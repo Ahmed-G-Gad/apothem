@@ -2,7 +2,7 @@
 title: "Référence de la CLI"
 description: "Référence de la CLI d'Apothem — toutes les sous-commandes et options."
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. |
 | `--dry-run` | Prévisualise la mise à jour sans écrire de fichiers. |
 
-`update` rematérialise la sortie de l'environnement. Elle ne met pas à jour le
-paquet de la CLI d'Apothem ; pour les mises à niveau du paquet, utilisez le
-gestionnaire de paquets ayant servi à installer Apothem.
+`update` rematérialise la sortie de l'environnement. Elle ne met pas à niveau le
+moteur Apothem lui-même ; mettez à jour le moteur par le canal ayant servi à
+l'installer (le flux `/plugin`, `npx`, ou les scripts d'installation et de mise
+à jour), comme décrit dans [Mise à jour](/docs/install/updating).
 
 ### `apothem uninstall`
 
@@ -143,6 +144,7 @@ deux se combinent pour donner l'état de dérive :
 | `in-sync` | Installé et conforme au profil de référence. |
 | `drift` | Installé mais plus conforme — corrigez avec `apothem update`. |
 | `unknown` | Installé, mais le profil de référence n'a pas pu être lu. |
+| `needs-project` | Un environnement à portée de projet a été signalé sans `--project`, de sorte que sa cible ne peut pas être résolue. |
 
 `installed` répond à « Apothem a-t-il effectué une installation ici ? », et non à
 « cet environnement est-il présent sur la machine ? ». Il repose sur les propres

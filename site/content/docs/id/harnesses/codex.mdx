@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "7f434952ef208581"
+sourceHash: "ca4ad5f675a665ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,28 +54,87 @@ agen ke TOML, skill ke `~/.agents/skills/`, dan aturan/templat Markdown
 non-native ke `~/.config/apothem/` sebagai materi pendukung.
 
 Setiap helper yang dikonversi menyetel `name`, `description`, dan
-`developer_instructions`. Helper yang izin alatnya, setelah alat-alat dalam
-daftar `disallowedTools` miliknya sendiri dikeluarkan, tidak menyertakan alat
-penyunting berkas apa pun (`Write`, `Edit`, `MultiEdit`, atau `NotebookEdit`)
-juga menyetel `sandbox_mode = "read-only"`, pembatasan penulisan milik Codex
-sendiri. `Bash` tidak dihitung sebagai alat penyunting berkas, sehingga helper
-yang diberi `Bash` tanpa satu pun alat tersebut tetap mendapat pengaturan itu.
-Tidak ada model atau upaya penalaran yang disetel, sehingga setiap helper
-mewarisi pilihan sesi. Codex tidak memiliki daftar alat atau batas giliran per
-helper, sehingga `tools` dan `maxTurns` milik helper tidak terbawa.
+`developer_instructions`, yang membawa isi helper tersebut. Tidak ada model atau
+upaya penalaran yang disetel, sehingga setiap helper mewarisi pilihan sesi.
+Codex tidak memiliki daftar alat atau batas giliran per helper, sehingga `tools`
+dan `maxTurns` milik helper tidak terbawa.
+
+Helper hanya-baca (lihat [referensi agen](/docs/reference/agents)) menyatakan
+dalam instruksinya bahwa mereka tidak menyunting apa pun. Sifat hanya-baca
+ditegakkan oleh sandbox sesi induk, bukan oleh berkas TOML helper: setiap helper
+berjalan di bawah pengaturan sandbox dan persetujuan dari sesi yang
+memulainya. Berkas helper tidak dapat menimpa mode sandbox, kebijakan
+persetujuan, penyedia model, atau server MCP milik sesi, sehingga adapter tidak
+menulis satu pun di antaranya, dan instruksi helper dapat memintanya menghindari
+suntingan tanpa menciptakan sandbox hanya-baca tersendiri. Untuk membuat batas
+hanya-baca mengikat, setel kontrol sandbox dan persetujuan pada sesi Codex itu
+sendiri. Build `Codex` yang lebih lama daripada rilis yang menambahkan
+pembatasan ini mungkin masih menghormati `sandbox_mode` dalam berkas helper;
+Apothem belum memastikan rilis mana itu, dan Apothem tidak menulis
+`sandbox_mode` dalam kedua kasus.
 
 ## Catatan kompatibilitas
 
-`~/.agents/skills/` adalah direktori akar bersama yang dimiliki Codex: delapan
+`~/.agents/skills/` adalah direktori akar bersama yang dimiliki Codex: sembilan
 alat lain yang didukung juga memuatnya
 ([registri harness](/docs/reference/harness-registry) mencantumkannya),
 sehingga skill Apothem yang ditulis instalasi Codex di sana juga muncul di
-alat-alat tersebut, dan pencopotan Codex menghapusnya dari alat-alat tersebut.
-Instalasi mencetak catatan yang menyebutkan alat-alat tersebut.
+alat-alat tersebut. Empat di antara alat-alat itu juga menulis folder tersebut
+sendiri ketika Anda memasangnya (registri mencantumkannya sebagai co-installer),
+dengan berkas yang sama yang ditulis instalasi Codex, sehingga skill tersebut
+ada di mesin yang tidak memiliki instalasi Codex. Hal yang sama berlaku untuk
+aturan dan templat di `~/.config/apothem/`, yang juga ditulis oleh tujuh adapter
+berlingkup proyek. Folder itu selalu berada di direktori home pengguna Anda,
+apa pun nilai `CODEX_HOME`: Codex membaca `$HOME/.agents/skills`, sehingga
+`CODEX_HOME` selain `~/.codex` memindahkan berkas Codex tetapi tidak memindahkan
+skill. Setiap instalasi Apothem yang memakai folder itu menulis berkas yang sama
+di sana, dan instalasi mencatat instalasi mana yang memakainya, sehingga urutan
+pemasangan tidak berpengaruh. Pencopotan Codex menghapus skill hanya ketika
+tidak ada lagi instalasi Apothem lain yang memakainya; jika masih ada, pencopotan
+mempertahankannya dan menyebutkan instalasi mana yang memakainya (lihat
+[Pencopotan](#pencopotan)). Pemilik terdaftar adalah alat yang path-nya
+didokumentasikan oleh vendor. Instalasi yang menempatkan berkas adalah instalasi
+mana pun yang masih memakainya, dan catatan instalasi menyebutkannya. Folder
+skill yang tidak ditulis Apothem dan memiliki nama yang sama dengan skill
+Apothem dibiarkan, dengan peringatan yang menyebutkan namanya. Instalasi
+mencetak catatan yang menyebutkan alat-alat tersebut.
+`~/.codex/agents/` adalah direktori akar bersama kedua: alat lain yang didukung
+mencantumkan folder itu sebagai lokasi kompatibilitas (registri menyebutkannya),
+dan dokumentasinya tidak menyatakan apakah alat itu membaca berkas TOML yang
+ditulis instalasi `Codex` di sana.
 
 Codex mereservasi `~/.codex/rules/` untuk kebijakan eksekusi `.rules`. Apothem
 tidak menempatkan aturan perilaku Markdown di sana; Apothem menyimpannya di
 `~/.config/apothem/` dan merujuknya dari `AGENTS.md` dan skill yang terpasang.
+
+## Plugin Codex
+
+Apothem juga menyediakan plugin Codex, yang ditambahkan dari marketplace plugin
+repositori ([panduan instalasi](/docs/install) mencantumkan perintahnya di bawah
+kanal 7). Plugin ini adalah bootstrap: plugin ini membundel satu skill entri yang
+menjalankan mesin, dan `apothem install --harness codex` menulis semua yang
+tercantum di atas.
+
+Plugin berada di `plugins/apothem/`. Manifesnya adalah `plugin.json` di akar,
+lokasi yang didokumentasikan Codex untuk paket baru. Manifes tidak menyebutkan
+path skill, karena Codex menemukan direktori `skills/` milik plugin dari akar
+plugin. Berkas `.codex-plugin/plugin.json` tetap berada di sampingnya sebagai
+fallback kompatibilitas untuk build Codex yang hanya membaca lokasi lama itu;
+Codex masih mendukungnya dan memperlakukan manifes akar sebagai kanonis untuk
+identitas plugin. Kedua berkas membawa versi rilis, dan sebuah tes mengikatnya
+pada versi mesin.
+
+Plugin tidak membundel agen, hook, maupun server MCP. Codex tidak
+mendokumentasikan komponen agen kustom untuk plugin, sehingga mesin tetap
+menulis agen ke `~/.codex/agents/*.toml`. Hook yang dibundel dalam plugin
+terbatas pada plugin yang dipasang secara manual di Codex desktop dan tidak
+dipercaya secara otomatis, sehingga mesin tetap menulisnya ke
+`~/.codex/hooks.json`.
+
+Entri marketplace menyetel blok `policy` yang menurut Codex harus selalu
+disertakan oleh penulis: `policy.installation` bernilai `AVAILABLE` dan
+`policy.authentication` bernilai `ON_INSTALL`, nilai default yang
+didokumentasikan Codex untuk entri baru.
 
 ## Verifikasi
 
@@ -99,6 +158,14 @@ apothem update --harness codex
 
 Menyegarkan bootstrap Codex, agen yang dikonversi, skill, dan kohor pendukung.
 
+Folder skill di `~/.agents/skills/` ditulis dalam satu bentuk yang sama bagi
+setiap instalasi Apothem pada folder itu: kunci header `SKILL.md` `version`,
+`updated`, `archetype`, dan `portability` berada di bawah map `metadata`, dan
+`userInvocable` ditulis sebagai `user-invocable`. Pembaruan pertama setelah
+pemutakhiran menulis ulang folder yang sebelumnya ditulis instalasi Codex ke
+dalam bentuk itu, dan mencadangkan setiap folder yang diubahnya.
+`apothem rollback --harness codex` memulihkannya.
+
 ## Pencopotan
 
 ```bash
@@ -109,10 +176,15 @@ Menghapus blok Apothem dari `~/.codex/AGENTS.md` dan mempertahankan teks apa
 pun di luarnya, serta menghapus entri milik Apothem dari `~/.codex/hooks.json`
 dan mempertahankan entri milik Anda. Juga menghapus berkas Apothem di
 `~/.codex/hooks/`, `~/.codex/agents/`, `~/.agents/skills/`, dan
-`~/.config/apothem/{rules,templates}/`; berkas lain di folder-folder tersebut
-tetap ada. Skill yang dihapus dari `~/.agents/skills/` juga hilang dari alat
-lain yang memuatnya (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)).
-Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah atau
+`~/.config/apothem/{rules,templates}/`, kecuali instalasi Apothem lain masih
+memakainya (pencopotan mempertahankan dan mencantumkannya); berkas lain di
+folder-folder tersebut tetap ada. Skill yang dihapus dari `~/.agents/skills/`
+juga hilang dari alat lain yang memuatnya (lihat
+[Catatan kompatibilitas](#catatan-kompatibilitas)). Jika Anda menyetel
+`CODEX_HOME` ke folder selain `~/.codex` dan memasang dengan rilis sebelumnya,
+salinan yang ditulis rilis itu di samping folder tersebut
+(`<CODEX_HOME>/../.agents/skills/` dan `<CODEX_HOME>/../.config/apothem/`) tidak
+dihapus; hapus salinan itu secara manual. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah atau
 dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas

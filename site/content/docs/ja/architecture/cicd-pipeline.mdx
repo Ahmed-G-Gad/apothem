@@ -2,7 +2,7 @@
 title: "CI/CD パイプライン図"
 description: "あらゆるコード変更とリリースを門にかけるビルド・テスト・lint・セキュリティ・公開のワークフロー段階の視覚マップとレーン分解。"
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ flowchart LR
 
 - **静的解析レーン** —— 高速なフィードバックです。Ruff は Python のスタイルと厳選されたルールセットを対象とします。mypy は strict モードで型の規律を強制します。frontmatter バリデーターは、ルール、スキル、委任されたワーカー、コマンドのアーティファクトスキーマへの準拠を門にかけます。markdownlint はこのレーンには含まれません。pre-commit フックとしてのみ実行され、CI では実行されません（[Markdown 規約](/docs/reference/markdown-conventions)を参照してください）。
 - **テストレーン** —— `pytest tests/hooks` は、フックランタイムを完全なイベントマトリクスに対して実行します。`validate_ecosystem.py` は、アーティファクト横断の整合性に対する主要な構造ゲートです。`chaos_pass.py` は、`main` へのプッシュおよびプルリクエストに対して、CI の品質ジョブ内で（パスフィルター付きで）実行され、劣化した入力のもとでの品質低下を捕捉します。`src/apothem/benchmarks/` 配下のクラス別ベンチマークドライバーは、pytest スイートと `metrics` ジョブを通じて CI で実行されます。CI での pytest の各フル実行は、`bench_install.py` を除くすべてのドライバーを呼び出す `tests/unit/test_benchmarks.py` を収集します。`metrics` ジョブは `scripts/dev/collect_metrics.py` を実行します。このスクリプトは `bench_hooks.py --json` を実行し、結果を `hook_e2e_ms` として記録します。`bench_tests.py` と `bench_install.py` が実際の実行を計測するのは、`make benchmarks` の下だけです。`make benchmarks` を実行するワークフローはありません。
-- **セキュリティレーン** —— `ci.yml` 内の gitleaks が、誤ってコミットされた認証情報を捕捉します。ライセンス監査（`license-audit.yml`）は、許可リストにない依存関係のライセンスを検出すると失敗します。毎週、および依存関係またはライセンスファイルが変更されたときに実行されます。`release.yml` は、タグ付けされたリリースごとに SBOM を生成します。
+- **セキュリティレーン** —— `ci.yml` 内の gitleaks が、誤ってコミットされた認証情報を捕捉します。ライセンス監査（`license-audit.yml`）は、許可リストにない依存関係のライセンスを検出すると失敗します。毎週、および依存関係またはライセンスファイルが変更されたときに実行されます。REUSE ゲート（`reuse.yml`）はすべての変更で実行され、ファイルにライセンス行がない場合や SPDX 式を解析できない場合に失敗します。`release.yml` は、タグ付けされたリリースごとに SBOM を生成します。
 - **公開レーン** —— リリースワークフローはタグのプッシュによって起動されます。npm と VS Code の公開処理は、既存のタグに対して手動ディスパッチで再実行することもできます。署名済みタグの検証は、リリースブランチの来歴を確認します。リリースノートは `CHANGELOG.md` の Keep-A-Changelog 形式から派生します。プロジェクトのウェブサイトは、そのビルド入力に変更を加えた `main` へのプッシュ時、または手動ディスパッチ時に、`site/dist/` から GitHub Pages のターゲットへ公開されます。
 
 ## 具体的な構成

@@ -2,7 +2,7 @@
 title: "Mulai cepat"
 description: "Pasang Apothem, tulis profil, materialisasikan harness pertama Anda, dan verifikasi — tur salin-tempel dengan keluaran yang diharapkan."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -118,14 +118,39 @@ apothem profile show --json
 
 Kerangka ini menggunakan data identitas placeholder palsu dan aman untuk disunting
 sebelum Anda memasang keluaran harness apa pun. `show --json` membacanya kembali
-dan melaporkan profil yang tervalidasi:
+dan melaporkan profil yang tervalidasi dengan setiap nilai default terisi, diawali
+dengan `schema_version`. Perintah ini mencetaknya dalam satu baris; di sini
+ditampilkan secara diperluas:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -152,9 +177,11 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Adapter bercakupan proyek menulis di dalam sebuah proyek alih-alih di direktori
-home Anda, sehingga memerlukan `--project PATH`. Pratinjau instalasi apa pun tanpa
-menulis berkas dengan `--dry-run`:
+Adapter bercakupan proyek menulis berkas aturannya di dalam sebuah proyek,
+sehingga memerlukan `--project PATH`; tujuh di antaranya juga menulis skill dan
+aturan bersama ke folder di direktori home Anda, dan `--project` tidak mengubah
+lokasi tujuan berkas-berkas itu. Pratinjau instalasi apa pun tanpa menulis
+berkas dengan `--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

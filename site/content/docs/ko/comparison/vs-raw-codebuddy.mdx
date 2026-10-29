@@ -2,7 +2,7 @@
 title: "Apothem 대 원시 CodeBuddy 규칙"
 description: "프로젝트마다 .codebuddy/rules 파일을 직접 작성하는 대신, CodeBuddy의 프로젝트 규칙을 Apothem을 통해 처리하는 이유입니다."
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ CodeBuddy는 프로젝트 규칙을 `.codebuddy/rules/*.md`에서 읽습니다. 
 | 하니스 간 규칙 정렬 유지 | 도구별로 다시 도출 | 자동으로 투영됨 |
 | 규칙 업데이트 | 모든 프로젝트를 손으로 편집 | `apothem update --harness codebuddy --project <path>` |
 | 구성 제거 | 수동 삭제 | 타임스탬프 백업과 함께 `apothem uninstall` |
+| 재사용 가능한 스킬과 커맨드 공유 | 각 스킬 폴더를 `~/.codebuddy/skills/`에 직접 복사하고 사본을 최신 상태로 유지 | 어댑터가 `~/.codebuddy/skills/`에 모든 프로젝트용 사본 하나로 작성하고, `apothem update` 시 갱신 |
 
 ## Apothem이 관리하는 것
 
-codebuddy 어댑터는 공유 규칙을 전용 `<project>/.codebuddy/rules/apothem-rules.md` 파일로 렌더링하며 그 밖의 아무것도 작성하지 않습니다. `CODEBUDDY.md` 메모리 파일, `.codebuddy/settings.json`의 권한과 MCP 서버, 그리고 직접 작성한 다른 모든 규칙 파일은 전적으로 운영자 소유로 남습니다. 어댑터는 그 표면을 인식하지만 결코 편집하지 않습니다. 공유 규칙을 변경하면 다음 `apothem update` 때 파일이 다시 렌더링됩니다.
+codebuddy 어댑터는 공유 규칙을 전용 `<project>/.codebuddy/rules/apothem-rules.md` 파일로 렌더링합니다. 또한 모든 프로젝트가 공유하는 홈 디렉터리의 폴더 두 곳에 작성합니다. 스킬과 스킬로 감싼 커맨드는 `~/.codebuddy/skills/`에, 그 스킬들이 인용하는 규칙과 템플릿은 `~/.config/apothem/rules/`와 `~/.config/apothem/templates/`에 들어갑니다. `CODEBUDDY.md` 메모리 파일, `.codebuddy/settings.json`의 권한과 MCP 서버, 그리고 직접 작성한 다른 모든 규칙 파일은 전적으로 운영자 소유로 남습니다. 어댑터는 그 표면을 인식하지만 결코 편집하지 않습니다. 공유 규칙을 변경하면 다음 `apothem update` 때 규칙 파일이 다시 렌더링됩니다.
 
 ## 마이그레이션 경로
 

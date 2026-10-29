@@ -2,7 +2,7 @@
 title: "Contribuindo com o Apothem — Guia do Desenvolvedor"
 description: "Mantenha e estenda o ecossistema do Apothem criando regras, comandos, auxiliares, skills e hooks com schemas canônicos, requisitos de frontmatter e procedimentos de validação."
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -201,7 +201,10 @@ Documente o motivo na primeira seção do artefato.
 
 ### Sempre ativo
 
-A regra se aplica em todos os lugares.
+A regra se aplica em todos os lugares. Cinco regras são sempre ativas: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management` e o índice de
+regras (`apothem-rule-index`). O conjunto é pequeno porque toda regra sempre
+ativa custa contexto em todas as sessões.
 
 ```yaml
 pathFilter: ""
@@ -320,14 +323,20 @@ Use o schema de `site/content/docs/reference/artifact-schema.mdx` § Schema: Rul
 
 As regras carregam somente estes quatro campos — sem `version` / `updated` / `scope` / `portability` / `implements`.
 
+Uma nova regra é filtrada por caminho. Uma nova regra sempre ativa exige que a
+lista central e os tetos de bytes sejam elevados na mesma mudança: a lista em
+`tests/unit/test_always_on_core.py` e os tetos em
+`conformity/always_on_budget_grep.py`. Uma regra companheira
+(`<parent>-<aspect>`) adota o `pathFilter` da sua regra-mãe, ou um mais restrito.
+
 Exemplo:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -340,7 +349,10 @@ Adicione uma linha à tabela da família da regra na seção Rule families de
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Escolha a tabela de família cujo tema corresponda ao da regra.
+Escolha a tabela de família cujo tema corresponda ao da regra. Nomeie também a
+regra na linha de `src/apothem/rules/apothem-rule-index.md` correspondente à
+situação que a exige; `tests/unit/test_always_on_core.py` falha quando uma
+regra está ausente do índice.
 
 ### 5. Acrescente ao CHANGELOG.md
 
@@ -386,7 +398,7 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
@@ -394,9 +406,11 @@ allowed-tools: "Read, Glob, Grep"
 
 `disable-model-invocation: true` torna um comando invocável somente pelo
 operador; com `false`, o modelo pode executá-lo quando uma solicitação
-corresponde à sua descrição. A maioria dos comandos usa `true`, mas a maioria
-das etapas dos pipelines de planejamento e de pesquisa usa `false`. A tabela de
-invocação em `src/apothem/commands/README.md` lista a configuração de cada
+corresponde à sua descrição. O padrão é `false` para os comandos somente
+leitura e consultivos, com uma descrição que começa pelo caso de uso; 35 dos 45
+comandos o usam. Um comando permanece `true` quando altera o estado fora da
+árvore de trabalho ou depende de o operador escolher o momento (10 comandos). A
+tabela de invocação em `src/apothem/commands/README.md` lista a configuração de cada
 comando; adicione uma linha para um novo comando. Mantenha `allowed-tools`
 somente leitura: um harness que o respeita executa essas ferramentas sem
 perguntar. Conceda uma ferramenta com efeitos colaterais somente como uma regra
@@ -413,6 +427,14 @@ Estrutura:
 - Instruções de alto nível
 - Seção de fluxo de trabalho com os passos
 - Contrato de retorno / formato de saída
+
+A emissão de skills de um harness divide cada comando em um `SKILL.md` enxuto
+mais arquivos `references/` por seção H2. Dê a um comando uma única seção
+`## Workflow`, feche todas as cercas de código e classifique qualquer novo tipo
+de H2 em `src/apothem/lib/claude_skill_split.py`;
+`tests/unit/test_claude_skill_split.py` falha em um tipo não classificado. As
+regras estão no contrato Skill-emission split de
+`src/apothem/commands/README.md`.
 
 ### 4. Atualize o README e o CHANGELOG.md
 
@@ -714,17 +736,18 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### Avaliações comportamentais
 
-A suíte em `evals/` mede o comportamento em vez da forma: 64 casos de
-acionamento (cada comando e subagente invocável pelo modelo dispara diante de uma
-solicitação do seu domínio e permanece em silêncio diante de uma solicitação
-quase correspondente), 32 casos de resultado (um por etapa de plano, etapa de
+A suíte em `evals/` mede o comportamento em vez da forma: 148 casos de
+acionamento (cada comando, skill e subagente invocável pelo modelo dispara diante
+de uma solicitação do seu domínio e permanece em silêncio diante de uma
+solicitação quase correspondente, e seis comandos invocáveis somente pelo
+usuário não iniciam por conta própria), 32 casos de resultado (um por etapa de plano, etapa de
 pesquisa e dimensão de auditoria) e 6 pares de efeito de regra (o texto de uma
-regra sempre ativa ligado e desligado). Os casos são dados simples, validados
+regra amostrada ligado e desligado). Os casos são dados simples, validados
 gratuitamente por `python -m pytest tests/unit/test_eval_suite.py`; executá-los
 é cobrado e manual. Consulte
 [Executar as avaliações comportamentais](/docs/how-to/evals) para o fluxo de
 trabalho `Evals`, uma execução local e como adicionar um caso. Depois de editar
-uma regra sempre ativa que tem um par, execute
+uma regra que tem um par, execute
 `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmarks
@@ -748,6 +771,11 @@ conta palavras separadas por espaços em branco, excluindo a seção Bindings e 
 linhas de ponteiro companheiras. Seu relatório JSON também traz
 `always-on-loaded`: os bytes, os caracteres e as palavras dos corpos sem
 frontmatter que um harness carrega, somados sobre as regras sempre ativas.
+Apontada para o diretório de regras distribuído, a verificação também falha
+quando essa soma excede um teto de bytes (reportado como
+`always-on-ceiling-bytes`) ou quando o índice de regras excede o seu próprio. O
+Claude Code carrega as suas cópias das regras sem a seção Bindings, portanto o
+seu tamanho carregado é menor do que o valor que esta verificação reporta.
 
 ## Auditoria do ecossistema: executando a validação
 

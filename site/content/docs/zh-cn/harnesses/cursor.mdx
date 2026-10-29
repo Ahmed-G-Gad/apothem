@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "适用于 Cursor（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "555c36a18537fc13"
+sourceHash: "89536140f8fab5aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,11 +17,111 @@ sourceHash: "555c36a18537fc13"
 apothem install --harness cursor --project /path/to/project
 ```
 
-适配器根据共享的 Apothem 规则与治理表面渲染出单个项目级 `.mdc` 规则文件。
+适配器根据共享的 Apothem 规则与治理表面渲染出单个项目级 `.mdc` 规则文件，将 Apothem 的辅助器作为 Cursor 子代理写入项目中（参见[子代理](#子代理)），并向项目的 `hooks.json` 添加一个钩子（参见[钩子](#钩子)）。
 
-**写入的文件：** `<project>/.cursor/rules/apothem-rules.mdc`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
 
-该文件就是安装的全部内容：它旁边不会放置任何规则、技能、命令、模板或钩子文件，因此该文件会说明这一点，而不是指向项目中并不存在的 Apothem 文件。
+**写入的文件：**
+
+- `<project>/.cursor/rules/apothem-rules.mdc`，即规则文件。
+- 每个 Apothem 辅助器对应一个 `<project>/.cursor/agents/<name>.md`，位于项目中。
+- `<project>/.cursor/hooks.json`，其中添加了一个 `sessionStart` 条目。你自己在其中的条目和键会保留。
+- `<project>/.apothem/support/cursor/hooks/`，即钩子脚本，位于项目中。
+- 每个 Apothem 技能和命令对应一个 `~/.agents/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+规则文件概述了各项纪律并指出了这些文件夹，因此当任务需要时，模型可以打开某个技能或规则文件。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.agents/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和规则文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `cursor` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- `--project` 决定要写入哪个规则文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是规则文件、`.cursor/agents/` 中的子代理文件、`.cursor/hooks.json` 中的钩子条目，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
+
+## 子代理
+
+根据 [Cursor 子代理文档](https://cursor.com/docs/subagents)，Cursor 从 `<project>/.cursor/agents/` 中的 Markdown 文件读取子代理。安装会为每个 Apothem 辅助器在该文件夹中写入一个文件。它只为项目安装，不写入 `~/.cursor/agents/` 文件夹。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。 |
+| `readonly` | 对五个辅助器写入 `true`：`citation-auditor`、`convention-auditor`、`fact-checker`、`memory-auditor` 和 `research-scout`。 |
+
+Cursor 没有列出或拒绝工具的键：子代理会继承其父级的每一个工具。它唯一能强制执行的限制是 `readonly: true`，它不允许任何文件编辑，也不允许任何改变状态的 shell 命令。因此不会写入辅助器的 `tools` 和 `disallowedTools` 行，该限制只以这个标志的形式保留下来：
+
+- 上述五个辅助器是只读的，并且没有 `Bash`，因此它们获得 `readonly: true`，并在描述中保留只读的措辞。
+- 有七个辅助器是只读的，但会运行命令（`codebase-explorer`、`dependency-auditor`、`design-critic`、`prompt-evaluator`、`quality-gate`、`security-scanner` 和 `test-runner`）。`readonly: true` 也会阻止它们运行测试和 lint，因此它们不获得该标志，并且它们的描述会去掉 Cursor 不会强制执行的只读标签。只有描述会改变：指令被原样复制，因此它们仍然称该辅助器为只读，并提到一个 Cursor 文件并不具备的工具限制。模型会遵循这段文本，但 Cursor 不会强制执行它，该辅助器会以父级拥有的每一个工具运行。
+- `mcp-builder` 和 `refactor-surgeon` 会写入文件，保持不变。
+
+安装不写入 `model` 键，因此辅助器在父级所用的模型上运行；也不写入 `is_background`、轮次上限，或 Apothem 的 `version`、`updated` 和 `portability` 键中的任何一个。
+
+需要了解的事项：
+
+- 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.cursor/agents/`；Apothem 不替你做选择。
+- Cursor 还会加载为其他工具写入的辅助器文件夹，其中包括项目中的 `.claude/agents/` 和你主目录中的 `~/.claude/agents/`（其余的由[工具注册表](/docs/reference/harness-registry#共享根目录)列出）。名称冲突时，项目优先于主目录文件夹，`.cursor/` 优先于其他文件夹，因此在进行了此安装的项目中，原生文件会取代 Cursor 将从 `~/.claude/agents/` 导入的 Claude Code 副本。Cursor 的文档没有说明它是加载两份副本还是丢弃优先级较低的那一份，也没有说明它是否会应用它所导入的 Claude Code 文件中的 `tools` 和 `disallowedTools` 行。
+- 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
+- Apothem 尚未确认 Cursor 是否读取另一个工具写入其所导入文件夹中的 TOML 文件，Third-Party Imports 设置是否会关闭这些被导入的文件夹，以及它是否读取 `.cursor/agents/` 中 `.md` 以外的扩展名或嵌套文件夹。
+
+## 钩子
+
+根据 [Cursor 钩子文档](https://cursor.com/docs/hooks)，Cursor 运行 `hooks.json` 文件中的钩子。安装会向 `<project>/.cursor/hooks.json` 添加一个条目：
+
+| 事件 | 运行的内容 |
+| --- | --- |
+| `sessionStart` | 会话引导：会话元数据、技能索引、记忆和计划摘要以及常设姿态，添加到对话的初始上下文中。 |
+
+该钩子为模型添加上下文。它不会阻止任何内容，并且 Cursor 不会等待 `sessionStart` 钩子。
+
+这个第一版不注册其他任何内容。Cursor 的文档也为 `postToolUse` 列出了 `additional_context`，一旦探测表明该上下文能够到达模型，Apothem 就会在那里注册上下文大小计数器。它不注册 `preToolUse` 守卫：Cursor 只为它拒绝的操作记载了 `agent_message`（守卫借以传达的字段），而 Apothem 的守卫从不拒绝。写入、编辑和 shell 守卫、`AskUserQuestion` 检查以及会话结束协议都保留在能够传达它们的工具上。
+
+**文件的写入位置**
+
+| 文件 | 它存放的内容 |
+| --- | --- |
+| `<project>/.cursor/hooks.json` | 一个 `sessionStart` 条目，合并到该文件的 `hooks` 映射中。 |
+| `<project>/.apothem/support/cursor/hooks/` | 分发器脚本、它的辅助脚本以及它的消息文件。 |
+
+`hooks.json` 是你的文件，并且 Cursor 将项目钩子记载为签入版本控制的内容。安装会将 Apothem 的条目添加在你的条目之后，并让你的条目和其他键保持原样；更新只替换其命令运行 Apothem 分发器的条目（带有 `--contract cursor` 的 `.apothem/support/cursor/hooks/dispatch.py`，无论它是写在哪个项目路径下的），卸载也只移除该条目。你自己的钩子如果只是名称相同（例如你项目中的 `tools/hooks/dispatch.py`），或者运行的是 `python -m
+apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。当该文件中不再剩下其他内容时，卸载会先将一份副本保存到 `~/.apothem/backups/` 下，然后删除该文件。带有注释、尾随逗号或形状错误的 `hooks` 值的文件无法在不丢失某些内容的情况下被重写，因此安装会针对该文件报告 `config.unparseable` 错误，保持该文件不变并停止，同时再次移除它已开始写入的其他文件：修复该文件，或者自己添加该条目。
+
+**提交的文件会写明你的机器。** 该条目的命令包含 Apothem 运行时找到的解释器以及项目的绝对路径，因此检出该文件的队友会得到一条指向你机器的命令。Cursor 会将它找不到的命令报告为失败，会话继续进行，因此不会有任何东西损坏，但该钩子在那里不起任何作用。只有当你的团队共享这种布局时才提交该文件。Cursor 没有记载项目钩子文件的不提交变体。`.apothem/` 文件夹是脚本所在的位置，项目的 `.gitignore` 片段会将它排除在版本控制之外。
+
+命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+```
+
+在 Windows 主机上，命令以 `& `（PowerShell 的调用运算符）开头，因为 Cursor 的桌面应用通过 PowerShell 运行钩子命令，而在 PowerShell 中，以带引号的程序路径开头的一行并不是一次调用。`sh` 会将开头的 `&` 读作语法错误，因此其他主机都不会得到它。文档指出了 shell，但没有指出引号规则，因此这是 Apothem 对 PowerShell 语法的解读。
+
+`--contract cursor` 读取 Cursor 的 `conversation_id` 和 `workspace_roots`，并且只以 `{"additional_context": ...}` 作答。
+
+**shell 会误读的路径。** 包含 `$`、反引号、双引号或反斜杠的项目路径或解释器路径会在写入任何内容之前被拒绝：在带引号的命令内部，它会运行一个不同的文件，或者破坏写入该命令的 JSON。错误信息会指出该路径；移动或重命名项目，然后再次运行安装。路径中的空格或撇号没有问题。
+
+**Cursor 也会运行 Claude Code 写入的钩子。** 当"Include Third-Party Plugins, Skills, and Other Configs"开启时（位于 Cursor Settings 的 Third-Party Imports 下，默认开启），Cursor 会加载 `~/.claude/settings.json`、`.claude/settings.json` 和 `.claude/settings.local.json` 中的钩子，并运行来自每个来源的每个匹配钩子。如果你也为 Claude Code 安装了 Apothem，两套钩子都可能运行。这里的 `sessionStart` 命令与它在 Claude Code 中的副本在 Apothem 的钩子状态文件夹中共享每个会话一个的标记，因此后运行的那个保持静默，引导内容只到达模型一次；Apothem 通过 Cursor 为其钩子设置的 `CURSOR_PROJECT_DIR` 和 `CURSOR_VERSION` 变量识别出 Cursor。该标记覆盖十秒，因此同一会话稍后的一次启动（例如第二次压缩）仍会传达。Claude Code 副本的上下文大小计数器会额外运行，并且 Apothem 不会对计数器去重。要只运行这里的钩子，请关闭该设置；这也会阻止 Cursor 导入第三方插件、技能和其他配置。安装会将此作为一条说明打印出来。
+
+**需要了解的事项。** Cursor 会在 `hooks.json` 保存时重新加载它，因此无需重启。项目钩子在受信任的工作区中运行。Cursor 的云端会运行仓库的项目钩子，但会推迟 `sessionStart`，因此该条目在那里不会触发。在 Cursor 的环境中设置 `APOTHEM_HOOKS_DISABLE=1`，即可让 Apothem 钩子静默。
+
+{/* TODO(clarify): Cursor's default hook timeout (the entry sets 30 seconds), how
+its CLI runs hook commands on Windows, whether one command string can serve both sh
+and PowerShell, and whether the postToolUse context reaches the model; see the Hooks
+section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## 配置档案到原生配置的映射
 
@@ -33,6 +133,8 @@ apothem install --harness cursor --project /path/to/project
 
 Cursor 0.45+ 通过 `.cursor/rules/` 支持项目级指令。适配器默认写入项目级的 `.cursor/rules/` 目录；Cursor 没有可供此适配器管理的、有文档记载的基于文件的用户全局规则路径。
 
+Cursor 从 `~/.agents/skills/` 加载技能，因此安装写入的技能无需进一步设置即可出现在 Cursor 中。Cursor 也会加载 `~/.claude/skills/`，因此在同时装有 Claude Code 安装的机器上，它可能会将相同的技能名称列出两次，而它的文档没有说明哪一份副本优先。Apothem 尚未确认 Cursor 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
+
 ## 验证
 
 ```bash
@@ -42,8 +144,9 @@ apothem verify --harness cursor --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+2. 每个受管目标都存在，包括 `.cursor/agents/` 文件夹和钩子文件 `.cursor/hooks.json`；受管文件非空，并且 JSON 或 YAML 配置可以解析。钩子文件必须包含一个运行 Apothem 分发器的条目（检查不会运行它），因此被还原或清空的文件将不再通过验证。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.cursor/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；命令 `apothem diff --harness cursor --project /path/to/project` 会列出缺失或过期的辅助器文件。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -53,6 +156,8 @@ apothem update --harness cursor --project /path/to/project
 
 根据共享配置档案的当前状态重新派生项目规则文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。它会重写与当前文件不同的子代理文件，并添加任何缺失的子代理文件。它还会刷新钩子脚本以及 `.cursor/hooks.json` 中的 Apothem 条目，而不触碰你自己的条目。
+
 ## 卸载
 
 ```bash
@@ -60,6 +165,8 @@ apothem uninstall --harness cursor --project /path/to/project
 ```
 
 从 `<project>/.cursor/rules/apothem-rules.mdc` 中移除 Apothem 区块，以及 Apothem 写在该区块上方的前置元数据，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。在更改之前，会将该文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+卸载还会移除它在 `<project>/.cursor/agents/` 中写入的子代理文件，并保留其中的其他任何文件；该文件夹变空时会被移除。它会从 `<project>/.cursor/hooks.json` 中移除 Apothem 条目（通过其命令中的分发器路径识别它），并保留你自己的条目和键。仅当该文件中不再剩有任何其他内容时，才会删除该文件。`<project>/.apothem/support/cursor/hooks/` 中的钩子脚本也会被移除。如果某个文件带有卸载无法读取的注释，卸载会保持该文件原样，并将该条目报告为已跳过，同时给出原因；请手动移除 Apothem 条目。它会移除它在 `~/.agents/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -73,6 +180,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness cursor --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness cursor --project /path/to/project`，然后再次验证 |
+| Cursor 一个 Apothem 辅助器都没有列出 | 运行 `apothem diff --harness cursor --project /path/to/project`。如果有一行针对 `.cursor/agents` 文件夹的待处理项，说明辅助器文件缺失或已过期，因此运行 `apothem update --harness cursor --project /path/to/project`。`apothem verify` 无法检验这一点：只要 `.cursor/agents/` 存在，即使其中没有任何辅助器文件，它也会通过。如果 `diff` 报告没有待处理的更改，请检查项目是否已在 Cursor 中打开，并开始一个新的聊天 |
+| Apothem 钩子没有运行 | Cursor 只在受信任的工作区中运行项目钩子。打开 Customize 中的 Hooks 标签页，或 Hooks 输出通道，查看该条目是否已加载以及它报告了什么。在另一台机器上写入的文件写明的是那台机器的解释器，因此 Cursor 会将该命令报告为失败：请在这里运行 `apothem update --harness cursor --project /path/to/project` |
+| 安装针对 `hooks.json` 报告 `config.unparseable` | 该文件带有注释、尾随逗号或形状错误的 `hooks` 值。修复该文件后再次安装，或者自己添加 `sessionStart` 条目 |
+| Apothem 上下文出现两次 | Cursor 也会运行 Claude Code 安装写入的钩子。在 Cursor Settings 的 Third-Party Imports 下关闭"Include Third-Party Plugins, Skills, and Other Configs"，即可只运行 `.cursor/hooks.json` 中的钩子 |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness cursor --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness cursor --project /path/to/project` |
 
 ## 配置开关

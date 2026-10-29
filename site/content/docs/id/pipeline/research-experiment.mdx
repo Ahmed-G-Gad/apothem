@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Menjalankan studi yang dirancang dan menangkap data mentah dengan provenans lengkap plus manifes reproduksibilitas (lingkungan, seed, protokol, penyematan versi)."
 machineTranslated: true
-sourceHash: "669b49f8909599c4"
+sourceHash: "83b92abde30e8dc0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Dengan argumen:
 
 ## Keluaran
 
-`_outputs/experiment-log.md` (jejak protokol bercap waktu), data mentah di lokasi yang alami bagi host, dan `_outputs/reproducibility-manifest.md` (lingkungan, seed, protokol, penyematan versi).
+`_outputs/experiment-log.md` (jejak protokol bercap waktu, ditambah catatan penutupan kampanye otonom), data mentah di lokasi yang alami bagi host, dan `_outputs/reproducibility-manifest.md` (lingkungan, seed, protokol, penyematan versi).
 
 ## Hilir
 
@@ -48,7 +48,9 @@ Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
 ## Landasan ketelitian
 
-Eksekusi menjalankan lintasan pilot untuk mengkalibrasi anggaran dan rentang, lalu perbandingan penuh di bawah rencana pemanfaatan-komputasi yang dinyatakan (alokasi inti, batas memori, paralelisasi aman atas pengulangan independen). Setiap metode stokastik menjalankan regimen pengulangan terpraregistrasinya dengan seed yang tercatat dan perangkat keras terlog. Sebuah lup eksperimen otonom yang opt-in dan mati-secara-bawaan tersedia: terhadap harness yang dibekukan ia mengusulkan perubahan pada satu target yang dapat diubah, menjalankannya pada anggaran tetap, mempertahankannya hanya jika ia mengungguli petahana, dan menjurnal setiap percobaan.
+Eksekusi menjalankan lintasan pilot untuk mengkalibrasi anggaran dan rentang, lalu perbandingan penuh di bawah rencana pemanfaatan-komputasi yang dinyatakan (alokasi inti, batas memori, paralelisasi aman atas pengulangan independen). Setiap metode stokastik menjalankan regimen pengulangan terpraregistrasinya dengan seed yang tercatat dan perangkat keras terlog. Sebuah lup eksperimen otonom yang opt-in dan mati-secara-bawaan tersedia. Terhadap harness yang dibekukan, lup ini mengusulkan perubahan pada satu target yang dapat diubah, menyatakan prediksi yang dapat difalsifikasi sebelum setiap eksekusi, dan menjalankannya pada anggaran tetap. Metrik primer dibaca dari log eksekusi sebagai dua sinyal: sinyal pencarian yang mengarahkan lup, dan sinyal penerimaan dari himpunan yang terpisah, yang mengonfirmasi atau menolak perubahan sebelum perubahan itu dipertahankan: perubahan harus lolos tahap pencarian, lalu mengungguli petahana pada penerimaan dengan selisih lebih besar dari margin derau yang dinyatakan (atau menyamainya sambil mengurangi kompleksitas). Setiap percobaan dijurnal dan setiap kueri penerimaan dihitung dan diungkapkan.
+
+Himpunan akhir yang belum tersentuh dievaluasi sekali, pada penutupan. Kampanye yang tidak memilikinya memberi label hasilnya terkontaminasi-seleksi dan eksploratif, dan setiap angka yang dilaporkan kampanye diukur ulang di bawah regimen pengulangan di atas. Operator mengonfirmasi target, harness, metrik, himpunan evaluasi, aturan penerimaan, anggaran, dan ruang kerja sekali, dan dapat menetapkan kriteria berhenti; saat berhenti, catatan penutupan (jumlah percobaan, yang dipertahankan, dibuang, crash, dan kueri penerimaan, peningkatan atas baseline, dan hasil himpunan yang belum tersentuh) masuk ke log eksperimen sehingga tahap analisis dapat mengklasifikasikan hasil yang dipilih lup.
 
 ## Mode kegagalan
 
@@ -57,6 +59,7 @@ Eksekusi menjalankan lintasan pilot untuk mengkalibrasi anggaran dan rentang, la
 | Blocked: run /research-design first | Tidak ada rancangan studi | Jalankan `/research-design` untuk menghasilkan `_inputs/study-design.md` |
 | Eksekusi tidak dapat direproduksi | Catatan seed / lingkungan hilang | Catat manifes reproduksibilitas lengkap sebelum melanjutkan |
 | Penyimpangan protokol tak terdokumentasi | Perubahan di tengah eksekusi tidak dicatat | Catat penyimpangan dalam log eksperimen; ungkapkan saat analisis |
+| Hasil lup disajikan sebagai konfirmatori | Lup mengarahkan berdasarkan himpunan penerimaannya, atau tidak ada himpunan yang belum tersentuh yang dibaca saat penutupan | Beri label hasil sebagai terkontaminasi-seleksi dan eksploratif; sinyal pencarian mengarahkan, sinyal penerimaan memutuskan, dan himpunan yang belum tersentuh dibaca sekali |
 
 ## Contoh
 

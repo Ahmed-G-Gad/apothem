@@ -2,14 +2,14 @@
 title: "Kimi Code"
 description: "محوّل إطار عمل Apothem لـ Kimi Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "8e9f4f62c583aebb"
+sourceHash: "7baab16542cfcb94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Moonshot</bdi>
 **اسم التثبيت:** <bdi>`kimi-code`</bdi>
 **الحالة:** إتاحة عامة
-**الإعداد الأصلي:** <bdi>`<project>/AGENTS.md`</bdi> إضافةً إلى <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>
+**الإعداد الأصلي:** <bdi>`<project>/AGENTS.md`</bdi>، و<bdi>`<project>/.kimi-code/skills/`</bdi>، و<bdi>`<project>/.kimi-code/agents/`</bdi>، و<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>
 
 ## التثبيت
 
@@ -19,43 +19,140 @@ apothem install --harness kimi-code --project /path/to/project
 
 يكتب المحوّل سطح الحوكمة المشترك لـ <bdi>Apothem</bdi> في ملف <bdi>`AGENTS.md`</bdi>
 في جذر المشروع بوصفه كتلة مُدارة محدَّدة بعلامات حارسة (يُحفَظ نثر المُشغِّل الواقع
-خارج العلامات الحارسة)، ويُبقي حزم <bdi>Markdown</bdi> غير الأصلية تحت شجرة الدعم
-التي يملكها <bdi>Apothem</bdi> في <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
+خارج العلامات الحارسة). ويثبّت المهارات، والأوامرَ مغلَّفةً بوصفها مهارات، في
+دليل مهارات المشروع الأصلي في <bdi>Kimi Code</bdi>، وهو <bdi>`<project>/.kimi-code/skills/`</bdi>، ويثبّت
+مساعِدات <bdi>Apothem</bdi> بوصفها عوامل فرعية لـ <bdi>Kimi Code</bdi> في <bdi>`<project>/.kimi-code/agents/`</bdi> (راجع
+[العوامل الفرعية](#العوامل-الفرعية)). وتبقى الحزم الأخرى تحت شجرة الدعم التي يملكها
+<bdi>Apothem</bdi> في <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
 يقرأ ملفَّ <bdi>`AGENTS.md`</bdi> الخاص بالمشروع كثيرٌ من أدوات البرمجة إلى جانب
 <bdi>Kimi Code</bdi>، لذا تُكتَب الكتلة بوصفها إرشادات على نطاق المشروع لا تُسمّي
 أداة واحدة بعينها قارئًا لها.
 
 يقرأ <bdi>Kimi Code</bdi> ملف التعليمات <bdi>`AGENTS.md`</bdi> في جذر المشروع وفق
 الاصطلاح العام لـ <bdi>AGENTS.md</bdi>، ويقع إعداد المشروع تحت
-<bdi>`<project>/.kimi-code/`</bdi>. السطح <bdi>`<project>/.kimi-code/mcp.json`</bdi>
+<bdi>`<project>/.kimi-code/`</bdi>. ويَعُدّ <bdi>Kimi Code</bdi> جذرَ المشروع أقربَ دليل يحوي
+<bdi>`.git`</bdi>، باحثًا صعودًا من دليل العمل، لذا مرِّر جذر المستودع بوصفه
+<bdi>`--project`</bdi>. السطح <bdi>`<project>/.kimi-code/mcp.json`</bdi>
 يملكه المُشغِّل؛ يُسمّيه <bdi>Apothem</bdi> لكنه لا يؤلّف فيه أي مُدخَلات.
 
-**الملفات المكتوبة:** <bdi>`<project>/AGENTS.md`</bdi> (كتلة مُدارة) وحزم الأوامر،
-والمهارات، والخطّافات، والعوامل، والقواعد، والقوالب تحت
-<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
+**الملفات المكتوبة:** <bdi>`<project>/AGENTS.md`</bdi> (كتلة مُدارة)، والمهارات
+والأوامر (بوصفها مهارات) تحت <bdi>`<project>/.kimi-code/skills/`</bdi>، وملف
+<bdi>`<project>/.kimi-code/agents/<name>.md`</bdi> واحد لكل مساعِد من مساعِدات <bdi>Apothem</bdi>، وحزم
+الخطّافات، والقواعد، والقوالب تحت <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
+
+## العوامل الفرعية
+
+يقرأ <bdi>Kimi Code</bdi> العامل الفرعي من ملف <bdi>Markdown</bdi> في <bdi>`.kimi-code/agents/`</bdi> (أو
+<bdi>`.agents/agents/`</bdi>)، وفق
+[وثائق <bdi>Kimi Code</bdi> عن العوامل الفرعية المخصّصة](https://moonshotai.github.io/kimi-code/en/customization/agents.md).
+ويكتب التثبيت ملفًا واحدًا لكل مساعِد من مساعِدات <bdi>Apothem</bdi> في <bdi>`<project>/.kimi-code/agents/`</bdi>
+للمساعِدات الأربعة عشر كلها. وهو يثبّت للمشروع فقط ولا يكتب أي مجلّد
+<bdi>`~/.kimi-code/agents/`</bdi>.
+
+يُبقي كل ملف تعليمات المساعِد دون تغيير ويحمل مفاتيح البيانات الأمامية
+التالية:
+
+| المفتاح | ما يكتبه <bdi>Apothem</bdi> |
+| --- | --- |
+| <bdi>`name`</bdi>، <bdi>`description`</bdi> | اسم المساعِد ووصفه. |
+| <bdi>`tools`</bdi> | الأدوات المسموح بها للمساعِد، بوصفها قائمة بأسماء أدوات <bdi>Kimi Code</bdi>. |
+| <bdi>`disallowedTools`</bdi> | الأدوات المحظورة على المساعِد، بوصفها قائمة بأسماء أدوات <bdi>Kimi Code</bdi>. ويطبّقه <bdi>Kimi Code</bdi> بعد <bdi>`tools`</bdi>. |
+
+يطابق <bdi>Kimi Code</bdi> أسماء الأدوات مطابقةً تامة، بما فيها الأحرف الكبيرة، ويحذّر من
+الاسم الذي لا يملك له أداة. لذا يُعيد التثبيت تسمية الأداتين اللتين يتهجّاهما <bdi>Kimi Code</bdi> بشكل مختلف،
+<bdi>`WebFetch`</bdi> إلى <bdi>`FetchURL`</bdi> و<bdi>`TodoWrite`</bdi> إلى <bdi>`TodoList`</bdi>، ويستبعد الأسماء
+التي لا يملك لها <bdi>Kimi Code</bdi> أداة: <bdi>`MultiEdit`</bdi>، و<bdi>`NotebookEdit`</bdi>، و<bdi>`PowerShell`</bdi>، و<bdi>`Monitor`</bdi>،
+و<bdi>`Artifact`</bdi>، و<bdi>`TaskCreate`</bdi>، و<bdi>`TaskUpdate`</bdi>. والأداة المحظورة تبقى محظورة. وإن اختفت
+كل الأدوات المسموح بها لمساعِد على هذا النحو، يحمل الملف <bdi>`tools: []`</bdi>، الذي لا يسمح بأي
+أداة؛ أما حذف <bdi>`tools`</bdi> فسيسمح بكل الأدوات.
+
+لا يكتب التثبيت أبدًا <bdi>`model`</bdi> (لا يملك <bdi>Kimi Code</bdi> مفتاح نموذج للعامل الفرعي، الذي
+يستخدم نموذج الجلسة الرئيسية أو <bdi>`[secondary_model]`</bdi> في <bdi>`config.toml`</bdi>)، ولا
+<bdi>`override`</bdi> (إذ سيسمح لملف في المشروع باستبدال عامل فرعي مدمج)، ولا <bdi>`subagents`</bdi>، ولا
+<bdi>`whenToUse`</bdi>، ولا مفاتيح <bdi>Apothem</bdi>: <bdi>`maxTurns`</bdi> و<bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`portability`</bdi>.
+
+أمور ينبغي معرفتها:
+
+- ملفات العوامل الفرعية ملفات مشروع عادية. أودِعها مع المشروع أو
+  أدرِج <bdi>`.kimi-code/agents/`</bdi> في <bdi>`.gitignore`</bdi>؛ ولا يختار <bdi>Apothem</bdi> نيابةً عنك.
+- يستخدم <bdi>Kimi Code</bdi> المساعِد حين يُطلَب التفويض. فمنذ إصداره في
+  2026-10-25 يتولّى المهام بنفسه افتراضيًا بدلًا من إطلاق العوامل الفرعية
+  من تلقاء نفسه، لذا اطلب المساعِد باسمه، في رسالة أو في <bdi>`AGENTS.md`</bdi>. ولا تزال
+  صفحة المورّد عن العوامل الفرعية المخصّصة تصف الجدولة التلقائية، لذا
+  قد يتغيّر هذا.
+- الملف على مستوى المشروع في <bdi>`.kimi-code/agents/`</bdi> يتقدّم على التعريف الذي يحمل
+  الاسم نفسه في المستويات الإضافية، ومستوى المستخدم، ومستوى الإضافات. أعطِ مساعِداتك الخاصة أسماءً
+  تختلف عن أسماء <bdi>Apothem</bdi>. وتقرأ شيفرة <bdi>Kimi Code</bdi> أيضًا <bdi>`.kimi-code/agents/`</bdi> قبل
+  المجلّد المشترك <bdi>`.agents/agents/`</bdi>، الذي لا يكتبه <bdi>Apothem</bdi> أبدًا، وتُبقي الأول
+  من ملفين يحملان الاسم نفسه؛ ولا تذكر الوثائق ذلك.
+- الملف الخاص بك الذي يحمل اسم مساعِد من <bdi>Apothem</bdi> يُحفَظ تحت
+  <bdi>`~/.apothem/backups/`</bdi> ثم يُستبدَل. ولا يُعيده إلغاء التثبيت.
+  ولا تُمَسّ الملفات ذات الأسماء الأخرى أبدًا.
+- كانت الإصدارات السابقة تُبقي ملفات المساعِدات في شجرة الدعم، في
+  <bdi>`.kimi-code/.apothem/support/agents/`</bdi>، حيث لم يكن <bdi>Kimi Code</bdi> يُحمِّلها. ويُزيل
+  <bdi>`apothem update`</bdi> أو <bdi>`apothem uninstall`</bdi> تلك النسخة بعد حفظها تحت
+  <bdi>`~/.apothem/backups/`</bdi>.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
 يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد سطح التعليمات
 <bdi>`AGENTS.md`</bdi> في جذر المشروع في كل تشغيل لـ <bdi>`apothem install`</bdi> أو
 <bdi>`apothem update`</bdi>. تستقرّ القواعد السلوكية ومتن الحوكمة في الكتلة المُدارة
-من <bdi>`AGENTS.md`</bdi>؛ وتوضَع حزم الأوامر، والمهارات، والخطّافات، والعوامل،
-والقواعد، والقوالب تحت <bdi>`.kimi-code/.apothem/support/`</bdi> ويُشار إليها من سطح
-التعليمات. هذا هو التخطيط الذي اختاره المحوّل، وليس نقصًا في <bdi>Kimi Code</bdi>:
-يُحمِّل <bdi>Kimi Code</bdi> المهارات من <bdi>`.kimi-code/skills/`</bdi>
-و<bdi>`.agents/skills/`</bdi>، والعوامل المخصّصة من <bdi>`.kimi-code/agents/`</bdi>
-و<bdi>`.agents/agents/`</bdi>، والخطّافات من المصفوفة <bdi>`[[hooks]]`</bdi> في
-<bdi>`~/.kimi-code/config.toml`</bdi>، لكنه لا يُحمِّلها من شجرة الدعم، لذا فإن نسخ
-<bdi>Apothem</bdi> هناك مادة مرجعية تشير إليها كتلة <bdi>`AGENTS.md`</bdi>. تنتهي
-الكتلة بقسم ملفات دعم <bdi>Apothem</bdi> الذي يُسمّي، نسبةً إلى جذر المشروع،
-الدليلَ تحت <bdi>`.kimi-code/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل
-إحالة بأسلوب المستودع (<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>،
-و<bdi>`hooks/...`</bdi>)، بحيث لا يحمل ملف <bdi>`AGENTS.md`</bdi> المُودَع أي مسار
-خاص بجهاز بعينه. (سلوك <bdi>Kimi Code</bdi> وفق صفحات التخصيص الخاصة به عن
-[المهارات](https://moonshotai.github.io/kimi-code/en/customization/skills)،
-و[العوامل الفرعية](https://moonshotai.github.io/kimi-code/en/customization/agents)،
-و[الخطّافات](https://moonshotai.github.io/kimi-code/en/customization/hooks)، كما
-قُرئت في 2026-10-02.)
+من <bdi>`AGENTS.md`</bdi>. وتستقرّ كل مهارة، وكل أمر مغلَّف بوصفه مهارة، في
+<bdi>`.kimi-code/skills/<name>/SKILL.md`</bdi>، وهو دليل مهارات للمشروع يُحمِّله
+<bdi>Kimi Code</bdi>. ولا يكتب المحوّل إلا ذلك المجلّد الخاص بـ <bdi>Kimi</bdi>، ولا يكتب أبدًا
+<bdi>`.agents/skills/`</bdi>، الذي تقرؤه أدوات أخرى أيضًا. والمهارات التي تضيفها بنفسك إلى
+<bdi>`.kimi-code/skills/`</bdi> بأسماء أخرى يُحتفَظ بها عند التثبيت والتحديث
+وإلغاء التثبيت. أما المهارة الموجودة هناك بالاسم نفسه لمهارة من <bdi>Apothem</bdi> فتُستبدَل:
+يكتب التثبيت والتحديث فوقها، ويُزيلها إلغاء التثبيت، وكلٌّ منها بعد حفظ نسخة
+بطابع زمني تحت <bdi>`~/.apothem/backups/`</bdi>، ولا يطبع التثبيت أي إشعار
+بهذا التعارض. أعطِ مهاراتك الخاصة أسماءً تختلف عن أسماء <bdi>Apothem</bdi>.
+
+توضَع حزم الخطّافات، والقواعد، والقوالب تحت
+<bdi>`.kimi-code/.apothem/support/`</bdi> ويُشار إليها من سطح التعليمات.
+ولا يُحمِّلها <bdi>Kimi Code</bdi> من شجرة الدعم، لذا فإن نسخ <bdi>Apothem</bdi> هناك
+مادة مرجعية تشير إليها كتلة <bdi>`AGENTS.md`</bdi>. تنتهي الكتلة بقسم ملفات دعم
+<bdi>Apothem</bdi> الذي يُسمّي، نسبةً إلى جذر المشروع، الدليلَ تحت
+<bdi>`.kimi-code/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب المستودع
+(<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>، و<bdi>`hooks/...`</bdi>)، بحيث لا يحمل
+ملف <bdi>`AGENTS.md`</bdi> المُودَع أي مسار خاص بجهاز بعينه. (سلوك <bdi>Kimi Code</bdi> وفق
+صفحات التخصيص الخاصة به عن
+[المهارات](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html)،
+و[تعريفات المساعِدات](https://moonshotai.github.io/kimi-code/en/customization/agents.md)،
+و[الخطّافات](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html)، كما
+قُرئت في 2026-10-24 للمهارات والخطّافات، وفي 2026-10-27 لتعريفات المساعِدات.)
+
+## ما لا يُثبَّت أصليًا
+
+يوثّق <bdi>Kimi Code</bdi> موضعًا أصليًا للخطّافات. ولا يكتب فيه المحوّل
+بعد، للأسباب التالية.
+
+- **الخطّافات.** يقرأ <bdi>Kimi Code</bdi> الخطّافات من المصفوفة <bdi>`[[hooks]]`</bdi> في
+  <bdi>`~/.kimi-code/config.toml`</bdi> (<bdi>`$KIMI_CODE_HOME/config.toml`</bdi> حين يكون ذلك المتغيّر
+  مضبوطًا). ولا يكتب <bdi>Apothem</bdi> أيًّا منها. فذلك الملف على نطاق المستخدم بينما يكتب هذا المحوّل
+  تحت جذر المشروع؛ ولا تسمح المُدخلة إلا بأربعة حقول (<bdi>`event`</bdi> و<bdi>`command`</bdi>
+  إلزاميان، و<bdi>`matcher`</bdi> و<bdi>`timeout`</bdi> اختياريان) والحقل الإضافي يمنع
+  الإعداد من التحميل؛ ولا يملك <bdi>Apothem</bdi> دمجًا لـ <bdi>TOML</bdi> يستطيع لاحقًا إزالة
+  مُدخلاته وحدها. وتبقى السكربتات المساعدة للخطّافات في شجرة الدعم.
+- **البيانات الأمامية للمهارات.** توثّق صفحة المورّد مفاتيح <bdi>`SKILL.md`</bdi> التالية: <bdi>`name`</bdi>
+  و<bdi>`description`</bdi> (وكلاهما إلزامي)، و<bdi>`type`</bdi>، و<bdi>`whenToUse`</bdi>،
+  و<bdi>`disableModelInvocation`</bdi> (ويُقبَل أيضًا بصيغة <bdi>`disable-model-invocation`</bdi>)،
+  و<bdi>`arguments`</bdi>. ولا تنصّ على أي قاعدة للمفاتيح الأخرى. وتُثبَّت المهارات
+  بالبيانات الأمامية التي تحملها في مصدر <bdi>Apothem</bdi>، لذا تصل مفاتيح مثل <bdi>`version`</bdi>،
+  و<bdi>`updated`</bdi>، و<bdi>`archetype`</bdi>، و<bdi>`userInvocable`</bdi>، و<bdi>`argument-hint`</bdi>، و<bdi>`portability`</bdi>،
+  و<bdi>`allowed-tools`</bdi> إلى <bdi>Kimi Code</bdi>، الذي قد يتجاهلها أو يرفضها.
+- **المهارات ذات الأسماء المتطابقة.** يعطي <bdi>Kimi Code</bdi> مستوى المشروع الأولوية على مستوى
+  المستخدم، لذا تتقدّم المهارة في <bdi>`<project>/.kimi-code/skills/`</bdi> على
+  المهارة التي تحمل الاسم نفسه في <bdi>`~/.agents/skills/`</bdi>، الذي يكتبه محوّل آخر من
+  <bdi>Apothem</bdi>. ولا تقول صفحة المورّد كيف يترتّب <bdi>`.kimi-code/skills/`</bdi>
+  و<bdi>`.agents/skills/`</bdi> أحدهما مقابل الآخر داخل مستوى المشروع.
+
+{/* TODO(clarify): the hook install decision (user-scope TOML merge with
+surgical uninstall), whether the main session delegates to the helpers on its own
+(the vendor's page on custom subagents and its changelog of 2026-10-25 disagree), how Kimi Code treats a SKILL.md
+key outside the documented list, and how .kimi-code/skills/ ranks against
+.agents/skills/ inside the project level are open; see Open Questions in
+src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md. */}
 
 ## ملاحظات التوافق
 
@@ -69,7 +166,7 @@ apothem install --harness kimi-code --project /path/to/project
 الإخراج، لذا لا تُجسَّد تلك الحزم.
 
 يعمل <bdi>Kimi Code</bdi> على عائلة نماذج <bdi>Kimi</bdi> من <bdi>Moonshot</bdi>؛ راجع
-[مرجع إعداد المورّد](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+[مرجع إعداد المورّد](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files)
 لمعرفة النموذج الحالي وسطح الإعداد.
 
 ## التحقّق
@@ -81,7 +178,13 @@ apothem verify --harness kimi-code --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+2. كل هدف مُدار موجود، بما في ذلك دليلا المهارات والعوامل الفرعية؛ والملفات المُدارة
+   غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من
+   أن الملفات المثبّتة تطابق ذلك الملف التعريفي. وبالنسبة إلى
+   <bdi>`.kimi-code/agents/`</bdi> يتحقّق الفحص من وجود المجلّد، لا من وجود كل
+   ملف مساعِد فيه؛ ويسرد الأمر
+   <bdi>`apothem diff --harness kimi-code --project /path/to/project`</bdi> ملفات
+   المساعِدات المفقودة أو القديمة.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -90,8 +193,14 @@ apothem verify --harness kimi-code --project /path/to/project
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-يُعيد اشتقاق الكتلة المُدارة في <bdi>`AGENTS.md`</bdi> في جذر المشروع وحزم الدعم من
-الحالة الراهنة للملف التعريفي المشترك.
+يُعيد اشتقاق الكتلة المُدارة في <bdi>`AGENTS.md`</bdi> في جذر المشروع، والمهارات، وملفات
+العوامل الفرعية، وحزم الدعم من الحالة الراهنة للملف التعريفي المشترك.
+والتحديث فوق تثبيت أُجري قبل انتقال المهارات إلى <bdi>`.kimi-code/skills/`</bdi>
+يُزيل الدليل القديم <bdi>`<project>/.kimi-code/.apothem/support/skills/`</bdi>، بحيث
+تكون كل مهارة موجودة مرة واحدة. والتحديث فوق تثبيت من قبل انتقال المساعِدات
+إلى <bdi>`.kimi-code/agents/`</bdi> يُزيل الدليل القديم
+<bdi>`<project>/.kimi-code/.apothem/support/agents/`</bdi> بالطريقة نفسها. وتُحفَظ أولًا نسخة
+بطابع زمني من كل دليل مُزال تحت <bdi>`~/.apothem/backups/`</bdi>.
 
 ## إلغاء التثبيت
 
@@ -101,8 +210,12 @@ apothem uninstall --harness kimi-code --project /path/to/project
 
 يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`AGENTS.md`</bdi> في جذر المشروع، ويُبقي أي نص
 واقع خارج العلامات الحارسة. لا يُحذَف الملف إلا حين لا يتبقّى فيه شيء آخر. ويُزيل
-كذلك ملفات الدعم التي وضعها <bdi>Apothem</bdi> تحت
-<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>. قبل التغيير، تُحفَظ نسخة بطابع
+كذلك المهارات التي وضعها <bdi>Apothem</bdi> تحت <bdi>`<project>/.kimi-code/skills/`</bdi>
+(ويُحتفَظ بالمهارات التي أضفتها هناك بأسماء أخرى)، وملفات العوامل الفرعية تحت
+<bdi>`<project>/.kimi-code/agents/`</bdi> (ويُحتفَظ بالملفات التي أضفتها هناك بأسماء
+أخرى، ويُزال المجلّد حين يبقى فارغًا)، وملفات الدعم تحت
+<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>، بما فيها دليلا <bdi>`skills/`</bdi>
+و<bdi>`agents/`</bdi> القديمان في شجرة الدعم لتثبيت لم يُحدَّث قط. قبل التغيير، تُحفَظ نسخة بطابع
 زمني من كل ملف تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترك أي ملف نسخ احتياطي في
 المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
 <bdi>Apothem</bdi>.
@@ -119,6 +232,8 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness kimi-code --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness kimi-code --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| المهارات أو المساعِدات مفقودة في <bdi>Kimi Code</bdi> | تأكّد من أن <bdi>`--project`</bdi> يسمّي جذر المستودع (الدليل الذي يحوي <bdi>`.git`</bdi>)، ثم أعد تشغيل التثبيت |
+| لا يستخدم <bdi>Kimi Code</bdi> أي مساعِد أبدًا | اطلبه باسمه. يتولّى <bdi>Kimi Code</bdi> المهام بنفسه ما لم يُطلَب التفويض |
 | محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness kimi-code --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط

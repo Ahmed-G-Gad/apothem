@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referencia de la CLI para el comando apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,54 @@ instalado en la misma raíz siga usándolos. Cuando el entorno que eliminas es e
 último en esa raíz, el comando copia primero cada almacén en la raíz de copias de
 seguridad de Apothem (`~/.apothem/backups/`) y luego lo elimina con todo su
 contenido. Lo que conserves en `plans/` nunca se elimina.
+
+## Carpetas compartidas en tu directorio personal
+
+Varias instalaciones pueden usar una misma carpeta de tu directorio personal: la
+carpeta de skills (`~/.agents/skills/`, o `~/.codebuddy/skills/`,
+`~/.kiro/skills/` o `~/.trae/skills/`) y `~/.config/apothem/rules/` y
+`~/.config/apothem/templates/`. La página de [install](/docs/cli-reference/install#carpetas-en-tu-directorio-personal)
+lista qué adaptador escribe cada una. Apothem registra qué instalaciones usan
+cada carpeta, y una desinstalación sigue una regla: elimina una carpeta solo
+cuando ninguna otra instalación de Apothem la sigue usando.
+
+- Desinstalar una herramienta conserva las skills mientras otra instalación
+  siga usándolas, y lo indica. Una herramienta instalada en dos proyectos cuenta
+  como dos instalaciones, así que desinstalarla del proyecto A conserva las
+  carpetas mientras el proyecto B siga usándolas. La última desinstalación las
+  elimina (consulta el segundo ejemplo más abajo).
+- Solo se elimina lo que lista el registro propio de la instalación. Una
+  instalación hecha antes de que las carpetas se gestionaran no tiene tal
+  registro, así que desinstalarla no elimina nada de tu directorio personal. Los
+  archivos que agregaste a las carpetas se quedan, y también una carpeta que
+  tiene el nombre de una skill de Apothem y que Apothem no escribió.
+- Una instalación cuya carpeta de proyecto ya no existe se ignora, de modo que un
+  proyecto eliminado no retiene las carpetas para siempre. La nota la nombra.
+- Si no se puede leer el registro de una instalación que podría usar las
+  carpetas, la desinstalación se detiene con un error antes de eliminar nada, y
+  la instalación sigue registrada. Repara o mueve el registro ilegible y luego
+  vuelve a ejecutar el comando. Se ignora un registro dañado de una herramienta
+  que nunca escribe estas carpetas.
+- Cuando desaparece el último uso, las carpetas que quedan vacías también se
+  eliminan. Cada carpeta se respalda en `~/.apothem/backups/` antes de
+  eliminarla.
+
+Cada desinstalación imprime una `Note:` por carpeta, por ejemplo `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, o
+`was removed: no other Apothem install uses it`. En el sobre de `--format json`,
+cada nota es una entrada de `warnings` con `"outcome": "advisory"`,
+`"operation": "shared_root"` y `"role"` con valor `retained` o `released`. Lleva
+`path`, `holders` (las instalaciones que conservan la carpeta), `stale`
+(instalaciones ignoradas), y `kept` y `total` (las entradas registradas que se
+conservan y las entradas que listaba la instalación).
+
+Si una carpeta se queda por una instalación que no encuentras, la nota la nombra.
+Cuando se eliminó la carpeta del proyecto, la instalación se ignora y la carpeta
+desaparece con la siguiente desinstalación. Cuando el proyecto existe pero
+quitaste a mano el bloque de Apothem de su archivo de reglas, `uninstall` informa
+que el entorno no está instalado y no libera su reclamación; ejecuta `install`
+para ese entorno y ese proyecto, y luego `uninstall`, para liberarla.
+`apothem verify` muestra si una carpeta sigue completa.
 
 Una eliminación con `--harness all` es deliberadamente exhaustiva: abarca cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite durante la instalación — la limpieza alcanza el estado que una instalación anterior de mayor alcance pueda haber dejado atrás. Los entornos que nunca se instalaron reciben el mismo aviso.
 
@@ -93,6 +141,16 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+Una carpeta de skills compartida se mantiene hasta que desaparece la última
+instalación que la usa:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Códigos de salida

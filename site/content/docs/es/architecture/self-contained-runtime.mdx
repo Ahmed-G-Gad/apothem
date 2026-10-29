@@ -2,7 +2,7 @@
 title: "Tiempo de ejecución autónomo"
 description: "Cómo el motor de Apothem se ejecuta desde cualquier checkout — dependencias incorporadas, el modelo de invocación PYTHONPATH=src y el arranque del árbol del plugin."
 machineTranslated: true
-sourceHash: "7e97d59d22d34fda"
+sourceHash: "df04c51efc417e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -109,8 +109,8 @@ que el tiempo de ejecución nunca importa, por dos razones deliberadas: el motor
 **materializa sus cohortes** — reglas, skills, comandos y plantillas —
 directamente desde el árbol en cada entorno, de modo que el árbol es la fuente
 de verdad viva y no solo un tiempo de ejecución; y el directorio `.git`
-permanece en su sitio para que `apothem update` haga fast-forward del clon
-existente en lugar de volver a descargarlo.
+permanece en su sitio para que `apothem update` extraiga la etiqueta de la
+versión en el clon existente en lugar de volver a descargarlo.
 
 Esta disposición de ejecución desde el código fuente es el mismo patrón que usan
 herramientas como `nvm`, `pyenv` y `oh-my-zsh`: unos pocos megabytes de código

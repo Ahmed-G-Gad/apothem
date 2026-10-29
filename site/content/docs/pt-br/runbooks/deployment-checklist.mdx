@@ -2,7 +2,7 @@
 title: "Checklist de implantação"
 description: "Checklist de verificação prévia para implantar ou compartilhar o ecossistema Apothem"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,10 @@ As regras não têm nenhuma chave `version`, `updated`, `scope` ou `portability`
 - [ ] `name` — nome do comando em kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`,
       `allowed-tools` presentes
-- [ ] `disable-model-invocation` presente e intencional (`true` para comandos
-      somente de orientação)
+- [ ] `disable-model-invocation` presente e intencional (`false` para comandos
+      somente leitura ou consultivos; `true` somente quando executar o comando
+      altera o estado fora da árvore de trabalho ou depende de o operador
+      escolher o momento)
 - [ ] Sem chave `effort`: `command.schema.json` define
       `additionalProperties: false` e não a admite
 

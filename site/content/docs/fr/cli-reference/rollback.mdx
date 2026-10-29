@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "cff52dcbcba63390"
+sourceHash: "398c0c678cace0b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,6 +36,19 @@ elle :
   utilise encore ;
 - supprime les répertoires que l'installation a créés, une fois qu'ils sont
   vides.
+
+Un fichier ou un dossier de votre répertoire personnel que d'autres
+installations utilisent aussi (un dossier de skills, ou `~/.config/apothem/`)
+est traité comme les magasins de données partagés : rollback le conserve tant
+qu'une autre installation le liste encore, et ne le restaure ou ne le supprime
+que pour la dernière installation qui l'utilise. Un dossier que cette
+installation a trouvé déjà en place (un second outil installé après le premier)
+disparaît avec la dernière installation qui l'utilise lorsqu'il a été créé par
+une installation qui l'a depuis abandonné ; annuler chaque outil ne laisse donc
+rien derrière. Lorsque l'enregistrement d'une installation susceptible
+d'utiliser le dossier ne peut pas être lu, rollback s'arrête avec une erreur
+avant de modifier quoi que ce soit et n'écrit aucun enregistrement `rollback` ;
+réparez l'enregistrement, puis relancez la commande.
 
 Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de
 sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même

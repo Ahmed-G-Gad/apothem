@@ -2,7 +2,7 @@
 title: "CLI 参考"
 description: "Apothem CLI 参考——apothem 命令行界面中每个命令的概要、选项和退出码。"
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ sourceHash: "4012ab11dba3c29d"
 
 ## JSON 输出契约
 
-每个命令都接受 `--json`（`--format json` 的简写），随后向 stdout 写入恰好一个 JSON 文档。每个文档都以一个顶层 `schema_version` 键开头，它是一个整数，目前为 `1`：
+除 `completion`（它输出一个 shell 脚本）之外，每个命令都接受 `--json`（`--format json` 的简写），随后向 stdout 写入恰好一个 JSON 文档。每个文档都以一个顶层 `schema_version` 键开头，它是一个整数，目前为 `1`：
 
 ```json
 {"schema_version": 1, "status": "success", "command": "verify", "...": "..."}

@@ -2,7 +2,7 @@
 title: "Runtime autocontido"
 description: "Como o motor do Apothem roda a partir de qualquer checkout — dependências internalizadas, o modelo de invocação PYTHONPATH=src e o bootstrap da árvore do plugin."
 machineTranslated: true
-sourceHash: "7e97d59d22d34fda"
+sourceHash: "df04c51efc417e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -111,8 +111,8 @@ suíte de testes e o site de documentação que o runtime nunca importa, por dua
 razões deliberadas: o motor **materializa seus cohorts** — regras, skills,
 comandos e templates — diretamente da árvore em cada harness, de modo que a
 árvore é a fonte da verdade viva, e não apenas um runtime; e o diretório `.git`
-permanece no lugar para que o `apothem update` faça fast-forward do clone
-existente em vez de baixá-lo novamente.
+permanece no lugar para que o `apothem update` faça checkout da tag de release no
+clone existente em vez de baixá-lo novamente.
 
 Este layout de execução a partir do código-fonte é o mesmo padrão que
 ferramentas como `nvm`, `pyenv` e `oh-my-zsh` usam — alguns megabytes de

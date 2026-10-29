@@ -2,7 +2,7 @@
 title: "Instalação"
 description: "Visão geral da instalação do Apothem — oito canais de instalação, cada um com seus pré-requisitos, um comando pronto para copiar e uma etapa de verificação: o plugin do Claude Code, o shim do npm, os instaladores de uma única etapa, a extensão da família VS Code, as três extensões de bootstrap de linha de comando e o motor direto."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,20 +71,20 @@ Após a instalação, o conjunto de comandos do Apothem, os trabalhadores
 delegados incluídos, as skills e os quatro
 [output-styles](/docs/reference/output-styles) (escolha um com
 `/output-style` ou a partir de `/config`) ficam disponíveis em cada sessão do
-Claude Code. Os comandos do plugin carregam o prefixo do plugin:
-`/apothem:plan-spec`, `/apothem:security-audit` e os demais. O Claude Code
-também aceita a forma curta (`/plan-spec`) enquanto nenhum outro comando usar
-esse nome. Dois nomes são ocupados pelo próprio Claude Code: `/plan` entra no
-modo de planejamento e `/code-review` executa a revisão integrada, então digite
-`/apothem:plan` e `/apothem:code-review` para os comandos do Apothem. Quando o
-motor do Apothem é instalado no Claude Code em vez do plugin, os comandos se
-tornam skills pessoais sob `~/.claude/skills/` sem prefixo, e uma skill pessoal
-`code-review` substitui o `/code-review` integrado (seu alias `/review` ainda
-executa o integrado). Dois nomes, `projectify` e `workflow`, são distribuídos
-tanto como comando quanto como skill; o Claude Code executa a skill quando
-ambos existem, então o plugin executa a skill e a instalação do motor grava
-somente a skill, e não uma skill derivada do comando, em
-`~/.claude/skills/<name>/`. Consulte [Comandos de barra](/docs/reference/commands)
+Claude Code. O plugin distribui cada comando como uma skill, um `SKILL.md` com
+o detalhe que carrega sob demanda em uma pasta `references/` ao lado dele, então
+o Claude Code o invoca com o prefixo do plugin: `/apothem:plan-spec`,
+`/apothem:security-audit` e os demais. Dois nomes são ocupados pelo próprio
+Claude Code: `/plan` entra no modo de planejamento e `/code-review` executa a
+revisão integrada, então digite `/apothem:plan` e `/apothem:code-review` para os
+comandos do Apothem. Quando o motor do Apothem é instalado no Claude Code em vez
+do plugin, as mesmas skills são gravadas em `~/.claude/skills/` sem prefixo, e
+uma skill pessoal `code-review` substitui o `/code-review` integrado (seu alias
+`/review` ainda executa o integrado). Dois nomes, `projectify` e `workflow`,
+também são skills nativas; a skill nativa é a que o plugin e a instalação do
+motor distribuem, e não uma skill derivada do comando. Consulte
+[Claude Code](/docs/harnesses/claude-code#skills-de-comando-e-arquivos-de-referência)
+para ver como os comandos são divididos, e [Comandos de barra](/docs/reference/commands)
 para o catálogo completo de comandos.
 
 **Verifique:** execute `/plugin` dentro do Claude Code e confirme que
@@ -338,13 +338,20 @@ Adicione o repositório como um marketplace de plugins e depois instale o
 plugin — o comando traz o host e o slug de harness exatos:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+Os dois caminhos `--sparse` buscam apenas a listagem do marketplace e o plugin,
+não o repositório inteiro; um clone completo pode ultrapassar o limite de clone
+de 30 segundos do host em um disco lento, como uma unidade do Windows sob o WSL.
+
 Como as extensões dos canais 5 e 6, este é um **bootstrap** que invoca o motor
-pelo shell. Materialize o harness completo executando a instalação por meio
-dele:
+pelo shell. O plugin inclui uma skill de entrada; seu manifesto é um
+`plugin.json` na raiz, e a
+[página de harness do host do plugin](/docs/harnesses/codex#plugin-do-codex) descreve o
+layout e o que o plugin deixa para o motor. Materialize o harness completo
+executando a instalação por meio dele:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

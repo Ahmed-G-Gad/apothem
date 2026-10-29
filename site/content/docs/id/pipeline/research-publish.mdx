@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Memformat makalah ke templat venue dan merakit paket pengajuan (suplemen, ketersediaan data/kode, surat pengantar, etika/konflik kepentingan), dengan rencana preprint/DOI."
 machineTranslated: true
-sourceHash: "775d7080efc5b935"
+sourceHash: "ef7a2e79372ed070"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Dengan argumen:
 
 ## Masukan
 
-Keluaran makalah dan `_outputs/review-report.md` (revisi tinjauan sejawat).
+Keluaran makalah dan `_outputs/review-report.md` (revisi tinjauan sejawat dan daftar tidak-dinilainya).
 
 ## Keluaran
 
-Paket pengajuan terformat venue di lokasi yang natural bagi host (naskah terformat + materi suplemen + pernyataan ketersediaan data / kode + surat pengantar + deklarasi etika / konflik kepentingan) + `_outputs/publication-record.md` + daftar periksa pengajuan.
+Paket pengajuan terformat venue di lokasi yang natural bagi host (naskah terformat + materi suplemen + pernyataan ketersediaan data / kode + surat pengantar + deklarasi etika / konflik kepentingan) + `_outputs/publication-record.md` (termasuk register aturan venue bertanggal: setiap aturan beserta halaman sumber resminya, tanggal dibaca, dan tahap pengajuannya) + daftar periksa pengajuan.
 
 ## Hilir
 
@@ -39,16 +39,18 @@ Paket pengajuan terformat venue di lokasi yang natural bagi host (naskah terform
 
 Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
-1. **Memuat konteks** — Membaca makalah dan laporan tinjauan.
+1. **Memuat konteks** — Membaca makalah dan laporan tinjauan; mengunci venue, siklus, jalur, dan jenis artikel, serta mencatat setiap aturan venue beserta halaman sumber resminya, tanggal dibaca, dan tahap pengajuannya.
 2. **Memverifikasi Gerbang Urutan** — Memastikan `_outputs/review-report.md` ada dan revisi berkeparahan HIGH-nya sudah diselesaikan (atau operator telah secara eksplisit menerima risiko sisa); jika tidak, berhenti dengan `Blocked: run /research-review first`.
-3. **Memformat & mengemas** — Menerapkan templat venue; merakit suplemen, ketersediaan data/kode, surat pengantar, deklarasi etika / konflik kepentingan (COI).
+3. **Memformat & mengemas** — Membawa setiap aturan venue beserta halaman sumbernya, tanggal dibaca, dan tahap pengajuannya, membangun di atas templat venue yang tidak diubah, menghitung halaman dan kata dengan cara venue, dan memeriksa PDF hasil kompilasi; lalu merakit suplemen, ketersediaan data/kode, surat pengantar, deklarasi etika / konflik kepentingan (COI).
 4. **Merencanakan preprint / pengarsipan** — Mencatat rencana preprint dan DOI; menyusun daftar periksa pengajuan.
 5. **Memperbarui manifes serah terima** — Mencatat paket pengajuan dan catatan publikasi.
 6. **Memancarkan paket** — Paket pengajuan terformat venue + `_outputs/publication-record.md`.
 
 ## Landasan ketelitian
 
-Pemformatan menghormati pengungkapan bertahap: untuk tempat-terbit tunanetra-ganda, identitas penulis, institusi, dan sistem dilucuti menjadi metadata yang diajukan terpisah dan dipulihkan hanya pada tahap camera-ready yang ditetapkan. Deposit arsip membawa paket bukti-reproduksibilitas yang berskala-tempat-terbit (data, kode, lingkungan tersemat, seed, log perangkat keras, hasil per-instans, dan gambar).
+Pemformatan menghormati pengungkapan bertahap: untuk tempat-terbit tunanetra-ganda, identitas penulis, institusi, dan sistem dilucuti menjadi metadata yang diajukan terpisah dan dipulihkan hanya pada tahap camera-ready yang ditetapkan. Deposit arsip membawa paket bukti-reproduksibilitas yang berskala-tempat-terbit (data, kode, lingkungan tersemat, seed, log perangkat keras, hasil per-instans, dan gambar). Untuk tempat-terbit tunanetra-ganda, arsip suplemen dan setiap repositori atau dataset yang ditautkan diperiksa untuk identitas, tidak hanya naskahnya.
+
+Aturan venue bersumber dan bertahap. Hanya halaman resmi milik sasaran itu sendiri yang dihitung: venue tetangga, siklus sebelumnya, atau jalur saudara tidak pernah menjadi pengganti, dan pembangunan ulang untuk revisi atau untuk camera-ready memberlakukan batas tahap tersebut, bukan batas pengajuan awal. Aturan yang tidak didukung halaman resmi ditanyakan kepada operator dan ditandai tidak terverifikasi terhadap venue. Berkas templat venue tetap seperti yang diterbitkan, sehingga berkas awal yang ditulis secara lokal dilaporkan apa adanya. Halaman dan kata dihitung dengan cara venue, dengan bagian yang dikecualikan dicatat, dan setiap gambar dan tabel diperiksa pada ukuran dan format yang diterima venue.
 
 ## Mode kegagalan
 
@@ -57,6 +59,8 @@ Pemformatan menghormati pengungkapan bertahap: untuk tempat-terbit tunanetra-gan
 | Blocked: run /research-review first | Tidak ada laporan tinjauan, atau revisi HIGH yang masih terbuka | Jalankan `/research-review` untuk menghasilkan `_outputs/review-report.md`, atau selesaikan revisi HIGH yang terbuka lalu jalankan ulang `/research-review`, atau terima risiko sisa secara eksplisit |
 | Revisi HIGH belum ditangani | Temuan tinjauan dilewati | Tangani revisi dan jalankan ulang `/research-review` |
 | Ketersediaan data/kode hilang | Permukaan reproduksibilitas tidak ada | Tambahkan pernyataan ketersediaan data / kode sebelum pengajuan |
+| Aturan venue tanpa sumber | Aturan berasal dari siklus, jalur, atau venue tetangga lain, atau dari ingatan | Kunci sasaran; catat halaman resmi, tanggal dibaca, dan tahap untuk aturan tersebut, atau tanyakan kepada operator dan tandai tidak terverifikasi |
+| Templat diubah | Suntingan lokal mengubah geometri halaman atau pengaturan huruf venue | Pulihkan berkas venue dan ubah tata letak hanya melalui opsi yang didokumentasikan templat |
 
 ## Contoh
 

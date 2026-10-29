@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "适用于 GitHub Copilot（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "72bf51d743f95bc8"
+sourceHash: "b1b8b4918d7d754d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,110 @@ sourceHash: "72bf51d743f95bc8"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-适配器根据你的共享配置档案以及共享的 Apothem 规则与治理表面派生出项目指令文件。
+适配器根据你的共享配置档案以及共享的 Apothem 规则与治理表面派生出项目指令文件，将 Apothem 的辅助器作为 Copilot 辅助器配置文件写入项目中（参见[辅助器配置文件](#辅助器配置文件)），并注册两个钩子（参见[钩子](#钩子)）。
 
-**写入的文件：** `<project>/.github/copilot-instructions.md`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
+
+**写入的文件：**
+
+- `<project>/.github/copilot-instructions.md`，即指令文件。
+- 每个 Apothem 辅助器对应一个 `<project>/.github/agents/<name>.agent.md`，位于项目中。
+- `<project>/.github/hooks/apothem.json`，即钩子文件，位于项目中。你自己在该文件夹中的钩子文件不会被触碰。
+- `<project>/.apothem/support/github-copilot/hooks/`，即钩子脚本，位于项目中。
+- 每个 Apothem 技能和命令对应一个 `~/.agents/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.agents/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和指令文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `github-copilot` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- `--project` 决定要写入哪个指令文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是指令文件、`.github/agents/` 中的辅助器配置文件、钩子文件 `.github/hooks/apothem.json`，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
+
+## 辅助器配置文件
+
+根据 [GitHub 关于这些配置文件的参考](https://docs.github.com/en/copilot/reference/custom-agents-configuration)，Copilot 从 `<project>/.github/agents/<name>.agent.md` 读取辅助器配置文件。安装会为每个 Apothem 辅助器在该文件夹中写入一个文件。它只为项目安装，不写入 `~/.copilot/agents/` 文件夹。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。Copilot 要求提供描述。 |
+| `tools` | 辅助器可以使用的工具，以 Copilot 工具别名列表的形式给出，例如 `["read", "search", "execute"]`。 |
+
+Copilot 的 `tools` 键是一个别名允许列表，并且它没有拒绝工具的键。因此辅助器允许的工具和它被拒绝的工具会合并成这一个列表：
+
+| Copilot 别名 | 涵盖 | 为被允许以下工具的辅助器写入 |
+| --- | --- | --- |
+| `read` | Read、NotebookRead | `Read` |
+| `search` | Grep、Glob | `Grep` 或 `Glob` |
+| `edit` | Edit、MultiEdit、Write、NotebookEdit | `Write`、`Edit` 或 `MultiEdit` |
+| `execute` | Bash、PowerShell | `Bash` 或 `PowerShell` |
+| `web` | WebSearch、WebFetch | `WebSearch` 或 `WebFetch` |
+| `todo` | TodoWrite | `TodoWrite` |
+
+Copilot 还有一个别名，即允许辅助器启动其他辅助器的那个；没有任何 Apothem 辅助器被允许这样做，因此它绝不会被写入。当辅助器被拒绝了某个别名所涵盖的任何工具时，该别名会被省去，因为该别名会让辅助器使用那个工具。没有别名的工具（例如 `Monitor`）会被省去。带有模式的工具，例如 `Bash(git status)`，没有别名形式：作为允许的工具时它会被省去，作为被拒绝的工具时它会拒绝整个工具。不能编辑文件的辅助器会保留这一限制：它绝不会获得 `edit`。如果辅助器列表中的每个工具都被省去，文件会写明 `tools: []`，这不给辅助器任何工具，而不是省略该键，那样会给它所有工具。
+
+安装不写入 `model` 键，因此辅助器使用默认模型；也不写入 Copilot 记载的其他键（`target`、`disable-model-invocation`、`user-invocable`、`mcp-servers`、`metadata`）、轮次上限，或 Apothem 的 `version`、`updated` 和 `portability` 键中的任何一个。
+
+需要了解的事项：
+
+- `.github/agents/` 是你仓库的一部分。队友和 Copilot 的云端编码服务读取相同的文件，因此将它们随项目一起提交，或者在 `.gitignore` 中列出 `.github/agents/`；Apothem 不替你做选择。
+- 云端编码服务不遵从 `web` 和 `todo` 别名。`web` 别名同时涵盖网页搜索和页面获取，因此 `citation-auditor`、`fact-checker` 和 `research-scout` 在那里可以读取和搜索文件，但既不能搜索网页，也不能获取页面。
+- Copilot CLI 也会读取仓库的 `.claude/agents/`，但不读取 `~/.claude/agents/`，因此 Claude Code 安装不会到达 Copilot。
+- 你自己的、与某个 Apothem 辅助器同名的文件（`<name>.agent.md`）会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。Copilot 的文档没有说明当该文件夹同时存放 `<name>.md` 和 `<name>.agent.md` 时会发生什么。
+- Apothem 尚未确认对于同一个名称，Copilot 优先使用 `.github/agents/` 还是 `.claude/agents/`，也未确认云端编码服务和 VS Code 如何处理一个它们未列出的前置元数据键。
+
+## 钩子
+
+根据 [Copilot 钩子参考](https://docs.github.com/en/copilot/reference/hooks-reference)，Copilot 运行 `<project>/.github/hooks/` 中 JSON 文件里的钩子。安装会在那里写入一个文件 `apothem.json`（版本 1），其中包含两个钩子：
+
+| 事件 | 运行的内容 |
+| --- | --- |
+| `sessionStart` | 会话引导：会话元数据、技能索引、记忆和计划摘要以及常设姿态，添加到模型的上下文中。 |
+| `postToolUse`（每个工具） | 主动压缩跟踪器。它统计活动，并在每个压缩周期内最多两次告诉模型保存其状态或进行压缩。其他时候它保持静默。 |
+
+两者都为模型添加上下文。两者都不会阻止工具调用或会话。
+
+Apothem 不在 Copilot 上注册 `preToolUse` 守卫。对于 `preToolUse`，Copilot 只读取权限字段和重写后的工具输入，从不读取 `additionalContext`（Apothem 的守卫借以传达的字段）。注册在那里的守卫会在每次工具调用时付出一次进程启动的代价，却什么都传达不到，因此写入、编辑和 shell 守卫、`AskUserQuestion` 检查以及会话结束协议都保留在能够传达它们的工具上。这些钩子使用 Copilot 的 camelCase 事件名称，因为参考为这些事件列出了输出字段；Copilot 是否从 PascalCase 事件读取 `additionalContext` 没有记载。
+
+**文件的写入位置**
+
+| 文件 | 它存放的内容 |
+| --- | --- |
+| `<project>/.github/hooks/apothem.json` | 两个钩子注册。Apothem 拥有这一个文件。 |
+| `<project>/.apothem/support/github-copilot/hooks/` | 分发器脚本、它的辅助脚本以及它的消息文件。 |
+
+每个钩子都有一条 `bash` 命令和一条 `powershell` 命令。它们运行同一个分发器；`powershell` 那条在前面带有一个调用运算符（`&`），PowerShell 在带引号的程序路径之前需要它。一条 `bash` 命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+```
+
+`--contract copilot` 让分发器读取 Copilot 的 camelCase 输入并打印 `{"additionalContext": ...}`，这正是 Copilot 为这两个事件读取的内容。
+
+**谨慎提交，以及云端智能体。** `.github/hooks/` 是你仓库的一部分，并且 Copilot 的云端编码服务会读取它。这些命令写明了 Apothem 运行时找到的解释器以及项目的绝对路径，而脚本位于 `.apothem/` 中，项目的 `.gitignore` 片段会忽略该文件夹。在其他任何机器上，以及在云端服务中（它只运行 `bash` 命令），该命令都找不到可运行的东西。Copilot 会记录该失败，运行继续进行，因为失败的 `sessionStart` 或 `postToolUse` 钩子不会造成阻止。将 `.github/hooks/apothem.json` 添加到 `.gitignore`，或者只为共享相同布局的团队提交它。安装不会编辑 `.gitignore`，并会将此作为一条说明打印出来。
+
+**你自己的钩子。** 你在 `.github/hooks/` 中的钩子文件绝不会被读取或更改。你添加到 `apothem.json` 本身中的钩子会保留：更新和卸载只替换或移除其命令运行 Apothem 分发器的条目（带有 `--contract copilot` 的 `.apothem/support/github-copilot/hooks/dispatch.py`，无论它是写在哪个项目路径下的）。你自己的钩子如果只是名称相同，或者运行的是 `python -m apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。不是有效 JSON 的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。
+
+**shell 会误读的路径。** 包含 `$`、反引号、双引号或反斜杠的项目路径或解释器路径会在写入任何内容之前被拒绝：在带引号的命令内部，它会运行一个不同的文件，或者破坏写入该命令的 JSON。错误信息会指出该路径；移动或重命名项目，然后再次运行安装。路径中的空格或撇号没有问题。
+
+**关闭钩子。** 在 Copilot 运行所在的环境中设置 `APOTHEM_HOOKS_DISABLE=1`，即可让 Apothem 钩子静默；或者在 `apothem.json` 中设置 `"disableAllHooks": true`，这会跳过这一个文件。
+
+VS Code 较旧的 Local 钩子契约（带有 `command`、`windows`、`linux` 和 `osx` 字段的事件）是另一种格式，版本 1 的文件并不以它为目标。
 
 ## 配置档案到原生配置的映射
 
@@ -29,9 +130,11 @@ apothem install --harness github-copilot --project /path/to/project
 
 ## 兼容性说明
 
-GitHub Copilot 没有暴露可供此适配器管理的、基于文件的用户全局指令路径。Apothem 以有文档记载的项目级指令文件为目标，并将 IDE 级的用户设置留给操作者所有。
+GitHub Copilot 没有暴露可供此适配器管理的、基于文件的用户全局指令路径。Apothem 以有文档记载的项目级指令文件为目标，并将 IDE 级的用户设置留给操作者所有。它写入一个钩子文件 `.github/hooks/apothem.json`，不写入 `.github/hooks/` 中的其他任何文件。
 
 在 Apothem 仓库内，`.github/copilot-instructions.md` 是该仓库各助手指令表面中的一个声音。在该仓库的检出中，合规闸门的多表面一致性检查会比较 `AGENTS.md`、`CLAUDE.md` 和 `.github/copilot-instructions.md` 中的共享主张。它会报告这三个文件之一所遗漏的共享主张，以及与 `AGENTS.md` 所作主张相矛盾的文件。该检查不会读取 Apothem 写入你项目中的指令文件。该闸门默认是建议性的：它报告发现项并以 `0` 退出。
+
+GitHub Copilot 将 `~/.agents/skills/` 列为其个人技能位置之一，因此安装写入的技能位于你的机器上，供 Copilot 加载。在 GitHub 上运行的表面，即云端编码服务和代码评审，运行在别处，看不到你的主目录文件夹，这就是指令文件自身承载各项纪律的原因。Apothem 尚未确认 Copilot 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
 
 ## 验证
 
@@ -42,8 +145,9 @@ apothem verify --harness github-copilot --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+2. 每个受管目标都存在，包括 `.github/agents/` 文件夹；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.github/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；`apothem diff --harness github-copilot --project /path/to/project` 会列出缺失或过期的辅助器文件。钩子文件 `.github/hooks/apothem.json` 必须存在、非空、可解析为 JSON，并包含一个运行 Apothem 分发器的条目，并且钩子脚本必须位于 `.apothem/support/github-copilot/hooks/` 中。检查不会运行这些钩子。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -53,6 +157,8 @@ apothem update --harness github-copilot --project /path/to/project
 
 根据共享配置档案的当前状态重新派生项目指令文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。它会重写与当前文件不同的辅助器配置文件，并添加任何缺失的文件。它还会刷新钩子脚本以及 `.github/hooks/apothem.json` 中的 Apothem 钩子，并保留你在该文件中的任何钩子。
+
 ## 卸载
 
 ```bash
@@ -60,6 +166,8 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
 从 `<project>/.github/copilot-instructions.md` 中移除 Apothem 区块，并保留该区块之外的任何文本。只有当文件中不再剩下其他内容时，才会删除该文件。更改之前，该文件带时间戳的副本会保存到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+卸载还会移除它在 `<project>/.github/agents/` 中写入的辅助器配置文件，并保留其中的其他任何文件；该文件夹变空时会被移除。它会从 `<project>/.github/hooks/apothem.json` 中移除 Apothem 钩子（通过其命令中的分发器路径识别它们，因此无需安装记录也能工作），并保留你在该文件中的任何钩子。当该文件中不再剩有任何其他内容时，会删除该文件，你的其他钩子文件不会被触碰。如果该文件带有卸载无法读取的注释，卸载会保持该文件原样，并将这些钩子报告为已跳过，同时给出原因；请手动移除 Apothem 条目。`<project>/.apothem/support/github-copilot/hooks/` 中的钩子脚本也会被移除。它会移除它在 `~/.agents/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -79,6 +187,11 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness github-copilot --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness github-copilot --project /path/to/project`，然后再次验证 |
+| Copilot 一个 Apothem 辅助器都没有列出 | 检查 `.github/agents/` 中是否存放着 `.agent.md` 文件，以及它们是否位于你正在使用的分支上。运行 `apothem diff --harness github-copilot --project /path/to/project`：`.github/agents` 文件夹出现一行待处理项，意味着辅助器文件缺失或过期，因此请运行 `apothem update --harness github-copilot --project /path/to/project`。`apothem verify` 不能检验这一点：只要 `.github/agents/` 存在，即使其中没有任何辅助器文件，它也会通过 |
+| Apothem 钩子没有运行 | 检查 `.github/hooks/apothem.json` 是否位于你正在使用的分支上，以及这台机器上是否存在 `.apothem/support/github-copilot/hooks/`；这些命令写明的是运行安装的那台机器的解释器和项目路径，因此请在每台机器上运行 `apothem install --harness github-copilot --project /path/to/project`。Copilot 的云端编码服务只运行 `bash` 命令，而该路径上没有解释器 |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness github-copilot --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness github-copilot --project /path/to/project` |
 
 ## 配置开关

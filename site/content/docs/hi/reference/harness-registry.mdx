@@ -2,7 +2,7 @@
 title: "हार्नेस रजिस्ट्री"
 description: "अंतर्निर्मित Apothem हार्नेस अडैप्टरों के लिए तकनीकी रजिस्ट्री संदर्भ।"
 machineTranslated: true
-sourceHash: "6bb38868494e5b55"
+sourceHash: "8551abe209fad6c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,21 +18,21 @@ sourceHash: "6bb38868494e5b55"
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | उपयोगकर्ता | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | खोज-लंबित | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | उपयोगकर्ता | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; नेटिव `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
-| CodeBuddy | `codebuddy` | प्रोजेक्ट | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | खोज-लंबित | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | प्रोजेक्ट | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | उपयोगकर्ता | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | खोज-लंबित | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
-| Cursor | `cursor` | प्रोजेक्ट | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | खोज-लंबित | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | प्रोजेक्ट | mdc | `<project>/.cursor/rules/apothem-rules.mdc`; `<project>/.cursor/agents/`; `<project>/.cursor/hooks.json`; `<project>/.apothem/support/cursor/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
 | Gemini CLI | `gemini-cli` | प्रोजेक्ट | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/`; `<project>/.gemini/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
-| GitHub Copilot | `github-copilot` | प्रोजेक्ट | markdown | `<project>/.github/copilot-instructions.md` | असमर्थित | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | प्रोजेक्ट | markdown | `<project>/.github/copilot-instructions.md`; `<project>/.github/agents/`; `<project>/.github/hooks/apothem.json`; `<project>/.apothem/support/github-copilot/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | असमर्थित | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | प्रोजेक्ट | toml | `<project>/.apothem/providers/glm.toml` | असमर्थित | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
 | Hermes | `hermes` | उपयोगकर्ता | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | नेटिव | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
-| Kimi Code | `kimi-code` | प्रोजेक्ट | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
-| Kiro | `kiro` | प्रोजेक्ट | markdown | `<project>/.kiro/steering/apothem-rules.md` | खोज-लंबित | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | प्रोजेक्ट | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | प्रोजेक्ट | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | उपयोगकर्ता | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | असमर्थित | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | उपयोगकर्ता | json | `~/.config/opencode/opencode.json`; नेटिव `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | नेटिव | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | उपयोगकर्ता | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; नेटिव `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | नेटिव | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
-| Trae | `trae` | प्रोजेक्ट | markdown | `<project>/.trae/rules/apothem-rules.md` | खोज-लंबित | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
-| Windsurf | `windsurf` | प्रोजेक्ट | markdown | `<project>/.devin/rules/apothem-rules.md` | खोज-लंबित | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
-| Zed | `zed` | प्रोजेक्ट | markdown | `<project>/.rules` | खोज-लंबित | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | प्रोजेक्ट | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | प्रोजेक्ट | markdown | `<project>/.devin/rules/apothem-rules.md`; `<project>/.devin/agents/`; `<project>/.devin/config.local.json`; `<project>/.apothem/support/windsurf/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | प्रोजेक्ट | markdown | `<project>/.rules`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
 
 ## पेलोड समूह समर्थन
 
@@ -59,46 +59,97 @@ sourceHash: "6bb38868494e5b55"
 
 | हार्नेस | नेटिव या रूपांतरित पेलोड | समर्थन-वृक्ष पेलोड | असमर्थित या लंबित चेतावनियाँ |
 | --- | --- | --- | --- |
-| Antigravity | रूपांतरित कमांड, एजेंट और नियम; नेटिव स्किल, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | हुक, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP और मेमोरी खोज लंबित |
-| Claude Code | रूपांतरित कमांड; नेटिव स्किल, हुक, एजेंट, नियम, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, टूल प्रतिबंध, मेमोरी | टेम्पलेट | `CLAUDE.md` ऑपरेटर-स्वामित्व में रहता है; कोई अडैप्टर-लिखित सिस्टम प्रॉम्प्ट टेम्पलेट नहीं; MCP खोज लंबित |
-| CodeBuddy | नेटिव नियम, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच; MCP खोज लंबित |
-| Codex | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित क्योंकि Apothem `config.toml` को अधिलेखित नहीं करता |
-| Cursor | नेटिव नियम, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, मेमोरी; MCP खोज लंबित |
-| Gemini CLI | रूपांतरित कमांड और एजेंट; नेटिव स्किल, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित |
-| GitHub Copilot | नेटिव नियम और सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, MCP, उप-एजेंट डिस्पैच, मेमोरी |
+| Antigravity | रूपांतरित कमांड, एजेंट और नियम; नेटिव स्किल, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | हुक, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP और मेमोरी खोज लंबित |
+| Claude Code | रूपांतरित कमांड; नेटिव स्किल, हुक, एजेंट, नियम, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच | टेम्पलेट | `CLAUDE.md` एक Apothem ब्लॉक को छोड़कर ऑपरेटर-स्वामित्व में रहता है; कोई अडैप्टर-लिखित सिस्टम प्रॉम्प्ट टेम्पलेट नहीं; MCP खोज लंबित |
+| CodeBuddy | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित |
+| Codex | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित क्योंकि Apothem `config.toml` को अधिलेखित नहीं करता |
+| Cursor | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, मेमोरी; MCP खोज लंबित |
+| Gemini CLI | रूपांतरित कमांड और एजेंट; नेटिव स्किल, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित |
+| GitHub Copilot | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, MCP, मेमोरी |
 | GLM (Z.ai) | कोई नहीं | कोई नहीं | कमांड, स्किल, हुक, एजेंट, नियम, टेम्पलेट, स्टेटसलाइन, आउटपुट-स्टाइल, MCP, उप-एजेंट डिस्पैच, टूल प्रतिबंध, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी — GLM एक मॉडल बैकएंड है जिसकी कोई नेटिव कॉन्फ़िग सतह नहीं है |
-| Hermes | रूपांतरित कमांड; नेटिव सिस्टम प्रॉम्प्ट टेम्पलेट, MCP; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | स्किल, हुक, एजेंट, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच |
-| Kimi Code | नेटिव उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी | कमांड, स्किल, हुक, एजेंट, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP और टूल प्रतिबंध खोज लंबित |
-| Kiro | नेटिव नियम, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच; MCP खोज लंबित |
-| Open-Claw | रूपांतरित कमांड; नेटिव सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | स्किल, हुक, एजेंट, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, MCP, उप-एजेंट डिस्पैच |
-| OpenCode | रूपांतरित कमांड और एजेंट; नेटिव स्किल, MCP, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल |
-| Qwen Code | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, MCP, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल |
-| Trae | नेटिव नियम, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, मेमोरी; MCP खोज लंबित |
-| Windsurf | नेटिव नियम और सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, मेमोरी; MCP खोज लंबित |
-| Zed | नेटिव नियम, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित टूल प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, मेमोरी; MCP खोज लंबित |
+| Hermes | रूपांतरित कमांड; नेटिव सिस्टम प्रॉम्प्ट टेम्पलेट, MCP, उप-एजेंट डिस्पैच | स्किल, हुक, एजेंट, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल |
+| Kimi Code | रूपांतरित कमांड और एजेंट; नेटिव स्किल, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP और टूल प्रतिबंध खोज लंबित |
+| Kiro | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल; MCP खोज लंबित |
+| Open-Claw | रूपांतरित कमांड; नेटिव सिस्टम प्रॉम्प्ट टेम्पलेट, उप-एजेंट डिस्पैच | स्किल, हुक, एजेंट, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, MCP |
+| OpenCode | रूपांतरित कमांड और एजेंट; नेटिव स्किल, MCP, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल |
+| Qwen Code | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, MCP, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल |
+| Trae | रूपांतरित कमांड और एजेंट; नेटिव स्किल, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | हुक, स्टेटसलाइन, आउटपुट-स्टाइल, मेमोरी; MCP खोज लंबित |
+| Windsurf | रूपांतरित कमांड और एजेंट; नेटिव स्किल, हुक, नियम, उप-एजेंट डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | स्टेटसलाइन, आउटपुट-स्टाइल, मेमोरी; MCP खोज लंबित |
+| Zed | रूपांतरित कमांड; नेटिव स्किल, नियम, सिस्टम प्रॉम्प्ट टेम्पलेट | टेम्पलेट | हुक, एजेंट, स्टेटसलाइन, आउटपुट-स्टाइल, उप-एजेंट डिस्पैच, मेमोरी; MCP खोज लंबित |
+
+तालिका उन सेलों को छोड़ देती है जिन्हें रजिस्ट्री `not-applicable` चिह्नित करती है:
+`Kimi Code` (`discovery-pending`) और `GLM (Z.ai)` (`unsupported`) को छोड़कर हर
+हार्नेस पर टूल प्रतिबंध, और `Claude Code`, `CodeBuddy`, `Codex`, `Hermes`,
+`Kiro`, `Open-Claw`, `OpenCode`, और `Qwen Code` पर मेमोरी।
 
 ## साझा रूट
 
 कुछ इंस्टॉल टारगेट उन्हें लिखने वाले हार्नेस के अलावा अन्य हार्नेसों द्वारा भी
-लोड किए जाते हैं। रजिस्ट्री ऐसे प्रत्येक पथ को `SHARED_ROOTS` में एक स्वामी (वह
-एकमात्र अडैप्टर जो इसे लिखता है) और उन पाठकों के साथ दर्ज करती है जिनके वेंडर
-दस्तावेज़ इसे डिफ़ॉल्ट रूप से लोड करते हैं, साथ ही वे वेंडर पृष्ठ भी जो इसे दिखाते
-हैं और उन्हें प्राप्त करने की तिथि। स्वामी को इंस्टॉल करने से Apothem सामग्री हर
-पाठक के सामने आ जाती है, और स्वामी को अनइंस्टॉल करने से वह हर पाठक से हट जाती है।
+लोड किए जाते हैं। रजिस्ट्री ऐसे प्रत्येक पथ को `SHARED_ROOTS` में एक पंजीकृत
+स्वामी (वह अडैप्टर जिसके लिए वेंडर इस पथ का दस्तावेज़ीकरण करता है), उन
+सह-इंस्टॉलरों जो उसमें वही फ़ाइलें लिखते हैं, और उन पाठकों के साथ दर्ज करती है
+जिनके वेंडर दस्तावेज़ इसे डिफ़ॉल्ट रूप से लोड करते हैं, साथ ही वे वेंडर पृष्ठ भी
+जो इसे दिखाते हैं और उन्हें प्राप्त करने की तिथि।
 
-| पथ | स्वामी | पाठक |
-| --- | --- | --- |
-| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
-| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
-| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
-| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
-| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
-| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
-| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+सह-इंस्टॉलरों वाला पथ होम डायरेक्टरी में एक उपयोगकर्ता-स्तरीय फ़ोल्डर है जिसे कई
+इंस्टॉल समान बाइट के साथ लिखते हैं। केवल `Cursor` इंस्टॉल वाली मशीन पर
+`~/.agents/skills/` लिखने के लिए कोई `Codex` नहीं होता, इसलिए फ़ोल्डर का नाम लेने
+वाला हर इंस्टॉल उसे लिखता है, और इंस्टॉल लेजर उन इंस्टॉलों की गिनती करता है जो
+उसका उपयोग करते हैं। रिकॉर्ड का स्वामी पंजीकृत स्वामी होता है जब तक वह फ़ोल्डर का
+उपयोग करता है, और अन्यथा उसका उपयोग करने वाला सबसे पुराना इंस्टॉल; पंजीकृत स्वामी
+के अनइंस्टॉल होने पर कुछ भी स्थानांतरित नहीं होता। अनइंस्टॉल फ़ोल्डर को केवल तब
+हटाता है जब कोई अन्य इंस्टॉल अब भी उसका उपयोग नहीं करता (देखें
+[`uninstall`](/docs/cli-reference/uninstall#आपकी-होम-डायरेक्टरी-में-साझा-फ़ोल्डर))।
+किसी पाठक को इंस्टॉल करने से फ़ोल्डर में कोई फ़ाइल नहीं आती; स्वामी या किसी
+सह-इंस्टॉलर को इंस्टॉल करने से Apothem सामग्री हर पाठक के सामने आ जाती है।
+
+| पथ | स्वामी | सह-इंस्टॉलर | पाठक |
+| --- | --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, GitHub Copilot, Windsurf, Zed | Gemini CLI, Kimi Code, Open-Claw, OpenCode, Qwen Code |
+| `~/.config/apothem/rules/` | Codex | CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, Zed | कोई नहीं |
+| `~/.config/apothem/templates/` | Codex | CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, Zed | कोई नहीं |
+| `~/.claude/skills/` | Claude Code | कोई नहीं | Cursor, OpenCode |
+| `~/.claude/agents/` | Claude Code | कोई नहीं | Cursor |
+| `~/.codex/agents/` | Codex | कोई नहीं | Cursor |
+| `~/.claude/CLAUDE.md` | Claude Code | कोई नहीं | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | कोई नहीं | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | कोई नहीं | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | कोई नहीं | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | कोई नहीं | Zed |
+
+`~/.config/apothem/rules/` और `~/.config/apothem/templates/` वे फ़ाइलें रखते हैं
+जिन्हें Apothem के अपने स्किल और निर्देश फ़ाइलें उद्धृत करती हैं। कोई अन्य टूल
+उन्हें लोड नहीं करता, इसलिए उनके कोई पाठक और कोई वेंडर पृष्ठ नहीं हैं। `CodeBuddy`,
+`Kiro`, और `Trae` अपना स्वयं का एक स्किल फ़ोल्डर भी लिखते हैं
+(`~/.codebuddy/skills/`, `~/.kiro/skills/`, और `~/.trae/skills/`); उसे केवल वही
+टूल लोड करता है, इसलिए वह साझा रूट नहीं है।
+
+कोई पाठक केवल वहीं सूचीबद्ध होता है जहाँ उसके वेंडर दस्तावेज़ उसी सटीक पथ का
+डिफ़ॉल्ट लोड दिखाते हैं। एक पाठक के साथ एक शर्त जुड़ी है, और इंस्टॉल नोट उसे
+दोहराता है: `Open-Claw` `~/.agents/skills/` को केवल अपनी डिफ़ॉल्ट स्थिति
+डायरेक्टरी के अंतर्गत अनुक्रमित करता है (जब `OPENCLAW_STATE_DIR` कहीं और इंगित
+करता है तो यह फ़ोल्डर को छोड़ देता है)। `Cursor` दस्तावेज़ `~/.codex/agents/` को
+एक `Codex` संगतता फ़ोल्डर के रूप में सूचीबद्ध करते हैं, लेकिन यह नहीं बताते कि
+`Cursor` वहाँ किन फ़ाइल प्रारूपों को पार्स करता है, और एक `Codex` इंस्टॉल TOML
+फ़ाइलें लिखता है, इसलिए यह पुष्ट नहीं है कि `Cursor` उन हेल्परों को पढ़ता है या
+नहीं। `Cursor` इंस्टॉल हेल्परों की अपनी `<project>/.cursor/agents/` प्रति भी लिखता
+है, जिसे वेंडर की प्राथमिकता उसके द्वारा आयात किए जाने वाले फ़ोल्डरों से ऊपर रखती
+है, इसलिए किसी इंस्टॉल किए गए प्रोजेक्ट में नेटिव प्रति `~/.claude/agents/` वाली
+प्रति का स्थान ले लेती है।
+
+कुछ टूल जानबूझकर `~/.agents/skills/` के पाठक नहीं हैं: `Antigravity`, `CodeBuddy`,
+`Kiro`, और `Trae` के दस्तावेज़ यह नहीं कहते कि वे इसे डिफ़ॉल्ट रूप से लोड करते हैं
+(`Trae` प्रोजेक्ट का `.agents/skills/` फ़ोल्डर केवल एक सेटिंग चालू करने के बाद
+लोड करता है), यही कारण है कि `CodeBuddy`, `Kiro`, और `Trae` को अपना स्वयं का स्किल
+फ़ोल्डर मिलता है। `Hermes` दस्तावेज़ इसे केवल `skills.external_dirs` के एक
+उदाहरण मान के रूप में नामित करते हैं। `GitHub Copilot` `~/.claude/agents/` का
+पाठक नहीं है: VS Code दस्तावेज़ उस फ़ोल्डर को Anthropic Claude एजेंट के लिए
+सूचीबद्ध करते हैं, उस एजेंट के लिए नहीं जिसे `GitHub Copilot` चलाता है।
 
 कोई स्वामी किसी साझा निर्देश फ़ाइल में जो Apothem ब्लॉक लिखता है, वह किसी एक
 टूल को उसके पाठक के रूप में नामित नहीं करता। `tests/unit/test_shared_roots.py`
-तब विफल होता है जब दो अडैप्टर एक ही रजिस्ट्री टारगेट लिखते हैं, और तब भी जब किसी
+तब विफल होता है जब किसी रजिस्ट्री टारगेट को लिखने वाले अडैप्टर ठीक-ठीक उसके स्वामी
+और उसके सह-इंस्टॉलर नहीं होते, और तब भी जब किसी
 क्रॉस-टूल निर्देश फ़ाइल (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
 `copilot-instructions.md`) जैसे नाम वाले रजिस्ट्री टारगेट का कोई घोषित स्वामी नहीं
 होता। एकमात्र अपवाद `~/.codex/AGENTS.md` है, जिसे लोड करने का दस्तावेज़ीकरण कोई अन्य

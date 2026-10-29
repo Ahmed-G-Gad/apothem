@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "适用于 OpenCode（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,15 +32,16 @@ apothem install --harness opencode
 
 ## 配置档案到原生配置的映射
 
-适配器渲染 `opencode.json`，其中的 `instructions` 文件列表指明你的配置档案文档和 Apothem 的始终启用规则，然后将每个共享的 Apothem 集合传播到 OpenCode 原生表面或 Apothem 自有的支持子树中。现有的、匹配的 Apothem 管理子项会在替换之前被备份。
+适配器渲染 `opencode.json`，其中的 `instructions` 文件列表指明你的配置档案文档、四条核心规则和规则索引，然后将每个共享的 Apothem 集合传播到 OpenCode 原生表面或 Apothem 自有的支持子树中。现有的、匹配的 Apothem 管理子项会在替换之前被备份。
 
 ## 兼容性说明
 
-OpenCode 会将 `instructions` 列表指明的每个文件合并到每个会话中（[OpenCode 规则](https://opencode.ai/docs/rules/)）。因此，该列表首先指明你的配置档案文档，然后只列出 `alwaysApply` 为 `true` 的规则，每条规则一个明确的 `~/.config/opencode/.apothem/support/rules/<name>.md` 路径；OpenCode 会将开头的 `~/` 展开为你的主目录。按路径筛选的规则、模板和钩子提示词仍作为参考材料安装在 `~/.config/opencode/.apothem/support/` 下，引用其中某一项的规则、技能或命令会按需读取它。命令、技能和辅助器定义使用原生发现位置。
+OpenCode 会将 `instructions` 列表指明的每个文件合并到每个会话中（[OpenCode 规则](https://opencode.ai/docs/rules/)）。因此，该列表首先指明你的配置档案文档，然后只列出 `alwaysApply` 为 `true` 的规则，每条规则一个明确的 `~/.config/opencode/.apothem/support/rules/<name>.md` 路径；OpenCode 会将开头的 `~/` 展开为你的主目录。这些规则是 `agnostic-posture`、`authority-inquiry`、`context-management`、`session-closure`，以及规则索引 `apothem-rule-index`。OpenCode 不按路径限定任何规则，因此其他每条规则都按需读取。它们仍作为参考材料安装在 `~/.config/opencode/.apothem/support/` 下，而该索引指明每条规则以及需要用到它的情形。引用某条规则、模板或钩子提示词的规则、技能或命令会从那里读取它。命令、技能和辅助器定义使用原生发现位置。
 
 配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 携带共享配置档案中你的身份和偏好，并以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.config/opencode/.apothem/support/` 下的绝对目录。它是第一个 `instructions` 条目，因此 OpenCode 会在每个会话中加载它。
 
-由较早发布写入的 `opencode.json` 列出单个通配模式 `~/.config/opencode/.apothem/support/rules/*.md`，它会加载每条规则。`apothem install` 和 `apothem update` 会将其替换为始终启用的列表，而 `apothem uninstall` 会移除这两种形式。在任何情况下，你自己的 `instructions` 条目都会被保留。
+由较早发布写入的 `opencode.json` 列出单个通配模式 `~/.config/opencode/.apothem/support/rules/*.md`，它会加载每条规则；或者为当时始终启用的 28 条规则各列出一个明确的路径。`apothem
+install` 和 `apothem update` 会将任一形式替换为上述列表，从而去掉不再在启动时加载的 24 个路径，而 `apothem uninstall` 会移除所有这些条目。在任何情况下，你自己的 `instructions` 条目都会被保留。
 
 ## 验证
 

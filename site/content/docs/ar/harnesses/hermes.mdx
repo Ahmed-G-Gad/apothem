@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,18 +31,30 @@ apothem install --harness hermes
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد إعداد <bdi>YAML</bdi> الأصلي، بما في ذلك جرد <bdi>MCP</bdi> الوارد في الملف التعريفي. وتأتي خوادم <bdi>MCP</bdi> من قسم <bdi>`mcp_servers`</bdi> في الملف التعريفي؛ وتُجسَّد في <bdi>`config.yaml`</bdi> عند كل تثبيت وتحديث، ولا تُنسَخ ملفات. وتذهب هوية الملف التعريفي وتفضيلاته وقواعده إلى وثيقة الملف التعريفي. وتستقرّ الأوامر المشتركة والمهارات وتعريفات المساعِدات والقواعد والقوالب ومطالبات الخطّافات بوصفها مادة دعم تحت <bdi>`~/.hermes/.apothem/support/`</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد إعداد <bdi>YAML</bdi> الأصلي، بما في ذلك جرد <bdi>MCP</bdi> الوارد في الملف التعريفي. وتأتي خوادم <bdi>MCP</bdi> من قسم <bdi>`mcp_servers`</bdi> في الملف التعريفي؛ وتُجسَّد في <bdi>`config.yaml`</bdi> عند كل تثبيت وتحديث، ولا تُنسَخ ملفات. ويضيف المحوّل أيضًا <bdi>`~/.hermes/.apothem/support/skills`</bdi> إلى <bdi>`skills.external_dirs`</bdi>، وهي قائمة أدلّة المهارات الإضافية التي يقرؤها <bdi>Hermes</bdi>، وبها يعثر <bdi>Hermes</bdi> على المهارات المُثبَّتة. ويأتي المُدخَل بعد أي مُدخَلات تسردها أصلًا، وتبقى مفاتيحك الأخرى كما هي. وتذهب هوية الملف التعريفي وتفضيلاته وقواعده إلى وثيقة الملف التعريفي. وتستقرّ الأوامر المشتركة والمهارات وتعريفات المساعِدات والقواعد والقوالب ومطالبات الخطّافات بوصفها مادة دعم تحت <bdi>`~/.hermes/.apothem/support/`</bdi>.
 
 ## ملاحظات التوافق
 
-محوّل في مرحلة المعاينة. لا يُحمِّل <bdi>Hermes</bdi> شجرة الدعم ولا وثيقة الملف
-التعريفي من تلقاء نفسه: لا شيء في <bdi>`config.yaml`</bdi> ولا أيّ من ملفات السياق
+محوّل في مرحلة المعاينة. يُحمِّل <bdi>Hermes</bdi> مهارات <bdi>Apothem</bdi> عبر
+<bdi>`skills.external_dirs`</bdi>، لكنه لا يُحمِّل بقية شجرة الدعم ولا وثيقة الملف
+التعريفي من تلقاء نفسه: لا شيء آخر في <bdi>`config.yaml`</bdi> ولا أيّ من ملفات السياق
 التي يقرؤها <bdi>Hermes</bdi> يُشير إليهما، لذا يعمل <bdi>Hermes</bdi> بعد التثبيت دون
-قواعد <bdi>Apothem</bdi> أو مهاراته أو خطّافاته. يقرأ <bdi>Hermes</bdi> المهارات من
-<bdi>`~/.hermes/skills/`</bdi> ومن كل مجلد مُدرَج تحت <bdi>`skills.external_dirs`</bdi>
-في <bdi>`config.yaml`</bdi>؛ لاستخدام مهارات <bdi>Apothem</bdi>، أضف
-<bdi>`~/.hermes/.apothem/support/skills`</bdi> إلى تلك القائمة بنفسك؛ ويحتفظ
-<bdi>`apothem update`</bdi> بالمفاتيح التي تضيفها إلى <bdi>`config.yaml`</bdi>. يكتب
+قواعد <bdi>Apothem</bdi> أو خطّافاته.
+
+**تعارض الأسماء.** يوثّق <bdi>Hermes</bdi> ترتيب الأسبقية التالي للمهارات: مهارات
+المشروع (<bdi>`<project>/.hermes/skills/`</bdi> و<bdi>`<project>/.agents/skills/`</bdi>)،
+ثم <bdi>`~/.hermes/skills/`</bdi>، ثم <bdi>`skills.create_dir`</bdi>، ثم المجلّدات المُدرَجة تحت
+<bdi>`skills.external_dirs`</bdi>. ودليل <bdi>Apothem</bdi> مُدخَل في <bdi>`external_dirs`</bdi>، لذا
+يأتي أخيرًا. ولا تذكر وثائق <bdi>Hermes</bdi> التي رُوجِعت أيّ نسخة يُحمِّلها <bdi>Hermes</bdi> حين
+يحوي موقعان مهارةً بالاسم نفسه؛ ويقرأ <bdi>Apothem</bdi> الترتيب على أن المواقع الأسبق
+تفوز، لذا توقّع أن المهارة التي تحمل الاسم نفسه وتحتفظ بها في موقع أسبق
+تسبق نسخة <bdi>Apothem</bdi>. ولا يكتب <bdi>Apothem</bdi> إلا في
+<bdi>`config.yaml`</bdi> وتحت <bdi>`~/.hermes/.apothem/support/`</bdi>، ولا يكتب أبدًا في تلك المواقع
+الأسبق، لذا لا يستبدل التثبيت والتحديث وإلغاء التثبيت مهارةً تحتفظ بها
+هناك.
+
+يحتفظ <bdi>`apothem update`</bdi> بالمفاتيح التي تضيفها إلى <bdi>`config.yaml`</bdi>، بما فيها
+<bdi>`skills.config`</bdi> ومُدخَلات <bdi>`skills.external_dirs`</bdi> الخاصة بك. يكتب
 المحوّل جرد <bdi>MCP</bdi> الوارد في الملف التعريفي تحت المفتاح
 <bdi>`mcp_servers`</bdi> في المستوى الأعلى، حيث يقرأ <bdi>Hermes</bdi> خوادم
 <bdi>MCP</bdi>. كانت إصدارات <bdi>Apothem</bdi> السابقة تكتبه تحت
@@ -51,9 +63,24 @@ apothem install --harness hermes
 و<bdi>`apothem uninstall`</bdi> تلك الكتلة حين لا تزال تطابق ما كان سيكتبه مثل ذلك
 الإصدار من ملفك التعريفي المشترك الراهن (راجع [إلغاء التثبيت](#إلغاء-التثبيت) لمعرفة
 متى تبقى). (سلوك <bdi>Hermes</bdi> وفق صفحات دليل المستخدم الخاص به عن
-[المهارات](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+[المهارات](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)،
+المقروءة في 2026-10-24،
 و[<bdi>MCP</bdi>](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)،
 المقروءة في 2026-10-02.)
+
+**التعليقات في <bdi>`config.yaml`</bdi>.** يُعيد <bdi>Apothem</bdi> كتابة الملف بمكتبة <bdi>YAML</bdi>
+تُسقِط التعليقات. وحين يحمل الملف تعليقات خاصة بك ويكون المُدخَل
+مفقودًا، يترك <bdi>Apothem</bdi> الملف دون مساس ويتوقّف التثبيت برسالة
+تسمّي المفتاح. أضِف المُدخَل بنفسك، ثم شغّل التثبيت مجدّدًا:
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+المُدخَل الذي تضيفه بنفسك يُعَدّ مُدخَلك: فإن كنت تسرد هذا الدليل أصلًا،
+يُبقي <bdi>Apothem</bdi> مُدخَلك كما هو ويتركه إلغاء التثبيت في مكانه.
 
 ## التحقّق
 
@@ -65,7 +92,10 @@ apothem verify --harness hermes
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
 2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
-3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
+3. يسرد <bdi>`skills.external_dirs`</bdi> في الإعداد الأصلي
+   <bdi>`~/.hermes/.apothem/support/skills`</bdi>. فمن دون ذلك المُدخَل لا يُحمِّل <bdi>Hermes</bdi>
+   المهارات المُثبَّتة؛ ويُعيد <bdi>`apothem update`</bdi> إضافته.
+4. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -73,7 +103,8 @@ apothem verify --harness hermes
 apothem update --harness hermes
 ```
 
-يُعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك.
+يُعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك؛ ويبقى مُدخَل
+<bdi>Apothem</bdi> في <bdi>`skills.external_dirs`</bdi> مسرودًا مرة واحدة مهما تكرّر التحديث.
 شغّله بعد تحرير <bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة
 <bdi>Apothem</bdi> المُثبَّتة.
 
@@ -83,8 +114,9 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-يُزيل ما أضافه المحوّل: مدخلات <bdi>`mcp_servers`</bdi> التي سجّلها تثبيته في
-<bdi>`config.yaml`</bdi> (تبقى مفاتيحك الخاصة، ولا يُحذَف الملف إلا حين يكون
+يُزيل ما أضافه المحوّل: مدخلات <bdi>`mcp_servers`</bdi> ومُدخَل
+<bdi>`skills.external_dirs`</bdi> اللذين سجّلهما تثبيته في <bdi>`config.yaml`</bdi> (تبقى
+مفاتيحك الخاصة، بما فيها مُدخَلات <bdi>`external_dirs`</bdi> الخاصة بك و<bdi>`skills.config`</bdi>، ولا يُحذَف الملف إلا حين يكون
 <bdi>Apothem</bdi> قد أنشأه ولم يتبقَّ فيه شيء يخصّك)، ووثيقة الملف التعريفي، وشجرة
 الدعم. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
 <bdi>Apothem</bdi>.
@@ -112,6 +144,8 @@ python -m apothem.conformity.gate --all .
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness hermes`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness hermes`</bdi>، ثم تحقّق مجدّدًا |
 | محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness hermes`</bdi> |
+| يتوقّف التثبيت برسالة عن تعليقات في <bdi>`config.yaml`</bdi> | لا يُعيد <bdi>Apothem</bdi> كتابة ملف قد يضطرّ إلى حذف التعليقات منه. أضِف بنفسك المُدخَل <bdi>`skills.external_dirs`</bdi> المعروض في [ملاحظات التوافق](#ملاحظات-التوافق)، ثم شغّل التثبيت مجدّدًا |
+| لا تظهر مهارة من <bdi>Apothem</bdi> في <bdi>Hermes</bdi> | قد تسبق المهارةُ التي تحمل الاسم نفسه في المشروع أو في <bdi>`~/.hermes/skills/`</bdi> نسخةَ <bdi>Apothem</bdi>: فـ <bdi>Hermes</bdi> يوثّق ترتيب البحث لكنه لا يوثّق قاعدة التعارض (راجع [ملاحظات التوافق](#ملاحظات-التوافق)). وشغّل أيضًا <bdi>`apothem verify --harness hermes`</bdi> |
 
 ## مفاتيح الضبط
 

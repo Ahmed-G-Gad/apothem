@@ -2,7 +2,7 @@
 title: "Cabeçalho de autoria — Linha de licença SPDX por arquivo"
 description: "Define e aplica marcadores de identificador de licença SPDX por arquivo usando cabeçalhos canônicos de uma única linha na sintaxe de comentário adequada para cada tipo de arquivo."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -196,7 +196,16 @@ A disciplina precisa sobreviver a toda sessão futura e a todo colaborador futur
    `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` —
    interceptam chamadas das ferramentas Write/Edit em caminhos aplicáveis, para
    que a linha SPDX seja injetada na criação do arquivo, em vez de ser
-   descoberta depois como achado do validador.
+   descoberta depois como achado do validador. O verificador do guard,
+   `src/apothem/hooks/lib/header_check.py`, usa apenas a biblioteca padrão e lê
+   a fixture e a lista de exceções do diretório `schemas/` ao lado de `hooks/`,
+   de modo que também funciona sob o plugin do Claude Code, onde o pacote
+   `apothem` não é importável. Ele aplica as tabelas de variantes e as regras de
+   posição de inserção do injetor a arquivos dentro do projeto, e somente em um
+   projeto git que traga a fixture do cabeçalho
+   (`src/apothem/schemas/authorship-header.txt`), já que a linha SPDX é a
+   convenção deste repositório e não um padrão para todo projeto que o plugin
+   abre.
 8. **Caixa de seleção do template de PR** — afirmação voltada ao colaborador de
    que todo arquivo novo traz a linha SPDX canônica.
 9. **Este documento** (`site/content/docs/reference/authorship-header.mdx`) —

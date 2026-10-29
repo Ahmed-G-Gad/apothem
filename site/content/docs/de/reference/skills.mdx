@@ -2,7 +2,7 @@
 title: "Skills"
 description: "Wiederverwendbare erkennbare Techniken in SKILL.md-Dateien mit Erkennungssignalen, Verfahren und Durchsetzungs-Hooks für Plan-Suiten und Ökosystem-Audits."
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,8 @@ Schlüssel, daher übersetzt die Installation sie nur für den jeweiligen Harnes
 | Harness | Was die Installation ändert |
 | --- | --- |
 | Claude Code (Installation und Plugin) | Benennt `userInvocable` in `user-invocable` um, den Schlüssel, den Claude Code liest. Claude Code ignoriert den camelCase-Schlüssel, sodass ein mit `userInvocable: false` markierter Skill ohne die Umbenennung weiterhin im `/`-Menü erscheinen würde. |
-| Codex | Lässt `SKILL.md` unverändert und schreibt `agents/openai.yaml` mit `policy.allow_implicit_invocation: false` neben jeden Skill, dessen Quelle `disable-model-invocation: true` setzt, weil Codex diesen Schlüssel ignoriert. |
+| Gemeinsam genutzte Skill-Ordner auf Benutzerebene: `~/.agents/skills/` (geschrieben von Codex, Cursor, GitHub Copilot, Windsurf und Zed) sowie `~/.codebuddy/skills/`, `~/.kiro/skills/` und `~/.trae/skills/` | Eine einheitliche Form für jede Installation, die einen dieser Ordner schreibt, sodass Installationen niemals die Dateien der jeweils anderen neu schreiben. Sie benennt `userInvocable` in `user-invocable` um, verschiebt `version`, `updated`, `archetype` und `portability` unter eine abschließende `metadata:`-Map aus Zeichenketten in Anführungszeichen und schreibt `agents/openai.yaml` mit `policy.allow_implicit_invocation: false` neben jeden Skill, dessen Quelle `disable-model-invocation: true` setzt, weil Codex diesen Schlüssel ignoriert und `~/.agents/skills/` liest, unabhängig davon, ob ein Codex-Adapter ihn geschrieben hat. Ein als Skill verpackter Befehl behält seinen Body vollständig und beginnt mit einem festen Hinweis, der die Ordner für Regeln und Vorlagen nennt, `~/.config/apothem/rules/` und `~/.config/apothem/templates/`. Die verbleibenden Schlüssel auf oberster Ebene sind `name`, `description`, `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint` und `metadata`. |
+| Qwen Code | Schreibt die kommagetrennte `allowed-tools`-Zeichenkette als `allowedTools`-Liste um, ein YAML-Eintrag pro Zeile, weil `Qwen Code` nur den camelCase-Schlüssel liest und eine Liste verlangt. Jeder Eintrag behält die Schreibweise der Quelle bei, einschließlich Mustern wie `Bash(git status *)`. Jeder andere Schlüssel und der Skill-Body werden unverändert installiert. |
 | Andere Harnesses | Keine Änderung. |
 
 `skill.schema.json` akzeptiert beide Schreibweisen des Flags für die

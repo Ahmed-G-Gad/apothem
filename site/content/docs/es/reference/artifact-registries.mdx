@@ -2,7 +2,7 @@
 title: "Registros de artefactos"
 description: "Enumeración completa de los artefactos del ecosistema Apothem: comandos, reglas, trabajadores delegados, hooks, skills, output-styles, disciplina de evolución de artefactos y declaraciones de clases de artefacto vacías."
 machineTranslated: true
-sourceHash: "742e318ae876739a"
+sourceHash: "b0cb48ef6011396d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,11 @@ sourceHash: "742e318ae876739a"
 
 ## 1. Comandos
 
-Se registran treinta comandos desde `src/apothem/commands/*.md` (no recursivo). Cada comando es un archivo registrado de primera clase; el orquestador `/plan` solo encadena las etapas de plan que ya son de primera clase y no lleva lógica de etapa propia, por lo que sigue sin haber un despachador monolítico ni agrupación de subcomandos. Los comandos que no son de plan ni de workflow:
+Se registran cuarenta y cinco comandos desde `src/apothem/commands/*.md` (no recursivo) — la referencia completa y siempre actualizada por comando es la [Referencia de comandos](https://apothem.ahmedgad.com/docs/reference/commands/) generada, y la canalización `/research` de trece etapas (de `/research-ideate` a `/research-disseminate`) más los orquestadores de flujos de trabajo envueltos `/audit` y `/fortress` se enumeran allí por completo. Cada comando es un archivo registrado de primera clase; el orquestador `/plan` solo encadena las etapas de plan que ya son de primera clase y no lleva lógica de etapa propia, por lo que sigue sin haber un despachador monolítico ni agrupación de subcomandos.
+
+Treinta y cinco comandos son invocables por el modelo (`disable-model-invocation: false`): el modelo puede ejecutar uno cuando una solicitud coincide con su descripción. Diez solo los invoca el operador: `/freshify`, `/github-deploy-fresh`, `/github-deploy-next`, `/release-readiness`, `/elevate`, `/fortress`, `/workflow`, `/plan-execute`, `/research-experiment` y `/research-publish`. La bandera de cada comando se registra en `src/apothem/commands/README.md`.
+
+Los comandos de auditoría y elevación que no son de plan ni de investigación:
 
 | Comando | Archivo | Descripción |
 | ------- | ---- | ----------- |
@@ -40,7 +44,7 @@ La canalización de plan se entrega como ocho comandos de primera clase — uno 
 
 | Comando | Archivo | Comportamiento |
 | ------- | ---- | -------- |
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma libre en un `_spec/spec.md` de grado de especificación; cada pregunta abierta se enruta por el canal de consulta estructurada en lugar de aplicar valores por defecto en silencio; `--quick` escribe un único archivo de plan ligero bajo `<project-root>/.apothem/plans/` (`.plans/` sigue siendo un respaldo de retrocompatibilidad admitido) |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma libre en un `_spec/spec.md` de grado de especificación; cada pregunta abierta se enruta por el canal de consulta estructurada en lugar de aplicar valores por defecto en silencio; `--quick` escribe un único archivo de plan ligero bajo `<project-root>/.apothem/plans/` |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Genera una Suite de Plan Maestro completa a partir de prosa/requisitos redactados |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoría forense de una suite existente — fidelidad de la prosa, consistencia interna, análisis de brechas — refinada mediante preguntas y respuestas interactivas |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Produce un artefacto de diseño arquitectónico en el `_inputs/design.md` de la suite, validado por la puerta de pre-emisión de quince barras antes de la promoción |
@@ -69,14 +73,16 @@ Las reglas de comportamiento viven bajo `src/apothem/rules/` — un pequeño nú
 
 ## 3. Trabajadores delegados
 
-El ecosistema se entrega con doce definiciones de trabajadores persistentes; los patrones de equipo de la regla de orquestación despachan hacia ellos. Cada definición vive en la ruta de archivo indicada a continuación.
+El ecosistema se entrega con catorce definiciones de trabajadores persistentes; los patrones de equipo de la regla de orquestación despachan hacia ellos. Cada definición vive en la ruta de archivo indicada a continuación.
 
 ```text
 Worker              File                                       Pattern         Model Policy
 ------------------- ------------------------------------------ --------------- -------------
+Citation Auditor    src/apothem/agents/citation-auditor.md    Audit           host-selected
 Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
 Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
 Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Design Critic       src/apothem/agents/design-critic.md       Audit           host-selected
 Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
 MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
 Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
@@ -90,14 +96,14 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## 4. Hooks
 
-Las entradas de hook de Claude Code instaladas usan la forma exec: `command` es `${PYTHON_BIN}`, y `args` contiene una ruta de script bajo `${HARNESS_ROOT}/.apothem/support/` (por ejemplo, `hooks/dispatch.py` y `conformity/gate.py`). La forma `-m apothem.hooks.dispatch` es para desarrollar desde un checkout del código fuente con `PYTHONPATH=src`. El despachador importa `src/apothem/hooks/lib/resolve_root.py` para la resolución de la raíz del ecosistema y delega en dos auxiliares que están junto a él, en el propio `src/apothem/hooks/`: `src/apothem/hooks/emit_hook_context.py` da formato a las cargas útiles de eventos para el asistente, y `src/apothem/hooks/session_start_bootstrap.py` lleva el trabajo de preparación de SessionStart que el despachador le delega cuando enruta ese evento. Los mensajes de hook que se presentan al asistente cuando se disparan los eventos admitidos viven como archivos de contexto Markdown bajo `src/apothem/hooks/messages/`, uno por variante de evento: `postcompact.md`, `precompact.md`, `posttooluse-proactive-compaction.md`, `pretooluse-askuserquestion-recommended.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md` y `stop.md`. El despachador carga cada archivo de contexto enrutado cuando se dispara su evento y su argumento de contexto está registrado en `settings.json`. `pretooluse-conformity.md` se distribuye como variante disponible sin una entrada de enrutamiento actual en `settings.json`. `pretooluse-dependency-guard.md` se enruta en los matchers Write y Edit, y `pretooluse-eval-guard.md` en los matchers Write, Edit y `Bash|PowerShell`.
+Las entradas de hook de Claude Code instaladas usan la forma exec: `command` es `${PYTHON_BIN}`, y `args` contiene una ruta de script bajo `${HARNESS_ROOT}/.apothem/support/` (por ejemplo, `hooks/dispatch.py` y `conformity/gate.py`). La forma `-m apothem.hooks.dispatch` es para desarrollar desde un checkout del código fuente con `PYTHONPATH=src`. El despachador importa `src/apothem/hooks/lib/resolve_root.py` para la resolución de la raíz del ecosistema y delega en dos auxiliares que están junto a él, en el propio `src/apothem/hooks/`: `src/apothem/hooks/emit_hook_context.py` da formato a las cargas útiles de eventos para el asistente, y `src/apothem/hooks/session_start_bootstrap.py` lleva el trabajo de preparación de SessionStart que el despachador le delega cuando enruta ese evento. Los mensajes de hook que se presentan al asistente cuando se disparan los eventos admitidos viven como archivos de contexto Markdown bajo `src/apothem/hooks/messages/`, uno por variante de evento: `postcompact.md`, `precompact.md`, `posttooluse-proactive-compaction.md`, `pretooluse-askuserquestion-recommended.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`, `skill-index.md` y `stop.md`. El despachador carga cada archivo de contexto enrutado cuando se dispara su evento y su argumento de contexto está registrado en `settings.json`. `pretooluse-conformity.md` se distribuye como variante disponible sin una entrada de enrutamiento actual en `settings.json`. `skill-index.md` se genera a partir del catálogo de skills y comandos y lo lee el bootstrap de inicio de sesión, sin enrutarse a través de `settings.json`. `pretooluse-dependency-guard.md` se enruta en los matchers Write y Edit, y `pretooluse-eval-guard.md` en los matchers Write, Edit y `Bash|PowerShell`.
 
 ```text
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PreCompact        CM-24                    30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24                    30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
 PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher
@@ -121,26 +127,36 @@ aterrizan en ese archivo de forma atómica.
 
 Las skills reutilizables viven bajo `src/apothem/skills/`, una carpeta por skill.
 
-| Skill | Ruta | Invocable por el usuario | Propósito |
-| ----- | ---- | -------------- | ------- |
-| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Sí | Actualizaciones de dependencias revisadas por changelog, con versión fijada y verificadas por puerta |
-| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Sí | Bucles de ingeniería disciplinados — depuración estructurada, rojo-verde-refactor con pruebas primero, descomposición en cortes verticales, desglose de requisito a incidencia |
-| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Sí | Canalización escribir → validar → renderizar → exportar para diagramas declarativos y visualizaciones de datos (SVG / PNG / PDF) |
-| Document Authoring | `src/apothem/skills/document-authoring/` | Sí | Escritura de documentos de formato largo con puerta de aprobación (esquema → borrador → revisión) con citas verificadas y una compilación de composición tipográfica determinista |
-| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Sí | Auditoría a ciegas del árbol de configuración de Apothem |
-| Eval Harness | `src/apothem/skills/eval-harness/` | Sí | Marcos reproducibles de evaluación de modelos de lenguaje con criterios de aprobación explícitos |
-| Incident Runbook | `src/apothem/skills/incident-runbook/` | Sí | Escritura de runbooks como Trigger → Diagnosis → Action → Verification → Rollback |
-| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Sí | Informes de investigación con fan-out, verificados de forma cruzada y citados |
-| Plan Suite | `src/apothem/skills/plan-suite/` | No | Plantilla maestra consumida por las etapas de la canalización `/plan` |
-| Projectify | `src/apothem/skills/projectify/` | Sí | Elevación de Proyectos de aplicaciones de chat — los entregables de Description / Instruction / Files de conocimiento a las convenciones SOTA dentro de un presupuesto de contexto medible por plataforma |
-| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Sí | Diseño de prompts estructurado validado por evaluación |
-| Refactor Extract | `src/apothem/skills/refactor-extract/` | Sí | Refactorizaciones de extracción que preservan el comportamiento |
-| Secret Rotation | `src/apothem/skills/secret-rotation/` | Sí | Retiro y reemplazo seguros de credenciales expuestas |
-| Source Synthesis | `src/apothem/skills/source-synthesis/` | Sí | Reconcilia un conjunto fijo de fuentes en una única síntesis citada |
-| Surgical Guard | `src/apothem/skills/surgical-guard/` | Sí | Edición de diferencia mínima delimitada por anclas, emparejada con un guardia de calidad post-edición reactivo basado en diferencias |
-| Test Authoring | `src/apothem/skills/test-authoring/` | Sí | Escritura de pruebas con enfoque en el comportamiento con disciplina Arrange-Act-Assert |
-| Vuln Triage | `src/apothem/skills/vuln-triage/` | Sí | Clasifica por severidad los avisos de seguridad y enruta la remediación |
-| Workflow | `src/apothem/skills/workflow/` | Sí | Aprovechamiento de flujos de trabajo multiagente de propósito general con verificación adversarial por refutación-por-defecto y remediación más allá de la misión revelada |
+| Skill | Ruta | Invocable por el usuario | Invocable por el modelo | Propósito |
+| ----- | ---- | -------------- | --------------- | ------- |
+| Decision Matrix | `src/apothem/skills/decision-matrix/` | Sí | Sí | Elección ponderada y con evidencia citada entre opciones, con una comprobación de sensibilidad |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Sí | No | Actualizaciones de dependencias revisadas por changelog, con versión fijada y verificadas por puerta |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Sí | Sí | Bucles de ingeniería disciplinados — depuración estructurada, rojo-verde-refactor con pruebas primero, descomposición en cortes verticales, desglose de requisito a incidencia |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Sí | Sí | Canalización escribir → validar → renderizar → exportar para diagramas declarativos y visualizaciones de datos (SVG / PNG / PDF) |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Sí | Sí | Escritura de documentos de formato largo con puerta de aprobación (esquema → borrador → revisión) con citas verificadas y una compilación de composición tipográfica determinista |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Sí | Sí | Auditoría a ciegas del árbol de configuración de Apothem |
+| Eval Harness | `src/apothem/skills/eval-harness/` | Sí | Sí | Marcos reproducibles de evaluación de modelos de lenguaje con criterios de aprobación explícitos |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | Sí | Sí | Escritura de runbooks como Trigger → Diagnosis → Action → Verification → Rollback |
+| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Sí | No | De la incidencia a la corrección con evidencia en cada etapa: borradores, dimensionamiento, un punto de control con una prueba que falla, la corrección, una solicitud redactada para quien informó y un borrador de pull request opcional |
+| Knowledge Wiki | `src/apothem/skills/knowledge-wiki/` | Sí | Sí | Base de conocimiento en Markdown con el índice primero, con análisis de lint, de deriva y de nodos centrales |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Sí | Sí | Informes de investigación con fan-out, verificados de forma cruzada y citados |
+| Paper Toolkit | `src/apothem/skills/paper-toolkit/` | Sí | Sí | Notas de lectura, comparaciones de artículos, borradores de trabajo relacionado a partir de fuentes proporcionadas con informes de cobertura, críticas de borradores y pasadas de estilo de referencias, sin una suite de investigación |
+| Perspectives | `src/apothem/skills/perspectives/` | Sí | Sí | Varios puntos de vista separados sobre una cuestión disputada, reconciliados con un nivel de confianza y la discrepancia más sólida |
+| Plan Suite | `src/apothem/skills/plan-suite/` | No | No | Plantilla maestra consumida por las etapas de la canalización `/plan` |
+| Projectify | `src/apothem/skills/projectify/` | Sí | Sí | Elevación de Proyectos de aplicaciones de chat — los entregables de Description / Instruction / Files de conocimiento a las convenciones SOTA dentro de un presupuesto de contexto medible por plataforma |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Sí | Sí | Diseño de prompts estructurado validado por evaluación |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | Sí | Sí | Refactorizaciones de extracción que preservan el comportamiento |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | Sí | No | Retiro y reemplazo seguros de credenciales expuestas |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | Sí | Sí | Reconcilia un conjunto fijo de fuentes en una única síntesis citada |
+| Research Suite | `src/apothem/skills/research-suite/` | No | No | Superficie canónica de la suite de investigación — los diez mandatos de rigor (R1–R10), el ciclo de vida de investigación de trece etapas y el Principal-Investigator Framework; se resuelve por ruta desde las etapas de la canalización `/research` |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | Sí | Sí | Edición de diferencia mínima delimitada por anclas, emparejada con un guardia de calidad post-edición reactivo basado en diferencias |
+| Teaching Pack | `src/apothem/skills/teaching-pack/` | Sí | Sí | Objetivos de aprendizaje, plan de estudios, recorridos por fórmulas, ejemplos resueltos, cuestionario con clave y glosario a partir de un artículo o documento técnico, con cada línea marcada por la sección de origen |
+| Test Authoring | `src/apothem/skills/test-authoring/` | Sí | Sí | Escritura de pruebas con enfoque en el comportamiento con disciplina Arrange-Act-Assert |
+| UI Design | `src/apothem/skills/ui-design/` | Sí | Sí | Diseño y refinamiento de interfaces hasta un nivel mínimo de oficio con un contexto `DESIGN.md` |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | Sí | Sí | Clasifica por severidad los avisos de seguridad y enruta la remediación |
+| Workflow | `src/apothem/skills/workflow/` | Sí | No | Aprovechamiento de flujos de trabajo multiagente de propósito general con verificación adversarial por refutación-por-defecto y remediación más allá de la misión revelada |
+
+Una skill con `disable-model-invocation: true` solo se ejecuta cuando el operador la invoca por su nombre. Veinte skills son invocables por el modelo. Cuatro son manuales porque cambian el estado fuera del árbol de trabajo o dependen de que el operador elija el momento: Dependency Upgrade, Secret Rotation, Workflow e Issue Lifecycle. Las dos skills de suite son plantillas solo de referencia que se leen por ruta. El índice de skills del inicio de sesión enumera los nombres invocables por el modelo y los manuales por dominio.
 
 > **Convención.** La **Ruta** de cada fila es una carpeta; el punto de entrada es el archivo `SKILL.md` dentro de ella — p. ej. `src/apothem/skills/plan-suite/SKILL.md` — según la convención de skill de carpeta-con-`SKILL.md` declarada en el esquema de la fuente del proyecto.
 

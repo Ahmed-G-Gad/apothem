@@ -2,7 +2,7 @@
 title: "MCP サーバー"
 description: "Model Context Protocol サーバーの設定 — オペレーター所有であり、各ツールのネイティブな MCP 機構を通じて登録されます。いくつかのアダプターは共有プロファイルの MCP インベントリを投影し、残りのアダプターはサーバーエントリを記述しません。"
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,57 @@ Model Context Protocol（MCP）サーバーは**オペレーター所有**です
 `~/.claude.json`（ユーザースコープまたはローカルスコープ）と、プロジェクトレベルの
 `.mcp.json` に登録されます。Claude Code アダプターはどちらのファイルも書き込まず、
 Apothem が管理する Claude Code の設定が `mcpServers` ブロックを持つことは決してありません。
+
+## ヘルパーに MCP サーバーへのアクセスを与える
+
+読み取り専用のリサーチエージェント（`research-scout`、`citation-auditor`）は、
+`Read, Glob, Grep, WebSearch, WebFetch` という明示的な `tools` 一覧を持って同梱されています。Claude Code が
+サブエージェントの明示的な一覧に MCP ツールを認めるのは、エントリが `mcp__<server>__*` の形式でサーバーを
+名指ししている場合だけです。プロファイルの `agent_mcp_servers` キーは、エージェントごとにそれらのサーバーを
+名指しします:
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+Claude Code のインストールは、名指しされたサーバーごとに 1 つの `mcp__<server>__*` エントリを、列挙された
+各エージェントの `tools` 行に追加し、他のエージェントや行は変更しません。キーがなければ、すべての
+エージェントは素の一覧を保持するため、どのエージェントも MCP ツールには到達しません。各サーバー名は、
+`/mcp` が示すとおりに書いてください。Claude Code はツール名の中で `:` と `.` を `_` として書くため、
+インストールはサーバー `plugin:bio-research:biorxiv` を `mcp__plugin_bio-research_biorxiv__*` として
+レンダリングします。名前は文字、数字、`-`、`_`、`:`、`.` からなり、文字または数字で始まって終わり、
+`_`、`:`、`.` のうち 2 つが連続することは決してありません（レンダリングされたエントリが `__` を含むことに
+なるため）。`*`、空白、およびその他のすべての文字は拒否されます。
+付与はそのサーバーのすべてのツールを、書き込むものも含めて名指しするため、検索・参照用として信頼できる
+サーバーだけを付与してください。エージェントの指示はそれらを参照に限定していますが、ハーネスが強制するのは
+あなたが列挙した名前だけです。存在しないエージェント、または明示的な `tools` 一覧を持たないエージェントに
+対する付与は、報告されてスキップされます。`harnesses.claude-code` の下のハーネスごとのオーバーライドは、
+共有の一覧に追加されます。
+
+付与は、`Claude Code` と `Gemini CLI` のエンジンインストール（`apothem install`）に適用されます。
+`Gemini CLI` では、インストールは名指しされたサーバーごとに 1 つの `mcp_<server>_*` エントリ（たとえば
+`mcp_your-scholarly-server_*`）を、列挙されたエージェントの `tools` 許可リストに追加し、他のエージェントや
+行は変更しません。`Gemini CLI` はすべての MCP ツールを `mcp_{serverName}_{toolName}` と名付け、`mcp_` の
+後の最初のアンダースコアまでのテキストからサーバーを読み取るため、アンダースコアを含むサーバー名は
+そこでは指定できません。Apothem が `Gemini CLI` の付与を書き込むのは、文字、数字、`-` からなる名前に
+対してだけです。アンダースコア、コロン、ピリオドを含む名前は `Claude Code` では有効ですが、
+`Gemini CLI` ではスキップされて報告され、別の名前に書き換えられることは決してありません。すでに
+すべての MCP サーバーに到達するエージェント（`tools` 一覧がない、または `mcp_*` を含む一覧を持つ）は
+変更されずに報告されます。`Gemini CLI` には拒否リストがないため、エージェント自身の `disallowedTools` が
+名指しするサーバーにはエントリが与えられず、報告されます。`Claude Code` と同様に、拒否が優先します。
+Gemini の付与は、共有の `agent_mcp_servers` の一覧と `harnesses.gemini-cli` のオーバーライドを読み、
+`harnesses.claude-code` のものは読みません。その他のハーネスはこのキーを無視します。`Qwen Code` は
+`tools` についてサーバーごとのエントリを文書化しておらず、`OpenCode` はパーミッションを通じてツールを
+制御し、`Codex` と `Antigravity` はツール一覧を出力しません。
+
+Claude Code プラグインはプロファイルなしで組み立てられるため、その 2 つのエージェントは素の一覧を
+保持します。プラグインのファイルを編集せずにそれらにコネクターへのアクセスを与えるには、
+`~/.claude/agents/` に、自分で選んだ名前で独自のユーザーレベルのエージェントを定義し、同じ読み取り専用の
+`tools` 一覧に、必要な `mcp__<server>__*` エントリを加えたものを持たせてください。
 
 ## サーバーの追加
 

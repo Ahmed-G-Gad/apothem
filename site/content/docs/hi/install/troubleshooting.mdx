@@ -2,7 +2,7 @@
 title: "समस्या निवारण"
 description: "प्लगइन, npx और इंस्टॉलर पथों में आम Apothem इंस्टॉलेशन विफलताओं और रनटाइम समस्याओं के समाधान।"
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,6 +66,24 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 नियम), फिर पुनः प्रयास करें। यदि मार्केटप्लेस पहले किसी आंशिक
 फ़ेच के तहत जोड़ा गया था, तो
 `/plugin install apothem@apothem` चलाने से पहले इसे हटाएँ और फिर से जोड़ें।
+
+### प्लगइन होस्ट का मार्केटप्लेस जोड़ने का समय समाप्त हो जाता है
+
+मार्केटप्लेस जोड़ने वाला प्लगइन होस्ट का कमांड उसकी रिपॉज़िटरी को क्लोन करता है और
+30 सेकंड के बाद हार मान लेता है। धीमी डिस्क पर, जैसे WSL के अंतर्गत एक Windows
+ड्राइव पर, इस रिपॉज़िटरी के पूर्ण क्लोन में इससे अधिक समय लग सकता है, और जब कोई
+बाद का रीफ़्रेश समय-सीमा पार कर जाता है, तो पहले का पूर्ण क्लोन प्लगइन को किसी पुराने
+संस्करण पर अटका भी छोड़ सकता है। केवल वे दो फ़ोल्डर फ़ेच करें जिनकी प्लगइन को
+आवश्यकता है:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+इसके बाद होस्ट के प्लगइन सूचीबद्ध करने पर `apothem@apothem` का वर्तमान संस्करण
+दिखता है।
 
 ### npx एक पुराना संस्करण परोसता है
 

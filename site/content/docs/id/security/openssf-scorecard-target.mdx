@@ -2,7 +2,7 @@
 title: "Postur OpenSSF Scorecard"
 description: "Target OpenSSF Scorecard milik Apothem dan permukaan bukti yang digunakan untuk menjaga skor terus membaik."
 machineTranslated: true
-sourceHash: "94c192fa1985b563"
+sourceHash: "41707bcf572f98ce"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Skor aktual ada di [penampil Scorecard](https://securityscorecards.dev/viewer/?u
 | **Code-Review** | Proteksi branch + CODEOWNERS | Pull request diwajibkan untuk `main` bagi semua orang kecuali admin repositori, dan proteksi branch mensyaratkan 0 tinjauan yang menyetujui selama proyek memiliki satu pemelihara (lihat [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); riwayat Scorecard tetap terbatas hingga ada PR yang ditinjau. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Proyek baru dengan satu pemelihara tidak dapat membuat-buat riwayat kontribusi multi-organisasi; ini membaik secara alami seiring bergabungnya kontributor. |
 | **Dangerous-Workflow** | Audit alur kerja | Tidak ada `pull_request_target`; Actions dipatok per SHA dan dicakup dengan izin eksplisit. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate mencakup GitHub Actions, manifest Python, persyaratan rilis yang dikunci-hash, dan permukaan npm sambil menjaga PR dependensi yang dikelompokkan tetap tersedia. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot mengusulkan pembaruan mingguan yang dikelompokkan untuk pin GitHub Actions, situs web, lockfile pengemas vsce, dan hook pre-commit, serta pembaruan bulanan untuk lockfile channel-smoke; pembaruan keamanan Dependabot mencakup setiap manifest yang terdeteksi. `.gitattributes` mempertahankan satu berkas ini di arsip sumber yang dibaca Scorecard. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Tes properti Hypothesis menguji invarian parser dan frontmatter; Scorecard upstream mungkin tidak mengakui Hypothesis sebagai integrasi fuzzer. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Lisensi MIT di akar repositori. |
 | **Maintained** | Riwayat Git | Commit rilis saat ini dan irama alur kerja yang aktif menunjukkan pemeliharaan; repositori yang sangat baru mungkin menerima peringatan usia. |

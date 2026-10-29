@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adapter harness Apothem untuk OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,8 +35,8 @@ OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 ## Pemetaan profil ke konfigurasi native
 
 Adapter merender `opencode.json` dengan daftar berkas `instructions` yang
-menyebut dokumen profil Anda dan aturan always-on Apothem, lalu menyebarkan
-setiap kohor Apothem bersama ke permukaan native OpenCode atau ke support
+menyebut dokumen profil Anda, empat aturan inti, dan indeks aturan, lalu
+menyebarkan setiap kohor Apothem bersama ke permukaan native OpenCode atau ke support
 subtree milik Apothem. Anak yang dikelola Apothem dan cocok yang sudah ada
 dicadangkan sebelum penggantian.
 
@@ -47,10 +47,14 @@ setiap sesi ([aturan OpenCode](https://opencode.ai/docs/rules/)). Karena itu,
 daftar tersebut menyebut dokumen profil Anda terlebih dahulu, lalu hanya aturan
 yang `alwaysApply`-nya bernilai `true`, masing-masing dengan satu jalur
 `~/.config/opencode/.apothem/support/rules/<name>.md` eksplisit; OpenCode
-mengekspansi `~/` di awal terhadap direktori home Anda. Aturan yang difilter
-berdasarkan jalur, templat, dan prompt hook tetap terpasang sebagai materi
-rujukan di bawah `~/.config/opencode/.apothem/support/`, tempat aturan, skill,
-atau command yang mengutip salah satunya membacanya sesuai kebutuhan. Command,
+mengekspansi `~/` di awal terhadap direktori home Anda. Aturan-aturan itu adalah
+`agnostic-posture`, `authority-inquiry`, `context-management`,
+`session-closure`, dan indeks aturan, `apothem-rule-index`. OpenCode tidak
+membatasi aturan apa pun berdasarkan jalur, sehingga setiap aturan lain dibaca
+sesuai kebutuhan. Aturan tersebut tetap terpasang sebagai materi rujukan di
+bawah `~/.config/opencode/.apothem/support/`, dan indeks menyebutkan setiap
+aturan serta situasi yang memerlukannya. Aturan, skill, atau command yang
+mengutip sebuah aturan, templat, atau prompt hook membacanya dari sana. Command,
 skill, dan definisi helper menggunakan lokasi penemuan native.
 
 Dokumen profil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
@@ -62,10 +66,13 @@ Dokumen ini adalah entri `instructions` pertama, sehingga OpenCode memuatnya di
 setiap sesi.
 
 `opencode.json` yang ditulis oleh rilis sebelumnya mencantumkan satu glob
-`~/.config/opencode/.apothem/support/rules/*.md`, yang memuat setiap aturan.
-`apothem install` dan `apothem update` menggantinya dengan daftar always-on, dan
-`apothem uninstall` menghapus kedua bentuk tersebut. Entri `instructions` milik
-Anda sendiri dipertahankan dalam setiap kasus.
+`~/.config/opencode/.apothem/support/rules/*.md`, yang memuat setiap aturan,
+atau jalur eksplisit untuk masing-masing dari 28 aturan yang saat itu always-on.
+`apothem
+install` dan `apothem update` mengganti kedua bentuk tersebut dengan daftar di
+atas, yang membuang 24 jalur yang tidak lagi dimuat saat peluncuran, dan
+`apothem uninstall` menghapus semuanya. Entri `instructions` milik Anda sendiri
+dipertahankan dalam setiap kasus.
 
 ## Verifikasi
 

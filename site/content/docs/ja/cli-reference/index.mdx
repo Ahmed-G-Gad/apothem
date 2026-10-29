@@ -2,7 +2,7 @@
 title: "CLI リファレンス"
 description: "Apothem CLI リファレンス — apothem コマンドラインインターフェースのコマンドごとの構文、オプション、終了コード。"
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ sourceHash: "4012ab11dba3c29d"
 
 ## JSON 出力の契約
 
-すべてのコマンドは `--json`（`--format json` の短縮形）を受け付け、その場合は正確に 1 つの JSON ドキュメントを stdout に書き出します。
+`completion`（シェルスクリプトを出力します）を除くすべてのコマンドは `--json`（`--format json` の短縮形）を受け付け、その場合は正確に 1 つの JSON ドキュメントを stdout に書き出します。
 各ドキュメントはトップレベルの `schema_version` キーで始まります。これは整数で、現在は `1` です。
 
 ```json

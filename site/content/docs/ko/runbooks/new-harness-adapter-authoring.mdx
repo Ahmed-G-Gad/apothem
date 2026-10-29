@@ -2,7 +2,7 @@
 title: "새 하니스 어댑터 작성"
 description: "새 Apothem 하니스 어댑터를 작성하고 게시하기 위한 런북."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,16 @@ Apothem에 1차 구성으로 포함하거나 서드파티 패키지로 만들기
 
 [하니스 어댑터 작성하기](/docs/examples/authoring-a-harness-adapter) 예제를 따라
 대상 하니스를 위한 `HarnessAdapter`를 구현합니다.
+
+어댑터가 `mode: write_text`와 `ownership_class: operator-owned`로 일반 텍스트
+템플릿(JSON이나 YAML이 아닌 파일)을 기록하는 경우, `uninstall`은 그 파일이
+Apothem이 배포한 템플릿의 편집되지 않은 사본일 때에만 파일을 삭제합니다. 이후
+릴리스에서 템플릿이 바뀌면, 같은 변경에서 이전 텍스트의 SHA-256 다이제스트를 해당
+매니페스트 항목의 `earlier_digests` 목록에 추가하십시오. 그렇지 않으면 `uninstall`은
+이전 릴리스가 기록한 편집되지 않은 사본을 모두 그대로 남겨 둡니다. 최신 릴리스
+태그 시점 텍스트의 다이제스트는 `git show <tag>:<template path> | sha256sum`으로
+구하며, 템플릿에는 `${...}` 경로 토큰이 없어야 합니다.
+`tests/unit/test_template_digests.py`는 배포된 템플릿이 반영되지 않았을 때 실패합니다.
 
 ### 2. 문서 페이지 작성
 

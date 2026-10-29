@@ -2,14 +2,15 @@
 title: "Apothem बनाम कच्चा Open-Claw कॉन्फ़िग"
 description: "Open-Claw कॉन्फ़िग को हाथ से बनाए रखना बनाम उसे Apothem के साझा प्रोफ़ाइल के माध्यम से प्रबंधित करना।"
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw `~/.openclaw/openclaw.json` पढ़ता है। इसका `agents.defaults.skills` एक
-नाम अनुमति-सूची है (निर्देशिका लोडर नहीं) और MCP एक CLI सतह है, इसलिए Apothem कोई
-कॉन्फ़िग कुंजी नहीं लिखता; यह साझा कमांड समूह और स्किल समूह
-`~/.openclaw/.apothem/support/skills/` के अंतर्गत समर्थन सामग्री के रूप में स्थापित करता है।
+Open-Claw `~/.openclaw/openclaw.json` पढ़ता है। Apothem साझा कमांड समूह और स्किल
+समूह `~/.openclaw/.apothem/support/skills/` के अंतर्गत स्थापित करता है और वहाँ एक
+कुंजी, `skills.load.extraDirs`, लिखता है, जो उस निर्देशिका को सूचीबद्ध करती है ताकि
+OpenClaw स्किल लोड करे। इसका `agents.defaults.skills` एक नाम अनुमति-सूची है जिसके
+स्वामी आप हैं और MCP एक CLI सतह है, इसलिए Apothem इनमें से कोई भी नहीं लिखता।
 
 ## स्थिति
 
@@ -31,7 +32,9 @@ Open-Claw `~/.openclaw/openclaw.json` पढ़ता है। इसका `ag
 Open-Claw अडैप्टर `openclaw.json` लिखता है, Apothem के स्लैश कमांड को स्किल के रूप
 में लपेटता है, Apothem स्किल को संदर्भित समर्थन निर्देशिका में कॉपी करता है, और
 नियम, टेम्पलेट, agents तथा हुक सामग्री को Apothem समर्थन उप-वृक्ष के अंतर्गत रखता
-है।
+है। OpenClaw `skills.load.extraDirs` को अपने स्किल स्रोतों में सबसे निम्न प्राथमिकता
+पर पढ़ता है, इसलिए आपके वर्कस्पेस, `~/.agents/skills` या `~/.openclaw/skills` में
+उसी नाम का स्किल Apothem की प्रति के बजाय उपयोग किया जाता है।
 
 ## माइग्रेशन पथ
 

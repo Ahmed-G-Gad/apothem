@@ -2,7 +2,7 @@
 title: "المهارات"
 description: "تقنيات قابلة لإعادة الاستخدام والاكتشاف في ملفات SKILL.md، مع إشارات اكتشاف، وإجراءات، وخطّافات إنفاذ لحِزم الخطط وعمليات تدقيق المنظومة."
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 | إطار العمل | ما يغيّره التثبيت |
 | --- | --- |
 | <bdi>Claude Code</bdi> (التثبيت والإضافة) | يعيد تسمية <bdi>`userInvocable`</bdi> إلى <bdi>`user-invocable`</bdi>، وهو المفتاح الذي يقرؤه <bdi>Claude Code</bdi>. يتجاهل <bdi>Claude Code</bdi> المفتاح المكتوب بصيغة <bdi>camelCase</bdi>، لذا من دون إعادة التسمية تظل المهارة الموسومة <bdi>`userInvocable: false`</bdi> ظاهرة في قائمة <bdi>`/`</bdi>. |
-| <bdi>Codex</bdi> | يترك <bdi>`SKILL.md`</bdi> كما هو ويكتب <bdi>`agents/openai.yaml`</bdi> مع <bdi>`policy.allow_implicit_invocation: false`</bdi> بجوار كل مهارة يضبط مصدرها <bdi>`disable-model-invocation: true`</bdi>، لأن <bdi>Codex</bdi> يتجاهل ذلك المفتاح. |
+| مجلّدات المهارات المشتركة على مستوى المستخدم: <bdi>`~/.agents/skills/`</bdi> (تكتبه <bdi>Codex</bdi> و<bdi>Cursor</bdi> و<bdi>GitHub Copilot</bdi> و<bdi>Windsurf</bdi> و<bdi>Zed</bdi>) و<bdi>`~/.codebuddy/skills/`</bdi>، و<bdi>`~/.kiro/skills/`</bdi>، و<bdi>`~/.trae/skills/`</bdi> | صيغة واحدة لكل تثبيت يكتب أحد هذه المجلّدات، فلا تعيد التثبيتات كتابة ملفات بعضها أبدًا. فهو يعيد تسمية <bdi>`userInvocable`</bdi> إلى <bdi>`user-invocable`</bdi>، وينقل <bdi>`version`</bdi>، و<bdi>`updated`</bdi>، و<bdi>`archetype`</bdi>، و<bdi>`portability`</bdi> إلى خريطة <bdi>`metadata:`</bdi> لاحقة من سلاسل نصية بين علامتَي اقتباس، ويكتب <bdi>`agents/openai.yaml`</bdi> مع <bdi>`policy.allow_implicit_invocation: false`</bdi> بجوار كل مهارة يضبط مصدرها <bdi>`disable-model-invocation: true`</bdi>، لأن <bdi>Codex</bdi> يتجاهل ذلك المفتاح ويقرأ <bdi>`~/.agents/skills/`</bdi> سواء كتبه محوّل <bdi>Codex</bdi> أم لا. والأمر المُغلَّف في صورة مهارة يحتفظ بمتنه كاملًا ويبدأ بملاحظة ثابتة واحدة تُسمّي مجلّدَي القواعد والقوالب، <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi>. والمفاتيح العلوية المتبقية هي <bdi>`name`</bdi>، و<bdi>`description`</bdi>، و<bdi>`user-invocable`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>، و<bdi>`argument-hint`</bdi>، و<bdi>`metadata`</bdi>. |
+| <bdi>Qwen Code</bdi> | يعيد كتابة السلسلة <bdi>`allowed-tools`</bdi> المفصولة بفواصل في صورة قائمة <bdi>`allowedTools`</bdi>، بمُدخَل <bdi>YAML</bdi> واحد في كل سطر، لأن <bdi>`Qwen Code`</bdi> لا يقرأ إلا المفتاح المكتوب بصيغة <bdi>camelCase</bdi> ويشترط قائمة. ويحتفظ كل مُدخَل بتهجئة المصدر، بما فيها أنماط مثل <bdi>`Bash(git status *)`</bdi>. ويُثبَّت كل مفتاح آخر ومتن المهارة دون تغيير. |
 | أُطُر العمل الأخرى | لا تغيير. |
 
 يقبل <bdi>`skill.schema.json`</bdi> أيًّا من تهجئتَي راية قابلية الاستدعاء من المستخدم،

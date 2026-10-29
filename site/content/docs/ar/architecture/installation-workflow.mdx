@@ -2,7 +2,7 @@
 title: "سير عمل التثبيت"
 description: "كيف تعمل apothem install وupdate وuninstall من البداية إلى النهاية."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,19 +47,23 @@ flowchart TD
 يكتب كل مُحوِّل إلى جذر تثبيته الثابت الخاص به: المنزل الشخصي للمستخدم
 لمُحوِّلات نطاق المستخدم، والمسار المحلّي للمشروع لمُحوِّلات نطاق المشروع. لا
 تكشف واجهة <bdi>CLI</bdi> عن راية <bdi>`--scope`</bdi>؛ وتتطلّب مُحوِّلات نطاق
-المشروع <bdi>`--project <path>`</bdi>. كل وجهة مُوثَّقة في
+المشروع <bdi>`--project <path>`</bdi>. وتكتب سبعة من مُحوِّلات نطاق المشروع أيضًا
+مجلّدات مشتركة في المنزل الشخصي للمستخدم، مثل <bdi>`~/.agents/skills/`</bdi>
+و<bdi>`~/.config/apothem/`</bdi>، قبل أن تكتب ملف المشروع، ولا يُغيّر
+<bdi>`--project`</bdi> مكان كتابتها. ويسردها
+[مرجع التثبيت](/docs/cli-reference/install#المجلّدات-في-دليلك-المنزلي). وكل وجهة مُوثَّقة في
 <bdi>`site/content/docs/harnesses/<harness>.mdx`</bdi>.
 
 ## معالجة الأخطاء
 
 تتحقّق عمليّات التثبيت/التحديث قبل الكتابة، وتُنشئ نسخة احتياطية من الأهداف المُطابِقة الموجودة قبل استبدالها، ولا تدمج إلا الإدخالات الفرعية التي يديرها <bdi>Apothem</bdi> في أدلّة الاكتشاف المشتركة. وينفّذ <bdi>`--dry-run`</bdi> التحقّق نفسه، ويعيد النتيجة التي كانت ستسجّلها كل كتابة، مثل <bdi>`created`</bdi> أو <bdi>`updated`</bdi>، دون إنشاء أي أدلّة أو ملفّات.
 
-## Reversibility (backup and rollback)
+## قابلية التراجع (النسخ الاحتياطي والتراجع)
 
-Every install pass is reversible. Replaced bytes are captured into the Apothem
-backup root and the pass is recorded in the harness ledger under a ULID
-install id; [`apothem rollback`](/docs/cli-reference/rollback) selects a
-recorded pass and restores those captured backups.
+كل تمريرة تثبيت قابلة للتراجع. تُلتقَط البايتات المُستبدَلة في جذر النسخ الاحتياطي
+الخاص بـ<bdi>Apothem</bdi>، وتُسجَّل التمريرة في دفتر إطار العمل تحت مُعرِّف تثبيت
+بصيغة <bdi>ULID</bdi>؛ ويختار [<bdi>`apothem rollback`</bdi>](/docs/cli-reference/rollback)
+تمريرةً مُسجَّلة ويستعيد تلك النسخ الاحتياطية المُلتقَطة.
 
 ```mermaid
 %% provenance: hand-authored %%

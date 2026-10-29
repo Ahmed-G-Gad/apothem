@@ -2,7 +2,7 @@
 title: "プロファイルを編集する"
 description: "共有プロファイルを変更し、インストール済みの全ハーネスを再生成します。"
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,16 @@ sourceHash: "7359e9f71919f942"
 - `harnesses` —— ハーネス id をキーとするハーネスごとのオーバーライド。
 - `exclude_harnesses` —— 一括(`--harness all`)コマンドでスキップされる
   ハーネス id。
+- `mcp_servers` —— サーバー名をキーとする MCP サーバーの定義。
+- `agent_mcp_servers` —— ヘルパー名ごとに、そのヘルパーが呼び出せる MCP
+  サーバー([ヘルパーに MCP サーバーへのアクセスを与える](/docs/reference/mcp#ヘルパーに-mcp-サーバーへのアクセスを与える)を参照)。
+  デフォルトでは空であるため、どのヘルパーも MCP ツールに到達しません。
+- `workspace` —— Apothem が共有作業ディレクトリを置く場所
+  (`directory_name`、`scope`)。
+- `schema_version` —— 任意のプロファイルスキーマのバージョン。これを持たない
+  プロファイルはバージョン 1 として読み込まれます。
+
+すべてのフィールドは[プロファイルフィールド](/docs/reference/profile-fields)に一覧されています。
 
 ## 手順
 

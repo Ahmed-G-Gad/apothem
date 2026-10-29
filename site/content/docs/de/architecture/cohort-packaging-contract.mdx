@@ -2,7 +2,7 @@
 title: "Vertrag zur Kohorten-Paketierung"
 description: "Der stabile, nachgelagert nutzbare Vertrag für die Kohorten-Paketierung und Plugin-Manifeste — Kohorten aufzählen und ihre harness-spezifischen nativen Ziele auflösen, ohne die Zuordnung neu abzuleiten."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,12 @@ anstelle von `name` angezeigt wird) und die Felder für den Eintrag im
 Plugin-Verzeichnis: `documentationUrl`, `supportUrl`, `privacyPolicyUrl` und
 `termsOfServiceUrl`, jeweils eine `https://`-URL, sowie einen `icon`-Pfad
 innerhalb des Plugins. Das generierte Claude Code-Paket setzt `displayName`,
-`documentationUrl` und `supportUrl`. Ein Plugin-Manifest ist die Einheit, die
+`documentationUrl` und `supportUrl`. Das Verzeichnis von Anthropic liest die
+Felder für den Verzeichniseintrag, und Claude Code ignoriert sie beim Laden. Die
+Marketplace-Synchronisierung von claude.ai meldet die beiden Links als nicht
+erkannte Schlüssel und entfernt sie, sodass der Marketplace dort „1 with
+warnings“ anzeigt. Diese Warnung ist erwartet, und das Plugin lädt unverändert.
+Ein Plugin-Manifest ist die Einheit, die
 ein Harness-Adapter in seine native Plugin-Oberfläche materialisiert; Kohorten
 wählen aus, welche Mitglieder ein Plugin trägt, und das Propagation-Manifest
 löst auf, wo diese Mitglieder je Harness landen.

@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "محوّل إطار عمل Apothem لـ GitHub Copilot (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "72bf51d743f95bc8"
+sourceHash: "b1b8b4918d7d754d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,184 @@ apothem install --harness github-copilot --project /path/to/project
 ```
 
 يشتقّ المحوّل ملف تعليمات المشروع من ملفك التعريفي المشترك ومن سطح القواعد
-والحوكمة المشترك في <bdi>Apothem</bdi>.
+والحوكمة المشترك في <bdi>Apothem</bdi>، ويكتب مساعِدات <bdi>Apothem</bdi> بوصفها ملفات تعريف
+مساعِدات لـ <bdi>Copilot</bdi> في المشروع (راجع [ملفات تعريف المساعِدات](#ملفات-تعريف-المساعِدات))،
+ويسجّل خطّافين (راجع [الخطّافات](#الخطّافات)).
 
-**الملفات المكتوبة:** <bdi>`<project>/.github/copilot-instructions.md`</bdi>
+ويكتب أيضًا مهارات <bdi>Apothem</bdi>، والقواعد والقوالب التي تستشهد بها، في دليلك
+المنزلي، قبل أن يمسّ المشروع (راجع
+[الملفات خارج المشروع](#الملفات-خارج-المشروع)).
+
+**الملفات المكتوبة:**
+
+- <bdi>`<project>/.github/copilot-instructions.md`</bdi>، ملف التعليمات.
+- <bdi>`<project>/.github/agents/<name>.agent.md`</bdi> لكل مساعِد من <bdi>Apothem</bdi>، في المشروع.
+- <bdi>`<project>/.github/hooks/apothem.json`</bdi>، ملف الخطّافات، في المشروع. ولا تُمَسّ ملفات الخطّافات الخاصة بك في ذلك المجلّد.
+- <bdi>`<project>/.apothem/support/github-copilot/hooks/`</bdi>، سكربتات الخطّافات، في المشروع.
+- <bdi>`~/.agents/skills/<name>/SKILL.md`</bdi> لكل مهارة وأمر من <bdi>Apothem</bdi>، في دليلك المنزلي.
+- <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi>، في دليلك المنزلي.
+
+## الملفات خارج المشروع
+
+يكتب التثبيت أيضًا مهارات <bdi>Apothem</bdi> في دليلك المنزلي، قبل أن يغيّر أي شيء
+في المشروع:
+
+| المجلّد | ما يكتبه <bdi>Apothem</bdi> فيه |
+| --- | --- |
+| <bdi>`~/.agents/skills/`</bdi> | لكل مهارة من <bdi>Apothem</bdi> مجلّد واحد يحوي <bdi>`SKILL.md`</bdi>، ولكل أمر من <bdi>Apothem</bdi> مجلّد (يصبح الأمر مهارة بالاسم نفسه). |
+| <bdi>`~/.config/apothem/rules/`</bdi>، <bdi>`~/.config/apothem/templates/`</bdi> | القواعد والقوالب التي تُحيل إليها المهارات وملف التعليمات. |
+
+هذه المجلّدات مشتركة، وليست خاصة بالمشروع:
+
+- كل مشروع تثبّت فيه <bdi>`github-copilot`</bdi>، وكل تثبيت آخر لـ <bdi>Apothem</bdi> يسمّي المجلّد، يستخدم النسخة نفسها ويكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت به. وتقرأ أدوات أخرى عديدة <bdi>`~/.agents/skills/`</bdi> أيضًا؛ ويسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة).
+- يختار <bdi>`--project`</bdi> ملف التعليمات الذي يُكتَب والمشروعَ الذي ينتمي إليه
+  التثبيت. ولا يغيّر المكان الذي تذهب إليه المهارات.
+- لا يضيف التثبيت أي ملف مهارة أو قاعدة إلى مستودعك. ويحصل المشروع على ملف
+  التعليمات، وملفات تعريف المساعِدات في <bdi>`.github/agents/`</bdi>، وملف الخطّافات
+  <bdi>`.github/hooks/apothem.json`</bdi>، إضافةً إلى المجلّد <bdi>`.apothem/`</bdi> الذي يُنشئه كل
+  تثبيت على مستوى المشروع، والذي يحوي أيضًا سكربتات الخطّافات.
+- تُكتَب المجلّدات المنزلية أولًا. فإن فشل ذلك، مثلًا لأن مجلّدًا في المسار رابطٌ
+  يخرج من دليلك المنزلي (أما الرابط الذي يبقى داخله فيُتَّبَع) أو لا يمكن الكتابة فيه،
+  يتوقّف التثبيت مع الخطأ قبل أن يتغيّر أي شيء في المشروع.
+- مجلّد المهارة الذي يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>
+  يُترَك كما هو، ويطبع التثبيت تحذيرًا يسمّيه. أعد تسميته أو انقله، ثم شغّل
+  <bdi>`apothem update`</bdi>. ويفشل <bdi>`apothem verify`</bdi> ما دام ذلك الاسم محجوزًا.
+- يبلغ مجموع الملفات بضعة ميغابايتات.
+
+يطبع التثبيت ملاحظة تسمّي المجلّدات التي يكتبها خارج <bdi>`--project`</bdi>، ويسردها
+<bdi>`--dry-run`</bdi>.
+
+## ملفات تعريف المساعِدات
+
+يقرأ <bdi>Copilot</bdi> ملف تعريف المساعِد من <bdi>`<project>/.github/agents/<name>.agent.md`</bdi>، وفق
+[مرجع <bdi>GitHub</bdi> لهذه الملفات](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
+ويكتب التثبيت ملفًا واحدًا لكل مساعِد من <bdi>Apothem</bdi> في ذلك المجلّد. وهو يثبّت
+للمشروع فقط، ولا يكتب أي مجلّد <bdi>`~/.copilot/agents/`</bdi>.
+
+يُبقي كل ملف تعليمات المساعِد دون تغيير ويحمل مفاتيح البيانات الأمامية
+التالية:
+
+| المفتاح | ما يكتبه <bdi>Apothem</bdi> |
+| --- | --- |
+| <bdi>`name`</bdi>، <bdi>`description`</bdi> | اسم المساعِد ووصفه. ويشترط <bdi>Copilot</bdi> وجود الوصف. |
+| <bdi>`tools`</bdi> | الأدوات التي يجوز للمساعِد استخدامها، بوصفها قائمة بأسماء أدوات <bdi>Copilot</bdi> المستعارة، مثلًا <bdi>`["read", "search", "execute"]`</bdi>. |
+
+المفتاح <bdi>`tools`</bdi> في <bdi>Copilot</bdi> قائمة سماح بالأسماء المستعارة، ولا مفتاح فيه يحظر
+أداة. لذا تُدمَج الأدوات المسموح بها للمساعِد والأدوات المحظورة عليه في تلك القائمة
+الواحدة:
+
+| الاسم المستعار في <bdi>Copilot</bdi> | ما يغطّيه | يُكتَب للمساعِد المسموح له بـ |
+| --- | --- | --- |
+| <bdi>`read`</bdi> | <bdi>Read</bdi>، <bdi>NotebookRead</bdi> | <bdi>`Read`</bdi> |
+| <bdi>`search`</bdi> | <bdi>Grep</bdi>، <bdi>Glob</bdi> | <bdi>`Grep`</bdi> أو <bdi>`Glob`</bdi> |
+| <bdi>`edit`</bdi> | <bdi>Edit</bdi>، <bdi>MultiEdit</bdi>، <bdi>Write</bdi>، <bdi>NotebookEdit</bdi> | <bdi>`Write`</bdi> أو <bdi>`Edit`</bdi> أو <bdi>`MultiEdit`</bdi> |
+| <bdi>`execute`</bdi> | <bdi>Bash</bdi>، <bdi>PowerShell</bdi> | <bdi>`Bash`</bdi> أو <bdi>`PowerShell`</bdi> |
+| <bdi>`web`</bdi> | <bdi>WebSearch</bdi>، <bdi>WebFetch</bdi> | <bdi>`WebSearch`</bdi> أو <bdi>`WebFetch`</bdi> |
+| <bdi>`todo`</bdi> | <bdi>TodoWrite</bdi> | <bdi>`TodoWrite`</bdi> |
+
+لدى <bdi>Copilot</bdi> اسم مستعار آخر، هو الذي يتيح للمساعِد بدء مساعِدات أخرى؛ ولا يُسمَح
+لأي مساعِد من <bdi>Apothem</bdi> بذلك، لذا لا يُكتَب أبدًا. ويُستبعَد الاسم المستعار حين يحظر
+المساعِد أي أداة يغطّيها، لأن الاسم المستعار سيتيح للمساعِد استخدام تلك الأداة. والأداة
+التي لا اسم مستعار لها (مثلًا <bdi>`Monitor`</bdi>) تُستبعَد. والأداة ذات النمط، مثل
+<bdi>`Bash(git status)`</bdi>، ليس لها صيغة اسم مستعار: فبوصفها أداة مسموحًا بها تُستبعَد،
+وبوصفها أداة محظورة تحظر الأداة كلها. والمساعِد الذي لا يستطيع تعديل الملفات يحتفظ بذلك
+القيد: فلا يحصل أبدًا على <bdi>`edit`</bdi>.
+وإن استُبعِدت كل أداة في قائمة المساعِد، يقول الملف <bdi>`tools: []`</bdi>، الذي لا يمنح
+المساعِد أي أدوات، بدلًا من حذف المفتاح، الذي سيمنحه كل الأدوات.
+
+لا يكتب التثبيت أي مفتاح <bdi>`model`</bdi>، لذا يستخدم المساعِد النموذج الافتراضي، ولا أيًّا من
+المفاتيح الأخرى التي يوثّقها <bdi>Copilot</bdi> (<bdi>`target`</bdi>، و<bdi>`disable-model-invocation`</bdi>،
+و<bdi>`user-invocable`</bdi>، و<bdi>`mcp-servers`</bdi>، و<bdi>`metadata`</bdi>)، ولا حدًّا لعدد الأدوار، ولا مفاتيح
+<bdi>Apothem</bdi> <bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`portability`</bdi>.
+
+أمور ينبغي معرفتها:
+
+- المجلّد <bdi>`.github/agents/`</bdi> جزء من مستودعك. إذ يقرأ زملاؤك وخدمة البرمجة السحابية في
+  <bdi>Copilot</bdi> الملفات نفسها، لذا أودِعها مع المشروع أو أدرِج
+  <bdi>`.github/agents/`</bdi> في <bdi>`.gitignore`</bdi>؛ ولا يختار <bdi>Apothem</bdi> نيابةً عنك.
+- لا تحترم خدمة البرمجة السحابية الاسمين المستعارين <bdi>`web`</bdi> و<bdi>`todo`</bdi>. ويغطّي الاسم
+  المستعار <bdi>`web`</bdi> كلًّا من البحث على الويب وجلب الصفحات، لذا يستطيع <bdi>`citation-auditor`</bdi>
+  و<bdi>`fact-checker`</bdi> و<bdi>`research-scout`</bdi> قراءة الملفات والبحث فيها هناك، لكنها
+  لا تستطيع البحث على الويب ولا جلب الصفحات.
+- تقرأ واجهة سطر أوامر <bdi>Copilot</bdi> أيضًا المجلّد <bdi>`.claude/agents/`</bdi> في المستودع، لكن لا تقرأ
+  <bdi>`~/.claude/agents/`</bdi>، لذا لا يصل تثبيت <bdi>Claude Code</bdi> إلى <bdi>Copilot</bdi>.
+- الملف الخاص بك الذي يحمل اسم مساعِد من <bdi>Apothem</bdi> (<bdi>`<name>.agent.md`</bdi>) يُحفَظ تحت
+  <bdi>`~/.apothem/backups/`</bdi> ثم يُستبدَل. ولا يُعيده إلغاء التثبيت.
+  ولا تُمَسّ الملفات ذات الأسماء الأخرى أبدًا. ولا تقول وثائق <bdi>Copilot</bdi>
+  ما يحدث حين يحوي المجلّد كلًّا من <bdi>`<name>.md`</bdi> و<bdi>`<name>.agent.md`</bdi>.
+- لم يتحقّق <bdi>Apothem</bdi> مما إذا كان <bdi>Copilot</bdi> يفضّل <bdi>`.github/agents/`</bdi> أو
+  <bdi>`.claude/agents/`</bdi> للاسم الواحد، ولا من كيفية تعامل خدمة البرمجة السحابية و<bdi>VS Code</bdi> مع
+  مفتاح بيانات أمامية لا تسردانه.
+
+## الخطّافات
+
+يُشغِّل <bdi>Copilot</bdi> الخطّافات من ملفات <bdi>JSON</bdi> في <bdi>`<project>/.github/hooks/`</bdi>، وفق
+[مرجع الخطّافات في <bdi>Copilot</bdi>](https://docs.github.com/en/copilot/reference/hooks-reference).
+ويكتب التثبيت ملفًا واحدًا هناك، <bdi>`apothem.json`</bdi> (الإصدار 1)، فيه خطّافان:
+
+| الحدث | ما يُشغَّل |
+| --- | --- |
+| <bdi>`sessionStart`</bdi> | تمهيد الجلسة: البيانات الوصفية للجلسة، وفهرس المهارات، وملخّصات الذاكرة والخطط، والوضعية الدائمة، تُضاف إلى سياق النموذج. |
+| <bdi>`postToolUse`</bdi> (كل أداة) | متتبّع الضغط الاستباقي. يعدّ النشاط، وفي مرّتين على الأكثر في كل دورة ضغط، يطلب من النموذج حفظ حالته أو الضغط. ويبقى صامتًا في غير ذلك. |
+
+يضيف كلاهما سياقًا للنموذج. ولا يحجب أيٌّ منهما استدعاء أداة أو جلسة.
+
+لا يسجّل <bdi>Apothem</bdi> أي حارس <bdi>`preToolUse`</bdi> على <bdi>Copilot</bdi>. فللحدث <bdi>`preToolUse`</bdi> يقرأ <bdi>Copilot</bdi>
+حقول الأذونات ومُدخَل أداة مُعاد كتابته فقط، ولا يقرأ أبدًا <bdi>`additionalContext`</bdi> (الحقل
+الذي تتحدّث عبره حُرّاس <bdi>Apothem</bdi>). والحارس المسجَّل هناك سيكلّف بدء عملية في كل
+استدعاء أداة ولا يوصل شيئًا، لذا تبقى حُرّاس الكتابة والتعديل والصدفة، وفحص
+<bdi>`AskUserQuestion`</bdi>، وبروتوكول نهاية الجلسة، على الأدوات التي توصلها. وتستخدم الخطّافات
+أسماء أحداث <bdi>Copilot</bdi> بصيغة <bdi>camelCase</bdi>، لأن المرجع يسرد حقول المُخرَج لتلك الأسماء؛
+أما ما إذا كان <bdi>Copilot</bdi> يقرأ <bdi>`additionalContext`</bdi> من حدث بصيغة <bdi>PascalCase</bdi> فغير موثَّق.
+
+**أين تذهب الملفات**
+
+| الملف | ما يحويه |
+| --- | --- |
+| <bdi>`<project>/.github/hooks/apothem.json`</bdi> | تسجيلا الخطّافين. ويملك <bdi>Apothem</bdi> هذا الملف الواحد. |
+| <bdi>`<project>/.apothem/support/github-copilot/hooks/`</bdi> | سكربت المُوزِّع، ووحداته المساعدة، وملفات رسائله. |
+
+لكل خطّاف أمر <bdi>`bash`</bdi> وأمر <bdi>`powershell`</bdi>. ويُشغِّلان المُوزِّع نفسه؛ وأمام أمر
+<bdi>`powershell`</bdi> مُعامِل استدعاء (<bdi>`&`</bdi>)، يحتاجه <bdi>PowerShell</bdi> قبل مسار برنامج مقتبس.
+ويبدو أمر <bdi>`bash`</bdi> هكذا، مع المُفسِّر ومسار المشروع لديك في موضع المسارين:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+```
+
+يجعل <bdi>`--contract copilot`</bdi> المُوزِّعَ يقرأ مُدخَل <bdi>Copilot</bdi> بصيغة <bdi>camelCase</bdi> ويطبع
+<bdi>`{"additionalContext": ...}`</bdi>، وهو ما يقرؤه <bdi>Copilot</bdi> لهذين الحدثين.
+
+**أودِع بحذر، والعامل السحابي.** المجلّد <bdi>`.github/hooks/`</bdi> جزء من مستودعك، وتقرؤه
+خدمة البرمجة السحابية في <bdi>Copilot</bdi>. وتسمّي الأوامر المُفسِّر الذي عثر عليه <bdi>Apothem</bdi> حين
+عمل والمسار المطلق للمشروع، والسكربتات موجودة في <bdi>`.apothem/`</bdi>، الذي يتجاهله مقتطف
+<bdi>`.gitignore`</bdi> الخاص بالمشروع. فعلى أي جهاز آخر، وفي الخدمة السحابية (التي لا تُشغِّل إلا
+أمر <bdi>`bash`</bdi>)، لا يجد الأمر شيئًا ليُشغِّله. ويسجّل <bdi>Copilot</bdi> الفشل ويستمر التشغيل،
+لأن فشل خطّاف <bdi>`sessionStart`</bdi> أو <bdi>`postToolUse`</bdi> لا يحجب شيئًا.
+أضِف <bdi>`.github/hooks/apothem.json`</bdi> إلى <bdi>`.gitignore`</bdi>، أو أودِعه فقط لفريق
+يتشارك التخطيط نفسه. ولا يعدّل التثبيت <bdi>`.gitignore`</bdi>، ويطبع هذا بوصفه
+ملاحظة.
+
+**خطّافاتك الخاصة.** لا تُقرأ ملفات الخطّافات الخاصة بك في <bdi>`.github/hooks/`</bdi> ولا تُغيَّر
+أبدًا. والخطّاف الذي تضيفه إلى <bdi>`apothem.json`</bdi> نفسه يبقى: إذ لا يستبدل التحديث وإلغاء
+التثبيت، أو يُزيلان، إلا المُدخَلات التي يُشغِّل أمرها مُوزِّع <bdi>Apothem</bdi>
+(<bdi>`.apothem/support/github-copilot/hooks/dispatch.py`</bdi> مع <bdi>`--contract copilot`</bdi>، أيًّا كان
+مسار المشروع الذي كُتِب تحته). والخطّاف الخاص بك الذي يشاركه الاسم فقط، أو الذي يُشغِّل
+<bdi>`python -m apothem.conformity.gate`</bdi>، لا يُعَدّ أبدًا خطّافًا لـ <bdi>Apothem</bdi>. والملف
+الذي ليس <bdi>JSON</bdi> صالحًا يُحفَظ تحت <bdi>`~/.apothem/backups/`</bdi> ثم يُستبدَل.
+
+**مسارات قد تسيء الصدفة قراءتها.** يُرفَض مسار المشروع أو المُفسِّر الذي يحوي
+<bdi>`$`</bdi>، أو علامة اقتباس مائلة (<bdi>backtick</bdi>)، أو علامة اقتباس مزدوجة، أو شرطة
+مائلة عكسية، قبل كتابة أي شيء: فداخل الأمر المقتبس سيُشغِّل ملفًا مختلفًا، أو يكسر
+<bdi>JSON</bdi> الذي يُكتَب فيه الأمر. ويسمّي الخطأ المسار؛ انقل المشروع أو أعد تسميته
+ثم شغّل التثبيت مجدّدًا. والمسافة أو الفاصلة العليا في المسار لا تضرّ.
+
+**إيقاف الخطّافات.** اضبط <bdi>`APOTHEM_HOOKS_DISABLE=1`</bdi> في البيئة التي يعمل فيها <bdi>Copilot</bdi>
+لإسكات خطّافات <bdi>Apothem</bdi>، أو اضبط <bdi>`"disableAllHooks": true`</bdi> في
+<bdi>`apothem.json`</bdi>، الذي يتخطّى ذلك الملف الواحد.
+
+عقد الخطّافات المحلّي الأقدم في <bdi>VS Code</bdi> (أحداث بالحقول <bdi>`command`</bdi> و<bdi>`windows`</bdi> و<bdi>`linux`</bdi>
+و<bdi>`osx`</bdi>) صيغة مختلفة لا يستهدفها ملف من الإصدار 1.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -41,7 +216,9 @@ apothem install --harness github-copilot --project /path/to/project
 
 لا يكشف <bdi>GitHub Copilot</bdi> عن مسار تعليمات عامّ على مستوى المستخدم قائم على
 الملفات كي يديره هذا المحوّل. يستهدف <bdi>Apothem</bdi> ملف التعليمات الموثَّق بنطاق
-المشروع، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة ملكًا للمُشغِّل.
+المشروع، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة ملكًا للمُشغِّل. ويكتب
+ملف خطّافات واحدًا، <bdi>`.github/hooks/apothem.json`</bdi>، ولا يكتب أي ملف آخر في
+<bdi>`.github/hooks/`</bdi>.
 
 داخل مستودع <bdi>Apothem</bdi>، يُعَدّ <bdi>`.github/copilot-instructions.md`</bdi>
 صوتًا واحدًا بين أسطح تعليمات المساعد في ذلك المستودع. وفي نسخة مسحوبة من ذلك
@@ -50,6 +227,15 @@ apothem install --harness github-copilot --project /path/to/project
 ويُبلِغ عن ادّعاء مشترك يُغفله أحد الملفات الثلاثة، وعن ملف يناقض ادّعاءً يقوم به
 <bdi>`AGENTS.md`</bdi>. لا يقرأ الفحص ملف التعليمات الذي يكتبه <bdi>Apothem</bdi> في
 مشروعك. البوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>.
+
+يسرد <bdi>GitHub Copilot</bdi> المجلّد <bdi>`~/.agents/skills/`</bdi> ضمن مواقع المهارات الشخصية لديه،
+لذا تكون المهارات التي يكتبها التثبيت على جهازك كي يُحمِّلها <bdi>Copilot</bdi>.
+أما الأسطح التي تعمل على <bdi>GitHub</bdi>، أي خدمة البرمجة السحابية ومراجعة الشيفرة، فتعمل
+في مكان آخر ولا ترى دليلك المنزلي، ولهذا يحمل ملف التعليمات
+الانضباطات بنفسه. ولم يتحقّق <bdi>Apothem</bdi> من كيفية تعامل <bdi>Copilot</bdi> مع مفتاح ترويسة في
+<bdi>`SKILL.md`</bdi> لا يسرده؛ وتحمل المهارات <bdi>`user-invocable`</bdi>،
+و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>، و<bdi>`argument-hint`</bdi>، وخريطة
+<bdi>`metadata`</bdi>.
 
 ## التحقّق
 
@@ -60,8 +246,20 @@ apothem verify --harness github-copilot --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
-3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
+2. كل هدف مُدار موجود، بما في ذلك المجلّد <bdi>`.github/agents/`</bdi>؛ والملفات المُدارة
+   غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi>
+   لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي. وبالنسبة إلى
+   <bdi>`.github/agents/`</bdi> يتحقّق الفحص من وجود المجلّد، لا من وجود كل ملف مساعِد فيه؛
+   ويسرد <bdi>`apothem diff --harness github-copilot --project /path/to/project`</bdi> ملفات المساعِدات
+   المفقودة أو القديمة.
+   ويجب أن يكون ملف الخطّافات <bdi>`.github/hooks/apothem.json`</bdi> موجودًا، وغير فارغ، وقابلًا
+   للتحليل بوصفه <bdi>JSON</bdi>، وأن يحوي مُدخَلًا يُشغِّل مُوزِّع <bdi>Apothem</bdi>، ويجب أن تكون
+   سكربتات الخطّافات في <bdi>`.apothem/support/github-copilot/hooks/`</bdi>. ولا يُشغِّل الفحص الخطّافات.
+3. كل مجلّد مهارة من <bdi>Apothem</bdi> في مكانه ومعه <bdi>`SKILL.md`</bdi>، أيًّا كان
+   التثبيت الذي كتبه، ولا يوجد مجلّد مهارة يحمل اسمًا من <bdi>Apothem</bdi> ويعود إلى
+   شيء لم يكتبه <bdi>Apothem</bdi>. ويسمّي الفحص الفاشل المجلّدات المفقودة أو
+   الدخيلة.
+4. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -70,6 +268,12 @@ apothem update --harness github-copilot --project /path/to/project
 ```
 
 يُعيد اشتقاق ملف تعليمات المشروع من الحالة الراهنة للملف التعريفي المشترك.
+
+ويُعيد التحديث أيضًا كتابة أي مجلّد مهارة تختلف ملفاته عن الملفات الحالية.
+وإن كنت قد ثبّتّ بإصدار سابق لم يكتب أي مهارات، فإن التحديث يضيفها.
+ويُعيد كتابة ملفات تعريف المساعِدات التي تختلف عن الحالية، ويضيف أي ملفات مفقودة منها.
+ويُحدِّث كذلك سكربتات الخطّافات وخطّافات <bdi>Apothem</bdi> في <bdi>`.github/hooks/apothem.json`</bdi>،
+مُبقيًا أي خطّاف خاص بك في ذلك الملف.
 
 ## إلغاء التثبيت
 
@@ -81,6 +285,22 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ويُبقي أي نص خارجها. لا يُحذَف الملف إلا حين لا يتبقّى فيه شيء آخر. قبل التغيير،
 تُحفَظ نسخة بطابع زمني من الملف تحت <bdi>`~/.apothem/backups/`</bdi>. لا يتأثّر
 ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+ويُزيل إلغاء التثبيت أيضًا ملفات تعريف المساعِدات التي كتبها في <bdi>`<project>/.github/agents/`</bdi>
+ويُبقي أي ملف آخر هناك؛ ويُزال المجلّد حين يبقى فارغًا.
+ويُزيل خطّافات <bdi>Apothem</bdi> من <bdi>`<project>/.github/hooks/apothem.json`</bdi>، متعرّفًا عليها
+من مسار المُوزِّع في أمرها، لذا يعمل دون سجلّ تثبيت، ويُبقي أي خطّاف خاص بك في ذلك
+الملف. ويُحذَف الملف حين لا يتبقّى فيه شيء آخر، ولا تُمَسّ ملفات الخطّافات الأخرى الخاصة
+بك. وإن كان الملف يحوي تعليقات لا يستطيع إلغاء التثبيت قراءتها، فإنه يترك الملف كما هو
+ويُبلِغ عن الخطّافات بوصفها متخطّاة، مع ذكر السبب؛ أزِل مُدخَلات <bdi>Apothem</bdi> يدويًا. وتُزال كذلك
+سكربتات الخطّافات في <bdi>`<project>/.apothem/support/github-copilot/hooks/`</bdi>.
+ويُزيل مجلّدات المهارات التي كتبها في <bdi>`~/.agents/skills/`</bdi>
+والقواعد والقوالب في <bdi>`~/.config/apothem/`</bdi>، ولكن فقط حين لا يعود أي تثبيت آخر لـ <bdi>Apothem</bdi>
+يستخدمها. فقد يستخدمها مشروع آخر، أو أداة أخرى تشارك
+المجلّد. وفي تلك الحالة يُبقي إلغاء التثبيت المجلّدات، ويطبع التثبيت
+الذي يستخدمها، ويُزيلها آخر إلغاء تثبيت. وتبقى الملفات التي أضفتها إلى تلك
+المجلّدات، ويُزال المجلّد الذي يبقى فارغًا. ويُنسَخ كل
+مجلّد احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل إزالته.
 
 ## بوابة المطابقة
 
@@ -100,6 +320,11 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness github-copilot --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| لا يسرد <bdi>Copilot</bdi> أيًّا من مساعِدات <bdi>Apothem</bdi> | تحقّق من أن <bdi>`.github/agents/`</bdi> يحوي ملفات <bdi>`.agent.md`</bdi> وأنها على الفرع الذي تستخدمه. شغّل <bdi>`apothem diff --harness github-copilot --project /path/to/project`</bdi>: فوجود سطر معلّق للمجلّد <bdi>`.github/agents`</bdi> يعني أن ملفات مساعِدات مفقودة أو قديمة، لذا شغّل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi>. وليس <bdi>`apothem verify`</bdi> اختبارًا لهذا: فهو ينجح حين يكون <bdi>`.github/agents/`</bdi> موجودًا، حتى لو لم يكن فيه أي ملف مساعِد |
+| لا تعمل خطّافات <bdi>Apothem</bdi> | تحقّق من أن <bdi>`.github/hooks/apothem.json`</bdi> على الفرع الذي تستخدمه وأن <bdi>`.apothem/support/github-copilot/hooks/`</bdi> موجود على هذا الجهاز؛ إذ تسمّي الأوامر المُفسِّر ومسار المشروع على الجهاز الذي شغّل التثبيت، لذا شغّل <bdi>`apothem install --harness github-copilot --project /path/to/project`</bdi> على كل جهاز. ولا تُشغِّل خدمة البرمجة السحابية في <bdi>Copilot</bdi> إلا أمر <bdi>`bash`</bdi>، ولا مُفسِّر لديها في ذلك المسار |
+| يسمّي <bdi>`apothem verify`</bdi> مجلّد مهارة مفقودًا | شغّل <bdi>`apothem install --harness github-copilot --project /path/to/project`</bdi>؛ فهو يستعيد المجلّد |
+| يحذّر تثبيت أو تحديث من أنه تخطّى مجلّد مهارة | يوجد بالفعل في مجلّد المهارات مجلّد يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>. أعد تسميته أو انقله، ثم شغّل <bdi>`apothem update`</bdi> |
+| يتوقّف التثبيت قبل أن يغيّر المشروع | فشلت عملية كتابة في دليلك المنزلي. اقرأ الخطأ، وأصلح المجلّد الذي يسمّيه (رابط يخرج من دليلك المنزلي، أو ملف في موضع مجلّد، أو مجلّد للقراءة فقط)، ثم ثبّت مجدّدًا |
 | محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط

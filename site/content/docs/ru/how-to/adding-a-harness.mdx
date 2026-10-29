@@ -2,7 +2,7 @@
 title: "Добавить окружение"
 description: "Включите адаптер окружения, чтобы его нативная конфигурация материализовалась из общего профиля."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,7 @@ sourceHash: "86a3b203d53e58ea"
 3. Предпросмотрите установку без записи файлов:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Установите окружение. Для окружения пользовательского уровня:
@@ -67,7 +67,7 @@ sourceHash: "86a3b203d53e58ea"
 ## Проверка
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Строка `✓ <harness-id> is verified` подтверждает, что управляемые цели существуют и

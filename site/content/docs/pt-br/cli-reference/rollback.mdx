@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referência da CLI para o comando apothem rollback."
 machineTranslated: true
-sourceHash: "cff52dcbcba63390"
+sourceHash: "398c0c678cace0b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,6 +32,18 @@ mais recente para a mais antiga, ele:
   `learning`) que a instalação criou, a menos que outro harness instalado ainda
   os use;
 - remove os diretórios que a instalação criou, assim que estiverem vazios.
+
+Um arquivo ou uma pasta no seu diretório pessoal que outras instalações também
+usam (uma pasta de skills, ou `~/.config/apothem/`) é tratado como os
+armazenamentos de dados compartilhados: o rollback o mantém enquanto outra
+instalação ainda o lista, e o restaura ou remove somente para a última instalação
+que o usa. Uma pasta que esta instalação encontrou já existente (uma segunda
+ferramenta instalada depois da primeira) sai com a última instalação que a usa
+quando quem a criou foi uma instalação que desde então deixou de usá-la, de modo
+que reverter todas as ferramentas não deixa nada para trás. Quando o registro de
+uma instalação que poderia usar a pasta não pode ser lido, o rollback para com um
+erro antes de alterar qualquer coisa e não grava nenhum registro `rollback`;
+repare o registro e execute-o novamente.
 
 Tudo o que o rollback remove ou substitui é primeiro copiado para a raiz de
 backup do Apothem (`~/.apothem/backups/`), de modo que o próprio rollback pode

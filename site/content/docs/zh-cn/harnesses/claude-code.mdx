@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f60950ab3aa08ee9"
+sourceHash: "57393f27f1d98c86"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ apothem install --harness claude-code
 
 **写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
 
-`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 也会加载 `~/.claude/CLAUDE.md`，因此该区块不把任何单一工具指定为其读者。
+`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 也会加载 `~/.claude/CLAUDE.md`，因此该区块不把任何单一工具指定为其读者。
 
 ## 配置档案到原生配置的映射
 
@@ -31,9 +31,47 @@ apothem install --harness claude-code
 
 已安装的技能以及 Claude Code 插件中捆绑的技能都携带 `user-invocable`，而不是源语料中的 `userInvocable`，因为 Claude Code 只读取带连字符的键。两个模板容器（`plan-suite`、`research-suite`）将其设为 `false`，因此它们不会出现在 `/` 菜单中。每种输出样式都设置了 `keep-coding-instructions: true`，因此选择其中任意一种都会保留 Claude Code 内置的软件工程指令。
 
+两者还会把 Apothem 专用的前置元数据键（`version`、`updated`、`archetype`、`portability`）按这一固定顺序放在末尾的 `metadata:` 映射下，值为带引号的字符串。Claude Code 会忽略未知的顶层键，而开放技能格式把客户端专属的额外内容放在 `metadata` 中。源文件不会改变。用户级技能文件夹（`~/.agents/skills/`、`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）使用同样的 `metadata` 形式，因此共享同一文件夹的安装绝不会相互重写对方的文件。其他每个工具仍像以前一样在顶层接收这些键。
+
+### 规则以及启动时加载的内容
+
+Claude Code 会在启动时加载规则文件，除非其前置元数据带有一个限定其作用范围的 `paths:` 列表。带有 `paths:` 时，它会在读取或编辑一个匹配的文件时加载该规则。仅由 `**` 组成的列表不限定任何范围，因此该规则也会在启动时加载；没有任何 Apothem 规则使用这样的列表。安装会把每条规则的 `pathFilter` 转换为该列表。有五条规则不带该列表，并在每个会话中加载：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`，以及规则索引 `apothem-rule-index`。其他每条规则都带着 `paths:` 安装在 `~/.claude/rules/` 下，并在触碰到匹配文件时加载。
+
+Claude Code 以 `.gitignore` 语义，将这些 glob 与文件相对于工作目录的路径进行匹配，并且绝不与工作目录之外的文件匹配。自动记忆目录位于 `~/.claude/projects/` 下，因此 `auto-memory` 和 `auto-memory-topic-files` 永远不会因路径匹配而加载。从另一个项目编辑 `~/.claude/CLAUDE.md` 或 `~/.claude/rules/` 下的文件，也不会加载限定于这些文件的规则。这些规则通过索引触达会话。
+
+索引列出每条规则的名称以及需要用到它的情形。将 `rules/<name>.md` 引用为其流程的步骤会先读取该文件。在上下文压缩之后，请重新读取你正在应用的任何规则：在再次触碰到匹配文件之前，Claude Code 不会重新注入限定路径的规则。名称 `apothem-rule-index.md` 是保留的，因为安装会备份并覆盖具有该名称的规则文件。
+
+约束 Apothem 自身表面的规则限定于 `CLAUDE.md`、`AGENTS.md`，以及 `rules/`、`commands/`、`skills/`、`agents/`、`hooks/` 和 `output-styles/` 下的 Markdown。应用程序仓库很少包含这些文件，因此在这样的仓库中，这些规则通过索引、通过引用它们的技能、命令或辅助程序，以及通过钩子触达会话，而不是通过路径匹配。
+
+规则副本在写入时不带其末尾的 `## Bindings` 小节，命令技能也是如此。该小节保存供维护者和合规闸门使用的相互引用。源文件保留它，其他工具收到的副本也保留它。
+
+若要让某条限定范围的规则在每个会话中都保持开启，你可以尝试在 `~/.claude/CLAUDE.md` 中 Apothem 区块之外的文本里导入它，例如 `@rules/definitiveness.md`。Claude Code 的记忆页面记载了这种导入，并说明导入的路径相对于执行导入的文件进行解析。它没有说明被导入规则的 `paths` 列表会如何处理，Apothem 也尚未验证这一点。请使用 `InstructionsLoaded` 钩子检查该规则是否在启动时加载，并且不会因路径匹配而再次加载。
+
+### 命令技能与参考文件
+
+在上下文压缩之后，Claude Code 只会重新附加每个已调用技能的前 5,000 个令牌，并且它建议 `SKILL.md` 不超过约 500 行，把细节放在同级文件中。命令提示词最长达 67 KB，因此 Claude Code 产出会把每个命令拆分为一个精简的 `SKILL.md`，外加 `references/` 下的文件：
+
+- `## Bindings` 小节被删除。它是供合规闸门使用的维护者文本，模型从不需要它。
+- Pipeline Contract、Foundational Stanzas、Decision Tree、示例、模式小节以及少数被引用的清单会移入参考文件。标题保留，其下的一行指引会写明文件名以及何时阅读它。Pipeline Contract 和 Foundational Stanzas 的指引还会列出该文件涵盖的内容。
+- 当 `SKILL.md` 仍超过 15,800 字节时，最大的 Workflow 步骤会按从大到小的顺序移入 `references/step-NN-<slug>.md`，直到它符合要求。slug 是去掉 `Step N:` 前缀、并去掉末尾括号中的强制要求或纪律 id 之后的步骤标题。小于 600 字节的步骤保持内联。如果这还不够，Output、Mandates、Critical Rules 和 Instructions 小节会按此顺序移出。
+- 前言之后的一段简短说明会告诉模型这些文件的位置（`${CLAUDE_SKILL_DIR}/references/`），以及在压缩之后它**必须**重新读取约束其当前步骤的那些文件。
+
+每个产出的 `SKILL.md`，包括安装追加的 `## Installed Reference Paths` 说明，在安装根目录不超过 140 个字符时，都保持在 17,000 字节或以下。插件提供同样的文件，但不带该说明，而且它的命令都是 `skills/` 下的技能，因此它没有 `commands/` 文件夹；调用方式 `/apothem:<name>` 保持不变。拆分是确定性且可逆的：`SKILL.md` 及其参考文件的文本可以重建去掉 Bindings 之后的源命令。源文件以及面向其他每个工具的输出均保持不变。其他工具也从 `~/.claude/skills/` 读取技能，因此它们看到的是同样的文件；`apothem install` 会列出这些工具。
+
+要查看每个命令的数字，请在检出的仓库中运行测量脚本：
+
+```bash
+python scripts/dev/measure_claude_skills.py          # per-command table
+python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
+```
+
+它会报告源文件、`SKILL.md` 和参考文件的大小、距离预算的余量以及估算的令牌数，并列出原生技能以供比较。`research-suite` 是一个源文件未被拆分的原生技能，它是唯一超过上限的技能。
+
 ## 兼容性说明
 
-命令提示词被转换为技能目录；智能体、规则、技能和输出样式按原样复制。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
+命令提示词被转换为技能目录，规则按上文所述进行渲染；技能和输出样式按原样复制，智能体也按原样复制，但配置档案的 `agent_mcp_servers` 键所列出的辅助程序会在其 `tools` 行中为每个指定的服务器增加一个 `mcp__<server>__*` 条目（参见 [MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
+
+`~/.claude/agents/` 是一个由 `Claude Code` 拥有的共享根目录，`~/.claude/skills/` 也是：其他受支持的工具会加载这些文件夹，因此 `Claude Code` 安装写入其中的智能体和技能也会出现在这些工具中，安装会打印一条指出这些工具的说明。[工具注册表](/docs/reference/harness-registry)列出了每个根目录的读取者。
 
 Claude Code 在每次会话启动时应用 settings.json 中的所有钩子绑定。每个适配器都针对其自身的原生工具进行验证——不存在享有特权的“参考”工具。
 
@@ -77,6 +115,8 @@ apothem uninstall --harness claude-code
 ```bash
 python -m apothem.conformity.gate --all .
 ```
+
+针对仓库运行时，闸门要求每条规则、命令、辅助程序和技能都带有 `## Bindings` 小节。针对已安装的 `~/.claude/` 树运行时，它接受不带该小节的规则或技能副本，因为安装会省去该小节，但仍会检查存在的小节。
 
 ## 故障排查
 

@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "555c36a18537fc13"
+sourceHash: "89536140f8fab5aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,11 +17,139 @@ sourceHash: "555c36a18537fc13"
 apothem install --harness cursor --project /path/to/project
 ```
 
-アダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトスコープの `.mdc` ルールファイルを 1 つレンダリングします。
+アダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトスコープの `.mdc` ルールファイルを 1 つレンダリングし、Apothem のヘルパーを Cursor サブエージェントとしてプロジェクト内に書き込み（[サブエージェント](#サブエージェント)を参照）、プロジェクトの `hooks.json` にフックを 1 つ追加します（[フック](#フック)を参照）。
 
-**書き込まれるファイル：** `<project>/.cursor/rules/apothem-rules.mdc`
+また、プロジェクトに触れる前に、Apothem のスキルと、それらが引用するルールとテンプレートを、あなたのユーザーホームに書き込みます（[プロジェクト外のファイル](#プロジェクト外のファイル)を参照）。
 
-このファイルがインストールのすべてです。ルール、スキル、コマンド、テンプレート、フックのファイルはその隣に一切配置されないため、このファイルは、プロジェクト内に存在しない Apothem のファイルを指し示す代わりに、その旨を記載しています。
+**書き込まれるファイル：**
+
+- `<project>/.cursor/rules/apothem-rules.mdc`：ルールファイル。
+- `<project>/.cursor/agents/<name>.md`：Apothem の各ヘルパーにつき 1 つ、プロジェクト内に。
+- `<project>/.cursor/hooks.json`：`sessionStart` エントリーが 1 つ追加されます。その中のあなた自身のエントリーとキーは残ります。
+- `<project>/.apothem/support/cursor/hooks/`：フックスクリプト。プロジェクト内に。
+- `~/.agents/skills/<name>/SKILL.md`：Apothem の各スキルと各コマンドにつき 1 つ、あなたのユーザーホームに。
+- `~/.config/apothem/rules/` と `~/.config/apothem/templates/`：あなたのユーザーホームに。
+
+ルールファイルは各規律を要約し、それらのフォルダーの名前を挙げるため、タスクが必要とするときに、モデルはスキルやルールファイルを開くことができます。
+
+## プロジェクト外のファイル
+
+インストールは、プロジェクト内の何かを変更する前に、Apothem のスキルをあなたのユーザーホームにも書き込みます。
+
+| フォルダー | Apothem がそこに書き込むもの |
+| --- | --- |
+| `~/.agents/skills/` | Apothem の各スキルにつき `SKILL.md` を含むフォルダーを 1 つ、そして Apothem の各コマンドにつき 1 つ（コマンドは同じ名前のスキルになります）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | スキルとルールファイルが参照するルールとテンプレート。 |
+
+これらのフォルダーは共有されます。プロジェクト専用ではありません。
+
+- `cursor` をインストールするすべてのプロジェクトと、そのフォルダーを指定する他のすべての Apothem のインストールが同じコピーを使い、同じファイルを書き込むため、インストールの順序は関係ありません。他のいくつかのツールも `~/.agents/skills/` を読みます。[ハーネスレジストリ](/docs/reference/harness-registry#共有ルート)がそれらを一覧にしています。
+- `--project` は、書き込むルールファイルと、インストールがどのプロジェクトに属するかを選びます。スキルの書き込み先は変わりません。
+- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、ルールファイル、`.cursor/agents/` 内のサブエージェントファイル、`.cursor/hooks.json` 内のフックのエントリー、そしてプロジェクトへのインストールが毎回作成する `.apothem/` フォルダーで、このフォルダーにはフックスクリプトも置かれます。
+- ホームのフォルダーが最初に書き込まれます。それが失敗した場合、たとえばパス内のフォルダーがホームディレクトリの外へ出るリンクである場合（内側にとどまるリンクはたどられます）や書き込めない場合、インストールはプロジェクト内の何かが変わる前にエラーで停止します。
+- Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーはそのまま残され、インストールはその名前を挙げる警告を表示します。名前を変えるか移動してから、`apothem update` を実行してください。その名前が占有されている間、`apothem verify` は失敗します。
+- ファイルの合計は数メガバイトになります。
+
+インストールは、`--project` の外に書き込むフォルダーを挙げるメモを表示し、`--dry-run` はそれらを一覧表示します。
+
+## サブエージェント
+
+[Cursor のサブエージェントに関するドキュメント](https://cursor.com/docs/subagents)によれば、Cursor はサブエージェントを `<project>/.cursor/agents/` 内の Markdown ファイルから読み取ります。
+インストールは、Apothem のヘルパーごとに 1 つのファイルをそのフォルダーに書き込みます。
+インストールはプロジェクト向けのみで、`~/.cursor/agents/` フォルダーには書き込みません。
+
+各ファイルはヘルパーの指示を変更せずに保持し、次のフロントマターキーを持ちます。
+
+| キー | Apothem が書き込むもの |
+| --- | --- |
+| `name`, `description` | ヘルパーの名前と説明。 |
+| `readonly` | 5 つのヘルパーに `true`：`citation-auditor`、`convention-auditor`、`fact-checker`、`memory-auditor`、`research-scout`。 |
+
+Cursor にはツールを列挙または拒否するキーがありません。サブエージェントは親のすべてのツールを継承します。
+Cursor が強制できる唯一の制限は `readonly: true` で、これはファイルの編集も、状態を変更するシェルコマンドも許可しません。
+そのため、ヘルパーの `tools` と `disallowedTools` の行は書き込まれず、制限はそのフラグとしてのみ残ります。
+
+- 上記の 5 つのヘルパーは読み取り専用で `Bash` を持たないため、`readonly: true` を受け取り、説明の中の読み取り専用の記述を保持します。
+- 7 つのヘルパーは読み取り専用ですがコマンドを実行します（`codebase-explorer`、`dependency-auditor`、`design-critic`、`prompt-evaluator`、`quality-gate`、`security-scanner`、`test-runner`）。`readonly: true` はそれらのテストや lint の実行も止めてしまうため、フラグは付かず、説明からは Cursor が強制しない読み取り専用のラベルが外されます。変わるのは説明だけです。指示は変更せずにコピーされるため、指示は依然としてヘルパーを読み取り専用と呼び、Cursor のファイルにはないツール制限に言及しています。モデルはその文章に従いますが、Cursor はそれを強制せず、ヘルパーは親が持つすべてのツールで実行されます。
+- `mcp-builder` と `refactor-surgeon` はファイルを書き込み、変更されません。
+
+インストールは `model` キーを書き込まないため、ヘルパーは親が使うモデルで実行されます。また、`is_background`、ターン数の上限、Apothem の `version`、`updated`、`portability` キーのいずれも書き込みません。
+
+知っておくべきこと：
+
+- サブエージェントファイルは通常のプロジェクトファイルです。プロジェクトと一緒にコミットするか、`.cursor/agents/` を `.gitignore` に記載してください。Apothem はあなたの代わりに選びません。
+- Cursor は、他のツール向けに書き込まれたヘルパーフォルダーも読み込みます。その中には、プロジェクト内の `.claude/agents/` と、ホームディレクトリ内の `~/.claude/agents/` が含まれます（残りは[ハーネスレジストリ](/docs/reference/harness-registry#共有ルート)が一覧にしています）。名前が衝突した場合、プロジェクトがホームのフォルダーより優先され、`.cursor/` が他より優先されるため、このインストールがあるプロジェクトでは、Cursor が `~/.claude/agents/` からインポートする Claude Code のコピーよりもネイティブのファイルが優先されます。Cursor のドキュメントは、両方のコピーを読み込むのか優先度の低い方を捨てるのか、また、インポートした Claude Code のファイルの `tools` と `disallowedTools` の行を適用するのかを述べていません。
+- Apothem のヘルパーの名前を持つあなたのファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。アンインストールはそれを元に戻しません。他の名前のファイルには決して触れません。
+- Apothem は、Cursor がインポートするフォルダーに他のツールが書き込む TOML ファイルを Cursor が読むかどうか、Third-Party Imports 設定がそれらのインポートされたフォルダーをオフにするかどうか、`.cursor/agents/` 内の `.md` 以外の拡張子やネストしたフォルダーを読むかどうかを確認していません。
+
+## フック
+
+[Cursor のフックに関するドキュメント](https://cursor.com/docs/hooks)によれば、Cursor は `hooks.json` ファイルからフックを実行します。
+インストールは `<project>/.cursor/hooks.json` にエントリーを 1 つ追加します。
+
+| イベント | 実行されるもの |
+| --- | --- |
+| `sessionStart` | セッションブートストラップ：セッションのメタデータ、スキルのインデックス、メモリとプランの要約、常設の姿勢を、会話の初期コンテキストに追加します。 |
+
+このフックはモデルにコンテキストを追加します。何もブロックせず、Cursor は `sessionStart` フックを待ちません。
+
+この最初のバージョンは他に何も登録しません。
+Cursor のドキュメントは `postToolUse` についても `additional_context` を挙げており、コンテキストがモデルに届くことがプローブで示された時点で、Apothem はそこにコンテキストサイズのカウンターを登録します。
+`preToolUse` ガードは登録しません。Cursor は、ガードが伝達に使うフィールドである `agent_message` を、拒否するアクションについてのみ文書化しており、Apothem のガードは決して拒否しません。
+書き込み、編集、シェルのガード、`AskUserQuestion` のチェック、セッション終了プロトコルは、それらを届けるツールに残ります。
+
+**ファイルの書き込み先**
+
+| ファイル | 保持するもの |
+| --- | --- |
+| `<project>/.cursor/hooks.json` | `sessionStart` エントリー 1 つ。ファイルの `hooks` マップにマージされます。 |
+| `<project>/.apothem/support/cursor/hooks/` | ディスパッチャースクリプト、そのヘルパー、そのメッセージファイル。 |
+
+`hooks.json` はあなたのファイルであり、Cursor はプロジェクトのフックをバージョン管理にチェックインされるものとして文書化しています。
+インストールは Apothem のエントリーをあなたのエントリーの後に追加し、あなたのエントリーと他のキーはそのまま残します。更新は、コマンドが Apothem のディスパッチャー（`--contract cursor` 付きの `.apothem/support/cursor/hooks/dispatch.py`。どのプロジェクトパスの下で書き込まれたかは問いません）を実行するエントリーだけを置き換え、アンインストールはそのエントリーだけを削除します。
+名前を共有するだけのあなたのフック（たとえばプロジェクト内の `tools/hooks/dispatch.py`）や、`python -m apothem.conformity.gate` を実行するあなたのフックが、Apothem のものと見なされることは決してありません。
+アンインストールは、中に他に何も残っていない場合、`~/.apothem/backups/` 配下にコピーを保存した後でファイルを削除します。
+コメント、末尾のカンマ、または形の誤った `hooks` 値を含むファイルは、何かを失わずに書き直すことができないため、インストールはそのファイルについて `config.unparseable` エラーを報告し、ファイルには触れずに停止し、書き込みを始めていた他のファイルは再び削除されます。ファイルを修正するか、エントリーを自分で追加してください。
+
+**コミットされたファイルはあなたのマシンを名指しします。** エントリーのコマンドには、Apothem が実行時に見つけたインタープリターとプロジェクトの絶対パスが含まれるため、そのファイルをチェックアウトしたチームメイトは、あなたのマシンを指すコマンドを受け取ります。
+Cursor は見つからないコマンドを失敗として報告し、セッションは続行されるため、何も壊れませんが、そこではフックは何もしません。
+チームがそのレイアウトを共有している場合にのみ、ファイルをコミットしてください。
+Cursor は、プロジェクトのフックファイルのコミットされない版を文書化していません。
+`.apothem/` フォルダーはスクリプトが置かれる場所であり、プロジェクトの `.gitignore` スニペットがそれをバージョン管理から除外します。
+
+コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+```
+
+Windows ホストでは、コマンドは PowerShell の呼び出し演算子である `& ` で始まります。Cursor のデスクトップアプリはフックコマンドを PowerShell を通じて実行し、PowerShell では引用符で囲まれたプログラムパスで始まる行は呼び出しにならないためです。
+`sh` は先頭の `&` を構文エラーとして読むため、他のホストにはこれが付きません。
+ドキュメントはシェルを挙げていますがクォートについては述べていないため、これは PowerShell の構文に対する Apothem の解釈です。
+
+`--contract cursor` は Cursor の `conversation_id` と `workspace_roots` を読み、`{"additional_context": ...}` だけで応答します。
+
+**シェルが誤読するパス。** `$`、バッククォート、二重引用符、バックスラッシュを含むプロジェクトまたはインタープリターのパスは、何かが書き込まれる前に拒否されます。引用符で囲まれたコマンドの中では、別のファイルを実行したり、コマンドが書き込まれる JSON を壊したりするためです。
+エラーはそのパスを挙げます。プロジェクトを移動するか名前を変えてから、インストールを再度実行してください。
+パス内のスペースやアポストロフィは問題ありません。
+
+**Cursor は Claude Code が書き込んだフックも実行します。** Cursor は、「Include Third-Party Plugins, Skills, and Other Configs」（Cursor Settings の Third-Party Imports 配下）がオンの間、`~/.claude/settings.json`、`.claude/settings.json`、`.claude/settings.local.json` 内のフックを読み込みます。これはデフォルトであり、Cursor はすべてのソースから一致するすべてのフックを実行します。
+Claude Code 向けにも Apothem をインストールした場合、両方のフックのセットが実行される可能性があります。
+ここの `sessionStart` コマンドと、その Claude Code 側のコピーは、Apothem のフック状態フォルダー内でセッションごとに 1 つのマーカーを共有するため、2 番目に実行される方は何も出力せず、ブートストラップはモデルに 1 回だけ届きます。Apothem は、Cursor がフックのために設定する `CURSOR_PROJECT_DIR` と `CURSOR_VERSION` 変数から Cursor を見分けます。
+マーカーの有効期間は 10 秒なので、2 回目のコンパクションのような、同じセッションの後の開始でも配信されます。
+Claude Code 側のコピーのコンテキストサイズのカウンターは追加で実行され、Apothem はカウンターの重複を排除しません。
+ここのフックだけを実行するには、その設定をオフにします。これにより、Cursor がサードパーティのプラグイン、スキル、その他の設定をインポートすることも止まります。
+インストールはこれをメモとして表示します。
+
+**知っておくべきこと。** Cursor は `hooks.json` が保存されると再読み込みするため、再起動は必要ありません。
+プロジェクトのフックは信頼されたワークスペースで実行されます。
+Cursor のクラウドはリポジトリのプロジェクトフックを実行しますが、`sessionStart` は延期するため、そこではエントリーは発火しません。
+Cursor の環境で `APOTHEM_HOOKS_DISABLE=1` を設定すると、Apothem のフックを沈黙させます。
+
+{/* TODO(clarify): Cursor's default hook timeout (the entry sets 30 seconds), how
+its CLI runs hook commands on Windows, whether one command string can serve both sh
+and PowerShell, and whether the postToolUse context reaches the model; see the Hooks
+section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -36,6 +164,10 @@ Apothem が管理するブロックがその後に続きます。ブロックの
 Cursor 0.45+ は、`.cursor/rules/` を通じてプロジェクトレベルの命令をサポートします。
 アダプターはデフォルトで、プロジェクトスコープの `.cursor/rules/` ディレクトリに書き込みます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバルなルールパスが文書化されていません。
 
+Cursor は `~/.agents/skills/` からスキルを読み込むため、インストールが書き込むスキルは追加の設定なしで Cursor に表示されます。
+Cursor は `~/.claude/skills/` も読み込むため、Claude Code のインストールもあるマシンでは同じスキル名を 2 回一覧表示することがあり、そのドキュメントはどちらのコピーが優先されるかを述べていません。
+記載のない `SKILL.md` のヘッダーキーを Cursor がどう扱うかを、Apothem は確認していません。スキルは `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、および `metadata` マップを持ちます。
+
 ## 検証
 
 ```bash
@@ -45,8 +177,9 @@ apothem verify --harness cursor --project /path/to/project
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+2. `.cursor/agents/` フォルダーとフックファイル `.cursor/hooks.json` を含め、管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。フックファイルは Apothem のディスパッチャーを実行するエントリーを保持していなければならないため（チェックはそれを実行しません）、元に戻されたファイルや空にされたファイルはもはや検証に通りません。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。`.cursor/agents/` については、フォルダーが存在することを確認し、各ヘルパーファイルがその中にあることは確認しません。`apothem diff --harness cursor --project /path/to/project` は、欠けているヘルパーファイルや古くなったヘルパーファイルを一覧表示します。
+3. どのインストールが書き込んだかにかかわらず、Apothem の各スキルフォルダーが `SKILL.md` とともに所定の場所にあり、Apothem の名前を持つスキルフォルダーがどれも、Apothem が書き込んだのではないものに属していないこと。チェックが失敗すると、欠けているフォルダーや外部のフォルダーの名前が挙げられます。
+4. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -55,6 +188,11 @@ apothem update --harness cursor --project /path/to/project
 ```
 
 現在の共有プロファイルの状態からプロジェクトのルールファイルを再導出します。
+
+更新は、ファイルが現在のものと異なるスキルフォルダーも書き直します。
+スキルを書き込まなかった以前のリリースでインストールした場合、更新はスキルを追加します。
+現在のものと異なるサブエージェントファイルを書き直し、欠けているものを追加します。
+また、フックスクリプトと `.cursor/hooks.json` 内の Apothem のエントリーを更新し、あなた自身のエントリーには触れません。
 
 ## アンインストール
 
@@ -66,6 +204,17 @@ apothem uninstall --harness cursor --project /path/to/project
 ファイルが削除されるのは、中に他に何も残っていない場合のみです。
 変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+アンインストールは、`<project>/.cursor/agents/` に書き込んだサブエージェントファイルも削除し、そこにある他のファイルは残します。フォルダーは空になった場合に削除されます。
+`<project>/.cursor/hooks.json` から Apothem のエントリーを、そのコマンド内のディスパッチャーのパスで識別して削除し、あなた自身のエントリーとキーは残します。
+このファイルは、その中に他に何も残っていない場合にのみ削除されます。
+`<project>/.apothem/support/cursor/hooks/` 内のフックスクリプトも削除されます。
+アンインストールが読めないコメントがファイルにある場合、そのファイルはそのまま残し、エントリーをスキップしたものとしてその理由とともに報告します。Apothem のエントリーは手作業で削除してください。
+`~/.agents/skills/` に書き込んだスキルフォルダーと `~/.config/apothem/` 内のルールとテンプレートも削除しますが、それはそれらをまだ使っている他の Apothem のインストールがない場合に限ります。
+別のプロジェクトや、そのフォルダーを共有する別のツールが使っている可能性があります。
+その場合、アンインストールはフォルダーを残し、どのインストールがそれらを使っているかを表示し、最後のアンインストールがそれらを削除します。
+あなたがそれらのフォルダーに追加したファイルは残り、空になったフォルダーは削除されます。
+各フォルダーは、削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 
 ## コンフォーミティゲート
 
@@ -79,6 +228,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness cursor --project /path/to/project` を再実行する |
 | 検証が失敗した | `apothem update --harness cursor --project /path/to/project` を実行してから、再度検証する |
+| Cursor が Apothem のヘルパーを 1 つも一覧表示しない | `apothem diff --harness cursor --project /path/to/project` を実行する。`.cursor/agents` フォルダーについて保留中の行がある場合は、ヘルパーファイルが欠けているか古くなっているので、`apothem update --harness cursor --project /path/to/project` を実行する。`apothem verify` はこれを確かめるものではない。`.cursor/agents/` が存在すれば、その中にヘルパーファイルが 1 つもなくても合格する。`diff` が保留中の変更を報告しない場合は、プロジェクトが Cursor で開かれていることを確認してから、新しいチャットを開始する |
+| Apothem のフックが実行されない | Cursor はプロジェクトのフックを信頼されたワークスペースでのみ実行する。Customize の Hooks タブ、または Hooks 出力チャネルを開いて、エントリーが読み込まれたかどうかと、それが何を報告したかを確認する。別のマシンで書き込まれたファイルはそのマシンのインタープリターを指しているため、Cursor はコマンドを失敗として報告する。ここで `apothem update --harness cursor --project /path/to/project` を実行する |
+| インストールが `hooks.json` について `config.unparseable` を報告する | ファイルにコメント、末尾のカンマ、または形の誤った `hooks` 値がある。ファイルを修正して再度インストールするか、`sessionStart` エントリーを自分で追加する |
+| Apothem のコンテキストが 2 回表示される | Cursor は Claude Code のインストールが書き込んだフックも実行する。Cursor Settings の Third-Party Imports 配下にある「Include Third-Party Plugins, Skills, and Other Configs」をオフにすると、`.cursor/hooks.json` 内のフックだけが実行される |
+| `apothem verify` が欠けているスキルフォルダーの名前を挙げる | `apothem install --harness cursor --project /path/to/project` を実行する。これでフォルダーが復元される |
+| インストールまたは更新が、スキルフォルダーをスキップしたと警告する | Apothem のスキルの名前を持つフォルダーがスキルフォルダー内にすでに存在し、Apothem が書き込んだものではない。名前を変えるか移動してから、`apothem update` を実行する |
+| インストールがプロジェクトを変更する前に停止する | ホーム内への書き込みが失敗した。エラーを読み、それが挙げるフォルダー（ホームディレクトリの外へ出るリンク、フォルダーがあるべき場所にあるファイル、または読み取り専用のフォルダー）を修正してから、再度インストールする |
 | 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness cursor --project /path/to/project` を再実行する |
 
 ## 設定ノブ

@@ -2,7 +2,7 @@
 title: "설치 워크플로"
 description: "apothem install, update, uninstall이 처음부터 끝까지 어떻게 동작하는지."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,12 @@ flowchart TD
 
 각 어댑터는 자신의 고정 설치 루트에 씁니다. 사용자 범위 어댑터는 사용자 홈에,
 프로젝트 범위 어댑터는 프로젝트 로컬에 씁니다. CLI는 `--scope` 플래그를 노출하지
-않습니다. 프로젝트 범위 어댑터는 `--project <path>`가 필요합니다. 각 대상 위치는
+않습니다. 프로젝트 범위 어댑터는 `--project <path>`가 필요합니다. 프로젝트 범위
+어댑터 중 일곱 개는 프로젝트 파일을 쓰기 전에 `~/.agents/skills/`와
+`~/.config/apothem/` 같은 공유 폴더도 사용자 홈에 쓰며, `--project`는 그 폴더들이
+가는 위치를 바꾸지 않습니다.
+[install 레퍼런스](/docs/cli-reference/install#홈-디렉터리의-폴더)에 그 목록이
+있습니다. 각 대상 위치는
 `site/content/docs/harnesses/<harness>.mdx`에 문서화되어 있습니다.
 
 ## 오류 처리
@@ -55,12 +60,12 @@ flowchart TD
 병합합니다. `--dry-run`은 동일한 검증을 실행하고, 각 쓰기가 수행되었다면 얻었을
 결과(예: `created` 또는 `updated`)를 반환하되, 디렉터리나 파일은 만들지 않습니다.
 
-## Reversibility (backup and rollback)
+## 되돌릴 수 있음 (백업과 롤백)
 
-Every install pass is reversible. Replaced bytes are captured into the Apothem
-backup root and the pass is recorded in the harness ledger under a ULID
-install id; [`apothem rollback`](/docs/cli-reference/rollback) selects a
-recorded pass and restores those captured backups.
+모든 설치 패스는 되돌릴 수 있습니다. 교체된 바이트는 Apothem 백업 루트에
+보관되고, 패스는 ULID 설치 ID로 하니스 원장에 기록됩니다.
+[`apothem rollback`](/docs/cli-reference/rollback)은 기록된 패스를 선택하여
+보관된 백업을 복원합니다.
 
 ```mermaid
 %% provenance: hand-authored %%

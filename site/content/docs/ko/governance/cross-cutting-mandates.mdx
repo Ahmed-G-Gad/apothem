@@ -2,7 +2,7 @@
 title: "횡단 맨데이트 레지스트리 (CM-1–CM-28)"
 description: "모든 상호작용과 파이프라인 작업을 규율하는 생태계 내부 횡단 맨데이트(CM-1–CM-28)의 전체 레지스트리와 정의입니다."
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## 레지스트리 자기 참조 예외
 
-이 문서가 바로 표준 CM-N 레지스트리이며, `CM-1`부터 `CM-28`까지의 토큰이 *정의되는* 출처입니다. 이 토큰들을 *레지스트리 자체의 본문 안에서* 다시 기술하는 것은 표준이며, 플랜 내부 용어의 누출이 아닙니다. 코드베이스 격리 불변 조건은 *그 밖의* 모든 아티팩트(규칙, 헬퍼, 명령, 훅, 스키마, 스크립트, 도구, 테스트, 문서, README, 변경 로그, 커밋 제목/본문, 브랜치 이름, PR 제목/설명)에 계속 온전히 적용됩니다. `CM-N` / `TM-N` / `CP-N` 토큰은 쓰지 않으며, 자연스러운 도메인 언어만 사용합니다.
+이 문서가 바로 표준 CM-N 레지스트리이며, `CM-1`부터 `CM-28`까지의 토큰이 *정의되는* 출처입니다. 이 토큰들을 *레지스트리 자체의 본문 안에서* 다시 기술하는 것은 표준이며, 플랜 내부 용어의 누출이 아닙니다. 코드베이스 격리 불변 조건은 게시된 문서가 아닌 *그 밖의* 모든 아티팩트(규칙, 헬퍼, 명령, 훅, 스키마, 스크립트, 도구, 테스트, README, CONTRIBUTING, 변경 로그, 커밋 제목/본문, 브랜치 이름, PR 제목/설명)에 계속 온전히 적용됩니다. `CM-N` / `TM-N` / `CP-N` 토큰은 쓰지 않으며, 자연스러운 도메인 언어만 사용합니다.
+
+`site/content/docs/` 아래의 게시된 문서 페이지는 맨데이트를 `CM-N` id로 인용할 수 있습니다. 이 레지스트리와 규칙 레퍼런스 페이지가 독자를 위해 그 id를 정의하기 때문입니다. id를 인용하는 페이지는 그 옆에 맨데이트를 평이한 말로 명명해야 하며(SHOULD), 맨데이트의 플랜 내부 섹션 번호를 인용해서는 안 됩니다(MUST NOT). `TM-N`과 `CP-N` 토큰은 게시된 문서에 들어가지 않으며, 아래 CM-7 블록의 다른 금지 용어도 마찬가지입니다.
 
 ## 네임스페이스
 
@@ -18,7 +20,7 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## 활성화
 
-CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-11, CM-13(하위 규칙 A부터 C), CM-15, CM-16, CM-20은 `/plan` 파이프라인 안에서만 적용됩니다. CM-13 하위 규칙 D는 모든 git 쓰기에, 하위 규칙 E는 `git mv` / `git rm` 대상과 커밋 본문 경로에 적용되며, 이 파이프라인 안에서든 밖에서든 적용됩니다. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26은 보편적으로 적용됩니다(항상 활성). CM-23, CM-27, CM-28은 각자 선언된 경로 필터 범위 안에서 보편적으로 적용됩니다. 임시 작업의 기본 심각도 등급: PERSONAL_USE.
+CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-11, CM-13(하위 규칙 A부터 C), CM-15, CM-16, CM-20은 `/plan` 파이프라인 안에서만 적용됩니다. CM-13 하위 규칙 D는 모든 git 쓰기에, 하위 규칙 E는 `git mv` / `git rm` 대상과 커밋 본문 경로에 적용되며, 이 파이프라인 안에서든 밖에서든 적용됩니다. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26은 보편적으로 적용됩니다. CM-23, CM-27, CM-28은 각자 선언된 경로 필터 범위 안에서 보편적으로 적용됩니다. 임시 작업의 기본 심각도 등급: PERSONAL_USE. 맨데이트는 그 규칙이 시작 시점에 로드되는지 여부와 관계없이 적용됩니다. 네 개의 규칙(`agnostic-posture`, `authority-inquiry`, `session-closure`, `context-management`)은 모든 세션에서 로드되며, 나머지는 경로가 일치할 때, 규칙 색인을 통해, 또는 그것을 인용하는 규칙, 스킬, 명령을 통해 로드됩니다.
 
 ## CM-1–10 (운영)
 
@@ -28,7 +30,7 @@ CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-1
 
 > 이것은 CM-7의 코드베이스 측면입니다. 제품 완결성 측면은 `src/apothem/rules/operational-mandates.md §CM-7`에 **일관된 제품(→TM-11)** 항목으로 문서화되어 있습니다. 두 레이블은 같은 맨데이트를 가리킵니다.
 
-코드베이스 아티팩트는 플랜 내부 참조를 절대(NEVER) 포함해서는 안 됩니다. **금지 용어(표준 블록 — 형제 소비자는 이 열거를 상호 참조함):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", 단계 폴더 이름, 플랜 스위트 파일 이름(PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), 심각도 등급 이름(EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **보호 대상 아티팩트:** 소스 코드, 테스트, 구성, 스키마, 빌드 스크립트, 데이터, 자산, 커밋 메시지, 브랜치 이름, PR 제목/설명, README, CONTRIBUTING, API 문서, 변경 로그 등 Apothem 소스 트리 밖에서 보이는 모든 아티팩트(하니스별 설치 대상, 예를 들어 Claude Code의 `~/.claude/`). 자연스러운 도메인 언어만 사용합니다. **형제 소비자**(각각 이 블록을 다시 열거하지 않고 참조로 인용함): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 위반 지표.
+코드베이스 아티팩트는 플랜 내부 참조를 절대(NEVER) 포함해서는 안 됩니다. **금지 용어(표준 블록 — 형제 소비자는 이 열거를 상호 참조함):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", 단계 폴더 이름, 플랜 스위트 파일 이름(PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), 심각도 등급 이름(EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **보호 대상 아티팩트:** 소스 코드, 테스트, 구성, 스키마, 빌드 스크립트, 데이터, 자산, 커밋 메시지, 브랜치 이름, PR 제목/설명, README, CONTRIBUTING, API 문서, 변경 로그 등 Apothem 소스 트리 밖에서 보이는 모든 아티팩트(하니스별 설치 대상, 예를 들어 Claude Code의 `~/.claude/`). 자연스러운 도메인 언어만 사용합니다. 유일한 예외는 `site/content/docs/` 아래의 게시된 문서로, 위의 레지스트리 자기 참조 예외에서 설명한 대로 `CM-N` id를 인용할 수 있습니다. **형제 소비자**(각각 이 블록을 다시 열거하지 않고 참조로 인용함): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 위반 지표.
 
 ## CM-11 (플랜 무결성)
 

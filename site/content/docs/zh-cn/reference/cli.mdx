@@ -2,7 +2,7 @@
 title: "CLI 参考"
 description: "Apothem CLI 参考——全部子命令与标志。"
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,7 +73,7 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | 项目作用域工具的项目根目录。 |
 | `--dry-run` | 预览更新而不写入文件。 |
 
-`update` 会重新物化工具的输出。它不会更新 Apothem CLI 软件包；如需升级软件包，请使用安装 Apothem 时所用的包管理器。
+`update` 会重新物化工具的输出。它不会升级 Apothem 引擎本身；请通过安装引擎时所用的渠道（`/plugin` 流程、`npx`，或安装与更新脚本）更新引擎，具体见[更新](/docs/install/updating)。
 
 ### `apothem uninstall`
 
@@ -128,6 +128,7 @@ apothem status [--profile PATH] [--project PATH]
 | `in-sync` | 已安装，且与配置档案基线一致。 |
 | `drift` | 已安装，但已不再一致——使用 `apothem update` 进行修复。 |
 | `unknown` | 已安装，但无法读取基线配置档案。 |
+| `needs-project` | 报告某个项目作用域工具时未提供 `--project`，因此无法解析其目标。 |
 
 `installed` 回答的是“Apothem 是否在此处安装过？”，而不是“此工具是否存在于这台机器上？”。它以 Apothem 自己的工件为依据——指令锚点内的受管区块，以及 Apothem 自有的 `.apothem/` 子树下的内容——绝不以工具为自身写入的、归厂商所有的文件为依据。一个配置目录存在但 Apothem 从未触及过的工具会报告 `absent`；一个已被卸载的工具即使其已清空的目录仍然存在，也会报告 `absent`。
 

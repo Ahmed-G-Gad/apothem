@@ -2,7 +2,7 @@
 title: "하니스 어댑터 추상화"
 description: "HarnessAdapter 프로토콜 — Apothem 어댑터가 공유 프로필을 어떻게 변환하는지."
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,17 +26,20 @@ Apothem은 스키마로 검증된 단일 YAML 프로필을 의미상의 정보�
 어댑터는 두 가지 머티리얼라이즈 형태로 나뉘며, 둘 다 레지스트리에서 확인할 수 있습니다.
 
 - **단일 파일 렌더러**는 프로필 필드를 하나의 하니스 네이티브 구성 파일로 변환합니다. 예를 들어 OpenCode 어댑터는 공유 프로필에서 머티리얼라이저를 거쳐 네이티브 구성 파일을 렌더링합니다.
-- **규칙 표면 및 지원 하위 트리 어댑터**는 Apothem 페이로드 코호트를 하니스가 문서화한 규칙 위치로 전파합니다. 네이티브 형식이 있는 경우 코호트를 그 형식으로 변환하고, 나머지는 네이티브 앵커에서 참조되는 Apothem 소유 지원 하위 트리 아래에 둡니다. Cursor 어댑터는 제공된 프로젝트 루트에 `.cursor/rules/apothem-rules.mdc` 하나를 작성하며 규칙 표면만 전달합니다. Claude Code 어댑터는 프로필에서 `settings.json`을 렌더링하지 않습니다. 번들된 설정 템플릿을 훅 인터프리터 경로를 채운 상태로 `~/.claude/settings.json`에 복사하고, 그 옆에 Apothem 규약 디렉터리(`agents/`, `rules/`, `skills/`, …)를 평탄화하여 배치하며, `CLAUDE.md`의 센티널로 구분된 관리 블록에 프로필을 기록합니다.
+- **규칙 표면 및 지원 하위 트리 어댑터**는 Apothem 페이로드 코호트를 하니스가 문서화한 규칙 위치로 전파합니다. 네이티브 형식이 있는 경우 코호트를 그 형식으로 변환하고, 나머지는 네이티브 앵커에서 참조되는 Apothem 소유 지원 하위 트리 아래에 둡니다. Cursor 어댑터는 제공된 프로젝트 루트에 `.cursor/rules/apothem-rules.mdc` 하나를 작성합니다. 그 파일보다 먼저 사용자 홈에 두 개의 공유 폴더를 씁니다. 스킬과 스킬로 래핑한 명령은 `~/.agents/skills/`로, 그 스킬들이 인용하는 규칙과 템플릿은 `~/.config/apothem/`로 갑니다. Claude Code 어댑터는 프로필에서 `settings.json`을 렌더링하지 않습니다. 번들된 설정 템플릿을 훅 인터프리터 경로를 채운 상태로 `~/.claude/settings.json`에 복사하고, 그 옆에 Apothem 규약 디렉터리(`agents/`, `rules/`, `skills/`, …)를 평탄화하여 배치하며, `CLAUDE.md`의 센티널로 구분된 관리 블록에 프로필을 기록합니다.
 
 주어진 어댑터는 **사용자 범위**(홈 디렉터리 아래에 씀)이거나
-**프로젝트 범위**(`--project <path>`를 요구하고 그 트리 내부에 씀)이며,
-레지스트리가 그중 어느 쪽인지 기록합니다.
+**프로젝트 범위**(`--project <path>`를 요구하고 자신의 프로젝트 파일을 그 트리
+내부에 씀)이며, 레지스트리가 그중 어느 쪽인지 기록합니다. 프로젝트 범위 어댑터
+일곱 개(cursor, github-copilot, windsurf, zed, codebuddy, kiro, trae)는
+`~/.agents/skills/`와 `~/.config/apothem/` 같은 공유 폴더도 사용자 홈에 쓰며,
+`--project`는 그 폴더들이 가는 위치를 바꾸지 않습니다.
 
 ## 현재 어댑터 토폴로지
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -53,9 +56,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

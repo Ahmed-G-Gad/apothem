@@ -2,7 +2,7 @@
 title: "Feuille de route"
 description: "La feuille de route publique d'Apothem — fonctionnalités à venir et améliorations prévues."
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,8 +26,9 @@ La ligne actuelle livre le gestionnaire de configuration d'environnements
 indépendant de l'hôte : un profil partagé (`~/.config/apothem/profile.yaml`)
 matérialisé en configuration native des environnements pour les adaptateurs
 enregistrés, piloté par la ligne de commande `apothem` (`quickstart` ·
-`install` · `update` · `uninstall` · `rollback` · `verify` · `status` · `diff`
-· `harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
+`install` · `update` · `uninstall` · `rollback` · `backups` · `verify` ·
+`status` · `diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` ·
+`completion`).
 
 | Élément | Statut | Notes |
 | ---- | ------ | ----- |
@@ -40,6 +41,8 @@ enregistrés, piloté par la ligne de commande `apothem` (`quickstart` ·
 | Infrastructure d'audit et de revue de dérive | livré | Scanners d'inventaire et de dérive sur lesquels reposent les commandes d'audit |
 | Portail de conformité | livré | Validateurs des en-têtes d'auteur, du nommage, de la facture du code, des formulations évasives et de la réciprocité des liaisons sur chaque surface matérialisée, avec des goldens de behavior-diff qui verrouillent la sortie de chaque adaptateur |
 | Mémoire durable et apprentissage continu sur option | livré | Un niveau de mémoire persistant et une boucle d'apprentissage sur option qui transmettent les conventions confirmées d'une session à l'autre |
+| Distribution npm / npx | livré | Le paquet `@ahmed-g-gad/apothem` exécute le moteur via `npx @ahmed-g-gad/apothem` |
+| Fiche du plugin Claude Code | livré | Installé avec `/plugin marketplace add ahmed-g-gad/apothem` |
 | Pipeline CI/CD et chaîne d'approvisionnement des publications signées | livré | Chaque changement est conditionné au lint, aux tests, aux vérifications de types, à une compilation de la documentation et à des contrôles de chaîne d'approvisionnement avant la publication |
 
 ## À court terme
@@ -47,8 +50,8 @@ enregistrés, piloté par la ligne de commande `apothem` (`quickstart` ·
 | Élément | Statut | Notes |
 | ---- | ------ | ----- |
 | Guides de documentation | en cours | Davantage de guides orientés tâches, de diagrammes et d'exemples pour des configurations d'environnement réelles |
-| Distribution npm / npx | prévu | Garder le point d'entrée npx `@ahmed-g-gad/apothem` aligné sur chaque publication et élargir sa couverture de plateformes |
-| Fiche du plugin Claude Code | prévu | Développer la fiche du plugin à mesure que la surface de la marketplace se stabilise |
+| Couverture de plateformes de npx | prévu | Garder le point d'entrée npx `@ahmed-g-gad/apothem` aligné sur chaque publication et élargir sa couverture de plateformes |
+| Croissance de la fiche du plugin | prévu | Développer la fiche du plugin à mesure que la surface de la marketplace se stabilise |
 | Davantage d'adaptateurs d'environnement | prévu | Des environnements supplémentaires à mesure que leurs conventions de configuration se stabilisent et que les utilisateurs les demandent |
 | Améliorations du schéma de profil | prévu | Des surfaces de surcharge par environnement plus riches et des diagnostics de validation plus stricts |
 | Validation du profil dans le portail de conformité | prévu | Valider le profil partagé par rapport à son schéma en tant que contrôle du portail |

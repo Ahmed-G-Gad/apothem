@@ -2,7 +2,7 @@
 title: "Resolución de problemas"
 description: "Soluciones para los fallos de instalación habituales de Apothem y los problemas en tiempo de ejecución en las rutas del plugin, npx y el instalador."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,6 +66,22 @@ marketplace desde GitHub. Cuando falla, confirma que la máquina puede alcanzar
 y vuelve a intentarlo. Si el marketplace se añadió antes con una descarga parcial,
 elimínalo y vuelve a añadirlo antes de ejecutar
 `/plugin install apothem@apothem`.
+
+### Añadir el marketplace del host de plugin agota el tiempo de espera
+
+El comando del host de plugin que añade un marketplace clona su repositorio y
+se rinde al cabo de 30 segundos. Un clon completo de este repositorio puede tardar más en un disco
+lento, como una unidad de Windows bajo WSL, y un clon completo anterior también puede
+dejar el plugin atascado en una versión antigua cuando una actualización posterior agota el tiempo de espera.
+Obtén solo las dos carpetas que necesita el plugin:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+Al listar los plugins del host se muestra entonces la versión actual de `apothem@apothem`.
 
 ### npx sirve una versión obsoleta
 

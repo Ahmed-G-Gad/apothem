@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "محوّل إطار عمل Apothem لـ Open-Claw (معاينة)."
 machineTranslated: true
-sourceHash: "f13f9ce348ede92c"
+sourceHash: "4c7b4673820f1fa6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ apothem install --harness open-claw
 يكتب المحوّل ملف الإعداد العام على مستوى المستخدم في <bdi>OpenClaw</bdi>، ويُسقِط
 الملف التعريفي المشترك في وثيقة ملف تعريفي، ويثبّت حزم دعم <bdi>Apothem</bdi> تحت جذر
 إطار العمل. الإعداد الأصلي لـ <bdi>OpenClaw</bdi> بصيغة <bdi>JSON</bdi>؛ ويُجسِّد
-المُجسِّد كائن <bdi>JSON</bdi> فارغًا، ويحتفظ الملف الموجود بمفاتيحه.
+المُجسِّد مفتاحًا واحدًا، <bdi>`skills.load.extraDirs`</bdi>، ويحتفظ الملف الموجود بمفاتيحه الأخرى.
 
 **الملفات المكتوبة:** <bdi>`~/.openclaw/openclaw.json`</bdi>، ووثيقة الملف التعريفي
 <bdi>`~/.openclaw/apothem/rules/00-apothem-profile.md`</bdi>، وملفات الدعم تحت
@@ -33,15 +33,63 @@ apothem install --harness open-claw
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> لكنه لا يؤلّف أي مفاتيح
-إعداد: يُكتَب <bdi>`openclaw.json`</bdi> الجديد أو الفارغ بوصفه كائنًا فارغًا،
-ويحتفظ الملف الموجود بمفاتيحه. تذهب هوية الملف التعريفي وتفضيلاته وقواعده إلى وثيقة
+يؤلّف المحوّل مفتاح إعداد واحدًا. فهو يضيف
+<bdi>`~/.openclaw/.apothem/support/skills`</bdi> إلى <bdi>`skills.load.extraDirs`</bdi>، وهي قائمة
+أدلّة المهارات الإضافية التي يقرؤها <bdi>OpenClaw</bdi>، وبها يعثر <bdi>OpenClaw</bdi> على
+المهارات المُثبَّتة. ويأتي المُدخَل بعد أي مُدخَلات تسردها أصلًا، وتبقى مفاتيحك
+الأخرى كما هي. تذهب هوية الملف التعريفي وتفضيلاته وقواعده إلى وثيقة
 الملف التعريفي. وتُثبَّت الأوامر، والمهارات، والقواعد، والقوالب، ومطالبات الخطّافات
 المشتركة بوصفها مادة دعم تحت <bdi>`~/.openclaw/.apothem/support/`</bdi>.
 
 ## ملاحظات التوافق
 
-محوّل في مرحلة المعاينة. لا يُحمِّل <bdi>OpenClaw</bdi> شجرة الدعم ولا وثيقة الملف التعريفي من تلقاء نفسه: فلا يشير إليهما أيٌّ من مواقع المهارات لديه، ولا ملفات تعليمات مساحة العمل لديه، ولا إعداده، لذا يعمل <bdi>OpenClaw</bdi> بعد التثبيت دون قواعد <bdi>Apothem</bdi> أو مهاراته أو خوادم <bdi>MCP</bdi> الخاصة بها. يقرأ <bdi>OpenClaw</bdi> المهارات من مجلّدَي <bdi>`skills/`</bdi> و<bdi>`.agents/skills/`</bdi> في مساحة العمل الخاصة به، ومن <bdi>`~/.agents/skills`</bdi>، ومن دليل الحالة الخاص به، ثم يُصفّيها عبر قائمة السماح بأسماء المهارات تحت <bdi>`agents.defaults.skills`</bdi>. و<bdi>`skills.load.extraDirs`</bdi> ليس مُحمِّلًا للمهارات، لذا لا تُحمَّل مهارات <bdi>Apothem</bdi> الموجودة تحت <bdi>`~/.openclaw/.apothem/support/skills`</bdi> إلا بعد أن تضعها في أحد هذه المجلدات وتُدرِج أسماءها في تلك القائمة. ويُبقي <bdi>`apothem update`</bdi> على المفاتيح التي تضيفها إلى <bdi>`openclaw.json`</bdi>. وتعيش خوادم <bdi>MCP</bdi> في كتلة <bdi>`mcp.servers`</bdi> من إعداد <bdi>OpenClaw</bdi>، التي تديرها عبر <bdi>`openclaw mcp add`</bdi> والأوامر الفرعية ذات الصلة؛ ولا يكتب المحوّل فيها أي مُدخَلات. (سلوك <bdi>OpenClaw</bdi> وفق وثائقه عن [المهارات](https://docs.openclaw.ai/tools/skills) و[واجهة سطر أوامر <bdi>MCP</bdi>](https://docs.openclaw.ai/cli/mcp)، كما قُرئت في 2026-10-02.)
+محوّل في مرحلة المعاينة. يُحمِّل <bdi>OpenClaw</bdi> مهارات <bdi>Apothem</bdi> عبر
+<bdi>`skills.load.extraDirs`</bdi>، لكنه لا يُحمِّل بقية شجرة الدعم ولا
+وثيقة الملف التعريفي من تلقاء نفسه: فلا يشير إليهما أيٌّ من ملفات تعليمات مساحة العمل لديه ولا
+إعداده، لذا يعمل <bdi>OpenClaw</bdi> بعد التثبيت دون قواعد <bdi>Apothem</bdi> أو
+خوادم <bdi>MCP</bdi> الخاصة بها.
+
+**تعارض الأسماء.** يقرأ <bdi>OpenClaw</bdi> المهارات من هذه المصادر، من الأعلى أسبقيةً
+إلى الأدنى، وحين يظهر اسم المهارة نفسه في أكثر من موضع يفوز المصدر
+الأعلى: مجلّد <bdi>`skills/`</bdi> في مساحة العمل، ومجلّد <bdi>`.agents/skills/`</bdi> في مساحة العمل،
+و<bdi>`~/.agents/skills`</bdi> (لدليل الحالة الافتراضي فقط)، ومجلّد <bdi>`skills/`</bdi> في دليل
+الحالة (<bdi>`~/.openclaw/skills`</bdi> افتراضيًا)، ومهارات الورشة،
+والمهارات المُضمَّنة ومهارات الحارس، وأخيرًا المجلّدات المسرودة تحت
+<bdi>`skills.load.extraDirs`</bdi> مع مهارات الإضافات. ودليل <bdi>Apothem</bdi> مُدخَل في
+<bdi>`extraDirs`</bdi>، لذا فإن المهارة التي تحمل الاسم نفسه وتحتفظ بها في أيٍّ من
+المصادر الأسبق هي التي يستخدمها <bdi>OpenClaw</bdi>، وتبقى نسخة <bdi>Apothem</bdi> من تلك المهارة
+غير مستخدمة على القرص. ولا يكتب <bdi>Apothem</bdi> إلا في <bdi>`openclaw.json`</bdi> وتحت
+<bdi>`~/.openclaw/.apothem/support/`</bdi>، ولا يكتب أبدًا في تلك المجلّدات الأسبق، لذا لا يستبدل
+التثبيت والتحديث وإلغاء التثبيت مهارةً تحتفظ بها هناك.
+
+<bdi>`agents.defaults.skills`</bdi> هي قائمة السماح بأسماء المهارات؛ ولا يعدّلها <bdi>Apothem</bdi>،
+لذا إن كنت تحتفظ بواحدة، فتحقّق من أنها تسمّي مهارات <bdi>Apothem</bdi> التي تريدها.
+ويُبقي <bdi>`apothem update`</bdi> على المفاتيح التي تضيفها إلى <bdi>`openclaw.json`</bdi>. وتعيش خوادم <bdi>MCP</bdi> في
+كتلة <bdi>`mcp.servers`</bdi> من إعداد <bdi>OpenClaw</bdi>، التي تديرها عبر
+<bdi>`openclaw mcp add`</bdi> والأوامر الفرعية ذات الصلة؛ ولا يكتب المحوّل فيها أي
+مُدخَلات. (سلوك <bdi>OpenClaw</bdi> وفق وثائقه عن [المهارات](https://docs.openclaw.ai/tools/skills)،
+و[إعداد المهارات](https://docs.openclaw.ai/tools/skills-config)،
+و[امتدادات الإعداد](https://docs.openclaw.ai/gateway/config-extensions)،
+كما قُرئت في 2026-10-24، ووثائقه عن [واجهة سطر أوامر <bdi>MCP</bdi>](https://docs.openclaw.ai/cli/mcp)، كما قُرئت في
+2026-10-02.)
+
+**التعليقات في <bdi>`openclaw.json`</bdi>.** يقرأ <bdi>OpenClaw</bdi> إعداده بصيغة <bdi>JSON5</bdi>، ويُعيد <bdi>Apothem</bdi>
+كتابة الملف بصيغة <bdi>JSON</bdi> عادية. وحين يحمل الملف تعليقات أو صياغة أخرى من <bdi>JSON5</bdi>
+ويكون المُدخَل مفقودًا، يترك <bdi>Apothem</bdi> الملف دون مساس ويتوقّف التثبيت
+برسالة تسمّي المفتاح. ادمج هذا المُدخَل في ملفك
+بنفسك، أو حوّل الملف إلى <bdi>JSON</bdi> عادي، ثم شغّل التثبيت مجدّدًا:
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  }
+}
+```
+
+المُدخَل الذي تضيفه بنفسك يُعَدّ مُدخَلك: فيتركه إلغاء التثبيت في مكانه.
 
 ## التحقّق
 
@@ -53,7 +101,10 @@ apothem verify --harness open-claw
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
 2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
-3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
+3. يسرد <bdi>`skills.load.extraDirs`</bdi> في الإعداد الأصلي
+   <bdi>`~/.openclaw/.apothem/support/skills`</bdi>. فمن دون ذلك المُدخَل لا يُحمِّل <bdi>OpenClaw</bdi>
+   المهارات المُثبَّتة؛ ويُعيد <bdi>`apothem update`</bdi> إضافته.
+4. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -62,7 +113,9 @@ apothem update --harness open-claw
 ```
 
 يُعيد اشتقاق وثيقة الملف التعريفي من الحالة الراهنة للملف التعريفي المشترك ويُحدِّث
-ملفات الدعم؛ ويحتفظ <bdi>`openclaw.json`</bdi> بالمفاتيح الموجودة فيه أصلًا.
+ملفات الدعم؛ ويحتفظ <bdi>`openclaw.json`</bdi> بالمفاتيح الموجودة فيه أصلًا، ويبقى
+مُدخَل <bdi>Apothem</bdi> في <bdi>`skills.load.extraDirs`</bdi> مسرودًا مرة واحدة مهما تكرّر
+التحديث.
 شغّله بعد تحرير <bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة
 <bdi>Apothem</bdi> المُثبَّتة.
 
@@ -72,8 +125,9 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-يُزيل ما أضافه المحوّل: وثيقة الملف التعريفي وشجرة الدعم. تبقى مفاتيحك الخاصة في
-<bdi>`openclaw.json`</bdi>، ولا يُحذَف الملف إلا إذا كان <bdi>Apothem</bdi> هو من
+يُزيل ما أضافه المحوّل: مُدخَله في <bdi>`skills.load.extraDirs`</bdi>، ووثيقة الملف
+التعريفي، وشجرة الدعم. تبقى مفاتيحك الخاصة في <bdi>`openclaw.json`</bdi>،
+بما فيها مُدخَلات <bdi>`extraDirs`</bdi> الخاصة بك، ولا يُحذَف الملف إلا إذا كان <bdi>Apothem</bdi> هو من
 أنشأه ولم يتبقَّ فيه شيء يخصّك. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي
 المشترك ولا محرّك <bdi>Apothem</bdi>.
 
@@ -89,7 +143,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness open-claw`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness open-claw`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | لا يُنشئ <bdi>Apothem</bdi> أي مفاتيح في <bdi>`openclaw.json`</bdi>، بل يُبقي المفاتيح الموجودة فيه، لذا لا يصل محتوى الملف التعريفي إليه. ويصل محتوى الملف التعريفي إلى <bdi>`~/.openclaw/apothem/rules/00-apothem-profile.md`</bdi>: افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل الأمر وفق [التحديث](#التحديث) |
+| محتوى إعداد غير متوقَّع | لا يُنشئ <bdi>Apothem</bdi> في <bdi>`openclaw.json`</bdi> سوى المُدخَل <bdi>`skills.load.extraDirs`</bdi>، بل يُبقي المفاتيح الموجودة فيه، لذا لا يصل محتوى الملف التعريفي إليه. ويصل محتوى الملف التعريفي إلى <bdi>`~/.openclaw/apothem/rules/00-apothem-profile.md`</bdi>: افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل الأمر وفق [التحديث](#التحديث) |
+| يتوقّف التثبيت برسالة عن تعليقات أو صياغة <bdi>JSON5</bdi> في <bdi>`openclaw.json`</bdi> | لا يُعيد <bdi>Apothem</bdi> كتابة ملف قد يضطرّ إلى حذف التعليقات منه. أضِف بنفسك المُدخَل <bdi>`skills.load.extraDirs`</bdi> المعروض في [ملاحظات التوافق](#ملاحظات-التوافق)، أو حوّل الملف إلى <bdi>JSON</bdi> عادي، ثم شغّل التثبيت مجدّدًا |
+| لا تظهر مهارة من <bdi>Apothem</bdi> في <bdi>OpenClaw</bdi> | المهارة التي تحمل الاسم نفسه في مساحة العمل، أو في <bdi>`~/.agents/skills`</bdi>، أو في <bdi>`~/.openclaw/skills`</bdi> تسبق نسخة <bdi>Apothem</bdi> (راجع [ملاحظات التوافق](#ملاحظات-التوافق)). وشغّل أيضًا <bdi>`apothem verify --harness open-claw`</bdi>، وتحقّق من أن أي قائمة سماح <bdi>`agents.defaults.skills`</bdi> تحتفظ بها تسمّي المهارة |
 
 ## مفاتيح الضبط
 

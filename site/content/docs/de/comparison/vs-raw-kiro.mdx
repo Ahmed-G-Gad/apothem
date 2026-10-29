@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Kiro-Konfiguration"
 description: "Die Steuerungsdateien von Kiro unter .kiro/steering/ von Hand pflegen, verglichen mit dem Rendern aus dem gemeinsamen Profil von Apothem."
 machineTranslated: true
-sourceHash: "a4a26f280f1271a3"
+sourceHash: "58351c9a748f4d91"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,19 @@ der Verwaltung mit Apothem gegenüber.
 | Steuerungsregeln verfassen | Jede Datei unter `.kiro/steering/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | Fundamentdateien unberührt halten | Daran denken, `product.md` / `tech.md` / `structure.md` nicht zu überschreiben | Der Adapter schreibt nur `apothem-rules.md` |
 | Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Wiederverwendbare Skills und Befehle teilen | Jeden Skill-Ordner von Hand nach `~/.kiro/skills/` kopieren und die Kopien aktuell halten | Vom Adapter nach `~/.kiro/skills/` geschrieben, eine gemeinsame Kopie für alle Projekte, und bei `apothem update` aufgefrischt |
+| Wiederverwendbare Helfer synchron halten | Jede Datei für benutzerdefinierte Agenten unter `.kiro/agents/` von Hand schreiben und die Werkzeugkategorien von Kiro nachverfolgen | Vierzehn Helfer mit übersetzten Werkzeugen nach `.kiro/agents/` geschrieben und bei `apothem update` aufgefrischt |
 | Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness kiro --project <path>` |
 
 ## Was Apothem verwaltet
 
 Der kiro-Adapter rendert die geteilten Regeln in eine dedizierte
 `apothem-rules.md`-Steuerungsdatei mit `inclusion: always`-Front-Matter und rührt die
-vom Operator verfassten Fundamentdateien von Kiro nicht an. Kiro hat keinen
-PreToolUse-Hook, daher lebt die Schutzschranken-Absicht in der Regelprosa statt an
-einem Tool-Aufruf-Abfangpunkt. Jede Änderung an den geteilten Regeln rendert die Datei
+vom Operator verfassten Fundamentdateien von Kiro nicht an. Außerdem schreibt er die
+vierzehn Helfer von Apothem als benutzerdefinierte Kiro-Agenten in
+`<project>/.kiro/agents/`, für Kiro IDE 1.0 und Kiro CLI V3. Kiro dokumentiert
+Agent-Hooks, die der Adapter nicht schreibt, daher lebt die Schutzschranken-Absicht
+in der Regelprosa statt an einem Tool-Aufruf-Abfangpunkt. Jede Änderung an den geteilten Regeln rendert die Datei
 beim nächsten `apothem update` neu.
 
 ## Migrationspfad

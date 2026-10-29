@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Zed"
 description: "Manter à mão o arquivo de instruções plano .rules do Zed versus renderizá-lo a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "2c5b5e0dd0dfe386"
+sourceHash: "693a56d0ed665ef9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,7 @@ contrasta manter essa configuração à mão com gerenciá-la com o Apothem.
 | Escrever instruções | Escrever à mão o arquivo `.rules` | Renderizadas a partir do corpus compartilhado |
 | Preservar um `.rules` anterior | Lembrar de copiá-lo para outro lugar você mesmo | O adaptador faz backup do arquivo existente antes de substituí-lo |
 | Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Compartilhar skills e comandos reutilizáveis | Copiar à mão cada pasta de skill para `~/.agents/skills/` e manter as cópias atualizadas | Gravados em `~/.agents/skills/` pelo adaptador, uma cópia para todos os projetos, e atualizados no `apothem update` |
 | Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness zed --project <path>` |
 
 ## O que o Apothem gerencia

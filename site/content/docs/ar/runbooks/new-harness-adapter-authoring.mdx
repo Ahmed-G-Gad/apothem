@@ -2,7 +2,7 @@
 title: "تأليف محوّل إطار عمل جديد"
 description: "دليل تشغيلي لتأليف ونشر محوّل إطار عمل جديد لـ Apothem."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,16 @@ sourceHash: "340d6137117f067e"
 
 اتبع مثال [تأليف محوّل إطار عمل](/docs/examples/authoring-a-harness-adapter)
 لتنفيذ `HarnessAdapter` لإطار العمل المستهدف.
+
+إذا كان المحوّل يكتب قالبًا نصيًا عاديًا (ملفًا ليس JSON ولا YAML)
+باستخدام `mode: write_text` و`ownership_class: operator-owned`، فإن `uninstall`
+لا يحذف الملف إلا ما دام نسخة غير معدَّلة من قالب شحنه Apothem. وحين يغيّر
+إصدار لاحق القالب، أضف بصمة SHA-256 للنص السابق إلى قائمة `earlier_digests`
+في مُدخل البيان ذاك ضمن التغيير نفسه، وإلا ترك `uninstall` في مكانها كل نسخة
+غير معدَّلة كتبها الإصدار الأقدم. خذ بصمة النص عند وسم آخر إصدار باستخدام
+`git show <tag>:<template path> | sha256sum`؛ ويجب ألا يحمل القالب أي رمز مسار
+`${...}`. يفشل `tests/unit/test_template_digests.py` حين لا يُؤخذ قالب مشحون
+في الحسبان.
 
 ### 2. اكتب صفحة التوثيق
 

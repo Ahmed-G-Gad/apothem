@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptateur d'environnement Apothem pour GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "72bf51d743f95bc8"
+sourceHash: "b1b8b4918d7d754d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,213 @@ apothem install --harness github-copilot --project /path/to/project
 ```
 
 L'adaptateur dérive le fichier d'instructions du projet à partir de votre profil
-partagé et de la surface partagée de règles et de gouvernance d'Apothem.
+partagé et de la surface partagée de règles et de gouvernance d'Apothem, écrit
+les auxiliaires d'Apothem sous forme de profils d'auxiliaires Copilot dans le
+projet (voir [Profils des auxiliaires](#profils-des-auxiliaires)), et enregistre
+deux hooks (voir [Hooks](#hooks)).
 
-**Fichiers écrits :** `<project>/.github/copilot-instructions.md`
+Il écrit aussi les skills d'Apothem, ainsi que les règles et templates qu'ils
+citent, dans votre répertoire personnel, avant de toucher au projet (voir
+[Fichiers hors du projet](#fichiers-hors-du-projet)).
+
+**Fichiers écrits :**
+
+- `<project>/.github/copilot-instructions.md`, le fichier d'instructions.
+- `<project>/.github/agents/<name>.agent.md` pour chaque auxiliaire Apothem, dans le projet.
+- `<project>/.github/hooks/apothem.json`, le fichier de hooks, dans le projet. Vos propres fichiers de hooks dans ce dossier ne sont pas touchés.
+- `<project>/.apothem/support/github-copilot/hooks/`, les scripts de hooks, dans le projet.
+- `~/.agents/skills/<name>/SKILL.md` pour chaque skill et chaque commande Apothem, dans votre répertoire personnel.
+- `~/.config/apothem/rules/` et `~/.config/apothem/templates/`, dans votre répertoire personnel.
+
+## Fichiers hors du projet
+
+L'installation écrit aussi les skills d'Apothem dans votre répertoire personnel,
+avant de modifier quoi que ce soit dans le projet :
+
+| Dossier | Ce qu'Apothem y écrit |
+| --- | --- |
+| `~/.agents/skills/` | Un dossier par skill Apothem, avec son propre `SKILL.md`, et un par commande Apothem (une commande devient un skill du même nom). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Les règles et templates auxquels renvoient les skills et le fichier d'instructions. |
+
+Ces dossiers sont partagés. Ils ne sont pas propres au projet :
+
+- Chaque projet dans lequel vous installez `github-copilot`, et chaque autre installation Apothem qui nomme ce dossier, utilise la même copie et écrit les mêmes fichiers, de sorte que l'ordre d'installation n'a pas d'importance. Plusieurs autres outils lisent aussi `~/.agents/skills/` ; le [registre des environnements](/docs/reference/harness-registry#racines-partagées) les liste.
+- `--project` choisit le fichier d'instructions à écrire et le projet auquel
+  l'installation appartient. Il ne change pas l'emplacement des skills.
+- L'installation n'ajoute aucun fichier de skill ni de règle à votre dépôt. Le
+  projet reçoit le fichier d'instructions, les fichiers de profils d'auxiliaires
+  dans `.github/agents/`, le fichier de hooks `.github/hooks/apothem.json`, plus
+  le dossier `.apothem/` que crée toute installation de projet, et qui contient
+  aussi les scripts de hooks.
+- Les dossiers du répertoire personnel sont écrits en premier. Si cela échoue,
+  par exemple parce qu'un dossier du chemin est un lien qui sort de votre
+  répertoire personnel (un lien qui reste à l'intérieur est suivi) ou ne peut
+  pas être écrit, l'installation s'arrête avec l'erreur avant que quoi que ce
+  soit ne change dans le projet.
+- Un dossier de skill portant le nom d'un skill Apothem qu'Apothem n'a pas
+  écrit est laissé tel quel, et l'installation affiche un avertissement qui le
+  nomme. Renommez-le ou déplacez-le, puis exécutez `apothem update`.
+  `apothem verify` échoue tant que ce nom est occupé.
+- Les fichiers totalisent quelques mégaoctets.
+
+L'installation affiche une note qui nomme les dossiers qu'elle écrit hors de
+`--project`, et `--dry-run` les liste.
+
+## Profils des auxiliaires
+
+Copilot lit un profil d'auxiliaire depuis
+`<project>/.github/agents/<name>.agent.md`, selon la
+[référence de GitHub pour ces profils](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
+L'installation écrit un fichier par auxiliaire Apothem dans ce dossier. Elle
+installe pour le projet uniquement et n'écrit aucun dossier `~/.copilot/agents/`.
+
+Chaque fichier conserve les instructions de l'auxiliaire inchangées et porte
+ces clés de frontmatter :
+
+| Clé | Ce qu'Apothem écrit |
+| --- | --- |
+| `name`, `description` | Le nom et la description de l'auxiliaire. Copilot exige la description. |
+| `tools` | Les outils que l'auxiliaire peut utiliser, sous forme d'une liste d'alias d'outils Copilot, par exemple `["read", "search", "execute"]`. |
+
+La clé `tools` de Copilot est une liste d'autorisation d'alias, et Copilot n'a
+aucune clé qui refuse un outil. Les outils autorisés et les outils refusés de
+l'auxiliaire sont donc combinés en une seule liste :
+
+| Alias Copilot | Couvre | Écrit pour un auxiliaire autorisé à utiliser |
+| --- | --- | --- |
+| `read` | Read, NotebookRead | `Read` |
+| `search` | Grep, Glob | `Grep` ou `Glob` |
+| `edit` | Edit, MultiEdit, Write, NotebookEdit | `Write`, `Edit` ou `MultiEdit` |
+| `execute` | Bash, PowerShell | `Bash` ou `PowerShell` |
+| `web` | WebSearch, WebFetch | `WebSearch` ou `WebFetch` |
+| `todo` | TodoWrite | `TodoWrite` |
+
+Copilot a un alias de plus, celui qui permet à un auxiliaire de lancer d'autres
+auxiliaires ; aucun auxiliaire Apothem n'est autorisé à le faire, il n'est donc
+jamais écrit. Un alias est omis lorsque l'auxiliaire refuse l'un des outils
+qu'il couvre, car l'alias permettrait à l'auxiliaire d'utiliser cet outil. Un
+outil sans alias (par exemple `Monitor`) est omis. Un outil avec un motif, tel
+que `Bash(git status)`, n'a pas de forme d'alias : en tant qu'outil autorisé, il
+est omis, et en tant qu'outil refusé, il refuse l'outil entier. Un auxiliaire
+qui ne peut pas modifier de fichiers conserve cette limite : il ne reçoit jamais
+`edit`.
+Si chaque outil de la liste d'un auxiliaire est omis, le fichier indique
+`tools: []`, ce qui ne donne aucun outil à l'auxiliaire, plutôt que d'omettre la
+clé, ce qui lui donnerait tous les outils.
+
+L'installation n'écrit aucune clé `model`, de sorte qu'un auxiliaire utilise le
+modèle par défaut, ni aucune des autres clés que Copilot documente (`target`,
+`disable-model-invocation`, `user-invocable`, `mcp-servers`, `metadata`), ni
+limite de tours, ni les clés `version`, `updated` et `portability` d'Apothem.
+
+À savoir :
+
+- `.github/agents/` fait partie de votre dépôt. Vos coéquipiers et le service de
+  codage cloud de Copilot lisent les mêmes fichiers ; commitez-les donc avec le
+  projet ou listez `.github/agents/` dans `.gitignore` ; Apothem ne choisit pas à
+  votre place.
+- Le service de codage cloud ne respecte pas les alias `web` et `todo`. L'alias
+  `web` couvre à la fois la recherche web et la récupération de pages ; ainsi
+  `citation-auditor`, `fact-checker` et `research-scout` peuvent y lire et
+  rechercher des fichiers, mais ne peuvent ni effectuer de recherche web ni
+  récupérer de pages.
+- La CLI Copilot lit aussi le `.claude/agents/` du dépôt, mais pas
+  `~/.claude/agents/` ; l'installation Claude Code n'atteint donc pas Copilot.
+- Un fichier à vous nommé comme un auxiliaire Apothem (`<name>.agent.md`) est
+  enregistré sous `~/.apothem/backups/` puis remplacé. La désinstallation ne le
+  remet pas en place. Les fichiers portant d'autres noms ne sont jamais touchés.
+  La documentation de Copilot ne dit pas ce qui se passe lorsque le dossier
+  contient à la fois `<name>.md` et `<name>.agent.md`.
+- Apothem n'a pas confirmé si Copilot préfère `.github/agents/` ou
+  `.claude/agents/` pour un même nom, ni comment le service de codage cloud et
+  VS Code traitent une clé de frontmatter qu'ils ne listent pas.
+
+## Hooks
+
+Copilot exécute les hooks depuis des fichiers JSON dans `<project>/.github/hooks/`,
+selon la
+[référence des hooks de Copilot](https://docs.github.com/en/copilot/reference/hooks-reference).
+L'installation y écrit un fichier, `apothem.json` (version 1), avec deux hooks :
+
+| Événement | Ce qui s'exécute |
+| --- | --- |
+| `sessionStart` | L'amorçage de session : les métadonnées de session, l'index des skills, les résumés de mémoire et de plan et la posture permanente, ajoutés au contexte du modèle. |
+| `postToolUse` (tous les outils) | Le suivi de compaction proactive. Il compte l'activité et, au plus deux fois par cycle de compaction, demande au modèle d'enregistrer son état ou de compacter. Il reste silencieux le reste du temps. |
+
+Les deux ajoutent du contexte pour le modèle. Aucun ne bloque un appel d'outil ni
+une session.
+
+Apothem n'enregistre aucune garde `preToolUse` sur Copilot. Pour `preToolUse`,
+Copilot ne lit que les champs de permission et une entrée d'outil réécrite,
+jamais `additionalContext` (le champ par lequel s'expriment les gardes
+d'Apothem). Une garde enregistrée là coûterait un démarrage de processus à
+chaque appel d'outil et ne transmettrait rien ; les gardes d'écriture, d'édition
+et de shell, la vérification `AskUserQuestion` et le protocole de fin de session
+restent donc sur les outils qui les transmettent. Les hooks utilisent les noms
+d'événements en camelCase de Copilot, car la référence liste les champs de
+sortie pour ceux-ci ; la documentation ne dit pas si Copilot lit
+`additionalContext` depuis un événement en PascalCase.
+
+**Où vont les fichiers**
+
+| Fichier | Ce qu'il contient |
+| --- | --- |
+| `<project>/.github/hooks/apothem.json` | Les deux enregistrements de hooks. Apothem possède ce seul fichier. |
+| `<project>/.apothem/support/github-copilot/hooks/` | Le script répartiteur, ses auxiliaires et ses fichiers de messages. |
+
+Chaque hook a une commande `bash` et une commande `powershell`. Elles exécutent
+le même répartiteur ; la commande `powershell` est précédée d'un opérateur
+d'appel (`&`), dont PowerShell a besoin devant un chemin de programme entre
+guillemets. Une commande `bash` ressemble à ceci, avec votre interpréteur et le
+chemin de votre projet à la place des deux chemins :
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+```
+
+`--contract copilot` fait lire au répartiteur l'entrée en camelCase de Copilot et
+afficher `{"additionalContext": ...}`, ce que Copilot lit pour ces deux
+événements.
+
+**Commitez avec précaution, et pensez au Copilot cloud agent.** `.github/hooks/` fait partie de
+votre dépôt, et le service de codage cloud de Copilot le lit. Les commandes
+nomment l'interpréteur qu'Apothem a trouvé lors de son exécution et le chemin
+absolu du projet, et les scripts se trouvent dans `.apothem/`, que le snippet
+`.gitignore` d'un projet ignore. Sur toute autre machine, et dans le service
+cloud (qui n'exécute que la commande `bash`), la commande ne trouve rien à
+exécuter. Copilot journalise l'échec et l'exécution continue, car un hook
+`sessionStart` ou `postToolUse` en échec ne bloque pas. Ajoutez
+`.github/hooks/apothem.json` à `.gitignore`, ou ne le commitez que pour une
+équipe qui partage la même disposition. L'installation ne modifie pas
+`.gitignore` et l'affiche sous forme de note.
+
+**Vos propres hooks.** Vos fichiers de hooks dans `.github/hooks/` ne sont
+jamais lus ni modifiés. Un hook que vous ajoutez à `apothem.json` lui-même
+reste : une mise à jour et une désinstallation ne remplacent ou ne suppriment
+que les entrées dont la commande exécute le répartiteur d'Apothem
+(`.apothem/support/github-copilot/hooks/dispatch.py` avec `--contract copilot`,
+quel que soit le chemin de projet sous lequel il a été écrit). Un hook à vous
+qui ne fait que partager le nom, ou qui exécute
+`python -m apothem.conformity.gate`, n'est jamais pris pour celui d'Apothem. Un
+fichier qui n'est pas du JSON valide est enregistré sous `~/.apothem/backups/`
+et remplacé.
+
+**Chemins que le shell interpréterait mal.** Un chemin de projet ou
+d'interpréteur qui contient `$`, un accent grave, un guillemet double ou une
+barre oblique inverse est refusé avant toute écriture : à l'intérieur de la
+commande entre guillemets, il exécuterait un autre fichier, ou casserait le JSON
+dans lequel la commande est écrite. L'erreur nomme le chemin ; déplacez ou
+renommez le projet et relancez l'installation. Une espace ou une apostrophe dans
+un chemin ne pose pas de problème.
+
+**Désactiver les hooks.** Définissez `APOTHEM_HOOKS_DISABLE=1` dans
+l'environnement dans lequel Copilot s'exécute pour rendre les hooks Apothem
+silencieux, ou définissez `"disableAllHooks": true` dans `apothem.json`, ce qui
+ignore ce seul fichier.
+
+L'ancien contrat de hooks Local de VS Code (des événements avec les champs
+`command`, `windows`, `linux` et `osx`) est un format différent qu'un fichier de
+version 1 ne cible pas.
 
 ## Correspondance entre le profil et la configuration native
 
@@ -43,7 +247,9 @@ la partie qui vous est propre ouvre donc le fichier.
 GitHub Copilot n'expose aucun chemin d'instructions globales utilisateur sous
 forme de fichier que cet adaptateur pourrait gérer. Apothem cible le fichier
 d'instructions de portée projet documenté et laisse les paramètres utilisateur
-au niveau de l'IDE sous la propriété de l'opérateur.
+au niveau de l'IDE sous la propriété de l'opérateur. Il écrit un seul fichier de
+hooks, `.github/hooks/apothem.json`, et aucun autre fichier dans
+`.github/hooks/`.
 
 Dans le dépôt Apothem, `.github/copilot-instructions.md` est une voix parmi les
 surfaces d'instructions d'assistant de ce dépôt. Dans un checkout de ce dépôt, le
@@ -55,6 +261,16 @@ formulée par `AGENTS.md`. Le contrôle ne lit pas le fichier d'instructions
 qu'Apothem écrit dans votre projet. Le portail est consultatif par défaut : il
 signale les constats et se termine avec le code `0`.
 
+GitHub Copilot liste `~/.agents/skills/` parmi ses emplacements de skills
+personnels ; les skills qu'écrit l'installation sont donc sur votre machine, à
+la disposition de Copilot. Les surfaces qui s'exécutent sur GitHub, le service
+de codage cloud et la revue de code, s'exécutent ailleurs et ne voient pas votre
+répertoire personnel, c'est pourquoi le fichier d'instructions porte lui-même
+les disciplines. Apothem n'a pas confirmé comment Copilot traite une clé
+d'en-tête de `SKILL.md` qu'il ne liste pas ; les skills portent
+`user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
+et une table `metadata`.
+
 ## Vérification
 
 ```bash
@@ -64,11 +280,24 @@ apothem verify --harness github-copilot --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
-   configurations JSON ou YAML s'analysent correctement. Ajoutez
-   `--profile PATH` pour vérifier en plus que les fichiers installés
-   correspondent à ce profil.
-3. La routine de vérification propre à l'adaptateur signale un succès.
+2. Chaque cible gérée existe, y compris le dossier `.github/agents/` ; les
+   fichiers gérés ne sont pas vides, et les configurations JSON ou YAML
+   s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que
+   les fichiers installés correspondent à ce profil. Pour `.github/agents/`, la
+   vérification porte sur l'existence du dossier, et non sur la présence de
+   chaque fichier d'auxiliaire ; la commande
+   `apothem diff --harness github-copilot --project /path/to/project` liste les
+   fichiers d'auxiliaires manquants ou obsolètes.
+   Le fichier de hooks `.github/hooks/apothem.json` doit exister, ne pas être
+   vide, s'analyser comme du JSON et contenir une entrée qui exécute le
+   répartiteur d'Apothem, et les scripts de hooks doivent se trouver dans
+   `.apothem/support/github-copilot/hooks/`. La vérification n'exécute pas les
+   hooks.
+3. Chaque dossier de skill Apothem est en place avec un `SKILL.md`, quelle que
+   soit l'installation qui l'a écrit, et aucun dossier de skill portant un nom
+   Apothem n'appartient à quelque chose qu'Apothem n'a pas écrit. Une
+   vérification en échec nomme les dossiers manquants ou étrangers.
+4. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -78,6 +307,13 @@ apothem update --harness github-copilot --project /path/to/project
 
 Redérive le fichier d'instructions du projet à partir de l'état actuel du
 profil partagé.
+
+La mise à jour réécrit aussi tout dossier de skill dont les fichiers diffèrent
+des fichiers actuels. Si vous avez installé avec une version antérieure qui
+n'écrivait aucun skill, la mise à jour les ajoute. Elle réécrit les fichiers de
+profils d'auxiliaires qui diffèrent des fichiers actuels, et ajoute ceux qui
+manquent. Elle actualise aussi les scripts de hooks et les hooks Apothem de
+`.github/hooks/apothem.json`, en conservant tout hook à vous dans ce fichier.
 
 ## Désinstallation
 
@@ -90,6 +326,26 @@ conserve tout texte situé en dehors de ce bloc. Le fichier n'est supprimé que
 lorsqu'il ne contient plus rien d'autre. Avant la modification, une copie
 horodatée du fichier est enregistrée sous `~/.apothem/backups/`. Le YAML du
 profil partagé et le moteur Apothem ne sont pas affectés.
+
+La désinstallation supprime aussi les fichiers de profils d'auxiliaires qu'elle
+a écrits dans `<project>/.github/agents/` et conserve tout autre fichier qui s'y
+trouve ; le dossier est supprimé lorsqu'il reste vide. Elle supprime les hooks
+Apothem de `<project>/.github/hooks/apothem.json`, en les reconnaissant au
+chemin du répartiteur dans leur commande, de sorte qu'elle fonctionne sans
+enregistrement d'installation, et conserve tout hook à vous dans ce fichier. Le
+fichier est supprimé lorsque rien d'autre n'y subsiste, et vos autres fichiers
+de hooks ne sont pas touchés. Si le fichier contient des commentaires que la
+désinstallation ne peut pas lire, elle laisse le fichier tel quel et signale les
+hooks comme ignorés, avec la raison ; supprimez les entrées Apothem à la main.
+Les scripts de hooks de `<project>/.apothem/support/github-copilot/hooks/` sont
+supprimés aussi. Elle supprime les dossiers de skills qu'elle a écrits dans
+`~/.agents/skills/` ainsi que les règles et templates de `~/.config/apothem/`,
+mais seulement si aucune autre installation Apothem ne les utilise encore. Un
+autre projet, ou un autre outil qui partage le dossier, peut les utiliser. Dans
+ce cas, la désinstallation conserve les dossiers, affiche quelle installation
+les utilise, et la dernière désinstallation les supprime. Les fichiers que vous
+avez ajoutés à ces dossiers restent, et un dossier laissé vide est supprimé.
+Chaque dossier est sauvegardé sous `~/.apothem/backups/` avant d'être supprimé.
 
 ## Portail de conformité
 
@@ -109,6 +365,11 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | Fichier de configuration introuvable | Relancez `apothem install --harness github-copilot --project /path/to/project` |
 | Échec de la vérification | Exécutez `apothem update --harness github-copilot --project /path/to/project`, puis vérifiez à nouveau |
+| Copilot ne liste aucun des auxiliaires Apothem | Vérifiez que `.github/agents/` contient les fichiers `.agent.md` et qu'ils se trouvent sur la branche que vous utilisez. Exécutez `apothem diff --harness github-copilot --project /path/to/project` : une ligne en attente pour le dossier `.github/agents` signifie que des fichiers d'auxiliaires sont manquants ou obsolètes ; exécutez alors `apothem update --harness github-copilot --project /path/to/project`. `apothem verify` ne teste pas cela : il réussit dès que `.github/agents/` existe, même sans aucun fichier d'auxiliaire dedans |
+| Les hooks Apothem ne s'exécutent pas | Vérifiez que `.github/hooks/apothem.json` se trouve sur la branche que vous utilisez et que `.apothem/support/github-copilot/hooks/` existe sur cette machine ; les commandes nomment l'interpréteur et le chemin de projet de la machine qui a exécuté l'installation, exécutez donc `apothem install --harness github-copilot --project /path/to/project` sur chaque machine. Le service de codage cloud de Copilot n'exécute que la commande `bash`, sans interpréteur à ce chemin |
+| `apothem verify` nomme un dossier de skill manquant | Exécutez `apothem install --harness github-copilot --project /path/to/project` ; il restaure le dossier |
+| Une installation ou une mise à jour avertit qu'elle a ignoré un dossier de skill | Un dossier portant le nom d'un skill Apothem existe déjà dans le dossier des skills et Apothem ne l'a pas écrit. Renommez-le ou déplacez-le, puis exécutez `apothem update` |
+| Une installation s'arrête avant de modifier le projet | Une écriture dans votre répertoire personnel a échoué. Lisez l'erreur, corrigez le dossier qu'elle nomme (un lien qui sort de votre répertoire personnel, un fichier là où un dossier est attendu, ou un dossier en lecture seule), puis relancez l'installation |
 | Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness github-copilot --project /path/to/project` |
 
 ## Paramètres de configuration

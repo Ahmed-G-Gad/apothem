@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,21 +37,39 @@ Der Adapter liest das gemeinsame Profil von Apothem und rendert die native
 YAML-Konfiguration einschließlich des MCP-Inventars des Profils. Die MCP-Server
 stammen aus dem Abschnitt `mcp_servers` des Profils. Sie werden bei jeder
 Installation und jedem Update in `config.yaml` gerendert, nicht als Dateien
-kopiert. Identität, Präferenzen und Regeln des Profils gehen in das Profildokument.
-Gemeinsame Commands, Skills, Helfer-Definitionen, Regeln, Templates und
-Hook-Prompts landen als Unterstützungsmaterial unter `~/.hermes/.apothem/support/`.
+kopiert. Der Adapter fügt außerdem `~/.hermes/.apothem/support/skills` zu
+`skills.external_dirs` hinzu, der Liste zusätzlicher Skill-Verzeichnisse, die
+Hermes liest; so findet Hermes die installierten Skills. Der Eintrag kommt nach
+allen Einträgen, die Sie bereits aufführen, und Ihre übrigen Schlüssel bleiben,
+wie sie sind. Identität, Präferenzen und Regeln des Profils gehen in das
+Profildokument. Gemeinsame Commands, Skills, Helfer-Definitionen, Regeln,
+Templates und Hook-Prompts landen als Unterstützungsmaterial unter
+`~/.hermes/.apothem/support/`.
 
 ## Kompatibilitätshinweise
 
-Vorschau-Adapter. Hermes lädt weder den Unterstützungs-Teilbaum noch das
-Profildokument von selbst: Nichts in `config.yaml` und keine der
-Kontextdateien, die Hermes liest, verweist dorthin, daher läuft Hermes nach der
-Installation ohne die Regeln, Skills oder Hooks von Apothem. Hermes liest
-Skills aus `~/.hermes/skills/` und aus jedem Ordner, der in `config.yaml` unter
-`skills.external_dirs` aufgeführt ist; um die Apothem-Skills zu verwenden,
-fügen Sie `~/.hermes/.apothem/support/skills` selbst zu dieser Liste hinzu;
-`apothem update` behält Schlüssel bei, die Sie zu `config.yaml` hinzufügen. Der
-Adapter schreibt das MCP-Inventar des Profils unter den Top-Level-Schlüssel
+Vorschau-Adapter. Hermes lädt die Apothem-Skills über `skills.external_dirs`,
+lädt aber weder den Rest des Unterstützungs-Teilbaums noch das Profildokument
+von selbst: Nichts sonst in `config.yaml` und keine der Kontextdateien, die
+Hermes liest, verweist dorthin, daher läuft Hermes nach der Installation ohne
+die Regeln oder Hooks von Apothem.
+
+**Namenskonflikte.** Hermes dokumentiert diese Vorrangreihenfolge für Skills:
+die Skills des Projekts (`<project>/.hermes/skills/` und
+`<project>/.agents/skills/`), dann `~/.hermes/skills/`, dann
+`skills.create_dir`, dann die unter `skills.external_dirs` aufgeführten Ordner.
+Das Apothem-Verzeichnis ist ein `external_dirs`-Eintrag und kommt daher zuletzt.
+Die geprüfte Hermes-Dokumentation sagt nicht, welche Kopie Hermes lädt, wenn zwei
+Orte einen gleichnamigen Skill enthalten; Apothem liest die Reihenfolge so, dass
+frühere Orte gewinnen, rechnen Sie also damit, dass ein gleichnamiger Skill, den
+Sie an einem früheren Ort halten, Vorrang vor der Apothem-Kopie hat. Apothem
+schreibt nur in `config.yaml` und unter `~/.hermes/.apothem/support/`, nie in
+diese früheren Orte, daher ersetzen Installation, Aktualisierung und
+Deinstallation keinen Skill, den Sie dort halten.
+
+`apothem update` behält Schlüssel bei, die Sie zu `config.yaml` hinzufügen,
+einschließlich `skills.config` und Ihrer eigenen `skills.external_dirs`-Einträge.
+Der Adapter schreibt das MCP-Inventar des Profils unter den Top-Level-Schlüssel
 `mcp_servers`, wo Hermes MCP-Server liest.
 Frühere Apothem-Releases schrieben es unter `auxiliary.mcp`, das Hermes als
 Hilfsmodell für den Dispatch von MCP-Werkzeugen liest; sowohl `apothem update`
@@ -59,9 +77,26 @@ als auch `apothem uninstall` entfernen diesen Block, wenn er noch dem
 entspricht, was ein solches Release aus Ihrem aktuellen gemeinsamen Profil
 schreiben würde (siehe [Deinstallation](#deinstallation), wann er stehen
 bleibt). (Verhalten von Hermes gemäß den Seiten seines Benutzerhandbuchs zu
-[Skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
-und [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+[Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills),
+gelesen am 2026-10-24, und
+[MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 gelesen am 2026-10-02.)
+
+**Kommentare in `config.yaml`.** Apothem schreibt die Datei mit einer
+YAML-Bibliothek neu, die Kommentare verwirft. Enthält die Datei Kommentare von
+Ihnen und fehlt der Eintrag, lässt Apothem die Datei unverändert, und die
+Installation bricht mit einer Meldung ab, die den Schlüssel nennt. Fügen Sie den
+Eintrag selbst hinzu und führen Sie dann die Installation erneut aus:
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+Ein Eintrag, den Sie selbst hinzufügen, gilt als Ihrer: Wenn Sie dieses
+Verzeichnis bereits aufführen, behält Apothem Ihren Eintrag unverändert bei, und
+die Deinstallation lässt ihn bestehen.
 
 ## Verifizierung
 
@@ -76,7 +111,10 @@ Der Befehl verify bestätigt Folgendes:
    JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
    hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
    Profil passen.
-3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
+3. `skills.external_dirs` in der nativen Konfiguration führt
+   `~/.hermes/.apothem/support/skills` auf. Ohne diesen Eintrag lädt Hermes die
+   installierten Skills nicht; `apothem update` fügt ihn wieder hinzu.
+4. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -85,7 +123,8 @@ apothem update --harness hermes
 ```
 
 Leitet die native Konfiguration aus dem aktuellen Zustand des gemeinsamen
-Profils neu ab.
+Profils neu ab; der Apothem-Eintrag in `skills.external_dirs` bleibt genau
+einmal aufgeführt, wie oft Sie auch aktualisieren.
 Führen Sie den Befehl aus, nachdem Sie `~/.config/apothem/profile.yaml`
 bearbeitet oder das installierte Apothem-Paket aktualisiert haben.
 
@@ -95,10 +134,12 @@ bearbeitet oder das installierte Apothem-Paket aktualisiert haben.
 apothem uninstall --harness hermes
 ```
 
-Entfernt, was der Adapter hinzugefügt hat: die `mcp_servers`-Einträge, die
-seine Installation in `config.yaml` festgehalten hat (Ihre eigenen Schlüssel
-bleiben erhalten, und die Datei wird nur gelöscht, wenn Apothem sie erstellt
-hat und nichts von Ihnen übrig ist), das Profildokument und den
+Entfernt, was der Adapter hinzugefügt hat: die `mcp_servers`-Einträge und den
+`skills.external_dirs`-Eintrag, die seine Installation in `config.yaml`
+festgehalten hat (Ihre eigenen Schlüssel bleiben erhalten, einschließlich Ihrer
+eigenen `external_dirs`-Einträge und `skills.config`, und die Datei wird nur
+gelöscht, wenn Apothem sie erstellt hat und nichts von Ihnen übrig ist), das
+Profildokument und den
 Unterstützungs-Teilbaum. Die YAML-Datei des gemeinsamen Profils und die
 Apothem-Engine bleiben unberührt.
 
@@ -126,6 +167,8 @@ python -m apothem.conformity.gate --all .
 | Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness hermes` erneut aus |
 | Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness hermes` aus und verifizieren Sie dann erneut |
 | Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness hermes` erneut aus |
+| Die Installation bricht mit einer Meldung über Kommentare in `config.yaml` ab | Apothem schreibt keine Datei neu, aus der es Kommentare entfernen müsste. Fügen Sie den unter [Kompatibilitätshinweise](#kompatibilitätshinweise) gezeigten Eintrag `skills.external_dirs` selbst hinzu und führen Sie dann die Installation erneut aus |
+| Ein Apothem-Skill erscheint nicht in Hermes | Ein gleichnamiger Skill im Projekt oder in `~/.hermes/skills/` kann Vorrang vor der Apothem-Kopie haben: Hermes dokumentiert die Suchreihenfolge, aber nicht die Konfliktregel (siehe [Kompatibilitätshinweise](#kompatibilitätshinweise)). Führen Sie außerdem `apothem verify --harness hermes` aus |
 
 ## Konfigurationsschalter
 

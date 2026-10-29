@@ -2,7 +2,7 @@
 title: "커밋 규약"
 description: "git 아티팩트와 버전 관리를 위한 커밋 메시지 형식, 릴리스 태깅, 사람 전용 작성자 규율, 작업별 케이던스를 확립합니다."
 machineTranslated: true
-sourceHash: "b14f720edd93a318"
+sourceHash: "b4f17475336ad671"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,15 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. 작성자 규율(사람 전용)
 
-모든 git 아티팩트의 모든 작성자 표면(커밋 제목, 커밋 본문, `Author:` 필드, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)은 **사람 기여자만** 명명합니다. 하니스 런타임은 자기 자신, 기반 언어 모델, 런타임 / 하니스 / IDE / 확장 / 공급업체, 또는 그 밖의 어떤 자동화 도구도 이러한 표면 중 어느 것에도 절대 귀속시키지 않습니다. 금지된 패턴에는 `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, `generated with X` 또는 `co-authored by an automated helper` 같은 본문 서술, 그리고 사람이 아닌 작성자를 나타내는 모든 제목 행 마커가 포함됩니다. 전체 명세는 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6에 있습니다. 기계적 적용은 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3에 있습니다.
+모든 git 아티팩트의 모든 작성자 표면(커밋 제목, 커밋 본문, `Author:` 필드, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)은 **사람 기여자만** 명명합니다. 하니스 런타임은 자기 자신, 기반 언어 모델, 런타임 / 하니스 / IDE / 확장 / 공급업체, 또는 그 밖의 어떤 자동화 도구도 이러한 표면 중 어느 것에도 절대 귀속시키지 않습니다. 금지된 패턴에는 `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, `generated with X` 또는 `co-authored by an automated helper` 같은 본문 서술, 그리고 사람이 아닌 작성자를 나타내는 모든 제목 행 마커가 포함됩니다. 전체 명세는 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/production-ready-prs.md) §6에 있습니다. 기계적 적용은 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) Scan 3에 있습니다.
 
 ## 3. 릴리스 태그(시맨틱 버저닝)
 
-릴리스 태그는 **시맨틱 버저닝**(`vMAJOR.MINOR.PATCH`)을 따릅니다. 1.0 이전 버전은 명세의 안정화 이전 규약에 따라 `0.MINOR.PATCH`입니다. 호환성을 깨는 변경은 MINOR를, 버그 수정은 PATCH를 증가시킵니다. 태그는 주석이 달려 있으며(`git tag -a`) [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)에 따라 게시 계층에서 서명됩니다. 패키지 버전은 소스 매니페스트(`pyproject.toml`의 `version`)에 있으며, 런타임 / 버전을 담은 표면은 해당 패키지 메타데이터에서 파생됩니다.
+릴리스 태그는 **시맨틱 버저닝**(`vMAJOR.MINOR.PATCH`)을 따릅니다. 호환성을 깨는 변경은 MAJOR를, 하위 호환되는 추가는 MINOR를, 버그 수정은 PATCH를 증가시킵니다. 태그는 주석이 달려 있으며(`git tag -a`) [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)에 따라 게시 계층에서 서명됩니다. 패키지 버전은 소스 매니페스트(`pyproject.toml`의 `version`)에 있으며, 런타임 / 버전을 담은 표면은 해당 패키지 메타데이터에서 파생됩니다.
 
 ## 4. 작업별 케이던스
 
-커밋은 SHARED+ 진지도에서는 작업별로, PERSONAL_USE에서는 단계별로 이루어지며, EXPLORING에서는 선택 사항입니다. 작업의 커밋은 해당 작업의 검증 게이트가 통과한 직후 이루어집니다. 미룬 커밋은 컨텍스트를 누적하고 범위를 잃을 위험이 있습니다. 전체 규율은 [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13에 있습니다.
+커밋은 SHARED+ 진지도에서는 작업별로, PERSONAL_USE에서는 단계별로 이루어지며, EXPLORING에서는 선택 사항입니다. 작업의 커밋은 해당 작업의 검증 게이트가 통과한 직후 이루어집니다. 미룬 커밋은 컨텍스트를 누적하고 범위를 잃을 위험이 있습니다. 전체 규율은 [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/operational-mandates.md) §CM-13에 있습니다.
 
 ## 5. 검증기
 

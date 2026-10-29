@@ -2,7 +2,7 @@
 title: "استكشاف الأخطاء وإصلاحها"
 description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات الإضافة وnpx والمُثبِّت."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,6 +68,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 <bdi>`https://github.com/ahmed-g-gad/apothem`</bdi> (قواعد الشبكة أو الوكيل أو جدار
 الحماية)، ثم أعِد المحاولة. وإذا أُضيف سوق الإضافات سابقًا أثناء عملية جلب جزئية،
 فأزِله وأعِد إضافته قبل تشغيل <bdi>`/plugin install apothem@apothem`</bdi>.
+
+### تنتهي مهلة إضافة سوق مضيف الإضافات
+
+يستنسخ أمر مضيف الإضافات الذي يضيف سوقًا مستودعَ ذلك السوق، ويتوقّف بعد 30 ثانية.
+وقد يستغرق الاستنساخ الكامل لهذا المستودع وقتًا أطول على قرص بطيء، مثل محرّك أقراص
+<bdi>Windows</bdi> تحت <bdi>WSL</bdi>، وقد يترك استنساخ كامل سابق أيضًا الإضافةَ عالقة
+عند نسخة قديمة حين تنتهي مهلة تحديث لاحق. اجلب المجلّدين اللذين تحتاجهما الإضافة فقط:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+يُظهِر سرد إضافات المضيف بعد ذلك النسخة الحالية من <bdi>`apothem@apothem`</bdi>.
 
 ### يقدّم <bdi>npx</bdi> نسخة قديمة
 

@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adaptador de harness do Apothem para o Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,6 +55,29 @@ O bloco do Apothem em `QWEN.md` termina com uma seção de arquivos de suporte d
 Apothem que nomeia o diretório absoluto sob `~/.qwen/.apothem/support/` em
 relação ao qual cada citação no estilo do repositório (`rules/<name>.md`,
 `templates/...`, `hooks/...`) é resolvida.
+
+**Listas de ferramentas das skills.** O `Qwen Code` lê a lista de ferramentas
+permitidas de uma skill a partir da chave de frontmatter `allowedTools`, em
+camelCase, e o valor deve ser uma lista YAML. Ele ignora a chave hifenizada
+`allowed-tools` gravada para outros agentes. Por isso, as skills instaladas trazem
+`allowedTools` como uma lista, uma entrada por linha, no lugar da string
+`allowed-tools` separada por vírgulas do corpus de origem. Cada entrada mantém a
+grafia da origem, incluindo padrões como `Bash(git status *)`. Todas as outras
+chaves da skill, e o corpo da skill, são instalados sem alteração.
+
+**Pastas de skills.** O adaptador grava as skills em `~/.qwen/skills/`. O `Qwen Code`
+também lê `~/.agents/skills/` e, dentro de um projeto, `.qwen/skills/` e
+`.agents/skills/`. Quando duas pastas contêm uma skill com o mesmo nome, a que está
+sob `.qwen` prevalece, então uma skill do Apothem em `~/.qwen/skills/` tem
+precedência sobre uma skill de mesmo nome que outro adaptador gravou em
+`~/.agents/skills/`.
+
+**Eventos de hook.** O adaptador conecta `SessionStart`, `PreToolUse`, `PreCompact`,
+`PostCompact` e `Stop`. O `Qwen Code` define 22 eventos de hook, e cada um destes
+cinco é um deles. Três dos 22 (`SessionDelete`, `TodoCreated` e
+`TodoCompleted`) não têm evento do `Claude Code` com o mesmo nome (o `Claude Code`
+chama os eventos de todo de `TaskCreated` e `TaskCompleted`); o adaptador não
+conecta nenhum deles.
 
 ## Verificação
 

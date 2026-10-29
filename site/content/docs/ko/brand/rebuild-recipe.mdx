@@ -2,7 +2,7 @@
 title: "에셋 재빌드 레시피"
 description: "resvg와 Pillow를 사용해 마스터 SVG 소스로부터 모든 래스터 브랜드 에셋을 다시 생성합니다."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ sourceHash: "7ffb351825fa59ff"
 
 다음과 같은 경우 재빌드 레시피를 실행하세요:
 
-- 마스터 SVG(`assets/src/logo.svg` 또는 `assets/src/logo-dark.svg`)가 변경될 때.
+- 마스터 SVG(`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` 또는 `assets/src/logo-animated-light.svg`)가 변경될 때.
 - 컴팩트 favicon 마스터(`assets/favicon.svg`)가 변경될 때.
 - 소셜 카드 마스터(`assets/src/og-banner.svg` 또는 `assets/src/twitter-card.svg`)가 변경될 때.
 - 새로운 래스터 크기가 필요할 때.
@@ -60,8 +60,9 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 
 ## 검증
 
-성공적인 실행은 라이트 및 다크 마크 래스터, favicon PNG/ICO 세트, Apple touch
-아이콘, OG/Twitter 이미지를 다시 생성하고, 웹에서 제공되는 하위 집합 — 사이트가
+성공적인 실행은 라이트 및 다크 마크 래스터, favicon PNG/ICO 세트(ICO에는 16, 32,
+48 px 레이어가 포함됨), Apple touch 아이콘, VS Code 확장 아이콘
+(`vscode-extension/icon.png`), OG/Twitter 이미지를 다시 생성하고, 웹에서 제공되는 하위 집합 — 사이트가
 참조하는 히어로 로고 소스를 포함하여 — 을 `site/public/`으로 미러링합니다. 생성
 후에는 사이트 빌드를 실행하고, 게시하기 전에 홈 페이지, 브라우저 탭 favicon, 소셜
 카드 PNG를 점검하세요.

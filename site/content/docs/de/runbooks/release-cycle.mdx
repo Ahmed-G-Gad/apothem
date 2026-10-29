@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,6 +90,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -206,15 +207,271 @@ im Repository ist kein Registry-Token gespeichert. Genehmigen Sie außerdem den
 wartenden Lauf `Publish VS Code Extension`. Er paketiert `apothem.vsix` und
 veröffentlicht es im Visual Studio Marketplace als `ahmed-g-gad.apothem-vscode`.
 Der Veröffentlichungsschritt läuft nur, solange die Repository-Variable
-`VSCODE_MARKETPLACE_READY` den Wert `true` hat und das Secret `VSCE_PAT` gesetzt
-ist; andernfalls paketiert der Lauf die Erweiterung und überspringt die
-Veröffentlichung.
+`VSCODE_MARKETPLACE_READY` den Wert `true` hat und eine Zugangsberechtigung
+konfiguriert ist: die Variable `VSCE_AUTH=oidc` (Marketplace Trusted Publishing,
+kein gespeichertes Secret), die Variablen `VSCE_AUTH=entra`, `AZURE_CLIENT_ID`
+und `AZURE_TENANT_ID` (ein kurzlebiges Microsoft Entra ID-Token, kein
+gespeichertes Secret) oder das Secret `VSCE_PAT`. Ist keine davon konfiguriert,
+paketiert der Lauf die Erweiterung und überspringt die Veröffentlichung. Die
+Zugangsberechtigung ist ein Schalter, kein Wiederholungsversuch: Eine
+fehlgeschlagene Veröffentlichung auf einem Weg fällt nicht von selbst auf einen
+anderen zurück. Die Einrichtung jedes Wegs steht unten in
+[Marketplace-Veröffentlichung mit Trusted Publishing](#marketplace-veröffentlichung-mit-trusted-publishing)
+(bevorzugt) und
+[Marketplace-Veröffentlichung mit Microsoft Entra ID](#marketplace-veröffentlichung-mit-microsoft-entra-id).
 
 Um nach einem fehlgeschlagenen Lauf erneut zu veröffentlichen, starten Sie den
 Workflow für dasselbe Tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Er überspringt die
 Veröffentlichung, wenn die Version bereits in der Registry ist, weil
 npm-Versionen unveränderlich sind.
+
+#### Marketplace-Veröffentlichung mit Trusted Publishing
+
+Mit Trusted Publishing akzeptiert der Marketplace das GitHub-OIDC-Token dieses
+Repositorys direkt: `vsce publish --oidc` tauscht das Token des
+Veröffentlichungsjobs gegen eine kurzlebige Marketplace-Zugangsberechtigung.
+Es gibt kein gespeichertes Secret und keine Azure-Ressource, daher ist dies der
+bevorzugte Weg. Der Entra-Weg unten und das Secret `VSCE_PAT` bleiben als
+Alternativen bestehen, die der Operator auswählt.
+
+1. **Ein vsce-Release verwenden, das ihn unterstützt.** Auf diesem Weg prüft
+   der Veröffentlichungsjob vor dem Veröffentlichen das in `tools/vsce`
+   gesperrte vsce-Release und bricht mit einem Fehler ab, der das
+   Mindest-Release nennt, wenn die Sperre älter ist. Dependabot schlägt
+   vsce-Updates für diese Lockdatei vor; mergen Sie dasjenige, das das Minimum
+   erreicht, bevor Sie umschalten.
+2. **Die Richtlinie anlegen.** Melden Sie sich als Owner des Publishers an,
+   öffnen Sie
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad` und
+   fügen Sie unter **Trusted Publishing** eine Richtlinie hinzu:
+   - Richtlinienname: ein beliebiger Name, etwa `apothem-release`
+   - Repository-Eigentümer: `Ahmed-G-Gad`
+   - Repository: `apothem`
+   - Workflow: `publish-vscode.yml`
+   - Umgebung: `release`
+
+   Die Feldnamen sind die, die der VS Code-Veröffentlichungsleitfaden in seinem
+   Abschnitt zur Veröffentlichung mit GitHub Actions und Trusted Publishing
+   aufführt
+   (`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`).
+   Unbestätigt: ob jeder Publisher den Tab Trusted Publishing bereits sieht.
+   Wenn Ihrer ihn nicht sieht, verwenden Sie den Entra-Weg.
+3. **Den Weg umschalten.** Lassen Sie `VSCODE_MARKETPLACE_READY` auf `true`
+   und setzen Sie den Selektor. Setzen Sie ihn, wenn kein Tag wartet, denn der
+   nächste Tag-Push veröffentlicht über diesen Weg.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **Veröffentlichen.** Der nächste Tag-Push oder ein Start für ein bestehendes
+   Tag veröffentlicht über Trusted Publishing. Dieser Weg hat keinen
+   Probelauf: Die erste Veröffentlichung ist die Prüfung, und ein Start mit
+   `dry_run` warnt nur, dass nichts verifiziert wurde.
+5. **Bei einem Fehlschlag zurückfallen.** Löschen Sie den Selektor und starten
+   Sie erneut für dasselbe Tag; ist das Secret `VSCE_PAT` gesetzt, veröffentlicht
+   der Token-Weg. Eine fehlgeschlagene Veröffentlichung hat nichts
+   veröffentlicht, daher kann dasselbe Tag erneut gestartet werden.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### Marketplace-Veröffentlichung mit Microsoft Entra ID
+
+Der Entra-Weg ersetzt das gespeicherte persönliche Zugriffstoken durch ein
+kurzlebiges Token. `publish-vscode.yml` fordert bei GitHub ein OIDC-Token an,
+die Aktion `Azure/login` tauscht es über eine föderierte Zugangsberechtigung
+gegen eine Entra-Anmeldung, und `vsce publish --azure-credential`
+veröffentlicht mit dem resultierenden Token. Es existiert kein Client-Secret.
+Das Secret `VSCE_PAT` bleibt als Rückfalloption bestehen, die der Operator
+auswählt; der Workflow wechselt nie von selbst darauf.
+
+Das in `tools/vsce` gepinnte vsce-Release unterstützt diesen Weg. Er erfordert
+einen Entra-Mandanten, eine Anwendungsregistrierung und eine
+Publisher-Mitgliedschaft, was Trusted Publishing oben nicht erfordert;
+verwenden Sie ihn, wenn Trusted Publishing für den Publisher nicht verfügbar
+ist.
+
+1. **Die Voraussetzungen prüfen.** Ermitteln Sie das Konto, dem der Publisher
+   `ahmed-g-gad` gehört (der Tab Members unter
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`), und
+   den Entra-Mandanten, in dem Sie Anwendungen registrieren können.
+   Unbestätigt: ob der Mandant des Publisher-Eigentümers mit dem Mandanten der
+   Anwendung übereinstimmen muss und ob die Azure DevOps-Organisation
+   `Ahmed-G-Gad` mit Entra verbunden sein muss (`dev.azure.com/Ahmed-G-Gad`,
+   Organization settings, Microsoft Entra). Keine Quelle nennt eines von
+   beiden. Wenn Schritt 5 oder 6 fehlschlägt, prüfen Sie diese Punkte zuerst.
+
+2. **Die Anwendung registrieren.** Öffnen Sie in
+   `https://entra.microsoft.com` App registrations und dann New registration.
+   Nennen Sie sie `apothem-vscode-publish`, wählen Sie einen einzelnen
+   Mandanten und lassen Sie die Umleitungs-URI leer. Kopieren Sie unter
+   Overview die Application (client) ID und die Directory (tenant) ID. Legen
+   Sie kein Client-Secret an und erteilen Sie keine API-Berechtigung. Der
+   Schritt erfordert Anwendungseigentümerrechte oder eine Entra-Rolle wie
+   Application Administrator.
+
+3. **Die föderierte Zugangsberechtigung hinzufügen.** Öffnen Sie in dieser
+   Anwendung Certificates & secrets, Federated credentials, Add credential, und
+   wählen Sie das Szenario „GitHub Actions deploying Azure resources“. Geben
+   Sie die Organisation `Ahmed-G-Gad`, das Repository `apothem`, den
+   Entitätstyp `Environment`, den Umgebungsnamen `release` und den Namen der
+   Zugangsberechtigung `apothem-release` ein. Die erzeugten Felder müssen
+   lauten:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   Der Abgleich ist exakt und unterscheidet Groß- und Kleinschreibung. Wenn
+   eine spätere Anmeldung mit AADSTS700213 oder AADSTS7002138 fehlschlägt,
+   vergleichen Sie die Zugangsberechtigung mit der Zeile `subject claim`, die
+   `Azure/login` in das Job-Protokoll schreibt. AADSTS70021 direkt nach dem
+   Anlegen bedeutet, dass sich die Zugangsberechtigung noch nicht verbreitet
+   hat; warten Sie einige Minuten und versuchen Sie es erneut.
+
+4. **Die Repository-Variablen setzen.** Solange `VSCODE_MARKETPLACE_READY`
+   den Wert `true` hat, ist der Entra-Weg aktiv, sobald alle drei gesetzt sind;
+   setzen Sie sie daher, wenn kein Release-Tag auf Genehmigung wartet. Ohne
+   `VSCODE_MARKETPLACE_READY=true` meldet sich nichts an, und der Lauf
+   überspringt die Veröffentlichung.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   Lassen Sie `VSCODE_MARKETPLACE_READY` und `VSCE_PAT` unverändert. Wenn
+   `VSCE_AUTH` den Wert `entra` hat, `AZURE_CLIENT_ID` oder `AZURE_TENANT_ID`
+   aber leer ist, protokolliert der Workflow eine Warnung, unabhängig davon, ob
+   `VSCE_PAT` gesetzt ist, und verwendet den Entra-Weg nicht. Er verwendet dann
+   das Secret `VSCE_PAT`, sofern es gesetzt ist; ohne Secret veröffentlicht er
+   nichts, und der Lauf endet trotzdem grün; achten Sie daher auf die Warnung.
+
+5. **Den Probelauf ausführen.** Starten Sie den Workflow für ein bestehendes
+   Release-Tag mit gesetztem `dry_run`. Auf dem Entra-Weg meldet er sich an,
+   gibt das Azure DevOps-Profil aus und verifiziert den Publisher-Zugriff, ohne
+   zu veröffentlichen. Der Token-Weg hat keinen Probelauf: Zeigt das Protokoll
+   `Marketplace credential mode: pat`, endet der Lauf grün mit einer Warnung
+   und hat nichts verifiziert. Genehmigen Sie den wartenden Lauf der Umgebung
+   `release`.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   Erwartet: `Marketplace credential mode: entra`, eine Zeile `subject claim`,
+   die dem Subjekt aus Schritt 3 entspricht, sowie die Profil-Werte `id` und
+   `displayName`, die der erste Probelauf-Schritt ausgibt. Der
+   Verifizierungsschritt schlägt erwartungsgemäß bis Schritt 6 mit einem 403
+   fehl. Unbestätigt: dass eine Anmeldung ohne Azure-Abonnement über die
+   Azure CLI ein Token für den Marketplace liefert. Dieser Lauf ist der erste
+   Test dafür. Schlägt er hier fehl, registrieren Sie stattdessen eine
+   benutzerseitig zugewiesene verwaltete Identität in einem Abonnement; das ist
+   der Weg, den Microsoft dokumentiert.
+
+6. **Die Anwendung zum Publisher hinzufügen.** Melden Sie sich im Tab Members
+   aus Schritt 1 als Owner des Publishers an und fügen Sie ein Mitglied mit der
+   Profil-`id` aus Schritt 5 und der Rolle Contributor hinzu. Unbestätigt: die
+   Feldbezeichnung des Dialogs und ob er die ID akzeptiert, bevor die Anwendung
+   Mitglied einer Azure DevOps-Organisation ist. Azure DevOps fügt
+   Anwendungsidentitäten in der Regel pro Organisation hinzu. Lehnt der Dialog
+   die ID ab, fügen Sie den Dienstprinzipal der Organisation `Ahmed-G-Gad` hinzu
+   (Organization settings, Users, mit der Object ID der Enterprise application)
+   und versuchen Sie es erneut. Ebenfalls unbestätigt: ob das Profil vor dem
+   ersten Azure DevOps-Aufruf der Identität existiert.
+
+7. **Den Probelauf wiederholen.** Der Verifizierungsschritt gelingt nun mit
+   „verification succeeded for the publisher“; seine Meldungen sprechen
+   weiterhin von Personal Access Token, weil das Entra-Token denselben Pfad
+   nimmt. Die Prüfung belegt die Publisher-Mitgliedschaft (Creator, Owner,
+   Contributor oder Reader), nicht Veröffentlichungsrechte. Unbestätigt: dass
+   Contributor genügt, um ein Update zu veröffentlichen. Microsofts
+   Rollenbeschreibung sagt, dass es genügt, und keine Quelle zeigt eine
+   Veröffentlichung damit; daher ist die erste echte Veröffentlichung der
+   Beweis.
+
+8. **Ein Release veröffentlichen.** Taggen Sie wie in §2.2 und genehmigen Sie
+   den Lauf. Der Schritt
+   `Publish to Visual Studio Marketplace (Entra ID)` läuft, sein
+   Umgebungs-Header führt nur `AZURE_TENANT_ID` auf, der Token-Rückfallschritt
+   wird übersprungen, und vsce gibt `DONE Published ahmed-g-gad.apothem-vscode`
+   aus. Die Marketplace-Galerie führt die neue Version nach etwa vier Minuten
+   auf.
+
+9. **Über das Token entscheiden.** Behalten Sie `VSCE_PAT` bis zur ersten
+   erfolgreichen Entra-Veröffentlichung und löschen Sie das Secret dann, wenn
+   keine Rückfalloption gewünscht ist. Sobald es entfernt ist, lässt eine
+   gelöschte oder leere Entra-Variable den Lauf ohne Veröffentlichung grün
+   enden: mit einer Warnung, wenn `VSCE_AUTH` noch `entra` ist, und nur mit dem
+   Überspringen-Hinweis, wenn nicht. Lesen Sie nach jedem Tag die Annotationen
+   des Laufs. Um eine Rückfalloption über die Abschaffung globaler persönlicher
+   Zugriffstoken hinaus zu behalten, erstellen Sie ein auf die Organisation
+   beschränktes Token für `Ahmed-G-Gad` mit dem benutzerdefinierten
+   Geltungsbereich Marketplace Manage und der kürzesten Ablaufzeit, die Sie
+   akzeptieren, und speichern Sie es als `VSCE_PAT`. Unbestätigt: Die
+   Portal-Bezeichnungen in diesem Schritt stammen aus dem Gedächtnis, nicht aus
+   einer Primärquelle; Microsoft bezeichnet auf die Organisation beschränkte
+   Token als vorübergehende Notlösung und kann aufhören, sie anzuerkennen; und
+   Microsofts Seiten widersprechen sich beim Abschaffungsdatum globaler Token.
+
+10. **Auf das Token zurückfallen.** Löschen Sie den Selektor, starten Sie
+    erneut und genehmigen Sie dann den Lauf. Eine fehlgeschlagene
+    Entra-Veröffentlichung hat nichts veröffentlicht, daher kann dasselbe Tag
+    erneut gestartet werden; prüfen Sie zuerst die Marketplace-Seite, denn eine
+    gelandete Version kann nicht zweimal veröffentlicht werden.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+Wenn die Entra-Veröffentlichung fehlschlägt, lesen Sie das Schrittprotokoll:
+
+- Eine Meldung, die mit „Can not acquire a Microsoft Entra ID access token“
+  beginnt, bedeutet, dass die Anmeldung oder die Kette der Zugangsberechtigungen
+  fehlgeschlagen ist. Prüfen Sie zuerst den Schritt
+  `Sign in to Microsoft Entra ID` und die föderierte Zugangsberechtigung. Ist
+  die Anmeldung grün, entfernen Sie `AZURE_TENANT_ID` aus dem `env` des
+  vsce-Schritts im Workflow; GitHubs eigener Release-Workflow für Erweiterungen
+  exportiert es nicht.
+- „InvalidAccessException“ oder „not allowed“ bedeutet, dass die Identität des
+  Tokens kein Publisher-Mitglied ist. Vergleichen Sie die Profil-`id` aus dem
+  Probelauf mit dem Tab Members.
+- Ein 403 aus dem Verifizierungsschritt des Probelaufs bedeutet, dass die
+  Anwendung noch keine Rolle hat.
+
+Für diesen Weg gelten drei Einschränkungen:
+
+- `id-token: write` wird dem gesamten Veröffentlichungsjob gewährt, daher kann
+  jeder Schritt darin ein OIDC-Token anfordern, auch im Token-Modus. Das
+  Subjekt des Tokens ist an die Umgebung `release` gebunden, die die
+  Genehmigung eines Reviewers verlangt.
+- Die Umgebung `release` hat keine Deployment-Richtlinie für Branches oder
+  Tags, daher kann jede Ref, die ein Maintainer genehmigt, das
+  Umgebungs-Subjekt-Token erhalten. Eine Beschränkung auf `v*.*.*`-Tags
+  erfordert zuerst eine Prüfung dessen, was `release.yml` und
+  `publish-npm.yml` starten.
+- Eine Umbenennung oder Übertragung des Repositorys ändert das Format des
+  OIDC-Subjekts und bricht die föderierte Zugangsberechtigung stillschweigend.
+  Kopieren Sie nach jeder Umbenennung das Subjekt aus dem `Azure/login`-Protokoll
+  erneut in die Zugangsberechtigung.
+
+### 2.5 Den Template-Digest-Pin aktualisieren
+
+Sobald das Tag existiert, setzen Sie `_LATEST_RELEASE` und
+`_LATEST_RELEASE_DIGESTS` in `tests/unit/test_template_digests.py` auf das neue
+Release und den SHA-256-Digest jedes Klartext-Templates, wie dieses Release es
+ausgeliefert hat (`git show vX.Y.Z:<template path> | sha256sum`). Tun Sie dies
+in der nächsten Änderung an `main`, und fügen Sie den vorherigen Digest zu den
+`earlier_digests` des Manifest-Eintrags hinzu, wenn sich das Template geändert
+hat. Der CI-Job `release-preflight` checkt jedes Tag aus und schlägt daher mit
+den Tag-Namen fehl, bis der Pin aktualisiert ist.
 
 ## 3. Distributionsoberflächen
 

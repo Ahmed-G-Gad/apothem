@@ -2,7 +2,7 @@
 title: "Manifeste d'épinglage des dépendances"
 description: "Politique de déclaration des dépendances couvrant les plages du runtime Python, l'outillage de développement, les fichiers de verrouillage de l'outillage de publication et les planchers de version ratifiés pour chaque surface de build."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,16 +18,18 @@ auxquelles s'ajoute une chaîne d'outils plus vaste de développement, d'audit, 
 publication et de documentation. Les dépendances d'exécution utilisent des
 bornes inférieures prudentes dans `pyproject.toml` ; le site web commite
 `site/package-lock.json` ; les GitHub Actions sont épinglées par SHA immuable
-avec des commentaires de version et sont mises à niveau par Renovate.
+avec des commentaires de version et sont mises à niveau par Dependabot.
 
 | Classe | Déclaration | Politique de verrouillage |
 |---|---|---|
 | Dépendances d'exécution Python | `[project.dependencies]` dans `pyproject.toml` | Plages à borne inférieure ; aucun verrou d'exécution Python commité |
 | Outillage de développement / sécurité | extras de `[project.optional-dependencies]` | Plages à borne inférieure ; la CI installe les versions correspondantes actuelles |
 | Outillage de publication | `scripts/release/requirements-build-linux.txt` pour les flux de travail de publication ; l'extra `release` de `[project.optional-dependencies]` pour les builds locaux | Verrouillé par hash pour les flux de travail de publication ; généré à partir de la fermeture de l'outillage de publication. L'extra `release` est une plage à borne inférieure |
-| Outils propres à la CI | `.github/workflows/*.yml` | Les outils pip propres au flux de travail utilisent des épinglages exacts (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Outils propres à la CI | `.github/workflows/*.yml` | Les outils pip propres au flux de travail utilisent des épinglages exacts (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Site de documentation | `site/package.json` | `site/package-lock.json` commité et consommé par `npm ci` |
-| GitHub Actions | Références `uses:` épinglées par SHA avec commentaires de version | Renovate propose des mises à jour ; les exceptions portent des marqueurs `action-pinning-exempt:` |
+| Empaqueteur VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` commité ; les tâches de publication et de mise en ligne exécutent `npm ci --ignore-scripts` |
+| CLI des harnais du channel-smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` commité et consommé par `npm ci` |
+| GitHub Actions | Références `uses:` épinglées par SHA avec commentaires de version | Dependabot propose des mises à jour hebdomadaires ; les exceptions portent des marqueurs `action-pinning-exempt:` |
 
 ## Ratification de publication
 
@@ -75,5 +77,37 @@ reproductible.
   déployé ; le fichier de verrouillage donne des builds `npm ci` déterministes
   pour cette surface publique.
 - **Pourquoi des Actions épinglées par SHA ?** Les étiquettes sont mutables ; les
-  SHA sont immuables. Renovate met à jour les SHA épinglés, tandis que le portail
-  de publication consigne toute retenue intentionnelle.
+  SHA sont immuables. Dependabot propose les mises à niveau de SHA et réécrit
+  chaque commentaire de version, tandis que le portail de publication consigne
+  toute retenue intentionnelle.
+- **Ce que le robot de mise à jour ne touche pas.** Les mises à jour de version
+  de Dependabot (`.github/dependabot.yml`) couvrent les épinglages des GitHub
+  Actions, le fichier de verrouillage du site web, le fichier de verrouillage de
+  l'empaqueteur vsce (`tools/vsce`), le fichier de verrouillage des CLI de
+  harnais qu'installe le channel smoke (`tools/channel-smoke`) et les hooks
+  pre-commit. Les planchers d'exécution de `pyproject.toml`, les exigences de
+  publication verrouillées par hash, la fermeture vendorisée de
+  `src/apothem/_vendor/vendor.txt` et les hooks pre-commit épinglés en phase
+  avec `pyproject.toml` évoluent à la main, car la mise à niveau d'un seul
+  épinglage casserait les fichiers avec lesquels ils concordent.
+  La version majeure de `@types/node` du site web suit son plancher Node
+  (`engines` et `.nvmrc`, Node 22) ; Dependabot ne propose donc que ses mises à
+  jour mineures et correctives ; relevez cette version majeure en même temps que
+  le plancher.
+  Les mises à jour de version laissent intacts les blocs npm `overrides`. Les
+  mises à jour de sécurité de Dependabot couvrent toujours chaque manifeste, de
+  sorte qu'une pull request de sécurité peut proposer l'un de ces épinglages, ou
+  déplacer une surcharge ; adaptez-la à la main ou fermez-la.
+- **Fusionner une pull request Dependabot.** Le squash par défaut du dépôt
+  reprend le titre de la PR. Certains titres Dependabot, surtout des titres
+  groupés qui nomment un répertoire, dépassent le sujet de squash de
+  72 caractères ; la vérification PR Title les signale, et un changement de
+  titre les corrige. Une pull request qui modifie le fichier de verrouillage
+  d'un outil n'exécute aucune tâche `ci.yml` ; le flux de travail d'audit npm
+  l'audite et l'installe, empaquette l'extension VS Code pour le fichier de
+  verrouillage vsce et exécute les tests de publication vsce, et le flux de
+  travail channel smoke s'exécute pour le fichier de verrouillage
+  channel-smoke. Le flux de travail Markdown Lint exécute le hook markdownlint
+  sur une pull request de hooks pre-commit ; les autres hooks ne sont pas
+  exercés en CI, alors exécutez `pre-commit run --all-files` sur sa branche
+  avant de la fusionner.

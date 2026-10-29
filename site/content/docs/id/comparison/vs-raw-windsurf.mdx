@@ -2,7 +2,7 @@
 title: "Apothem vs konfigurasi Windsurf mentah"
 description: "Memelihara aturan Windsurf secara manual di .devin/rules/ versus merendernya dari profil bersama apothem."
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,23 @@ melalui apothem.
 | Menulis aturan | Menulis dengan tangan setiap berkas di bawah `.windsurf/rules/` | Dirender dari korpus bersama |
 | Menjaga satu format aturan | Memilih dengan tangan antara `.windsurf/rules/` dan satu berkas `.windsurfrules` | Adapter hanya menulis `.devin/rules/` |
 | Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Berbagi skill dan command yang dapat digunakan ulang | Menyalin tiap folder skill ke `~/.agents/skills/` dengan tangan dan menjaga salinannya tetap mutakhir | Ditulis ke `~/.agents/skills/` oleh adapter, satu salinan untuk semua proyek, dan disegarkan pada `apothem update` |
+| Menjaga helper yang dapat digunakan ulang tetap tersinkron | Menulis dengan tangan setiap berkas subagent Devin Local di bawah `.devin/agents/` dan melacak nama alat Devin | Sebelas helper ditulis ke `.devin/agents/` dengan alatnya diterjemahkan, dan disegarkan pada `apothem update` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness windsurf --project <path>` |
 
 ## Apa yang dikelola apothem
 
-Adaptor windsurf merender aturan bersama ke direktori `.devin/rules/`; ia
-tidak menulis berkas tunggal `.windsurfrules`. Windsurf tidak memiliki hook
-PreToolUse, jadi maksud pagar pengaman berada di dalam prosa aturan, bukan pada
-titik intersepsi panggilan alat. Setiap perubahan pada aturan bersama merender
-ulang direktori pada `apothem update` berikutnya.
+Adaptor windsurf merender aturan bersama ke satu berkas,
+`<project>/.devin/rules/apothem-rules.md`; ia tidak menulis berkas tunggal
+`.windsurfrules`. Adaptor ini juga menulis sebelas helper Apothem sebagai
+subagent Devin Local di `<project>/.devin/agents/`; tiga helper yang membutuhkan
+alat web menunggu sampai Devin mendokumentasikan nama alatnya. Adaptor
+mendaftarkan dua hook Devin Local, bootstrap sesi dan advisori ukuran konteks, di
+`<project>/.devin/config.local.json`; mode Cascade yang lebih lama membaca format
+hook yang berbeda (`hooks.json`), yang tidak ditulis oleh adaptor. Adaptor tidak
+mendaftarkan penjaga panggilan alat, jadi maksud pagar pengaman berada di dalam
+prosa aturan, bukan pada titik intersepsi panggilan alat. Setiap perubahan pada
+aturan bersama merender ulang berkas pada `apothem update` berikutnya.
 
 ## Jalur migrasi
 

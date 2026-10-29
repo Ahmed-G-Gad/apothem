@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "6bb38868494e5b55"
+sourceHash: "8551abe209fad6c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,21 +19,21 @@ jedes Adapters rückführbar.
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
-| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
-| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc`; `<project>/.cursor/agents/`; `<project>/.cursor/hooks.json`; `<project>/.apothem/support/cursor/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
 | Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/`; `<project>/.gemini/.apothem/support/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
-| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md`; `<project>/.github/agents/`; `<project>/.github/hooks/apothem.json`; `<project>/.apothem/support/github-copilot/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
-| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
-| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; native `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; native `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
-| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
-| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
-| Zed | `zed` | project | markdown | `<project>/.rules` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md`; `<project>/.devin/agents/`; `<project>/.devin/config.local.json`; `<project>/.apothem/support/windsurf/hooks/`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
 
 ## Unterstützung der Payload-Kohorten
 
@@ -60,48 +60,101 @@ Ein Test rendert jede konvertierte Datei und prüft die Maps gegen die Ausgabe.
 
 | Harness | Native oder konvertierte Payloads | Payloads im Unterstützungs-Teilbaum | Warnungen: nicht unterstützt oder ausstehend |
 | --- | --- | --- | --- |
-| Antigravity | konvertierte Commands, Agenten und Regeln; native Skills, Subagenten-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Templates | Statuslines, Output-Styles; MCP- und Memory-Discovery ausstehend |
-| Claude Code | konvertierte Commands; native Skills, Hooks, Agenten, Regeln, Statuslines, Output-Styles, Subagenten-Dispatch, Tool-Einschränkungen, Memory | Templates | `CLAUDE.md` bleibt im Besitz des Operators; kein vom Adapter geschriebenes System-Prompt-Template; MCP-Discovery ausstehend |
-| CodeBuddy | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch; MCP-Discovery ausstehend |
-| Codex | konvertierte Commands und Agenten; native Skills, Hooks, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend, weil Apothem `config.toml` nicht überschreibt |
-| Cursor | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
-| Gemini CLI | konvertierte Commands und Agenten; native Skills, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
-| GitHub Copilot | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, MCP, Subagenten-Dispatch, Memory |
+| Antigravity | konvertierte Commands, Agenten und Regeln; native Skills, Subagenten-Dispatch, System-Prompt-Templates | Hooks, Templates | Statuslines, Output-Styles; MCP- und Memory-Discovery ausstehend |
+| Claude Code | konvertierte Commands; native Skills, Hooks, Agenten, Regeln, Statuslines, Output-Styles, Subagenten-Dispatch | Templates | `CLAUDE.md` bleibt bis auf den einen Apothem-Block im Besitz des Operators; kein vom Adapter geschriebenes System-Prompt-Template; MCP-Discovery ausstehend |
+| CodeBuddy | konvertierte Commands und Agenten; native Skills, Hooks, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
+| Codex | konvertierte Commands und Agenten; native Skills, Hooks, Subagenten-Dispatch, System-Prompt-Templates | Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend, weil Apothem `config.toml` nicht überschreibt |
+| Cursor | konvertierte Commands und Agenten; native Skills, Hooks, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Statuslines, Output-Styles, Memory; MCP-Discovery ausstehend |
+| Gemini CLI | konvertierte Commands und Agenten; native Skills, Subagenten-Dispatch, System-Prompt-Templates, Memory | Hooks, Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
+| GitHub Copilot | konvertierte Commands und Agenten; native Skills, Hooks, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Statuslines, Output-Styles, MCP, Memory |
 | GLM (Z.ai) | keine | keine | Commands, Skills, Hooks, Agenten, Regeln, Templates, Statuslines, Output-Styles, MCP, Subagenten-Dispatch, Tool-Einschränkungen, System-Prompt-Templates, Memory — GLM ist ein Modell-Backend ohne native Konfigurationsoberfläche |
-| Hermes | konvertierte Commands; native System-Prompt-Templates, MCP; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles, Subagenten-Dispatch |
-| Kimi Code | native Subagenten-Dispatch, System-Prompt-Templates, Memory | Commands, Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles; Discovery für MCP und Tool-Einschränkungen ausstehend |
-| Kiro | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch; MCP-Discovery ausstehend |
-| Open-Claw | konvertierte Commands; native System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles, MCP, Subagenten-Dispatch |
-| OpenCode | konvertierte Commands und Agenten; native Skills, MCP, Subagenten-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles |
-| Qwen Code | konvertierte Commands und Agenten; native Skills, Hooks, MCP, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles |
-| Trae | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
-| Windsurf | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
-| Zed | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
+| Hermes | konvertierte Commands; native System-Prompt-Templates, MCP, Subagenten-Dispatch | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles |
+| Kimi Code | konvertierte Commands und Agenten; native Skills, Subagenten-Dispatch, System-Prompt-Templates, Memory | Hooks, Regeln, Templates | Statuslines, Output-Styles; Discovery für MCP und Tool-Einschränkungen ausstehend |
+| Kiro | konvertierte Commands und Agenten; native Skills, Hooks, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
+| Open-Claw | konvertierte Commands; native System-Prompt-Templates, Subagenten-Dispatch | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles, MCP |
+| OpenCode | konvertierte Commands und Agenten; native Skills, MCP, Subagenten-Dispatch, System-Prompt-Templates | Hooks, Regeln, Templates | Statuslines, Output-Styles |
+| Qwen Code | konvertierte Commands und Agenten; native Skills, Hooks, MCP, Subagenten-Dispatch, System-Prompt-Templates | Regeln, Templates | Statuslines, Output-Styles |
+| Trae | konvertierte Commands und Agenten; native Skills, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Hooks, Statuslines, Output-Styles, Memory; MCP-Discovery ausstehend |
+| Windsurf | konvertierte Commands und Agenten; native Skills, Hooks, Regeln, Subagenten-Dispatch, System-Prompt-Templates | Templates | Statuslines, Output-Styles, Memory; MCP-Discovery ausstehend |
+| Zed | konvertierte Commands; native Skills, Regeln, System-Prompt-Templates | Templates | Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
+
+Die Tabelle lässt die Zellen weg, die die Registry als `not-applicable` markiert:
+Tool-Einschränkungen bei jedem Harness außer `Kimi Code` (`discovery-pending`)
+und `GLM (Z.ai)` (`unsupported`) sowie Memory bei `Claude Code`, `CodeBuddy`,
+`Codex`, `Hermes`, `Kiro`, `Open-Claw`, `OpenCode` und `Qwen Code`.
 
 ## Gemeinsame Wurzelverzeichnisse
 
 Manche Installationsziele werden von anderen Harnesses geladen als von dem, der
 sie schreibt. Die Registry erfasst jeden solchen Pfad in `SHARED_ROOTS` mit einem
-Eigentümer (dem einzigen Adapter, der ihn schreibt) und den Lesern, deren
-Vendor-Dokumentation ihn standardmäßig lädt, dazu die Vendor-Seiten, die das
-belegen, und das Datum, an dem sie abgerufen wurden. Die Installation des
-Eigentümers stellt Apothem-Inhalte jedem Leser bereit, und die Deinstallation des
-Eigentümers entfernt sie für jeden Leser.
+registrierten Eigentümer (dem Adapter, für den der Vendor den Pfad dokumentiert),
+den Mitinstallierern, die dieselben Dateien dorthin schreiben, und den Lesern,
+deren Vendor-Dokumentation ihn standardmäßig lädt, dazu die Vendor-Seiten, die
+das belegen, und das Datum, an dem sie abgerufen wurden.
 
-| Pfad | Eigentümer | Leser |
-| --- | --- | --- |
-| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
-| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
-| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
-| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
-| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
-| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
-| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+Ein Pfad mit Mitinstallierern ist ein Ordner auf Benutzerebene im
+Home-Verzeichnis, den mehrere Installationen mit denselben Bytes schreiben. Eine
+Maschine, auf der nur `Cursor` installiert ist, hat kein `Codex`, das
+`~/.agents/skills/` schreibt, daher schreibt jede Installation, die den Ordner
+nennt, ihn, und das Installations-Ledger zählt die Installationen, die ihn
+nutzen. Eigentümer laut Eintrag ist der registrierte Eigentümer, solange er den
+Ordner nutzt, und andernfalls die älteste Installation, die ihn nutzt; nichts
+wird verschoben, wenn der registrierte Eigentümer deinstalliert wird. Eine
+Deinstallation entfernt den Ordner nur, wenn keine andere Installation ihn noch
+nutzt (siehe [`uninstall`](/docs/cli-reference/uninstall#gemeinsame-ordner-in-ihrem-home-verzeichnis)).
+Die Installation eines Lesers legt keine Dateien in dem Ordner ab; die
+Installation des Eigentümers oder eines Mitinstallierers stellt Apothem-Inhalte
+jedem Leser bereit.
+
+| Pfad | Eigentümer | Mitinstallierer | Leser |
+| --- | --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, GitHub Copilot, Windsurf, Zed | Gemini CLI, Kimi Code, Open-Claw, OpenCode, Qwen Code |
+| `~/.config/apothem/rules/` | Codex | CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, Zed | keine |
+| `~/.config/apothem/templates/` | Codex | CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, Zed | keine |
+| `~/.claude/skills/` | Claude Code | keine | Cursor, OpenCode |
+| `~/.claude/agents/` | Claude Code | keine | Cursor |
+| `~/.codex/agents/` | Codex | keine | Cursor |
+| `~/.claude/CLAUDE.md` | Claude Code | keine | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | keine | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | keine | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | keine | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | keine | Zed |
+
+`~/.config/apothem/rules/` und `~/.config/apothem/templates/` enthalten die
+Dateien, die Apothems eigene Skills und Anweisungsdateien zitieren. Kein anderes
+Werkzeug lädt sie, daher haben sie keine Leser und keine Vendor-Seiten.
+`CodeBuddy`, `Kiro` und `Trae` schreiben außerdem einen eigenen Skills-Ordner
+(`~/.codebuddy/skills/`, `~/.kiro/skills/` und `~/.trae/skills/`); nur das
+jeweilige Werkzeug lädt ihn, daher ist er kein gemeinsames Wurzelverzeichnis.
+
+Ein Leser wird nur dort aufgeführt, wo seine Vendor-Dokumentation ein
+standardmäßiges Laden genau dieses Pfads zeigt. Ein Leser ist an eine Bedingung
+geknüpft, und der Installationshinweis wiederholt sie: `Open-Claw` indiziert
+`~/.agents/skills/` nur unter seinem Standard-Zustandsverzeichnis (es überspringt
+den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). Die
+`Cursor`-Dokumentation führt `~/.codex/agents/` als `Codex`-Kompatibilitätsordner
+auf, sagt aber nicht, welche Dateiformate `Cursor` dort parst, und eine
+`Codex`-Installation schreibt TOML-Dateien, daher ist nicht bestätigt, ob
+`Cursor` diese Helfer liest. Die `Cursor`-Installation schreibt außerdem eine
+eigene Kopie der Helfer nach `<project>/.cursor/agents/`, die die Rangfolge des
+Vendors über die importierten Ordner stellt, sodass in einem installierten
+Projekt die native Kopie die aus `~/.claude/agents/` ablöst.
+
+Manche Werkzeuge sind bewusst keine Leser von `~/.agents/skills/`: Die
+Dokumentation von `Antigravity`, `CodeBuddy`, `Kiro` und `Trae` sagt nicht, dass
+sie ihn standardmäßig laden (`Trae` lädt den Projektordner `.agents/skills/` erst,
+nachdem eine Einstellung aktiviert wurde), weshalb `CodeBuddy`, `Kiro` und `Trae`
+einen eigenen Skills-Ordner erhalten. Die `Hermes`-Dokumentation nennt ihn nur
+als Beispielwert für `skills.external_dirs`. `GitHub Copilot` ist kein Leser von
+`~/.claude/agents/`: Die VS Code-Dokumentation führt diesen Ordner für den
+Anthropic-Claude-Agenten auf, nicht für den Agenten, den `GitHub Copilot`
+ausführt.
 
 Der Apothem-Block, den ein Eigentümer in eine gemeinsame Anweisungsdatei
 schreibt, nennt kein einzelnes Werkzeug als seinen Leser.
-`tests/unit/test_shared_roots.py` schlägt fehl, wenn zwei Adapter dasselbe
-Registry-Ziel schreiben und wenn ein Registry-Ziel, das wie eine
+`tests/unit/test_shared_roots.py` schlägt fehl, wenn die Adapter, die ein
+Registry-Ziel schreiben, nicht genau sein Eigentümer und seine Mitinstallierer
+sind, und wenn ein Registry-Ziel, das wie eine
 werkzeugübergreifende Anweisungsdatei benannt ist (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `copilot-instructions.md`), keinen deklarierten Eigentümer hat. Die
 einzige Ausnahme ist `~/.codex/AGENTS.md`; kein anderer registrierter Harness

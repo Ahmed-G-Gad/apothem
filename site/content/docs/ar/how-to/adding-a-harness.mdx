@@ -2,7 +2,7 @@
 title: "إضافة بيئة"
 description: "فعّل محوّل بيئة لكي تُجسَّد تهيئتها الأصلية من الملف التعريفي المشترك."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,7 @@ sourceHash: "86a3b203d53e58ea"
 3. عاين التثبيت دون كتابة ملفات:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. ثبّت إطار العمل. لإطار عمل بنطاق المستخدم:
@@ -65,7 +65,7 @@ sourceHash: "86a3b203d53e58ea"
 ## التحقق
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 سطر `✓ <harness-id> is verified` يؤكّد أن الأهداف المُدارة موجودة وقابلة للتحليل.

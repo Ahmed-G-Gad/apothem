@@ -2,7 +2,7 @@
 title: "Regras"
 description: "Regras comportamentais sempre ativas e filtradas por caminho que governam a resolução de problemas, o ofício do código, a arquitetura limpa, o planejamento e a qualidade em todo o conjunto de regras comportamentais."
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,25 +13,11 @@ sempre ativa ou filtrada por caminho.
 
 ## Regras ativas
 
-O registro canônico é o cohort de regras. O mesmo conjunto em forma plana:
-
-| Regra | Escopo | Implementa |
-|------|-------|------------|
-| Auto Memory | Sempre ativa | CM-26 |
-| Clean-Room Generation | Sempre ativa | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Sempre ativa | CM-21 |
-| Context Management | Sempre ativa | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Filtrada por caminho | CM-12 / CM-24 (companheira) |
-| Conventions Vigilance | Sempre ativa | CM-22 |
-| Interactive Questions | Sempre ativa | extensão de CM-2 |
-| Interactive Questions Sweep Matchers | Filtrada por caminho | extensão de CM-2 (companheira) |
-| Operational Mandates | Sempre ativa | CM-1–10 |
-| Worker Orchestration | Sempre ativa | CM-17 / CM-25 |
-| Clean Architecture | Filtrada por caminho | CM-27 |
-| Large File Generation | Filtrada por caminho | CM-23 |
-| Performance Discipline | Filtrada por caminho | Eixo de desempenho |
-| Planning Techniques | Filtrada por caminho | CM-20 / CM-21 |
-| Python Senior Architect | Filtrada por caminho | CM-28 |
+O registro canônico é o cohort de regras em `src/apothem/rules/`. O
+[inventário gerado](#inventário-de-regras-gerado) no pé desta página lista
+cada regra com sua descrição e seu arquivo de origem. Cinco regras são sempre ativas e as
+demais são filtradas por caminho; a próxima seção nomeia as cinco que carregam em toda
+sessão.
 
 ## Contrato de frontmatter
 
@@ -56,21 +42,35 @@ globs e `alwaysApply` é `false`. O contrato legível por máquina é
 `pathFilter` e `alwaysApply` são neutros em relação ao harness. Cada adaptador
 os traduz onde seu harness tem um campo nativo de escopo. O Claude Code lê
 somente `paths:` de uma regra e carrega na inicialização toda regra que não o
-tenha, então a instalação pelo motor (`apothem install --harness claude-code`)
+tenha, assim como faz com uma regra cujo `paths:` é apenas `**`, então a instalação pelo motor (`apothem install --harness claude-code`)
 grava cada regra filtrada por caminho em `~/.claude/rules/` com uma lista
-`paths:` construída a partir de seu `pathFilter`, e copia as regras sempre
-ativas sem alterações. As 28 regras sempre ativas carregam em toda sessão; as 63
-companheiras filtradas por caminho carregam quando o assistente lê um arquivo
-correspondente.
+`paths:` construída a partir de seu `pathFilter`, e grava toda cópia de regra
+sem a sua seção final Bindings. Cinco regras carregam em toda sessão: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management` e o índice de regras. As outras 90
+regras são filtradas por caminho e carregam quando o assistente lê um arquivo
+correspondente. Adicionar uma regra ao conjunto sempre ativo altera a lista central e o
+teto de bytes na mesma mudança.
+
+O índice de regras, `apothem-rule-index`, é o único arquivo sempre ativo que nomeia todas as
+demais regras e a situação que pede cada uma. Um harness que define o escopo das regras por
+caminho carrega uma regra com escopo quando um arquivo correspondente é tocado. Um harness que não faz isso não carrega
+nenhuma delas, então o índice, a frase no arquivo de instruções que aponta para
+ele, e as regras e skills que citam uma regra pelo caminho são a forma como uma sessão a
+alcança. Após uma compactação de contexto, uma regra com escopo deixa de estar no contexto, e o
+índice instrui o assistente a ler novamente qualquer regra que estivesse aplicando. O Claude Code
+compara um filtro de caminho somente com arquivos dentro do diretório de trabalho, então as
+regras de auto memory, cujos arquivos ficam sob `~/.claude/projects/`, chegam a uma sessão
+pelo índice e não por uma correspondência de caminho.
 
 O OpenCode não tem campo de escopo por regra: ele combina em toda sessão cada
 arquivo que a lista `instructions` do seu `opencode.json` nomeia. Por isso, a
 instalação do OpenCode (`apothem install --harness opencode`) lista o seu
-documento de perfil e somente as regras cujo `alwaysApply` é `true`, um caminho
+documento de perfil e somente as regras cujo `alwaysApply` é `true` (as quatro regras
+centrais e o índice de regras), um caminho
 `~/.config/opencode/...` explícito por arquivo, conforme lido nos arquivos de
 regra quando a configuração é gravada. Toda regra, incluindo as filtradas por
 caminho, ainda é instalada sob `~/.config/opencode/.apothem/support/rules/`,
-onde uma regra, skill ou comando que cite uma delas a lê sob demanda.
+onde o índice a nomeia e uma regra, skill ou comando que cite uma delas a lê sob demanda.
 
 ## Disciplina de autoria
 

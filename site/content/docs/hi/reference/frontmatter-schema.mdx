@@ -2,7 +2,7 @@
 title: "Frontmatter स्कीमा"
 description: "YAML frontmatter ब्लॉक संरचना, प्रति-वर्ग आवश्यक कुंजियों, और सभी आर्टिफ़ैक्ट वर्गों में वैलिडेटर प्रवर्तन नियमों के लिए संदर्भ मार्गदर्शिका।"
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 हर आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। Markdown-परिवार की फ़ाइलों पर frontmatter फ़ाइल की पहली सामग्री होती है, और [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैनोनिकल SPDX हेडर लाइन समापन `---` के बाद आती है।
 
-कमांड की कुंजियाँ `kebab-case` का उपयोग करती हैं। स्किल की कुंजियाँ भी `kebab-case` का उपयोग करती हैं, सिवाय `userInvocable` के, जो स्रोत कॉर्पस द्वारा उपयोग की गई camelCase वर्तनी है (Claude Code इंस्टॉल उसका नाम `user-invocable` कर देता है)। नियम और प्रत्यायोजित-वर्कर की कुंजियाँ camelCase हैं, जैसा खंड 2 की आवश्यक-कुंजी तालिका सूचीबद्ध करती है। अदिश मान या तो बिना उद्धरण चिह्नों के होते हैं या दोहरे उद्धरण चिह्नों में; कोलन, हैश चिह्न, या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण चिह्नों में रखे जाते हैं।
+कमांड की कुंजियाँ `kebab-case` का उपयोग करती हैं। स्किल की कुंजियाँ भी `kebab-case` का उपयोग करती हैं, सिवाय `userInvocable` के, जो स्रोत कॉर्पस द्वारा उपयोग की गई camelCase वर्तनी है (Claude Code इंस्टॉल उसका नाम `user-invocable` कर देता है)। Claude Code इंस्टॉल और प्लगइन किसी स्किल या कमांड की केवल-Apothem कुंजियों (`version`, `updated`, `archetype`, `portability`) को उद्धृत स्ट्रिंग के एक अंतिम `metadata:` मैप के अंतर्गत, उसी निश्चित क्रम में, ले जाते भी हैं, क्योंकि Claude Code अज्ञात शीर्ष-स्तरीय कुंजियों को अनदेखा करता है और Agent Skills मानक अतिरिक्त कुंजियों को `metadata` में रखता है; स्रोत फ़ाइलें और हर अन्य हार्नेस उन्हें शीर्ष स्तर पर रखते हैं, सिवाय साझा उपयोगकर्ता-स्तरीय स्किल फ़ोल्डरों (`~/.agents/skills/` तथा `~/.codebuddy/skills/`, `~/.kiro/skills/`, और `~/.trae/skills/` फ़ोल्डर) के, जो उन्हें इसी तरह समेटते हैं। नियम और प्रत्यायोजित-वर्कर की कुंजियाँ camelCase हैं, जैसा खंड 2 की आवश्यक-कुंजी तालिका सूचीबद्ध करती है। अदिश मान या तो बिना उद्धरण चिह्नों के होते हैं या दोहरे उद्धरण चिह्नों में; कोलन, हैश चिह्न, या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण चिह्नों में रखे जाते हैं।
 
 ## 2. प्रति-वर्ग आवश्यक फ़ील्ड
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (रूट कॉन्फ़िग) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | नियम (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| सहायक, जिन्हें प्रत्यायोजित वर्कर भी कहा जाता है (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा हर स्किल से दोनों वर्तनियों में से ठीक एक रखने की माँग करता है, दोनों कभी नहीं |
+| सहायक, जिन्हें प्रत्यायोजित वर्कर भी कहा जाता है (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (वैकल्पिक: जो सहायक इसे छोड़ देता है वह हर टूल विरासत में पाता है; `tools` सूचीबद्ध करने वाले सहायक को कोई MCP सर्वर देने के लिए, प्रोफ़ाइल की `agent_mcp_servers` कुंजी में उस सर्वर का नाम दें), `disallowedTools`, `maxTurns`, `effort` |
+| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन, तथा साझा उपयोगकर्ता-स्तरीय स्किल फ़ोल्डर, `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा हर स्किल से दोनों वर्तनियों में से ठीक एक रखने की माँग करता है, दोनों कभी नहीं; `Qwen Code` इंस्टॉल `allowed-tools` को एक `allowedTools` सूची के रूप में लिखता है, वह कुंजी और आकार जिसे `Qwen Code` पढ़ता है |
 | आउटपुट-स्टाइल (`src/apothem/output-styles/*.md`) | `name`, `description`; हर शिप की गई स्टाइल `keep-coding-instructions: true` भी सेट करती है ताकि Claude Code अपने सॉफ़्टवेयर इंजीनियरिंग निर्देश बनाए रखे |
 
 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) पर प्रति-वर्ग स्कीमा पूरा बाधा समुच्चय वहन करते हैं, जिसमें प्रकार, प्रारूप, enum, और पैटर्न प्रतिबंध, तथा लंबाई सीमाएँ शामिल हैं: किसी स्किल या कमांड का `description` अधिकतम 1,024 वर्णों का होता है, जो [Agent Skills](https://agentskills.io/specification) की सीमा है।

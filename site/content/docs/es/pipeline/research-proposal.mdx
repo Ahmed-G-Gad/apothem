@@ -1,8 +1,8 @@
 ---
 title: "/research-proposal"
-description: "/research-proposal — Transforma la brecha sintetizada y el marco teórico en un plan maestro financiable y revisable: objetivos SMART, registro de viabilidad y riesgos, vía de impacto, plan de preinscripción y selección de la guía de publicación EQUATOR — la etapa de propuesta del flujo de /research, entre /research-synthesis y /research-design."
+description: "/research-proposal — Transforma la brecha sintetizada y el marco teórico en un plan maestro financiable y revisable: objetivos SMART, registro de viabilidad y riesgos con contingencias, vía de impacto, plan de preinscripción, plan de gestión e intercambio de datos y selección de la guía de publicación EQUATOR, más una matriz de requisitos para una convocatoria de financiación suministrada y una respuesta independiente de reenvío — la etapa de propuesta del flujo de /research, entre /research-synthesis y /research-design."
 machineTranslated: true
-sourceHash: "0addcba24af3c7ac"
+sourceHash: "040241295ba96783"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,20 @@ Transforma la brecha sintetizada y el marco teórico en un plan maestro financia
 Con argumentos:
 
 ```bash
-/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]
 ```
 
 ## Entradas
 
 El archivo `_inputs/synthesis.md` de la suite (el mapa SOTA + el análisis de la brecha) y `_inputs/theory.md` (el marco conceptual).
 
+Con `--call`, el texto de la convocatoria de financiación, como ruta de archivo o `-` para texto pegado; el texto suministrado es la única fuente de los requisitos del financiador. Con `--resubmission`, la crítica del financiador a una solicitud anterior, y no se necesitan ni la síntesis ni la teoría (véase más abajo).
+
 ## Salidas
 
-`_inputs/proposal.md` (la jerarquía de objetivos SMART, la evaluación de viabilidad, el registro de recursos / cronograma / riesgos, la vía de impacto, el plan de preinscripción y la preselección de la guía de publicación EQUATOR).
+`_inputs/proposal.md` (la jerarquía de objetivos SMART, la evaluación de viabilidad, el registro de recursos / cronograma / riesgos con sus contingencias, la vía de impacto, el plan de preinscripción, el plan de gestión e intercambio de datos y la preselección de la guía de publicación EQUATOR).
+
+Con `--call`, también `_inputs/call-requirements.md` (la matriz de requisitos de la convocatoria). Con `--resubmission`, `_outputs/resubmission-response.md` en lugar de la propuesta.
 
 ## Aguas abajo
 
@@ -41,14 +45,34 @@ El comando sigue el flujo de trabajo estándar del flujo `/research`:
 
 1. **Cargar el contexto** — Leer `_inputs/synthesis.md` y `_inputs/theory.md`, las reglas y cualquier estado existente de la suite.
 2. **Construir la jerarquía de objetivos SMART** — Convertir la brecha en objetivos específicos, medibles, alcanzables, relevantes y delimitados en el tiempo.
-3. **Evaluar la viabilidad y el riesgo** — Construir el registro de recursos / cronograma / riesgos; plantear la viabilidad ética desde el principio.
-4. **Planificar la preinscripción y la publicación** — Seleccionar el registro, redactar el plan de preinscripción y preseleccionar la guía de publicación EQUATOR.
+3. **Evaluar la viabilidad y el riesgo** — Construir el registro de recursos / cronograma / riesgos; dar a cada riesgo que afecte a la viabilidad de un objetivo un registro de contingencia y someter a prueba de estrés la decisión que lo sustenta; conciliar las partidas de costes suministradas; plantear la viabilidad ética desde el principio.
+4. **Planificar la preinscripción, los datos y la publicación** — Seleccionar el registro, redactar el plan de preinscripción, comprometer el plan de gestión e intercambio de datos y preseleccionar la guía de publicación EQUATOR.
 5. **Trazar la vía de impacto** — Rastrear cómo los objetivos, una vez cumplidos, producen impacto aguas abajo.
 6. **Verificar y emitir** — Confirmar que los objetivos son comprobables y el plan reproducible; emitir `_inputs/proposal.md` más el manifiesto de traspaso.
+
+## Una convocatoria de financiación suministrada
+
+Con `--call`, el texto de la convocatoria rige la forma de la propuesta. La etapa escribe una matriz de requisitos en `_inputs/call-requirements.md`, una fila por requisito (sección, límite, elegibilidad, anexo, criterio de evaluación o política) con la sección de la propuesta que lo responde, su ubicación en el borrador del operador y un estado de `met`, `partly-met`, `gap` u `operator-owned`. Cada criterio de evaluación es una fila, de modo que cada objetivo remite al criterio que responde; ningún criterio se pondera y no se hace ninguna afirmación sobre las probabilidades de financiación.
+
+- **Primero la política de uso de herramientas.** La política de la convocatoria sobre herramientas automatizadas se resuelve antes de escribir cualquier texto: permitidas, permitidas con declaración (se redacta la declaración de uso de herramientas) o restringidas. Bajo una política restringida, la etapa se detiene tras la matriz y devuelve la decisión al operador. Si una convocatoria no dice nada sobre la política, se pregunta, nunca se presupone.
+- **Nada de memoria, nada de presupuesto.** Un requisito, límite, fecha, tarifa o tope del financiador procede del texto suministrado o del operador, nunca de la memoria. La etapa no construye ningún presupuesto: comprueba las partidas de costes del operador, y una partida que no remite a ningún objetivo es `orphan`, un objetivo sin recursos es `unresourced` y un total que no cuadra es `unreconciled`.
+- **Ninguna narrativa dirigida al financiador.** La etapa emite un plan maestro, no prosa sobre la relevancia o el enfoque. El equipo, las biografías, las instalaciones, las cartas de apoyo y la financiación actual y pendiente son filas `operator-owned`, nunca redactadas.
+
+## Modo de reenvío
+
+`--resubmission PATH` responde a la crítica de un financiador a una solicitud anterior, fuera de la cadena de trece etapas. La puerta de secuencia no se aplica y el manifiesto de traspaso no se toca. El operador suministra la crítica, el texto de la convocatoria (`--call`), la solicitud tal como se presentó y el borrador revisado, y la etapa escribe `_outputs/resubmission-response.md` a partir de tres partes:
+
+- **Elegibilidad y límites** — Leer en el texto de la convocatoria si se permite un reenvío, cuántos permite la convocatoria, el plazo y los límites de la respuesta y de la solicitud revisada. Una regla que el texto no establece se pregunta al operador; sin texto de la convocatoria, la respuesta no puede llegar a `ready`.
+- **Matriz de revisión** — Una fila por comentario de la crítica, numerada como la numera el financiador: el comentario citado, la acción (`changed`, `clarified` o `declined`), el lugar revisado, la consecuencia científica, cualquier cuestión sin resolver y un estado de `answered`, `partly-answered` o `not-answered` respaldado por el texto revisado. Un comentario rechazado lleva su motivo y su evidencia.
+- **Comprobación de propagación** — Rastrear cada fila `changed` hasta cada elemento del plan al que afecta: objetivos, métodos, cronograma, partidas presupuestarias, plan de datos y registro de riesgos. Un elemento afectado por el cambio que el borrador revisado deja sin cambios es `unpropagated`.
+
+La respuesta está `ready` cuando cada fila está `answered` o lleva un residuo aceptado por el operador, ningún elemento está `unpropagated` y se cumple cada límite de la convocatoria. Una respuesta que necesita nueva evidencia vuelve al operador, que la dirige a `/research-design` o `/research-experiment`. El operador hace el envío.
 
 ## Umbral de rigor
 
 La ambición del lugar de publicación objetivo fija no solo la elección de la guía de publicación, sino la profundidad del umbral de rigor que las etapas posteriores de diseño y experimento deben superar —umbral de replicación, paridad de presupuesto, ajuste en particiones disjuntas y significancia con un tamaño del efecto— más el paquete de evidencia de reproducibilidad que llevará el entregable.
+
+Cada riesgo es una predicción refutable de cómo falla el plan. Un riesgo que afecta a la viabilidad de un objetivo no se detiene en su mitigación: lleva un registro de contingencia (desencadenante, rol responsable, fecha de revisión, tiempo de anticipación, coste de la alternativa, riesgo residual) fijado antes de la recogida de datos, y una respuesta escrita en el plan es una adaptación planificada, no una desviación. El plan de gestión e intercambio de datos fija la clase de repositorio, las condiciones de acceso con la base de cada restricción y el período de conservación antes de que el diseño fije los datos, y el alcance del consentimiento debe permitir el intercambio que promete.
 
 ## Modos de fallo
 
@@ -57,6 +81,8 @@ La ambición del lugar de publicación objetivo fija no solo la elección de la 
 | El objetivo no es medible | El objetivo se planteó como actividad, no como resultado | Reformularlo como un objetivo SMART con una métrica de éxito explícita |
 | Sin plan de preinscripción | El paso de preinscripción se omitió | Seleccionar un registro y redactar el plan antes de avanzar a `/research-design` |
 | Falta la entrada de síntesis | `/research-synthesis` aún no se ha ejecutado | Ejecutar primero `/research-synthesis` para producir el análisis de la brecha |
+| Convocatoria de financiación nombrada sin su texto | Se omitió `--call` o el texto es ilegible | Suministrar el texto de la convocatoria; la etapa nunca completa una regla del financiador de memoria |
+| La respuesta de reenvío no está `ready` | Un comentario no está respondido, un cambio está `unpropagated` o se supera un límite de la convocatoria | Propagar el cambio al borrador revisado, responder el comentario o ajustar la respuesta al límite |
 
 ## Ejemplos
 
@@ -66,6 +92,12 @@ La ambición del lugar de publicación objetivo fija no solo la elección de la 
 
 # Fija la guía de publicación y el registro de preinscripción
 /research-proposal --guideline PRISMA --prereg-registry OSF
+
+# Mapea una convocatoria de financiación sobre el plan maestro
+/research-proposal --suite-name retrieval-latency --call funder-call.md
+
+# Responde a la crítica de un financiador a una solicitud anterior
+/research-proposal --resubmission critique.md --call funder-call.md
 ```
 
 ## Referencias cruzadas

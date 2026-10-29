@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Apothem-Harness-Adapter für Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,6 +54,30 @@ Der Apothem-Block in `QWEN.md` endet mit einem Abschnitt zu den
 Apothem-Unterstützungsdateien, der das absolute Verzeichnis unter
 `~/.qwen/.apothem/support/` nennt, gegen das jeder Verweis im Repository-Stil
 (`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst wird.
+
+**Werkzeuglisten von Skills.** `Qwen Code` liest die Werkzeug-Erlaubnisliste
+eines Skills aus dem camelCase-Frontmatter-Schlüssel `allowedTools`, und der
+Wert muss eine YAML-Liste sein. Den mit Bindestrich geschriebenen Schlüssel
+`allowed-tools`, der für andere Agenten geschrieben wird, ignoriert es.
+Installierte Skills tragen daher `allowedTools` als Liste, ein Eintrag pro Zeile,
+anstelle der kommagetrennten `allowed-tools`-Zeichenkette des Quellkorpus. Jeder
+Eintrag behält die Schreibweise der Quelle, einschließlich Mustern wie
+`Bash(git status *)`. Jeder andere Skill-Schlüssel und der Skill-Rumpf werden
+unverändert installiert.
+
+**Skill-Ordner.** Der Adapter schreibt Skills nach `~/.qwen/skills/`. `Qwen Code`
+liest außerdem `~/.agents/skills/` und, innerhalb eines Projekts,
+`.qwen/skills/` und `.agents/skills/`. Wenn zwei Ordner einen Skill mit demselben
+Namen enthalten, gewinnt der unter `.qwen`, sodass ein Apothem-Skill in
+`~/.qwen/skills/` Vorrang vor einem gleichnamigen Skill hat, den ein anderer
+Adapter nach `~/.agents/skills/` geschrieben hat.
+
+**Hook-Ereignisse.** Der Adapter verdrahtet `SessionStart`, `PreToolUse`,
+`PreCompact`, `PostCompact` und `Stop`. `Qwen Code` definiert 22
+Hook-Ereignisse, und jedes dieser fünf gehört dazu. Drei der 22
+(`SessionDelete`, `TodoCreated` und `TodoCompleted`) haben kein
+gleichnamiges `Claude Code`-Ereignis (`Claude Code` nennt die Todo-Ereignisse
+`TaskCreated` und `TaskCompleted`); der Adapter verdrahtet keines davon.
 
 ## Verifizierung
 

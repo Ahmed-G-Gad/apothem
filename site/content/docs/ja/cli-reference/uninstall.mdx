@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,6 +37,33 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 インストールルートの `.apothem/` 配下にある共有データストア（`memory/`、`contexts/`、`learning/`）は、同じルートにある別のインストール済みハーネスがそれらをまだ使用している間は残ります。
 削除するハーネスがそのルートで最後の 1 つである場合、コマンドは各ストアをまず Apothem のバックアップルート（`~/.apothem/backups/`）へコピーし、その後、中身ごとストアを削除します。
 あなたが `plans/` に保管しているものは、決して削除されません。
+
+## ホームディレクトリ内の共有フォルダー
+
+複数のインストールが、ホームディレクトリ内の 1 つのフォルダーを使用することがあります。スキルフォルダー（`~/.agents/skills/`、または `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/`）と、`~/.config/apothem/rules/` および `~/.config/apothem/templates/` です。
+どのアダプターがどれに書き込むかは、[install](/docs/cli-reference/install#ホームディレクトリ内のフォルダー) のページに記載されています。
+Apothem は各フォルダーをどのインストールが使用しているかを記録しており、アンインストールは 1 つのルールに従います。そのフォルダーをまだ使用している他の Apothem インストールがない場合にのみ、フォルダーを削除します。
+
+- 1 つのツールをアンインストールしても、別のインストールがまだスキルを使用している間はスキルが残り、その旨が表示されます。
+  2 つのプロジェクトにインストールされた 1 つのツールは 2 つのインストールとして数えられるため、プロジェクト A からそれをアンインストールしても、プロジェクト B がまだ使用している間はフォルダーが残ります。最後のアンインストールがそれらを削除します（以下の 2 つ目の例を参照）。
+- 削除されるのは、そのインストール自身の記録に列挙されているものだけです。
+  フォルダーが管理されるようになる前に行われたインストールにはそのような記録がないため、それをアンインストールしてもホーム内の何も削除されません。
+  あなたがフォルダーに追加したファイルは残り、Apothem のスキルの名前を持ち、Apothem が書き込んだものではないフォルダーも残ります。
+- プロジェクトフォルダーがもはや存在しないインストールは無視されるため、削除されたプロジェクトがフォルダーをいつまでも保持し続けることはありません。注記はその名前を挙げます。
+- フォルダーを使用し得るインストールの記録が読み取れない場合、アンインストールは何も削除する前にエラーとともに停止し、そのインストールは記録されたまま残ります。
+  読み取れない記録を修復または移動してから、コマンドを再度実行してください。これらのフォルダーに一度も書き込まないツールの破損した記録は無視されます。
+- 最後の使用がなくなると、空になったフォルダーも削除されます。
+  各フォルダーは、削除される前に `~/.apothem/backups/` の下にバックアップされます。
+
+各アンインストールは、フォルダーごとに 1 つの `Note:` を出力します。たとえば `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`、または `was removed: no other Apothem install uses it` です。
+`--format json` のエンベロープでは、各注記は `"outcome": "advisory"`、`"operation": "shared_root"`、および `retained` または `released` に設定された `"role"` を持つ `warnings` エントリです。
+これは `path`、`holders`（フォルダーを保持しているインストール）、`stale`（無視されたインストール）、および `kept` と `total`（保持された記録済みエントリと、インストールが列挙したエントリ）を含みます。
+
+見つけられないインストールのためにフォルダーが残っている場合、注記はその名前を挙げます。
+プロジェクトフォルダーが削除されていた場合、そのインストールは無視され、フォルダーは次のアンインストールで削除されます。
+プロジェクトは存在するものの、そのルールファイルから Apothem ブロックを手作業で削除した場合、`uninstall` はそのハーネスをインストールされていないと報告し、その使用の登録を解除しません。解除するには、そのハーネスとプロジェクトに対して `install` を実行してから `uninstall` を実行してください。
+`apothem verify` は、フォルダーがまだ完全であるかどうかを表示します。
 
 `--harness all` による削除は意図的に網羅的です。登録済みのすべてのハーネスを対象とし、
 インストール時にプロファイルの `exclude_harnesses` がスキップするハーネスも含みます。
@@ -99,6 +126,15 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+共有スキルフォルダーは、それを使用する最後のインストールがなくなるまで残ります。
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## 終了コード

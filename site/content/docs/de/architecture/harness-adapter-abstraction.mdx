@@ -2,7 +2,7 @@
 title: "Harness-Adapter-Abstraktion"
 description: "Das HarnessAdapter-Protokoll — wie Apothem-Adapter das gemeinsame Profil übersetzen."
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,8 +48,10 @@ sichtbar:
   Kohorten ins native Format, wo eines existiert, und parken den Rest unter einem
   Apothem-eigenen Unterstützungs-Teilbaum, der vom nativen Anker referenziert wird. Der
   Cursor-Adapter schreibt ein einzelnes `.cursor/rules/apothem-rules.mdc` in die
-  bereitgestellte Projektwurzel und liefert nur die Regeloberfläche. Der Adapter
-  für Claude Code rendert `settings.json` nicht aus dem Profil. Er kopiert die
+  bereitgestellte Projektwurzel. Vor dieser Datei schreibt er zwei gemeinsame
+  Ordner im Home-Verzeichnis: Die Skills und die als Skills verpackten Befehle
+  gehen nach `~/.agents/skills/`, und die Regeln und Vorlagen, die diese Skills
+  zitieren, gehen nach `~/.config/apothem/`. Der Adapter für Claude Code rendert `settings.json` nicht aus dem Profil. Er kopiert die
   mitgelieferte Settings-Vorlage mit eingetragenem Hook-Interpreter nach
   `~/.claude/settings.json`, legt die Apothem-Konventionsverzeichnisse
   (`agents/`, `rules/`, `skills/`, …) flach daneben ab und schreibt das Profil in
@@ -57,13 +59,17 @@ sichtbar:
 
 Ein gegebener Adapter ist **benutzerbezogen** (schreibt unter dem
 Home-Verzeichnis) oder **projektbezogen** (erfordert `--project <path>` und
-schreibt innerhalb dieses Baums); das Registry hält fest, welcher.
+schreibt seine Projektdatei innerhalb dieses Baums); das Registry hält fest,
+welcher. Sieben projektbezogene Adapter (cursor, github-copilot, windsurf, zed,
+codebuddy, kiro und trae) schreiben außerdem gemeinsame Ordner im
+Home-Verzeichnis, etwa `~/.agents/skills/` und `~/.config/apothem/`, und
+`--project` ändert nicht, wohin diese gehen.
 
 ## Aktuelle Adapter-Topologie
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -80,9 +86,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

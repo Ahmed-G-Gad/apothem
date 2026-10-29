@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptador de entorno de Apothem para Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,6 +61,17 @@ con nombres de herramientas de Gemini, y `maxTurns` se convierte en
 `max_turns`. Por tanto, un ayudante de solo lectura no recibe ninguna
 herramienta `write_file` ni `replace`. No se establece ningún modelo, así que
 cada ayudante hereda el modelo de la sesión.
+
+Un ayudante que la clave `agent_mcp_servers` del perfil lista también obtiene una
+entrada `mcp_<server>_*` por cada servidor nombrado en su lista de permitidos
+`tools`, de modo que puede llamar a las herramientas de ese servidor y a las de
+ningún otro; sin la clave, cada ayudante conserva la lista de permitidos simple
+(consulta
+[Servidores MCP](/docs/reference/mcp#dar-a-un-trabajador-delegado-acceso-a-servidores-mcp)).
+Apothem escribe aquí una concesión solo para un nombre de servidor formado por
+letras, dígitos y `-`, porque `Gemini CLI` no puede referirse a un nombre con
+guion bajo; cualquier otro nombre se omite y se informa, y lo mismo ocurre con
+una concesión para un ayudante que ya alcanza todos los servidores MCP.
 
 ## Notas de compatibilidad
 

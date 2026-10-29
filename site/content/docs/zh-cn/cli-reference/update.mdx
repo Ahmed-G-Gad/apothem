@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "9090fc8d8546d5b0"
+sourceHash: "0f47915f4f7819de"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,8 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 ```
 
 `update` 会从当前的共享配置档案重新物化工具输出。它使用与 `install` 相同的配置档案校验、`--harness all` 选择、项目作用域检查、试运行行为以及 JSON 信封。
+
+对于将技能写入你主目录的项目作用域适配器（见 [`install`](/docs/cli-reference/install#主目录中的文件夹)），`update` 也会使这些文件夹保持最新，并打印指出它们的同一条 `Note:`。在开始写入技能之前安装的适配器，会在其下一次更新时得到这些技能。并非由 Apothem 写入的技能文件夹会被跳过并伴有一条警告，与 [`install`](/docs/cli-reference/install#主目录中的文件夹) 相同。先前写入过共享技能文件夹的安装，会在其下一次更新时被重写为每个安装共享的形式；每个被更改的文件夹都会先备份。
 
 连续式别名 `apothem updating`（也接受写作 `apothem Updating`）解析到同一个处理程序。
 

@@ -2,7 +2,7 @@
 title: "Paleta de marca"
 description: "Colores de marca centrales de Apothem y los quince colores de marca de los entornos, que se definen en la página Colores de entornos. La única fuente de verdad de los colores centrales son los tokens de diseño canónicos en assets/design-tokens.css; el sitio refleja esos valores."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,13 @@ semánticos— pertenece a los tokens de diseño en
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (y su espejo `assets/design-tokens.json`). El tema del sitio en
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-refleja esos valores de tokens en las variables CSS que consume el tema de Fumadocs. Cada
-valor a continuación es un paso de la rampa slate o emerald de esos tokens de diseño; un nombre de paso como slate-600 se refiere al valor de esa rampa.
+vuelve a expresar los valores de los tokens semánticos en OKLCH en las variables CSS que consume el tema de Fumadocs: las
+variables de fondo de página, texto, primario, borde y anillo de foco se resuelven en los pasos exactos de los tokens (la
+comprobación `lib/theme-tokens.test.mjs` exige que las variables de fondo, primer plano, primario y anillo se ajusten
+a ellos). Las rampas `apothem-*`, `polygon-*` y `field-*` declaradas en el mismo archivo son aproximaciones
+derivadas de las rampas de los tokens, no copias, y no forman parte de la especificación. Cada
+valor a continuación es un paso de la rampa slate o emerald de los tokens de diseño; un nombre de paso como slate-600
+se refiere al valor de esa rampa.
 
 | Rol | Token (CSS) | Modo claro | Modo oscuro | Uso |
 |---|---|---|---|---|

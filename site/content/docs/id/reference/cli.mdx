@@ -2,7 +2,7 @@
 title: "Referensi CLI"
 description: "Referensi CLI Apothem — semua subperintah dan flag."
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. |
 | `--dry-run` | Pratinjau pembaruan tanpa menulis berkas. |
 
-`update` mematerialisasi ulang keluaran harness. Perintah ini tidak memperbarui
-paket CLI Apothem; untuk peningkatan paket, gunakan pengelola paket yang
-memasang Apothem.
+`update` mematerialisasi ulang keluaran harness. Perintah ini tidak memutakhirkan
+mesin Apothem itu sendiri; mutakhirkan mesin melalui kanal yang Anda gunakan untuk
+memasangnya (alur `/plugin`, `npx`, atau skrip installer dan pembaruan), seperti
+dijelaskan di [Memperbarui](/docs/install/updating).
 
 ### `apothem uninstall`
 
@@ -141,6 +142,7 @@ bergabung menjadi status penyimpangan:
 | `in-sync` | Terpasang dan cocok dengan profil acuan. |
 | `drift` | Terpasang tetapi tidak lagi cocok — perbaiki dengan `apothem update`. |
 | `unknown` | Terpasang, tetapi profil acuan tidak dapat dibaca. |
+| `needs-project` | Harness lingkup proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat diselesaikan. |
 
 `installed` menjawab "apakah Apothem memasang di sini?", bukan "apakah harness
 ini ada di mesin?". Flag ini berpatokan pada artefak milik Apothem sendiri —

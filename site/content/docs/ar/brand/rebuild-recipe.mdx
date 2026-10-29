@@ -2,7 +2,7 @@
 title: "وصفة إعادة بناء الأصول"
 description: "إعادة توليد جميع أصول العلامة النقطية من مصادر SVG الرئيسية باستخدام resvg وPillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ sourceHash: "7ffb351825fa59ff"
 
 شغِّل وصفة إعادة البناء عندما:
 
-- يتغيّر ملف <bdi>SVG</bdi> الرئيسي (<bdi>`assets/src/logo.svg`</bdi> أو <bdi>`assets/src/logo-dark.svg`</bdi>).
+- يتغيّر أحد ملفات <bdi>SVG</bdi> الرئيسية (<bdi>`assets/src/logo.svg`</bdi> أو <bdi>`assets/src/logo-dark.svg`</bdi> أو <bdi>`assets/src/logo-animated.svg`</bdi> أو <bdi>`assets/src/logo-animated-light.svg`</bdi>).
 - يتغيّر ملف <bdi>favicon</bdi> المضغوط الرئيسي (<bdi>`assets/favicon.svg`</bdi>).
 - يتغيّر ملف بطاقة اجتماعية رئيسي (<bdi>`assets/src/og-banner.svg`</bdi> أو <bdi>`assets/src/twitter-card.svg`</bdi>).
 - يلزم حجم نقطي جديد.
@@ -61,8 +61,8 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## التحقُّق
 
 يُعيد التشغيل الناجح توليد العلامات النقطية الفاتحة والداكنة، ومجموعة
-<bdi>favicon</bdi> بصيغتي <bdi>PNG/ICO</bdi>، وأيقونات <bdi>Apple touch</bdi>،
-وصور <bdi>OG/Twitter</bdi>، ويعكس المجموعة الفرعية المُقدَّمة على الويب — بما في
+<bdi>favicon</bdi> بصيغتي <bdi>PNG/ICO</bdi> (يضمّ ملف <bdi>ICO</bdi> طبقات بأحجام 16 و32 و48 بكسل)، وأيقونات <bdi>Apple touch</bdi>،
+وأيقونة امتداد <bdi>VS Code</bdi> (<bdi>`vscode-extension/icon.png`</bdi>)، وصور <bdi>OG/Twitter</bdi>، ويعكس المجموعة الفرعية المُقدَّمة على الويب — بما في
 ذلك مصادر شعار البطل (hero) التي يُحيل إليها الموقع — إلى <bdi>`site/public/`</bdi>.
 بعد التوليد، شغِّل بناء الموقع وافحص الصفحة الرئيسية، و<bdi>favicon</bdi> تبويب
 المتصفّح، وملفات <bdi>PNG</bdi> للبطاقات الاجتماعية قبل النشر.

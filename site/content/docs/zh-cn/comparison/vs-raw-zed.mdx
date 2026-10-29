@@ -2,7 +2,7 @@
 title: "Apothem 对比原生 Zed 配置"
 description: "手工维护 Zed 扁平的 .rules 指令文件，对比通过 Apothem 的共享配置档案来渲染它。"
 machineTranslated: true
-sourceHash: "2c5b5e0dd0dfe386"
+sourceHash: "693a56d0ed665ef9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,6 +17,7 @@ Zed 从项目根目录下一个扁平的 `.rules` 文件读取代理指令（与
 | 编写指令 | 手工编写 `.rules` 文件 | 从共享语料库渲染 |
 | 保留先前的 `.rules` | 记得自己把它复制到一旁 | 适配器在替换前备份现有文件 |
 | 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 共享可复用的技能和命令 | 把每个技能文件夹手工复制到 `~/.agents/skills/` 并保持这些副本最新 | 由适配器写入 `~/.agents/skills/`，所有项目共用一份副本，并在 `apothem update` 时刷新 |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness zed --project <path>` |
 
 ## Apothem 管理什么

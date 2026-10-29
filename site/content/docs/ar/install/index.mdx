@@ -2,7 +2,7 @@
 title: "التثبيت"
 description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,22 +67,22 @@ sourceHash: "9bbe909880e8e0b6"
 بعد التثبيت، تصبح مجموعة أوامر <bdi>Apothem</bdi>، والعمّال المُفوَّضون المرفقون،
 والمهارات، و[أنماط الإخراج](/docs/reference/output-styles) الأربعة (اختر أحدها عبر
 <bdi>`/output-style`</bdi> أو من <bdi>`/config`</bdi>) متاحةً في كل جلسة
-<bdi>Claude Code</bdi>. تحمل أوامر الإضافة بادئة الإضافة:
-<bdi>`/apothem:plan-spec`</bdi>، و<bdi>`/apothem:security-audit`</bdi>، وسائرها.
-ويقبل <bdi>Claude Code</bdi> أيضًا الصيغة المختصرة (<bdi>`/plan-spec`</bdi>) ما دام
-لا يستخدم أي أمر آخر ذلك الاسم. واسمان يحجزهما <bdi>Claude Code</bdi> نفسه:
-<bdi>`/plan`</bdi> يدخل وضع التخطيط، و<bdi>`/code-review`</bdi> يشغّل المراجعة
+<bdi>Claude Code</bdi>. تشحن الإضافة كل أمر بوصفه مهارة، أي ملف <bdi>`SKILL.md`</bdi>
+تقع التفاصيل التي يحمّلها عند الطلب في مجلد <bdi>`references/`</bdi> بجانبه، لذا
+يستدعيه <bdi>Claude Code</bdi> ببادئة الإضافة: <bdi>`/apothem:plan-spec`</bdi>،
+و<bdi>`/apothem:security-audit`</bdi>، وسائرها. واسمان يحجزهما <bdi>Claude Code</bdi>
+نفسه: <bdi>`/plan`</bdi> يدخل وضع التخطيط، و<bdi>`/code-review`</bdi> يشغّل المراجعة
 المرفقة، لذا اكتب <bdi>`/apothem:plan`</bdi> و<bdi>`/apothem:code-review`</bdi>
 لأوامر <bdi>Apothem</bdi>. وعندما يتولّى محرّك <bdi>Apothem</bdi> التثبيت في
-<bdi>Claude Code</bdi> بدلًا من الإضافة، تصبح الأوامر مهارات شخصية تحت
+<bdi>Claude Code</bdi> بدلًا من الإضافة، تُكتَب المهارات نفسها في
 <bdi>`~/.claude/skills/`</bdi> بلا بادئة، وتحلّ مهارة <bdi>`code-review`</bdi>
 شخصية محلّ <bdi>`/code-review`</bdi> المرفق (ويظلّ اسمه البديل <bdi>`/review`</bdi>
-يشغّل الأمر المرفق). واسمان، <bdi>`projectify`</bdi> و<bdi>`workflow`</bdi>،
-يُشحَنان أمرًا ومهارةً معًا؛ ويشغّل <bdi>Claude Code</bdi> المهارة عند وجود
-الاثنين، لذا تشغّل الإضافة المهارة، ولا يكتب تثبيت المحرّك في
-<bdi>`~/.claude/skills/<name>/`</bdi> سوى المهارة، لا مهارةً مشتقّة من الأمر.
-راجع [أوامر الشرطة المائلة](/docs/reference/commands) للاطّلاع على الكتالوج الكامل
-للأوامر.
+يشغّل الأمر المرفق). واسمان، <bdi>`projectify`</bdi> و<bdi>`workflow`</bdi>، هما
+أيضًا مهارتان أصليّتان؛ والمهارة الأصلية هي التي تشحنها الإضافة وتثبيت المحرّك،
+لا مهارةً مشتقّة من الأمر. راجع
+[<bdi>Claude Code</bdi>](/docs/harnesses/claude-code#مهارات-الأوامر-والملفات-المرجعية)
+لمعرفة كيف تُقسَّم الأوامر، و[أوامر الشرطة المائلة](/docs/reference/commands)
+للاطّلاع على الكتالوج الكامل للأوامر.
 
 **التحقّق:** شغِّل <bdi>`/plugin`</bdi> داخل <bdi>Claude Code</bdi> وتأكّد من أن
 **<bdi>apothem</bdi>** مُدرَج بوصفه مُثبَّتًا، أو افحص تقرير الانحراف من طرفية:
@@ -328,12 +328,18 @@ npx @ahmed-g-gad/apothem verify --harness qwen-code
 إطار العمل الدقيقين:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
-مثل امتدادَي القناتين 5 و6، هذا **مدخل تمهيدي** يستدعي المحرّك عبر الصدفة. جسِّد
-إطار العمل الكامل بتشغيل التثبيت عبره:
+يجلب مسارا <bdi>`--sparse`</bdi> قائمةَ السوق والإضافةَ فقط، لا المستودع كله؛ فقد
+يتجاوز الاستنساخ الكامل حدّ الاستنساخ لدى المضيف البالغ 30 ثانية على قرص بطيء، مثل
+محرّك أقراص <bdi>Windows</bdi> تحت <bdi>WSL</bdi>.
+
+مثل امتدادَي القناتين 5 و6، هذا **مدخل تمهيدي** يستدعي المحرّك عبر الصدفة. تحزم
+الإضافة مهارة دخول واحدة؛ وبيانها ملف <bdi>`plugin.json`</bdi> في الجذر، وتصف
+[صفحة إطار العمل الخاصة بمضيف الإضافات](/docs/harnesses/codex#إضافة-codex) البنيةَ
+وما تتركه الإضافة للمحرّك. جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

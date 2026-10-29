@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,6 +23,21 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 除非提供 `--yes`，否则会提示确认。在无法提示时——`--format json`（提示文本会破坏单个 JSON 文档）或非交互式 shell（无 TTY）——该命令会预先拒绝执行，并返回结构化的 `uninstall.confirmation_required` 错误（退出码 1），除非提供了 `--yes`。如果所选工具未安装，该命令会成功（退出码 0）；在纯文本输出中，它会打印 `NAME is not installed; nothing to remove.`，其中 `NAME` 为工具 ID。
 
 安装根目录下 `.apothem/` 中的共享数据存储（`memory/`、`contexts/`、`learning/`），只要同一根目录下仍有另一个已安装的工具在使用它们，就会保留。当你移除的工具是该根目录下的最后一个工具时，该命令会先将每个数据存储复制到 Apothem 备份根目录（`~/.apothem/backups/`），然后连同其中的全部内容一并移除。你保存在 `plans/` 中的任何内容绝不会被移除。
+
+## 主目录中的共享文件夹
+
+多个安装可以使用你主目录中的同一个文件夹：技能文件夹（`~/.agents/skills/`，或 `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/`）以及 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`。[install](/docs/cli-reference/install#主目录中的文件夹) 页面列出了哪个适配器写入哪个文件夹。Apothem 会记录哪些安装使用每个文件夹，而卸载遵循一条规则：只有当没有其他 Apothem 安装仍在使用某个文件夹时，才会移除它。
+
+- 卸载一个工具时，只要另一个安装仍在使用这些技能，就会保留它们，并会说明这一点。同一个工具安装在两个项目中算作两个安装，因此从项目 A 卸载它时，只要项目 B 仍在使用这些文件夹，就会保留它们。最后一次卸载会移除它们（见下文的第二个示例）。
+- 只会移除该安装自身记录所列出的内容。在这些文件夹开始受管理之前进行的安装没有这样的记录，因此卸载它不会移除你主目录中的任何内容。你添加到这些文件夹中的文件会保留，与某个 Apothem 技能同名、但并非由 Apothem 写入的文件夹也会保留。
+- 项目文件夹已不存在的安装会被忽略，因此一个已删除的项目不会让这些文件夹永久保留。说明中会指出该安装。
+- 如果一个可能使用这些文件夹的安装的记录无法读取，卸载会在移除任何内容之前以错误停止，而该安装仍保持已记录状态。修复或移走这条无法读取的记录，然后再次运行该命令。一个从不写入这些文件夹的工具的损坏记录会被忽略。
+- 当最后一次使用消失时，变为空的文件夹也会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
+
+每次卸载都会为每个文件夹打印一条 `Note:`，例如 `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`，或 `was removed: no other Apothem install uses it`。在 `--format json` 信封中，每条说明都是一个 `warnings` 条目，带有 `"outcome": "advisory"`、`"operation": "shared_root"`，以及设为 `retained` 或 `released` 的 `"role"`。它携带 `path`、`holders`（保留该文件夹的安装）、`stale`（被忽略的安装），以及 `kept` 和 `total`（保留的已记录条目，以及该安装列出的条目）。
+
+如果某个文件夹因为一个你找不到的安装而保留，说明中会指出该安装。当项目文件夹已被删除时，该安装会被忽略，而该文件夹会随下一次卸载一并移除。当项目存在、但你手动从其规则文件中移除了 Apothem 块时，`uninstall` 会将该工具报告为未安装，并且不会释放它的占用；请为该工具和项目运行 `install`，然后运行 `uninstall`，以释放它。`apothem verify` 会显示某个文件夹是否仍然完整。
 
 使用 `--harness all` 进行的移除刻意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装时跳过的工具——清理会触及先前范围更广的安装可能遗留的状态。从未安装过的工具会收到同样的提示。
 
@@ -82,6 +97,15 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+共享技能文件夹会一直保留，直到使用它的最后一个安装消失为止：
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## 退出码

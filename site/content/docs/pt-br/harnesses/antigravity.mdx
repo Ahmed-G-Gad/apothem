@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptador de harness do Apothem para o Antigravity (Prévia)."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,13 @@ do plugin, e `templates/...` e `hooks/...` sob o `.apothem/support/` do plugin.
 então cada regra do Apothem é convertida na instalação. Uma regra que sempre se
 aplica recebe `trigger: always_on`; uma regra com escopo de caminhos recebe
 `trigger: glob` com os mesmos padrões em `globs`; qualquer outra regra recebe
-`trigger: model_decision`. Toda regra mantém sua `description`. O Antigravity
-reparte um orçamento de 20.000 tokens entre as regras sempre ativas e, além
-dele, transforma as maiores em ponteiros sob demanda.
+`trigger: model_decision`. Toda regra mantém sua `description`. Cinco regras
+sempre se aplicam: `agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management` e o índice de regras `apothem-rule-index`, que nomeia todas
+as outras regras e quando lê-las. As demais regras recebem `trigger: glob`. O
+Antigravity reparte um orçamento de 20.000 tokens entre as regras sempre ativas
+e, além dele, transforma as maiores em ponteiros sob demanda; as cinco regras
+somam cerca de 11.000 tokens, então nenhuma é transformada em ponteiro.
 
 **Manifesto do plugin.** `plugin.json` carrega apenas `name` e `description`,
 as duas chaves que o schema de plugin do Antigravity admite.

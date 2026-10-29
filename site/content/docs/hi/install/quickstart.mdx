@@ -2,7 +2,7 @@
 title: "त्वरित प्रारंभ"
 description: "Apothem इंस्टॉल करें, एक प्रोफ़ाइल लिखें, अपने पहले हार्नेस को मूर्त रूप दें और उसे सत्यापित करें — अपेक्षित आउटपुट के साथ एक कॉपी-पेस्ट मार्गदर्शिका।"
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -117,14 +117,39 @@ apothem profile show --json
 
 यह ढाँचा नकली प्लेसहोल्डर पहचान डेटा का उपयोग करता है, और किसी भी हार्नेस आउटपुट
 को इंस्टॉल करने से पहले इसे संपादित करना सुरक्षित है। `show --json` इसे वापस पढ़ता
-है और सत्यापित प्रोफ़ाइल की रिपोर्ट करता है:
+है और हर डिफ़ॉल्ट भरी हुई सत्यापित प्रोफ़ाइल की रिपोर्ट करता है, जिसकी शुरुआत
+`schema_version` से होती है। कमांड इसे एक पंक्ति में प्रिंट करता है; यहाँ इसे
+विस्तारित करके दिखाया गया है:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -151,9 +176,10 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-प्रोजेक्ट-स्कोप अडैप्टर आपकी होम डायरेक्टरी के बजाय किसी प्रोजेक्ट के भीतर लिखते
-हैं, इसलिए उन्हें एक `--project PATH` चाहिए। `--dry-run` का उपयोग करके फ़ाइलें
-लिखे बिना किसी भी इंस्टॉल का पूर्वावलोकन करें:
+प्रोजेक्ट-स्कोप अडैप्टर अपनी नियम फ़ाइल किसी प्रोजेक्ट के भीतर लिखते हैं, इसलिए
+उन्हें एक `--project PATH` चाहिए; उनमें से सात आपकी होम डायरेक्टरी के फ़ोल्डरों में
+स्किल और साझा नियम भी लिखते हैं, और `--project` यह नहीं बदलता कि वे कहाँ जाते हैं।
+`--dry-run` का उपयोग करके फ़ाइलें लिखे बिना किसी भी इंस्टॉल का पूर्वावलोकन करें:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

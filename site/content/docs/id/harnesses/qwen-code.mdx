@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adapter harness Apothem untuk Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,6 +52,30 @@ Blok Apothem di `QWEN.md` diakhiri dengan bagian berkas pendukung Apothem yang
 menyebutkan direktori absolut di bawah `~/.qwen/.apothem/support/` yang menjadi
 acuan resolusi setiap sitasi bergaya repositori (`rules/<name>.md`,
 `templates/...`, `hooks/...`).
+
+**Daftar alat skill.** `Qwen Code` membaca daftar-izin alat sebuah skill dari
+kunci frontmatter camelCase `allowedTools`, dan nilainya harus berupa list YAML.
+Alat ini mengabaikan kunci `allowed-tools` bertanda hubung yang ditulis untuk
+agen lain. Karena itu, skill yang terpasang membawa `allowedTools` sebagai list,
+satu entri per baris, menggantikan string `allowed-tools` yang dipisahkan koma
+dari korpus sumber. Setiap entri mempertahankan ejaan sumbernya, termasuk pola
+seperti `Bash(git status *)`. Setiap kunci skill lainnya, dan isi skill,
+terpasang tanpa perubahan.
+
+**Folder skill.** Adapter menulis skill ke `~/.qwen/skills/`. `Qwen Code` juga
+membaca `~/.agents/skills/` dan, di dalam proyek, `.qwen/skills/` dan
+`.agents/skills/`. Ketika dua folder memuat skill dengan nama yang sama, yang
+berada di bawah `.qwen` yang menang, sehingga skill Apothem di `~/.qwen/skills/`
+lebih diutamakan daripada skill bernama sama yang ditulis adapter lain ke
+`~/.agents/skills/`.
+
+**Event hook.** Adapter menyambungkan `SessionStart`, `PreToolUse`, `PreCompact`,
+`PostCompact`, dan `Stop`. `Qwen Code` mendefinisikan 22 event hook dan
+masing-masing dari kelima event ini termasuk di antaranya. Tiga dari 22 event
+tersebut (`SessionDelete`, `TodoCreated`, dan `TodoCompleted`) tidak memiliki
+event `Claude Code` dengan nama yang sama (`Claude Code` menamai event todo
+`TaskCreated` dan `TaskCompleted`); adapter tidak menyambungkan satu pun dari
+ketiganya.
 
 ## Verifikasi
 

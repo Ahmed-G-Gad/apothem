@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptateur d'environnement Apothem pour Antigravity (préversion)."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,9 +42,13 @@ chaque règle Apothem est donc convertie à l'installation. Une règle qui
 s'applique toujours reçoit `trigger: always_on` ; une règle limitée à des
 chemins reçoit `trigger: glob` avec les mêmes motifs dans `globs` ; toute autre
 règle reçoit `trigger: model_decision`. Chaque règle conserve sa `description`.
-Antigravity partage un budget de 20 000 jetons entre les règles toujours
-actives et, au-delà de ce budget, transforme les plus volumineuses en pointeurs
-à la demande.
+Cinq règles s'appliquent toujours : `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management` et l'index des règles
+`apothem-rule-index`, qui nomme chaque autre règle et le moment de la lire. Les
+autres règles portent `trigger: glob`. Antigravity partage un budget de 20 000
+jetons entre les règles toujours actives et, au-delà de ce budget, transforme
+les plus volumineuses en pointeurs à la demande ; les cinq règles totalisent
+environ 11 000 jetons, de sorte qu'aucune n'est transformée en pointeur.
 
 **Manifeste du plugin.** `plugin.json` ne porte que `name` et `description`, les
 deux clés qu'admet le schéma de plugin d'Antigravity.

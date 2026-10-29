@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -147,7 +147,7 @@ portability: "unix-only"
 
 ### 始终生效
 
-规则在所有位置都适用。
+规则在所有位置都适用。有五条规则始终生效：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`，以及规则索引（`apothem-rule-index`）。这一集合之所以很小，是因为每条始终生效规则在每个会话中都会占用上下文。
 
 ```yaml
 pathFilter: ""
@@ -248,14 +248,16 @@ alwaysApply: false
 
 规则只携带这四个字段——没有 `version` / `updated` / `scope` / `portability` / `implements`。
 
+新规则默认是路径过滤规则。新增一条始终生效规则时，需要在同一变更中扩充核心列表并提高字节上限：列表位于 `tests/unit/test_always_on_core.py`，上限位于 `conformity/always_on_budget_grep.py`。配套规则（`<parent>-<aspect>`）沿用其父规则的 `pathFilter`，或使用更窄的过滤器。
+
 示例：
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -267,7 +269,7 @@ alwaysApply: true
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-选择其关注点与该规则相符的那张系列表格。
+选择其关注点与该规则相符的那张系列表格。同时，在 `src/apothem/rules/apothem-rule-index.md` 中对应需要该规则的情形的那一行里写上这条规则的名称；规则缺失于索引时，`tests/unit/test_always_on_core.py` 会失败。
 
 ### 5. 追加到 CHANGELOG.md
 
@@ -310,13 +312,13 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-`disable-model-invocation: true` 使命令只能由操作者调用；设为 `false` 时，当某个请求与其描述相匹配，模型可以运行它。大多数命令使用 `true`，但大多数规划与研究流水线阶段使用 `false`。`src/apothem/commands/README.md` 中的调用表列出了每个命令的设置；新增命令时要为其添加一行。让 `allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。有副作用的工具只能以限定作用域的规则形式授予，例如 `Bash(git log *)`；schema 会拒绝 `"*"`，也会拒绝任何一个未带作用域限定而写出的 `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit` 或 `WebFetch`。
+`disable-model-invocation: true` 使命令只能由操作者调用；设为 `false` 时，当某个请求与其描述相匹配，模型可以运行它。只读命令和咨询类命令默认使用 `false`，其描述以使用场景开头；45 个命令中有 35 个采用该设置。若命令会改变工作树之外的状态，或依赖操作者选择执行时机，则保持 `true`（10 个命令）。`src/apothem/commands/README.md` 中的调用表列出了每个命令的设置；新增命令时要为其添加一行。让 `allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。有副作用的工具只能以限定作用域的规则形式授予，例如 `Bash(git log *)`；schema 会拒绝 `"*"`，也会拒绝任何一个未带作用域限定而写出的 `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit` 或 `WebFetch`。
 
 ### 3. 撰写内容
 
@@ -327,6 +329,8 @@ allowed-tools: "Read, Glob, Grep"
 - 高层级指令
 - 带步骤的工作流章节
 - 返回契约 / 输出格式
+
+某个工具的技能产出会按 H2 章节把每个命令拆分为一个精简的 `SKILL.md` 和若干 `references/` 文件。为命令只设一个 `## Workflow` 章节，闭合每个代码围栏，并在 `src/apothem/lib/claude_skill_split.py` 中为任何新的 H2 种类进行分类；遇到未分类的种类时，`tests/unit/test_claude_skill_split.py` 会失败。相关规则见 `src/apothem/commands/README.md` 中的 Skill-emission split contract（技能产出拆分契约）。
 
 ### 4. 更新 README 与 CHANGELOG.md
 
@@ -610,7 +614,7 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### 行为评估
 
-`evals/` 下的套件度量的是行为而非形式：64 个触发用例（每个可由模型调用的命令和子代理都会在其领域内的请求上触发，并在似是而非的请求上保持静默）、32 个结果用例（每个规划阶段、研究阶段和审计维度各一个），以及 6 个规则效果对（某条始终生效规则的文本开启与关闭）。这些用例是纯数据，由 `python -m pytest tests/unit/test_eval_suite.py` 免费校验；运行它们则需付费，且须手动进行。关于 `Evals` 工作流、本地运行以及如何添加用例，参见[运行行为评估](/docs/how-to/evals)。编辑一条带有对应规则效果对的始终生效规则之后，运行 `python scripts/dev/sync_eval_rule_cases.py`。
+`evals/` 下的套件度量的是行为而非形式：148 个触发用例（每个可由模型调用的命令、技能和子代理都会在其领域内的请求上触发，并在似是而非的请求上保持静默，另有六个仅由用户调用的命令不会自行启动）、32 个结果用例（每个规划阶段、研究阶段和审计维度各一个），以及 6 个规则效果对（某条抽样规则的文本开启与关闭）。这些用例是纯数据，由 `python -m pytest tests/unit/test_eval_suite.py` 免费校验；运行它们则需付费，且须手动进行。关于 `Evals` 工作流、本地运行以及如何添加用例，参见[运行行为评估](/docs/how-to/evals)。编辑一条带有对应规则效果对的规则之后，运行 `python scripts/dev/sync_eval_rule_cases.py`。
 
 ### 基准测试
 
@@ -619,7 +623,7 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 - `bench_hooks.py` 按每个事件和匹配器，在真实负载上按原样运行 `hooks/hooks.json` 注册的每条 `shell: bash` 命令，并报告中位总耗时、最慢的命令（对照该事件的预算进行检查）以及注入的字符数。无法按注册方式运行的命令（脚本缺少可执行位时退出码为 126）算作错误，而不是通过。
 - `bench_agents.py` 报告 `NOT MEASURED`（退出码 3）：生成子代理需要一个宿主工具和一次模型调用。`make benchmarks` 不会运行它。
 
-始终生效预算检查（`always-on-budget-grep`）统计以空白分隔的单词数，并排除 Bindings 部分和配套指针行。其 JSON 报告还带有 `always-on-loaded`：某个工具加载的、去除 frontmatter 后的正文的字节数、字符数和单词数，按所有始终生效规则求和。
+始终生效预算检查（`always-on-budget-grep`）统计以空白分隔的单词数，并排除 Bindings 部分和配套指针行。其 JSON 报告还带有 `always-on-loaded`：某个工具加载的、去除 frontmatter 后的正文的字节数、字符数和单词数，按所有始终生效规则求和。当指向随附的规则目录时，若该总和超过字节上限（报告为 `always-on-ceiling-bytes`），或规则索引超过其自身的上限，该检查也会失败。Claude Code 加载的规则副本不含 Bindings 部分，因此其加载大小小于该检查报告的数值。
 
 ## 生态审计：运行验证
 

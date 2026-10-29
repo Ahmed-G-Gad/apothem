@@ -2,7 +2,7 @@
 title: "安装器环境变量"
 description: "通过环境变量控制脚本安装器（目标位置、来源、工具、配置档案、验证）。"
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ sourceHash: "64d4512dc0ce59b4"
 | `APOTHEM_VERIFY` | `signature` 验证发布标签的 GPG 签名；`checksum` 先将该发布的平台归档的 SHA-256 与该发布的 `SHA256SUMS` 核对，然后安装该归档（这保证完整性，但不能证明是谁发布的） | `signature` |
 | `APOTHEM_RELEASE_BASE` | 校验和模式的下载基址 | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | 用于替代克隆的显式本地源码树 | 未设置（克隆） |
-| `APOTHEM_HARNESS` | 要安装的工具 | `claude-code` |
+| `APOTHEM_HARNESS` | 要安装的用户作用域工具（`antigravity`、`claude-code`、`codex`、`hermes`、`open-claw`、`opencode`、`qwen-code`）。安装器不会传入 `--project`，因此项目作用域工具会以 `project.required` 失败；之后请使用 `apothem install --harness NAME --project PATH` 安装这类工具。 | `claude-code` |
 | `APOTHEM_PROFILE` | 共享配置档案 YAML 的路径 | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | 设置为 `1` 时跳过安装后的验证步骤 | `0`（运行验证） |
 | `APOTHEM_AUTO_INSTALL_DEPS` | 设置为 `1` 时，自动安装缺失的 `click` / `rich` 前置依赖，不进行提示 | `0`（提示；在非交互式管道中则拒绝） |
@@ -53,10 +53,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## 步骤（POSIX bash）
 
-1. 安装一个非默认的工具：
+1. 安装一个非默认的用户作用域工具：
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. 固定安装目标位置，并选择会持续变动的 `main` 分支。分支不是已签名的标签，因此安装器还需要 `APOTHEM_ALLOW_UNVERIFIED=1`：
@@ -79,7 +79,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 在运行安装器之前，在 `$env:` 上设置每个变量：
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -102,7 +102,14 @@ pwsh -NoProfile -File install.ps1
 安装器会打印 `✓ Harness <name> installed`，然后（除非设置了 `APOTHEM_SKIP_VERIFY=1`）打印 `✓ verify passed`。独立确认：
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+对于 Cursor 这类项目作用域工具，请在安装器运行之后自行带上 `--project` 运行安装和验证：
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 当配置档案尚不存在时，安装器会从示例创建一份，并在同一次运行中继续完成安装和验证。示例中的身份字段是占位值，因此安装会打印一条提示；编辑 `$APOTHEM_PROFILE`，然后运行 `apothem update --harness <name>` 以应用你的身份信息。在没有配置档案时运行 `--dry-run`，会使用示例配置档案进行预览，且不写入任何内容。

@@ -2,7 +2,7 @@
 title: "البدء السريع"
 description: "ثبِّت Apothem، وألِّف ملفًا تعريفيًا، وجسِّد أول إطار عمل لك وتحقَّق منه — جولة بالنسخ واللصق مع المخرجات المتوقَّعة."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -103,14 +103,38 @@ apothem profile show --json
 
 يستخدم الهيكل الأولي بيانات هوية نائبة زائفة، ومن الآمن تحريره قبل أن تُثبِّت أي
 مخرجات لإطار عمل. ويقرؤه <bdi>`show --json`</bdi> مجددًا ويُبلِغ عن الملف التعريفي
-المُتحقَّق منه:
+المُتحقَّق منه مع ملء كل قيمة افتراضية، بدءًا بالحقل <bdi>`schema_version`</bdi>.
+يطبعه الأمر في سطر واحد؛ وهو مُوسَّع هنا:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -137,9 +161,10 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-تكتب المحوّلات ذات نطاق المشروع داخل مشروع بدلًا من دليلك المنزلي، لذا تحتاج إلى
-<bdi>`--project PATH`</bdi>. عايِن أي تثبيت دون كتابة ملفات باستخدام
-<bdi>`--dry-run`</bdi>:
+تكتب المحوّلات ذات نطاق المشروع ملف قواعدها داخل مشروع، لذا تحتاج إلى
+<bdi>`--project PATH`</bdi>؛ ويكتب سبعة منها أيضًا مهارات وقواعد مشتركة في مجلّدات
+داخل دليلك المنزلي، ولا يغيّر <bdi>`--project`</bdi> مكان كتابتها. عايِن أي تثبيت
+دون كتابة ملفات باستخدام <bdi>`--dry-run`</bdi>:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

@@ -2,7 +2,7 @@
 title: "Recette de reconstruction des ressources"
 description: "Régénérez toutes les ressources de marque en mode raster à partir des sources SVG maîtresses avec resvg et Pillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ itérations de marque.
 
 Exécutez la recette de reconstruction lorsque :
 
-- Le SVG maître (`assets/src/logo.svg` ou `assets/src/logo-dark.svg`) change.
+- Un SVG maître (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` ou `assets/src/logo-animated-light.svg`) change.
 - Le maître du favicon compact (`assets/favicon.svg`) change.
 - Un maître de carte sociale (`assets/src/og-banner.svg` ou `assets/src/twitter-card.svg`) change.
 - Une nouvelle taille raster est nécessaire.
@@ -62,8 +62,9 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Vérification
 
 Une exécution réussie régénère les rasters de la marque en versions claire et
-sombre, le jeu de favicon PNG/ICO, les icônes Apple touch, les images OG/Twitter,
-et reflète le sous-ensemble servi sur le web — y compris les sources du logo
+sombre, le jeu de favicon PNG/ICO (l'ICO intègre des calques de 16, 32 et 48 px),
+les icônes Apple touch, l'icône de l'extension VS Code
+(`vscode-extension/icon.png`), les images OG/Twitter, et reflète le sous-ensemble servi sur le web — y compris les sources du logo
 principal que le site référence — dans `site/public/`. Après la génération, lancez
 la compilation du site et inspectez la page d'accueil, le favicon de l'onglet du
 navigateur et les PNG des cartes sociales avant de publier.

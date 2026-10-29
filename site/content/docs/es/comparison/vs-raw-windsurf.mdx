@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración de Windsurf en bruto"
 description: "Mantener a mano las reglas de Windsurf en .devin/rules/ frente a renderizarlas desde el perfil compartido de apothem."
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,16 +18,24 @@ frente a gestionarla con apothem.
 | Escribir reglas | Escribir a mano cada archivo bajo `.windsurf/rules/` | Renderizadas desde el corpus compartido |
 | Mantener un solo formato de reglas | Elegir a mano entre `.windsurf/rules/` y un único archivo `.windsurfrules` | El adaptador escribe solo `.devin/rules/` |
 | Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Compartir skills y comandos reutilizables | Copiar a mano cada carpeta de skill en `~/.agents/skills/` y mantener las copias al día | Escritas en `~/.agents/skills/` por el adaptador, una copia para todos los proyectos, y actualizadas con `apothem update` |
+| Mantener sincronizados los ayudantes reutilizables | Escribir a mano cada archivo de subagente de Devin Local bajo `.devin/agents/` y seguir los nombres de herramientas de Devin | Once ayudantes escritos en `.devin/agents/` con sus herramientas traducidas, y actualizados con `apothem update` |
 | Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness windsurf --project <path>` |
 
 ## Qué gestiona apothem
 
-El adaptador de windsurf renderiza las reglas compartidas en el directorio
-`.devin/rules/`; no escribe un único archivo `.windsurfrules`. Windsurf no
-tiene un hook PreToolUse, por lo que la intención de salvaguarda reside en la
-prosa de las reglas y no en un punto de interceptación de llamadas a
-herramientas. Cada cambio en las reglas compartidas vuelve a renderizar el
-directorio en el siguiente `apothem update`.
+El adaptador de windsurf renderiza las reglas compartidas en un archivo,
+`<project>/.devin/rules/apothem-rules.md`; no escribe un único archivo
+`.windsurfrules`. También escribe once de los ayudantes de Apothem como
+subagentes de Devin Local en `<project>/.devin/agents/`; los tres que necesitan
+herramientas web esperan hasta que Devin documente sus nombres de herramientas.
+Registra dos hooks de Devin Local, un arranque de sesión y un aviso de tamaño de
+contexto, en `<project>/.devin/config.local.json`; el modo Cascade, más antiguo,
+lee un formato de hooks distinto (`hooks.json`), que el adaptador no escribe. No
+registra ninguna guarda de llamadas a herramientas, por lo que la intención de
+salvaguarda reside en la prosa de las reglas y no en un punto de interceptación
+de llamadas a herramientas. Cada cambio en las reglas compartidas vuelve a
+renderizar el archivo en el siguiente `apothem update`.
 
 ## Ruta de migración
 

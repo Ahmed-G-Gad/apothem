@@ -2,7 +2,7 @@
 title: "Escribir reglas"
 description: "Crea, delimita el alcance y mantén las reglas de comportamiento de Apothem."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,21 @@ El ámbito de una regla se define con dos campos del frontmatter, `alwaysApply` 
 | `true` | `""` (vacío) | Siempre activa: cada sesión y cada archivo |
 | `false` | un glob como `"**/*.py"` | Filtrada por ruta: solo cuando el archivo activo coincide con el glob |
 
+Cinco reglas incluidas son siempre activas: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management` y el índice de reglas. Una regla siempre
+activa consume contexto en cada sesión, así que una regla nueva DEBERÍA estar
+filtrada por ruta con globs que nombren los archivos que rige; un filtro de `**`
+por sí solo no delimita nada, y Claude Code carga esa regla al iniciarse como si
+fuera siempre activa. El corpus incluido limita el conjunto siempre activo a esa
+lista y a un tope de bytes; una regla promovida a siempre activa cambia ambos en
+el mismo cambio. Nombra cada regla que añadas en el índice de reglas
+(`apothem-rule-index`), para que una sesión en un entorno que no delimita las
+reglas por ruta también la encuentre. Una regla complementaria
+(`<parent>-<aspect>`) adopta el `pathFilter` de su regla padre, o uno más
+estrecho, para que nunca se cargue sin su regla padre. No le des a una regla
+propia el nombre `apothem-rule-index`: una instalación hace una copia de
+seguridad de un archivo de regla con ese nombre y lo sobrescribe.
+
 ## Regla de ejemplo
 
 ```markdown
@@ -51,11 +66,25 @@ Después de escribir una regla, actualiza cada adaptador de entorno instalado. E
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+Un entorno de ámbito de proyecto necesita `--project` en la actualización, como
+en la segunda línea; un entorno de ámbito de usuario no.
 
 ## Validación de reglas
 
+Ejecuta el validador de frontmatter contra el archivo de regla que escribiste.
+Desde un checkout de Apothem, `PYTHONPATH=src` hace que el paquete se pueda
+importar; tras una instalación por script, usa `PYTHONPATH="$HOME/.apothem/src"`
+en su lugar.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+Una comprobación por escritura como `frontmatter-grep` recibe el archivo que debe
+comprobar, o `--stdin` para leer el contenido desde la entrada estándar; sin
+ninguno de los dos, espera entrada en la entrada estándar. Una comprobación
+independiente recibe en su lugar un directorio raíz, como en
+`--check naming-grep .`.

@@ -2,7 +2,7 @@
 title: "Installations-Workflow"
 description: "Wie apothem install, update und uninstall durchgängig funktionieren."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,8 +50,12 @@ Bei `apothem uninstall --harness X`:
 Jeder Adapter schreibt in seine eigene feste Installationswurzel: das
 Benutzer-Home für Adapter mit Benutzergeltungsbereich und der projektlokale Pfad
 für Adapter mit Projektgeltungsbereich. Die CLI stellt kein `--scope`-Flag bereit;
-Adapter mit Projektgeltungsbereich erfordern `--project <path>`. Jedes Ziel ist
-unter `site/content/docs/harnesses/<harness>.mdx` dokumentiert.
+Adapter mit Projektgeltungsbereich erfordern `--project <path>`. Sieben der
+Adapter mit Projektgeltungsbereich schreiben außerdem gemeinsame Ordner im
+Home-Verzeichnis, etwa `~/.agents/skills/` und `~/.config/apothem/`, bevor sie
+die Projektdatei schreiben, und `--project` ändert nicht, wohin diese gehen. Die
+[Install-Referenz](/docs/cli-reference/install#ordner-in-ihrem-home-verzeichnis)
+listet sie auf. Jedes Ziel ist unter `site/content/docs/harnesses/<harness>.mdx` dokumentiert.
 
 ## Fehlerbehandlung
 

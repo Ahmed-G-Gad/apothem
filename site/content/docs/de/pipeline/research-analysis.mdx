@@ -2,14 +2,14 @@
 title: "/research-analysis"
 description: "/research-analysis — Analysiert die Rohdaten gemäß dem präregistrierten Plan: geplante Tests, Effektstärken mit Konfidenzintervallen, Robustheitsprüfungen und offengelegte Abweichungen."
 machineTranslated: true
-sourceHash: "63b072fd3548eba2"
+sourceHash: "6bfe62bf33b6bccc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rolle:** Leitender Forscher (Analyse)
 **Pipeline-Position:** Kettenmitte
 
-Analysiert die Rohdaten gemäß dem präregistrierten Plan — führt die geplanten statistischen Tests aus, berichtet Effektstärken mit Konfidenzintervallen (nicht nur p-Werte), wendet die Korrektur für multiple Vergleiche an, wo zutreffend, führt Robustheits- / Sensitivitätsprüfungen durch und legt jede Abweichung von der Präregistrierung offen.
+Analysiert die Rohdaten gemäß dem präregistrierten Plan — führt die geplanten statistischen Tests auf der unabhängigen Analyseeinheit aus, berichtet Effektstärken mit Konfidenzintervallen (Glaubwürdigkeitsintervallen bei einem bayesianischen Plan; nicht nur p-Werte), wendet die Korrektur für multiple Vergleiche an, wo zutreffend, gibt an, wie mit fehlenden Daten umgegangen wurde, führt Robustheits- / Sensitivitätsprüfungen durch und legt jede Abweichung von der Präregistrierung offen.
 
 ## Kanonischer Aufruf
 
@@ -29,7 +29,7 @@ Die Rohdaten am host-natürlichen Ort, den die Experiment-Stufe aufgezeichnet ha
 
 ## Ausgaben
 
-`_outputs/analysis.md` (die präregistrierten Tests mit Effektstärken und KIs, die Korrektur für multiple Vergleiche, die Robustheitsprüfungen und die offengelegten Abweichungen) + Abbildungen / Tabellen an einem host-natürlichen Ort.
+`_outputs/analysis.md` (die präregistrierten Tests mit Effektstärken, KIs, Analyseeinheit und einem Verzerrungsurteil pro Domäne für jedes Hauptergebnis; die Korrektur für multiple Vergleiche; der Umgang mit fehlenden Daten; die Robustheitsprüfungen; und die offengelegten Abweichungen) + Abbildungen / Tabellen an einem host-natürlichen Ort.
 
 ## Nachgelagert
 
@@ -41,10 +41,18 @@ Der Befehl folgt dem standardmäßigen `/research`-Pipeline-Workflow:
 
 1. **Kontext laden** — Die Rohdaten und die Präregistrierung lesen.
 2. **Das Sequenz-Gate prüfen** — Bestätigen, dass die Experiment-Ausgaben vorhanden sind; andernfalls mit `Blocked: run /research-experiment first` anhalten.
-3. **Analysieren** — Die präregistrierten Tests ausführen; Effektstärken + KIs berichten; für multiple Vergleiche korrigieren; Robustheits- / Sensitivitätsprüfungen durchführen.
-4. **Abweichungen offenlegen** — Jede Abweichung vom präregistrierten Plan festhalten.
+3. **Analysieren** — Die präregistrierten Tests auf der unabhängigen Analyseeinheit ausführen; Annahmen diagnostizieren, ohne die Diagnostik den Test wählen zu lassen; Effektstärken + KIs berichten; für multiple Vergleiche korrigieren; den Umgang mit fehlenden Daten angeben; Robustheits- / Sensitivitätsprüfungen durchführen.
+4. **Abweichungen offenlegen** — Jede Abweichung vom präregistrierten Plan festhalten. Ein Wechsel zu einer Ausweichlösung, die die Präregistrierung benennt, wird als geplante Anpassung protokolliert; jede andere Ersetzung ist eine Abweichung.
 5. **Das Übergabe-Manifest aktualisieren** — Den Analysepfad und die Abbildungen / Tabellen festhalten.
 6. **Die Analyse ausgeben** — `_outputs/analysis.md` + Abbildungen / Tabellen.
+
+## Statistische Disziplin
+
+- **Der Test folgt dem Design.** Der präregistrierte primäre Test bleibt bestehen, sofern nicht der eigene Ausweich-Auslöser der Präregistrierung greift; ein Screening-Test, der nicht verwirft, zeigt nicht, dass eine Annahme zutrifft.
+- **n zählt unabhängige Einheiten.** Wiederholte Messungen, Teilstichproben, Cluster und Seeds werden auf die Einheit aggregiert oder als Abhängigkeit modelliert, nie als unabhängige Replikate gezählt.
+- **Ein Nullergebnis wird auf drei Arten gelesen.** Das Effektstärkeintervall, das Äquivalenzergebnis gegenüber dem kleinsten interessierenden Effekt und eine Sensitivitätsaussage (der kleinste Effekt, der beim erreichten analysierten n nachweisbar ist) werden gemeinsam berichtet. Eine aus dem beobachteten Effekt berechnete Teststärke wird nie berichtet.
+- **Bayesianische Pläne nach ihren eigenen Maßstäben.** Ein präregistrierter bayesianischer Plan berichtet die Posterior-Zusammenfassung mit ihrem Glaubwürdigkeitsintervall, führt Prior-Sensitivitäts-, Berechnungsdiagnose- und Posterior-Predictive-Prüfungen durch, bevor irgendein Posterior berichtet wird, und verwendet für Nullergebnisse eine vorab festgelegte Region praktischer Äquivalenz.
+- **Verzerrung auf Ergebnisebene und Abbildungen.** Jedes Hauptergebnis trägt ein Urteil niedrig / einige Bedenken / hoch pro Domäne, ausgehend vom Register der Validitätsbedrohungen des Designs und nie zu einer einzigen Punktzahl summiert, und jede Abbildung erfüllt die Untergrenze für Codierung, Offenlegung der Unsicherheit und Barrierefreiheit.
 
 ## Rigorositätsuntergrenze
 
@@ -56,6 +64,8 @@ Ein stochastisches Verfahren wird für mindestens dreißig unabhängige Wiederho
 |---------|-------|----------|
 | Blocked: run /research-experiment first | Keine Rohdaten | `/research-experiment` ausführen, um die Daten + das Protokoll zu erzeugen |
 | p-Wert ohne Effektstärke berichtet | Unvollständige statistische Berichterstattung | Effektstärken + Konfidenzintervalle berichten |
+| Abhängige Beobachtungen als Replikate gezählt | Wiederholte Messungen, Teilstichproben, Cluster oder Seeds als unabhängig behandelt | Auf die unabhängige Einheit aggregieren oder die Abhängigkeit modellieren; n zählt Einheiten |
+| Beobachtete Teststärke für ein Nullergebnis berichtet | Teststärke aus dem beobachteten Effekt berechnet | Sie streichen; das Intervall, das Äquivalenzergebnis und die Sensitivitätsaussage berichten |
 | Nicht offengelegte Analyseabweichung | Der Plan wich stillschweigend ab | Die Abweichung von der Präregistrierung offenlegen |
 
 ## Beispiele

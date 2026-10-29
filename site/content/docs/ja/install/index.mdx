@@ -2,7 +2,7 @@
 title: "インストール"
 description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップがあります: Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,12 +51,11 @@ Apothem エンジンを、そのスラッシュコマンド、委任ワーカー
 ```
 
 インストール後、Apothem のコマンド一式、同梱の委任ワーカー、スキル、そして 4 つの[出力スタイル](/docs/reference/output-styles)（`/output-style` で、または `/config` から 1 つを選びます）が、すべての Claude Code セッションで利用可能になります。
-プラグインのコマンドにはプラグインの接頭辞が付きます: `/apothem:plan-spec`、`/apothem:security-audit` などです。
-他のコマンドがその名前を使っていない間は、Claude Code は短い形式（`/plan-spec`）も受け付けます。
+プラグインは各コマンドをスキルとして出荷します。これは `SKILL.md` と、それが必要に応じて読み込む詳細を収めた、その隣の `references/` フォルダーからなるため、Claude Code はプラグインの接頭辞を付けてそれを呼び出します: `/apothem:plan-spec`、`/apothem:security-audit` などです。
 2 つの名前は Claude Code 自身が使用しています。`/plan` はプランモードに入り、`/code-review` は同梱のレビューを実行するため、Apothem のコマンドには `/apothem:plan` と `/apothem:code-review` を入力してください。
-プラグインではなく Apothem エンジンが Claude Code へのインストールを行う場合、コマンドは接頭辞のない、`~/.claude/skills/` 配下の個人用スキルになり、個人用の `code-review` スキルが同梱の `/code-review` を置き換えます（その `/review` エイリアスは引き続き同梱のものを実行します）。
-`projectify` と `workflow` の 2 つの名前は、コマンドとスキルの両方として出荷されます。両方が存在する場合は Claude Code がスキルを実行するため、プラグインはスキルを実行し、エンジンのインストールは、コマンドから派生させたスキルではなく、スキルだけを `~/.claude/skills/<name>/` に書き込みます。
-コマンドの完全なカタログは[スラッシュコマンド](/docs/reference/commands)を参照してください。
+プラグインではなく Apothem エンジンが Claude Code へのインストールを行う場合、同じスキルが接頭辞なしで `~/.claude/skills/` に書き込まれ、個人用の `code-review` スキルが同梱の `/code-review` を置き換えます（その `/review` エイリアスは引き続き同梱のものを実行します）。
+`projectify` と `workflow` の 2 つの名前はネイティブスキルでもあります。プラグインとエンジンのインストールが出荷するのはネイティブスキルであり、コマンドから派生させたスキルではありません。
+コマンドがどのように分割されるかは [Claude Code](/docs/harnesses/claude-code#コマンドスキルとリファレンスファイル) を、コマンドの完全なカタログは[スラッシュコマンド](/docs/reference/commands)を参照してください。
 
 **検証:** Claude Code 内で `/plugin` を実行し、**apothem** がインストール済みとして一覧に表示されることを確認するか、ターミナルからドリフトレポートを確認します。
 
@@ -244,11 +243,14 @@ npx @ahmed-g-gad/apothem verify --harness qwen-code
 リポジトリをプラグインマーケットプレイスとして追加してから、プラグインをインストールします——コマンドには正確なホストとハーネスのスラッグが含まれています。
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+2 つの `--sparse` パスは、リポジトリ全体ではなく、マーケットプレイスの一覧とプラグインだけを取得します。完全なクローンは、WSL 配下の Windows ドライブのような低速なディスクでは、ホストの 30 秒のクローン制限を超えることがあります。
+
 チャネル 5 とチャネル 6 の拡張機能と同様に、これはエンジンへシェルアウトする**ブートストラップ**です。
+プラグインは 1 つのエントリースキルを同梱します。そのマニフェストはルートの `plugin.json` であり、[プラグインホストのハーネスページ](/docs/harnesses/codex#codex-プラグイン)では、そのレイアウトと、プラグインがエンジンに任せる部分を説明しています。
 それを通してインストールを実行し、完全なハーネスをマテリアライズしてください。
 
 ```bash title="Materialize the full harness"

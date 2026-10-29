@@ -2,14 +2,14 @@
 title: "/research-design"
 description: "/research-design — Operacionaliza las hipótesis en predicciones comprobables y diseña el estudio (variables, controles, muestra, potencia), luego congela el plan de análisis como un preregistro."
 machineTranslated: true
-sourceHash: "7086ac7a2433484e"
+sourceHash: "6cf7d93ab189ec25"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Investigador principal (diseño del estudio)
 **Posición en la canalización:** intermedia
 
-Operacionaliza las hipótesis en predicciones comprobables y diseña el estudio o experimento —variables, controles, muestra, instrumentos, análisis de potencia, amenazas a la validez— y luego produce un preregistro que congela el plan de análisis antes de la recolección de datos.
+Operacionaliza las hipótesis en predicciones comprobables y diseña el estudio o experimento —variables, condiciones de control, unidad experimental, asignación y enmascaramiento, muestra, instrumentos, análisis de potencia, amenazas a la validez— y luego produce un preregistro que congela el plan de análisis antes de la recolección de datos.
 
 ## Invocación canónica
 
@@ -29,7 +29,7 @@ Con argumentos:
 
 ## Salidas
 
-`_inputs/study-design.md` (predicciones operacionalizadas, especificación de variables, controles, muestra, instrumentos, análisis de potencia, amenazas a la validez) + `_inputs/preregistration.md` (el plan de análisis congelado).
+`_inputs/study-design.md` (predicciones operacionalizadas, especificación de variables, condiciones de control, unidad experimental, plan de asignación y enmascaramiento, muestra, instrumentos, análisis de potencia, amenazas a la validez) + `_inputs/preregistration.md` (el plan de análisis congelado, que incluye las condiciones de control con sus criterios de superación, el plan de asignación y enmascaramiento, el tratamiento de los resultados faltantes y cualquier análisis intermedio).
 
 ## Aguas abajo
 
@@ -41,10 +41,18 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar contexto** — Leer la síntesis y las hipótesis de la especificación.
 2. **Verificar la Puerta de Secuencia** — Confirmar que `_inputs/proposal.md` (y los `_inputs/synthesis.md` y `_spec/research-spec.md` previos) existe; de lo contrario, detenerse con `Blocked: run /research-proposal first`.
-3. **Diseñar el estudio** — Operacionalizar predicciones; especificar variables, controles, muestra, instrumentos, potencia; enumerar amenazas a la validez.
-4. **Preregistrar** — Congelar el plan de análisis antes de cualquier recolección de datos.
+3. **Diseñar el estudio** — Operacionalizar predicciones; especificar variables, condiciones de control e instrumentos; fijar la unidad experimental, la asignación con semilla, el plan de enmascaramiento y el orden de ejecución; dimensionar la muestra para el análisis planificado; enumerar amenazas a la validez.
+4. **Preregistrar** — Congelar el plan de análisis, las condiciones de control, la asignación y el enmascaramiento antes de cualquier recolección de datos.
 5. **Actualizar el manifiesto de traspaso** — Registrar las rutas del diseño del estudio y del preregistro.
 6. **Emitir el diseño** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Estructura y dimensionamiento
+
+- **La estructura se fija en el diseño, no en el análisis.** El diseño nombra la unidad experimental y la unidad de análisis, el procedimiento de asignación con su calendario con semilla y, cuando las unidades se incorporan una tras otra, su ocultación, quién está enmascarado (o por qué el enmascaramiento es inviable), los factores de molestia y cómo se bloquea, aleatoriza o mantiene fijo cada uno, y el orden de ejecución. Planifica el comparador y los controles positivos y negativos que ejecutará el experimento. Un control añadido después de la congelación es una desviación divulgada.
+- **Los barridos de un solo factor no pueden mostrar una interacción.** Cuando se sospecha que componentes o parámetros interactúan, el diseño añade una disposición conjunta sobre el conjunto sospechoso y preregistra la interacción que afirma.
+- **El efecto mínimo de interés procede de la especificación.** Remite a las métricas de éxito de la especificación o a un umbral de significancia práctica que fundamenta la síntesis. El efecto informado por un estudio previo acota el rango plausible y nunca sustituye al efecto mínimo de interés.
+- **Dimensionar para el análisis que se ejecutará.** El objetivo de cada afirmación primaria (superioridad, no inferioridad o equivalencia) y su lateralidad se fijan en el diseño, y cada una se dota de potencia en su propio efecto mínimo de interés al umbral por prueba que deja la corrección declarada. El N requerido se informa como un rango a lo largo del efecto plausible; cuando la viabilidad limita N, se informa el efecto mínimo detectable con ese N y se declara que el efecto mínimo de interés no tiene potencia suficiente.
+- **Márgenes y simulación.** N cuenta unidades independientes y se infla por la correlación intraconglomerado; el objetivo de recolección se obtiene del N analizado mediante una tasa de pérdida registrada. Cuando ninguna forma cerrada corresponde al análisis planificado, la potencia se estima por simulación registrando la herramienta, la versión, la semilla y el error de Monte Carlo, y una regla secuencial fija su número de análisis intermedios y su límite en el preregistro.
 
 ## Umbral de rigor
 
@@ -55,7 +63,9 @@ Para un estudio que conlleva comparación, el diseño fija —y preregistra— e
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Blocked: run /research-proposal first | Sin plan de referencia | Ejecuta `/research-proposal` para producir `_inputs/proposal.md` |
-| Diseño sin potencia suficiente | Muestra demasiado pequeña para el efecto | Vuelve a ejecutar el análisis de potencia; redimensiona la muestra |
+| Diseño sin potencia suficiente | Muestra demasiado pequeña para el efecto | Vuelve a ejecutar el análisis de potencia para el análisis planificado; redimensiona la muestra, o informa el efecto mínimo detectable y declara que el efecto mínimo de interés no tiene potencia suficiente |
+| Estructura dejada al análisis | Unidad, asignación, enmascaramiento u orden de ejecución no fijados en el diseño | Fíjalos en el diseño y en el preregistro; ninguna prueba aplicada después separa un factor de confusión que la disposición incorporó |
+| Estimación previa usada como efecto objetivo | El efecto informado por un único estudio sustituye al efecto mínimo de interés | Fundamenta el objetivo en las métricas de éxito de la especificación; usa el estudio previo solo para acotar el rango |
 | Plan de análisis no congelado | Preregistro omitido | Redacta `_inputs/preregistration.md` antes de la recolección de datos |
 
 ## Ejemplos

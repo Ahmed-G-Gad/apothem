@@ -2,7 +2,7 @@
 title: "跨工具的约定收敛"
 description: "尽管厂商配置格式与执行面各不相同，Apothem 如何让一套操作者工作流在十七个工具中保持一致。"
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,11 +18,13 @@ Claude Code、Cursor 还是 Gemini CLI，它们的行为都相同。本文介绍
 
 | 形态 | 工具（示例） | Apothem 输出的内容 |
 | --- | --- | --- |
-| 目录中的扁平 `.md` 规则文件 | claude-code、windsurf、trae | 原样复制到工具规则树中的规则文件 |
-| Cursor `.mdc` 规则 | cursor | 一套携带 Cursor 所期望的元数据头部的 `.mdc` 规则 |
+| 目录中的扁平 `.md` 规则文件 | claude-code | 原样复制到工具规则树中的规则文件 |
+| 规则目录中的一份合并规则文件 | windsurf、trae | 一份带有该工具所读取的激活 frontmatter 的 `apothem-rules.md` 文件 |
+| Cursor `.mdc` 规则 | cursor | 一份携带 Cursor 所期望的元数据头部的 `.mdc` 规则文件 |
 | 单文件指令文档 | codex、gemini-cli、github-copilot、zed | 一份拼接而成的文档——`AGENTS.md`、`GEMINI.md`、`copilot-instructions.md`、`.rules`——由配置档案的规则集组装而来 |
 
-扁平 `.md` 工具逐字接收规则。`.mdc` 工具需要在每条规则外包裹 Cursor 元数据头部。
+扁平 `.md` 工具逐字接收规则。合并文件工具接收一份规则文件，其 frontmatter 设定规则何时适用。
+`.mdc` 工具需要在其规则文件顶部放置 Cursor 元数据头部。
 单文件工具需要把整个规则集压平进一份文档，并保持稳定的段落顺序，使操作者无论
 目标为何，都以相同的顺序读到相同的约定。中立的配置档案是唯一的事实来源；分歧
 完全存在于每个适配器的渲染步骤中。

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "适用于 Codex（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "7f434952ef208581"
+sourceHash: "ca4ad5f675a665ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,25 @@ apothem install --harness codex
 
 适配器读取 Apothem 的共享集合，并将每个集合安装到正确的 Codex 表面：指令安装到 `AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体转换为 TOML，技能安装到 `~/.agents/skills/`，非原生的 Markdown 规则/模板则作为支持材料安装到 `~/.config/apothem/`。
 
-每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权在去掉其自身 `disallowedTools` 列表中的工具之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。`Bash` 不算作文件编辑工具，因此被授予 `Bash` 而不含上述任何工具的辅助程序仍然会得到该设置。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
+每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`，后者承载辅助程序的正文。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
+
+只读辅助程序（参见[智能体参考](/docs/reference/agents)）在其指令中说明它们不编辑任何内容。只读由父会话的沙箱强制执行，而不是由辅助程序的 TOML 文件强制执行：每个辅助程序都在启动它的会话的沙箱和审批设置下运行。辅助程序文件无法覆盖会话的沙箱模式、审批策略、模型提供方或 MCP 服务器，因此适配器一项都不写入；辅助程序的指令可以要求它避免编辑，但不会因此创建一个单独的只读沙箱。要让只读限制具有约束力，请在 Codex 会话本身上设置沙箱和审批控制。早于添加此限制的那个版本的 `Codex` 构建可能仍会遵从辅助程序文件中的 `sandbox_mode`；Apothem 尚未确定是哪个版本，并且无论如何都不写入 `sandbox_mode`。
 
 ## 兼容性说明
 
-`~/.agents/skills/` 是一个由 Codex 拥有的共享根目录：其他八个受支持的工具也会加载它（[工具注册表](/docs/reference/harness-registry)列出了这些工具），因此 Codex 安装写入其中的 Apothem 技能也会出现在这些工具中，而 Codex 卸载会将它们从这些工具中移除。安装时会打印一条注明这些工具的提示。
+`~/.agents/skills/` 是一个由 Codex 拥有的共享根目录：其他九个受支持的工具也会加载它（[工具注册表](/docs/reference/harness-registry)列出了这些工具），因此 Codex 安装写入其中的 Apothem 技能也会出现在这些工具中。其中四个工具在你安装它们时也会自行写入该文件夹（注册表将它们列为共同安装者），写入的文件与 Codex 安装写入的相同，因此在没有 Codex 安装的机器上，这些技能也同样存在。`~/.config/apothem/` 中的规则和模板也是如此，另有七个项目级适配器也会写入它们。该文件夹始终位于你的用户主目录中，无论 `CODEX_HOME` 是什么：Codex 读取 `$HOME/.agents/skills`，因此不同于 `~/.codex` 的 `CODEX_HOME` 会移动 Codex 文件，但不会移动技能。每个使用该文件夹的 Apothem 安装都会向其中写入相同的文件，并且安装会记录哪些安装在使用它，因此安装的顺序无关紧要。Codex 卸载只有在没有其他 Apothem 安装仍在使用这些技能时才会移除它们；否则会保留它们，并说明是哪些安装在使用（参见[卸载](#卸载)）。登记的所有者是厂商为该路径编写文档的那个工具。放置这些文件的安装是仍在使用它们的那一个，安装说明会指出它。并非由 Apothem 写入、但与某个 Apothem 技能同名的技能文件夹会保持原样，并附带一条指出它的警告。安装时会打印一条注明这些工具的提示。`~/.codex/agents/` 是第二个共享根目录：另一个受支持的工具将该文件夹列为兼容位置（注册表指出了它），而其文档没有说明它是否读取 `Codex` 安装写入其中的 TOML 文件。
 
 Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不在那里放置 Markdown 行为规则；它将这些规则保存在 `~/.config/apothem/` 中，并从 `AGENTS.md` 和已安装的技能中引用它们。
+
+## Codex 插件
+
+Apothem 还提供一个 Codex 插件，从仓库的插件市场添加（[安装指南](/docs/install)在渠道 7 下列出了相关命令）。该插件是一个引导程序：它捆绑一个运行引擎的入口技能，而 `apothem install --harness codex` 会写入上文列出的所有内容。
+
+该插件位于 `plugins/apothem/` 中。其清单是根目录下的 `plugin.json`，这是 Codex 为新包记载的位置。清单不指定任何技能路径，因为 Codex 会从插件根目录发现插件的 `skills/` 目录。一个 `.codex-plugin/plugin.json` 文件保留在它旁边，作为面向只读取这一旧位置的 Codex 构建的兼容性回退；Codex 仍然支持它，并将根目录清单视为插件身份的规范来源。两个文件都带有发布版本号，一个测试会让它们与引擎的版本保持一致。
+
+该插件不捆绑任何智能体、钩子或 MCP 服务器。Codex 没有为插件记载任何自定义智能体组件，因此引擎继续将智能体写入 `~/.codex/agents/*.toml`。插件中捆绑的钩子仅限于在 Codex 桌面版中手动安装的插件，并且不会被自动信任，因此引擎继续将钩子写入 `~/.codex/hooks.json`。
+
+市场条目设置了 Codex 要求作者始终包含的 `policy` 块：`policy.installation` 为 `AVAILABLE`，`policy.authentication` 为 `ON_INSTALL`，这是 Codex 为新条目记载的默认值。
 
 ## 验证
 
@@ -60,13 +72,15 @@ apothem update --harness codex
 
 刷新 Codex 引导文件、已转换的智能体、技能和支持集合。
 
+`~/.agents/skills/` 中的技能文件夹以一种由该文件夹的每个 Apothem 安装共享的形式写入：`SKILL.md` 的头部键 `version`、`updated`、`archetype` 和 `portability` 位于一个 `metadata` 映射下，`userInvocable` 写作 `user-invocable`。升级之后的第一次更新会把 Codex 安装先前写入的文件夹重写为这种形式，并备份它更改的每个文件夹。`apothem rollback --harness codex` 可以还原它们。
+
 ## 卸载
 
 ```bash
 apothem uninstall --harness codex
 ```
 
-从 `~/.codex/AGENTS.md` 中移除 Apothem 区块并保留该区块之外的任何文本，并从 `~/.codex/hooks.json` 中移除 Apothem 的条目并保留你自己的条目。同时移除 `~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/` 和 `~/.config/apothem/{rules,templates}/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。从 `~/.agents/skills/` 中移除的技能，也会从其他加载该目录的工具中消失（参见[兼容性说明](#兼容性说明)）。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `~/.codex/AGENTS.md` 中移除 Apothem 区块并保留该区块之外的任何文本，并从 `~/.codex/hooks.json` 中移除 Apothem 的条目并保留你自己的条目。同时移除 `~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/` 和 `~/.config/apothem/{rules,templates}/` 中的 Apothem 文件，除非另一个 Apothem 安装仍在使用它们（卸载会保留这些文件并将其列出）；这些文件夹中的其他文件保持不变。从 `~/.agents/skills/` 中移除的技能，也会从其他加载该目录的工具中消失（参见[兼容性说明](#兼容性说明)）。如果你将 `CODEX_HOME` 设置为 `~/.codex` 以外的文件夹，并且使用早期版本进行了安装，那么该版本在该文件夹旁边写入的副本（`<CODEX_HOME>/../.agents/skills/` 和 `<CODEX_HOME>/../.config/apothem/`）不会被移除；请手动删除它们。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

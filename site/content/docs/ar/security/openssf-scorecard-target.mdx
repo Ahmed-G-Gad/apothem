@@ -2,7 +2,7 @@
 title: "وضعية OpenSSF Scorecard"
 description: "هدف Apothem في OpenSSF Scorecard وأسطح الأدلّة المُستخدَمة لإبقاء الدرجة في تحسّن."
 machineTranslated: true
-sourceHash: "94c192fa1985b563"
+sourceHash: "41707bcf572f98ce"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ sourceHash: "94c192fa1985b563"
 | **<bdi>Code-Review</bdi>** | حماية الفرع + <bdi>CODEOWNERS</bdi> | طلبات السحب مطلوبة لـ <bdi>`main`</bdi> للجميع باستثناء مسؤولي المستودع، وتشترط حماية الفرع 0 مراجعات موافِقة ما دام للمشروع مُشرِف واحد (راجع [<bdi>branch-protection-ruleset.md</bdi>](/docs/security/branch-protection-ruleset))؛ ويبقى سجلّ <bdi>Scorecard</bdi> محدودًا إلى أن توجد طلبات سحب مُراجَعة. |
 | **<bdi>Contributors</bdi>** | [<bdi>AUTHORS</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | لا يستطيع مشروع جديد بمُشرِف منفرد اصطناع سجلّ مساهمات من عدّة مؤسسات؛ ويتحسّن هذا طبيعيًا مع انضمام المساهمين. |
 | **<bdi>Dangerous-Workflow</bdi>** | تدقيق سِيَر العمل | لا يوجد <bdi>`pull_request_target`</bdi>؛ و<bdi>Actions</bdi> مُثبَّتة ببصمات <bdi>SHA</bdi> ومحصورة بصلاحيات صريحة. |
-| **<bdi>Dependency-Update-Tool</bdi>** | [<bdi>`renovate.json`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | يغطّي <bdi>Renovate</bdi> كلًّا من <bdi>GitHub Actions</bdi>، وملفات بيان <bdi>Python</bdi>، ومتطلّبات الإصدار المقفولة بالبصمات، وأسطح <bdi>npm</bdi>، مع إبقاء طلبات السحب المُجمَّعة للاعتماديات متاحة. |
+| **<bdi>Dependency-Update-Tool</bdi>** | [<bdi>`.github/dependabot.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | يقترح <bdi>Dependabot</bdi> تحديثات أسبوعية مُجمَّعة لتثبيتات <bdi>GitHub Actions</bdi>، والموقع الإلكتروني، وملف القفل الخاص بمُحزِّم <bdi>vsce</bdi>، وخطّافات <bdi>pre-commit</bdi>، وتحديثات شهرية لملف القفل الخاص بـ <bdi>channel-smoke</bdi>؛ وتغطّي تحديثات الأمان في <bdi>Dependabot</bdi> كل ملف بيان مُكتشَف. ويُبقي <bdi>`.gitattributes`</bdi> هذا الملف وحده في أرشيف المصدر الذي يقرؤه <bdi>Scorecard</bdi>. |
 | **<bdi>Fuzzing</bdi>** | [<bdi>`tests/property/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | تختبر اختبارات الخصائص في <bdi>Hypothesis</bdi> ثوابت المُحلِّل و<bdi>frontmatter</bdi>؛ وقد لا يحتسب <bdi>Scorecard</bdi> في المنبع <bdi>Hypothesis</bdi> بوصفه تكاملًا لأداة التشويش (fuzzer). |
 | **<bdi>License</bdi>** | [<bdi>LICENSE</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | رخصة <bdi>MIT</bdi> في جذر المستودع. |
 | **<bdi>Maintained</bdi>** | تاريخ <bdi>Git</bdi> | يُظهِر كوميت الإصدار الحالي ووتيرة سِيَر العمل النشطة الصيانةَ؛ وقد تتلقّى المستودعات الحديثة جدًا تحذيرًا بشأن العمر. |

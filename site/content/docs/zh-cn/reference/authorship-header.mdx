@@ -2,7 +2,7 @@
 title: "作者署名头——逐文件 SPDX 许可行"
 description: "使用规范的单行头部，以每种文件类型相应的注释语法，定义并强制执行逐文件的 SPDX 许可标识符标记。"
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 4. **Pre-commit 钩子**——`conformity-corpus-perwrite` 钩子会以 `--strict` 对已跟踪的树运行每个逐写入（per-Write）匹配器，包括 `file-header` 校验器（§8）。`file-header` 匹配器属于阻断性质，因此其发现项会阻止提交。该钩子只做检查，没有修复模式，也从不运行注入器（§7）；注入器通过 `make headers-fix` 运行。
 5. **`CLAUDE.md` 强制行为块**——指示助手在创建适用文件时注入规范 SPDX 行。
 6. 位于 `.github/copilot-instructions.md` 的 **GitHub Copilot 指令文件**——指示 Copilot 在生成文件时同样照做。
-7. 位于 `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` 的 **PreToolUse 钩子**——拦截适用路径上的 Write/Edit 工具调用，使 SPDX 行在文件创建时即被注入，而不是之后才以校验器发现项的形式暴露。
+7. 位于 `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` 的 **PreToolUse 钩子**——拦截适用路径上的 Write/Edit 工具调用，使 SPDX 行在文件创建时即被注入，而不是之后才以校验器发现项的形式暴露。该守卫的检查器 `src/apothem/hooks/lib/header_check.py` 仅使用标准库，并从 `hooks/` 旁边的 `schemas/` 目录读取夹具和豁免列表，因此它在 Claude Code 插件下同样可用，而在插件环境中 `apothem` 软件包无法导入。它对项目内部的文件应用注入器的变体表和插入位置规则，并且仅在带有头部夹具（`src/apothem/schemas/authorship-header.txt`）的 git 项目中这样做，因为 SPDX 行是本仓库的约定，而不是插件所打开的每个项目的默认设置。
 8. **PR 模板复选框**——面向贡献者的断言：每个新文件都带有规范 SPDX 行。
 9. **本文档**（`site/content/docs/reference/authorship-header.mdx`）——规范的、具有规范效力的说明文。
 

@@ -2,19 +2,21 @@
 title: "Команды"
 description: "Определения слэш-команд, реализующие конвейер набора планов, а также аудиты для проверки кода, архитектуры, безопасности, зависимостей и документации."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Определения слэш-команд хранятся как плоские файлы `.md` в каталоге `src/apothem/commands/`.
 Канонический набор возглавляет учитывающий архитектуру конвейер набора планов,
-который поставляется в виде семи полноправных команд — по одной на каждый этап,
-и каждая вызывается напрямую как `/plan-<stage>`. Монолитного диспетчера нет;
-каждый этап — это собственный зарегистрированный файл команды в
-`src/apothem/commands/plan-<stage>.md`.
+который поставляется в виде восьми полноправных команд этапов, каждая из которых
+вызывается напрямую как `/plan-<stage>`, плюс `/plan` — оркестратор, который
+проводит цепочку этапов от начала до конца. Каждый этап — это собственный
+зарегистрированный файл команды в `src/apothem/commands/plan-<stage>.md`, и
+`/plan` не реализует заново ни один из них.
 
 | Вызов | Файл команды | Описание |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Запустить этапы spec, generate, review и design как один проверенный рабочий процесс с подтверждением на каждой передаче; execute остаётся ручным шагом |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Преобразовать неструктурированное содержимое в прозу уровня спецификации |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Материализовать набор планов из прозы / требований |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Форензический аудит с оценочными картами |
@@ -69,8 +71,12 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 эффектами (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch) появляется
 только как ограниченное правило, например `Bash(git log *)`, а голый
 подстановочный знак `"*"` отклоняется схемой. Команды с необратимыми побочными
-эффектами (`freshify`, `github-deploy-fresh`, `github-deploy-next`) задают
-`disable-model-invocation: true`, поэтому запускает их только оператор.
+эффектами или временем запуска, выбираемым оператором, задают
+`disable-model-invocation: true`, поэтому запускает их только оператор:
+`freshify`, `github-deploy-fresh`, `github-deploy-next`, `release-readiness`,
+`elevate`, `fortress`, `workflow`, `plan-execute`, `research-experiment` и
+`research-publish`. Остальные 35 команд задают `false` и сопоставляются с
+запросом по своему описанию.
 
 ## Дисциплина написания
 

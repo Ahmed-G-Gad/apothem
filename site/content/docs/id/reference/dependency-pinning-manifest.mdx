@@ -2,7 +2,7 @@
 title: "Manifes Penyematan Dependensi"
 description: "Kebijakan deklarasi dependensi yang mencakup rentang runtime Python, perkakas pengembangan, berkas kunci perkakas rilis, dan batas bawah versi yang diratifikasi untuk setiap permukaan build."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,18 @@ Apothem adalah CLI Python dengan kumpulan dependensi runtime yang kecil ditambah
 rantai perkakas pengembangan, audit, rilis, dan dokumentasi yang lebih besar.
 Dependensi runtime menggunakan batas bawah yang konservatif di `pyproject.toml`;
 situs web meng-commit `site/package-lock.json`; GitHub Actions disematkan oleh
-SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Renovate.
+SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Dependabot.
 
 | Kelas | Deklarasi | Kebijakan penguncian |
 |---|---|---|
 | Dependensi runtime Python | `[project.dependencies]` di `pyproject.toml` | Rentang batas bawah; tanpa kunci runtime Python yang di-commit |
 | Perkakas pengembangan / keamanan | extras `[project.optional-dependencies]` | Rentang batas bawah; CI memasang versi yang cocok saat ini |
 | Perkakas rilis | `scripts/release/requirements-build-linux.txt` untuk alur kerja rilis; extra `release` di `[project.optional-dependencies]` untuk build lokal | Dikunci hash untuk alur kerja rilis; dihasilkan dari penutupan perkakas rilis. Extra `release` adalah rentang batas bawah |
-| Perkakas khusus CI | `.github/workflows/*.yml` | Perkakas pip khusus alur kerja menggunakan penyematan eksak (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Perkakas khusus CI | `.github/workflows/*.yml` | Perkakas pip khusus alur kerja menggunakan penyematan eksak (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Situs dokumentasi | `site/package.json` | `site/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
-| GitHub Actions | Referensi `uses:` yang disematkan SHA dengan komentar versi | Renovate mengusulkan pembaruan; pengecualian membawa penanda `action-pinning-exempt:` |
+| Pengemas VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` di-commit; job rilis dan publikasi menjalankan `npm ci --ignore-scripts` |
+| CLI harness channel-smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
+| GitHub Actions | Referensi `uses:` yang disematkan SHA dengan komentar versi | Dependabot mengusulkan pembaruan mingguan; pengecualian membawa penanda `action-pinning-exempt:` |
 
 ## Ratifikasi rilis
 
@@ -73,5 +75,34 @@ dapat direproduksi.
   di-deploy; berkas kunci memberikan build `npm ci` yang deterministik untuk
   permukaan publik tersebut.
 - **Mengapa Actions yang disematkan SHA?** Tag dapat diubah; SHA tidak dapat
-  diubah. Renovate memperbarui SHA yang disematkan, sementara gerbang rilis
-  mencatat setiap penahanan yang disengaja.
+  diubah. Dependabot mengusulkan peningkatan SHA dan menulis ulang setiap
+  komentar versi, sementara gerbang rilis mencatat setiap penahanan yang
+  disengaja.
+- **Apa yang tidak disentuh bot pembaruan.** Pembaruan versi Dependabot
+  (`.github/dependabot.yml`) mencakup penyematan GitHub Actions, berkas kunci
+  situs web, berkas kunci pengemas vsce (`tools/vsce`), berkas kunci CLI harness
+  yang dipasang oleh channel smoke (`tools/channel-smoke`), dan hook pre-commit.
+  Batas bawah runtime di `pyproject.toml`, persyaratan rilis yang dikunci hash,
+  penutupan vendor di `src/apothem/_vendor/vendor.txt`, dan hook pre-commit yang
+  disematkan seiring dengan `pyproject.toml` diubah secara manual, karena
+  peningkatan satu penyematan saja akan merusak berkas-berkas yang harus selaras
+  dengannya.
+  Versi mayor `@types/node` situs web mengikuti batas bawah Node-nya (`engines`
+  dan `.nvmrc`, Node 22), sehingga Dependabot hanya mengusulkan pembaruan minor
+  dan patch-nya; naikkan versi mayor tersebut bersamaan dengan batas bawahnya.
+  Pembaruan versi tidak menyentuh blok `overrides` npm. Pembaruan keamanan
+  Dependabot tetap mencakup setiap manifes, sehingga pull request keamanan dapat
+  mengusulkan salah satu penyematan ini, atau memindahkan sebuah override;
+  sesuaikan secara manual atau tutup pull request tersebut.
+- **Menggabungkan pull request Dependabot.** Default squash repositori mengambil
+  judul PR. Beberapa judul Dependabot, kebanyakan judul berkelompok yang
+  menyebut sebuah direktori, melampaui batas 72 karakter subjek squash;
+  pemeriksaan PR Title menyebutkannya, dan penggantian judul memperbaikinya.
+  Pull request yang mengubah berkas kunci perkakas tidak menjalankan job
+  `ci.yml` apa pun, sehingga alur kerja audit npm mengaudit dan memasangnya,
+  mengemas ekstensi VS Code untuk berkas kunci vsce dan menjalankan pengujian
+  rilis vsce, dan alur kerja channel smoke berjalan untuk berkas kunci
+  channel-smoke. Alur kerja Markdown Lint menjalankan hook markdownlint pada
+  pull request hook pre-commit; hook lainnya tidak dijalankan di CI, jadi
+  jalankan `pre-commit run --all-files` pada branch-nya sebelum
+  menggabungkannya.

@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Gemini CLI（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,6 +46,9 @@ Gemini がカスタムコマンドを実行するのは、あなたがそれを�
 `.gemini/agents/` 内のヘルパー定義は、ツールの制限とターン数の上限を保持します。ソースの `tools` の付与から `disallowedTools` を差し引いたものが、Gemini のツール名からなる Gemini の `tools` 許可リストになり、`maxTurns` は `max_turns` になります。
 そのため、読み取り専用のヘルパーには `write_file` ツールも `replace` ツールも与えられません。
 モデルは設定されないため、各ヘルパーはセッションのモデルを継承します。
+
+プロファイルの `agent_mcp_servers` キーが挙げるヘルパーは、その `tools` 許可リストに、指定された各サーバーにつき `mcp_<server>_*` エントリーも 1 つ得るため、そのサーバーのツールを呼び出すことができ、他のサーバーのツールは呼び出せません。キーがなければ、すべてのヘルパーは通常の許可リストを保ちます（[MCP サーバー](/docs/reference/mcp#ヘルパーに-mcp-サーバーへのアクセスを与える)を参照）。
+Apothem がここに付与を書き込むのは、英字、数字、`-` からなるサーバー名の場合のみです。`Gemini CLI` はアンダースコアを含む名前を指定できないためです。それ以外の名前はスキップされて報告され、すでにすべての MCP サーバーに到達できるヘルパーへの付与も同様です。
 
 ## 互換性に関する注意
 

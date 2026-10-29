@@ -2,7 +2,7 @@
 title: "update"
 description: "Referensi CLI untuk perintah apothem update."
 machineTranslated: true
-sourceHash: "9090fc8d8546d5b0"
+sourceHash: "0f47915f4f7819de"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,6 +20,16 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 `update` mematerialisasi ulang keluaran harness dari profil bersama saat ini.
 Perintah ini menggunakan validasi profil, pemilihan `--harness all`, pemeriksaan
 cakupan proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`.
+
+Untuk adapter berlingkup-proyek yang menulis skill ke direktori home Anda
+(lihat [`install`](/docs/cli-reference/install#folder-di-direktori-home-anda)),
+`update` juga memperbarui folder tersebut dan mencetak `Note:` yang sama yang
+menyebutkannya. Adapter yang dipasang sebelum ia menulis skill mendapatkannya
+pada update berikutnya. Folder skill yang tidak ditulis oleh Apothem dilewati
+dengan peringatan, seperti pada [`install`](/docs/cli-reference/install#folder-di-direktori-home-anda).
+Pemasangan yang sebelumnya menulis folder skill bersama ditulis ulang ke dalam
+bentuk yang dibagikan oleh setiap pemasangan pada update berikutnya; setiap
+folder yang berubah dicadangkan terlebih dahulu.
 
 Alias bentuk-kontinu `apothem updating` (juga diterima sebagai
 `apothem Updating`) di-resolve ke handler yang sama.

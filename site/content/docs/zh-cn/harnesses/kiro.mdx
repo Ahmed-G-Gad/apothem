@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "适用于 Kiro（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "d53472ff7c450563"
+sourceHash: "91ec41080bf29036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,108 @@ sourceHash: "d53472ff7c450563"
 apothem install --harness kiro --project /path/to/project
 ```
 
-适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Kiro 引导文件。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Kiro 引导文件，将 Apothem 的辅助器作为 Kiro 自定义智能体文件写入项目中（参见[自定义智能体文件](#自定义智能体文件)），并写入一个钩子（参见[钩子](#钩子)）。
 
-**写入的文件：** `<project>/.kiro/steering/apothem-rules.md`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
+
+**写入的文件：**
+
+- `<project>/.kiro/steering/apothem-rules.md`，即引导文件。
+- 每个 Apothem 辅助器对应一个 `<project>/.kiro/agents/<name>.md`，位于项目中。
+- `<project>/.kiro/hooks/apothem.json`，即钩子文件，位于项目中。你自己在该文件夹中的钩子文件不会被触碰。
+- `<project>/.apothem/support/kiro/hooks/`，即钩子脚本，位于项目中。
+- 每个 Apothem 技能和命令对应一个 `~/.kiro/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.kiro/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和引导文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `kiro` 的每个项目都使用 `~/.kiro/skills/` 的同一份副本，并且安装每次都向其中写入相同的文件。Kiro 是唯一读取该文件夹的工具。`~/.config/apothem/` 下的规则和模板也会由其他工具的安装写入，内容是相同的文件。
+- `--project` 决定要写入哪个引导文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是引导文件、`.kiro/agents/` 中的自定义智能体文件、钩子文件 `.kiro/hooks/apothem.json`，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
+
+## 自定义智能体文件
+
+根据 [Kiro 自定义智能体文档](https://kiro.dev/docs/custom-agents/)，Kiro 从 `<project>/.kiro/agents/` 中的 Markdown 文件读取自定义智能体。安装会为每个 Apothem 辅助器在该文件夹中写入一个文件，共十四个。它面向 Kiro IDE 1.0 和 Kiro CLI V3（`kiro-cli --v3`），即读取 Markdown 格式的版本。它不写入 JSON 配置文件，也不写入任何较旧的 CLI 2.x 键，因为 V3 会跳过带有 `allowedTools` 但没有 `permissions` 块的 JSON 配置文件。它只为项目安装：不会写入用户文件夹 `~/.kiro/agents/`。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。Kiro 的主智能体根据描述挑选辅助器。 |
+| `tools` | 辅助器可以使用的工具，以 Kiro 工具类别列表的形式给出：`["read", "shell"]`。当辅助器不限制任何工具时省略。 |
+
+Kiro 只有一个工具列表，因此辅助器允许和拒绝的工具会合并成该列表。类别为 `read`、`write`、`shell`、`web` 和 `subagent`：
+
+| 辅助器的工具 | Kiro 类别 |
+| --- | --- |
+| `Read`, `Glob`, `Grep` | `read` |
+| `Write`, `Edit`, `MultiEdit`, `NotebookEdit` | `write` |
+| `Bash`, `PowerShell` | `shell` |
+| `WebSearch`, `WebFetch` | `web` |
+| `Agent`, `Task` | `subagent` |
+
+没有类别的工具（`TodoWrite`、`Monitor`、`Artifact`、`TaskCreate`、`TaskUpdate`、MCP 条目）会被省去。当辅助器被拒绝了某个类别中的任何工具时，该类别会被省去，因此辅助器绝不会获得它被拒绝的工具：不能编辑文件的辅助器不会获得 `write` 类别。允许的工具全部被省去的辅助器会以 `tools: []` 写入，因此它不会被赋予所有工具。有两个辅助器（`mcp-builder` 和 `refactor-surgeon`）带有 `write`，九个带有 `shell`，三个带有 `web`。安装不写入 `model` 键，因此辅助器在 Kiro 选择的模型上运行；也不写入 `permissions`、`excludedTools`、`resources`、`mcpServers` 或 `hooks` 中的任何一个。
+
+需要了解的事项：
+
+- 在你信任工作区之前，Kiro 不会加载该工作区的自定义智能体文件。Kiro CLI 2.33 及更高版本会在你第一次在某个文件夹中启动交互式 V3 会话时询问"Trust this workspace?"。如果 Kiro 一个辅助器都没有列出，请信任该文件夹并开始一个新会话。
+- Apothem 尚未确认 Kiro CLI 2.x 是否加载 V3 Markdown 智能体。请使用 IDE，或运行 `kiro-cli --v3`。
+- 智能体文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.kiro/agents/`；Apothem 不替你做选择。
+- 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件（包括 JSON 配置文件）绝不会被触碰。
+- Kiro 的各个页面对于自定义智能体默认是否能看到 `~/.kiro/skills/` 中的技能说法不一：技能页面说智能体需要一个 `skill://` 资源，而配置参考说智能体会继承默认技能。安装不添加 `resources` 键，因此只有当第二种解读成立时，辅助器才能看到这些技能。
+- Kiro 的[内置工具页面](https://kiro.dev/docs/tools/)列出了每个类别通常包含的工具。`read` 类别包含文件搜索和文本搜索工具（CLI 2.x 的 `glob` 和 `grep`），这就是 `Glob` 和 `Grep` 映射到那里的原因。它还包含 `code`（基于语法树的代码分析）和 `introspect`（回答关于 Kiro 本身的问题），因此带有 `read` 的辅助器可以使用这两者。该页面也将 `code` 列在 `write` 之下，并且没有说明该工具是否会编辑文件。
+- Apothem 尚未确认 Kiro 如何处理省略的 `tools` 键，也未确认除 `name` 之外 Kiro 还要求哪些前置元数据键。
+
+## 钩子
+
+根据 [Kiro 钩子文档](https://kiro.dev/docs/hooks/)，Kiro 运行 `<project>/.kiro/hooks/` 中 JSON 文件里的钩子。安装会在那里写入一个文件 `apothem.json`（钩子文件版本 `v1`），其中包含一个钩子：
+
+| 触发器 | 运行的内容 |
+| --- | --- |
+| `SessionStart` | 会话引导：会话元数据、技能索引、记忆和计划摘要以及常设姿态，添加到模型的上下文中。 |
+
+该钩子为模型添加上下文。它不会阻止工具调用或会话。
+
+Apothem 不在 Kiro 上注册 `PreToolUse` 或 `PostToolUse` 钩子。Kiro 只在 `SessionStart` 和 `UserPromptSubmit` 时将命令的输出添加到模型的上下文中，而对工具事件会忽略它。注册在工具事件上的守卫会在每次工具调用时付出一次进程启动的代价，却什么都传达不到，因此写入、编辑和 shell 守卫、上下文大小建议以及会话结束协议都保留在能够传达它们的工具上。安装不为 `UserPromptSubmit` 写入钩子，也不向用户文件夹 `~/.kiro/hooks/` 写入任何钩子。
+
+**文件的写入位置**
+
+| 文件 | 它存放的内容 |
+| --- | --- |
+| `<project>/.kiro/hooks/apothem.json` | 钩子注册。Apothem 拥有这一个文件。 |
+| `<project>/.apothem/support/kiro/hooks/` | 分发器脚本、它的辅助脚本以及它的消息文件。 |
+
+钩子文件中的命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+```
+
+`--contract kiro` 让分发器以纯文本形式打印上下文，这正是 Kiro 为 `SessionStart` 添加到上下文中的内容。Kiro 没有记载 Windows 上命令操作所用的 shell。该命令是为 sh 和 cmd.exe 编写的，解释器路径使用正斜杠并加上引号；如果在你的机器上 Kiro 在 PowerShell 下运行它，带引号的路径前面需要一个调用运算符（`&`），你可以手动添加。
+
+**信任工作区。** Kiro CLI 2.33 及更高版本只有在你信任工作区之后才会加载该工作区的钩子：它会在你第一次在某个文件夹中启动交互式 V3 会话（`kiro-cli --v3`）时询问"Trust this workspace?"。Kiro Web 会话不运行任何钩子。安装会将此作为一条说明打印出来。
+
+**谨慎提交。** 该命令写明了 Apothem 运行时找到的解释器以及项目的绝对路径，因此该文件是特定于你的机器的，而它运行的脚本位于 `.apothem/` 中，项目的 `.gitignore` 片段会忽略该文件夹。如果你提交了 `.kiro/hooks/apothem.json`，队友的检出会得到一个什么都不指向的钩子：Kiro 会为失败的命令显示一条警告，会话继续进行。将 `.kiro/hooks/apothem.json` 添加到 `.gitignore`，或者只为共享相同布局的团队提交它。安装不会编辑 `.gitignore`。
+
+**你自己的钩子。** 你在 `.kiro/hooks/` 中的钩子文件绝不会被读取或更改。你添加到 `apothem.json` 本身中的钩子会保留：更新和卸载只替换或移除其命令运行 Apothem 分发器的钩子（带有 `--contract kiro` 的 `.apothem/support/kiro/hooks/dispatch.py`，无论它是写在哪个项目路径下的）。你自己的钩子如果只是名称相同，或者运行的是 `python -m apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。不是有效 JSON 的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。
+
+**shell 会误读的路径。** 包含 `$`、反引号、双引号或反斜杠的项目路径或解释器路径会在写入任何内容之前被拒绝：在带引号的命令内部，它会运行一个不同的文件，或者破坏写入该命令的 JSON。错误信息会指出该路径；移动或重命名项目，然后再次运行安装。路径中的空格或撇号没有问题。
+
+**关闭钩子。** 在 Kiro 的环境中设置 `APOTHEM_HOOKS_DISABLE=1`，即可让 Apothem 钩子静默。更新会重写 Apothem 条目，因此对它的编辑不会持久，只有一个例外：在它上面设置 `"enabled": false`，Kiro 将其记载为跳过钩子而不删除它，并且更新会保留该设置。
 
 ## 配置档案到原生配置的映射
 
@@ -29,7 +128,9 @@ apothem install --harness kiro --project /path/to/project
 
 ## 兼容性说明
 
-Kiro 的引导表面位于 `.kiro/steering/` 下，作用范围为项目级。适配器写入一个带有 `inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不覆盖 Kiro 中由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。Kiro 规格（`.kiro/specs/`）和智能体钩子归操作者所有；Apothem 不写入它们。
+Kiro 的引导表面位于 `.kiro/steering/` 下，作用范围为项目级。适配器写入一个带有 `inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不覆盖 Kiro 中由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。Kiro 规格（`.kiro/specs/`）归操作者所有；Apothem 不写入它们。它写入一个钩子文件 `.kiro/hooks/apothem.json`，不写入 `.kiro/hooks/` 中的其他任何文件。
+
+Kiro 为全局技能记载了 `~/.kiro/skills/`，而没有提到 `~/.agents/skills/`，因此安装写入 Kiro 的文件夹，而不写入跨工具的那个文件夹。同名的工作区技能优先于全局技能。Apothem 尚未确认 Kiro 如何处理一个它未列出的 `SKILL.md` 头部键。
 
 ## 验证
 
@@ -40,8 +141,9 @@ apothem verify --harness kiro --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+2. 每个受管目标都存在，包括 `.kiro/agents/` 文件夹；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.kiro/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；命令 `apothem diff --harness kiro --project /path/to/project` 会列出缺失或过期的辅助器文件。钩子文件 `.kiro/hooks/apothem.json` 必须存在、非空、可解析为 JSON，并包含一个运行 Apothem 分发器的钩子，并且钩子脚本必须位于 `.apothem/support/kiro/hooks/` 中。检查不会运行该钩子。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -51,6 +153,8 @@ apothem update --harness kiro --project /path/to/project
 
 根据当前的共享配置档案状态，重新派生项目引导文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。它会重写与当前文件不同的自定义智能体文件，并添加任何缺失的文件。它还会刷新钩子脚本以及 `.kiro/hooks/apothem.json` 中的 Apothem 钩子，并保留你在该文件中的任何钩子。
+
 ## 卸载
 
 ```bash
@@ -58,6 +162,8 @@ apothem uninstall --harness kiro --project /path/to/project
 ```
 
 从 `<project>/.kiro/steering/apothem-rules.md` 中移除 Apothem 块，以及 Apothem 写在该块上方的前置元数据，并保留文件中的其他任何文本。只有当文件中不再剩下其他内容时，才会删除该文件。更改之前，会在 `~/.apothem/backups/` 下保存该文件的一份带时间戳的副本；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+卸载还会移除它在 `<project>/.kiro/agents/` 中写入的自定义智能体文件，并保留其中的其他任何文件；该文件夹变空时会被移除。它会从 `<project>/.kiro/hooks/apothem.json` 中移除 Apothem 钩子（通过其命令中的分发器路径识别它，因此无需安装记录也能工作），并保留你在该文件中的任何钩子。当该文件中不再剩有任何其他内容时，会删除该文件，你的其他钩子文件不会被触碰。如果该文件带有卸载无法读取的注释，卸载会保持该文件原样，并将该钩子报告为已跳过，同时给出原因；请手动移除 Apothem 钩子。`<project>/.apothem/support/kiro/hooks/` 中的钩子脚本也会被移除。它会移除它在 `~/.kiro/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -71,6 +177,11 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness kiro --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness kiro --project /path/to/project`，然后再次验证 |
+| Kiro 一个 Apothem 辅助器都没有列出 | 信任该工作区（CLI 会在某个文件夹中的第一个交互式 V3 会话时询问"Trust this workspace?"），并使用 IDE 或 `kiro-cli --v3` |
+| Apothem 钩子没有运行 | 信任该工作区（CLI 会在某个文件夹中的第一个交互式 V3 会话时询问"Trust this workspace?"），并使用 IDE 或 `kiro-cli --v3`。Kiro Web 会话不运行任何钩子。会话开始时出现关于该命令的警告，意味着这台机器上缺少解释器或 `.apothem/support/kiro/hooks/` 文件夹：请在那里运行 `apothem install --harness kiro --project /path/to/project` |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness kiro --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness kiro --project /path/to/project` |
 
 ## 配置开关

@@ -2,7 +2,7 @@
 title: "ترويسة التأليف — سطر رخصة SPDX لكل ملف"
 description: "تعريف علامات مُعرِّف رخصة SPDX لكل ملف وفرضها باستخدام ترويسات مرجعية أحادية السطر بصيغة التعليق المناسبة لكل نوع ملف."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ sourceHash: "9c0a567f38d65f5b"
 4. **خطّاف <bdi>pre-commit</bdi>** — يُشغِّل الخطّاف <bdi>`conformity-corpus-perwrite`</bdi> كل مطابِق يعمل عند كل كتابة، بما فيه مدقّق <bdi>`file-header`</bdi> (§8)، على الشجرة المتتبَّعة مع <bdi>`--strict`</bdi>. ومطابِق <bdi>`file-header`</bdi> حاجِب، فتمنع ملاحظته الإيداع. والخطّاف يفحص فقط؛ فليس له وضع إصلاح، ولا يُشغِّل الحاقن أبدًا (§7)، إذ يعمل الحاقن عبر <bdi>`make headers-fix`</bdi>.
 5. **كتلة السلوك الإلزامي في <bdi>`CLAUDE.md`</bdi>** — توجّه المساعِد إلى حقن سطر <bdi>SPDX</bdi> المرجعي كلما أنشأ ملفًا منطبقًا.
 6. **ملف تعليمات <bdi>GitHub Copilot</bdi>** في <bdi>`.github/copilot-instructions.md`</bdi> — يوجّه <bdi>Copilot</bdi> إلى فعل الأمر نفسه عند توليد الملفات.
-7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداتَي <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة، فيُحقَن سطر <bdi>SPDX</bdi> عند إنشاء الملف، بدلًا من أن يُكتشَف غيابه لاحقًا بوصفه ملاحظة من المدقّق.
+7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداتَي <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة، فيُحقَن سطر <bdi>SPDX</bdi> عند إنشاء الملف، بدلًا من أن يُكتشَف غيابه لاحقًا بوصفه ملاحظة من المدقّق. ويستخدم مُدقِّق الحارس، <bdi>`src/apothem/hooks/lib/header_check.py`</bdi>، المكتبة القياسية وحدها، ويقرأ التجهيزة وقائمة الاستثناءات من الدليل <bdi>`schemas/`</bdi> المجاور لـ<bdi>`hooks/`</bdi>، لذا يعمل أيضًا تحت إضافة <bdi>Claude Code</bdi>، حيث لا تكون الحزمة <bdi>`apothem`</bdi> قابلة للاستيراد. ويطبّق جداول أشكال الحاقن وقواعد مواضع الإدراج على الملفات داخل المشروع، وفقط في مشروع <bdi>git</bdi> يحمل تجهيزة الترويسة (<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>)، لأن سطر <bdi>SPDX</bdi> اصطلاح هذا المستودع وليس افتراضيًا لكل مشروع تفتحه الإضافة.
 8. **خانة اختيار في قالب <bdi>PR</bdi>** — إقرار موجَّه إلى المساهِم بأن كل ملف جديد يحمل سطر <bdi>SPDX</bdi> المرجعي.
 9. **هذا المستند** (<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>) — الشرح المعياري المرجعي.
 

@@ -2,7 +2,7 @@
 title: "Variables d'environnement de l'installateur"
 description: "Piloter l'installateur par script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ définissant des variables d'environnement avant de l'exécuter.
 | `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de la personne qui l'a publiée) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de téléchargement pour le mode checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non définie (clonage) |
-| `APOTHEM_HARNESS` | Environnement à installer | `claude-code` |
+| `APOTHEM_HARNESS` | Environnement de portée utilisateur à installer (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). L'installateur ne transmet pas `--project` ; un environnement de portée projet échoue donc avec `project.required` ; installez ceux-ci ensuite avec `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Chemin vers le YAML du profil partagé | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Lorsqu'elle vaut `1`, ignore l'étape de vérification post-installation | `0` (la vérification s'exécute) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Lorsqu'elle vaut `1`, installe automatiquement les prérequis `click` / `rich` manquants, sans demande de confirmation | `0` (demande de confirmation, ou refus dans un pipe non interactif) |
@@ -83,10 +83,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Étapes (POSIX bash)
 
-1. Installer un environnement autre que celui par défaut :
+1. Installer un environnement de portée utilisateur autre que celui par défaut :
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Épingler la destination d'installation et sélectionner la branche mouvante
@@ -112,7 +112,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Définissez chaque variable sur `$env:` avant d'exécuter l'installateur :
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -136,7 +136,15 @@ L'installateur affiche `✓ Harness <name> installed`, puis (sauf si
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Confirmez de manière indépendante :
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Pour un environnement de portée projet tel que Cursor, lancez vous-même
+l'installation et la vérification après l'installateur, avec `--project` :
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Lorsque le profil n'existait pas encore, l'installateur en crée un à partir de

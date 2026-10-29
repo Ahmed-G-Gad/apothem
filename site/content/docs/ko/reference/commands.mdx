@@ -2,18 +2,20 @@
 title: "명령"
 description: "플랜 스위트 파이프라인을 구현하는 슬래시 명령 정의와 코드, 아키텍처, 보안, 종속성, 문서 검토를 위한 감사입니다."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 슬래시 명령 정의는 `src/apothem/commands/` 아래에 플랫 `.md` 파일로 있습니다.
 정규 집합의 선두에는 아키텍처를 인식하는 플랜 스위트 파이프라인이 있으며, 이
-파이프라인은 일곱 개의 일급 명령으로 배포됩니다 — 단계당 하나씩이며, 각각
-`/plan-<stage>`로 직접 호출할 수 있습니다. 단일 거대 디스패처는 없습니다. 모든
-단계는 `src/apothem/commands/plan-<stage>.md`에 있는 자체 등록 명령 파일입니다.
+파이프라인은 각각 `/plan-<stage>`로 직접 호출할 수 있는 여덟 개의 일급 단계
+명령과, 단계 체인을 처음부터 끝까지 구동하는 오케스트레이터인 `/plan`으로
+배포됩니다. 모든 단계는 `src/apothem/commands/plan-<stage>.md`에 있는 자체 등록
+명령 파일이며, `/plan`은 그중 어느 것도 다시 구현하지 않습니다.
 
 | 호출 | 명령 파일 | 설명 |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | 스펙, 생성, 검토, 설계 단계를 하나의 검증된 워크플로로 실행하며 각 인계 시점마다 확인함. 실행은 수동 단계로 남음 |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | 비정형 콘텐츠를 스펙 등급 산문으로 정제 |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | 산문 / 요구 사항에서 플랜 스위트를 머티리얼라이즈 |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | 스코어카드를 갖춘 포렌식 감사 |
@@ -65,9 +67,12 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 실행할 수 있는 도구를 나열하므로, 기본적으로 읽기 전용으로 유지됩니다. 부작용이
 있는 도구(Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch)는
 `Bash(git log *)` 같은 범위 지정 규칙으로만 나타나며, 맨
-`"*"` 와일드카드는 스키마가 거부합니다. 되돌릴 수 없는 부작용이 있는
-명령(`freshify`, `github-deploy-fresh`, `github-deploy-next`)은
-`disable-model-invocation: true`를 설정하므로, 운영자만 이 명령을 시작합니다.
+`"*"` 와일드카드는 스키마가 거부합니다. 되돌릴 수 없는 부작용이 있거나 운영자가
+시점을 정하는 명령은 `disable-model-invocation: true`를 설정하므로, 운영자만 이
+명령을 시작합니다: `freshify`, `github-deploy-fresh`, `github-deploy-next`,
+`release-readiness`, `elevate`, `fortress`, `workflow`, `plan-execute`,
+`research-experiment`, `research-publish`. 나머지 35개 명령은 `false`를 설정하며
+설명에 따라 요청과 매칭됩니다.
 
 ## 작성 규율
 

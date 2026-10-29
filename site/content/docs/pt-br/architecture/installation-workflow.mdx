@@ -2,7 +2,7 @@
 title: "Fluxo de instalação"
 description: "Como apothem install, update e uninstall funcionam de ponta a ponta."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,8 +49,13 @@ Em `apothem uninstall --harness X`:
 Cada adaptador escreve na sua própria raiz de instalação fixa: o diretório pessoal
 do usuário para os adaptadores de escopo de usuário e o caminho local do projeto
 para os adaptadores de escopo de projeto. A CLI não expõe uma flag `--scope`; os
-adaptadores de escopo de projeto exigem `--project <path>`. Cada destino é
-documentado em `site/content/docs/harnesses/<harness>.mdx`.
+adaptadores de escopo de projeto exigem `--project <path>`. Sete dos
+adaptadores de escopo de projeto também gravam pastas compartilhadas no
+diretório pessoal do usuário, como `~/.agents/skills/` e `~/.config/apothem/`,
+antes de gravarem o arquivo do projeto, e `--project` não altera para onde elas
+vão. A
+[referência de install](/docs/cli-reference/install#pastas-no-seu-diretório-pessoal)
+as lista. Cada destino é documentado em `site/content/docs/harnesses/<harness>.mdx`.
 
 ## Tratamento de erros
 

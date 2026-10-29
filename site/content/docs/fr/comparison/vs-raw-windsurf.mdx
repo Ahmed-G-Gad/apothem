@@ -2,12 +2,13 @@
 title: "Apothem face à la configuration Windsurf brute"
 description: "Maintenir à la main les règles de Windsurf sous .devin/rules/ versus les rendre depuis le profil partagé d'apothem."
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Windsurf lit les règles depuis un répertoire `.devin/rules/`. L'adaptateur
-windsurf d'Apothem rend les règles basées sur un répertoire depuis le profil
+Windsurf est désormais Devin Desktop et lit les règles depuis un répertoire
+`.devin/rules/` (l'emplacement privilégié, qui l'emporte sur l'emplacement de
+repli `.windsurf/rules/`). L'adaptateur windsurf d'Apothem rend les règles basées sur un répertoire depuis le profil
 partagé. Cette page met en contraste la maintenance manuelle de cette
 configuration et sa gestion avec apothem.
 
@@ -18,16 +19,24 @@ configuration et sa gestion avec apothem.
 | Rédiger les règles | Écrire à la main chaque fichier sous `.windsurf/rules/` | Rendues depuis le corpus partagé |
 | Conserver un seul format de règles | Choisir à la main entre `.windsurf/rules/` et un fichier unique `.windsurfrules` | L'adaptateur n'écrit que `.devin/rules/` |
 | Garder les règles alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Partager des skills et des commandes réutilisables | Copier à la main chaque dossier de skill dans `~/.agents/skills/` et garder les copies à jour | Écrits dans `~/.agents/skills/` par l'adaptateur, une seule copie pour tous les projets, et actualisés lors de `apothem update` |
+| Garder les auxiliaires réutilisables synchronisés | Écrire à la main chaque fichier de sous-agent Devin Local sous `.devin/agents/` et suivre les noms d'outils de Devin | Onze auxiliaires écrits dans `.devin/agents/` avec leurs outils traduits, et actualisés lors de `apothem update` |
 | Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness windsurf --project <path>` |
 
 ## Ce que gère apothem
 
-L'adaptateur windsurf rend les règles partagées dans le répertoire
-`.devin/rules/` ; il n'écrit pas un fichier unique `.windsurfrules`. Windsurf
-n'a pas de hook PreToolUse, de sorte que l'intention de garde-fou réside dans la
-prose des règles plutôt que dans un point d'interception d'appel d'outil. Chaque
-changement des règles partagées re-rend le répertoire lors du prochain
-`apothem update`.
+L'adaptateur windsurf rend les règles partagées dans un seul fichier,
+`<project>/.devin/rules/apothem-rules.md` ; il n'écrit pas un fichier unique
+`.windsurfrules`. Il écrit aussi onze des auxiliaires d'Apothem en tant que
+sous-agents Devin Local dans `<project>/.devin/agents/` ; les trois qui ont besoin
+d'outils web attendent que Devin documente leurs noms d'outils. Il enregistre deux
+hooks Devin Local, un amorçage de session et un avertissement sur la taille du
+contexte, dans `<project>/.devin/config.local.json` ; l'ancien mode Cascade lit un
+autre format de hooks (`hooks.json`), que l'adaptateur n'écrit pas. Il
+n'enregistre aucune garde d'appel d'outil, de sorte que l'intention de garde-fou
+réside dans la prose des règles plutôt que dans un point d'interception d'appel
+d'outil. Chaque changement des règles partagées re-rend le fichier lors du
+prochain `apothem update`.
 
 ## Chemin de migration
 

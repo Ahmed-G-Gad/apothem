@@ -2,7 +2,7 @@
 title: "クイックスタート"
 description: "Apothem をインストールし、プロファイルを作成し、最初のハーネスをマテリアライズして検証する — 期待される出力付きの、コピー＆ペーストで進めるツアー。"
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,14 +81,38 @@ apothem profile show --json
 ```
 
 このスキャフォールドは架空のプレースホルダーの識別情報を使用しており、ハーネスの出力をインストールする前に編集しても安全です。
-`show --json` はそれを読み戻し、検証済みのプロファイルを報告します。
+`show --json` はそれを読み戻し、`schema_version` から始まる、すべてのデフォルトが埋められた検証済みのプロファイルを報告します。
+コマンドはそれを 1 行で出力します。ここでは展開して示します。
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -113,7 +137,7 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-プロジェクトスコープのアダプターは、ホームディレクトリではなくプロジェクトの内部に書き込むため、`--project PATH` が必要です。
+プロジェクトスコープのアダプターはルールファイルをプロジェクトの内部に書き込むため、`--project PATH` が必要です。そのうち 7 つは、スキルと共有ルールもホームディレクトリ内のフォルダーに書き込み、`--project` はそれらの書き込み先を変えません。
 `--dry-run` を使うと、ファイルを書き込まずに任意のインストールをプレビューできます。
 
 ```bash

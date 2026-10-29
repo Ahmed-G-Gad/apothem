@@ -1,8 +1,8 @@
 ---
 title: "/research-proposal"
-description: "/research-proposal — Verwandelt die synthetisierte Lücke und den theoretischen Rahmen in einen förderfähigen, prüfbaren Referenzplan: SMART-Ziele, Machbarkeits- und Risikoregister, Wirkungspfad, Präregistrierungsplan und Auswahl der EQUATOR-Berichtsleitlinie — die Vorschlagsphase der /research-Pipeline, zwischen /research-synthesis und /research-design."
+description: "/research-proposal — Verwandelt die synthetisierte Lücke und den theoretischen Rahmen in einen förderfähigen, prüfbaren Referenzplan: SMART-Ziele, Machbarkeits- und Risikoregister mit Notfallplänen, Wirkungspfad, Präregistrierungsplan, Datenmanagement- und Datenteilungsplan und Auswahl der EQUATOR-Berichtsleitlinie, dazu eine Anforderungsmatrix für eine bereitgestellte Förderausschreibung und eine eigenständige Antwort auf eine Wiedereinreichung — die Vorschlagsphase der /research-Pipeline, zwischen /research-synthesis und /research-design."
 machineTranslated: true
-sourceHash: "0addcba24af3c7ac"
+sourceHash: "040241295ba96783"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,20 @@ Verwandelt die synthetisierte Lücke und den theoretischen Rahmen in einen förd
 Mit Argumenten:
 
 ```bash
-/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]
 ```
 
 ## Eingaben
 
 Die `_inputs/synthesis.md` der Suite (die SOTA-Karte + die Lückenanalyse) und `_inputs/theory.md` (der konzeptionelle Rahmen).
 
+Mit `--call` der Text der Förderausschreibung, als Dateipfad oder `-` für eingefügten Text; der bereitgestellte Text ist die einzige Quelle für die Anforderungen des Fördergebers. Mit `--resubmission` die Kritik des Fördergebers an einem früheren Antrag; Synthese und Theorie werden dann nicht benötigt (siehe unten).
+
 ## Ausgaben
 
-`_inputs/proposal.md` (die SMART-Zielhierarchie, die Machbarkeitsbewertung, das Ressourcen- / Zeitplan- / Risikoregister, der Wirkungspfad, der Präregistrierungsplan und die Vorauswahl der EQUATOR-Berichtsleitlinie).
+`_inputs/proposal.md` (die SMART-Zielhierarchie, die Machbarkeitsbewertung, das Ressourcen- / Zeitplan- / Risikoregister mit seinen Notfallplänen, der Wirkungspfad, der Präregistrierungsplan, der Datenmanagement- und Datenteilungsplan und die Vorauswahl der EQUATOR-Berichtsleitlinie).
+
+Mit `--call` zusätzlich `_inputs/call-requirements.md` (die Matrix der Ausschreibungsanforderungen). Mit `--resubmission` `_outputs/resubmission-response.md` anstelle des Vorschlags.
 
 ## Nachgelagert
 
@@ -41,14 +45,34 @@ Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
 1. **Kontext laden** — `_inputs/synthesis.md` und `_inputs/theory.md`, die Regeln und jeden bestehenden Suite-Zustand lesen.
 2. **Die SMART-Zielhierarchie aufbauen** — Die Lücke in spezifische, messbare, erreichbare, relevante und terminierte Ziele umwandeln.
-3. **Machbarkeit und Risiko bewerten** — Das Ressourcen- / Zeitplan- / Risikoregister aufbauen; die ethische Machbarkeit vorab ansprechen.
-4. **Präregistrierung und Berichterstattung planen** — Das Register auswählen, den Präregistrierungsplan entwerfen und die EQUATOR-Berichtsleitlinie vorauswählen.
+3. **Machbarkeit und Risiko bewerten** — Das Ressourcen- / Zeitplan- / Risikoregister aufbauen; jedem Risiko, das die Erreichbarkeit eines Ziels berührt, einen Notfallplan-Eintrag geben und die zugrunde liegende Entscheidung einem Stresstest unterziehen; bereitgestellte Kostenpositionen abgleichen; die ethische Machbarkeit vorab ansprechen.
+4. **Präregistrierung, Daten und Berichterstattung planen** — Das Register auswählen, den Präregistrierungsplan entwerfen, den Datenmanagement- und Datenteilungsplan festlegen und die EQUATOR-Berichtsleitlinie vorauswählen.
 5. **Den Wirkungspfad abbilden** — Nachvollziehen, wie die Ziele, sofern erreicht, nachgelagerte Wirkung erzeugen.
 6. **Prüfen und ausgeben** — Bestätigen, dass die Ziele testbar und der Plan reproduzierbar sind; `_inputs/proposal.md` sowie das Übergabe-Manifest ausgeben.
+
+## Eine bereitgestellte Förderausschreibung
+
+Mit `--call` bestimmt der Ausschreibungstext die Gestalt des Vorschlags. Die Stufe schreibt eine Anforderungsmatrix nach `_inputs/call-requirements.md`, eine Zeile pro Anforderung (Abschnitt, Begrenzung, Förderfähigkeit, Anlage, Begutachtungskriterium oder Richtlinie) mit dem Abschnitt des Vorschlags, der sie beantwortet, ihrer Fundstelle im Entwurf des Operators und einem Status `met`, `partly-met`, `gap` oder `operator-owned`. Jedes Begutachtungskriterium ist eine Zeile, sodass jedes Ziel auf das Kriterium zurückgeführt wird, das es beantwortet; kein Kriterium wird gewichtet, und es wird keine Aussage über Förderchancen getroffen.
+
+- **Zuerst die Richtlinie zur Werkzeugnutzung.** Die Richtlinie der Ausschreibung zu automatisierten Werkzeugen wird geklärt, bevor irgendein Text geschrieben wird: erlaubt, erlaubt mit Offenlegung (die Erklärung zur Werkzeugnutzung wird entworfen) oder eingeschränkt. Bei einer einschränkenden Richtlinie hält die Stufe nach der Matrix an und gibt die Entscheidung an den Operator zurück. Schweigt eine Ausschreibung zu dieser Richtlinie, wird nachgefragt, nie etwas angenommen.
+- **Kein Erinnern, kein Budget.** Eine Anforderung, Begrenzung, ein Datum, ein Satz oder eine Obergrenze des Fördergebers stammt aus dem bereitgestellten Text oder vom Operator, nie aus dem Gedächtnis. Die Stufe erstellt kein Budget: Sie prüft die Kostenpositionen des Operators; eine Position, die sich auf kein Ziel zurückführen lässt, ist `orphan`, ein Ziel ohne Ressourcen ist `unresourced`, und eine Summe, die nicht aufgeht, ist `unreconciled`.
+- **Keine an den Fördergeber gerichtete Erzählung.** Die Stufe gibt einen Referenzplan aus, keine Prosa zu Bedeutung oder Vorgehen. Team, Lebensläufe, Einrichtungen, Unterstützungsschreiben und laufende und beantragte Förderungen sind `operator-owned`-Zeilen und werden nie entworfen.
+
+## Wiedereinreichungsmodus
+
+`--resubmission PATH` beantwortet die Kritik eines Fördergebers an einem früheren Antrag, außerhalb der dreizehnstufigen Kette. Das Sequenz-Gate gilt nicht, und das Übergabe-Manifest bleibt unberührt. Der Operator stellt die Kritik, den Ausschreibungstext (`--call`), den Antrag in der eingereichten Fassung und den überarbeiteten Entwurf bereit, und die Stufe schreibt `_outputs/resubmission-response.md` aus drei Teilen:
+
+- **Förderfähigkeit und Begrenzungen** — Aus dem Ausschreibungstext lesen, ob eine Wiedereinreichung zulässig ist, wie viele die Ausschreibung erlaubt, die Frist und die Begrenzungen für die Antwort und den überarbeiteten Antrag. Eine Regel, die der Text nicht nennt, wird beim Operator erfragt; ohne Ausschreibungstext kann die Antwort `ready` nicht erreichen.
+- **Überarbeitungsmatrix** — Eine Zeile pro Kritikkommentar, nummeriert wie der Fördergeber nummeriert: der zitierte Kommentar, die Maßnahme (`changed`, `clarified` oder `declined`), die überarbeitete Stelle, die wissenschaftliche Konsequenz, jede offene Frage und ein Status `answered`, `partly-answered` oder `not-answered`, gestützt durch den überarbeiteten Text. Ein abgelehnter Kommentar trägt seine Begründung und seinen Beleg.
+- **Fortpflanzungsprüfung** — Jede `changed`-Zeile zu jedem Planelement verfolgen, das sie berührt: Ziele, Methoden, Zeitplan, Budgetpositionen, Datenplan und Risikoregister. Ein von der Änderung berührtes Element, das der überarbeitete Entwurf unverändert lässt, ist `unpropagated`.
+
+Die Antwort ist `ready`, wenn jede Zeile `answered` ist oder ein vom Operator akzeptiertes Restrisiko trägt, kein Element `unpropagated` ist und jede Begrenzung der Ausschreibung eingehalten wird. Eine Antwort, die neue Belege benötigt, geht an den Operator zurück, der sie an `/research-design` oder `/research-experiment` weiterleitet. Der Operator reicht ein.
 
 ## Rigorositätsuntergrenze
 
 Der Anspruch des Zielorts der Veröffentlichung legt nicht nur die Wahl der Berichtsleitlinie fest, sondern auch die Tiefe der Rigorositätsuntergrenze, die die nachgelagerten Design- und Experimentstufen erreichen müssen — Replikationsuntergrenze, Budgetparität, Abstimmung auf disjunkten Splits und Signifikanz mit einer Effektstärke — plus das Reproduzierbarkeitsnachweis-Paket, das das Liefergut tragen wird.
+
+Jedes Risiko ist eine widerlegbare Vorhersage darüber, wie der Plan scheitert. Ein Risiko, das die Erreichbarkeit eines Ziels berührt, endet nicht bei seiner Minderung: Es trägt einen Notfallplan-Eintrag (Auslöser, verantwortliche Rolle, Überprüfungsdatum, Vorlaufzeit, Kosten der Ausweichlösung, Restrisiko), der vor der Datenerhebung festgelegt wird, und eine im Plan festgeschriebene Reaktion ist eine geplante Anpassung, keine Abweichung. Der Datenmanagement- und Datenteilungsplan legt die Repository-Klasse, die Zugangsbedingungen mit der Grundlage jeder Einschränkung und die Aufbewahrungsdauer fest, bevor das Design die Daten festlegt, und der Umfang der Einwilligung muss das versprochene Teilen erlauben.
 
 ## Fehlermodi
 
@@ -57,6 +81,8 @@ Der Anspruch des Zielorts der Veröffentlichung legt nicht nur die Wahl der Beri
 | Ziel ist nicht messbar | Ziel als Aktivität statt als Ergebnis formuliert | Als SMART-Ziel mit einer expliziten Erfolgsmetrik neu formulieren |
 | Kein Präregistrierungsplan | Präregistrierungsschritt übersprungen | Eine Registry auswählen und den Plan entwerfen, bevor mit `/research-design` fortgefahren wird |
 | Fehlende Synthese-Eingabe | `/research-synthesis` noch nicht ausgeführt | Zuerst `/research-synthesis` ausführen, um die Lückenanalyse zu erzeugen |
+| Förderausschreibung ohne ihren Text genannt | `--call` weggelassen oder der Text unlesbar | Den Ausschreibungstext bereitstellen; die Stufe füllt eine Regel des Fördergebers nie aus dem Gedächtnis |
+| Antwort auf die Wiedereinreichung nicht `ready` | Ein Kommentar ist nicht beantwortet, eine Änderung ist `unpropagated` oder eine Begrenzung der Ausschreibung ist überschritten | Die Änderung in den überarbeiteten Entwurf übertragen, den Kommentar beantworten oder die Antwort in die Begrenzung bringen |
 
 ## Beispiele
 
@@ -66,6 +92,12 @@ Der Anspruch des Zielorts der Veröffentlichung legt nicht nur die Wahl der Beri
 
 # Legt die Berichtsleitlinie und das Präregistrierungsregister fest
 /research-proposal --guideline PRISMA --prereg-registry OSF
+
+# Bildet eine Förderausschreibung auf den Referenzplan ab
+/research-proposal --suite-name retrieval-latency --call funder-call.md
+
+# Beantwortet die Kritik eines Fördergebers an einem früheren Antrag
+/research-proposal --resubmission critique.md --call funder-call.md
 ```
 
 ## Querverweise

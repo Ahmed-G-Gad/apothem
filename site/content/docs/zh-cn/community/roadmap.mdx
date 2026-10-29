@@ -2,7 +2,7 @@
 title: "路线图"
 description: "Apothem 公开路线图——即将推出的功能和计划中的改进。"
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "66086baa5064d245"
 
 ## 当前发布
 
-当前发布线提供与宿主无关的工具配置管理器：一份共享配置档案（`~/.config/apothem/profile.yaml`）为已注册的适配器物化为工具原生配置，由 `apothem` 命令行驱动（`quickstart` · `install` · `update` · `uninstall` · `rollback` · `verify` · `status` · `diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`）。
+当前发布线提供与宿主无关的工具配置管理器：一份共享配置档案（`~/.config/apothem/profile.yaml`）为已注册的适配器物化为工具原生配置，由 `apothem` 命令行驱动（`quickstart` · `install` · `update` · `uninstall` · `rollback` · `backups` · `verify` · `status` · `diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`）。
 
 | 条目 | 状态 | 说明 |
 | ---- | ------ | ----- |
@@ -27,6 +27,8 @@ sourceHash: "66086baa5064d245"
 | 审计与漂移评审基础设施 | 已交付 | 审计命令背后的盘点与漂移扫描器 |
 | 合规闸门 | 已交付 | 覆盖每个物化表面的作者署名头、命名、代码工艺、含糊措辞和绑定互惠校验器，并以行为差异黄金基准锁定每个适配器的输出 |
 | 持久记忆与可选启用的持续学习 | 已交付 | 一个持久记忆层和一个可选启用的学习循环，在会话之间延续已确认的约定 |
+| npm / npx 分发 | 已交付 | `@ahmed-g-gad/apothem` 包通过 `npx @ahmed-g-gad/apothem` 运行引擎 |
+| Claude Code 插件上架 | 已交付 | 通过 `/plugin marketplace add ahmed-g-gad/apothem` 安装 |
 | CI/CD 流水线与经签名发布的供应链 | 已交付 | 每项变更在发布前都要经过 lint、测试、类型检查、文档构建和供应链检查的把关 |
 
 ## 近期
@@ -34,8 +36,8 @@ sourceHash: "66086baa5064d245"
 | 条目 | 状态 | 说明 |
 | ---- | ------ | ----- |
 | 文档指南 | 进行中 | 更多面向任务的指南、图示和示例，用于真实的工具设置 |
-| npm / npx 分发 | 已计划 | 使 `@ahmed-g-gad/apothem` npx 入口点与每次发布保持一致，并扩大其平台覆盖 |
-| Claude Code 插件上架 | 已计划 | 随着市场表面趋于稳定，扩充插件上架内容 |
+| npx 平台覆盖 | 已计划 | 使 `@ahmed-g-gad/apothem` npx 入口点与每次发布保持一致，并扩大其平台覆盖 |
+| 插件上架扩充 | 已计划 | 随着市场表面趋于稳定，扩充插件上架内容 |
 | 更多工具适配器 | 已计划 | 随着更多工具的配置约定趋于稳定且有用户请求，加入这些工具 |
 | 配置档案模式增强 | 已计划 | 更丰富的逐工具覆盖表面和更严格的校验诊断 |
 | 合规闸门中的配置档案校验 | 已计划 | 将依据其模式校验共享配置档案作为一项闸门检查 |

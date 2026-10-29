@@ -2,7 +2,7 @@
 title: "Trabajadores delegados"
 description: "Trabajadores delegados persistentes para investigación, auditoría, calidad y orquestación, con contratos de frontmatter y protocolos de aislamiento del despliegue."
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,25 +52,78 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` es opcional. Un trabajador delegado que lo omite hereda todas las
+herramientas que tiene la sesión, incluidas las herramientas MCP conectadas, y
+`disallowedTools` lleva su límite. Los catorce trabajadores delegados incluidos
+enumeran `tools`.
+
+## Servidores MCP conectados
+
+Un trabajador delegado que enumera `tools` solo puede llamar a lo que enumera.
+Claude Code solo admite una herramienta MCP en esa lista cuando la entrada nombra
+el servidor, como en `mcp__<server>__*`; un `mcp__*` sin más está documentado como
+entrada de `disallowedTools` y en ningún otro lugar. Los nombres de servidor
+pertenecen a la persona que los conecta, así que un trabajador delegado incluido
+no puede nombrarlos.
+
+`citation-auditor` y `research-scout` buscan fuentes académicas. Cada uno se
+entrega con `tools: Read, Glob, Grep, WebSearch, WebFetch` y deniega las
+herramientas que escriben archivos, ejecutan comandos, inician otros trabajadores
+delegados o publican: `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Bash`,
+`PowerShell`, `Monitor`, `Agent`, `Artifact` y las herramientas de lista de
+tareas. Sin ningún ajuste del perfil, ninguno de los dos alcanza una herramienta
+MCP, y ambos buscan las fuentes mediante búsqueda web y descarga web.
+
+Para dar a uno de ellos un índice académico conectado, nombra el servidor en la
+clave `agent_mcp_servers` del perfil, que asigna un nombre de agente a nombres de
+servidor. La instalación del motor de Claude Code (`apothem install`) añade
+entonces una entrada `mcp__<server>__*` por cada servidor nombrado a la línea
+`tools` de ese agente, y no cambia ningún otro agente. La instalación de Gemini
+CLI hace lo mismo con una entrada `mcp_<server>_*` por servidor en la lista de
+permitidos `tools` del agente, para un nombre de servidor de letras, dígitos y
+`-`. En ambos, un servidor que nombra el propio `disallowedTools` del agente sigue
+denegado. La entrada admite todas las herramientas de ese servidor, incluidas las
+que escriben, así que nombra solo un servidor en el que confíes para consultas:
+las instrucciones de los trabajadores delegados los limitan a llamadas de
+búsqueda, consulta, lectura, verificación y resolución, pero el entorno solo
+impone los nombres que enumera la línea `tools`. Un nombre para un agente que no
+existe, o que no tiene una línea `tools` explícita, se notifica y se omite.
+
+Los entornos distintos de Claude Code y Gemini CLI ignoran la clave. El árbol del
+plugin de Claude Code se ensambla sin perfil y conserva la lista simple, así que
+quien usa el plugin define en su lugar un agente de nivel de usuario bajo
+`~/.claude/agents/`. La sintaxis del perfil, las reglas de nombres de servidor y
+esa alternativa están en
+[Dar a un trabajador delegado acceso a servidores MCP](/docs/reference/mcp#dar-a-un-trabajador-delegado-acceso-a-servidores-mcp).
+
 ## Conversión por entorno
 
 Un trabajador delegado cuya concesión `tools`, después de aplicar
 `disallowedTools`, no incluye ninguna herramienta de edición de archivos
-(`Write`, `Edit`, `MultiEdit` o `NotebookEdit`) es de solo lectura. Cada entorno
-que convierte trabajadores delegados aplica ese límite de forma nativa o elimina
-la etiqueta de solo lectura:
+(`Write`, `Edit`, `MultiEdit` o `NotebookEdit`) es de solo lectura. Un trabajador
+delegado sin concesión `tools` es de solo lectura cuando `disallowedTools`
+deniega al menos `Write` y `Edit`. Cada entorno que convierte trabajadores
+delegados aplica ese límite de forma nativa, lo indica en las instrucciones del
+trabajador delegado o elimina la etiqueta de solo lectura:
 
 | Entorno | Límite de herramientas | Límite de turnos | Modelo y esfuerzo |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` tal como están escritos | `maxTurns` | heredado (no se establece) |
-| Codex | `sandbox_mode = "read-only"` para los trabajadores delegados de solo lectura | no disponible | heredado (no se establece) |
-| Gemini CLI | lista de permitidos `tools` con nombres de herramientas de Gemini | `max_turns` | heredado (no se establece) |
-| Qwen Code | `tools` / `disallowedTools` con nombres de herramientas de Qwen | no se asigna | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` por herramienta) | no se asigna | heredado (no se establece) |
+| Claude Code | `tools` / `disallowedTools` tal como están escritos, más las entradas `mcp__<server>__*` que la clave `agent_mcp_servers` del perfil añada a una línea `tools` enumerada; sin `tools`, se heredan todas las herramientas, MCP incluido | `maxTurns` | heredado (no se establece) |
+| Codex | no se emite ninguno; las instrucciones del trabajador delegado lo indican, y el sandbox de la sesión principal rige las escrituras | no disponible | heredado (no se establece) |
+| Gemini CLI | lista de permitidos `tools` con nombres de herramientas de Gemini, más las entradas `mcp_<server>_*` que la clave `agent_mcp_servers` del perfil añada a una lista explícita enumerada; sin `tools`, la lista de permitidos que implican las denegaciones más `mcp_*` | `max_turns` | heredado (no se establece) |
+| Qwen Code | `tools` / `disallowedTools` con nombres de herramientas de Qwen; sin `tools`, no se emite ninguna lista, así que las herramientas MCP se heredan y se aplican las denegaciones | no se asigna | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` por herramienta); las herramientas MCP no se restringen | no se asigna | heredado (no se establece) |
 | Antigravity | no se emite ninguno; la descripción omite «read-only» | no disponible | heredado (no se establece) |
+| CodeBuddy | `tools` / `disallowedTools` como cadenas separadas por comas, limitadas a los nombres de herramientas que documenta CodeBuddy; ninguna entrada MCP | `maxTurns` | heredado (no se establece) |
+| Trae | `tools` / `disallowedTools` como cadenas separadas por comas, limitadas a los nombres de herramientas que documenta Trae; ninguna entrada MCP | no disponible | heredado (no se establece) |
+| GitHub Copilot | lista de permitidos `tools` de alias de Copilot (`read`, `search`, `edit`, `execute`, `web`, `agent`, `todo`) con las denegaciones incorporadas, porque Copilot no tiene clave de denegación; se omite un alias que cubre una herramienta denegada; ninguna entrada MCP | no disponible | heredado (no se establece) |
+| Cursor | ninguna lista de herramientas (Cursor no tiene ninguna); `readonly: true` para los cinco trabajadores delegados de solo lectura sin `Bash`, y los demás trabajadores delegados de solo lectura omiten la etiqueta «read-only» | no disponible | heredado (no se establece) |
+| Kimi Code | `tools` / `disallowedTools` como listas de nombres de herramientas de Kimi Code (`WebFetch` pasa a ser `FetchURL`, `TodoWrite` pasa a ser `TodoList`; se omiten los nombres para los que Kimi Code no tiene herramienta); ninguna entrada MCP | no disponible | heredado (no se establece) |
+| Kiro | lista de permitidos `tools` de categorías de herramientas de Kiro (`read`, `write`, `shell`, `web`, `subagent`) con las denegaciones incorporadas, porque la lista es la única restricción que se escribe; se omite una categoría que cubre una herramienta denegada; ninguna entrada MCP | no disponible | heredado (no se establece) |
+| Windsurf | lista de permitidos `allowed-tools` de nombres de herramientas de Devin (`read`, `edit`, `grep`, `glob`, `exec`, `write`) con las denegaciones incorporadas, porque Devin no tiene clave de denegación; los tres trabajadores delegados que necesitan herramientas web no se instalan; ninguna entrada MCP | no disponible | modelo de subagente predeterminado de Devin (no se establece) |
 
-Hermes, Open-Claw y Kimi Code reciben los archivos de los trabajadores delegados
-como material de soporte, no como trabajadores delegados nativos.
+Hermes y Open-Claw reciben los archivos de los trabajadores delegados como
+material de soporte, no como trabajadores delegados nativos.
 
 ## Orquestación
 

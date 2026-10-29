@@ -2,7 +2,7 @@
 title: "Peta jalan"
 description: "Peta jalan publik Apothem — fitur mendatang dan peningkatan yang direncanakan."
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,8 +25,8 @@ Lini saat ini menghadirkan pengelola konfigurasi harness yang tidak bergantung
 pada host: sebuah profil bersama (`~/.config/apothem/profile.yaml`) yang
 dimaterialisasikan menjadi konfigurasi native-harness untuk adapter-adapter
 yang terdaftar, digerakkan oleh baris perintah `apothem` (`quickstart` ·
-`install` · `update` · `uninstall` · `rollback` · `verify` · `status` · `diff` ·
-`harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
+`install` · `update` · `uninstall` · `rollback` · `backups` · `verify` · `status` ·
+`diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
 
 | Butir | Status | Catatan |
 | ---- | ------ | ----- |
@@ -39,6 +39,8 @@ yang terdaftar, digerakkan oleh baris perintah `apothem` (`quickstart` ·
 | Infrastruktur audit dan tinjauan penyimpangan | dirilis | Pemindai inventaris dan penyimpangan di balik perintah audit |
 | Gerbang konformitas | dirilis | Validator untuk header kepengarangan, penamaan, mutu penulisan kode, kata-kata pengelak (hedging), dan resiprositas binding di atas setiap permukaan yang dimaterialisasikan, dengan golden behavior-diff yang mengunci keluaran setiap adapter |
 | Memori tahan lama dan pembelajaran berkelanjutan opt-in | dirilis | Tingkat memori persisten dan loop pembelajaran opt-in yang membawa konvensi yang telah dikonfirmasi lintas sesi |
+| Distribusi npm / npx | dirilis | Paket `@ahmed-g-gad/apothem` menjalankan mesin melalui `npx @ahmed-g-gad/apothem` |
+| Daftar plugin Claude Code | dirilis | Dipasang dengan `/plugin marketplace add ahmed-g-gad/apothem` |
 | Pipeline CI/CD dan rantai pasok rilis bertanda tangan | dirilis | Setiap perubahan digerbang oleh lint, pengujian, pemeriksaan tipe, build dokumentasi, dan pemeriksaan rantai pasok sebelum rilis |
 
 ## Jangka pendek
@@ -46,8 +48,8 @@ yang terdaftar, digerakkan oleh baris perintah `apothem` (`quickstart` ·
 | Butir | Status | Catatan |
 | ---- | ------ | ----- |
 | Panduan dokumentasi | sedang dikerjakan | Lebih banyak panduan yang berfokus pada tugas, diagram, dan contoh untuk penyiapan harness nyata |
-| Distribusi npm / npx | direncanakan | Menjaga entry point npx `@ahmed-g-gad/apothem` tetap selaras dengan setiap rilis dan memperluas cakupan platformnya |
-| Daftar plugin Claude Code | direncanakan | Mengembangkan daftar plugin seiring stabilnya permukaan marketplace |
+| Cakupan platform npx | direncanakan | Menjaga entry point npx `@ahmed-g-gad/apothem` tetap selaras dengan setiap rilis dan memperluas cakupan platformnya |
+| Pertumbuhan daftar plugin | direncanakan | Mengembangkan daftar plugin seiring stabilnya permukaan marketplace |
 | Lebih banyak adapter harness | direncanakan | Harness tambahan seiring konvensi konfigurasinya stabil dan pengguna memintanya |
 | Peningkatan skema profil | direncanakan | Permukaan override per harness yang lebih kaya dan diagnostik validasi yang lebih ketat |
 | Validasi profil di gerbang konformitas | direncanakan | Memvalidasi profil bersama terhadap skemanya sebagai pemeriksaan gerbang |

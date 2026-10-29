@@ -2,7 +2,7 @@
 title: "Receta de reconstrucción de recursos"
 description: "Regenera todos los recursos de marca en formato raster a partir de las fuentes SVG maestras con resvg y Pillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ de marca.
 
 Ejecuta la receta de reconstrucción cuando:
 
-- El SVG maestro (`assets/src/logo.svg` o `assets/src/logo-dark.svg`) cambie.
+- Un SVG maestro (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` o `assets/src/logo-animated-light.svg`) cambie.
 - El maestro del favicon compacto (`assets/favicon.svg`) cambie.
 - Un maestro de tarjeta social (`assets/src/og-banner.svg` o `assets/src/twitter-card.svg`) cambie.
 - Se necesite un nuevo tamaño raster.
@@ -62,8 +62,9 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Verificación
 
 Una ejecución exitosa regenera los rasters de la marca en versión clara y oscura,
-el conjunto de favicon PNG/ICO, los iconos Apple touch, las imágenes OG/Twitter, y
-replica el subconjunto servido en la web —incluidas las fuentes del logo principal
-que el sitio referencia— en `site/public/`. Tras la generación, ejecuta la
+el conjunto de favicon PNG/ICO (el ICO incorpora capas de 16, 32 y 48 px), los iconos
+Apple touch, el icono de la extensión de VS Code (`vscode-extension/icon.png`), las
+imágenes OG/Twitter, y replica el subconjunto servido en la web —incluidas las fuentes
+del logo principal que el sitio referencia— en `site/public/`. Tras la generación, ejecuta la
 compilación del sitio e inspecciona la página de inicio, el favicon de la pestaña
 del navegador y los PNG de las tarjetas sociales antes de publicar.

@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,6 +74,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -157,11 +158,106 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 次の場合、チェックは失敗します。リリースがドラフトまたはプレリリースである場合、タグのコミットに対する必須のワークフローがグリーンでない場合、SBOM が存在しない場合、SBOM が別のバージョンを記述している場合、または SBOM にベンダリングされたパッケージが含まれていない場合です。失敗メッセージには、原因が示されます。
 
-準備状態チェックに合格したら、§2.3 と同じ方法で、待機中の `Publish npm` の実行を承認します（その実行 ID は `gh run list --workflow=publish-npm.yml` から取得します）。このワークフローは、npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。待機中の `Publish VS Code Extension` の実行も承認してください。この実行は `apothem.vsix` をパッケージ化し、それを `ahmed-g-gad.apothem-vscode` として Visual Studio Marketplace へ公開します。公開ステップは、リポジトリ変数 `VSCODE_MARKETPLACE_READY` が `true` であり、かつ `VSCE_PAT` シークレットが設定されている間だけ実行されます。そうでない場合、この実行は拡張機能をパッケージ化するだけで公開はスキップします。
+準備状態チェックに合格したら、§2.3 と同じ方法で、待機中の `Publish npm` の実行を承認します（その実行 ID は `gh run list --workflow=publish-npm.yml` から取得します）。このワークフローは、npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。待機中の `Publish VS Code Extension` の実行も承認してください。この実行は `apothem.vsix` をパッケージ化し、それを `ahmed-g-gad.apothem-vscode` として Visual Studio Marketplace へ公開します。公開ステップは、リポジトリ変数 `VSCODE_MARKETPLACE_READY` が `true` であり、かつ認証情報が 1 つ構成されている間だけ実行されます。認証情報は、変数 `VSCE_AUTH=oidc`（Marketplace Trusted Publishing。保存されるシークレットなし）、変数 `VSCE_AUTH=entra`、`AZURE_CLIENT_ID`、`AZURE_TENANT_ID`（有効期間の短い Microsoft Entra ID トークン。保存されるシークレットなし）、または `VSCE_PAT` シークレットのいずれかです。どれもない場合、この実行は拡張機能をパッケージ化するだけで公開はスキップします。認証情報は切り替えであって再試行ではありません。あるルートでの公開が失敗しても、自動的に別のルートへフォールバックすることはありません。各ルートのセットアップは、以下の[Trusted Publishing による Marketplace への公開](#trusted-publishing-による-marketplace-への公開)（推奨）と[Microsoft Entra ID による Marketplace への公開](#microsoft-entra-id-による-marketplace-への公開)にあります。
 
 実行が失敗した後に再度公開するには、同じタグに対してワークフローをディスパッチします
 （`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。
 npm のバージョンは不変であるため、バージョンがすでにレジストリにある場合、ワークフローは公開をスキップします。
+
+#### Trusted Publishing による Marketplace への公開
+
+Trusted Publishing により、Marketplace はこのリポジトリの GitHub OIDC トークンを直接受け入れます。`vsce publish --oidc` は、公開ジョブのトークンを有効期間の短い Marketplace 認証情報と交換します。保存されるシークレットも Azure リソースもないため、これが推奨ルートです。以下の Entra ルートと `VSCE_PAT` シークレットは、オペレーターが選択する代替手段として残ります。
+
+1. **これをサポートする vsce リリースを使う。** このルートでは、公開ジョブは公開の前に `tools/vsce` でロックされた vsce リリースを確認し、ロックがそれより古い場合は、最低限必要なリリースを示すエラーで停止します。Dependabot はそのロックファイルに対して vsce の更新を提案します。切り替える前に、最低限のリリースに達する更新をマージしてください。
+2. **ポリシーを作成する。** パブリッシャーの Owner としてサインインし、`https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad` を開いて、**Trusted Publishing** の下にポリシーを追加します:
+   - ポリシー名: `apothem-release` など、任意の名前
+   - リポジトリのオーナー: `Ahmed-G-Gad`
+   - リポジトリ: `apothem`
+   - ワークフロー: `publish-vscode.yml`
+   - 環境: `release`
+
+   フィールド名は、VS Code の公開ガイドが GitHub Actions と Trusted Publishing による公開のセクションで挙げているものです（`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`）。未確認: すべてのパブリッシャーにすでに Trusted Publishing タブが表示されるかどうか。表示されない場合は、Entra ルートを使ってください。
+3. **ルートを切り替える。** `VSCODE_MARKETPLACE_READY` を `true` のままにして、セレクターを設定します。次のタグのプッシュはこのルートを通じて公開されるため、待機中のタグがないときに設定してください。
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **公開する。** 次のタグのプッシュ、または既存のタグに対するディスパッチが、Trusted Publishing を通じて公開します。このルートにはドライランがありません。最初の公開がチェックとなり、`dry_run` を指定したディスパッチは、何も検証されなかったという警告を出すだけです。
+5. **失敗したらフォールバックする。** セレクターを削除し、同じタグに対して再度ディスパッチします。`VSCE_PAT` シークレットが設定されていれば、トークンルートが公開します。失敗した公開は何も公開していないため、同じタグを再度ディスパッチできます。
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### Microsoft Entra ID による Marketplace への公開
+
+Entra ルートは、保存された個人用アクセストークンを有効期間の短いトークンに置き換えます。`publish-vscode.yml` が GitHub に OIDC トークンを要求し、`Azure/login` アクションがフェデレーション資格情報を通じてそれを Entra のサインインと交換し、`vsce publish --azure-credential` が得られたトークンで公開します。クライアントシークレットは存在しません。`VSCE_PAT` シークレットは、オペレーターが選択するフォールバックとして残ります。ワークフローが自らそれに切り替えることは決してありません。
+
+`tools/vsce` にピン留めされた vsce リリースは、このルートをサポートしています。このルートには Entra テナント、アプリケーション登録、パブリッシャーのメンバーシップが必要ですが、上記の Trusted Publishing には必要ありません。パブリッシャーが Trusted Publishing を利用できない場合に使ってください。
+
+1. **前提条件を確認する。** パブリッシャー `ahmed-g-gad` を所有するアカウント（`https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad` の Members タブ）と、アプリケーションを登録できる Entra テナントを特定します。未確認: パブリッシャーのオーナーのテナントがアプリケーションのテナントと一致しなければならないかどうか、および Azure DevOps 組織 `Ahmed-G-Gad` を Entra に接続する必要があるかどうか（`dev.azure.com/Ahmed-G-Gad`、Organization settings、Microsoft Entra）。どちらについても記載している情報源はありません。手順 5 または 6 が失敗した場合は、まずこれらを確認してください。
+
+2. **アプリケーションを登録する。** `https://entra.microsoft.com` で App registrations を開き、New registration を選びます。名前を `apothem-vscode-publish` とし、シングルテナントを選び、リダイレクト URI は空のままにします。Overview から、Application (client) ID と Directory (tenant) ID をコピーします。クライアントシークレットは作成せず、API のアクセス許可も付与しないでください。この手順には、アプリケーションのオーナー権限か、Application Administrator などの Entra ロールが必要です。
+
+3. **フェデレーション資格情報を追加する。** そのアプリケーションで Certificates & secrets、Federated credentials、Add credential を開き、シナリオ「GitHub Actions deploying Azure resources」を選びます。組織 `Ahmed-G-Gad`、リポジトリ `apothem`、エンティティの種類 `Environment`、環境名 `release`、資格情報名 `apothem-release` を入力します。生成されたフィールドは次のとおりでなければなりません:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   照合は完全一致で、大文字と小文字を区別します。後のサインインが AADSTS700213 または AADSTS7002138 で失敗する場合は、資格情報を、`Azure/login` がジョブログに書き出す `subject claim` 行と比較してください。作成直後の AADSTS70021 は、資格情報がまだ伝播していないことを意味します。数分待ってから再試行してください。
+
+4. **リポジトリ変数を設定する。** `VSCODE_MARKETPLACE_READY` が `true` の間は、3 つすべてが設定された時点で Entra ルートが有効になるため、承認待ちのリリースタグがないときに設定してください。`VSCODE_MARKETPLACE_READY=true` がなければ、何もサインインせず、実行は公開をスキップします。
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   `VSCODE_MARKETPLACE_READY` と `VSCE_PAT` はそのままにしてください。`VSCE_AUTH` が `entra` でも `AZURE_CLIENT_ID` または `AZURE_TENANT_ID` が空の場合、ワークフローは `VSCE_PAT` が設定されているかどうかにかかわらず警告をログに出し、Entra ルートを使いません。その場合、`VSCE_PAT` シークレットが設定されていればそれを使います。シークレットがなければ何も公開せず、それでも実行はグリーンで終わるため、警告を探してください。
+
+5. **ドライランを実行する。** 既存のリリースタグに対して、`dry_run` を設定してワークフローをディスパッチします。Entra ルートでは、サインインし、Azure DevOps のプロフィールを出力し、公開せずにパブリッシャーへのアクセスを検証します。トークンルートにはドライランがありません。ログに `Marketplace credential mode: pat` と表示された場合、実行は警告付きのグリーンで終わり、何も検証していません。待機中の `release` 環境の実行を承認してください。
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   期待される結果: `Marketplace credential mode: entra`、手順 3 の subject と等しい `subject claim` 行、そして最初のドライランステップが出力するプロフィールの `id` と `displayName`。検証ステップは、手順 6 までは 403 で失敗するのが想定どおりです。未確認: Azure サブスクリプションなしのサインインで、Azure CLI を通じて Marketplace 用のトークンが得られるかどうか。この実行がその最初のテストです。ここで失敗した場合は、代わりにサブスクリプション内にユーザー割り当てマネージド ID を登録してください。これは Microsoft が文書化しているルートです。
+
+6. **アプリケーションをパブリッシャーに追加する。** 手順 1 の Members タブで、パブリッシャーの Owner としてサインインし、手順 5 のプロフィールの `id` を使って、ロール Contributor のメンバーを追加します。未確認: ダイアログのフィールドラベル、およびアプリケーションが Azure DevOps 組織のメンバーになる前にダイアログがその id を受け付けるかどうか。Azure DevOps は、原則としてアプリケーション ID を組織ごとに追加します。ダイアログが id を拒否した場合は、サービスプリンシパルを組織 `Ahmed-G-Gad` に追加し（Organization settings、Users で、Enterprise application の Object ID を使用）、再試行してください。同じく未確認: その ID が最初に Azure DevOps を呼び出す前にプロフィールが存在するかどうか。
+
+7. **ドライランを繰り返す。** 検証ステップは今度は「verification succeeded for the publisher」で成功します。Entra トークンは同じ経路を通るため、そのメッセージには引き続き Personal Access Token と表示されます。このチェックが証明するのはパブリッシャーのメンバーシップ（Creator、Owner、Contributor、Reader）であり、公開権限ではありません。未確認: 更新を公開するのに Contributor で十分かどうか。Microsoft のロールの説明では十分とされていますが、それで公開した例を示す情報源はないため、最初の実際の公開が証明となります。
+
+8. **リリースを公開する。** §2.2 のとおりにタグを付け、実行を承認します。ステップ `Publish to Visual Studio Marketplace (Entra ID)` が実行され、その環境ヘッダーには `AZURE_TENANT_ID` だけが表示され、トークンのフォールバックステップはスキップされ、vsce が `DONE Published ahmed-g-gad.apothem-vscode` を出力します。Marketplace のギャラリーには、約 4 分後に新しいバージョンが掲載されます。
+
+9. **トークンについて決める。** 最初の Entra での公開が成功するまでは `VSCE_PAT` を残し、その後、フォールバックが不要であればシークレットを削除します。削除した後は、Entra の変数が削除されているか空である場合、実行は公開なしでグリーンのままになります。`VSCE_AUTH` がまだ `entra` であれば警告が出ますが、そうでなければスキップの通知だけが出ます。タグを付けるたびに、実行のアノテーションを読んでください。グローバル個人用アクセストークンの廃止後もフォールバックを残すには、`Ahmed-G-Gad` 向けに、カスタムスコープ Marketplace Manage と許容できる最短の有効期限を指定した組織スコープのトークンを作成し、`VSCE_PAT` として保存します。未確認: この手順のポータルのラベルは一次情報源ではなく記憶に基づくものであること、Microsoft は組織スコープのトークンを一時的な回避策と呼んでおり、それを受け付けなくなる可能性があること、そして Microsoft のページ間でグローバルトークンの廃止日が食い違っていること。
+
+10. **トークンにフォールバックする。** セレクターを削除して再度ディスパッチし、実行を承認します。失敗した Entra での公開は何も公開していないため、同じタグを再度ディスパッチできます。ただし、着地したバージョンを 2 回公開することはできないため、先に Marketplace のページを確認してください。
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+Entra での公開が失敗した場合は、ステップのログを読んでください:
+
+- 「Can not acquire a Microsoft Entra ID access token」で始まるメッセージは、サインインまたは資格情報のチェーンが失敗したことを意味します。まず `Sign in to Microsoft Entra ID` ステップとフェデレーション資格情報を確認してください。サインインがグリーンの場合は、ワークフロー内の vsce ステップの `env` から `AZURE_TENANT_ID` を削除してください。GitHub 自身の拡張機能リリースワークフローは、これをエクスポートしていません。
+- 「InvalidAccessException」または「not allowed」は、トークンの ID がパブリッシャーのメンバーではないことを意味します。ドライランのプロフィールの `id` を Members タブと比較してください。
+- ドライランの検証ステップからの 403 は、アプリケーションにまだロールがないことを意味します。
+
+このルートには 3 つの制限があります:
+
+- `id-token: write` は公開ジョブ全体に付与されるため、トークンモードであっても、その中のすべてのステップが OIDC トークンを要求できます。トークンの subject は `release` 環境に結び付けられており、その環境にはレビュアーの承認が必要です。
+- `release` 環境にはデプロイのブランチポリシーもタグポリシーもないため、メンテナーが承認したどの ref でも、環境 subject のトークンを取得できます。これを `v*.*.*` タグに制限するには、まず `release.yml` と `publish-npm.yml` が何をディスパッチするかを確認する必要があります。
+- リポジトリの名前変更や移管は OIDC の subject の形式を変え、フェデレーション資格情報を気付かないうちに壊します。名前を変更した後は、`Azure/login` のログから subject を再度資格情報にコピーしてください。
+
+### 2.5 テンプレートダイジェストのピンを更新する
+
+タグが存在するようになったら、`tests/unit/test_template_digests.py` の `_LATEST_RELEASE` と `_LATEST_RELEASE_DIGESTS` を、新しいリリースと、そのリリースが出荷した各プレーンテキストテンプレートの SHA-256 ダイジェスト（`git show vX.Y.Z:<template path> | sha256sum`）に設定します。これは `main` への次の変更で行い、テンプレートが変更された場合は、以前のダイジェストをマニフェストエントリの `earlier_digests` に追加してください。`release-preflight` CI ジョブはすべてのタグをチェックアウトするため、ピンが更新されるまで、タグ名を示して失敗します。
 
 ## 3. 配布面
 

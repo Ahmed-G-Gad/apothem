@@ -2,7 +2,7 @@
 title: "Rezept zum Neuaufbau der Assets"
 description: "Alle Raster-Markenassets aus den Master-SVG-Quellen mit resvg und Pillow neu generieren."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ Marken-Iterationen.
 
 Führe das Rezept zum Neuaufbau aus, wenn:
 
-- Das Master-SVG (`assets/src/logo.svg` oder `assets/src/logo-dark.svg`) sich ändert.
+- Ein Master-SVG (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` oder `assets/src/logo-animated-light.svg`) sich ändert.
 - Der kompakte Favicon-Master (`assets/favicon.svg`) sich ändert.
 - Ein Social-Card-Master (`assets/src/og-banner.svg` oder `assets/src/twitter-card.svg`) sich ändert.
 - Eine neue Rastergröße benötigt wird.
@@ -62,7 +62,9 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Überprüfung
 
 Ein erfolgreicher Lauf generiert die hellen und dunklen Marken-Raster, das
-Favicon-PNG/ICO-Set, die Apple-Touch-Icons und die OG-/Twitter-Bilder neu und
+Favicon-PNG/ICO-Set (das ICO bettet Ebenen mit 16, 32 und 48 px ein), die
+Apple-Touch-Icons, das Icon der VS-Code-Erweiterung (`vscode-extension/icon.png`)
+und die OG-/Twitter-Bilder neu und
 spiegelt die im Web ausgelieferte Teilmenge — einschließlich der Hero-Logo-Quellen,
 auf die die Website verweist — nach `site/public/`. Führe nach der Generierung den
 Website-Build aus und prüfe vor dem Veröffentlichen die Startseite, das

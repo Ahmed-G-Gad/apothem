@@ -2,7 +2,7 @@
 title: "بيان تثبيت الاعتماديات"
 description: "سياسة الإعلان عن الاعتماديات تغطي نطاقات بيئة تشغيل Python، وأدوات التطوير، وملفات قفل أدوات الإصدار، والحدود الدنيا للإصدارات المُصادَق عليها لكل سطح بناء."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,16 +15,18 @@ sourceHash: "bb9b1e385a680545"
 إضافةً إلى سلسلة أدوات أكبر للتطوير والتدقيق والإصدار والتوثيق. تستخدم اعتماديات
 وقت التشغيل حدودًا دنيا متحفظة في <bdi>`pyproject.toml`</bdi>؛ ويُودِع الموقع
 <bdi>`site/package-lock.json`</bdi>؛ وتُثبَّت <bdi>GitHub Actions</bdi> بـ<bdi>SHA</bdi> غير قابل للتغيير
-مع تعليقات الإصدار، وتُرقَّى عبر <bdi>Renovate</bdi>.
+مع تعليقات الإصدار، وتُرقَّى عبر <bdi>Dependabot</bdi>.
 
 | الصنف | الإعلان | سياسة القفل |
 |---|---|---|
 | اعتماديات وقت تشغيل <bdi>Python</bdi> | <bdi>`[project.dependencies]`</bdi> في <bdi>`pyproject.toml`</bdi> | نطاقات بحد أدنى؛ بلا قفل وقت تشغيل <bdi>Python</bdi> مُودَع |
 | أدوات التطوير / الأمان | <bdi>extras</bdi> الخاصة بـ<bdi>`[project.optional-dependencies]`</bdi> | نطاقات بحد أدنى؛ يُثبِّت <bdi>CI</bdi> الإصدارات المطابقة الحالية |
 | أدوات الإصدار | <bdi>`scripts/release/requirements-build-linux.txt`</bdi> لسير عمل الإصدار؛ و<bdi>extra</bdi> <bdi>`release`</bdi> في <bdi>`[project.optional-dependencies]`</bdi> لعمليات البناء المحلية | مقفولة بالتجزئة لسير عمل الإصدار؛ مُولَّدة من إغلاق أدوات الإصدار. أما <bdi>extra</bdi> <bdi>`release`</bdi> فنطاق بحد أدنى |
-| أدوات <bdi>CI</bdi> فقط | <bdi>`.github/workflows/*.yml`</bdi> | تستخدم أدوات <bdi>pip</bdi> الخاصة بسير العمل تثبيتات دقيقة (<bdi>`pip`</bdi>، <bdi>`bandit`</bdi>، <bdi>`pip-audit`</bdi>، <bdi>`pip-licenses`</bdi>، <bdi>`pyinstaller`</bdi>) |
+| أدوات <bdi>CI</bdi> فقط | <bdi>`.github/workflows/*.yml`</bdi> | تستخدم أدوات <bdi>pip</bdi> الخاصة بسير العمل تثبيتات دقيقة (<bdi>`pip`</bdi>، <bdi>`bandit`</bdi>، <bdi>`pip-audit`</bdi>، <bdi>`pip-licenses`</bdi>، <bdi>`pyinstaller`</bdi>، <bdi>`pre-commit`</bdi>، <bdi>`ruff`</bdi>) |
 | موقع التوثيق | <bdi>`site/package.json`</bdi> | <bdi>`site/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
-| <bdi>GitHub Actions</bdi> | مراجع <bdi>`uses:`</bdi> مُثبَّتة بـ<bdi>SHA</bdi> مع تعليقات الإصدار | يقترح <bdi>Renovate</bdi> التحديثات؛ وتحمل الاستثناءات علامات <bdi>`action-pinning-exempt:`</bdi> |
+| مُحزِّم <bdi>VS Code</bdi> | <bdi>`tools/vsce/package.json`</bdi> | <bdi>`tools/vsce/package-lock.json`</bdi> مُودَع؛ وتُشغِّل مهام الإصدار والنشر <bdi>`npm ci --ignore-scripts`</bdi> |
+| واجهات سطر أوامر الأدوات المضيفة لاختبار القنوات السريع | <bdi>`tools/channel-smoke/package.json`</bdi> | <bdi>`tools/channel-smoke/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
+| <bdi>GitHub Actions</bdi> | مراجع <bdi>`uses:`</bdi> مُثبَّتة بـ<bdi>SHA</bdi> مع تعليقات الإصدار | يقترح <bdi>Dependabot</bdi> تحديثات أسبوعية؛ وتحمل الاستثناءات علامات <bdi>`action-pinning-exempt:`</bdi> |
 
 ## مصادقة الإصدار
 
@@ -67,5 +69,28 @@ pip freeze > requirements.dev.lock
 - **لماذا قفل <bdi>Node</bdi> مُودَع؟** الموقع مُنتَج ساكن منشور؛ ويمنح ملف القفل عمليات بناء
   <bdi>`npm ci`</bdi> حتمية لذلك السطح العام.
 - **لماذا <bdi>Actions</bdi> مُثبَّتة بـ<bdi>SHA</bdi>؟** الوسوم قابلة للتغيير؛ أما <bdi>SHA</bdi> فغير قابلة
-  للتغيير. يُحدِّث <bdi>Renovate</bdi> قيم <bdi>SHA</bdi> المُثبَّتة، بينما تُسجِّل بوابة الإصدار أي
-  تأجيل مقصود.
+  للتغيير. يقترح <bdi>Dependabot</bdi> ترقيات <bdi>SHA</bdi> ويعيد كتابة كل تعليق إصدار، بينما
+  تُسجِّل بوابة الإصدار أي تأجيل مقصود.
+- **ما لا تلمسه أداة التحديث الآلية.** تغطي تحديثات الإصدارات في <bdi>Dependabot</bdi>
+  (<bdi>`.github/dependabot.yml`</bdi>) تثبيتات <bdi>GitHub Actions</bdi>، وملف قفل الموقع،
+  وملف قفل مُحزِّم <bdi>vsce</bdi> (<bdi>`tools/vsce`</bdi>)، وملف قفل واجهات سطر أوامر الأدوات
+  المضيفة الذي يُثبِّته اختبار القنوات السريع (<bdi>`tools/channel-smoke`</bdi>)، وخطافات
+  <bdi>pre-commit</bdi>. أما الحدود الدنيا لوقت التشغيل في <bdi>`pyproject.toml`</bdi>، ومتطلبات
+  الإصدار المقفولة بالتجزئة، والإغلاق المُضمَّن في <bdi>`src/apothem/_vendor/vendor.txt`</bdi>،
+  وخطافات <bdi>pre-commit</bdi> المُثبَّتة بالتوازي مع <bdi>`pyproject.toml`</bdi>، فتُحدَّث يدويًا،
+  لأن ترقية تثبيت منفرد ستكسر الملفات التي تتوافق معها.
+  يتبع الإصدار الرئيسي لـ<bdi>`@types/node`</bdi> في الموقع الحدَّ الأدنى لـ<bdi>Node</bdi>
+  (<bdi>`engines`</bdi> و<bdi>`.nvmrc`</bdi>، <bdi>Node 22</bdi>)، فلا يقترح <bdi>Dependabot</bdi> إلا
+  تحديثاته الفرعية والتصحيحية؛ ارفع ذلك الإصدار الرئيسي مع الحد الأدنى معًا.
+  تترك تحديثات الإصدارات كتل <bdi>`overrides`</bdi> في <bdi>npm</bdi> دون مساس. أما تحديثات الأمان
+  في <bdi>Dependabot</bdi> فتظل تغطي كل بيان، لذا قد يقترح طلب سحب أمني أحد هذه التثبيتات،
+  أو ينقل تجاوزًا؛ فكيِّفه يدويًا أو أغلقه.
+- **دمج طلب سحب من <bdi>Dependabot</bdi>.** يأخذ الدمج الافتراضي بالضغط (<bdi>squash</bdi>) في
+  المستودع عنوانَ طلب السحب. وبعض عناوين <bdi>Dependabot</bdi>، ومعظمها عناوين مُجمَّعة تُسمّي
+  مجلدًا، تتجاوز سطر موضوع الضغط البالغ 72 حرفًا؛ ويُسمّيها فحص <bdi>PR Title</bdi>، ويُصلحها
+  تغيير العنوان. ولا يُشغِّل طلب السحب الذي يغيّر ملف قفل أداة أي مهمة من <bdi>`ci.yml`</bdi>، لذا
+  يدقّقه سير عمل تدقيق <bdi>npm</bdi> ويُثبِّته، ويُحزِّم امتداد <bdi>VS Code</bdi> لملف قفل
+  <bdi>vsce</bdi> ويُشغِّل اختبارات إصدار <bdi>vsce</bdi>، ويعمل سير عمل اختبار القنوات السريع
+  لملف قفل <bdi>channel-smoke</bdi>. ويُشغِّل سير عمل <bdi>Markdown Lint</bdi> خطاف
+  <bdi>markdownlint</bdi> على طلب سحب خطافات <bdi>pre-commit</bdi>؛ أما الخطافات الأخرى فلا
+  تُختبَر في <bdi>CI</bdi>، لذا شغِّل <bdi>`pre-commit run --all-files`</bdi> على فرعه قبل دمجه.

@@ -2,7 +2,7 @@
 title: "Démarrage rapide"
 description: "Installez Apothem, rédigez un profil, matérialisez votre premier environnement et vérifiez-le — une visite à copier-coller avec la sortie attendue."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,14 +122,39 @@ apothem profile show --json
 
 Le squelette utilise des données d'identité fictives servant d'espaces réservés
 et peut être édité sans risque avant que vous n'installiez la moindre sortie
-d'environnement. `show --json` le relit et affiche le profil validé :
+d'environnement. `show --json` le relit et affiche le profil validé, avec
+chaque valeur par défaut renseignée, en commençant par `schema_version`. La
+commande l'affiche sur une seule ligne ; il est développé ici :
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -157,8 +182,10 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Les adaptateurs à portée projet écrivent à l'intérieur d'un projet plutôt que
-dans votre répertoire personnel ; ils ont donc besoin d'un `--project PATH`.
+Les adaptateurs à portée projet écrivent leur fichier de règles à l'intérieur
+d'un projet, et ont donc besoin d'un `--project PATH` ; sept d'entre eux
+écrivent aussi des skills et des règles partagées dans des dossiers de votre
+répertoire personnel, et `--project` ne change pas l'emplacement de ceux-ci.
 Prévisualisez n'importe quelle installation sans écrire de fichiers avec
 `--dry-run` :
 

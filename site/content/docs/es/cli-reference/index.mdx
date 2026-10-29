@@ -2,7 +2,7 @@
 title: "Referencia de la CLI"
 description: "Referencia de la CLI de Apothem — sinopsis, opciones y códigos de salida de cada comando de la interfaz de línea de comandos apothem."
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,9 @@ no en los alias en sí.
 
 ## Contrato de la salida JSON
 
-Cada comando acepta `--json` (abreviatura de `--format json`) y entonces escribe
-exactamente un documento JSON en stdout. Cada documento empieza con una clave
+Cada comando excepto `completion` (que emite un script de shell) acepta `--json`
+(abreviatura de `--format json`) y entonces escribe exactamente un documento
+JSON en stdout. Cada documento empieza con una clave
 `schema_version` de nivel superior, un entero que hoy vale `1`:
 
 ```json

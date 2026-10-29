@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi manual Kimi Code"
 description: "Memelihara AGENTS.md akar proyek dan berkas pendukung .kimi-code/ milik Kimi Code dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "95d0fa19ca3ddd46"
+sourceHash: "f5ddfe61adc7d28d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Apothem.
 | Tugas | Konfigurasi manual | Dikelola Apothem |
 | ---- | --------------- | --------------- |
 | Menulis permukaan instruksi `AGENTS.md` | Menulis dengan tangan dan menyinkronkan ulang per proyek | Satu blok terkelola yang dirender dari profil bersama |
-| Menjaga aturan, command, skill, agen tetap tersinkron | Salin manual per proyek | Dimaterialisasi di bawah `<project>/.kimi-code/.apothem/support/` pada setiap pemasangan |
+| Menjaga aturan, command, skill, agen tetap tersinkron | Salin manual per proyek | Skill dan command (sebagai skill) di bawah `<project>/.kimi-code/skills/`; helper sebagai sub-agen di bawah `<project>/.kimi-code/agents/`; aturan, hook, dan templat di bawah `<project>/.kimi-code/.apothem/support/`, pada setiap pemasangan |
 | Mempertahankan prosa operator saat penyegaran | Penggabungan manual | Blok dibatasi sentinel; prosa operator di luarnya dipertahankan |
 | Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kimi-code --project <path>` |
@@ -29,9 +29,14 @@ Apothem.
 ## Apa yang dikelola Apothem
 
 Adapter kimi-code merender aturan bersama dan permukaan tata kelola ke dalam
-blok terkelola `AGENTS.md` di akar proyek, dan memasang kohor command, skill,
-hook, agen, aturan, dan templat di bawah `.kimi-code/.apothem/support/`. Adapter
-ini tidak menulis `.kimi-code/mcp.json`; permukaan MCP tetap dimiliki operator.
+blok terkelola `AGENTS.md` di akar proyek, dan memasang skill, serta command
+yang dibungkus sebagai skill, di `.kimi-code/skills/`, direktori skill proyek
+yang dimuat Kimi Code. Helper menjadi sub-agen Kimi Code di `.kimi-code/agents/`,
+dengan nama alatnya diterjemahkan ke nama yang dicocokkan Kimi Code. Kohor hook,
+aturan, dan templat ditempatkan di bawah `.kimi-code/.apothem/support/`: Kimi
+Code membaca hook dari `~/.kimi-code/config.toml` cakupan pengguna, yang tidak
+ditulis oleh adapter. Adapter ini tidak menulis `.kimi-code/mcp.json`; permukaan
+MCP tetap dimiliki operator.
 Kimi Code membaca instruksi proyek dari `AGENTS.md` atau
 `.kimi-code/AGENTS.md`; adapter hanya menulis `AGENTS.md` di akar proyek, dan
 dokumentasi Kimi Code tidak menyebutkan berkas mana dari keduanya yang
@@ -43,7 +48,8 @@ ulang berkas pada `apothem update` berikutnya.
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
 2. Pindahkan aturan dari `AGENTS.md` yang sudah ada ke korpus bersama.
 3. Jalankan `apothem install --harness kimi-code --project <path>` untuk merender
-   permukaan instruksi `AGENTS.md` dan pohon pendukung `.kimi-code/.apothem/support/`.
+   permukaan instruksi `AGENTS.md`, skill `.kimi-code/skills/`, sub-agen
+   `.kimi-code/agents/`, dan pohon pendukung `.kimi-code/.apothem/support/`.
 4. Jalankan `apothem verify --harness kimi-code --project <path>` untuk memastikan konfigurasi
    sudah terpasang.
 5. Gunakan `apothem update --harness kimi-code --project <path>` untuk setiap perubahan

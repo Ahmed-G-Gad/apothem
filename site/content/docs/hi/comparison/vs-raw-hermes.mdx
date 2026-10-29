@@ -2,14 +2,15 @@
 title: "Apothem बनाम कच्चा Hermes कॉन्फ़िग"
 description: "Hermes कॉन्फ़िग को हाथ से अनुरक्षित करना बनाम उसे Apothem की साझा प्रोफ़ाइल के माध्यम से प्रबंधित करना।"
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes `~/.hermes/config.yaml` पढ़ता है। Apothem नेटिव YAML कॉन्फ़िग लिखता है
 (प्रोफ़ाइल की MCP सूची को `mcp_servers` में प्रक्षेपित करते हुए) और साझा कमांड
 तथा स्किल समूहों को `~/.hermes/.apothem/support/skills/` के अंतर्गत इंस्टॉल करता
-है। Hermes का अपना `skills.config` एक रजिस्ट्री-पैकेज सूची है, इसलिए Apothem उसे
+है, जिसे वह `skills.external_dirs` के अंतर्गत सूचीबद्ध करता है ताकि Hermes उन्हें लोड
+करे। Hermes का अपना `skills.config` प्रति-स्किल सेटिंग्स रखता है, इसलिए Apothem उसे
 नहीं लिखता।
 
 ## स्थिति
@@ -32,20 +33,22 @@ Hermes `~/.hermes/config.yaml` पढ़ता है। Apothem नेटिव
 Hermes अडैप्टर `config.yaml` लिखता है, Apothem स्लैश कमांड को स्किल के रूप में
 लपेटता है, Apothem स्किल को समर्थन डायरेक्टरी में कॉपी करता है, और नियम,
 टेम्पलेट, एजेंट तथा हुक सामग्री को Apothem समर्थन उप-वृक्ष के अंतर्गत रखता है।
-Hermes उन स्किल को तभी लोड करता है जब आप `~/.hermes/.apothem/support/skills` को
-`config.yaml` में `skills.external_dirs` में जोड़ देते हैं।
+यह `~/.hermes/.apothem/support/skills` को `config.yaml` में `skills.external_dirs`
+में भी जोड़ता है, ताकि Hermes उन स्किल को लोड करे। वह सूची Hermes के दस्तावेज़ीकृत
+प्राथमिकता क्रम में सबसे अंत में आती है, इसलिए आपके प्रोजेक्ट में या
+`~/.hermes/skills/` में उसी नाम का स्किल संभवतः Apothem की प्रति पर प्राथमिकता
+पाएगा; समीक्षा किए गए Hermes दस्तावेज़ टकराव का नियम नहीं बताते।
 
 ## माइग्रेशन पथ
 
 1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो उसे बनाने के लिए
    `apothem profile init` चलाएँ।
 2. पुनः उपयोग योग्य Hermes स्किल या कमांड प्रॉम्प्ट को साझा कॉर्पस में ले जाएँ।
-3. नेटिव कॉन्फ़िग और समर्थन स्किल डायरेक्टरी रेंडर करने के लिए
-   `apothem install --harness hermes` चलाएँ।
-4. `~/.hermes/.apothem/support/skills` को `config.yaml` में `skills.external_dirs`
-   में जोड़ें, ताकि Hermes इंस्टॉल किए गए स्किल लोड करे। `apothem update` वे कुंजियाँ
-   बनाए रखता है जो आप `config.yaml` में जोड़ते हैं।
-5. यह पुष्टि करने के लिए कि कॉन्फ़िग अपनी जगह पहुँच गया,
+3. नेटिव कॉन्फ़िग रेंडर करने के लिए, जो समर्थन स्किल डायरेक्टरी को
+   `skills.external_dirs` के अंतर्गत सूचीबद्ध करता है, और स्किल इंस्टॉल करने के लिए
+   `apothem install --harness hermes` चलाएँ। `apothem update` वे कुंजियाँ बनाए रखता
+   है जो आप `config.yaml` में जोड़ते हैं।
+4. यह पुष्टि करने के लिए कि कॉन्फ़िग अपनी जगह पहुँच गया,
    `apothem verify --harness hermes` चलाएँ।
 
 ## आगे पढ़ें

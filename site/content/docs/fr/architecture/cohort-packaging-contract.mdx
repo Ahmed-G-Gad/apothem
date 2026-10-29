@@ -2,7 +2,7 @@
 title: "Contrat d'empaquetage des cohortes"
 description: "Le contrat stable, consommable en aval, pour l'empaquetage des cohortes et les manifestes de plugin — énumérer les cohortes et résoudre leurs cibles natives par environnement sans redériver la correspondance."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,7 +80,12 @@ optionnelles couvrent `displayName` (le nom affiché à la place de `name`) et l
 champs de fiche de l'annuaire de plugins : `documentationUrl`, `supportUrl`,
 `privacyPolicyUrl` et `termsOfServiceUrl`, chacun une URL `https://`, ainsi
 qu'un chemin `icon` à l'intérieur du plugin. Le paquet Claude Code généré
-définit `displayName`, `documentationUrl` et `supportUrl`. Un manifeste de
+définit `displayName`, `documentationUrl` et `supportUrl`. L'annuaire
+d'Anthropic lit les champs de fiche et Claude Code les ignore au chargement. La
+synchronisation de la marketplace claude.ai signale les deux liens comme des
+clés non reconnues et les supprime, de sorte que la marketplace y affiche
+« 1 with warnings ». Cet avertissement est attendu, et le plugin se charge sans
+changement. Un manifeste de
 plugin est l'unité qu'un adaptateur d'environnement matérialise dans sa surface
 de plugin native ; les cohortes sélectionnent les membres qu'un plugin
 transporte, et le manifeste de propagation résout où ces membres atterrissent

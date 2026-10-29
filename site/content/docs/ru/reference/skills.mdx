@@ -2,7 +2,7 @@
 title: "Навыки"
 description: "Переиспользуемые распознаваемые техники в файлах SKILL.md с сигналами распознавания, процедурами и хуками контроля соблюдения для наборов планов и аудитов экосистемы."
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 | Окружение | Что меняет установка |
 | --- | --- |
 | Claude Code (установка и плагин) | Переименовывает `userInvocable` в `user-invocable` — ключ, который читает Claude Code. Claude Code игнорирует ключ в camelCase, поэтому без переименования навык с пометкой `userInvocable: false` всё равно отображался бы в меню `/`. |
-| Codex | Оставляет `SKILL.md` без изменений и записывает `agents/openai.yaml` с `policy.allow_implicit_invocation: false` рядом с каждым навыком, в исходнике которого задано `disable-model-invocation: true`, поскольку Codex игнорирует этот ключ. |
+| Общие папки навыков уровня пользователя: `~/.agents/skills/` (записывается Codex, Cursor, GitHub Copilot, Windsurf и Zed) и `~/.codebuddy/skills/`, `~/.kiro/skills/` и `~/.trae/skills/` | Одна форма для каждой установки, записывающей одну из этих папок, поэтому установки никогда не переписывают файлы друг друга. Она переименовывает `userInvocable` в `user-invocable`, переносит `version`, `updated`, `archetype` и `portability` в замыкающую карту `metadata:` из строк в кавычках и записывает `agents/openai.yaml` с `policy.allow_implicit_invocation: false` рядом с каждым навыком, в исходнике которого задано `disable-model-invocation: true`, поскольку Codex игнорирует этот ключ и читает `~/.agents/skills/` независимо от того, записал ли её адаптер Codex. Команда, обёрнутая как навык, сохраняет своё тело целиком и открывается одним фиксированным примечанием, которое называет папки правил и шаблонов, `~/.config/apothem/rules/` и `~/.config/apothem/templates/`. Остающиеся ключи верхнего уровня — `name`, `description`, `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint` и `metadata`. |
+| Qwen Code | Переписывает строку `allowed-tools`, разделённую запятыми, как список `allowedTools`, по одной записи YAML на строку, поскольку `Qwen Code` читает только ключ в camelCase и требует список. Каждая запись сохраняет написание из исходника, включая шаблоны вроде `Bash(git status *)`. Все остальные ключи и тело навыка устанавливаются без изменений. |
 | Другие окружения | Без изменений. |
 
 `skill.schema.json` принимает любое из двух написаний флага вызова

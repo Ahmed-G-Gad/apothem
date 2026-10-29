@@ -2,7 +2,7 @@
 title: "verify"
 description: "Référence de la CLI pour la commande apothem verify."
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,6 +24,19 @@ signalent que leurs cibles gérées sont présentes et valides. Sans
 **fidélité au profil** : une installation présente mais qui a dérivé échoue
 donc à la vérification, ce qui répond à la question « CE profil est-il
 fidèlement installé ? » plutôt qu'à la simple question « existe-t-il ? ».
+
+Pour un adaptateur qui écrit des skills dans votre répertoire personnel, verify
+vérifie aussi que chaque dossier de skill attendu existe avec un `SKILL.md`,
+quelle que soit l'installation qui l'a écrit ; une machine sur laquelle un seul
+des outils qui partagent un dossier est installé passe donc la vérification. La
+vérification échoue lorsqu'un dossier manque, et lorsqu'un dossier portant le
+nom d'un skill Apothem appartient à quelque chose qu'Apothem n'a pas écrit. Une
+ligne en échec indique le cas : en mode plain, une ligne `Note:` la suit, et
+dans la ligne JSON un objet `user_level` liste les chemins `missing` et
+`unlisted` ainsi qu'un `message`. Exécutez
+[`install`](/docs/cli-reference/install) pour restaurer un dossier manquant ;
+renommez ou déplacez un dossier étranger, puis exécutez
+[`update`](/docs/cli-reference/update).
 
 Un balayage `--harness all` respecte le champ `exclude_harnesses` du profil —
 les mêmes exclusions que celles appliquées par le lot `install`/`update` —, de

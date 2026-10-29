@@ -2,7 +2,7 @@
 title: "Menulis aturan"
 description: "Tulis, batasi cakupan, dan pelihara aturan perilaku Apothem."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,21 @@ Cakupan aturan ditetapkan oleh dua field frontmatter, `alwaysApply` dan `pathFil
 | `true` | `""` (kosong) | Selalu aktif: setiap sesi, setiap berkas |
 | `false` | glob seperti `"**/*.py"` | Berbasis path: hanya ketika berkas aktif cocok dengan glob |
 
+Lima aturan bawaan selalu aktif: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, dan indeks aturan. Aturan yang selalu
+aktif memakan konteks di setiap sesi, sehingga aturan baru SHOULD berbasis path
+dengan glob yang menyebutkan berkas yang diaturnya; filter `**` saja tidak
+membatasi apa pun, dan Claude Code memuat aturan itu saat peluncuran seperti
+aturan yang selalu aktif. Korpus bawaan membatasi kumpulan yang selalu aktif
+pada daftar tersebut dan pada batas ukuran byte; aturan yang dipromosikan
+menjadi selalu aktif mengubah keduanya dalam perubahan yang sama. Sebutkan setiap
+aturan yang Anda tambahkan di indeks aturan (`apothem-rule-index`), sehingga
+sesi pada harness yang tidak membatasi aturan berdasarkan path tetap
+menemukannya. Aturan pendamping (`<parent>-<aspect>`) mengambil `pathFilter`
+induknya, atau yang lebih sempit, sehingga aturan itu tidak pernah dimuat tanpa
+induknya. Jangan beri aturan milik Anda sendiri nama `apothem-rule-index`:
+instalasi mencadangkan dan menimpa berkas aturan dengan nama tersebut.
+
 ## Contoh aturan
 
 ```markdown
@@ -51,11 +66,23 @@ Setelah menulis aturan, perbarui setiap adapter harness yang terpasang. Jalankan
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+Harness cakupan proyek memerlukan `--project` saat update, seperti pada baris
+kedua; harness cakupan pengguna tidak.
 
 ## Validasi aturan
 
+Jalankan validator frontmatter terhadap berkas aturan yang Anda tulis. Dari
+checkout Apothem, `PYTHONPATH=src` membuat paket dapat diimpor; setelah instalasi
+lewat skrip, gunakan `PYTHONPATH="$HOME/.apothem/src"` sebagai gantinya.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+Pemeriksaan per-penulisan seperti `frontmatter-grep` menerima berkas yang akan
+diperiksa, atau `--stdin` untuk membaca konten dari standard input; tanpa
+keduanya, pemeriksaan menunggu masukan di standard input. Pemeriksaan standalone
+justru menerima direktori root, seperti pada `--check naming-grep .`.

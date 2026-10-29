@@ -2,7 +2,7 @@
 title: "Переменные окружения установщика"
 description: "Управляйте скриптовым установщиком (место установки, источник, окружение, профиль, проверка) с помощью переменных окружения."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ sourceHash: "64d4512dc0ce59b4"
 | `APOTHEM_VERIFY` | `signature` проверяет GPG-подпись тега релиза; `checksum` устанавливает архив релиза для платформы после сверки его SHA-256 с `SHA256SUMS` релиза (это проверка целостности, а не доказательство того, кто его опубликовал) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Базовый адрес загрузки для режима контрольных сумм | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Явно заданное локальное дерево исходного кода вместо клонирования | не задана (клонирование) |
-| `APOTHEM_HARNESS` | Окружение для установки | `claude-code` |
+| `APOTHEM_HARNESS` | Окружение уровня пользователя для установки (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). Установщик не передаёт `--project`, поэтому окружение уровня проекта завершается ошибкой `project.required`; устанавливайте такие окружения после этого командой `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Путь к YAML-файлу общего профиля | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | При значении `1` пропускает шаг проверки после установки | `0` (проверка выполняется) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | При значении `1` автоматически, без запроса, устанавливает недостающие предварительные требования `click` / `rich` | `0` (запрос; в неинтерактивном конвейере — отказ) |
@@ -81,10 +81,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Шаги (POSIX bash)
 
-1. Установите окружение, отличное от окружения по умолчанию:
+1. Установите окружение уровня пользователя, отличное от окружения по умолчанию:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Закрепите место установки и выберите подвижную ветку `main`. Ветка не
@@ -109,7 +109,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Задайте каждую переменную через `$env:` перед запуском установщика:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -133,7 +133,15 @@ pwsh -NoProfile -File install.ps1
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Подтвердите это независимо:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Для окружения уровня проекта, например Cursor, выполните установку и проверку
+самостоятельно после установщика, с `--project`:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Если профиля ещё не было, установщик создаёт его из примера и продолжает

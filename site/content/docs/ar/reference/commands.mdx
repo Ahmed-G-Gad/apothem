@@ -2,18 +2,20 @@
 title: "الأوامر"
 description: "تعريفات أوامر الشَّرطة المائلة التي تُنفِّذ خطّ أنابيب حزمة الخطّة، إضافةً إلى عمليات تدقيق للشيفرة والمعمارية والأمان والاعتماديات ومراجعة التوثيق."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 تعيش تعريفات أوامر الشَّرطة المائلة ملفاتِ <bdi>`.md`</bdi> مسطّحةً تحت <bdi>`src/apothem/commands/`</bdi>.
 تتصدّر المجموعةَ المرجعية خطُّ أنابيب حزمة الخطّة المُدرِكُ للمعمارية، الذي يُشحَن
-في صورة سبعة أوامر من الدرجة الأولى — أمرٌ لكل مرحلة، يمكن استدعاء كلٍّ منها مباشرةً
-بالصيغة <bdi>`/plan-<stage>`</bdi>. لا يوجد مُوزِّع أحادي؛ فكل مرحلة ملفُّ أمرٍ
-مُسجَّل قائم بذاته في <bdi>`src/apothem/commands/plan-<stage>.md`</bdi>.
+في صورة ثمانية أوامر مراحل من الدرجة الأولى، يمكن استدعاء كلٍّ منها مباشرةً
+بالصيغة <bdi>`/plan-<stage>`</bdi>، إضافةً إلى <bdi>`/plan`</bdi>، المُنسِّق الذي يقود سلسلة
+المراحل من أولها إلى آخرها. فكل مرحلة ملفُّ أمرٍ مُسجَّل قائم بذاته في
+<bdi>`src/apothem/commands/plan-<stage>.md`</bdi>، ولا يعيد <bdi>`/plan`</bdi> تنفيذ أيٍّ منها.
 
 | الاستدعاء | ملف الأمر | الوصف |
 |------------|--------------|-------------|
+| <bdi>`/plan`</bdi> | <bdi>`src/apothem/commands/plan.md`</bdi> | تشغيل مراحل المواصفة والتوليد والمراجعة والتصميم سيرَ عملٍ واحدًا مُتحقَّقًا منه، مع التأكيد عند كل تسليم؛ ويبقى التنفيذ خطوةً يدوية |
 | <bdi>`/plan-spec`</bdi> | <bdi>`src/apothem/commands/plan-spec.md`</bdi> | صقل المحتوى غير المُهيكَل إلى نصٍّ بمستوى المواصفة |
 | <bdi>`/plan-generate`</bdi> | <bdi>`src/apothem/commands/plan-generate.md`</bdi> | تجسيد حزمة خطّة من النص / المتطلّبات |
 | <bdi>`/plan-review`</bdi> | <bdi>`src/apothem/commands/plan-review.md`</bdi> | تدقيق جنائي مع بطاقات تقييم |
@@ -69,9 +71,12 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 الجانبية (<bdi>Bash</bdi>، و<bdi>PowerShell</bdi>، و<bdi>Write</bdi>، و<bdi>Edit</bdi>،
 و<bdi>NotebookEdit</bdi>، و<bdi>WebFetch</bdi>) إلا في صورة قاعدة مُقيَّدة النطاق مثل
 <bdi>`Bash(git log *)`</bdi>، ويرفض المخطط حرف البدل المجرّد <bdi>`"*"`</bdi>.
-والأوامر ذات الآثار الجانبية التي لا رجعة فيها (<bdi>`freshify`</bdi>،
-و<bdi>`github-deploy-fresh`</bdi>، و<bdi>`github-deploy-next`</bdi>) تضبط
-<bdi>`disable-model-invocation: true`</bdi>، فلا يبدؤها إلا المُشغِّل.
+والأوامر ذات الآثار الجانبية التي لا رجعة فيها أو ذات التوقيت الذي يختاره المُشغِّل تضبط
+<bdi>`disable-model-invocation: true`</bdi>، فلا يبدؤها إلا المُشغِّل: <bdi>`freshify`</bdi>،
+و<bdi>`github-deploy-fresh`</bdi>، و<bdi>`github-deploy-next`</bdi>، و<bdi>`release-readiness`</bdi>،
+و<bdi>`elevate`</bdi>، و<bdi>`fortress`</bdi>، و<bdi>`workflow`</bdi>، و<bdi>`plan-execute`</bdi>،
+و<bdi>`research-experiment`</bdi>، و<bdi>`research-publish`</bdi>. أما الأوامر الخمسة والثلاثون
+الأخرى فتضبط <bdi>`false`</bdi>، وتُطابَق مع الطلب بحسب وصفها.
 
 ## انضباط التأليف
 

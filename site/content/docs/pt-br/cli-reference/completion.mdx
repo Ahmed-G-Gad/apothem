@@ -2,7 +2,7 @@
 title: "completion"
 description: "Referência da CLI para o comando apothem completion."
 machineTranslated: true
-sourceHash: "fccf7d9dc0484b37"
+sourceHash: "9ab2c1cd3f4b9f04"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,7 +81,7 @@ o bloco anexado desabilita o autocompletar.
 | Código | Significado |
 |---|---|
 | 0 | Script de autocompletar emitido |
-| 64 | Shell não suportado solicitado, ou outro erro de uso (com `--json`, um envelope de erro `cli.usage`) |
+| 64 | Shell não suportado solicitado, ou outro erro de uso, como uma opção desconhecida. `completion` não tem modo `--json`: ele imprime um script, e passar `--json` é por si só um erro de uso. |
 
 ## Veja também
 

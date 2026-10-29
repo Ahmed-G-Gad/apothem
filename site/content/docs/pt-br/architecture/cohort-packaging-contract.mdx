@@ -2,7 +2,7 @@
 title: "Contrato de empacotamento de cohorts"
 description: "O contrato estável e consumível a jusante para o empacotamento de cohorts e os manifestos de plugin — enumere os cohorts e resolva seus alvos nativos por harness sem rederivar o mapeamento."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,12 @@ opcionais abrangem `displayName` (o nome exibido no lugar de `name`) e os campos
 de listagem do diretório de plugins: `documentationUrl`, `supportUrl`,
 `privacyPolicyUrl` e `termsOfServiceUrl`, cada um uma URL `https://`, além de um
 caminho `icon` dentro do plugin. O pacote gerado do Claude Code define
-`displayName`, `documentationUrl` e `supportUrl`. Um manifesto de plugin é a
+`displayName`, `documentationUrl` e `supportUrl`. O diretório da Anthropic lê os
+campos de listagem, e o Claude Code os ignora no momento do carregamento. A
+sincronização do marketplace do claude.ai reporta os dois links como chaves não
+reconhecidas e os remove, de modo que o marketplace ali mostra "1 with
+warnings". Esse aviso é esperado, e o plugin carrega sem alterações. Um
+manifesto de plugin é a
 unidade que um adaptador de harness materializa em sua superfície de plugin
 nativa; os cohorts selecionam quais membros um plugin carrega, e o manifesto de
 propagação resolve onde esses membros chegam em cada harness.

@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Apothem-Harness-Adapter für GLM (Z.ai) als konfigurierbares Modell-Backend."
 machineTranslated: true
-sourceHash: "1de53f25ee125b1a"
+sourceHash: "026e29a055db8a67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,14 +11,19 @@ sourceHash: "1de53f25ee125b1a"
 **Status:** GA
 **Native Konfiguration:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) ist ein **Modell-Backend**, kein eigenständiges Coding-Werkzeug.
-Z.ai liefert keine eigene GLM-Kommandozeile aus; stattdessen wird ein Werkzeug,
-das das Anthropic-kompatible oder das OpenAI-kompatible Protokoll spricht, auf
-GLM ausgerichtet, indem eine Backend-Basis-URL und ein Schlüssel gesetzt werden.
-Apothem zählt GLM dennoch zu seinen Harness-Adaptern, daher wählen Sie es wie
-jeden anderen mit `--harness glm` aus. Der `glm`-Adapter schreibt eine
-Provider-Konfigurationsdatei, die beide Kompatibilitätsoberflächen festhält,
-sodass sich jedes kompatible Werkzeug mit der GLM-Modellfamilie verbinden lässt.
+Der `glm`-Adapter konfiguriert GLM (Z.ai) als **Modell-Backend**. Ein Werkzeug,
+das das Anthropic-kompatible oder das OpenAI-kompatible Protokoll spricht, wird
+auf GLM ausgerichtet, indem eine Backend-Basis-URL und ein Schlüssel gesetzt
+werden, und Sie wählen den Adapter wie jeden anderen mit `--harness glm` aus. Er
+schreibt eine Provider-Konfigurationsdatei, die beide
+Kompatibilitätsoberflächen festhält, sodass sich jedes kompatible Werkzeug mit
+der GLM-Modellfamilie verbinden lässt.
+
+Z.ai liefert außerdem ein eigenes Coding-Werkzeug aus, ZCode, das die
+[Dokumentation](https://docs.z.ai/devpack/tool/zcode) von Z.ai als „Agentic
+Development Environment“ bezeichnet. Dieser Adapter konfiguriert ZCode nicht.
+Apothem hat die eigene Konfigurationsoberfläche von ZCode nicht geprüft, daher
+schreibt der Adapter nichts dafür.
 
 ## Installation
 
@@ -51,11 +56,30 @@ der aktuellen
 [Z.ai-Dokumentation](https://docs.z.ai/devpack/tool/claude) ausfüllen. Aus dem
 gemeinsamen Profil fließt nichts in diese Datei; sie ist eine feste Vorlage.
 
+### Zuordnung von Rollen zu Modellen
+
+Die eigenen Angaben von Z.ai zur Zuordnung von Rollen zu Modellen widersprechen
+sich, daher lässt die Datei die drei Werte `ANTHROPIC_DEFAULT_*_MODEL` als
+Platzhalter stehen und trägt darüber einen `TODO(clarify)`-Kommentar. Sie
+entscheiden, welche Zuordnung Sie verwenden:
+
+- Das manuelle `settings.json`-Beispiel in der Anthropic-kompatiblen
+  Einrichtungsanleitung des Anbieters ordnet opus und sonnet `glm-5.3[1m]` und
+  haiku `glm-5.3-flash[1m]` zu und setzt `CLAUDE_CODE_AUTO_COMPACT_WINDOW` auf
+  `1000000`.
+- Die angegebene Standardzuordnung derselben Anleitung listet `GLM-5.3-Flash`
+  für alle drei Rollen auf.
+- Das Werkzeug `@z_ai/coding-helper` von Z.ai verwendet standardmäßig
+  `glm-5.3-flash`, hängt `[1m]` an alle drei Rollen an und schreibt ein
+  Kompaktierungsfenster von `1048576`.
+
+Apothem pinnt keinen dieser Werte und wählt nicht zwischen ihnen.
+
 ## Kompatibilitätshinweise
 
-Weil GLM ein Backend und kein Coding-Werkzeug ist, bietet es keine Oberfläche
-für Regeln, Commands, Skills oder Hooks — der Adapter schreibt nur die
-Backend-Provider-Datei und nichts anderes. Ihr Z.ai-Schlüssel und Ihre Wahl der
+Das GLM-Backend bietet keine Oberfläche für Regeln, Commands, Skills oder Hooks,
+daher schreibt der Adapter nur die Backend-Provider-Datei und nichts anderes.
+Apothem hat nicht geprüft, ob ZCode solche Oberflächen bietet. Ihr Z.ai-Schlüssel und Ihre Wahl der
 Modell-IDs bleiben im Besitz des Operators. Die Konventionen der
 Vendor-Oberfläche, auf die sich der Adapter stützt, sind in
 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` festgeschrieben und als
@@ -96,10 +120,15 @@ kopieren Ihre Werte in die neue Datei.
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Entfernt die Provider-Datei nur, wenn Apothem sie erstellt hat und sie noch die
+Entfernt die Provider-Datei nur, wenn Apothem sie erstellt hat und sie noch eine
 unbearbeitete Vorlage ist, und sichert sie zuvor unter dem Wurzelverzeichnis
-für Apothem-Sicherungen. Eine Datei, die Sie erstellt oder bearbeitet haben,
-bleibt an Ort und Stelle. Die YAML-Datei des gemeinsamen Profils und die
+für Apothem-Sicherungen. Eine unbearbeitete Datei, die ein früheres Release
+geschrieben hat, zählt dazu, wenn Apothems Installationsaufzeichnung für das
+Projekt zeigt, dass es die Datei geschrieben hat: Das Manifest hält den Digest
+jeder Vorlage fest, die das Projekt ausgeliefert hat. Ohne
+Installationsaufzeichnung wird nur eine exakte Kopie der aktuellen Vorlage
+entfernt. Eine Datei, die Sie erstellt oder bearbeitet haben, bleibt an Ort und
+Stelle. Die YAML-Datei des gemeinsamen Profils und die
 Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate

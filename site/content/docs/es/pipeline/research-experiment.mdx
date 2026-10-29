@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Ejecuta el estudio diseñado y captura datos en bruto con procedencia completa, junto con un manifiesto de reproducibilidad (entorno, semilla, protocolo, fijación de versiones)."
 machineTranslated: true
-sourceHash: "669b49f8909599c4"
+sourceHash: "83b92abde30e8dc0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Con argumentos:
 
 ## Salidas
 
-`_outputs/experiment-log.md` (la traza del protocolo con marca de tiempo), los datos en bruto en una ubicación natural del host y `_outputs/reproducibility-manifest.md` (entorno, semilla, protocolo, fijación de versiones).
+`_outputs/experiment-log.md` (la traza del protocolo con marca de tiempo, más el registro de cierre de una campaña autónoma), los datos en bruto en una ubicación natural del host y `_outputs/reproducibility-manifest.md` (entorno, semilla, protocolo, fijación de versiones).
 
 ## Aguas abajo
 
@@ -48,7 +48,9 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 ## Umbral de rigor
 
-La ejecución realiza una pasada piloto para calibrar presupuestos y rangos, y luego la comparación completa bajo un plan declarado de utilización de cómputo (asignación de núcleos, techos de memoria, paralelización segura de repeticiones independientes). Cada método estocástico ejecuta su régimen de repeticiones preregistrado con semillas registradas y hardware anotado. Está disponible un bucle de experimentación autónomo opcional y desactivado por defecto: contra un arnés congelado, propone un cambio a un único objetivo mutable, lo ejecuta con el presupuesto fijo, lo conserva solo si supera al titular y deja constancia de cada ensayo.
+La ejecución realiza una pasada piloto para calibrar presupuestos y rangos, y luego la comparación completa bajo un plan declarado de utilización de cómputo (asignación de núcleos, techos de memoria, paralelización segura de repeticiones independientes). Cada método estocástico ejecuta su régimen de repeticiones preregistrado con semillas registradas y hardware anotado. Está disponible un bucle de experimentación autónomo opcional y desactivado por defecto. Contra un arnés congelado, propone un cambio a un único objetivo mutable, enuncia una predicción falsable antes de cada ejecución y lo ejecuta con el presupuesto fijo. La métrica principal se lee del registro de ejecución como dos señales: una señal de búsqueda que guía el bucle y una señal de admisión de un conjunto disjunto, que confirma o rechaza un cambio antes de conservarlo: el cambio debe superar la fase de búsqueda y, después, superar al titular en la admisión por más del margen de ruido declarado (o empatar con él reduciendo la complejidad). Se deja constancia de cada ensayo y cada consulta de admisión se cuenta y se divulga.
+
+Un conjunto final intacto se evalúa una sola vez, en el cierre. Una campaña sin él etiqueta su resultado como contaminado por la selección y exploratorio, y cualquier cifra que informe la campaña se vuelve a medir bajo el régimen de repeticiones anterior. El operador confirma una vez el objetivo, el arnés, la métrica, los conjuntos de evaluación, la regla de aceptación, el presupuesto y el espacio de trabajo, y puede fijar criterios de parada; al detenerse, el registro de cierre (recuentos de ensayos, conservados, descartados, fallos y consultas de admisión, la ganancia sobre la línea base y el resultado del conjunto intacto) va al registro del experimento para que la etapa de análisis pueda clasificar el resultado seleccionado por el bucle.
 
 ## Modos de fallo
 
@@ -57,6 +59,7 @@ La ejecución realiza una pasada piloto para calibrar presupuestos y rangos, y l
 | Blocked: run /research-design first | Sin diseño del estudio | Ejecuta `/research-design` para producir `_inputs/study-design.md` |
 | Ejecución no reproducible | Falta el registro de la semilla / el entorno | Registra el manifiesto de reproducibilidad completo antes de continuar |
 | Desviación del protocolo sin documentar | Cambio a mitad de ejecución no registrado | Registra la desviación en el registro del experimento; divúlgala en el análisis |
+| Resultado del bucle presentado como confirmatorio | El bucle se guio por su conjunto de admisión, o no se leyó ningún conjunto intacto en el cierre | Etiqueta el resultado como contaminado por la selección y exploratorio; la señal de búsqueda guía, la señal de admisión decide y el conjunto intacto se lee una sola vez |
 
 ## Ejemplos
 

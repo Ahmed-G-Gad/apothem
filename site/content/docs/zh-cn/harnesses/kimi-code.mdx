@@ -2,14 +2,14 @@
 title: "Kimi Code"
 description: "适用于 Kimi Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "8e9f4f62c583aebb"
+sourceHash: "7baab16542cfcb94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Moonshot
 **安装名称：** `kimi-code`
 **状态：** GA
-**原生配置：** `<project>/AGENTS.md` 以及 `<project>/.kimi-code/.apothem/support/`
+**原生配置：** `<project>/AGENTS.md`、`<project>/.kimi-code/skills/`、`<project>/.kimi-code/agents/` 以及 `<project>/.kimi-code/.apothem/support/`
 
 ## 安装
 
@@ -17,21 +17,62 @@ sourceHash: "8e9f4f62c583aebb"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留），并将非原生的 Markdown 集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读者。
+适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留）。它将技能以及包装为技能的命令安装到 Kimi Code 的原生项目技能目录 `<project>/.kimi-code/skills/` 中，并将 Apothem 的辅助器作为 Kimi Code 子代理安装到 `<project>/.kimi-code/agents/` 中（参见[子代理](#子代理)）。其他集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读者。
 
-Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` 指令文件，项目配置位于 `<project>/.kimi-code/` 下。`<project>/.kimi-code/mcp.json` 表面归操作者所有；Apothem 会指明它，但不编写任何条目。
+Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` 指令文件，项目配置位于 `<project>/.kimi-code/` 下。Kimi Code 从工作目录向上搜索，将最近的包含 `.git` 的目录视为项目根目录，因此请将仓库根目录作为 `--project` 传入。`<project>/.kimi-code/mcp.json` 表面归操作者所有；Apothem 会指明它，但不编写任何条目。
 
-**写入的文件：** `<project>/AGENTS.md`（受管块），以及 `<project>/.kimi-code/.apothem/support/` 下的命令、技能、钩子、智能体、规则和模板集合。
+**写入的文件：** `<project>/AGENTS.md`（受管块），`<project>/.kimi-code/skills/` 下的技能和命令（作为技能），每个 Apothem 辅助器对应一个 `<project>/.kimi-code/agents/<name>.md`，以及 `<project>/.kimi-code/.apothem/support/` 下的钩子、规则和模板集合。
+
+## 子代理
+
+根据 [Kimi Code 关于自定义子代理的文档](https://moonshotai.github.io/kimi-code/en/customization/agents.md)，Kimi Code 从 `.kimi-code/agents/`（或 `.agents/agents/`）中的 Markdown 文件读取子代理。安装会为全部十四个辅助器，每个在 `<project>/.kimi-code/agents/` 中写入一个文件。它只为项目安装，不写入 `~/.kimi-code/agents/` 文件夹。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。 |
+| `tools` | 辅助器允许使用的工具，写成一个 Kimi Code 工具名称列表。 |
+| `disallowedTools` | 辅助器被拒绝使用的工具，写成一个 Kimi Code 工具名称列表。Kimi Code 在 `tools` 之后应用它。 |
+
+Kimi Code 精确匹配工具名称（区分大小写），并会对它没有对应工具的名称发出警告。因此安装会重命名 Kimi Code 拼写不同的两个工具，将 `WebFetch` 改为 `FetchURL`，将 `TodoWrite` 改为 `TodoList`，并省略 Kimi Code 没有对应工具的名称：`MultiEdit`、`NotebookEdit`、`PowerShell`、`Monitor`、`Artifact`、`TaskCreate` 和 `TaskUpdate`。被拒绝的工具仍保持被拒绝。如果某个辅助器允许的工具以这种方式全部消失，该文件会带有 `tools: []`，它不允许任何工具；省略 `tools` 则会允许所有工具。
+
+安装从不写入 `model`（Kimi Code 没有用于子代理的模型键，子代理使用主会话的模型或 `config.toml` 中的 `[secondary_model]`）、`override`（它会让项目文件取代内置子代理）、`subagents`、`whenToUse`，也不写入 Apothem 的 `maxTurns`、`version`、`updated` 和 `portability` 键。
+
+需要了解的事项：
+
+- 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.kimi-code/agents/`；Apothem 不替你做选择。
+- Kimi Code 在请求委派时才会使用辅助器。自其 2026-10-25 的版本起，它默认自己处理任务，而不会自行启动子代理，因此请在消息中或在 `AGENTS.md` 中按名称请求某个辅助器。厂商关于自定义子代理的页面仍然描述自动调度，因此这一点可能会改变。
+- `.kimi-code/agents/` 中的项目级文件优先于 extra、用户和插件级别上同名的定义。请为你自己的辅助器取与 Apothem 不同的名称。Kimi Code 的代码还会在共享的 `.agents/agents/` 文件夹（Apothem 从不写入它）之前读取 `.kimi-code/agents/`，并在两个同名文件中保留第一个；文档没有说明这一点。
+- 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
+- 早期版本将辅助器文件保存在支持树中的 `.kimi-code/.apothem/support/agents/`，Kimi Code 不会从那里加载它们。`apothem update` 或 `apothem uninstall` 会先将该副本保存到 `~/.apothem/backups/` 下，然后将其移除。
 
 ## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目根目录的 `AGENTS.md` 指令表面。行为规则和治理语料落在 `AGENTS.md` 的受管块中；命令、技能、钩子、智能体、规则和模板集合被放置在 `.kimi-code/.apothem/support/` 下，并从指令表面引用。这是适配器所选择的布局，而不是 Kimi Code 的缺口：Kimi Code 从 `.kimi-code/skills/` 和 `.agents/skills/` 加载技能，从 `.kimi-code/agents/` 和 `.agents/agents/` 加载自定义智能体，并从 `~/.kimi-code/config.toml` 中的 `[[hooks]]` 数组加载钩子，但它不会从支持树加载这些内容，因此 Apothem 放在那里的副本是 `AGENTS.md` 块所指向的参考材料。该块以一个 Apothem 支持文件小节结尾，该小节以相对于项目根目录的形式，指明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的 `.kimi-code/.apothem/support/` 下的目录，因此已提交的 `AGENTS.md` 不携带任何特定于机器的路径。（Kimi Code 的行为依据其关于[技能](https://moonshotai.github.io/kimi-code/en/customization/skills)、[子智能体](https://moonshotai.github.io/kimi-code/en/customization/agents)和[钩子](https://moonshotai.github.io/kimi-code/en/customization/hooks)的自定义页面，于 2026-10-02 查阅。）
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目根目录的 `AGENTS.md` 指令表面。行为规则和治理语料落在 `AGENTS.md` 的受管块中。每个技能，以及每个包装为技能的命令，都落在 `.kimi-code/skills/<name>/SKILL.md`，这是 Kimi Code 会加载的项目技能目录。适配器只写入这个 Kimi 专属的文件夹，从不写入其他工具也会读取的 `.agents/skills/`。你自己以其他名称添加到 `.kimi-code/skills/` 中的技能会在安装、更新和卸载时保留。那里与某个 Apothem 技能同名的技能会被替换：安装和更新会覆盖它，卸载会移除它，每次都会先在 `~/.apothem/backups/` 下保存一份带时间戳的副本，并且安装不会打印关于该冲突的任何提示。请为你自己的技能取与 Apothem 不同的名称。
+
+钩子、规则和模板集合被放置在 `.kimi-code/.apothem/support/` 下，并从指令表面引用。Kimi Code 不会从支持树加载它们，因此 Apothem 放在那里的副本是 `AGENTS.md` 块所指向的参考材料。该块以一个 Apothem 支持文件小节结尾，该小节以相对于项目根目录的形式，指明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的 `.kimi-code/.apothem/support/` 下的目录，因此已提交的 `AGENTS.md` 不携带任何特定于机器的路径。（Kimi Code 的行为依据其关于[技能](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html)、[辅助器定义](https://moonshotai.github.io/kimi-code/en/customization/agents.md)和[钩子](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html)的自定义页面，技能和钩子于 2026-10-24 查阅，辅助器定义于 2026-10-27 查阅。）
+
+## 未原生安装的内容
+
+Kimi Code 为钩子记载了一个原生位置。适配器目前尚未写入该位置，原因如下。
+
+- **钩子。** Kimi Code 从 `~/.kimi-code/config.toml`（设置了该变量时为 `$KIMI_CODE_HOME/config.toml`）中的 `[[hooks]]` 数组读取钩子。Apothem 不写入任何钩子。该文件属于用户范围，而此适配器写入项目根目录之下；一个条目只允许四个字段（`event` 和 `command` 为必填，`matcher` 和 `timeout` 为可选），多出一个字段就会导致配置无法加载；并且 Apothem 没有可在日后只移除其自身条目的 TOML 合并机制。钩子辅助脚本保留在支持树中。
+- **技能前置元数据。** 厂商页面记载的 `SKILL.md` 键有 `name` 和 `description`（均为必填）、`type`、`whenToUse`、`disableModelInvocation`（也接受写作 `disable-model-invocation`）以及 `arguments`。它没有说明其他键的规则。技能按照它们在 Apothem 源中的前置元数据安装，因此 `version`、`updated`、`archetype`、`userInvocable`、`argument-hint`、`portability` 和 `allowed-tools` 等键会到达 Kimi Code，而 Kimi Code 可能会忽略或拒绝它们。
+- **同名技能。** Kimi Code 让项目级别优先于用户级别，因此 `<project>/.kimi-code/skills/` 中的技能优先于 `~/.agents/skills/` 中的同名技能，后者由另一个 Apothem 适配器写入。厂商页面没有说明在项目级别内部 `.kimi-code/skills/` 和 `.agents/skills/` 之间如何排序。
+
+{/* TODO(clarify): the hook install decision (user-scope TOML merge with
+surgical uninstall), whether the main session delegates to the helpers on its own
+(the vendor's page on custom subagents and its changelog of 2026-10-25 disagree), how Kimi Code treats a SKILL.md
+key outside the documented list, and how .kimi-code/skills/ ranks against
+.agents/skills/ inside the project level are open; see Open Questions in
+src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md. */}
 
 ## 兼容性说明
 
 Kimi Code 从 `AGENTS.md` 或 `.kimi-code/AGENTS.md` 读取项目指令，并将 `.kimi-code/mcp.json` 识别为归操作者所有的 MCP 表面；Apothem 会指明该表面，但不向其中编写任何条目。在这两个指令文件中，适配器只写入项目根目录的 `AGENTS.md`，Kimi Code 将其作为项目指令读取；Kimi Code 文档没有说明当两个文件同时存在时以哪一个为准。Kimi Code 不暴露状态栏或输出样式文件表面，因此这些集合不会被物化。
 
-Kimi Code 运行在 Moonshot 的 Kimi 模型系列上；当前的模型和配置表面参见[厂商配置参考](https://moonshotai.github.io/kimi-code/en/configuration/config-files)。
+Kimi Code 运行在 Moonshot 的 Kimi 模型系列上；当前的模型和配置表面参见[厂商配置参考](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files)。
 
 ## 验证
 
@@ -42,7 +83,7 @@ apothem verify --harness kimi-code --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
+2. 每个受管目标都存在，包括技能目录和子代理目录；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.kimi-code/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；命令 `apothem diff --harness kimi-code --project /path/to/project` 会列出缺失或过期的辅助器文件。
 3. 适配器专属的验证例程报告成功。
 
 ## 更新
@@ -51,7 +92,7 @@ verify 命令确认：
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-根据当前的共享配置档案状态，重新派生项目根目录 `AGENTS.md` 的受管块和支持集合。
+根据当前的共享配置档案状态，重新派生项目根目录 `AGENTS.md` 的受管块、技能、子代理文件和支持集合。在技能迁移到 `.kimi-code/skills/` 之前进行的安装上运行更新，会移除旧的 `<project>/.kimi-code/.apothem/support/skills/` 目录，从而使每个技能只存在一份。在辅助器迁移到 `.kimi-code/agents/` 之前进行的安装上运行更新，会以同样的方式移除旧的 `<project>/.kimi-code/.apothem/support/agents/` 目录。每个被移除的目录都会先在 `~/.apothem/backups/` 下保存一份带时间戳的副本。
 
 ## 卸载
 
@@ -59,7 +100,7 @@ apothem update --harness kimi-code --project /path/to/project
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-移除项目根目录 `AGENTS.md` 中的 Apothem 块，并保留哨兵标记之外的所有文本。只有当文件中已无其他内容时才会删除该文件。同时移除 Apothem 放置在 `<project>/.kimi-code/.apothem/support/` 下的支持文件。在变更之前，会在 `~/.apothem/backups/` 下保存每个文件的一份带时间戳的副本；项目中不会留下备份文件。共享配置档案 YAML 与 Apothem 引擎不受影响。
+移除项目根目录 `AGENTS.md` 中的 Apothem 块，并保留哨兵标记之外的所有文本。只有当文件中已无其他内容时才会删除该文件。同时移除 Apothem 放置在 `<project>/.kimi-code/skills/` 下的技能（你以其他名称添加到那里的技能会保留）、`<project>/.kimi-code/agents/` 下的子代理文件（你以其他名称添加到那里的文件会保留，该文件夹变空时会被移除），以及 `<project>/.kimi-code/.apothem/support/` 下的支持文件，包括从未更新过的安装中旧的支持树 `skills/` 和 `agents/` 目录。在变更之前，会在 `~/.apothem/backups/` 下保存每个文件的一份带时间戳的副本；项目中不会留下备份文件。共享配置档案 YAML 与 Apothem 引擎不受影响。
 
 ## 合规闸门
 
@@ -73,6 +114,8 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness kimi-code --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness kimi-code --project /path/to/project`，然后再次验证 |
+| Kimi Code 中缺少技能或辅助器 | 检查 `--project` 是否指向仓库根目录（包含 `.git` 的目录），然后重新运行安装 |
+| Kimi Code 从不使用某个辅助器 | 按名称请求它。除非请求委派，否则 Kimi Code 会自己处理任务 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness kimi-code --project /path/to/project` |
 
 ## 配置开关

@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,6 +35,56 @@ sama masih menggunakannya. Ketika harness yang Anda hapus adalah yang terakhir
 pada root tersebut, perintah terlebih dahulu menyalin setiap penyimpanan ke root
 cadangan Apothem (`~/.apothem/backups/`), lalu menghapusnya beserta seluruh
 isinya. Apa pun yang Anda simpan di `plans/` tidak pernah dihapus.
+
+## Folder bersama di direktori home Anda
+
+Beberapa pemasangan dapat menggunakan satu folder di direktori home Anda: folder
+skill (`~/.agents/skills/`, atau `~/.codebuddy/skills/`, `~/.kiro/skills/`, atau
+`~/.trae/skills/`) serta `~/.config/apothem/rules/` dan
+`~/.config/apothem/templates/`. Halaman [install](/docs/cli-reference/install#folder-di-direktori-home-anda)
+mencantumkan adapter mana yang menulis folder mana. Apothem mencatat pemasangan
+mana yang menggunakan setiap folder, dan pencopotan mengikuti satu aturan:
+pencopotan menghapus sebuah folder hanya ketika tidak ada pemasangan Apothem
+lain yang masih menggunakannya.
+
+- Mencopot satu alat mempertahankan skill selama pemasangan lain masih
+  menggunakannya, dan memberitahukannya. Satu alat yang dipasang di dua proyek
+  dihitung sebagai dua pemasangan, sehingga mencopotnya dari proyek A
+  mempertahankan folder tersebut selama proyek B masih menggunakannya.
+  Pencopotan terakhir menghapusnya (lihat contoh kedua di bawah).
+- Hanya apa yang tercantum dalam catatan milik pemasangan itu sendiri yang
+  dihapus. Pemasangan yang dibuat sebelum folder tersebut dikelola tidak
+  memiliki catatan semacam itu, sehingga mencopotnya tidak menghapus apa pun di
+  direktori home Anda. Berkas yang Anda tambahkan ke folder tersebut tetap ada,
+  begitu pula folder yang memiliki nama skill Apothem dan tidak ditulis oleh
+  Apothem.
+- Pemasangan yang folder proyeknya sudah tidak ada diabaikan, sehingga proyek
+  yang dihapus tidak menahan folder tersebut selamanya. Catatan menyebutkannya.
+- Jika catatan pemasangan yang dapat menggunakan folder tersebut tidak dapat
+  dibaca, pencopotan berhenti dengan galat sebelum menghapus apa pun, dan
+  pemasangan tetap tercatat. Perbaiki atau pindahkan catatan yang tidak dapat
+  dibaca itu, lalu jalankan perintah lagi. Catatan rusak milik alat yang tidak
+  pernah menulis folder ini diabaikan.
+- Ketika penggunaan terakhir hilang, folder yang tersisa kosong juga dihapus.
+  Setiap folder dicadangkan di bawah `~/.apothem/backups/` sebelum dihapus.
+
+Setiap pencopotan mencetak satu `Note:` per folder, misalnya `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, atau
+`was removed: no other Apothem install uses it`. Dalam amplop `--format json`,
+setiap catatan adalah entri `warnings` dengan `"outcome": "advisory"`,
+`"operation": "shared_root"`, dan `"role"` bernilai `retained` atau `released`.
+Entri itu membawa `path`, `holders` (pemasangan yang mempertahankan folder),
+`stale` (pemasangan yang diabaikan), serta `kept` dan `total` (entri tercatat
+yang dipertahankan dan entri yang dicantumkan oleh pemasangan).
+
+Jika sebuah folder tetap ada karena pemasangan yang tidak dapat Anda temukan,
+catatan menyebutkannya. Ketika folder proyek telah dihapus, pemasangan tersebut
+diabaikan dan folder itu ikut terhapus pada pencopotan berikutnya. Ketika
+proyek ada tetapi Anda menghapus blok Apothem dari berkas aturannya secara
+manual, `uninstall` melaporkan harness tersebut sebagai tidak terpasang dan
+tidak melepaskan klaimnya; jalankan `install` untuk harness dan proyek
+tersebut, lalu `uninstall`, untuk melepaskannya. `apothem verify` menunjukkan
+apakah sebuah folder masih lengkap.
 
 Penghapusan `--harness all` sengaja dibuat menyeluruh: penghapusan ini mencakup
 setiap harness yang terdaftar, termasuk harness apa pun yang dilewati
@@ -101,6 +151,16 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+Folder skill bersama tetap ada sampai pemasangan terakhir yang menggunakannya
+dicopot:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Kode keluar

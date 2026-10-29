@@ -2,7 +2,7 @@
 title: "Contrato de empaquetado de cohortes"
 description: "El contrato estable y consumible aguas abajo para el empaquetado de cohortes y los manifiestos de plugin — enumera las cohortes y resuelve sus destinos nativos por entorno sin volver a derivar el mapeo."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,12 @@ opcionales cubren `displayName` (el nombre que se muestra en lugar de `name`) y
 los campos de listado del directorio de plugins: `documentationUrl`,
 `supportUrl`, `privacyPolicyUrl` y `termsOfServiceUrl`, cada uno una URL
 `https://`, además de una ruta `icon` dentro del plugin. El paquete de Claude
-Code generado establece `displayName`, `documentationUrl` y `supportUrl`. Un
+Code generado establece `displayName`, `documentationUrl` y `supportUrl`. El
+directorio de Anthropic lee los campos de listado y Claude Code los ignora al
+cargar. La sincronización del marketplace de claude.ai informa los dos enlaces
+como claves no reconocidas y los elimina, de modo que el marketplace allí
+muestra "1 with warnings". Esa advertencia es esperada, y el plugin se carga sin
+cambios. Un
 manifiesto de plugin es la unidad que un adaptador de entorno materializa en su
 superficie de plugin nativa; las cohortes seleccionan qué miembros lleva un
 plugin, y el manifiesto de propagación resuelve dónde aterrizan esos miembros

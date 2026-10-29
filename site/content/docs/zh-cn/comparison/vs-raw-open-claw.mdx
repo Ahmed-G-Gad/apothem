@@ -2,13 +2,15 @@
 title: "Apothem 对比原生 Open-Claw 配置"
 description: "手工维护 Open-Claw 配置，还是经由 Apothem 的共享 profile 来管理它。"
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw 读取 `~/.openclaw/openclaw.json`。它的 `agents.defaults.skills` 是一个
-名称白名单（而非目录加载器），且 MCP 是一个 CLI 面，因此 Apothem 不编写任何配置
-键；它在 `~/.openclaw/.apothem/support/skills/` 下安装共享的命令集合和技能集合作为支持材料。
+Open-Claw 读取 `~/.openclaw/openclaw.json`。Apothem 在
+`~/.openclaw/.apothem/support/skills/` 下安装共享的命令集合和技能集合，并在其中编写
+一个键 `skills.load.extraDirs`，该键列出这个目录，以便 OpenClaw 加载这些技能。它的
+`agents.defaults.skills` 是一个归你所有的名称白名单，且 MCP 是一个 CLI 面，因此
+Apothem 两者都不编写。
 
 ## 状态
 
@@ -29,6 +31,8 @@ Open-Claw 读取 `~/.openclaw/openclaw.json`。它的 `agents.defaults.skills` �
 Open-Claw 适配器写入 `openclaw.json`，把 Apothem 斜杠命令封装为技能，把 Apothem
 技能复制进被引用的支持目录，并把规则、模板、agents 与钩子材料保留在 Apothem
 支持子树下。
+OpenClaw 以其技能来源中最低的优先级读取 `skills.load.extraDirs`，因此你的工作区、
+`~/.agents/skills` 或 `~/.openclaw/skills` 中的同名技能会取代 Apothem 的副本被使用。
 
 ## 迁移路径
 

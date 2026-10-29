@@ -2,7 +2,7 @@
 title: "Контрольный список проверки межмашинной синхронизации"
 description: "Процедура проверки, подтверждающая, что адаптер Claude Code корректно устанавливается, валидируется и удаляется на новом хосте, с полными проверками переносимости."
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Ожидается:** Установщик обнаруживает существующий домашний каталог движка и выполняет быструю перемотку (fast-forward) вместо переустановки или дублирования; код выхода 0.
+**Ожидается:** Установщик обнаруживает существующий домашний каталог движка и извлекает в нём тег релиза вместо переустановки или дублирования; код выхода 0.
 
 ### 3.2 Проверка предварительных требований
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

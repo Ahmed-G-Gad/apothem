@@ -2,7 +2,7 @@
 title: "故障排查"
 description: "针对插件、npx 和安装器各路径下常见的 Apothem 安装失败和运行时问题的解决方案。"
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,6 +38,18 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ### `/plugin marketplace add` 失败
 
 `/plugin marketplace add ahmed-g-gad/apothem` 会从 GitHub 获取插件市场列表。当它失败时，请确认该机器可以访问 `https://github.com/ahmed-g-gad/apothem`（网络、代理或防火墙规则），然后重试。如果该插件市场之前是在一次不完整的获取下添加的，请在运行 `/plugin install apothem@apothem` 之前先移除并重新添加它。
+
+### 添加插件宿主的插件市场时超时
+
+插件宿主用于添加插件市场的命令会克隆该市场的仓库，并在 30 秒后放弃。在较慢的磁盘上（例如 WSL 下的 Windows 驱动器），完整克隆本仓库可能需要更长时间；而且当之后的一次刷新超时时，较早的一次完整克隆还可能让插件停留在旧版本。只获取插件所需的两个文件夹：
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+随后列出宿主的插件时，会显示 `apothem@apothem` 的当前版本。
 
 ### npx 提供过期版本
 

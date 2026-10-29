@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Kiro 構成の比較"
 description: "Kiro の .kiro/steering/ 配下のステアリングファイルを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "a4a26f280f1271a3"
+sourceHash: "58351c9a748f4d91"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,20 @@ Apothem で管理するのとを対比します。
 | ステアリングルールを書く | `.kiro/steering/` 配下の各ファイルを手で書く | 共有コーパスからレンダリング |
 | 基盤ファイルに触れずに保つ | `product.md` / `tech.md` / `structure.md` を上書きしないよう注意する | アダプターが書き込むのは `apothem-rules.md` のみ |
 | ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 再利用可能なスキルとコマンドを共有する | 各スキルフォルダーを `~/.kiro/skills/` へ手でコピーし、コピーを最新に保つ | アダプターが `~/.kiro/skills/` に書き込み、すべてのプロジェクトで 1 つのコピーを共有し、`apothem update` で更新 |
+| 再利用可能なヘルパーを同期し続ける | `.kiro/agents/` 配下の各カスタムエージェントファイルを手で書き、Kiro のツールカテゴリに追従する | ツールを変換した 14 個のヘルパーを `.kiro/agents/` に書き込み、`apothem update` で更新 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness kiro --project <path>` |
 
 ## Apothem が管理するもの
 
 kiro アダプターは共有ルールを `inclusion: always` フロントマター付きの専用
 `apothem-rules.md` ステアリングファイルへレンダリングし、Kiro の操作者が作成した
-基盤ファイルには触れません。Kiro には PreToolUse フックがないため、ガードレールの
-意図はツール呼び出しの傍受点ではなくルールの散文に宿ります。共有ルールへの変更が
-あるたびに、次の `apothem update` でファイルが再レンダリングされます。
+基盤ファイルには触れません。また、Apothem の 14 個のヘルパーを、Kiro IDE 1.0 と
+Kiro CLI V3 向けの Kiro カスタムエージェントとして `<project>/.kiro/agents/` に
+書き込みます。Kiro はエージェントフックを文書化していますが、アダプターはそれを
+書き込まないため、ガードレールの意図はツール呼び出しの傍受点ではなくルールの散文に
+宿ります。共有ルールへの変更があるたびに、次の `apothem update` でファイルが
+再レンダリングされます。
 
 ## 移行手順
 

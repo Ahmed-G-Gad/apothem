@@ -2,7 +2,7 @@
 title: "Helfer"
 description: "Persistente Helfer-Agenten für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,25 +50,79 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` ist optional. Ein Helfer, der es weglässt, erbt jedes Werkzeug, das die
+Sitzung hat, verbundene MCP-Werkzeuge eingeschlossen, und `disallowedTools`
+trägt seine Beschränkung. Alle vierzehn ausgelieferten Helfer führen `tools`
+auf.
+
+## Verbundene MCP-Server
+
+Ein Helfer, der `tools` aufführt, kann nur aufrufen, was er aufführt. Claude Code
+lässt ein MCP-Werkzeug nur dann in diese Liste zu, wenn der Eintrag den Server
+benennt, wie in `mcp__<server>__*`; ein bloßes `mcp__*` ist als
+`disallowedTools`-Eintrag dokumentiert und nirgendwo sonst. Servernamen gehören
+der Person, die die Server verbindet, daher kann ein ausgelieferter Helfer sie
+nicht benennen.
+
+`citation-auditor` und `research-scout` schlagen wissenschaftliche Quellen nach.
+Jeder wird mit `tools: Read, Glob, Grep, WebSearch, WebFetch` ausgeliefert und
+verweigert die Werkzeuge, die Dateien schreiben, Befehle ausführen, andere Helfer
+starten oder veröffentlichen: `Write`, `Edit`, `MultiEdit`, `NotebookEdit`,
+`Bash`, `PowerShell`, `Monitor`, `Agent`, `Artifact` und die
+Aufgabenlisten-Werkzeuge. Ohne Profileinstellung erreicht keiner von beiden ein
+MCP-Werkzeug, und beide schlagen Quellen über Websuche und Web-Abruf nach.
+
+Um einem von ihnen einen verbundenen wissenschaftlichen Index zu geben, benennen
+Sie den Server im Profilschlüssel `agent_mcp_servers`, der einen Agentennamen
+auf Servernamen abbildet. Die Claude Code-Engine-Installation (`apothem install`)
+hängt dann pro benanntem Server einen `mcp__<server>__*`-Eintrag an die
+`tools`-Zeile dieses Agenten an und ändert keinen anderen Agenten. Die
+Gemini CLI-Installation tut dasselbe mit einem `mcp_<server>_*`-Eintrag pro
+Server in der `tools`-Erlaubnisliste des Agenten, für einen Servernamen aus
+Buchstaben, Ziffern und `-`. Bei beiden bleibt ein Server, den das eigene
+`disallowedTools` des Agenten nennt, verweigert. Der Eintrag lässt jedes
+Werkzeug dieses Servers zu, einschließlich solcher, die schreiben, benennen Sie
+also nur einen Server, dem Sie für Nachschlagevorgänge vertrauen: Die
+Anweisungen der Helfer beschränken sie auf Such-, Nachschlage-, Lese-,
+Verifizierungs- und Auflösungsaufrufe, aber der Harness erzwingt nur die Namen,
+die die `tools`-Zeile aufführt. Ein Name für einen Agenten, der nicht existiert
+oder keine explizite `tools`-Zeile hat, wird gemeldet und übersprungen.
+
+Andere Harnesses als Claude Code und Gemini CLI ignorieren den Schlüssel. Der
+Plugin-Baum von Claude Code wird ohne Profil zusammengestellt und behält die
+schlichte Liste, daher definiert ein Plugin-Nutzer stattdessen einen Agenten auf
+Benutzerebene unter `~/.claude/agents/`. Die Profilsyntax, die Regeln für
+Servernamen und dieser Workaround stehen unter
+[Einem Helfer Zugriff auf MCP-Server geben](/docs/reference/mcp#einem-helfer-zugriff-auf-mcp-server-geben).
+
 ## Konvertierung je Harness
 
 Ein Helfer, dessen `tools`-Freigabe nach Abzug von `disallowedTools` kein
 Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`, `MultiEdit` oder
-`NotebookEdit`) enthält, ist schreibgeschützt. Jeder Harness, der Helfer
-konvertiert, setzt diese Beschränkung entweder nativ durch oder lässt die
+`NotebookEdit`) enthält, ist schreibgeschützt. Ein Helfer ohne `tools`-Freigabe
+ist schreibgeschützt, wenn `disallowedTools` mindestens `Write` und `Edit`
+verweigert. Jeder Harness, der Helfer konvertiert, setzt diese Beschränkung
+nativ durch, nennt sie in den Anweisungen des Helfers oder lässt die
 Kennzeichnung als schreibgeschützt weg:
 
 | Harness | Werkzeuglimit | Turn-Limit | Modell und Aufwand |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` wie geschrieben | `maxTurns` | geerbt (nicht gesetzt) |
-| Codex | `sandbox_mode = "read-only"` für schreibgeschützte Helfer | nicht verfügbar | geerbt (nicht gesetzt) |
-| Gemini CLI | `tools`-Erlaubnisliste mit Gemini-Werkzeugnamen | `max_turns` | geerbt (nicht gesetzt) |
-| Qwen Code | `tools` / `disallowedTools` in Qwen-Werkzeugnamen | nicht abgebildet | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` je Werkzeug) | nicht abgebildet | geerbt (nicht gesetzt) |
+| Claude Code | `tools` / `disallowedTools` wie geschrieben, plus alle `mcp__<server>__*`-Einträge, die der Profilschlüssel `agent_mcp_servers` einer aufgeführten `tools`-Zeile hinzufügt; ohne `tools` wird jedes Werkzeug geerbt, MCP eingeschlossen | `maxTurns` | geerbt (nicht gesetzt) |
+| Codex | keines ausgegeben; die Anweisungen des Helfers nennen es, und die Sandbox der übergeordneten Sitzung regelt Schreibvorgänge | nicht verfügbar | geerbt (nicht gesetzt) |
+| Gemini CLI | `tools`-Erlaubnisliste mit Gemini-Werkzeugnamen, plus alle `mcp_<server>_*`-Einträge, die der Profilschlüssel `agent_mcp_servers` einer aufgeführten expliziten Liste hinzufügt; ohne `tools` die Erlaubnisliste, die sich aus den Verweigerungen ergibt, plus `mcp_*` | `max_turns` | geerbt (nicht gesetzt) |
+| Qwen Code | `tools` / `disallowedTools` in Qwen-Werkzeugnamen; ohne `tools` wird keine Liste ausgegeben, sodass MCP-Werkzeuge geerbt werden und die Verweigerungen gelten | nicht abgebildet | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` je Werkzeug); MCP-Werkzeuge werden nicht eingeschränkt | nicht abgebildet | geerbt (nicht gesetzt) |
 | Antigravity | keines ausgegeben; die Beschreibung lässt „read-only“ weg | nicht verfügbar | geerbt (nicht gesetzt) |
+| CodeBuddy | `tools` / `disallowedTools` als kommagetrennte Zeichenketten, beschränkt auf die Werkzeugnamen, die CodeBuddy dokumentiert; kein MCP-Eintrag | `maxTurns` | geerbt (nicht gesetzt) |
+| Trae | `tools` / `disallowedTools` als kommagetrennte Zeichenketten, beschränkt auf die Werkzeugnamen, die Trae dokumentiert; kein MCP-Eintrag | nicht verfügbar | geerbt (nicht gesetzt) |
+| GitHub Copilot | `tools`-Erlaubnisliste mit Copilot-Aliasen (`read`, `search`, `edit`, `execute`, `web`, `agent`, `todo`), in die die Verweigerungen eingearbeitet sind, weil Copilot keinen Deny-Schlüssel hat; ein Alias, der ein verweigertes Werkzeug abdeckt, wird weggelassen; kein MCP-Eintrag | nicht verfügbar | geerbt (nicht gesetzt) |
+| Cursor | keine Werkzeugliste (Cursor hat keine); `readonly: true` für die fünf schreibgeschützten Helfer ohne `Bash`, und die übrigen schreibgeschützten Helfer lassen die Kennzeichnung „read-only“ weg | nicht verfügbar | geerbt (nicht gesetzt) |
+| Kimi Code | `tools` / `disallowedTools` als Listen von Kimi Code-Werkzeugnamen (`WebFetch` wird zu `FetchURL`, `TodoWrite` zu `TodoList`; Namen, für die Kimi Code kein Werkzeug hat, werden weggelassen); kein MCP-Eintrag | nicht verfügbar | geerbt (nicht gesetzt) |
+| Kiro | `tools`-Erlaubnisliste mit Kiro-Werkzeugkategorien (`read`, `write`, `shell`, `web`, `subagent`), in die die Verweigerungen eingearbeitet sind, weil die Liste die einzige geschriebene Beschränkung ist; eine Kategorie, die ein verweigertes Werkzeug abdeckt, wird weggelassen; kein MCP-Eintrag | nicht verfügbar | geerbt (nicht gesetzt) |
+| Windsurf | `allowed-tools`-Erlaubnisliste mit Devin-Werkzeugnamen (`read`, `edit`, `grep`, `glob`, `exec`, `write`), in die die Verweigerungen eingearbeitet sind, weil Devin keinen Deny-Schlüssel hat; die drei Helfer, die Web-Werkzeuge benötigen, werden nicht installiert; kein MCP-Eintrag | nicht verfügbar | Devins Standard-Subagenten-Modell (nicht gesetzt) |
 
-Hermes, Open-Claw und Kimi Code erhalten die Helferdateien als
-Unterstützungsmaterial, nicht als native Helfer.
+Hermes und Open-Claw erhalten die Helferdateien als Unterstützungsmaterial,
+nicht als native Helfer.
 
 ## Orchestrierung
 

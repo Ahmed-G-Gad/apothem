@@ -2,7 +2,7 @@
 title: "규칙 작성"
 description: "Apothem 동작 규칙을 작성하고, 범위를 정하고, 유지 관리합니다."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,19 @@ alwaysApply: true         # true for always-on; false for path-filtered
 | `true` | `""`(빈 값) | 항상 적용: 모든 세션, 모든 파일 |
 | `false` | `"**/*.py"` 같은 glob | 경로 필터: 활성 파일이 glob과 일치할 때만 |
 
+배포되는 규칙 중 다섯 개가 항상 적용됩니다: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, 그리고 규칙 인덱스입니다. 항상 적용되는 규칙은
+모든 세션에서 컨텍스트를 소비하므로, 새 규칙은 그 규칙이 관할하는 파일을 지정하는 glob으로
+경로 필터를 적용해야 합니다(SHOULD). `**` 하나만으로 된 필터는 아무 범위도 한정하지 않으며,
+Claude Code는 그 규칙을 항상 적용되는 규칙처럼 시작 시점에 로드합니다. 배포되는
+코퍼스는 항상 적용되는 집합을 이 목록과 바이트 상한으로 묶어 둡니다. 항상 적용으로
+승격되는 규칙은 같은 변경에서 둘 다 바꿉니다. 추가하는 각 규칙의 이름을 규칙
+인덱스(`apothem-rule-index`)에 적어, 경로로 규칙 범위를 정하지 않는 하니스의 세션도 그
+규칙을 찾을 수 있게 하세요. 동반 규칙(`<parent>-<aspect>`)은 부모의 `pathFilter` 또는 더
+좁은 필터를 사용하므로, 부모 없이 로드되는 일이 없습니다. 직접 만든 규칙에
+`apothem-rule-index`라는 이름을 붙이지 마세요. 설치 시 그 이름의 규칙 파일을 백업하고
+덮어씁니다.
+
 ## 예시 규칙
 
 ```markdown
@@ -51,11 +64,22 @@ alwaysApply: false
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+프로젝트 범위 하니스는 두 번째 줄처럼 update에 `--project`가 필요하며,
+사용자 범위 하니스는 필요하지 않습니다.
 
 ## 규칙 검증
 
+작성한 규칙 파일에 대해 프런트매터 검증기를 실행하세요. Apothem 체크아웃에서는
+`PYTHONPATH=src`가 패키지를 임포트할 수 있게 합니다. 스크립트로 설치한 뒤에는 그 대신
+`PYTHONPATH="$HOME/.apothem/src"`를 사용하세요.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+`frontmatter-grep` 같은 쓰기별 검사는 검사할 파일을 받거나, 표준 입력에서 내용을
+읽으려면 `--stdin`을 받습니다. 둘 다 없으면 표준 입력에서 입력을 기다립니다. 독립
+실행형 검사는 그 대신 `--check naming-grep .`처럼 루트 디렉터리를 받습니다.

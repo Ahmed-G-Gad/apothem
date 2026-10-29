@@ -2,7 +2,7 @@
 title: "Runtime mandiri"
 description: "Cara mesin Apothem berjalan dari checkout mana pun — dependensi yang di-vendor, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
 machineTranslated: true
-sourceHash: "7e97d59d22d34fda"
+sourceHash: "df04c51efc417e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,7 +107,7 @@ dua alasan yang disengaja: mesin **mematerialisasikan kohornya** — aturan,
 skill, command, dan templat — langsung dari pohon ke setiap harness, sehingga
 pohon tersebut adalah sumber kebenaran yang hidup, bukan hanya sebuah runtime;
 dan direktori `.git` tetap di tempatnya sehingga `apothem update` melakukan
-fast-forward pada klon yang ada alih-alih mengunduh ulang.
+checkout tag rilis di klon yang ada alih-alih mengunduh ulang.
 
 Tata letak jalankan-dari-sumber ini adalah pola yang sama dengan yang digunakan
 alat seperti `nvm`, `pyenv`, dan `oh-my-zsh` — beberapa megabita sumber

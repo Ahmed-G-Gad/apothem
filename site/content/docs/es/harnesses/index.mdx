@@ -2,7 +2,7 @@
 title: "Adaptadores de entorno"
 description: "Adaptadores de entorno de Apothem — un perfil compartido, diecisiete destinos compatibles."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,12 +79,43 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Skills en tu directorio personal
+
+Siete adaptadores con alcance de proyecto escriben un archivo de reglas en tu
+proyecto (seis de ellos también escriben allí los ayudantes de Apothem como
+archivos de subagentes; cada página de entorno nombra la carpeta), y también
+escriben las skills de Apothem, y las reglas y plantillas que citan las skills,
+en carpetas de tu directorio personal:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Cada instalación que nombra una carpeta escribe los mismos archivos, así que
+  el orden en que instalas no importa, y una sola copia sirve a todos los
+  proyectos.
+- Una instalación escribe primero las carpetas del directorio personal. Si eso
+  falla, se detiene antes de cambiar el proyecto, y no añade ningún archivo de
+  skill ni de regla a tu repositorio.
+- Una desinstalación elimina una carpeta compartida solo cuando ninguna otra
+  instalación de Apothem la sigue usando, e indica qué instalación la conserva.
+- Una carpeta de skill con el nombre de una skill de Apothem que Apothem no
+  escribió se deja intacta, con una advertencia.
+
+Cada página de entorno lista sus carpetas. El
+[registro de entornos](/docs/reference/harness-registry#raíces-compartidas)
+muestra qué herramientas comparten qué carpeta.
 
 Consulta [Abstracción del adaptador de entorno](/docs/architecture/harness-adapter-abstraction)
 para ver la especificación del protocolo.

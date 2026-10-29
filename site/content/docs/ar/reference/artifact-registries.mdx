@@ -2,15 +2,19 @@
 title: "سجلّات الأدوات (Artifact Registries)"
 description: "تعداد كامل لأدوات منظومة Apothem: الأوامر، القواعد، العاملون المساعِدون المُفوَّضون، الخطّافات، المهارات، أنماط الإخراج، انضباط تطوّر الأدوات، وإعلانات صنف الأداة الفارغ."
 machineTranslated: true
-sourceHash: "742e318ae876739a"
+sourceHash: "b0cb48ef6011396d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **سجلّ كنسي لِـ <bdi>`CLAUDE.md`</bdi> §11.** يحمل هذا المستند التعدادات الكاملة للأوامر والقواعد والعاملين المساعِدين المُفوَّضين والخطّافات والمهارات وأنماط الإخراج وانضباط تطوّر-الأدوات وإعلانات صنف-الأداة-الفارغ. يحتفظ <bdi>`CLAUDE.md`</bdi> بسطر المرساة + المؤشّر؛ والجداول الموضوعية تعيش هنا. يوفّر فهرس القدرات في <bdi>`CLAUDE.md`</bdi> §3 العرض المُكثَّف الدائم (always-on) بالفعل.
+> **السجلّ الكنسي لحِزم الأدوات.** يحمل هذا المستند التعدادات الكاملة للأوامر والقواعد والعاملين المساعِدين المُفوَّضين والخطّافات والمهارات وأنماط الإخراج وانضباط تطوّر-الأدوات وإعلانات صنف-الأداة-الفارغ؛ والجداول الموضوعية تعيش هنا. ويوفّر تخطيط مصدر المشروع العرض المُكثَّف الدائم (always-on).
 
 ## ١. الأوامر
 
-ثلاثون أمرًا مُسجَّلة من <bdi>`src/apothem/commands/*.md`</bdi> (غير تعاودي). كل أمر هو ملف مُسجَّل من الدرجة الأولى؛ مُنسِّق <bdi>`/plan`</bdi> يسلسل فقط مراحل الخطّة التي هي بالفعل من الدرجة الأولى ولا يحمل أي منطق مرحلة خاص به، فلا يزال لا يوجد مُوزِّع متجانس ولا تجميع أوامر فرعية. الأوامر غير الخاصّة بالخطّة وغير الخاصّة بسير-العمل:
+خمسة وأربعون أمرًا مُسجَّلة من <bdi>`src/apothem/commands/*.md`</bdi> (غير تعاودي) — والمرجع الكامل الدائم الحداثة لكل أمر هو [مرجع الأوامر](https://apothem.ahmedgad.com/docs/reference/commands/) المُولَّد، وفيه يُعدَّد بالكامل خطّ أنابيب <bdi>`/research`</bdi> ذو المراحل الثلاث عشرة (من <bdi>`/research-ideate`</bdi> إلى <bdi>`/research-disseminate`</bdi>) إضافة إلى مُنسِّقَي سير-العمل المُغلَّف <bdi>`/audit`</bdi> و<bdi>`/fortress`</bdi>. كل أمر هو ملف مُسجَّل من الدرجة الأولى؛ مُنسِّق <bdi>`/plan`</bdi> يسلسل فقط مراحل الخطّة التي هي بالفعل من الدرجة الأولى ولا يحمل أي منطق مرحلة خاص به، فلا يزال لا يوجد مُوزِّع متجانس ولا تجميع أوامر فرعية.
+
+خمسة وثلاثون أمرًا قابلة للاستدعاء من النموذج (<bdi>`disable-model-invocation: false`</bdi>): يجوز للنموذج تشغيل أحدها عندما يطابق طلبٌ وصفه. وعشرة لا يستدعيها إلا المُشغِّل: <bdi>`/freshify`</bdi>، و<bdi>`/github-deploy-fresh`</bdi>، و<bdi>`/github-deploy-next`</bdi>، و<bdi>`/release-readiness`</bdi>، و<bdi>`/elevate`</bdi>، و<bdi>`/fortress`</bdi>، و<bdi>`/workflow`</bdi>، و<bdi>`/plan-execute`</bdi>، و<bdi>`/research-experiment`</bdi>، و<bdi>`/research-publish`</bdi>. والراية الخاصة بكل أمر مُسجَّلة في <bdi>`src/apothem/commands/README.md`</bdi>.
+
+أوامر التدقيق والرفع غير الخاصّة بالخطّة وغير الخاصّة بالبحث:
 
 | الأمر | الملف | الوصف |
 | ------- | ---- | ----------- |
@@ -20,7 +24,7 @@ sourceHash: "742e318ae876739a"
 | <bdi>`/code-review`</bdi> | <bdi>`src/apothem/commands/code-review.md`</bdi> | مراجعة جودة-شِفرة لكل-ملف عبر <bdi>`src/`</bdi> و<bdi>`scripts/`</bdi> و<bdi>`tools/`</bdi> مع نتائج لكل-ملف |
 | <bdi>`/dependency-audit`</bdi> | <bdi>`src/apothem/commands/dependency-audit.md`</bdi> | تدقيق لكل-تبعية (مباشرة + متعدّية) عبر ملفات بيان المستودع |
 | <bdi>`/docs-review`</bdi> | <bdi>`src/apothem/commands/docs-review.md`</bdi> | مراجعة وثائق لكل صفحة Markdown تحت سطح وثائق المضيف |
-| <bdi>`/elevate`</bdi> | <bdi>`src/apothem/commands/elevate.md`</bdi> | يرفع كل سطح مشروع إلى أحدث مستوى متقدّم (SOTA) عبر عاملي نقد مستقلّين، ثم يُسلِّم إلى <bdi>`/freshify`</bdi> |
+| <bdi>`/elevate`</bdi> | <bdi>`src/apothem/commands/elevate.md`</bdi> | يرفع كل سطح مشروع إلى أحدث مستوى متقدّم (SOTA) عبر عوامل نقد مستقلّة، ثم يُسلِّم إلى <bdi>`/freshify`</bdi> |
 | <bdi>`/eval`</bdi> | <bdi>`src/apothem/commands/eval.md`</bdi> | حملة تقييم لنموذج-لغوي محايدة-للنموذج مبنية على مهارة eval-harness |
 | <bdi>`/freshify`</bdi> | <bdi>`src/apothem/commands/freshify.md`</bdi> | جعل المشروع جديدًا، خاليًا من الأثر، وجاهزًا للإنتاج؛ كل خطوة هدّامة مُبَوَّبة بالتأكيد |
 | <bdi>`/github-deploy-fresh`</bdi> | <bdi>`src/apothem/commands/github-deploy-fresh.md`</bdi> | تخصيص GitHub لِـ <bdi>`/freshify`</bdi> يُنتج إصدارًا أوّليًّا جديدًا واحدًا على <bdi>`origin/main`</bdi> |
@@ -40,7 +44,7 @@ sourceHash: "742e318ae876739a"
 
 | الأمر | الملف | السلوك |
 | ------- | ---- | -------- |
-| <bdi>`/plan-spec`</bdi> | <bdi>`src/apothem/commands/plan-spec.md`</bdi> | يُحسِّن النثر الحُرّ إلى <bdi>`_spec/spec.md`</bdi> بمستوى-المواصفة؛ كل سؤال مفتوح يُوجَّه عبر قناة الاستفسار-المُهيكل بدلًا من التعيين-الصامت؛ <bdi>`--quick`</bdi> يكتب ملف خطّة خفيف واحد تحت <bdi>`<project-root>/.apothem/plans/`</bdi> (تبقى <bdi>`.plans/`</bdi> بديلًا متوافقًا مع الإصدارات السابقة) |
+| <bdi>`/plan-spec`</bdi> | <bdi>`src/apothem/commands/plan-spec.md`</bdi> | يُحسِّن النثر الحُرّ إلى <bdi>`_spec/spec.md`</bdi> بمستوى-المواصفة؛ كل سؤال مفتوح يُوجَّه عبر قناة الاستفسار-المُهيكل بدلًا من التعيين-الصامت؛ <bdi>`--quick`</bdi> يكتب ملف خطّة خفيف واحد تحت <bdi>`<project-root>/.apothem/plans/`</bdi> |
 | <bdi>`/plan-generate`</bdi> | <bdi>`src/apothem/commands/plan-generate.md`</bdi> | يولّد حزمة خطّة رئيسية (Master Plan Suite) كاملة من نثر/متطلّبات مُؤلَّفة |
 | <bdi>`/plan-review`</bdi> | <bdi>`src/apothem/commands/plan-review.md`</bdi> | تدقيق جنائي لحزمة قائمة — أمانة النثر، الاتّساق الداخلي، تحليل الثغرات — مُحسَّن عبر سؤال-وجواب تفاعلي |
 | <bdi>`/plan-design`</bdi> | <bdi>`src/apothem/commands/plan-design.md`</bdi> | يُنتج أداة تصميم-معماري في <bdi>`_inputs/design.md`</bdi> للحزمة، مُتحقَّق منها ببوّابة ما قبل الإصدار ذات الخمسة عشر شريطًا قبل الترقية |
@@ -69,14 +73,16 @@ sourceHash: "742e318ae876739a"
 
 ## ٣. العاملون المساعِدون المُفوَّضون
 
-اثنا عشر تعريفًا لعامل دائم يُشحَنون مع المنظومة؛ وأنماط الفريق في قاعدة التنسيق توزّع عليهم. كل تعريف يعيش في مسار الملف المُدرَج أدناه.
+أربعة عشر تعريفًا لعامل دائم تُشحَن مع المنظومة؛ وأنماط الفريق في قاعدة التنسيق توزّع عليهم. كل تعريف يعيش في مسار الملف المُدرَج أدناه.
 
 ```text
 Worker              File                                       Pattern         Model Policy
 ------------------- ------------------------------------------ --------------- -------------
+Citation Auditor    src/apothem/agents/citation-auditor.md    Audit           host-selected
 Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
 Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
 Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Design Critic       src/apothem/agents/design-critic.md       Audit           host-selected
 Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
 MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
 Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
@@ -90,14 +96,14 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## ٤. الخطّافات
 
-تستخدم إدخالات خطّافات <bdi>Claude Code</bdi> المُثبَّتة صيغة exec: إذ إن <bdi>`command`</bdi> هو <bdi>`${PYTHON_BIN}`</bdi>، و<bdi>`args`</bdi> يحمل مسار نص برمجي تحت <bdi>`${HARNESS_ROOT}/.apothem/support/`</bdi> (مثل <bdi>`hooks/dispatch.py`</bdi> و<bdi>`conformity/gate.py`</bdi>). والصيغة <bdi>`-m apothem.hooks.dispatch`</bdi> مخصّصة للتطوير من نسخة مسحوبة من المصدر مع <bdi>`PYTHONPATH=src`</bdi>. ويستورد الموزّع <bdi>`src/apothem/hooks/lib/resolve_root.py`</bdi> لحلّ جذر النظام البيئي، ويُفوّض إلى وحدتَين مساعدتين تقعان بجواره تحت <bdi>`src/apothem/hooks/`</bdi> نفسه: فـ<bdi>`src/apothem/hooks/emit_hook_context.py`</bdi> يُنسّق حمولات الأحداث للمساعِد، و<bdi>`src/apothem/hooks/session_start_bootstrap.py`</bdi> يحمل أعمال تحضير <bdi>SessionStart</bdi> التي يُسلّمها الموزّع عند توجيه ذلك الحدث. أما رسائل الخطّاف التي تُعرَض على المساعِد عند إطلاق الأحداث المدعومة فتعيش ملفات سياق Markdown تحت <bdi>`src/apothem/hooks/messages/`</bdi> — ملف واحد لكل صنف حدث: <bdi>`postcompact.md`</bdi>، و<bdi>`precompact.md`</bdi>، و<bdi>`posttooluse-proactive-compaction.md`</bdi>، و<bdi>`pretooluse-askuserquestion-recommended.md`</bdi>، و<bdi>`pretooluse-bash.md`</bdi>، و<bdi>`pretooluse-bash-plan-guard.md`</bdi>، و<bdi>`pretooluse-conformity.md`</bdi>، و<bdi>`pretooluse-dependency-guard.md`</bdi>، و<bdi>`pretooluse-edit.md`</bdi>، و<bdi>`pretooluse-edit-header-guard.md`</bdi>، و<bdi>`pretooluse-eval-guard.md`</bdi>، و<bdi>`pretooluse-notebookedit.md`</bdi>، و<bdi>`pretooluse-write.md`</bdi>، و<bdi>`pretooluse-write-header-guard.md`</bdi>، و<bdi>`pretooluse-write-plan-guard.md`</bdi>، و<bdi>`sessionstart.md`</bdi>، و<bdi>`stop.md`</bdi>. ويُحمَّل كل ملف سياق مُوجَّه بواسطة الموزّع عند إطلاق حدثه وتسجيل وسيط سياقه في <bdi>`settings.json`</bdi>. ويُشحَن <bdi>`pretooluse-conformity.md`</bdi> صنفًا متاحًا دون مدخل توجيه حالي في <bdi>`settings.json`</bdi>. و<bdi>`pretooluse-dependency-guard.md`</bdi> موجَّه على مطابِقَي <bdi>Write</bdi> و<bdi>Edit</bdi>، و<bdi>`pretooluse-eval-guard.md`</bdi> على مطابِقات <bdi>Write</bdi> و<bdi>Edit</bdi> و<bdi>`Bash|PowerShell`</bdi>.
+تستخدم إدخالات خطّافات <bdi>Claude Code</bdi> المُثبَّتة صيغة exec: إذ إن <bdi>`command`</bdi> هو <bdi>`${PYTHON_BIN}`</bdi>، و<bdi>`args`</bdi> يحمل مسار نص برمجي تحت <bdi>`${HARNESS_ROOT}/.apothem/support/`</bdi> (مثل <bdi>`hooks/dispatch.py`</bdi> و<bdi>`conformity/gate.py`</bdi>). والصيغة <bdi>`-m apothem.hooks.dispatch`</bdi> مخصّصة للتطوير من نسخة مسحوبة من المصدر مع <bdi>`PYTHONPATH=src`</bdi>. ويستورد الموزّع <bdi>`src/apothem/hooks/lib/resolve_root.py`</bdi> لحلّ جذر النظام البيئي، ويُفوّض إلى وحدتَين مساعدتين تقعان بجواره تحت <bdi>`src/apothem/hooks/`</bdi> نفسه: فـ<bdi>`src/apothem/hooks/emit_hook_context.py`</bdi> يُنسّق حمولات الأحداث للمساعِد، و<bdi>`src/apothem/hooks/session_start_bootstrap.py`</bdi> يحمل أعمال تحضير <bdi>SessionStart</bdi> التي يُسلّمها الموزّع عند توجيه ذلك الحدث. أما رسائل الخطّاف التي تُعرَض على المساعِد عند إطلاق الأحداث المدعومة فتعيش ملفات سياق Markdown تحت <bdi>`src/apothem/hooks/messages/`</bdi> — ملف واحد لكل صنف حدث: <bdi>`postcompact.md`</bdi>، و<bdi>`precompact.md`</bdi>، و<bdi>`posttooluse-proactive-compaction.md`</bdi>، و<bdi>`pretooluse-askuserquestion-recommended.md`</bdi>، و<bdi>`pretooluse-bash.md`</bdi>، و<bdi>`pretooluse-bash-plan-guard.md`</bdi>، و<bdi>`pretooluse-conformity.md`</bdi>، و<bdi>`pretooluse-dependency-guard.md`</bdi>، و<bdi>`pretooluse-edit.md`</bdi>، و<bdi>`pretooluse-edit-header-guard.md`</bdi>، و<bdi>`pretooluse-eval-guard.md`</bdi>، و<bdi>`pretooluse-notebookedit.md`</bdi>، و<bdi>`pretooluse-write.md`</bdi>، و<bdi>`pretooluse-write-header-guard.md`</bdi>، و<bdi>`pretooluse-write-plan-guard.md`</bdi>، و<bdi>`sessionstart.md`</bdi>، و<bdi>`skill-index.md`</bdi>، و<bdi>`stop.md`</bdi>. ويُحمَّل كل ملف سياق مُوجَّه بواسطة الموزّع عند إطلاق حدثه وتسجيل وسيط سياقه في <bdi>`settings.json`</bdi>. ويُشحَن <bdi>`pretooluse-conformity.md`</bdi> صنفًا متاحًا دون مدخل توجيه حالي في <bdi>`settings.json`</bdi>. ويُولَّد <bdi>`skill-index.md`</bdi> من فهرس المهارات والأوامر ويقرؤه تمهيد بدء الجلسة، ولا يُوجَّه عبر <bdi>`settings.json`</bdi>. و<bdi>`pretooluse-dependency-guard.md`</bdi> موجَّه على مطابِقَي <bdi>Write</bdi> و<bdi>Edit</bdi>، و<bdi>`pretooluse-eval-guard.md`</bdi> على مطابِقات <bdi>Write</bdi> و<bdi>Edit</bdi> و<bdi>`Bash|PowerShell`</bdi>.
 
 ```text
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PreCompact        CM-24                    30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24                    30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
 PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher
@@ -120,28 +126,38 @@ Notification      —                        10s      Accepted by src/apothem/ho
 
 تعيش المهارات القابلة لإعادة-الاستخدام تحت <bdi>`src/apothem/skills/`</bdi>، مجلد واحد لكل مهارة.
 
-| المهارة | المسار | قابلة للاستدعاء-من-المستخدم | الغرض |
-| ----- | ---- | -------------- | ------- |
-| Dependency Upgrade | <bdi>`src/apothem/skills/dependency-upgrade/`</bdi> | نعم | ترقيات تبعيات مُراجَعة-السجلّ، مُثبَّتة، مُتحقَّقة-بالبوّابة |
-| Dev Toolkit | <bdi>`src/apothem/skills/dev-toolkit/`</bdi> | نعم | حلقات هندسية منضبطة — تنقيح مُهيكل، اختبار-أوّلًا red-green-refactor، تفكيك شريحة-عمودية، تفكيك متطلّب-إلى-قضية |
-| Diagram Authoring | <bdi>`src/apothem/skills/diagram-authoring/`</bdi> | نعم | خطّ أنابيب تأليف → تحقُّق → عرض → تصدير للمخطّطات التصريحية وتصوّرات البيانات (SVG / PNG / PDF) |
-| Document Authoring | <bdi>`src/apothem/skills/document-authoring/`</bdi> | نعم | تأليف وثائق طويلة-الشكل مُبَوَّب-بالموافقة (مخطّط → مسوّدة → مراجعة) مع استشهادات مُتحقَّقة وتجميع typeset حتمي |
-| Ecosystem Audit | <bdi>`src/apothem/skills/ecosystem-audit/`</bdi> | نعم | تدقيق أعمى لشجرة إعداد Apothem |
-| Eval Harness | <bdi>`src/apothem/skills/eval-harness/`</bdi> | نعم | أُطُر تقييم نموذج-لغوي قابلة-للإعادة بمعايير-نجاح صريحة |
-| Incident Runbook | <bdi>`src/apothem/skills/incident-runbook/`</bdi> | نعم | تأليف كُتيّب تشغيل بصيغة Trigger → Diagnosis → Action → Verification → Rollback |
-| Multi-Source Research | <bdi>`src/apothem/skills/multi-source-research/`</bdi> | نعم | تقارير بحثية مُتشعّبة، مُتحقَّقة-تبادليًّا، مُستشهَدة |
-| Plan Suite | <bdi>`src/apothem/skills/plan-suite/`</bdi> | لا | قالب رئيسي تستهلكه مراحل خطّ أنابيب <bdi>`/plan`</bdi> |
-| Projectify | <bdi>`src/apothem/skills/projectify/`</bdi> | نعم | رفع مشروع تطبيق-المحادثة — مُخرجات Description / Instruction / knowledge-Files إلى أعراف SOTA ضمن ميزانية سياق لكل-منصّة قابلة للقياس |
-| Prompt Engineering | <bdi>`src/apothem/skills/prompt-engineering/`</bdi> | نعم | تصميم موجِّه مُهيكل مُتحقَّق-بالتقييم |
-| Refactor Extract | <bdi>`src/apothem/skills/refactor-extract/`</bdi> | نعم | إعادة هيكلة استخراج تحافظ-على-السلوك |
-| Secret Rotation | <bdi>`src/apothem/skills/secret-rotation/`</bdi> | نعم | تقاعُد واستبدال آمن للاعتمادات المكشوفة |
-| Source Synthesis | <bdi>`src/apothem/skills/source-synthesis/`</bdi> | نعم | يوفّق مجموعة مصادر ثابتة في تركيب مُستشهَد واحد |
-| Surgical Guard | <bdi>`src/apothem/skills/surgical-guard/`</bdi> | نعم | تحرير مُقيَّد-بالمرساة بأدنى-فرق مقترن بحارس جودة ما-بعد-التحرير تفاعلي قائم-على-الفرق |
-| Test Authoring | <bdi>`src/apothem/skills/test-authoring/`</bdi> | نعم | تأليف اختبارات يُعطي-الأولوية-للسلوك بانضباط Arrange-Act-Assert |
-| Vuln Triage | <bdi>`src/apothem/skills/vuln-triage/`</bdi> | نعم | يُصنِّف-حسب-الخطورة الإرشادات الأمنية ويُوجِّه المعالجة |
-| Workflow | <bdi>`src/apothem/skills/workflow/`</bdi> | نعم | تسخير سير عمل متعدّد-العمّال عامّ-الغرض بتحقُّق تنافُسي refute-by-default ومعالجة تتجاوز-المهمّة مُفصَح عنها |
+| المهارة | المسار | قابلة للاستدعاء-من-المستخدم | قابلة للاستدعاء-من-النموذج | الغرض |
+| ----- | ---- | -------------- | --------------- | ------- |
+| Decision Matrix | <bdi>`src/apothem/skills/decision-matrix/`</bdi> | نعم | نعم | اختيار مُرجَّح مُستشهَد-بالأدلّة بين خيارات مع فحص حساسية |
+| Dependency Upgrade | <bdi>`src/apothem/skills/dependency-upgrade/`</bdi> | نعم | لا | ترقيات تبعيات مُراجَعة-السجلّ، مُثبَّتة، مُتحقَّقة-بالبوّابة |
+| Dev Toolkit | <bdi>`src/apothem/skills/dev-toolkit/`</bdi> | نعم | نعم | حلقات هندسية منضبطة — تنقيح مُهيكل، اختبار-أوّلًا red-green-refactor، تفكيك شريحة-عمودية، تفكيك متطلّب-إلى-قضية |
+| Diagram Authoring | <bdi>`src/apothem/skills/diagram-authoring/`</bdi> | نعم | نعم | خطّ أنابيب تأليف → تحقُّق → عرض → تصدير للمخطّطات التصريحية وتصوّرات البيانات (SVG / PNG / PDF) |
+| Document Authoring | <bdi>`src/apothem/skills/document-authoring/`</bdi> | نعم | نعم | تأليف وثائق طويلة-الشكل مُبَوَّب-بالموافقة (مخطّط → مسوّدة → مراجعة) مع استشهادات مُتحقَّقة وتجميع typeset حتمي |
+| Ecosystem Audit | <bdi>`src/apothem/skills/ecosystem-audit/`</bdi> | نعم | نعم | تدقيق أعمى لشجرة إعداد Apothem |
+| Eval Harness | <bdi>`src/apothem/skills/eval-harness/`</bdi> | نعم | نعم | أُطُر تقييم نموذج-لغوي قابلة-للإعادة بمعايير-نجاح صريحة |
+| Incident Runbook | <bdi>`src/apothem/skills/incident-runbook/`</bdi> | نعم | نعم | تأليف كُتيّب تشغيل بصيغة Trigger → Diagnosis → Action → Verification → Rollback |
+| Issue Lifecycle | <bdi>`src/apothem/skills/issue-lifecycle/`</bdi> | نعم | لا | من القضية إلى الإصلاح مع أدلّة عند كل مرحلة: مسوّدات، وتقدير الحجم، ونقطة تفتيش لاختبار فاشل، والإصلاح، وطلب مُسوَّد إلى المُبلِّغ، وطلب سحب مسوّدة اختياري |
+| Knowledge Wiki | <bdi>`src/apothem/skills/knowledge-wiki/`</bdi> | نعم | نعم | قاعدة معرفة Markdown تبدأ بالفهرس مع تدقيق وتحليل للانجراف والمحاور |
+| Multi-Source Research | <bdi>`src/apothem/skills/multi-source-research/`</bdi> | نعم | نعم | تقارير بحثية مُتشعّبة، مُتحقَّقة-تبادليًّا، مُستشهَدة |
+| Paper Toolkit | <bdi>`src/apothem/skills/paper-toolkit/`</bdi> | نعم | نعم | ملاحظات قراءة، ومقارنات أوراق، ومسوّدات أعمال ذات صلة من مصادر مُقدَّمة مع تقارير تغطية، ونقد المسوّدات، وتمريرات أسلوب المراجع، من دون حزمة بحث |
+| Perspectives | <bdi>`src/apothem/skills/perspectives/`</bdi> | نعم | نعم | عدّة وجهات نظر منفصلة حول مسألة خلافية، يُوفَّق بينها مع درجة ثقة وأقوى اعتراض |
+| Plan Suite | <bdi>`src/apothem/skills/plan-suite/`</bdi> | لا | لا | قالب رئيسي تستهلكه مراحل خطّ أنابيب <bdi>`/plan`</bdi> |
+| Projectify | <bdi>`src/apothem/skills/projectify/`</bdi> | نعم | نعم | رفع مشروع تطبيق-المحادثة — مُخرجات Description / Instruction / knowledge-Files إلى أعراف SOTA ضمن ميزانية سياق لكل-منصّة قابلة للقياس |
+| Prompt Engineering | <bdi>`src/apothem/skills/prompt-engineering/`</bdi> | نعم | نعم | تصميم موجِّه مُهيكل مُتحقَّق-بالتقييم |
+| Refactor Extract | <bdi>`src/apothem/skills/refactor-extract/`</bdi> | نعم | نعم | إعادة هيكلة استخراج تحافظ-على-السلوك |
+| Secret Rotation | <bdi>`src/apothem/skills/secret-rotation/`</bdi> | نعم | لا | تقاعُد واستبدال آمن للاعتمادات المكشوفة |
+| Source Synthesis | <bdi>`src/apothem/skills/source-synthesis/`</bdi> | نعم | نعم | يوفّق مجموعة مصادر ثابتة في تركيب مُستشهَد واحد |
+| Research Suite | <bdi>`src/apothem/skills/research-suite/`</bdi> | لا | لا | سطح حزمة البحث الكنسي — تفويضات الصرامة العشرة (R1–R10)، ودورة حياة البحث ذات المراحل الثلاث عشرة، وإطار الباحث الرئيسي (Principal-Investigator Framework)؛ يُحَلّ بالمسار من مراحل خطّ أنابيب <bdi>`/research`</bdi> |
+| Surgical Guard | <bdi>`src/apothem/skills/surgical-guard/`</bdi> | نعم | نعم | تحرير مُقيَّد-بالمرساة بأدنى-فرق مقترن بحارس جودة ما-بعد-التحرير تفاعلي قائم-على-الفرق |
+| Teaching Pack | <bdi>`src/apothem/skills/teaching-pack/`</bdi> | نعم | نعم | أهداف تعلّم، ومنهج، وشروح للصيغ خطوة بخطوة، وأمثلة محلولة، واختبار مع مفتاح الإجابات ومسرد، من ورقة واحدة أو وثيقة تقنية واحدة، وكل سطر مُعلَّم بقسم المصدر |
+| Test Authoring | <bdi>`src/apothem/skills/test-authoring/`</bdi> | نعم | نعم | تأليف اختبارات يُعطي-الأولوية-للسلوك بانضباط Arrange-Act-Assert |
+| UI Design | <bdi>`src/apothem/skills/ui-design/`</bdi> | نعم | نعم | تصميم الواجهات وتحسينها إلى حدّ أدنى من الإتقان مع سياق <bdi>`DESIGN.md`</bdi> |
+| Vuln Triage | <bdi>`src/apothem/skills/vuln-triage/`</bdi> | نعم | نعم | يُصنِّف-حسب-الخطورة الإرشادات الأمنية ويُوجِّه المعالجة |
+| Workflow | <bdi>`src/apothem/skills/workflow/`</bdi> | نعم | لا | تسخير سير عمل متعدّد-العمّال عامّ-الغرض بتحقُّق تنافُسي refute-by-default ومعالجة تتجاوز-المهمّة مُفصَح عنها |
 
-> **عُرف.** **المسار** في كل صف هو مجلد؛ ونقطة الدخول هي ملف <bdi>`SKILL.md`</bdi> بداخله — مثلًا <bdi>`src/apothem/skills/plan-suite/SKILL.md`</bdi> — وفق عُرف مهارة مجلد-مع-<bdi>`SKILL.md`</bdi> المُعلَن في <bdi>`CLAUDE.md`</bdi> §15 Artifact Directories.
+المهارة التي تحمل <bdi>`disable-model-invocation: true`</bdi> لا تعمل إلا عندما يستدعيها المُشغِّل باسمها. عشرون مهارة قابلة للاستدعاء من النموذج. وأربع يدوية لأنها تُغيِّر الحالة خارج شجرة العمل أو تعتمد على اختيار المُشغِّل للحظة: Dependency Upgrade، وSecret Rotation، وWorkflow، وIssue Lifecycle. ومهارتا الحزمتين قالبان مرجعيان فقط يُقرآن بالمسار. ويسرد فهرس المهارات عند بدء الجلسة الأسماء القابلة للاستدعاء من النموذج والأسماء اليدوية بحسب المجال.
+
+> **عُرف.** **المسار** في كل صف هو مجلد؛ ونقطة الدخول هي ملف <bdi>`SKILL.md`</bdi> بداخله — مثلًا <bdi>`src/apothem/skills/plan-suite/SKILL.md`</bdi> — وفق عُرف مهارة مجلد-مع-<bdi>`SKILL.md`</bdi> المُعلَن في تخطيط مصدر المشروع.
 
 ## ٦. أنماط الإخراج
 

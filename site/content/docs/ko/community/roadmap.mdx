@@ -2,7 +2,7 @@
 title: "로드맵"
 description: "Apothem 공개 로드맵 — 예정된 기능과 계획된 개선 사항."
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,8 +24,9 @@ sourceHash: "66086baa5064d245"
 현재 릴리스 라인은 호스트 비종속 하니스 구성 관리자를 제공합니다. 즉, 공유
 프로필(`~/.config/apothem/profile.yaml`)을 등록된 어댑터용 하니스 네이티브
 구성으로 머티리얼라이즈하며, `apothem` 명령줄(`quickstart` · `install` ·
-`update` · `uninstall` · `rollback` · `verify` · `status` · `diff` ·
-`harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`)로
+`update` · `uninstall` · `rollback` · `backups` · `verify` · `status` ·
+`diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` ·
+`completion`)로
 구동됩니다.
 
 | 항목 | 상태 | 비고 |
@@ -39,6 +40,8 @@ sourceHash: "66086baa5064d245"
 | 감사 및 드리프트 검토 인프라 | 배포됨 | 감사 명령을 뒷받침하는 인벤토리 및 드리프트 스캐너 |
 | 적합성 게이트 | 배포됨 | 머티리얼라이즈된 모든 표면에 대해 작성자 헤더, 명명, 코드 품질, 얼버무림 표현, 바인딩 상호성을 검사하는 검증기와, 각 어댑터의 출력을 고정하는 동작 diff 골든 |
 | 영속 메모리와 옵트인 지속 학습 | 배포됨 | 확인된 규약을 세션 간에 이어 주는 영구 메모리 계층과 옵트인 학습 루프 |
+| npm / npx 배포 | 배포됨 | `@ahmed-g-gad/apothem` 패키지가 `npx @ahmed-g-gad/apothem`을 통해 엔진을 실행함 |
+| Claude Code 플러그인 등재 | 배포됨 | `/plugin marketplace add ahmed-g-gad/apothem`으로 설치 |
 | CI/CD 파이프라인과 서명된 릴리스 공급망 | 배포됨 | 모든 변경은 릴리스 전에 lint, 테스트, 타입 검사, 문서 빌드, 공급망 검사를 통과해야 함 |
 
 ## 단기
@@ -46,8 +49,8 @@ sourceHash: "66086baa5064d245"
 | 항목 | 상태 | 비고 |
 | ---- | ------ | ----- |
 | 문서 가이드 | 진행 중 | 실제 하니스 설정을 위한 더 많은 작업 중심 가이드, 다이어그램, 예제 |
-| npm / npx 배포 | 계획됨 | `@ahmed-g-gad/apothem` npx 진입점을 각 릴리스와 맞춰 유지하고 플랫폼 지원 범위를 넓힘 |
-| Claude Code 플러그인 등재 | 계획됨 | 마켓플레이스 표면이 안정화됨에 따라 플러그인 등재를 확대 |
+| npx 플랫폼 지원 범위 | 계획됨 | `@ahmed-g-gad/apothem` npx 진입점을 각 릴리스와 맞춰 유지하고 플랫폼 지원 범위를 넓힘 |
+| 플러그인 등재 확대 | 계획됨 | 마켓플레이스 표면이 안정화됨에 따라 플러그인 등재를 확대 |
 | 추가 하니스 어댑터 | 계획됨 | 구성 규약이 안정화되고 사용자가 요청하는 하니스를 추가 |
 | 프로필 스키마 개선 | 계획됨 | 더 풍부한 하니스별 재정의 표면과 더 엄격한 검증 진단 |
 | 적합성 게이트의 프로필 검증 | 계획됨 | 게이트 검사로서 공유 프로필을 스키마에 대해 검증 |

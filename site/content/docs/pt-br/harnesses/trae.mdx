@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Adaptador de harness do Apothem para o Trae (GA)."
 machineTranslated: true
-sourceHash: "0e9e61064d66a5da"
+sourceHash: "97ae18e3fc9b0b70"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,97 @@ apothem install --harness trae --project /path/to/project
 ```
 
 O adaptador grava um arquivo de regras do Trae com escopo de projeto a partir da
-superfície compartilhada de regras e governança do Apothem.
+superfície compartilhada de regras e governança do Apothem, e os auxiliares do
+Apothem como subagentes do Trae no projeto (consulte [Subagentes](#subagentes)).
 
-**Arquivos gravados:** `<project>/.trae/rules/apothem-rules.md`
+Ele também grava as skills do Apothem, e as regras e templates que elas citam, no
+seu diretório pessoal, antes de tocar no projeto (consulte
+[Arquivos fora do projeto](#arquivos-fora-do-projeto)).
+
+**Arquivos gravados:**
+
+- `<project>/.trae/rules/apothem-rules.md`, o arquivo de regras.
+- `<project>/.trae/agents/<name>.md` para cada auxiliar do Apothem, no projeto.
+- `~/.trae/skills/<name>/SKILL.md` para cada skill e comando do Apothem, no seu diretório pessoal.
+- `~/.config/apothem/rules/` e `~/.config/apothem/templates/`, no seu diretório pessoal.
+
+## Arquivos fora do projeto
+
+A instalação também grava as skills do Apothem no seu diretório pessoal, antes de
+alterar qualquer coisa no projeto:
+
+| Pasta | O que o Apothem grava ali |
+| --- | --- |
+| `~/.trae/skills/` | Uma pasta com um `SKILL.md` para cada skill do Apothem, e uma para cada comando do Apothem (um comando se torna uma skill de mesmo nome). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | As regras e os templates aos quais as skills e o arquivo de regras se referem. |
+
+Essas pastas são compartilhadas. Elas não são privadas do projeto:
+
+- Todo projeto em que você instala `trae` usa a mesma cópia de `~/.trae/skills/`, e a instalação grava os mesmos arquivos nela a cada vez. O Trae é a única ferramenta que lê essa pasta. As regras e os templates sob `~/.config/apothem/` também são gravados pelas instalações das outras ferramentas, com os mesmos arquivos.
+- `--project` escolhe o arquivo de regras a gravar e a qual projeto a
+  instalação pertence. Ele não muda para onde vão as skills.
+- A instalação não adiciona nenhum arquivo de skill ou de regra ao seu repositório. O projeto
+  recebe o arquivo de regras e os arquivos de subagente em `.trae/agents/`, além da
+  pasta de dados `.apothem/` que toda instalação de projeto cria.
+- As pastas do diretório pessoal são gravadas primeiro. Se isso falhar, por exemplo porque uma
+  pasta no caminho é um link que sai do seu diretório pessoal (um link que
+  permanece dentro dele é seguido) ou não pode ser gravada, a instalação para
+  com o erro antes que qualquer coisa no projeto mude.
+- Uma pasta de skill com o nome de uma skill do Apothem que o Apothem não gravou é
+  deixada intacta, e a instalação exibe um aviso que a nomeia. Renomeie-a ou mova-a
+  e depois execute `apothem update`. `apothem verify` falha enquanto esse nome estiver ocupado.
+- Os arquivos somam alguns megabytes.
+
+A instalação exibe uma nota que nomeia as pastas que ela grava fora de `--project`,
+e `--dry-run` as lista.
+
+## Subagentes
+
+O Trae lê um subagente de um arquivo Markdown em `<project>/.trae/agents/`, conforme a
+[documentação de subagentes do Trae](https://docs.trae.ai/ide/subagents). A instalação
+grava um arquivo por auxiliar do Apothem nessa pasta. Ela instala apenas para o
+projeto: a documentação indica a pasta de nível de usuário como `~/.trae-cn/agents/`, enquanto
+todas as outras pastas de usuário do Trae ficam sob `~/.trae/`, e o Apothem não confirmou
+qual delas uma instalação internacional lê, então não grava nenhuma das duas.
+
+Cada arquivo mantém as instruções do auxiliar inalteradas e traz estas chaves de
+frontmatter:
+
+| Chave | O que o Apothem grava |
+| --- | --- |
+| `name`, `description` | O nome e a descrição do auxiliar. O Trae exige ambos. |
+| `tools` | As ferramentas permitidas ao auxiliar, como uma única string separada por vírgulas. |
+| `disallowedTools` | As ferramentas negadas ao auxiliar, como uma única string separada por vírgulas. O Trae a aplica por cima de `tools`. Omitida quando o auxiliar não tem nenhuma. |
+
+Apenas os nomes de ferramentas da página de subagentes do Trae são gravados:
+
+```text
+Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
+```
+
+Uma ferramenta que a fonte nomeia e que não está nessa lista (por exemplo `MultiEdit` ou
+`PowerShell`) fica de fora de ambos os campos. Uma ferramenta com padrão, como
+`Bash(rm *)`, não tem forma em uma lista separada por vírgulas: como ferramenta permitida ela fica de fora, e
+como ferramenta negada ela nega a ferramenta inteira. Um auxiliar que não pode editar arquivos mantém
+esse limite: ele não lista `Write` nem `Edit` entre suas ferramentas e nega ambas. O Trae
+não documenta limite de turnos, então o `maxTurns` do auxiliar não é gravado. A instalação
+não grava nenhuma chave `model`, então um auxiliar usa o modelo escolhido na caixa de chat, nem
+nenhuma chave `mcpServers`.
+
+Pontos a saber:
+
+- A documentação em inglês do Trae diz para ativar **Settings > Beta > Subagents >
+  Enable Subagents Directory** antes que ele carregue `.trae/agents/`. Sua página em
+  chinês, atualizada depois, diz que o recurso costuma vir ativado por padrão. Se o Trae não listar
+  nenhum dos auxiliares, verifique essa opção.
+- Os arquivos de subagente são arquivos comuns do projeto. Faça commit deles com o projeto ou
+  liste `.trae/agents/` no `.gitignore`; o Apothem não escolhe por você.
+- Um arquivo seu com o nome de um auxiliar do Apothem é salvo em
+  `~/.apothem/backups/` e depois substituído. A desinstalação não o restaura.
+  Arquivos com outros nomes nunca são tocados.
+- A documentação do Trae não diz como ele trata uma chave de frontmatter que ela não
+  lista, nem se `.trae/agents/` se aplica na segunda janela do
+  "all-new TRAE" unificado como se aplica na janela do IDE.
 
 ## Mapeamento do perfil para a configuração nativa
 
@@ -43,7 +131,17 @@ as regras globais ficam sob `~/.trae/user_rules`. O adaptador grava um arquivo
 `apothem-rules.md` dedicado e nunca sobrescreve os outros arquivos de regras
 desse diretório nem as suas regras globais. A
 superfície de servidores de ferramentas `.trae/mcp.json` e a superfície de
-skills `.trae/skills/` pertencem ao operador; o Apothem não as grava.
+skills `.trae/skills/` do projeto pertencem ao operador; o Apothem não as grava.
+
+O Trae documenta `~/.trae/skills/` para skills globais. Ele lê a pasta
+multiferramenta `.agents/skills/` somente depois que a configuração `Enable .agents Skills
+Directory` é ativada, então a instalação grava a pasta do Trae. A edição da
+China (TRAE CN) documenta `~/.trae-cn/skills/` em vez disso; seu changelog diz que os
+diretórios globais de skills do TRAE CN e da edição internacional são
+compatíveis, apenas para a edição pessoal. A instalação grava somente `~/.trae/skills/`,
+e o Apothem não confirmou se as outras edições do TRAE CN o leem.
+O Apothem também não confirmou como o Trae trata uma chave de cabeçalho de `SKILL.md` que ele não
+lista.
 
 ## Verificação
 
@@ -54,10 +152,18 @@ apothem verify --harness trae --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
-   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
-   para também confirmar que os arquivos instalados correspondem a esse perfil.
-3. A rotina de verificação específica do adaptador informa sucesso.
+2. Cada destino gerenciado existe, incluindo a pasta `.trae/agents/`; os arquivos
+   gerenciados não estão vazios, e as configurações JSON ou YAML podem ser
+   analisadas. Adicione `--profile PATH` para também confirmar que os arquivos
+   instalados correspondem a esse perfil. Para `.trae/agents/` a verificação é que a pasta existe,
+   não que cada arquivo de auxiliar esteja nela; o comando
+   `apothem diff --harness trae --project /path/to/project` lista os arquivos de
+   auxiliar que estão ausentes ou desatualizados.
+3. Toda pasta de skill do Apothem está no lugar com um `SKILL.md`, seja qual for a
+   instalação que a gravou, e nenhuma pasta de skill com um nome do Apothem pertence a
+   algo que o Apothem não gravou. Uma verificação com falha nomeia as pastas ausentes ou
+   alheias.
+4. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -67,6 +173,10 @@ apothem update --harness trae --project /path/to/project
 
 Deriva novamente o arquivo de regras do projeto a partir do estado atual do
 perfil compartilhado.
+
+A atualização também regrava qualquer pasta de skill cujos arquivos difiram dos atuais.
+Se você instalou com uma versão anterior que não gravava skills, a atualização as adiciona.
+Ela regrava os arquivos de subagente que diferem dos atuais e adiciona os que estiverem ausentes.
 
 ## Desinstalação
 
@@ -81,6 +191,16 @@ cópia do arquivo com carimbo de data e hora é salva em `~/.apothem/backups/`;
 nenhum arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e
 o motor do Apothem não são afetados.
 
+A desinstalação também remove os arquivos de subagente que gravou em `<project>/.trae/agents/`
+e mantém qualquer outro arquivo ali; a pasta é removida quando fica vazia.
+Ela remove as pastas de skill que gravou em `~/.trae/skills/` e as
+regras e templates em `~/.config/apothem/`, mas somente quando nenhuma outra instalação do
+Apothem ainda as usa. Outro projeto, ou outra ferramenta que compartilha a
+pasta, pode usá-las. Nesse caso a desinstalação mantém as pastas, exibe qual instalação
+as usa, e a última desinstalação as remove. Os arquivos que você adicionou a essas
+pastas permanecem, e uma pasta que fica vazia é removida. Cada
+pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
+
 ## Conformity gate
 
 ```bash
@@ -93,6 +213,10 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness trae --project /path/to/project` |
 | Falha na verificação | Execute `apothem update --harness trae --project /path/to/project` e depois verifique novamente |
+| O Trae não lista nenhum dos auxiliares do Apothem | Ative Settings > Beta > Subagents > Enable Subagents Directory e depois inicie um novo chat |
+| `apothem verify` nomeia uma pasta de skill ausente | Execute `apothem install --harness trae --project /path/to/project`; ele restaura a pasta |
+| Uma instalação ou atualização avisa que ignorou uma pasta de skill | Uma pasta com o nome de uma skill do Apothem já existe na pasta de skills e o Apothem não a gravou. Renomeie-a ou mova-a e depois execute `apothem update` |
+| Uma instalação para antes de alterar o projeto | Uma gravação no seu diretório pessoal falhou. Leia o erro, corrija a pasta que ele nomeia (um link que sai do seu diretório pessoal, um arquivo onde deveria haver uma pasta ou uma pasta somente leitura) e instale novamente |
 | Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness trae --project /path/to/project` |
 
 ## Ajustes de configuração

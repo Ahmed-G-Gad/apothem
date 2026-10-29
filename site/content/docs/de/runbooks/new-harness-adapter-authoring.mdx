@@ -2,7 +2,7 @@
 title: "Einen neuen Harness-Adapter erstellen"
 description: "Runbook für das Erstellen und Veröffentlichen eines neuen Apothem-Harness-Adapters."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,18 @@ in Apothem oder als Drittanbieter-Paket erstellst.
 
 Folge dem Beispiel [Einen Harness-Adapter erstellen](/docs/examples/authoring-a-harness-adapter),
 um `HarnessAdapter` für den Ziel-Harness zu implementieren.
+
+Schreibt der Adapter ein Klartext-Template (eine Datei, die weder JSON noch YAML
+ist) mit `mode: write_text` und `ownership_class: operator-owned`, löscht
+`uninstall` die Datei nur, solange sie eine unbearbeitete Kopie eines Templates
+ist, das Apothem ausgeliefert hat. Wenn ein späteres Release das Template
+ändert, füge in derselben Änderung den SHA-256-Digest des vorherigen Texts zur
+Liste `earlier_digests` dieses Manifest-Eintrags hinzu, sonst lässt `uninstall`
+jede unbearbeitete Kopie liegen, die das frühere Release geschrieben hat.
+Ermittle den Digest des Texts beim neuesten Release-Tag mit
+`git show <tag>:<template path> | sha256sum`; das Template darf kein
+`${...}`-Pfad-Token enthalten. `tests/unit/test_template_digests.py` schlägt
+fehl, wenn ein ausgeliefertes Template nicht berücksichtigt ist.
 
 ### 2. Schreibe die Dokumentationsseite
 

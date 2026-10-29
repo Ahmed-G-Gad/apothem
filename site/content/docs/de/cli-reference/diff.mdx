@@ -2,7 +2,7 @@
 title: "diff"
 description: "CLI-Referenz für den Befehl apothem diff."
 machineTranslated: true
-sourceHash: "c72e575434a36191"
+sourceHash: "c04c91f0e63a082f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,11 @@ Profildokument, in das das gemeinsame Profil projiziert wird (etwa
 nach einer Installation meldet `diff` keine ausstehende Änderung; eine erneute
 Installation schreibt dann nichts und legt keine neue Sicherung an.
 `install --dry-run` zeigt denselben Plan.
+
+Für die Adapter, die Skills in Ihr Home-Verzeichnis schreiben, listet der Plan
+diese Ordner mit ihren Home-Pfaden vor den Projektdateien auf, und ein
+Skill-Ordner, den Apothem nicht geschrieben hat, erscheint als
+`skill_conflict`-Warnung.
 
 Für operatoreigene Ziele — Dateien, die sowohl Ihren eigenen Inhalt als auch
 einen von Apothem verwalteten Block tragen — zeigt das Diff die genauen Zeilen,

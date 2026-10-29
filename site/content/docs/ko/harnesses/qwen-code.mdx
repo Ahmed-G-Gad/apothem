@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code(베타)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,6 +51,27 @@ apothem install --harness qwen-code
 `QWEN.md`의 Apothem 블록은 Apothem 지원 파일 섹션으로 끝납니다. 이 섹션은
 저장소 스타일의 각 인용(`rules/<name>.md`, `templates/...`, `hooks/...`)이
 해석되는 기준인 `~/.qwen/.apothem/support/` 아래의 절대 디렉터리를 명시합니다.
+
+**스킬 도구 목록.** `Qwen Code`는 스킬의 도구 허용 목록을 camelCase
+`allowedTools` 프런트매터 키에서 읽으며, 그 값은 YAML 목록이어야 합니다. 다른
+에이전트를 위해 작성된 하이픈 표기 `allowed-tools` 키는 무시합니다. 따라서 설치된
+스킬은 소스 코퍼스의 쉼표로 구분된 `allowed-tools` 문자열 대신, 한 줄에 항목
+하나씩인 목록으로 `allowedTools`를 담습니다. 각 항목은 `Bash(git status *)` 같은
+패턴을 포함하여 소스의 표기를 유지합니다. 다른 모든 스킬 키와 스킬 본문은 변경
+없이 설치됩니다.
+
+**스킬 폴더.** 어댑터는 스킬을 `~/.qwen/skills/`에 작성합니다. `Qwen Code`는
+`~/.agents/skills/`도 읽고, 프로젝트 안에서는 `.qwen/skills/`와
+`.agents/skills/`도 읽습니다. 두 폴더에 같은 이름의 스킬이 있으면 `.qwen` 아래의
+스킬이 우선하므로, `~/.qwen/skills/`의 Apothem 스킬은 다른 어댑터가
+`~/.agents/skills/`에 작성한 같은 이름의 스킬보다 우선합니다.
+
+**훅 이벤트.** 어댑터는 `SessionStart`, `PreToolUse`, `PreCompact`,
+`PostCompact`, `Stop`을 연결합니다. `Qwen Code`는 22개의 훅 이벤트를 정의하며 이
+다섯 개는 각각 그중 하나입니다. 22개 중 세 개(`SessionDelete`, `TodoCreated`,
+`TodoCompleted`)에는 같은 이름의 `Claude Code` 이벤트가 없습니다(`Claude Code`는
+todo 이벤트를 `TaskCreated`와 `TaskCompleted`라고 부릅니다). 어댑터는 그중 어느
+것도 연결하지 않습니다.
 
 ## 검증
 

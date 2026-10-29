@@ -2,7 +2,7 @@
 title: "Menyunting profil"
 description: "Ubah profil bersama dan wujudkan-ulang setiap perkakas yang terpasang."
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,6 +32,16 @@ Profil adalah satu dokumen YAML tunggal. Kunci tingkat-atasnya:
   `continuous_execution`, `learning_loop`), setiap flag default-mati.
 - `harnesses` — penimpaan per-perkakas yang dikunci oleh id perkakas.
 - `exclude_harnesses` — id perkakas yang dilewati oleh command batch (`--harness all`).
+- `mcp_servers` — definisi server MCP yang dikunci oleh nama server.
+- `agent_mcp_servers` — per nama pembantu, server MCP yang boleh dipanggil oleh
+  pembantu tersebut (lihat [Memberi pembantu akses ke server MCP](/docs/reference/mcp#memberi-pembantu-akses-ke-server-mcp)).
+  Kosong secara default, sehingga tidak ada pembantu yang menjangkau alat MCP.
+- `workspace` — tempat Apothem menyimpan direktori kerja bersamanya
+  (`directory_name`, `scope`).
+- `schema_version` — versi skema profil opsional; profil tanpa kunci ini
+  dibaca sebagai versi 1.
+
+Setiap bidang tercantum dalam [Bidang profil](/docs/reference/profile-fields).
 
 ## Langkah-langkah
 

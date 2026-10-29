@@ -2,7 +2,7 @@
 title: "ルール"
 description: "行動ルールセット全体にわたって、問題解決、コードの技法、クリーンアーキテクチャ、計画、品質を統制する、常時オンおよびパスフィルター型の行動ルール。"
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,25 +12,10 @@ Anti-Patterns、Enforcement、Bindings — 常時オンかパスフィルター�
 
 ## アクティブなルール
 
-正規のレジストリはルールコホートです。同じセットをフラットな形式で示します:
-
-| ルール | スコープ | 実装するもの |
-|------|-------|------------|
-| Auto Memory | 常時オン | CM-26 |
-| Clean-Room Generation | 常時オン | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | 常時オン | CM-21 |
-| Context Management | 常時オン | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | パスフィルター型 | CM-12 / CM-24（コンパニオン） |
-| Conventions Vigilance | 常時オン | CM-22 |
-| Interactive Questions | 常時オン | CM-2 の拡張 |
-| Interactive Questions Sweep Matchers | パスフィルター型 | CM-2 の拡張（コンパニオン） |
-| Operational Mandates | 常時オン | CM-1–10 |
-| Worker Orchestration | 常時オン | CM-17 / CM-25 |
-| Clean Architecture | パスフィルター型 | CM-27 |
-| Large File Generation | パスフィルター型 | CM-23 |
-| Performance Discipline | パスフィルター型 | パフォーマンス軸 |
-| Planning Techniques | パスフィルター型 | CM-20 / CM-21 |
-| Python Senior Architect | パスフィルター型 | CM-28 |
+正規のレジストリは `src/apothem/rules/` にあるルールコホートです。このページの末尾にある
+[生成されたインベントリ](#生成されたルールインベントリ)が、すべてのルールをその説明とソースファイルとともに
+一覧表示します。5 個のルールは常時オンで、残りはパスフィルター型です。次のセクションで、すべての
+セッションで読み込まれる 5 個を挙げます。
 
 ## Frontmatter 契約
 
@@ -54,20 +39,34 @@ alwaysApply: <true | false>
 
 `pathFilter` と `alwaysApply` はハーネスに中立です。各アダプターは、そのハーネスにネイティブな
 スコープ指定フィールドがある場合に、それらを変換します。Claude Code はルールから `paths:` だけを
-読み取り、それを持たないすべてのルールを起動時に読み込みます。そのため、エンジンインストール
+読み取り、それを持たないすべてのルールを、`paths:` が `**` だけであるルールと同様に起動時に読み込みます。
+そのため、エンジンインストール
 （`apothem install --harness claude-code`）は、パスフィルター型の各ルールを、その `pathFilter`
-から構築した `paths:` リストとともに `~/.claude/rules/` に書き込み、常時オンのルールは変更せずに
-コピーします。28 個の常時オンのルールはすべてのセッションで読み込まれ、63 個のパスフィルター型の
-コンパニオンは、アシスタントが一致するファイルを読み取ったときに読み込まれます。
+から構築した `paths:` リストとともに `~/.claude/rules/` に書き込み、すべてのルールのコピーを、末尾の
+Bindings セクションを除いて書き込みます。5 個のルールはすべてのセッションで読み込まれます:
+`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`、そしてルール
+インデックスです。それ以外の 90 個のルールはパスフィルター型で、アシスタントが一致するファイルを
+読み取ったときに読み込まれます。常時オンのセットにルールを追加すると、同じ変更の中でコアのリストと
+バイト上限が変わります。
+
+ルールインデックス `apothem-rule-index` は、他のすべてのルールと、それを必要とする状況を名指しする
+唯一の常時オンのファイルです。ルールをパスでスコープ指定するハーネスは、一致するファイルに触れたときに
+スコープ指定されたルールを読み込みます。そうしないハーネスはそれらを 1 つも読み込まないため、
+インデックス、命令ファイル内でそれを指す文、そしてルールをパスで引用するルールとスキルが、セッションが
+そのルールに到達する手段になります。コンテキストの圧縮の後、スコープ指定されたルールはもはやコンテキストに
+なく、インデックスは、適用していたルールがあれば読み直すようアシスタントに伝えます。Claude Code は
+パスフィルターを作業ディレクトリ内のファイルに対してのみ照合するため、ファイルが `~/.claude/projects/`
+配下にある自動メモリのルールは、パスの一致ではなくインデックスを通じてセッションに届きます。
 
 OpenCode にはルールごとのスコープ指定フィールドがありません。OpenCode は、
 `opencode.json` の `instructions` リストが挙げるすべてのファイルを、すべてのセッションに
 結合します。そのため、OpenCode のインストール（`apothem install --harness opencode`）は、
-あなたのプロファイルドキュメントと、`alwaysApply` が `true` であるルールだけを、ファイルごとに
+あなたのプロファイルドキュメントと、`alwaysApply` が `true` であるルール（4 つのコアルールとルール
+インデックス）だけを、ファイルごとに
 1 つの明示的な `~/.config/opencode/...` パスとして列挙します。対象となるルールは、設定が
 書き込まれる時点でルールファイルを読んで判定されます。それでも、パスフィルター型のものを含むすべてのルールは
-`~/.config/opencode/.apothem/support/rules/` 配下にインストールされ、そこで、それを引用する
-ルール、スキル、コマンドがオンデマンドで読み取ります。
+`~/.config/opencode/.apothem/support/rules/` 配下にインストールされ、そこで、インデックスがそれを
+名指しし、それを引用するルール、スキル、コマンドがオンデマンドで読み取ります。
 
 ## オーサリング規律
 

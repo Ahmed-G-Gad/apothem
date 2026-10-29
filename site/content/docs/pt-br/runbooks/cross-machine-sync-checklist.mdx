@@ -2,7 +2,7 @@
 title: "Lista de verificação de sincronização entre máquinas"
 description: "Procedimento de verificação para confirmar que o adaptador do Claude Code instala, valida e desinstala corretamente em um host novo, com verificações completas de portabilidade."
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Esperado:** o instalador detecta o diretório do motor existente e faz fast-forward em vez de reinstalar ou duplicar; código de saída 0.
+**Esperado:** o instalador detecta o diretório do motor existente e faz checkout da tag de lançamento nele em vez de reinstalar ou duplicar; código de saída 0.
 
 ### 3.2 Verificação de pré-requisitos
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

@@ -2,7 +2,7 @@
 title: "Internacionalização (i18n)"
 description: "Como o site de documentação do Apothem declara sua coorte de localidades, emite links de idioma alternativo hreflang e renderiza da direita para a esquerda em doze idiomas."
 machineTranslated: true
-sourceHash: "b3eb706603e79d8b"
+sourceHash: "fbe64d232e98a8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,12 @@ idioma são conectadas ao roteamento.
 - **Renderização da direita para a esquerda: ativa.** As folhas de estilo
   compartilhadas usam propriedades CSS lógicas em todo lugar, então as páginas
   em árabe são renderizadas corretamente sob `dir="rtl"`.
+- **Revisão da tradução: rastreada por página.** As páginas de localidade
+  semeadas por máquina são servidas e carregam `machineTranslated: true` em seu
+  frontmatter até que uma pessoa as revise; a marcação é um metadado de
+  acompanhamento da revisão e a página não a exibe. O inglês é o fallback para
+  qualquer página que falte a uma localidade. Ter 80% das páginas de uma
+  localidade revisadas é uma meta de revisão, não um bloqueio à publicação.
 - **Atualidade da tradução: rastreada por página.** Cada página de localidade
   registra o texto em inglês a partir do qual foi traduzida. Quando a página em
   inglês muda depois, a página traduzida mostra uma nota de uma linha com um

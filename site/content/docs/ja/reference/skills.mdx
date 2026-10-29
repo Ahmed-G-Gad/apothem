@@ -2,7 +2,7 @@
 title: "スキル"
 description: "SKILL.md ファイルに記述された、再利用可能で検出可能なテクニック。プランスイートとエコシステム監査のための検出シグナル、手順、強制フックを備えます。"
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 | ハーネス | インストールが変更する内容 |
 | --- | --- |
 | Claude Code（インストールとプラグイン） | `userInvocable` を、Claude Code が読み取るキーである `user-invocable` に改名します。Claude Code はキャメルケースのキーを無視するため、改名しなければ、`userInvocable: false` と指定されたスキルが `/` メニューに表示されたままになります。 |
-| Codex | `SKILL.md` はそのままにし、ソースで `disable-model-invocation: true` が設定されているすべてのスキルの隣に、`policy.allow_implicit_invocation: false` を含む `agents/openai.yaml` を書き込みます。Codex がそのキーを無視するためです。 |
+| 共有のユーザーレベルのスキルフォルダー: `~/.agents/skills/`（Codex、Cursor、GitHub Copilot、Windsurf、Zed が書き込む）、および `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/` | これらのフォルダーのいずれかに書き込むすべてのインストールで共通の 1 つの形式を使うため、インストール同士が互いのファイルを書き換えることはありません。`userInvocable` を `user-invocable` に改名し、`version`、`updated`、`archetype`、`portability` を引用符付き文字列からなる末尾の `metadata:` マップの下へ移動し、ソースで `disable-model-invocation: true` が設定されているすべてのスキルの隣に、`policy.allow_implicit_invocation: false` を含む `agents/openai.yaml` を書き込みます。Codex はそのキーを無視し、Codex アダプターが書き込んだかどうかにかかわらず `~/.agents/skills/` を読み取るためです。スキルとしてラップされたコマンドは本体をそのまま保持し、ルールとテンプレートのフォルダーである `~/.config/apothem/rules/` と `~/.config/apothem/templates/` を示す 1 つの固定の注記で始まります。残るトップレベルキーは `name`、`description`、`user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、`metadata` です。 |
+| Qwen Code | カンマ区切りの `allowed-tools` 文字列を、1 行に 1 つの YAML エントリからなる `allowedTools` リストとして書き換えます。`Qwen Code` はキャメルケースのキーだけを読み取り、リストを要求するためです。各エントリは `Bash(git status *)` のようなパターンを含め、ソースの表記を保持します。その他のキーとスキル本文はすべて変更されずにインストールされます。 |
 | その他のハーネス | 変更なし。 |
 
 `skill.schema.json` は、ユーザー呼び出し可否フラグのどちらの綴りも受け付け、そのうちちょうど

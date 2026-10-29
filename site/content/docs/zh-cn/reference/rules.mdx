@@ -2,7 +2,7 @@
 title: "规则"
 description: "常驻与按路径筛选的行为规则，在整个行为规则集中治理问题求解、代码工艺、整洁架构、规划与质量。"
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,25 +10,7 @@ sourceHash: "84db4f5243d1ad02"
 
 ## 生效的规则
 
-规范注册表是规则集合。以下是同一组规则的扁平形式：
-
-| 规则 | 作用域 | 实现 |
-|------|-------|------------|
-| Auto Memory | 常驻 | CM-26 |
-| Clean-Room Generation | 常驻 | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | 常驻 | CM-21 |
-| Context Management | 常驻 | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | 按路径筛选 | CM-12 / CM-24（配套） |
-| Conventions Vigilance | 常驻 | CM-22 |
-| Interactive Questions | 常驻 | CM-2 扩展 |
-| Interactive Questions Sweep Matchers | 按路径筛选 | CM-2 扩展（配套） |
-| Operational Mandates | 常驻 | CM-1–10 |
-| Worker Orchestration | 常驻 | CM-17 / CM-25 |
-| Clean Architecture | 按路径筛选 | CM-27 |
-| Large File Generation | 按路径筛选 | CM-23 |
-| Performance Discipline | 按路径筛选 | 性能维度 |
-| Planning Techniques | 按路径筛选 | CM-20 / CM-21 |
-| Python Senior Architect | 按路径筛选 | CM-28 |
+规范注册表是 `src/apothem/rules/` 中的规则集合。本页底部的[生成的清单](#生成的规则清单)列出了每条规则及其描述和源文件。五条规则为常驻规则，其余均按路径筛选；下一节会指明在每个会话中加载的这五条规则。
 
 ## Frontmatter 契约
 
@@ -45,9 +27,11 @@ alwaysApply: <true | false>
 
 在常驻规则上，`pathFilter` 是空字符串（`""`），`alwaysApply` 为 `true`；在按路径筛选的规则上，`pathFilter` 携带 glob 列表，`alwaysApply` 为 `false`。机器可读的契约是 [`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)（`{name, description, pathFilter, alwaysApply}`）；校验器的 `frontmatter-cohort` 检查会在每个规则文件上验证它。
 
-`pathFilter` 和 `alwaysApply` 与工具无关。在工具具有原生作用域字段的地方，每个适配器都会转换它们。Claude Code 只从规则中读取 `paths:`，并在启动时加载每条不带该字段的规则，因此引擎安装（`apothem install --harness claude-code`）会将每条按路径筛选的规则写入 `~/.claude/rules/`，并附带一个由其 `pathFilter` 构建的 `paths:` 列表，而常驻规则则原样复制。这 28 条常驻规则在每个会话中加载；63 条按路径筛选的配套规则在助手读取匹配的文件时加载。
+`pathFilter` 和 `alwaysApply` 与工具无关。在工具具有原生作用域字段的地方，每个适配器都会转换它们。Claude Code 只从规则中读取 `paths:`，并在启动时加载每条不带该字段的规则，对 `paths:` 仅为 `**` 的规则也是如此，因此引擎安装（`apothem install --harness claude-code`）会将每条按路径筛选的规则写入 `~/.claude/rules/`，并附带一个由其 `pathFilter` 构建的 `paths:` 列表，且写入的每份规则副本都不含其结尾的 Bindings 部分。有五条规则在每个会话中加载：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management` 以及规则索引。其余 90 条规则按路径筛选，在助手读取匹配的文件时加载。将某条规则加入常驻集合时，须在同一次变更中修改核心列表和字节上限。
 
-OpenCode 没有按规则划分的作用域字段：它会将其 `opencode.json` 的 `instructions` 列表所指明的每个文件合并到每个会话中。因此，OpenCode 安装（`apothem install --harness opencode`）会列出你的配置档案文档，并且只列出 `alwaysApply` 为 `true` 的规则，每个文件一个明确的 `~/.config/opencode/...` 路径，在写入配置时从规则文件中读取。每条规则（包括按路径筛选的规则）仍会安装在 `~/.config/opencode/.apothem/support/rules/` 下，引用其中某一条的规则、技能或命令会按需读取它。
+规则索引 `apothem-rule-index` 是唯一一个指明其他每条规则及其适用情形的常驻文件。按路径限定规则作用域的工具，会在触及匹配文件时加载限定作用域的规则。不这样做的工具则一条也不加载，因此该索引、指令文件中指向它的那句话，以及按路径引用某条规则的规则和技能，就是会话触达该规则的途径。上下文压缩之后，限定作用域的规则不再位于上下文中，索引会告诉助手重新读取它当时正在应用的任何规则。Claude Code 只针对工作目录内的文件匹配路径过滤器，因此文件位于 `~/.claude/projects/` 下的自动记忆规则是通过索引、而不是通过路径匹配触达会话的。
+
+OpenCode 没有按规则划分的作用域字段：它会将其 `opencode.json` 的 `instructions` 列表所指明的每个文件合并到每个会话中。因此，OpenCode 安装（`apothem install --harness opencode`）会列出你的配置档案文档，并且只列出 `alwaysApply` 为 `true` 的规则（四条核心规则和规则索引），每个文件一个明确的 `~/.config/opencode/...` 路径，在写入配置时从规则文件中读取。每条规则（包括按路径筛选的规则）仍会安装在 `~/.config/opencode/.apothem/support/rules/` 下，索引会指明它，而引用其中某一条的规则、技能或命令会按需读取它。
 
 ## 编写纪律
 

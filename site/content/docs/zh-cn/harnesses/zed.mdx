@@ -2,7 +2,7 @@
 title: "Zed"
 description: "适用于 Zed（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "62b3de71f4c3ce39"
+sourceHash: "43036c087a25d729"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,33 @@ GEMINI.md
 
 不存在按工具划分的规则目录，因此整个 Apothem 表面都落在该列表顶部的扁平 `.rules` 文件中。
 
-**写入的文件：** `<project>/.rules`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
+
+**写入的文件：**
+
+- `<project>/.rules`，即指令文件。
+- 每个 Apothem 技能和命令对应一个 `~/.agents/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.agents/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和指令文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `zed` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- `--project` 决定要写入哪个指令文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是指令文件，以及每次项目安装都会创建的 `.apothem/` 数据文件夹。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
 
 ## 配置档案到原生配置的映射
 
@@ -45,6 +71,8 @@ Zed 将 `AGENTS.md` 称为其主要指令文件，并保留项目 `.rules` 作�
 
 全局 `~/.config/zed/AGENTS.md` 指令文件和 MCP 上下文服务器块（`.zed/settings.json` 中的 `context_servers`）归操作者所有；Apothem 不写入它们。
 
+Zed 只从 `~/.agents/skills/` 加载全局技能，采用每个技能一个文件夹的扁平布局，这正是安装写入的布局。Zed 将项目本地技能的加载限定于受信任的工作树，而它的文档没有为全局文件夹设定此类限制。有一份报告称 Zed 发送给模型的技能目录存在大小上限；Apothem 尚未确认这一点，也未确认关闭模型调用的技能是否计入该上限。Apothem 技能的名称和描述总计约 20 KB。Apothem 也尚未确认 Zed 如何处理一个它未列出的 `SKILL.md` 头部键。
+
 ## 验证
 
 ```bash
@@ -55,7 +83,8 @@ verify 命令确认：
 
 1. 原生配置存在于预期路径。
 2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -65,6 +94,8 @@ apothem update --harness zed --project /path/to/project
 
 根据当前的共享配置档案状态，重新派生项目 `.rules` 文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。
+
 ## 卸载
 
 ```bash
@@ -72,6 +103,8 @@ apothem uninstall --harness zed --project /path/to/project
 ```
 
 移除 Apothem 在原生配置文件 `.rules` 中的受管块，并保留你自己的文本。只有当文件中已无其他内容时才会删除该文件。在变更之前，会在 `~/.apothem/backups/` 下保存一份带时间戳的文件副本；项目中不会留下备份文件。共享配置档案 YAML 与 Apothem 引擎不受影响。
+
+卸载还会移除它在 `~/.agents/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -85,6 +118,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness zed --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness zed --project /path/to/project`，然后再次验证 |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness zed --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness zed --project /path/to/project` |
 
 ## 配置开关

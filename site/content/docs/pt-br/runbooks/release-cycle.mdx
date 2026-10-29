@@ -2,7 +2,7 @@
 title: "Runbook do ciclo de lançamento"
 description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,6 +87,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -201,13 +202,255 @@ aguardando, do mesmo modo que na §2.3 (o ID da execução vem de
 execução `Publish VS Code Extension` que está aguardando. Ela empacota
 `apothem.vsix` e o publica no Visual Studio Marketplace como
 `ahmed-g-gad.apothem-vscode`. A etapa de publicação roda somente enquanto a variável
-do repositório `VSCODE_MARKETPLACE_READY` for `true` e o segredo `VSCE_PAT` estiver
-definido; caso contrário, a execução empacota a extensão e pula a publicação.
+do repositório `VSCODE_MARKETPLACE_READY` for `true` e uma credencial estiver
+configurada: a variável `VSCE_AUTH=oidc` (Trusted Publishing do Marketplace, sem
+segredo armazenado), as variáveis `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` e
+`AZURE_TENANT_ID` (um token de curta duração do Microsoft Entra ID, sem segredo
+armazenado), ou o segredo `VSCE_PAT`. Sem nenhuma delas, a execução empacota a
+extensão e pula a publicação. A credencial é uma chave seletora, não uma nova
+tentativa: uma publicação com falha em uma rota não recorre a outra por conta
+própria. A configuração de cada rota está em
+[Publicação no Marketplace com Trusted Publishing](#publicação-no-marketplace-com-trusted-publishing)
+(preferida) e
+[Publicação no Marketplace com Microsoft Entra ID](#publicação-no-marketplace-com-microsoft-entra-id)
+abaixo.
 
 Para publicar novamente após uma execução com falha, despache o fluxo de
 trabalho para a mesma tag (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`).
 Ele pula a publicação quando a versão já está no registro, porque as versões do
 npm são imutáveis.
+
+#### Publicação no Marketplace com Trusted Publishing
+
+O Trusted Publishing permite que o Marketplace aceite diretamente o token OIDC
+do GitHub deste repositório: `vsce publish --oidc` troca o token do job de
+publicação por uma credencial de curta duração do Marketplace. Não há segredo
+armazenado nem recurso do Azure, por isso esta é a rota preferida. A rota do
+Entra abaixo e o segredo `VSCE_PAT` permanecem como alternativas que o operador
+seleciona.
+
+1. **Use uma versão do vsce que dê suporte a ela.** Nesta rota, o job de
+   publicação verifica a versão do vsce travada em `tools/vsce` antes de
+   publicar e para com um erro que nomeia a versão mínima quando a trava é mais
+   antiga. O Dependabot propõe atualizações do vsce para esse lockfile; faça o
+   merge daquela que alcança a versão mínima antes de trocar de rota.
+2. **Crie a política.** Entre como Owner do publicador, abra
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad` e
+   adicione uma política em **Trusted Publishing**:
+   - Nome da política: qualquer nome, como `apothem-release`
+   - Proprietário do repositório: `Ahmed-G-Gad`
+   - Repositório: `apothem`
+   - Fluxo de trabalho: `publish-vscode.yml`
+   - Ambiente: `release`
+
+   Os nomes dos campos são os que o guia de publicação do VS Code lista, na sua
+   seção sobre publicação com GitHub Actions e Trusted Publishing
+   (`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`).
+   Não confirmado: se todo publicador já vê a aba Trusted Publishing. Se o seu
+   não vir, use a rota do Entra.
+3. **Troque a rota.** Mantenha `VSCODE_MARKETPLACE_READY` definida como `true` e
+   defina o seletor. Defina-o quando nenhuma tag estiver aguardando, porque o
+   próximo push de tag publica por esta rota.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **Publique.** O próximo push de tag, ou um despacho para uma tag existente,
+   publica por meio do Trusted Publishing. Esta rota não tem execução de teste
+   (dry run): a primeira publicação é a verificação, e um despacho com
+   `dry_run` apenas avisa que nada foi verificado.
+5. **Recorra à alternativa se falhar.** Exclua o seletor e despache novamente
+   para a mesma tag; com o segredo `VSCE_PAT` definido, a rota do token publica.
+   Uma publicação com falha não publicou nada, então a mesma tag pode ser
+   despachada novamente.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### Publicação no Marketplace com Microsoft Entra ID
+
+A rota do Entra substitui o token de acesso pessoal armazenado por um token de
+curta duração. `publish-vscode.yml` pede ao GitHub um token OIDC, a action
+`Azure/login` o troca por um login do Entra por meio de uma credencial
+federada, e `vsce publish --azure-credential` publica com o token resultante.
+Não existe nenhum segredo de cliente. O segredo `VSCE_PAT` permanece como uma
+alternativa que o operador seleciona; o fluxo de trabalho nunca muda para ele
+por conta própria.
+
+A versão do vsce fixada em `tools/vsce` dá suporte a esta rota. Ela exige um
+tenant do Entra, um registro de aplicativo e a associação ao publicador, o que
+o Trusted Publishing acima não exige; use-a quando o Trusted Publishing não
+estiver disponível para o publicador.
+
+1. **Verifique as pré-condições.** Encontre a conta proprietária do publicador
+   `ahmed-g-gad` (a aba Members em
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`) e o
+   tenant do Entra em que você pode registrar aplicativos. Não confirmado: se o
+   tenant do proprietário do publicador precisa corresponder ao tenant do
+   aplicativo, e se a organização do Azure DevOps `Ahmed-G-Gad` precisa estar
+   conectada ao Entra (`dev.azure.com/Ahmed-G-Gad`, Organization settings,
+   Microsoft Entra). Nenhuma fonte afirma nenhuma das duas coisas. Se a etapa 5
+   ou 6 falhar, verifique estes pontos primeiro.
+
+2. **Registre o aplicativo.** Em `https://entra.microsoft.com`, abra App
+   registrations e depois New registration. Dê a ele o nome
+   `apothem-vscode-publish`, escolha um único tenant e deixe o URI de
+   redirecionamento vazio. Em Overview, copie o Application (client) ID e o
+   Directory (tenant) ID. Não crie nenhum segredo de cliente e não conceda
+   nenhuma permissão de API. A etapa exige direitos de proprietário do
+   aplicativo ou uma função do Entra como Application Administrator.
+
+3. **Adicione a credencial federada.** Nesse aplicativo, abra Certificates &
+   secrets, Federated credentials, Add credential, e escolha o cenário
+   "GitHub Actions deploying Azure resources". Informe a organização
+   `Ahmed-G-Gad`, o repositório `apothem`, o tipo de entidade `Environment`, o
+   nome de ambiente `release` e o nome de credencial `apothem-release`. Os
+   campos gerados devem mostrar:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   A correspondência é exata e diferencia maiúsculas de minúsculas. Se um login
+   posterior falhar com AADSTS700213 ou AADSTS7002138, compare a credencial com
+   a linha `subject claim` que `Azure/login` grava no log do job. AADSTS70021
+   logo após a criação significa que a credencial ainda não se propagou;
+   aguarde alguns minutos e tente novamente.
+
+4. **Defina as variáveis do repositório.** Enquanto `VSCODE_MARKETPLACE_READY`
+   for `true`, a rota do Entra fica ativa assim que as três estiverem
+   definidas; por isso, defina-as quando nenhuma tag de lançamento estiver
+   aguardando aprovação. Sem `VSCODE_MARKETPLACE_READY=true`, nada faz login e
+   a execução pula a publicação.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   Deixe `VSCODE_MARKETPLACE_READY` e `VSCE_PAT` como estão. Quando
+   `VSCE_AUTH` é `entra`, mas `AZURE_CLIENT_ID` ou `AZURE_TENANT_ID` está vazia,
+   o fluxo de trabalho registra um aviso, esteja ou não `VSCE_PAT` definido, e
+   não usa a rota do Entra. Ele então usa o segredo `VSCE_PAT`, se estiver
+   definido; sem o segredo, não publica nada e a execução ainda termina em
+   verde, então procure o aviso.
+
+5. **Faça a execução de teste.** Despache o fluxo de trabalho para uma tag de
+   lançamento existente com `dry_run` definido. Na rota do Entra, ele faz
+   login, imprime o perfil do Azure DevOps e verifica o acesso ao publicador
+   sem publicar. A rota do token não tem execução de teste: se o log mostrar
+   `Marketplace credential mode: pat`, a execução termina em verde com um aviso
+   e não verificou nada. Aprove a execução do ambiente `release` que está
+   aguardando.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   Esperado: `Marketplace credential mode: entra`, uma linha `subject claim`
+   igual ao subject da etapa 3, e o `id` e o `displayName` do perfil impressos
+   pela primeira etapa da execução de teste. Espera-se que a etapa de
+   verificação falhe com um 403 até a etapa 6. Não confirmado: que um login sem
+   uma assinatura do Azure produza um token para o Marketplace por meio da CLI
+   do Azure. Esta execução é o primeiro teste disso. Se falhar aqui, registre
+   em vez disso uma identidade gerenciada atribuída pelo usuário em uma
+   assinatura, que é a rota que a Microsoft documenta.
+
+6. **Adicione o aplicativo ao publicador.** Na aba Members da etapa 1, entre
+   como Owner do publicador e adicione um membro usando o `id` do perfil da
+   etapa 5, com a função Contributor. Não confirmado: o rótulo do campo da
+   caixa de diálogo, e se ela aceita o id antes de o aplicativo ser membro de
+   uma organização do Azure DevOps. Como regra geral, o Azure DevOps adiciona
+   identidades de aplicativo por organização. Se a caixa de diálogo rejeitar o
+   id, adicione a entidade de serviço à organização `Ahmed-G-Gad`
+   (Organization settings, Users, usando o Object ID do Enterprise
+   application) e tente novamente. Também não confirmado: se o perfil existe
+   antes da primeira chamada da identidade ao Azure DevOps.
+
+7. **Repita a execução de teste.** A etapa de verificação agora é bem-sucedida
+   com "verification succeeded for the publisher"; suas mensagens ainda falam
+   em Personal Access Token, porque o token do Entra percorre o mesmo caminho.
+   A verificação comprova a associação ao publicador (Creator, Owner,
+   Contributor ou Reader), não os direitos de publicação. Não confirmado: que
+   Contributor baste para publicar uma atualização. A descrição de funções da
+   Microsoft diz que basta, e nenhuma fonte mostra uma publicação com ela, então
+   a primeira publicação real é a prova.
+
+8. **Publique um lançamento.** Marque a tag como na §2.2 e aprove a execução. A
+   etapa `Publish to Visual Studio Marketplace (Entra ID)` é executada, o
+   cabeçalho de ambiente dela lista apenas `AZURE_TENANT_ID`, a etapa
+   alternativa do token é pulada, e o vsce imprime
+   `DONE Published ahmed-g-gad.apothem-vscode`. A galeria do Marketplace lista
+   a nova versão após cerca de quatro minutos.
+
+9. **Decida sobre o token.** Mantenha `VSCE_PAT` até a primeira publicação
+   bem-sucedida pelo Entra e depois exclua o segredo se nenhuma alternativa for
+   desejada. Depois que ele não existir mais, uma variável do Entra excluída ou
+   vazia deixa a execução em verde sem publicação: com um aviso quando
+   `VSCE_AUTH` ainda é `entra`, e apenas com o aviso de pulo quando não é. Leia
+   as anotações da execução após cada tag. Para manter uma alternativa além da
+   aposentadoria dos tokens de acesso pessoal globais, crie um token com escopo
+   de organização para `Ahmed-G-Gad` com o escopo personalizado Marketplace
+   Manage e a validade mais curta que você aceitar, e armazene-o como
+   `VSCE_PAT`. Não confirmado: os rótulos do portal nesta etapa vêm da memória,
+   não de uma fonte primária; a Microsoft chama os tokens com escopo de
+   organização de solução temporária e pode deixar de aceitá-los; e as páginas
+   da Microsoft divergem sobre a data de aposentadoria dos tokens globais.
+
+10. **Recorra ao token.** Exclua o seletor e despache novamente; depois,
+    aprove a execução. Uma publicação com falha pelo Entra não publicou nada,
+    então a mesma tag pode ser despachada novamente; verifique antes a página
+    do Marketplace, porque uma versão que chegou lá não pode ser publicada duas
+    vezes.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+Quando a publicação pelo Entra falhar, leia o log da etapa:
+
+- Uma mensagem que começa com "Can not acquire a Microsoft Entra ID access
+  token" significa que o login ou a cadeia de credenciais falhou. Verifique
+  primeiro a etapa `Sign in to Microsoft Entra ID` e a credencial federada. Se
+  o login estiver em verde, remova `AZURE_TENANT_ID` do `env` da etapa do vsce
+  no fluxo de trabalho; o próprio fluxo de trabalho de lançamento de extensão
+  do GitHub não o exporta.
+- "InvalidAccessException" ou "not allowed" significa que a identidade do token
+  não é membro do publicador. Compare o `id` do perfil da execução de teste com
+  a aba Members.
+- Um 403 da etapa de verificação da execução de teste significa que o
+  aplicativo ainda não tem função.
+
+Três limites se aplicam a esta rota:
+
+- `id-token: write` é concedido a todo o job de publicação, de modo que
+  qualquer etapa dele pode solicitar um token OIDC, também no modo token. O
+  subject do token está vinculado ao ambiente `release`, que exige a aprovação
+  de um revisor.
+- O ambiente `release` não tem política de branch ou de tag de implantação, de
+  modo que qualquer ref que um mantenedor aprove pode obter o token com o
+  subject do ambiente. Restringi-lo a tags `v*.*.*` exige verificar antes o que
+  `release.yml` e `publish-npm.yml` despacham.
+- Uma renomeação ou transferência do repositório muda o formato do subject OIDC
+  e quebra silenciosamente a credencial federada. Copie novamente o subject do
+  log do `Azure/login` para a credencial após qualquer renomeação.
+
+### 2.5 Atualizar a fixação do digest dos templates
+
+Depois que a tag existir, defina `_LATEST_RELEASE` e `_LATEST_RELEASE_DIGESTS`
+em `tests/unit/test_template_digests.py` com o novo lançamento e o digest
+SHA-256 de cada template de texto simples tal como esse lançamento o entregou
+(`git show vX.Y.Z:<template path> | sha256sum`). Faça isso na próxima mudança
+em `main` e adicione o digest anterior a `earlier_digests` da entrada do
+manifesto quando o template tiver mudado. O job de CI `release-preflight` faz
+checkout de cada tag, por isso falha com os nomes das tags até que a fixação
+seja atualizada.
 
 ## 3. Superfícies de distribuição
 

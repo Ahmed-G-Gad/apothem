@@ -2,7 +2,7 @@
 title: "Adaptadores de harness"
 description: "Adaptadores de harness do Apothem — um perfil compartilhado, dezessete alvos suportados."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,12 +80,40 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Skills no seu diretório pessoal
+
+Sete adaptadores com escopo de projeto gravam um arquivo de regras no seu projeto (seis
+deles também gravam ali os auxiliares do Apothem como arquivos de subagente; cada página de harness nomeia
+a pasta), e também gravam as skills do Apothem, e as regras e templates que as
+skills citam, em pastas no seu diretório pessoal:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Toda instalação que nomeia uma pasta grava os mesmos arquivos, então a ordem em que você
+  instala não importa, e uma única cópia serve a todos os projetos.
+- Uma instalação grava as pastas do diretório pessoal primeiro. Se isso falhar, ela para antes de
+  alterar o projeto, e não adiciona nenhum arquivo de skill ou de regra ao seu repositório.
+- Uma desinstalação remove uma pasta compartilhada somente quando nenhuma outra instalação do Apothem ainda
+  a usa, e diz qual instalação a mantém.
+- Uma pasta de skill com o nome de uma skill do Apothem que o Apothem não gravou é deixada
+  intacta, com um aviso.
+
+Cada página de harness lista as suas pastas. O
+[registro de harnesses](/docs/reference/harness-registry#raízes-compartilhadas) mostra quais
+ferramentas compartilham qual pasta.
 
 Consulte [Abstração de adaptador de harness](/docs/architecture/harness-adapter-abstraction)
 para a especificação do protocolo.

@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adapter harness Apothem untuk Open-Claw (Pratinjau)."
 machineTranslated: true
-sourceHash: "f13f9ce348ede92c"
+sourceHash: "4c7b4673820f1fa6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,8 @@ apothem install --harness open-claw
 Adapter menulis berkas konfigurasi global-pengguna OpenClaw, memproyeksikan
 profil bersama ke dalam dokumen profil, dan memasang kohor pendukung Apothem di
 bawah akar harness. Konfigurasi native OpenClaw adalah JSON; materializer
-merender objek JSON kosong, dan berkas yang sudah ada tetap mempertahankan
-kunci-kuncinya.
+merender satu kunci, `skills.load.extraDirs`, dan berkas yang sudah ada tetap
+mempertahankan kunci-kuncinya yang lain.
 
 **Berkas yang ditulis:** `~/.openclaw/openclaw.json`, dokumen profil
 `~/.openclaw/apothem/rules/00-apothem-profile.md`, dan berkas pendukung di bawah
@@ -34,16 +34,69 @@ di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adapter membaca profil bersama Apothem tetapi tidak menulis kunci konfigurasi
-apa pun: `openclaw.json` yang baru atau kosong ditulis sebagai objek kosong, dan
-berkas yang sudah ada tetap mempertahankan kunci-kuncinya. Identitas,
+Adapter menulis satu kunci konfigurasi. Adapter menambahkan
+`~/.openclaw/.apothem/support/skills` ke `skills.load.extraDirs`, daftar
+direktori skill tambahan yang dibaca OpenClaw, yang merupakan cara OpenClaw
+menemukan skill yang terpasang. Entri ini ditempatkan setelah entri apa pun yang
+sudah Anda cantumkan, dan kunci Anda yang lain tetap seperti semula. Identitas,
 preferensi, dan aturan profil masuk ke dokumen profil. Command, skill, aturan,
 templat, dan prompt hook bersama dipasang sebagai materi pendukung di bawah
 `~/.openclaw/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
-Adapter pratinjau. OpenClaw tidak memuat pohon pendukung maupun dokumen profil dengan sendirinya: tidak satu pun lokasi skill-nya, berkas instruksi workspace-nya, atau konfigurasinya menunjuk ke sana, sehingga setelah pemasangan OpenClaw berjalan tanpa aturan, skill, atau server MCP Apothem. OpenClaw membaca skill dari folder `skills/` dan `.agents/skills/` di workspace-nya, `~/.agents/skills`, dan direktori state-nya, lalu menyaringnya melalui daftar izin nama skill di bawah `agents.defaults.skills`. `skills.load.extraDirs` bukan pemuat skill, sehingga skill Apothem di bawah `~/.openclaw/.apothem/support/skills` baru dimuat setelah Anda menempatkannya di salah satu folder tersebut dan menyebutkan namanya di daftar izin itu. `apothem update` mempertahankan kunci yang Anda tambahkan ke `openclaw.json`. Server MCP berada di blok `mcp.servers` pada konfigurasi OpenClaw, yang Anda kelola dengan `openclaw mcp add` dan subperintah terkait; adapter tidak menulis entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasinya tentang [skill](https://docs.openclaw.ai/tools/skills) dan [CLI MCP](https://docs.openclaw.ai/cli/mcp), dibaca 2026-10-02.)
+Adapter pratinjau. OpenClaw memuat skill Apothem melalui
+`skills.load.extraDirs`, tetapi tidak memuat bagian lain dari pohon pendukung
+maupun dokumen profil dengan sendirinya: tidak satu pun berkas instruksi
+workspace-nya atau konfigurasinya menunjuk ke sana, sehingga setelah pemasangan
+OpenClaw berjalan tanpa aturan atau server MCP Apothem.
+
+**Bentrok nama.** OpenClaw membaca skill dari sumber-sumber berikut, dimulai
+dari prioritas tertinggi, dan ketika nama skill yang sama muncul di lebih dari
+satu tempat, sumber tertinggi yang menang: folder `skills/` di workspace, folder
+`.agents/skills/` di workspace, `~/.agents/skills` (hanya untuk direktori state
+default), folder `skills/` di direktori state (`~/.openclaw/skills` secara
+default), skill workshop, skill bawaan dan custodian, dan terakhir folder yang
+tercantum di bawah `skills.load.extraDirs` bersama skill plugin. Direktori
+Apothem adalah entri `extraDirs`, sehingga skill dengan nama yang sama yang Anda
+simpan di salah satu sumber sebelumnya adalah yang digunakan OpenClaw, dan
+salinan Apothem dari skill itu tetap tidak terpakai di disk. Apothem hanya
+menulis ke `openclaw.json` dan di bawah `~/.openclaw/.apothem/support/`, tidak
+pernah ke folder-folder sebelumnya itu, sehingga instalasi, pembaruan, dan
+pencopotan tidak mengganti skill yang Anda simpan di sana.
+
+`agents.defaults.skills` adalah daftar izin nama skill; Apothem tidak
+menyuntingnya, jadi jika Anda menyimpannya, periksa bahwa daftar itu menyebutkan
+skill Apothem yang Anda inginkan.
+`apothem update` mempertahankan kunci yang Anda tambahkan ke `openclaw.json`.
+Server MCP berada di blok `mcp.servers` pada konfigurasi OpenClaw, yang Anda
+kelola dengan `openclaw mcp add` dan subperintah terkait; adapter tidak menulis
+entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasinya tentang
+[skill](https://docs.openclaw.ai/tools/skills),
+[konfigurasi skill](https://docs.openclaw.ai/tools/skills-config), dan
+[ekstensi konfigurasi](https://docs.openclaw.ai/gateway/config-extensions),
+dibaca 2026-10-24, serta dokumentasi [CLI MCP](https://docs.openclaw.ai/cli/mcp)
+miliknya, dibaca 2026-10-02.)
+
+**Komentar di `openclaw.json`.** OpenClaw membaca konfigurasinya sebagai JSON5,
+dan Apothem menulis ulang berkas itu sebagai JSON biasa. Ketika berkas itu
+memuat komentar atau sintaks JSON5 lainnya dan entri tersebut tidak ada, Apothem
+membiarkan berkas itu tidak tersentuh dan instalasi berhenti dengan pesan yang
+menyebutkan kuncinya. Gabungkan sendiri entri ini ke dalam berkas Anda, atau
+konversikan berkas itu menjadi JSON biasa, lalu jalankan instalasi lagi:
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  }
+}
+```
+
+Entri yang Anda tambahkan sendiri dihitung sebagai milik Anda: pencopotan
+membiarkannya di tempatnya.
 
 ## Verifikasi
 
@@ -57,7 +110,10 @@ Perintah verify memastikan bahwa:
 2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
    JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
    memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+3. `skills.load.extraDirs` di konfigurasi native mencantumkan
+   `~/.openclaw/.apothem/support/skills`. Tanpa entri itu OpenClaw tidak
+   memuat skill yang terpasang; `apothem update` menambahkannya kembali.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -67,7 +123,8 @@ apothem update --harness open-claw
 
 Menurunkan ulang dokumen profil dari status profil bersama saat ini dan
 menyegarkan berkas pendukung; `openclaw.json` tetap mempertahankan kunci yang
-sudah dimilikinya.
+sudah dimilikinya, dan entri Apothem di `skills.load.extraDirs` tetap tercantum
+sekali, seberapa sering pun Anda memperbarui.
 Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
 paket Apothem yang terpasang.
 
@@ -77,8 +134,10 @@ paket Apothem yang terpasang.
 apothem uninstall --harness open-claw
 ```
 
-Menghapus apa yang ditambahkan adapter: dokumen profil dan pohon pendukung.
-Kunci milik Anda sendiri di `openclaw.json` tetap ada, dan berkas itu dihapus
+Menghapus apa yang ditambahkan adapter: entrinya di `skills.load.extraDirs`,
+dokumen profil, dan pohon pendukung. Kunci milik Anda sendiri di
+`openclaw.json` tetap ada, termasuk entri `extraDirs` milik Anda sendiri, dan
+berkas itu dihapus
 hanya ketika Apothem yang membuatnya dan tidak ada lagi yang tersisa milik
 Anda. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
@@ -94,7 +153,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness open-claw` |
 | Verifikasi gagal | Jalankan `apothem update --harness open-claw`, lalu verifikasi lagi |
-| Konten konfigurasi tidak terduga | Apothem tidak menulis kunci apa pun di `openclaw.json` dan mempertahankan kunci yang sudah ada di dalamnya, sehingga konten profil tidak masuk ke sana. Konten profil masuk ke `~/.openclaw/apothem/rules/00-apothem-profile.md`: periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang perintah di bawah [Pembaruan](#pembaruan) |
+| Konten konfigurasi tidak terduga | Apothem hanya menulis entri `skills.load.extraDirs` di `openclaw.json` dan mempertahankan kunci yang sudah ada di dalamnya, sehingga konten profil tidak masuk ke sana. Konten profil masuk ke `~/.openclaw/apothem/rules/00-apothem-profile.md`: periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang perintah di bawah [Pembaruan](#pembaruan) |
+| Instalasi berhenti dengan pesan tentang komentar atau sintaks JSON5 di `openclaw.json` | Apothem tidak menulis ulang berkas yang komentarnya harus dibuang. Tambahkan sendiri entri `skills.load.extraDirs` yang ditunjukkan di [Catatan kompatibilitas](#catatan-kompatibilitas), atau konversikan berkas itu menjadi JSON biasa, lalu jalankan instalasi lagi |
+| Skill Apothem tidak muncul di OpenClaw | Skill dengan nama yang sama di workspace, `~/.agents/skills`, atau `~/.openclaw/skills` didahulukan daripada salinan Apothem (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)). Jalankan juga `apothem verify --harness open-claw`, dan periksa bahwa daftar izin `agents.defaults.skills` yang Anda simpan menyebutkan skill tersebut |
 
 ## Tombol konfigurasi
 

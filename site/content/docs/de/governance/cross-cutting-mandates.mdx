@@ -2,7 +2,7 @@
 title: "Registry der übergreifenden Mandate (CM-1–CM-28)"
 description: "Vollständige Registry und Definitionen der ökosysteminternen übergreifenden Mandate (CM-1–CM-28), die alle Interaktionen und Pipeline-Operationen regeln."
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## Selbstreferenz-Ausnahme der Registry
 
-Dieses Dokument IST die kanonische CM-N-Registry — es ist die Quelle, in der die Token `CM-1` bis `CM-28` *definiert* werden. Diese Token *im eigenen Inhalt der Registry* erneut zu nennen, ist kanonisch und kein Durchsickern plan-interner Terminologie. Die Invariante der Codebase-Isolation gilt weiterhin mit voller Kraft für jedes *andere* Artefakt (Regeln, Helfer, Befehle, Hooks, Schemas, Skripte, Werkzeuge, Tests, Dokumentation, README, Changelogs, Commit-Betreffzeilen/-Nachrichtentexte, Branch-Namen, PR-Titel/-Beschreibungen): keine `CM-N`- / `TM-N`- / `CP-N`-Token, ausschließlich natürliche Domänensprache.
+Dieses Dokument IST die kanonische CM-N-Registry — es ist die Quelle, in der die Token `CM-1` bis `CM-28` *definiert* werden. Diese Token *im eigenen Inhalt der Registry* erneut zu nennen, ist kanonisch und kein Durchsickern plan-interner Terminologie. Die Invariante der Codebase-Isolation gilt weiterhin mit voller Kraft für jedes *andere* Artefakt, das keine veröffentlichte Dokumentation ist (Regeln, Helfer, Befehle, Hooks, Schemas, Skripte, Werkzeuge, Tests, README, CONTRIBUTING, Changelogs, Commit-Betreffzeilen/-Nachrichtentexte, Branch-Namen, PR-Titel/-Beschreibungen): keine `CM-N`- / `TM-N`- / `CP-N`-Token, ausschließlich natürliche Domänensprache.
+
+Veröffentlichte Dokumentationsseiten unter `site/content/docs/` dürfen ein Mandat über seine `CM-N`-ID zitieren, weil diese Registry und die Referenzseite der Regeln diese IDs für die Leser definieren. Eine Seite, die eine ID zitiert, SOLLTE das Mandat daneben in einfachen Worten benennen und DARF KEINE plan-internen Abschnittsnummern eines Mandats zitieren. `TM-N`- und `CP-N`-Token bleiben aus der veröffentlichten Dokumentation heraus, ebenso die übrigen verbotenen Begriffe im CM-7-Block unten.
 
 ## Namensräume
 
@@ -18,7 +20,7 @@ Dieses Dokument IST die kanonische CM-N-Registry — es ist die Quelle, in der d
 
 ## Aktivierung
 
-CM-1–10 + kognitive Identität regeln alle Interaktionen. CM-11, CM-13 (Unterregeln A bis C), CM-15, CM-16, CM-20 gelten nur innerhalb der `/plan`-Pipeline. Die Unterregel D von CM-13 gilt für jeden git-Schreibvorgang und die Unterregel E für die Ziele von `git mv` / `git rm` sowie für Pfade im Commit-Nachrichtentext, innerhalb wie außerhalb dieser Pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 gelten universell (immer aktiv). CM-23, CM-27, CM-28 gelten universell innerhalb ihres deklarierten Pfadfilter-Geltungsbereichs. Standard-Ernsthaftigkeitsstufe für Ad-hoc-Arbeit: PERSONAL_USE.
+CM-1–10 + kognitive Identität regeln alle Interaktionen. CM-11, CM-13 (Unterregeln A bis C), CM-15, CM-16, CM-20 gelten nur innerhalb der `/plan`-Pipeline. Die Unterregel D von CM-13 gilt für jeden git-Schreibvorgang und die Unterregel E für die Ziele von `git mv` / `git rm` sowie für Pfade im Commit-Nachrichtentext, innerhalb wie außerhalb dieser Pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 gelten universell. CM-23, CM-27, CM-28 gelten universell innerhalb ihres deklarierten Pfadfilter-Geltungsbereichs. Standard-Ernsthaftigkeitsstufe für Ad-hoc-Arbeit: PERSONAL_USE. Ein Mandat gilt unabhängig davon, ob seine Regel beim Start geladen wird: Vier Regeln werden in jeder Sitzung geladen (`agnostic-posture`, `authority-inquiry`, `session-closure`, `context-management`), und die übrigen werden bei einem passenden Pfad, über den Regelindex oder über eine Regel, einen Skill oder einen Befehl geladen, die sie zitieren.
 
 ## CM-1–10 (Operativ)
 
@@ -28,7 +30,7 @@ CM-1–10 + kognitive Identität regeln alle Interaktionen. CM-11, CM-13 (Unterr
 
 > Dies ist die codebase-seitige Facette von CM-7; die Facette der Produktvollständigkeit ist als **Kohärentes Produkt (→TM-11)** in `src/apothem/rules/operational-mandates.md §CM-7` dokumentiert. Beide Bezeichnungen beziehen sich auf dasselbe Mandat.
 
-Codebase-Artefakte dürfen NIEMALS plan-interne Verweise enthalten. **Verbotene Begriffe (kanonischer Block — gleichrangige Konsumenten verweisen auf diese Aufzählung):** TM-N, CM-N, CP-N, „Resumption Contract“, „Phase Output Registry“, „convention anchors“, Namen von Phasenordnern, Dateinamen der Plan-Suite (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), Namen der Ernsthaftigkeitsstufen (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Geschützte Artefakte:** Quellcode, Tests, Konfigurationen, Schemas, Build-Skripte, Daten, Assets, Commit-Nachrichten, Branch-Namen, PR-Titel/-Beschreibungen, README, CONTRIBUTING, API-Dokumentation, Changelogs — jedes Artefakt, das außerhalb des Apothem-Quellbaums sichtbar ist (die Installationsziele je Harness, etwa `~/.claude/` für Claude Code). Ausschließlich natürliche Domänensprache. **Gleichrangige Konsumenten** (jeder zitiert diesen Block per Verweis, statt ihn erneut aufzuzählen): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, die Verstoßindikatoren in `src/apothem/rules/operational-mandates.md` §CM-7.
+Codebase-Artefakte dürfen NIEMALS plan-interne Verweise enthalten. **Verbotene Begriffe (kanonischer Block — gleichrangige Konsumenten verweisen auf diese Aufzählung):** TM-N, CM-N, CP-N, „Resumption Contract“, „Phase Output Registry“, „convention anchors“, Namen von Phasenordnern, Dateinamen der Plan-Suite (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), Namen der Ernsthaftigkeitsstufen (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Geschützte Artefakte:** Quellcode, Tests, Konfigurationen, Schemas, Build-Skripte, Daten, Assets, Commit-Nachrichten, Branch-Namen, PR-Titel/-Beschreibungen, README, CONTRIBUTING, API-Dokumentation, Changelogs — jedes Artefakt, das außerhalb des Apothem-Quellbaums sichtbar ist (die Installationsziele je Harness, etwa `~/.claude/` für Claude Code). Ausschließlich natürliche Domänensprache. Die einzige Ausnahme ist die veröffentlichte Dokumentation unter `site/content/docs/`, die `CM-N`-IDs zitieren darf, wie in der Selbstreferenz-Ausnahme der Registry oben beschrieben. **Gleichrangige Konsumenten** (jeder zitiert diesen Block per Verweis, statt ihn erneut aufzuzählen): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, die Verstoßindikatoren in `src/apothem/rules/operational-mandates.md` §CM-7.
 
 ## CM-11 (Plan-Integrität)
 

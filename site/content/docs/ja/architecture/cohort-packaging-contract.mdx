@@ -2,7 +2,7 @@
 title: "コホートパッケージング契約"
 description: "コホートのパッケージングとプラグインマニフェストに関する、下流で利用できる安定した契約 — マッピングを再導出せずに、コホートを列挙し、ハーネスごとのネイティブターゲットを解決します。"
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,6 +69,9 @@ sourceHash: "ef3a145a60ec6690"
 `documentationUrl`、`supportUrl`、`privacyPolicyUrl`、`termsOfServiceUrl`（それぞれ `https://` の URL）、
 さらにプラグイン内の `icon` パスを扱います。
 生成される Claude Code パッケージは、`displayName`、`documentationUrl`、`supportUrl` を設定します。
+Anthropic のディレクトリは掲載用フィールドを読み取り、Claude Code は読み込み時にそれらを無視します。
+claude.ai のマーケットプレイス同期は、この 2 つのリンクを認識されないキーとして報告して取り除くため、そこでのマーケットプレイスには「1 with warnings」と表示されます。
+この警告は想定どおりであり、プラグインは変わらずに読み込まれます。
 プラグインマニフェストは、ハーネスアダプターがそのネイティブプラグイン面にマテリアライズする単位です。
 コホートはプラグインがどのメンバーを携えるかを選択し、伝播マニフェストはそれらのメンバーがハーネスごとにどこへ配置されるかを解決します。
 

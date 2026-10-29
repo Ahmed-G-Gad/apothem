@@ -2,7 +2,7 @@
 title: "Conceptos"
 description: "Glosario que define los perfiles compartidos, los adaptadores de entorno, las reglas, los hooks, las puertas de conformidad, las skills y los trabajadores delegados en Apothem."
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,10 @@ adaptadores.
 
 Un archivo Markdown bajo src/apothem/rules/ que se carga en cada interacción (siempre activa) o
 solo al editar archivos bajo una ruta específica (filtrada por ruta). Las reglas codifican cómo debe
-comportarse el entorno.
+comportarse el entorno. Cuatro reglas están siempre activas: `agnostic-posture`, `authority-inquiry`,
+`session-closure` y `context-management`. El índice de reglas, `apothem-rule-index`, se carga con
+ellas y nombra cada una de las demás reglas y cuándo leerla. Un entorno que no delimita las reglas por
+ruta no carga ninguna de las demás, así que el índice es la forma en que una sesión las encuentra.
 
 ## Hook
 

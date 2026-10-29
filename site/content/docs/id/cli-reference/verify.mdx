@@ -2,7 +2,7 @@
 title: "verify"
 description: "Referensi CLI untuk perintah apothem verify."
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,6 +23,18 @@ terkelolanya ada dan valid. Tanpa `--profile`, pemeriksaannya bersifat
 `--profile`, pemeriksaan juga mensyaratkan **fidelitas profil**, sehingga
 pemasangan yang ada tetapi telah menyimpang gagal dalam verify, menjawab
 "apakah profil INI terpasang secara setia?" alih-alih sekadar "apakah ia ada?".
+
+Untuk adapter yang menulis skill ke direktori home Anda, verify juga memeriksa
+bahwa setiap folder skill yang diharapkannya ada dengan sebuah `SKILL.md`,
+pemasangan mana pun yang menulisnya, sehingga mesin yang hanya memasang salah
+satu dari alat-alat yang berbagi sebuah folder tetap lolos verifikasi. Verify
+gagal ketika sebuah folder hilang, dan ketika folder dengan nama skill Apothem
+milik sesuatu yang tidak ditulis oleh Apothem. Baris yang gagal menyebutkan
+yang mana: dalam mode plain, baris `Note:` mengikutinya, dan dalam baris JSON,
+objek `user_level` mencantumkan jalur `missing` dan `unlisted` serta sebuah
+`message`. Jalankan [`install`](/docs/cli-reference/install) untuk memulihkan
+folder yang hilang; ganti nama atau pindahkan folder asing, lalu jalankan
+[`update`](/docs/cli-reference/update).
 
 Sapuan `--harness all` mematuhi `exclude_harnesses` milik profil — pengecualian
 yang sama dengan yang diterapkan batch `install`/`update` — sehingga verify

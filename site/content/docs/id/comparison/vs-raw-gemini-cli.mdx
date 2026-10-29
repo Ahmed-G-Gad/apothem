@@ -2,7 +2,7 @@
 title: "Apothem dibandingkan konfigurasi Gemini CLI manual"
 description: "Memelihara secara manual berkas aturan GEMINI.md milik Gemini CLI dibandingkan merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "1571985a6318fd28"
+sourceHash: "e239aa7e0b2101a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ konfigurasi itu secara manual dengan mengelolanya menggunakan Apothem.
 
 ## Apa yang dikelola Apothem
 
-Adapter gemini-cli menulis blok Apothem yang dibatasi sentinel ke dalam `<project>/GEMINI.md` yang memuat panduan untuk seluruh proyek dan menunjuk ke materi Apothem. Aturan, templat, dan hook mendarat sebagai berkas pendukung di bawah `<project>/.gemini/.apothem/support/`, sedangkan command, skill, dan agen mendarat di bawah `<project>/.gemini/`. Gemini CLI tidak memiliki hook PreToolUse, sehingga maksud pagar pengaman diekspresikan dalam prosa aturan, bukan sebagai titik intersepsi pemanggilan alat. Setiap perubahan pada aturan bersama merender ulang `GEMINI.md` pada `apothem update` berikutnya.
+Adapter gemini-cli menulis blok Apothem yang dibatasi sentinel ke dalam `<project>/GEMINI.md` yang memuat panduan untuk seluruh proyek dan menunjuk ke materi Apothem. Aturan, templat, dan hook mendarat sebagai berkas pendukung di bawah `<project>/.gemini/.apothem/support/`, sedangkan command, skill, dan agen mendarat di bawah `<project>/.gemini/`. Gemini CLI mendokumentasikan objek `hooks` di `settings.json`, yang tetap dimiliki operator, sehingga adapter tidak mendaftarkan hook dan maksud pagar pengaman diekspresikan dalam prosa aturan, bukan sebagai titik intersepsi pemanggilan alat. Setiap perubahan pada aturan bersama merender ulang `GEMINI.md` pada `apothem update` berikutnya.
 
 ## Jalur migrasi
 

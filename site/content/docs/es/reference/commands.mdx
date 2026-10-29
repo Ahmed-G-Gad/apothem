@@ -2,18 +2,20 @@
 title: "Comandos"
 description: "Definiciones de comandos de barra que implementan la canalización de la suite de planes, además de auditorías de código, arquitectura, seguridad y dependencias, y revisión de la documentación."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Las definiciones de los comandos de barra residen como archivos `.md` planos bajo `src/apothem/commands/`. El
 conjunto canónico está encabezado por la canalización de la suite de planes consciente de la arquitectura, que se distribuye
-como siete comandos de primera clase — uno por etapa, cada uno invocable directamente como
-`/plan-<stage>`. No hay ningún despachador monolítico; cada etapa es su propio
-archivo de comando registrado en `src/apothem/commands/plan-<stage>.md`.
+como ocho comandos de etapa de primera clase, cada uno invocable directamente como `/plan-<stage>`,
+más `/plan`, el orquestador que recorre la cadena de etapas de principio a fin. Cada etapa
+es su propio archivo de comando registrado en `src/apothem/commands/plan-<stage>.md`, y
+`/plan` no reimplementa ninguna de ellas.
 
 | Invocación | Archivo de comando | Descripción |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Ejecuta las etapas spec, generate, review y design como un único flujo de trabajo verificado, con confirmación en cada traspaso; execute sigue siendo un paso manual |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina contenido no estructurado en prosa de calidad de especificación |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Materializa una suite de plan a partir de prosa / requisitos |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoría forense con tarjetas de puntuación |
@@ -69,9 +71,12 @@ un entorno puede ejecutar sin preguntar mientras el comando está activo, por lo
 que se mantiene de solo lectura por defecto: una herramienta con efectos
 secundarios (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch) solo aparece
 como una regla acotada, como `Bash(git log *)`, y el esquema rechaza el comodín
-`"*"` sin acotar. Los comandos con efectos secundarios irreversibles
-(`freshify`, `github-deploy-fresh`, `github-deploy-next`) establecen
-`disable-model-invocation: true`, de modo que solo el operador los inicia.
+`"*"` sin acotar. Los comandos con efectos secundarios irreversibles o con un
+momento elegido por el operador establecen `disable-model-invocation: true`, de
+modo que solo el operador los inicia: `freshify`, `github-deploy-fresh`,
+`github-deploy-next`, `release-readiness`, `elevate`, `fortress`, `workflow`,
+`plan-execute`, `research-experiment` y `research-publish`. Los otros 35
+comandos establecen `false` y se asocian a una solicitud por su descripción.
 
 ## Disciplina de autoría
 

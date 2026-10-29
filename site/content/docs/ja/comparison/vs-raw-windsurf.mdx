@@ -2,11 +2,13 @@
 title: "Apothem と素の Windsurf 構成の比較"
 description: ".devin/rules/ で Windsurf のルールを手作業で保守するのと、apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Windsurf は `.devin/rules/` ディレクトリからルールを読み込みます。Apothem の
+Windsurf は現在 Devin Desktop となっており、`.devin/rules/` ディレクトリから
+ルールを読み込みます（これが推奨される場所で、フォールバックの `.windsurf/rules/`
+より優先されます）。Apothem の
 windsurf アダプターは、ディレクトリベースのルールを共有プロファイルから
 レンダリングします。このページでは、その構成を手作業で保守する場合と apothem で
 管理する場合を対比します。
@@ -18,15 +20,23 @@ windsurf アダプターは、ディレクトリベースのルールを共有�
 | ルールを書く | `.windsurf/rules/` 配下の各ファイルを手で書く | 共有コーパスからレンダリング |
 | ルール形式を 1 つに保つ | `.windsurf/rules/` と単一ファイルの `.windsurfrules` のどちらかを手で選ぶ | アダプターが書き込むのは `.devin/rules/` のみ |
 | ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 再利用可能なスキルとコマンドを共有する | 各スキルフォルダーを `~/.agents/skills/` へ手でコピーし、コピーを最新に保つ | アダプターが `~/.agents/skills/` に書き込み、すべてのプロジェクトで 1 つのコピーを共有し、`apothem update` で更新 |
+| 再利用可能なヘルパーを同期し続ける | `.devin/agents/` 配下の各 Devin Local サブエージェントファイルを手で書き、Devin のツール名に追従する | ツールを変換した 11 個のヘルパーを `.devin/agents/` に書き込み、`apothem update` で更新 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness windsurf --project <path>` |
 
 ## apothem が管理するもの
 
-windsurf アダプターは共有ルールを `.devin/rules/` ディレクトリへ
-レンダリングし、単一ファイルの `.windsurfrules` は書き込みません。Windsurf には
-PreToolUse フックがないため、ガードレールの意図はツール呼び出しの傍受地点では
+windsurf アダプターは共有ルールを 1 つのファイル
+`<project>/.devin/rules/apothem-rules.md` へレンダリングし、単一ファイルの
+`.windsurfrules` は書き込みません。また、Apothem のヘルパーのうち 11 個を
+Devin Local のサブエージェントとして `<project>/.devin/agents/` に書き込みます。
+Web ツールを必要とする 3 個は、Devin がそれらのツール名を文書化するまで待機します。
+セッションブートストラップとコンテキストサイズのアドバイザリーという 2 つの Devin Local
+フックを `<project>/.devin/config.local.json` に登録します。旧来の Cascade モードは
+別のフック形式（`hooks.json`）を読み込みますが、アダプターはこれを書き込みません。
+ツール呼び出しのガードは登録しないため、ガードレールの意図はツール呼び出しの傍受地点では
 なくルールの文章の中に存在します。共有ルールへの変更はすべて、次の
-`apothem update` でディレクトリを再レンダリングします。
+`apothem update` でファイルを再レンダリングします。
 
 ## 移行パス
 

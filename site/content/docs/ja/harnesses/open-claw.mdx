@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f13f9ce348ede92c"
+sourceHash: "4c7b4673820f1fa6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ apothem install --harness open-claw
 ```
 
 アダプターは OpenClaw のユーザーグローバル設定ファイルを書き込み、共有プロファイルをプロファイルドキュメントへ投影し、Apothem のサポートコホートをハーネスルート配下にインストールします。
-OpenClaw のネイティブ設定は JSON であり、マテリアライザーは空の JSON オブジェクトをレンダリングし、既存のファイルはそのキーを保持します。
+OpenClaw のネイティブ設定は JSON であり、マテリアライザーは 1 つのキー `skills.load.extraDirs` をレンダリングし、既存のファイルはその他のキーを保持します。
 
 **書き込まれるファイル：** `~/.openclaw/openclaw.json`、プロファイルドキュメント
 `~/.openclaw/apothem/rules/00-apothem-profile.md`、および
@@ -29,14 +29,33 @@ OpenClaw のネイティブ設定は JSON であり、マテリアライザー�
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取りますが、設定キーは一切作成しません。
-新規または空の `openclaw.json` は空のオブジェクトとして書き込まれ、既存のファイルはそのキーを保持します。
+アダプターは 1 つの設定キーを作成します。
+OpenClaw が読む追加のスキルディレクトリのリストである `skills.load.extraDirs` に `~/.openclaw/.apothem/support/skills` を追加します。これにより OpenClaw はインストールされたスキルを見つけます。
+このエントリーは、あなたがすでに列挙しているエントリーの後に置かれ、あなたの他のキーはそのまま残ります。
 プロファイルのアイデンティティ、プリファレンス、ルールはプロファイルドキュメントに入ります。
 共有のコマンド、スキル、ルール、テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材としてインストールされます。
 
 ## 互換性に関する注意
 
-プレビュー版のアダプターです。OpenClaw は、サポートツリーもプロファイルドキュメントも自力では読み込みません。スキルの場所、ワークスペースの命令ファイル、設定のいずれもそこを指していないため、インストール後の OpenClaw は Apothem のルール、スキル、MCP サーバーなしで動作します。OpenClaw は、ワークスペースの `skills/` フォルダーと `.agents/skills/` フォルダー、`~/.agents/skills`、および自身の状態ディレクトリからスキルを読み込み、その後 `agents.defaults.skills` 配下のスキル名の許可リストで絞り込みます。`skills.load.extraDirs` はスキルのローダーではないため、`~/.openclaw/.apothem/support/skills` 配下の Apothem のスキルは、それらのフォルダーのいずれかに配置し、許可リストにその名前を記載して初めて読み込まれます。`apothem update` は、`openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の `mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、[スキル](https://docs.openclaw.ai/tools/skills)および [MCP CLI](https://docs.openclaw.ai/cli/mcp) のドキュメントに基づき、2026-10-02 に確認しました。）
+プレビュー版のアダプターです。OpenClaw は `skills.load.extraDirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自力では読み込みません。ワークスペースの命令ファイルも設定もそこを指していないため、インストール後の OpenClaw は Apothem のルールと MCP サーバーなしで動作します。
+
+**名前の衝突。** OpenClaw は次のソースからスキルを読み込み（優先順位の高い順）、同じスキル名が複数の場所に現れた場合は最も優先順位の高いソースが勝ちます：ワークスペースの `skills/` フォルダー、ワークスペースの `.agents/skills/` フォルダー、`~/.agents/skills`（デフォルトの状態ディレクトリの場合のみ）、状態ディレクトリの `skills/` フォルダー（デフォルトでは `~/.openclaw/skills`）、ワークショップのスキル、同梱スキルとカストディアンスキル、そして最後に `skills.load.extraDirs` 配下に列挙されたフォルダーとプラグインのスキルです。Apothem のディレクトリは `extraDirs` のエントリーなので、それより前のいずれかのソースにあなたが置いている同じ名前のスキルが OpenClaw に使われ、そのスキルの Apothem のコピーはディスク上で使われないままになります。Apothem は `openclaw.json` と `~/.openclaw/.apothem/support/` 配下にのみ書き込み、それより前のフォルダーには決して書き込まないため、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
+
+`agents.defaults.skills` はスキル名の許可リストです。Apothem はこれを編集しないため、許可リストを使っている場合は、使いたい Apothem のスキルがそこに記載されているか確認してください。`apothem update` は、`openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の `mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、[スキル](https://docs.openclaw.ai/tools/skills)、[スキル設定](https://docs.openclaw.ai/tools/skills-config)、[設定拡張](https://docs.openclaw.ai/gateway/config-extensions) のドキュメント（2026-10-24 に確認）、および [MCP CLI](https://docs.openclaw.ai/cli/mcp) のドキュメント（2026-10-02 に確認）に基づきます。）
+
+**`openclaw.json` 内のコメント。** OpenClaw は設定を JSON5 として読み、Apothem はファイルをプレーンな JSON として書き直します。ファイルにコメントやその他の JSON5 構文が含まれていてエントリーがない場合、Apothem はファイルに手を付けず、インストールはそのキーを挙げるメッセージを出して停止します。このエントリーを自分でファイルにマージするか、ファイルをプレーンな JSON に変換してから、再度インストールを実行してください。
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  }
+}
+```
+
+あなたが自分で追加したエントリーはあなたのものとみなされます。アンインストールはそれをそのまま残します。
 
 ## 検証
 
@@ -48,7 +67,8 @@ verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
 2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+3. ネイティブ設定の `skills.load.extraDirs` に `~/.openclaw/.apothem/support/skills` が記載されていること。そのエントリーがないと OpenClaw はインストールされたスキルを読み込みません。`apothem update` がそれを再び追加します。
+4. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -56,7 +76,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness open-claw
 ```
 
-現在の共有プロファイルの状態からプロファイルドキュメントを再導出し、サポートファイルを更新します。`openclaw.json` は、すでに持っているキーを保持します。
+現在の共有プロファイルの状態からプロファイルドキュメントを再導出し、サポートファイルを更新します。`openclaw.json` は、すでに持っているキーを保持し、`skills.load.extraDirs` 内の Apothem のエントリーは、何度更新しても 1 回だけ記載されたままです。
 `~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
@@ -65,8 +85,8 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-アダプターが追加したもの、つまりプロファイルドキュメントとサポートツリーを削除します。
-`openclaw.json` 内のあなた自身のキーは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます。
+アダプターが追加したもの、つまり `skills.load.extraDirs` 内のそのエントリー、プロファイルドキュメント、サポートツリーを削除します。
+`openclaw.json` 内のあなた自身のキーは、あなた自身の `extraDirs` のエントリーを含めて残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート
@@ -81,7 +101,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness open-claw` を再実行する |
 | 検証が失敗した | `apothem update --harness open-claw` を実行してから、再度検証する |
-| 想定外の設定内容 | Apothem は `openclaw.json` にキーを一切作成せず、既存のキーを保持する。そのため、プロファイルの内容はそこには入らない。プロファイルの内容は `~/.openclaw/apothem/rules/00-apothem-profile.md` に入る。`~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、そのうえで [更新](#更新) の手順にあるコマンドを再実行する |
+| 想定外の設定内容 | Apothem は `openclaw.json` に `skills.load.extraDirs` のエントリーだけを作成し、既存のキーを保持する。そのため、プロファイルの内容はそこには入らない。プロファイルの内容は `~/.openclaw/apothem/rules/00-apothem-profile.md` に入る。`~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、そのうえで [更新](#更新) の手順にあるコマンドを再実行する |
+| インストールが、`openclaw.json` 内のコメントや JSON5 構文に関するメッセージを出して停止する | Apothem は、コメントを取り除かなければならないファイルを書き直さない。[互換性に関する注意](#互換性に関する注意) に示した `skills.load.extraDirs` のエントリーを自分で追加するか、ファイルをプレーンな JSON に変換してから、再度インストールを実行する |
+| Apothem のスキルが OpenClaw に表示されない | ワークスペース、`~/.agents/skills`、または `~/.openclaw/skills` にある同じ名前のスキルが、Apothem のコピーより優先される（[互換性に関する注意](#互換性に関する注意) を参照）。また、`apothem verify --harness open-claw` を実行し、使っている `agents.defaults.skills` 許可リストがあればそのスキルが記載されているか確認する |
 
 ## 設定ノブ
 

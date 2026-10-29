@@ -2,7 +2,7 @@
 title: "Écrire des règles"
 description: "Rédigez, délimitez la portée et maintenez les règles de comportement d'Apothem."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,22 @@ La portée d'une règle est définie par deux champs du frontmatter, `alwaysAppl
 | `true` | `""` (vide) | Toujours active : chaque session, chaque fichier |
 | `false` | un glob, par exemple `"**/*.py"` | Filtrée par chemin : uniquement lorsque le fichier actif correspond au glob |
 
+Cinq règles livrées sont toujours actives : `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management` et l'index des règles. Une règle toujours
+active consomme du contexte dans chaque session ; une nouvelle règle DEVRAIT donc
+être filtrée par chemin, avec des globs qui nomment les fichiers qu'elle régit ;
+un filtre réduit à `**` ne délimite rien, et Claude Code charge cette règle au
+lancement comme une règle toujours active. Le corpus livré limite l'ensemble
+toujours actif à cette liste et à un plafond en octets ; une règle promue au
+rang de règle toujours active modifie les deux dans le même changement. Nommez
+chaque règle que vous ajoutez dans l'index des règles (`apothem-rule-index`),
+afin qu'une session sur un environnement qui ne délimite pas les règles par
+chemin la trouve quand même. Une règle compagnon (`<parent>-<aspect>`) reprend
+le `pathFilter` de sa règle parente, ou un filtre plus étroit, de sorte qu'elle
+ne se charge jamais sans sa parente. Ne donnez pas le nom `apothem-rule-index`
+à une règle qui vous appartient : une installation sauvegarde puis écrase un
+fichier de règle portant ce nom.
+
 ## Exemple de règle
 
 ```markdown
@@ -51,11 +67,25 @@ Après avoir rédigé une règle, mettez à jour chaque adaptateur d'environneme
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+Un environnement de portée projet nécessite `--project` lors de la mise à jour,
+comme dans la deuxième ligne ; un environnement de portée utilisateur n'en a
+pas besoin.
 
 ## Validation des règles
 
+Exécutez le validateur de frontmatter sur le fichier de règle que vous avez
+écrit. Depuis un checkout d'Apothem, `PYTHONPATH=src` rend le paquet importable ;
+après une installation par script, utilisez `PYTHONPATH="$HOME/.apothem/src"` à
+la place.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+Une vérification par écriture telle que `frontmatter-grep` prend le fichier à
+vérifier, ou `--stdin` pour lire le contenu depuis l'entrée standard ; sans l'un
+ni l'autre, elle attend une entrée sur l'entrée standard. Une vérification
+autonome prend plutôt un répertoire racine, comme dans `--check naming-grep .`.

@@ -2,7 +2,7 @@
 title: "资产重建配方"
 description: "使用 resvg 和 Pillow 从主 SVG 源重新生成所有光栅品牌资产。"
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ sourceHash: "7ffb351825fa59ff"
 
 在以下情况运行重建配方：
 
-- 主 SVG（`assets/src/logo.svg` 或 `assets/src/logo-dark.svg`）发生变更。
+- 某个主 SVG（`assets/src/logo.svg`、`assets/src/logo-dark.svg`、`assets/src/logo-animated.svg` 或 `assets/src/logo-animated-light.svg`）发生变更。
 - 紧凑型 favicon 主文件（`assets/favicon.svg`）发生变更。
 - 社交卡片主文件（`assets/src/og-banner.svg` 或 `assets/src/twitter-card.svg`）发生变更。
 - 需要新的光栅尺寸。
@@ -60,7 +60,8 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## 验证
 
 一次成功的运行会重新生成浅色和深色标志光栅图、favicon PNG/ICO
-集合、Apple touch 图标、OG/Twitter 图像，并将网页所用的子集——
+集合（ICO 内嵌 16、32 和 48 px 图层）、Apple touch 图标、VS Code
+扩展图标（`vscode-extension/icon.png`）、OG/Twitter 图像，并将网页所用的子集——
 包括站点引用的主视觉标志源——镜像到 `site/public/`。
 生成之后，运行站点构建，并在发布前检查主页、浏览器标签页
 favicon 以及社交卡片 PNG。

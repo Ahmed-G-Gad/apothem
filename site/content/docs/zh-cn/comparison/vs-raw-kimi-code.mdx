@@ -2,7 +2,7 @@
 title: "Apothem 对比手工 Kimi Code 配置"
 description: "手工维护 Kimi Code 的项目根目录 AGENTS.md 和 .kimi-code/ 支持文件，对比从 Apothem 的共享配置档案渲染它们。"
 machineTranslated: true
-sourceHash: "95d0fa19ca3ddd46"
+sourceHash: "f5ddfe61adc7d28d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ kimi-code 适配器从共享配置档案把治理表面渲染到 `AGENTS.md` 中
 | 任务 | 手工配置 | Apothem 托管 |
 | ---- | --------------- | --------------- |
 | 编写 `AGENTS.md` 指令表面 | 每个项目手工编写并重新同步 | 由共享配置档案渲染出的一个受管块 |
-| 让规则、命令、技能、代理保持同步 | 每个项目手工复制 | 每次安装时物化到 `<project>/.kimi-code/.apothem/support/` 下 |
+| 让规则、命令、技能、代理保持同步 | 每个项目手工复制 | 每次安装时，技能和命令（作为技能）位于 `<project>/.kimi-code/skills/` 下；辅助器作为子代理位于 `<project>/.kimi-code/agents/` 下；规则、钩子和模板位于 `<project>/.kimi-code/.apothem/support/` 下 |
 | 刷新时保留操作者的文字 | 手工合并 | 由哨兵标记界定的块；块外的操作者文字会被保留 |
 | 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness kimi-code --project <path>` |
@@ -26,8 +26,11 @@ kimi-code 适配器从共享配置档案把治理表面渲染到 `AGENTS.md` 中
 ## Apothem 管理什么
 
 kimi-code 适配器把共享规则和治理表面渲染到项目根目录 `AGENTS.md` 的受管块中，
-并把命令、技能、钩子、代理、规则和模板集合安装到
-`.kimi-code/.apothem/support/` 下。它不编写 `.kimi-code/mcp.json`；MCP 表面仍归
+并把技能以及包装为技能的命令安装到 `.kimi-code/skills/`，即 Kimi Code 加载的
+项目技能目录。辅助器成为 `.kimi-code/agents/` 中的 Kimi Code 子代理，其工具名称
+被转换为 Kimi Code 匹配的名称。钩子、规则和模板集合放在
+`.kimi-code/.apothem/support/` 下：Kimi Code 从用户级的 `~/.kimi-code/config.toml`
+读取钩子，而适配器不写入该文件。适配器不编写 `.kimi-code/mcp.json`；MCP 表面仍归
 操作者所有。Kimi Code 从 `AGENTS.md` 或 `.kimi-code/AGENTS.md` 读取项目指令；
 适配器只写入项目根目录的 `AGENTS.md`，而 Kimi Code 的文档没有说明这两个文件同时
 存在时哪一个优先。对共享规则的每一次更改，都会在下一次 `apothem update` 时重新
@@ -37,7 +40,7 @@ kimi-code 适配器把共享规则和治理表面渲染到项目根目录 `AGENT
 
 1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
 2. 把现有 `AGENTS.md` 中的规则移入共享语料库。
-3. 运行 `apothem install --harness kimi-code --project <path>`，以渲染 `AGENTS.md` 指令表面和 `.kimi-code/.apothem/support/` 支持树。
+3. 运行 `apothem install --harness kimi-code --project <path>`，以渲染 `AGENTS.md` 指令表面、`.kimi-code/skills/` 技能、`.kimi-code/agents/` 子代理和 `.kimi-code/.apothem/support/` 支持树。
 4. 运行 `apothem verify --harness kimi-code --project <path>` 来确认配置已落地。
 5. 之后的每次更改都使用 `apothem update --harness kimi-code --project <path>`。
 

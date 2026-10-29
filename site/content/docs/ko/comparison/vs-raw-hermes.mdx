@@ -2,14 +2,15 @@
 title: "Apothem 대 수동 Hermes 구성"
 description: "Hermes 구성을 손으로 유지하는 것과 Apothem의 공유 프로필을 통해 관리하는 것의 비교."
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes는 `~/.hermes/config.yaml`을 읽습니다. Apothem은 네이티브 YAML 구성을
 작성하고(프로필의 MCP 인벤토리를 `mcp_servers`로 투영), 공유 명령 코호트와 스킬
-코호트를 `~/.hermes/.apothem/support/skills/` 아래에 설치합니다. Hermes 자체의
-`skills.config`는 레지스트리 패키지 목록이므로 Apothem은 이를 작성하지 않습니다.
+코호트를 `~/.hermes/.apothem/support/skills/` 아래에 설치하고, Hermes가 이를
+로드하도록 그 디렉터리를 `skills.external_dirs` 아래에 나열합니다. Hermes 자체의
+`skills.config`는 스킬별 설정을 담으므로 Apothem은 이를 작성하지 않습니다.
 
 ## 상태
 
@@ -29,21 +30,23 @@ Hermes는 `~/.hermes/config.yaml`을 읽습니다. Apothem은 네이티브 YAML 
 
 Hermes 어댑터는 `config.yaml`을 작성하고, Apothem 슬래시 명령을 스킬로 감싸고,
 Apothem 스킬을 지원 디렉터리로 복사하며, 규칙, 템플릿, 에이전트, 훅 자료를
-Apothem 지원 하위 트리 아래에 둡니다. Hermes는
+Apothem 지원 하위 트리 아래에 둡니다. 또한
 `~/.hermes/.apothem/support/skills`를 `config.yaml`의 `skills.external_dirs`에
-추가한 후에만 해당 스킬을 로드합니다.
+추가하므로 Hermes가 해당 스킬을 로드합니다. 이 목록은 Hermes의 문서화된 우선순위
+순서에서 마지막에 오므로, 프로젝트나 `~/.hermes/skills/`에 같은 이름의 스킬이
+있으면 Apothem 사본보다 우선할 가능성이 높습니다. 검토한 Hermes 문서는 충돌
+규칙을 명시하지 않습니다.
 
 ## 마이그레이션 경로
 
 1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행해
    만듭니다.
 2. 재사용 가능한 Hermes 스킬이나 명령 프롬프트를 공유 코퍼스로 옮깁니다.
-3. `apothem install --harness hermes`를 실행해 네이티브 구성과 지원 스킬
-   디렉터리를 렌더링합니다.
-4. Hermes가 설치된 스킬을 로드하도록 `~/.hermes/.apothem/support/skills`를
-   `config.yaml`의 `skills.external_dirs`에 추가합니다. `apothem update`는
-   `config.yaml`에 여러분이 추가한 키를 그대로 유지합니다.
-5. `apothem verify --harness hermes`를 실행해 구성이 안착했는지 확인합니다.
+3. `apothem install --harness hermes`를 실행해 지원 스킬 디렉터리를
+   `skills.external_dirs` 아래에 나열하는 네이티브 구성을 렌더링하고 스킬을
+   설치합니다. `apothem update`는 `config.yaml`에 여러분이 추가한 키를 그대로
+   유지합니다.
+4. `apothem verify --harness hermes`를 실행해 구성이 안착했는지 확인합니다.
 
 ## 다음으로 읽기
 

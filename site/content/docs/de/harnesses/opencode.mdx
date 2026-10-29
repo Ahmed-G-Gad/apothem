@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Apothem-Harness-Adapter für OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,8 +36,8 @@ Helferdefinitionen als OpenCode-Subhelfer.
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter rendert `opencode.json` mit einer `instructions`-Dateiliste, die Ihr
-Profildokument und Apothems stets aktive Regeln nennt, und propagiert dann jede
-gemeinsame Apothem-Kohorte entweder in eine native OpenCode-Oberfläche oder in
+Profildokument, die vier Kernregeln und den Regelindex nennt, und propagiert dann
+jede gemeinsame Apothem-Kohorte entweder in eine native OpenCode-Oberfläche oder in
 einen Apothem-eigenen Unterstützungs-Teilbaum. Bestehende übereinstimmende, von
 Apothem verwaltete Kindeinträge werden vor dem Ersetzen gesichert.
 
@@ -48,11 +48,15 @@ zusammen ([OpenCode-Regeln](https://opencode.ai/docs/rules/)). Die Liste nennt
 daher zuerst Ihr Profildokument und danach nur die Regeln, deren `alwaysApply`
 den Wert `true` hat, jeweils mit einem expliziten Pfad
 `~/.config/opencode/.apothem/support/rules/<name>.md`; OpenCode löst das
-führende `~/` gegen Ihr Home-Verzeichnis auf. Die pfadgefilterten Regeln,
-Templates und Hook-Prompts bleiben als Referenzmaterial unter
-`~/.config/opencode/.apothem/support/` installiert, wo eine Regel, ein Skill oder
-ein Command, die bzw. der eines davon zitiert, es bei Bedarf liest. Commands,
-Skills und Helferdefinitionen nutzen native Discovery-Speicherorte.
+führende `~/` gegen Ihr Home-Verzeichnis auf. Diese Regeln sind
+`agnostic-posture`, `authority-inquiry`, `context-management`,
+`session-closure` und der Regelindex, `apothem-rule-index`. OpenCode beschränkt
+keine Regel auf Pfade, daher wird jede andere Regel bei Bedarf gelesen. Sie
+bleibt als Referenzmaterial unter `~/.config/opencode/.apothem/support/`
+installiert, und der Index nennt jede Regel und die Situation, die sie erfordert.
+Eine Regel, ein Skill oder ein Command, die bzw. der eine Regel, ein Template
+oder einen Hook-Prompt zitiert, liest sie bzw. es von dort. Commands, Skills und
+Helferdefinitionen nutzen native Discovery-Speicherorte.
 
 Das Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md`
 trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil und endet
@@ -64,9 +68,11 @@ in jeder Sitzung.
 
 Eine von einem früheren Release geschriebene `opencode.json` listet den
 einzelnen Glob `~/.config/opencode/.apothem/support/rules/*.md`, der jede Regel
-lädt. `apothem install` und `apothem update` ersetzen ihn durch die Liste der
-stets aktiven Regeln, und `apothem uninstall` entfernt beide Formen. Ihre
-eigenen `instructions`-Einträge bleiben in jedem Fall erhalten.
+lädt, oder einen expliziten Pfad für jede der 28 Regeln, die damals stets aktiv
+waren. `apothem install` und `apothem update` ersetzen beide Formen durch die
+obige Liste, was die 24 Pfade entfernt, die beim Start nicht mehr geladen werden,
+und `apothem uninstall` entfernt sie alle. Ihre eigenen `instructions`-Einträge
+bleiben in jedem Fall erhalten.
 
 ## Verifizierung
 

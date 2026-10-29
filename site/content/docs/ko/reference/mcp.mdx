@@ -2,7 +2,7 @@
 title: "MCP 서버"
 description: "Model Context Protocol 서버 구성 — 운영자 소유이며 각 도구의 네이티브 MCP 메커니즘을 통해 등록됩니다. 몇몇 어댑터는 공유 프로필의 MCP 인벤토리를 투영하고, 나머지는 서버 항목을 작성하지 않습니다."
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,60 @@ Model Context Protocol(MCP) 서버는 **운영자 소유**입니다. Apothem은 
 `~/.claude.json`(사용자 또는 로컬 범위)과 프로젝트 수준의 `.mcp.json`에
 등록됩니다. Claude Code 어댑터는 두 파일 중 어느 것도 쓰지 않으며, Apothem이
 관리하는 Claude Code 설정은 `mcpServers` 블록을 절대 담지 않습니다.
+
+## 헬퍼에 MCP 서버 접근 권한 부여하기
+
+읽기 전용 리서치 에이전트(`research-scout`, `citation-auditor`)는
+`Read, Glob, Grep, WebSearch, WebFetch`라는 명시적 `tools` 목록과 함께 제공됩니다.
+Claude Code는 항목이 `mcp__<server>__*` 형식으로 서버를 지명할 때만 MCP 도구를
+서브에이전트의 명시적 목록에 허용합니다. 프로필의 `agent_mcp_servers` 키가
+에이전트마다 그 서버들을 지명합니다.
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+Claude Code 설치는 나열된 각 에이전트의 `tools` 줄에 지명된 서버마다
+`mcp__<server>__*` 항목 하나를 추가하며, 다른 에이전트나 줄은 변경하지 않습니다.
+키가 없으면 모든 에이전트가 평범한 목록을 유지하므로, 어떤 에이전트도 MCP 도구에
+닿지 않습니다. 각 서버 이름은 `/mcp`가 보여 주는 대로 쓰세요. Claude Code는 도구
+이름에서 `:`와 `.`를 `_`로 쓰므로, 설치는 서버 `plugin:bio-research:biorxiv`를
+`mcp__plugin_bio-research_biorxiv__*`로 렌더링합니다. 이름은 문자, 숫자, `-`, `_`,
+`:`, `.`를 담고, 문자나 숫자로 시작하고 끝나며, `_`, `:`, `.` 중 두 개가 연달아
+오는 일이 절대 없습니다(렌더링된 항목에 `__`가 생기기 때문입니다). `*`, 공백 및
+그 밖의 모든 문자는 거부됩니다.
+부여는 그 서버의 모든 도구를, 쓰기를 하는 도구까지 포함해 지명하므로, 조회 용도로
+신뢰하는 서버만 부여하세요. 에이전트의 지침은 에이전트를 조회로 제한하지만,
+하니스는 여러분이 나열한 이름만 강제합니다. 존재하지 않는 에이전트나 명시적
+`tools` 목록이 없는 에이전트에 대한 부여는 보고되고 건너뜁니다.
+`harnesses.claude-code` 아래의 하니스별 재정의는 공유 목록에 더해집니다.
+
+부여는 `Claude Code`와 `Gemini CLI`의 엔진 설치(`apothem install`)에 적용됩니다.
+`Gemini CLI`에서는 설치가 나열된 에이전트의 `tools` 허용 목록에 지명된 서버마다
+`mcp_<server>_*` 항목 하나(예: `mcp_your-scholarly-server_*`)를 추가하며, 다른
+에이전트나 줄은 변경하지 않습니다. `Gemini CLI`는 모든 MCP 도구를
+`mcp_{serverName}_{toolName}`으로 명명하고 `mcp_` 뒤 첫 번째 밑줄까지의 텍스트에서
+서버를 읽으므로, 밑줄이 있는 서버 이름은 그곳에서 지정할 수 없습니다. Apothem은
+문자, 숫자, `-`로 된 이름에 대해서만 `Gemini CLI` 부여를 씁니다. 밑줄, 콜론 또는
+마침표가 있는 이름은 `Claude Code`에서는 유효하지만 `Gemini CLI`에서는 건너뛰고
+보고하며, 절대 다른 이름으로 다시 쓰지 않습니다. 이미 모든 MCP 서버에 닿는
+에이전트(`tools` 목록이 없거나, 목록에 `mcp_*`가 있는 경우)는 변경 없이 두고
+보고합니다. `Gemini CLI`에는 거부 목록이 없으므로, 에이전트 자체의
+`disallowedTools`가 지명한 서버는 항목을 받지 못하고 보고됩니다. `Claude Code`에서와
+마찬가지로 거부가 우선합니다. Gemini 부여는 공유 `agent_mcp_servers` 목록과
+`harnesses.gemini-cli` 재정의를 읽으며, `harnesses.claude-code` 재정의는 읽지
+않습니다. 다른 하니스는 이 키를 무시합니다. `Qwen Code`는 `tools`에 대한 서버별
+항목을 문서화하지 않고, `OpenCode`는 권한으로 도구를 제어하며, `Codex`와
+`Antigravity`는 도구 목록을 방출하지 않습니다.
+
+Claude Code 플러그인은 프로필 없이 조립되므로, 그 두 에이전트는 평범한 목록을
+유지합니다. 플러그인 파일을 편집하지 않고 커넥터 접근 권한을 주려면,
+`~/.claude/agents/`에 원하는 이름으로 사용자 수준 에이전트를 직접 정의하고, 같은
+읽기 전용 `tools` 목록에 원하는 `mcp__<server>__*` 항목을 더해 담으세요.
 
 ## 서버 추가
 

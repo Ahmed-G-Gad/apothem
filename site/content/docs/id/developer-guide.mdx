@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -204,7 +204,10 @@ Dokumentasikan alasannya di bagian pertama artefak.
 
 ### Selalu Aktif
 
-Aturan berlaku di mana saja.
+Aturan berlaku di mana saja. Lima aturan selalu aktif: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, dan indeks
+aturan (`apothem-rule-index`). Himpunan ini kecil karena setiap aturan yang
+selalu aktif memakan konteks di setiap sesi.
 
 ```yaml
 pathFilter: ""
@@ -320,14 +323,20 @@ Gunakan skema dari `site/content/docs/reference/artifact-schema.mdx` § Schema: 
 
 Aturan hanya membawa keempat bidang ini — tanpa `version` / `updated` / `scope` / `portability` / `implements`.
 
+Aturan baru bersifat difilter jalur. Aturan baru yang selalu aktif mengharuskan
+daftar inti dan batas atas byte dinaikkan dalam perubahan yang sama: daftar di
+`tests/unit/test_always_on_core.py` dan batas atas di
+`conformity/always_on_budget_grep.py`. Aturan pendamping
+(`<parent>-<aspect>`) mengambil `pathFilter` induknya, atau yang lebih sempit.
+
 Contoh:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -340,7 +349,10 @@ families dalam `src/apothem/rules/README.md`:
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Pilih tabel keluarga yang bidang perhatiannya sesuai dengan aturan tersebut.
+Pilih tabel keluarga yang bidang perhatiannya sesuai dengan aturan tersebut. Sebutkan
+juga aturan itu pada baris `src/apothem/rules/apothem-rule-index.md` untuk situasi
+yang memerlukannya; `tests/unit/test_always_on_core.py` gagal ketika sebuah aturan
+tidak ada di indeks.
 
 ### 5. Tambahkan ke CHANGELOG.md
 
@@ -385,7 +397,7 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
@@ -393,8 +405,11 @@ allowed-tools: "Read, Glob, Grep"
 
 `disable-model-invocation: true` membuat sebuah command hanya dapat dipanggil oleh
 operator; dengan `false`, model dapat menjalankannya ketika sebuah permintaan cocok
-dengan deskripsinya. Sebagian besar command menggunakan `true`, tetapi sebagian
-besar tahap pipeline perencanaan dan riset menggunakan `false`. Tabel pemanggilan
+dengan deskripsinya. Nilai bawaannya adalah `false` untuk command yang hanya-baca
+dan bersifat penasihat, dengan deskripsi yang diawali kasus penggunaannya; 35 dari
+45 command menggunakannya. Sebuah command tetap `true` ketika command itu mengubah
+status di luar pohon kerja atau bergantung pada operator yang memilih saatnya
+(10 command). Tabel pemanggilan
 di `src/apothem/commands/README.md` mencantumkan setelan setiap command;
 tambahkan satu baris untuk command baru. Jaga
 `allowed-tools` tetap hanya-baca: harness yang mematuhinya menjalankan alat-alat
@@ -412,6 +427,13 @@ Struktur:
 - Instruksi tingkat tinggi
 - Bagian Workflow dengan langkah-langkah
 - Kontrak pengembalian / format keluaran
+
+Emisi skill pada satu harness memecah setiap command menjadi `SKILL.md` yang ramping
+ditambah berkas `references/` per bagian H2. Berikan command satu bagian `## Workflow`,
+tutup setiap code fence, dan klasifikasikan setiap jenis H2 baru di
+`src/apothem/lib/claude_skill_split.py`; `tests/unit/test_claude_skill_split.py`
+gagal pada jenis yang belum diklasifikasikan. Aturannya ada di kontrak
+Skill-emission split dalam `src/apothem/commands/README.md`.
 
 ### 4. Perbarui README dan CHANGELOG.md
 
@@ -713,17 +735,18 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### Eval perilaku
 
-Suite di bawah `evals/` mengukur perilaku, bukan bentuk: 64 kasus pemicu
-(setiap command dan subagen yang dapat dipanggil model terpicu oleh permintaan
-dalam domainnya dan tetap diam pada permintaan yang nyaris cocok), 32 kasus hasil
+Suite di bawah `evals/` mengukur perilaku, bukan bentuk: 148 kasus pemicu
+(setiap command, skill, dan subagen yang dapat dipanggil model terpicu oleh permintaan
+dalam domainnya dan tetap diam pada permintaan yang nyaris cocok, dan enam command
+yang hanya dipanggil pengguna tidak berjalan dengan sendirinya), 32 kasus hasil
 (satu per tahap rencana, tahap riset, dan dimensi audit) dan 6 pasangan efek
-aturan (teks aturan yang selalu aktif dalam keadaan disertakan dan tidak
+aturan (teks aturan sampel dalam keadaan disertakan dan tidak
 disertakan). Kasus-kasus tersebut adalah data biasa yang divalidasi tanpa biaya
 oleh `python -m pytest tests/unit/test_eval_suite.py`; menjalankannya dikenai
 biaya dan dilakukan secara manual. Lihat
 [Menjalankan eval perilaku](/docs/how-to/evals) untuk alur kerja `Evals`,
-eksekusi lokal, dan cara menambahkan kasus. Setelah menyunting aturan selalu
-aktif yang memiliki pasangan, jalankan `python scripts/dev/sync_eval_rule_cases.py`.
+eksekusi lokal, dan cara menambahkan kasus. Setelah menyunting aturan yang
+memiliki pasangan, jalankan `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmark
 
@@ -745,6 +768,11 @@ dipisahkan spasi dengan mengecualikan bagian Bindings dan baris penunjuk
 pendamping. Laporan JSON-nya juga memuat `always-on-loaded`: jumlah byte,
 karakter, dan kata dari isi tanpa frontmatter yang dimuat oleh sebuah harness,
 dijumlahkan atas seluruh aturan selalu aktif.
+Ketika diarahkan ke direktori aturan yang dikirimkan, pemeriksaan ini juga gagal
+ketika jumlah tersebut melampaui batas atas byte (dilaporkan sebagai
+`always-on-ceiling-bytes`) atau indeks aturan melampaui batas atasnya sendiri.
+Claude Code memuat salinan aturannya tanpa bagian Bindings, sehingga ukuran yang
+dimuatnya lebih kecil daripada angka yang dilaporkan pemeriksaan ini.
 
 ## Audit Ekosistem: Menjalankan Validasi
 

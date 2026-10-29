@@ -2,7 +2,7 @@
 title: "Apothem vs. aturan CodeBuddy mentah"
 description: "Mengapa mengalirkan aturan proyek CodeBuddy melalui Apothem alih-alih menulis berkas .codebuddy/rules secara manual untuk setiap proyek."
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ CodeBuddy membaca aturan proyek dari `.codebuddy/rules/*.md`. Anda dapat menulis
 | Menjaga aturan tetap selaras lintas harness | Derivasi ulang per alat | Diproyeksikan otomatis |
 | Memperbarui aturan | Sunting tangan di setiap proyek | `apothem update --harness codebuddy --project <path>` |
 | Menghapus konfigurasi | Hapus manual | `apothem uninstall` dengan cadangan berstempel waktu |
+| Berbagi skill dan command yang dapat digunakan ulang | Menyalin tiap folder skill ke `~/.codebuddy/skills/` dengan tangan dan menjaga salinannya tetap mutakhir | Ditulis ke `~/.codebuddy/skills/` oleh adapter, satu salinan untuk semua proyek, dan disegarkan pada `apothem update` |
 
 ## Apa yang dikelola Apothem
 
-Adapter codebuddy merender aturan bersama ke dalam berkas khusus `<project>/.codebuddy/rules/apothem-rules.md` dan tidak menulis apa pun selain itu. Berkas memori `CODEBUDDY.md` Anda, izin dan server MCP di `.codebuddy/settings.json`, serta berkas aturan lain yang Anda tulis tetap sepenuhnya milik operator — adapter mengenali permukaan tersebut tetapi tidak pernah menyuntingnya. Setiap perubahan pada aturan bersama merender ulang berkas pada `apothem update` berikutnya.
+Adapter codebuddy merender aturan bersama ke dalam berkas khusus `<project>/.codebuddy/rules/apothem-rules.md`. Adapter juga menulis dua folder di direktori home Anda yang dipakai bersama oleh setiap proyek: skill, dan command yang dibungkus sebagai skill, masuk ke `~/.codebuddy/skills/`, sedangkan aturan dan templat yang dirujuk skill tersebut masuk ke `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`. Berkas memori `CODEBUDDY.md` Anda, izin dan server MCP di `.codebuddy/settings.json`, serta berkas aturan lain yang Anda tulis tetap sepenuhnya milik operator — adapter mengenali permukaan tersebut tetapi tidak pernah menyuntingnya. Setiap perubahan pada aturan bersama merender ulang berkas aturan pada `apothem update` berikutnya.
 
 ## Jalur migrasi
 

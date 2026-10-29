@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adapter harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "8d3f64199c281e2a"
+sourceHash: "5e594da654351298"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,9 +22,230 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 Adapter menulis satu berkas aturan Windsurf berlingkup proyek dari aturan dan
-permukaan tata kelola Apothem bersama.
+permukaan tata kelola Apothem bersama, menulis sebelas helper Apothem sebagai
+subagent Devin Local di dalam proyek (lihat [Subagent](#subagent)), dan
+mendaftarkan dua hook Devin Local (lihat [Hook](#hook)).
 
-**Berkas yang ditulis:** `<project>/.devin/rules/apothem-rules.md`
+Adapter juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
+
+**Berkas yang ditulis:**
+
+- `<project>/.devin/rules/apothem-rules.md`, berkas aturan.
+- `<project>/.devin/agents/<name>.md` untuk sebelas helper Apothem, di dalam proyek.
+- `<project>/.devin/config.local.json`, pendaftaran hook, di dalam proyek. Entri milik Anda di dalamnya tetap ada.
+- `<project>/.apothem/support/windsurf/hooks/`, skrip hook, di dalam proyek.
+- `~/.agents/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.agents/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas aturan. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `windsurf`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#root-bersama) mencantumkannya.
+- `--project` memilih berkas aturan yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas aturan, berkas subagent di `.devin/agents/`,
+  pendaftaran hook di `.devin/config.local.json`, ditambah folder `.apothem/`
+  yang dibuat oleh setiap instalasi proyek, yang juga menampung skrip hook.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
+
+## Subagent
+
+Devin Local, mode tempat tab Devin Desktop baru dimulai, membaca subagent dari
+berkas Markdown di `<project>/.devin/agents/`, menurut
+[dokumentasi subagent Devin](https://docs.devin.ai/cli/subagents.md). Cascade,
+mode yang lebih lama, tidak memiliki subagent. Instalasi menulis sebelas dari
+empat belas helper Apothem ke folder tersebut. Instalasi ini hanya untuk proyek
+dan tidak menulis folder subagent tingkat pengguna (`~/.config/devin/agents/` di
+Linux dan macOS, `%APPDATA%\devin\agents\` di Windows).
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. |
+| `allowed-tools` | Alat yang boleh dipakai helper, sebagai daftar nama alat Devin: `read`, `edit`, `grep`, `glob`, `exec` (`Bash` milik helper) dan `write`. |
+
+Devin tidak memiliki kunci yang menolak alat, sehingga alat yang diizinkan untuk
+helper dikurangi alat yang ditolaknya menjadi satu daftar `allowed-tools`.
+`Bash` milik helper adalah `exec` di Devin, dan alat yang tidak memiliki nama
+tercantum di Devin dihilangkan. Helper hanya-baca mendapatkan `read`, `glob`
+dan `grep`, ditambah `exec` bagi helper yang menjalankan perintah, dan tidak
+pernah mendapatkan `write` atau `edit`.
+
+Tiga helper tidak dipasang: `citation-auditor`, `fact-checker` dan
+`research-scout`. Helper tersebut membutuhkan pencarian web dan pengambilan web,
+dan Devin tidak mendokumentasikan nama `allowed-tools` untuk keduanya, sehingga
+instalasi menahannya alih-alih menulis versi yang tidak dapat melakukan riset
+atau versi yang memiliki semua alat. Berkas milik Anda di `.devin/agents/`
+dengan salah satu nama itu tidak pernah disentuh.
+
+Instalasi tidak menulis kunci `model`. Devin menjalankan subagent dengan model
+subagent default-nya sendiri, yang bukan model sesi yang memulainya. Instalasi
+juga tidak menulis `max-nesting` dan tidak satu pun dari kunci `maxTurns`,
+`version`, `updated` dan `portability` milik Apothem.
+
+Hal yang perlu diketahui:
+
+- Subagent kustom masih eksperimental. Devin menandai format dan opsinya dapat
+  berubah, dan Devin Desktop memiliki sakelar Subagents (Preview) di Devin
+  Settings (pengaturan Devin CLI `subagents_enabled` aktif secara default).
+- Berkas subagent adalah berkas proyek biasa. Commit berkas itu bersama proyek atau
+  cantumkan `.devin/agents/` di `.gitignore`; Apothem tidak memilihkannya untuk Anda.
+- Berkas milik Anda dengan nama helper Apothem disimpan di bawah
+  `~/.apothem/backups/` lalu diganti. Pencopotan tidak mengembalikannya.
+  Berkas dengan nama lain tidak pernah disentuh.
+- Devin juga membaca folder bersama `.agents/agents/`, yang tidak pernah ditulis
+  Apothem, dan Devin CLI mendokumentasikan impor subagent dari folder `.claude/`
+  tanpa menyebutkan jalurnya. Apothem belum memastikan apakah mode Local Devin
+  Desktop menerapkan impor tersebut.
+- Apothem belum memastikan nama `allowed-tools` untuk alat web, nilai mana yang
+  diterima `model`, atau bagaimana daftar `allowed-tools` yang kosong dibaca.
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
+## Hook
+
+Devin Local menjalankan hook dari kunci `hooks` di berkas konfigurasinya, menurut
+[dokumentasi hook Devin](https://docs.devin.ai/cli/extensibility/hooks/overview.md).
+Instalasi mendaftarkan dua hook:
+
+| Peristiwa | Apa yang dijalankan |
+| --- | --- |
+| `SessionStart` | Bootstrap sesi: metadata sesi, indeks skill, ringkasan memori dan plan, serta postur tetap, ditambahkan ke konteks model. |
+| `PostToolUse` (setiap alat) | Pelacak pemadatan proaktif. Pelacak ini menghitung aktivitas dan, paling banyak dua kali per siklus pemadatan, meminta model menyimpan keadaannya atau memadatkan. Selain itu pelacak ini diam. |
+
+Keduanya menambahkan konteks bagi model. Tidak satu pun yang memblokir pemanggilan
+alat atau sesi.
+
+Apothem tidak mendaftarkan penjaga `PreToolUse` di Devin. Dokumentasi Devin
+mencantumkan `additionalContext` (bidang yang dipakai penjaga Apothem untuk
+berbicara) untuk `UserPromptSubmit`, `SessionStart` dan `PostToolUse`, dan hanya
+mencantumkan keputusan dan penulisan ulang masukan untuk `PreToolUse`. Penjaga
+yang didaftarkan di sana akan memakan biaya satu permulaan proses pada setiap
+pemanggilan alat dan mungkin tidak menyampaikan apa pun, sehingga penjaga tulis,
+sunting dan shell, pemeriksaan `AskUserQuestion` dan protokol akhir sesi tetap
+berada di alat yang menyampaikannya. Apothem akan mendaftarkan penjaga pada
+peristiwa Devin setelah dokumentasi, atau sebuah probe, menunjukkan bahwa
+penjaga itu mencapai model.
+
+Ini adalah hook Devin Local. Mode Cascade yang lebih lama membaca format hook
+yang berbeda (`.devin/hooks.json`), yang tidak ditulis oleh instalasi.
+
+**Ke mana berkas ditulis**
+
+| Berkas | Isinya |
+| --- | --- |
+| `<project>/.devin/config.local.json` | Dua pendaftaran hook, digabungkan ke kunci `hooks` berkas itu. Devin mendokumentasikan berkas ini sebagai override lokal dan diabaikan git, dan mengecualikan berkas konfigurasi lokal dari git sendiri melalui `.git/info/exclude`. |
+| `<project>/.apothem/support/windsurf/hooks/` | Skrip dispatcher, helper-nya, dan berkas pesannya. |
+
+Setiap perintah yang didaftarkan menyebut interpreter yang ditemukan Apothem saat
+dijalankan, dan jalur absolut proyek, sehingga perintah itu spesifik untuk mesin.
+Karena itulah instalasi menulis berkas lokal dan tidak pernah menulis
+`<project>/.devin/config.json` yang dipakai bersama, `.devin/hooks.v1.json` yang
+berdiri sendiri, atau pengaturan `.claude/`. Instalasi tidak menyunting
+`.gitignore`. Devin mengecualikan berkas konfigurasi lokalnya dari git sendiri
+(melalui `.git/info/exclude`), sehingga checkout milik rekan tim tidak menerima
+perintah yang menunjuk ke mesin Anda; periksa bahwa `.gitignore` Anda
+mencantumkan `.apothem/`.
+
+**Jalur yang akan salah dibaca shell.** Jalur proyek atau interpreter yang
+mengandung `$`, backtick, tanda kutip ganda, atau backslash ditolak sebelum apa
+pun ditulis: di dalam perintah yang dikutip, jalur itu akan menjalankan berkas
+lain, atau merusak JSON tempat perintah itu ditulis. Galat menyebutkan jalur
+tersebut; pindahkan atau ganti nama proyek dan jalankan instalasi lagi. Spasi
+atau apostrof dalam jalur tidak masalah.
+
+Sebuah perintah terlihat seperti ini, dengan interpreter dan jalur proyek Anda
+menggantikan kedua jalur tersebut:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+`--contract devin` memetakan nama alat huruf kecil Devin (`exec`, `write`, `edit`,
+`read`, `grep`, `glob`) ke nama yang diuji oleh handler Apothem, dan membiarkan
+keluaran sebagai amplop yang sama dengan yang dibaca Claude Code. Tidak ada
+matcher yang ditulis: matcher Devin adalah ekspresi reguler, matcher yang
+dihilangkan cocok dengan setiap alat, dan `SessionStart` tidak memiliki alat
+untuk dicocokkan.
+
+**Hal yang perlu diperiksa setelah instalasi**
+
+- Devin tidak menjalankan hook apa pun selama workspace berada dalam Restricted
+  Mode. Percayai workspace tersebut terlebih dahulu.
+- Untuk melihat apakah hook dimuat, buka tab Hooks di Customizations Devin
+  Local, atau jalankan `/hooks` di Devin CLI. Keduanya mencantumkan setiap hook
+  beserta berkas sumbernya.
+- Dokumentasi Devin tidak menyebutkan shell untuk perintah hook di Windows.
+  Perintah memakai pengutipan `sh`, yang tidak akan diurai PowerShell tanpa
+  operator panggilan. Apothem belum memastikan apa yang dijalankan Devin Local
+  di Windows; jika hook tidak dimuat di sana, sampaikan dalam sebuah issue.
+
+**Devin juga menjalankan hook yang ditulis Claude Code.** Devin memuat hook di
+`~/.claude/settings.json`, `.claude/settings.json` dan
+`.claude/settings.local.json` selama `read_config_from.claude` aktif, yang
+merupakan default-nya untuk Devin CLI; halaman Desktop tidak menyebutkan apakah
+Devin Local menerapkannya. Jika Anda juga memasang Apothem untuk Claude Code,
+kedua set hook dapat berjalan. Perintah `SessionStart` di sini dan salinannya di
+Claude Code berbagi satu penanda per sesi di folder keadaan hook Apothem,
+sehingga mana pun yang berjalan kedua akan diam dan bootstrap mencapai model
+satu kali; Apothem mengenali Devin dari variabel `DEVIN_PROJECT_DIR` yang
+ditetapkan Devin untuk hook-nya. Penanda itu mencakup sepuluh detik, sehingga
+permulaan berikutnya dari sesi yang sama tetap menyampaikannya. Penghitung
+ukuran konteks berjalan di kedua tempat, sehingga ambangnya tercapai lebih awal,
+dan Apothem tidak menghapus duplikasi penghitung tersebut. Untuk memuat hanya
+hook ini, tetapkan `"claude": false` di bawah `"read_config_from"` di konfigurasi
+pengguna Anda (`~/.config/devin/config.json`, atau `%APPDATA%\devin\config.json`
+di Windows) atau di `.devin/config.json` proyek; itu juga menghentikan Devin
+mengimpor aturan, skill, command, dan server MCP milik Claude Code. Instalasi
+mencetak hal ini sebagai catatan.
+
+**Hook milik Anda.** Pendaftaran digabungkan ke berkas Anda berdasarkan kunci.
+Hook dan kunci lain yang Anda tulis tetap seperti semula, handler milik Anda di
+bawah peristiwa yang sama tetap berada di samping milik Apothem, dan pembaruan
+hanya mengganti handler yang perintahnya menjalankan dispatcher Apothem
+(`.apothem/support/windsurf/hooks/dispatch.py` dengan `--contract devin`, di
+jalur proyek mana pun perintah itu ditulis). Hook milik Anda yang hanya berbagi
+nama, atau yang menjalankan `python -m apothem.conformity.gate`, tidak pernah
+dianggap milik Apothem. Berkas dengan komentar atau sintaks JSON5 lain tidak
+dapat ditulis ulang tanpa kehilangannya, sehingga instalasi melaporkan galat
+`config.unparseable` untuk berkas itu, membiarkannya tidak tersentuh dan
+berhenti, dengan berkas lain yang sudah mulai ditulisnya dihapus kembali: hapus
+komentarnya, atau tambahkan kedua entri itu sendiri.
+
+**Mematikan hook.** Tetapkan `APOTHEM_HOOKS_DISABLE=1` di lingkungan Devin untuk
+membungkam hook Apothem.
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -43,8 +264,19 @@ Anda tambahkan setelah blok tersebut dipertahankan pada setiap sinkronisasi.
 Permukaan aturan Windsurf saat ini berlingkup proyek di bawah `.devin/rules/`
 (lokasi yang lebih disukai, yang lebih diutamakan daripada fallback
 kompatibilitas mundur `.windsurf/rules/`). Alur kerja dan memori lokal-mesin
-dimiliki operator; Apothem tidak menulisnya. Bentuk berkas tunggal
-`.windsurfrules` sengaja tidak ditulis.
+dimiliki operator; Apothem tidak menulisnya, begitu pula berkas hook Cascade
+maupun konfigurasi Devin bersama. Bentuk berkas tunggal `.windsurfrules`
+sengaja tidak ditulis.
+
+Devin Desktop (Windsurf) menemukan `~/.agents/skills/`, sehingga skill yang
+ditulis instalasi muncul tanpa penyiapan lebih lanjut. Devin Desktop juga dapat
+mencantumkan nama yang sama dari `~/.claude/skills/` ketika impor konfigurasi
+Claude Code-nya aktif; dokumentasi Devin CLI menjadikan impor itu aktif secara
+default, dan halaman Desktop tidak menyebutkan apakah mode Local menerapkannya.
+Apothem belum memastikan bagaimana Windsurf memperlakukan kunci header
+`SKILL.md` yang tidak dicantumkannya; skill membawa `user-invocable`,
+`disable-model-invocation`, `allowed-tools`, `argument-hint`, dan sebuah peta
+`metadata`.
 
 ## Verifikasi
 
@@ -55,10 +287,22 @@ apothem verify --harness windsurf --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
-   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
-   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+2. Setiap target terkelola ada, termasuk folder `.devin/agents/` dan
+   pendaftaran hook `.devin/config.local.json`; berkas terkelola tidak kosong,
+   dan konfigurasi JSON atau YAML dapat diurai. Berkas hook harus memuat
+   handler yang menjalankan dispatcher Apothem (pemeriksaan tidak
+   menjalankannya), sehingga berkas yang dikembalikan atau dikosongkan tidak
+   lagi lolos verifikasi. Tambahkan `--profile PATH` untuk juga memastikan
+   bahwa berkas yang terpasang cocok dengan profil tersebut. Untuk
+   `.devin/agents/`, yang diperiksa adalah keberadaan folder tersebut, bukan
+   keberadaan setiap berkas helper di dalamnya; perintah
+   `apothem diff --harness windsurf --project /path/to/project` mencantumkan
+   berkas helper yang hilang atau usang.
+3. Setiap folder skill Apothem ada di tempatnya dengan sebuah `SKILL.md`,
+   instalasi mana pun yang menulisnya, dan tidak ada folder skill dengan nama
+   Apothem yang milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal
+   menyebutkan folder yang hilang atau asing.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -67,6 +311,12 @@ apothem update --harness windsurf --project /path/to/project
 ```
 
 Menurunkan ulang berkas aturan proyek dari keadaan profil bersama saat ini.
+
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari berkas saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+Pembaruan menulis ulang berkas subagent yang berbeda dari berkas saat ini, dan menambahkan yang hilang.
+Pembaruan juga menyegarkan skrip hook dan handler Apothem di
+`.devin/config.local.json`, tanpa menyentuh entri milik Anda.
 
 ## Pencopotan
 
@@ -81,6 +331,21 @@ dalamnya. Sebelum perubahan, salinan berkas bercap waktu disimpan di bawah
 `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML
 profil bersama dan mesin Apothem tidak terpengaruh.
 
+Pencopotan juga menghapus berkas subagent yang ditulisnya di `<project>/.devin/agents/`
+dan mempertahankan berkas lain di sana; folder itu dihapus ketika menjadi kosong.
+Pencopotan menghapus handler hook Apothem dari `<project>/.devin/config.local.json`,
+mengenalinya dari jalur dispatcher dalam perintahnya, dan mempertahankan hook dan
+kunci milik Anda. Berkas itu dihapus hanya ketika Apothem yang membuatnya dan tidak
+ada lagi yang tersisa di dalamnya. Skrip hook di `<project>/.apothem/support/windsurf/hooks/` juga dihapus.
+Pencopotan menghapus folder skill yang ditulisnya di `~/.agents/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada lagi
+instalasi Apothem lain yang memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin masih memakainya. Dalam kasus itu pencopotan mempertahankan
+folder tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir
+menghapusnya. Berkas yang Anda tambahkan ke folder tersebut tetap ada, dan folder
+yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
+
 ## Gerbang konformitas
 
 ```bash
@@ -93,6 +358,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness windsurf --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness windsurf --project /path/to/project`, lalu verifikasi lagi |
+| Devin Local tidak mencantumkan satu pun helper Apothem | Jalankan `apothem diff --harness windsurf --project /path/to/project`. Baris tertunda untuk folder `.devin/agents` berarti berkas helper hilang atau usang, jadi jalankan `apothem update --harness windsurf --project /path/to/project`. `apothem verify` bukan pengujian untuk hal ini: perintah itu lolos ketika `.devin/agents/` ada, bahkan tanpa berkas helper di dalamnya. Jika `diff` tidak melaporkan perubahan tertunda, periksa bahwa pengaturan Subagents (Preview) aktif dan bahwa proyek terbuka dalam mode Local Devin Desktop, lalu mulai tab baru |
+| Hook Apothem tidak berjalan | Devin tidak menjalankan hook di workspace yang berada dalam Restricted Mode: percayai workspace tersebut. Buka tab Hooks di Customizations Devin Local, atau jalankan `/hooks` di Devin CLI, untuk melihat apakah entri Apothem dimuat. Di Windows, Apothem belum memastikan shell mana yang dipakai Devin untuk menjalankan perintah hook |
+| Instalasi melaporkan `config.unparseable` untuk `config.local.json` | Berkas itu memiliki komentar atau sintaks lain yang akan hilang saat ditulis ulang. Hapus komentarnya dan pasang lagi, atau tambahkan sendiri kedua entri hook Apothem |
+| Konteks Apothem muncul dua kali, atau pengingat ukuran konteks datang lebih awal | Devin juga menjalankan hook yang ditulis instalasi Claude Code. Tetapkan `"claude": false` di bawah `"read_config_from"` di konfigurasi Devin Anda untuk memuat hanya hook di `.devin/config.local.json` |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness windsurf --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness windsurf --project /path/to/project` |
 
 ## Tombol konfigurasi

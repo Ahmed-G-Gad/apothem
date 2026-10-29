@@ -2,7 +2,7 @@
 title: "배포 체크리스트"
 description: "Apothem 에코시스템을 배포하거나 공유하기 전의 사전 검증 체크리스트"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ frontmatter를 파싱하고 YAML 오류 + 누락된 필수 필드를 표시합�
 
 - [ ] `name` — kebab-case 명령 이름
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` 존재
-- [ ] `disable-model-invocation` 존재하며 의도적임 (지침 전용 명령의 경우 `true`)
+- [ ] `disable-model-invocation` 존재하며 의도적임 (읽기 전용 또는 자문 명령의 경우 `false`, 명령 실행이 작업 트리 밖의 상태를 변경하거나 운영자가 시점을 선택하는 데 의존하는 경우에만 `true`)
 - [ ] `effort` 키는 없어야 합니다: `command.schema.json`은 `additionalProperties: false`를 설정하며 이를 허용하지 않습니다.
 
 ### 위임 작업자

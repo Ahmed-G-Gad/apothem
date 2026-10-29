@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "适用于 GLM（Z.ai）的 Apothem 工具适配器，将其作为可配置的模型后端。"
 machineTranslated: true
-sourceHash: "1de53f25ee125b1a"
+sourceHash: "026e29a055db8a67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,9 @@ sourceHash: "1de53f25ee125b1a"
 **状态：** GA
 **原生配置：** `<project>/.apothem/providers/glm.toml`
 
-GLM（Z.ai）是一个**模型后端**，本身并不是编码工具。Z.ai 不提供第一方的 GLM 命令行；取而代之的是，通过设置后端基础 URL 和密钥，让支持 Anthropic 兼容协议或 OpenAI 兼容协议的工具指向 GLM。Apothem 仍将 GLM 计入其工具适配器之列，因此你可以像选择其他适配器一样，用 `--harness glm` 选择它。`glm` 适配器写入一个提供方配置文件，记录这两种兼容表面，以便任何兼容的工具都能接入 GLM 模型系列。
+`glm` 适配器将 GLM（Z.ai）配置为一个**模型后端**。通过设置后端基础 URL 和密钥，让支持 Anthropic 兼容协议或 OpenAI 兼容协议的工具指向 GLM，你可以像选择其他适配器一样，用 `--harness glm` 选择该适配器。它写入一个提供方配置文件，记录这两种兼容表面，以便任何兼容的工具都能接入 GLM 模型系列。
+
+Z.ai 还提供了自己的第一方编码工具 ZCode，Z.ai 的[文档](https://docs.z.ai/devpack/tool/zcode)称其为"Agentic Development Environment"。此适配器不配置 ZCode。Apothem 尚未检查 ZCode 自身的配置表面，因此适配器不为它写入任何内容。
 
 ## 安装
 
@@ -27,9 +29,19 @@ apothem install --harness glm --project /path/to/project
 
 提供方文件记录两个后端。Anthropic 兼容后端使用基础 URL `https://api.z.ai/api/anthropic`；支持 Anthropic 协议的工具通过设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 以及可选的 `API_TIMEOUT_MS` 路由到 GLM。文件中的 `[backends.anthropic_compatible.env]` 表列出了这些变量，还列出了 `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，它们将该工具的 opus、sonnet 和 haiku 角色映射到 GLM 模型。OpenAI 兼容后端使用基础 URL `https://api.z.ai/api/coding/paas/v4`。认证令牌是一个占位符，需由你替换为自己的 Z.ai 密钥——Apothem 绝不写入真实的机密。模型 ID 随版本变化，因此 Apothem 不锁定任何模型 ID；该文件带有 `<GLM_MODEL_ID>` 占位符，由你根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填写。共享配置档案中的任何内容都不会进入此文件；它是一份固定的模板。
 
+### 角色到模型的映射
+
+Z.ai 自己关于角色到模型映射的说法互相矛盾，因此该文件将三个 `ANTHROPIC_DEFAULT_*_MODEL` 值保留为占位符，并在它们上方带有一条 `TODO(clarify)` 注释。由你决定使用哪种映射：
+
+- 厂商 Anthropic 兼容设置指南中的手动 `settings.json` 示例将 opus 和 sonnet 映射到 `glm-5.3[1m]`，将 haiku 映射到 `glm-5.3-flash[1m]`，并将 `CLAUDE_CODE_AUTO_COMPACT_WINDOW` 设为 `1000000`。
+- 同一指南所述的默认映射为全部三个角色列出 `GLM-5.3-Flash`。
+- Z.ai 的 `@z_ai/coding-helper` 工具默认使用 `glm-5.3-flash`，为全部三个角色追加 `[1m]`，并写入 `1048576` 的压缩窗口。
+
+Apothem 不锁定其中任何值，也不在它们之间做选择。
+
 ## 兼容性说明
 
-由于 GLM 是后端而不是编码工具，它不暴露任何用于规则、命令、技能或钩子的表面——适配器只写入后端提供方文件，别无其他。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
+GLM 后端不暴露任何用于规则、命令、技能或钩子的表面，因此适配器只写入后端提供方文件，别无其他。Apothem 尚未检查 ZCode 是否暴露此类表面。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
 
 GLM 运行来自 Z.ai 的 GLM 模型系列；有关当前的后端、模型以及 Anthropic 兼容配置表面，请参见[厂商配置参考](https://docs.z.ai/devpack/tool/claude)。
 
@@ -59,7 +71,7 @@ apothem update --harness glm --project /path/to/project
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-只有当提供方文件由 Apothem 创建且仍是未经编辑的模板时，才会移除它，并会先将其备份到 Apothem 备份根目录下。由你创建或编辑过的文件会保留原位。共享配置档案 YAML 和 Apothem 引擎不受影响。
+只有当提供方文件由 Apothem 创建且仍是一份未经编辑的模板时，才会移除它，并会先将其备份到 Apothem 备份根目录下。当 Apothem 为该项目保存的安装记录表明是它写入了该文件时，由早期版本写入的未经编辑的文件也算在内：清单记录了该项目发布过的每个模板的摘要。没有安装记录时，只会移除与当前模板完全相同的副本。由你创建或编辑过的文件会保留原位。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

@@ -2,14 +2,14 @@
 title: "/research-analysis"
 description: "/research-analysis — Analiza los datos brutos según el plan preregistrado: pruebas planificadas, tamaños del efecto con intervalos de confianza, comprobaciones de robustez y desviaciones divulgadas."
 machineTranslated: true
-sourceHash: "63b072fd3548eba2"
+sourceHash: "6bfe62bf33b6bccc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Investigador principal (análisis)
 **Posición en la canalización:** mitad de la cadena
 
-Analiza los datos brutos según el plan preregistrado: ejecuta las pruebas estadísticas planificadas, informa los tamaños del efecto con intervalos de confianza (no solo valores p), aplica la corrección por comparaciones múltiples donde corresponda, ejecuta comprobaciones de robustez / sensibilidad y divulga cada desviación respecto al preregistro.
+Analiza los datos brutos según el plan preregistrado: ejecuta las pruebas estadísticas planificadas sobre la unidad de análisis independiente, informa los tamaños del efecto con intervalos de confianza (intervalos de credibilidad bajo un plan bayesiano; no solo valores p), aplica la corrección por comparaciones múltiples donde corresponda, declara cómo se trataron los datos faltantes, ejecuta comprobaciones de robustez / sensibilidad y divulga cada desviación respecto al preregistro.
 
 ## Invocación canónica
 
@@ -29,7 +29,7 @@ Los datos brutos en la ubicación natural del host que registró la etapa de exp
 
 ## Salidas
 
-`_outputs/analysis.md` (las pruebas preregistradas con tamaños del efecto e IC, la corrección por comparaciones múltiples, las comprobaciones de robustez y las desviaciones divulgadas) + figuras / tablas en una ubicación natural del host.
+`_outputs/analysis.md` (las pruebas preregistradas con tamaños del efecto, IC, unidad de análisis y un juicio de sesgo por dominio para cada resultado principal; la corrección por comparaciones múltiples; el tratamiento de los datos faltantes; las comprobaciones de robustez; y las desviaciones divulgadas) + figuras / tablas en una ubicación natural del host.
 
 ## Aguas abajo
 
@@ -41,10 +41,18 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar el contexto** — Leer los datos brutos y el preregistro.
 2. **Verificar la Puerta de secuencia** — Confirmar que existen las salidas del experimento; de lo contrario, detenerse con `Blocked: run /research-experiment first`.
-3. **Analizar** — Ejecutar las pruebas preregistradas; informar tamaños del efecto + IC; corregir por comparaciones múltiples; ejecutar comprobaciones de robustez / sensibilidad.
-4. **Divulgar las desviaciones** — Registrar cada desviación respecto al plan preregistrado.
+3. **Analizar** — Ejecutar las pruebas preregistradas sobre la unidad de análisis independiente; diagnosticar los supuestos sin dejar que los diagnósticos elijan la prueba; informar tamaños del efecto + IC; corregir por comparaciones múltiples; declarar el tratamiento de los datos faltantes; ejecutar comprobaciones de robustez / sensibilidad.
+4. **Divulgar las desviaciones** — Registrar cada desviación respecto al plan preregistrado. El paso a una alternativa que nombra el preregistro se anota como una adaptación planificada; cualquier otra sustitución es una desviación.
 5. **Actualizar el manifiesto de traspaso** — Registrar la ruta del análisis y las figuras / tablas.
 6. **Emitir el análisis** — `_outputs/analysis.md` + figuras / tablas.
+
+## Disciplina estadística
+
+- **La prueba sigue al diseño.** La prueba primaria preregistrada se mantiene salvo que se active el desencadenante de alternativa del propio preregistro; una prueba de cribado que no rechaza no demuestra que un supuesto se cumpla.
+- **n cuenta unidades independientes.** Las medidas repetidas, submuestras, conglomerados y semillas se agregan a la unidad o se modelan como dependencia, nunca se cuentan como réplicas independientes.
+- **Un nulo se lee de tres maneras.** El intervalo del tamaño del efecto, el resultado de equivalencia frente al efecto mínimo de interés y una declaración de sensibilidad (el efecto mínimo detectable con el n analizado alcanzado) se informan juntos. Nunca se informa la potencia calculada a partir del efecto observado.
+- **Planes bayesianos en sus propios términos.** Un plan bayesiano preregistrado informa el resumen posterior con su intervalo de credibilidad, ejecuta comprobaciones de sensibilidad a la priori, de diagnóstico computacional y predictivas posteriores antes de informar cualquier posterior, y usa una región de equivalencia práctica fijada de antemano para los nulos.
+- **Sesgo a nivel de resultado y figuras.** Cada resultado principal lleva un juicio bajo / algunas dudas / alto por dominio, inicializado a partir del libro mayor de amenazas a la validez del diseño y nunca sumado en una única puntuación, y cada figura cumple el umbral de codificación, divulgación de la incertidumbre y accesibilidad.
 
 ## Umbral de rigor
 
@@ -56,6 +64,8 @@ Un método estocástico se ejecuta al menos treinta repeticiones independientes 
 |---------|-------|----------|
 | Blocked: run /research-experiment first | No hay datos brutos | Ejecuta `/research-experiment` para producir los datos + el registro |
 | Valor p informado sin tamaño del efecto | Informe estadístico incompleto | Informa tamaños del efecto + intervalos de confianza |
+| Observaciones dependientes contadas como réplicas | Medidas repetidas, submuestras, conglomerados o semillas tratados como independientes | Agrega a la unidad independiente o modela la dependencia; n cuenta unidades |
+| Potencia observada informada para un nulo | Potencia calculada a partir del efecto observado | Elimínala; informa el intervalo, el resultado de equivalencia y la declaración de sensibilidad |
 | Desviación de análisis no divulgada | El plan se desvió en silencio | Divulga la desviación respecto al preregistro |
 
 ## Ejemplos

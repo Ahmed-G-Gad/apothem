@@ -2,7 +2,7 @@
 title: "Host-agnostische Haltung"
 description: "Wie Apothem über das gemeinsame Profil und Harness-Adapter eine host-agnostische Haltung erreicht."
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,8 @@ einzige Abstand vom Kern zu jeder Kante, in jeder Richtung identisch. Genau das
 ist das Design: ein gemeinsames Profil im Zentrum, siebzehn gleich weit entfernte Harnesses am
 Rand, jede Materialisierung gleich weit von der Quelle der Wahrheit entfernt. Der
 Kern ändert sich nicht, wenn sich eine Kante ändert; die Kanten teilen eine einzige Beziehung zum
-Kern. Drift ist strukturell unmöglich.
+Kern. Weil sich jeder Harness aus einem einzigen Profil ableitet, ist Drift erkennbar
+(`apothem status` meldet sie) und korrigierbar (`apothem update` materialisiert neu).
 
 ## Portabilitätsgarantien
 

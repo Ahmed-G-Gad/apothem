@@ -2,7 +2,7 @@
 title: "CLI-Referenz"
 description: "Apothem-CLI-Referenz — alle Unterbefehle und Flags."
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
 | `--dry-run` | Vorschau der Aktualisierung ohne Schreiben von Dateien. |
 
-`update` materialisiert die Harness-Ausgabe neu. Es aktualisiert nicht das Paket
-der Apothem-CLI; verwenden Sie für Paket-Upgrades den Paketmanager, mit dem
-Apothem installiert wurde.
+`update` materialisiert die Harness-Ausgabe neu. Es aktualisiert nicht die
+Apothem-Engine selbst; aktualisieren Sie die Engine über den Kanal, mit dem Sie
+sie installiert haben (den `/plugin`-Ablauf, `npx` oder die Installer- und
+Update-Skripte), wie unter [Aktualisieren](/docs/install/updating) beschrieben.
 
 ### `apothem uninstall`
 
@@ -142,6 +143,7 @@ ergeben zusammen den Drift-Zustand:
 | `in-sync` | Installiert und mit der Profil-Basislinie übereinstimmend. |
 | `drift` | Installiert, aber nicht mehr übereinstimmend — beheben Sie dies mit `apothem update`. |
 | `unknown` | Installiert, aber das Basislinienprofil konnte nicht gelesen werden. |
+| `needs-project` | Ein Harness mit Projektbereich wurde ohne `--project` gemeldet, daher kann sein Ziel nicht aufgelöst werden. |
 
 `installed` beantwortet die Frage „Hat Apothem hier installiert?“, nicht „Ist
 dieser Harness auf dem Rechner vorhanden?“. Es stützt sich auf Apothems eigene

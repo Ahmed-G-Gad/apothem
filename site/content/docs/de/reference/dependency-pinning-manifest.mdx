@@ -2,7 +2,7 @@
 title: "Manifest zur Abhängigkeitsfixierung"
 description: "Richtlinie zur Abhängigkeitsdeklaration, die Python-Laufzeitbereiche, Entwicklungswerkzeuge, Lock-Dateien der Release-Werkzeuge und ratifizierte Versionsuntergrenzen für jede Build-Oberfläche abdeckt."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ Apothem ist eine Python-CLI mit einem kleinen Satz an Laufzeitabhängigkeiten pl
 einer umfangreicheren Werkzeugkette für Entwicklung, Audit, Release und
 Dokumentation. Laufzeitabhängigkeiten verwenden konservative Untergrenzen in
 `pyproject.toml`; die Website committet `site/package-lock.json`; GitHub Actions
-werden per unveränderlichem SHA mit Versionskommentaren fixiert und von Renovate
+werden per unveränderlichem SHA mit Versionskommentaren fixiert und von Dependabot
 aktualisiert.
 
 | Klasse | Deklaration | Lock-Richtlinie |
@@ -25,9 +25,11 @@ aktualisiert.
 | Python-Laufzeitabhängigkeiten | `[project.dependencies]` in `pyproject.toml` | Untergrenzenbereiche; kein committeter Python-Laufzeit-Lock |
 | Entwicklungs- / Sicherheitswerkzeuge | `[project.optional-dependencies]`-Extras | Untergrenzenbereiche; CI installiert die aktuell passenden Versionen |
 | Release-Werkzeuge | `scripts/release/requirements-build-linux.txt` für Release-Workflows; das `release`-Extra in `[project.optional-dependencies]` für lokale Builds | Hash-gesperrt für Release-Workflows; aus der Hülle der Release-Werkzeuge erzeugt. Das `release`-Extra ist ein Untergrenzenbereich |
-| Nur-CI-Werkzeuge | `.github/workflows/*.yml` | Workflow-eigene pip-Werkzeuge verwenden exakte Fixierungen (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Nur-CI-Werkzeuge | `.github/workflows/*.yml` | Workflow-eigene pip-Werkzeuge verwenden exakte Fixierungen (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Dokumentationsseite | `site/package.json` | `site/package-lock.json` committet und von `npm ci` konsumiert |
-| GitHub Actions | SHA-fixierte `uses:`-Referenzen mit Versionskommentaren | Renovate schlägt Aktualisierungen vor; Ausnahmen tragen `action-pinning-exempt:`-Markierungen |
+| VS-Code-Packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committet; Release- und Veröffentlichungsjobs führen `npm ci --ignore-scripts` aus |
+| Harness-CLIs für den Channel-Smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` committet und von `npm ci` konsumiert |
+| GitHub Actions | SHA-fixierte `uses:`-Referenzen mit Versionskommentaren | Dependabot schlägt wöchentliche Aktualisierungen vor; Ausnahmen tragen `action-pinning-exempt:`-Markierungen |
 
 ## Release-Ratifizierung
 
@@ -74,5 +76,36 @@ Node-Hülle hat.
   statisches Artefakt; die Lock-Datei liefert deterministische `npm ci`-Builds
   für diese öffentliche Oberfläche.
 - **Warum SHA-fixierte Actions?** Tags sind veränderlich; SHAs sind
-  unveränderlich. Renovate aktualisiert die fixierten SHAs, während das
-  Release-Gate jede absichtliche Zurückstellung festhält.
+  unveränderlich. Dependabot schlägt die SHA-Aktualisierungen vor und schreibt
+  jeden Versionskommentar neu, während das Release-Gate jede absichtliche
+  Zurückstellung festhält.
+- **Was der Update-Bot nicht anfasst.** Die Dependabot-Versionsupdates
+  (`.github/dependabot.yml`) decken die GitHub-Actions-Pins, die Lock-Datei der
+  Website, die Lock-Datei des vsce-Packagers (`tools/vsce`), die Lock-Datei der
+  Harness-CLIs, die der Channel-Smoke installiert (`tools/channel-smoke`), und
+  die Pre-Commit-Hooks ab. Die Laufzeit-Untergrenzen in `pyproject.toml`, die
+  hash-gesperrten Release-Anforderungen, die vendorte Hülle in
+  `src/apothem/_vendor/vendor.txt` und die Pre-Commit-Hooks, die im Gleichschritt
+  mit `pyproject.toml` fixiert sind, werden von Hand angehoben, weil die
+  Anhebung einer einzelnen Fixierung die Dateien brechen würde, mit denen sie
+  übereinstimmen müssen.
+  Die Major-Version von `@types/node` der Website folgt ihrer Node-Untergrenze
+  (`engines` und `.nvmrc`, Node 22), daher schlägt Dependabot nur deren Minor-
+  und Patch-Aktualisierungen vor; heben Sie diese Major-Version zusammen mit
+  der Untergrenze an.
+  Versionsupdates lassen npm-`overrides`-Blöcke unberührt. Die
+  Dependabot-Sicherheitsupdates decken weiterhin jedes Manifest ab, sodass ein
+  Sicherheits-Pull-Request eine dieser Fixierungen vorschlagen oder einen
+  Override verschieben kann; passen Sie ihn von Hand an oder schließen Sie ihn.
+- **Einen Dependabot-Pull-Request mergen.** Die Squash-Voreinstellung des
+  Repositorys übernimmt den PR-Titel. Manche Dependabot-Titel, meist
+  gruppierte, die ein Verzeichnis nennen, überschreiten die 72 Zeichen des
+  Squash-Betreffs; die PR-Title-Prüfung nennt sie, und eine Umbenennung behebt
+  sie. Ein Pull-Request, der eine Werkzeug-Lock-Datei ändert, führt keinen
+  `ci.yml`-Job aus; daher auditiert und installiert sie der npm-Audit-Workflow,
+  paketiert für die vsce-Lock-Datei die VS-Code-Erweiterung und führt die
+  vsce-Release-Tests aus, und für die channel-smoke-Lock-Datei läuft der
+  Channel-Smoke-Workflow. Der Markdown-Lint-Workflow führt bei einem
+  Pull-Request für die Pre-Commit-Hooks den markdownlint-Hook aus; die übrigen
+  Hooks werden in CI nicht ausgeübt, führen Sie daher vor dem Mergen
+  `pre-commit run --all-files` auf seinem Branch aus.

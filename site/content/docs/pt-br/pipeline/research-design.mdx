@@ -2,14 +2,14 @@
 title: "/research-design"
 description: "/research-design — Operacionaliza as hipóteses em previsões testáveis e projeta o estudo (variáveis, controles, amostra, poder), depois congela o plano de análise como um pré-registro."
 machineTranslated: true
-sourceHash: "7086ac7a2433484e"
+sourceHash: "6cf7d93ab189ec25"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Papel:** Pesquisador Principal (projeto do estudo)
 **Posição no pipeline:** intermediária
 
-Operacionaliza as hipóteses em previsões testáveis e projeta o estudo ou experimento — variáveis, controles, amostra, instrumentos, análise de poder, ameaças à validade — depois produz um pré-registro que congela o plano de análise antes da coleta de dados.
+Operacionaliza as hipóteses em previsões testáveis e projeta o estudo ou experimento — variáveis, condições de controle, unidade experimental, alocação e mascaramento, amostra, instrumentos, análise de poder, ameaças à validade — depois produz um pré-registro que congela o plano de análise antes da coleta de dados.
 
 ## Invocação canônica
 
@@ -29,7 +29,7 @@ Com argumentos:
 
 ## Saídas
 
-`_inputs/study-design.md` (previsões operacionalizadas, especificação de variáveis, controles, amostra, instrumentos, análise de poder, ameaças à validade) + `_inputs/preregistration.md` (o plano de análise congelado).
+`_inputs/study-design.md` (previsões operacionalizadas, especificação de variáveis, condições de controle, unidade experimental, plano de alocação e mascaramento, amostra, instrumentos, análise de poder, ameaças à validade) + `_inputs/preregistration.md` (o plano de análise congelado, incluindo as condições de controle com seus critérios de aprovação, o plano de alocação e mascaramento, o tratamento de desfechos ausentes e quaisquer análises interinas).
 
 ## A jusante
 
@@ -41,10 +41,18 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 1. **Carregar contexto** — Ler a síntese e as hipóteses da especificação.
 2. **Verificar o Portão de Sequência** — Confirmar que `_inputs/proposal.md` (e os `_inputs/synthesis.md` e `_spec/research-spec.md` a montante) existe; caso contrário, parar com `Blocked: run /research-proposal first`.
-3. **Projetar o estudo** — Operacionalizar previsões; especificar variáveis, controles, amostra, instrumentos, poder; enumerar ameaças à validade.
-4. **Pré-registrar** — Congelar o plano de análise antes de qualquer coleta de dados.
+3. **Projetar o estudo** — Operacionalizar previsões; especificar variáveis, condições de controle e instrumentos; fixar a unidade experimental, a alocação com semente, o plano de mascaramento e a ordem de execução; dimensionar a amostra para a análise planejada; enumerar ameaças à validade.
+4. **Pré-registrar** — Congelar o plano de análise, as condições de controle, a alocação e o mascaramento antes de qualquer coleta de dados.
 5. **Atualizar o manifesto de transferência** — Registrar os caminhos do projeto do estudo e do pré-registro.
 6. **Emitir o projeto** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Estrutura e dimensionamento
+
+- **A estrutura é fixada no projeto, não na análise.** O projeto nomeia a unidade experimental e a unidade de análise, o procedimento de alocação com seu cronograma com semente e, quando as unidades entram uma após a outra, seu sigilo, quem é mascarado (ou por que o mascaramento é inviável), os fatores de perturbação e como cada um é bloqueado, aleatorizado ou mantido constante, e a ordem de execução. Ele planeja o comparador e os controles positivos e negativos que o experimento executará. Um controle acrescentado após o congelamento é um desvio divulgado.
+- **Varreduras de um fator por vez não conseguem mostrar uma interação.** Onde se suspeita que componentes ou parâmetros interagem, o projeto acrescenta um arranjo conjunto sobre o conjunto suspeito e pré-registra a interação que afirma.
+- **O menor efeito de interesse vem da especificação.** Ele remete às métricas de sucesso da especificação ou a um limiar de significância prática que a síntese fundamenta. O efeito relatado por um estudo anterior delimita a faixa plausível e nunca substitui o menor efeito de interesse.
+- **Dimensionar para a análise que será executada.** O objetivo de cada afirmação primária (superioridade, não inferioridade ou equivalência) e sua lateralidade são fixados no projeto, e cada uma recebe poder em seu próprio menor efeito de interesse, no limiar por teste que a correção declarada deixa. O N necessário é relatado como uma faixa ao longo do efeito plausível; quando a viabilidade limita o N, o menor efeito detectável nesse N é relatado e o menor efeito de interesse é declarado como sem poder suficiente.
+- **Margens e simulação.** N conta unidades independentes e é inflado para a correlação intraconglomerado; a meta de coleta vem do N analisado por meio de uma taxa de perda registrada. Onde nenhuma forma fechada corresponde à análise planejada, o poder é estimado por simulação, com a ferramenta, a versão, a semente e o erro de Monte Carlo registrados, e uma regra sequencial fixa seu número de análises interinas e sua fronteira no pré-registro.
 
 ## Piso de rigor
 
@@ -55,7 +63,9 @@ Para um estudo que envolve comparação, o projeto fixa, e pré-registra, o piso
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
 | Blocked: run /research-proposal first | Sem plano de referência | Execute `/research-proposal` para produzir `_inputs/proposal.md` |
-| Projeto com poder insuficiente | Amostra pequena demais para o efeito | Reexecute a análise de poder; redimensione a amostra |
+| Projeto com poder insuficiente | Amostra pequena demais para o efeito | Reexecute a análise de poder para a análise planejada; redimensione a amostra, ou relate o menor efeito detectável e declare que o menor efeito de interesse está sem poder suficiente |
+| Estrutura deixada para a análise | Unidade, alocação, mascaramento ou ordem de execução não fixados no projeto | Fixe-os no projeto e no pré-registro; nenhum teste aplicado depois separa um fator de confusão que o arranjo embutiu |
+| Estimativa anterior usada como efeito-alvo | O efeito relatado por um único estudo substitui o menor efeito de interesse | Fundamente a meta nas métricas de sucesso da especificação; use o estudo anterior apenas para delimitar a faixa |
 | Plano de análise não congelado | Pré-registro omitido | Redija `_inputs/preregistration.md` antes da coleta de dados |
 
 ## Exemplos

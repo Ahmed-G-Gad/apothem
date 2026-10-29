@@ -2,13 +2,13 @@
 title: "品牌调板"
 description: "Apothem 核心品牌色与十五种工具品牌色，后者定义在“工具颜色”页面上。核心颜色的单一事实来源是位于 assets/design-tokens.css 的规范设计令牌；网站镜像这些值。"
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 核心调板
 
-规范调板——板岩中性色阶、翡翠强调色阶和语义色相——由位于 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css) 的设计令牌（及其 `assets/design-tokens.json` 镜像）拥有。位于 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) 的网站主题将这些令牌值镜像到 Fumadocs 主题所使用的 CSS 变量中。下方的每个值都是这些设计令牌中板岩色阶或翡翠色阶的一个级别；诸如 slate-600 之类的级别名称指向该色阶中对应的值。
+规范调板——板岩中性色阶、翡翠强调色阶和语义色相——由位于 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css) 的设计令牌（及其 `assets/design-tokens.json` 镜像）拥有。位于 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) 的网站主题在 Fumadocs 主题所使用的 CSS 变量中以 OKLCH 形式重述语义令牌值：页面背景、文本、主色、边框和焦点环变量解析为精确的令牌级别（`lib/theme-tokens.test.mjs` 检查要求背景、前景、主色和焦点环变量与之一致）。同一文件中声明的 `apothem-*`、`polygon-*` 和 `field-*` 色阶是令牌色阶的派生近似值，而非副本，且不属于规范的一部分。下方的每个值都是设计令牌中板岩色阶或翡翠色阶的一个级别；诸如 slate-600 之类的级别名称指向该色阶中对应的值。
 
 | 角色 | 令牌（CSS） | 浅色模式 | 深色模式 | 用途 |
 |---|---|---|---|---|

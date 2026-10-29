@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptateur d'environnement Apothem pour Zed (GA)."
 machineTranslated: true
-sourceHash: "62b3de71f4c3ce39"
+sourceHash: "43036c087a25d729"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,47 @@ GEMINI.md
 Il n'existe aucun répertoire de règles propre à chaque outil ; toute la surface
 Apothem atterrit donc dans le fichier plat `.rules`, en tête de cette liste.
 
-**Fichiers écrits :** `<project>/.rules`
+Il écrit aussi les skills d'Apothem, ainsi que les règles et templates qu'ils
+citent, dans votre répertoire personnel, avant de toucher au projet (voir
+[Fichiers hors du projet](#fichiers-hors-du-projet)).
+
+**Fichiers écrits :**
+
+- `<project>/.rules`, le fichier d'instructions.
+- `~/.agents/skills/<name>/SKILL.md` pour chaque skill et chaque commande Apothem, dans votre répertoire personnel.
+- `~/.config/apothem/rules/` et `~/.config/apothem/templates/`, dans votre répertoire personnel.
+
+## Fichiers hors du projet
+
+L'installation écrit aussi les skills d'Apothem dans votre répertoire personnel,
+avant de modifier quoi que ce soit dans le projet :
+
+| Dossier | Ce qu'Apothem y écrit |
+| --- | --- |
+| `~/.agents/skills/` | Un dossier contenant un `SKILL.md` pour chaque skill Apothem, et un pour chaque commande Apothem (une commande devient un skill du même nom). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Les règles et templates auxquels renvoient les skills et le fichier d'instructions. |
+
+Ces dossiers sont partagés. Ils ne sont pas propres au projet :
+
+- Chaque projet dans lequel vous installez `zed`, et chaque autre installation Apothem qui nomme ce dossier, utilise la même copie et écrit les mêmes fichiers, de sorte que l'ordre d'installation n'a pas d'importance. Plusieurs autres outils lisent aussi `~/.agents/skills/` ; le [registre des environnements](/docs/reference/harness-registry#racines-partagées) les liste.
+- `--project` choisit le fichier d'instructions à écrire et le projet auquel
+  l'installation appartient. Il ne change pas l'emplacement des skills.
+- L'installation n'ajoute aucun fichier de skill ni de règle à votre dépôt. Le
+  projet reçoit le fichier d'instructions, plus le dossier de données
+  `.apothem/` que crée toute installation de projet.
+- Les dossiers du répertoire personnel sont écrits en premier. Si cela échoue,
+  par exemple parce qu'un dossier du chemin est un lien qui sort de votre
+  répertoire personnel (un lien qui reste à l'intérieur est suivi) ou ne peut
+  pas être écrit, l'installation s'arrête avec l'erreur avant que quoi que ce
+  soit ne change dans le projet.
+- Un dossier de skill portant le nom d'un skill Apothem qu'Apothem n'a pas
+  écrit est laissé tel quel, et l'installation affiche un avertissement qui le
+  nomme. Renommez-le ou déplacez-le, puis exécutez `apothem update`.
+  `apothem verify` échoue tant que ce nom est occupé.
+- Les fichiers totalisent quelques mégaoctets.
+
+L'installation affiche une note qui nomme les dossiers qu'elle écrit hors de
+`--project`, et `--dry-run` les liste.
 
 ## Correspondance entre le profil et la configuration native
 
@@ -63,6 +103,17 @@ Le fichier d'instructions global `~/.config/zed/AGENTS.md` et le bloc de
 serveurs de contexte MCP (`context_servers` de `.zed/settings.json`) sont
 détenus par l'opérateur ; Apothem ne les écrit pas.
 
+Zed ne charge les skills globaux que depuis `~/.agents/skills/`, dans une
+disposition plate avec un dossier par skill, qui est la disposition qu'écrit
+l'installation. Zed subordonne les skills locaux au projet à un worktree de
+confiance, et sa documentation n'associe aucune condition de ce type au dossier
+global. Un signalement a fait état d'une limite de taille pour le catalogue de
+skills que Zed envoie au modèle ; Apothem ne l'a pas confirmée, ni si un skill
+qui désactive l'invocation par le modèle compte dans cette limite. Les noms et
+descriptions des skills d'Apothem totalisent environ 20 Ko. Apothem n'a pas non
+plus confirmé comment Zed traite une clé d'en-tête de `SKILL.md` qu'il ne liste
+pas.
+
 ## Vérification
 
 ```bash
@@ -73,7 +124,11 @@ La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
 2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
-3. La routine de vérification propre à l'adaptateur signale un succès.
+3. Chaque dossier de skill Apothem est en place avec un `SKILL.md`, quelle que
+   soit l'installation qui l'a écrit, et aucun dossier de skill portant un nom
+   Apothem n'appartient à quelque chose qu'Apothem n'a pas écrit. Une
+   vérification en échec nomme les dossiers manquants ou étrangers.
+4. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -84,6 +139,10 @@ apothem update --harness zed --project /path/to/project
 Redérive le fichier `.rules` du projet à partir de l'état actuel du profil
 partagé.
 
+La mise à jour réécrit aussi tout dossier de skill dont les fichiers diffèrent
+des fichiers actuels. Si vous avez installé avec une version antérieure qui
+n'écrivait aucun skill, la mise à jour les ajoute.
+
 ## Désinstallation
 
 ```bash
@@ -91,6 +150,15 @@ apothem uninstall --harness zed --project /path/to/project
 ```
 
 Supprime le bloc géré d'Apothem du fichier de configuration native `.rules` et conserve votre propre texte. Le fichier n'est supprimé que si rien d'autre n'y subsiste. Avant la modification, une copie horodatée du fichier est enregistrée sous `~/.apothem/backups/` ; aucun fichier de sauvegarde ne reste dans le projet. Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+
+La désinstallation supprime aussi les dossiers de skills qu'elle a écrits dans
+`~/.agents/skills/` ainsi que les règles et templates de `~/.config/apothem/`,
+mais seulement si aucune autre installation Apothem ne les utilise encore. Un
+autre projet, ou un autre outil qui partage le dossier, peut les utiliser. Dans
+ce cas, la désinstallation conserve les dossiers, affiche quelle installation les
+utilise, et la dernière désinstallation les supprime. Les fichiers que vous avez
+ajoutés à ces dossiers restent, et un dossier laissé vide est supprimé. Chaque
+dossier est sauvegardé sous `~/.apothem/backups/` avant d'être supprimé.
 
 ## Portail de conformité
 
@@ -104,6 +172,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Fichier de configuration introuvable | Relancez `apothem install --harness zed --project /path/to/project` |
 | Échec de la vérification | Exécutez `apothem update --harness zed --project /path/to/project`, puis vérifiez à nouveau |
+| `apothem verify` nomme un dossier de skill manquant | Exécutez `apothem install --harness zed --project /path/to/project` ; il restaure le dossier |
+| Une installation ou une mise à jour avertit qu'elle a ignoré un dossier de skill | Un dossier portant le nom d'un skill Apothem existe déjà dans le dossier des skills et Apothem ne l'a pas écrit. Renommez-le ou déplacez-le, puis exécutez `apothem update` |
+| Une installation s'arrête avant de modifier le projet | Une écriture dans votre répertoire personnel a échoué. Lisez l'erreur, corrigez le dossier qu'elle nomme (un lien qui sort de votre répertoire personnel, un fichier là où un dossier est attendu, ou un dossier en lecture seule), puis relancez l'installation |
 | Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness zed --project /path/to/project` |
 
 ## Paramètres de configuration

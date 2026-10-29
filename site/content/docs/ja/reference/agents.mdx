@@ -2,7 +2,7 @@
 title: "ヘルパー"
 description: "リサーチ、監査、品質、オーケストレーション向けの永続的なヘルパーエージェント。frontmatter 契約とデプロイ隔離プロトコルを備えます。"
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,23 +49,67 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` は省略可能です。これを省略したヘルパーは、接続済みの MCP ツールを含め、セッションが持つすべての
+ツールを継承し、その制限は `disallowedTools` が担います。同梱の 14 個のヘルパーはすべて `tools` を
+列挙しています。
+
+## 接続済みの MCP サーバー
+
+`tools` を列挙したヘルパーは、列挙したものしか呼び出せません。Claude Code が MCP ツールをその一覧に
+認めるのは、エントリが `mcp__<server>__*` のようにサーバーを名指ししている場合だけです。素の `mcp__*` は
+`disallowedTools` のエントリとしてのみ文書化されており、それ以外の場所では文書化されていません。
+サーバー名はそれを接続した人のものなので、同梱のヘルパーがそれを名指しすることはできません。
+
+`citation-auditor` と `research-scout` は学術的なソースを調べます。どちらも
+`tools: Read, Glob, Grep, WebSearch, WebFetch` を同梱し、ファイルを書き込む、コマンドを実行する、
+他のヘルパーを起動する、または公開するツールを拒否します: `Write`、`Edit`、
+`MultiEdit`、`NotebookEdit`、`Bash`、`PowerShell`、`Monitor`、`Agent`、
+`Artifact`、およびタスクリストのツールです。プロファイルの設定がなければ、どちらも MCP ツールには
+到達せず、どちらも Web 検索と Web 取得を通じてソースを調べます。
+
+どちらかに接続済みの学術インデックスを与えるには、エージェント名をサーバー名に対応付けるプロファイルの
+`agent_mcp_servers` キーにサーバーを名指ししてください。すると Claude Code のエンジンインストール
+（`apothem install`）は、名指しされたサーバーごとに 1 つの `mcp__<server>__*` エントリをそのエージェントの
+`tools` 行に追加し、他のエージェントは変更しません。Gemini CLI のインストールも同様に、文字、数字、`-` から
+なるサーバー名について、サーバーごとに 1 つの `mcp_<server>_*` エントリをエージェントの `tools` 許可リストに
+追加します。どちらでも、エージェント自身の `disallowedTools` が名指しするサーバーは拒否されたままです。
+エントリはそのサーバーのすべてのツールを、書き込むものも含めて認めるため、検索・参照用として信頼できる
+サーバーだけを名指ししてください。ヘルパーの指示は、それらを検索、参照、読み取り、検証、解決の呼び出しに
+限定していますが、ハーネスが強制するのは `tools` 行が列挙する名前だけです。存在しないエージェント、
+または明示的な `tools` 行を持たないエージェントに対する名前は、報告されてスキップされます。
+
+Claude Code と Gemini CLI 以外のハーネスは、このキーを無視します。Claude Code プラグインのツリーは
+プロファイルなしで組み立てられ、素の一覧を保持するため、プラグインのユーザーは代わりに
+`~/.claude/agents/` 配下にユーザーレベルのエージェントを定義します。プロファイルの構文、サーバー名の規則、
+その回避策は
+[ヘルパーに MCP サーバーへのアクセスを与える](/docs/reference/mcp#ヘルパーに-mcp-サーバーへのアクセスを与える)
+にあります。
+
 ## ハーネスごとの変換
 
 `disallowedTools` を適用した後の `tools` の付与に、ファイル編集ツール
 （`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、読み取り専用です。
-ヘルパーを変換する各ハーネスは、その制限をネイティブに強制するか、
-読み取り専用のラベルを外すかのいずれかを行います。
+`tools` の付与を持たないヘルパーは、`disallowedTools` が少なくとも `Write` と `Edit` を拒否している場合に
+読み取り専用です。ヘルパーを変換する各ハーネスは、その制限をネイティブに強制するか、
+ヘルパーの指示の中でそれを述べるか、読み取り専用のラベルを外すかのいずれかを行います。
 
 | ハーネス | ツール制限 | ターン制限 | モデルとエフォート |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` を記述どおりに使用 | `maxTurns` | 継承（設定しない） |
-| Codex | 読み取り専用ヘルパーには `sandbox_mode = "read-only"` | 利用不可 | 継承（設定しない） |
-| Gemini CLI | Gemini のツール名による `tools` 許可リスト | `max_turns` | 継承（設定しない） |
-| Qwen Code | Qwen のツール名による `tools` / `disallowedTools` | マッピングなし | `model: inherit` |
-| OpenCode | `permission`（ツールごとに `allow` / `deny`） | マッピングなし | 継承（設定しない） |
+| Claude Code | `tools` / `disallowedTools` を記述どおりに使用し、加えて、プロファイルの `agent_mcp_servers` キーが列挙済みの `tools` 行に追加する `mcp__<server>__*` エントリ。`tools` がない場合は、MCP を含むすべてのツールが継承される | `maxTurns` | 継承（設定しない） |
+| Codex | 出力しない。ヘルパーの指示がそれを述べ、書き込みは親セッションのサンドボックスが管理する | 利用不可 | 継承（設定しない） |
+| Gemini CLI | Gemini のツール名による `tools` 許可リストに加えて、プロファイルの `agent_mcp_servers` キーが列挙済みの明示的な一覧に追加する `mcp_<server>_*` エントリ。`tools` がない場合は、拒否から導かれる許可リストに `mcp_*` を加えたもの | `max_turns` | 継承（設定しない） |
+| Qwen Code | Qwen のツール名による `tools` / `disallowedTools`。`tools` がない場合は一覧が出力されないため、MCP ツールは継承され、拒否が適用される | マッピングなし | `model: inherit` |
+| OpenCode | `permission`（ツールごとに `allow` / `deny`）。MCP ツールは制限されない | マッピングなし | 継承（設定しない） |
 | Antigravity | 出力しない。説明から「読み取り専用」が除かれる | 利用不可 | 継承（設定しない） |
+| CodeBuddy | カンマ区切りの文字列としての `tools` / `disallowedTools`。CodeBuddy が文書化しているツール名に限定される。MCP エントリはなし | `maxTurns` | 継承（設定しない） |
+| Trae | カンマ区切りの文字列としての `tools` / `disallowedTools`。Trae が文書化しているツール名に限定される。MCP エントリはなし | 利用不可 | 継承（設定しない） |
+| GitHub Copilot | Copilot のエイリアス（`read`、`search`、`edit`、`execute`、`web`、`agent`、`todo`）による `tools` 許可リストで、Copilot には拒否キーがないため拒否が織り込まれる。拒否されたツールを含むエイリアスは除外される。MCP エントリはなし | 利用不可 | 継承（設定しない） |
+| Cursor | ツール一覧なし（Cursor には存在しない）。`Bash` を持たない 5 つの読み取り専用ヘルパーには `readonly: true`、それ以外の読み取り専用ヘルパーは「読み取り専用」のラベルが外される | 利用不可 | 継承（設定しない） |
+| Kimi Code | Kimi Code のツール名のリストとしての `tools` / `disallowedTools`（`WebFetch` は `FetchURL` に、`TodoWrite` は `TodoList` になる。Kimi Code に対応するツールがない名前は除外される）。MCP エントリはなし | 利用不可 | 継承（設定しない） |
+| Kiro | Kiro のツールカテゴリ（`read`、`write`、`shell`、`web`、`subagent`）による `tools` 許可リストで、書き込まれる制限はこの一覧だけなので拒否が織り込まれる。拒否されたツールを含むカテゴリは除外される。MCP エントリはなし | 利用不可 | 継承（設定しない） |
+| Windsurf | Devin のツール名（`read`、`edit`、`grep`、`glob`、`exec`、`write`）による `allowed-tools` 許可リストで、Devin には拒否キーがないため拒否が織り込まれる。Web ツールを必要とする 3 つのヘルパーはインストールされない。MCP エントリはなし | 利用不可 | Devin のデフォルトのサブエージェントモデル（設定しない） |
 
-Hermes、Open-Claw、Kimi Code は、ヘルパーファイルをネイティブなヘルパーとしてではなく、
+Hermes と Open-Claw は、ヘルパーファイルをネイティブなヘルパーとしてではなく、
 サポート素材として受け取ります。
 
 ## オーケストレーション

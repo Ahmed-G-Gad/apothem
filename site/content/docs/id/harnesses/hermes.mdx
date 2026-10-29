@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,18 +31,31 @@ di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native, termasuk inventaris MCP milik profil. Server MCP berasal dari bagian `mcp_servers` pada profil. Server tersebut dirender ke dalam `config.yaml` pada setiap pemasangan dan pembaruan, bukan disalin sebagai berkas. Identitas, preferensi, dan aturan milik profil dimasukkan ke dalam dokumen profil. Command, skill, definisi helper, aturan, templat, dan prompt hook bersama ditempatkan sebagai materi pendukung di bawah `~/.hermes/.apothem/support/`.
+Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native, termasuk inventaris MCP milik profil. Server MCP berasal dari bagian `mcp_servers` pada profil. Server tersebut dirender ke dalam `config.yaml` pada setiap pemasangan dan pembaruan, bukan disalin sebagai berkas. Adapter juga menambahkan `~/.hermes/.apothem/support/skills` ke `skills.external_dirs`, daftar direktori skill tambahan yang dibaca Hermes, yang merupakan cara Hermes menemukan skill yang terpasang. Entri ini ditempatkan setelah entri apa pun yang sudah Anda cantumkan, dan kunci Anda yang lain tetap seperti semula. Identitas, preferensi, dan aturan milik profil dimasukkan ke dalam dokumen profil. Command, skill, definisi helper, aturan, templat, dan prompt hook bersama ditempatkan sebagai materi pendukung di bawah `~/.hermes/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
-Adapter pratinjau. Hermes tidak memuat pohon pendukung maupun dokumen profil
-dengan sendirinya: tidak ada apa pun di `config.yaml` dan tidak ada satu pun
-berkas konteks yang dibaca Hermes yang menunjuk ke sana, sehingga setelah
-instalasi Hermes berjalan tanpa aturan, skill, atau hook Apothem. Hermes
-membaca skill dari `~/.hermes/skills/` dan dari setiap folder yang tercantum di
-bawah `skills.external_dirs` di `config.yaml`; untuk menggunakan skill Apothem,
-tambahkan sendiri `~/.hermes/.apothem/support/skills` ke daftar tersebut;
-`apothem update` mempertahankan kunci yang Anda tambahkan ke `config.yaml`.
+Adapter pratinjau. Hermes memuat skill Apothem melalui
+`skills.external_dirs`, tetapi tidak memuat bagian lain dari pohon pendukung
+maupun dokumen profil dengan sendirinya: tidak ada hal lain di `config.yaml`
+dan tidak ada satu pun berkas konteks yang dibaca Hermes yang menunjuk ke sana,
+sehingga setelah instalasi Hermes berjalan tanpa aturan atau hook Apothem.
+
+**Bentrok nama.** Hermes mendokumentasikan urutan prioritas skill berikut:
+skill proyek (`<project>/.hermes/skills/` dan `<project>/.agents/skills/`),
+lalu `~/.hermes/skills/`, lalu `skills.create_dir`, lalu folder yang tercantum
+di bawah `skills.external_dirs`. Direktori Apothem adalah entri `external_dirs`,
+sehingga berada paling akhir. Dokumentasi Hermes yang ditinjau tidak menyatakan
+salinan mana yang dimuat Hermes ketika dua lokasi memuat skill dengan nama yang
+sama; Apothem membaca urutan itu sebagai lokasi yang lebih awal yang menang,
+jadi perkirakan bahwa skill dengan nama yang sama yang Anda simpan di lokasi
+yang lebih awal akan didahulukan daripada salinan Apothem. Apothem hanya
+menulis ke `config.yaml` dan di bawah `~/.hermes/.apothem/support/`, tidak
+pernah ke lokasi-lokasi yang lebih awal itu, sehingga instalasi, pembaruan, dan
+pencopotan tidak mengganti skill yang Anda simpan di sana.
+
+`apothem update` mempertahankan kunci yang Anda tambahkan ke `config.yaml`,
+termasuk `skills.config` dan entri `skills.external_dirs` milik Anda sendiri.
 Adapter menulis inventaris MCP milik profil di bawah kunci tingkat atas
 `mcp_servers`, tempat Hermes membaca server MCP. Rilis Apothem sebelumnya
 menulisnya di bawah `auxiliary.mcp`, yang dibaca Hermes sebagai model auxiliary
@@ -51,9 +64,26 @@ menghapus blok tersebut ketika blok itu masih cocok dengan apa yang akan
 ditulis oleh rilis semacam itu dari profil bersama Anda saat ini (lihat
 [Pencopotan](#pencopotan) untuk mengetahui kapan blok itu tetap ada). (Perilaku
 Hermes menurut halaman panduan penggunanya tentang
-[skill](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
-dan [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+[skill](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills),
+dibaca 2026-10-24, dan
+[MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 dibaca 2026-10-02.)
+
+**Komentar di `config.yaml`.** Apothem menulis ulang berkas tersebut dengan
+pustaka YAML yang membuang komentar. Ketika berkas itu memuat komentar milik
+Anda dan entri tersebut tidak ada, Apothem membiarkan berkas itu tidak tersentuh
+dan instalasi berhenti dengan pesan yang menyebutkan kuncinya. Tambahkan entri
+itu sendiri, lalu jalankan instalasi lagi:
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+Entri yang Anda tambahkan sendiri dihitung sebagai milik Anda: jika Anda sudah
+mencantumkan direktori ini, Apothem mempertahankan entri Anda apa adanya dan
+pencopotan membiarkannya di tempatnya.
 
 ## Verifikasi
 
@@ -67,7 +97,10 @@ Perintah verify memastikan bahwa:
 2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
    JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
    memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+3. `skills.external_dirs` di konfigurasi native mencantumkan
+   `~/.hermes/.apothem/support/skills`. Tanpa entri itu Hermes tidak memuat
+   skill yang terpasang; `apothem update` menambahkannya kembali.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -75,7 +108,9 @@ Perintah verify memastikan bahwa:
 apothem update --harness hermes
 ```
 
-Menurunkan ulang konfigurasi native dari status profil bersama saat ini.
+Menurunkan ulang konfigurasi native dari status profil bersama saat ini; entri
+Apothem di `skills.external_dirs` tetap tercantum sekali, seberapa sering pun
+Anda memperbarui.
 Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
 paket Apothem yang terpasang.
 
@@ -85,9 +120,10 @@ paket Apothem yang terpasang.
 apothem uninstall --harness hermes
 ```
 
-Menghapus apa yang ditambahkan adapter: entri `mcp_servers` yang dicatat oleh
-instalasinya di `config.yaml` (kunci milik Anda sendiri tetap ada, dan berkas
-tersebut dihapus hanya ketika Apothem yang membuatnya dan tidak ada lagi milik
+Menghapus apa yang ditambahkan adapter: entri `mcp_servers` dan entri
+`skills.external_dirs` yang dicatat oleh instalasinya di `config.yaml` (kunci
+milik Anda sendiri tetap ada, termasuk entri `external_dirs` milik Anda sendiri
+dan `skills.config`, dan berkas tersebut dihapus hanya ketika Apothem yang membuatnya dan tidak ada lagi milik
 Anda yang tersisa di dalamnya), dokumen profil, dan pohon pendukung. YAML
 profil bersama dan mesin Apothem tidak terpengaruh.
 
@@ -115,6 +151,8 @@ python -m apothem.conformity.gate --all .
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness hermes` |
 | Verifikasi gagal | Jalankan `apothem update --harness hermes`, lalu verifikasi lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness hermes` |
+| Instalasi berhenti dengan pesan tentang komentar di `config.yaml` | Apothem tidak menulis ulang berkas yang komentarnya harus dibuang. Tambahkan sendiri entri `skills.external_dirs` yang ditunjukkan di [Catatan kompatibilitas](#catatan-kompatibilitas), lalu jalankan instalasi lagi |
+| Skill Apothem tidak muncul di Hermes | Skill dengan nama yang sama di proyek atau di `~/.hermes/skills/` mungkin didahulukan daripada salinan Apothem: Hermes mendokumentasikan urutan pencarian tetapi tidak aturan bentroknya (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)). Jalankan juga `apothem verify --harness hermes` |
 
 ## Tombol konfigurasi
 

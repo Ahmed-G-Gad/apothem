@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration manuelle de Trae"
 description: "Maintenir à la main les règles de Trae sous .trae/rules/ face à les rendre depuis le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "065945ba50500576"
+sourceHash: "a74a13015bc510bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,7 @@ oppose la maintenance manuelle de cette configuration à sa gestion avec Apothem
 | Rédiger les règles | Écrire à la main chaque fichier sous `.trae/rules/` | Rendues depuis le corpus partagé |
 | Garder la surface d'Apothem séparée | Penser à ne pas surcharger `project_rules.md` | L'adaptateur écrit un `apothem-rules.md` dédié |
 | Garder les règles alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Partager des skills et des commandes réutilisables | Copier à la main chaque dossier de skill dans `~/.trae/skills/` et garder les copies à jour | Écrits dans `~/.trae/skills/` par l'adaptateur, une seule copie pour tous les projets, et actualisés lors de `apothem update` |
 | Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness trae --project <path>` |
 
 ## Ce qu'Apothem gère

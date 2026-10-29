@@ -2,7 +2,7 @@
 title: "Schnellstart"
 description: "Apothem installieren, ein Profil verfassen, den ersten Harness materialisieren und verifizieren — eine Tour zum Kopieren und Einfügen mit erwarteter Ausgabe."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,14 +110,39 @@ apothem profile show --json
 
 Das Gerüst verwendet fiktive Platzhalter-Identitätsdaten und kann gefahrlos
 bearbeitet werden, bevor Sie irgendeine Harness-Ausgabe installieren.
-`show --json` liest es zurück und meldet das validierte Profil:
+`show --json` liest es zurück und meldet das validierte Profil mit allen
+ausgefüllten Standardwerten, beginnend mit `schema_version`. Der Befehl gibt es
+in einer Zeile aus; hier ist es aufgeklappt:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -144,8 +169,10 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Adapter mit Projektbereich schreiben innerhalb eines Projekts statt in Ihr
-Home-Verzeichnis und benötigen daher ein `--project PATH`. Mit `--dry-run` sehen
+Adapter mit Projektbereich schreiben ihre Regeldatei innerhalb eines Projekts
+und benötigen daher ein `--project PATH`; sieben von ihnen schreiben außerdem
+Skills und gemeinsame Regeln in Ordner in Ihrem Home-Verzeichnis, und
+`--project` ändert nicht, wohin diese geschrieben werden. Mit `--dry-run` sehen
 Sie jede Installation in einer Vorschau, ohne Dateien zu schreiben:
 
 ```bash

@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "6bb38868494e5b55"
+sourceHash: "8551abe209fad6c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,21 +14,21 @@ sourceHash: "6bb38868494e5b55"
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`；`~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`；`~/.claude/CLAUDE.md`；原生 `agents`、`rules`、`skills`、`statuslines`、`output-styles`；`~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
-| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`；`<project>/.codebuddy/agents/`；`<project>/.codebuddy/settings.local.json`；`<project>/.apothem/support/hooks/`；`~/.codebuddy/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`；`hooks.json`；`hooks/`；`agents/*.toml`；`~/.agents/skills/`；`~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
-| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc`；`<project>/.cursor/agents/`；`<project>/.cursor/hooks.json`；`<project>/.apothem/support/cursor/hooks/`；`~/.agents/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
 | Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`；`<project>/.gemini/{commands,skills,agents}/`；`<project>/.gemini/.apothem/support/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
-| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md`；`<project>/.github/agents/`；`<project>/.github/hooks/apothem.json`；`<project>/.apothem/support/github-copilot/hooks/`；`~/.agents/skills/`；`~/.config/apothem/{rules,templates}/` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`；`~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
-| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`；`<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
-| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`；`<project>/.kimi-code/skills/`；`<project>/.kimi-code/agents/`；`<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`；`<project>/.kiro/agents/`；`<project>/.kiro/hooks/apothem.json`；`<project>/.apothem/support/kiro/hooks/`；`~/.kiro/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`；`~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`；原生 `commands`、`skills`、`agents`；`~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`；`~/.qwen/QWEN.md`；原生 `commands`、`skills`、`agents`；`~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
-| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
-| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
-| Zed | `zed` | project | markdown | `<project>/.rules` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`；`<project>/.trae/agents/`；`~/.trae/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md`；`<project>/.devin/agents/`；`<project>/.devin/config.local.json`；`<project>/.apothem/support/windsurf/hooks/`；`~/.agents/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules`；`~/.agents/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
 
 ## 载荷集合支持
 
@@ -49,39 +49,53 @@ sourceHash: "6bb38868494e5b55"
 
 | 工具 | 原生或已转换的载荷 | 支持树载荷 | 不支持或待定的警告 |
 | --- | --- | --- | --- |
-| Antigravity | 已转换的命令、智能体和规则；原生技能、子智能体调度、系统提示词模板；按配置档案投射的工具限制 | 钩子、模板 | 状态栏、输出样式；MCP 和记忆的发现待定 |
-| Claude Code | 已转换的命令；原生技能、钩子、智能体、规则、状态栏、输出样式、子智能体调度、工具限制、记忆 | 模板 | `CLAUDE.md` 仍归操作者所有；没有由适配器写入的系统提示词模板；MCP 发现待定 |
-| CodeBuddy | 原生规则、系统提示词模板、记忆；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度；MCP 发现待定 |
-| Codex | 已转换的命令和智能体；原生技能、钩子、子智能体调度、系统提示词模板、记忆；按配置档案投射的工具限制 | 规则、模板 | 状态栏、输出样式；MCP 发现待定，因为 Apothem 不会覆盖 `config.toml` |
-| Cursor | 原生规则、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
-| Gemini CLI | 已转换的命令和智能体；原生技能、子智能体调度、系统提示词模板、记忆；按配置档案投射的工具限制 | 钩子、规则、模板 | 状态栏、输出样式；MCP 发现待定 |
-| GitHub Copilot | 原生规则和系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、MCP、子智能体调度、记忆 |
+| Antigravity | 已转换的命令、智能体和规则；原生技能、子智能体调度、系统提示词模板 | 钩子、模板 | 状态栏、输出样式；MCP 和记忆的发现待定 |
+| Claude Code | 已转换的命令；原生技能、钩子、智能体、规则、状态栏、输出样式、子智能体调度 | 模板 | 除那一个 Apothem 区块外，`CLAUDE.md` 仍归操作者所有；没有由适配器写入的系统提示词模板；MCP 发现待定 |
+| CodeBuddy | 已转换的命令和智能体；原生技能、钩子、规则、子智能体调度、系统提示词模板 | 模板 | 状态栏、输出样式；MCP 发现待定 |
+| Codex | 已转换的命令和智能体；原生技能、钩子、子智能体调度、系统提示词模板 | 规则、模板 | 状态栏、输出样式；MCP 发现待定，因为 Apothem 不会覆盖 `config.toml` |
+| Cursor | 已转换的命令和智能体；原生技能、钩子、规则、子智能体调度、系统提示词模板 | 模板 | 状态栏、输出样式、记忆；MCP 发现待定 |
+| Gemini CLI | 已转换的命令和智能体；原生技能、子智能体调度、系统提示词模板、记忆 | 钩子、规则、模板 | 状态栏、输出样式；MCP 发现待定 |
+| GitHub Copilot | 已转换的命令和智能体；原生技能、钩子、规则、子智能体调度、系统提示词模板 | 模板 | 状态栏、输出样式、MCP、记忆 |
 | GLM (Z.ai) | 无 | 无 | 命令、技能、钩子、智能体、规则、模板、状态栏、输出样式、MCP、子智能体调度、工具限制、系统提示词模板、记忆——GLM 是一个没有原生配置表面的模型后端 |
-| Hermes | 已转换的命令；原生系统提示词模板、MCP；按配置档案投射的工具限制 | 技能、钩子、智能体、规则、模板 | 状态栏、输出样式、子智能体调度 |
-| Kimi Code | 原生子智能体调度、系统提示词模板、记忆 | 命令、技能、钩子、智能体、规则、模板 | 状态栏、输出样式；MCP 和工具限制的发现待定 |
-| Kiro | 原生规则、系统提示词模板、记忆；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度；MCP 发现待定 |
-| Open-Claw | 已转换的命令；原生系统提示词模板；按配置档案投射的工具限制 | 技能、钩子、智能体、规则、模板 | 状态栏、输出样式、MCP、子智能体调度 |
-| OpenCode | 已转换的命令和智能体；原生技能、MCP、子智能体调度、系统提示词模板；按配置档案投射的工具限制 | 钩子、规则、模板 | 状态栏、输出样式 |
-| Qwen Code | 已转换的命令和智能体；原生技能、钩子、MCP、子智能体调度、系统提示词模板、记忆；按配置档案投射的工具限制 | 规则、模板 | 状态栏、输出样式 |
-| Trae | 原生规则、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
-| Windsurf | 原生规则和系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
-| Zed | 原生规则、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
+| Hermes | 已转换的命令；原生系统提示词模板、MCP、子智能体调度 | 技能、钩子、智能体、规则、模板 | 状态栏、输出样式 |
+| Kimi Code | 已转换的命令和智能体；原生技能、子智能体调度、系统提示词模板、记忆 | 钩子、规则、模板 | 状态栏、输出样式；MCP 和工具限制的发现待定 |
+| Kiro | 已转换的命令和智能体；原生技能、钩子、规则、子智能体调度、系统提示词模板 | 模板 | 状态栏、输出样式；MCP 发现待定 |
+| Open-Claw | 已转换的命令；原生系统提示词模板、子智能体调度 | 技能、钩子、智能体、规则、模板 | 状态栏、输出样式、MCP |
+| OpenCode | 已转换的命令和智能体；原生技能、MCP、子智能体调度、系统提示词模板 | 钩子、规则、模板 | 状态栏、输出样式 |
+| Qwen Code | 已转换的命令和智能体；原生技能、钩子、MCP、子智能体调度、系统提示词模板 | 规则、模板 | 状态栏、输出样式 |
+| Trae | 已转换的命令和智能体；原生技能、规则、子智能体调度、系统提示词模板 | 模板 | 钩子、状态栏、输出样式、记忆；MCP 发现待定 |
+| Windsurf | 已转换的命令和智能体；原生技能、钩子、规则、子智能体调度、系统提示词模板 | 模板 | 状态栏、输出样式、记忆；MCP 发现待定 |
+| Zed | 已转换的命令；原生技能、规则、系统提示词模板 | 模板 | 钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
+
+该表省略了注册表标记为 `not-applicable` 的单元格：除 `Kimi Code`（`discovery-pending`）和 `GLM (Z.ai)`（`unsupported`）之外每个工具上的工具限制，以及 `Claude Code`、`CodeBuddy`、`Codex`、`Hermes`、`Kiro`、`Open-Claw`、`OpenCode` 和 `Qwen Code` 上的记忆。
 
 ## 共享根目录
 
-有些安装目标会被写入它们的那个工具以外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个所有者（唯一写入该路径的适配器）和若干读取者（其厂商文档默认会加载该路径），以及显示这一点的厂商页面和这些页面的获取日期。安装所有者会把 Apothem 内容呈现在每个读取者面前，卸载所有者则会将其从每个读取者处移除。
+有些安装目标会被写入它们的那个工具以外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个注册所有者（厂商为其文档化该路径的适配器）、向该路径写入相同文件的共同安装者，以及若干读取者（其厂商文档默认会加载该路径），还有显示这一点的厂商页面和这些页面的获取日期。
 
-| 路径 | 所有者 | 读取者 |
-| --- | --- | --- |
-| `~/.agents/skills/` | Codex | Cursor、Gemini CLI、GitHub Copilot、Kimi Code、Open-Claw、OpenCode、Windsurf、Zed |
-| `~/.claude/skills/` | Claude Code | Cursor、OpenCode |
-| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
-| `<project>/AGENTS.md` | Kimi Code | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
-| `<project>/GEMINI.md` | Gemini CLI | Antigravity、GitHub Copilot、Zed |
-| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
-| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+带有共同安装者的路径是主目录中的一个用户级文件夹，多个安装会以相同的字节写入它。一台只安装了 `Cursor` 的机器上没有 `Codex` 来写入 `~/.agents/skills/`，因此每个指定该文件夹的安装都会写入它，而安装台账会统计使用它的安装。当注册所有者使用该文件夹时，记录在案的所有者就是注册所有者，否则是使用它的最早的安装；卸载注册所有者时，什么都不会转移。只有当没有其他安装仍在使用该文件夹时，卸载才会移除它（见 [`uninstall`](/docs/cli-reference/uninstall#主目录中的共享文件夹)）。安装读取者不会在该文件夹中放入任何文件；安装所有者或共同安装者会把 Apothem 内容呈现在每个读取者面前。
 
-所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当两个适配器写入同一个注册表目标时，以及当某个注册表目标的名称类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者时，`tests/unit/test_shared_roots.py` 都会失败。唯一的例外是 `~/.codex/AGENTS.md`，没有其他已注册的工具在其文档中说明会加载它。
+| 路径 | 所有者 | 共同安装者 | 读取者 |
+| --- | --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor、GitHub Copilot、Windsurf、Zed | Gemini CLI、Kimi Code、Open-Claw、OpenCode、Qwen Code |
+| `~/.config/apothem/rules/` | Codex | CodeBuddy、Cursor、GitHub Copilot、Kiro、Trae、Windsurf、Zed | 无 |
+| `~/.config/apothem/templates/` | Codex | CodeBuddy、Cursor、GitHub Copilot、Kiro、Trae、Windsurf、Zed | 无 |
+| `~/.claude/skills/` | Claude Code | 无 | Cursor、OpenCode |
+| `~/.claude/agents/` | Claude Code | 无 | Cursor |
+| `~/.codex/agents/` | Codex | 无 | Cursor |
+| `~/.claude/CLAUDE.md` | Claude Code | 无 | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | 无 | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
+| `<project>/GEMINI.md` | Gemini CLI | 无 | Antigravity、GitHub Copilot、Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | 无 | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | 无 | Zed |
+
+`~/.config/apothem/rules/` 和 `~/.config/apothem/templates/` 存放 Apothem 自身的技能和指令文件所引用的文件。没有其他工具加载它们，因此它们没有读取者，也没有厂商页面。`CodeBuddy`、`Kiro` 和 `Trae` 还会写入各自专属的技能文件夹（`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）；只有对应的工具会加载它，因此它不是共享根目录。
+
+只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。有一个读取者带有条件，安装说明会重复这一点：`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`Cursor` 文档将 `~/.codex/agents/` 列为 `Codex` 兼容文件夹，但没有说明 `Cursor` 在那里解析哪些文件格式，而 `Codex` 安装写入的是 TOML 文件，因此 `Cursor` 是否读取这些辅助智能体尚未得到确认。`Cursor` 安装还会写入自己的 `<project>/.cursor/agents/` 辅助智能体副本，厂商的优先级规则将其排在它所导入的文件夹之上，因此在已安装的项目中，原生副本会取代来自 `~/.claude/agents/` 的那一份。
+
+有些工具被有意不列为 `~/.agents/skills/` 的读取者：`Antigravity`、`CodeBuddy`、`Kiro` 和 `Trae` 的文档没有说明它们会默认加载它（`Trae` 只有在打开某项设置之后才会加载项目的 `.agents/skills/` 文件夹），这就是 `CodeBuddy`、`Kiro` 和 `Trae` 各自获得专属技能文件夹的原因。`Hermes` 文档仅将它作为 `skills.external_dirs` 的一个示例值提及。`GitHub Copilot` 不是 `~/.claude/agents/` 的读取者：VS Code 文档为 Anthropic Claude 智能体列出了该文件夹，而不是为 `GitHub Copilot` 运行的智能体。
+
+所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当写入某个注册表目标的适配器并不恰好是其所有者及其共同安装者时，以及当某个注册表目标的名称类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者时，`tests/unit/test_shared_roots.py` 都会失败。唯一的例外是 `~/.codex/AGENTS.md`，没有其他已注册的工具在其文档中说明会加载它。
 
 ## 校验钩子
 

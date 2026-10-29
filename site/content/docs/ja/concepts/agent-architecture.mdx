@@ -2,7 +2,7 @@
 title: "エージェントアーキテクチャ"
 description: "Apothem が、フック面やルール形式の異なる 17 種類の AI ハーネスにわたって、単一のエージェント能力コホートをどのように投影するか。"
 machineTranslated: true
-sourceHash: "a0655f91d2726ce9"
+sourceHash: "f7b510f076abbabd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,9 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
 
 ## ハーネスごとのエージェント能力マトリクス
 
-以下のマトリクスは 17 種類すべてのハーネスを対象とします。列は、各ハーネスが
-公開する PreToolUse フック面、Apothem がルールを有効化するために用いる形式、
+以下のマトリクスは 17 種類すべてのハーネスを対象とします。列は、アダプターが
+接続する PreToolUse フック面（ハーネスが文書化しているフックをアダプターが登録しない
+場合は、セルにその旨を記載します）、Apothem がルールを有効化するために用いる形式、
 アダプタークラス([アダプタークラスの解説](#アダプタークラスの解説)を参照)、
 そしてアダプターがマテリアライザーを介してネイティブ構成をレンダリングするか
 どうかです。
@@ -31,26 +32,26 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
 |---------|-------------------------|------------------------|---------------|--------------|
 | antigravity | ネイティブのフック面は存在するが、Apothem はサポート資料のみ | `GEMINI.md` および Antigravity CLI プラグインのルール | クラス I | なし |
 | claude-code | ネイティブの PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 配下のフラットな `.md` ルール | クラス II-A | なし（ベンダー設定テンプレート） |
-| codebuddy | なし | `.codebuddy/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
+| codebuddy | `.codebuddy/settings.local.json` 内のネイティブの SessionStart と PostToolUse。PreToolUse ガードはなし（ベンダーはそこで `additionalContext` を文書化していない） | `.codebuddy/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
 | codex | ネイティブの `hooks.json` ライフサイクルフック | `AGENTS.md` と、インストール済みスキルが参照するサポートルール | クラス I | なし |
-| cursor | なし | `.mdc` ワークスペースルール（MDC フロントマター: `description` / `globs` / `alwaysApply`） | クラス I | なし |
-| gemini-cli | サポート資料のみ | 単一の `GEMINI.md` に埋め込まれたルール | クラス I | なし |
-| github-copilot | なし（IDE 拡張機能であり、ツール呼び出しフックはない） | `.github/copilot-instructions.md` 内のルール | クラス I | なし |
+| cursor | プロジェクトの `.cursor/hooks.json` 内のネイティブの `sessionStart`。ツールイベントのフックはまだない | 1 つの `.mdc` ワークスペースルールファイル（MDC フロントマター: `description` / `globs` / `alwaysApply`） | クラス I | なし |
+| gemini-cli | ネイティブのフック面は存在するが、Apothem はサポート資料のみ | 単一の `GEMINI.md` に埋め込まれたルール | クラス I | なし |
+| github-copilot | `.github/hooks/apothem.json` 内のネイティブの sessionStart と postToolUse。preToolUse ガードはなし（ベンダーはそこで権限フィールドのみを読み取る） | `.github/copilot-instructions.md` 内のルール | クラス I | なし |
 | glm | なし（モデルバックエンドであり、エージェントツール面はない） | `.apothem/providers/glm.toml` バックエンドプロバイダー構成（ルールコホートなし） | クラス I | なし |
 | hermes | サポート資料のみ | `config.yaml` と外部スキルディレクトリ | クラス II-B | `config.yaml` |
 | kimi-code | サポート資料のみ | `AGENTS.md` と、`.kimi-code/.apothem/support/` 配下のサポートルール | クラス I | なし |
-| kiro | なし（Kiro のエージェントフックはアダプターの対象外） | `.kiro/steering/apothem-rules.md` ステアリングファイル | クラス I | なし |
+| kiro | `.kiro/hooks/apothem.json` 内のネイティブの SessionStart。ツールイベントのフックはなし（ベンダーはその出力を無視する） | `.kiro/steering/apothem-rules.md` ステアリングファイル | クラス I | なし |
 | open-claw | サポート資料のみ | `openclaw.json` と追加のスキルディレクトリ | クラス II-B | `openclaw.json` |
 | opencode | サポート資料のみ | プロファイルでレンダリングされた JSON と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `opencode.json` |
 | qwen-code | ネイティブの PreToolUse / Stop / SessionStart | `QWEN.md` と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `settings.json` / `QWEN.md` |
 | trae | なし | `.trae/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
-| windsurf | なし | `.devin/rules/` 内のルール | クラス I | なし |
+| windsurf | `.devin/config.local.json` 内の、Devin Local 向けのネイティブの SessionStart と PostToolUse。PreToolUse ガードはなし（ベンダーはそこでコンテキストチャネルを文書化していない） | `.devin/rules/` 内の 1 つのルールファイル | クラス I | なし |
 | zed | なし | プロジェクトルートの `.rules` フラットファイル | クラス I | なし |
 
 
 マトリクスに関する注記:
 
-- **claude-code** は参照アダプターです。ネイティブの PreToolUse、
+- **claude-code** は、最も広いネイティブ面を持つアダプターです。ネイティブの PreToolUse、
   PostToolUse、Stop、SessionStart フックを備え、ベンダー設定テンプレートを
   同梱します。`CLAUDE.md` に、センチネルで区切られた管理ブロックを 1 つ書き込み、
   センチネルの外側にあるオペレーターの文章はそのまま残します。
@@ -62,7 +63,7 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
   アダプターが Antigravity のフックスキーマの変換を担うまで、フックファイルは
   サポート資料として保持されます。
 - **cursor** は、ベンダーの MDC フロントマター（`description`、`globs`、`alwaysApply`）を
-  備えた `.mdc` ファイルを介してルールを有効化します。アダプターは単一ファイルの
+  備えた 1 つの `.mdc` ファイルを介してルールを有効化します。アダプターは単一ファイルの
   `.cursorrules` を書き込みません。
 - **windsurf** は `.devin/rules/` を使用します。アダプターは単一ファイルの
   `.windsurfrules` を書き込みません。
@@ -123,10 +124,14 @@ CLI を実行するとき —— に現れます:
 - `apothem install --harness <H>` は `<H>` 向けのマニフェストサブセットを
   伝播し、クラス II-A / II-B のアダプターについてはハーネスネイティブな
   構成をレンダリングします。
-- `apothem verify --harness <H>` は、インストール済みの構成を、現在の
-  プロファイルが生成するであろうものと照合し、ずれを報告します。
+- `apothem verify --harness <H>` は、管理対象のファイルが存在し、解析できることを
+  確認します。`--profile PATH` を指定すると、それらをそのプロファイルが生成するで
+  あろうものとも照合し、ずれがあれば失敗します。
+- `apothem status` は、各ハーネスがインストール済みかどうか、そして現在の共有
+  プロファイルからずれているかどうかを報告します。
 - `apothem doctor` は、登録済みの全アダプターにわたってハーネスごとの
-  ステータス —— インストール済み / 不在 / ずれあり —— を報告します。
+  健全性 —— `ok`、`not_installed`、`needs_project`、`verify_failed`、
+  `hook_failed`、または `error` —— を報告します。
 
 完全なコマンド面については [CLI リファレンス](/docs/cli-reference) を
 参照してください。
@@ -139,7 +144,7 @@ CLI を実行するとき —— に現れます:
 
 | 軸 | 17 種類のハーネスにわたって観測される範囲 |
 |------|---------------------------------------------|
-| フック面 | ネイティブな複数イベント（claude-code、codex、qwen-code）→ サポート専用のフック資料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ なし（codebuddy、cursor、github-copilot、glm、kiro、trae、windsurf、zed） |
+| フック面 | ネイティブな複数イベント（claude-code、codex、qwen-code）→ ベンダーがモデルに届けるイベントでのネイティブ（codebuddy: SessionStart と PostToolUse、cursor: sessionStart、github-copilot: sessionStart と postToolUse、kiro: SessionStart、windsurf: SessionStart と PostToolUse）→ サポート専用のフック資料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ アダプターがフックを登録しない（glm、trae、zed） |
 | ルール有効化形式 | フラットな `.md`（claude-code）→ プラグインルール（antigravity）→ `.mdc` ワークスペース（cursor）→ ディレクトリルール（codebuddy、trae、windsurf）→ ステアリングファイル（kiro）→ プロジェクトルートのフラットファイル（zed）→ 単一の埋め込みファイル（codex、gemini-cli、github-copilot、kimi-code）→ 構成から参照されるサポート資料（hermes、open-claw、opencode、qwen-code）→ バックエンドプロバイダー構成（glm） |
 | アダプタークラス | クラス I の生の伝播 → クラス II-A の生の伝播 + ベンダー設定 → クラス II-B のプロファイルレンダリングによる単一面 |
 

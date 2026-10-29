@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "محوّل إطار عمل Apothem لـ OpenCode (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ apothem install --harness opencode
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
 يُجسِّد المحوّل <bdi>`opencode.json`</bdi> مع قائمة ملفات <bdi>`instructions`</bdi>
-تُسمّي وثيقة ملفك التعريفي وقواعد <bdi>Apothem</bdi> الدائمة التفعيل، ثم ينشر كل حزمة
+تُسمّي وثيقة ملفك التعريفي، والقواعد الأساسية الأربع، وفهرس القواعد، ثم ينشر كل حزمة
 مشتركة من حزم <bdi>Apothem</bdi> إمّا إلى سطح أصلي في <bdi>OpenCode</bdi> وإمّا إلى
 شجرة دعم فرعية يملكها <bdi>Apothem</bdi>. وتُنسَخ العناصر الفرعية المطابقة الموجودة
 التي يديرها <bdi>Apothem</bdi> احتياطيًا قبل استبدالها.
@@ -48,10 +48,13 @@ apothem install --harness opencode
 وثيقة ملفك التعريفي أولًا، ثم القواعد التي تكون قيمة <bdi>`alwaysApply`</bdi> فيها
 <bdi>`true`</bdi> فقط، بمسار صريح واحد
 <bdi>`~/.config/opencode/.apothem/support/rules/<name>.md`</bdi> لكلٍّ منها؛ ويوسّع
-<bdi>OpenCode</bdi> البادئة <bdi>`~/`</bdi> نسبةً إلى دليلك المنزلي. تبقى القواعد
-المقصورة على مسارات، والقوالب، ومطالبات الخطّافات مُثبَّتةً بوصفها مادة مرجعية تحت
-<bdi>`~/.config/opencode/.apothem/support/`</bdi>، حيث تقرؤها عند الطلب أيُّ قاعدة أو
-مهارة أو أمر يُحيل إليها. تستخدم الأوامر والمهارات وتعريفات المساعِدات مواقع الاكتشاف
+<bdi>OpenCode</bdi> البادئة <bdi>`~/`</bdi> نسبةً إلى دليلك المنزلي. وتلك القواعد هي
+<bdi>`agnostic-posture`</bdi>، و<bdi>`authority-inquiry`</bdi>، و<bdi>`context-management`</bdi>،
+و<bdi>`session-closure`</bdi>، وفهرس القواعد <bdi>`apothem-rule-index`</bdi>. ولا يقصر
+<bdi>OpenCode</bdi> أي قاعدة على مسارات، لذا تُقرَأ كل قاعدة أخرى عند الطلب. وتبقى
+مُثبَّتةً بوصفها مادة مرجعية تحت <bdi>`~/.config/opencode/.apothem/support/`</bdi>،
+ويُسمّي الفهرس كل قاعدة والموقف الذي يستدعيها. وأيُّ قاعدة أو مهارة أو أمر يُحيل
+إلى قاعدة أو قالب أو مطالبة خطّاف يقرؤها من هناك. تستخدم الأوامر والمهارات وتعريفات المساعِدات مواقع الاكتشاف
 الأصلية.
 
 تحمل وثيقة الملف التعريفي <bdi>`~/.config/opencode/apothem/rules/00-apothem-profile.md`</bdi>
@@ -62,9 +65,11 @@ apothem install --harness opencode
 <bdi>`instructions`</bdi>، لذا يُحمِّلها <bdi>OpenCode</bdi> في كل جلسة.
 
 يسرد ملف <bdi>`opencode.json`</bdi> الذي كتبه إصدار سابق نمط <bdi>glob</bdi> واحدًا هو
-<bdi>`~/.config/opencode/.apothem/support/rules/*.md`</bdi>، الذي يُحمِّل كل قاعدة.
-يستبدله <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> بالقائمة الدائمة
-التفعيل، ويُزيل <bdi>`apothem uninstall`</bdi> الشكلين كليهما. ويُحتفَظ بمُدخَلات
+<bdi>`~/.config/opencode/.apothem/support/rules/*.md`</bdi>، الذي يُحمِّل كل قاعدة، أو
+مسارًا صريحًا لكل واحدة من القواعد الثماني والعشرين التي كانت حينها دائمة التفعيل.
+يستبدل <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> أيًّا من الشكلين بالقائمة
+أعلاه، فيُسقطان المسارات الأربعة والعشرين التي لم تعد تُحمَّل عند الإطلاق، ويُزيل
+<bdi>`apothem uninstall`</bdi> كل ذلك. ويُحتفَظ بمُدخَلات
 <bdi>`instructions`</bdi> الخاصة بك في كل الحالات.
 
 ## التحقّق

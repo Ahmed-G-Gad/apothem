@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Gemini CLI اليدوية"
 description: "صيانة ملف القواعد GEMINI.md الخاص بـ Gemini CLI يدويًّا، مقابل تحويله من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "1571985a6318fd28"
+sourceHash: "e239aa7e0b2101a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ sourceHash: "1571985a6318fd28"
 
 ## ما الذي يديره Apothem
 
-يكتب محوِّل <bdi>gemini-cli</bdi> كتلة <bdi>Apothem</bdi> مُدارة محدَّدة بعلامات داخل <bdi>`<project>/GEMINI.md`</bdi>، تحمل الإرشادات على مستوى المشروع وتُشير إلى مواد <bdi>Apothem</bdi>. وتُوضع القواعد والقوالب والخطّافات ملفات دعم تحت <bdi>`<project>/.gemini/.apothem/support/`</bdi>، وتُوضع الأوامر والمهارات والوكلاء تحت <bdi>`<project>/.gemini/`</bdi>. لا يملك <bdi>Gemini CLI</bdi> خطّاف <bdi>PreToolUse</bdi>، ولذلك تُعبَّر نيّة الحواجز الواقية في نص القواعد بدلًا من نقطة اعتراض لاستدعاء الأداة. وكلّ تغيير في القواعد المشتركة يُعيد تصيير <bdi>`GEMINI.md`</bdi> عند <bdi>`apothem update`</bdi> التالي.
+يكتب محوِّل <bdi>gemini-cli</bdi> كتلة <bdi>Apothem</bdi> مُدارة محدَّدة بعلامات داخل <bdi>`<project>/GEMINI.md`</bdi>، تحمل الإرشادات على مستوى المشروع وتُشير إلى مواد <bdi>Apothem</bdi>. وتُوضع القواعد والقوالب والخطّافات ملفات دعم تحت <bdi>`<project>/.gemini/.apothem/support/`</bdi>، وتُوضع الأوامر والمهارات والوكلاء تحت <bdi>`<project>/.gemini/`</bdi>. يوثّق <bdi>Gemini CLI</bdi> كائن <bdi>`hooks`</bdi> في <bdi>`settings.json`</bdi>، ويبقى مملوكًا للمشغِّل، ولذلك لا يسجّل المحوِّل أيّ خطّاف وتُعبَّر نيّة الحواجز الواقية في نص القواعد بدلًا من نقطة اعتراض لاستدعاء الأداة. وكلّ تغيير في القواعد المشتركة يُعيد تصيير <bdi>`GEMINI.md`</bdi> عند <bdi>`apothem update`</bdi> التالي.
 
 ## مسار الترحيل
 

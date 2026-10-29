@@ -2,7 +2,7 @@
 title: "Abstraksi adapter harness"
 description: "Protokol HarnessAdapter — bagaimana adapter Apothem menerjemahkan profil bersama."
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,22 +46,29 @@ Adapter terbagi menjadi dua bentuk materialisasi, keduanya terlihat di registri:
   ke lokasi aturan yang didokumentasikan oleh harness, mengonversi kohor ke
   format native di tempat format itu ada dan memarkir sisanya di bawah pohon
   pendukung milik Apothem yang dirujuk dari jangkar native. Adapter Cursor menulis
-  satu `.cursor/rules/apothem-rules.mdc` ke akar proyek yang disuplai dan hanya
-  mengirimkan permukaan aturan. Adapter Claude Code tidak merender
+  satu `.cursor/rules/apothem-rules.mdc` ke akar proyek yang disuplai. Sebelum
+  berkas itu, ia menulis dua folder bersama di direktori home pengguna: skill,
+  dan command yang dibungkus sebagai skill, masuk ke `~/.agents/skills/`, dan
+  aturan serta templat yang dikutip skill-skill tersebut masuk ke
+  `~/.config/apothem/`. Adapter Claude Code tidak merender
   `settings.json` dari profil. Ia menyalin templat pengaturan yang dibundel ke
   `~/.claude/settings.json` dengan interpreter hook sudah terisi, meratakan
   direktori konvensi Apothem (`agents/`, `rules/`, `skills/`, …) di sampingnya,
   dan menulis profil ke dalam blok terkelola yang dibatasi sentinel di `CLAUDE.md`.
 
 Sebuah adapter tertentu bersifat **lingkup-pengguna** (menulis di bawah direktori
-home) atau **lingkup-proyek** (memerlukan `--project <path>` dan menulis di dalam
-pohon itu); registri mencatat yang mana.
+home) atau **lingkup-proyek** (memerlukan `--project <path>` dan menulis berkas
+proyeknya di dalam pohon itu); registri mencatat yang mana. Tujuh adapter
+lingkup-proyek (cursor, github-copilot, windsurf, zed, codebuddy, kiro, dan trae)
+juga menulis folder bersama di direktori home pengguna, seperti
+`~/.agents/skills/` dan `~/.config/apothem/`, dan `--project` tidak mengubah ke
+mana folder-folder itu ditulis.
 
 ## Topologi adapter saat ini
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -78,9 +85,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

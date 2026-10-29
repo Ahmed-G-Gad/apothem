@@ -2,14 +2,14 @@
 title: "/research-review"
 description: "/research-review — Critique adversariale de niveau évaluation par les pairs de l'article : une grille de notation de l'évaluateur à sept axes (nouveauté, rigueur, reproductibilité, clarté, éthique, revue statistique, conformité aux directives de rapport) plus une liste de révisions obligatoires triée par gravité."
 machineTranslated: true
-sourceHash: "73915d388b353eda"
+sourceHash: "0f888b58aa245da1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rôle :** Chercheur principal (évaluation par les pairs)
 **Position dans le pipeline :** milieu de chaîne
 
-Soumet l'article à une critique adversariale de niveau évaluation par les pairs au regard des normes du lieu de publication — nouveauté, rigueur, reproductibilité, clarté, éthique, revue statistique et conformité aux directives de rapport. Émet une grille de notation de l'évaluateur à **sept axes** ainsi qu'une liste de révisions obligatoires triée par gravité, avec une justification à moteur concret par constatation. Réfutation par défaut.
+Soumet l'article à une critique adversariale de niveau évaluation par les pairs au regard des normes du lieu de publication — nouveauté, rigueur, reproductibilité, clarté, éthique, revue statistique et conformité aux directives de rapport. Émet une grille de notation de l'évaluateur à **sept axes** ainsi qu'une liste de révisions obligatoires triée par gravité, avec une justification à moteur concret par constatation. Réfutation par défaut, et chaque point repose sur les propres mots et les propres preuves du brouillon, jamais sur le prestige du lieu de publication, de l'institution ou des auteurs.
 
 ## Invocation canonique
 
@@ -20,16 +20,18 @@ Soumet l'article à une critique adversariale de niveau évaluation par les pair
 Avec des arguments :
 
 ```bash
-/research-review [--suite-name NAME]
+/research-review [--suite-name NAME] [--venue STANDARD] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]
 ```
 
 ## Entrées
 
-Le livrable de l'article à l'emplacement naturel de l'hôte enregistré par l'étape de l'article.
+Le livrable de l'article à l'emplacement naturel de l'hôte enregistré par l'étape de l'article. Avec `--paper`, l'article est un fichier PDF ou texte que vous fournissez (ou un texte collé), et non un livrable d'une suite de recherche, et aucune suite n'est nécessaire.
 
 ## Sorties
 
 `_outputs/review-report.md` — la grille de notation de l'évaluateur à **sept axes** (nouveauté · rigueur · reproductibilité · clarté · éthique · revue statistique · conformité aux directives de rapport), la liste de révisions obligatoires triée par gravité (HIGH / MEDIUM / LOW) avec une justification à moteur concret par constatation, le verdict du paquet de reproductibilité et de la réexécution, l'audit d'intégrité des citations, et le verdict global `accept · minor-revision · major-revision · reject`.
+
+Avec `--paper`, le rapport est écrit dans `.apothem/plans/<date>--review-<slug>.md` à la racine du projet (ou au chemin `--out`) : une grille de notation à sept axes avec une ligne par rôle d'évaluateur, des lignes de vérification des équations, des ablations et des références de comparaison, des révisions obligatoires classées par gravité, jusqu'à cinq questions pour les auteurs, et une décision rapportée à l'échelle de recommandation que vous nommez. Il est étiqueté comme une lecture assistée par modèle, et non comme une évaluation par les pairs.
 
 ## En aval
 
@@ -41,12 +43,25 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 1. **Charger le contexte** — Lire le livrable de l'article.
 2. **Vérifier le portail de séquence** — Confirmer que l'article, `_outputs/analysis.md` et `_inputs/synthesis.md` existent et ne sont pas vides ; sinon, s'arrêter avec `Blocked: run /research-paper first`.
-3. **Évaluer de manière adversariale** — Noter les sept axes (nouveauté · rigueur · reproductibilité · clarté · éthique · revue statistique · conformité aux directives de rapport) ; exécuter la réexécution de reproductibilité et l'audit d'intégrité des citations ; réfutation par défaut ; localiser les défauts concrets avec des preuves.
-4. **Trier les révisions** — Classer les révisions obligatoires HIGH / MEDIUM / LOW avec une justification fondée sur un facteur concret.
+3. **Évaluer de manière adversariale** — Noter les sept axes (nouveauté · rigueur · reproductibilité · clarté · éthique · revue statistique · conformité aux directives de rapport) ; typer chaque affirmation comme descriptive, associative ou causale et vérifier les erreurs d'appréciation récurrentes ; vérifier que les figures encodent honnêtement et se lisent sans couleur ; exécuter la réexécution de reproductibilité et l'audit d'intégrité des citations ; réfutation par défaut ; localiser les défauts concrets avec des preuves.
+4. **Trier les révisions** — Classer les révisions obligatoires HIGH / MEDIUM / LOW avec une justification fondée sur un facteur concret. Un axe que l'évaluation ne peut pas juger ne reçoit aucun verdict ; il reste sur la liste des axes non jugés avec sa raison, et le verdict global l'encadre.
 5. **Mettre à jour le manifeste de transfert** — Consigner le rapport d'évaluation et le verdict de la grille de notation.
 6. **Émettre l'évaluation** — `_outputs/review-report.md`.
 
+## Évaluer l'article de quelqu'un d'autre
+
+`--paper` évalue un manuscrit qui ne fait pas partie d'une suite de recherche, par exemple une soumission que l'on vous a demandé d'expertiser ou un brouillon d'un collègue.
+
+- **Profil de lieu de publication.** `--venue` prend l'identifiant d'un profil générique (par exemple `empirical-conference` ou `field-journal`). Un lieu de publication nommé utilise le profil générique le plus proche et le rapport le signale. Apothem ne livre que des profils génériques et ne revendique jamais les critères propres d'un lieu de publication ; les directives que vous fournissez font foi lorsque vous les collez, et l'en-tête du rapport consigne leur source, leur date, ainsi que l'année ou le cycle et la piste qu'elles couvrent.
+- **Version du manuscrit.** Le rapport consigne quelle version a été lue (prépublication, manuscrit accepté, version de référence ou inconnue), tout marqueur de version que porte le fichier, sa provenance et la date de lecture, de sorte que l'évaluation est rattachée à une seule révision.
+- **Rôles d'évaluateur.** Les rôles par défaut sont méthodes, domaine et sceptique. `--roles` modifie la liste. Lorsque les rôles sont en désaccord, le rapport imprime le désaccord au lieu d'en faire la moyenne.
+- **Confidentialité.** On vous demande une seule fois si l'article est une soumission confidentielle, un article publié ou votre propre brouillon. Lorsque la réponse est inconnue, le traitement le plus strict s'applique : les recherches utilisent des titres, des identifiants ou des termes de sujet génériques, et jamais des phrases du manuscrit.
+- **Nouveauté.** Sans suite, il n'existe pas de carte des travaux antérieurs ; l'évaluation utilise donc les voisins nommés de l'article plus un registre de recherche borné. Une recherche vide n'est jamais prise comme preuve de nouveauté, et la confiance en la nouveauté reste faible à moins que le registre ne couvre un index savant.
+- **Anonymat.** Pour votre propre vérification de préparation auprès d'un lieu de publication en double aveugle, l'évaluation inspecte les surfaces au-delà de la prose (propriétés du document, fichiers livrés et liés, historique du dépôt, archives supplémentaires, figures rendues) ; une surface qu'elle ne peut pas ouvrir va sur la liste des éléments non jugés, jamais sur la liste des éléments propres. Pour une soumission confidentielle qui vous est assignée, l'évaluation ne cherche pas d'identité dans ces surfaces : une identité rencontrée sans la chercher vous est signalée comme une fuite et n'entre dans aucune note.
+
 ## Seuil de rigueur
+
+Aucun verdict d'axe, aucune constatation ni aucune confiance ne repose sur une mesure au niveau de la revue, un nombre de citations, un indice au niveau de l'auteur, ou la réputation du lieu de publication, de l'institution ou des auteurs ; une évaluation qui cite un tel chiffre le cite de manière descriptive, avec ce qu'il mesure, sa source et sa date. Les constatations de gravité HIGH incluent une image expérimentale comportant un raccord, un composite ou une étape de traitement non divulgués, et un critère de jugement enregistré qui diffère de celui rapporté sans raison énoncée. La revue statistique vérifie que n compte l'unité indépendante plutôt que des mesures répétées, des plis ou des graines d'une même unité.
 
 L'évaluation note les affirmations empiriques au regard de la barre du portail d'avancement — réplication adéquate, significativité non paramétrique assortie d'une taille d'effet et de rangs de différence critique, et parité de budget entre les méthodes comparées — et traite le verdict comme un portail d'avancement explicite : un article n'avance que lorsqu'il bat la barre du lieu de publication de manière convaincante et significative, avec le franchissement consigné. Sous un lieu de publication en double aveugle, l'évaluateur signale aussi toute fuite d'identité comme un défaut d'anonymisation.
 
@@ -55,7 +70,9 @@ L'évaluation note les affirmations empiriques au regard de la barre du portail 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Blocked: run /research-paper first | Aucun article | Exécutez `/research-paper` pour produire le manuscrit |
+| Blocked: no paper supplied | Fichier `--paper` manquant ou illisible | Passez un fichier PDF ou texte lisible, ou collez le texte |
 | Notation indulgente | L'évaluateur a supposé le meilleur cas | Réfutation par défaut ; notez d'après les preuves présentes |
+| Point reposant sur le prestige | Un lieu de publication, une institution, un auteur, une mesure au niveau de la revue ou un nombre de citations a servi de preuve | Supprimez-le ; reformulez le point à partir des propres mots et des propres preuves du brouillon |
 | Constatation sans justification | Révision affirmée, non justifiée | Joignez une justification à moteur concret à chaque constatation |
 
 ## Exemples
@@ -63,6 +80,9 @@ L'évaluation note les affirmations empiriques au regard de la barre du portail 
 ```bash
 # Peer-review the paper and emit a reviewer scorecard
 /research-review --suite-name <name>
+
+# Review a supplied PDF against a generic venue profile on a 1-10 scale
+/research-review --paper ./submission.pdf --venue empirical-conference --scale 1-10
 ```
 
 ## Références croisées

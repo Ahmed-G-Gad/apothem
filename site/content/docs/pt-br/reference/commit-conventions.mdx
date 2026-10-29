@@ -2,7 +2,7 @@
 title: "Convenções de commit"
 description: "Estabelece o formato das mensagens de commit, a marcação de versões, a disciplina de autoria exclusivamente humana e a cadência por tarefa para artefatos git e controle de versão."
 machineTranslated: true
-sourceHash: "b14f720edd93a318"
+sourceHash: "b4f17475336ad671"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,15 @@ O assunto está no modo imperativo, em minúsculas após os dois-pontos de type/
 
 ## 2. Disciplina de autoria (somente humana)
 
-Cada superfície de autoria em cada artefato git (assunto do commit, corpo do commit, campo `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nome de branch, nome de tag, anotação de tag, nome de stash, corpo do git-notes, título de PR, descrição de PR) nomeia **apenas contribuidores humanos**. O ambiente de execução do harness nunca atribui a si mesmo, ao modelo de linguagem subjacente, ao ambiente de execução / harness / IDE / extensão / fornecedor, ou a qualquer outra ferramenta automatizada, nenhuma dessas superfícies. Os padrões proibidos incluem `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, narrativa de corpo como `generated with X` ou `co-authored by an automated helper`, e qualquer marcador na linha de assunto que sinalize autoria não humana. A especificação completa vive em [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; a aplicação mecânica vive em [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+Cada superfície de autoria em cada artefato git (assunto do commit, corpo do commit, campo `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nome de branch, nome de tag, anotação de tag, nome de stash, corpo do git-notes, título de PR, descrição de PR) nomeia **apenas contribuidores humanos**. O ambiente de execução do harness nunca atribui a si mesmo, ao modelo de linguagem subjacente, ao ambiente de execução / harness / IDE / extensão / fornecedor, ou a qualquer outra ferramenta automatizada, nenhuma dessas superfícies. Os padrões proibidos incluem `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, narrativa de corpo como `generated with X` ou `co-authored by an automated helper`, e qualquer marcador na linha de assunto que sinalize autoria não humana. A especificação completa vive em [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/production-ready-prs.md) §6; a aplicação mecânica vive em [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) Scan 3.
 
 ## 3. Tags de versão (versionamento semântico)
 
-As tags de versão seguem o **versionamento semântico** (`vMAJOR.MINOR.PATCH`). A versão pré-1.0 é `0.MINOR.PATCH` conforme a convenção pré-estável da especificação; mudanças incompatíveis incrementam MINOR, correções de bugs incrementam PATCH. A tag é anotada (`git tag -a`) e assinada no nível de publicação conforme [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). A versão do pacote vive no manifesto de origem (`pyproject.toml` `version`), e as superfícies de tempo de execução / portadoras de versão derivam desses metadados do pacote.
+As tags de versão seguem o **versionamento semântico** (`vMAJOR.MINOR.PATCH`). Mudanças incompatíveis incrementam MAJOR, adições retrocompatíveis incrementam MINOR e correções de bugs incrementam PATCH. A tag é anotada (`git tag -a`) e assinada no nível de publicação conforme [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). A versão do pacote vive no manifesto de origem (`pyproject.toml` `version`), e as superfícies de tempo de execução / portadoras de versão derivam desses metadados do pacote.
 
 ## 4. Cadência por tarefa
 
-Os commits são feitos por tarefa em seriedade SHARED+, por fase em PERSONAL_USE e opcionais em EXPLORING. O commit de uma tarefa é feito imediatamente após as portas de verificação da tarefa passarem; commits adiados acumulam contexto e arriscam perder o escopo. A disciplina completa vive em [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+Os commits são feitos por tarefa em seriedade SHARED+, por fase em PERSONAL_USE e opcionais em EXPLORING. O commit de uma tarefa é feito imediatamente após as portas de verificação da tarefa passarem; commits adiados acumulam contexto e arriscam perder o escopo. A disciplina completa vive em [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/operational-mandates.md) §CM-13.
 
 ## 5. Validadores
 

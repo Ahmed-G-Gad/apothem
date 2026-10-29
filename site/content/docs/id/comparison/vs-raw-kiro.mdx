@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi Kiro manual"
 description: "Memelihara file pengarah Kiro di bawah .kiro/steering/ dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "a4a26f280f1271a3"
+sourceHash: "58351c9a748f4d91"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,17 @@ terhadap pengelolaannya dengan Apothem.
 | Menulis aturan pengarah | Menulis tiap file di bawah `.kiro/steering/` dengan tangan | Dirender dari korpus bersama |
 | Menjaga file fondasi tetap utuh | Ingat untuk tidak menimpa `product.md` / `tech.md` / `structure.md` | Adapter hanya menulis `apothem-rules.md` |
 | Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Berbagi skill dan command yang dapat digunakan ulang | Menyalin tiap folder skill ke `~/.kiro/skills/` dengan tangan dan menjaga salinannya tetap mutakhir | Ditulis ke `~/.kiro/skills/` oleh adapter, satu salinan untuk semua proyek, dan disegarkan pada `apothem update` |
+| Menjaga helper yang dapat digunakan ulang tetap tersinkron | Menulis tiap file agen kustom di bawah `.kiro/agents/` dengan tangan dan melacak kategori alat Kiro | Empat belas helper ditulis ke `.kiro/agents/` dengan alatnya diterjemahkan, dan disegarkan pada `apothem update` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kiro --project <path>` |
 
 ## Apa yang dikelola Apothem
 
 Adapter kiro merender aturan bersama menjadi file pengarah `apothem-rules.md` khusus
 dengan front matter `inclusion: always` dan tidak menyentuh file fondasi yang ditulis
-operator milik Kiro. Kiro tidak memiliki hook PreToolUse, sehingga niat pagar pengaman
+operator milik Kiro. Adapter juga menulis empat belas helper Apothem sebagai agen kustom
+Kiro di `<project>/.kiro/agents/`, untuk Kiro IDE 1.0 dan Kiro CLI V3. Kiro
+mendokumentasikan hook agen, yang tidak ditulis oleh adapter, sehingga niat pagar pengaman
 berdiam di dalam prosa aturan alih-alih di titik penyadapan panggilan alat. Setiap
 perubahan pada aturan bersama merender ulang file pada `apothem update` berikutnya.
 

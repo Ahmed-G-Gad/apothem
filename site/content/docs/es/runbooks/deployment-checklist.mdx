@@ -2,7 +2,7 @@
 title: "Lista de verificación de despliegue"
 description: "Lista de verificación previa para desplegar o compartir el ecosistema Apothem"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ Las reglas no incluyen ninguna clave `version`, `updated`, `scope` ni `portabili
 
 - [ ] `name` — nombre del comando en kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` presentes
-- [ ] `disable-model-invocation` presente e intencional (`true` para comandos solo de orientación)
+- [ ] `disable-model-invocation` presente e intencional (`false` para comandos de solo lectura o de asesoramiento; `true` solo cuando ejecutar el comando cambia el estado fuera del árbol de trabajo o depende de que el operador elija el momento)
 - [ ] Sin clave `effort`: `command.schema.json` establece `additionalProperties: false` y no la admite
 
 ### Trabajadores delegados

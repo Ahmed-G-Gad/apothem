@@ -2,7 +2,7 @@
 title: "CI/CD-Pipeline-Diagramm"
 description: "Visuelle Karte und Spuraufschlüsselung der Workflow-Phasen für Build, Test, Lint, Sicherheit und Veröffentlichung, die jede Codeänderung und jedes Release kontrollieren."
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,6 +88,9 @@ flowchart LR
   Anmeldedaten. Das Lizenz-Audit (`license-audit.yml`) schlägt bei einer
   Abhängigkeitslizenz fehl, die nicht auf seiner Allowlist steht. Es läuft
   wöchentlich sowie dann, wenn sich Abhängigkeits- oder Lizenzdateien ändern.
+  Das REUSE-Gate (`reuse.yml`) läuft bei jeder Änderung und schlägt fehl, wenn
+  eine Datei keine Lizenzzeile hat oder ein SPDX-Ausdruck nicht geparst werden
+  kann.
   `release.yml` erzeugt die SBOM für jedes getaggte Release.
 - **Veröffentlichungs-Spur** — die Release-Workflows werden durch Tag-Pushes
   ausgelöst; der npm- und der VS-Code-Publisher lassen sich für einen bestehenden

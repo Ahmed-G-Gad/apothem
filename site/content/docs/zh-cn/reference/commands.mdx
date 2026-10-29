@@ -2,14 +2,15 @@
 title: "命令"
 description: "实现计划套件流水线的斜杠命令定义，外加用于代码、架构、安全、依赖与文档评审的审计。"
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-斜杠命令定义以扁平 `.md` 文件的形式存放在 `src/apothem/commands/` 下。规范集合以具备架构感知的计划套件流水线为首，它以七个一等命令的形式交付——每个阶段一个，各自可直接以 `/plan-<stage>` 的形式调用。不存在单体式的调度器；每个阶段都是位于 `src/apothem/commands/plan-<stage>.md` 的、独立注册的命令文件。
+斜杠命令定义以扁平 `.md` 文件的形式存放在 `src/apothem/commands/` 下。规范集合以具备架构感知的计划套件流水线为首，它以八个一等阶段命令的形式交付，各自可直接以 `/plan-<stage>` 的形式调用，外加 `/plan`——端到端驱动阶段链的编排器。每个阶段都是位于 `src/apothem/commands/plan-<stage>.md` 的、独立注册的命令文件，而 `/plan` 不重新实现其中任何一个。
 
 | 调用 | 命令文件 | 说明 |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | 将 spec、generate、review 与 design 阶段作为一个经过验证的工作流运行，并在每次移交时进行确认；execute 仍是一个手动步骤 |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | 将非结构化内容精炼为规格级的散文 |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | 依据散文 / 需求物化一个计划套件 |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | 带记分卡的取证式审计 |
@@ -47,7 +48,7 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-校验器的 `frontmatter-cohort` 检查（Command 分支）会在每个命令文件上验证该契约。`allowed-tools` 列出命令处于活动状态时，工具可以不经询问就运行的那些工具，因此它默认保持只读：有副作用的工具（Bash、PowerShell、Write、Edit、NotebookEdit、WebFetch）只能以作用域规则的形式出现，例如 `Bash(git log *)`，而裸的 `"*"` 通配符会被 schema 拒绝。具有不可逆副作用的命令（`freshify`、`github-deploy-fresh`、`github-deploy-next`）设置 `disable-model-invocation: true`，因此只有操作者才能启动它们。
+校验器的 `frontmatter-cohort` 检查（Command 分支）会在每个命令文件上验证该契约。`allowed-tools` 列出命令处于活动状态时，工具可以不经询问就运行的那些工具，因此它默认保持只读：有副作用的工具（Bash、PowerShell、Write、Edit、NotebookEdit、WebFetch）只能以作用域规则的形式出现，例如 `Bash(git log *)`，而裸的 `"*"` 通配符会被 schema 拒绝。具有不可逆副作用或由操作者选定时机的命令设置 `disable-model-invocation: true`，因此只有操作者才能启动它们：`freshify`、`github-deploy-fresh`、`github-deploy-next`、`release-readiness`、`elevate`、`fortress`、`workflow`、`plan-execute`、`research-experiment` 和 `research-publish`。其余 35 个命令设置 `false`，并依据其描述与请求进行匹配。
 
 ## 编写纪律
 

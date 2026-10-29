@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adapter harness Apothem untuk GLM (Z.ai) sebagai backend model yang dapat dikonfigurasi."
 machineTranslated: true
-sourceHash: "1de53f25ee125b1a"
+sourceHash: "026e29a055db8a67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,15 +11,19 @@ sourceHash: "1de53f25ee125b1a"
 **Status:** GA
 **Konfigurasi native:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) adalah **backend model**, bukan alat pengodean tersendiri. Z.ai tidak
-menyediakan antarmuka baris perintah GLM resmi miliknya sendiri; sebagai
-gantinya, alat yang menggunakan protokol yang kompatibel dengan Anthropic atau
-yang kompatibel dengan OpenAI diarahkan ke GLM dengan menyetel base URL backend
-dan sebuah kunci. Apothem tetap memasukkan GLM ke dalam adapter harness-nya,
-sehingga Anda memilihnya dengan `--harness glm` seperti adapter lain. Adapter
-`glm` menulis berkas konfigurasi penyedia yang mencatat kedua permukaan
+Adapter `glm` mengonfigurasi GLM (Z.ai) sebagai **backend model**. Alat yang
+menggunakan protokol yang kompatibel dengan Anthropic atau yang kompatibel
+dengan OpenAI diarahkan ke GLM dengan menyetel base URL backend dan sebuah
+kunci, dan Anda memilih adapter ini dengan `--harness glm` seperti adapter lain.
+Adapter ini menulis berkas konfigurasi penyedia yang mencatat kedua permukaan
 kompatibilitas tersebut sehingga alat kompatibel apa pun dapat disambungkan ke
 keluarga model GLM.
+
+Z.ai juga menyediakan alat pengodean resmi miliknya sendiri, ZCode, yang oleh
+[dokumentasi](https://docs.z.ai/devpack/tool/zcode) Z.ai disebut sebagai
+"Agentic Development Environment". Adapter ini tidak mengonfigurasi ZCode.
+Apothem belum memeriksa permukaan konfigurasi ZCode sendiri, sehingga adapter
+tidak menulis apa pun untuknya.
 
 ## Instalasi
 
@@ -51,12 +55,31 @@ Anda isi dari [dokumentasi Z.ai](https://docs.z.ai/devpack/tool/claude) yang
 terkini. Tidak ada apa pun dari profil bersama yang masuk ke berkas ini; berkas
 ini adalah templat tetap.
 
+### Pemetaan peran ke model
+
+Pernyataan Z.ai sendiri tentang pemetaan peran ke model saling bertentangan,
+sehingga berkas tersebut membiarkan ketiga nilai `ANTHROPIC_DEFAULT_*_MODEL`
+sebagai placeholder dan membawa komentar `TODO(clarify)` di atasnya. Anda yang
+memutuskan pemetaan mana yang dipakai:
+
+- Contoh `settings.json` manual dalam panduan penyiapan kompatibel-Anthropic
+  milik vendor memetakan opus dan sonnet ke `glm-5.3[1m]` dan haiku ke
+  `glm-5.3-flash[1m]`, serta menyetel `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ke
+  `1000000`.
+- Pemetaan default yang dinyatakan dalam panduan yang sama mencantumkan
+  `GLM-5.3-Flash` untuk ketiga peran.
+- Alat `@z_ai/coding-helper` milik Z.ai menggunakan default `glm-5.3-flash`,
+  menambahkan `[1m]` ke ketiga peran, dan menulis jendela pemadatan `1048576`.
+
+Apothem tidak mematok satu pun dari nilai-nilai ini dan tidak memilih di antara
+keduanya.
+
 ## Catatan kompatibilitas
 
-Karena GLM adalah backend dan bukan alat pengodean, GLM tidak mengekspos
-permukaan untuk aturan, command, skill, atau hook — adapter hanya menulis berkas
-penyedia backend dan tidak ada yang lain. Kunci Z.ai Anda dan pilihan ID model
-Anda tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi
+Backend GLM tidak mengekspos permukaan untuk aturan, command, skill, atau hook,
+sehingga adapter hanya menulis berkas penyedia backend dan tidak ada yang lain.
+Apothem belum memeriksa apakah ZCode mengekspos permukaan semacam itu. Kunci
+Z.ai Anda dan pilihan ID model Anda tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi
 sandaran adapter dipatok di `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`,
 yang di-snapshot terhadap dokumentasi Z.ai yang berlaku.
 
@@ -97,8 +120,12 @@ apothem uninstall --harness glm --project /path/to/project
 
 Menghapus berkas penyedia hanya ketika Apothem yang membuatnya dan berkas itu
 masih berupa templat yang belum disunting, dengan terlebih dahulu
-mencadangkannya di bawah akar cadangan Apothem. Berkas yang Anda buat atau
-sunting dibiarkan di tempatnya. YAML profil bersama dan mesin Apothem tidak
+mencadangkannya di bawah akar cadangan Apothem. Berkas yang belum disunting dan
+ditulis oleh rilis sebelumnya ikut terhitung ketika catatan instalasi Apothem
+untuk proyek tersebut menunjukkan bahwa Apothem yang menulis berkas itu:
+manifes mencatat digest setiap templat yang pernah dikirimkan ke proyek. Tanpa
+catatan instalasi, hanya salinan persis dari templat saat ini yang dihapus.
+Berkas yang Anda buat atau sunting dibiarkan di tempatnya. YAML profil bersama dan mesin Apothem tidak
 terpengaruh.
 
 ## Gerbang konformitas

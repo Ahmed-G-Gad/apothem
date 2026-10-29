@@ -2,7 +2,7 @@
 title: "एक टूल जोड़ें"
 description: "किसी टूल अडैप्टर को सक्षम करें ताकि उसकी नेटिव कॉन्फ़िगरेशन साझा प्रोफ़ाइल से मटेरियलाइज़ हो।"
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,7 @@ sourceHash: "86a3b203d53e58ea"
 3. फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. टूल इंस्टॉल करें। एक उपयोगकर्ता-दायरे के टूल के लिए:
@@ -66,7 +66,7 @@ sourceHash: "86a3b203d53e58ea"
 ## सत्यापन
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 एक `✓ <harness-id> is verified` पंक्ति पुष्टि करती है कि प्रबंधित लक्ष्य मौजूद हैं और पार्स होते हैं।

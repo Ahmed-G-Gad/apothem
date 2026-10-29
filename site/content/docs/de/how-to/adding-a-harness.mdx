@@ -2,7 +2,7 @@
 title: "Einen Harness hinzufügen"
 description: "Aktiviere einen Harness-Adapter, damit seine native Konfiguration aus dem gemeinsamen Profil materialisiert wird."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,7 @@ dieses Harness aus deinem gemeinsamen Profil materialisiert.
 3. Sieh dir die Installation in der Vorschau an, ohne Dateien zu schreiben:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Installiere den Harness. Für einen Harness im Benutzer-Geltungsbereich:
@@ -70,7 +70,7 @@ dieses Harness aus deinem gemeinsamen Profil materialisiert.
 ## Verifizieren
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Eine Zeile `✓ <harness-id> is verified` bestätigt, dass die verwalteten Ziele

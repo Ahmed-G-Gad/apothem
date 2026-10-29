@@ -2,7 +2,7 @@
 title: "安装工作流"
 description: "apothem install、update 和 uninstall 的端到端工作原理。"
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,11 @@ flowchart TD
 
 每个适配器都写入自己固定的安装根目录：用户范围适配器写入用户主目录，
 项目范围适配器写入项目本地。CLI 不暴露
-`--scope` 标志；项目范围适配器需要 `--project <path>`。每个
+`--scope` 标志；项目范围适配器需要 `--project <path>`。其中有七个
+项目范围适配器还会在写入项目文件之前，在用户主目录中写入共享文件夹，例如
+`~/.agents/skills/` 和 `~/.config/apothem/`，而 `--project` 不会改变这些文件夹的写入位置。
+[install 参考](/docs/cli-reference/install#主目录中的文件夹)
+列出了它们。每个
 目标位置都记录在
 `site/content/docs/harnesses/<harness>.mdx`。
 

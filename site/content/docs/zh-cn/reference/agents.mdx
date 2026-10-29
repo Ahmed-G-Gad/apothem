@@ -2,7 +2,7 @@
 title: "辅助器"
 description: "用于研究、审计、质量与编排的持久化辅助智能体，附带 frontmatter 契约和部署隔离协议。"
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,20 +46,39 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` 是可选的。省略它的辅助器会继承会话拥有的每一个工具（包括已连接的 MCP 工具），并由 `disallowedTools` 承载其限制。全部十四个随附辅助器都列出了 `tools`。
+
+## 已连接的 MCP 服务器
+
+列出了 `tools` 的辅助器只能调用它所列出的内容。只有当条目指明服务器时（形如 `mcp__<server>__*`），Claude Code 才会将某个 MCP 工具纳入该列表；单独的 `mcp__*` 仅被文档化为 `disallowedTools` 条目，别处均无此用法。服务器名称属于连接它们的人，因此随附的辅助器无法指明这些名称。
+
+`citation-auditor` 和 `research-scout` 负责查找学术来源。二者都随附 `tools: Read, Glob, Grep, WebSearch, WebFetch`，并拒绝那些写入文件、运行命令、启动其他辅助器或发布内容的工具：`Write`、`Edit`、`MultiEdit`、`NotebookEdit`、`Bash`、`PowerShell`、`Monitor`、`Agent`、`Artifact`，以及任务列表工具。在没有任何配置档案设置的情况下，二者都无法访问 MCP 工具，并通过网页搜索和网页抓取来查找来源。
+
+要为其中一个辅助器提供已连接的学术索引，请在配置档案的 `agent_mcp_servers` 键中指明该服务器，该键将智能体名称映射到服务器名称。随后，Claude Code 引擎安装（`apothem install`）会为每个指明的服务器向该智能体的 `tools` 行追加一个 `mcp__<server>__*` 条目，且不改动任何其他智能体。Gemini CLI 安装也会这样做：对于由字母、数字和 `-` 组成的服务器名称，它会在该智能体的 `tools` 允许列表中为每个服务器追加一个 `mcp_<server>_*` 条目。在这两者上，智能体自身的 `disallowedTools` 所指明的服务器仍保持被拒绝。该条目会放行该服务器的每一个工具，包括任何会写入的工具，因此只应指明你信任其用于查询的服务器：辅助器的指令将它们限制为搜索、查找、读取、验证和解析调用，但工具只强制执行 `tools` 行所列出的名称。针对不存在的智能体、或没有显式 `tools` 行的智能体所给出的名称，会被报告并跳过。
+
+Claude Code 和 Gemini CLI 以外的工具会忽略该键。Claude Code 插件树是在没有配置档案的情况下组装的，并保留普通列表，因此插件用户应改为在 `~/.claude/agents/` 下定义一个用户级智能体。配置档案语法、服务器名称规则以及该变通做法见[让辅助器访问 MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)。
+
 ## 按工具转换
 
-如果某个辅助器的 `tools` 授权在减去 `disallowedTools` 之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它就是只读的。每个转换辅助器的工具要么原生地强制执行该限制，要么去掉只读标签：
+如果某个辅助器的 `tools` 授权在减去 `disallowedTools` 之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它就是只读的。没有 `tools` 授权的辅助器，当 `disallowedTools` 至少拒绝了 `Write` 和 `Edit` 时即为只读。每个转换辅助器的工具要么原生地强制执行该限制，要么在辅助器的指令中声明该限制，要么去掉只读标签：
 
 | 工具 | 工具限制 | 轮次限制 | 模型与推理强度 |
 | --- | --- | --- | --- |
-| Claude Code | 按原样使用 `tools` / `disallowedTools` | `maxTurns` | 继承（未设置） |
-| Codex | 对只读辅助器使用 `sandbox_mode = "read-only"` | 不可用 | 继承（未设置） |
-| Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表 | `max_turns` | 继承（未设置） |
-| Qwen Code | 使用 Qwen 工具名称的 `tools` / `disallowedTools` | 未映射 | `model: inherit` |
-| OpenCode | `permission`（每个工具的 `allow` / `deny`） | 未映射 | 继承（未设置） |
+| Claude Code | 按原样使用 `tools` / `disallowedTools`，外加配置档案的 `agent_mcp_servers` 键向已列出的 `tools` 行添加的任何 `mcp__<server>__*` 条目；没有 `tools` 时，继承每一个工具，包括 MCP | `maxTurns` | 继承（未设置） |
+| Codex | 不输出任何限制；辅助器的指令声明该限制，由父会话的沙箱管控写入 | 不可用 | 继承（未设置） |
+| Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表，外加配置档案的 `agent_mcp_servers` 键向已列出的显式列表添加的任何 `mcp_<server>_*` 条目；没有 `tools` 时，使用拒绝项所隐含的允许列表加上 `mcp_*` | `max_turns` | 继承（未设置） |
+| Qwen Code | 使用 Qwen 工具名称的 `tools` / `disallowedTools`；没有 `tools` 时，不输出列表，因此 MCP 工具被继承，拒绝项仍然生效 | 未映射 | `model: inherit` |
+| OpenCode | `permission`（每个工具的 `allow` / `deny`）；MCP 工具不受限制 | 未映射 | 继承（未设置） |
 | Antigravity | 不输出任何限制；描述中去掉“只读” | 不可用 | 继承（未设置） |
+| CodeBuddy | 以逗号分隔字符串表示的 `tools` / `disallowedTools`，仅限 CodeBuddy 文档化的工具名称；无 MCP 条目 | `maxTurns` | 继承（未设置） |
+| Trae | 以逗号分隔字符串表示的 `tools` / `disallowedTools`，仅限 Trae 文档化的工具名称；无 MCP 条目 | 不可用 | 继承（未设置） |
+| GitHub Copilot | 由 Copilot 别名（`read`、`search`、`edit`、`execute`、`web`、`agent`、`todo`）组成的 `tools` 允许列表，并折入拒绝项，因为 Copilot 没有拒绝键；覆盖了被拒绝工具的别名会被略去；无 MCP 条目 | 不可用 | 继承（未设置） |
+| Cursor | 没有工具列表（Cursor 不支持）；对五个不含 `Bash` 的只读辅助器使用 `readonly: true`，其他只读辅助器去掉“只读”标签 | 不可用 | 继承（未设置） |
+| Kimi Code | 以 Kimi Code 工具名称列表表示的 `tools` / `disallowedTools`（`WebFetch` 变为 `FetchURL`，`TodoWrite` 变为 `TodoList`；Kimi Code 没有对应工具的名称会被略去）；无 MCP 条目 | 不可用 | 继承（未设置） |
+| Kiro | 由 Kiro 工具类别（`read`、`write`、`shell`、`web`、`subagent`）组成的 `tools` 允许列表，并折入拒绝项，因为该列表是唯一写入的限制；覆盖了被拒绝工具的类别会被略去；无 MCP 条目 | 不可用 | 继承（未设置） |
+| Windsurf | 由 Devin 工具名称（`read`、`edit`、`grep`、`glob`、`exec`、`write`）组成的 `allowed-tools` 允许列表，并折入拒绝项，因为 Devin 没有拒绝键；需要网页工具的三个辅助器不会被安装；无 MCP 条目 | 不可用 | Devin 的默认子智能体模型（未设置） |
 
-Hermes、Open-Claw 和 Kimi Code 以支持材料的形式接收辅助器文件，而不是将其作为原生辅助器。
+Hermes 和 Open-Claw 以支持材料的形式接收辅助器文件，而不是将其作为原生辅助器。
 
 ## 编排
 

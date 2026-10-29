@@ -2,7 +2,7 @@
 title: "작성자 헤더 — 파일별 SPDX 라이선스 줄"
 description: "각 파일 타입에 맞는 주석 구문의 정식 한 줄 헤더로 파일별 SPDX 라이선스 식별자 마커를 정의하고 강제합니다."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ Markdown 및 MDX 파일의 경우, SPDX 줄은 항상 주석 래퍼(`<!-- ... --
 4. **Pre-commit 훅** — `conformity-corpus-perwrite` 훅이 `--strict`로 추적 중인 트리 전체에 대해, `file-header` 검증기(§8)를 포함한 모든 Write별 매처를 실행합니다. `file-header` 매처는 차단 수준이므로 발견 사항은 커밋을 막습니다. 이 훅은 검사만 하며, 수정 모드가 없고, 인젝터(§7)를 절대 실행하지 않습니다. 인젝터는 `make headers-fix`를 통해 실행됩니다.
 5. **`CLAUDE.md` 필수 동작 블록** — 해당되는 파일을 만들 때마다 정식 SPDX 줄을 주입하도록 어시스턴트에 지시합니다.
 6. `.github/copilot-instructions.md`에 있는 **GitHub Copilot 지침 파일** — 파일 생성 시 Copilot이 같은 일을 하도록 지시합니다.
-7. `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`의 **PreToolUse 훅** — 해당되는 경로에 대한 Write/Edit 도구 호출을 가로채어, SPDX 줄이 나중에 검증기 발견 사항으로 드러나는 대신 파일을 만들 때 주입되게 합니다.
+7. `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`의 **PreToolUse 훅** — 해당되는 경로에 대한 Write/Edit 도구 호출을 가로채어, SPDX 줄이 나중에 검증기 발견 사항으로 드러나는 대신 파일을 만들 때 주입되게 합니다. 가드의 검사기인 `src/apothem/hooks/lib/header_check.py`는 표준 라이브러리만 사용하며 `hooks/` 옆의 `schemas/` 디렉터리에서 픽스처와 면제 목록을 읽으므로, `apothem` 패키지를 임포트할 수 없는 Claude Code 플러그인에서도 작동합니다. 이 검사기는 프로젝트 내부의 파일에 인젝터의 변형 표와 삽입 위치 규칙을 적용하며, 헤더 픽스처(`src/apothem/schemas/authorship-header.txt`)를 담은 git 프로젝트에서만 그렇게 합니다. SPDX 줄은 이 저장소의 규약이지 플러그인이 여는 모든 프로젝트의 기본값이 아니기 때문입니다.
 8. **PR 템플릿 체크박스** — 모든 새 파일이 정식 SPDX 줄을 담고 있다는 기여자 대상 확인 항목입니다.
 9. **이 문서**(`site/content/docs/reference/authorship-header.mdx`) — 정식 규범 설명서입니다.
 

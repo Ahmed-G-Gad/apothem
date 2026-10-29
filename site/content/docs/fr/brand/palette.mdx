@@ -2,7 +2,7 @@
 title: "Palette de marque"
 description: "Couleurs de marque principales d'Apothem et les quinze couleurs de marque des environnements, qui sont définies sur la page Couleurs des environnements. La source unique de vérité pour les couleurs principales est constituée des jetons de design canoniques dans assets/design-tokens.css ; le site reflète ces valeurs."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,14 @@ teintes sémantiques — appartient aux jetons de design définis dans
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (et son miroir `assets/design-tokens.json`). Le thème du site dans
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-reflète ces valeurs de jetons dans les variables CSS que consomme le thème Fumadocs. Chaque valeur ci-dessous
-est un palier de la rampe slate ou emerald de ces jetons de design ; un nom de palier tel que slate-600 renvoie à la valeur de cette rampe.
+reformule les valeurs des jetons sémantiques en OKLCH dans les variables CSS que consomme le thème
+Fumadocs : les variables de fond de page, de texte, de couleur primaire, de bordure et d'anneau de focus
+se résolvent exactement sur les paliers des jetons (la vérification `lib/theme-tokens.test.mjs`
+impose ces paliers aux variables de fond, de premier plan, de couleur primaire et d'anneau). Les
+rampes `apothem-*`, `polygon-*` et `field-*` déclarées dans le même fichier sont des approximations
+dérivées des rampes de jetons, et non des copies, et ne font pas partie de la spécification. Chaque
+valeur ci-dessous est un palier de la rampe slate ou emerald des jetons de design ; un nom de palier
+tel que slate-600 renvoie à la valeur de cette rampe.
 
 | Rôle | Jeton (CSS) | Mode clair | Mode sombre | Usage |
 |---|---|---|---|---|

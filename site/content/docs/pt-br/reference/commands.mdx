@@ -2,19 +2,21 @@
 title: "Comandos"
 description: "Definições de comandos de barra que implementam o pipeline da suíte de planejamento, além de auditorias de código, arquitetura, segurança, dependências e revisão de documentação."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 As definições de comandos de barra residem como arquivos `.md` planos sob
 `src/apothem/commands/`. O conjunto canônico é encabeçado pelo pipeline da suíte de planejamento ciente da
-arquitetura, que é distribuído como sete comandos de primeira classe — um por
-estágio, cada um invocável diretamente como `/plan-<stage>`. Não há despachante
-monolítico; cada estágio é seu próprio arquivo de comando registrado em
-`src/apothem/commands/plan-<stage>.md`.
+arquitetura, que é distribuído como oito comandos de estágio de primeira classe,
+cada um invocável diretamente como `/plan-<stage>`, além de `/plan`, o
+orquestrador que conduz a cadeia de estágios de ponta a ponta. Cada estágio é seu
+próprio arquivo de comando registrado em `src/apothem/commands/plan-<stage>.md`, e
+`/plan` não reimplementa nenhum deles.
 
 | Invocação | Arquivo de comando | Descrição |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Executa os estágios spec, generate, review e design como um único fluxo de trabalho verificado, pedindo confirmação a cada passagem de etapa; execute continua sendo um passo manual |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina conteúdo não estruturado em prosa com qualidade de especificação |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Materializa uma suíte de planejamento a partir de prosa / requisitos |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoria forense com scorecards |
@@ -69,8 +71,11 @@ permanece somente leitura por padrão: uma ferramenta com efeitos colaterais
 (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch) aparece somente como uma
 regra com escopo, como `Bash(git log *)`, e o curinga isolado
 `"*"` é rejeitado pelo schema. Os comandos com efeitos colaterais irreversíveis
-(`freshify`, `github-deploy-fresh`, `github-deploy-next`) definem
-`disable-model-invocation: true`, de modo que somente o operador os inicia.
+ou com momento escolhido pelo operador definem `disable-model-invocation: true`,
+de modo que somente o operador os inicia: `freshify`, `github-deploy-fresh`,
+`github-deploy-next`, `release-readiness`, `elevate`, `fortress`, `workflow`,
+`plan-execute`, `research-experiment` e `research-publish`. Os outros 35 comandos
+definem `false` e são associados a uma solicitação pela descrição.
 
 ## Disciplina de autoria
 

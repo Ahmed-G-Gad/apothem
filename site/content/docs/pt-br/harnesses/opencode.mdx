@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adaptador de harness do Apothem para o OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,11 +36,11 @@ Apothem como subauxiliares do OpenCode.
 ## Mapeamento do perfil para a configuração nativa
 
 O adaptador renderiza `opencode.json` com uma lista de arquivos `instructions`
-que nomeia o seu documento de perfil e as regras sempre ativas do Apothem e, em
-seguida, propaga cada cohort compartilhado do Apothem para uma superfície nativa
-do OpenCode ou para uma subárvore de suporte de propriedade do Apothem. Os
-filhos existentes correspondentes gerenciados pelo Apothem recebem backup antes
-da substituição.
+que nomeia o seu documento de perfil, as quatro regras centrais e o índice de
+regras e, em seguida, propaga cada cohort compartilhado do Apothem para uma
+superfície nativa do OpenCode ou para uma subárvore de suporte de propriedade do
+Apothem. Os filhos existentes correspondentes gerenciados pelo Apothem recebem
+backup antes da substituição.
 
 ## Notas de compatibilidade
 
@@ -49,10 +49,14 @@ as sessões ([regras do OpenCode](https://opencode.ai/docs/rules/)). Por isso, a
 lista nomeia primeiro o seu documento de perfil e depois apenas as regras cujo
 `alwaysApply` é `true`, cada uma com um caminho explícito
 `~/.config/opencode/.apothem/support/rules/<name>.md`; o OpenCode expande o `~/`
-inicial em relação ao seu diretório home. As regras filtradas por caminho, os
-templates e os prompts de hook permanecem instalados como material de
-referência sob `~/.config/opencode/.apothem/support/`, onde uma regra, skill ou
-comando que cite um deles o lê sob demanda. Os comandos, as skills e as
+inicial em relação ao seu diretório home. Essas regras são
+`agnostic-posture`, `authority-inquiry`, `context-management`,
+`session-closure` e o índice de regras, `apothem-rule-index`. O OpenCode não
+limita nenhuma regra por caminho, então todas as outras regras são lidas sob
+demanda. Elas permanecem instaladas como material de referência sob
+`~/.config/opencode/.apothem/support/`, e o índice nomeia cada regra e a
+situação que a exige. Uma regra, skill ou comando que cite uma regra, um
+template ou um prompt de hook o lê dali. Os comandos, as skills e as
 definições de auxiliares usam locais de descoberta nativos.
 
 O documento de perfil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
@@ -64,10 +68,12 @@ citação no estilo do repositório (`rules/<name>.md`, `templates/...`,
 OpenCode o carrega em todas as sessões.
 
 Um `opencode.json` gravado por um lançamento anterior lista o glob único
-`~/.config/opencode/.apothem/support/rules/*.md`, que carrega todas as regras.
-`apothem install` e `apothem update` o substituem pela lista de regras sempre
-ativas, e `apothem uninstall` remove ambas as formas. As suas próprias entradas
-de `instructions` são mantidas em todos os casos.
+`~/.config/opencode/.apothem/support/rules/*.md`, que carrega todas as regras,
+ou um caminho explícito para cada uma das 28 regras que eram então sempre
+ativas. `apothem install` e `apothem update` substituem qualquer uma das formas
+pela lista acima, o que remove os 24 caminhos que não são mais carregados na
+inicialização, e `apothem uninstall` remove todos eles. As suas próprias
+entradas de `instructions` são mantidas em todos os casos.
 
 ## Verificação
 

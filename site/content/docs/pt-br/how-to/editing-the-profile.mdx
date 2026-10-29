@@ -2,7 +2,7 @@
 title: "Editar o perfil"
 description: "Altere o perfil compartilhado e rematerialize todos os harnesses instalados."
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,6 +32,16 @@ O perfil é um único documento YAML. Suas chaves de nível superior:
   `continuous_execution`, `learning_loop`), cada flag desligada por padrão.
 - `harnesses` — sobrescritas por harness indexadas pelo id do harness.
 - `exclude_harnesses` — ids de harnesses ignorados por comandos em lote (`--harness all`).
+- `mcp_servers` — definições de servidores MCP indexadas pelo nome do servidor.
+- `agent_mcp_servers` — por nome de auxiliar, os servidores MCP que esse auxiliar pode chamar
+  (veja [Dar a um auxiliar acesso a servidores MCP](/docs/reference/mcp#dar-a-um-auxiliar-acesso-a-servidores-mcp)).
+  Vazio por padrão, então nenhum auxiliar alcança uma ferramenta MCP.
+- `workspace` — onde o Apothem mantém seu diretório de trabalho compartilhado
+  (`directory_name`, `scope`).
+- `schema_version` — versão opcional do esquema do perfil; um perfil sem ela é
+  lido como versão 1.
+
+Todos os campos estão listados em [Campos do perfil](/docs/reference/profile-fields).
 
 ## Passos
 

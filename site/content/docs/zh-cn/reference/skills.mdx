@@ -2,7 +2,7 @@
 title: "技能"
 description: "存放在 SKILL.md 文件中的可复用、可检测的技术，带有检测信号、流程，以及面向计划套件与生态系统审计的强制执行钩子。"
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,7 +34,8 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 | 工具 | 安装会更改什么 |
 | --- | --- |
 | Claude Code（安装与插件） | 将 `userInvocable` 重命名为 `user-invocable`，即 Claude Code 读取的键。Claude Code 会忽略驼峰式的键，因此如果不重命名，标记为 `userInvocable: false` 的技能仍会显示在 `/` 菜单中。 |
-| Codex | 保持 `SKILL.md` 不变，并在源文件设置了 `disable-model-invocation: true` 的每个技能旁边写入带有 `policy.allow_implicit_invocation: false` 的 `agents/openai.yaml`，因为 Codex 会忽略该键。 |
+| 共享的用户级技能文件夹：`~/.agents/skills/`（由 Codex、Cursor、GitHub Copilot、Windsurf 和 Zed 写入）以及 `~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/` | 写入这些文件夹之一的每次安装都使用同一种形式，因此各次安装绝不会相互改写对方的文件。它将 `userInvocable` 重命名为 `user-invocable`，把 `version`、`updated`、`archetype` 和 `portability` 移入末尾一个由带引号字符串组成的 `metadata:` 映射，并在源文件设置了 `disable-model-invocation: true` 的每个技能旁边写入带有 `policy.allow_implicit_invocation: false` 的 `agents/openai.yaml`，因为 Codex 会忽略该键，并且无论是否由 Codex 适配器写入，它都会读取 `~/.agents/skills/`。被包装为技能的命令完整保留其正文，并以一条固定的说明开头，该说明指明规则与模板文件夹 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`。剩下的顶层键为 `name`、`description`、`user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 和 `metadata`。 |
+| Qwen Code | 将以逗号分隔的 `allowed-tools` 字符串改写为 `allowedTools` 列表，每行一个 YAML 条目，因为 `Qwen Code` 只读取驼峰式的键并要求其为列表。每个条目都保留源文件中的拼写，包括诸如 `Bash(git status *)` 之类的模式。其他所有键以及技能正文均原样安装。 |
 | 其他工具 | 不作更改。 |
 
 `skill.schema.json` 接受用户可调用性标志的任一种拼写，并要求恰好使用其中一种。

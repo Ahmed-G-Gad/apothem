@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "72bf51d743f95bc8"
+sourceHash: "b1b8b4918d7d754d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,204 @@ apothem install --harness github-copilot --project /path/to/project
 ```
 
 Adapter menurunkan berkas instruksi proyek dari profil bersama Anda dan dari
-permukaan aturan dan tata kelola Apothem bersama.
+permukaan aturan dan tata kelola Apothem bersama, menulis helper Apothem sebagai
+profil helper Copilot di dalam proyek (lihat [Profil helper](#profil-helper)),
+dan mendaftarkan dua hook (lihat [Hook](#hook)).
 
-**Berkas yang ditulis:** `<project>/.github/copilot-instructions.md`
+Adapter juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
+
+**Berkas yang ditulis:**
+
+- `<project>/.github/copilot-instructions.md`, berkas instruksi.
+- `<project>/.github/agents/<name>.agent.md` untuk setiap helper Apothem, di dalam proyek.
+- `<project>/.github/hooks/apothem.json`, berkas hook, di dalam proyek. Berkas hook milik Anda di folder itu tidak disentuh.
+- `<project>/.apothem/support/github-copilot/hooks/`, skrip hook, di dalam proyek.
+- `~/.agents/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.agents/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas instruksi. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `github-copilot`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#root-bersama) mencantumkannya.
+- `--project` memilih berkas instruksi yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas instruksi, berkas profil helper di `.github/agents/`,
+  berkas hook `.github/hooks/apothem.json`, ditambah folder `.apothem/` yang
+  dibuat oleh setiap instalasi proyek, yang juga menampung skrip hook.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
+
+## Profil helper
+
+Copilot membaca profil helper dari `<project>/.github/agents/<name>.agent.md`, menurut
+[referensi GitHub untuk profil-profil ini](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
+Instalasi menulis satu berkas per helper Apothem ke folder tersebut. Instalasi
+ini hanya untuk proyek dan tidak menulis folder `~/.copilot/agents/`.
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. Copilot mewajibkan deskripsi. |
+| `tools` | Alat yang boleh dipakai helper, sebagai daftar alias alat Copilot, misalnya `["read", "search", "execute"]`. |
+
+Kunci `tools` Copilot adalah daftar izin berisi alias, dan Copilot tidak memiliki
+kunci yang menolak alat. Jadi alat yang diizinkan dan alat yang ditolak bagi
+helper digabungkan ke dalam satu daftar itu:
+
+| Alias Copilot | Mencakup | Ditulis untuk helper yang diizinkan memakai |
+| --- | --- | --- |
+| `read` | Read, NotebookRead | `Read` |
+| `search` | Grep, Glob | `Grep` atau `Glob` |
+| `edit` | Edit, MultiEdit, Write, NotebookEdit | `Write`, `Edit` atau `MultiEdit` |
+| `execute` | Bash, PowerShell | `Bash` atau `PowerShell` |
+| `web` | WebSearch, WebFetch | `WebSearch` atau `WebFetch` |
+| `todo` | TodoWrite | `TodoWrite` |
+
+Copilot memiliki satu alias lagi, yaitu alias yang memungkinkan helper memulai
+helper lain; tidak ada helper Apothem yang diizinkan melakukan itu, sehingga
+alias itu tidak pernah ditulis. Sebuah alias tidak dicantumkan ketika helper
+menolak alat apa pun yang dicakupnya, karena alias itu akan membiarkan helper
+memakai alat tersebut. Alat tanpa alias (misalnya `Monitor`) tidak dicantumkan.
+Alat dengan pola, seperti `Bash(git status)`, tidak memiliki bentuk alias:
+sebagai alat yang diizinkan, alat itu tidak dicantumkan, dan sebagai alat yang
+ditolak, alat itu menolak seluruh alat. Helper yang tidak dapat menyunting
+berkas mempertahankan batas itu: helper itu tidak pernah mendapatkan `edit`.
+Jika setiap alat dalam daftar sebuah helper tidak dicantumkan, berkas itu
+menyatakan `tools: []`, yang tidak memberi helper alat apa pun, alih-alih
+menghilangkan kunci itu, yang akan memberinya setiap alat.
+
+Instalasi tidak menulis kunci `model`, sehingga helper memakai model default,
+dan tidak menulis kunci lain yang didokumentasikan Copilot (`target`,
+`disable-model-invocation`, `user-invocable`, `mcp-servers`, `metadata`), batas
+giliran, maupun kunci `version`, `updated` dan `portability` milik Apothem.
+
+Hal yang perlu diketahui:
+
+- `.github/agents/` adalah bagian dari repositori Anda. Rekan tim dan layanan
+  pengodean cloud Copilot membaca berkas yang sama, jadi commit berkas itu
+  bersama proyek atau cantumkan `.github/agents/` di `.gitignore`; Apothem tidak
+  memilihkannya untuk Anda.
+- Layanan pengodean cloud tidak menghormati alias `web` dan `todo`. Alias `web`
+  mencakup pencarian web sekaligus pengambilan halaman, sehingga
+  `citation-auditor`, `fact-checker` dan `research-scout` dapat membaca dan
+  mencari berkas di sana tetapi tidak dapat mencari di web maupun mengambil
+  halaman.
+- Copilot CLI juga membaca `.claude/agents/` milik repositori, tetapi tidak
+  `~/.claude/agents/`, sehingga instalasi Claude Code tidak menjangkau Copilot.
+- Berkas milik Anda yang dinamai seperti helper Apothem (`<name>.agent.md`)
+  disimpan di bawah `~/.apothem/backups/` lalu diganti. Pencopotan tidak
+  mengembalikannya. Berkas dengan nama lain tidak pernah disentuh. Dokumentasi
+  Copilot tidak menyebutkan apa yang terjadi ketika folder memuat `<name>.md`
+  sekaligus `<name>.agent.md`.
+- Apothem belum memastikan apakah Copilot mengutamakan `.github/agents/` atau
+  `.claude/agents/` untuk satu nama, atau bagaimana layanan pengodean cloud dan
+  VS Code memperlakukan kunci frontmatter yang tidak dicantumkannya.
+
+## Hook
+
+Copilot menjalankan hook dari berkas JSON di `<project>/.github/hooks/`, menurut
+[referensi hook Copilot](https://docs.github.com/en/copilot/reference/hooks-reference).
+Instalasi menulis satu berkas di sana, `apothem.json` (versi 1), dengan dua hook:
+
+| Peristiwa | Apa yang dijalankan |
+| --- | --- |
+| `sessionStart` | Bootstrap sesi: metadata sesi, indeks skill, ringkasan memori dan plan, serta postur tetap, ditambahkan ke konteks model. |
+| `postToolUse` (setiap alat) | Pelacak pemadatan proaktif. Pelacak ini menghitung aktivitas dan, paling banyak dua kali per siklus pemadatan, memberi tahu model untuk menyimpan keadaannya atau memadatkan. Selain itu, pelacak ini diam. |
+
+Keduanya menambahkan konteks bagi model. Tidak satu pun memblokir pemanggilan
+alat atau sesi.
+
+Apothem tidak mendaftarkan penjaga `preToolUse` di Copilot. Untuk `preToolUse`
+Copilot hanya membaca bidang izin dan input alat yang ditulis ulang, tidak
+pernah `additionalContext` (bidang yang dipakai penjaga Apothem untuk
+berbicara). Penjaga yang didaftarkan di sana akan memakan satu permulaan proses
+pada setiap pemanggilan alat tanpa menyampaikan apa pun, sehingga penjaga tulis,
+sunting dan shell, pemeriksaan `AskUserQuestion` dan protokol akhir sesi tetap
+berada di alat yang menyampaikannya. Hook memakai nama peristiwa camelCase
+Copilot, karena referensi mencantumkan bidang keluaran untuk nama-nama itu;
+apakah Copilot membaca `additionalContext` dari peristiwa PascalCase tidak
+didokumentasikan.
+
+**Ke mana berkas ditulis**
+
+| Berkas | Isinya |
+| --- | --- |
+| `<project>/.github/hooks/apothem.json` | Kedua pendaftaran hook. Apothem memiliki satu berkas ini. |
+| `<project>/.apothem/support/github-copilot/hooks/` | Skrip dispatcher, helper-nya, dan berkas pesannya. |
+
+Setiap hook memiliki perintah `bash` dan perintah `powershell`. Keduanya
+menjalankan dispatcher yang sama; perintah `powershell` memiliki operator
+panggilan (`&`) di depannya, yang diperlukan PowerShell sebelum jalur program
+yang dikutip. Perintah `bash` terlihat seperti ini, dengan interpreter dan jalur
+proyek Anda menggantikan kedua jalur tersebut:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+```
+
+`--contract copilot` membuat dispatcher membaca input camelCase Copilot dan
+mencetak `{"additionalContext": ...}`, yang merupakan apa yang dibaca Copilot
+untuk kedua peristiwa ini.
+
+**Commit dengan hati-hati, dan agen cloud.** `.github/hooks/` adalah bagian dari
+repositori Anda, dan layanan pengodean cloud Copilot membacanya. Perintah-perintah
+itu memuat interpreter yang ditemukan Apothem saat dijalankan dan jalur absolut
+proyek, dan skripnya berada di `.apothem/`, yang diabaikan oleh cuplikan
+`.gitignore` proyek. Di mesin lain mana pun, dan di layanan cloud (yang hanya
+menjalankan perintah `bash`), perintah itu tidak menemukan apa pun untuk
+dijalankan. Copilot mencatat kegagalan itu dan eksekusi tetap berjalan, karena
+hook `sessionStart` atau `postToolUse` yang gagal tidak memblokir. Tambahkan
+`.github/hooks/apothem.json` ke `.gitignore`, atau commit berkas itu hanya untuk
+tim yang memakai tata letak yang sama. Instalasi tidak menyunting `.gitignore`
+dan mencetak hal ini sebagai catatan.
+
+**Hook milik Anda.** Berkas hook milik Anda di `.github/hooks/` tidak pernah
+dibaca atau diubah. Hook yang Anda tambahkan ke `apothem.json` itu sendiri tetap
+ada: pembaruan dan pencopotan hanya mengganti atau menghapus entri yang
+perintahnya menjalankan dispatcher Apothem
+(`.apothem/support/github-copilot/hooks/dispatch.py` dengan `--contract copilot`,
+di jalur proyek mana pun perintah itu ditulis). Hook milik Anda yang hanya
+berbagi nama, atau yang menjalankan `python -m apothem.conformity.gate`, tidak
+pernah dianggap milik Apothem. Berkas yang bukan JSON valid disimpan di bawah
+`~/.apothem/backups/` dan diganti.
+
+**Jalur yang akan salah dibaca shell.** Jalur proyek atau interpreter yang
+mengandung `$`, backtick, tanda kutip ganda, atau backslash ditolak sebelum apa
+pun ditulis: di dalam perintah yang dikutip, jalur itu akan menjalankan berkas
+lain, atau merusak JSON tempat perintah itu ditulis. Galat menyebutkan jalur
+tersebut; pindahkan atau ganti nama proyek dan jalankan instalasi lagi. Spasi
+atau apostrof dalam jalur tidak masalah.
+
+**Mematikan hook.** Tetapkan `APOTHEM_HOOKS_DISABLE=1` di lingkungan tempat
+Copilot berjalan untuk membungkam hook Apothem, atau tetapkan
+`"disableAllHooks": true` di `apothem.json`, yang melewati satu berkas itu.
+
+Kontrak hook Local VS Code yang lebih lama (peristiwa dengan bidang `command`,
+`windows`, `linux` dan `osx`) adalah format berbeda yang tidak ditargetkan oleh
+berkas versi 1.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -43,7 +238,8 @@ sehingga bagian yang khusus untuk Anda berada di awal berkas.
 GitHub Copilot tidak mengekspos jalur instruksi global-pengguna berbasis berkas
 untuk dikelola oleh adapter ini. Apothem menargetkan berkas instruksi
 berlingkup proyek yang terdokumentasi dan membiarkan pengaturan pengguna
-tingkat IDE tetap menjadi milik operator.
+tingkat IDE tetap menjadi milik operator. Adapter menulis satu berkas hook,
+`.github/hooks/apothem.json`, dan tidak ada berkas lain di `.github/hooks/`.
 
 Di dalam repositori Apothem, `.github/copilot-instructions.md` adalah satu suara
 di antara permukaan instruksi asisten milik repositori tersebut. Dalam checkout
@@ -55,6 +251,16 @@ bertentangan dengan klaim yang dibuat `AGENTS.md`. Pemeriksaan ini tidak membaca
 berkas instruksi yang ditulis Apothem ke dalam proyek Anda. Gerbang ini bersifat
 advisori secara default: gerbang melaporkan temuan dan keluar dengan kode `0`.
 
+GitHub Copilot mencantumkan `~/.agents/skills/` di antara lokasi skill
+pribadinya, sehingga skill yang ditulis instalasi ada di mesin Anda untuk dimuat
+Copilot. Permukaan yang berjalan di GitHub, yaitu layanan pengodean cloud dan
+tinjauan kode, berjalan di tempat lain dan tidak melihat folder home Anda,
+itulah sebabnya berkas instruksi membawa disiplin-disiplin itu sendiri. Apothem
+belum memastikan bagaimana Copilot memperlakukan kunci header `SKILL.md` yang
+tidak dicantumkannya; skill membawa `user-invocable`,
+`disable-model-invocation`, `allowed-tools`, `argument-hint`, dan sebuah peta
+`metadata`.
+
 ## Verifikasi
 
 ```bash
@@ -64,10 +270,23 @@ apothem verify --harness github-copilot --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
-   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
-   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+2. Setiap target terkelola ada, termasuk folder `.github/agents/`; berkas
+   terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai.
+   Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang
+   cocok dengan profil tersebut. Untuk `.github/agents/`, yang diperiksa adalah
+   keberadaan folder tersebut, bukan keberadaan setiap berkas helper di
+   dalamnya; perintah
+   `apothem diff --harness github-copilot --project /path/to/project`
+   mencantumkan berkas helper yang hilang atau usang.
+   Berkas hook `.github/hooks/apothem.json` harus ada, tidak kosong, dapat
+   diurai sebagai JSON, dan memuat entri yang menjalankan dispatcher Apothem,
+   dan skrip hook harus berada di `.apothem/support/github-copilot/hooks/`.
+   Pemeriksaan tidak menjalankan hook.
+3. Setiap folder skill Apothem ada di tempatnya dengan sebuah `SKILL.md`,
+   instalasi mana pun yang menulisnya, dan tidak ada folder skill dengan nama
+   Apothem yang milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal
+   menyebutkan folder yang hilang atau asing.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -76,6 +295,12 @@ apothem update --harness github-copilot --project /path/to/project
 ```
 
 Menurunkan ulang berkas instruksi proyek dari status profil bersama saat ini.
+
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari berkas saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+Pembaruan menulis ulang berkas profil helper yang berbeda dari berkas saat ini, dan menambahkan yang hilang.
+Pembaruan juga menyegarkan skrip hook dan hook Apothem di `.github/hooks/apothem.json`,
+dengan mempertahankan hook milik Anda di berkas itu.
 
 ## Pencopotan
 
@@ -88,6 +313,24 @@ mempertahankan teks apa pun di luarnya. Berkas dihapus hanya ketika tidak ada
 lagi yang tersisa di dalamnya. Sebelum perubahan, salinan bertanda waktu dari
 berkas disimpan di bawah `~/.apothem/backups/`. YAML profil bersama dan mesin
 Apothem tidak terpengaruh.
+
+Pencopotan juga menghapus berkas profil helper yang ditulisnya di `<project>/.github/agents/`
+dan mempertahankan berkas lain di sana; folder itu dihapus ketika menjadi kosong.
+Pencopotan menghapus hook Apothem dari `<project>/.github/hooks/apothem.json`, mengenalinya
+dari jalur dispatcher dalam perintahnya, sehingga berfungsi tanpa catatan instalasi,
+dan mempertahankan hook milik Anda di berkas itu. Berkas itu dihapus ketika tidak ada lagi isi lain di
+dalamnya, dan berkas hook Anda yang lain tidak disentuh. Jika berkas itu memiliki komentar yang
+tidak dapat dibaca pencopotan, pencopotan membiarkan berkas itu apa adanya dan melaporkan hook
+sebagai dilewati, beserta alasannya; hapus entri Apothem secara manual. Skrip hook di
+`<project>/.apothem/support/github-copilot/hooks/` juga dihapus.
+Pencopotan menghapus folder skill yang ditulisnya di `~/.agents/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada lagi
+instalasi Apothem lain yang memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin masih memakainya. Dalam kasus itu pencopotan mempertahankan
+folder tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir
+menghapusnya. Berkas yang Anda tambahkan ke folder tersebut tetap ada, dan folder
+yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
 
 ## Gerbang konformitas
 
@@ -107,6 +350,11 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness github-copilot --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness github-copilot --project /path/to/project`, lalu verifikasi lagi |
+| Copilot tidak mencantumkan satu pun helper Apothem | Periksa bahwa `.github/agents/` memuat berkas `.agent.md` dan bahwa berkas itu ada di branch yang Anda pakai. Jalankan `apothem diff --harness github-copilot --project /path/to/project`: baris tertunda untuk folder `.github/agents` berarti berkas helper hilang atau usang, jadi jalankan `apothem update --harness github-copilot --project /path/to/project`. `apothem verify` bukan pengujian untuk hal ini: perintah itu lolos ketika `.github/agents/` ada, bahkan tanpa berkas helper di dalamnya |
+| Hook Apothem tidak berjalan | Periksa bahwa `.github/hooks/apothem.json` ada di branch yang Anda pakai dan bahwa `.apothem/support/github-copilot/hooks/` ada di mesin ini; perintah-perintah itu memuat interpreter dan jalur proyek dari mesin yang menjalankan instalasi, jadi jalankan `apothem install --harness github-copilot --project /path/to/project` di setiap mesin. Layanan pengodean cloud Copilot hanya menjalankan perintah `bash`, tanpa interpreter di jalur itu |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness github-copilot --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness github-copilot --project /path/to/project` |
 
 ## Tombol konfigurasi

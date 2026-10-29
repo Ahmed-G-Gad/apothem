@@ -2,7 +2,7 @@
 title: "Convergence des conventions entre environnements"
 description: "Comment Apothem maintient un seul flux de travail de l'opérateur cohérent à travers dix-sept environnements, malgré des formats de configuration et des surfaces d'enforcement divergents selon les fournisseurs."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,13 +23,15 @@ environnement attend.
 
 | Forme | Environnements (exemples) | Ce qu'Apothem émet |
 | --- | --- | --- |
-| Fichiers de règles `.md` plats dans un répertoire | claude-code, windsurf, trae | Fichiers de règles bruts copiés dans l'arbre de règles de l'environnement |
-| Règles `.mdc` de Cursor | cursor | Un ensemble de règles `.mdc` portant l'en-tête de métadonnées que Cursor attend |
+| Fichiers de règles `.md` plats dans un répertoire | claude-code | Fichiers de règles bruts copiés dans l'arbre de règles de l'environnement |
+| Un fichier de règles fusionné dans un répertoire de règles | windsurf, trae | Un fichier `apothem-rules.md` unique portant le frontmatter d'activation que lit l'environnement |
+| Règles `.mdc` de Cursor | cursor | Un fichier de règles `.mdc` unique portant l'en-tête de métadonnées que Cursor attend |
 | Document d'instructions à fichier unique | codex, gemini-cli, github-copilot, zed | Un document concaténé —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— assemblé à partir de l'ensemble de règles du profil |
 
 Un environnement à `.md` plat prend les règles telles quelles. Un environnement
-`.mdc` a besoin de l'en-tête de métadonnées de Cursor enroulé autour de chaque
-règle. Un environnement à fichier unique a besoin que tout l'ensemble de règles
+à fichier fusionné prend un fichier de règles unique dont le frontmatter
+détermine quand les règles s'appliquent. Un environnement `.mdc` a besoin de
+l'en-tête de métadonnées de Cursor en tête de son fichier de règles. Un environnement à fichier unique a besoin que tout l'ensemble de règles
 soit aplati en un seul document avec un ordre de sections stable, afin que
 l'opérateur lise les mêmes conventions dans la même séquence quelle que soit la
 cible. Le profil neutre est la source unique de vérité ; la divergence vit

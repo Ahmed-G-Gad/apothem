@@ -2,7 +2,7 @@
 title: "Быстрый старт"
 description: "Установите Apothem, составьте профиль, материализуйте первое окружение и проверьте его — обзор с готовыми к копированию командами и ожидаемым выводом."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,14 +108,39 @@ apothem profile show --json
 
 Заготовка использует фиктивные данные идентичности-заполнители, и её безопасно
 редактировать до того, как вы установите какой-либо вывод окружения.
-`show --json` читает её обратно и сообщает проверенный профиль:
+`show --json` читает её обратно и сообщает проверенный профиль со всеми
+заполненными значениями по умолчанию, начиная с `schema_version`. Команда
+выводит его одной строкой; здесь он развёрнут:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -142,9 +167,11 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Адаптеры уровня проекта пишут внутрь проекта, а не в ваш домашний каталог,
-поэтому им нужен `--project PATH`. Предварительно просмотрите любую установку
-без записи файлов с помощью `--dry-run`:
+Адаптеры уровня проекта пишут свой файл правил внутрь проекта, поэтому им
+нужен `--project PATH`; семь из них также записывают навыки и общие правила в
+папки в вашем домашнем каталоге, и `--project` не меняет, куда они попадают.
+Предварительно просмотрите любую установку без записи файлов с помощью
+`--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

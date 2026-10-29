@@ -2,7 +2,7 @@
 title: "Das Profil bearbeiten"
 description: "Ändere das gemeinsame Profil und materialisiere jeden installierten Harness erneut."
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,16 @@ Das Profil ist ein einzelnes YAML-Dokument. Seine Schlüssel der obersten Ebene:
 - `harnesses` — Überschreibungen je Harness, indexiert nach Harness-ID.
 - `exclude_harnesses` — Harness-IDs, die von Stapelbefehlen (`--harness all`)
   übersprungen werden.
+- `mcp_servers` — MCP-Server-Definitionen, indexiert nach Servername.
+- `agent_mcp_servers` — je Helfername die MCP-Server, die dieser Helfer aufrufen
+  darf (siehe [Einem Helfer Zugriff auf MCP-Server geben](/docs/reference/mcp#einem-helfer-zugriff-auf-mcp-server-geben)).
+  Standardmäßig leer, sodass kein Helfer ein MCP-Werkzeug erreicht.
+- `workspace` — wo Apothem sein gemeinsames Arbeitsverzeichnis ablegt
+  (`directory_name`, `scope`).
+- `schema_version` — optionale Version des Profilschemas; ein Profil ohne sie
+  wird als Version 1 gelesen.
+
+Jedes Feld ist unter [Profilfelder](/docs/reference/profile-fields) aufgeführt.
 
 ## Schritte
 

@@ -2,7 +2,7 @@
 title: "Diagrama do pipeline de CI/CD"
 description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada lançamento."
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,7 +91,9 @@ flowchart LR
 - **Faixa de segurança** — gitleaks em `ci.yml` detecta credenciais incluídas em
   commits por acidente. A auditoria de licenças (`license-audit.yml`) falha
   quando a licença de uma dependência está fora da sua lista de permissões. Ela
-  roda semanalmente e quando arquivos de dependência ou de licença mudam.
+  roda semanalmente e quando arquivos de dependência ou de licença mudam. O
+  gate REUSE (`reuse.yml`) roda em cada mudança e falha quando um arquivo não
+  tem uma linha de licença ou quando uma expressão SPDX não pode ser analisada.
   `release.yml` gera o SBOM de cada release marcada com tag.
 - **Faixa de publicação** — os fluxos de trabalho de release são disparados por
   pushes de tags; os publicadores do npm e do VS Code também podem ser

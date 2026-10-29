@@ -2,7 +2,7 @@
 title: "종속성 고정 매니페스트"
 description: "Python 런타임 범위, 개발 도구, 릴리스 도구 잠금 파일, 각 빌드 표면에 대해 비준된 버전 하한을 다루는 종속성 선언 정책."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,16 +14,18 @@ sourceHash: "bb9b1e385a680545"
 Apothem은 작은 런타임 종속성 집합과 더 큰 개발·감사·릴리스·문서 도구 체인을 갖춘
 Python CLI입니다. 런타임 종속성은 `pyproject.toml`에서 보수적인 하한을 사용합니다.
 웹사이트는 `site/package-lock.json`을 커밋합니다. GitHub Actions는 버전 주석과 함께
-불변 SHA로 고정되며 Renovate가 버전을 올립니다.
+불변 SHA로 고정되며 Dependabot이 버전을 올립니다.
 
 | 구분 | 선언 | 잠금 정책 |
 |---|---|---|
 | 런타임 Python 종속성 | `pyproject.toml`의 `[project.dependencies]` | 하한 범위; 커밋되는 Python 런타임 잠금 없음 |
 | 개발 / 보안 도구 | `[project.optional-dependencies]` extras | 하한 범위; CI는 현재 일치하는 버전을 설치 |
 | 릴리스 도구 | 릴리스 워크플로용 `scripts/release/requirements-build-linux.txt`; 로컬 빌드용 `[project.optional-dependencies]`의 `release` extra | 릴리스 워크플로용은 해시 잠금이며 릴리스 도구 클로저에서 생성됨. `release` extra는 하한 범위임 |
-| CI 전용 도구 | `.github/workflows/*.yml` | 워크플로 전용 pip 도구는 정확한 고정을 사용(`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| CI 전용 도구 | `.github/workflows/*.yml` | 워크플로 전용 pip 도구는 정확한 고정을 사용(`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | 문서 사이트 | `site/package.json` | `site/package-lock.json`이 커밋되고 `npm ci`가 사용 |
-| GitHub Actions | 버전 주석이 있는 SHA 고정 `uses:` 참조 | Renovate가 업데이트를 제안; 예외는 `action-pinning-exempt:` 마커를 지님 |
+| VS Code 패키저 | `tools/vsce/package.json` | `tools/vsce/package-lock.json`이 커밋됨; 릴리스 및 게시 작업은 `npm ci --ignore-scripts`를 실행 |
+| channel-smoke 하니스 CLI | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json`이 커밋되고 `npm ci`가 사용 |
+| GitHub Actions | 버전 주석이 있는 SHA 고정 `uses:` 참조 | Dependabot이 주간 업데이트를 제안; 예외는 `action-pinning-exempt:` 마커를 지님 |
 
 ## 릴리스 비준
 
@@ -66,5 +68,27 @@ pip freeze > requirements.dev.lock
 - **커밋되는 Node 잠금을 쓰는 이유는?** 웹사이트는 배포된 정적 산출물입니다. 잠금
   파일은 그 공개 표면에 대해 결정론적 `npm ci` 빌드를 제공합니다.
 - **SHA 고정 Actions를 쓰는 이유는?** 태그는 가변적이지만 SHA는 불변입니다.
-  Renovate는 고정된 SHA를 업데이트하고, 릴리스 준비 게이트는 의도적인 보류를 모두
-  기록합니다.
+  Dependabot은 SHA 상향을 제안하고 각 버전 주석을 다시 쓰며, 릴리스 준비 게이트는
+  의도적인 보류를 모두 기록합니다.
+- **업데이트 봇이 건드리지 않는 것.** Dependabot 버전 업데이트
+  (`.github/dependabot.yml`)는 GitHub Actions 고정, 웹사이트 잠금 파일, vsce 패키저
+  잠금 파일(`tools/vsce`), channel smoke가 설치하는 하니스 CLI 잠금 파일
+  (`tools/channel-smoke`), pre-commit 훅을 다룹니다. `pyproject.toml`의 런타임 하한,
+  해시 잠금된 릴리스 요구 사항, `src/apothem/_vendor/vendor.txt`의 벤더링된 클로저,
+  `pyproject.toml`과 보조를 맞춰 고정된 pre-commit 훅은 수동으로 갱신합니다. 고정
+  하나만 올리면 그것과 일치해야 하는 파일들이 깨지기 때문입니다.
+  웹사이트의 `@types/node` 메이저 버전은 Node 하한(`engines`와 `.nvmrc`, Node 22)을
+  따르므로, Dependabot은 마이너 및 패치 업데이트만 제안합니다. 그 메이저 버전은
+  하한과 함께 올리세요.
+  버전 업데이트는 npm `overrides` 블록을 건드리지 않습니다. Dependabot 보안
+  업데이트는 여전히 모든 매니페스트를 다루므로, 보안 풀 리퀘스트가 이러한 고정 중
+  하나를 제안하거나 override를 옮길 수 있습니다. 수동으로 조정하거나 닫으세요.
+- **Dependabot 풀 리퀘스트 병합.** 저장소의 스쿼시 기본값은 PR 제목을 사용합니다.
+  일부 Dependabot 제목, 주로 디렉터리를 명시하는 그룹화된 제목은 72자 스쿼시 제목
+  한도를 넘깁니다. PR Title 검사가 이를 지적하며, 제목을 바꾸면 해결됩니다. 도구
+  잠금 파일을 변경하는 풀 리퀘스트는 `ci.yml` 작업을 실행하지 않으므로, npm audit
+  워크플로가 이를 감사하고 설치하며, vsce 잠금 파일에 대해서는 VS Code 확장을
+  패키징하고 vsce 릴리스 테스트를 실행하고, channel-smoke 잠금 파일에 대해서는
+  channel smoke 워크플로가 실행됩니다. Markdown Lint 워크플로는 pre-commit 훅 풀
+  리퀘스트에서 markdownlint 훅을 실행합니다. 다른 훅은 CI에서 실행되지 않으므로,
+  병합하기 전에 해당 브랜치에서 `pre-commit run --all-files`를 실행하세요.

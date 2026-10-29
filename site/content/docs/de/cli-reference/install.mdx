@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "838431066489b516"
+sourceHash: "16be1a92f6de53b3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,10 +43,11 @@ anzuwenden. Unter `--json` wird das Anlegen als `warnings`-Eintrag mit
 
 ## Wirkungsradius-Vorschau
 
-`install --harness all` fächert sich in gemischte Geltungsbereiche auf: Adapter mit Projekt-Geltungsbereich schreiben unter die angegebene `--project`-Wurzel, während Adapter mit Benutzer-Geltungsbereich unter Ihr Home-Verzeichnis schreiben — außerhalb dieser Wurzel. Bevor die Installation eine Datei schreibt, gibt der Befehl die konkreten Ziele aus, gruppiert unter zwei Überschriften: die Ziele innerhalb der Projektwurzel und die Ziele unter Ihrem Home-Verzeichnis. Die einzige Ausnahme ist `--clean`: Sein Schritt für einen sauberen Neuanfang läuft vor dieser Vorschau, schreibt eine Sicherung und entfernt vorherige Ziele, wie unten beschrieben.
+`install --harness all` fächert sich in gemischte Geltungsbereiche auf: Adapter mit Projekt-Geltungsbereich schreiben unter die angegebene `--project`-Wurzel, während Adapter mit Benutzer-Geltungsbereich unter Ihr Home-Verzeichnis schreiben — außerhalb dieser Wurzel. Bevor die Installation eine Datei schreibt, gibt der Befehl die konkreten Ziele aus, gruppiert unter zwei Überschriften: die Ziele innerhalb der Projektwurzel und die Ziele unter Ihrem Home-Verzeichnis. Eine dritte Überschrift listet die gemeinsamen Ordner in Ihrem Home-Verzeichnis auf, die die Adapter mit Projekt-Geltungsbereich außerhalb von `--project` schreiben: den Skills-Ordner und `~/.config/apothem/` (siehe [Ordner in Ihrem Home-Verzeichnis](#ordner-in-ihrem-home-verzeichnis)). Die einzige Ausnahme ist `--clean`: Sein Schritt für einen sauberen Neuanfang läuft vor dieser Vorschau, schreibt eine Sicherung und entfernt vorherige Ziele, wie unten beschrieben.
 
-Wenn die Auswahl außerhalb der Projektwurzel schreibt, schützt eine interaktive
-Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht
+Wenn die Auswahl außerhalb der Projektwurzel schreibt, sei es in den Ordner eines
+Adapters im Home-Verzeichnis oder in einen gemeinsamen Ordner, schützt eine
+interaktive Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht
 interaktive Shell (kein TTY), `--dry-run` und `--format json` fahren jeweils ohne
 Nachfrage fort. Nur `--dry-run` schreibt nichts; `--format json` überspringt die
 Vorschau und die Bestätigungsabfrage, führt die Schreibvorgänge aber dennoch aus.
@@ -56,6 +57,57 @@ mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter
 `~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese
 Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage
 abgelehnt wird.
+
+## Ordner in Ihrem Home-Verzeichnis
+
+Sieben Adapter mit Projekt-Geltungsbereich schreiben Apothems Skills sowie die
+Regeln und Vorlagen, auf die sich die Skills beziehen, in Ordner in Ihrem
+Benutzer-Home:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- `--project` wählt die Regeldatei und das Projekt aus, zu dem die Installation
+  gehört. Es ändert nicht, wohin die Skills gehen: Eine Installation mit
+  `--project A` und eine mit `--project B` schreiben dieselben Ordner.
+- Jede Installation, die einen Ordner benennt, schreibt dieselben Dateien. Eine
+  zweite Installation findet sie vor und meldet `unchanged`, und die Reihenfolge,
+  in der Sie installieren, spielt keine Rolle.
+- Die Home-Ordner werden vor allem anderen im Projekt geschrieben. Schlägt dort
+  ein Schreibvorgang fehl, bricht die Installation des Adapters mit dem Fehler ab,
+  und das Projekt bleibt unverändert. Der Fehler benennt den Pfad, der im Weg
+  ist, zum Beispiel eine Datei namens `~/.agents` dort, wo der Ordner hingehört.
+- Jeder Skill-Ordner wird in einen versteckten Ordner `.<name>.apothem-staging`
+  daneben geschrieben und nach Abschluss an seinen Platz umbenannt, sodass ein
+  fehlgeschlagener oder unterbrochener Schreibvorgang niemals einen halb
+  geschriebenen Skill-Ordner unter seinem endgültigen Namen hinterlässt. Führen
+  Sie die Installation erneut aus, um sie abzuschließen; sie ersetzt einen
+  übrig gebliebenen Staging-Ordner.
+- Ein symbolischer Link auf oder oberhalb eines dieser Ordner, wie ihn
+  Dotfile-Manager für `~/.config` oder `~/.agents` anlegen, wird verfolgt, wenn er
+  an eine Stelle innerhalb Ihres Home-Verzeichnisses führt. Ein Link, der Ihr
+  Home-Verzeichnis verlässt, bricht die Installation mit
+  `target escapes the allowed materialization root` ab, ebenso ein Link innerhalb
+  eines Skill-Ordners.
+- Die Installation fügt Ihrem Repository keine Skill- oder Regeldatei hinzu. Das
+  Projekt erhält die Regeldatei des Adapters sowie den Datenordner `.apothem/`,
+  den jede Projektinstallation anlegt.
+- Ein Skill-Ordner, der den Namen eines Apothem-Skills trägt und den Apothem
+  nicht geschrieben hat, wird übersprungen. Die Installation gibt eine
+  `Warning:`-Zeile aus, und der `--format json`-Umschlag trägt einen
+  `warnings`-Eintrag mit `"outcome": "warning"` und
+  `"operation": "skill_conflict"`, der den Ordner benennt. Benennen Sie den
+  Ordner um oder verschieben Sie ihn und führen Sie dann
+  [`update`](/docs/cli-reference/update) aus.
+- Jede solche Installation, Aktualisierung und jeder solche Dry-Run gibt einen
+  `Note:` aus, der die Ordner benennt, die außerhalb von `--project` geschrieben
+  werden. Im JSON-Umschlag ist er ein `warnings`-Eintrag mit
+  `"operation": "user_level_write"` und einer `paths`-Liste.
 
 ## Hinweise zu Fähigkeiten
 
@@ -74,11 +126,43 @@ Installation und Aktualisierung geben außerdem Empfehlungshinweise als
 `Note:`-Zeilen aus. Ein Empfehlungshinweis ändert niemals, was die Installation
 schreibt. Wenn eine Installation in ein gemeinsames Wurzelverzeichnis schreibt,
 also einen Pfad, den auch andere Werkzeuge laden (zum Beispiel den Skills-Ordner
-`~/.agents/skills/`), benennt der Hinweis diese Werkzeuge. Wenn eine Installation
-auf ein Werkzeug zielt, das bereits Apothem-Inhalte aus dem gemeinsamen
-Wurzelverzeichnis einer anderen Installation lädt, benennt der Hinweis diese
-Installation. Im `--format json`-Umschlag ist jeder Empfehlungshinweis ein
-`warnings`-Eintrag mit `"outcome": "advisory"` und `"operation": "shared_root"`.
+`~/.agents/skills/`), benennt der Hinweis diese Werkzeuge und setzt ein Werkzeug,
+das den Pfad nur unter einer Bedingung lädt, in Klammern, zum Beispiel
+`Open-Claw (only under its default state
+directory)`. Eine Installation, die einen Ordner schreibt, den auch andere
+Installationen schreiben (die Rolle `holder`), teilt mit, dass der Ordner
+bestehen bleibt, bis die letzte Apothem-Installation, die ihn verwendet,
+deinstalliert wird, und benennt die Installationen, die ihn derzeit verwenden.
+Wenn eine Installation auf ein Werkzeug zielt, das bereits Apothem-Inhalte aus dem
+gemeinsamen Wurzelverzeichnis einer anderen Installation lädt, benennt der
+Hinweis die Installation, die sie dort abgelegt hat: den registrierten Eigentümer,
+solange er den Ordner noch verwendet, andernfalls die älteste Installation, die
+ihn verwendet. Im `--format json`-Umschlag ist jeder Empfehlungshinweis ein
+`warnings`-Eintrag mit `"outcome": "advisory"` und `"operation": "shared_root"`;
+seine `role` ist `owner`, `holder` oder `reader`, `holders` listet die
+Installationen auf, die den Ordner verwenden, und `owner_of_record` benennt den
+eingetragenen Eigentümer.
+
+Eine Installation, die Hooks registriert, gibt außerdem Hinweise zur Hook-Datei
+aus. Ein `hook_review`-Empfehlungshinweis benennt den Schritt, den das Werkzeug
+benötigt, bevor es die Hooks ausführt (einen Neustart und eine Überprüfung oder
+das Vertrauen in den Arbeitsbereich), oder die Gefahr einer Hook-Datei, die ein
+Repository eincheckt und die den Interpreter dieses Rechners benennt. Ein
+`hook_import`-Empfehlungshinweis erscheint für ein Werkzeug, das auch die Hooks in
+den Einstellungsdateien von Claude Code ausführt, etwa denen, die die
+Apothem-Installation für Claude Code schreibt, und benennt den eigenen Schalter
+des Werkzeugs, mit dem sich dieser Import abschalten lässt, sowie das, was der
+Schalter außerdem unterbindet. Jeder ist ein `warnings`-Eintrag mit
+`"outcome": "advisory"`, dem `harness`, dem `path` der Hook-Datei und einer
+`message`.
+
+Ein Hook-Befehl setzt den Projektpfad und den Interpreterpfad in doppelte
+Anführungszeichen, die `sh`, Git Bash und PowerShell jeweils lesen. Ein Pfad, der
+`$`, einen Backtick, ein doppeltes Anführungszeichen oder einen Backslash enthält,
+würde den Befehl eine andere Datei ausführen lassen; daher bricht die Installation
+(und `--dry-run`) mit einem Fehler ab, der den Pfad benennt, und schreibt nichts;
+verschieben oder benennen Sie das Projekt um und führen Sie den Befehl erneut aus.
+Ein Leerzeichen oder ein Apostroph in einem Pfad ist unproblematisch.
 
 Die MCP-Server des Profils erhalten drei Empfehlungshinweise, die jeweils das
 Profilfeld benennen:
@@ -112,6 +196,14 @@ Kommentare, nachgestellte Kommas und JSON5-Syntax verloren gingen. Daher gilt:
   Schlüssel, die die Installation hinzufügen würde, sodass Sie die Datei in
   reines JSON oder YAML umwandeln oder diese Schlüssel von Hand hinzufügen und den
   Befehl erneut ausführen können.
+- Wenn ein Schlüssel, den die Installation mit einer Zuordnung oder einer Liste
+  füllt (zum Beispiel `skills.external_dirs` in `config.yaml`), in Ihrer Datei
+  einen skalaren Wert oder die jeweils andere Containerform enthält, schreibt die
+  Installation für diesen Harness nichts und endet mit Exit-Code 1 und demselben
+  Fehlercode, weil das Füllen des Schlüssels Ihren Wert verwerfen würde. Der
+  Fehler benennt den Schlüssel; ändern Sie ihn in die genannte Form oder entfernen
+  Sie ihn und führen Sie den Befehl erneut aus. Ein Schlüssel, den Sie leer
+  gelassen haben (`skills:` ohne etwas darunter), wird gefüllt.
 
 ## Optionen
 

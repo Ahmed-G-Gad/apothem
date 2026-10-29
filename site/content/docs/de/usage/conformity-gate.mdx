@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,27 @@ sind eine Ausnahme: Plan-Suites liegen im per gitignore ausgeschlossenen Baum
 dasselbe, wenn das Projekt noch kein Verzeichnis `.github/workflows/` hat, und der
 Commit-Subject-Validator, wenn das Stammverzeichnis keine Commit-Historie hat.
 
+Sechs Validatoren beginnen im Wurzelverzeichnis des Repositorys und durchsuchen
+den gesamten Baum nach den Dateien, die sie prüfen:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+Diese überspringen verschachtelte Git-Checkouts, etwa Worktrees, Submodule und
+verschachtelte Klone, und überspringen Verzeichnisse, die Abhängigkeiten,
+virtuelle Umgebungen, Caches oder Build-Ausgaben enthalten, etwa `node_modules`,
+`venv` und `dist`. Die Prüfung auf verirrte Pläne in `no-global-plans-grep` hält
+ebenfalls an einem verschachtelten Checkout an. Ein Lauf eines dieser
+Validatoren meldet Ergebnisse zu dem Checkout, auf den er gerichtet wurde, und zu
+nichts anderem. Ein Validator, der einen festen Ordner liest, etwa `naming-grep`
+unter `src/apothem/`, liest alles unterhalb dieses Ordners.
+
 ## Gate-Stufen
 
 | Stufe | Prüfung | Art |
@@ -76,12 +97,22 @@ Commit-Subject-Validator, wenn das Stammverzeichnis keine Commit-Historie hat.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Ein Validator pro Schreibvorgang nimmt die zu prüfende Datei entgegen oder
+`--stdin`, um den Inhalt von der Standardeingabe zu lesen; ohne beides wartet er
+auf Eingaben über die Standardeingabe, übergeben Sie also die Datei, wenn Sie ihn
+aus einem Terminal ausführen. Ein eigenständiger Validator nimmt ein
+Stammverzeichnis entgegen (das aktuelle Verzeichnis, wenn es weggelassen wird).
+`--list` zeigt, zu welcher Gruppe jeder Validator gehört.
 
 Der `--hook`-Modus (`python -m apothem.conformity.gate --hook`) ist der vom
 Harness aufgerufene Einstiegspunkt: Er liest eine JSON-Nutzlast mit der

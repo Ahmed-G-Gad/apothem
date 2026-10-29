@@ -2,7 +2,7 @@
 title: "/research-disseminate"
 description: "/research-disseminate — Pilote la diffusion et l'impact post-acceptation : annonce du preprint, artefacts publics, dépôt d'archivage FAIR, suivi des altmetrics, la boucle de réponse / révision des relecteurs et le parcours de l'étape 2 du rapport enregistré — l'étape terminale du flux /research, après /research-publish."
 machineTranslated: true
-sourceHash: "0955b1a35b0c23ed"
+sourceHash: "e2a78434b72c92bd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Le `_outputs/publication-record.md` de la suite (le paquet de la revue + l'enreg
 
 ## Sorties
 
-`_outputs/dissemination-plan.md` (l'annonce du preprint, le plan d'artefacts publics, l'enregistrement du dépôt d'archivage FAIR, le plan d'altmetrics et de suivi d'impact, la boucle de réponse / révision et le parcours de l'étape 2 du rapport enregistré).
+`_outputs/dissemination-plan.md` (l'annonce du preprint, le plan d'artefacts publics avec, pour chaque présentation, son recueil des paramètres, son budget de temps et sa liste de questions et de diapositives de secours, pour chaque poster, sa carte des sections, une table de provenance des figures et le résultat des artefacts compilés, l'enregistrement du dépôt d'archivage FAIR, le plan d'altmetrics et de suivi d'impact, la boucle de réponse / révision et le parcours de l'étape 2 du rapport enregistré).
 
 ## En aval
 
@@ -40,15 +40,17 @@ Terminal — le plan de diffusion est l'artefact final du pipeline. La boucle de
 La commande suit le flux de travail standard du flux `/research` :
 
 1. **Charger le contexte** — Lire `_outputs/publication-record.md`, les règles et tout état existant de la suite.
-2. **Planifier le preprint et les artefacts publics** — Rédiger l'annonce du preprint et le plan de présentation / poster / blog.
+2. **Planifier le preprint et les artefacts publics** — Rédiger l'annonce du preprint et planifier chaque présentation et chaque poster selon le recueil des paramètres, le budget de temps, la liste de questions et de diapositives de secours et la provenance des figures, avec une vérification du PDF compilé pour tout ce qui est construit.
 3. **Enregistrer le dépôt d'archivage FAIR** — Planifier le dépôt des données + du code dans un dépôt FAIR avec des identifiants persistants.
 4. **Mettre en place le suivi d'impact** — Planifier les altmetrics et le suivi d'impact par rapport à la voie d'impact de la proposition.
-5. **Préparer la boucle de réponse** — Rédiger la réponse aux relecteurs et le parcours de l'étape 2 du rapport enregistré le cas échéant.
+5. **Préparer la boucle de réponse** — Lire les contraintes de l'étape de réponse du lieu de publication dans le registre des règles du lieu de publication de l'enregistrement de publication avant de rédiger, puis rédiger la réponse aux relecteurs et le parcours de l'étape 2 du rapport enregistré le cas échéant.
 6. **Vérifier et émettre** — Confirmer que le plan est actionnable ; émettre `_outputs/dissemination-plan.md` ainsi que le manifeste de transfert. L'opérateur réalise les actions publiques.
 
 ## Seuil de rigueur
 
 Les artefacts publics portent un langage naturel du domaine ; là où la diffusion précède la dé-anonymisation, l'identité de l'auteur, de l'institution et du système est réservée à l'étape désignée. Le dépôt FAIR est le dossier de preuves de reproductibilité durable et citable, mis à l'échelle de l'ambition du lieu de publication, qui permet à une partie indépendante de reproduire l'étude.
+
+Les présentations et les posters sont planifiés à partir de leur recueil des paramètres : la durée du créneau, le type de présentation, le public et le fait que les questions partagent ou non le créneau sont demandés, jamais supposés. Les sections s'additionnent pour former le temps de parole, et le temps de parole plus les questions dans le créneau, les transitions et la réserve s'additionnent pour former le créneau. Une figure de données est le fichier propre de l'article ou une régénération à partir des données consignées, jamais redessinée à la main ou par un outil génératif. Une réponse qui enfreint une contrainte énoncée du lieu de publication (limite de longueur, anonymat des fichiers de réponse, politique relative aux liens, admission de nouveaux résultats) n'est pas déclarée prête.
 
 ## Modes de défaillance
 
@@ -57,6 +59,8 @@ Les artefacts publics portent un langage naturel du domaine ; là où la diffusi
 | Aucun enregistrement de dépôt FAIR | Étape d'archivage ignorée | Sélectionnez un dépôt FAIR (`--archive`) et enregistrez le plan de dépôt avec des identifiants persistants |
 | Le plan tente de publier automatiquement | Limite d'étape franchie | Arrêtez-vous au plan prêt ; l'opérateur réalise chaque action publique |
 | Enregistrement de publication manquant | `/research-publish` pas encore exécuté | Exécutez d'abord `/research-publish` pour produire le paquet de la revue |
+| Figure de données redessinée dans une présentation ou un poster | La figure a été redessinée au lieu d'être réutilisée | Utilisez le fichier de l'article, ou régénérez-la à partir des données consignées |
+| Le budget de temps de la présentation ne s'additionne pas | Créneau, temps de parole, questions ou réserve laissés non planifiés | Demandez le recueil des paramètres, puis dimensionnez les sections pour que le budget corresponde au créneau |
 
 ## Exemples
 

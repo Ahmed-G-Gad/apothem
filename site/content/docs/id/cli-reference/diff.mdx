@@ -2,7 +2,7 @@
 title: "diff"
 description: "Referensi CLI untuk perintah apothem diff."
 machineTranslated: true
-sourceHash: "c72e575434a36191"
+sourceHash: "c04c91f0e63a082f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,6 +36,10 @@ diproyeksikan (seperti `CLAUDE.md`), dan penyimpanan data bersama di bawah
 `.apothem/`. Tepat setelah pemasangan, `diff` tidak melaporkan perubahan
 tertunda apa pun; pemasangan ulang setelah itu tidak menulis apa pun dan tidak
 membuat cadangan baru. `install --dry-run` menampilkan rencana yang sama.
+
+Untuk adapter yang menulis skill ke direktori home Anda, rencana mencantumkan
+folder tersebut beserta jalur home-nya, sebelum berkas proyek, dan folder skill
+yang tidak ditulis oleh Apothem muncul sebagai peringatan `skill_conflict`.
 
 Untuk target milik operator — berkas yang membawa konten Anda sendiri sekaligus
 blok yang dikelola Apothem — diff menampilkan baris persis yang akan berubah.

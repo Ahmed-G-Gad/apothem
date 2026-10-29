@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "9090fc8d8546d5b0"
+sourceHash: "0f47915f4f7819de"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,6 +19,11 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 `update` は、現在の共有プロファイルからハーネスの出力を再マテリアライズします。
 `install` と同じプロファイル検証、`--harness all` の選択、プロジェクトスコープのチェック、ドライランの動作、JSON エンベロープを使用します。
+
+スキルをホームディレクトリに書き込むプロジェクトスコープのアダプター（[`install`](/docs/cli-reference/install#ホームディレクトリ内のフォルダー) を参照）については、`update` はそれらのフォルダーも最新の状態にし、それらの名前を挙げる同じ `Note:` を出力します。
+スキルを書き込むようになる前にインストールされたアダプターは、次回の更新でスキルを受け取ります。
+Apothem が書き込んだものではないスキルフォルダーは、[`install`](/docs/cli-reference/install#ホームディレクトリ内のフォルダー) と同様に、警告とともにスキップされます。
+以前に共有スキルフォルダーを書き込んだインストールは、次回の更新で、すべてのインストールが共有する形式に書き直されます。変更される各フォルダーは、事前にバックアップされます。
 
 進行形のエイリアス `apothem updating`（`apothem Updating` としても受け付けられます）は、同じハンドラーに解決されます。
 

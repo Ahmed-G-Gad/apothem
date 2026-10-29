@@ -2,7 +2,7 @@
 title: "横断的マンデートレジストリ（CM-1–CM-28）"
 description: "すべてのやり取りとパイプライン操作を統制する、エコシステム内部の横断的マンデート（CM-1–CM-28）の完全なレジストリと定義。"
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## レジストリの自己参照の免除
 
-このドキュメントこそが正規の CM-N レジストリです — `CM-1` から `CM-28` までのトークンが*定義*されるソースです。これらのトークンを*レジストリ自身の本文内で*再記述することは正規のものであり、プラン内部の用語の漏洩ではありません。コードベース分離の不変条件は、*その他の*すべてのアーティファクト（ルール、ヘルパー、コマンド、フック、スキーマ、スクリプト、ツール、テスト、ドキュメント、README、変更履歴、コミットの件名 / 本文、ブランチ名、PR のタイトル / 説明）に引き続き全面的に適用されます。`CM-N` / `TM-N` / `CP-N` トークンは使わず、自然なドメイン言語のみを使用します。
+このドキュメントこそが正規の CM-N レジストリです — `CM-1` から `CM-28` までのトークンが*定義*されるソースです。これらのトークンを*レジストリ自身の本文内で*再記述することは正規のものであり、プラン内部の用語の漏洩ではありません。コードベース分離の不変条件は、公開ドキュメントではない*その他の*すべてのアーティファクト（ルール、ヘルパー、コマンド、フック、スキーマ、スクリプト、ツール、テスト、README、CONTRIBUTING、変更履歴、コミットの件名 / 本文、ブランチ名、PR のタイトル / 説明）に引き続き全面的に適用されます。`CM-N` / `TM-N` / `CP-N` トークンは使わず、自然なドメイン言語のみを使用します。
+
+`site/content/docs/` 配下の公開ドキュメントページは、マンデートをその `CM-N` ID で引用してもかまいません。このレジストリとルールのリファレンスページが、読者向けにそれらの ID を定義しているためです。ID を引用するページは、その横でマンデートを平易な言葉で名指しすべきであり（SHOULD）、マンデートのプラン内部のセクション番号を引用してはなりません（MUST NOT）。`TM-N` と `CP-N` のトークンは公開ドキュメントに含めず、下記の CM-7 ブロックにあるその他の禁止用語も同様です。
 
 ## 名前空間
 
@@ -18,7 +20,7 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## 有効化
 
-CM-1–10 と認知アイデンティティは、すべてのやり取りを統制します。CM-11、CM-13（サブルール A から C）、CM-15、CM-16、CM-20 は `/plan` パイプライン内でのみ適用されます。CM-13 のサブルール D はすべての git 書き込みに、サブルール E は `git mv` / `git rm` の対象とコミット本文内のパスに適用され、どちらもそのパイプラインの内外を問いません。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 は普遍的に（常時有効で）適用されます。CM-23、CM-27、CM-28 は、それぞれが宣言したパスフィルターの範囲内で普遍的に適用されます。アドホック作業のデフォルトのシリアスネス: PERSONAL_USE。
+CM-1–10 と認知アイデンティティは、すべてのやり取りを統制します。CM-11、CM-13（サブルール A から C）、CM-15、CM-16、CM-20 は `/plan` パイプライン内でのみ適用されます。CM-13 のサブルール D はすべての git 書き込みに、サブルール E は `git mv` / `git rm` の対象とコミット本文内のパスに適用され、どちらもそのパイプラインの内外を問いません。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 は普遍的に適用されます。CM-23、CM-27、CM-28 は、それぞれが宣言したパスフィルターの範囲内で普遍的に適用されます。アドホック作業のデフォルトのシリアスネス: PERSONAL_USE。マンデートは、そのルールが起動時に読み込まれるかどうかにかかわらず統制します。4 つのルール（`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`）はすべてのセッションで読み込まれ、その他のルールは、一致するパス、ルールインデックス、またはそれらを引用するルール、スキル、コマンドを通じて読み込まれます。
 
 ## CM-1–10（運用）
 
@@ -28,7 +30,7 @@ CM-1–10 と認知アイデンティティは、すべてのやり取りを統�
 
 > これは CM-7 のコードベース向けの側面です。製品の完全性の側面は、`src/apothem/rules/operational-mandates.md §CM-7` に **一貫した製品（→TM-11）** として記載されています。どちらのラベルも同じマンデートを指します。
 
-コードベースのアーティファクトは、プラン内部の参照を絶対に含んではなりません。**禁止用語（正規ブロック — 兄弟コンシューマーはこの列挙を相互参照します）:** TM-N、CM-N、CP-N、「Resumption Contract」、「Phase Output Registry」、「convention anchors」、フェーズフォルダー名、プランスイートのファイル名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、シリアスネスレベル名（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**保護対象のアーティファクト:** ソースコード、テスト、設定、スキーマ、ビルドスクリプト、データ、アセット、コミットメッセージ、ブランチ名、PR のタイトル / 説明、README、CONTRIBUTING、API ドキュメント、変更履歴 — Apothem のソースツリーの外から見えるあらゆるアーティファクト（Claude Code 向けの `~/.claude/` のような、ハーネスごとのインストール先）。自然なドメイン言語のみを使用します。**兄弟コンシューマー**（それぞれがこのブロックを再列挙せず、参照によって引用します）: `src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 の違反の兆候。
+コードベースのアーティファクトは、プラン内部の参照を絶対に含んではなりません。**禁止用語（正規ブロック — 兄弟コンシューマーはこの列挙を相互参照します）:** TM-N、CM-N、CP-N、「Resumption Contract」、「Phase Output Registry」、「convention anchors」、フェーズフォルダー名、プランスイートのファイル名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、シリアスネスレベル名（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**保護対象のアーティファクト:** ソースコード、テスト、設定、スキーマ、ビルドスクリプト、データ、アセット、コミットメッセージ、ブランチ名、PR のタイトル / 説明、README、CONTRIBUTING、API ドキュメント、変更履歴 — Apothem のソースツリーの外から見えるあらゆるアーティファクト（Claude Code 向けの `~/.claude/` のような、ハーネスごとのインストール先）。自然なドメイン言語のみを使用します。唯一の例外は `site/content/docs/` 配下の公開ドキュメントで、上記のレジストリの自己参照の免除で説明しているとおり、`CM-N` ID を引用してもかまいません。**兄弟コンシューマー**（それぞれがこのブロックを再列挙せず、参照によって引用します）: `src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 の違反の兆候。
 
 ## CM-11（プランの整合性）
 

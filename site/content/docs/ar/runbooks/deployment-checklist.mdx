@@ -2,7 +2,7 @@
 title: "قائمة تحقّق النشر"
 description: "قائمة تحقّق للتحقّق المسبق قبل نشر منظومة Apothem أو مشاركتها"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ sourceHash: "23417f8798d91fef"
 
 - [ ] `name` — اسم أمر بنمط kebab-case
 - [ ] `version` و`updated` و`description` و`argument-hint` و`portability` و`allowed-tools` حاضرة
-- [ ] `disable-model-invocation` حاضر ومقصود (`true` للأوامر الإرشادية فقط)
+- [ ] `disable-model-invocation` حاضر ومقصود (`false` للأوامر القرائية فقط أو الاستشارية؛ و`true` فقط حين يُغيّر تشغيل الأمر حالةً خارج شجرة العمل أو يعتمد على اختيار المشغِّل للحظة التشغيل)
 - [ ] لا يوجد مفتاح `effort`: إذ يضبط `command.schema.json` القيمة `additionalProperties: false` ولا يقبله
 
 ### العاملون المُفوَّضون

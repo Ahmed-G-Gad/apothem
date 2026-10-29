@@ -2,7 +2,7 @@
 title: "Membuat adapter harness baru"
 description: "Runbook untuk membuat dan menerbitkan adapter harness Apothem baru."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,18 @@ bawaan di Apothem atau sebagai paket pihak ketiga.
 
 Ikuti contoh [Membuat adapter harness](/docs/examples/authoring-a-harness-adapter)
 untuk mengimplementasikan `HarnessAdapter` bagi harness target.
+
+Jika adapter menulis templat teks biasa (berkas yang bukan JSON atau YAML)
+dengan `mode: write_text` dan `ownership_class: operator-owned`, `uninstall`
+menghapus berkas tersebut hanya selama berkas itu merupakan salinan yang belum
+disunting dari templat yang dikirimkan Apothem. Ketika rilis berikutnya mengubah
+templat, tambahkan digest SHA-256 dari teks sebelumnya ke daftar
+`earlier_digests` milik entri manifest tersebut dalam perubahan yang sama, atau
+`uninstall` membiarkan di tempatnya setiap salinan belum disunting yang ditulis
+rilis sebelumnya. Ambil digest teks pada tag rilis terbaru dengan
+`git show <tag>:<template path> | sha256sum`; templat tidak boleh membawa token
+path `${...}`. `tests/unit/test_template_digests.py` gagal ketika templat yang
+dikirimkan tidak diperhitungkan.
 
 ### 2. Tulis halaman dokumentasi
 

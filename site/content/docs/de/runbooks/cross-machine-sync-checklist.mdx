@@ -2,7 +2,7 @@
 title: "Prüfliste zur maschinenübergreifenden Synchronisation"
 description: "Prüfverfahren, um zu bestätigen, dass der Adapter für Claude Code auf einem frischen Host korrekt installiert, validiert und deinstalliert wird, mit vollständigen Portabilitätsprüfungen."
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Erwartet:** Der Installer erkennt das bestehende Engine-Home und führt einen Fast-Forward aus, statt neu zu installieren oder zu duplizieren; Exit-Code 0.
+**Erwartet:** Der Installer erkennt das bestehende Engine-Home und checkt darin das Release-Tag aus, statt neu zu installieren oder zu duplizieren; Exit-Code 0.
 
 ### 3.2 Voraussetzungen geprüft
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

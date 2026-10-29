@@ -2,7 +2,7 @@
 title: "Referensi CLI"
 description: "Referensi CLI Apothem — sinopsis, opsi, dan kode keluar per perintah untuk antarmuka baris perintah apothem."
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,8 +39,9 @@ sekali-jalan — didokumentasikan dalam panduan pemasangan
 
 ## Kontrak keluaran JSON
 
-Setiap perintah menerima `--json` (singkatan untuk `--format json`) lalu
-menulis tepat satu dokumen JSON ke stdout. Setiap dokumen diawali dengan kunci
+Setiap perintah kecuali `completion` (yang memancarkan skrip shell) menerima
+`--json` (singkatan untuk `--format json`) lalu menulis tepat satu dokumen JSON
+ke stdout. Setiap dokumen diawali dengan kunci
 tingkat atas `schema_version`, sebuah bilangan bulat yang saat ini bernilai `1`:
 
 ```json

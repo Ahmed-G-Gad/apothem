@@ -2,7 +2,7 @@
 title: "Creación de un nuevo adaptador de entorno"
 description: "Manual operativo para crear y publicar un nuevo adaptador de entorno de Apothem."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,18 @@ de primera parte en Apothem o como un paquete de terceros.
 
 Sigue el ejemplo [Creación de un adaptador de entorno](/docs/examples/authoring-a-harness-adapter)
 para implementar `HarnessAdapter` para el entorno de destino.
+
+Si el adaptador escribe una plantilla de texto plano (un archivo que no es JSON
+ni YAML) con `mode: write_text` y `ownership_class: operator-owned`, `uninstall`
+elimina el archivo solo mientras sea una copia sin editar de una plantilla que
+Apothem distribuyó. Cuando un lanzamiento posterior cambie la plantilla, agrega
+el digest SHA-256 del texto anterior a la lista `earlier_digests` de esa entrada
+del manifiesto en el mismo cambio, o `uninstall` dejará en su sitio todas las
+copias sin editar que escribió el lanzamiento anterior. Obtén el digest del
+texto en la etiqueta del último lanzamiento con
+`git show <tag>:<template path> | sha256sum`; la plantilla no debe contener
+ningún token de ruta `${...}`. `tests/unit/test_template_digests.py` falla
+cuando una plantilla distribuida no está contemplada.
 
 ### 2. Escribe la página de documentación
 

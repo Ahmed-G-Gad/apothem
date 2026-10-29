@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptador de harness do Apothem para o Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,6 +60,16 @@ ferramentas e seu limite de turnos: a concessão `tools` de origem, menos
 de ferramentas do Gemini, e `maxTurns` torna-se `max_turns`. Um auxiliar somente
 leitura, portanto, não recebe nenhuma ferramenta `write_file` ou `replace`.
 Nenhum modelo é definido, de modo que cada auxiliar herda o modelo da sessão.
+
+Um auxiliar que a chave `agent_mcp_servers` do perfil lista também ganha uma
+entrada `mcp_<server>_*` por servidor nomeado em sua lista de permissões `tools`,
+para que possa chamar as ferramentas desse servidor e de nenhum outro; sem a
+chave, todo auxiliar mantém a lista de permissões simples (consulte
+[Servidores MCP](/docs/reference/mcp#dar-a-um-auxiliar-acesso-a-servidores-mcp)). O
+Apothem grava uma concessão aqui somente para um nome de servidor composto de
+letras, dígitos e `-`, porque o `Gemini CLI` não consegue endereçar um nome com
+sublinhado; qualquer outro nome é ignorado e informado, assim como uma concessão
+para um auxiliar que já alcança todos os servidores MCP.
 
 ## Notas de compatibilidade
 

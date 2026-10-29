@@ -2,14 +2,14 @@
 title: "/research-analysis"
 description: "/research-analysis — Menganalisis data mentah sesuai rencana prapendaftaran: uji yang direncanakan, ukuran efek dengan interval kepercayaan, pemeriksaan ketangguhan, dan deviasi yang diungkapkan."
 machineTranslated: true
-sourceHash: "63b072fd3548eba2"
+sourceHash: "6bfe62bf33b6bccc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Peran:** Peneliti utama (analisis)
 **Posisi pipeline:** tengah-rantai
 
-Menganalisis data mentah sesuai rencana prapendaftaran — menjalankan uji statistik yang direncanakan, melaporkan ukuran efek dengan interval kepercayaan (bukan hanya nilai p), menerapkan koreksi perbandingan ganda jika berlaku, menjalankan pemeriksaan ketangguhan / sensitivitas, dan mengungkapkan setiap deviasi dari prapendaftaran.
+Menganalisis data mentah sesuai rencana prapendaftaran — menjalankan uji statistik yang direncanakan pada unit analisis yang independen, melaporkan ukuran efek dengan interval kepercayaan (interval kredibel di bawah rencana Bayesian; bukan hanya nilai p), menerapkan koreksi perbandingan ganda jika berlaku, menyatakan bagaimana data yang hilang ditangani, menjalankan pemeriksaan ketangguhan / sensitivitas, dan mengungkapkan setiap deviasi dari prapendaftaran.
 
 ## Pemanggilan kanonis
 
@@ -29,7 +29,7 @@ Data mentah di lokasi alami host yang dicatat oleh tahap eksperimen, ditambah `_
 
 ## Keluaran
 
-`_outputs/analysis.md` (uji terprapendaftar dengan ukuran efek dan IK, koreksi perbandingan ganda, pemeriksaan ketangguhan, dan deviasi yang diungkapkan) + gambar / tabel di lokasi alami host.
+`_outputs/analysis.md` (uji terprapendaftar dengan ukuran efek, IK, unit analisis, dan penilaian bias per domain untuk setiap hasil utama; koreksi perbandingan ganda; penanganan data yang hilang; pemeriksaan ketangguhan; dan deviasi yang diungkapkan) + gambar / tabel di lokasi alami host.
 
 ## Hilir
 
@@ -41,10 +41,18 @@ Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
 1. **Muat konteks** — Baca data mentah dan prapendaftaran.
 2. **Verifikasi Gerbang Urutan** — Konfirmasi bahwa keluaran eksperimen ada; jika tidak, hentikan dengan `Blocked: run /research-experiment first`.
-3. **Analisis** — Jalankan uji terprapendaftar; laporkan ukuran efek + IK; koreksi perbandingan ganda; jalankan pemeriksaan ketangguhan / sensitivitas.
-4. **Ungkapkan deviasi** — Catat setiap penyimpangan dari rencana terprapendaftar.
+3. **Analisis** — Jalankan uji terprapendaftar pada unit analisis yang independen; diagnosis asumsi tanpa membiarkan diagnostik memilih uji; laporkan ukuran efek + IK; koreksi perbandingan ganda; nyatakan penanganan data yang hilang; jalankan pemeriksaan ketangguhan / sensitivitas.
+4. **Ungkapkan deviasi** — Catat setiap penyimpangan dari rencana terprapendaftar. Peralihan ke cadangan yang disebutkan dalam prapendaftaran dicatat sebagai adaptasi terencana; penggantian lainnya adalah deviasi.
 5. **Perbarui manifes serah terima** — Catat jalur analisis dan gambar / tabel.
 6. **Pancarkan analisis** — `_outputs/analysis.md` + gambar / tabel.
+
+## Disiplin statistik
+
+- **Uji mengikuti rancangan.** Uji primer terprapendaftar tetap berlaku kecuali pemicu cadangan milik prapendaftaran itu sendiri terpicu; uji penyaringan yang gagal menolak tidak menunjukkan bahwa suatu asumsi terpenuhi.
+- **n menghitung unit independen.** Pengukuran berulang, subsampel, klaster, dan seed diagregasi ke unit atau dimodelkan sebagai ketergantungan, tidak pernah dihitung sebagai replikasi independen.
+- **Hasil nol dibaca dengan tiga cara.** Interval ukuran efek, hasil ekuivalensi terhadap efek terkecil yang diminati, dan pernyataan sensitivitas (efek terkecil yang dapat dideteksi pada n analisis yang tercapai) dilaporkan bersama. Daya yang dihitung dari efek yang teramati tidak pernah dilaporkan.
+- **Rencana Bayesian menurut ketentuannya sendiri.** Rencana Bayesian terprapendaftar melaporkan ringkasan posterior beserta interval kredibelnya, menjalankan pemeriksaan sensitivitas prior, diagnostik komputasi, dan prediktif posterior sebelum posterior apa pun dilaporkan, dan menggunakan wilayah ekuivalensi praktis yang ditetapkan sebelumnya untuk hasil nol.
+- **Bias tingkat hasil dan gambar.** Setiap hasil utama membawa penilaian rendah / sebagian-mengkhawatirkan / tinggi per domain, yang diturunkan dari buku besar ancaman-terhadap-validitas rancangan dan tidak pernah dijumlahkan menjadi satu skor, dan setiap gambar memenuhi landasan penyandian, pengungkapan ketidakpastian, dan aksesibilitas.
 
 ## Landasan ketelitian
 
@@ -56,6 +64,8 @@ Metode stokastik dijalankan setidaknya tiga puluh pengulangan independen per ins
 |---------|-------|----------|
 | Blocked: run /research-experiment first | Tidak ada data mentah | Jalankan `/research-experiment` untuk menghasilkan data + log |
 | Nilai p dilaporkan tanpa ukuran efek | Pelaporan statistik tidak lengkap | Laporkan ukuran efek + interval kepercayaan |
+| Observasi yang saling bergantung dihitung sebagai replikasi | Pengukuran berulang, subsampel, klaster, atau seed diperlakukan sebagai independen | Agregasikan ke unit independen atau modelkan ketergantungannya; n menghitung unit |
+| Daya teramati dilaporkan untuk hasil nol | Daya dihitung dari efek yang teramati | Hapus; laporkan interval, hasil ekuivalensi, dan pernyataan sensitivitas |
 | Deviasi analisis yang tidak diungkapkan | Rencana menyimpang secara diam-diam | Ungkapkan deviasi terhadap prapendaftaran |
 
 ## Contoh

@@ -2,7 +2,7 @@
 title: "Apothem 对比手动配置 Gemini CLI"
 description: "手动维护 Gemini CLI 的 GEMINI.md 规则文件，对比从 Apothem 的共享配置档案渲染它。"
 machineTranslated: true
-sourceHash: "1571985a6318fd28"
+sourceHash: "e239aa7e0b2101a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ Gemini CLI 读取单个 `GEMINI.md` 规则文件。Apothem 的 gemini-cli 适配
 
 ## Apothem 管理什么
 
-gemini-cli 适配器会在 `<project>/GEMINI.md` 中写入一个由哨兵标记界定的 Apothem 块，其中携带项目级指导并指向 Apothem 的材料。规则、模板和钩子作为支持文件落在 `<project>/.gemini/.apothem/support/` 下，命令、技能和代理则落在 `<project>/.gemini/` 下。Gemini CLI 没有 PreToolUse 钩子，因此防护意图通过规则文本来表达，而不是通过工具调用拦截点。共享规则的每次更改都会在下一次 `apothem update` 时重新渲染 `GEMINI.md`。
+gemini-cli 适配器会在 `<project>/GEMINI.md` 中写入一个由哨兵标记界定的 Apothem 块，其中携带项目级指导并指向 Apothem 的材料。规则、模板和钩子作为支持文件落在 `<project>/.gemini/.apothem/support/` 下，命令、技能和代理则落在 `<project>/.gemini/` 下。Gemini CLI 在 `settings.json` 中记载了一个 `hooks` 对象，该对象仍归操作者所有，因此适配器不注册任何钩子，防护意图通过规则文本来表达，而不是通过工具调用拦截点。共享规则的每次更改都会在下一次 `apothem update` 时重新渲染 `GEMINI.md`。
 
 ## 迁移路径
 

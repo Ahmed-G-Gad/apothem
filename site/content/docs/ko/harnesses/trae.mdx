@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "0e9e61064d66a5da"
+sourceHash: "97ae18e3fc9b0b70"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,95 @@ apothem install --harness trae --project /path/to/project
 ```
 
 어댑터는 공유 Apothem 규칙 및 거버넌스 표면으로부터 프로젝트 범위 Trae 규칙 파일
-하나를 작성합니다.
+하나를 작성하고, Apothem의 도우미를 Trae 서브에이전트로 프로젝트에 작성합니다
+([서브에이전트](#서브에이전트) 참조).
 
-**작성되는 파일:** `<project>/.trae/rules/apothem-rules.md`
+또한 프로젝트를 건드리기 전에 Apothem의 스킬과, 스킬이 인용하는 규칙 및 템플릿을
+사용자 홈에 작성합니다([프로젝트 외부의 파일](#프로젝트-외부의-파일) 참조).
+
+**작성되는 파일:**
+
+- `<project>/.trae/rules/apothem-rules.md`, 규칙 파일.
+- 각 Apothem 도우미마다 `<project>/.trae/agents/<name>.md`, 프로젝트 안.
+- 각 Apothem 스킬과 커맨드마다 `~/.trae/skills/<name>/SKILL.md`, 사용자 홈 안.
+- `~/.config/apothem/rules/`와 `~/.config/apothem/templates/`, 사용자 홈 안.
+
+## 프로젝트 외부의 파일
+
+설치는 프로젝트에서 무엇이든 변경하기 전에 Apothem의 스킬도 사용자 홈에
+작성합니다.
+
+| 폴더 | Apothem이 그곳에 작성하는 것 |
+| --- | --- |
+| `~/.trae/skills/` | 각 Apothem 스킬마다 `SKILL.md`가 든 폴더 하나, 그리고 각 Apothem 커맨드마다 폴더 하나(커맨드는 같은 이름의 스킬이 됩니다). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 스킬과 규칙 파일이 참조하는 규칙과 템플릿. |
+
+이 폴더들은 공유됩니다. 프로젝트 전용이 아닙니다.
+
+- `trae`를 설치하는 모든 프로젝트는 같은 `~/.trae/skills/` 사본을 사용하며, 설치는 매번 같은 파일을 그곳에 작성합니다. 그 폴더를 읽는 도구는 Trae뿐입니다. `~/.config/apothem/` 아래의 규칙과 템플릿은 다른 도구의 설치도 같은 파일로 작성합니다.
+- `--project`는 작성할 규칙 파일과 설치가 속하는 프로젝트를 선택합니다.
+  스킬이 가는 위치는 바꾸지 않습니다.
+- 설치는 저장소에 스킬이나 규칙 파일을 추가하지 않습니다. 프로젝트에는
+  규칙 파일과 `.trae/agents/`의 서브에이전트 파일, 그리고 모든 프로젝트 설치가
+  만드는 `.apothem/` 데이터 폴더가 생깁니다.
+- 홈 폴더가 먼저 작성됩니다. 예를 들어 경로상의 폴더가 홈 디렉터리 밖으로
+  나가는 링크이거나(홈 안에 머무는 링크는 따라갑니다) 쓸 수 없어서 이 작업이
+  실패하면, 설치는 프로젝트에서 무엇이든 변경되기 전에 오류와 함께 중단됩니다.
+- Apothem 스킬의 이름을 가졌지만 Apothem이 작성하지 않은 스킬 폴더는 그대로
+  두며, 설치는 그 폴더를 지목하는 경고를 출력합니다. 이름을 바꾸거나 옮긴 다음
+  `apothem update`를 실행하세요. 그 이름이 점유되어 있는 동안 `apothem verify`는 실패합니다.
+- 파일은 합쳐서 몇 메가바이트 정도입니다.
+
+설치는 `--project` 밖에 작성하는 폴더를 지목하는 메모를 출력하며,
+`--dry-run`은 그 폴더들을 나열합니다.
+
+## 서브에이전트
+
+Trae는 [Trae 서브에이전트 문서](https://docs.trae.ai/ide/subagents)에 따라
+`<project>/.trae/agents/`의 Markdown 파일에서 서브에이전트를 읽습니다. 설치는
+Apothem 도우미마다 파일 하나를 그 폴더에 작성합니다. 프로젝트용으로만
+설치합니다. 문서는 사용자 수준 폴더를 `~/.trae-cn/agents/`로 제시하는 반면
+다른 모든 Trae 사용자 폴더는 `~/.trae/` 아래에 있으며, Apothem은 국제판 설치가
+어느 쪽을 읽는지 확인하지 않았으므로 어느 쪽에도 작성하지 않습니다.
+
+각 파일은 도우미의 지침을 변경 없이 유지하며 다음 프런트매터 키를
+담습니다.
+
+| 키 | Apothem이 작성하는 것 |
+| --- | --- |
+| `name`, `description` | 도우미의 이름과 설명. Trae는 둘 다 필요로 합니다. |
+| `tools` | 도우미에게 허용된 도구, 쉼표로 구분된 하나의 문자열. |
+| `disallowedTools` | 도우미에게 거부된 도구, 쉼표로 구분된 하나의 문자열. Trae는 이를 `tools`보다 우선 적용합니다. 도우미에게 거부된 도구가 없으면 생략됩니다. |
+
+Trae의 서브에이전트 페이지에 있는 도구 이름만 작성됩니다.
+
+```text
+Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
+```
+
+소스가 지칭하지만 그 목록에 없는 도구(예: `MultiEdit` 또는
+`PowerShell`)는 두 필드 모두에서 빠집니다. `Bash(rm *)`처럼 패턴이 붙은 도구는
+쉼표 목록에서 표현할 형식이 없습니다. 허용된 도구로서는 빠지고, 거부된
+도구로서는 도구 전체를 거부합니다. 파일을 편집할 수 없는 도우미는 그 제한을
+유지합니다. 도구 중에 `Write`나 `Edit`를 나열하지 않으며 둘 다 거부합니다. Trae는
+턴 제한을 문서화하지 않으므로 도우미의 `maxTurns`는 작성되지 않습니다. 설치는
+`model` 키를 작성하지 않으므로 도우미는 채팅 상자에서 선택한 모델을 사용하며,
+`mcpServers` 키도 작성하지 않습니다.
+
+알아 둘 사항:
+
+- Trae의 영어 문서는 `.trae/agents/`를 로드하기 전에 **Settings > Beta > Subagents >
+  Enable Subagents Directory**를 켜라고 합니다. 나중에 업데이트된 중국어
+  페이지는 이 기능이 보통 기본으로 켜져 있다고 합니다. Trae가 도우미를 하나도
+  나열하지 않으면 그 스위치를 확인하세요.
+- 서브에이전트 파일은 일반 프로젝트 파일입니다. 프로젝트와 함께 커밋하거나
+  `.trae/agents/`를 `.gitignore`에 나열하세요. Apothem이 대신 선택하지 않습니다.
+- Apothem 도우미의 이름을 가진 여러분의 파일은 `~/.apothem/backups/` 아래에
+  저장된 다음 교체됩니다. 제거는 이를 되돌려 놓지 않습니다.
+  다른 이름의 파일은 절대 건드리지 않습니다.
+- Trae의 문서는 나열하지 않은 프런트매터 키를 어떻게 처리하는지, 또는
+  `.trae/agents/`가 통합된 "all-new TRAE"의 두 번째 창에서도 IDE 창에서처럼
+  적용되는지 밝히지 않습니다.
 
 ## 프로필에서 네이티브 구성으로의 매핑
 
@@ -40,8 +126,17 @@ Trae의 현재 규칙 표면은 `.trae/rules/` 아래에서 프로젝트 범위�
 규칙은 `~/.trae/user_rules` 아래에 있습니다. 어댑터는 전용 `apothem-rules.md`
 파일을 작성하며, 그 디렉터리의 다른 규칙 파일이나 여러분의 전역 규칙을 절대
 덮어쓰지 않습니다.
-`.trae/mcp.json` 도구 서버 표면과 `.trae/skills/` 스킬 표면은 운영자
+`.trae/mcp.json` 도구 서버 표면과 프로젝트 `.trae/skills/` 스킬 표면은 운영자
 소유입니다. Apothem은 이를 작성하지 않습니다.
+
+Trae는 전역 스킬용으로 `~/.trae/skills/`를 문서화합니다. 도구 간 공용
+`.agents/skills/` 폴더는 `Enable .agents Skills
+Directory` 설정을 켠 뒤에만 읽으므로, 설치는 Trae 폴더에 작성합니다. 중국판
+(TRAE CN)은 대신 `~/.trae-cn/skills/`를 문서화합니다. 그 변경 로그에 따르면
+TRAE CN과 국제판의 전역 스킬 디렉터리는 개인판에 한해서만 호환됩니다. 설치는
+`~/.trae/skills/`에만 작성하며, Apothem은 다른 TRAE CN 판이 그것을 읽는지
+확인하지 않았습니다. Apothem은 또한 Trae가 나열하지 않은 `SKILL.md` 헤더 키를
+어떻게 처리하는지도 확인하지 않았습니다.
 
 ## 검증
 
@@ -52,10 +147,16 @@ apothem verify --harness trae --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
-   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
-   `--profile PATH`를 추가하세요.
-3. 어댑터별 검증 루틴이 성공을 보고합니다.
+2. `.trae/agents/` 폴더를 포함해 각 관리 대상이 존재하고, 관리되는 파일은 비어
+   있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도
+   일치하는지 확인하려면 `--profile PATH`를 추가하세요. `.trae/agents/`에 대해서는
+   각 도우미 파일이 그 안에 있는지가 아니라 폴더가 존재하는지를 확인합니다.
+   `apothem diff --harness trae --project /path/to/project` 명령은 누락되었거나
+   오래된 도우미 파일을 나열합니다.
+3. 어느 설치가 작성했든 모든 Apothem 스킬 폴더가 `SKILL.md`와 함께 제자리에
+   있으며, Apothem 이름을 가진 스킬 폴더 중 Apothem이 작성하지 않은 것에 속하는
+   폴더가 없습니다. 확인이 실패하면 누락되었거나 외부의 폴더를 지목합니다.
+4. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
 
@@ -64,6 +165,10 @@ apothem update --harness trae --project /path/to/project
 ```
 
 현재 공유 프로필 상태에서 프로젝트 규칙 파일을 다시 도출합니다.
+
+업데이트는 또한 파일이 현재 파일과 다른 스킬 폴더를 다시 작성합니다.
+스킬을 작성하지 않던 이전 릴리스로 설치했다면 업데이트가 스킬을 추가합니다.
+현재 파일과 다른 서브에이전트 파일을 다시 작성하고, 누락된 파일은 추가합니다.
 
 ## 제거
 
@@ -78,6 +183,15 @@ apothem uninstall --harness trae --project /path/to/project
 백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지
 않습니다.
 
+제거는 또한 `<project>/.trae/agents/`에 작성한 서브에이전트 파일을 제거하고
+그곳의 다른 파일은 유지합니다. 폴더가 비게 되면 폴더를 제거합니다.
+`~/.trae/skills/`에 작성한 스킬 폴더와 `~/.config/apothem/`의 규칙 및 템플릿도
+제거하지만, 다른 Apothem 설치가 더 이상 사용하지 않을 때만 제거합니다. 다른
+프로젝트나 그 폴더를 공유하는 다른 도구가 사용하고 있을 수 있습니다. 그런 경우
+제거는 폴더를 유지하고 어느 설치가 사용 중인지 출력하며, 마지막 제거가 폴더를
+제거합니다. 그 폴더에 여러분이 추가한 파일은 남으며, 비게 된 폴더는 제거됩니다.
+각 폴더는 제거되기 전에 `~/.apothem/backups/` 아래에 백업됩니다.
+
 ## 적합성 게이트
 
 ```bash
@@ -90,6 +204,10 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness trae --project /path/to/project`를 다시 실행 |
 | 검증 실패 | `apothem update --harness trae --project /path/to/project`를 실행한 다음 다시 검증 |
+| Trae가 Apothem 도우미를 하나도 나열하지 않음 | Settings > Beta > Subagents > Enable Subagents Directory를 켠 다음 새 채팅을 시작 |
+| `apothem verify`가 누락된 스킬 폴더를 지목함 | `apothem install --harness trae --project /path/to/project`를 실행. 폴더를 복원합니다 |
+| 설치 또는 업데이트가 스킬 폴더를 건너뛰었다고 경고함 | Apothem 스킬의 이름을 가진 폴더가 스킬 폴더에 이미 있고 Apothem이 작성하지 않았습니다. 이름을 바꾸거나 옮긴 다음 `apothem update`를 실행 |
+| 설치가 프로젝트를 변경하기 전에 중단됨 | 홈에서의 쓰기가 실패했습니다. 오류를 읽고 지목된 폴더(홈 디렉터리 밖으로 나가는 링크, 폴더가 있어야 할 자리의 파일, 또는 읽기 전용 폴더)를 고친 다음 다시 설치 |
 | 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness trae --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브

@@ -2,7 +2,7 @@
 title: "入門: ゼロから動作するハーネスまで"
 description: "空のマシンから、マテリアライズされ検証されたハーネス構成に至るまでの、エンドツーエンドのウォークスルー。"
 machineTranslated: true
-sourceHash: "35d8b7420a9a02a8"
+sourceHash: "daa3b8225766a994"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,17 +46,27 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 インストーラーは次の手順を実行します。
 
 1. **前提条件のチェック。** インストーラーは実際の Python 3.10 以上のインタープリターを探し、2 つのランタイムライブラリ（`click` と `rich`）がインポート可能であることを確認します。いずれかが欠けている場合は、その名前を示して停止し、インストールコマンドを表示します。パイプ経由の実行はプロンプトを表示できないため、プロンプトなしでインストールするには `APOTHEM_AUTO_INSTALL_DEPS=1` を設定してください。
-2. **ソースの配置。** 同梱のツリーは `~/.apothem` にクローンされます（`APOTHEM_HOME` 環境変数で上書きできます）。再実行すると、既存のクローンを複製するのではなく、fast-forward で更新します。
+2. **ソースの配置。** 同梱のツリーは `~/.apothem` にクローンされます（`APOTHEM_HOME` 環境変数で上書きできます）。再実行すると、既存のクローンを複製するのではなく、そのクローンでリリースタグをチェックアウトします。
 3. **プロファイルのブートストラップ。** まだプロファイルがない場合、インストーラーはサンプルプロファイルを `~/.config/apothem/profile.yaml` にコピーし、同じ実行の中でそのプロファイルから Claude Code をインストールして検証します。また、識別情報のフィールドがプレースホルダーであることを警告します。
 
 環境変数でインストールを制御できます。
 最もよく使う可能性が高いものは次のとおりです。
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+インストーラーがインストールするのは、ユーザースコープのハーネスだけです。
+プロジェクトスコープのハーネスは、その後でプロジェクトを指定してインストールします。
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 ほかに認識される変数は、`APOTHEM_REPO` と `APOTHEM_REF` です。これらは、どのリモートをクローンし、どの git ref をチェックアウトするかを指定します。未設定の場合は、最新の署名付きリリースタグを解決して検証します。タグを設定するとそのタグに固定され、移動するブランチには `main` を設定します（ブランチは署名付きタグではないため、`APOTHEM_ALLOW_UNVERIFIED=1` も必要です）。`APOTHEM_ALLOW_UNVERIFIED=1` は、タグ署名の検証失敗を警告に格下げし、`main` のようなタグ以外の ref を許可します。`APOTHEM_SOURCE` は、クローンの代わりに既存のローカルチェックアウトを使います。`APOTHEM_SKIP_VERIFY=1` は、インストール後の検証をスキップします。この検証は実行しておきたいので、未設定のままにしてください。
@@ -144,7 +154,8 @@ apothem install --harness cursor --project .
 apothem verify --harness claude-code
 ```
 
-`verify` は、ハーネスに期待される設定ファイルが存在し、プロファイルの宣言内容と一致していることをチェックします。
+`verify` は、ハーネスの管理対象の設定ファイルが存在し、パースできることをチェックします。
+`--profile PATH` を追加すると、インストール済みのファイルがそのプロファイルから生成される内容からずれている場合にも失敗します。
 クリーンな実行は、マテリアライズが成功したことを意味します。
 
 登録済みのすべてのアダプターを対象とする、マシン全体のヘルスチェックを行うには、次を実行します。
@@ -169,8 +180,10 @@ apothem doctor
 
 - **別のツールを追加する。** [ハーネス一覧](/docs/harnesses)は、サポートされているすべてのプラットフォームとそのアダプター名を扱っています。
   新しい `--harness` でステップ 3 を繰り返してください。
-- **1 つのタスクをより深く掘り下げる。** [ハウツーガイド](/docs/how-to)は、ルールの記述、プランの作成、コンフォーミティゲートの実行のための、タスクに焦点を当てたレシピです。
-- **具体的な内容を調べる。** [リファレンス](/docs/harnesses)は、各アダプター、プロファイルスキーマ、CLI の面を余すところなく文書化しています。
+- **1 つのタスクをより深く掘り下げる。** [ハウツーレシピ](/docs/how-to)は、ハーネスの追加、プロファイルの編集、インストーラーの操作を扱います。
+  [利用ガイド](/docs/usage)は、ルールの記述、プランの作成、コンフォーミティゲートの実行を扱います。
+- **具体的な内容を調べる。** [リファレンス](/docs/reference)は、各アーティファクトクラスとプロファイルスキーマを文書化しており、[CLI リファレンス](/docs/cli-reference)はすべてのコマンドを扱います。
+  各アダプターには、[ハーネス](/docs/harnesses)の下に専用のページがあります。
 - **セッションより長く続く作業を計画する。** [再開可能なプランニング](/docs/concepts/resumable-planning)では、Apothem が長時間に及ぶ作業をプロジェクトローカルの `.apothem/plans/` スイートへ外部化し、どのマシン上の新しいセッションでもその作業をその場で再開できるようにする方法を説明します。
 
 ## 推奨される次のステップ

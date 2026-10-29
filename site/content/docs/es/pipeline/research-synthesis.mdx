@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis — Concilia las fuentes recopiladas en un mapa del estado del arte y una matriz de literatura, verifica de forma adversaria cada afirmación y enuncia la brecha de investigación explícita."
 machineTranslated: true
-sourceHash: "41141e6d1904a0ea"
+sourceHash: "c9f85b95a0e0ceb8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Con argumentos:
 
 ## Salidas
 
-`_inputs/synthesis.md` — el mapa del estado del arte, la matriz de literatura, el libro mayor de hallazgos en disputa y el enunciado explícito de la brecha en una sola frase.
+`_inputs/synthesis.md` — el mapa del estado del arte, la matriz de literatura, el libro mayor de hallazgos en disputa y el enunciado explícito de la brecha en una sola frase con la cobertura de búsqueda en la que se apoya. Informa tanto el recuento de informes como el recuento de estudios.
 
 ## Aguas abajo
 
@@ -41,8 +41,8 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar contexto** — Leer el libro mayor de fuentes y las extracciones por fuente.
 2. **Verificar la Puerta de secuencia** — Confirmar que el libro mayor de fuentes existe; de lo contrario, detenerse con `Blocked: run /research-sources first`.
-3. **Sintetizar** — Construir el mapa del estado del arte + matriz de literatura; conciliar acuerdos y contradicciones; enunciar la brecha explícita.
-4. **Verificar de forma adversaria** — Toda afirmación que sustenta el argumento se refuta por defecto frente a dos o más fuentes independientes.
+3. **Sintetizar** — Construir el mapa del estado del arte + matriz de literatura, trasladando desde el libro mayor el id de estudio, la clase de evidencia y el estado de integridad de cada fuente; conciliar acuerdos y contradicciones; enunciar la brecha explícita y nombrar la cobertura de búsqueda en la que se apoya.
+4. **Verificar de forma adversaria** — Toda afirmación que sustenta el argumento se refuta por defecto frente a dos o más estudios independientes.
 5. **Actualizar el manifiesto de traspaso** — Registrar la ruta de síntesis y el libro mayor de afirmaciones en disputa.
 6. **Emitir la síntesis** — `_inputs/synthesis.md`.
 
@@ -50,12 +50,19 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 Antes de que el enunciado de la brecha quede definitivo, la síntesis concilia su terminología, sus hallazgos y sus recomendaciones frente a los corpus hermanos relacionados (coherencia entre corpus); un conflicto se registra en el libro mayor de hallazgos en disputa, nunca se armoniza en silencio. La brecha debe resolverse en una contribución distinta y parsimoniosa —no una ya cerrada por una afirmación corroborada, y no descomponible en elementos superpuestos y no distintos.
 
+## Recuento de la evidencia
+
+- **Estudios, no informes.** Los informes que comparten un id de estudio en el libro mayor, los estudios que comparten una muestra recopilada y las fuentes que se citan entre sí cuentan como una sola fuente; dos artículos de un mismo grupo de autores se comprueban primero en busca de datos compartidos. Las calificaciones de certeza cuentan los estudios independientes del mismo modo.
+- **Integridad.** Una fuente retractada o retirada no cuenta para la corroboración, y una fuente cuyo estado de integridad es `concern` nunca es el único apoyo de una afirmación.
+- **Evidencia contraria y cobertura.** Una síntesis previa encontrada en la búsqueda sirve para localizar estudios primarios y no cuenta junto a ellos. Cuando la clase de evidencia contraria no retuvo nada, el hallazgo se registra como `none found in the searches recorded`, nunca como consenso, y la frase de la brecha nombra su alcance en los mismos términos: los índices, los términos y el rango de fechas, la fecha de la última ejecución y cualquier pasada marcada `incomplete`.
+
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Blocked: run /research-sources first | Sin libro mayor de fuentes | Ejecuta `/research-sources` para producir `_inputs/source-ledger.md` |
-| Una afirmación sobrevive sin ≥2 fuentes | Corroboración insuficiente | Márcala como en disputa o no verificable; no la afirmes |
+| Una afirmación sobrevive sin ≥2 estudios independientes | Corroboración insuficiente, o las fuentes comparten un estudio o una muestra | Márcala como en disputa o no verificable; no la afirmes |
+| Brecha enunciada como una ausencia en el campo | La frase de la brecha no tiene cobertura de búsqueda que la respalde | Nombra las búsquedas registradas como el alcance; nunca afirmes una ausencia más allá de ellas |
 | Sin enunciado explícito de la brecha | A la síntesis le falta un objetivo | Vuelve a derivar la brecha en una sola frase que aborda la investigación |
 
 ## Ejemplos

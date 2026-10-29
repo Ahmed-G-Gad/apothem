@@ -2,7 +2,7 @@
 title: "Registro de mandatos transversais (CM-1–CM-28)"
 description: "Registro completo e definições dos mandatos transversais internos ao ecossistema (CM-1–CM-28) que regem todas as interações e operações do pipeline."
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## Isenção de autorreferência do registro
 
-Este documento É o registro canônico de CM-N — é a fonte em que os tokens `CM-1` a `CM-28` são *definidos*. Repetir esses tokens *dentro do próprio corpo do registro* é canônico, e não um vazamento de terminologia interna aos planos. O invariante de isolamento da base de código continua a valer com força total para todos os *demais* artefatos (regras, auxiliares, comandos, hooks, schemas, scripts, ferramentas, testes, documentação, README, changelogs, assuntos/corpos de commits, nomes de branches, títulos/descrições de PR): nenhum token `CM-N` / `TM-N` / `CP-N`, apenas linguagem natural do domínio.
+Este documento É o registro canônico de CM-N — é a fonte em que os tokens `CM-1` a `CM-28` são *definidos*. Repetir esses tokens *dentro do próprio corpo do registro* é canônico, e não um vazamento de terminologia interna aos planos. O invariante de isolamento da base de código continua a valer com força total para todos os *demais* artefatos que não são documentação publicada (regras, auxiliares, comandos, hooks, schemas, scripts, ferramentas, testes, README, CONTRIBUTING, changelogs, assuntos/corpos de commits, nomes de branches, títulos/descrições de PR): nenhum token `CM-N` / `TM-N` / `CP-N`, apenas linguagem natural do domínio.
+
+As páginas de documentação publicada em `site/content/docs/` podem citar um mandato pelo seu id `CM-N`, porque este registro e a página de referência de regras definem esses ids para os leitores. Uma página que cita um id DEVERIA nomear o mandato em palavras simples ao lado dele, e NÃO DEVE citar números de seção internos ao plano de um mandato. Os tokens `TM-N` e `CP-N` ficam fora da documentação publicada, assim como os demais termos proibidos no bloco de CM-7 abaixo.
 
 ## Namespaces
 
@@ -18,7 +20,7 @@ Este documento É o registro canônico de CM-N — é a fonte em que os tokens `
 
 ## Ativação
 
-CM-1–10 + a identidade cognitiva regem todas as interações. CM-11, CM-13 (subregras A a C), CM-15, CM-16, CM-20 se aplicam somente dentro do pipeline `/plan`. A subregra D de CM-13 se aplica a toda escrita no git, e a subregra E aos destinos de `git mv` / `git rm` e aos caminhos no corpo de commits, dentro ou fora desse pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 se aplicam universalmente (sempre ativos). CM-23, CM-27, CM-28 se aplicam universalmente dentro do escopo de filtro de caminhos que declaram. Nível de seriedade padrão ad hoc: PERSONAL_USE.
+CM-1–10 + a identidade cognitiva regem todas as interações. CM-11, CM-13 (subregras A a C), CM-15, CM-16, CM-20 se aplicam somente dentro do pipeline `/plan`. A subregra D de CM-13 se aplica a toda escrita no git, e a subregra E aos destinos de `git mv` / `git rm` e aos caminhos no corpo de commits, dentro ou fora desse pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 se aplicam universalmente. CM-23, CM-27, CM-28 se aplicam universalmente dentro do escopo de filtro de caminhos que declaram. Nível de seriedade padrão ad hoc: PERSONAL_USE. Um mandato rege independentemente de sua regra ser carregada na inicialização: quatro regras são carregadas em toda sessão (`agnostic-posture`, `authority-inquiry`, `session-closure`, `context-management`), e as demais são carregadas em um caminho correspondente, por meio do índice de regras ou por meio de uma regra, skill ou comando que as cite.
 
 ## CM-1–10 (Operacionais)
 
@@ -28,7 +30,7 @@ CM-1–10 + a identidade cognitiva regem todas as interações. CM-11, CM-13 (su
 
 > Esta é a faceta de CM-7 voltada à base de código; a faceta de completude do produto está documentada como **Produto coerente (→TM-11)** em `src/apothem/rules/operational-mandates.md §CM-7`. Os dois rótulos se referem ao mesmo mandato.
 
-Os artefatos da base de código NUNCA devem conter referências internas aos planos. **Termos proibidos (bloco canônico — os consumidores irmãos fazem referência cruzada a esta enumeração):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", nomes de pastas de fase, nomes de arquivos da suíte de planejamento (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), nomes de níveis de seriedade (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefatos protegidos:** código-fonte, testes, configurações, schemas, scripts de build, dados, assets, mensagens de commit, nomes de branches, títulos/descrições de PR, README, CONTRIBUTING, documentação de API, changelogs — qualquer artefato visível fora da árvore de código-fonte do Apothem (os destinos de instalação por harness, como `~/.claude/` para o Claude Code). Apenas linguagem natural do domínio. **Consumidores irmãos** (cada um cita este bloco por referência em vez de enumerá-lo de novo): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 indicadores de violação.
+Os artefatos da base de código NUNCA devem conter referências internas aos planos. **Termos proibidos (bloco canônico — os consumidores irmãos fazem referência cruzada a esta enumeração):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", nomes de pastas de fase, nomes de arquivos da suíte de planejamento (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), nomes de níveis de seriedade (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefatos protegidos:** código-fonte, testes, configurações, schemas, scripts de build, dados, assets, mensagens de commit, nomes de branches, títulos/descrições de PR, README, CONTRIBUTING, documentação de API, changelogs — qualquer artefato visível fora da árvore de código-fonte do Apothem (os destinos de instalação por harness, como `~/.claude/` para o Claude Code). Apenas linguagem natural do domínio. A única exceção é a documentação publicada em `site/content/docs/`, que pode citar ids `CM-N` conforme descrito na isenção de autorreferência do registro acima. **Consumidores irmãos** (cada um cita este bloco por referência em vez de enumerá-lo de novo): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 indicadores de violação.
 
 ## CM-11 (Integridade do plano)
 

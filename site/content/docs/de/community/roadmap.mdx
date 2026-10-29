@@ -2,7 +2,7 @@
 title: "Roadmap"
 description: "Öffentliche Apothem-Roadmap — kommende Funktionen und geplante Verbesserungen."
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,8 +28,8 @@ Harness-Konfigurationsmanager aus: ein gemeinsames Profil
 (`~/.config/apothem/profile.yaml`), das in harness-native Konfiguration für die
 registrierten Adapter materialisiert wird, gesteuert über die
 `apothem`-Kommandozeile (`quickstart` · `install` · `update` · `uninstall` ·
-`rollback` · `verify` · `status` · `diff` · `harnesses` · `profile` ·
-`doctor` · `migrate-workspace` · `completion`).
+`rollback` · `backups` · `verify` · `status` · `diff` · `harnesses` ·
+`profile` · `doctor` · `migrate-workspace` · `completion`).
 
 | Punkt | Status | Anmerkungen |
 | ---- | ------ | ----- |
@@ -42,6 +42,8 @@ registrierten Adapter materialisiert wird, gesteuert über die
 | Infrastruktur für Audit und Drift-Review | ausgeliefert | Inventar- und Drift-Scanner hinter den Audit-Befehlen |
 | Konformitäts-Gate | ausgeliefert | Validatoren für Urheberschafts-Header, Benennung, Code-Handwerk, Hedging und Bindungsreziprozität über jede materialisierte Oberfläche, mit Behavior-Diff-Goldens, die die Ausgabe jedes Adapters festschreiben |
 | Dauerhaftes Gedächtnis und optionales kontinuierliches Lernen | ausgeliefert | Eine persistente Gedächtnisebene und eine optionale Lernschleife, die bestätigte Konventionen über Sitzungen hinweg weitertragen |
+| npm-/npx-Distribution | ausgeliefert | Das Paket `@ahmed-g-gad/apothem` führt die Engine über `npx @ahmed-g-gad/apothem` aus |
+| Eintrag des Claude Code-Plugins | ausgeliefert | Installiert mit `/plugin marketplace add ahmed-g-gad/apothem` |
 | CI/CD-Pipeline und Lieferkette für signierte Releases | ausgeliefert | Jede Änderung muss vor dem Release Lint, Tests, Typprüfungen, einen Dokumentations-Build und Lieferkettenprüfungen bestehen |
 
 ## Kurzfristig
@@ -49,8 +51,8 @@ registrierten Adapter materialisiert wird, gesteuert über die
 | Punkt | Status | Anmerkungen |
 | ---- | ------ | ----- |
 | Dokumentationsleitfäden | in Arbeit | Weitere aufgabenorientierte Leitfäden, Diagramme und Beispiele für reale Harness-Setups |
-| npm-/npx-Distribution | geplant | Den npx-Einstiegspunkt `@ahmed-g-gad/apothem` mit jedem Release abgestimmt halten und seine Plattformabdeckung erweitern |
-| Eintrag des Claude Code-Plugins | geplant | Den Plugin-Eintrag ausbauen, während sich die Marketplace-Oberfläche stabilisiert |
+| npx-Plattformabdeckung | geplant | Den npx-Einstiegspunkt `@ahmed-g-gad/apothem` mit jedem Release abgestimmt halten und seine Plattformabdeckung erweitern |
+| Ausbau des Plugin-Eintrags | geplant | Den Plugin-Eintrag ausbauen, während sich die Marketplace-Oberfläche stabilisiert |
 | Weitere Harness-Adapter | geplant | Zusätzliche Harnesses, sobald sich ihre Konfigurationskonventionen stabilisieren und Nutzer sie anfragen |
 | Erweiterungen des Profilschemas | geplant | Reichhaltigere Override-Oberflächen je Harness und strengere Validierungsdiagnosen |
 | Profilvalidierung im Konformitäts-Gate | geplant | Das gemeinsame Profil als Gate-Prüfung gegen sein Schema validieren |

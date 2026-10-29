@@ -2,15 +2,16 @@
 title: "Apothem vs. rohe Open-Claw-Konfiguration"
 description: "Die Open-Claw-Konfiguration von Hand pflegen versus sie über Apothems gemeinsames Profil verwalten."
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw liest `~/.openclaw/openclaw.json`. Sein `agents.defaults.skills` ist
-eine Namens-Allowlist (kein Verzeichnis-Loader), und MCP ist eine CLI-Fläche,
-daher schreibt Apothem keine Konfigurationsschlüssel; es installiert gemeinsame
-Befehls- und Skill-Kohorten unter `~/.openclaw/.apothem/support/skills/` als
-Unterstützungsmaterial.
+Open-Claw liest `~/.openclaw/openclaw.json`. Apothem installiert gemeinsame
+Befehls- und Skill-Kohorten unter `~/.openclaw/.apothem/support/skills/` und
+schreibt dort einen Schlüssel, `skills.load.extraDirs`, der dieses Verzeichnis
+aufführt, damit OpenClaw die Skills lädt. Sein `agents.defaults.skills` ist eine
+Namens-Allowlist, die dir gehört, und MCP ist eine CLI-Fläche, daher schreibt
+Apothem keines von beiden.
 
 ## Status
 
@@ -33,6 +34,10 @@ Der Open-Claw-Adapter schreibt `openclaw.json`, verpackt Apothems Slash-Befehle
 als Skills, kopiert Apothem-Skills in das referenzierte Unterstützungsverzeichnis
 und hält Regeln, Templates, Agenten und Hook-Material unter dem
 Apothem-Unterstützungsteilbaum.
+OpenClaw liest `skills.load.extraDirs` mit der niedrigsten Priorität seiner
+Skill-Quellen, daher wird ein Skill gleichen Namens in deinem Workspace, in
+`~/.agents/skills` oder in `~/.openclaw/skills` anstelle der Apothem-Kopie
+verwendet.
 
 ## Migrationspfad
 

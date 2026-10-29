@@ -2,7 +2,7 @@
 title: "المفاهيم"
 description: "مسرد يعرّف الملفات التعريفية المشتركة، ومحوّلات أُطُر العمل، والقواعد، والخطّافات، وبوابات المطابقة، والمهارات، والعمّال المُفوَّضين في Apothem."
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,10 @@ Claude Code, Cursor, Gemini CLI, etc.
 
 ملف <bdi>Markdown</bdi> ضمن <bdi>src/apothem/rules/</bdi> يُحمَّل في كل تفاعل (دائم التفعيل) أو
 فقط عند تحرير الملفات الموجودة ضمن مسار محدّد (مُرشَّح بالمسار). تُقنِّن القواعد كيف ينبغي
-لإطار العمل أن يتصرّف.
+لإطار العمل أن يتصرّف. أربع قواعد دائمة التفعيل: <bdi>`agnostic-posture`</bdi> و<bdi>`authority-inquiry`</bdi>
+و<bdi>`session-closure`</bdi> و<bdi>`context-management`</bdi>. ويُحمَّل فهرس القواعد، <bdi>`apothem-rule-index`</bdi>، معها
+ويُسمّي كل قاعدة أخرى ومتى تُقرأ. وإطار العمل الذي لا يقيّد نطاق القواعد بالمسار
+لا يُحمِّل أيًّا من القواعد الأخرى، لذا فالفهرس هو الطريقة التي تجدها بها الجلسة.
 
 ## الخطّاف
 

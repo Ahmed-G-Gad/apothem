@@ -2,7 +2,7 @@
 title: "Skill"
 description: "Teknik yang dapat dipakai ulang dan dapat dideteksi dalam berkas SKILL.md, dengan sinyal deteksi, prosedur, dan hook penegakan untuk suite rencana dan audit ekosistem."
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ berbeda, sehingga pemasangan menerjemahkannya hanya untuk harness tersebut:
 | Harness | Apa yang diubah pemasangan |
 | --- | --- |
 | Claude Code (pemasangan dan plugin) | Mengganti nama `userInvocable` menjadi `user-invocable`, kunci yang dibaca Claude Code. Claude Code mengabaikan kunci camelCase, sehingga tanpa penggantian nama itu skill yang ditandai `userInvocable: false` akan tetap muncul di menu `/`. |
-| Codex | Membiarkan `SKILL.md` apa adanya dan menulis `agents/openai.yaml` dengan `policy.allow_implicit_invocation: false` di samping setiap skill yang sumbernya menetapkan `disable-model-invocation: true`, karena Codex mengabaikan kunci tersebut. |
+| Folder skill tingkat pengguna bersama: `~/.agents/skills/` (ditulis oleh Codex, Cursor, GitHub Copilot, Windsurf, dan Zed) serta `~/.codebuddy/skills/`, `~/.kiro/skills/`, dan `~/.trae/skills/` | Satu bentuk untuk setiap pemasangan yang menulis salah satu folder ini, sehingga pemasangan tidak pernah menulis ulang berkas satu sama lain. Pemasangan ini mengganti nama `userInvocable` menjadi `user-invocable`, memindahkan `version`, `updated`, `archetype`, dan `portability` ke bawah peta `metadata:` di bagian akhir yang berisi string bertanda kutip, dan menulis `agents/openai.yaml` dengan `policy.allow_implicit_invocation: false` di samping setiap skill yang sumbernya menetapkan `disable-model-invocation: true`, karena Codex mengabaikan kunci tersebut dan membaca `~/.agents/skills/` terlepas dari apakah adapter Codex yang menulisnya atau bukan. Perintah yang dibungkus sebagai skill mempertahankan isinya secara utuh dan dibuka dengan satu catatan tetap yang menyebutkan folder aturan dan templat, `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`. Kunci tingkat atas yang tersisa adalah `name`, `description`, `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`, dan `metadata`. |
+| Qwen Code | Menulis ulang string `allowed-tools` yang dipisahkan koma sebagai daftar `allowedTools`, satu entri YAML per baris, karena `Qwen Code` hanya membaca kunci camelCase dan mensyaratkan sebuah daftar. Setiap entri mempertahankan ejaan sumbernya, termasuk pola seperti `Bash(git status *)`. Setiap kunci lain dan isi skill dipasang tanpa perubahan. |
 | Harness lain | Tidak ada perubahan. |
 
 `skill.schema.json` menerima salah satu dari kedua ejaan flag user-invocability

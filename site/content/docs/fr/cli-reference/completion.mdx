@@ -2,7 +2,7 @@
 title: "completion"
 description: "Référence de la CLI pour la commande apothem completion."
 machineTranslated: true
-sourceHash: "fccf7d9dc0484b37"
+sourceHash: "9ab2c1cd3f4b9f04"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,7 +84,7 @@ complétion.
 | Code | Signification |
 |---|---|
 | 0 | Script de complétion émis |
-| 64 | Shell non pris en charge demandé, ou autre erreur d'utilisation (sous `--json`, une enveloppe d'erreur `cli.usage`) |
+| 64 | Shell non pris en charge demandé, ou autre erreur d'utilisation, comme une option inconnue. `completion` n'a pas de mode `--json` : la commande affiche un script, et passer `--json` constitue en soi une erreur d'utilisation. |
 
 ## Voir aussi
 

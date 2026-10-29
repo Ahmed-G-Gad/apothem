@@ -2,7 +2,7 @@
 title: "Pemecahan masalah"
 description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan pemasang."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,6 +66,23 @@ dari GitHub. Ketika perintah itu gagal, pastikan mesin dapat menjangkau
 firewall), lalu coba lagi. Jika marketplace pernah ditambahkan sebelumnya dalam
 keadaan pengambilan parsial, hapus lalu tambahkan ulang sebelum menjalankan
 `/plugin install apothem@apothem`.
+
+### Menambahkan marketplace host plugin mengalami batas waktu
+
+Perintah host plugin yang menambahkan marketplace melakukan clone repositorinya
+dan menyerah setelah 30 detik. Clone penuh repositori ini dapat memakan waktu
+lebih lama pada disk yang lambat, seperti drive Windows di bawah WSL, dan clone
+penuh sebelumnya juga dapat membuat plugin tertahan pada versi lama ketika
+penyegaran berikutnya melampaui batas waktu. Ambil hanya dua folder yang
+dibutuhkan plugin:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+Daftar plugin host kemudian menampilkan versi terkini `apothem@apothem`.
 
 ### npx menyajikan versi usang
 

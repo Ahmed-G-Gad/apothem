@@ -2,7 +2,7 @@
 title: "Posture indépendante de l'hôte"
 description: "Comment Apothem atteint une posture indépendante de l'hôte via le profil partagé et les adaptateurs d'environnement."
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,8 @@ distance unique du cœur jusqu'à chaque bord, identique dans toutes les directi
 là le principe de conception : un profil partagé au centre, dix-sept environnements équidistants sur le
 périmètre, chaque matérialisation à la même distance de la source de vérité. Le
 cœur ne change pas quand un bord change ; les bords partagent une relation unique avec
-le cœur. La dérive est structurellement impossible.
+le cœur. Comme chaque environnement dérive d'un profil unique, la dérive est détectable
+(`apothem status` la signale) et corrigible (`apothem update` re-matérialise la configuration).
 
 ## Garanties de portabilité
 

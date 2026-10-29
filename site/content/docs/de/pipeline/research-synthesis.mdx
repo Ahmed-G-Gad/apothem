@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis — Gleicht die gesammelten Quellen zu einer Landkarte des Stands der Technik und einer Literaturmatrix ab, verifiziert jede Behauptung adversarial und benennt die explizite Forschungslücke."
 machineTranslated: true
-sourceHash: "41141e6d1904a0ea"
+sourceHash: "c9f85b95a0e0ceb8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Mit Argumenten:
 
 ## Ausgaben
 
-`_inputs/synthesis.md` — die Landkarte des Stands der Technik, die Literaturmatrix, das Register der umstrittenen Befunde und die explizite Lückenaussage in einem einzigen Satz.
+`_inputs/synthesis.md` — die Landkarte des Stands der Technik, die Literaturmatrix, das Register der umstrittenen Befunde und die explizite Lückenaussage in einem einzigen Satz mit der Suchabdeckung, auf der sie beruht. Sie berichtet sowohl die Anzahl der Berichte als auch die Anzahl der Studien.
 
 ## Stromabwärts
 
@@ -41,8 +41,8 @@ Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
 1. **Kontext laden** — Das Quellenregister und die Extraktionen pro Quelle lesen.
 2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass das Quellenregister existiert; andernfalls mit `Blocked: run /research-sources first` anhalten.
-3. **Synthetisieren** — Die Landkarte des Stands der Technik + Literaturmatrix aufbauen; Übereinstimmungen und Widersprüche abgleichen; die explizite Lücke benennen.
-4. **Adversarial verifizieren** — Jede tragende Behauptung wird standardmäßig gegen zwei oder mehr unabhängige Quellen widerlegt.
+3. **Synthetisieren** — Die Landkarte des Stands der Technik + Literaturmatrix aufbauen und dabei die Studien-ID, die Evidenzklasse und den Integritätsstatus jeder Quelle aus dem Register übernehmen; Übereinstimmungen und Widersprüche abgleichen; die explizite Lücke benennen und die Suchabdeckung nennen, auf der sie beruht.
+4. **Adversarial verifizieren** — Jede tragende Behauptung wird standardmäßig gegen zwei oder mehr unabhängige Studien widerlegt.
 5. **Das Übergabe-Manifest aktualisieren** — Den Synthesepfad und das Register der umstrittenen Behauptungen festhalten.
 6. **Die Synthese ausgeben** — `_inputs/synthesis.md`.
 
@@ -50,12 +50,19 @@ Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
 Bevor die Lückenaussage endgültig festgelegt wird, gleicht die Synthese ihre Terminologie, Befunde und Empfehlungen gegen verwandte Schwesterkorpora ab (korpusübergreifende Kohärenz); ein Konflikt wird im Register der umstrittenen Befunde festgehalten, niemals stillschweigend harmonisiert. Die Lücke muss sich zu einem eigenständigen, sparsamen Beitrag auflösen — nicht zu einem, der bereits durch eine bestätigte Behauptung geschlossen ist, und nicht zerlegbar in überlappende, nicht-eigenständige Elemente.
 
+## Evidenz zählen
+
+- **Studien, nicht Berichte.** Berichte, die im Register eine Studien-ID teilen, Studien, die eine erhobene Stichprobe teilen, und Quellen, die einander zitieren, zählen als eine Quelle; zwei Artikel aus einer Autorengruppe werden zuerst auf gemeinsame Daten geprüft. Sicherheitsbewertungen zählen unabhängige Studien auf dieselbe Weise.
+- **Integrität.** Eine zurückgezogene oder widerrufene Quelle zählt nicht zur Untermauerung, und eine Quelle mit dem Integritätsstatus `concern` ist nie die alleinige Stütze einer Behauptung.
+- **Gegenteilige Belege und Abdeckung.** Eine in der Suche gefundene frühere Synthese dient dazu, Primärstudien aufzufinden, und zählt nicht neben ihnen. Wenn die Klasse der gegenteiligen Belege nichts behalten hat, wird der Befund als `none found in the searches recorded` festgehalten, nie als Konsens, und der Lückensatz benennt seinen Geltungsbereich in denselben Begriffen: die Indizes, die Begriffe und den Datumsbereich, das Datum der letzten Ausführung und jeden als `incomplete` markierten Durchlauf.
+
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
 | Blocked: run /research-sources first | Kein Quellenregister | Führen Sie `/research-sources` aus, um `_inputs/source-ledger.md` zu erzeugen |
-| Eine Behauptung überlebt ohne ≥2 Quellen | Unzureichende Untermauerung | Als umstritten oder nicht verifizierbar markieren; nicht behaupten |
+| Eine Behauptung überlebt ohne ≥2 unabhängige Studien | Unzureichende Untermauerung, oder die Quellen teilen eine Studie oder eine Stichprobe | Als umstritten oder nicht verifizierbar markieren; nicht behaupten |
+| Lücke als Abwesenheit im Fachgebiet formuliert | Hinter dem Lückensatz steht keine Suchabdeckung | Die erfassten Suchen als Geltungsbereich nennen; nie eine Abwesenheit über sie hinaus behaupten |
 | Keine explizite Lückenaussage | Der Synthese fehlt ein Ziel | Die Lücke in einem einzigen Satz neu ableiten, die die Forschung schließt |
 
 ## Beispiele

@@ -2,7 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -195,7 +195,10 @@ portability: "unix-only"
 
 ### 상시 적용
 
-규칙이 모든 곳에 적용됩니다.
+규칙이 모든 곳에 적용됩니다. 상시 적용 규칙은 다섯 개입니다: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, 그리고 규칙
+색인(`apothem-rule-index`). 모든 상시 적용 규칙은 모든 세션에서 컨텍스트를
+소모하므로 이 집합은 작게 유지됩니다.
 
 ```yaml
 pathFilter: ""
@@ -309,14 +312,20 @@ alwaysApply: false
 
 규칙에는 이 네 필드만 있습니다 — `version` / `updated` / `scope` / `portability` / `implements`는 없습니다.
 
+새 규칙은 경로 필터링 규칙입니다. 새 상시 적용 규칙을 추가하려면 같은 변경에서
+핵심 목록과 바이트 상한을 함께 올려야 합니다: 목록은
+`tests/unit/test_always_on_core.py`에, 상한은
+`conformity/always_on_budget_grep.py`에 있습니다. 동반 규칙
+(`<parent>-<aspect>`)은 부모 규칙의 `pathFilter` 또는 그보다 좁은 필터를 따릅니다.
+
 예시:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -329,7 +338,10 @@ alwaysApply: true
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-다루는 사안이 해당 규칙과 맞는 계열 표를 고르세요.
+다루는 사안이 해당 규칙과 맞는 계열 표를 고르세요. 또한
+`src/apothem/rules/apothem-rule-index.md`에서 그 규칙이 필요한 상황에 해당하는
+줄에 규칙 이름을 넣으세요. 색인에 빠진 규칙이 있으면
+`tests/unit/test_always_on_core.py`가 실패합니다.
 
 ### 5. CHANGELOG.md에 추가
 
@@ -375,7 +387,7 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
@@ -383,8 +395,10 @@ allowed-tools: "Read, Glob, Grep"
 
 `disable-model-invocation: true`는 명령을 운영자만 호출할 수 있게 합니다.
 `false`이면 요청이 명령의 설명과 일치할 때 모델이 명령을 실행할 수 있습니다.
-대부분의 명령은 `true`를 사용하지만, 대부분의 계획 및 리서치 파이프라인 단계는
-`false`를 사용합니다. `src/apothem/commands/README.md`의 호출 표에는 모든
+읽기 전용 명령과 자문 명령의 기본값은 `false`이며, 이런 명령의 설명은 사용
+사례로 시작합니다. 45개 명령 중 35개가 이 값을 사용합니다. 작업 트리 밖의 상태를
+바꾸거나 운영자가 시점을 고르는 것에 의존하는 명령은 `true`로 유지합니다(10개
+명령). `src/apothem/commands/README.md`의 호출 표에는 모든
 명령의 설정이 나열되어 있으니, 새 명령에 대한 행을 추가하세요.
 `allowed-tools`는 읽기 전용으로 유지하세요. 이 필드를 따르는 하니스는 해당
 도구를 묻지 않고 실행합니다. 부작용이 있는 도구는 `Bash(git log *)`처럼 범위가
@@ -400,6 +414,13 @@ allowed-tools: "Read, Glob, Grep"
 - 상위 수준 지침
 - 단계가 포함된 Workflow 섹션
 - 반환 계약 / 출력 형식
+
+한 하니스의 스킬 출력은 각 명령을 H2 섹션 단위로 슬림한 `SKILL.md`와
+`references/` 파일들로 분할합니다. 명령에는 `## Workflow` 섹션을 하나만 두고,
+모든 코드 펜스를 닫고, 새로운 종류의 H2는
+`src/apothem/lib/claude_skill_split.py`에서 분류하세요. 분류되지 않은 종류가
+있으면 `tests/unit/test_claude_skill_split.py`가 실패합니다. 규칙은
+`src/apothem/commands/README.md`의 Skill-emission split 계약에 있습니다.
 
 ### 4. README와 CHANGELOG.md 업데이트
 
@@ -704,16 +725,17 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### 동작 평가
 
-`evals/` 아래의 스위트는 형식이 아니라 동작을 측정합니다. 64개의 트리거
-케이스(모델이 호출할 수 있는 각 명령과 서브에이전트가 자기 도메인의 요청에는
-실행되고, 도메인을 아슬아슬하게 벗어난 요청에는 반응하지 않음), 32개의 결과
-케이스(계획 단계, 리서치 단계, 감사 차원마다 하나씩), 6개의 규칙 효과 쌍(상시
-적용 규칙의 텍스트를 켠 경우와 끈 경우)으로 이루어집니다. 케이스는 일반
+`evals/` 아래의 스위트는 형식이 아니라 동작을 측정합니다. 148개의 트리거
+케이스(모델이 호출할 수 있는 각 명령, 스킬, 서브에이전트가 자기 도메인의 요청에는
+실행되고, 도메인을 아슬아슬하게 벗어난 요청에는 반응하지 않으며, 사용자만 호출할
+수 있는 명령 여섯 개는 스스로 시작되지 않음), 32개의 결과
+케이스(계획 단계, 리서치 단계, 감사 차원마다 하나씩), 6개의 규칙 효과 쌍(표본으로
+고른 규칙의 텍스트를 켠 경우와 끈 경우)으로 이루어집니다. 케이스는 일반
 데이터이며 `python -m pytest tests/unit/test_eval_suite.py`로 비용 없이
 검증됩니다. 케이스를 실행하는 데에는 비용이 청구되며 수동으로 실행합니다.
 `Evals` 워크플로, 로컬 실행, 케이스 추가 방법은
-[동작 평가 실행하기](/docs/how-to/evals)를 참조하세요. 쌍이 있는 상시 적용
-규칙을 편집한 후에는 `python scripts/dev/sync_eval_rule_cases.py`를 실행하세요.
+[동작 평가 실행하기](/docs/how-to/evals)를 참조하세요. 쌍이 있는 규칙을
+편집한 후에는 `python scripts/dev/sync_eval_rule_cases.py`를 실행하세요.
 
 ### 벤치마크
 
@@ -735,6 +757,10 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 줄을 제외하고 공백으로 구분된 단어 수를 셉니다. 이 검사의 JSON 보고서에는
 `always-on-loaded`도 담겨 있습니다. 이는 하니스가 로드하는, 프런트매터를 제거한
 본문의 바이트, 문자, 단어 수를 상시 적용 규칙 전체에 걸쳐 합산한 값입니다.
+배포되는 규칙 디렉터리를 대상으로 실행하면, 이 검사는 그 합계가 바이트
+상한(`always-on-ceiling-bytes`로 보고됨)을 넘거나 규칙 색인이 자체 상한을 넘을
+때에도 실패합니다. Claude Code는 Bindings 섹션이 없는 규칙 사본을 로드하므로,
+그 로드 크기는 이 검사가 보고하는 수치보다 작습니다.
 
 ## 생태계 감사: 검증 실행하기
 

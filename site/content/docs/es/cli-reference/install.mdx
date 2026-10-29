@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "838431066489b516"
+sourceHash: "16be1a92f6de53b3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,10 +43,12 @@ perfil y luego ejecuta [`update`](/docs/cli-reference/update) para aplicarlo. Co
 
 ## Vista previa del radio de impacto
 
-`install --harness all` se despliega en alcances mixtos: los adaptadores de alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que los adaptadores de alcance de usuario escriben bajo tu directorio personal, fuera de esa raíz. Antes de que la instalación escriba cualquier archivo, el comando imprime los destinos concretos agrupados bajo dos encabezados: los que están dentro de la raíz del proyecto y los que están bajo tu directorio personal. La única excepción es `--clean`: su paso de partida limpia se ejecuta antes de esta vista previa, escribe una copia de seguridad y elimina los destinos anteriores, tal como se describe más abajo.
+`install --harness all` se despliega en alcances mixtos: los adaptadores de alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que los adaptadores de alcance de usuario escriben bajo tu directorio personal, fuera de esa raíz. Antes de que la instalación escriba cualquier archivo, el comando imprime los destinos concretos agrupados bajo dos encabezados: los que están dentro de la raíz del proyecto y los que están bajo tu directorio personal. Un tercer encabezado lista las carpetas compartidas de tu directorio personal que escriben los adaptadores de alcance de proyecto, fuera de `--project`: la carpeta de skills y `~/.config/apothem/` (consulta [Carpetas en tu directorio personal](#carpetas-en-tu-directorio-personal)). La única excepción es `--clean`: su paso de partida limpia se ejecuta antes de esta vista previa, escribe una copia de seguridad y elimina los destinos anteriores, tal como se describe más abajo.
 
-Cuando la selección escribe fuera de la raíz del proyecto, una confirmación
-interactiva protege las escrituras con raíz en el directorio personal. `--yes`,
+Cuando la selección escribe fuera de la raíz del proyecto, ya sea en la carpeta
+de un adaptador con raíz en el directorio personal o en una carpeta compartida,
+una confirmación interactiva protege las escrituras con raíz en el directorio
+personal. `--yes`,
 una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada
 uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la
 vista previa y la solicitud de confirmación, pero aun así realiza las escrituras.
@@ -55,6 +57,55 @@ la instalación. Con `--clean`, el paso de borrón y cuenta nueva se ejecuta
 primero bajo su propia confirmación por destino: escribe una copia de seguridad
 en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y
 la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
+
+## Carpetas en tu directorio personal
+
+Siete adaptadores de alcance de proyecto escriben las skills de Apothem, y las
+reglas y plantillas que citan las skills, en carpetas de tu directorio personal:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- `--project` elige el archivo de reglas y el proyecto al que pertenece la
+  instalación. No cambia adónde van las skills: una instalación con
+  `--project A` y otra con `--project B` escriben las mismas carpetas.
+- Cada instalación que nombra una carpeta escribe los mismos archivos. Una
+  segunda instalación los encuentra e informa `unchanged`, y el orden en que
+  instalas no importa.
+- Las carpetas del directorio personal se escriben antes que nada en el
+  proyecto. Si una escritura allí falla, la instalación del adaptador se detiene
+  con el error y el proyecto queda sin cambios. El error nombra la ruta que
+  estorba, por ejemplo un archivo llamado `~/.agents` donde debería estar la
+  carpeta.
+- Cada carpeta de skill se escribe en una carpeta oculta
+  `.<name>.apothem-staging` junto a ella y se renombra a su lugar cuando está
+  completa, de modo que una escritura fallida o interrumpida nunca deja una
+  carpeta de skill a medio escribir con su nombre definitivo. Vuelve a ejecutar
+  la instalación para terminar; reemplaza cualquier carpeta de staging que haya
+  quedado.
+- Un enlace simbólico en una de estas carpetas o por encima de ella, como los que
+  crean los gestores de dotfiles para `~/.config` o `~/.agents`, se sigue cuando
+  lleva a algún lugar dentro de tu directorio personal. Un enlace que sale de tu
+  directorio personal detiene la instalación con
+  `target escapes the allowed materialization root`, y lo mismo ocurre con un
+  enlace dentro de una carpeta de skill.
+- La instalación no añade ningún archivo de skill ni de regla a tu repositorio.
+  El proyecto recibe el archivo de reglas del adaptador, además de la carpeta de
+  datos `.apothem/` que crea toda instalación de proyecto.
+- Una carpeta de skill que tiene el nombre de una skill de Apothem y que Apothem
+  no escribió se omite. La instalación imprime una línea `Warning:` y el sobre de
+  `--format json` lleva una entrada de `warnings` con `"outcome": "warning"` y
+  `"operation": "skill_conflict"` que nombra la carpeta. Cámbiale el nombre a la
+  carpeta o muévela y luego ejecuta [`update`](/docs/cli-reference/update).
+- Cada una de estas instalaciones, actualizaciones y ejecuciones en seco imprime
+  una `Note:` que nombra las carpetas que escribe fuera de `--project`. En el
+  sobre JSON es una entrada de `warnings` con `"operation": "user_level_write"` y
+  una lista `paths`.
 
 ## Notas sobre capacidades
 
@@ -72,11 +123,40 @@ detalle.
 La instalación y la actualización también imprimen avisos como líneas `Note:`. Un
 aviso nunca cambia lo que escribe la instalación. Cuando una instalación escribe
 una raíz compartida, una ruta que otras herramientas también cargan (por ejemplo
-la carpeta de skills `~/.agents/skills/`), la nota nombra esas herramientas.
-Cuando una instalación apunta a una herramienta que ya carga contenido de
-Apothem desde la raíz compartida de otra instalación, la nota nombra esa
-instalación. En el sobre de `--format json`, cada aviso es una entrada de
-`warnings` con `"outcome": "advisory"` y `"operation": "shared_root"`.
+la carpeta de skills `~/.agents/skills/`), la nota nombra esas herramientas, y
+pone entre paréntesis una herramienta que carga la ruta solo bajo una condición,
+por ejemplo `Open-Claw (only under its default state
+directory)`. Una instalación que escribe una carpeta que otras instalaciones
+también escriben (el rol `holder`) indica que la carpeta se mantiene hasta que se
+desinstala la última instalación de Apothem que la usa, y nombra las
+instalaciones que la usan ahora. Cuando una instalación apunta a una herramienta
+que ya carga contenido de Apothem desde la raíz compartida de otra instalación, la
+nota nombra la instalación que lo colocó: el propietario registrado mientras siga
+usando la carpeta y, en caso contrario, la instalación más antigua que la use. En
+el sobre de `--format json`, cada aviso es una entrada de `warnings` con
+`"outcome": "advisory"` y `"operation": "shared_root"`; su `role` es `owner`,
+`holder` o `reader`, `holders` lista las instalaciones que usan la carpeta y
+`owner_of_record` nombra al propietario registrado.
+
+Una instalación que registra hooks también imprime notas sobre el archivo de
+hooks. Un aviso `hook_review` nombra el paso que la herramienta necesita antes de
+ejecutar los hooks (un reinicio y una revisión, o confiar en el espacio de
+trabajo), o el riesgo de un archivo de hooks que un repositorio incluye en sus
+commits y que nombra el intérprete de esta máquina. Un aviso `hook_import`
+aparece para una herramienta que también ejecuta los hooks de los archivos de
+configuración de Claude Code, como los que escribe la instalación de Apothem para
+Claude Code, y nombra el interruptor propio de la herramienta para desactivar esa
+importación y lo que ese interruptor detiene además. Cada uno es una entrada de
+`warnings` con `"outcome": "advisory"`, el `harness`, la `path` del archivo de
+hooks y un `message`.
+
+Un comando de hook lleva la ruta del proyecto y la ruta del intérprete entre
+comillas dobles, que `sh`, Git Bash y PowerShell leen por igual. Una ruta que
+contiene `$`, un acento grave, una comilla doble o una barra invertida haría que
+el comando ejecutara un archivo distinto, así que la instalación (y `--dry-run`)
+se detiene con un error que nombra la ruta y no escribe nada; mueve o cambia el
+nombre del proyecto y vuelve a ejecutarla. Un espacio o un apóstrofo en una ruta
+no son problema.
 
 Los servidores MCP del perfil reciben tres avisos, cada uno de los cuales nombra
 el campo del perfil:
@@ -108,6 +188,13 @@ comentarios, las comas finales y la sintaxis JSON5. Por eso:
   `config.unparseable`. El campo `fix` nombra las claves que la instalación
   agregaría, de modo que puedas convertir el archivo a JSON o YAML simple, o
   agregar esas claves a mano y volver a ejecutar.
+- Cuando una clave que la instalación rellena con un mapeo o una lista (por
+  ejemplo `skills.external_dirs` en `config.yaml`) contiene en tu archivo un
+  valor escalar, o la otra forma de contenedor, la instalación no escribe nada
+  para ese entorno y sale con 1 y el mismo código de error, porque rellenar la
+  clave descartaría tu valor. El error nombra la clave; cámbiala a la forma que
+  nombra, o elimínala, y vuelve a ejecutar. Una clave que dejaste vacía
+  (`skills:` sin nada debajo) se rellena.
 
 ## Opciones
 

@@ -2,23 +2,29 @@
 title: "Hook"
 description: "Penangan peristiwa tool yang terpicu pada SessionStart, PreToolUse, PostToolUse, dan Stop, memuat konteks pesan yang menegakkan isolasi git dan disiplin rencana, dengan kontrak runtime yang teruji dan status per pengguna."
 machineTranslated: true
-sourceHash: "3a6c32f33850537e"
+sourceHash: "2fe3999ec76b34d3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hook terpicu pada peristiwa tool dan memuat konteks pesan yang diperlakukan
 asisten sebagai prompt sistem tambahan. Pengabelannya berada di blok hook
 `settings.json` Claude Code (pemasangan mesin) atau `hooks.json` milik plugin
-(pemasangan plugin), berkas hook `hooks.json` Codex, dan map hook
-`settings.json` Qwen Code.
+(pemasangan plugin), berkas hook `hooks.json` Codex, map hook
+`settings.json` Qwen Code, kunci hook CodeBuddy
+`.codebuddy/settings.local.json` (hanya SessionStart dan PostToolUse), berkas
+hook Kiro `.kiro/hooks/apothem.json` (hanya SessionStart), berkas hook
+GitHub Copilot `.github/hooks/apothem.json` (hanya sessionStart dan
+postToolUse), kunci hook Windsurf (Devin Local) `.devin/config.local.json`
+(hanya SessionStart dan PostToolUse), dan berkas hook proyek Cursor
+`.cursor/hooks.json` (hanya sessionStart).
 
 | Peristiwa | Batas waktu | Tujuan |
 |-------|--------:|---------|
-| SessionStart | 30 detik | Membaca memori, memeriksa status rencana, melaporkan kesiapan; setelah pemadatan, mengirimkan konteks pemulihan |
+| SessionStart | 30 detik | Membaca memori, memeriksa status rencana, melaporkan kesiapan; setelah pemadatan, mengirimkan konteks pemulihan; menandai basis pengetahuan yang berubah sejak baseline-nya |
 | PreCompact | 30 detik | Memverifikasi status telah dieksternalisasi sebelum pemadatan (Codex, Qwen Code; tidak didaftarkan di Claude Code) |
 | PostCompact | 30 detik | Memulihkan status kerja setelah pemadatan (Codex, Qwen Code; tidak didaftarkan di Claude Code) |
 | Stop | 60 detik | Protokol akhir sesi, opt-in |
-| PostToolUse | 10 detik | Saran pemadatan proaktif, paling banyak dua kali per sesi |
+| PostToolUse | 10 detik | Saran ukuran konteks: menyimpan status pada tanda pertama, dan pada tanda kedua operator diberi tahu bahwa sesi sudah panjang; paling banyak dua kali per siklus pemadatan; berjalan di latar belakang di Claude Code |
 | PreToolUse (shell: Bash, PowerShell, `run_shell_command`) | 10 detik | Isolasi artefak git, lokalitas rencana, penjaga eval dinamis |
 | PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 detik | Isolasi referensi rencana, header kepengarangan, lokalitas rencana, penjaga dependensi dan eval dinamis |
 | PreToolUse (AskUserQuestion) | 10 detik | Kebenaran bentuk penanda `(Recommended)` |
@@ -32,10 +38,23 @@ pemasangan. Claude Code dan Qwen Code mematerialisasi dispatcher di bawah
 `<harness-root>/.apothem/support/hooks/`; Codex di bawah `<harness-root>/hooks/`.
 Entri Claude Code menggunakan bentuk exec (`command` ditambah `args`), sehingga
 tidak memerlukan shell. Plugin Claude Code menjalankan setiap hook sebagai
-`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`,
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]`,
 di shell hook bawaan Claude Code (`sh` di macOS dan Linux, Git Bash di
 Windows); bootstrap menemukan interpreter Python 3.10+ dan menjalankan
-dispatcher yang dibundel. Di Windows tanpa Git for Windows, gunakan pemasangan
+dispatcher yang dibundel. Bootstrap menyimpan interpreter yang ditemukannya ke
+cache di `interpreter-path` (`interpreter-path-ps1` untuk `bootstrap.ps1`) di
+bawah direktori status hook (di bawah) dan memakainya kembali selama interpreter
+itu masih ada, sehingga probe PATH berjalan sekali, bukan sebelum setiap
+panggilan tool; hapus berkas cache untuk memaksa probe baru. Hanya direktori
+status absolut dan jalur cache absolut yang dihormati.
+
+Setiap permukaan mendaftarkan satu entri dispatcher per peristiwa dan matcher,
+yang mencantumkan setiap pesan yang dievaluasi matcher tersebut: satu proses
+membaca payload sekali, menjalankan setiap penjaga, dan menjawab dengan satu
+amplop, sehingga sebuah Write memulai satu dispatcher, bukan satu per penjaga.
+Pemasangan mesin Claude Code juga menjalankan gerbang konformitas
+(`gate.py --hook`) pada Write dan Edit sebagai entrinya sendiri. Di Windows
+tanpa Git for Windows, gunakan pemasangan
 mesin (`apothem install --harness claude-code`), yang hook bentuk exec-nya tidak
 memerlukan shell. Dispatcher adalah skrip stdlib mandiri: ia mem-bootstrap
 `sys.path`-nya sendiri, sehingga host tidak memerlukan paket `apothem` yang dapat
@@ -45,12 +64,97 @@ Dispatcher memuat `hooks/lib/resolve_root.py` untuk resolusi root ekosistem dan
 mendelegasikan ke `hooks/emit_hook_context.py` dan
 `hooks/session_start_bootstrap.py`.
 
+## Kontrak vendor
+
+Harness yang bukan Claude Code menjalankan dispatcher yang sama dengan
+`--contract <id>` setelah skripnya, misalnya
+`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+Kontrak (`hooks/lib/vendor_contract.py`) menerjemahkan ejaan peristiwa dan nama
+tool serta kunci payload milik vendor ke bentuk Claude yang dibaca para
+penangan, menulis ulang amplop ke bentuk yang dibaca vendor, dan membuang
+peristiwa yang tidak diserahkan vendor ke model. Tanpa flag tersebut tidak ada
+yang diterjemahkan dan keluarannya adalah amplop Claude, byte demi byte. Flag
+itu adalah bagian dari baris perintah dispatcher yang terdokumentasi: `dispatch.py [--contract <id>]
+<Event> [<message> ...]`.
+
+| Kontrak | Membaca | Keluaran | Peristiwa yang dikirimkan |
+| --- | --- | --- | --- |
+| `codebuddy` | stdin Claude | amplop Claude | SessionStart, UserPromptSubmit, PostToolUse |
+| `devin` | stdin Claude dengan nama tool huruf kecil (`exec`, `write`, `edit`); root proyek dari `DEVIN_PROJECT_DIR` | amplop Claude | SessionStart, UserPromptSubmit, PostToolUse |
+| `cursor` | peristiwa camelCase, `conversation_id`, `workspace_roots` | `{"additional_context": ...}` | SessionStart |
+| `copilot` | camelCase `sessionId`, `toolName`, `toolArgs`, atau bentuk snake_case PascalCase | `{"additionalContext": ...}` | SessionStart, PostToolUse, Notification |
+| `kiro` | stdin mirip Claude, id tool Kiro (`execute_bash`, `fs_write`, `str_replace`) | teks polos | SessionStart, UserPromptSubmit |
+| `claude` | stdin Claude | amplop Claude | setiap peristiwa |
+
+Kontrak `codebuddy`, `copilot`, `cursor`, `devin` dan `kiro` saat ini dipasang
+oleh adapter Apothem (`devin` oleh adapter Windsurf); kontrak `claude`
+membuktikan bahwa baris perintah bawaan tidak berubah. Dispatcher tetap bersifat
+saran di bawah setiap kontrak: tidak ada bentuk yang membawa izin, keputusan,
+pemblokiran, atau input tool yang ditulis ulang.
+
+Cursor dan Devin Local memuat hook yang disimpan berkas pengaturan Claude Code
+selain hook mereka sendiri, sehingga dengan pemasangan Claude Code Apothem di
+mesin yang sama dua set dapat berjalan. Bootstrap SessionStart dikirimkan
+sekali: perintah milik vendor (`--contract cursor` atau `--contract devin`) dan
+salinan Claude Code, yang merupakan baris perintah bawaan, berbagi satu penanda
+per sesi dan sumber di direktori status hook, dan mana pun yang berjalan kedua
+akan diam. Baris perintah bawaan hanya ikut serta ketika lingkungan proses
+menyebut host-nya (`CURSOR_PROJECT_DIR`, `CURSOR_VERSION` atau
+`DEVIN_PROJECT_DIR`); di bawah Claude Code, Codex dan Qwen Code ia tidak pernah
+membaca penanda itu. Penanda berlaku selama sepuluh detik, sehingga awal sesi
+yang sama berikutnya, seperti pemadatan kedua, tetap mengirimkan konteks
+pemulihannya. Tidak ada penghitung PostToolUse yang dideduplikasi, sehingga
+penghitung ukuran konteks berjalan di kedua tempat dan mencapai ambangnya lebih
+awal. Pemasangan mencetak catatan yang menyebut sakelar vendor untuk mematikan
+impor tersebut ("Include Third-Party Plugins, Skills, and Other Configs" milik
+Cursor; `read_config_from.claude` milik Devin).
+
+Sebuah perintah didaftarkan hanya di tempat vendor menyerahkan keluarannya ke
+model. Kiro menambahkan stdout hook ke konteks hanya untuk `SessionStart` dan
+`UserPromptSubmit`, sehingga berkas Kiro hanya mendaftarkan `SessionStart`.
+Copilot membaca `additionalContext` dari `sessionStart` dan `postToolUse` dan
+hanya bidang izin dari `preToolUse`, sehingga berkas Copilot mendaftarkan kedua
+peristiwa tersebut, dengan nama camelCase-nya, dan tanpa penjaga. Setiap entri
+Copilot membawa perintah `bash` dan `powershell`. Kedua berkas dimiliki Apothem
+dan menyebut interpreter serta jalur proyek dari mesin yang menjalankan
+pemasangan; halaman harness menjelaskan apa artinya bagi berkas yang di-commit
+sebuah repositori.
+
+Devin Local membaca `additionalContext` dari `SessionStart`, `UserPromptSubmit`
+dan `PostToolUse` dan tidak mendokumentasikannya untuk `PreToolUse`, sehingga
+pendaftaran Windsurf memuat `SessionStart` dan `PostToolUse`, tanpa matcher
+(matcher Devin adalah ekspresi reguler, dan matcher yang dihilangkan cocok
+dengan setiap tool). Pendaftaran itu ditempatkan di override lokal
+`.devin/config.local.json`, yang didokumentasikan Devin sebagai di-gitignore dan
+dikecualikannya sendiri dari git melalui `.git/info/exclude`.
+Hook `sessionStart` milik Cursor menambahkan `additional_context` ke konteks awal
+percakapan; versi pertama hanya mendaftarkan peristiwa tersebut.
+`.cursor/hooks.json` milik Cursor adalah satu-satunya berkas hook proyek,
+sehingga berkas itu milik operator: pemasangan menggabungkan satu entri ke
+dalamnya, mempertahankan entri dan kunci milik operator, menolak berkas yang
+tidak dapat ditulis ulangnya tanpa kehilangan, dan membedakan entrinya sendiri
+melalui jalur dispatcher di dalam perintah. Aplikasi desktop Cursor menjalankan
+perintah hook melalui PowerShell di Windows, sehingga di host Windows
+perintahnya diawali dengan `& `.
+
+Di kelima berkas, sebuah entri adalah milik Apothem ketika perintahnya
+menjalankan `.apothem/support/[<harness>/]hooks/dispatch.py` dengan
+`--contract <id>`, di jalur proyek mana pun entri itu ditulis. Karena itu proyek
+yang diganti nama, dipindahkan, atau dikloning tetap memiliki satu set entri,
+dan hook milik Anda, seperti `hooks/dispatch.py` di pohon Anda sendiri atau
+`python -m apothem.conformity.gate`, tidak pernah diganti atau dihapus.
+`apothem verify` melaporkan pendaftaran hilang begitu tidak ada lagi entri
+Apothem yang tersisa di berkas, dan pencopotan yang tidak dapat membaca berkas
+melaporkannya sebagai dilewati. Jalur proyek atau interpreter yang memuat `$`,
+backtick, tanda kutip ganda, atau backslash ditolak saat pemasangan, dengan
+menyebut jalurnya, karena perintah yang dikutip akan menjalankan berkas lain.
+
 ## Konteks pesan
 
 Konteks Markdown per peristiwa berada di bawah `src/apothem/hooks/messages/`:
 
-- Siklus hidup sesi: `sessionstart.md`, `precompact.md`, `postcompact.md`,
-  `stop.md`, `posttooluse-proactive-compaction.md`
+- Siklus hidup sesi: `sessionstart.md`, `skill-index.md`, `precompact.md`,
+  `postcompact.md`, `stop.md`, `posttooluse-proactive-compaction.md`
 - Panggilan shell: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
 - Penulisan berkas: `pretooluse-write.md`, `pretooluse-edit.md`,
   `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
@@ -64,28 +168,79 @@ Di Claude Code, `postcompact.md` dikirimkan oleh hook SessionStart ketika sesi
 dilanjutkan setelah pemadatan, karena Claude Code tidak meneruskan keluaran hook
 PreCompact atau PostCompact ke asisten.
 
+`skill-index.md` dihasilkan, bukan ditulis: `scripts/dev/generate_skill_index.py`
+merendernya dari katalog skill dan perintah, satu baris per kelompok tugas,
+dengan skill manual ditampilkan sebagai `/apothem:<name>`. Di Claude Code, hook
+SessionStart menambahkannya ke konteks sesi ketika berkas itu ada. Berkas ini
+ada karena Claude Code membuang deskripsi skill dari daftarnya begitu daftar
+tersebut melampaui anggaran karakternya, dan indeks menjaga agar setiap skill
+tetap dapat ditemukan berdasarkan tugas. Pemasangan plugin menampilkan skill
+manual sebagai `/apothem:<name>`; pemasangan mesin menghilangkan prefiksnya.
+Teksnya tetap di bawah 1.600 karakter, dan `generate_skill_index.py
+--check` gagal ketika berkas yang di-commit tidak lagi cocok dengan katalog.
+
+Ketika Apothem berjalan sebagai plugin Claude Code saja, tidak ada berkas aturan
+yang dimuat saat peluncuran. Hook SessionStart kemudian menambahkan penunjuk
+singkat ke direktori `rules/` yang dibundel. Jika direktori itu memuat
+`apothem-rule-index.md`, penunjuk itu juga memberi tahu sesi untuk membaca empat
+aturan inti terlebih dahulu, karena tidak ada yang memuatnya dalam postur ini
+(`agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management`), dan menyebut indeksnya, yang menyatakan aturan mana yang
+dibaca untuk tugas mana. Teks indeks tidak disisipkan langsung.
+
+Ketika proyek memuat basis pengetahuan yang dibuat oleh skill `knowledge-wiki`,
+hook SessionStart membandingkan sidik jarinya dengan yang tercatat pada baseline
+terakhir dan, jika berbeda, menambahkan satu baris yang menyarankan mode drift
+skill tersebut (`--mode drift --kb <path>`). Sidik jarinya adalah jumlah halaman
+ditambah entri log terbaru; salinan yang tercatat adalah baris `baseline`
+terbaru di `log.md` milik basis tersebut, yang hanya ditulis oleh mode drift.
+Hook memeriksa empat jalur di bawah root proyek, secara berurutan:
+`knowledge-base/`, `wiki/`, `docs/knowledge-base/` dan `docs/wiki/`, dan hanya
+direktori yang memuat `index.md` sekaligus `log.md`. Proyek tanpa basis seperti
+itu membayar kurang dari satu milidetik. Dengan basis tersebut, hook membaca
+paling banyak 256 KiB terakhir dari `log.md` dan mendaftar tiga direktori datar;
+hook tidak pernah menelusuri pohon dan tidak pernah menulis. Baris itu memuat
+jalur tetap, tanggal, dan dua jumlah halaman, tidak pernah teks dari basis
+tersebut. Hook tetap diam ketika tidak ada basis, tidak ada baseline, tidak ada
+perubahan, atau ada berkas yang tidak dapat dibacanya, dan baris itu diulang
+setiap sesi sampai mode drift mencatat baseline baru. Basis di jalur lain mana
+pun berfungsi di setiap mode skill tetapi tidak mendapat baris awal sesi.
+
 Setiap berkas konteks dimuat oleh dispatcher ketika peristiwanya terpicu dan
 argumen konteksnya terdaftar di berkas pengaturan. Baris komentar lisensi dan
 bagian penutup `## Bindings` dihapus sebelum teks mencapai asisten; keduanya ada
 untuk pemelihara dan gerbang konformitas.
 
+Penjaga yang tidak menemukan apa pun tidak menyuntikkan apa pun. Penjaga yang
+terpicu hanya menyuntikkan bagian `## Advisory` dari pesannya, diisi dengan apa
+yang ditemukannya (jalur, pengenal, primitif), diikuti oleh
+`Full procedure: <message-file>`. Sisa berkas adalah prosedur lengkap, yang
+dibaca asisten hanya ketika memerlukan detailnya. Penjaga menilai "di dalam
+proyek" terhadap root git di atas direktori kerja panggilan tool, tidak pernah
+terhadap pohon tempat hook dipasang.
+
 ## Kontrak runtime
 
 Setiap perintah hook yang terdaftar memenuhi kontrak yang sama, yang diperiksa
 oleh `tests/hooks/test_hook_contract.py` pada plugin, pemasangan mesin Claude
-Code, Codex, dan Qwen Code:
+Code, Codex, Qwen Code, dan pemasangan CodeBuddy (berkas Kiro, Copilot, Cursor
+dan Windsurf diperiksa terhadap kontraknya oleh
+`tests/hooks/test_native_hook_registrations.py` dan dijalankan sebagaimana
+vendor menjalankannya oleh `tests/integration/test_native_hook_files_roundtrip.py`,
+`test_cursor_hooks_roundtrip.py` dan `test_windsurf_hooks_roundtrip.py`):
 
 - **Berjalan dari checkout biasa.** Keluar dengan kode 0, dan keluaran standar
   kosong atau berupa satu objek JSON. Tidak ada hook yang bergantung pada bit
   executable sebuah berkas.
-- **Didaftarkan sekali.** Setiap pasangan peristiwa, matcher, dan pesan muncul
-  sekali per permukaan, sehingga sebuah hook tidak pernah berjalan dua kali pada
-  satu panggilan tool.
+- **Didaftarkan sekali.** Setiap peristiwa dan matcher memiliki satu entri
+  dispatcher per permukaan, yang mencantumkan setiap pesan yang dievaluasinya,
+  sehingga sebuah penjaga tidak pernah berjalan dua kali pada satu panggilan
+  tool.
 - **Terbatas.** Tidak ada teks yang dipancarkan melebihi 10.000 karakter. Penjaga
   dependensi hanya bersuara ketika sebuah penulisan menargetkan manifest
   dependensi atau lockfile, dan penjaga eval dinamis hanya ketika konten atau
   perintah mengandung primitif evaluasi atau deserialisasi tidak aman. Saran
-  pemadatan terpicu paling banyak dua kali per sesi.
+  pemadatan terpicu paling banyak dua kali per siklus pemadatan.
 - **Menggunakan kanal yang diteruskan harness.** Panduan PreToolUse dibawa di
   `hookSpecificOutput`; penjaga AskUserQuestion mengembalikan
   `additionalContext`, atau `permissionDecision: deny` di bawah opt-in ketat.
@@ -95,7 +250,7 @@ Code, Codex, dan Qwen Code:
 - **Tidak pernah menjalankan kode proyek.** Bootstrap me-resolve pohon
   terpasangnya sendiri dan tidak pernah mengambil skrip dari proyek yang dibuka.
   Panduan awal sesi dibaca dari pohon terpasang; direktori proyek dibaca hanya
-  untuk ringkasan rencana dan memori.
+  untuk ringkasan rencana dan memori serta pemeriksaan drift basis pengetahuan.
 - **Gagal terbuka.** Berkas pesan yang hilang, interpreter yang hilang, atau
   status yang rusak menghasilkan kode keluar 0 dan amplop yang valid.
 
@@ -105,9 +260,16 @@ Code, Codex, dan Qwen Code:
 | `APOTHEM_SESSION_END_ENABLED` | nonaktif | `1`, `true`, `yes` atau `on` mengaktifkan protokol akhir sesi pada Stop. Hook Stop yang mengembalikan konteks membuat asisten melanjutkan, sehingga protokol ini memakan satu giliran tambahan per sesi; protokol ini tidak pernah terpicu pada penghentian yang sudah mengikuti kelanjutan yang digerakkan hook |
 | `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Jumlah akhir giliran sebelum protokol akhir sesi boleh terpicu |
 | `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | aktif | `0`, `false`, `no` atau `off` membungkam saran pemadatan |
-| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Panggilan tool per jendela saran |
-| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Byte keluaran tool per jendela saran |
+| `APOTHEM_CONTEXT_WINDOW_TOKENS` | tidak diatur | Ukuran jendela konteks; dengan variabel ini (atau `CLAUDE_CODE_AUTO_COMPACT_WINDOW` milik Claude Code) saran terpicu pada 50% dan 75% dari jendela, jika tidak pada 120.000 dan 250.000 token |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Panggilan tool per jendela saran, hanya digunakan ketika ukuran konteks tidak dapat diukur |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Byte keluaran tool per jendela saran, hanya digunakan ketika ukuran konteks tidak dapat diukur |
 | `APOTHEM_HOOK_STATE_DIR` | lihat di bawah | Direktori untuk status hook per sesi |
+
+Saran pemadatan mengukur konteks dari catatan penggunaan terbaru di transkrip
+sesi (input ditambah token yang di-cache), sehingga mencerminkan apa yang
+benar-benar dipegang model. Penurunan tajam pada ukuran itu menandai pemadatan
+dan memulai ulang anggaran dua saran. Jika tidak ada transkrip, saran ini
+menghitung panggilan tool dan byte keluaran sebagai gantinya.
 
 Status hook per sesi berada di direktori per pengguna yang dibuat dengan mode
 `0700`: `APOTHEM_HOOK_STATE_DIR` bila diatur, jika tidak

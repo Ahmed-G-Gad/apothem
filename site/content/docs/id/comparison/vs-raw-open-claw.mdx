@@ -2,14 +2,16 @@
 title: "Apothem vs. konfigurasi Open-Claw mentah"
 description: "Memelihara konfigurasi Open-Claw dengan tangan versus mengelolanya melalui profil bersama Apothem."
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw membaca `~/.openclaw/openclaw.json`. `agents.defaults.skills`-nya adalah
-daftar nama yang diizinkan (bukan pemuat direktori) dan MCP adalah permukaan CLI,
-jadi Apothem tidak menulis kunci konfigurasi apa pun; ia memasang kohor perintah
-dan skill bersama di bawah `~/.openclaw/.apothem/support/skills/` sebagai materi pendukung.
+Open-Claw membaca `~/.openclaw/openclaw.json`. Apothem memasang kohor perintah
+dan skill bersama di bawah `~/.openclaw/.apothem/support/skills/` dan menulis satu
+kunci di sana, `skills.load.extraDirs`, yang mencantumkan direktori itu agar
+OpenClaw memuat skill tersebut. `agents.defaults.skills`-nya adalah daftar nama
+yang diizinkan milik Anda dan MCP adalah permukaan CLI, jadi Apothem tidak
+menulis keduanya.
 
 ## Status
 
@@ -31,7 +33,10 @@ tetap menjadi materi pendukung Apothem.
 Adaptor Open-Claw menulis `openclaw.json`, membungkus perintah garis miring
 Apothem sebagai skill, menyalin skill Apothem ke direktori pendukung yang
 direferensikan, dan menjaga aturan, templat, agents, dan materi hook di bawah
-pohon pendukung Apothem.
+pohon pendukung Apothem. OpenClaw membaca `skills.load.extraDirs` pada prioritas
+terendah di antara sumber skill-nya, sehingga skill dengan nama yang sama di
+ruang kerja Anda, `~/.agents/skills`, atau `~/.openclaw/skills` digunakan sebagai
+ganti salinan Apothem.
 
 ## Jalur migrasi
 

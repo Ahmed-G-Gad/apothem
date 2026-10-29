@@ -2,7 +2,7 @@
 title: "Flux d'installation"
 description: "Comment apothem install, update et uninstall fonctionnent de bout en bout."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,7 +51,12 @@ Chaque adaptateur écrit dans sa propre racine d'installation fixe : le réperto
 personnel de l'utilisateur pour les adaptateurs de portée utilisateur et le chemin
 local du projet pour les adaptateurs de portée projet. La CLI n'expose pas
 d'option `--scope` ; les adaptateurs de portée projet exigent `--project <path>`.
-Chaque destination est documentée dans
+Sept des adaptateurs de portée projet écrivent aussi des dossiers partagés dans
+le répertoire personnel de l'utilisateur, comme `~/.agents/skills/` et
+`~/.config/apothem/`, avant d'écrire le fichier de projet, et `--project` ne
+change pas l'emplacement de ceux-ci. La
+[référence d'install](/docs/cli-reference/install#dossiers-dans-votre-répertoire-personnel)
+les énumère. Chaque destination est documentée dans
 `site/content/docs/harnesses/<harness>.mdx`.
 
 ## Gestion des erreurs

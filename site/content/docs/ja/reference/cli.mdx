@@ -2,7 +2,7 @@
 title: "CLI リファレンス"
 description: "Apothem CLI リファレンス — すべてのサブコマンドとフラグ。"
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,9 +76,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
 | `--dry-run` | ファイルを書き込まずに更新をプレビューします。 |
 
-`update` はハーネスの出力を再マテリアライズします。Apothem CLI パッケージは
-更新しません。パッケージのアップグレードには、Apothem をインストールした
-パッケージマネージャーを使用してください。
+`update` はハーネスの出力を再マテリアライズします。Apothem エンジン自体は
+アップグレードしません。エンジンは、インストールに使用したチャネル（`/plugin` フロー、
+`npx`、またはインストーラーと更新スクリプト）を通じて更新してください。詳しくは
+[更新](/docs/install/updating) を参照してください。
 
 ### `apothem uninstall`
 
@@ -139,6 +140,7 @@ apothem status [--profile PATH] [--project PATH]
 | `in-sync` | インストール済みで、プロファイルのベースラインと一致しています。 |
 | `drift` | インストール済みですが、もはや一致していません — `apothem update` で修復します。 |
 | `unknown` | インストール済みですが、ベースラインのプロファイルを読み取れませんでした。 |
+| `needs-project` | プロジェクトスコープのハーネスが `--project` なしで報告されたため、そのターゲットを解決できません。 |
 
 `installed` が答えるのは「Apothem はここにインストールしたか？」であり、「このハーネスは
 マシン上に存在するか？」ではありません。判定は Apothem 自身のアーティファクト — 命令アンカー内の

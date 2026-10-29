@@ -2,7 +2,7 @@
 title: "Variáveis de ambiente do instalador"
 description: "Controle o instalador por script (destino, origem, harness, perfil, verificação) com variáveis de ambiente."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,7 @@ variáveis de ambiente antes de executá-lo.
 | `APOTHEM_VERIFY` | `signature` verifica a assinatura GPG da tag de lançamento; `checksum` instala o arquivo da plataforma do lançamento depois de conferir o SHA-256 dele com o `SHA256SUMS` do lançamento (integridade, não prova de quem o publicou) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de download para o modo checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Árvore de código-fonte local explícita a usar em vez de clonar | não definida (clona) |
-| `APOTHEM_HARNESS` | Harness a instalar | `claude-code` |
+| `APOTHEM_HARNESS` | Harness de escopo de usuário a instalar (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). O instalador não passa `--project`, então um harness de escopo de projeto falha com `project.required`; instale-os depois com `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Caminho para o YAML do perfil compartilhado | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Pula a etapa de verificação pós-instalação quando definida como `1` | `0` (a verificação é executada) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Instala automaticamente, sem perguntar, os pré-requisitos `click` / `rich` ausentes quando definida como `1` | `0` (pergunta, ou recusa em um pipe não interativo) |
@@ -78,10 +78,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Etapas (POSIX bash)
 
-1. Instale um harness diferente do padrão:
+1. Instale um harness de escopo de usuário diferente do padrão:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Fixe o destino da instalação e selecione a branch móvel `main`. Uma branch
@@ -106,7 +106,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Defina cada variável em `$env:` antes de executar o instalador:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -130,7 +130,15 @@ O instalador imprime `✓ Harness <name> installed` e depois (a menos que
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Confirme de forma independente:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Para um harness de escopo de projeto como o Cursor, execute você mesmo a instalação e a
+verificação depois do instalador, com `--project`:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Quando o perfil ainda não existia, o instalador cria um a partir do exemplo e

@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Kiro اليدوية"
 description: "صيانة ملفّات توجيه Kiro ضمن .kiro/steering/ يدويًّا، مقابل تصييرها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "a4a26f280f1271a3"
+sourceHash: "58351c9a748f4d91"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,17 @@ sourceHash: "a4a26f280f1271a3"
 | كتابة قواعد التوجيه | كتابة كلّ ملفّ ضمن <bdi>`.kiro/steering/`</bdi> يدويًّا | مُصيَّرة من المتن المشترك |
 | إبقاء ملفّات الأساس دون مساس | تذكُّر عدم استبدال <bdi>`product.md`</bdi> / <bdi>`tech.md`</bdi> / <bdi>`structure.md`</bdi> | يكتب المحوِّل ملفّ <bdi>`apothem-rules.md`</bdi> فقط |
 | إبقاء القواعد متوائمة مع أُطُر العمل الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًّا إلى <bdi>`~/.kiro/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوِّل في <bdi>`~/.kiro/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
+| إبقاء المساعِدات القابلة لإعادة الاستخدام متزامنة | كتابة كل ملف وكيل مخصّص يدويًّا ضمن <bdi>`.kiro/agents/`</bdi> وتتبّع فئات أدوات <bdi>Kiro</bdi> | أربعة عشر مساعِدًا تُكتب في <bdi>`.kiro/agents/`</bdi> مع ترجمة أدواتها، وتُحدَّث عند <bdi>`apothem update`</bdi> |
 | التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness kiro --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem
 
 يصيّر محوِّل <bdi>kiro</bdi> القواعد المشتركة في ملفّ توجيه <bdi>`apothem-rules.md`</bdi>
 مخصّص يحمل بيانات أمامية <bdi>`inclusion: always`</bdi>، ولا يمسّ ملفّات الأساس التي
-كتبها مشغّل <bdi>Kiro</bdi>. ولا يمتلك <bdi>Kiro</bdi> خطّاف <bdi>PreToolUse</bdi>، لذا
+كتبها مشغّل <bdi>Kiro</bdi>. ويكتب أيضًا مساعِدات <bdi>Apothem</bdi> الأربعة عشر بوصفها وكلاء
+مخصّصين لـ <bdi>Kiro</bdi> في <bdi>`<project>/.kiro/agents/`</bdi>، لكلٍّ من <bdi>Kiro IDE 1.0</bdi>
+و<bdi>Kiro CLI V3</bdi>. ويوثّق <bdi>Kiro</bdi> خطّافات الوكلاء، ولا يكتبها المحوِّل، لذا
 يسكن مقصد المتراس في نصّ القواعد بدلًا من نقطة اعتراض لاستدعاء الأداة. وكلّ تغيير في
 القواعد المشتركة يعيد تصيير الملفّ عند <bdi>`apothem update`</bdi> التالي.
 

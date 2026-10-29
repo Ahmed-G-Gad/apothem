@@ -2,7 +2,7 @@
 title: "Header Kepengarangan — Baris Lisensi SPDX per Berkas"
 description: "Mendefinisikan dan menegakkan penanda pengidentifikasi lisensi SPDX per berkas menggunakan header satu baris kanonik dalam sintaks komentar yang sesuai untuk setiap tipe berkas."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ Disiplin ini harus bertahan melewati setiap sesi mendatang dan setiap kontributo
 4. **Hook pre-commit** — hook `conformity-corpus-perwrite` menjalankan setiap matcher per-Write, termasuk validator `file-header` (§8), atas pohon yang dilacak dengan `--strict`. Matcher `file-header` bersifat memblokir, sehingga temuannya memblokir commit. Hook ini hanya memeriksa. Hook ini tidak memiliki mode perbaikan dan tidak pernah menjalankan injektor (§7), yang berjalan melalui `make headers-fix`.
 5. **Blok perilaku wajib `CLAUDE.md`** — menginstruksikan asisten untuk menyuntikkan baris SPDX kanonik setiap kali membuat berkas yang berlaku.
 6. **Berkas instruksi GitHub Copilot** di `.github/copilot-instructions.md` — menginstruksikan Copilot untuk melakukan hal yang sama saat menghasilkan berkas.
-7. **Hook PreToolUse** di `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — mencegat pemanggilan tool Write/Edit pada jalur yang berlaku agar baris SPDX disuntikkan saat berkas dibuat, bukan baru ditemukan sebagai temuan validator di kemudian hari.
+7. **Hook PreToolUse** di `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — mencegat pemanggilan tool Write/Edit pada jalur yang berlaku agar baris SPDX disuntikkan saat berkas dibuat, bukan baru ditemukan sebagai temuan validator di kemudian hari. Pemeriksa milik guard tersebut, `src/apothem/hooks/lib/header_check.py`, hanya menggunakan pustaka standar dan membaca fixture serta daftar pengecualian dari direktori `schemas/` di samping `hooks/`, sehingga pemeriksa ini juga bekerja di bawah plugin Claude Code, tempat paket `apothem` tidak dapat diimpor. Pemeriksa ini menerapkan tabel varian dan aturan lokasi penyisipan milik injektor pada berkas di dalam proyek, dan hanya dalam proyek git yang membawa fixture header (`src/apothem/schemas/authorship-header.txt`), karena baris SPDX adalah konvensi repositori ini dan bukan bawaan untuk setiap proyek yang dibuka plugin.
 8. **Kotak centang templat PR** — pernyataan untuk kontributor bahwa setiap berkas baru membawa baris SPDX kanonik.
 9. **Dokumen ini** (`site/content/docs/reference/authorship-header.mdx`) — penjelasan kanonik dan normatif.
 

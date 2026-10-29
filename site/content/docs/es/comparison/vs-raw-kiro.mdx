@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración manual de Kiro"
 description: "Mantener a mano los archivos de dirección de Kiro bajo .kiro/steering/ frente a renderizarlos desde el perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "a4a26f280f1271a3"
+sourceHash: "58351c9a748f4d91"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,17 @@ frente a gestionarla con Apothem.
 | Escribir reglas de dirección | Escribir a mano cada archivo bajo `.kiro/steering/` | Renderizadas desde el corpus compartido |
 | Mantener intactos los archivos de base | Recordar no sobrescribir `product.md` / `tech.md` / `structure.md` | El adaptador escribe solo `apothem-rules.md` |
 | Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Compartir skills y comandos reutilizables | Copiar a mano cada carpeta de skill en `~/.kiro/skills/` y mantener las copias al día | Escritas en `~/.kiro/skills/` por el adaptador, una copia para todos los proyectos, y actualizadas con `apothem update` |
+| Mantener sincronizados los ayudantes reutilizables | Escribir a mano cada archivo de agente personalizado bajo `.kiro/agents/` y seguir las categorías de herramientas de Kiro | Catorce ayudantes escritos en `.kiro/agents/` con sus herramientas traducidas, y actualizados con `apothem update` |
 | Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness kiro --project <path>` |
 
 ## Qué gestiona Apothem
 
 El adaptador kiro renderiza las reglas compartidas en un archivo de dirección
 `apothem-rules.md` dedicado con front matter `inclusion: always` y no toca los archivos
-de base escritos por el operador de Kiro. Kiro no tiene un hook PreToolUse, por lo que
+de base escritos por el operador de Kiro. También escribe los catorce ayudantes de
+Apothem como agentes personalizados de Kiro en `<project>/.kiro/agents/`, para Kiro IDE
+1.0 y Kiro CLI V3. Kiro documenta hooks de agente, que el adaptador no escribe, por lo que
 la intención de los guardarraíles vive en la prosa de las reglas en lugar de en un
 punto de interceptación de llamadas a herramientas. Cada cambio en las reglas
 compartidas vuelve a renderizar el archivo en el siguiente `apothem update`.

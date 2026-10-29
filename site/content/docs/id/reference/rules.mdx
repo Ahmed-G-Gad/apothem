@@ -2,7 +2,7 @@
 title: "Aturan"
 description: "Aturan perilaku yang selalu aktif dan yang tersaring jalur, yang mengatur pemecahan masalah, keterampilan kode, arsitektur bersih, perencanaan, dan kualitas di seluruh kumpulan aturan perilaku."
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,25 +13,11 @@ aktif atau tersaring jalur.
 
 ## Aturan aktif
 
-Registri kanonisnya adalah kohor aturan. Kumpulan yang sama dalam bentuk datar:
-
-| Aturan | Cakupan | Mengimplementasikan |
-|------|-------|------------|
-| Auto Memory | Selalu aktif | CM-26 |
-| Clean-Room Generation | Selalu aktif | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Selalu aktif | CM-21 |
-| Context Management | Selalu aktif | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Tersaring jalur | CM-12 / CM-24 (pendamping) |
-| Conventions Vigilance | Selalu aktif | CM-22 |
-| Interactive Questions | Selalu aktif | Ekstensi CM-2 |
-| Interactive Questions Sweep Matchers | Tersaring jalur | Ekstensi CM-2 (pendamping) |
-| Operational Mandates | Selalu aktif | CM-1–10 |
-| Worker Orchestration | Selalu aktif | CM-17 / CM-25 |
-| Clean Architecture | Tersaring jalur | CM-27 |
-| Large File Generation | Tersaring jalur | CM-23 |
-| Performance Discipline | Tersaring jalur | Sumbu kinerja |
-| Planning Techniques | Tersaring jalur | CM-20 / CM-21 |
-| Python Senior Architect | Tersaring jalur | CM-28 |
+Registri kanonisnya adalah kohor aturan di `src/apothem/rules/`.
+[Inventaris yang dihasilkan](#inventaris-aturan-yang-dihasilkan) di bagian bawah
+halaman ini mencantumkan setiap aturan beserta deskripsi dan berkas sumbernya.
+Lima aturan bersifat selalu aktif dan sisanya tersaring jalur; bagian berikutnya
+menyebut kelima aturan yang dimuat di setiap sesi.
 
 ## Kontrak frontmatter
 
@@ -57,22 +43,41 @@ dibaca mesin adalah
 `pathFilter` dan `alwaysApply` bersifat netral terhadap harness. Setiap adapter
 menerjemahkannya bila harness-nya memiliki field cakupan native. Claude Code
 hanya membaca `paths:` dari sebuah aturan dan memuat setiap aturan yang tidak
-memilikinya saat diluncurkan, sehingga pemasangan mesin
+memilikinya saat diluncurkan, sebagaimana ia memperlakukan aturan yang
+`paths:`-nya hanya `**`, sehingga pemasangan mesin
 (`apothem install --harness claude-code`) menulis setiap aturan yang tersaring
 jalur ke `~/.claude/rules/` dengan daftar `paths:` yang dibangun dari
-`pathFilter`-nya, dan menyalin aturan yang selalu aktif tanpa perubahan. Ke-28
-aturan yang selalu aktif dimuat di setiap sesi; ke-63 pendamping yang tersaring
-jalur dimuat ketika asisten membaca berkas yang cocok.
+`pathFilter`-nya, dan menulis setiap salinan aturan tanpa bagian Bindings
+penutupnya. Lima aturan dimuat di setiap sesi: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, dan indeks aturan.
+Ke-90 aturan lainnya tersaring jalur dan dimuat ketika asisten membaca berkas
+yang cocok. Menambahkan sebuah aturan ke kumpulan selalu aktif mengubah daftar
+inti dan batas atas byte dalam perubahan yang sama.
+
+Indeks aturan, `apothem-rule-index`, adalah satu-satunya berkas selalu aktif
+yang menyebut setiap aturan lain dan situasi yang memerlukannya. Harness yang
+membatasi cakupan aturan berdasarkan jalur memuat aturan bercakupan saat terjadi
+sentuhan yang cocok. Harness yang tidak melakukannya tidak memuat satu pun dari
+aturan tersebut, sehingga indeks, kalimat di berkas instruksi yang menunjuk ke
+indeks itu, serta aturan dan skill yang mengutip sebuah aturan melalui jalurnya
+adalah cara sesi menjangkaunya. Setelah pemadatan konteks, aturan bercakupan
+tidak lagi berada di konteks, dan indeks memberi tahu asisten untuk membaca
+ulang aturan apa pun yang sedang diterapkannya. Claude Code mencocokkan filter
+jalur hanya terhadap berkas di dalam direktori kerja, sehingga aturan auto
+memory, yang berkasnya berada di bawah `~/.claude/projects/`, menjangkau sesi
+melalui indeks dan bukan melalui kecocokan jalur.
 
 OpenCode tidak memiliki field cakupan per aturan: OpenCode menggabungkan setiap
 berkas yang disebut daftar `instructions` di `opencode.json` miliknya ke dalam
 setiap sesi. Karena itu, pemasangan OpenCode
 (`apothem install --harness opencode`) mencantumkan dokumen profil Anda dan
-hanya aturan yang `alwaysApply`-nya bernilai `true`, satu jalur
-`~/.config/opencode/...` eksplisit per berkas, yang dibaca dari berkas aturan
-saat konfigurasi ditulis. Setiap aturan, termasuk yang tersaring jalur, tetap
-dipasang di bawah `~/.config/opencode/.apothem/support/rules/`, tempat aturan,
-skill, atau perintah yang mengutip sebuah aturan membacanya sesuai kebutuhan.
+hanya aturan yang `alwaysApply`-nya bernilai `true` (keempat aturan inti dan
+indeks aturan), satu jalur `~/.config/opencode/...` eksplisit per berkas, yang
+dibaca dari berkas aturan saat konfigurasi ditulis. Setiap aturan, termasuk yang
+tersaring jalur, tetap dipasang di bawah
+`~/.config/opencode/.apothem/support/rules/`, tempat indeks menyebutnya dan
+aturan, skill, atau perintah yang mengutip sebuah aturan membacanya sesuai
+kebutuhan.
 
 ## Disiplin penulisan
 

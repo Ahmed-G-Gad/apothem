@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis — Réconcilie les sources collectées en une carte de l'état de l'art et une matrice de littérature, vérifie de manière contradictoire chaque affirmation et énonce la lacune de recherche explicite."
 machineTranslated: true
-sourceHash: "41141e6d1904a0ea"
+sourceHash: "c9f85b95a0e0ceb8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Avec des arguments :
 
 ## Sorties
 
-`_inputs/synthesis.md` — la carte de l'état de l'art, la matrice de littérature, le registre des constats contestés et l'énoncé explicite de la lacune en une seule phrase.
+`_inputs/synthesis.md` — la carte de l'état de l'art, la matrice de littérature, le registre des constats contestés et l'énoncé explicite de la lacune en une seule phrase avec la couverture de recherche sur laquelle il repose. Elle rapporte à la fois le nombre de rapports et le nombre d'études.
 
 ## En aval
 
@@ -41,8 +41,8 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 1. **Charger le contexte** — Lire le registre de sources et les extractions par source.
 2. **Vérifier le Portail de séquence** — Confirmer que le registre de sources existe ; sinon, s'arrêter avec `Blocked: run /research-sources first`.
-3. **Synthétiser** — Construire la carte de l'état de l'art + matrice de littérature ; réconcilier les accords et les contradictions ; énoncer la lacune explicite.
-4. **Vérifier de manière contradictoire** — Toute affirmation porteuse est réfutée par défaut par rapport à deux sources indépendantes ou plus.
+3. **Synthétiser** — Construire la carte de l'état de l'art + matrice de littérature, en reportant l'identifiant d'étude, la classe de preuve et le statut d'intégrité de chaque source depuis le registre ; réconcilier les accords et les contradictions ; énoncer la lacune explicite et nommer la couverture de recherche sur laquelle elle repose.
+4. **Vérifier de manière contradictoire** — Toute affirmation porteuse est réfutée par défaut par rapport à deux études indépendantes ou plus.
 5. **Mettre à jour le manifeste de transfert** — Enregistrer le chemin de synthèse et le registre des affirmations contestées.
 6. **Émettre la synthèse** — `_inputs/synthesis.md`.
 
@@ -50,12 +50,19 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 Avant que l'énoncé de la lacune ne soit finalisé, la synthèse réconcilie sa terminologie, ses constats et ses recommandations avec les corpus frères apparentés (cohérence inter-corpus) ; un conflit est consigné dans le registre des constats contestés, jamais harmonisé en silence. La lacune doit se résoudre en une contribution distincte et parcimonieuse — non déjà comblée par une affirmation corroborée, et non décomposable en éléments non distincts qui se chevauchent.
 
+## Compter les preuves
+
+- **Des études, non des rapports.** Les rapports qui partagent un identifiant d'étude dans le registre, les études qui partagent un échantillon collecté et les sources qui se citent mutuellement comptent comme une seule source ; deux articles d'un même groupe d'auteurs sont d'abord vérifiés pour des données partagées. Les niveaux de certitude comptent les études indépendantes de la même manière.
+- **Intégrité.** Une source rétractée ou retirée ne compte pas pour la corroboration, et une source dont le statut d'intégrité est `concern` n'est jamais le seul appui d'une affirmation.
+- **Preuves contraires et couverture.** Une synthèse antérieure trouvée lors de la recherche permet de localiser des études primaires et ne compte pas à côté d'elles. Lorsque la classe des preuves contraires n'a rien retenu, le constat est consigné comme `none found in the searches recorded`, jamais comme un consensus, et la phrase de la lacune nomme sa portée dans les mêmes termes : les index, les termes et la plage de dates, la date de dernière exécution, et toute passe marquée `incomplete`.
+
 ## Modes de défaillance
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Blocked: run /research-sources first | Aucun registre de sources | Exécutez `/research-sources` pour produire `_inputs/source-ledger.md` |
-| Une affirmation survit sans ≥2 sources | Corroboration insuffisante | Marquez-la comme contestée ou non vérifiable ; ne l'affirmez pas |
+| Une affirmation survit sans ≥2 études indépendantes | Corroboration insuffisante, ou les sources partagent une étude ou un échantillon | Marquez-la comme contestée ou non vérifiable ; ne l'affirmez pas |
+| Lacune énoncée comme une absence dans le domaine | La phrase de la lacune ne s'appuie sur aucune couverture de recherche | Nommez les recherches consignées comme portée ; n'affirmez jamais une absence au-delà de celles-ci |
 | Aucun énoncé explicite de la lacune | À la synthèse manque une cible | Redérivez la lacune en une seule phrase que la recherche comble |
 
 ## Exemples

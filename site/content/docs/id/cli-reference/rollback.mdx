@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "cff52dcbcba63390"
+sourceHash: "398c0c678cace0b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,19 @@ dimulai dari perubahan terbaru, perintah ini:
   menggunakannya;
 - menghapus direktori yang dibuat oleh pemasangan, setelah direktori tersebut
   kosong.
+
+Berkas atau folder di direktori home Anda yang juga digunakan oleh pemasangan
+lain (folder skill, atau `~/.config/apothem/`) diperlakukan seperti
+penyimpanan data bersama: rollback mempertahankannya selama pemasangan lain
+masih mencantumkannya, dan memulihkan atau menghapusnya hanya untuk pemasangan
+terakhir yang menggunakannya. Folder yang ditemukan pemasangan ini sudah ada
+(alat kedua yang dipasang setelah alat pertama) ikut hilang bersama pemasangan
+terakhir yang menggunakannya ketika folder itu dibuat oleh pemasangan yang
+sejak itu telah melepaskannya, sehingga me-rollback setiap alat tidak
+meninggalkan apa pun. Ketika catatan pemasangan yang dapat menggunakan folder
+tersebut tidak dapat dibaca, rollback berhenti dengan galat sebelum mengubah
+apa pun dan tidak menulis catatan `rollback`; perbaiki catatan tersebut lalu
+jalankan lagi.
 
 Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin
 ke root cadangan Apothem (`~/.apothem/backups/`), sehingga rollback itu sendiri

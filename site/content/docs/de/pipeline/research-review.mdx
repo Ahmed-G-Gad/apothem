@@ -2,14 +2,14 @@
 title: "/research-review"
 description: "/research-review — Adversarielle Kritik des Artikels auf Peer-Review-Niveau: eine siebenachsige Gutachter-Bewertungskarte (Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung, Konformität mit Berichtsrichtlinien) plus eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen."
 machineTranslated: true
-sourceHash: "73915d388b353eda"
+sourceHash: "0f888b58aa245da1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rolle:** Leitender Forscher (Peer-Review)
 **Pipeline-Position:** Kettenmitte
 
-Unterzieht den Artikel einer adversariellen Kritik auf Peer-Review-Niveau gegen die Standards des Veröffentlichungsorts — Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung und Konformität mit Berichtsrichtlinien. Gibt eine **siebenachsige** Gutachter-Bewertungskarte sowie eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen aus, mit einer Begründung mit konkretem Treiber pro Befund. Widerlegung als Standard.
+Unterzieht den Artikel einer adversariellen Kritik auf Peer-Review-Niveau gegen die Standards des Veröffentlichungsorts — Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung und Konformität mit Berichtsrichtlinien. Gibt eine **siebenachsige** Gutachter-Bewertungskarte sowie eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen aus, mit einer Begründung mit konkretem Treiber pro Befund. Widerlegung als Standard, und jeder Punkt stützt sich auf die eigenen Worte und Belege des Entwurfs, nie auf das Ansehen des Veröffentlichungsorts, der Institution oder der Autorinnen und Autoren.
 
 ## Kanonischer Aufruf
 
@@ -20,16 +20,18 @@ Unterzieht den Artikel einer adversariellen Kritik auf Peer-Review-Niveau gegen 
 Mit Argumenten:
 
 ```bash
-/research-review [--suite-name NAME]
+/research-review [--suite-name NAME] [--venue STANDARD] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]
 ```
 
 ## Eingaben
 
-Das Artikel-Liefergut am hostnatürlichen Ort, den die Artikel-Phase aufgezeichnet hat.
+Das Artikel-Liefergut am hostnatürlichen Ort, den die Artikel-Phase aufgezeichnet hat. Mit `--paper` ist der Artikel eine von Ihnen bereitgestellte PDF- oder Textdatei (oder eingefügter Text), kein Liefergut einer Forschungs-Suite, und es wird keine Suite benötigt.
 
 ## Ausgaben
 
 `_outputs/review-report.md` — die **siebenachsige** Gutachter-Bewertungskarte (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien), die nach Schweregrad (HIGH / MEDIUM / LOW) triagierte Liste erforderlicher Überarbeitungen mit einer Begründung mit konkretem Treiber pro Befund, das Reproduzierbarkeitspaket und das Wiederholungs-Urteil, das Audit der Zitationsintegrität und das Gesamturteil `accept · minor-revision · major-revision · reject`.
+
+Mit `--paper` wird der Bericht nach `.apothem/plans/<date>--review-<slug>.md` im Projektstamm geschrieben (oder an den `--out`-Pfad): eine siebenachsige Bewertungskarte mit einer Zeile pro Gutachterrolle, Prüfzeilen für Gleichungen, Ablationen und Baselines, nach Schweregrad geordnete erforderliche Überarbeitungen, bis zu fünf Fragen an die Autorinnen und Autoren und eine Entscheidung, abgebildet auf die von Ihnen genannte Empfehlungsskala. Er ist als modellgestützte Lektüre gekennzeichnet, nicht als Peer-Review.
 
 ## Nachgelagert
 
@@ -41,12 +43,25 @@ Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
 
 1. **Kontext laden** — Das Paper als Liefergut lesen.
 2. **Das Sequenz-Gate prüfen** — Bestätigen, dass das Paper, `_outputs/analysis.md` und `_inputs/synthesis.md` existieren und nicht leer sind; andernfalls mit `Blocked: run /research-paper first` anhalten.
-3. **Adversariell begutachten** — Die sieben Achsen bewerten (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien); die Reproduzierbarkeits-Wiederholung und das Audit der Zitationsintegrität durchführen; Widerlegung als Standard ansetzen; konkrete Mängel mit Belegen verorten.
-4. **Überarbeitungen triagieren** — Die erforderlichen Überarbeitungen nach HIGH / MEDIUM / LOW einstufen, jeweils mit einer Begründung über einen konkreten Auslöser.
+3. **Adversariell begutachten** — Die sieben Achsen bewerten (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien); jede Behauptung als deskriptiv, assoziativ oder kausal typisieren und die wiederkehrenden Bewertungsfehler prüfen; prüfen, dass Abbildungen ehrlich codieren und ohne Farbe lesbar sind; die Reproduzierbarkeits-Wiederholung und das Audit der Zitationsintegrität durchführen; Widerlegung als Standard ansetzen; konkrete Mängel mit Belegen verorten.
+4. **Überarbeitungen triagieren** — Die erforderlichen Überarbeitungen nach HIGH / MEDIUM / LOW einstufen, jeweils mit einer Begründung über einen konkreten Auslöser. Eine Achse, die die Begutachtung nicht beurteilen kann, erhält kein Urteil; sie bleibt mit ihrer Begründung auf der Liste des Nicht-Beurteilten, und das Gesamturteil klammert sie ein.
 5. **Das Übergabe-Manifest aktualisieren** — Den Begutachtungsbericht und das Urteil der Bewertungskarte festhalten.
 6. **Die Begutachtung ausgeben** — `_outputs/review-report.md`.
 
+## Den Artikel einer anderen Person begutachten
+
+`--paper` begutachtet ein Manuskript, das nicht Teil einer Forschungs-Suite ist, zum Beispiel eine Einreichung, für die Sie um ein Gutachten gebeten wurden, oder einen Entwurf einer Kollegin oder eines Kollegen.
+
+- **Profil des Veröffentlichungsorts.** `--venue` nimmt die ID eines generischen Profils entgegen (zum Beispiel `empirical-conference` oder `field-journal`). Ein namentlich genannter Veröffentlichungsort verwendet das nächstgelegene generische Profil, und der Bericht sagt das. Apothem liefert nur generische Profile aus und beansprucht nie die eigenen Kriterien eines Veröffentlichungsorts; von Ihnen bereitgestellte Leitlinien gelten, wenn Sie sie einfügen, und der Berichtskopf hält ihre Quelle, ihr Datum sowie das Jahr oder den Zyklus und den Track fest, die sie abdecken.
+- **Manuskriptversion.** Der Bericht hält fest, welche Version gelesen wurde (Preprint, akzeptiertes Manuskript, Version of Record oder unbekannt), jede Versionsmarkierung, die die Datei trägt, woher sie stammt und an welchem Datum sie gelesen wurde, sodass die Begutachtung an eine einzige Revision gebunden ist.
+- **Gutachterrollen.** Die Standardrollen sind Methoden, Fachgebiet und Skeptiker. `--roles` ändert die Liste. Wo Rollen uneins sind, druckt der Bericht die Uneinigkeit aus, statt sie zu mitteln.
+- **Vertraulichkeit.** Sie werden einmal gefragt, ob der Artikel eine vertrauliche Einreichung, ein veröffentlichter Artikel oder Ihr eigener Entwurf ist. Ist die Antwort unbekannt, gilt die strengere Handhabung: Nachschlagen verwendet Titel, Kennungen oder generische Themenbegriffe und nie Sätze aus dem Manuskript.
+- **Neuheit.** Ohne Suite gibt es keine Karte früherer Arbeiten, daher verwendet die Begutachtung die vom Artikel benannten Nachbarn plus ein begrenztes Suchprotokoll. Eine leere Suche wird nie als Beleg für Neuheit gewertet, und die Konfidenz zur Neuheit bleibt niedrig, sofern das Protokoll nicht einen wissenschaftlichen Index abdeckt.
+- **Anonymität.** Für Ihre eigene Bereitschaftsprüfung bei einem doppelblinden Veröffentlichungsort untersucht die Begutachtung die Oberflächen jenseits des Fließtexts (Dokumenteigenschaften, mitgelieferte und verlinkte Dateien, Repository-Historie, ergänzende Archive, gerenderte Abbildungen); eine, die sie nicht öffnen kann, kommt auf die Liste des Nicht-Beurteilten, nie auf die Liste des Unbedenklichen. Bei einer Ihnen zugewiesenen vertraulichen Einreichung durchsucht die Begutachtung diese Oberflächen nicht nach Identität: Eine Identität, auf die sie ohne Suche stößt, wird Ihnen als Leck gemeldet und fließt in keine Bewertung ein.
+
 ## Rigorositätsuntergrenze
+
+Kein Achsenurteil, kein Befund und keine Konfidenz stützt sich auf eine Kennzahl auf Zeitschriftenebene, eine Zitationszahl, einen autorenbezogenen Index oder den Ruf des Veröffentlichungsorts, der Institution oder der Autorinnen und Autoren; eine Begutachtung, die eine solche Zahl zitiert, zitiert sie deskriptiv, mit dem, was sie misst, ihrer Quelle und dem Datum. Zu den Befunden mit Schweregrad HIGH gehören ein experimentelles Bild mit einem nicht offengelegten Splice, Composite oder Verarbeitungsschritt sowie ein registriertes Ergebnis, das ohne genannten Grund vom berichteten abweicht. Die statistische Begutachtung prüft, dass n die unabhängige Einheit zählt und nicht wiederholte Messungen, Folds oder Seeds einer einzigen Einheit.
 
 Die Begutachtung bewertet die empirischen Behauptungen gegen die Latte des Vorrückungs-Gates — angemessene Replikation, nichtparametrische Signifikanz mit einer Effektstärke und Rängen der kritischen Differenz sowie Budgetparität über die verglichenen Methoden hinweg — und behandelt das Urteil als ein explizites Vorrückungs-Gate: Ein Paper rückt nur dann vor, wenn es die Latte des Publikationsorts überzeugend und signifikant schlägt, mit protokollierter Freigabe. Bei einem doppelblinden Publikationsort markiert der Gutachter zudem jedes Identitätsleck als Anonymisierungsmangel.
 
@@ -55,7 +70,9 @@ Die Begutachtung bewertet die empirischen Behauptungen gegen die Latte des Vorr�
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
 | Blocked: run /research-paper first | Kein Artikel | Führen Sie `/research-paper` aus, um das Manuskript zu erzeugen |
+| Blocked: no paper supplied | `--paper`-Datei fehlt oder ist unlesbar | Übergeben Sie eine lesbare PDF- oder Textdatei, oder fügen Sie den Text ein |
 | Wohlwollende Bewertung | Gutachter ging vom besten Fall aus | Widerlegung als Standard; bewerten Sie anhand der vorhandenen Belege |
+| Punkt, der sich auf Ansehen stützt | Ein Veröffentlichungsort, eine Institution, eine Autorin oder ein Autor, eine Kennzahl auf Zeitschriftenebene oder eine Zitationszahl wurde als Beleg verwendet | Entfernen Sie ihn; formulieren Sie den Punkt aus den eigenen Worten und Belegen des Entwurfs neu |
 | Befund ohne Begründung | Überarbeitung behauptet, nicht begründet | Fügen Sie jedem Befund eine Begründung mit konkretem Treiber bei |
 
 ## Beispiele
@@ -63,6 +80,9 @@ Die Begutachtung bewertet die empirischen Behauptungen gegen die Latte des Vorr�
 ```bash
 # Den Artikel per Peer-Review begutachten und eine Gutachter-Bewertungskarte ausgeben
 /research-review --suite-name <name>
+
+# Eine bereitgestellte PDF gegen ein generisches Profil eines Veröffentlichungsorts auf einer Skala von 1-10 begutachten
+/research-review --paper ./submission.pdf --venue empirical-conference --scale 1-10
 ```
 
 ## Querverweise

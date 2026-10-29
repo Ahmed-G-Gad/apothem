@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formatea el artículo según la plantilla del lugar de publicación y ensambla el paquete de envío (suplementario, disponibilidad de datos/código, carta de presentación, ética/conflicto de interés), con un plan de preprint/DOI."
 machineTranslated: true
-sourceHash: "775d7080efc5b935"
+sourceHash: "ef7a2e79372ed070"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Con argumentos:
 
 ## Entradas
 
-El entregable del artículo y `_outputs/review-report.md` (las revisiones de la revisión por pares).
+El entregable del artículo y `_outputs/review-report.md` (las revisiones de la revisión por pares y su lista de no juzgados).
 
 ## Salidas
 
-El paquete de envío con formato del lugar de publicación en una ubicación natural del host (el manuscrito formateado + materiales suplementarios + declaración de disponibilidad de datos / código + carta de presentación + declaraciones de ética / conflicto de interés) + `_outputs/publication-record.md` + una lista de comprobación de envío.
+El paquete de envío con formato del lugar de publicación en una ubicación natural del host (el manuscrito formateado + materiales suplementarios + declaración de disponibilidad de datos / código + carta de presentación + declaraciones de ética / conflicto de interés) + `_outputs/publication-record.md` (que incluye el registro fechado de reglas del lugar de publicación: cada regla con su página de fuente oficial, su fecha de lectura y su etapa de envío) + una lista de comprobación de envío.
 
 ## Aguas abajo
 
@@ -39,16 +39,18 @@ El paquete de envío con formato del lugar de publicación en una ubicación nat
 
 El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
-1. **Cargar contexto** — Leer el artículo y el informe de revisión.
+1. **Cargar contexto** — Leer el artículo y el informe de revisión; fijar el lugar de publicación, el ciclo, la sección y el tipo de artículo, y registrar cada regla del lugar de publicación con su página de fuente oficial, su fecha de lectura y su etapa de envío.
 2. **Verificar la Puerta de secuencia** — Confirmar que `_outputs/review-report.md` existe y que sus revisiones de severidad HIGH están resueltas (o que el operador ha aceptado explícitamente el riesgo residual); de lo contrario, detenerse con `Blocked: run /research-review first`.
-3. **Formatear y empaquetar** — Aplicar la plantilla del lugar de publicación; ensamblar material suplementario, disponibilidad de datos/código, carta de presentación y declaraciones de ética / conflicto de interés.
+3. **Formatear y empaquetar** — Llevar cada regla del lugar de publicación con su página de fuente, su fecha de lectura y su etapa de envío, construir sobre la plantilla intacta del lugar de publicación, contar páginas y palabras a la manera del lugar de publicación e inspeccionar el PDF compilado; después, ensamblar material suplementario, disponibilidad de datos/código, carta de presentación y declaraciones de ética / conflicto de interés.
 4. **Planificar el preprint / archivado** — Registrar el plan de preprint y DOI; construir la lista de comprobación de envío.
 5. **Actualizar el manifiesto de traspaso** — Registrar el paquete de envío y el registro de publicación.
 6. **Emitir el paquete** — El paquete de envío con el formato del lugar de publicación + `_outputs/publication-record.md`.
 
 ## Umbral de rigor
 
-El formateo respeta la divulgación por etapas: para un lugar de publicación de doble ciego, la identidad del autor, la institución y el sistema se retiran a metadatos enviados por separado y se restauran solo en la etapa designada de versión final para impresión. El depósito de archivo lleva el paquete de evidencia de reproducibilidad escalado al lugar de publicación (datos, código, entorno fijado, semillas, registro de hardware, resultados por instancia y figuras).
+El formateo respeta la divulgación por etapas: para un lugar de publicación de doble ciego, la identidad del autor, la institución y el sistema se retiran a metadatos enviados por separado y se restauran solo en la etapa designada de versión final para impresión. El depósito de archivo lleva el paquete de evidencia de reproducibilidad escalado al lugar de publicación (datos, código, entorno fijado, semillas, registro de hardware, resultados por instancia y figuras). Para un lugar de publicación de doble ciego, se inspeccionan en busca de la identidad el archivo suplementario y cada repositorio o conjunto de datos enlazado, no solo el manuscrito.
+
+Las reglas del lugar de publicación tienen fuente y etapa. Solo cuentan las páginas oficiales del propio objetivo: un lugar de publicación vecino, un ciclo anterior o una sección hermana nunca lo sustituyen, y una reconstrucción para una revisión o para la versión final aplica los límites de esa etapa, no los del envío inicial. Una regla sin página oficial que la respalde se pregunta al operador y se marca como no verificada frente al lugar de publicación. Los archivos de plantilla del lugar de publicación se mantienen tal como se publicaron, de modo que un archivo inicial escrito localmente se informa como tal. Las páginas y las palabras se cuentan a la manera del lugar de publicación, registrando las secciones excluidas, y cada figura y tabla se comprueba al tamaño y en el formato que recibe el lugar de publicación.
 
 ## Modos de fallo
 
@@ -57,6 +59,8 @@ El formateo respeta la divulgación por etapas: para un lugar de publicación de
 | Blocked: run /research-review first | No hay informe de revisión, o hay revisiones HIGH abiertas | Ejecuta `/research-review` para producir `_outputs/review-report.md`, o resuelve las revisiones HIGH abiertas y vuelve a ejecutar `/research-review`, o acepta explícitamente el riesgo residual |
 | Revisión HIGH sin atender | Hallazgo de revisión omitido | Atiende la revisión y vuelve a ejecutar `/research-review` |
 | Falta disponibilidad de datos/código | Superficie de reproducibilidad ausente | Añade la declaración de disponibilidad de datos / código antes del envío |
+| Regla del lugar de publicación sin fuente | La regla procede de otro ciclo, otra sección o un lugar de publicación vecino, o de la memoria | Fija el objetivo; registra la página oficial, la fecha de lectura y la etapa de la regla, o pregunta al operador y márcala como no verificada |
+| Plantilla alterada | Una edición local cambia la geometría de página o la configuración tipográfica del lugar de publicación | Restaura los archivos del lugar de publicación y cambia la maquetación solo mediante las opciones que documenta la plantilla |
 
 ## Ejemplos
 

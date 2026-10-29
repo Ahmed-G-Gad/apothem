@@ -2,7 +2,7 @@
 title: "Diagram pipeline CI/CD"
 description: "Peta visual dan rincian per jalur dari tahap alur kerja build, uji, lint, keamanan, dan publikasi yang mengawal setiap perubahan kode dan rilis."
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ flowchart LR
 
 - **Jalur analisis statis** — umpan balik cepat. Ruff mencakup gaya Python dan satu set aturan yang dikurasi; mypy menegakkan disiplin tipe pada tingkat strict; validator frontmatter mengawal kepatuhan skema artefak untuk aturan, skill, pekerja terdelegasi, dan command. markdownlint tidak termasuk dalam jalur ini: ia hanya berjalan sebagai hook pre-commit, dan CI tidak menjalankannya (lihat [Konvensi Markdown](/docs/reference/markdown-conventions)).
 - **Jalur uji** — `pytest tests/hooks` menjalankan runtime hook terhadap matriks peristiwa lengkap; `validate_ecosystem.py` adalah gerbang struktural utama untuk konsistensi lintas-artefak; `chaos_pass.py` berjalan di job kualitas CI pada push dan pull request ke `main` (difilter menurut jalur) untuk menangkap degradasi di bawah masukan yang terdegradasi. Driver benchmark per-kelas di bawah `src/apothem/benchmarks/` berjalan di CI melalui suite pytest dan melalui job `metrics`. Setiap eksekusi pytest penuh di CI mengumpulkan `tests/unit/test_benchmarks.py`, yang memanggil setiap driver kecuali `bench_install.py`. Job `metrics` menjalankan `scripts/dev/collect_metrics.py`, yang menjalankan `bench_hooks.py --json` dan mencatat hasilnya sebagai `hook_e2e_ms`. `bench_tests.py` dan `bench_install.py` hanya mengukur eksekusi nyata di bawah `make benchmarks`. Tidak ada workflow yang menjalankan `make benchmarks`.
-- **Jalur keamanan** — gitleaks di `ci.yml` menangkap kredensial yang tidak sengaja di-commit. Audit lisensi (`license-audit.yml`) gagal ketika sebuah dependensi memiliki lisensi di luar daftar izinnya. Audit ini berjalan mingguan dan ketika berkas dependensi atau lisensi berubah. `release.yml` menghasilkan SBOM untuk setiap rilis yang diberi tag.
+- **Jalur keamanan** — gitleaks di `ci.yml` menangkap kredensial yang tidak sengaja di-commit. Audit lisensi (`license-audit.yml`) gagal ketika sebuah dependensi memiliki lisensi di luar daftar izinnya. Audit ini berjalan mingguan dan ketika berkas dependensi atau lisensi berubah. Gerbang REUSE (`reuse.yml`) berjalan pada setiap perubahan dan gagal ketika sebuah berkas tidak memiliki baris lisensi atau sebuah ekspresi SPDX tidak dapat diurai. `release.yml` menghasilkan SBOM untuk setiap rilis yang diberi tag.
 - **Jalur publikasi** — workflow rilis dipicu oleh push tag; penerbit npm dan VS Code juga dapat dijalankan ulang melalui dispatch manual untuk tag yang sudah ada. Verifikasi tag yang ditandatangani memastikan asal-usul cabang rilis; catatan rilis berasal dari format Keep-A-Changelog `CHANGELOG.md`. Situs web proyek dipublikasikan dari `site/dist/` ke target GitHub Pages pada push ke `main` yang menyentuh masukan build-nya, atau melalui dispatch manual.
 
 ## Konfigurasi konkret

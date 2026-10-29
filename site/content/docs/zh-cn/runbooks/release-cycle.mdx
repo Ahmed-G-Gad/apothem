@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,6 +58,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -133,9 +134,104 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 以下任一情况都会使检查失败：发布为草稿或预发布版本；标签所指提交的某个必需工作流未通过；SBOM 缺失；SBOM 描述的是其他版本；或 SBOM 漏掉了某个 vendored 包。失败信息会指明原因。
 
-检查通过后，请按照 §2.3 中的方式批准等待中的 `Publish npm` 运行（其运行 ID 来自 `gh run list --workflow=publish-npm.yml`）。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。也请批准等待中的 `Publish VS Code Extension` 运行。它会打包 `apothem.vsix`，并以 `ahmed-g-gad.apothem-vscode` 的名称将其发布到 Visual Studio Marketplace。发布步骤仅当仓库变量 `VSCODE_MARKETPLACE_READY` 为 `true` 且 `VSCE_PAT` 机密已设置时运行；否则该运行会打包扩展，并跳过发布。
+检查通过后，请按照 §2.3 中的方式批准等待中的 `Publish npm` 运行（其运行 ID 来自 `gh run list --workflow=publish-npm.yml`）。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。也请批准等待中的 `Publish VS Code Extension` 运行。它会打包 `apothem.vsix`，并以 `ahmed-g-gad.apothem-vscode` 的名称将其发布到 Visual Studio Marketplace。发布步骤仅当仓库变量 `VSCODE_MARKETPLACE_READY` 为 `true` 且配置了一种凭据时运行：变量 `VSCE_AUTH=oidc`（Marketplace 受信任发布，不存储机密）、变量 `VSCE_AUTH=entra`、`AZURE_CLIENT_ID` 和 `AZURE_TENANT_ID`（一个短期有效的 Microsoft Entra ID 令牌，不存储机密），或 `VSCE_PAT` 机密。三者都没有时，该运行会打包扩展，并跳过发布。凭据是一个开关，而不是重试：某条路径上的发布失败不会自行回退到另一条路径。每条路径的设置见下方的[通过受信任发布进行 Marketplace 发布](#通过受信任发布进行-marketplace-发布)（首选）和[通过 Microsoft Entra ID 进行 Marketplace 发布](#通过-microsoft-entra-id-进行-marketplace-发布)。
 
 若要在一次失败的运行之后再次发布，为同一标签调度该工作流（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。当该版本已在注册表上时，它会跳过发布，因为 npm 版本不可变。
+
+#### 通过受信任发布进行 Marketplace 发布
+
+受信任发布让 Marketplace 直接接受本仓库的 GitHub OIDC 令牌：`vsce publish --oidc` 将发布作业的令牌换取为一个短期有效的 Marketplace 凭据。这里没有存储的机密，也没有 Azure 资源，因此这是首选路径。下方的 Entra 路径和 `VSCE_PAT` 机密作为由操作者选择的替代方案保留。
+
+1. **使用支持它的 vsce 版本。** 在这条路径上，发布作业会在发布之前检查 `tools/vsce` 中锁定的 vsce 版本；当锁定的版本较旧时，它会以一条指明最低版本的错误停止。Dependabot 会为该锁文件提出 vsce 更新；在切换之前，合并达到最低版本的那一个。
+2. **创建策略。** 以发布者的 Owner 身份登录，打开 `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`，并在 **Trusted Publishing** 下添加一条策略：
+   - 策略名称（Policy name）：任意名称，例如 `apothem-release`
+   - 仓库所有者（Repository owner）：`Ahmed-G-Gad`
+   - 仓库（Repository）：`apothem`
+   - 工作流（Workflow）：`publish-vscode.yml`
+   - 环境（Environment）：`release`
+
+   这些字段名称取自 VS Code 发布指南中关于使用 GitHub Actions 和受信任发布进行发布的那一节（`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`）。未确认：是否每个发布者都已能看到 Trusted Publishing 选项卡。如果你的发布者看不到，请使用 Entra 路径。
+3. **切换路径。** 保持 `VSCODE_MARKETPLACE_READY` 为 `true`，并设置选择器。请在没有标签等待时设置它，因为下一次标签推送会通过这条路径发布。
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **发布。** 下一次标签推送，或针对现有标签的一次调度，会通过受信任发布进行发布。这条路径没有试运行：第一次发布就是检查，而带 `dry_run` 的调度只会警告未验证任何内容。
+5. **失败时回退。** 删除选择器，并为同一标签再次调度；设置了 `VSCE_PAT` 机密时，由令牌路径发布。失败的发布没有发布任何内容，因此可以为同一标签再次调度。
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### 通过 Microsoft Entra ID 进行 Marketplace 发布
+
+Entra 路径以一个短期有效的令牌取代存储的个人访问令牌。`publish-vscode.yml` 向 GitHub 请求一个 OIDC 令牌，`Azure/login` action 通过联合凭据将其换取为一次 Entra 登录，然后 `vsce publish --azure-credential` 使用由此得到的令牌进行发布。不存在客户端机密。`VSCE_PAT` 机密作为由操作者选择的回退方案保留；工作流从不自行切换到它。
+
+`tools/vsce` 中固定的 vsce 版本支持这条路径。它需要一个 Entra 租户、一个应用程序注册以及发布者成员身份，而上方的受信任发布不需要这些；当发布者无法使用受信任发布时，请使用这条路径。
+
+1. **检查前置条件。** 找到拥有发布者 `ahmed-g-gad` 的账户（`https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad` 上的 Members 选项卡），以及你可以在其中注册应用程序的 Entra 租户。未确认：发布者所有者的租户是否必须与应用程序的租户一致，以及 Azure DevOps 组织 `Ahmed-G-Gad` 是否必须连接到 Entra（`dev.azure.com/Ahmed-G-Gad`，Organization settings，Microsoft Entra）。没有任何来源说明其中任何一项。如果第 5 步或第 6 步失败，请先检查这些。
+
+2. **注册应用程序。** 在 `https://entra.microsoft.com` 中，打开 App registrations，然后点击 New registration。将其命名为 `apothem-vscode-publish`，选择单租户，并将重定向 URI 留空。在 Overview 中，复制 Application (client) ID 和 Directory (tenant) ID。不要创建客户端机密，也不要授予任何 API 权限。此步骤需要应用程序所有者权限，或诸如 Application Administrator 之类的 Entra 角色。
+
+3. **添加联合凭据。** 在该应用程序上，打开 Certificates & secrets、Federated credentials、Add credential，并选择场景“GitHub Actions deploying Azure resources”。输入组织 `Ahmed-G-Gad`、仓库 `apothem`、实体类型 `Environment`、环境名称 `release`，以及凭据名称 `apothem-release`。生成的字段必须为：
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   匹配是精确且区分大小写的。如果之后的登录以 AADSTS700213 或 AADSTS7002138 失败，请将该凭据与 `Azure/login` 写入作业日志的 `subject claim` 行进行比较。创建后立即出现 AADSTS70021 表示该凭据尚未传播；请等待几分钟后重试。
+
+4. **设置仓库变量。** 当 `VSCODE_MARKETPLACE_READY` 为 `true` 时，三个变量一旦全部设置，Entra 路径即生效，因此请在没有发布标签等待批准时设置它们。没有 `VSCODE_MARKETPLACE_READY=true` 时，不会进行任何登录，运行会跳过发布。
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   保持 `VSCODE_MARKETPLACE_READY` 和 `VSCE_PAT` 不变。当 `VSCE_AUTH` 为 `entra` 但 `AZURE_CLIENT_ID` 或 `AZURE_TENANT_ID` 为空时，无论是否设置了 `VSCE_PAT`，工作流都会记录一条警告，并且不使用 Entra 路径。随后，如果设置了 `VSCE_PAT` 机密，它就使用该机密；没有该机密时，它不发布任何内容，而运行仍以绿色结束，因此请留意该警告。
+
+5. **执行试运行。** 针对一个现有的发布标签调度该工作流，并设置 `dry_run`。在 Entra 路径上，它会登录、打印 Azure DevOps 配置文件，并在不发布的情况下验证发布者访问权限。令牌路径没有试运行：如果日志显示 `Marketplace credential mode: pat`，运行会以绿色结束并带有一条警告，且未验证任何内容。请批准等待中的 `release` 环境运行。
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   预期：`Marketplace credential mode: entra`、一行与第 3 步中的 subject 相同的 `subject claim`，以及由第一个试运行步骤打印的配置文件 `id` 和 `displayName`。在第 6 步之前，验证步骤预计会以 403 失败。未确认：在没有 Azure 订阅的情况下登录，能否通过 Azure CLI 获得用于 Marketplace 的令牌。这次运行是对此的首次测试。如果在这里失败，请改为在某个订阅中注册一个用户分配的托管标识，这是 Microsoft 记载的路径。
+
+6. **将应用程序添加到发布者。** 在第 1 步中的 Members 选项卡上，以发布者 Owner 身份登录，并使用第 5 步中的配置文件 `id` 添加一名成员，角色为 Contributor。未确认：该对话框的字段标签，以及在应用程序成为某个 Azure DevOps 组织的成员之前，它是否接受该 id。按照一般规则，Azure DevOps 按组织添加应用程序标识。如果对话框拒绝该 id，请将服务主体添加到组织 `Ahmed-G-Gad`（Organization settings，Users，使用 Enterprise application 的 Object ID），然后重试。同样未确认：在该标识首次调用 Azure DevOps 之前，配置文件是否已存在。
+
+7. **再次执行试运行。** 验证步骤现在会以“verification succeeded for the publisher”成功；其消息仍然提到 Personal Access Token，因为 Entra 令牌走的是同一条路径。该检查证明的是发布者成员身份（Creator、Owner、Contributor 或 Reader），而不是发布权限。未确认：Contributor 是否足以发布更新。Microsoft 的角色说明称足够，而没有任何来源展示过以该角色进行的发布，因此第一次真正的发布就是证明。
+
+8. **发布一个版本。** 按照 §2.2 打标签并批准运行。步骤 `Publish to Visual Studio Marketplace (Entra ID)` 会运行，其环境头部只列出 `AZURE_TENANT_ID`，令牌回退步骤被跳过，vsce 打印 `DONE Published ahmed-g-gad.apothem-vscode`。大约四分钟后，Marketplace 库会列出新版本。
+
+9. **决定如何处理令牌。** 保留 `VSCE_PAT`，直到第一次成功的 Entra 发布；之后如果不需要回退，就删除该机密。一旦删除，被删除或为空的 Entra 变量会使运行以绿色结束且不发布：当 `VSCE_AUTH` 仍为 `entra` 时会带有一条警告，否则只有跳过通知。每次打标签后，请阅读该运行的注解。若要在全局个人访问令牌停用之后仍保留回退，请为 `Ahmed-G-Gad` 创建一个组织范围的令牌，使用自定义范围 Marketplace Manage 和你可接受的最短有效期，并将其存储为 `VSCE_PAT`。未确认：此步骤中的门户标签来自记忆，而非一手来源；Microsoft 称组织范围的令牌是一种临时变通办法，并且可能停止接受它们；而且 Microsoft 的各个页面对全局令牌的停用日期说法不一。
+
+10. **回退到令牌。** 删除选择器并再次调度，然后批准运行。失败的 Entra 发布没有发布任何内容，因此可以为同一标签再次调度；请先检查 Marketplace 页面，因为已落地的版本无法发布两次。
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+当 Entra 发布失败时，请阅读步骤日志：
+
+- 以“Can not acquire a Microsoft Entra ID access token”开头的消息表示登录或凭据链失败。请先检查 `Sign in to Microsoft Entra ID` 步骤和联合凭据。如果登录为绿色，请从工作流中 vsce 步骤的 `env` 里移除 `AZURE_TENANT_ID`；GitHub 自己的扩展发布工作流不导出它。
+- “InvalidAccessException”或“not allowed”表示该令牌的标识不是发布者成员。请将试运行中的配置文件 `id` 与 Members 选项卡进行比较。
+- 试运行验证步骤返回的 403 表示该应用程序尚无角色。
+
+这条路径有三项限制：
+
+- `id-token: write` 被授予整个发布作业，因此其中的每个步骤都可以请求 OIDC 令牌，在令牌模式下也是如此。该令牌的 subject 绑定到 `release` 环境，而该环境需要审查者的批准。
+- `release` 环境没有部署分支或标签策略，因此维护者批准的任何 ref 都可以获得环境 subject 令牌。要将其限制为 `v*.*.*` 标签，需要先检查 `release.yml` 和 `publish-npm.yml` 调度了什么。
+- 仓库重命名或转移会改变 OIDC subject 格式，并悄无声息地破坏联合凭据。任何重命名之后，请将 `Azure/login` 日志中的 subject 重新复制到该凭据中。
+
+### 2.5 刷新模板摘要固定值
+
+标签存在之后，将 `tests/unit/test_template_digests.py` 中的 `_LATEST_RELEASE` 和 `_LATEST_RELEASE_DIGESTS` 设置为新版本，以及该版本所发布的每个纯文本模板的 SHA-256 摘要（`git show vX.Y.Z:<template path> | sha256sum`）。请在对 `main` 的下一次更改中执行此操作；当模板发生变化时，将之前的摘要添加到清单条目的 `earlier_digests` 中。`release-preflight` CI 作业会检出每个标签，因此在固定值刷新之前，它会以这些标签名称失败。
 
 ## 3. 分发表面
 

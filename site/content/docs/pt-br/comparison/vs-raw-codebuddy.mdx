@@ -2,7 +2,7 @@
 title: "Apothem vs. as regras brutas do CodeBuddy"
 description: "Por que encaminhar as regras de projeto do CodeBuddy pelo Apothem, em vez de escrever à mão os arquivos .codebuddy/rules em cada projeto."
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ O CodeBuddy lê as regras do projeto em `.codebuddy/rules/*.md`. Você pode escr
 | Manter as regras alinhadas entre harnesses | Derivar novamente por ferramenta | Projetadas automaticamente |
 | Atualizar as regras | Editar à mão em cada projeto | `apothem update --harness codebuddy --project <path>` |
 | Remover a configuração | Exclusão manual | `apothem uninstall` com backup com marca de tempo |
+| Compartilhar skills e comandos reutilizáveis | Copiar à mão cada pasta de skill para `~/.codebuddy/skills/` e manter as cópias atualizadas | Gravados em `~/.codebuddy/skills/` pelo adaptador, uma cópia para todos os projetos, e atualizados no `apothem update` |
 
 ## O que o Apothem gerencia
 
-O adaptador codebuddy renderiza as regras compartilhadas em um arquivo dedicado `<project>/.codebuddy/rules/apothem-rules.md` e não grava nenhum outro arquivo. Seu arquivo de memória `CODEBUDDY.md`, suas permissões e servidores MCP em `.codebuddy/settings.json` e quaisquer outros arquivos de regras que você escrever continuam pertencendo inteiramente ao operador: o adaptador reconhece essas superfícies, mas nunca as edita. Toda mudança nas regras compartilhadas re-renderiza o arquivo na próxima execução de `apothem update`.
+O adaptador codebuddy renderiza as regras compartilhadas em um arquivo dedicado `<project>/.codebuddy/rules/apothem-rules.md`. Ele também grava duas pastas no seu diretório pessoal que todos os projetos compartilham: as skills, e os comandos encapsulados como skills, vão para `~/.codebuddy/skills/`, e as regras e os templates que essas skills citam vão para `~/.config/apothem/rules/` e `~/.config/apothem/templates/`. Seu arquivo de memória `CODEBUDDY.md`, suas permissões e servidores MCP em `.codebuddy/settings.json` e quaisquer outros arquivos de regras que você escrever continuam pertencendo inteiramente ao operador: o adaptador reconhece essas superfícies, mas nunca as edita. Toda mudança nas regras compartilhadas re-renderiza o arquivo de regras na próxima execução de `apothem update`.
 
 ## Caminho de migração
 

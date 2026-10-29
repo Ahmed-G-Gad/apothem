@@ -2,7 +2,7 @@
 title: "Frontmatter 模式"
 description: "YAML frontmatter 块结构、逐类必需键，以及各制品类别校验器强制规则的参考指南。"
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 每个制品都在头部带有 YAML frontmatter，由 `---` 行分隔。在 Markdown 系列文件上，frontmatter 是文件的第一项内容，而按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范 SPDX 头部行紧随闭合的 `---` 之后。
 
-命令键使用 `kebab-case`。技能键使用 `kebab-case`，但 `userInvocable` 除外；它是源语料库所用的 camelCase 拼写（Claude Code 安装时会将其重命名为 `user-invocable`）。规则与委派工作者的键使用 camelCase，如第 2 节的必需键表所列。标量值可以不加引号，也可以使用双引号；包含冒号、井号或其他对 YAML 有特殊含义字符的字符串值需要加引号。
+命令键使用 `kebab-case`。技能键使用 `kebab-case`，但 `userInvocable` 除外；它是源语料库所用的 camelCase 拼写（Claude Code 安装时会将其重命名为 `user-invocable`）。Claude Code 安装和插件还会把技能或命令中仅 Apothem 使用的键（`version`、`updated`、`archetype`、`portability`）移入末尾一个由带引号字符串组成的 `metadata:` 映射，并按这一固定顺序排列，因为 Claude Code 会忽略未知的顶层键，而 Agent Skills 标准把额外的键放在 `metadata` 中；源文件和其他所有工具都把这些键保留在顶层，但共享的用户级技能文件夹（`~/.agents/skills/` 以及 `~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/` 文件夹）除外，它们以同样的方式折叠这些键。规则与委派工作者的键使用 camelCase，如第 2 节的必需键表所列。标量值可以不加引号，也可以使用双引号；包含冒号、井号或其他对 YAML 有特殊含义字符的字符串值需要加引号。
 
 ## 2. 逐类必需字段
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md`（根配置） | `name`、`version`、`updated`、`description`、`scope`、`portability` |
 | 规则（`src/apothem/rules/*.md`） | `name`、`description`、`pathFilter`、`alwaysApply` |
 | 命令（`src/apothem/commands/*.md`） | `name`、`version`、`updated`、`description`、`argument-hint`、`disable-model-invocation`、`portability`、`allowed-tools` |
-| 辅助器，也称为委派工作者（`src/apothem/agents/*.md`） | `name`、`version`、`updated`、`description`、`tools`、`disallowedTools`、`maxTurns`、`effort` |
-| 技能（`src/apothem/skills/*/SKILL.md`） | `name`、`version`、`updated`、`description`、`archetype`、`userInvocable`、`disable-model-invocation`、`allowed-tools`；Claude Code 安装和插件会将 `userInvocable` 重命名为 `user-invocable`，并且 schema 要求每个技能恰好带有这两种拼写中的一种，绝不能同时带有两种 |
+| 辅助器，也称为委派工作者（`src/apothem/agents/*.md`） | `name`、`version`、`updated`、`description`、`tools`（可选：省略它的辅助器会继承所有工具；若要为列出了 `tools` 的辅助器提供某个 MCP 服务器，请在配置档案的 `agent_mcp_servers` 键中指明该服务器）、`disallowedTools`、`maxTurns`、`effort` |
+| 技能（`src/apothem/skills/*/SKILL.md`） | `name`、`version`、`updated`、`description`、`archetype`、`userInvocable`、`disable-model-invocation`、`allowed-tools`；Claude Code 安装和插件以及共享的用户级技能文件夹会将 `userInvocable` 重命名为 `user-invocable`，并且 schema 要求每个技能恰好带有这两种拼写中的一种，绝不能同时带有两种；`Qwen Code` 安装会把 `allowed-tools` 写成一个 `allowedTools` 列表，这是 `Qwen Code` 读取的键与形态 |
 | 输出样式（`src/apothem/output-styles/*.md`） | `name`、`description`；每个随附样式还会设置 `keep-coding-instructions: true`，以便 Claude Code 保留其软件工程指令 |
 
 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 schema 承载完整的约束集，包括类型、格式、枚举和模式限制，以及长度限制：技能或命令的 `description` 最多 1,024 个字符，即 [Agent Skills](https://agentskills.io/specification) 的限制。

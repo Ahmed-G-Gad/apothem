@@ -2,7 +2,7 @@
 title: "インストーラーの環境変数"
 description: "環境変数でスクリプトインストーラー（インストール先、ソース、ハーネス、プロファイル、検証）を制御します。"
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "64d4512dc0ce59b4"
 | `APOTHEM_VERIFY` | `signature` は、リリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォーム用アーカイブを、その SHA-256 をリリースの `SHA256SUMS` と照合したうえでインストールします（完全性を確認するものであり、誰が公開したかの証明ではありません） | `signature` |
 | `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | クローンの代わりに使う、明示的なローカルソースツリー | 未設定（クローン） |
-| `APOTHEM_HARNESS` | インストールするハーネス | `claude-code` |
+| `APOTHEM_HARNESS` | インストールするユーザースコープのハーネス（`antigravity`、`claude-code`、`codex`、`hermes`、`open-claw`、`opencode`、`qwen-code`）。インストーラーは `--project` を渡さないため、プロジェクトスコープのハーネスは `project.required` で失敗します。それらは後から `apothem install --harness NAME --project PATH` でインストールしてください。 | `claude-code` |
 | `APOTHEM_PROFILE` | 共有プロファイル YAML へのパス | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | `1` に設定すると、インストール後の検証ステップをスキップします | `0`（検証を実行） |
 | `APOTHEM_AUTO_INSTALL_DEPS` | `1` に設定すると、不足している `click` / `rich` の前提条件を、確認なしで自動的にインストールします | `0`（確認する。非対話のパイプでは拒否する） |
@@ -59,10 +59,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## 手順（POSIX bash）
 
-1. デフォルト以外のハーネスをインストールします。
+1. デフォルト以外のユーザースコープのハーネスをインストールします。
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. インストール先を固定し、移動する `main` ブランチを選択します。ブランチは署名付きタグではないため、インストーラーには `APOTHEM_ALLOW_UNVERIFIED=1` も必要です。
@@ -85,7 +85,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 インストーラーを実行する前に、各変数を `$env:` に設定します。
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -109,7 +109,14 @@ pwsh -NoProfile -File install.ps1
 インストーラーとは別に確認するには、次を実行します。
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Cursor のようなプロジェクトスコープのハーネスでは、インストーラーの後に、インストールと検証を `--project` を付けて自分で実行します。
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 プロファイルがまだ存在しなかった場合、インストーラーはサンプルからプロファイルを作成し、同じ実行の中でそのままインストールと検証に進みます。

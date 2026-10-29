@@ -2,14 +2,14 @@
 title: "/research-review"
 description: "/research-review — Kritik adversarial setingkat tinjauan sejawat atas makalah: kartu skor peninjau tujuh sumbu (kebaruan, ketelitian, reproduktibilitas, kejelasan, etika, tinjauan statistik, kesesuaian pedoman pelaporan) ditambah daftar revisi wajib yang dipilah berdasarkan tingkat keparahan."
 machineTranslated: true
-sourceHash: "73915d388b353eda"
+sourceHash: "0f888b58aa245da1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Peran:** Peneliti utama (tinjauan sejawat)
 **Posisi pipeline:** tengah rantai
 
-Memberikan makalah kritik adversarial setingkat tinjauan sejawat terhadap standar tempat publikasi — kebaruan, ketelitian, reproduktibilitas, kejelasan, etika, tinjauan statistik, dan kesesuaian pedoman pelaporan. Mengeluarkan kartu skor peninjau **tujuh sumbu** ditambah daftar revisi wajib yang dipilah berdasarkan tingkat keparahan, dengan alasan pendorong konkret per temuan. Sanggahan secara bawaan.
+Memberikan makalah kritik adversarial setingkat tinjauan sejawat terhadap standar tempat publikasi — kebaruan, ketelitian, reproduktibilitas, kejelasan, etika, tinjauan statistik, dan kesesuaian pedoman pelaporan. Mengeluarkan kartu skor peninjau **tujuh sumbu** ditambah daftar revisi wajib yang dipilah berdasarkan tingkat keparahan, dengan alasan pendorong konkret per temuan. Sanggahan secara bawaan, dan setiap poin bertumpu pada kata-kata dan bukti draf itu sendiri, tidak pernah pada reputasi tempat publikasi, institusi, atau penulis.
 
 ## Pemanggilan kanonis
 
@@ -20,16 +20,18 @@ Memberikan makalah kritik adversarial setingkat tinjauan sejawat terhadap standa
 Dengan argumen:
 
 ```bash
-/research-review [--suite-name NAME]
+/research-review [--suite-name NAME] [--venue STANDARD] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]
 ```
 
 ## Masukan
 
-Hasil makalah di lokasi alami host yang dicatat oleh tahap makalah.
+Hasil makalah di lokasi alami host yang dicatat oleh tahap makalah. Dengan `--paper`, makalah adalah berkas PDF atau teks yang Anda berikan (atau teks yang ditempelkan), bukan hasil suite riset, dan tidak diperlukan suite.
 
 ## Keluaran
 
 `_outputs/review-report.md` — kartu skor peninjau **tujuh sumbu** (kebaruan · ketelitian · reproduktibilitas · kejelasan · etika · tinjauan statistik · kesesuaian pedoman pelaporan), daftar revisi wajib yang dipilah berdasarkan tingkat keparahan (HIGH / MEDIUM / LOW) dengan alasan pendorong konkret per temuan, verdik paket-reproduktibilitas dan jalankan-ulang, audit integritas-sitasi, serta verdik keseluruhan `accept · minor-revision · major-revision · reject`.
+
+Dengan `--paper`, laporan ditulis ke `.apothem/plans/<date>--review-<slug>.md` di root proyek (atau ke path `--out`): kartu skor tujuh sumbu dengan satu baris per peran peninjau, baris pemeriksaan persamaan, ablasi, dan baseline, revisi wajib yang diurutkan berdasarkan tingkat keparahan, hingga lima pertanyaan untuk penulis, dan keputusan yang dipetakan ke skala rekomendasi yang Anda sebutkan. Laporan ini diberi label pembacaan berbantuan model, bukan tinjauan sejawat.
 
 ## Hilir
 
@@ -41,12 +43,25 @@ Perintah ini mengikuti alur kerja standar pipeline `/research`:
 
 1. **Memuat konteks** — Membaca hasil makalah.
 2. **Verifikasi Gerbang Urutan** — Pastikan makalah, `_outputs/analysis.md`, dan `_inputs/synthesis.md` ada dan tidak kosong; jika tidak, berhenti dengan `Blocked: run /research-paper first`.
-3. **Tinjau secara adversarial** — Beri skor pada tujuh sumbu (kebaruan · ketelitian · reproduktibilitas · kejelasan · etika · tinjauan statistik · kepatuhan pedoman pelaporan); jalankan uji ulang reproduktibilitas dan audit integritas sitasi; sanggahan secara bawaan; temukan cacat konkret dengan bukti.
-4. **Pilah revisi** — Urutkan revisi wajib HIGH / MEDIUM / LOW dengan alasan berbasis pendorong konkret.
+3. **Tinjau secara adversarial** — Beri skor pada tujuh sumbu (kebaruan · ketelitian · reproduktibilitas · kejelasan · etika · tinjauan statistik · kepatuhan pedoman pelaporan); golongkan setiap klaim sebagai deskriptif, asosiasional, atau kausal dan periksa kesalahan penilaian yang berulang; periksa bahwa gambar menyandikan data secara jujur dan terbaca tanpa warna; jalankan uji ulang reproduktibilitas dan audit integritas sitasi; sanggahan secara bawaan; temukan cacat konkret dengan bukti.
+4. **Pilah revisi** — Urutkan revisi wajib HIGH / MEDIUM / LOW dengan alasan berbasis pendorong konkret. Sumbu yang tidak dapat dinilai oleh tinjauan tidak diberi verdik; sumbu itu tetap berada dalam daftar tidak-dinilai beserta alasannya, dan verdik keseluruhan mengapitnya.
 5. **Perbarui manifes serah-terima** — Catat laporan tinjauan dan putusan kartu skor.
 6. **Keluarkan tinjauan** — `_outputs/review-report.md`.
 
+## Meninjau makalah orang lain
+
+`--paper` meninjau naskah yang bukan bagian dari suite riset, misalnya kiriman yang diminta untuk Anda tinjau atau draf dari seorang kolega.
+
+- **Profil tempat publikasi.** `--venue` menerima id profil generik (misalnya `empirical-conference` atau `field-journal`). Tempat publikasi yang disebut namanya menggunakan profil generik terdekat dan laporan menyatakannya. Apothem hanya menyertakan profil generik dan tidak pernah mengklaim kriteria milik tempat publikasi mana pun; pedoman yang Anda berikan berlaku ketika Anda menempelkannya, dan kepala laporan mencatat sumbernya, tanggalnya, serta tahun atau siklus dan jalur yang dicakupnya.
+- **Versi naskah.** Laporan mencatat versi mana yang dibaca (pracetak, naskah yang diterima, versi rekaman, atau tidak diketahui), penanda versi apa pun yang dibawa berkas, asal berkas, dan tanggal pembacaannya, sehingga tinjauan terikat pada satu revisi.
+- **Peran peninjau.** Peran bawaan adalah metode, domain, dan skeptis. `--roles` mengubah daftar tersebut. Ketika peran-peran tidak sepakat, laporan mencetak ketidaksepakatan itu alih-alih merata-ratakannya.
+- **Kerahasiaan.** Anda ditanya sekali apakah makalah itu kiriman rahasia, makalah yang sudah terbit, atau draf Anda sendiri. Ketika jawabannya tidak diketahui, penanganan yang lebih ketat berlaku: pencarian menggunakan judul, pengenal, atau istilah topik generik dan tidak pernah kalimat dari naskah.
+- **Kebaruan.** Tanpa suite, tidak ada peta karya terdahulu, sehingga tinjauan menggunakan karya tetangga yang disebut makalah ditambah catatan pencarian yang terbatas. Pencarian yang kosong tidak pernah dianggap sebagai bukti kebaruan, dan keyakinan atas kebaruan tetap rendah kecuali catatan tersebut mencakup indeks ilmiah.
+- **Anonimitas.** Untuk pemeriksaan kesiapan Anda sendiri di tempat-terbit tunanetra-ganda, tinjauan memeriksa permukaan di luar prosa (properti dokumen, berkas yang disertakan dan ditautkan, riwayat repositori, arsip pelengkap, gambar yang dirender); permukaan yang tidak dapat dibukanya masuk ke daftar tidak-dinilai, tidak pernah ke daftar bersih. Untuk kiriman rahasia yang ditugaskan kepada Anda, tinjauan tidak mencari identitas di permukaan tersebut: identitas yang ditemukan tanpa dicari dilaporkan kepada Anda sebagai kebocoran dan tidak masuk ke skor mana pun.
+
 ## Landasan ketelitian
+
+Tidak ada verdik sumbu, temuan, atau tingkat keyakinan yang bertumpu pada ukuran tingkat jurnal, jumlah sitasi, indeks tingkat penulis, atau reputasi tempat publikasi, institusi, atau penulis; tinjauan yang mengutip angka semacam itu mengutipnya secara deskriptif, beserta apa yang diukurnya, sumbernya, dan tanggalnya. Temuan dengan tingkat keparahan HIGH mencakup gambar eksperimental dengan sambungan, komposit, atau langkah pemrosesan yang tidak diungkapkan, serta hasil terdaftar yang berbeda dari hasil yang dilaporkan tanpa alasan yang dinyatakan. Tinjauan statistik memeriksa bahwa n menghitung unit independen, bukan pengukuran berulang, lipatan, atau seed dari satu unit.
 
 Tinjauan menilai klaim empiris terhadap batas gerbang-kemajuan — replikasi memadai, signifikansi nonparametrik dengan ukuran efek dan peringkat perbedaan-kritis, serta paritas anggaran lintas metode yang dibandingkan — dan memperlakukan verdiknya sebagai gerbang kemajuan eksplisit: sebuah makalah maju hanya ketika ia mengungguli batas tempat-terbit secara meyakinkan dan signifikan, dengan pelolosan terlog. Di bawah tempat-terbit tunanetra-ganda, peninjau juga menandai setiap kebocoran identitas sebagai cacat anonimisasi.
 
@@ -55,7 +70,9 @@ Tinjauan menilai klaim empiris terhadap batas gerbang-kemajuan — replikasi mem
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
 | Blocked: run /research-paper first | Tidak ada makalah | Jalankan `/research-paper` untuk menghasilkan naskah |
+| Blocked: no paper supplied | Berkas `--paper` hilang atau tidak terbaca | Berikan berkas PDF atau teks yang terbaca, atau tempelkan teksnya |
 | Penilaian yang murah hati | Peninjau mengasumsikan kasus terbaik | Sanggahan secara bawaan; nilai berdasarkan bukti yang ada |
+| Poin bertumpu pada reputasi | Tempat publikasi, institusi, penulis, ukuran tingkat jurnal, atau jumlah sitasi digunakan sebagai bukti | Hapus; nyatakan ulang poin dari kata-kata dan bukti draf itu sendiri |
 | Temuan tanpa alasan | Revisi diklaim, bukan dibenarkan | Lampirkan alasan pendorong konkret pada setiap temuan |
 
 ## Contoh
@@ -63,6 +80,9 @@ Tinjauan menilai klaim empiris terhadap batas gerbang-kemajuan — replikasi mem
 ```bash
 # Tinjau makalah secara sejawat dan keluarkan kartu skor peninjau
 /research-review --suite-name <name>
+
+# Tinjau PDF yang diberikan terhadap profil tempat publikasi generik pada skala 1-10
+/research-review --paper ./submission.pdf --venue empirical-conference --scale 1-10
 ```
 
 ## Referensi silang

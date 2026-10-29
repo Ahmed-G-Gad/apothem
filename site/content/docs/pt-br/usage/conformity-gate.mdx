@@ -2,7 +2,7 @@
 title: "Conformity gate"
 description: "Execute o conformity gate do Apothem para verificar a saúde do ecossistema."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,26 @@ validadores de fluxo de trabalho fazem o mesmo quando o projeto ainda não tem u
 diretório `.github/workflows/`, e o validador de assunto de commit faz o mesmo
 quando a raiz não tem histórico de commits.
 
+Seis validadores partem da raiz do repositório e buscam em toda a árvore os
+arquivos que verificam:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+Eles ignoram checkouts git aninhados, como worktrees, submódulos e clones
+aninhados, e ignoram diretórios que guardam dependências, ambientes virtuais,
+caches ou saída de build, como `node_modules`, `venv` e `dist`. A verificação
+de planos perdidos em `no-global-plans-grep` também para em um checkout
+aninhado. Uma execução de qualquer um deles relata sobre o checkout para o qual
+foi apontada e sobre nada mais. Um validador que lê uma pasta fixa, como
+`naming-grep` sob `src/apothem/`, lê tudo abaixo dessa pasta.
+
 ## Barras do portão
 
 | Barra | Verificação | Tipo |
@@ -76,12 +96,21 @@ quando a raiz não tem histórico de commits.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Um validador por gravação recebe o arquivo a verificar, ou `--stdin` para ler o
+conteúdo da entrada padrão; sem nenhum dos dois, ele espera por entrada na
+entrada padrão, então passe o arquivo ao executá-lo a partir de um terminal. Um
+validador independente recebe um diretório raiz (o diretório atual, quando
+omitido). `--list` mostra a qual grupo cada validador pertence.
 
 O modo `--hook` (`python -m apothem.conformity.gate --hook`) é o ponto de
 entrada despachado pelo harness: ele lê um payload JSON de entrada de

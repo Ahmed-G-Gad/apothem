@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "f60950ab3aa08ee9"
+sourceHash: "57393f27f1d98c86"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,8 @@ apothem install --harness claude-code
 모든 줄은 그대로 보존합니다. 지원 파일 섹션은 설치된 규칙, 스킬, 에이전트에 있는
 저장소 스타일의 각 인용이 해석되는 기준 절대 디렉터리를 명시합니다.
 `rules/<name>.md`는 `~/.claude/rules/` 아래, `templates/...`, `schemas/...`,
-`hooks/...`, `conformity/...`는 `~/.claude/.apothem/support/` 아래입니다. Apothem
+`hooks/...`, `conformity/...`는 `~/.claude/.apothem/support/` 아래입니다. 이
+섹션은 규칙 색인 `~/.claude/rules/apothem-rule-index.md`도 가리킵니다. Apothem
 거버넌스 표면의 나머지는 전파된 `rules/` 트리와 SessionStart 훅을 통해 Claude
 Code에 도달합니다. OpenCode도 `~/.config/opencode/AGENTS.md`가 없으면
 `~/.claude/CLAUDE.md`를 로드하므로, 이 블록은 어느 한 도구도 독자로 지칭하지
@@ -59,13 +60,120 @@ Code에 도달합니다. OpenCode도 `~/.config/opencode/AGENTS.md`가 없으면
 `keep-coding-instructions: true`를 설정하므로, 어느 출력 스타일을 선택해도
 Claude Code의 내장 소프트웨어 엔지니어링 지침이 유지됩니다.
 
+두 종류의 스킬 모두 Apothem 전용 프런트매터 키(`version`, `updated`,
+`archetype`, `portability`)를 따옴표로 묶인 문자열로 이루어진 끝부분의 `metadata:` 맵
+아래에 이 고정된 순서로 담습니다. Claude Code는 알 수 없는 최상위 키를 무시하며,
+개방형 스킬 형식은 클라이언트별 추가 항목을 `metadata`에 둡니다. 소스 파일은
+변경되지 않습니다. 사용자 수준 스킬 폴더(`~/.agents/skills/`,
+`~/.codebuddy/skills/`, `~/.kiro/skills/`, `~/.trae/skills/`)도 같은
+`metadata` 형식을 사용하므로, 폴더를 공유하는 설치들이 서로의 파일을 다시 쓰는
+일이 없습니다. 다른 모든 하니스는 이전과 같이 이 키들을 최상위에서 받습니다.
+
+### 규칙과 시작 시 로드되는 항목
+
+Claude Code는 규칙 파일의 프런트매터에 범위를 지정하는 `paths:` 목록이 없으면
+시작 시 그 파일을 로드합니다. `paths:`가 있으면 일치하는 파일을 읽거나 편집할 때
+규칙을 로드합니다. `**`로만 이루어진 목록은 아무 범위도 지정하지 않으므로 그
+규칙도 시작 시 로드됩니다. 그런 목록을 쓰는 Apothem 규칙은 없습니다. 설치는 각
+규칙의 `pathFilter`를 그 목록으로 바꿉니다. 다섯 개의 규칙은 이 필터가 없어
+모든 세션에서 로드됩니다: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, 그리고 규칙 색인
+`apothem-rule-index`. 다른 모든 규칙은 `paths:`와 함께 `~/.claude/rules/` 아래에
+설치되며 일치하는 파일을 건드릴 때 로드됩니다.
+
+Claude Code는 이 글롭을 `.gitignore` 의미론에 따라 작업 디렉터리를 기준으로 한
+파일의 상대 경로와 대조하며, 작업 디렉터리 밖의 파일과는 절대 대조하지 않습니다.
+자동 메모리 디렉터리는 `~/.claude/projects/` 아래에 있으므로
+`auto-memory`와 `auto-memory-topic-files`는 경로 일치로 로드되는 일이 없습니다.
+다른 프로젝트에서 `~/.claude/CLAUDE.md`나 `~/.claude/rules/` 아래의 파일을
+편집해도 그 파일들로 범위가 지정된 규칙은 로드되지 않습니다. 이 규칙들은 색인을
+통해 세션에 도달합니다.
+
+색인은 각 규칙과 그 규칙이 필요한 상황을 명시합니다. `rules/<name>.md`를 절차로
+인용하는 단계는 그 파일을 먼저 읽습니다. 컨텍스트 압축 후에는 적용하던 규칙을
+다시 읽으세요. Claude Code는 일치하는 파일을 다시 건드릴 때까지 경로 범위 규칙을
+다시 주입하지 않습니다. `apothem-rule-index.md`라는 이름은 예약되어 있습니다.
+설치가 그 이름의 규칙 파일을 백업하고 덮어쓰기 때문입니다.
+
+Apothem 자체 표면을 관장하는 규칙은 `CLAUDE.md`,
+`AGENTS.md`, 그리고 `rules/`, `commands/`, `skills/`, `agents/`,
+`hooks/`, `output-styles/` 아래의 Markdown으로 범위가 지정됩니다. 애플리케이션
+저장소에는 이런 파일이 거의 없으므로, 그런 저장소에서 이 규칙들은 경로 일치가
+아니라 색인, 규칙을 인용하는 스킬, 커맨드 또는 도우미, 그리고 훅을 통해 세션에
+도달합니다.
+
+규칙 사본은 커맨드 스킬과 마찬가지로 마지막 `## Bindings` 섹션 없이
+작성됩니다. 이 섹션에는 유지 관리자와 적합성 게이트를 위한 상호 참조가 들어
+있습니다. 소스 파일은 이 섹션을 유지하며, 다른 하니스가 받는 사본도 마찬가지입니다.
+
+범위가 지정된 규칙을 모든 세션에서 켜 두려면, `~/.claude/CLAUDE.md`의 Apothem
+블록 바깥 텍스트에서 그 규칙을 임포트해 볼 수 있습니다. 예:
+`@rules/definitiveness.md`. Claude Code 메모리 페이지는 임포트를 문서화하며,
+임포트된 경로는 임포트하는 파일을 기준으로 해석된다고 말합니다. 임포트된 규칙의
+`paths` 목록이 어떻게 처리되는지는 말하지 않으며, Apothem은 이를 검증하지
+않았습니다. `InstructionsLoaded` 훅으로 그 규칙이 시작 시 로드되고 경로 일치 시
+두 번째로 로드되지 않는지 확인하세요.
+
+### 커맨드 스킬과 참조 파일
+
+컨텍스트 압축 후 Claude Code는 호출된 각 스킬의 처음 5,000 토큰만 다시
+첨부하며, 세부 내용은 형제 파일에 두고 `SKILL.md`는 약 500줄 이하로 유지할 것을
+권장합니다. 커맨드 프롬프트는 최대 67 KB에 이르므로, Claude Code 출력은 각
+프롬프트를 슬림한 `SKILL.md`와 `references/` 아래의 파일들로 분할합니다.
+
+- `## Bindings` 섹션은 삭제됩니다. 이는 적합성 게이트를 위한 유지 관리자
+  텍스트이며 모델에는 전혀 필요하지 않습니다.
+- Pipeline Contract, Foundational Stanzas, Decision Tree, 예시, 모드 섹션, 그리고
+  인용된 몇몇 인벤토리는 참조 파일로 옮겨집니다. 제목은 그대로 남고, 그 아래의
+  한 줄짜리 포인터가 파일을 명시하고 언제 읽어야 하는지 알려 줍니다. Pipeline
+  Contract와 Foundational Stanzas의 포인터는 파일이 다루는 내용도 나열합니다.
+- `SKILL.md`가 여전히 15,800바이트를 넘으면, 가장 큰 Workflow 단계부터
+  차례로 `references/step-NN-<slug>.md`로 옮겨 크기에 맞을 때까지 계속합니다. slug는
+  `Step N:` 접두사와 끝의 괄호로 묶인 의무 또는 규율 ID를 뺀 단계 제목입니다.
+  600바이트 미만의 단계는 인라인으로 남습니다. 그래도 충분하지 않으면 Output,
+  Mandates, Critical Rules, Instructions 섹션이 이 순서대로 옮겨집니다.
+- 서문 뒤의 짧은 메모가 모델에게 파일의 위치
+  (`${CLAUDE_SKILL_DIR}/references/`)와, 압축 후에는 현재 단계를 관장하는 파일을
+  반드시(MUST) 다시 읽어야 한다는 것을 알려 줍니다.
+
+설치가 덧붙이는 `## Installed Reference Paths` 메모를 포함해, 출력되는 모든
+`SKILL.md`는 최대 140자의 설치 루트에 대해 17,000바이트 이하를 유지합니다.
+플러그인은 그 메모 없이 같은 파일을 제공하며, 플러그인의 커맨드는 `skills/` 아래의
+스킬이므로 `commands/` 폴더가 없습니다. 호출 `/apothem:<name>`은 변경되지
+않습니다. 분할은 결정적이며 되돌릴 수 있습니다. `SKILL.md`와 그 참조 파일의
+텍스트로 Bindings를 뺀 소스 커맨드를 다시 만들 수 있습니다. 소스 파일과 다른 모든
+하니스의 출력은 변경되지 않습니다. 다른 도구도 `~/.claude/skills/`에서 스킬을
+읽으므로 같은 파일을 보게 되며, `apothem install`이 그 도구들을 명시합니다.
+
+모든 커맨드의 수치를 보려면 체크아웃에서 측정 스크립트를 실행하세요.
+
+```bash
+python scripts/dev/measure_claude_skills.py          # per-command table
+python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
+```
+
+이 스크립트는 소스, `SKILL.md`, 참조 파일의 크기, 예산까지의 여유분, 추정 토큰
+수를 보고하며, 비교를 위해 네이티브 스킬을 나열합니다. 소스가 분할되지 않는
+네이티브 스킬인 `research-suite`가 상한을 넘는 유일한 스킬입니다.
+
 ## 호환성 참고 사항
 
-커맨드 프롬프트는 스킬 디렉터리로 변환되며, 에이전트, 규칙, 스킬, 출력 스타일은
-있는 그대로 복사됩니다. 설치는 프로필이 올바른 형식인지, 그리고 settings.json의
+커맨드 프롬프트는 스킬 디렉터리로 변환되고 규칙은 위에서 설명한 대로
+렌더링됩니다. 스킬과 출력 스타일은 있는 그대로 복사되며, 에이전트는 작성된
+그대로 복사되지만 프로필의 `agent_mcp_servers` 키가 나열하는 도우미는 지정된
+서버마다 `tools` 줄에 `mcp__<server>__*` 항목이 추가됩니다
+([MCP 서버](/docs/reference/mcp#헬퍼에-mcp-서버-접근-권한-부여하기) 참조).
+설치는 프로필이 올바른 형식인지, 그리고 settings.json의
 모든 훅 바인딩이 해석 가능한지 검증합니다. 어댑터는 MCP 서버 항목을 작성하지
 않습니다. 서버는 `claude mcp add`로 등록하세요([MCP 서버](/docs/reference/mcp)
 참조).
+
+`~/.claude/agents/`는 `~/.claude/skills/`와 마찬가지로 `Claude Code`가 소유하는
+공유 루트입니다. 지원되는 다른 도구들이 이 폴더를 로드하므로, `Claude Code`
+설치가 그곳에 작성하는 에이전트와 스킬은 그 도구들에서도 나타나며, 설치는 그
+도구들을 명시하는 메모를 출력합니다.
+[하니스 레지스트리](/docs/reference/harness-registry)는 각 루트를 읽는 도구를
+나열합니다.
 
 Claude Code는 세션이 시작될 때마다 settings.json의 모든 훅 바인딩을 적용합니다. 각 어댑터는 자체 네이티브 하니스에 대해 검증됩니다 — 특권을 가진 "참조" 하니스는 없습니다.
 
@@ -133,6 +241,11 @@ apothem uninstall --harness claude-code
 ```bash
 python -m apothem.conformity.gate --all .
 ```
+
+저장소를 대상으로 실행하면, 게이트는 모든 규칙, 커맨드, 도우미, 스킬에
+`## Bindings` 섹션을 요구합니다. 설치된 `~/.claude/` 트리를 대상으로 실행하면,
+설치가 그 섹션을 빼므로 섹션이 없는 규칙 또는 스킬 사본을 허용하며, 섹션이 있으면
+여전히 검사합니다.
 
 ## 문제 해결
 

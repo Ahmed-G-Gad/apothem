@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Zed 構成の比較"
 description: "Zed の扁平な .rules 指示ファイルを手作業で維持するのと、Apothem の共有プロファイルから生成するのとの比較。"
 machineTranslated: true
-sourceHash: "2c5b5e0dd0dfe386"
+sourceHash: "693a56d0ed665ef9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,7 @@ Zed はプロジェクトルートにある単一の扁平な `.rules` ファイ
 | 指示を書く | `.rules` ファイルを手で書く | 共有コーパスからレンダリング |
 | 以前の `.rules` を保持する | 自分でわきへコピーするのを忘れないようにする | アダプターが、置き換え前に既存ファイルをバックアップする |
 | ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 再利用可能なスキルとコマンドを共有する | 各スキルフォルダーを `~/.agents/skills/` へ手でコピーし、コピーを最新に保つ | アダプターが `~/.agents/skills/` に書き込み、すべてのプロジェクトで 1 つのコピーを共有し、`apothem update` で更新 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness zed --project <path>` |
 
 ## Apothem が管理するもの

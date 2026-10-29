@@ -2,7 +2,7 @@
 title: "Referência da CLI"
 description: "Referência da CLI do Apothem — todos os subcomandos e flags."
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. |
 | `--dry-run` | Pré-visualiza a atualização sem gravar arquivos. |
 
-`update` rematerializa a saída do harness. Ele não atualiza o pacote da CLI do
-Apothem; para atualizações de pacote, use o gerenciador de pacotes que instalou o
-Apothem.
+`update` rematerializa a saída do harness. Ele não atualiza o próprio motor do
+Apothem; atualize o motor pelo canal com que você o instalou
+(o fluxo `/plugin`, `npx` ou os scripts de instalação e atualização), conforme
+descrito em [Atualização](/docs/install/updating).
 
 ### `apothem uninstall`
 
@@ -142,6 +143,7 @@ combinam no estado de desvio:
 | `in-sync` | Instalado e correspondente à linha de base do perfil. |
 | `drift` | Instalado, mas não corresponde mais — corrija com `apothem update`. |
 | `unknown` | Instalado, mas o perfil de linha de base não pôde ser lido. |
+| `needs-project` | Um harness com escopo de projeto foi relatado sem `--project`, de modo que seu destino não pode ser resolvido. |
 
 `installed` responde "o Apothem instalou aqui?", não "este harness está presente
 na máquina?". Ele se baseia nos próprios artefatos do Apothem — o bloco

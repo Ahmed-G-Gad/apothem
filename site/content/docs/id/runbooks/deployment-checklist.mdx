@@ -2,7 +2,7 @@
 title: "Checklist Deployment"
 description: "Checklist verifikasi pra-penerbangan untuk men-deploy atau berbagi ekosistem Apothem"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ Aturan tidak memiliki kunci `version`, `updated`, `scope`, atau `portability`.
 
 - [ ] `name` — nama perintah kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` hadir
-- [ ] `disable-model-invocation` hadir dan disengaja (`true` untuk perintah panduan-saja)
+- [ ] `disable-model-invocation` hadir dan disengaja (`false` untuk perintah baca-saja atau penasihat; `true` hanya ketika menjalankan perintah mengubah keadaan di luar working tree atau bergantung pada operator yang memilih momennya)
 - [ ] Tidak ada kunci `effort`: `command.schema.json` menetapkan `additionalProperties: false` dan tidak menerimanya
 
 ### Pekerja terdelegasi

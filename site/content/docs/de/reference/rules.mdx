@@ -2,7 +2,7 @@
 title: "Regeln"
 description: "Always-on- und pfadgefilterte Verhaltensregeln, die Problemlösung, Code-Handwerk, saubere Architektur, Planung und Qualität über das gesamte Verhaltensregelwerk steuern."
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,25 +13,11 @@ entweder always-on oder pfadgefiltert.
 
 ## Aktive Regeln
 
-Die kanonische Registry ist die Regel-Kohorte. Dieselbe Menge in flacher Form:
-
-| Regel | Geltungsbereich | Implementiert |
-|------|-------|------------|
-| Auto Memory | Always-on | CM-26 |
-| Clean-Room Generation | Always-on | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Always-on | CM-21 |
-| Context Management | Always-on | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Pfadgefiltert | CM-12 / CM-24 (Begleiter) |
-| Conventions Vigilance | Always-on | CM-22 |
-| Interactive Questions | Always-on | CM-2-Erweiterung |
-| Interactive Questions Sweep Matchers | Pfadgefiltert | CM-2-Erweiterung (Begleiter) |
-| Operational Mandates | Always-on | CM-1–10 |
-| Worker Orchestration | Always-on | CM-17 / CM-25 |
-| Clean Architecture | Pfadgefiltert | CM-27 |
-| Large File Generation | Pfadgefiltert | CM-23 |
-| Performance Discipline | Pfadgefiltert | Performance-Achse |
-| Planning Techniques | Pfadgefiltert | CM-20 / CM-21 |
-| Python Senior Architect | Pfadgefiltert | CM-28 |
+Die kanonische Registry ist die Regel-Kohorte in `src/apothem/rules/`. Das
+[generierte Inventar](#generiertes-regelinventar) am Ende dieser Seite listet
+jede Regel mit ihrer Beschreibung und Quelldatei auf. Fünf Regeln sind always-on,
+die übrigen pfadgefiltert; der nächste Abschnitt nennt die fünf, die in jeder
+Sitzung geladen werden.
 
 ## Frontmatter-Vertrag
 
@@ -55,22 +41,41 @@ des Validators verifiziert ihn bei jeder Regeldatei.
 
 `pathFilter` und `alwaysApply` sind harness-neutral. Jeder Adapter übersetzt sie
 dort, wo sein Harness ein natives Feld zur Eingrenzung hat. Claude Code liest aus
-einer Regel nur `paths:` und lädt jede Regel ohne dieses Feld beim Start, daher
-schreibt die Engine-Installation (`apothem install --harness claude-code`) jede
+einer Regel nur `paths:` und lädt jede Regel ohne dieses Feld beim Start, wie
+auch eine Regel, deren `paths:` nur aus `**` besteht, daher schreibt die
+Engine-Installation (`apothem install --harness claude-code`) jede
 pfadgefilterte Regel mit einer aus ihrem `pathFilter` gebildeten `paths:`-Liste
-nach `~/.claude/rules/` und kopiert Always-on-Regeln unverändert. Die 28
-Always-on-Regeln werden in jeder Sitzung geladen; die 63 pfadgefilterten
-Begleiter werden geladen, wenn der Assistent eine passende Datei liest.
+nach `~/.claude/rules/` und schreibt jede Regelkopie ohne ihren abschließenden
+Bindings-Abschnitt. Fünf Regeln werden in jeder Sitzung geladen:
+`agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management` und der Regelindex. Die übrigen 90 Regeln sind
+pfadgefiltert und werden geladen, wenn der Assistent eine passende Datei liest.
+Wer eine Regel in die Always-on-Menge aufnimmt, ändert die Kernliste und die
+Byte-Obergrenze in derselben Änderung.
+
+Der Regelindex, `apothem-rule-index`, ist die eine Always-on-Datei, die jede
+andere Regel und die Situation nennt, die sie erfordert. Ein Harness, der Regeln
+nach Pfad eingrenzt, lädt eine eingegrenzte Regel bei einer passenden Berührung.
+Ein Harness, der das nicht tut, lädt keine davon, daher erreicht eine Sitzung
+eine Regel über den Index, den Satz in der Anweisungsdatei, der auf ihn
+verweist, und die Regeln und Skills, die eine Regel per Pfad zitieren. Nach
+einer Kontextkompaktierung ist eine eingegrenzte Regel nicht mehr im Kontext,
+und der Index weist den Assistenten an, jede Regel, die er gerade anwendete,
+erneut zu lesen. Claude Code gleicht einen Pfadfilter nur mit Dateien innerhalb
+des Arbeitsverzeichnisses ab, daher erreichen die Auto-Memory-Regeln, deren
+Dateien unter `~/.claude/projects/` liegen, eine Sitzung über den Index und
+nicht über einen Pfadtreffer.
 
 OpenCode hat kein Eingrenzungsfeld pro Regel: Es fügt jede Datei, die die
 `instructions`-Liste seiner `opencode.json` nennt, in jede Sitzung ein. Die
 OpenCode-Installation (`apothem install --harness opencode`) listet daher Ihr
-Profildokument und nur die Regeln, deren `alwaysApply` `true` ist, mit einem
-expliziten `~/.config/opencode/...`-Pfad pro Datei, ausgelesen aus den
-Regeldateien, wenn die Konfiguration geschrieben wird. Jede Regel,
-pfadgefilterte eingeschlossen, wird dennoch unter
-`~/.config/opencode/.apothem/support/rules/` installiert, wo eine Regel, ein
-Skill oder ein Befehl, der sie zitiert, sie bei Bedarf liest.
+Profildokument und nur die Regeln, deren `alwaysApply` `true` ist (die vier
+Kernregeln und den Regelindex), mit einem expliziten
+`~/.config/opencode/...`-Pfad pro Datei, ausgelesen aus den Regeldateien, wenn
+die Konfiguration geschrieben wird. Jede Regel, pfadgefilterte eingeschlossen,
+wird dennoch unter `~/.config/opencode/.apothem/support/rules/` installiert, wo
+der Index sie nennt und eine Regel, ein Skill oder ein Befehl, der sie zitiert,
+sie bei Bedarf liest.
 
 ## Autorendisziplin
 

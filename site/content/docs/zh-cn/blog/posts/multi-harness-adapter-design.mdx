@@ -2,7 +2,7 @@
 title: "深入多工具适配器设计"
 description: "对 Apothem 的 HarnessAdapter 协议以及把一份配置文件物化为十七个工具的三种适配器类的技术深度解析。"
 machineTranslated: true
-sourceHash: "66f90956d4db4557"
+sourceHash: "33968cc40c47c003"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,9 +70,9 @@ Hermes 的 `config.yaml`、一份 Open-Claw 的 `openclaw.json`、一份 OpenCod
 调和工作集中之处；[约定收敛深度解析](/docs/blog/posts/cross-harness-convention-convergence)
 对此有详细论述。
 
-## claude-code：全配置面参考适配器
+## claude-code：全配置面适配器
 
-claude-code 适配器是覆盖最广配置面的参考实现——规则、agents、钩子、
+claude-code 适配器拥有最广的配置面——规则、agents、钩子、
 输出样式、设置以及约定目录。它属于第 II-A 类：它传播 Apothem 的原始
 模板并摊平约定目录，且在 `src/apothem/harnesses/claude_code/templates/`
 下随附厂商设置模板。它不带 `materializer.py`——它并不从配置文件渲染原生

@@ -2,13 +2,13 @@
 title: "Apothem と素の Hermes 設定の比較"
 description: "Hermes の設定を手作業で保守する方法と、Apothem の共有プロファイルを通じて管理する方法の比較。"
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes は `~/.hermes/config.yaml` を読み取ります。
-Apothem はネイティブの YAML 設定を書き込み（プロファイルの MCP インベントリを `mcp_servers` へ投影します）、共有のコマンドコホートとスキルコホートを `~/.hermes/.apothem/support/skills/` 配下にインストールします。
-Hermes 自身の `skills.config` はレジストリパッケージのリストであるため、Apothem はそれを作成しません。
+Apothem はネイティブの YAML 設定を書き込み（プロファイルの MCP インベントリを `mcp_servers` へ投影します）、共有のコマンドコホートとスキルコホートを `~/.hermes/.apothem/support/skills/` 配下にインストールし、Hermes がそれらを読み込むように、そのディレクトリを `skills.external_dirs` に列挙します。
+Hermes 自身の `skills.config` はスキルごとの設定を保持するため、Apothem はそれを作成しません。
 
 ## ステータス
 
@@ -27,15 +27,15 @@ Hermes 自身の `skills.config` はレジストリパッケージのリスト�
 ## Apothem が管理するもの
 
 Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキルとしてラップし、Apothem のスキルをサポートディレクトリへコピーし、ルール、テンプレート、エージェント、フックの素材を Apothem のサポートサブツリー配下に保持します。
-Hermes がそれらのスキルを読み込むのは、`~/.hermes/.apothem/support/skills` を `config.yaml` の `skills.external_dirs` に追加した後のみです。
+また、`~/.hermes/.apothem/support/skills` を `config.yaml` の `skills.external_dirs` に追加し、Hermes がそれらのスキルを読み込むようにします。
+このリストは Hermes が文書化している優先順位の最後に位置するため、あなたのプロジェクト内または `~/.hermes/skills/` にある同じ名前のスキルが、Apothem のコピーより優先される可能性が高いです。確認した Hermes のドキュメントには、衝突時の規則は記載されていません。
 
 ## 移行パス
 
 1. まだ作成していない場合は、`apothem profile init` を実行して共有プロファイルを作成します。
 2. 再利用可能な Hermes のスキルやコマンドプロンプトを共有コーパスへ移します。
-3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキルディレクトリをレンダリングします。
-4. インストールされたスキルを Hermes が読み込むように、`~/.hermes/.apothem/support/skills` を `config.yaml` の `skills.external_dirs` に追加します。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
-5. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
+3. `apothem install --harness hermes` を実行して、サポートスキルディレクトリを `skills.external_dirs` に列挙するネイティブ設定をレンダリングし、スキルをインストールします。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
+4. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
 
 ## 次に読む
 

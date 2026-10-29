@@ -2,7 +2,7 @@
 title: "ハーネスアダプター"
 description: "Apothem のハーネスアダプター — 1 つの共有プロファイル、17 のサポート対象ターゲット。"
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -78,12 +78,40 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## ユーザーホーム内のスキル
+
+プロジェクトスコープの 7 つのアダプターは、プロジェクトにルールファイルを 1 つ書き込み（そのうち 6 つは
+Apothem のヘルパーもサブエージェントファイルとしてそこに書き込みます。各ハーネスのページがそのフォルダーを
+挙げています）、さらに Apothem のスキルと、スキルが引用するルールとテンプレートを、あなたのユーザーホーム内の
+フォルダーに書き込みます。
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- フォルダーを指定するすべてのインストールが同じファイルを書き込むため、インストールの順序は関係なく、
+  1 つのコピーがすべてのプロジェクトに使われます。
+- インストールはホームのフォルダーを最初に書き込みます。それが失敗した場合、プロジェクトを変更する前に
+  停止し、あなたのリポジトリにスキルファイルもルールファイルも追加しません。
+- アンインストールは、それをまだ使っている他の Apothem のインストールがない場合にのみ共有フォルダーを削除し、
+  どのインストールがそれを残しているかを表示します。
+- Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーは、警告とともにそのまま
+  残されます。
+
+各ハーネスのページが、そのフォルダーを一覧にしています。
+[ハーネスレジストリ](/docs/reference/harness-registry#共有ルート)は、どのツールがどのフォルダーを
+共有しているかを示しています。
 
 プロトコルの仕様については[ハーネスアダプター抽象化](/docs/architecture/harness-adapter-abstraction)を
 参照してください。

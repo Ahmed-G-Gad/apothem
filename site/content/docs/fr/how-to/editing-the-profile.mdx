@@ -2,7 +2,7 @@
 title: "Modifier le profil"
 description: "Modifier le profil partagé et re-matérialiser chaque environnement installé."
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,6 +35,17 @@ Le profil est un unique document YAML. Ses clés de premier niveau :
   d'environnement.
 - `exclude_harnesses` — identifiants d'environnements ignorés par les commandes
   en lot (`--harness all`).
+- `mcp_servers` — définitions de serveurs MCP indexées par nom de serveur.
+- `agent_mcp_servers` — pour chaque nom d'auxiliaire, les serveurs MCP que cet
+  auxiliaire peut appeler
+  (voir [Donner à un auxiliaire l'accès aux serveurs MCP](/docs/reference/mcp#donner-à-un-auxiliaire-laccès-aux-serveurs-mcp)).
+  Vide par défaut ; aucun auxiliaire n'atteint donc un outil MCP.
+- `workspace` — l'emplacement où Apothem conserve son répertoire de travail
+  partagé (`directory_name`, `scope`).
+- `schema_version` — version facultative du schéma de profil ; un profil qui
+  en est dépourvu est lu comme version 1.
+
+Chaque champ est répertorié dans [Champs du profil](/docs/reference/profile-fields).
 
 ## Étapes
 

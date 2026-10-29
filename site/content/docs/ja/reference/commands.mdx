@@ -2,18 +2,20 @@
 title: "コマンド"
 description: "プランスイートパイプラインを実装するスラッシュコマンド定義に加え、コード、アーキテクチャ、セキュリティ、依存関係、ドキュメントレビューのための監査。"
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 スラッシュコマンド定義は、`src/apothem/commands/` 配下のフラットな `.md` ファイルとして置かれます。
-正規のセットの筆頭はアーキテクチャを意識したプランスイートパイプラインであり、これは 7 つの
-第一級コマンドとして出荷されます — ステージごとに 1 つで、それぞれ `/plan-<stage>` として
-直接呼び出せます。モノリシックなディスパッチャーは存在しません。すべてのステージは、
-`src/apothem/commands/plan-<stage>.md` にある、それぞれ独自の登録済みコマンドファイルです。
+正規のセットの筆頭はアーキテクチャを意識したプランスイートパイプラインであり、これは 8 つの
+第一級ステージコマンドとして出荷されます — それぞれ `/plan-<stage>` として直接呼び出せます —
+さらに、ステージの連鎖を端から端まで駆動するオーケストレーターである `/plan` が加わります。
+すべてのステージは、`src/apothem/commands/plan-<stage>.md` にある、それぞれ独自の登録済み
+コマンドファイルであり、`/plan` はそのいずれも再実装しません。
 
 | 呼び出し | コマンドファイル | 説明 |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | spec、generate、review、design の各ステージを 1 つの検証済みワークフローとして実行し、各引き継ぎで確認する。execute は手動のステップのまま |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | 非構造化コンテンツを仕様グレードの散文に洗練する |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | 散文 / 要件からプランスイートをマテリアライズする |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | スコアカードを伴うフォレンジック監査 |
@@ -65,8 +67,11 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 よいツールを列挙するため、デフォルトでは読み取り専用に保たれます。副作用のあるツール（Bash、
 PowerShell、Write、Edit、NotebookEdit、WebFetch）は `Bash(git log *)` のようなスコープ付きの
 ルールとしてのみ現れ、裸の `"*"` ワイルドカードはスキーマによって拒否されます。不可逆な副作用を
-持つコマンド（`freshify`、`github-deploy-fresh`、`github-deploy-next`）は
-`disable-model-invocation: true` を設定するため、それらを開始するのはオペレーターだけです。
+持つコマンド、またはオペレーターが実行タイミングを選ぶコマンドは `disable-model-invocation: true`
+を設定するため、それらを開始するのはオペレーターだけです。該当するのは `freshify`、
+`github-deploy-fresh`、`github-deploy-next`、`release-readiness`、`elevate`、`fortress`、`workflow`、
+`plan-execute`、`research-experiment`、`research-publish` です。その他の 35 のコマンドは `false` を設定し、
+その説明によってリクエストに照合されます。
 
 ## オーサリング規律
 

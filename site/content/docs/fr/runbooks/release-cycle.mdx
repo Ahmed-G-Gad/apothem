@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,6 +90,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -213,15 +214,256 @@ attente, de la même manière qu'au §2.3 (son identifiant d'exécution provient
 l'exécution `Publish VS Code Extension` en attente. Elle empaquette
 `apothem.vsix` et le publie sur le Visual Studio Marketplace sous l'identifiant
 `ahmed-g-gad.apothem-vscode`. L'étape de publication ne s'exécute que tant que la
-variable de dépôt `VSCODE_MARKETPLACE_READY` est `true` et que le secret
-`VSCE_PAT` est défini ; sinon, l'exécution empaquette l'extension et ignore la
-publication.
+variable de dépôt `VSCODE_MARKETPLACE_READY` est `true` et qu'un identifiant est
+configuré : la variable `VSCE_AUTH=oidc` (Trusted Publishing du Marketplace, aucun
+secret stocké), les variables `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` et
+`AZURE_TENANT_ID` (un jeton Microsoft Entra ID de courte durée, aucun secret
+stocké), ou le secret `VSCE_PAT`. Sans aucun d'eux, l'exécution empaquette
+l'extension et ignore la publication. L'identifiant est un commutateur, pas une
+nouvelle tentative : une publication en échec sur une voie ne bascule pas d'elle-même
+vers une autre. La configuration de chaque voie figure dans
+[Publication sur le Marketplace avec Trusted Publishing](#publication-sur-le-marketplace-avec-trusted-publishing)
+(à privilégier) et
+[Publication sur le Marketplace avec Microsoft Entra ID](#publication-sur-le-marketplace-avec-microsoft-entra-id)
+ci-dessous.
 
 Pour publier de nouveau après une exécution en échec, déclenchez le flux de
 travail pour la même étiquette
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Il ignore la
 publication lorsque la version est déjà sur le registre, car les versions npm
 sont immuables.
+
+#### Publication sur le Marketplace avec Trusted Publishing
+
+Trusted Publishing permet au Marketplace d'accepter directement le jeton OIDC
+GitHub de ce dépôt : `vsce publish --oidc` échange le jeton du job de publication
+contre un identifiant Marketplace de courte durée. Il n'y a ni secret stocké ni
+ressource Azure ; c'est donc la voie à privilégier. La voie Entra ci-dessous et le
+secret `VSCE_PAT` restent des alternatives que l'opérateur sélectionne.
+
+1. **Utilisez une version de vsce qui la prend en charge.** Sur cette voie, le job
+   de publication vérifie la version de vsce verrouillée dans `tools/vsce` avant de
+   publier, et s'arrête avec une erreur qui indique la version minimale lorsque le
+   verrou est plus ancien. Dependabot propose des mises à jour de vsce pour ce
+   fichier de verrouillage ; fusionnez celle qui atteint la version minimale avant
+   de basculer.
+2. **Créez la politique.** Connectez-vous en tant qu'Owner de l'éditeur, ouvrez
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`, et ajoutez
+   une politique sous **Trusted Publishing** :
+   - Nom de la politique : un nom quelconque, par exemple `apothem-release`
+   - Propriétaire du dépôt : `Ahmed-G-Gad`
+   - Dépôt : `apothem`
+   - Flux de travail : `publish-vscode.yml`
+   - Environnement : `release`
+
+   Les noms de champs sont ceux qu'indique le guide de publication de VS Code,
+   dans sa section sur la publication avec GitHub Actions et Trusted Publishing
+   (`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`).
+   Non confirmé : si chaque éditeur voit déjà l'onglet Trusted Publishing. Si ce
+   n'est pas le cas du vôtre, utilisez la voie Entra.
+3. **Basculez la voie.** Laissez `VSCODE_MARKETPLACE_READY` à `true` et définissez
+   le sélecteur. Définissez-le lorsqu'aucune étiquette n'est en attente, car le
+   prochain push d'étiquette publie par cette voie.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **Publiez.** Le prochain push d'étiquette, ou un déclenchement pour une
+   étiquette existante, publie via Trusted Publishing. Cette voie n'a pas
+   d'exécution à blanc : la première publication sert de vérification, et un
+   déclenchement avec `dry_run` avertit seulement que rien n'a été vérifié.
+5. **Revenez en arrière en cas d'échec.** Supprimez le sélecteur et déclenchez de
+   nouveau pour la même étiquette ; avec le secret `VSCE_PAT` défini, la voie par
+   jeton publie. Une publication en échec n'a rien publié, de sorte que la même
+   étiquette peut être déclenchée de nouveau.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### Publication sur le Marketplace avec Microsoft Entra ID
+
+La voie Entra remplace le jeton d'accès personnel stocké par un jeton de courte
+durée. `publish-vscode.yml` demande un jeton OIDC à GitHub, l'action `Azure/login`
+l'échange contre une connexion Entra via un identifiant fédéré, et
+`vsce publish --azure-credential` publie avec le jeton obtenu. Aucun secret client
+n'existe. Le secret `VSCE_PAT` reste une solution de repli que l'opérateur
+sélectionne ; le flux de travail ne bascule jamais vers lui de lui-même.
+
+La version de vsce épinglée dans `tools/vsce` prend en charge cette voie. Elle
+nécessite un locataire Entra, une inscription d'application et l'appartenance à
+l'éditeur, ce que Trusted Publishing ci-dessus n'exige pas ; utilisez-la lorsque
+Trusted Publishing n'est pas disponible pour l'éditeur.
+
+1. **Vérifiez les prérequis.** Trouvez le compte propriétaire de l'éditeur
+   `ahmed-g-gad` (l'onglet Members à
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`) et le
+   locataire Entra dans lequel vous pouvez inscrire des applications. Non
+   confirmé : si le locataire du propriétaire de l'éditeur doit correspondre à
+   celui de l'application, et si l'organisation Azure DevOps `Ahmed-G-Gad` doit
+   être connectée à Entra (`dev.azure.com/Ahmed-G-Gad`, Organization settings,
+   Microsoft Entra). Aucune source n'établit l'un ou l'autre. Si l'étape 5 ou 6
+   échoue, vérifiez d'abord ces points.
+
+2. **Inscrivez l'application.** Dans `https://entra.microsoft.com`, ouvrez
+   App registrations, puis New registration. Nommez-la `apothem-vscode-publish`,
+   choisissez un seul locataire et laissez l'URI de redirection vide. Depuis
+   Overview, copiez l'Application (client) ID et le Directory (tenant) ID. Ne
+   créez aucun secret client et n'accordez aucune permission d'API. L'étape
+   nécessite les droits de propriétaire de l'application ou un rôle Entra tel
+   qu'Application Administrator.
+
+3. **Ajoutez l'identifiant fédéré.** Sur cette application, ouvrez Certificates &
+   secrets, Federated credentials, Add credential, et choisissez le scénario
+   « GitHub Actions deploying Azure resources ». Saisissez l'organisation
+   `Ahmed-G-Gad`, le dépôt `apothem`, le type d'entité `Environment`, le nom
+   d'environnement `release` et le nom d'identifiant `apothem-release`. Les
+   champs générés doivent indiquer :
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   La correspondance est exacte et sensible à la casse. Si une connexion
+   ultérieure échoue avec AADSTS700213 ou AADSTS7002138, comparez l'identifiant
+   avec la ligne `subject claim` que `Azure/login` écrit dans le journal du job.
+   AADSTS70021 juste après la création signifie que l'identifiant ne s'est pas
+   encore propagé ; attendez quelques minutes et réessayez.
+
+4. **Définissez les variables de dépôt.** Tant que `VSCODE_MARKETPLACE_READY` est
+   `true`, la voie Entra est active dès que les trois sont définies ; définissez-les
+   donc lorsqu'aucune étiquette de version n'attend d'approbation. Sans
+   `VSCODE_MARKETPLACE_READY=true`, rien ne se connecte et l'exécution ignore la
+   publication.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   Laissez `VSCODE_MARKETPLACE_READY` et `VSCE_PAT` tels quels. Lorsque
+   `VSCE_AUTH` vaut `entra` mais que `AZURE_CLIENT_ID` ou `AZURE_TENANT_ID` est
+   vide, le flux de travail journalise un avertissement, que `VSCE_PAT` soit défini
+   ou non, et n'utilise pas la voie Entra. Il utilise alors le secret `VSCE_PAT`
+   s'il est défini ; sans secret, il ne publie rien et l'exécution se termine tout
+   de même au vert : cherchez donc l'avertissement.
+
+5. **Lancez l'exécution à blanc.** Déclenchez le flux de travail pour une
+   étiquette de version existante avec `dry_run` activé. Sur la voie Entra, il se
+   connecte, affiche le profil Azure DevOps et vérifie l'accès à l'éditeur sans
+   publier. La voie par jeton n'a pas d'exécution à blanc : si le journal affiche
+   `Marketplace credential mode: pat`, l'exécution se termine au vert avec un
+   avertissement et n'a rien vérifié. Approuvez l'exécution de l'environnement
+   `release` en attente.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   Attendu : `Marketplace credential mode: entra`, une ligne `subject claim` égale
+   au sujet de l'étape 3, ainsi que l'`id` et le `displayName` du profil affichés
+   par la première étape de l'exécution à blanc. L'étape de vérification doit
+   échouer avec un 403 jusqu'à l'étape 6. Non confirmé : qu'une connexion sans
+   abonnement Azure fournisse un jeton pour le Marketplace via l'Azure CLI. Cette
+   exécution en est le premier test. Si elle échoue ici, inscrivez plutôt une
+   identité managée affectée par l'utilisateur dans un abonnement, qui est la voie
+   que Microsoft documente.
+
+6. **Ajoutez l'application à l'éditeur.** Dans l'onglet Members de l'étape 1,
+   connectez-vous en tant qu'Owner de l'éditeur et ajoutez un membre à l'aide de
+   l'`id` du profil de l'étape 5, avec le rôle Contributor. Non confirmé :
+   l'intitulé du champ de la boîte de dialogue, et si elle accepte l'id avant que
+   l'application soit membre d'une organisation Azure DevOps. En règle générale,
+   Azure DevOps ajoute les identités d'application par organisation. Si la boîte
+   de dialogue rejette l'id, ajoutez le principal de service à l'organisation
+   `Ahmed-G-Gad` (Organization settings, Users, en utilisant l'Object ID de
+   l'Enterprise application) et réessayez. Non confirmé également : si le profil
+   existe avant le premier appel Azure DevOps de l'identité.
+
+7. **Relancez l'exécution à blanc.** L'étape de vérification réussit désormais
+   avec « verification succeeded for the publisher » ; ses messages mentionnent
+   toujours Personal Access Token, car le jeton Entra emprunte le même chemin. La
+   vérification prouve l'appartenance à l'éditeur (Creator, Owner, Contributor ou
+   Reader), pas les droits de publication. Non confirmé : que Contributor suffise
+   pour publier une mise à jour. La description du rôle par Microsoft l'affirme,
+   et aucune source ne montre de publication avec ce rôle ; la première vraie
+   publication en est donc la preuve.
+
+8. **Publiez une version.** Étiquetez comme au §2.2 et approuvez l'exécution.
+   L'étape `Publish to Visual Studio Marketplace (Entra ID)` s'exécute, son en-tête
+   d'environnement ne liste que `AZURE_TENANT_ID`, l'étape de repli par jeton est
+   ignorée, et vsce affiche `DONE Published ahmed-g-gad.apothem-vscode`. La galerie
+   du Marketplace liste la nouvelle version au bout d'environ quatre minutes.
+
+9. **Décidez du sort du jeton.** Conservez `VSCE_PAT` jusqu'à la première
+   publication Entra réussie, puis supprimez le secret si aucune solution de repli
+   n'est souhaitée. Une fois qu'il a disparu, une variable Entra supprimée ou vide
+   laisse l'exécution au vert sans publication : avec un avertissement lorsque
+   `VSCE_AUTH` vaut toujours `entra`, et avec seulement l'avis d'omission lorsque
+   ce n'est pas le cas. Lisez les annotations de l'exécution après chaque
+   étiquette. Pour conserver une solution de repli au-delà du retrait des jetons
+   d'accès personnels globaux, créez un jeton limité à l'organisation
+   `Ahmed-G-Gad` avec la portée personnalisée Marketplace Manage et la durée
+   d'expiration la plus courte que vous acceptez, et stockez-le en tant que
+   `VSCE_PAT`. Non confirmé : les intitulés du portail dans cette étape
+   proviennent de la mémoire, pas d'une source primaire ; Microsoft qualifie les
+   jetons limités à une organisation de solution de contournement temporaire et
+   peut cesser de les honorer ; et les pages de Microsoft divergent sur la date de
+   retrait des jetons globaux.
+
+10. **Revenez au jeton.** Supprimez le sélecteur et déclenchez de nouveau, puis
+    approuvez l'exécution. Une publication Entra en échec n'a rien publié, de sorte
+    que la même étiquette peut être déclenchée de nouveau ; vérifiez d'abord la
+    page du Marketplace, car une version qui a atterri ne peut pas être publiée
+    deux fois.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+Lorsque la publication Entra échoue, lisez le journal de l'étape :
+
+- Un message qui commence par « Can not acquire a Microsoft Entra ID access
+  token » signifie que la connexion ou la chaîne d'identifiants a échoué.
+  Vérifiez d'abord l'étape `Sign in to Microsoft Entra ID` et l'identifiant
+  fédéré. Si la connexion est au vert, retirez `AZURE_TENANT_ID` de l'`env` de
+  l'étape vsce dans le flux de travail ; le propre flux de travail de publication
+  d'extension de GitHub ne l'exporte pas.
+- « InvalidAccessException » ou « not allowed » signifie que l'identité du jeton
+  n'est pas membre de l'éditeur. Comparez l'`id` du profil issu de l'exécution à
+  blanc avec l'onglet Members.
+- Un 403 de l'étape de vérification de l'exécution à blanc signifie que
+  l'application n'a pas encore de rôle.
+
+Trois limites s'appliquent à cette voie :
+
+- `id-token: write` est accordé à l'ensemble du job de publication, de sorte que
+  chacune de ses étapes peut demander un jeton OIDC, y compris en mode jeton. Le
+  sujet du jeton est lié à l'environnement `release`, qui exige l'approbation
+  d'un relecteur.
+- L'environnement `release` n'a aucune politique de branche ou d'étiquette de
+  déploiement, de sorte que toute ref approuvée par un mainteneur peut obtenir le
+  jeton au sujet d'environnement. Le restreindre aux étiquettes `v*.*.*` nécessite
+  de vérifier d'abord ce que `release.yml` et `publish-npm.yml` déclenchent.
+- Un renommage ou un transfert du dépôt modifie le format du sujet OIDC et casse
+  silencieusement l'identifiant fédéré. Recopiez le sujet depuis le journal
+  `Azure/login` dans l'identifiant après tout renommage.
+
+### 2.5 Actualiser l'épinglage des condensés de modèles
+
+Une fois l'étiquette créée, définissez `_LATEST_RELEASE` et `_LATEST_RELEASE_DIGESTS`
+dans `tests/unit/test_template_digests.py` sur la nouvelle version et le condensé
+SHA-256 de chaque modèle en texte brut tel que cette version l'a livré
+(`git show vX.Y.Z:<template path> | sha256sum`). Faites-le dans la prochaine
+modification de `main`, et ajoutez le condensé précédent aux `earlier_digests` de
+l'entrée du manifeste lorsque le modèle a changé. Le job CI `release-preflight`
+extrait chaque étiquette ; il échoue donc avec les noms des étiquettes tant que
+l'épinglage n'est pas actualisé.
 
 ## 3. Surfaces de distribution
 

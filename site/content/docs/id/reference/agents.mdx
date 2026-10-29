@@ -2,7 +2,7 @@
 title: "Pembantu"
 description: "Agen pembantu persisten untuk riset, audit, kualitas, dan orkestrasi dengan kontrak frontmatter dan protokol isolasi penyebaran."
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,24 +51,74 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` bersifat opsional. Pembantu yang menghilangkannya mewarisi setiap tool
+yang dimiliki sesi, termasuk tool MCP yang terhubung, dan `disallowedTools`
+membawa batasnya. Keempat belas pembantu yang dikirimkan mencantumkan `tools`.
+
+## Server MCP yang terhubung
+
+Pembantu yang mencantumkan `tools` hanya dapat memanggil apa yang
+dicantumkannya. Claude Code menerima tool MCP ke dalam daftar itu hanya ketika
+entrinya menyebut servernya, seperti `mcp__<server>__*`; `mcp__*` polos
+didokumentasikan sebagai entri `disallowedTools` dan tidak di tempat lain. Nama
+server adalah milik orang yang menghubungkannya, sehingga pembantu yang
+dikirimkan tidak dapat menyebutnya.
+
+`citation-auditor` dan `research-scout` mencari sumber ilmiah. Masing-masing
+dikirimkan dengan `tools: Read, Glob, Grep, WebSearch, WebFetch` dan menolak tool
+yang menulis berkas, menjalankan perintah, memulai pembantu lain, atau
+menerbitkan: `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Bash`, `PowerShell`,
+`Monitor`, `Agent`, `Artifact`, dan tool daftar tugas. Tanpa pengaturan profil,
+keduanya tidak menjangkau tool MCP, dan keduanya mencari sumber melalui
+pencarian web dan pengambilan web.
+
+Untuk memberi salah satunya indeks ilmiah yang terhubung, sebut servernya di
+kunci `agent_mcp_servers` profil, yang memetakan nama agen ke nama server.
+Pemasangan mesin Claude Code (`apothem install`) kemudian menambahkan satu entri
+`mcp__<server>__*` per server yang disebut ke baris `tools` agen tersebut, dan
+tidak mengubah agen lain. Pemasangan Gemini CLI melakukan hal yang sama dengan
+satu entri `mcp_<server>_*` per server di daftar-izin `tools` agen, untuk nama
+server yang terdiri dari huruf, angka, dan `-`. Di keduanya, server yang disebut
+oleh `disallowedTools` milik agen itu sendiri tetap ditolak. Entri tersebut
+mengizinkan setiap tool dari server itu, termasuk tool yang menulis, jadi sebut
+hanya server yang Anda percayai untuk pencarian: instruksi pembantu membatasinya
+pada panggilan search, look-up, read, verify, dan resolve, tetapi harness hanya
+menegakkan nama-nama yang dicantumkan baris `tools`. Nama untuk agen yang tidak
+ada, atau yang tidak memiliki baris `tools` eksplisit, dilaporkan dan dilewati.
+
+Harness selain Claude Code dan Gemini CLI mengabaikan kunci ini. Pohon plugin
+Claude Code dirakit tanpa profil dan mempertahankan daftar polos, sehingga
+pengguna plugin mendefinisikan agen tingkat pengguna di bawah `~/.claude/agents/`
+sebagai gantinya. Sintaks profil, aturan nama server, dan solusi tersebut ada di
+[Memberi pembantu akses ke server MCP](/docs/reference/mcp#memberi-pembantu-akses-ke-server-mcp).
+
 ## Konversi per harness
 
 Pembantu yang pemberian `tools`-nya, setelah `disallowedTools` diterapkan, tidak
 menyertakan satu pun tool penyunting berkas (`Write`, `Edit`, `MultiEdit`, atau
-`NotebookEdit`) bersifat hanya-baca. Setiap harness yang mengonversi pembantu
-menegakkan batas itu secara native atau menghapus label hanya-baca:
+`NotebookEdit`) bersifat hanya-baca. Pembantu tanpa pemberian `tools` bersifat
+hanya-baca ketika `disallowedTools` menolak setidaknya `Write` dan `Edit`.
+Setiap harness yang mengonversi pembantu menegakkan batas itu secara native,
+menyatakannya di instruksi pembantu, atau menghapus label hanya-baca:
 
 | Harness | Batas tool | Batas giliran | Model dan tingkat upaya |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` sebagaimana ditulis | `maxTurns` | diwarisi (tidak diatur) |
-| Codex | `sandbox_mode = "read-only"` untuk pembantu hanya-baca | tidak tersedia | diwarisi (tidak diatur) |
-| Gemini CLI | daftar-izin `tools` berisi nama tool Gemini | `max_turns` | diwarisi (tidak diatur) |
-| Qwen Code | `tools` / `disallowedTools` dalam nama tool Qwen | tidak dipetakan | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` per tool) | tidak dipetakan | diwarisi (tidak diatur) |
+| Claude Code | `tools` / `disallowedTools` sebagaimana ditulis, ditambah entri `mcp__<server>__*` apa pun yang ditambahkan kunci `agent_mcp_servers` profil ke baris `tools` yang dicantumkan; tanpa `tools`, setiap tool diwarisi, termasuk MCP | `maxTurns` | diwarisi (tidak diatur) |
+| Codex | tidak ada yang dipancarkan; instruksi pembantu menyatakannya, dan sandbox sesi induk mengatur penulisan | tidak tersedia | diwarisi (tidak diatur) |
+| Gemini CLI | daftar-izin `tools` berisi nama tool Gemini, ditambah entri `mcp_<server>_*` apa pun yang ditambahkan kunci `agent_mcp_servers` profil ke daftar eksplisit yang dicantumkan; tanpa `tools`, daftar-izin yang tersirat dari penolakan ditambah `mcp_*` | `max_turns` | diwarisi (tidak diatur) |
+| Qwen Code | `tools` / `disallowedTools` dalam nama tool Qwen; tanpa `tools`, tidak ada daftar yang dipancarkan, sehingga tool MCP diwarisi dan penolakan berlaku | tidak dipetakan | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` per tool); tool MCP tidak dibatasi | tidak dipetakan | diwarisi (tidak diatur) |
 | Antigravity | tidak ada yang dipancarkan; deskripsi menghilangkan kata "read-only" | tidak tersedia | diwarisi (tidak diatur) |
+| CodeBuddy | `tools` / `disallowedTools` sebagai string berkoma, terbatas pada nama tool yang didokumentasikan CodeBuddy; tanpa entri MCP | `maxTurns` | diwarisi (tidak diatur) |
+| Trae | `tools` / `disallowedTools` sebagai string berkoma, terbatas pada nama tool yang didokumentasikan Trae; tanpa entri MCP | tidak tersedia | diwarisi (tidak diatur) |
+| GitHub Copilot | daftar-izin `tools` berisi alias Copilot (`read`, `search`, `edit`, `execute`, `web`, `agent`, `todo`) dengan penolakan dilipat ke dalamnya, karena Copilot tidak memiliki kunci penolakan; alias yang mencakup tool yang ditolak dihilangkan; tanpa entri MCP | tidak tersedia | diwarisi (tidak diatur) |
+| Cursor | tanpa daftar tool (Cursor tidak memilikinya); `readonly: true` untuk kelima pembantu hanya-baca tanpa `Bash`, dan pembantu hanya-baca lainnya menghilangkan label "read-only" | tidak tersedia | diwarisi (tidak diatur) |
+| Kimi Code | `tools` / `disallowedTools` sebagai daftar nama tool Kimi Code (`WebFetch` menjadi `FetchURL`, `TodoWrite` menjadi `TodoList`; nama yang tidak memiliki tool di Kimi Code dihilangkan); tanpa entri MCP | tidak tersedia | diwarisi (tidak diatur) |
+| Kiro | daftar-izin `tools` berisi kategori tool Kiro (`read`, `write`, `shell`, `web`, `subagent`) dengan penolakan dilipat ke dalamnya, karena daftar itu satu-satunya pembatasan yang ditulis; kategori yang mencakup tool yang ditolak dihilangkan; tanpa entri MCP | tidak tersedia | diwarisi (tidak diatur) |
+| Windsurf | daftar-izin `allowed-tools` berisi nama tool Devin (`read`, `edit`, `grep`, `glob`, `exec`, `write`) dengan penolakan dilipat ke dalamnya, karena Devin tidak memiliki kunci penolakan; tiga pembantu yang memerlukan tool web tidak dipasang; tanpa entri MCP | tidak tersedia | model subagen bawaan Devin (tidak diatur) |
 
-Hermes, Open-Claw, dan Kimi Code menerima berkas pembantu sebagai materi
-pendukung, bukan sebagai pembantu native.
+Hermes dan Open-Claw menerima berkas pembantu sebagai materi pendukung, bukan
+sebagai pembantu native.
 
 ## Orkestrasi
 

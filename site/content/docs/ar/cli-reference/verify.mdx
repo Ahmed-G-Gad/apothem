@@ -2,7 +2,7 @@
 title: "verify"
 description: "مرجع واجهة سطر الأوامر لأمر apothem verify."
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,6 +22,17 @@ apothem verify --harness NAME|all [--profile PATH] [--project PATH]
 <bdi>`--profile`</bdi> يشترط الفحص إضافةً إلى ذلك **الأمانة للملف التعريفي**، فيُخفق
 التحقّق من تثبيتٍ موجود لكنه منحرف، مجيبًا عن السؤال «هل هذا الملف التعريفي بعينه
 مثبّت بأمانة؟» لا عن مجرّد «هل هو موجود؟».
+
+بالنسبة إلى المحوّل الذي يكتب المهارات إلى دليلك المنزلي، يتحقّق <bdi>verify</bdi>
+أيضًا من أن كل مجلّد مهارة يتوقّعه موجود ومعه <bdi>`SKILL.md`</bdi>، أيًّا كان التثبيت
+الذي كتبه، لذا يجتاز التحقّق جهازٌ لم تُثبَّت عليه إلا أداة واحدة من الأدوات التي
+تتشارك مجلّدًا. ويُخفق حين يكون مجلّد مفقودًا، وحين يعود مجلّد يحمل اسم مهارة من
+<bdi>Apothem</bdi> إلى شيء لم يكتبه <bdi>Apothem</bdi>. ويذكر الصف الفاشل أيّهما:
+في الوضع العادي يليه سطر <bdi>`Note:`</bdi>، وفي صف <bdi>JSON</bdi> يسرد كائن
+<bdi>`user_level`</bdi> المسارات <bdi>`missing`</bdi> و<bdi>`unlisted`</bdi>
+ورسالة <bdi>`message`</bdi>. شغّل [<bdi>`install`</bdi>](/docs/cli-reference/install)
+لاستعادة مجلّد مفقود؛ وأعد تسمية المجلّد الغريب أو انقله، ثم شغّل
+[<bdi>`update`</bdi>](/docs/cli-reference/update).
 
 يحترم المسح بـ <bdi>`--harness all`</bdi> قائمة <bdi>`exclude_harnesses`</bdi> في
 الملف التعريفي — وهي الاستثناءات نفسها التي طبّقتها دفعة

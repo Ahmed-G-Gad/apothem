@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,30 +32,62 @@ style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
 
 ## Correspondance entre le profil et la configuration native
 
-L'adaptateur lit le profil partagé d'Apothem et rend la configuration YAML native, y compris l'inventaire MCP du profil. Les serveurs MCP proviennent de la section `mcp_servers` du profil. Ils sont rendus dans `config.yaml` à chaque installation et mise à jour, et non copiés sous forme de fichiers. L'identité, les préférences et les règles du profil vont dans le document de profil. Les commandes, skills, définitions d'auxiliaires, règles, templates et prompts de hooks partagés aboutissent comme matériel de support sous `~/.hermes/.apothem/support/`.
+L'adaptateur lit le profil partagé d'Apothem et rend la configuration YAML native, y compris l'inventaire MCP du profil. Les serveurs MCP proviennent de la section `mcp_servers` du profil. Ils sont rendus dans `config.yaml` à chaque installation et mise à jour, et non copiés sous forme de fichiers. L'adaptateur ajoute aussi `~/.hermes/.apothem/support/skills` à `skills.external_dirs`, la liste des répertoires de skills supplémentaires que lit Hermes, ce qui permet à Hermes de trouver les skills installés. L'entrée est placée après les entrées que vous listez déjà, et vos autres clés restent telles quelles. L'identité, les préférences et les règles du profil vont dans le document de profil. Les commandes, skills, définitions d'auxiliaires, règles, templates et prompts de hooks partagés aboutissent comme matériel de support sous `~/.hermes/.apothem/support/`.
 
 ## Notes de compatibilité
 
-Adaptateur en préversion. Hermes ne charge pas de lui-même l'arborescence de
-support ni le document de profil : rien dans `config.yaml` et aucun des fichiers
-de contexte que lit Hermes n'y pointe ; après l'installation, Hermes s'exécute
-donc sans les règles, les skills ni les hooks d'Apothem. Hermes lit les skills
-dans `~/.hermes/skills/` et dans chaque dossier listé sous
-`skills.external_dirs` dans `config.yaml` ; pour utiliser les skills Apothem,
-ajoutez vous-même `~/.hermes/.apothem/support/skills` à cette liste ;
-`apothem update` conserve les clés que vous ajoutez à `config.yaml`.
-L'adaptateur écrit l'inventaire MCP du profil sous la clé de premier niveau
-`mcp_servers`, où Hermes lit les serveurs MCP. Les publications antérieures
-d'Apothem l'écrivaient sous `auxiliary.mcp`, que Hermes lit comme le modèle
-auxiliaire chargé de répartir les appels d'outils MCP ; `apothem update` comme
+Adaptateur en préversion. Hermes charge les skills d'Apothem via
+`skills.external_dirs`, mais ne charge pas de lui-même le reste de
+l'arborescence de support ni le document de profil : rien d'autre dans
+`config.yaml` et aucun des fichiers de contexte que lit Hermes n'y pointe ;
+après l'installation, Hermes s'exécute donc sans les règles ni les hooks
+d'Apothem.
+
+**Conflits de noms.** Hermes documente cet ordre de priorité pour les skills :
+les skills du projet (`<project>/.hermes/skills/` et `<project>/.agents/skills/`),
+puis `~/.hermes/skills/`, puis `skills.create_dir`, puis les dossiers listés
+sous `skills.external_dirs`. Le répertoire d'Apothem est une entrée de
+`external_dirs` ; il vient donc en dernier. La documentation de Hermes
+consultée n'indique pas quelle copie Hermes charge lorsque deux emplacements
+contiennent un skill du même nom ; Apothem interprète l'ordre comme donnant
+l'avantage aux emplacements précédents : attendez-vous donc à ce qu'un skill
+du même nom que vous conservez dans un emplacement précédent ait priorité sur
+la copie Apothem. Apothem n'écrit que dans `config.yaml` et sous
+`~/.hermes/.apothem/support/`, jamais dans ces emplacements précédents ;
+l'installation, la mise à jour et la désinstallation ne remplacent donc pas un
+skill que vous y conservez.
+
+`apothem update` conserve les clés que vous ajoutez à `config.yaml`, y compris
+`skills.config` et vos propres entrées `skills.external_dirs`. L'adaptateur
+écrit l'inventaire MCP du profil sous la clé de premier niveau `mcp_servers`,
+où Hermes lit les serveurs MCP. Les publications antérieures d'Apothem
+l'écrivaient sous `auxiliary.mcp`, que Hermes lit comme le modèle auxiliaire
+chargé de répartir les appels d'outils MCP ; `apothem update` comme
 `apothem uninstall` retirent ce bloc lorsqu'il correspond encore à ce qu'une
 telle publication écrirait à partir de votre profil partagé actuel (voir
 [Désinstallation](#désinstallation) pour les cas où il reste en place).
 (Comportement de Hermes d'après les pages de son guide utilisateur consacrées
 aux
-[skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
-et au [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
-consultées le 2026-10-02.)
+[skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills),
+consultée le 2026-10-24, et au
+[MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+consultée le 2026-10-02.)
+
+**Commentaires dans `config.yaml`.** Apothem réécrit le fichier avec une
+bibliothèque YAML qui supprime les commentaires. Lorsque le fichier contient
+des commentaires de votre part et que l'entrée manque, Apothem laisse le
+fichier intact et l'installation s'arrête avec un message qui nomme la clé.
+Ajoutez vous-même l'entrée, puis relancez l'installation :
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+Une entrée que vous ajoutez vous-même compte comme la vôtre : si vous listez
+déjà ce répertoire, Apothem conserve votre entrée telle quelle et la
+désinstallation la laisse en place.
 
 ## Vérification
 
@@ -70,7 +102,10 @@ La commande verify confirme que :
    configurations JSON ou YAML s'analysent correctement. Ajoutez
    `--profile PATH` pour vérifier en plus que les fichiers installés
    correspondent à ce profil.
-3. La routine de vérification propre à l'adaptateur signale un succès.
+3. `skills.external_dirs` dans la configuration native liste
+   `~/.hermes/.apothem/support/skills`. Sans cette entrée, Hermes ne charge pas
+   les skills installés ; `apothem update` la rajoute.
+4. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -78,7 +113,9 @@ La commande verify confirme que :
 apothem update --harness hermes
 ```
 
-Redérive la configuration native à partir de l'état actuel du profil partagé.
+Redérive la configuration native à partir de l'état actuel du profil partagé ;
+l'entrée Apothem de `skills.external_dirs` reste listée une seule fois, quel
+que soit le nombre de mises à jour.
 Exécutez cette commande après avoir modifié `~/.config/apothem/profile.yaml` ou
 mis à niveau le paquet Apothem installé.
 
@@ -88,11 +125,12 @@ mis à niveau le paquet Apothem installé.
 apothem uninstall --harness hermes
 ```
 
-Supprime ce que l'adaptateur a ajouté : les entrées `mcp_servers` que son
-installation a consignées dans `config.yaml` (vos propres clés restent, et le
-fichier n'est supprimé que si Apothem l'a créé et qu'il ne contient plus rien
-de vous), le document de profil et l'arborescence de support. Le YAML du profil
-partagé et le moteur Apothem ne sont pas affectés.
+Supprime ce que l'adaptateur a ajouté : les entrées `mcp_servers` et l'entrée
+`skills.external_dirs` que son installation a consignées dans `config.yaml`
+(vos propres clés restent, y compris vos propres entrées `external_dirs` et
+`skills.config`, et le fichier n'est supprimé que si Apothem l'a créé et qu'il
+ne contient plus rien de vous), le document de profil et l'arborescence de
+support. Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
 Pour une installation effectuée par une publication antérieure, qui écrivait
 les serveurs du profil sous `auxiliary.mcp`, ce bloc est également retiré
@@ -118,6 +156,8 @@ python -m apothem.conformity.gate --all .
 | Fichier de configuration introuvable | Relancez `apothem install --harness hermes` |
 | Échec de la vérification | Exécutez `apothem update --harness hermes`, puis vérifiez à nouveau |
 | Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness hermes` |
+| L'installation s'arrête avec un message sur des commentaires dans `config.yaml` | Apothem ne réécrit pas un fichier dont il devrait retirer des commentaires. Ajoutez vous-même l'entrée `skills.external_dirs` indiquée sous [Notes de compatibilité](#notes-de-compatibilité), puis relancez l'installation |
+| Un skill Apothem n'apparaît pas dans Hermes | Un skill du même nom dans le projet ou dans `~/.hermes/skills/` peut avoir priorité sur la copie Apothem : Hermes documente l'ordre de recherche mais pas la règle en cas de conflit (voir [Notes de compatibilité](#notes-de-compatibilité)). Exécutez aussi `apothem verify --harness hermes` |
 
 ## Paramètres de configuration
 

@@ -2,14 +2,14 @@
 title: "Apothem مقابل تهيئة Cursor اليدوية"
 description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "c2a9e94f668e10b1"
+sourceHash: "3ac88ae9bc4bc63a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 يقرأ <bdi>Cursor</bdi> القواعد بصيغة <bdi>MDC</bdi> تحت <bdi>`.cursor/rules/`</bdi>.
 تتطلّب صيغة <bdi>MDC</bdi> حقول <bdi>frontmatter</bdi> — <bdi>`description`</bdi>
 و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>. يُحوِّل محوِّل <bdi>cursor</bdi> في
-<bdi>Apothem</bdi> ملفات <bdi>`.mdc`</bdi> تلك من الملف التعريفي المشترك. تقابل هذه
+<bdi>Apothem</bdi> ملف قواعد <bdi>`.mdc`</bdi> واحدًا من الملف التعريفي المشترك. تقابل هذه
 الصفحة بين صيانة تلك التهيئة يدويًّا وإدارتها بـ <bdi>Apothem</bdi>.
 
 ## مقارنة الجهد
@@ -18,25 +18,30 @@ sourceHash: "c2a9e94f668e10b1"
 | ---- | --------------- | --------------- |
 | كتابة القواعد | كتابة كل ملف <bdi>`.mdc`</bdi> تحت <bdi>`.cursor/rules/`</bdi> يدويًّا | مُحوَّلة من الذخيرة المشتركة |
 | كتابة <bdi>frontmatter</bdi> لـ <bdi>MDC</bdi> | كتابة <bdi>`description`</bdi> / <bdi>`globs`</bdi> / <bdi>`alwaysApply`</bdi> يدويًّا لكل ملف | يولّدها المحوِّل |
-| الحفاظ على صيغة قواعد واحدة | الاختيار يدويًّا بين قواعد <bdi>MDC</bdi> وملف <bdi>`.cursorrules`</bdi> واحد | يكتب المحوِّل ملفات <bdi>MDC</bdi> في <bdi>`.cursor/rules/`</bdi> فقط |
+| الحفاظ على صيغة قواعد واحدة | الاختيار يدويًّا بين قواعد <bdi>MDC</bdi> وملف <bdi>`.cursorrules`</bdi> واحد | يكتب المحوِّل ملف <bdi>MDC</bdi> واحدًا، <bdi>`.cursor/rules/apothem-rules.mdc`</bdi>، ولا يكتب <bdi>`.cursorrules`</bdi> |
 | إبقاء القواعد متوائمة مع أُطُر العمل الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًّا إلى <bdi>`~/.agents/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوِّل في <bdi>`~/.agents/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
 | التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem
 
-يُحوِّل محوِّل <bdi>cursor</bdi> القواعد المشتركة إلى ملفات <bdi>`.mdc`</bdi> تحت
-<bdi>`.cursor/rules/`</bdi>، ويولّد <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi>
-المطلوب (<bdi>`description`</bdi> و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>)
-لكل ملف. يكتب المحوِّل صيغة <bdi>MDC</bdi> القائمة على الأدلّة التي يقرأها
-<bdi>Cursor</bdi> فقط؛ ولا يكتب ملف <bdi>`.cursorrules`</bdi> مفردًا.
-لا يملك <bdi>Cursor</bdi> خطّاف <bdi>PreToolUse</bdi>، ولذا تقيم نيّة الحواجز
-الواقية في نصّ القواعد.
+يُحوِّل محوِّل <bdi>cursor</bdi> القواعد المشتركة إلى ملف <bdi>`.mdc`</bdi> واحد،
+<bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>، ويولّد <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi>
+المطلوب (<bdi>`description`</bdi> و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>).
+يكتب المحوِّل صيغة <bdi>MDC</bdi> القائمة على الأدلّة التي يقرأها
+<bdi>Cursor</bdi> فقط؛ ولا يكتب ملف <bdi>`.cursorrules`</bdi> مفردًا. ويكتب أيضًا المهارات،
+والأوامر المغلَّفة بوصفها مهارات، في <bdi>`~/.agents/skills/`</bdi>، والقواعد والقوالب التي
+تستشهد بها تلك المهارات في <bdi>`~/.config/apothem/`</bdi>، وكلاهما في دليلك المنزلي.
+يوثّق <bdi>Cursor</bdi> الخطّافات في ملفات <bdi>`hooks.json`</bdi> وعبر صيغة الإضافات الخاصة به.
+لا يبني المحوِّل أيّ إضافة؛ بل يضيف مُدخلًا واحدًا لـ <bdi>`sessionStart`</bdi> إلى
+<bdi>`.cursor/hooks.json`</bdi> الخاص بالمشروع، يحمّل تمهيد الجلسة، ويترك مُدخلاتك الخاصة كما
+هي. ولا يسجّل أيّ حارس لاستدعاءات الأدوات، ولذا تقيم نيّة الحواجز الواقية في نصّ القواعد.
 
 ## مسار الترحيل
 
 1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
 2. انقل القواعد من <bdi>`.cursor/rules/`</bdi> الموجود لديك (وأيّ <bdi>`.cursorrules`</bdi>) إلى الذخيرة المشتركة.
-3. شغّل <bdi>`apothem install --harness cursor --project <path>`</bdi> لتصيير ملفات <bdi>`.mdc`</bdi> مع <bdi>frontmatter</bdi> صحيح لـ <bdi>MDC</bdi>.
+3. شغّل <bdi>`apothem install --harness cursor --project <path>`</bdi> لتصيير <bdi>`apothem-rules.mdc`</bdi> مع <bdi>frontmatter</bdi> صحيح لـ <bdi>MDC</bdi>.
 4. شغّل <bdi>`apothem verify --harness cursor --project <path>`</bdi> للتأكّد من وصول التهيئة.
 5. استخدم <bdi>`apothem update --harness cursor --project <path>`</bdi> مع كل تغيير لاحق.
 

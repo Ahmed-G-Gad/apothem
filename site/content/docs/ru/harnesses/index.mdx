@@ -2,7 +2,7 @@
 title: "Адаптеры окружений"
 description: "Адаптеры окружений Apothem — один общий профиль, семнадцать поддерживаемых целей."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,12 +80,42 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Навыки в вашем домашнем каталоге пользователя
+
+Семь адаптеров с областью действия проекта записывают один файл правил в ваш
+проект (шесть из них также записывают туда помощников Apothem в виде файлов
+субагентов; папку называет страница каждого окружения), а также записывают
+навыки Apothem и правила и шаблоны, на которые ссылаются навыки, в папки в вашем
+домашнем каталоге пользователя:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Каждая установка, указывающая папку, записывает одни и те же файлы, поэтому
+  порядок установки не имеет значения, а одна копия обслуживает каждый проект.
+- Установка сначала записывает папки в домашнем каталоге. Если это не удаётся,
+  она останавливается до того, как изменить проект, и не добавляет в ваш
+  репозиторий ни одного файла навыка или правила.
+- Удаление удаляет общую папку, только когда никакая другая установка Apothem
+  её больше не использует, и сообщает, какая установка её сохраняет.
+- Папка навыка с именем навыка Apothem, которую Apothem не записывал, остаётся
+  нетронутой, с предупреждением.
+
+Страница каждого окружения перечисляет его папки.
+[Реестр окружений](/docs/reference/harness-registry#общие-корни) показывает,
+какие инструменты разделяют какую папку.
 
 См. [Абстракция адаптера окружения](/docs/architecture/harness-adapter-abstraction)
 для спецификации протокола.

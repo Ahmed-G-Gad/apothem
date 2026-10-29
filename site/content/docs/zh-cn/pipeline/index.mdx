@@ -2,7 +2,7 @@
 title: "流水线命令"
 description: "Apothem 流水线命令参考——/plan 流程与审计命令目录。"
 machineTranslated: true
-sourceHash: "08dadaaf1914c388"
+sourceHash: "3f3d8b895fc7fe35"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,9 +74,9 @@ flowchart LR
 | [/research-ideate](/docs/pipeline/research-ideate) | 提出问题——从领域种子生成候选问题 | 链首 |
 | [/research-spec](/docs/pipeline/research-spec) | 框定问题——可证伪假设 + 范围 | 链中 |
 | [/research-theory](/docs/pipeline/research-theory) | 概念框架 + 变革理论 | 链中 |
-| [/research-sources](/docs/pipeline/research-sources) | 系统性来源收集 | 链中 |
+| [/research-sources](/docs/pipeline/research-sources) | 带可重新运行检索记录的系统性来源收集 | 链中 |
 | [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA 图谱 + 缺口分析 | 链中 |
-| [/research-proposal](/docs/pipeline/research-proposal) | 目标 + 可行性 + 影响力 + 预注册计划 | 链中 |
+| [/research-proposal](/docs/pipeline/research-proposal) | 目标 + 可行性 + 应急预案 + 影响力 + 数据计划 + 预注册计划；资助方征集公告矩阵或再次申请回应 | 链中 |
 | [/research-design](/docs/pipeline/research-design) | 研究设计 + 预注册 | 链中 |
 | [/research-experiment](/docs/pipeline/research-experiment) | 运行 + 记录，可复现 | 链中 |
 | [/research-analysis](/docs/pipeline/research-analysis) | 结果 + 统计 | 链中 |
@@ -87,7 +87,7 @@ flowchart LR
 
 [/research](/docs/pipeline/research) 包装式工作流编排器驱动这些阶段，从原始问题推进到已发表的论文（它本身不是一个阶段），并在下一阶段基于每个阶段的输出继续构建之前，独立检查该输出；`--quick` 只运行 `/research-sources` + `/research-synthesis`，用于生成一次性的带引用报告。
 
-实证阶段（来源、设计、实验、分析）和写作阶段（论文、评审、发表、传播）还会借助若干将严谨性付诸实施的表面——公平的多方法比较、比较对象的来源记录、实验项目脚手架、算力利用计划、可选启用的自主实验循环、完成定义推进闸门，以及带分阶段披露的盲法——它们为这十项强制规定补充操作细节，而不扩展这些规定。
+实证阶段（来源、设计、实验、分析）和写作阶段（论文、评审、发表、传播）还会借助若干将严谨性付诸实施的表面——公平的多方法比较、比较对象的来源记录、实验项目脚手架、算力利用计划、可选启用的自主实验循环、完成定义推进闸门、带分阶段披露的盲法、检索记录、研究分配与检验力规划、分析规范、计划应急预案、图表完整性，以及演讲与海报规划——它们为这十项强制规定补充操作细节，而不扩展这些规定。
 
 ## 审计评审序列
 

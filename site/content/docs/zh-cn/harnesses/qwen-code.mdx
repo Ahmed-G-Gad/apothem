@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "适用于 Qwen Code（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,6 +40,12 @@ apothem install --harness qwen-code
 ## 兼容性说明
 
 `~/.qwen/.apothem/support/` 是由 `QWEN.md` 和设置中的钩子命令引用的支持材料；它不是厂商拥有的发现命名空间。`QWEN.md` 中的 Apothem 块以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.qwen/.apothem/support/` 下的绝对目录。
+
+**技能工具列表。** `Qwen Code` 从驼峰式的 `allowedTools` 前置元数据键读取技能的工具允许列表，且该值必须是一个 YAML 列表。它会忽略为其他代理写入的连字符形式 `allowed-tools` 键。因此，已安装的技能以列表形式携带 `allowedTools`，每行一个条目，取代源语料库中以逗号分隔的 `allowed-tools` 字符串。每个条目都保留源中的拼写，包括 `Bash(git status *)` 这样的模式。其他每个技能键以及技能正文都按原样安装。
+
+**技能文件夹。** 适配器将技能写入 `~/.qwen/skills/`。`Qwen Code` 还会读取 `~/.agents/skills/`，并在项目内读取 `.qwen/skills/` 和 `.agents/skills/`。当两个文件夹中存在同名技能时，`.qwen` 下的那个优先，因此 `~/.qwen/skills/` 中的 Apothem 技能优先于另一个适配器写入 `~/.agents/skills/` 的同名技能。
+
+**钩子事件。** 适配器接入 `SessionStart`、`PreToolUse`、`PreCompact`、`PostCompact` 和 `Stop`。`Qwen Code` 定义了 22 个钩子事件，这五个都在其中。这 22 个中有三个（`SessionDelete`、`TodoCreated` 和 `TodoCompleted`）没有同名的 `Claude Code` 事件（`Claude Code` 将待办事件命名为 `TaskCreated` 和 `TaskCompleted`）；适配器不接入其中任何一个。
 
 ## 验证
 

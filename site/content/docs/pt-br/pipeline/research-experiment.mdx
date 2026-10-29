@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Executa o estudo projetado e captura dados brutos com proveniência completa, além de um manifesto de reprodutibilidade (ambiente, semente, protocolo, fixação de versões)."
 machineTranslated: true
-sourceHash: "669b49f8909599c4"
+sourceHash: "83b92abde30e8dc0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Com argumentos:
 
 ## Saídas
 
-`_outputs/experiment-log.md` (o rastro do protocolo com carimbo de data/hora), os dados brutos em um local natural do host e `_outputs/reproducibility-manifest.md` (ambiente, semente, protocolo, fixação de versões).
+`_outputs/experiment-log.md` (o rastro do protocolo com carimbo de data/hora, mais o registro de encerramento de uma campanha autônoma), os dados brutos em um local natural do host e `_outputs/reproducibility-manifest.md` (ambiente, semente, protocolo, fixação de versões).
 
 ## Downstream
 
@@ -48,7 +48,9 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 ## Piso de rigor
 
-A execução faz uma passagem-piloto para calibrar orçamentos e faixas, e em seguida a comparação completa sob um plano declarado de utilização de computação (alocação de núcleos, tetos de memória, paralelização segura de repetições independentes). Cada método estocástico executa seu regime de repetições pré-registrado com sementes registradas e hardware anotado. Um laço autônomo de experimento, opcional e desligado por padrão, está disponível: contra um arcabouço congelado, ele propõe uma mudança em um único alvo mutável, executa-a com o orçamento fixo, retém-na somente se superar o titular e registra em diário cada tentativa.
+A execução faz uma passagem-piloto para calibrar orçamentos e faixas, e em seguida a comparação completa sob um plano declarado de utilização de computação (alocação de núcleos, tetos de memória, paralelização segura de repetições independentes). Cada método estocástico executa seu regime de repetições pré-registrado com sementes registradas e hardware anotado. Um laço autônomo de experimento, opcional e desligado por padrão, está disponível. Contra um arcabouço congelado, ele propõe uma mudança em um único alvo mutável, declara uma previsão falseável antes de cada execução e a executa com o orçamento fixo. A métrica primária é lida do log de execução como dois sinais: um sinal de busca que conduz o laço, e um sinal de admissão de um conjunto disjunto, que confirma ou rejeita uma mudança antes que ela seja retida: a mudança precisa passar pela etapa de busca e depois superar o titular na admissão por mais do que a margem de ruído declarada (ou empatar com ele reduzindo a complexidade). Cada tentativa é registrada em diário e cada consulta de admissão é contada e divulgada.
+
+Um conjunto final intocado é avaliado uma única vez, no encerramento. Uma campanha sem esse conjunto rotula seu resultado como contaminado pela seleção e exploratório, e qualquer valor que a campanha relate é medido novamente sob o regime de repetições acima. O operador confirma uma única vez o alvo, o arcabouço, a métrica, os conjuntos de avaliação, a regra de aceitação, o orçamento e o espaço de trabalho, e pode fixar critérios de parada; ao parar, o registro de encerramento (contagens de tentativas, retenções, descartes, falhas e consultas de admissão, o ganho sobre a linha de base e o resultado no conjunto intocado) vai para o registro do experimento, para que a etapa de análise possa classificar o resultado selecionado pelo laço.
 
 ## Modos de falha
 
@@ -57,6 +59,7 @@ A execução faz uma passagem-piloto para calibrar orçamentos e faixas, e em se
 | Blocked: run /research-design first | Sem projeto do estudo | Execute `/research-design` para produzir `_inputs/study-design.md` |
 | Execução não reproduzível | Falta o registro da semente / ambiente | Registre o manifesto de reprodutibilidade completo antes de prosseguir |
 | Desvio de protocolo não documentado | Mudança em meio à execução não registrada | Registre o desvio no registro do experimento; divulgue na análise |
+| Resultado do laço apresentado como confirmatório | O laço se orientou pelo seu conjunto de admissão, ou nenhum conjunto intocado foi lido no encerramento | Rotule o resultado como contaminado pela seleção e exploratório; o sinal de busca conduz, o sinal de admissão decide e o conjunto intocado é lido uma única vez |
 
 ## Exemplos
 

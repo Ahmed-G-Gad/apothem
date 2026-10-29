@@ -2,7 +2,7 @@
 title: "एजेंट आर्किटेक्चर"
 description: "Apothem किस तरह एक ही एजेंटिक-क्षमता समूह को सत्रह हार्नेस पर—जिनके हुक सतह और नियम प्रारूप भिन्न हैं—प्रक्षेपित करता है।"
 machineTranslated: true
-sourceHash: "a0655f91d2726ce9"
+sourceHash: "f7b510f076abbabd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,9 @@ Apothem एक साझा प्रोफ़ाइल (`~/.config/apothem/prof
 
 ## प्रति-टूल एजेंटिक-क्षमता मैट्रिक्स
 
-नीचे का मैट्रिक्स सभी सत्रह टूल को कवर करता है। स्तंभ: प्रत्येक टूल जो PreToolUse हुक
-सतह उजागर करता है, Apothem नियम सक्रिय करने के लिए जो प्रारूप उपयोग करता है, वह
+नीचे का मैट्रिक्स सभी सत्रह टूल को कवर करता है। स्तंभ: अडैप्टर जो PreToolUse हुक
+सतह जोड़ता है (जहाँ कोई टूल ऐसे हुक प्रलेखित करता है जिन्हें अडैप्टर पंजीकृत नहीं
+करता, वहाँ सेल यह बताता है), Apothem नियम सक्रिय करने के लिए जो प्रारूप उपयोग करता है, वह
 अडैप्टर वर्ग (देखें [अडैप्टर वर्ग](#अडैप्टर-वर्गों-की-व्याख्या)), और
 क्या अडैप्टर किसी मूर्तीकारक के माध्यम से नेटिव कॉन्फ़िग रेंडर करता है।
 
@@ -30,29 +31,29 @@ Apothem एक साझा प्रोफ़ाइल (`~/.config/apothem/prof
 |---------|-------------------------|------------------------|---------------|--------------|
 | antigravity | नेटिव हुक सतह मौजूद है; केवल Apothem समर्थन सामग्री | `GEMINI.md` साथ ही Antigravity CLI प्लगइन नियम | वर्ग I | कोई नहीं |
 | claude-code | नेटिव PreToolUse / PostToolUse / Stop / SessionStart | `rules/` के अंतर्गत `.md` सपाट नियम | वर्ग II-A | कोई नहीं (वेंडर सेटिंग्स टेम्पलेट) |
-| codebuddy | कोई नहीं | `.codebuddy/rules/apothem-rules.md` प्रोजेक्ट नियम फ़ाइल | वर्ग I | कोई नहीं |
+| codebuddy | `.codebuddy/settings.local.json` में नेटिव SessionStart और PostToolUse; कोई PreToolUse गार्ड नहीं (वेंडर वहाँ कोई `additionalContext` प्रलेखित नहीं करता) | `.codebuddy/rules/apothem-rules.md` प्रोजेक्ट नियम फ़ाइल | वर्ग I | कोई नहीं |
 | codex | नेटिव `hooks.json` लाइफ़साइकल हुक | `AGENTS.md` साथ ही इंस्टॉल की गई स्किलों द्वारा संदर्भित समर्थन नियम | वर्ग I | कोई नहीं |
-| cursor | कोई नहीं | `.mdc` वर्कस्पेस नियम (MDC फ़्रंटमैटर: `description` / `globs` / `alwaysApply`) | वर्ग I | कोई नहीं |
-| gemini-cli | केवल समर्थन सामग्री | एकल `GEMINI.md` में अंतःस्थापित नियम | वर्ग I | कोई नहीं |
-| github-copilot | कोई नहीं (IDE एक्सटेंशन, कोई टूल-कॉल हुक नहीं) | `.github/copilot-instructions.md` में नियम | वर्ग I | कोई नहीं |
+| cursor | प्रोजेक्ट की `.cursor/hooks.json` में नेटिव `sessionStart`; अभी कोई टूल-इवेंट हुक नहीं | एक `.mdc` वर्कस्पेस नियम फ़ाइल (MDC फ़्रंटमैटर: `description` / `globs` / `alwaysApply`) | वर्ग I | कोई नहीं |
+| gemini-cli | नेटिव हुक सतह मौजूद है; केवल Apothem समर्थन सामग्री | एकल `GEMINI.md` में अंतःस्थापित नियम | वर्ग I | कोई नहीं |
+| github-copilot | `.github/hooks/apothem.json` में नेटिव sessionStart और postToolUse; कोई preToolUse गार्ड नहीं (वेंडर वहाँ केवल अनुमति फ़ील्ड पढ़ता है) | `.github/copilot-instructions.md` में नियम | वर्ग I | कोई नहीं |
 | glm | कोई नहीं (मॉडल बैकएंड; कोई एजेंट टूल सतह नहीं) | `.apothem/providers/glm.toml` बैकएंड प्रोवाइडर कॉन्फ़िग (कोई नियम समूह नहीं) | वर्ग I | कोई नहीं |
 | hermes | केवल समर्थन सामग्री | `config.yaml` साथ ही बाहरी स्किल निर्देशिका | वर्ग II-B | `config.yaml` |
 | kimi-code | केवल समर्थन सामग्री | `AGENTS.md` साथ ही `.kimi-code/.apothem/support/` के अंतर्गत समर्थन नियम | वर्ग I | कोई नहीं |
-| kiro | कोई नहीं (Kiro एजेंट हुक अडैप्टर दायरे से बाहर हैं) | `.kiro/steering/apothem-rules.md` स्टीयरिंग फ़ाइल | वर्ग I | कोई नहीं |
+| kiro | `.kiro/hooks/apothem.json` में नेटिव SessionStart; कोई टूल-इवेंट हुक नहीं (वेंडर उनके आउटपुट को अनदेखा करता है) | `.kiro/steering/apothem-rules.md` स्टीयरिंग फ़ाइल | वर्ग I | कोई नहीं |
 | open-claw | केवल समर्थन सामग्री | `openclaw.json` साथ ही अतिरिक्त स्किल निर्देशिका | वर्ग II-B | `openclaw.json` |
 | opencode | केवल समर्थन सामग्री | प्रोफ़ाइल-रेंडर किया गया JSON साथ ही नेटिव कमांड, स्किल और एजेंट | वर्ग II-B | `opencode.json` |
 | qwen-code | नेटिव PreToolUse / Stop / SessionStart | `QWEN.md` साथ ही नेटिव कमांड, स्किल और एजेंट | वर्ग II-B | `settings.json` / `QWEN.md` |
 | trae | कोई नहीं | `.trae/rules/apothem-rules.md` प्रोजेक्ट नियम फ़ाइल | वर्ग I | कोई नहीं |
-| windsurf | कोई नहीं | `.devin/rules/` में नियम | वर्ग I | कोई नहीं |
+| windsurf | `.devin/config.local.json` में Devin Local के लिए नेटिव SessionStart और PostToolUse; कोई PreToolUse गार्ड नहीं (वेंडर वहाँ कोई संदर्भ चैनल प्रलेखित नहीं करता) | `.devin/rules/` में एक नियम फ़ाइल | वर्ग I | कोई नहीं |
 | zed | कोई नहीं | प्रोजेक्ट-रूट `.rules` सपाट फ़ाइल | वर्ग I | कोई नहीं |
 
 
 मैट्रिक्स पर टिप्पणियाँ:
 
-- **claude-code** संदर्भ अडैप्टर है। इसमें नेटिव PreToolUse, PostToolUse, Stop, और SessionStart हुक होते हैं और यह वेंडर सेटिंग्स टेम्पलेट भेजता है। यह `CLAUDE.md` में एक सेंटिनल-सीमांकित प्रबंधित ब्लॉक लिखता है और सेंटिनलों के बाहर का ऑपरेटर-गद्य अपरिवर्तित छोड़ता है।
+- **claude-code** सबसे व्यापक नेटिव सतह वाला अडैप्टर है। इसमें नेटिव PreToolUse, PostToolUse, Stop, और SessionStart हुक होते हैं और यह वेंडर सेटिंग्स टेम्पलेट भेजता है। यह `CLAUDE.md` में एक सेंटिनल-सीमांकित प्रबंधित ब्लॉक लिखता है और सेंटिनलों के बाहर का ऑपरेटर-गद्य अपरिवर्तित छोड़ता है।
 - **codex** `hooks.json` के माध्यम से नेटिव लाइफ़साइकल हुक इंस्टॉल करता है, एजेंटों को TOML में बदलता है, कमांड प्रॉम्प्ट को Codex स्किल के रूप में लपेटता है, और `config.toml` को ऑपरेटर-स्वामित्व में छोड़ देता है।
 - **antigravity** `~/.gemini/GEMINI.md` को वैश्विक संदर्भ-लंगर के रूप में रखता है और `~/.gemini/antigravity-cli/plugins/apothem/` के अंतर्गत एक Apothem प्लगइन इंस्टॉल करता है। जब तक अडैप्टर Antigravity हुक-स्कीमा अनुवाद का स्वामी नहीं होता, तब तक हुक फ़ाइलें समर्थन सामग्री के रूप में रखी जाती हैं।
-- **cursor** वेंडर MDC फ़्रंटमैटर (`description`, `globs`, `alwaysApply`) वाली `.mdc` फ़ाइलों के माध्यम से नियम सक्रिय करता है; अडैप्टर कोई एकल-फ़ाइल `.cursorrules` नहीं लिखता।
+- **cursor** वेंडर MDC फ़्रंटमैटर (`description`, `globs`, `alwaysApply`) वाली एक `.mdc` फ़ाइल के माध्यम से नियम सक्रिय करता है; अडैप्टर कोई एकल-फ़ाइल `.cursorrules` नहीं लिखता।
 - **windsurf** `.devin/rules/` का उपयोग करता है; अडैप्टर कोई एकल-फ़ाइल `.windsurfrules` नहीं लिखता।
 - **hermes** और **open-claw** नेटिव कॉन्फ़िग फ़ाइलें रेंडर करते हैं और हर हार्नेस की प्रलेखित स्किल-डायरेक्टरी सेटिंग के माध्यम से Apothem समर्थन स्किल डायरेक्टरियाँ जोड़ते हैं। असमर्थित साझा समूह Apothem-स्वामित्व वाले समर्थन उप-वृक्षों के अंतर्गत रहते हैं।
 - **qwen-code** संदर्भ और हुक प्रेषण के लिए प्रलेखित `settings.json` कुंजियाँ रेंडर करता है, फिर Qwen-नेटिव कमांड, स्किल, और एजेंट डायरेक्टरियों का उपयोग करता है।
@@ -103,10 +104,14 @@ CLI चलाता है:
 
 - `apothem install --harness <H>` `<H>` के लिए मैनिफ़ेस्ट उपसमुच्चय का प्रसार करता है
   और, वर्ग II-A / II-B अडैप्टरों के लिए, टूल-नेटिव कॉन्फ़िग रेंडर करता है।
-- `apothem verify --harness <H>` इंस्टॉल की गई कॉन्फ़िग की जाँच इस आधार पर करता है कि
-  वर्तमान प्रोफ़ाइल क्या उत्पन्न करती और ड्रिफ़्ट की रिपोर्ट देता है।
-- `apothem doctor` प्रत्येक पंजीकृत अडैप्टर के आर-पार प्रति-टूल स्थिति की
-  रिपोर्ट देता है — इंस्टॉल / अनुपस्थित / ड्रिफ़्टेड।
+- `apothem verify --harness <H>` जाँचता है कि प्रबंधित फ़ाइलें मौजूद हैं और
+  पार्स होती हैं। `--profile PATH` के साथ यह उन्हें इस आधार पर भी जाँचता है कि वह प्रोफ़ाइल
+  क्या उत्पन्न करती, और ड्रिफ़्ट होने पर विफल होता है।
+- `apothem status` रिपोर्ट देता है कि प्रत्येक टूल इंस्टॉल है या नहीं और क्या वह
+  वर्तमान साझा प्रोफ़ाइल से ड्रिफ़्ट हुआ है।
+- `apothem doctor` प्रत्येक पंजीकृत अडैप्टर के आर-पार प्रति-टूल स्वास्थ्य की
+  रिपोर्ट देता है: `ok`, `not_installed`, `needs_project`, `verify_failed`,
+  `hook_failed`, या `error`।
 
 पूर्ण कमांड सतहों के लिए [CLI संदर्भ](/docs/cli-reference) देखें।
 
@@ -118,7 +123,7 @@ CLI चलाता है:
 
 | अक्ष | सत्रह हार्नेस के आर-पार देखी गई सीमा |
 |------|---------------------------------------------|
-| हुक सतह | नेटिव मल्टी-इवेंट (claude-code, codex, qwen-code) → केवल-समर्थन हुक सामग्री (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → कोई नहीं (codebuddy, cursor, github-copilot, glm, kiro, trae, windsurf, zed) |
+| हुक सतह | नेटिव मल्टी-इवेंट (claude-code, codex, qwen-code) → उन इवेंट पर नेटिव जिन्हें वेंडर मॉडल तक पहुँचाता है (codebuddy: SessionStart और PostToolUse; cursor: sessionStart; github-copilot: sessionStart और postToolUse; kiro: SessionStart; windsurf: SessionStart और PostToolUse) → केवल-समर्थन हुक सामग्री (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → अडैप्टर द्वारा कोई हुक पंजीकृत नहीं (glm, trae, zed) |
 | नियम-सक्रियण प्रारूप | सपाट `.md` (claude-code) → प्लगइन नियम (antigravity) → `.mdc` वर्कस्पेस (cursor) → निर्देशिका नियम (codebuddy, trae, windsurf) → स्टीयरिंग फ़ाइल (kiro) → प्रोजेक्ट-रूट सपाट फ़ाइल (zed) → एकल अंतःस्थापित फ़ाइल (codex, gemini-cli, github-copilot, kimi-code) → कॉन्फ़िग-संदर्भित समर्थन सामग्री (hermes, open-claw, opencode, qwen-code) → बैकएंड प्रोवाइडर कॉन्फ़िग (glm) |
 | अडैप्टर वर्ग | वर्ग I रॉ-प्रसार → वर्ग II-A रॉ + वेंडर सेटिंग्स → वर्ग II-B प्रोफ़ाइल-रेंडर्ड एकल-सतह |
 

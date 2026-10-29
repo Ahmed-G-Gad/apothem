@@ -2,7 +2,7 @@
 title: "ホスト非依存の姿勢"
 description: "Apothem が共有プロファイルとハーネスアダプターを通じて、どのようにホスト非依存の姿勢を実現するか。"
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,7 +76,8 @@ One shared Apothem profile (YAML) + packaged cohorts
 どの方向でも同一です。これがこの設計です。中心に 1 つの共有プロファイルがあり、周縁に
 17 個の等距離のハーネスがあり、すべてのマテリアライズが信頼できる情報源から同じ長さだけ
 離れています。辺が変わっても中心は変わりません。辺は中心との単一の関係を共有します。
-ドリフトは構造的に不可能です。
+すべてのハーネスが 1 つのプロファイルから導出されるため、ドリフトは検出可能であり
+（`apothem status` がそれを報告します）、修正可能です（`apothem update` がそれを再マテリアライズします）。
 
 ## ポータビリティの保証
 

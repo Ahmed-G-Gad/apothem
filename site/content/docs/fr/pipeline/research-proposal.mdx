@@ -1,8 +1,8 @@
 ---
 title: "/research-proposal"
-description: "/research-proposal — Transforme la lacune synthétisée et le cadre théorique en un plan de référence finançable et révisable : objectifs SMART, registre de faisabilité et de risques, voie d'impact, plan de préenregistrement et sélection de la ligne directrice de publication EQUATOR — l'étape de proposition du pipeline /research, entre /research-synthesis et /research-design."
+description: "/research-proposal — Transforme la lacune synthétisée et le cadre théorique en un plan de référence finançable et révisable : objectifs SMART, registre de faisabilité et de risques avec plans de contingence, voie d'impact, plan de préenregistrement, plan de gestion et de partage des données et sélection de la ligne directrice de publication EQUATOR, ainsi qu'une matrice des exigences pour un appel de financeur fourni et une réponse de resoumission autonome — l'étape de proposition du pipeline /research, entre /research-synthesis et /research-design."
 machineTranslated: true
-sourceHash: "0addcba24af3c7ac"
+sourceHash: "040241295ba96783"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,20 @@ Transforme la lacune synthétisée et le cadre théorique en un plan de référe
 Avec des arguments :
 
 ```bash
-/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]
 ```
 
 ## Entrées
 
 Le fichier `_inputs/synthesis.md` de la suite (la carte SOTA + l'analyse de la lacune) et `_inputs/theory.md` (le cadre conceptuel).
 
+Avec `--call`, le texte de l'appel du financeur, sous forme de chemin de fichier ou de `-` pour un texte collé ; le texte fourni est la seule source des exigences du financeur. Avec `--resubmission`, la critique du financeur portant sur une candidature antérieure, et aucune synthèse ni théorie n'est nécessaire (voir ci-dessous).
+
 ## Sorties
 
-`_inputs/proposal.md` (la hiérarchie des objectifs SMART, l'évaluation de faisabilité, le registre des ressources / du calendrier / des risques, la voie d'impact, le plan de préenregistrement et la présélection de la ligne directrice de publication EQUATOR).
+`_inputs/proposal.md` (la hiérarchie des objectifs SMART, l'évaluation de faisabilité, le registre des ressources / du calendrier / des risques avec ses plans de contingence, la voie d'impact, le plan de préenregistrement, le plan de gestion et de partage des données et la présélection de la ligne directrice de publication EQUATOR).
+
+Avec `--call`, également `_inputs/call-requirements.md` (la matrice des exigences de l'appel). Avec `--resubmission`, `_outputs/resubmission-response.md` à la place de la proposition.
 
 ## En aval
 
@@ -41,14 +45,34 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 1. **Charger le contexte** — Lire `_inputs/synthesis.md` et `_inputs/theory.md`, les règles et tout état existant de la suite.
 2. **Construire la hiérarchie des objectifs SMART** — Transformer la lacune en objectifs spécifiques, mesurables, atteignables, pertinents et temporellement définis.
-3. **Évaluer la faisabilité et le risque** — Construire le registre des ressources / du calendrier / des risques ; soulever la faisabilité éthique d'emblée.
-4. **Planifier le préenregistrement et la publication** — Sélectionner le registre, rédiger le plan de préenregistrement et présélectionner la ligne directrice de publication EQUATOR.
+3. **Évaluer la faisabilité et le risque** — Construire le registre des ressources / du calendrier / des risques ; doter chaque risque qui touche à l'atteignabilité d'un objectif d'un dossier de contingence et soumettre à un test de résistance la décision qui le sous-tend ; rapprocher toute ligne de coût fournie ; soulever la faisabilité éthique d'emblée.
+4. **Planifier le préenregistrement, les données et la publication** — Sélectionner le registre, rédiger le plan de préenregistrement, arrêter le plan de gestion et de partage des données et présélectionner la ligne directrice de publication EQUATOR.
 5. **Cartographier la voie d'impact** — Retracer comment les objectifs, une fois atteints, produisent un impact en aval.
 6. **Vérifier et émettre** — Confirmer que les objectifs sont testables et le plan reproductible ; émettre `_inputs/proposal.md` ainsi que le manifeste de transfert.
+
+## Un appel de financeur fourni
+
+Avec `--call`, le texte de l'appel régit la forme de la proposition. L'étape écrit une matrice des exigences dans `_inputs/call-requirements.md`, une ligne par exigence (section, limite, éligibilité, pièce jointe, critère d'évaluation ou politique) avec la section de la proposition qui y répond, son emplacement dans le brouillon de l'opérateur, et un statut parmi `met`, `partly-met`, `gap` ou `operator-owned`. Chaque critère d'évaluation est une ligne, de sorte que chaque objectif se rattache au critère auquel il répond ; aucun critère n'est pondéré et aucune affirmation n'est faite sur les chances de financement.
+
+- **La politique d'usage des outils d'abord.** La politique de l'appel concernant les outils automatisés est tranchée avant qu'aucun texte ne soit écrit : autorisés, autorisés avec divulgation (la déclaration d'usage des outils est rédigée) ou restreints. Sous une politique restreinte, l'étape s'arrête après la matrice et renvoie la décision à l'opérateur. Un appel muet sur cette politique fait l'objet d'une question, jamais d'une supposition.
+- **Ni mémoire, ni budget.** Une exigence, une limite, une date, un taux ou un plafond du financeur provient du texte fourni ou de l'opérateur, jamais de la mémoire. L'étape ne construit aucun budget : elle vérifie les lignes de coût de l'opérateur, et une ligne qui ne se rattache à aucun objectif est `orphan`, un objectif sans ressources est `unresourced`, et un total qui ne s'additionne pas est `unreconciled`.
+- **Aucun récit destiné au financeur.** L'étape émet un plan de référence, non une prose sur l'importance ou l'approche. L'équipe, les biographies, les installations, les lettres de soutien et les soutiens en cours et en attente sont des lignes `operator-owned`, jamais rédigées.
+
+## Mode resoumission
+
+`--resubmission PATH` répond à la critique d'un financeur portant sur une candidature antérieure, en dehors de la chaîne des treize étapes. Le portail de séquence ne s'applique pas et le manifeste de transfert reste intact. L'opérateur fournit la critique, le texte de l'appel (`--call`), la candidature telle que soumise et le brouillon révisé, et l'étape écrit `_outputs/resubmission-response.md` à partir de trois parties :
+
+- **Éligibilité et limites** — Lire dans le texte de l'appel si une resoumission est autorisée, combien l'appel en permet, l'échéance, et les limites applicables à la réponse et à la candidature révisée. Une règle que le texte laisse non énoncée est demandée à l'opérateur ; sans texte d'appel, la réponse ne peut pas atteindre `ready`.
+- **Matrice des révisions** — Une ligne par commentaire de la critique, numérotée comme le financeur la numérote : le commentaire cité, l'action (`changed`, `clarified` ou `declined`), l'emplacement révisé, la conséquence scientifique, toute question non résolue, et un statut parmi `answered`, `partly-answered` ou `not-answered` étayé par le texte révisé. Un commentaire décliné porte sa raison et ses preuves.
+- **Vérification de propagation** — Rattacher chaque ligne `changed` à chaque élément du plan qu'elle touche : objectifs, méthodes, calendrier, lignes budgétaires, plan de données et registre des risques. Un élément touché par la modification que le brouillon révisé laisse inchangé est `unpropagated`.
+
+La réponse est `ready` lorsque chaque ligne est `answered` ou porte un risque résiduel accepté par l'opérateur, qu'aucun élément n'est `unpropagated` et que chaque limite de l'appel est respectée. Une réponse qui nécessite de nouvelles preuves retourne à l'opérateur, qui l'oriente vers `/research-design` ou `/research-experiment`. L'opérateur soumet.
 
 ## Seuil de rigueur
 
 L'ambition du lieu de publication visé fixe non seulement le choix de la ligne directrice de publication, mais aussi la profondeur du seuil de rigueur que les étapes de conception et d'expérience en aval doivent franchir — seuil de réplication, parité de budget, réglage sur des partitions disjointes et significativité assortie d'une taille d'effet — ainsi que le dossier de preuves de reproductibilité que le livrable portera.
+
+Chaque risque est une prédiction réfutable de la manière dont le plan échoue. Un risque qui touche à l'atteignabilité d'un objectif ne s'arrête pas à son atténuation : il porte un dossier de contingence (déclencheur, rôle responsable, date de revue, délai de mise en œuvre, coût de la solution de repli, risque résiduel) fixé avant la collecte des données, et une réponse inscrite dans le plan est une adaptation planifiée, non un écart. Le plan de gestion et de partage des données fixe la classe de dépôt, les conditions d'accès avec le fondement de chaque restriction, et la durée de conservation avant que la conception ne fixe les données, et la portée du consentement doit permettre le partage qu'il promet.
 
 ## Modes d'échec
 
@@ -57,6 +81,8 @@ L'ambition du lieu de publication visé fixe non seulement le choix de la ligne 
 | L'objectif n'est pas mesurable | L'objectif est énoncé comme une activité, non comme un résultat | Le reformuler en un objectif SMART assorti d'une métrique de réussite explicite |
 | Aucun plan de préenregistrement | L'étape de préenregistrement a été omise | Sélectionner un registre et rédiger le plan avant de passer à `/research-design` |
 | Entrée de synthèse manquante | `/research-synthesis` n'a pas encore été exécuté | Exécuter d'abord `/research-synthesis` pour produire l'analyse de la lacune |
+| Appel de financeur nommé sans son texte | `--call` omis ou texte illisible | Fournir le texte de l'appel ; l'étape ne complète jamais une règle du financeur de mémoire |
+| Réponse de resoumission non `ready` | Un commentaire n'a pas de réponse, une modification est `unpropagated` ou une limite de l'appel est dépassée | Propager la modification au brouillon révisé, répondre au commentaire ou ramener la réponse dans la limite |
 
 ## Exemples
 
@@ -66,6 +92,12 @@ L'ambition du lieu de publication visé fixe non seulement le choix de la ligne 
 
 # Fixe la ligne directrice de publication et le registre de préenregistrement
 /research-proposal --guideline PRISMA --prereg-registry OSF
+
+# Fait correspondre un appel de financeur au plan de référence
+/research-proposal --suite-name retrieval-latency --call funder-call.md
+
+# Répond à la critique d'un financeur portant sur une candidature antérieure
+/research-proposal --resubmission critique.md --call funder-call.md
 ```
 
 ## Références croisées

@@ -2,14 +2,14 @@
 title: "/research-review"
 description: "/research-review — Crítica adversarial em nível de revisão por pares do artigo: um placar do revisor de sete eixos (novidade, rigor, reprodutibilidade, clareza, ética, revisão estatística, conformidade com diretrizes de relato) mais uma lista de revisões obrigatórias triada por gravidade."
 machineTranslated: true
-sourceHash: "73915d388b353eda"
+sourceHash: "0f888b58aa245da1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Papel:** Investigador principal (revisão por pares)
 **Posição no pipeline:** meio da cadeia
 
-Submete o artigo a uma crítica adversarial em nível de revisão por pares frente aos padrões do local de publicação — novidade, rigor, reprodutibilidade, clareza, ética, revisão estatística e conformidade com diretrizes de relato. Emite um placar do revisor de **sete eixos** mais uma lista de revisões obrigatórias triada por gravidade, com uma justificativa de motor concreto por achado. Refutação por padrão.
+Submete o artigo a uma crítica adversarial em nível de revisão por pares frente aos padrões do local de publicação — novidade, rigor, reprodutibilidade, clareza, ética, revisão estatística e conformidade com diretrizes de relato. Emite um placar do revisor de **sete eixos** mais uma lista de revisões obrigatórias triada por gravidade, com uma justificativa de motor concreto por achado. Refutação por padrão, e cada ponto se apoia nas próprias palavras e evidências do rascunho, nunca no prestígio do veículo, da instituição ou dos autores.
 
 ## Invocação canônica
 
@@ -20,16 +20,18 @@ Submete o artigo a uma crítica adversarial em nível de revisão por pares fren
 Com argumentos:
 
 ```bash
-/research-review [--suite-name NAME]
+/research-review [--suite-name NAME] [--venue STANDARD] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]
 ```
 
 ## Entradas
 
-O entregável do artigo na localização natural do host que a etapa do artigo registrou.
+O entregável do artigo na localização natural do host que a etapa do artigo registrou. Com `--paper`, o artigo é um arquivo PDF ou de texto que você fornece (ou texto colado), não um entregável de uma suíte de pesquisa, e nenhuma suíte é necessária.
 
 ## Saídas
 
 `_outputs/review-report.md` — o placar do revisor de **sete eixos** (novidade · rigor · reprodutibilidade · clareza · ética · revisão estatística · conformidade com diretrizes de relato), a lista de revisões obrigatórias triada por gravidade (HIGH / MEDIUM / LOW) com uma justificativa de motor concreto por achado, o veredicto do pacote de reprodutibilidade e da reexecução, a auditoria de integridade das citações e o veredicto geral `accept · minor-revision · major-revision · reject`.
+
+Com `--paper`, o relatório é gravado em `.apothem/plans/<date>--review-<slug>.md` na raiz do projeto (ou no caminho de `--out`): um placar de sete eixos com uma linha por papel de revisor, linhas de verificação de equações, ablações e linhas de base, revisões obrigatórias ordenadas por gravidade, até cinco perguntas para os autores e uma decisão mapeada na escala de recomendação que você indicar. Ele é rotulado como uma leitura assistida por modelo, não como revisão por pares.
 
 ## A jusante
 
@@ -41,12 +43,25 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 1. **Carregar contexto** — Lê o entregável do artigo.
 2. **Verificar o Portão de sequência** — Confirma que o artigo, `_outputs/analysis.md` e `_inputs/synthesis.md` existem e não estão vazios; caso contrário, interrompe com `Blocked: run /research-paper first`.
-3. **Revisar adversarialmente** — Pontua os sete eixos (novidade · rigor · reprodutibilidade · clareza · ética · revisão estatística · conformidade com diretrizes de relato); executa a reexecução de reprodutibilidade e a auditoria de integridade das citações; refutação por padrão; localiza defeitos concretos com evidência.
-4. **Triar as revisões** — Ordena as revisões obrigatórias em HIGH / MEDIUM / LOW com justificativa baseada em fator concreto.
+3. **Revisar adversarialmente** — Pontua os sete eixos (novidade · rigor · reprodutibilidade · clareza · ética · revisão estatística · conformidade com diretrizes de relato); classifica cada afirmação como descritiva, associativa ou causal e verifica os erros recorrentes de avaliação; verifica se as figuras codificam os dados com honestidade e se leem sem cor; executa a reexecução de reprodutibilidade e a auditoria de integridade das citações; refutação por padrão; localiza defeitos concretos com evidência.
+4. **Triar as revisões** — Ordena as revisões obrigatórias em HIGH / MEDIUM / LOW com justificativa baseada em fator concreto. Um eixo que a revisão não consegue julgar não recebe veredicto; ele permanece na lista de não julgados com seu motivo, e o veredicto geral o ressalva.
 5. **Atualizar o manifesto de transferência** — Registra o relatório de revisão e o veredicto do placar.
 6. **Emitir a revisão** — `_outputs/review-report.md`.
 
+## Revisar o artigo de outra pessoa
+
+`--paper` revisa um manuscrito que não faz parte de uma suíte de pesquisa, por exemplo uma submissão que pediram para você arbitrar ou um rascunho de um colega.
+
+- **Perfil do veículo.** `--venue` recebe o id de um perfil genérico (por exemplo `empirical-conference` ou `field-journal`). Um veículo nomeado usa o perfil genérico mais próximo, e o relatório informa isso. O Apothem inclui apenas perfis genéricos e nunca reivindica os critérios próprios de qualquer veículo; as diretrizes que você fornece prevalecem quando você as cola, e o cabeçalho do relatório registra sua fonte, sua data e o ano ou ciclo e a trilha que cobrem.
+- **Versão do manuscrito.** O relatório registra qual versão foi lida (preprint, manuscrito aceito, versão registrada ou desconhecida), qualquer marcador de versão que o arquivo traga, de onde ele veio e a data em que foi lido, de modo que a revisão fique fixada a uma única revisão do texto.
+- **Papéis de revisor.** Os papéis padrão são métodos, domínio e cético. `--roles` altera a lista. Onde os papéis discordam, o relatório imprime a discordância em vez de tirar a média.
+- **Confidencialidade.** Você é perguntado uma vez se o artigo é uma submissão confidencial, um artigo publicado ou um rascunho seu. Quando a resposta é desconhecida, aplica-se o tratamento mais estrito: as buscas usam títulos, identificadores ou termos genéricos do tema, e nunca frases do manuscrito.
+- **Novidade.** Sem uma suíte não há mapa do trabalho anterior, então a revisão usa os vizinhos que o artigo nomeia mais um registro de busca limitado. Uma busca vazia nunca é tomada como evidência de novidade, e a confiança na novidade permanece baixa a menos que o registro cubra um índice acadêmico.
+- **Anonimato.** Para a sua própria verificação de prontidão em um veículo duplo-cego, a revisão inspeciona as superfícies além da prosa (propriedades do documento, arquivos enviados e vinculados, histórico do repositório, arquivos suplementares, figuras renderizadas); uma superfície que ela não consegue abrir vai para a lista de não julgados, nunca para a lista limpa. Para uma submissão confidencial atribuída a você, a revisão não busca identidade nessas superfícies: uma identidade encontrada sem procurar é relatada a você como vazamento e não entra em nenhuma pontuação.
+
 ## Piso de rigor
+
+Nenhum veredicto de eixo, achado ou confiança se apoia em uma métrica de periódico, uma contagem de citações, um índice de autor ou na reputação do veículo, da instituição ou dos autores; uma revisão que cita tal número o cita de forma descritiva, com o que ele mede, sua fonte e a data. Os achados de gravidade HIGH incluem uma imagem experimental com uma emenda, uma composição ou uma etapa de processamento não divulgada, e um desfecho registrado que difere do relatado sem motivo declarado. A revisão estatística verifica se n conta a unidade independente, e não medidas repetidas, folds ou sementes de uma mesma unidade.
 
 A revisão pontua as afirmações empíricas frente à barra do portão de avanço — replicação adequada, significância não paramétrica com um tamanho de efeito e postos de diferença crítica, e paridade de orçamento entre os métodos comparados — e trata o veredicto como um portão de avanço explícito: um artigo avança somente quando supera a barra do veículo de forma convincente e significativa, com a aprovação registrada. Sob um veículo de revisão duplo-cega, o revisor também sinaliza qualquer vazamento de identidade como um defeito de anonimização.
 
@@ -55,7 +70,9 @@ A revisão pontua as afirmações empíricas frente à barra do portão de avan�
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
 | Blocked: run /research-paper first | Nenhum artigo | Execute `/research-paper` para produzir o manuscrito |
+| Blocked: no paper supplied | Arquivo de `--paper` ausente ou ilegível | Passe um arquivo PDF ou de texto legível, ou cole o texto |
 | Pontuação caridosa | O revisor assumiu o melhor caso | Refutação por padrão; pontue de acordo com a evidência presente |
+| Ponto apoiado em prestígio | Um veículo, instituição, autor, métrica de periódico ou contagem de citações foi usado como evidência | Remova-o; reformule o ponto a partir das próprias palavras e evidências do rascunho |
 | Achado sem justificativa | Revisão afirmada, não justificada | Anexe uma justificativa de motor concreto a cada achado |
 
 ## Exemplos
@@ -63,6 +80,9 @@ A revisão pontua as afirmações empíricas frente à barra do portão de avan�
 ```bash
 # Revise o artigo por pares e emita um placar do revisor
 /research-review --suite-name <name>
+
+# Revise um PDF fornecido frente a um perfil genérico de veículo em uma escala de 1 a 10
+/research-review --paper ./submission.pdf --venue empirical-conference --scale 1-10
 ```
 
 ## Referências cruzadas

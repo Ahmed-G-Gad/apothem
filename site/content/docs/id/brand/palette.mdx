@@ -2,7 +2,7 @@
 title: "Palet merek"
 description: "Warna merek inti Apothem dan lima belas warna merek harness, yang didefinisikan di halaman Warna harness. Satu-satunya sumber kebenaran untuk warna inti adalah token desain kanonik di assets/design-tokens.css; situs mencerminkan nilai-nilai tersebut."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,10 +13,15 @@ dimiliki oleh token desain di
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (dan cerminnya `assets/design-tokens.json`). Tema situs di
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-mencerminkan nilai-nilai token tersebut ke dalam variabel CSS yang dikonsumsi
-tema Fumadocs. Setiap nilai di bawah ini adalah satu langkah dari ramp slate
-atau emerald dalam token desain tersebut; nama langkah seperti slate-600
-merujuk pada nilai ramp itu.
+menyatakan ulang nilai token semantik sebagai OKLCH dalam variabel CSS yang dikonsumsi
+tema Fumadocs: variabel latar halaman, teks, primer, border, dan cincin fokus
+mengarah tepat ke langkah token (pemeriksaan `lib/theme-tokens.test.mjs` mengikat
+variabel latar, latar depan, primer, dan cincin ke langkah-langkah tersebut). Ramp
+`apothem-*`, `polygon-*`, dan `field-*` yang dideklarasikan dalam file yang sama
+adalah aproksimasi turunan dari ramp token, bukan salinan, dan bukan bagian dari
+spesifikasi. Setiap nilai di bawah ini adalah satu langkah dari ramp slate atau
+emerald dalam token desain; nama langkah seperti slate-600 merujuk pada nilai ramp
+itu.
 
 | Peran | Token (CSS) | Mode terang | Mode gelap | Penggunaan |
 |---|---|---|---|---|

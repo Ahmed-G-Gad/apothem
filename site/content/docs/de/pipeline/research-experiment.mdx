@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Führt die entworfene Studie aus und erfasst Rohdaten mit vollständiger Herkunft sowie ein Reproduzierbarkeitsmanifest (Umgebung, Seed, Protokoll, Versions-Pins)."
 machineTranslated: true
-sourceHash: "669b49f8909599c4"
+sourceHash: "83b92abde30e8dc0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Mit Argumenten:
 
 ## Ausgaben
 
-`_outputs/experiment-log.md` (die zeitgestempelte Protokollspur), die Rohdaten an einem host-natürlichen Ort und `_outputs/reproducibility-manifest.md` (Umgebung, Seed, Protokoll, Versions-Pins).
+`_outputs/experiment-log.md` (die zeitgestempelte Protokollspur sowie der Abschlussdatensatz einer autonomen Kampagne), die Rohdaten an einem host-natürlichen Ort und `_outputs/reproducibility-manifest.md` (Umgebung, Seed, Protokoll, Versions-Pins).
 
 ## Nachgelagert
 
@@ -48,7 +48,9 @@ Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
 ## Rigorositätsuntergrenze
 
-Die Ausführung startet mit einem Pilotdurchlauf, um Budgets und Wertebereiche zu kalibrieren, dann den vollständigen Vergleich unter einem deklarierten Plan zur Rechenauslastung (Kernzuweisung, Speicherobergrenzen, sichere Parallelisierung unabhängiger Wiederholungen). Jede stochastische Methode durchläuft ihr präregistriertes Wiederholungsregime mit aufgezeichneten Seeds und protokollierter Hardware. Eine optionale, standardmäßig ausgeschaltete autonome Experimentschleife steht bereit: Gegen ein eingefrorenes Harness schlägt sie eine Änderung an einem einzigen veränderlichen Ziel vor, führt sie beim festgelegten Budget aus, behält sie nur, wenn sie den Amtsinhaber schlägt, und journalisiert jeden Versuch.
+Die Ausführung startet mit einem Pilotdurchlauf, um Budgets und Wertebereiche zu kalibrieren, dann den vollständigen Vergleich unter einem deklarierten Plan zur Rechenauslastung (Kernzuweisung, Speicherobergrenzen, sichere Parallelisierung unabhängiger Wiederholungen). Jede stochastische Methode durchläuft ihr präregistriertes Wiederholungsregime mit aufgezeichneten Seeds und protokollierter Hardware. Eine optionale, standardmäßig ausgeschaltete autonome Experimentschleife steht bereit. Gegen ein eingefrorenes Harness schlägt sie eine Änderung an einem einzigen veränderlichen Ziel vor, formuliert vor jedem Lauf eine falsifizierbare Vorhersage und führt sie beim festgelegten Budget aus. Die primäre Metrik wird aus dem Laufprotokoll als zwei Signale gelesen: ein Suchsignal, das die Schleife steuert, und ein Zulassungssignal aus einer disjunkten Menge, das eine Änderung bestätigt oder verwirft, bevor sie behalten wird: Die Änderung muss die Suchstufe bestehen und dann den Amtsinhaber bei der Zulassung um mehr als die angegebene Rauschmarge schlagen (oder mit ihm gleichziehen und dabei die Komplexität verringern). Jeder Versuch wird journalisiert, und jede Zulassungsabfrage wird gezählt und offengelegt.
+
+Eine letzte, unberührte Menge wird einmal ausgewertet, beim Abschluss. Eine Kampagne ohne eine solche kennzeichnet ihr Ergebnis als selektionskontaminiert und explorativ, und jede Zahl, die die Kampagne berichtet, wird unter dem oben genannten Wiederholungsregime erneut gemessen. Der Operator bestätigt Ziel, Harness, Metrik, Auswertungsmengen, Annahmeregel, Budget und Arbeitsbereich einmal und kann Abbruchkriterien festlegen; beim Anhalten geht der Abschlussdatensatz (Anzahl der Versuche, Behaltenen, Verworfenen, Abstürze und Zulassungsabfragen, der Gewinn gegenüber der Baseline und das Ergebnis der unberührten Menge) in das Experimentprotokoll ein, sodass die Analysestufe das von der Schleife ausgewählte Ergebnis einordnen kann.
 
 ## Fehlermodi
 
@@ -57,6 +59,7 @@ Die Ausführung startet mit einem Pilotdurchlauf, um Budgets und Wertebereiche z
 | Blocked: run /research-design first | Kein Studienentwurf | `/research-design` ausführen, um `_inputs/study-design.md` zu erzeugen |
 | Ausführung nicht reproduzierbar | Fehlende Seed-/Umgebungsaufzeichnung | Das vollständige Reproduzierbarkeitsmanifest aufzeichnen, bevor fortgefahren wird |
 | Protokollabweichung nicht dokumentiert | Änderung während der Ausführung nicht protokolliert | Die Abweichung im Experimentprotokoll festhalten; bei der Analyse offenlegen |
+| Schleifenergebnis als konfirmatorisch dargestellt | Die Schleife steuerte anhand ihrer Zulassungsmenge, oder beim Abschluss wurde keine unberührte Menge gelesen | Das Ergebnis als selektionskontaminiert und explorativ kennzeichnen; das Suchsignal steuert, das Zulassungssignal entscheidet, und die unberührte Menge wird einmal gelesen |
 
 ## Beispiele
 

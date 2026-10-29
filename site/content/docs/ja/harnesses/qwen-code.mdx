@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,6 +44,20 @@ apothem install --harness qwen-code
 `~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドから参照されるサポート素材であり、ベンダー所有の検出名前空間ではありません。
 `QWEN.md` 内の Apothem ブロックは Apothem サポートファイルのセクションで終わります。
 このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.qwen/.apothem/support/` 配下の絶対ディレクトリを示します。
+
+**スキルのツールリスト。** `Qwen Code` は、スキルのツール許可リストをキャメルケースの `allowedTools` フロントマターキーから読み取り、その値は YAML のリストでなければなりません。
+他のエージェント向けに書き込まれるハイフン付きの `allowed-tools` キーは無視します。
+そのため、インストールされたスキルは、ソースコーパスのカンマ区切りの `allowed-tools` 文字列の代わりに、1 行に 1 エントリーのリストとして `allowedTools` を持ちます。
+各エントリーは、`Bash(git status *)` のようなパターンも含め、ソースの綴りを保ちます。
+スキルの他のすべてのキーとスキル本文は、変更されずにインストールされます。
+
+**スキルフォルダー。** アダプターはスキルを `~/.qwen/skills/` に書き込みます。
+`Qwen Code` は `~/.agents/skills/` も読み、プロジェクト内では `.qwen/skills/` と `.agents/skills/` も読みます。
+2 つのフォルダーが同じ名前のスキルを保持している場合は `.qwen` 配下のものが優先されるため、`~/.qwen/skills/` 内の Apothem のスキルは、別のアダプターが `~/.agents/skills/` に書き込んだ同名のスキルより優先されます。
+
+**フックイベント。** アダプターは `SessionStart`、`PreToolUse`、`PreCompact`、`PostCompact`、`Stop` を接続します。
+`Qwen Code` は 22 のフックイベントを定義しており、これら 5 つはいずれもその 1 つです。
+22 のうち 3 つ（`SessionDelete`、`TodoCreated`、`TodoCompleted`）には同じ名前の `Claude Code` のイベントがありません（`Claude Code` は todo イベントを `TaskCreated` と `TaskCompleted` と名付けています）。アダプターはそれらのいずれも接続しません。
 
 ## 検証
 

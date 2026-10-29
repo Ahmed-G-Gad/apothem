@@ -2,19 +2,20 @@
 title: "Commandes"
 description: "Définitions de commandes slash mettant en œuvre le pipeline de suite de planification, ainsi que des audits pour la revue du code, de l'architecture, de la sécurité, des dépendances et de la documentation."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Les définitions de commandes slash vivent sous forme de fichiers `.md` plats sous
-`src/apothem/commands/`. L'ensemble canonique est mené par le pipeline de suite de planification sensible à l'architecture, livré sous forme de sept commandes de premier
-rang — une par étape, chacune invocable directement en tant que
-`/plan-<stage>`. Il n'existe aucun répartiteur monolithique ; chaque étape est
-son propre fichier de commande enregistré à
-`src/apothem/commands/plan-<stage>.md`.
+`src/apothem/commands/`. L'ensemble canonique est mené par le pipeline de suite de planification sensible à l'architecture, livré sous forme de huit commandes d'étape de premier
+rang, chacune invocable directement en tant que `/plan-<stage>`, ainsi que
+`/plan`, l'orchestrateur qui pilote la chaîne d'étapes de bout en bout. Chaque
+étape est son propre fichier de commande enregistré à
+`src/apothem/commands/plan-<stage>.md`, et `/plan` n'en réimplémente aucune.
 
 | Invocation | Fichier de commande | Description |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Exécute les étapes spec, generate, review et design comme un seul flux de travail vérifié, en confirmant à chaque transition ; execute reste une étape manuelle |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Affine un contenu non structuré en prose de qualité spécification |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Matérialise une suite de planification à partir de prose / d'exigences |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensique avec tableaux de score |
@@ -69,9 +70,13 @@ environnement peut exécuter sans demander tant que la commande est active ; ce
 champ reste donc en lecture seule par défaut : un outil à effets de bord (Bash,
 PowerShell, Write, Edit, NotebookEdit, WebFetch) n'y apparaît que sous forme de
 règle délimitée telle que `Bash(git log *)`, et le joker nu `"*"` est rejeté par
-le schéma. Les commandes aux effets de bord irréversibles (`freshify`,
-`github-deploy-fresh`, `github-deploy-next`) définissent
-`disable-model-invocation: true`, de sorte que seul l'opérateur les lance.
+le schéma. Les commandes aux effets de bord irréversibles ou dont le
+moment est choisi par l'opérateur définissent `disable-model-invocation: true`,
+de sorte que seul l'opérateur les lance : `freshify`, `github-deploy-fresh`,
+`github-deploy-next`, `release-readiness`, `elevate`, `fortress`, `workflow`,
+`plan-execute`, `research-experiment` et `research-publish`. Les 35 autres
+commandes définissent `false` et sont associées à une demande par leur
+description.
 
 ## Discipline de rédaction
 

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "f60950ab3aa08ee9"
+sourceHash: "57393f27f1d98c86"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,8 +38,9 @@ baris di luar sentinel apa adanya. Bagian berkas pendukung menyebutkan
 direktori absolut tempat setiap kutipan bergaya repositori dalam aturan, skill,
 dan agen yang terpasang di-resolve: `rules/<name>.md` di bawah
 `~/.claude/rules/`, serta `templates/...`, `schemas/...`, `hooks/...`, dan
-`conformity/...` di bawah `~/.claude/.apothem/support/`. Bagian lain dari
-permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/`
+`conformity/...` di bawah `~/.claude/.apothem/support/`. Bagian itu juga
+menunjuk ke indeks aturan, `~/.claude/rules/apothem-rule-index.md`. Bagian lain
+dari permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/`
 yang dipropagasikan dan hook SessionStart. OpenCode juga memuat
 `~/.claude/CLAUDE.md` ketika tidak ada `~/.config/opencode/AGENTS.md`, sehingga
 blok tersebut tidak menyebut satu alat pun sebagai pembacanya.
@@ -64,13 +65,134 @@ tidak muncul di menu `/`. Setiap output style menyetel
 `keep-coding-instructions: true`, sehingga memilih salah satunya tetap
 mempertahankan instruksi rekayasa perangkat lunak bawaan Claude Code.
 
+Keduanya juga membawa kunci frontmatter khusus Apothem (`version`, `updated`,
+`archetype`, `portability`) di bawah map `metadata:` penutup berisi string
+berkutip, dalam urutan tetap tersebut. Claude Code mengabaikan kunci tingkat
+atas yang tidak dikenal, dan format skill terbuka menyimpan tambahan khusus
+klien di `metadata`. Berkas sumber tidak berubah. Folder skill tingkat pengguna
+(`~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/`, dan
+`~/.trae/skills/`) memakai bentuk `metadata` yang sama, sehingga instalasi yang
+berbagi folder tidak pernah saling menulis ulang berkas satu sama lain. Setiap
+harness lain menerima kunci-kunci itu di tingkat atas seperti sebelumnya.
+
+### Aturan dan apa yang dimuat saat peluncuran
+
+Claude Code memuat berkas aturan saat peluncuran kecuali frontmatter-nya
+membawa daftar `paths:` yang membatasi lingkupnya. Dengan `paths:`, Claude Code
+memuat aturan itu ketika membaca atau menyunting berkas yang cocok. Daftar yang
+hanya berisi `**` tidak membatasi apa pun, sehingga aturan itu juga dimuat saat
+peluncuran; tidak ada aturan Apothem yang memakainya. Instalasi mengubah
+`pathFilter` setiap aturan menjadi daftar tersebut. Lima aturan tidak membawanya dan dimuat di setiap sesi: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, dan indeks aturan,
+`apothem-rule-index`. Setiap aturan lain dipasang di bawah `~/.claude/rules/`
+dengan `paths:` dan dimuat ketika berkas yang cocok disentuh.
+
+Claude Code mencocokkan glob tersebut, dengan semantik `.gitignore`, terhadap
+path berkas relatif terhadap direktori kerja, dan tidak pernah terhadap berkas
+di luarnya. Direktori memori otomatis berada di bawah `~/.claude/projects/`,
+sehingga `auto-memory` dan `auto-memory-topic-files` tidak pernah dimuat lewat
+kecocokan path. Menyunting `~/.claude/CLAUDE.md` atau berkas di bawah
+`~/.claude/rules/` dari proyek lain juga tidak memuat aturan yang lingkupnya
+dibatasi pada berkas-berkas itu. Aturan-aturan ini menjangkau sesi melalui
+indeks.
+
+Indeks menyebutkan setiap aturan dan situasi yang memerlukannya. Langkah yang
+mengutip `rules/<name>.md` sebagai prosedurnya membaca berkas itu terlebih
+dahulu. Setelah pemadatan konteks, baca lagi setiap aturan yang sedang Anda
+terapkan: Claude Code tidak menyuntikkan ulang aturan berlingkup path sampai
+berkas yang cocok disentuh lagi. Nama `apothem-rule-index.md` direservasi,
+karena instalasi mencadangkan dan menimpa berkas aturan dengan nama itu.
+
+Aturan yang mengatur permukaan Apothem sendiri dibatasi lingkupnya pada
+`CLAUDE.md`, `AGENTS.md`, dan Markdown di bawah `rules/`, `commands/`, `skills/`,
+`agents/`, `hooks/`, dan `output-styles/`. Repositori aplikasi jarang memuat
+berkas-berkas itu, sehingga di repositori semacam itu aturan-aturan ini
+menjangkau sesi melalui indeks, melalui skill, command, atau helper yang
+mengutipnya, dan melalui hook, bukan melalui kecocokan path.
+
+Salinan aturan ditulis tanpa bagian penutup `## Bindings`, sama seperti skill
+command. Bagian itu memuat rujukan timbal balik untuk pemelihara dan gerbang
+konformitas. Berkas sumber mempertahankannya, demikian pula salinan yang
+diterima harness lain.
+
+Agar aturan berlingkup tetap aktif di setiap sesi, Anda dapat mencoba
+mengimpornya dari teks di luar blok Apothem di `~/.claude/CLAUDE.md`, misalnya
+`@rules/definitiveness.md`. Halaman memori Claude Code mendokumentasikan impor
+tersebut dan menyatakan bahwa path yang diimpor di-resolve relatif terhadap
+berkas yang mengimpornya. Halaman itu tidak menyatakan bagaimana daftar `paths`
+milik aturan yang diimpor diperlakukan, dan Apothem belum memverifikasi hal
+ini. Periksa dengan hook `InstructionsLoaded` bahwa aturan itu dimuat saat
+peluncuran dan tidak dimuat untuk kedua kalinya lewat kecocokan path.
+
+### Skill command dan berkas referensi
+
+Setelah pemadatan konteks, Claude Code hanya melampirkan ulang 5.000 token
+pertama dari setiap skill yang dipanggil, dan merekomendasikan `SKILL.md`
+sekitar 500 baris atau kurang dengan detail di berkas-berkas saudara. Prompt
+command mencapai 67 KB, sehingga emisi Claude Code memecah masing-masing
+menjadi `SKILL.md` yang ramping ditambah berkas di bawah `references/`:
+
+- Bagian `## Bindings` dibuang. Bagian itu adalah teks pemelihara untuk
+  gerbang konformitas dan model tidak pernah membutuhkannya.
+- Pipeline Contract, Foundational Stanzas, Decision Tree, contoh, bagian mode,
+  dan beberapa inventaris yang dikutip dipindahkan ke berkas referensi.
+  Judulnya tetap, dan penunjuk satu baris di bawahnya menyebutkan berkas itu
+  dan kapan harus membacanya. Penunjuk untuk Pipeline Contract dan Foundational
+  Stanzas juga mencantumkan apa yang dicakup berkas tersebut.
+- Ketika `SKILL.md` masih melebihi 15.800 bita, langkah Workflow terbesar
+  dipindahkan ke `references/step-NN-<slug>.md`, dimulai dari yang terbesar,
+  sampai muat. Slug adalah judul langkah tanpa awalan `Step N:` dan tanpa id
+  mandat atau disiplin dalam kurung di akhir. Langkah di bawah 600 bita tetap
+  inline. Jika itu belum cukup, bagian Output, Mandates, Critical Rules, dan
+  Instructions dipindahkan dalam urutan itu.
+- Catatan singkat setelah pembuka memberi tahu model di mana berkas-berkas itu
+  berada (`${CLAUDE_SKILL_DIR}/references/`) dan bahwa model MUST membaca ulang
+  berkas yang mengatur langkahnya saat ini setelah pemadatan.
+
+Setiap `SKILL.md` yang diemisikan, termasuk catatan `## Installed Reference Paths`
+yang ditambahkan instalasi, tetap berukuran paling banyak 17.000 bita untuk
+akar instalasi hingga 140 karakter. Plugin mengirimkan berkas yang sama tanpa
+catatan itu, dan command-nya adalah skill di bawah `skills/`, sehingga plugin
+tidak memiliki folder `commands/`; pemanggilan `/apothem:<name>` tidak berubah.
+Pemecahan ini deterministik dan dapat dibalik: teks `SKILL.md` dan berkas
+referensinya membangun kembali command sumber tanpa Bindings. Berkas sumber,
+dan keluaran untuk setiap harness lain, tidak berubah. Alat lain juga membaca
+skill dari `~/.claude/skills/`, sehingga alat-alat itu melihat berkas yang
+sama; `apothem install` menyebutkan nama alat-alat tersebut.
+
+Untuk melihat angka bagi setiap command, jalankan skrip pengukuran dari sebuah
+checkout:
+
+```bash
+python scripts/dev/measure_claude_skills.py          # per-command table
+python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
+```
+
+Skrip ini melaporkan ukuran sumber, `SKILL.md`, dan referensi, ruang sisa
+terhadap anggaran, serta perkiraan jumlah token, dan mencantumkan skill native
+sebagai pembanding. `research-suite`, skill native yang sumbernya tidak
+dipecah, adalah satu-satunya skill yang melebihi batas.
+
 ## Catatan kompatibilitas
 
-Prompt command dikonversi menjadi direktori skill; agen, aturan, skill, dan
-output style disalin apa adanya. Instalasi memvalidasi bahwa profil terbentuk
+Prompt command dikonversi menjadi direktori skill dan aturan dirender seperti
+dijelaskan di atas; skill dan output style disalin apa adanya, dan agen disalin
+sebagaimana ditulis kecuali bahwa helper yang dicantumkan oleh kunci
+`agent_mcp_servers` milik profil mendapat entri `mcp__<server>__*` per server
+yang disebutkan di baris `tools`-nya (lihat
+[Server MCP](/docs/reference/mcp#memberi-pembantu-akses-ke-server-mcp)).
+Instalasi memvalidasi bahwa profil terbentuk
 dengan baik dan semua ikatan hook di settings.json dapat di-resolve. Adapter
 tidak menulis entri server MCP apa pun: daftarkan server dengan
 `claude mcp add` (lihat [Server MCP](/docs/reference/mcp)).
+
+`~/.claude/agents/` adalah direktori akar bersama yang dimiliki `Claude Code`,
+demikian pula `~/.claude/skills/`: alat lain yang didukung memuat folder-folder
+itu, sehingga agen dan skill yang ditulis instalasi `Claude Code` di sana juga
+muncul di alat-alat tersebut, dan instalasi mencetak catatan yang menyebutkan
+alat-alat itu.
+[Registri harness](/docs/reference/harness-registry) mencantumkan pembaca
+setiap direktori akar.
 
 Claude Code menerapkan semua ikatan hook di settings.json pada setiap awal sesi. Setiap adapter diverifikasi terhadap harness native-nya sendiri — tidak ada harness "referensi" yang diistimewakan.
 
@@ -142,6 +264,12 @@ Paket `apothem` yang terpasang dan repositori sumber tidak terpengaruh.
 ```bash
 python -m apothem.conformity.gate --all .
 ```
+
+Saat dijalankan terhadap repositori, gerbang mewajibkan bagian `## Bindings`
+pada setiap aturan, command, helper, dan skill. Saat dijalankan terhadap pohon
+`~/.claude/` yang terpasang, gerbang menerima salinan aturan atau skill yang
+tidak memiliki bagian tersebut, karena instalasi menghilangkannya, dan tetap
+memeriksa bagian yang ada.
 
 ## Pemecahan masalah
 

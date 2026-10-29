@@ -2,7 +2,7 @@
 title: "Konvergensi konvensi lintas lingkungan"
 description: "Bagaimana Apothem menjaga satu alur kerja operator tetap konsisten di tujuh belas lingkungan meskipun format konfigurasi dan permukaan enforcement dari tiap vendor berbeda-beda."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,12 +21,15 @@ merender maksud itu ke dalam bentuk yang diharapkan lingkungannya.
 
 | Bentuk | Lingkungan (contoh) | Apa yang dikeluarkan Apothem |
 | --- | --- | --- |
-| Berkas aturan `.md` datar dalam sebuah direktori | claude-code, windsurf, trae | Berkas aturan mentah yang disalin ke dalam pohon aturan lingkungan |
-| Aturan `.mdc` Cursor | cursor | Satu set aturan `.mdc` yang membawa header metadata yang diharapkan Cursor |
+| Berkas aturan `.md` datar dalam sebuah direktori | claude-code | Berkas aturan mentah yang disalin ke dalam pohon aturan lingkungan |
+| Satu berkas aturan gabungan dalam sebuah direktori aturan | windsurf, trae | Satu berkas `apothem-rules.md` dengan frontmatter aktivasi yang dibaca lingkungan |
+| Aturan `.mdc` Cursor | cursor | Satu berkas aturan `.mdc` yang membawa header metadata yang diharapkan Cursor |
 | Dokumen instruksi berkas tunggal | codex, gemini-cli, github-copilot, zed | Satu dokumen tergabung —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— dirakit dari set aturan profil |
 
-Lingkungan `.md` datar mengambil aturan apa adanya. Lingkungan `.mdc`
-membutuhkan header metadata Cursor yang dibungkus di sekitar setiap aturan.
+Lingkungan `.md` datar mengambil aturan apa adanya. Lingkungan berkas gabungan
+mengambil satu berkas aturan yang frontmatter-nya menetapkan kapan aturan berlaku.
+Lingkungan `.mdc` membutuhkan header metadata Cursor di bagian atas berkas
+aturannya.
 Lingkungan berkas tunggal membutuhkan seluruh set aturan diratakan ke dalam satu
 dokumen dengan urutan bagian yang stabil, sehingga operator membaca konvensi yang
 sama dalam urutan yang sama tanpa memandang targetnya. Profil netral adalah satu
