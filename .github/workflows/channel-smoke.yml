@@ -17,7 +17,7 @@
 #
 # The job holds no secret and no write token (`permissions: {}` at the top
 # level, `contents: read` for checkout only). The harness CLIs install with
-# `npm ci` from .github/channel-smoke/package-lock.json, so each is pinned by
+# `npm ci` from tools/channel-smoke/package-lock.json, so each is pinned by
 # version and integrity hash; Dependabot proposes a monthly refresh of that
 # lockfile. Its
 # package.json overrides sharp to 0.35.5, which fixes GHSA-wq5f-xc86-pv6w in
@@ -112,8 +112,8 @@ jobs:
           python -m pip install "click==${CLICK_VERSION}" "rich==${RICH_VERSION}"
           case "$CHANNEL" in
             claude-code-plugin|gemini-cli-extension|qwen-code-extension|codex-plugin)
-              npm ci --prefix .github/channel-smoke --no-audit --no-fund
-              echo "$GITHUB_WORKSPACE/.github/channel-smoke/node_modules/.bin" >> "$GITHUB_PATH"
+              npm ci --prefix tools/channel-smoke --no-audit --no-fund
+              echo "$GITHUB_WORKSPACE/tools/channel-smoke/node_modules/.bin" >> "$GITHUB_PATH"
               ;;
             vscode-extension|vscode-marketplace)
               curl -fsSL -o "$RUNNER_TEMP/code.deb" \

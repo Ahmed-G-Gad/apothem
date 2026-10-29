@@ -236,7 +236,7 @@ resource, so this is the preferred route. The Entra route below and the
 `VSCE_PAT` secret stay as alternatives that the operator selects.
 
 1. **Use a vsce release that supports it.** On this route the publish job
-   checks the vsce release locked in `.github/vsce` before it publishes, and
+   checks the vsce release locked in `tools/vsce` before it publishes, and
    stops with an error that names the minimum release when the lock is older.
    Dependabot proposes vsce updates for that lockfile; merge the one that
    reaches the minimum before you switch.
@@ -283,7 +283,7 @@ action exchanges it for an Entra sign-in through a federated credential, and
 secret exists. The `VSCE_PAT` secret stays as a fallback that the operator
 selects; the workflow never switches to it on its own.
 
-The vsce release pinned in `.github/vsce` supports this route. It needs an Entra
+The vsce release pinned in `tools/vsce` supports this route. It needs an Entra
 tenant, an application registration and publisher membership, which Trusted
 Publishing above does not; use it when Trusted Publishing is unavailable to the
 publisher.

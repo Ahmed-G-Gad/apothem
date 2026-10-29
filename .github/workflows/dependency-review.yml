@@ -106,10 +106,10 @@ jobs:
           # name prefix alone misses those four. Re-derive with: every entry in
           # site/package-lock.json whose `license` string contains "LGPL".
           #
-          # Second named exception: the CI tool lockfiles. .github/channel-smoke
+          # Second named exception: the CI tool lockfiles. tools/channel-smoke
           # pins the Claude Code, Gemini CLI, Codex and Qwen Code CLIs that
           # channel-smoke.yml installs to smoke each install channel, and
-          # .github/vsce pins the vsce packager the release and publish-vscode
+          # tools/vsce pins the vsce packager the release and publish-vscode
           # jobs install. Both are installed by npm ci inside CI jobs only, and
           # neither tree ships: the sdist and wheel carry no npm code, and the
           # vsix holds only vscode-extension/, which declares no dependencies.

@@ -54,9 +54,9 @@ The extension is published on the Visual Studio Marketplace as
 
 It is also distributed as the signed `apothem.vsix` that the release workflow
 attaches to each new GitHub Release (or built from a checkout with the vsce locked in
-`.github/vsce/`, which needs Node.js 22 or later: run
-`npm ci --prefix .github/vsce --ignore-scripts` at the repository root, then
-`../.github/vsce/node_modules/.bin/vsce package --no-dependencies` in this
+`tools/vsce/`, which needs Node.js 22 or later: run
+`npm ci --prefix tools/vsce --ignore-scripts` at the repository root, then
+`../tools/vsce/node_modules/.bin/vsce package --no-dependencies` in this
 folder) — install with
 `code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
 command. It installs across the VS Code family and manages the

@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: MIT
 
 # Weekly npm dependency audit for the documentation site and the two tool
-# lockfiles: the vsce packager (.github/vsce) and the harness CLIs the channel
-# smoke installs (.github/channel-smoke). A pull request that changes a tool
-# lockfile, such as a Dependabot update, also installs it here, since no other
-# pull-request job uses those lockfiles.
+# lockfiles: the vsce packager (tools/vsce) and the harness CLIs the channel
+# smoke installs (tools/channel-smoke). A pull request that changes a tool
+# lockfile, such as a Dependabot update, also installs it here: a lockfile-only
+# pull request runs no other job that installs them, and ci.yml's release
+# tests read the vsce lockfile only when a gated path changes.
 #
 # Sibling of pip-audit.yml, which covers the Python surface only: its triggers
 # are scoped to pyproject.toml, requirements*.txt and src/apothem/_vendor/**.
@@ -28,15 +29,15 @@ on:
     paths:
       - "site/package.json"
       - "site/package-lock.json"
-      - ".github/vsce/**"
-      - ".github/channel-smoke/**"
+      - "tools/vsce/**"
+      - "tools/channel-smoke/**"
       - ".github/workflows/npm-audit.yml"
   pull_request:
     paths:
       - "site/package.json"
       - "site/package-lock.json"
-      - ".github/vsce/**"
-      - ".github/channel-smoke/**"
+      - "tools/vsce/**"
+      - "tools/channel-smoke/**"
       - ".github/workflows/npm-audit.yml"
   workflow_dispatch:
 
@@ -90,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dir: [.github/vsce, .github/channel-smoke]
+        dir: [tools/vsce, tools/channel-smoke]
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
@@ -116,6 +117,6 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Load the vsce packager
-        if: matrix.dir == '.github/vsce'
+        if: matrix.dir == 'tools/vsce'
         working-directory: ${{ matrix.dir }}
         run: ./node_modules/.bin/vsce --version

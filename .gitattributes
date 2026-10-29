@@ -46,6 +46,8 @@
 .apothem/  export-ignore
 tests/   export-ignore
 .github/** export-ignore
+# The CI tool lockfiles stay out of source archives, as they did under .github/.
+/tools/ export-ignore
 # Scorecard's default archive mode reads a GitHub archive of the default branch
 # and finds the dependency-update tool by its config file, so this one file
 # stays in source archives.

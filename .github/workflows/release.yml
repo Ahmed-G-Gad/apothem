@@ -80,13 +80,13 @@ jobs:
           package-manager-cache: false
       - name: Install vsce from its lockfile
         # npm ci installs the exact versions and integrity hashes recorded in
-        # .github/vsce/package-lock.json, and --ignore-scripts runs no
+        # tools/vsce/package-lock.json, and --ignore-scripts runs no
         # dependency install script. Packaging needs neither keytar nor the
         # vsce-sign binary that those scripts would fetch.
-        run: npm ci --prefix .github/vsce --ignore-scripts --no-audit --no-fund
+        run: npm ci --prefix tools/vsce --ignore-scripts --no-audit --no-fund
       - name: Package the VS Code extension
         working-directory: vscode-extension
-        run: ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out "${RUNNER_TEMP}/apothem.vsix"
+        run: ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out "${RUNNER_TEMP}/apothem.vsix"
       - name: Upload the extension package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:

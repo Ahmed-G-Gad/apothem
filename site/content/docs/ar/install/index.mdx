@@ -243,10 +243,10 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 *<bdi>Install from VSIX…</bdi>* في المحرِّر. يوقّع سير عمل الإصدار الحزمةَ ويرفقها
 بكل إصدار <bdi>GitHub</bdi>. الإصدارات المنشورة قبل أن يحزّم سير العمل الامتداد لا
 تحمل أي ملف <bdi>`.vsix`</bdi>؛ وحين يخلو منه أحدث إصدار، ابنِ الحزمة من نسخة
-مسحوبة باستخدام إصدار <bdi>vsce</bdi> المقفل في <bdi>`.github/vsce/`</bdi>
+مسحوبة باستخدام إصدار <bdi>vsce</bdi> المقفل في <bdi>`tools/vsce/`</bdi>
 (يتطلّب إصدار <bdi>vsce</bdi> هذا <bdi>Node.js</bdi> 22 أو أحدث):
-شغِّل <bdi>`npm ci --prefix .github/vsce --ignore-scripts`</bdi>، ثم
-<bdi>`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`</bdi>.
+شغِّل <bdi>`npm ci --prefix tools/vsce --ignore-scripts`</bdi>، ثم
+<bdi>`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`</bdi>.
 تحمل نسخةٌ مُثبَّتة سابقًا من <bdi>`apothem.vsix`</bdi> المُعرِّفَ <bdi>`ahmed-g-gad.apothem`</bdi>؛ أزِلها (<bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>) حتى لا تسجّل النسختان معًا الأوامرَ نفسها.
 يغطّي امتداد واحد محرِّرات عائلة <bdi>VS Code</bdi>. تشغّل أوامره في
 لوحة الأوامر (<bdi>`Apothem: Install`</bdi>، و<bdi>`Verify`</bdi>،

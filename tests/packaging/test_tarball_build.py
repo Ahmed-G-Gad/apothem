@@ -65,6 +65,9 @@ def source_tree(tmp_path: Path) -> Path:
     (workflow / "release.yml").write_text(
         "# excluded from runtime archive\n", encoding=ENCODING
     )
+    tool_lock = root / "tools" / "vsce"
+    tool_lock.mkdir(parents=True)
+    (tool_lock / "package-lock.json").write_text("{}" + NEWLINE, encoding=ENCODING)
     sub = root / "subdir"
     sub.mkdir()
     (sub / "alpha.txt").write_text("alpha" + NEWLINE, encoding=ENCODING)
@@ -138,6 +141,7 @@ def test_archive_contains_installable_runtime_layout(
     assert f"{root}/install.ps1" in names
     assert not any(name.startswith(f"{root}/.github/") for name in names)
     assert not any(name.startswith(f"{root}/packaging/") for name in names)
+    assert not any(name.startswith(f"{root}/tools/") for name in names)
 
 
 def test_git_checkout_uses_index_blob_bytes(tmp_path: Path) -> None:

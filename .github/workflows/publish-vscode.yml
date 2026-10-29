@@ -12,7 +12,7 @@
 # credentials, or none.
 # - `VSCE_AUTH=oidc` (Marketplace Trusted Publishing): vsce publishes with
 #   `--oidc`, exchanging this job's GitHub OIDC token for a short-lived
-#   Marketplace credential. It needs vsce 4.1.0 or later in .github/vsce and a
+#   Marketplace credential. It needs vsce 4.1.0 or later in tools/vsce and a
 #   Trusted Publishing policy on the publisher page naming this repository,
 #   this workflow file and the `release` environment. No secret, no Azure.
 # - `VSCE_AUTH=entra` with the variables `AZURE_CLIENT_ID` and
@@ -86,14 +86,14 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.tag || github.ref_name }}
       - name: Checkout the vsce lockfile
-        # The tag being packaged may predate .github/vsce, so the packager comes
+        # The tag being packaged may predate tools/vsce, so the packager comes
         # from the lockfile at the commit this workflow runs from.
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
           path: vsce-tool
-          sparse-checkout: .github/vsce
+          sparse-checkout: tools/vsce
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
@@ -115,7 +115,7 @@ jobs:
             exit 1
           fi
       # vsce and its whole dependency tree are pinned by version and integrity
-      # hash in .github/vsce/package-lock.json, the lockfile release.yml uses,
+      # hash in tools/vsce/package-lock.json, the lockfile release.yml uses,
       # and --ignore-scripts runs no dependency install script. Bump it there.
       # Its package.json overrides @azure/msal-node to 7.1.1, which fixes
       # GHSA-xcx6-jx8p-x3h5: @azure/identity 4.14 still pins msal-node ^6.
@@ -123,9 +123,9 @@ jobs:
       # reached and the override stays. The PAT path does not load it.
       # Drop the override once @azure/identity requires msal-node 7.1 or later.
       - name: Install vsce from its lockfile
-        run: npm ci --prefix ../vsce-tool/.github/vsce --ignore-scripts --no-audit --no-fund
+        run: npm ci --prefix ../vsce-tool/tools/vsce --ignore-scripts --no-audit --no-fund
       - name: Package .vsix
-        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
+        run: ../vsce-tool/tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
       # The `secrets` context is not a valid context inside an `if:` expression
       # (GitHub allows env / steps / github / vars / … there, not secrets), so a
       # `if: ${{ secrets.VSCE_PAT != '' }}` gate makes the workflow fail to start.
@@ -195,7 +195,7 @@ jobs:
         run: |
           set -euo pipefail
           publisher="$(node -p "require('./package.json').publisher")"
-          ../vsce-tool/.github/vsce/node_modules/.bin/vsce verify-pat "${publisher}" --azure-credential
+          ../vsce-tool/tools/vsce/node_modules/.bin/vsce verify-pat "${publisher}" --azure-credential
       - name: Dry run - the PAT route has no dry run
         # Without this step a dry run on the PAT route is a green run that
         # verified nothing.
@@ -209,10 +209,10 @@ jobs:
         if: ${{ steps.auth.outputs.mode == 'oidc' }}
         run: |
           set -euo pipefail
-          version="$(node -p "require('../vsce-tool/.github/vsce/node_modules/@vscode/vsce/package.json').version")"
+          version="$(node -p "require('../vsce-tool/tools/vsce/node_modules/@vscode/vsce/package.json').version")"
           echo "vsce ${version}"
           if ! node -e "const [a, b] = process.argv[1].split('.').map(Number); process.exit(a > 4 || (a === 4 && b >= 1) ? 0 : 1)" "${version}"; then
-            echo "::error title=vsce too old for Trusted Publishing::Trusted Publishing needs vsce 4.1.0 or later in .github/vsce. Update that lockfile, or unset VSCE_AUTH to publish with VSCE_PAT."
+            echo "::error title=vsce too old for Trusted Publishing::Trusted Publishing needs vsce 4.1.0 or later in tools/vsce. Update that lockfile, or unset VSCE_AUTH to publish with VSCE_PAT."
             exit 1
           fi
       - name: Dry run - Trusted Publishing has no dry run
@@ -224,19 +224,19 @@ jobs:
         # No VSCE_PAT and no Azure variables: --oidc exchanges this job's GitHub
         # OIDC token (id-token: write) for a short-lived Marketplace credential.
         if: ${{ steps.auth.outputs.mode == 'oidc' && !inputs.dry_run }}
-        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --oidc
+        run: ../vsce-tool/tools/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --oidc
       - name: Publish to Visual Studio Marketplace (Entra ID)
         # No VSCE_PAT: vsce prefers it over --azure-credential. No AZURE_CLIENT_ID either.
         if: ${{ steps.auth.outputs.mode == 'entra' && !inputs.dry_run }}
         env:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --azure-credential
+        run: ../vsce-tool/tools/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --azure-credential
       - name: Publish to Visual Studio Marketplace (PAT fallback)
         # vsce reads VSCE_PAT natively, so the token is never a process argument.
         if: ${{ steps.auth.outputs.mode == 'pat' && !inputs.dry_run }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix
+        run: ../vsce-tool/tools/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix
       - name: Marketplace publish skipped (not yet enabled)
         if: ${{ steps.auth.outputs.mode == 'none' }}
         run: |

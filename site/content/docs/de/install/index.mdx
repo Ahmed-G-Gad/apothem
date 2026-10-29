@@ -256,11 +256,11 @@ Sie lässt sich außerdem aus einem `apothem.vsix`-Paket installieren:
 des Editors. Der Release-Workflow signiert das Paket und hängt es an jedes
 GitHub Release an. Releases, die veröffentlicht wurden, bevor der Workflow die
 Erweiterung paketierte, enthalten keine `.vsix`-Datei; fehlt sie im neuesten
-Release, bauen Sie das Paket aus einem Checkout mit dem in `.github/vsce/`
+Release, bauen Sie das Paket aus einem Checkout mit dem in `tools/vsce/`
 festgeschriebenen vsce-Release (dieses vsce-Release benötigt Node.js 22 oder
 neuer): Führen Sie
-`npm ci --prefix .github/vsce --ignore-scripts` aus, dann
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+`npm ci --prefix tools/vsce --ignore-scripts` aus, dann
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Eine Kopie, die aus einem früheren `apothem.vsix` installiert wurde, trägt den
 Bezeichner `ahmed-g-gad.apothem`; deinstallieren Sie sie
 (`code --uninstall-extension ahmed-g-gad.apothem`), damit die beiden Kopien nicht

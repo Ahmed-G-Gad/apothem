@@ -17,7 +17,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   short-lived Marketplace credential: no stored secret and no Azure setup.
   The publisher adds one Trusted Publishing policy for this repository, the
   publish workflow and the `release` environment. The job first checks that
-  the vsce release locked in `.github/vsce` supports the final token
+  the vsce release locked in `tools/vsce` supports the final token
   exchange, and stops with a plain error when it does not. The Entra route
   and the `VSCE_PAT` token stay as alternatives. An unrecognised
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
@@ -25,12 +25,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- **Dependabot checks the vsce packager weekly.** The `.github/vsce` lockfile
+- **Dependabot checks the vsce packager weekly.** The `tools/vsce` lockfile
   was checked monthly, so a new vsce release waited up to a month after its
   seven-day cooldown before a pull request proposed it. It is now checked
   every Monday, like the website and the pre-commit hooks, because the
   Marketplace publish route depends on the vsce release: Trusted Publishing
   needs vsce 4.1.0 or later.
+
+### Fixed
+
+- **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
+  from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
+  `tools/channel-smoke`. Dependabot cannot open pull requests for npm
+  manifests under `.github/`
+  ([dependabot-core#15237](https://github.com/dependabot/dependabot-core/issues/15237)),
+  so every version and security update for the two lockfiles failed and none
+  reached a pull request. The release archives and GitHub source archives
+  still leave them out.
 
 ## [1.5.0] - 2026-10-28
 
