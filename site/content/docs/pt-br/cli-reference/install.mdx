@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "838431066489b516"
+sourceHash: "16be1a92f6de53b3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,12 +48,16 @@ de projeto gravam sob a raiz informada em `--project`, enquanto os adaptadores c
 escopo de usuário gravam sob o seu diretório pessoal — fora dessa raiz. Antes que
 a instalação grave qualquer arquivo, o comando imprime os destinos concretos
 agrupados sob dois títulos: os que ficam dentro da raiz do projeto e os que ficam
-sob o seu diretório pessoal. A única exceção é `--clean`: a etapa de limpeza completa
-roda antes desta prévia e grava um backup e remove os destinos anteriores, como
-descrito abaixo.
+sob o seu diretório pessoal. Um terceiro título lista as pastas compartilhadas
+no seu diretório pessoal que os adaptadores com escopo de projeto gravam, fora de
+`--project`: a pasta de skills e `~/.config/apothem/` (consulte
+[Pastas no seu diretório pessoal](#pastas-no-seu-diretório-pessoal)). A única
+exceção é `--clean`: a etapa de limpeza completa roda antes desta prévia e grava
+um backup e remove os destinos anteriores, como descrito abaixo.
 
-Quando a seleção grava fora da raiz do projeto, uma confirmação interativa
-protege as gravações com raiz no diretório pessoal. `--yes`, um shell não
+Quando a seleção grava fora da raiz do projeto, seja na pasta de um adaptador
+com raiz no diretório pessoal ou em uma pasta compartilhada, uma confirmação
+interativa protege as gravações com raiz no diretório pessoal. `--yes`, um shell não
 interativo (sem TTY), `--dry-run` e `--format json` prosseguem, cada um, sem
 perguntar. Somente `--dry-run` não grava nada; `--format json` pula a prévia e o
 prompt de confirmação, mas ainda realiza as gravações. Recusar o prompt do
@@ -62,6 +66,52 @@ diretório pessoal aborta a operação antes que a instalação grave. Com
 própria para cada destino: ela grava um backup em `~/.apothem/backups` e remove
 os destinos que confirma. Essas remoções e o backup permanecem no lugar quando o
 prompt de instalação é recusado.
+
+## Pastas no seu diretório pessoal
+
+Sete adaptadores com escopo de projeto gravam as skills do Apothem, e as regras e
+os templates que as skills citam, em pastas no seu diretório pessoal:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- `--project` seleciona o arquivo de regras e o projeto ao qual a instalação
+  pertence. Ele não altera para onde vão as skills: uma instalação com
+  `--project A` e outra com `--project B` gravam as mesmas pastas.
+- Toda instalação que nomeia uma pasta grava os mesmos arquivos. Uma segunda
+  instalação os encontra e relata `unchanged`, e a ordem em que você instala não
+  importa.
+- As pastas do diretório pessoal são gravadas antes de qualquer coisa no projeto.
+  Se uma gravação ali falhar, a instalação do adaptador para com o erro e o
+  projeto permanece inalterado. O erro nomeia o caminho que está obstruindo, por
+  exemplo um arquivo chamado `~/.agents` onde a pasta deveria estar.
+- Cada pasta de skill é gravada em uma pasta oculta `.<name>.apothem-staging` ao
+  lado dela e renomeada para o lugar quando concluída, de modo que uma gravação
+  com falha ou interrompida nunca deixa uma pasta de skill gravada pela metade
+  sob o seu nome final. Execute a instalação novamente para concluir; ela
+  substitui uma pasta de staging que tenha sobrado.
+- Um link simbólico em uma dessas pastas ou acima dela, como os que os
+  gerenciadores de dotfiles criam para `~/.config` ou `~/.agents`, é seguido
+  quando leva a algum lugar dentro do seu diretório pessoal. Um link que sai do
+  seu diretório pessoal interrompe a instalação com
+  `target escapes the allowed materialization root`, assim como um link dentro
+  de uma pasta de skill.
+- A instalação não adiciona nenhum arquivo de skill ou de regra ao seu
+  repositório. O projeto recebe o arquivo de regras do adaptador, mais a pasta de
+  dados `.apothem/` que toda instalação de projeto cria.
+- Uma pasta de skill que tem o nome de uma skill do Apothem e que o Apothem não
+  gravou é ignorada. A instalação imprime uma linha `Warning:` e o envelope
+  `--format json` carrega uma entrada de `warnings` com `"outcome": "warning"` e
+  `"operation": "skill_conflict"` que nomeia a pasta. Renomeie ou mova a pasta e
+  depois execute [`update`](/docs/cli-reference/update).
+- Toda instalação, atualização e simulação desse tipo imprime uma `Note:` que
+  nomeia as pastas que grava fora de `--project`. No envelope JSON, ela é uma
+  entrada de `warnings` com `"operation": "user_level_write"` e uma lista `paths`.
 
 ## Notas sobre capacidades
 
@@ -80,11 +130,38 @@ A instalação e a atualização também imprimem avisos consultivos como linhas
 `Note:`. Um aviso consultivo nunca altera o que a instalação grava. Quando uma
 instalação grava em uma raiz compartilhada, um caminho que outras ferramentas
 também carregam (por exemplo, a pasta de skills `~/.agents/skills/`), a nota
-nomeia essas ferramentas. Quando uma instalação tem como alvo uma ferramenta que
-já carrega conteúdo do Apothem a partir da raiz compartilhada de outra
-instalação, a nota nomeia essa instalação. No envelope `--format json`, cada
-aviso consultivo é uma entrada de `warnings` com `"outcome": "advisory"` e
-`"operation": "shared_root"`.
+nomeia essas ferramentas e coloca entre parênteses uma ferramenta que só carrega
+o caminho sob uma condição, por exemplo `Open-Claw (only under its default state
+directory)`. Uma instalação que grava uma pasta que outras instalações também
+gravam (o papel `holder`) informa que a pasta permanece até que a última
+instalação do Apothem que a usa seja desinstalada e nomeia as instalações que a
+usam agora. Quando uma instalação tem como alvo uma ferramenta que já carrega
+conteúdo do Apothem a partir da raiz compartilhada de outra instalação, a nota
+nomeia a instalação que o colocou ali: o proprietário registrado enquanto ele
+ainda usa a pasta, caso contrário a instalação mais antiga que a usa. No
+envelope `--format json`, cada aviso consultivo é uma entrada de `warnings` com
+`"outcome": "advisory"` e `"operation": "shared_root"`; o seu `role` é `owner`,
+`holder` ou `reader`, `holders` lista as instalações que usam a pasta e
+`owner_of_record` nomeia o proprietário registrado.
+
+Uma instalação que registra hooks também imprime notas sobre o arquivo de hooks.
+Um aviso consultivo `hook_review` nomeia a etapa de que a ferramenta precisa
+antes de executar os hooks (uma reinicialização e uma revisão, ou confiar no
+workspace), ou o risco de um arquivo de hooks que um repositório versiona e que
+nomeia o interpretador desta máquina. Um aviso consultivo `hook_import` aparece
+para uma ferramenta que também executa os hooks dos arquivos de configuração do
+Claude Code, como os que a instalação do Apothem para o Claude Code grava, e
+nomeia o próprio interruptor da ferramenta para desativar essa importação e o
+que o interruptor também interrompe. Cada um é uma entrada de `warnings` com
+`"outcome": "advisory"`, o `harness`, o `path` do arquivo de hooks e uma
+`message`.
+
+Um comando de hook mantém o caminho do projeto e o caminho do interpretador
+entre aspas duplas, que `sh`, o Git Bash e o PowerShell leem. Um caminho que
+contém `$`, um acento grave, uma aspa dupla ou uma barra invertida faria o
+comando executar um arquivo diferente, então a instalação (e `--dry-run`) para
+com um erro que nomeia o caminho e não grava nada; mova ou renomeie o projeto e
+execute novamente. Um espaço ou um apóstrofo em um caminho não causa problema.
 
 Os servidores MCP do perfil recebem três avisos consultivos, cada um nomeando o
 campo do perfil:
@@ -116,6 +193,13 @@ comentários, vírgulas finais e a sintaxe JSON5. Por isso:
   e o código de erro `config.unparseable`. O campo `fix` nomeia as chaves que a
   instalação adicionaria, para que você possa converter o arquivo para JSON ou
   YAML simples, ou adicionar essas chaves à mão e executar novamente.
+- Quando uma chave que a instalação preenche com um mapeamento ou uma lista (por
+  exemplo, `skills.external_dirs` em `config.yaml`) contém um valor escalar, ou o
+  outro formato de contêiner, no seu arquivo, a instalação não grava nada para
+  esse harness e sai com o código 1 e o mesmo código de erro, porque preencher a
+  chave descartaria o seu valor. O erro nomeia a chave; altere-a para o formato
+  que ele nomeia, ou remova-a, e execute novamente. Uma chave que você deixou
+  vazia (`skills:` sem nada abaixo dela) é preenchida.
 
 ## Opções
 

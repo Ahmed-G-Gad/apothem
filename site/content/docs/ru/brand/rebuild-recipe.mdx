@@ -2,7 +2,7 @@
 title: "Рецепт пересборки ресурсов"
 description: "Пересоздание всех растровых бренд-ресурсов из мастер-источников SVG с помощью resvg и Pillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ sourceHash: "7ffb351825fa59ff"
 
 Запускайте рецепт пересборки, когда:
 
-- Мастер-SVG (`assets/src/logo.svg` или `assets/src/logo-dark.svg`) изменяется.
+- Изменяется один из мастер-SVG (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` или `assets/src/logo-animated-light.svg`).
 - Мастер компактного favicon (`assets/favicon.svg`) изменяется.
 - Мастер социальной карточки (`assets/src/og-banner.svg` или `assets/src/twitter-card.svg`) изменяется.
 - Требуется новый растровый размер.
@@ -61,7 +61,8 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Проверка
 
 Успешный запуск пересоздаёт растры светлого и тёмного знака, набор favicon
-PNG/ICO, иконки Apple touch, изображения OG/Twitter и зеркалирует подмножество,
+PNG/ICO (ICO содержит слои 16, 32 и 48 px), иконки Apple touch, иконку расширения VS Code
+(`vscode-extension/icon.png`), изображения OG/Twitter и зеркалирует подмножество,
 обслуживаемое в вебе, — включая источники главного логотипа, на которые ссылается
 сайт, — в `site/public/`. После генерации запустите сборку сайта и перед
 публикацией осмотрите главную страницу, favicon вкладки браузера и PNG социальных

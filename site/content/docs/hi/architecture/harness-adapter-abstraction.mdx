@@ -2,7 +2,7 @@
 title: "हार्नेस अडैप्टर अमूर्तन"
 description: "HarnessAdapter प्रोटोकॉल — Apothem अडैप्टर साझा प्रोफ़ाइल का अनुवाद कैसे करते हैं।"
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,17 +37,20 @@ Apothem-स्वामित्व वाले समर्थन पथों
 अडैप्टर दो मूर्तीकरण आकारों में विभाजित होते हैं, दोनों रजिस्ट्री में दृश्यमान हैं:
 
 - **एकल-फ़ाइल रेंडरर** प्रोफ़ाइल फ़ील्ड्स को एक हार्नेस-मूल कॉन्फ़िग फ़ाइल में अनुवाद करते हैं। उदाहरण के लिए, OpenCode अडैप्टर साझा प्रोफ़ाइल से अपनी नेटिव कॉन्फ़िग फ़ाइल एक मूर्तीकारक के माध्यम से रेंडर करता है।
-- **नियम-सतह और समर्थन-वृक्ष अडैप्टर** Apothem पेलोड समूह को हार्नेस की प्रलेखित नियम-स्थान में प्रसारित करते हैं, जहाँ नेटिव प्रारूप मौजूद हो वहाँ समूह को उसमें बदलते हैं, और शेष को नेटिव एंकर से संदर्भित Apothem-स्वामित्व वाले समर्थन उप-वृक्ष के अंतर्गत रखते हैं। Cursor अडैप्टर आपूर्ति की गई प्रोजेक्ट रूट में एक एकल `.cursor/rules/apothem-rules.mdc` लिखता है और केवल नियम सतह प्रदान करता है। Claude Code अडैप्टर प्रोफ़ाइल से `settings.json` रेंडर नहीं करता। वह बंडल्ड सेटिंग्स टेम्पलेट को हुक इंटरप्रेटर भरकर `~/.claude/settings.json` में कॉपी करता है, उसके बगल में Apothem कन्वेंशन डायरेक्टरियों (`agents/`, `rules/`, `skills/`, …) को समतल करता है, और प्रोफ़ाइल को `CLAUDE.md` में एक सेंटिनल-सीमांकित प्रबंधित ब्लॉक में लिखता है।
+- **नियम-सतह और समर्थन-वृक्ष अडैप्टर** Apothem पेलोड समूह को हार्नेस की प्रलेखित नियम-स्थान में प्रसारित करते हैं, जहाँ नेटिव प्रारूप मौजूद हो वहाँ समूह को उसमें बदलते हैं, और शेष को नेटिव एंकर से संदर्भित Apothem-स्वामित्व वाले समर्थन उप-वृक्ष के अंतर्गत रखते हैं। Cursor अडैप्टर आपूर्ति की गई प्रोजेक्ट रूट में एक एकल `.cursor/rules/apothem-rules.mdc` लिखता है। उस फ़ाइल से पहले वह यूज़र होम में दो साझा फ़ोल्डर लिखता है: स्किल, और स्किल के रूप में लपेटे गए कमांड, `~/.agents/skills/` में जाते हैं, और वे नियम और टेम्पलेट जिनका वे स्किल हवाला देते हैं, `~/.config/apothem/` में जाते हैं। Claude Code अडैप्टर प्रोफ़ाइल से `settings.json` रेंडर नहीं करता। वह बंडल्ड सेटिंग्स टेम्पलेट को हुक इंटरप्रेटर भरकर `~/.claude/settings.json` में कॉपी करता है, उसके बगल में Apothem कन्वेंशन डायरेक्टरियों (`agents/`, `rules/`, `skills/`, …) को समतल करता है, और प्रोफ़ाइल को `CLAUDE.md` में एक सेंटिनल-सीमांकित प्रबंधित ब्लॉक में लिखता है।
 
 कोई दिया गया अडैप्टर या तो **उपयोगकर्ता-दायरे** का होता है (होम डायरेक्टरी के नीचे
-लिखता है) या **परियोजना-दायरे** का (`--project <path>` अपेक्षित करता है और उस वृक्ष
-के भीतर लिखता है); रजिस्ट्री यह दर्ज करती है कि कौन-सा।
+लिखता है) या **परियोजना-दायरे** का (`--project <path>` अपेक्षित करता है और अपनी
+प्रोजेक्ट फ़ाइल उस वृक्ष के भीतर लिखता है); रजिस्ट्री यह दर्ज करती है कि कौन-सा। सात
+परियोजना-दायरे वाले अडैप्टर (cursor, github-copilot, windsurf, zed, codebuddy, kiro,
+और trae) यूज़र होम में साझा फ़ोल्डर भी लिखते हैं, जैसे `~/.agents/skills/` और
+`~/.config/apothem/`, और `--project` यह नहीं बदलता कि वे कहाँ जाते हैं।
 
 ## वर्तमान अडैप्टर टोपोलॉजी
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -64,9 +67,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

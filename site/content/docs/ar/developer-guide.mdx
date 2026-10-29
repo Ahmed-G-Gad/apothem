@@ -2,7 +2,7 @@
 title: "المساهمة في Apothem — دليل المطوّر"
 description: "صُن منظومة Apothem ووسّعها بتأليف القواعد والأوامر والمساعِدات والمهارات والخطّافات وفق المخططات المرجعية ومتطلّبات البيانات الأمامية وإجراءات التحقّق."
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -180,7 +180,10 @@ portability: "unix-only"
 
 ### فعّال دائمًا
 
-تنطبق القاعدة في كل مكان.
+تنطبق القاعدة في كل مكان. خمس قواعد فعّالة دائمًا: <bdi>`agnostic-posture`</bdi>،
+و<bdi>`authority-inquiry`</bdi>، و<bdi>`session-closure`</bdi>، و<bdi>`context-management`</bdi>، وفهرس
+القواعد (<bdi>`apothem-rule-index`</bdi>). والمجموعة صغيرة لأن كل قاعدة فعّالة دائمًا
+تستهلك من السياق في كل جلسة.
 
 ```yaml
 pathFilter: ""
@@ -292,14 +295,20 @@ alwaysApply: false
 
 لا تحمل القواعد إلا هذه الحقول الأربعة — بلا <bdi>`version`</bdi> / <bdi>`updated`</bdi> / <bdi>`scope`</bdi> / <bdi>`portability`</bdi> / <bdi>`implements`</bdi>.
 
+القاعدة الجديدة مُرشَّحة بالمسار. وتحتاج القاعدة الجديدة الفعّالة دائمًا إلى رفع القائمة
+الأساسية وسقوف البايتات في التغيير نفسه: القائمة في
+<bdi>`tests/unit/test_always_on_core.py`</bdi> والسقوف في
+<bdi>`conformity/always_on_budget_grep.py`</bdi>. وتأخذ القاعدة المرافقة
+(<bdi>`<parent>-<aspect>`</bdi>) قيمة <bdi>`pathFilter`</bdi> الخاصة بقاعدتها الأم، أو قيمة أضيق منها.
+
 مثال:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -312,7 +321,10 @@ alwaysApply: true
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-اختر جدول العائلة الذي يتّفق مجال اهتمامه مع القاعدة.
+اختر جدول العائلة الذي يتّفق مجال اهتمامه مع القاعدة. وسمِّ القاعدة أيضًا في
+سطر <bdi>`src/apothem/rules/apothem-rule-index.md`</bdi> الخاص بالموقف الذي
+يستدعيها؛ إذ يفشل <bdi>`tests/unit/test_always_on_core.py`</bdi> عندما تغيب قاعدة
+عن الفهرس.
 
 ### 5. ألحِق بملف <bdi>CHANGELOG.md</bdi>
 
@@ -357,15 +369,17 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
 يجعل <bdi>`disable-model-invocation: true`</bdi> الأمرَ لا يُستدعى إلا من المُشغِّل؛
-ومع <bdi>`false`</bdi> يجوز للنموذج تشغيله عندما يطابق طلبٌ وصفَه. تستخدم معظم
-الأوامر <bdi>`true`</bdi>، لكن معظم مراحل خطّي أنابيب التخطيط والبحث تستخدم <bdi>`false`</bdi>.
+ومع <bdi>`false`</bdi> يجوز للنموذج تشغيله عندما يطابق طلبٌ وصفَه. والقيمة
+الافتراضية <bdi>`false`</bdi> للأوامر التي للقراءة فقط وللأوامر الاستشارية، مع وصف يبدأ
+بحالة الاستخدام؛ ويستخدمها 35 أمرًا من أصل 45. ويبقى الأمر <bdi>`true`</bdi> عندما
+يُغيّر الحالة خارج شجرة العمل أو يعتمد على اختيار المُشغِّل للّحظة المناسبة (10 أوامر).
 ويسرد جدول الاستدعاء في <bdi>`src/apothem/commands/README.md`</bdi> إعداد كل
 أمر؛ أضف صفًّا للأمر الجديد. وأبقِ
 <bdi>`allowed-tools`</bdi> للقراءة فقط: فإطار العمل الذي يلتزم به يُشغِّل تلك الأدوات دون
@@ -382,6 +396,13 @@ allowed-tools: "Read, Glob, Grep"
 - تعليمات عالية المستوى
 - قسم سير العمل مع الخطوات
 - عقد الإرجاع / صيغة المُخرَج
+
+يُقسِّم إصدار المهارات لدى أحد أُطر العمل كل أمر إلى ملف <bdi>`SKILL.md`</bdi> مختصر وملفات
+<bdi>`references/`</bdi> بحسب أقسام <bdi>H2</bdi>. امنح الأمر قسم <bdi>`## Workflow`</bdi> واحدًا،
+وأغلِق كل سياج شيفرة، وصنِّف أي نوع جديد من أقسام <bdi>H2</bdi> في
+<bdi>`src/apothem/lib/claude_skill_split.py`</bdi>؛ إذ يفشل <bdi>`tests/unit/test_claude_skill_split.py`</bdi>
+عند وجود نوع غير مُصنَّف. والقواعد موجودة في عقد تقسيم إصدار المهارات
+(<bdi>Skill-emission split contract</bdi>) ضمن <bdi>`src/apothem/commands/README.md`</bdi>.
 
 ### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
@@ -681,14 +702,14 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### التقييمات السلوكية
 
-تقيس المجموعة الموجودة تحت <bdi>`evals/`</bdi> السلوكَ لا الشكل: 64 حالة إطلاق
-(كل أمر وكل عامل فرعي يمكن للنموذج استدعاؤه ينطلق عند طلب يقع في مجاله، ويبقى صامتًا
-عند طلب قريب منه لا يخصّه)، و32 حالة نتيجة (حالة واحدة لكل مرحلة تخطيط، ومرحلة بحث،
-وبُعد تدقيق)، و6 أزواج لأثر القواعد (نصّ قاعدة فعّالة دائمًا مُفعَّلًا ومُعطَّلًا).
+تقيس المجموعة الموجودة تحت <bdi>`evals/`</bdi> السلوكَ لا الشكل: 148 حالة إطلاق
+(كل أمر وكل مهارة وكل عامل فرعي يمكن للنموذج استدعاؤه ينطلق عند طلب يقع في مجاله، ويبقى صامتًا
+عند طلب قريب منه لا يخصّه، وستة أوامر لا يستدعيها إلا المستخدم لا تبدأ من تلقاء نفسها)، و32 حالة نتيجة (حالة واحدة لكل مرحلة تخطيط، ومرحلة بحث،
+وبُعد تدقيق)، و6 أزواج لأثر القواعد (نصّ قاعدة من عيّنة مختارة مُفعَّلًا ومُعطَّلًا).
 الحالات بيانات بسيطة يُتحقَّق منها مجانًا عبر
 <bdi>`python -m pytest tests/unit/test_eval_suite.py`</bdi>؛ أمّا تشغيلها فمدفوع
 التكلفة ويدوي. راجع [تشغيل التقييمات السلوكية](/docs/how-to/evals) للاطّلاع على سير عمل
-<bdi>`Evals`</bdi>، والتشغيل المحلي، وكيفية إضافة حالة. وبعد تعديل قاعدة فعّالة دائمًا
+<bdi>`Evals`</bdi>، والتشغيل المحلي، وكيفية إضافة حالة. وبعد تعديل قاعدة
 لها زوج، شغِّل <bdi>`python scripts/dev/sync_eval_rule_cases.py`</bdi>.
 
 ### اختبارات الأداء المرجعية
@@ -710,7 +731,10 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 المفصولة بمسافات بيضاء، مع استبعاد قسم <bdi>Bindings</bdi> وأسطر الإشارة المرافقة. ويحمل
 تقريره بصيغة <bdi>JSON</bdi> أيضًا <bdi>`always-on-loaded`</bdi>: البايتات والأحرف والكلمات
 في المتون المجرّدة من البيانات الأمامية التي يُحمِّلها إطار العمل، مجموعةً على
-القواعد الفعّالة دائمًا.
+القواعد الفعّالة دائمًا. وعند توجيه الفحص إلى مجلد القواعد المشحونة، يفشل أيضًا عندما
+يتجاوز ذلك المجموع سقفًا للبايتات (يُبلَّغ عنه بوصفه <bdi>`always-on-ceiling-bytes`</bdi>) أو
+يتجاوز فهرس القواعد سقفه الخاص. ويُحمِّل <bdi>Claude Code</bdi> نسخه من القواعد دون قسم
+<bdi>Bindings</bdi>، لذا يكون حجمها المُحمَّل أصغر من الرقم الذي يُبلغ عنه هذا الفحص.
 
 ## تدقيق المنظومة: تشغيل التحقّق
 

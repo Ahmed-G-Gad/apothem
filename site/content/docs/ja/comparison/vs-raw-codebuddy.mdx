@@ -2,7 +2,7 @@
 title: "Apothem と素の CodeBuddy ルールの比較"
 description: "CodeBuddy のプロジェクトルールを、プロジェクトごとに .codebuddy/rules ファイルを手書きするのではなく、Apothem 経由で管理する理由。"
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ CodeBuddy は、プロジェクトのルールを `.codebuddy/rules/*.md` から
 | ルールをハーネス間で揃えて保つ | ツールごとに導き直す | 自動的に投影される |
 | ルールを更新する | すべてのプロジェクトを手作業で編集する | `apothem update --harness codebuddy --project <path>` |
 | 設定を削除する | 手作業で削除 | タイムスタンプ付きバックアップを取って `apothem uninstall` |
+| 再利用可能なスキルとコマンドを共有する | 各スキルフォルダーを `~/.codebuddy/skills/` へ手作業でコピーし、コピーを最新に保つ | アダプターが `~/.codebuddy/skills/` に書き込み、すべてのプロジェクトで 1 つのコピーを共有し、`apothem update` で更新される |
 
 ## Apothem が管理する対象
 
-codebuddy アダプターは、共有ルールを専用ファイル `<project>/.codebuddy/rules/apothem-rules.md` にレンダリングし、それ以外には何も書き込みません。`CODEBUDDY.md` のメモリファイル、`.codebuddy/settings.json` の権限と MCP サーバー、作成したその他のルールファイルは、すべてオペレーターが所有したままです。アダプターはこれらの面を認識しますが、編集することは決してありません。共有ルールへの変更はすべて、次の `apothem update` の際にファイルを再レンダリングします。
+codebuddy アダプターは、共有ルールを専用ファイル `<project>/.codebuddy/rules/apothem-rules.md` にレンダリングします。また、すべてのプロジェクトが共有する 2 つのフォルダーをホームディレクトリに書き込みます。スキルと、スキルとしてラップしたコマンドは `~/.codebuddy/skills/` へ、それらのスキルが参照するルールとテンプレートは `~/.config/apothem/rules/` と `~/.config/apothem/templates/` へ書き込まれます。`CODEBUDDY.md` のメモリファイル、`.codebuddy/settings.json` の権限と MCP サーバー、作成したその他のルールファイルは、すべてオペレーターが所有したままです。アダプターはこれらの面を認識しますが、編集することは決してありません。共有ルールへの変更はすべて、次の `apothem update` の際にルールファイルを再レンダリングします。
 
 ## 移行の手順
 

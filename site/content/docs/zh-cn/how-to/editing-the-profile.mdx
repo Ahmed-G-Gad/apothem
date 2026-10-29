@@ -2,7 +2,7 @@
 title: "编辑配置文件"
 description: "更改共享配置档案并为每个已安装的工具重新物化。"
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,6 +31,16 @@ sourceHash: "7359e9f71919f942"
   `continuous_execution`、`learning_loop`），每个标志默认关闭。
 - `harnesses` —— 以工具 id 为键的各工具覆盖项。
 - `exclude_harnesses` —— 被批量命令（`--harness all`）跳过的工具 id。
+- `mcp_servers` —— 以服务器名称为键的 MCP 服务器定义。
+- `agent_mcp_servers` —— 按辅助器名称列出该辅助器可以调用的 MCP 服务器
+  （参见[让辅助器访问 MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。
+  默认为空，因此没有任何辅助器能触及 MCP 工具。
+- `workspace` —— Apothem 存放其共享工作目录的位置
+  （`directory_name`、`scope`）。
+- `schema_version` —— 可选的配置档案 schema 版本；不含该字段的配置档案按
+  版本 1 读取。
+
+每个字段都列在[配置档案字段](/docs/reference/profile-fields)中。
 
 ## 步骤
 

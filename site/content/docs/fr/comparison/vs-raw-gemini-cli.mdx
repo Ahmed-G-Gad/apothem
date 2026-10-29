@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration manuelle de Gemini CLI"
 description: "Maintenir à la main le fichier de règles GEMINI.md de Gemini CLI face à le rendre depuis le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "1571985a6318fd28"
+sourceHash: "e239aa7e0b2101a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ maintenance manuelle de cette configuration et sa gestion avec Apothem.
 
 ## Ce que gère Apothem
 
-L'adaptateur gemini-cli écrit un bloc Apothem délimité par des marqueurs sentinelles dans `<project>/GEMINI.md`. Ce bloc porte les consignes valables pour tout le projet et renvoie au matériel d'Apothem. Les règles, les templates et les hooks sont placés comme fichiers de support sous `<project>/.gemini/.apothem/support/`, et les commandes, les skills et les agents sous `<project>/.gemini/`. Gemini CLI n'a pas de hook PreToolUse : l'intention des garde-fous s'exprime donc dans la prose des règles plutôt qu'en un point d'interception d'appel d'outil. Chaque modification des règles partagées régénère `GEMINI.md` lors du prochain `apothem update`.
+L'adaptateur gemini-cli écrit un bloc Apothem délimité par des marqueurs sentinelles dans `<project>/GEMINI.md`. Ce bloc porte les consignes valables pour tout le projet et renvoie au matériel d'Apothem. Les règles, les templates et les hooks sont placés comme fichiers de support sous `<project>/.gemini/.apothem/support/`, et les commandes, les skills et les agents sous `<project>/.gemini/`. Gemini CLI documente un objet `hooks` dans `settings.json`, qui reste la propriété de l'opérateur : l'adaptateur n'enregistre donc aucun hook et l'intention des garde-fous s'exprime dans la prose des règles plutôt qu'en un point d'interception d'appel d'outil. Chaque modification des règles partagées régénère `GEMINI.md` lors du prochain `apothem update`.
 
 ## Chemin de migration
 

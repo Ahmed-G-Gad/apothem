@@ -2,7 +2,7 @@
 title: "Conceitos"
 description: "Glossário que define perfis compartilhados, adaptadores de harness, regras, hooks, conformity gates, skills e trabalhadores delegados no Apothem."
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,10 @@ adaptadores.
 
 Um arquivo Markdown sob src/apothem/rules/ que é carregado em toda interação (sempre ativo) ou
 apenas ao editar arquivos sob um caminho específico (filtrado por caminho). As regras codificam como o
-harness deve se comportar.
+harness deve se comportar. Quatro regras são sempre ativas: `agnostic-posture`, `authority-inquiry`,
+`session-closure` e `context-management`. O índice de regras, `apothem-rule-index`, é carregado com
+elas e nomeia todas as outras regras e quando lê-las. Um harness que não delimita regras por
+caminho não carrega nenhuma das outras, então o índice é como uma sessão as encontra.
 
 ## Hook
 

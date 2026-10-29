@@ -2,14 +2,14 @@
 title: "Kimi Code"
 description: "Adapter harness Apothem untuk Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "8e9f4f62c583aebb"
+sourceHash: "7baab16542cfcb94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Moonshot
 **Nama instalasi:** `kimi-code`
 **Status:** GA
-**Konfigurasi native:** `<project>/AGENTS.md` ditambah `<project>/.kimi-code/.apothem/support/`
+**Konfigurasi native:** `<project>/AGENTS.md`, `<project>/.kimi-code/skills/`, `<project>/.kimi-code/agents/`, dan `<project>/.kimi-code/.apothem/support/`
 
 ## Instalasi
 
@@ -19,43 +19,151 @@ apothem install --harness kimi-code --project /path/to/project
 
 Adapter menulis permukaan tata kelola Apothem bersama ke dalam `AGENTS.md` di
 akar proyek sebagai blok terkelola yang dibatasi sentinel (prosa operator di luar
-sentinel dipertahankan) dan menyimpan kohor Markdown non-native di bawah pohon
-pendukung milik Apothem di `<project>/.kimi-code/.apothem/support/`.
+sentinel dipertahankan). Adapter memasang skill, dan command yang dibungkus
+sebagai skill, di direktori skill proyek native Kimi Code,
+`<project>/.kimi-code/skills/`, serta helper Apothem sebagai subagent Kimi Code
+di `<project>/.kimi-code/agents/` (lihat [Subagent](#subagent)). Kohor lainnya
+tetap berada di bawah pohon pendukung milik Apothem di
+`<project>/.kimi-code/.apothem/support/`.
 `AGENTS.md` proyek dibaca oleh banyak alat pengodean selain Kimi Code, sehingga
 blok tersebut ditulis sebagai panduan seluruh proyek yang tidak menyebut satu
 alat tunggal pun sebagai pembacanya.
 
 Kimi Code membaca berkas instruksi `AGENTS.md` di akar proyek mengikuti konvensi
 AGENTS.md universal, dan konfigurasi proyek berada di bawah
-`<project>/.kimi-code/`. Permukaan `<project>/.kimi-code/mcp.json` dimiliki
-operator; Apothem menyebutnya tetapi tidak menulis entri apa pun.
+`<project>/.kimi-code/`. Kimi Code menganggap akar proyek sebagai direktori
+terdekat yang berisi `.git`, dengan mencari ke atas dari direktori kerja, jadi
+berikan akar repositori sebagai `--project`. Permukaan
+`<project>/.kimi-code/mcp.json` dimiliki operator; Apothem menyebutnya tetapi
+tidak menulis entri apa pun.
 
-**Berkas yang ditulis:** `<project>/AGENTS.md` (blok terkelola) dan kohor
-command, skill, hook, agen, aturan, dan templat di bawah
-`<project>/.kimi-code/.apothem/support/`.
+**Berkas yang ditulis:** `<project>/AGENTS.md` (blok terkelola), skill dan
+command (sebagai skill) di bawah `<project>/.kimi-code/skills/`, satu
+`<project>/.kimi-code/agents/<name>.md` untuk setiap helper Apothem, serta kohor
+hook, aturan, dan templat di bawah `<project>/.kimi-code/.apothem/support/`.
+
+## Subagent
+
+Kimi Code membaca subagent dari berkas Markdown di `.kimi-code/agents/` (atau
+`.agents/agents/`), menurut
+[dokumentasi Kimi Code tentang subagent kustom](https://moonshotai.github.io/kimi-code/en/customization/agents.md).
+Instalasi menulis satu berkas per helper Apothem ke `<project>/.kimi-code/agents/`
+untuk keempat belas helper. Instalasi ini hanya untuk proyek dan tidak menulis
+folder `~/.kimi-code/agents/`.
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. |
+| `tools` | Alat yang boleh dipakai helper, sebagai daftar nama alat Kimi Code. |
+| `disallowedTools` | Alat yang ditolak bagi helper, sebagai daftar nama alat Kimi Code. Kimi Code menerapkannya setelah `tools`. |
+
+Kimi Code mencocokkan nama alat secara persis, termasuk huruf kapital, dan
+memperingatkan tentang nama yang tidak memiliki alat. Karena itu instalasi
+mengganti nama dua alat yang dieja berbeda oleh Kimi Code, `WebFetch` menjadi
+`FetchURL` dan `TodoWrite` menjadi `TodoList`, dan menghilangkan nama yang tidak
+memiliki alat di Kimi Code: `MultiEdit`, `NotebookEdit`, `PowerShell`, `Monitor`,
+`Artifact`, `TaskCreate` dan `TaskUpdate`. Alat yang ditolak tetap ditolak. Jika
+semua alat yang diizinkan bagi sebuah helper hilang dengan cara ini, berkas itu
+membawa `tools: []`, yang tidak mengizinkan alat apa pun; `tools` yang dihilangkan
+akan mengizinkan setiap alat.
+
+Instalasi tidak pernah menulis `model` (Kimi Code tidak memiliki kunci model untuk
+subagent, yang memakai model sesi utama atau `[secondary_model]` di `config.toml`),
+`override` (kunci itu akan membiarkan berkas proyek mengganti subagent bawaan),
+`subagents`, `whenToUse`, maupun kunci `maxTurns`, `version`, `updated` dan
+`portability` milik Apothem.
+
+Hal yang perlu diketahui:
+
+- Berkas subagent adalah berkas proyek biasa. Commit berkas itu bersama proyek atau
+  cantumkan `.kimi-code/agents/` di `.gitignore`; Apothem tidak memilihkannya untuk Anda.
+- Kimi Code memakai helper ketika delegasi diminta. Sejak rilisnya pada
+  2026-10-25, Kimi Code secara default menangani tugas sendiri alih-alih
+  meluncurkan subagent atas inisiatifnya sendiri, jadi mintalah helper berdasarkan
+  namanya, dalam pesan atau di `AGENTS.md`. Halaman vendor tentang subagent kustom
+  masih menjelaskan penjadwalan otomatis, jadi hal ini dapat berubah.
+- Berkas tingkat proyek di `.kimi-code/agents/` berperingkat di atas definisi
+  dengan nama yang sama di tingkat extra, pengguna, dan plugin. Beri helper Anda
+  sendiri nama yang berbeda dari milik Apothem. Kode Kimi Code juga membaca
+  `.kimi-code/agents/` sebelum folder bersama `.agents/agents/`, yang tidak pernah
+  ditulis Apothem, dan mempertahankan yang pertama dari dua berkas bernama sama;
+  dokumentasinya tidak menyebutkan hal ini.
+- Berkas milik Anda dengan nama helper Apothem disimpan di bawah
+  `~/.apothem/backups/` lalu diganti. Pencopotan tidak mengembalikannya.
+  Berkas dengan nama lain tidak pernah disentuh.
+- Rilis sebelumnya menyimpan berkas helper di pohon pendukung, di
+  `.kimi-code/.apothem/support/agents/`, tempat Kimi Code tidak memuatnya.
+  `apothem update` atau `apothem uninstall` menghapus salinan itu setelah
+  menyimpannya di bawah `~/.apothem/backups/`.
 
 ## Pemetaan profil ke konfigurasi native
 
 Adapter membaca profil bersama Apothem dan merender permukaan instruksi
 `AGENTS.md` di akar proyek pada setiap kali `apothem install` atau
 `apothem update` dijalankan. Aturan perilaku dan korpus tata kelola mendarat di
-blok terkelola `AGENTS.md`; kohor command, skill, hook, agen, aturan, dan templat
-ditempatkan di bawah `.kimi-code/.apothem/support/` dan dirujuk dari permukaan
-instruksi. Ini adalah tata letak yang dipilih adapter, bukan celah pada Kimi Code:
-Kimi Code memuat skill dari `.kimi-code/skills/` dan `.agents/skills/`, agen
-kustom dari `.kimi-code/agents/` dan `.agents/agents/`, serta hook dari array
-`[[hooks]]` di `~/.kimi-code/config.toml`, tetapi tidak memuatnya dari pohon
-pendukung, sehingga salinan Apothem di sana adalah materi rujukan yang ditunjuk
-oleh blok `AGENTS.md`. Blok tersebut diakhiri dengan bagian berkas pendukung
-Apothem yang menyebutkan, relatif terhadap akar proyek, direktori di bawah
-`.kimi-code/.apothem/support/` tempat setiap kutipan bergaya repositori
-(`rules/<name>.md`, `templates/...`, `hooks/...`) di-resolve, sehingga
-`AGENTS.md` yang di-commit tidak membawa jalur khusus mesin apa pun. (Perilaku
-Kimi Code menurut halaman kustomisasinya untuk
-[skill](https://moonshotai.github.io/kimi-code/en/customization/skills),
-[subagen](https://moonshotai.github.io/kimi-code/en/customization/agents), dan
-[hook](https://moonshotai.github.io/kimi-code/en/customization/hooks), dibaca
-2026-10-02.)
+blok terkelola `AGENTS.md`. Setiap skill, dan setiap command yang dibungkus
+sebagai skill, mendarat di `.kimi-code/skills/<name>/SKILL.md`, direktori skill
+proyek yang dimuat Kimi Code. Adapter hanya menulis folder khusus Kimi itu dan
+tidak pernah menulis `.agents/skills/`, yang juga dibaca alat lain. Skill yang
+Anda tambahkan sendiri ke `.kimi-code/skills/` dengan nama lain dipertahankan
+saat instalasi, pembaruan, dan pencopotan. Skill di sana dengan nama yang sama
+dengan skill Apothem diganti: instalasi dan pembaruan menimpanya, dan pencopotan
+menghapusnya, masing-masing setelah salinan bertanda waktu dibuat di bawah
+`~/.apothem/backups/`, dan instalasi tidak mencetak pemberitahuan apa pun
+tentang tabrakan tersebut. Beri skill Anda sendiri nama yang berbeda dari milik
+Apothem.
+
+Kohor hook, aturan, dan templat ditempatkan di bawah
+`.kimi-code/.apothem/support/` dan dirujuk dari permukaan instruksi. Kimi Code
+tidak memuatnya dari pohon pendukung, sehingga salinan Apothem di sana adalah
+materi rujukan yang ditunjuk oleh blok `AGENTS.md`. Blok tersebut diakhiri
+dengan bagian berkas pendukung Apothem yang menyebutkan, relatif terhadap akar
+proyek, direktori di bawah `.kimi-code/.apothem/support/` tempat setiap kutipan
+bergaya repositori (`rules/<name>.md`, `templates/...`, `hooks/...`) di-resolve,
+sehingga `AGENTS.md` yang di-commit tidak membawa jalur khusus mesin apa pun.
+(Perilaku Kimi Code menurut halaman kustomisasinya untuk
+[skill](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html),
+[definisi helper](https://moonshotai.github.io/kimi-code/en/customization/agents.md), dan
+[hook](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html), dibaca
+2026-10-24 untuk skill dan hook, 2026-10-27 untuk definisi helper.)
+
+## Tidak dipasang secara native
+
+Kimi Code mendokumentasikan tempat native untuk hook. Adapter belum menulis ke
+sana, karena alasan-alasan berikut.
+
+- **Hook.** Kimi Code membaca hook dari array `[[hooks]]` di
+  `~/.kimi-code/config.toml` (`$KIMI_CODE_HOME/config.toml` ketika variabel itu
+  ditetapkan). Apothem tidak menulis satu pun. Berkas itu berlingkup pengguna,
+  sedangkan adapter ini menulis di bawah akar proyek; sebuah entri hanya
+  mengizinkan empat bidang (`event` dan `command` wajib, `matcher` dan `timeout`
+  opsional) dan bidang tambahan menghentikan konfigurasi dari dimuat; dan Apothem
+  tidak memiliki penggabungan TOML yang nantinya dapat menghapus hanya entri
+  miliknya sendiri. Skrip helper hook tetap berada di pohon pendukung.
+- **Frontmatter skill.** Halaman vendor mendokumentasikan kunci `SKILL.md` `name`
+  dan `description` (keduanya wajib), `type`, `whenToUse`,
+  `disableModelInvocation` (juga diterima sebagai `disable-model-invocation`), dan
+  `arguments`. Halaman itu tidak menyatakan aturan untuk kunci lain. Skill
+  dipasang dengan frontmatter yang dimilikinya di sumber Apothem, sehingga kunci
+  seperti `version`, `updated`, `archetype`, `userInvocable`, `argument-hint`,
+  `portability`, dan `allowed-tools` sampai ke Kimi Code, yang mungkin
+  mengabaikan atau menolaknya.
+- **Skill bernama sama.** Kimi Code memberi tingkat proyek prioritas di atas
+  tingkat pengguna, sehingga skill di `<project>/.kimi-code/skills/` diutamakan
+  di atas skill dengan nama yang sama di `~/.agents/skills/`, yang ditulis oleh
+  adapter Apothem yang berbeda. Halaman vendor tidak menyebutkan bagaimana
+  `.kimi-code/skills/` dan `.agents/skills/` berperingkat satu sama lain di dalam
+  tingkat proyek.
+
+{/* TODO(clarify): the hook install decision (user-scope TOML merge with
+surgical uninstall), whether the main session delegates to the helpers on its own
+(the vendor's page on custom subagents and its changelog of 2026-10-25 disagree), how Kimi Code treats a SKILL.md
+key outside the documented list, and how .kimi-code/skills/ ranks against
+.agents/skills/ inside the project level are open; see Open Questions in
+src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md. */}
 
 ## Catatan kompatibilitas
 
@@ -69,7 +177,7 @@ yang diutamakan ketika keduanya ada. Kimi Code tidak mengekspos permukaan berkas
 statusline atau output-style, sehingga kohor tersebut tidak dimaterialisasikan.
 
 Kimi Code berjalan pada keluarga model Kimi dari Moonshot; lihat
-[referensi konfigurasi vendor](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+[referensi konfigurasi vendor](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files)
 untuk model dan permukaan konfigurasi terkini.
 
 ## Verifikasi
@@ -81,9 +189,13 @@ apothem verify --harness kimi-code --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
-   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
-   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada, termasuk direktori skill dan subagent; berkas
+   terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan
+   `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok
+   dengan profil tersebut. Untuk `.kimi-code/agents/`, yang diperiksa adalah
+   keberadaan folder, bukan keberadaan setiap berkas helper di dalamnya; perintah
+   `apothem diff --harness kimi-code --project /path/to/project` mencantumkan
+   berkas helper yang hilang atau kedaluwarsa.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
@@ -92,8 +204,15 @@ Perintah verify memastikan bahwa:
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Menurunkan ulang blok terkelola `AGENTS.md` di akar proyek dan kohor pendukung
-dari status profil bersama saat ini.
+Menurunkan ulang blok terkelola `AGENTS.md` di akar proyek, skill, berkas
+subagent, dan kohor pendukung dari status profil bersama saat ini. Pembaruan atas
+instalasi yang dibuat sebelum skill dipindahkan ke `.kimi-code/skills/`
+menghapus direktori lama `<project>/.kimi-code/.apothem/support/skills/`,
+sehingga setiap skill hanya ada satu kali. Pembaruan atas instalasi dari sebelum
+helper dipindahkan ke `.kimi-code/agents/` menghapus direktori lama
+`<project>/.kimi-code/.apothem/support/agents/` dengan cara yang sama. Salinan
+bertanda waktu dari setiap direktori yang dihapus disimpan lebih dulu di bawah
+`~/.apothem/backups/`.
 
 ## Pencopotan
 
@@ -103,8 +222,13 @@ apothem uninstall --harness kimi-code --project /path/to/project
 
 Menghapus blok Apothem dari `AGENTS.md` di akar proyek dan mempertahankan teks
 apa pun di luar sentinel. Berkas dihapus hanya ketika tidak ada lagi yang
-tersisa di dalamnya. Juga menghapus berkas pendukung yang ditempatkan Apothem di
-bawah `<project>/.kimi-code/.apothem/support/`. Sebelum perubahan, salinan
+tersisa di dalamnya. Juga menghapus skill yang ditempatkan Apothem di bawah
+`<project>/.kimi-code/skills/` (skill yang Anda tambahkan di sana dengan nama lain
+dipertahankan), berkas subagent di bawah `<project>/.kimi-code/agents/` (berkas
+yang Anda tambahkan di sana dengan nama lain dipertahankan, dan folder itu
+dihapus jika dibiarkan kosong), serta berkas pendukung di bawah
+`<project>/.kimi-code/.apothem/support/`, termasuk direktori lama `skills/` dan
+`agents/` di pohon pendukung dari instalasi yang tidak pernah diperbarui. Sebelum perubahan, salinan
 bertanda waktu dari setiap berkas disimpan di bawah `~/.apothem/backups/`;
 tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan
 mesin Apothem tidak terpengaruh.
@@ -121,6 +245,8 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness kimi-code --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness kimi-code --project /path/to/project`, lalu verifikasi lagi |
+| Skill atau helper tidak ada di Kimi Code | Periksa bahwa `--project` menyebut akar repositori (direktori yang berisi `.git`), lalu jalankan ulang instalasi |
+| Kimi Code tidak pernah memakai helper | Mintalah helper itu berdasarkan namanya. Kimi Code menangani tugas sendiri kecuali delegasi diminta |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness kimi-code --project /path/to/project` |
 
 ## Tombol konfigurasi

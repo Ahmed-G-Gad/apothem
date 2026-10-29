@@ -2,14 +2,14 @@
 title: "Kimi Code"
 description: "Adaptador de harness do Apothem para o Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "8e9f4f62c583aebb"
+sourceHash: "7baab16542cfcb94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Fornecedor:** Moonshot
 **Nome de instalação:** `kimi-code`
 **Status:** GA
-**Configuração nativa:** `<project>/AGENTS.md` mais `<project>/.kimi-code/.apothem/support/`
+**Configuração nativa:** `<project>/AGENTS.md`, `<project>/.kimi-code/skills/`, `<project>/.kimi-code/agents/` e `<project>/.kimi-code/.apothem/support/`
 
 ## Instalação
 
@@ -19,46 +19,143 @@ apothem install --harness kimi-code --project /path/to/project
 
 O adaptador grava a superfície de governança compartilhada do Apothem no
 `AGENTS.md` da raiz do projeto como um bloco gerenciado delimitado por
-sentinelas (a prosa do operador fora das sentinelas é preservada) e mantém os
-cohorts Markdown não nativos sob a árvore de suporte de propriedade do Apothem
-em `<project>/.kimi-code/.apothem/support/`.
+sentinelas (a prosa do operador fora das sentinelas é preservada). Ele instala
+skills, e comandos encapsulados como skills, no diretório nativo de skills de
+projeto do Kimi Code, `<project>/.kimi-code/skills/`, e os auxiliares do Apothem
+como subagentes do Kimi Code em `<project>/.kimi-code/agents/` (consulte
+[Subagentes](#subagentes)). Os demais cohorts permanecem sob a árvore de suporte
+de propriedade do Apothem em `<project>/.kimi-code/.apothem/support/`.
 Um `AGENTS.md` de projeto é lido por muitas ferramentas de programação além do
 Kimi Code, então o bloco é escrito como orientação para todo o projeto que não
 nomeia nenhuma ferramenta específica como sua leitora.
 
 O Kimi Code lê o arquivo de instruções `AGENTS.md` da raiz do projeto seguindo a
 convenção universal do AGENTS.md, e a configuração do projeto fica sob
-`<project>/.kimi-code/`. A superfície `<project>/.kimi-code/mcp.json` pertence
-ao operador; o Apothem a nomeia, mas não redige nenhuma entrada.
+`<project>/.kimi-code/`. O Kimi Code considera como raiz do projeto o diretório
+mais próximo que contém `.git`, procurando para cima a partir do diretório de
+trabalho, então passe a raiz do repositório como `--project`. A superfície
+`<project>/.kimi-code/mcp.json` pertence ao operador; o Apothem a nomeia, mas
+não redige nenhuma entrada.
 
-**Arquivos gravados:** `<project>/AGENTS.md` (bloco gerenciado) e os cohorts de
-comandos, skills, hooks, agentes, regras e templates sob
-`<project>/.kimi-code/.apothem/support/`.
+**Arquivos gravados:** `<project>/AGENTS.md` (bloco gerenciado), as skills e os
+comandos (como skills) sob `<project>/.kimi-code/skills/`, um
+`<project>/.kimi-code/agents/<name>.md` para cada auxiliar do Apothem, e os
+cohorts de hooks, regras e templates sob `<project>/.kimi-code/.apothem/support/`.
+
+## Subagentes
+
+O Kimi Code lê um subagente de um arquivo Markdown em `.kimi-code/agents/` (ou
+`.agents/agents/`), conforme a
+[documentação do Kimi Code sobre subagentes personalizados](https://moonshotai.github.io/kimi-code/en/customization/agents.md).
+A instalação grava um arquivo por auxiliar do Apothem em `<project>/.kimi-code/agents/`
+para todos os catorze auxiliares. Ela instala apenas para o projeto e não grava
+nenhuma pasta `~/.kimi-code/agents/`.
+
+Cada arquivo mantém as instruções do auxiliar inalteradas e traz estas chaves de
+frontmatter:
+
+| Chave | O que o Apothem grava |
+| --- | --- |
+| `name`, `description` | O nome e a descrição do auxiliar. |
+| `tools` | As ferramentas permitidas ao auxiliar, como uma lista de nomes de ferramentas do Kimi Code. |
+| `disallowedTools` | As ferramentas negadas ao auxiliar, como uma lista de nomes de ferramentas do Kimi Code. O Kimi Code a aplica depois de `tools`. |
+
+O Kimi Code compara os nomes de ferramentas exatamente, com maiúsculas, e emite um aviso sobre um nome
+para o qual não tem ferramenta. Assim, a instalação renomeia as duas ferramentas que o Kimi Code
+escreve de forma diferente, `WebFetch` para `FetchURL` e `TodoWrite` para `TodoList`, e deixa de fora os nomes
+para os quais o Kimi Code não tem ferramenta: `MultiEdit`, `NotebookEdit`, `PowerShell`, `Monitor`,
+`Artifact`, `TaskCreate` e `TaskUpdate`. Uma ferramenta negada continua negada. Se todas as ferramentas
+permitidas de um auxiliar desaparecerem dessa forma, o arquivo traz `tools: []`, que não permite nenhuma
+ferramenta; um `tools` omitido permitiria todas as ferramentas.
+
+A instalação nunca grava `model` (o Kimi Code não tem chave de modelo para um subagente, que
+usa o modelo da sessão principal ou o `[secondary_model]` em `config.toml`),
+`override` (permitiria que um arquivo de projeto substituísse um subagente embutido), `subagents`,
+`whenToUse`, nem as chaves `maxTurns`, `version`, `updated` e `portability` do Apothem.
+
+Pontos a saber:
+
+- Os arquivos de subagente são arquivos comuns do projeto. Faça commit deles com o projeto ou
+  liste `.kimi-code/agents/` no `.gitignore`; o Apothem não escolhe por você.
+- O Kimi Code usa um auxiliar quando a delegação é solicitada. Desde a sua versão de
+  2026-10-25, ele trata as tarefas por conta própria por padrão, em vez de iniciar subagentes
+  por iniciativa própria, então peça um auxiliar pelo nome, em uma mensagem ou no `AGENTS.md`. A
+  página do fornecedor sobre subagentes personalizados ainda descreve o agendamento automático, então
+  isso pode mudar.
+- Um arquivo de nível de projeto em `.kimi-code/agents/` tem prioridade sobre uma definição com o
+  mesmo nome nos níveis extra, de usuário e de plugin. Dê aos seus próprios auxiliares nomes que
+  difiram dos do Apothem. O código do Kimi Code também lê `.kimi-code/agents/` antes da
+  pasta compartilhada `.agents/agents/`, que o Apothem nunca grava, e mantém o primeiro
+  de dois arquivos com o mesmo nome; a documentação não diz isso.
+- Um arquivo seu com o nome de um auxiliar do Apothem é salvo em
+  `~/.apothem/backups/` e depois substituído. A desinstalação não o restaura.
+  Arquivos com outros nomes nunca são tocados.
+- Versões anteriores mantinham os arquivos de auxiliar na árvore de suporte, em
+  `.kimi-code/.apothem/support/agents/`, onde o Kimi Code não os carregava. Um
+  `apothem update` ou `apothem uninstall` remove essa cópia depois de salvá-la em
+  `~/.apothem/backups/`.
 
 ## Mapeamento do perfil para a configuração nativa
 
 O adaptador lê o perfil compartilhado do Apothem e renderiza a superfície de
 instruções `AGENTS.md` da raiz do projeto a cada execução de `apothem install`
 ou `apothem update`. As regras comportamentais e o corpus de governança ficam no
-bloco gerenciado do `AGENTS.md`; os cohorts de comandos, skills, hooks, agentes,
-regras e templates são colocados sob `.kimi-code/.apothem/support/` e
-referenciados a partir da superfície de instruções. Esse é o layout escolhido
-pelo adaptador, não uma lacuna do Kimi Code: o Kimi Code carrega skills de
-`.kimi-code/skills/` e `.agents/skills/`, agentes personalizados de
-`.kimi-code/agents/` e `.agents/agents/`, e hooks do array `[[hooks]]` em
-`~/.kimi-code/config.toml`, mas não os carrega da árvore de suporte, então as
-cópias do Apothem ali são material de referência para o qual o bloco do
-`AGENTS.md` aponta. O bloco termina com uma seção de arquivos de suporte do
-Apothem que nomeia, em relação à raiz do projeto, o diretório sob
-`.kimi-code/.apothem/support/` em relação ao qual cada citação no estilo do
+bloco gerenciado do `AGENTS.md`. Cada skill, e cada comando encapsulado como skill,
+fica em `.kimi-code/skills/<name>/SKILL.md`, um diretório de skills de projeto que o
+Kimi Code carrega. O adaptador grava apenas essa pasta específica do Kimi e nunca
+`.agents/skills/`, que outras ferramentas também leem. As skills que você mesmo adiciona a
+`.kimi-code/skills/` com outros nomes são mantidas na instalação, na atualização e na
+desinstalação. Uma skill ali com o mesmo nome de uma skill do Apothem é substituída:
+a instalação e a atualização a sobrescrevem, e a desinstalação a remove, cada uma depois de uma
+cópia com carimbo de data e hora em `~/.apothem/backups/`, e a instalação não exibe nenhum aviso
+sobre a colisão. Dê às suas próprias skills nomes que difiram dos do Apothem.
+
+Os cohorts de hooks, regras e templates são colocados sob
+`.kimi-code/.apothem/support/` e referenciados a partir da superfície de instruções.
+O Kimi Code não os carrega da árvore de suporte, então as cópias do Apothem ali
+são material de referência para o qual o bloco do `AGENTS.md` aponta. O bloco termina com uma
+seção de arquivos de suporte do Apothem que nomeia, em relação à raiz do projeto, o
+diretório sob `.kimi-code/.apothem/support/` em relação ao qual cada citação no estilo do
 repositório (`rules/<name>.md`, `templates/...`, `hooks/...`) é resolvida, de
 modo que um `AGENTS.md` incluído em um commit não carrega nenhum caminho
 específico de máquina. (Comportamento do Kimi Code conforme suas páginas de
 personalização de
-[skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
-[subagentes](https://moonshotai.github.io/kimi-code/en/customization/agents) e
-[hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), lidas em
-2026-10-02.)
+[skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html),
+[definições de auxiliares](https://moonshotai.github.io/kimi-code/en/customization/agents.md) e
+[hooks](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html), lidas em
+2026-10-24 para skills e hooks, e em 2026-10-27 para definições de auxiliares.)
+
+## Não instalado nativamente
+
+O Kimi Code documenta um local nativo para hooks. O adaptador ainda não grava nele,
+pelos motivos a seguir.
+
+- **Hooks.** O Kimi Code lê hooks do array `[[hooks]]` em
+  `~/.kimi-code/config.toml` (`$KIMI_CODE_HOME/config.toml` quando essa variável
+  está definida). O Apothem não grava nenhum. Esse arquivo tem escopo de usuário, enquanto este adaptador
+  grava sob a raiz do projeto; uma entrada permite apenas quatro campos (`event` e
+  `command` obrigatórios, `matcher` e `timeout` opcionais) e um campo extra
+  impede que a configuração seja carregada; e o Apothem não tem nenhuma mesclagem de TOML que possa depois remover apenas as suas próprias
+  entradas. Os scripts auxiliares de hook permanecem na árvore de suporte.
+- **Frontmatter de skill.** A página do fornecedor documenta as chaves de `SKILL.md` `name`
+  e `description` (ambas obrigatórias), `type`, `whenToUse`,
+  `disableModelInvocation` (também aceita como `disable-model-invocation`) e
+  `arguments`. Ela não define nenhuma regra para outras chaves. As skills são instaladas com o
+  frontmatter que têm na fonte do Apothem, então chaves como `version`,
+  `updated`, `archetype`, `userInvocable`, `argument-hint`, `portability` e
+  `allowed-tools` chegam ao Kimi Code, que pode ignorá-las ou rejeitá-las.
+- **Skills com o mesmo nome.** O Kimi Code dá prioridade ao nível de projeto sobre o nível
+  de usuário, então uma skill em `<project>/.kimi-code/skills/` tem precedência sobre uma
+  skill de mesmo nome em `~/.agents/skills/`, que um adaptador diferente do Apothem
+  grava. A página do fornecedor não diz como `.kimi-code/skills/` e
+  `.agents/skills/` se classificam entre si dentro do nível de projeto.
+
+{/* TODO(clarify): the hook install decision (user-scope TOML merge with
+surgical uninstall), whether the main session delegates to the helpers on its own
+(the vendor's page on custom subagents and its changelog of 2026-10-25 disagree), how Kimi Code treats a SKILL.md
+key outside the documented list, and how .kimi-code/skills/ ranks against
+.agents/skills/ inside the project level are open; see Open Questions in
+src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md. */}
 
 ## Notas de compatibilidade
 
@@ -72,7 +169,7 @@ ambos existem. O Kimi Code não expõe nenhuma superfície de arquivos de
 statusline ou de output-style, então esses cohorts não são materializados.
 
 O Kimi Code roda sobre a família de modelos Kimi da Moonshot; consulte a
-[referência de configuração do fornecedor](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+[referência de configuração do fornecedor](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files)
 para o modelo e a superfície de configuração atuais.
 
 ## Verificação
@@ -84,9 +181,13 @@ apothem verify --harness kimi-code --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
-   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
-   para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe, incluindo os diretórios de skills e de subagentes; os arquivos
+   gerenciados não estão vazios, e as configurações JSON ou YAML podem ser analisadas. Adicione
+   `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil. Para
+   `.kimi-code/agents/` a verificação é que a pasta existe, não que cada
+   arquivo de auxiliar esteja nela; o comando
+   `apothem diff --harness kimi-code --project /path/to/project` lista os
+   arquivos de auxiliar que estão ausentes ou desatualizados.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -95,8 +196,15 @@ O comando verify confirma que:
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Deriva novamente o bloco gerenciado do `AGENTS.md` da raiz do projeto e os
-cohorts de suporte a partir do estado atual do perfil compartilhado.
+Deriva novamente o bloco gerenciado do `AGENTS.md` da raiz do projeto, as skills, os
+arquivos de subagente e os cohorts de suporte a partir do estado atual do perfil compartilhado.
+Uma atualização sobre uma instalação feita antes de as skills passarem para `.kimi-code/skills/`
+remove o antigo diretório `<project>/.kimi-code/.apothem/support/skills/`, de modo que
+cada skill esteja presente uma única vez. Uma atualização sobre uma instalação de antes de os auxiliares
+passarem para `.kimi-code/agents/` remove o antigo diretório
+`<project>/.kimi-code/.apothem/support/agents/` da mesma forma. Uma
+cópia com carimbo de data e hora de cada diretório removido é salva em `~/.apothem/backups/`
+antes.
 
 ## Desinstalação
 
@@ -106,11 +214,15 @@ apothem uninstall --harness kimi-code --project /path/to/project
 
 Remove o bloco do Apothem do `AGENTS.md` da raiz do projeto e mantém qualquer
 texto fora das sentinelas. O arquivo só é excluído quando nada mais resta nele.
-Também remove os arquivos de suporte que o Apothem colocou sob
-`<project>/.kimi-code/.apothem/support/`. Antes da alteração, uma cópia com
-carimbo de data e hora de cada arquivo é salva sob `~/.apothem/backups/`;
-nenhum arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e
-o motor do Apothem não são afetados.
+Também remove as skills que o Apothem colocou sob `<project>/.kimi-code/skills/`
+(as skills que você adicionou ali com outros nomes são mantidas), os arquivos de subagente sob
+`<project>/.kimi-code/agents/` (os arquivos que você adicionou ali com outros nomes são
+mantidos, e a pasta é removida quando fica vazia) e os arquivos de suporte
+sob `<project>/.kimi-code/.apothem/support/`, incluindo os antigos diretórios `skills/`
+e `agents/` da árvore de suporte de uma instalação que nunca foi atualizada. Antes da alteração, uma
+cópia com carimbo de data e hora de cada arquivo é salva sob `~/.apothem/backups/`; nenhum
+arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e o motor do Apothem não são
+afetados.
 
 ## Conformity gate
 
@@ -124,6 +236,8 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness kimi-code --project /path/to/project` |
 | Falha na verificação | Execute `apothem update --harness kimi-code --project /path/to/project` e depois verifique novamente |
+| Skills ou auxiliares ausentes no Kimi Code | Verifique se `--project` nomeia a raiz do repositório (o diretório que contém `.git`) e depois execute a instalação novamente |
+| O Kimi Code nunca usa um auxiliar | Peça-o pelo nome. O Kimi Code trata as tarefas por conta própria, a menos que a delegação seja solicitada |
 | Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness kimi-code --project /path/to/project` |
 
 ## Ajustes de configuração

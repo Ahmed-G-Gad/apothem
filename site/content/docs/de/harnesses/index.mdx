@@ -2,7 +2,7 @@
 title: "Harness-Adapter"
 description: "Apothem-Harness-Adapter — ein gemeinsames Profil, siebzehn unterstützte Ziele."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,11 +80,43 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Skills in Ihrem Home-Verzeichnis
+
+Sieben Adapter mit Projektgeltungsbereich schreiben eine Regeldatei in Ihr
+Projekt (sechs von ihnen schreiben dort außerdem die Helfer von Apothem als
+Subagenten-Dateien; jede Harness-Seite nennt den Ordner), und sie schreiben
+außerdem die Skills von Apothem sowie die Regeln und Templates, auf die die
+Skills verweisen, in Ordner in Ihrem Home-Verzeichnis:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Jede Installation, die einen Ordner nennt, schreibt dieselben Dateien, daher
+  spielt die Reihenfolge Ihrer Installationen keine Rolle, und eine einzige Kopie dient
+  allen Projekten.
+- Eine Installation schreibt die Home-Ordner zuerst. Schlägt das fehl, bricht sie
+  ab, bevor sie das Projekt ändert, und sie fügt Ihrem Repository keine Skill-
+  oder Regeldatei hinzu.
+- Eine Deinstallation entfernt einen gemeinsam genutzten Ordner nur, wenn keine
+  andere Apothem-Installation ihn noch nutzt, und sagt, welche Installation ihn
+  behält.
+- Ein Skill-Ordner mit dem Namen eines Apothem-Skills, den Apothem nicht
+  geschrieben hat, bleibt unangetastet, mit einer Warnung.
+
+Jede Harness-Seite listet ihre Ordner auf. Die
+[Harness-Registry](/docs/reference/harness-registry#gemeinsame-wurzelverzeichnisse)
+zeigt, welche Werkzeuge welchen Ordner teilen.
 
 Die Protokollspezifikation finden Sie unter [Harness-Adapter-Abstraktion](/docs/architecture/harness-adapter-abstraction).

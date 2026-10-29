@@ -2,7 +2,7 @@
 title: "Menambah perkakas"
 description: "Aktifkan adapter perkakas agar konfigurasi native-nya diwujudkan dari profil bersama."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,7 @@ perkakas itu dari profil bersama Anda.
 3. Pratinjau pemasangan tanpa menulis berkas:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Pasang perkakas. Untuk perkakas bercakupan-pengguna:
@@ -66,7 +66,7 @@ perkakas itu dari profil bersama Anda.
 ## Verifikasi
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Baris `✓ <harness-id> is verified` memastikan target terkelola ada dan terurai.

@@ -2,7 +2,7 @@
 title: "Liste de contrôle de déploiement"
 description: "Liste de contrôle de vérification préalable pour déployer ou partager l'écosystème Apothem"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ Les règles ne comportent aucune clé `version`, `updated`, `scope` ni `portabil
 
 - [ ] `name` — nom de commande en kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` présents
-- [ ] `disable-model-invocation` présent et intentionnel (`true` pour les commandes purement indicatives)
+- [ ] `disable-model-invocation` présent et intentionnel (`false` pour les commandes en lecture seule ou consultatives ; `true` uniquement lorsque l'exécution de la commande modifie l'état en dehors de l'arbre de travail ou dépend du moment choisi par l'opérateur)
 - [ ] Aucune clé `effort` : `command.schema.json` fixe `additionalProperties: false` et ne l'admet pas
 
 ### Travailleurs délégués

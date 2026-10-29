@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "محوّل إطار عمل Apothem لـ Antigravity (معاينة)."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,9 +42,13 @@ apothem install --harness antigravity
 دائمًا على <bdi>`trigger: always_on`</bdi>؛ وتحصل القاعدة المقصورة على مسارات على
 <bdi>`trigger: glob`</bdi> مع الأنماط نفسها في <bdi>`globs`</bdi>؛ وتحصل أي قاعدة
 أخرى على <bdi>`trigger: model_decision`</bdi>. وتحتفظ كل قاعدة بحقل
-<bdi>`description`</bdi> الخاص بها. يتقاسم <bdi>Antigravity</bdi> ميزانية قدرها
+<bdi>`description`</bdi> الخاص بها. وخمس قواعد تنطبق دائمًا: <bdi>`agnostic-posture`</bdi>،
+و<bdi>`authority-inquiry`</bdi>، و<bdi>`session-closure`</bdi>، و<bdi>`context-management`</bdi>، وفهرس
+القواعد <bdi>`apothem-rule-index`</bdi>، الذي يُسمّي كل قاعدة أخرى ومتى تُقرَأ. وتحمل
+القواعد الأخرى <bdi>`trigger: glob`</bdi>. يتقاسم <bdi>Antigravity</bdi> ميزانية قدرها
 20,000 رمز مميّز بين القواعد الدائمة التفعيل، ويحوّل أكبرها إلى مؤشّرات عند الطلب
-بعد تجاوز تلك الميزانية.
+بعد تجاوز تلك الميزانية؛ ويبلغ مجموع القواعد الخمس نحو 11,000 رمز مميّز، لذا لا
+تتحوّل أيٌّ منها إلى مؤشّر.
 
 **بيان الإضافة.** لا يحمل <bdi>`plugin.json`</bdi> إلا <bdi>`name`</bdi>
 و<bdi>`description`</bdi>، وهما المفتاحان اللذان يقبلهما مخطط الإضافات في

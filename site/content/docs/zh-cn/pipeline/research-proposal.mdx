@@ -1,8 +1,8 @@
 ---
 title: "/research-proposal"
-description: "/research-proposal——将综合得出的研究缺口和理论框架转化为可资助、可评审的工作蓝本：SMART 目标、可行性与风险登记册、影响路径、预注册计划，以及 EQUATOR 报告指南选择——这是 /research 流水线中的提案阶段，位于 /research-synthesis 与 /research-design 之间。"
+description: "/research-proposal——将综合得出的研究缺口和理论框架转化为可资助、可评审的工作蓝本：SMART 目标、附带应急预案的可行性与风险登记册、影响路径、预注册计划、数据管理与共享计划，以及 EQUATOR 报告指南选择，外加针对所提供资助方征集公告的要求矩阵和一份独立的再次申请回应——这是 /research 流水线中的提案阶段，位于 /research-synthesis 与 /research-design 之间。"
 machineTranslated: true
-sourceHash: "0addcba24af3c7ac"
+sourceHash: "040241295ba96783"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,20 @@ sourceHash: "0addcba24af3c7ac"
 带参数：
 
 ```bash
-/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]
 ```
 
 ## 输入
 
 套件的 `_inputs/synthesis.md`（SOTA 图谱 ＋ 缺口分析）和 `_inputs/theory.md`（概念框架）。
 
+使用 `--call` 时，输入资助方征集公告文本，形式为文件路径，或用 `-` 表示粘贴的文本；所提供的文本是资助方要求的唯一来源。使用 `--resubmission` 时，输入资助方对先前申请的评审意见，且无需综合或理论输入（见下文）。
+
 ## 输出
 
-`_inputs/proposal.md`（SMART 目标层级、可行性评估、资源／时间线／风险登记册、影响路径、预注册计划，以及 EQUATOR 报告指南的预选）。
+`_inputs/proposal.md`（SMART 目标层级、可行性评估、附带应急预案的资源／时间线／风险登记册、影响路径、预注册计划、数据管理与共享计划，以及 EQUATOR 报告指南的预选）。
+
+使用 `--call` 时，还会产出 `_inputs/call-requirements.md`（征集要求矩阵）。使用 `--resubmission` 时，产出 `_outputs/resubmission-response.md` 以取代提案。
 
 ## 下游
 
@@ -41,14 +45,34 @@ sourceHash: "0addcba24af3c7ac"
 
 1. **加载上下文**——读取 `_inputs/synthesis.md` 和 `_inputs/theory.md`、规则，以及任何已有的套件状态。
 2. **构建 SMART 目标层级**——将缺口转化为具体、可测量、可达成、相关且有时限的目标。
-3. **评估可行性与风险**——构建资源／时间线／风险登记册；提前提出伦理可行性。
-4. **规划预注册与报告**——选择登记处，起草预注册计划，并预选 EQUATOR 报告指南。
+3. **评估可行性与风险**——构建资源／时间线／风险登记册；为每项触及某一目标可达成性的风险提供一条应急预案记录，并对其背后的决策进行压力测试；核对任何所提供的成本条目；提前提出伦理可行性。
+4. **规划预注册、数据与报告**——选择登记处，起草预注册计划，确定数据管理与共享计划，并预选 EQUATOR 报告指南。
 5. **绘制影响路径**——追溯目标一旦达成将如何产生下游影响。
 6. **验证并发出**——确认目标可检验且计划可复现；发出 `_inputs/proposal.md` 以及交接清单。
+
+## 所提供的资助方征集公告
+
+使用 `--call` 时，征集公告文本决定提案的形态。该阶段会将一份要求矩阵写入 `_inputs/call-requirements.md`，每项要求（章节、限制、资格、附件、评审标准或政策）占一行，并列出回应该要求的提案章节、其在操作者草稿中的位置，以及 `met`、`partly-met`、`gap` 或 `operator-owned` 之一的状态。每条评审标准都是一行，因此每个目标都可追溯到它所回应的标准；不对任何标准加权，也不对获得资助的几率作任何断言。
+
+- **工具使用政策优先。** 征集公告关于自动化工具的政策要在撰写任何文本之前确定：允许、允许但须披露（此时会起草工具使用声明），或受限。在受限政策下，该阶段在矩阵之后停止，并将决定交还给操作者。对该政策未作说明的征集公告会被询问，绝不假定。
+- **不凭记忆，不编预算。** 资助方的要求、限制、日期、费率或上限均来自所提供的文本或操作者，绝不来自记忆。该阶段不编制预算：它检查操作者的成本条目，无法追溯到任何目标的条目为 `orphan`，没有资源配置的目标为 `unresourced`，合计不相符的总额为 `unreconciled`。
+- **不撰写面向资助方的叙述。** 该阶段发出的是工作蓝本，而非意义或方法部分的叙述文字。团队、个人简介、设施、支持信以及现有与待批资助均为 `operator-owned` 行，绝不代为起草。
+
+## 再次申请模式
+
+`--resubmission PATH` 用于回应资助方对先前申请的评审意见，位于十三阶段链路之外。序列闸门不适用，交接清单保持不变。操作者提供评审意见、征集公告文本（`--call`）、所提交的申请以及修订后的草稿，该阶段由三部分写出 `_outputs/resubmission-response.md`：
+
+- **资格与限制**——从征集公告文本中读取是否允许再次申请、征集公告允许几次、截止日期，以及对回应和修订后申请的限制。文本未说明的规则会询问操作者；没有征集公告文本时，回应无法达到 `ready`。
+- **修订矩阵**——每条评审意见占一行，按资助方的编号编排：引用的意见、所采取的行动（`changed`、`clarified` 或 `declined`）、修订位置、科学后果、任何未解决的问题，以及由修订文本支撑的 `answered`、`partly-answered` 或 `not-answered` 之一的状态。被拒绝的意见须附上其理由和证据。
+- **传播检查**——将每个 `changed` 行追溯到它所触及的每个计划要素：目标、方法、时间线、预算条目、数据计划和风险登记册。被该变更触及、但修订后的草稿未作修改的要素为 `unpropagated`。
+
+当每一行都为 `answered` 或带有操作者接受的残余风险、没有要素为 `unpropagated`，且满足每项征集公告限制时，回应即为 `ready`。需要新证据的回应会返回给操作者，由其转交 `/research-design` 或 `/research-experiment`。由操作者提交。
 
 ## 严谨性强制底线
 
 目标发表场所的抱负不仅决定报告指南的选择，还决定下游设计与实验阶段必须清越的严谨性强制底线深度——复现底线、预算对等、在互不相交的划分上调参、以及带效应量的显著性——外加交付物将携带的可复现性证据包。
+
+每项风险都是对计划如何失败的一个可反驳的预测。触及某一目标可达成性的风险不止于其缓解措施：它带有一条在数据收集之前确定的应急预案记录（触发条件、负责角色、复核日期、提前期、备用方案成本、残余风险），而写入计划的应对措施属于计划内的调整，而非偏离。数据管理与共享计划在设计确定数据之前，先确定存储库类别、访问条款（及每项限制的依据）以及保留期限，且知情同意范围必须允许其所承诺的共享。
 
 ## 失败模式
 
@@ -57,6 +81,8 @@ sourceHash: "0addcba24af3c7ac"
 | 目标不可测量 | 目标被表述为活动而非结果 | 重新表述为带有明确成功指标的 SMART 目标 |
 | 没有预注册计划 | 预注册步骤被跳过 | 在继续进行 `/research-design` 之前先选择登记处并起草计划 |
 | 缺少综合输入 | `/research-synthesis` 尚未运行 | 先运行 `/research-synthesis` 以产出缺口分析 |
+| 指明了资助方征集公告却未提供其文本 | 省略了 `--call`，或文本无法读取 | 提供征集公告文本；该阶段绝不凭记忆填写资助方规则 |
+| 再次申请回应未达到 `ready` | 某条意见未获回应、某项变更为 `unpropagated`，或超出某项征集公告限制 | 将变更传播到修订后的草稿、回应该意见，或使回应符合该限制 |
 
 ## 示例
 
@@ -66,6 +92,12 @@ sourceHash: "0addcba24af3c7ac"
 
 # 固定报告指南和预注册登记处
 /research-proposal --guideline PRISMA --prereg-registry OSF
+
+# 将资助方征集公告映射到工作蓝本上
+/research-proposal --suite-name retrieval-latency --call funder-call.md
+
+# 回应资助方对先前申请的评审意见
+/research-proposal --resubmission critique.md --call funder-call.md
 ```
 
 ## 交叉引用

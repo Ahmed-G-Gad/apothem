@@ -2,7 +2,7 @@
 title: "متغيّرات بيئة المُثبِّت"
 description: "تحكّم في مُثبِّت السكربت (الوجهة، والمصدر، وإطار العمل، والملف التعريفي، والتحقّق) بمتغيّرات البيئة."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ sourceHash: "64d4512dc0ce59b4"
 | <bdi>`APOTHEM_VERIFY`</bdi> | <bdi>`signature`</bdi> يتحقّق من توقيع <bdi>GPG</bdi> لوسم الإصدار؛ و<bdi>`checksum`</bdi> يُثبِّت أرشيف المنصّة الخاص بالإصدار بعد فحص بصمة <bdi>SHA-256</bdi> الخاصة به مقابل ملف <bdi>`SHA256SUMS`</bdi> الخاص بالإصدار (سلامة، لا إثبات لهوية من نشره) | <bdi>`signature`</bdi> |
 | <bdi>`APOTHEM_RELEASE_BASE`</bdi> | قاعدة التنزيل لوضع التحقّق بالمجموع الاختباري | <bdi>`<APOTHEM_REPO>/releases/download`</bdi> |
 | <bdi>`APOTHEM_SOURCE`</bdi> | شجرة مصدر محلية صريحة تُستخدَم بدلًا من الاستنساخ | غير مضبوط (استنساخ) |
-| <bdi>`APOTHEM_HARNESS`</bdi> | إطار العمل المراد تثبيته | <bdi>`claude-code`</bdi> |
+| <bdi>`APOTHEM_HARNESS`</bdi> | إطار العمل ذو نطاق المستخدم المراد تثبيته (<bdi>`antigravity`</bdi>، <bdi>`claude-code`</bdi>، <bdi>`codex`</bdi>، <bdi>`hermes`</bdi>، <bdi>`open-claw`</bdi>، <bdi>`opencode`</bdi>، <bdi>`qwen-code`</bdi>). لا يمرّر المُثبِّت <bdi>`--project`</bdi>، لذا يفشل إطار العمل ذو نطاق المشروع بالرمز <bdi>`project.required`</bdi>؛ ثبِّت تلك الأُطُر بعد ذلك بالأمر <bdi>`apothem install --harness NAME --project PATH`</bdi>. | <bdi>`claude-code`</bdi> |
 | <bdi>`APOTHEM_PROFILE`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك | <bdi>`$HOME/.config/apothem/profile.yaml`</bdi> |
 | <bdi>`APOTHEM_SKIP_VERIFY`</bdi> | يتخطّى خطوة التحقّق اللاحقة للتثبيت عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يعمل التحقّق) |
 | <bdi>`APOTHEM_AUTO_INSTALL_DEPS`</bdi> | يُثبِّت المتطلّبات المسبقة المفقودة <bdi>`click`</bdi> / <bdi>`rich`</bdi> تلقائيًا، دون مطالبة، عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يطالب، أو يرفض في أنبوب غير تفاعلي) |
@@ -78,10 +78,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## الخطوات (<bdi>POSIX bash</bdi>)
 
-1. ثبِّت إطار عمل غير افتراضي:
+1. ثبِّت إطار عمل غير افتراضي ذا نطاق المستخدم:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. قيِّد وجهة التثبيت، واختر الفرع المتحرّك <bdi>`main`</bdi>. فالفرع ليس وسمًا
@@ -105,7 +105,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 اضبط كل متغيّر على <bdi>`$env:`</bdi> قبل تشغيل المُثبِّت:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -130,7 +130,15 @@ pwsh -NoProfile -File install.ps1
 مستقل:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+لإطار عمل ذي نطاق المشروع مثل <bdi>Cursor</bdi>، شغِّل التثبيت والتحقّق بنفسك بعد
+المُثبِّت، مع <bdi>`--project`</bdi>:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 عندما لا يكون الملف التعريفي موجودًا بعد، يُنشئ المُثبِّت ملفًا من المثال ويتابع

@@ -2,7 +2,7 @@
 title: "اتفاقيات الالتزام (Commit)"
 description: "تُرسي تنسيق رسائل الالتزام، ووسم الإصدارات، وانضباط التأليف البشري حصرًا، والإيقاع لكل مهمة لمصنوعات git والتحكم في الإصدارات."
 machineTranslated: true
-sourceHash: "b14f720edd93a318"
+sourceHash: "b4f17475336ad671"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,15 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. انضباط التأليف (البشري حصرًا)
 
-كل سطح تأليف في كل مصنوعة <bdi>git</bdi> (موضوع الالتزام، ومتن الالتزام، وحقل <bdi>`Author:`</bdi>، وذيل <bdi>`Co-Authored-By:`</bdi>، وذيل <bdi>`Signed-off-by:`</bdi>، واسم الفرع، واسم الوسم، وتعليق الوسم، واسم الـ<bdi>stash</bdi>، ومتن <bdi>git-notes</bdi>، وعنوان طلب السحب، ووصف طلب السحب) يذكر **المساهمين البشريين فقط**. لا يَنسب وقتُ تشغيل إطار العمل نفسَه قط، ولا نموذجَ اللغة الأساسي، ولا وقتَ التشغيل / إطار العمل / بيئة التطوير المتكاملة / الإضافة / المورّد، ولا أي أداة آلية أخرى، إلى أيٍّ من تلك الأسطح. تشمل الأنماط المحظورة <bdi>`Co-Authored-By: <model-name>`</bdi>، و<bdi>`Co-Authored-By: <noreply@*-vendor.com>`</bdi>، وسردًا في المتن مثل <bdi>`generated with X`</bdi> أو <bdi>`co-authored by an automated helper`</bdi>، وأي علامة في سطر الموضوع تشير إلى تأليف غير بشري. تقيم المواصفة الكاملة في <bdi>[`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md)</bdi> §6؛ ويقيم التنفيذ الآلي في <bdi>[`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md)</bdi> <bdi>Scan 3</bdi>.
+كل سطح تأليف في كل مصنوعة <bdi>git</bdi> (موضوع الالتزام، ومتن الالتزام، وحقل <bdi>`Author:`</bdi>، وذيل <bdi>`Co-Authored-By:`</bdi>، وذيل <bdi>`Signed-off-by:`</bdi>، واسم الفرع، واسم الوسم، وتعليق الوسم، واسم الـ<bdi>stash</bdi>، ومتن <bdi>git-notes</bdi>، وعنوان طلب السحب، ووصف طلب السحب) يذكر **المساهمين البشريين فقط**. لا يَنسب وقتُ تشغيل إطار العمل نفسَه قط، ولا نموذجَ اللغة الأساسي، ولا وقتَ التشغيل / إطار العمل / بيئة التطوير المتكاملة / الإضافة / المورّد، ولا أي أداة آلية أخرى، إلى أيٍّ من تلك الأسطح. تشمل الأنماط المحظورة <bdi>`Co-Authored-By: <model-name>`</bdi>، و<bdi>`Co-Authored-By: <noreply@*-vendor.com>`</bdi>، وسردًا في المتن مثل <bdi>`generated with X`</bdi> أو <bdi>`co-authored by an automated helper`</bdi>، وأي علامة في سطر الموضوع تشير إلى تأليف غير بشري. تقيم المواصفة الكاملة في <bdi>[`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/production-ready-prs.md)</bdi> §6؛ ويقيم التنفيذ الآلي في <bdi>[`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md)</bdi> <bdi>Scan 3</bdi>.
 
 ## 3. وسوم الإصدار (الإصدار الدلالي)
 
-تتبع وسوم الإصدار **الإصدار الدلالي** (<bdi>`vMAJOR.MINOR.PATCH`</bdi>). الإصدار قبل 1.0 هو <bdi>`0.MINOR.PATCH`</bdi> وفقًا لاتفاقية ما قبل الاستقرار في المواصفة؛ فالتغييرات الكاسرة تزيد <bdi>MINOR</bdi>، وإصلاحات العلل تزيد <bdi>PATCH</bdi>. الوسم مُعلَّق (<bdi>`git tag -a`</bdi>) ومُوقَّع على مستوى النشر وفقًا لـ<bdi>[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)</bdi>. تقيم نسخة الحزمة في بيان المصدر (<bdi>`pyproject.toml`</bdi> الحقل <bdi>`version`</bdi>)، وتُشتقّ الأسطح الحاملة لزمن التشغيل / النسخة من بيانات الحزمة الوصفية تلك.
+تتبع وسوم الإصدار **الإصدار الدلالي** (<bdi>`vMAJOR.MINOR.PATCH`</bdi>). فالتغييرات الكاسرة تزيد <bdi>MAJOR</bdi>، والإضافات المتوافقة مع الإصدارات السابقة تزيد <bdi>MINOR</bdi>، وإصلاحات العلل تزيد <bdi>PATCH</bdi>. الوسم مُعلَّق (<bdi>`git tag -a`</bdi>) ومُوقَّع على مستوى النشر وفقًا لـ<bdi>[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)</bdi>. تقيم نسخة الحزمة في بيان المصدر (<bdi>`pyproject.toml`</bdi> الحقل <bdi>`version`</bdi>)، وتُشتقّ الأسطح الحاملة لزمن التشغيل / النسخة من بيانات الحزمة الوصفية تلك.
 
 ## 4. الإيقاع لكل مهمة
 
-تُسجَّل الالتزامات لكل مهمة عند جدّية <bdi>SHARED+</bdi>، ولكل مرحلة عند <bdi>PERSONAL_USE</bdi>، واختياريًّا عند <bdi>EXPLORING</bdi>. يُسجَّل التزام المهمة فور اجتياز بوّابات التحقّق الخاصة بها؛ فالالتزامات المؤجَّلة تُراكِم السياق وتُخاطِر بفقدان النطاق. يقيم الانضباط الكامل في <bdi>[`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md)</bdi> §CM-13.
+تُسجَّل الالتزامات لكل مهمة عند جدّية <bdi>SHARED+</bdi>، ولكل مرحلة عند <bdi>PERSONAL_USE</bdi>، واختياريًّا عند <bdi>EXPLORING</bdi>. يُسجَّل التزام المهمة فور اجتياز بوّابات التحقّق الخاصة بها؛ فالالتزامات المؤجَّلة تُراكِم السياق وتُخاطِر بفقدان النطاق. يقيم الانضباط الكامل في <bdi>[`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/operational-mandates.md)</bdi> §CM-13.
 
 ## 5. المُتحقِّقات
 

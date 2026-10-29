@@ -2,7 +2,7 @@
 title: "Ajouter un environnement"
 description: "Activer un adaptateur d'environnement pour que sa configuration native soit matérialisée depuis le profil partagé."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,7 +47,7 @@ la configuration native de cet environnement depuis votre profil partagé.
 3. Prévisualisez l'installation sans écrire de fichiers :
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Installez l'environnement. Pour un environnement au niveau utilisateur :
@@ -70,7 +70,7 @@ la configuration native de cet environnement depuis votre profil partagé.
 ## Vérifier
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Une ligne `✓ <harness-id> is verified` confirme que les cibles gérées existent

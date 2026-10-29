@@ -2,7 +2,7 @@
 title: "Schema de frontmatter"
 description: "Guia de referência para a estrutura do bloco de frontmatter YAML, as chaves obrigatórias por classe e as regras de imposição dos validadores entre as classes de artefato."
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 Todo artefato carrega frontmatter YAML no início, delimitado por linhas `---`. Nos arquivos da família Markdown, o frontmatter é o primeiro conteúdo do arquivo, e a linha de cabeçalho SPDX canônica conforme [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) vem depois do `---` de fechamento.
 
-As chaves de comando usam `kebab-case`. As chaves de skill usam `kebab-case`, exceto `userInvocable`, a grafia em camelCase que o corpus de origem usa (a instalação do Claude Code a renomeia para `user-invocable`). As chaves de regra e de trabalhador delegado são em camelCase, como lista a tabela de chaves obrigatórias da seção 2. Os valores escalares ficam sem aspas ou entre aspas duplas; valores de string que contêm dois-pontos, cerquilhas ou outros caracteres significativos em YAML ficam entre aspas.
+As chaves de comando usam `kebab-case`. As chaves de skill usam `kebab-case`, exceto `userInvocable`, a grafia em camelCase que o corpus de origem usa (a instalação do Claude Code a renomeia para `user-invocable`). A instalação do Claude Code e o plugin também movem as chaves exclusivas do Apothem (`version`, `updated`, `archetype`, `portability`) de uma skill ou de um comando para um mapa `metadata:` final de strings entre aspas, nessa ordem fixa, porque o Claude Code ignora chaves de nível superior desconhecidas e o padrão Agent Skills mantém os extras em `metadata`; os arquivos de origem e todos os outros harnesses as mantêm no nível superior, exceto as pastas de skills compartilhadas no nível do usuário (`~/.agents/skills/` e as pastas `~/.codebuddy/skills/`, `~/.kiro/skills/` e `~/.trae/skills/`), que as agrupam da mesma forma. As chaves de regra e de trabalhador delegado são em camelCase, como lista a tabela de chaves obrigatórias da seção 2. Os valores escalares ficam sem aspas ou entre aspas duplas; valores de string que contêm dois-pontos, cerquilhas ou outros caracteres significativos em YAML ficam entre aspas.
 
 ## 2. Campos obrigatórios por classe
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (configuração raiz) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Regras (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Comandos (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Auxiliares, também chamados de trabalhadores delegados (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; a instalação do Claude Code e o plugin renomeiam `userInvocable` para `user-invocable`, e o schema exige que cada skill carregue exatamente uma das duas grafias, nunca as duas |
+| Auxiliares, também chamados de trabalhadores delegados (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (opcional: um auxiliar que a omite herda todas as ferramentas; para dar um servidor MCP a um auxiliar que lista `tools`, nomeie o servidor na chave `agent_mcp_servers` do perfil), `disallowedTools`, `maxTurns`, `effort` |
+| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; a instalação do Claude Code e o plugin, e as pastas de skills compartilhadas no nível do usuário, renomeiam `userInvocable` para `user-invocable`, e o schema exige que cada skill carregue exatamente uma das duas grafias, nunca as duas; a instalação do `Qwen Code` grava `allowed-tools` como uma lista `allowedTools`, a chave e o formato que o `Qwen Code` lê |
 | Output-styles (`src/apothem/output-styles/*.md`) | `name`, `description`; todo estilo distribuído também define `keep-coding-instructions: true` para que o Claude Code mantenha as suas instruções de engenharia de software |
 
 Os schemas por classe em [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) carregam o conjunto completo de restrições, incluindo restrições de tipo, formato, enum e padrão, além de limites de tamanho: a `description` de uma skill ou de um comando tem no máximo 1.024 caracteres, o limite do [Agent Skills](https://agentskills.io/specification).

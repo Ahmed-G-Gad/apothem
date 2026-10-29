@@ -2,22 +2,27 @@
 title: "훅"
 description: "SessionStart, PreToolUse, PostToolUse, Stop에서 발화하는 도구 이벤트 핸들러로, git 격리와 플랜 규율을 강제하는 메시지 컨텍스트를 로드하며 테스트된 런타임 계약과 사용자별 상태를 갖춥니다."
 machineTranslated: true
-sourceHash: "3a6c32f33850537e"
+sourceHash: "2fe3999ec76b34d3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 훅은 도구 이벤트에서 발화하며, 어시스턴트가 추가 시스템 프롬프트로 취급하는
 메시지 컨텍스트를 로드합니다. 배선은 Claude Code `settings.json` 훅
 블록(엔진 설치) 또는 플러그인의 `hooks.json`(플러그인 설치), Codex
-`hooks.json` 훅 파일, Qwen Code `settings.json` 훅 맵에 있습니다.
+`hooks.json` 훅 파일, Qwen Code `settings.json` 훅 맵, CodeBuddy
+`.codebuddy/settings.local.json` 훅 키(SessionStart와 PostToolUse만), Kiro 훅
+파일 `.kiro/hooks/apothem.json`(SessionStart만), GitHub Copilot 훅 파일
+`.github/hooks/apothem.json`(sessionStart와 postToolUse만), Windsurf(Devin
+Local) `.devin/config.local.json` 훅 키(SessionStart와 PostToolUse만), Cursor
+프로젝트 훅 파일 `.cursor/hooks.json`(sessionStart만)에 있습니다.
 
 | 이벤트 | 타임아웃 | 목적 |
 |-------|--------:|---------|
-| SessionStart | 30초 | 메모리 읽기, 플랜 상태 확인, 준비 상태 보고. 압축 후에는 복구 컨텍스트 전달 |
+| SessionStart | 30초 | 메모리 읽기, 플랜 상태 확인, 준비 상태 보고. 압축 후에는 복구 컨텍스트 전달. 기준선 이후 변경된 지식 베이스 표시 |
 | PreCompact | 30초 | 압축 전에 상태가 외부화되었는지 검증(Codex, Qwen Code. Claude Code에는 등록되지 않음) |
 | PostCompact | 30초 | 압축 후 작업 상태 복원(Codex, Qwen Code. Claude Code에는 등록되지 않음) |
 | Stop | 60초 | 세션 종료 프로토콜, 옵트인 |
-| PostToolUse | 10초 | 선제적 압축 권고, 세션당 최대 두 번 |
+| PostToolUse | 10초 | 컨텍스트 크기 권고: 첫 번째 지점에서 상태를 저장하고, 두 번째 지점에서 운영자에게 세션이 길다고 알림. 압축 주기당 최대 두 번. Claude Code에서는 백그라운드로 실행 |
 | PreToolUse (셸: Bash, PowerShell, `run_shell_command`) | 10초 | git 아티팩트 격리, 플랜 로컬리티, 동적 평가 가드 |
 | PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10초 | 플랜 참조 격리, 작성자 헤더, 플랜 로컬리티, 종속성 및 동적 평가 가드 |
 | PreToolUse (AskUserQuestion) | 10초 | `(Recommended)` 마커의 형식 정합성 |
@@ -32,9 +37,20 @@ sourceHash: "3a6c32f33850537e"
 아래에 머티리얼라이즈합니다. Claude Code 항목은 exec 형식(`command`와 `args`)을
 사용하므로 셸이 필요하지 않습니다. Claude Code 플러그인은 각 훅을 Claude Code의
 기본 훅 셸(macOS와 Linux에서는 `sh`, Windows에서는 Git Bash)에서
-`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`로
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]`로
 실행합니다. 부트스트랩은 Python 3.10+ 인터프리터를 찾아 번들된 디스패처를
-실행합니다. Git for Windows가 없는 Windows에서는 엔진 설치
+실행합니다. 부트스트랩은 찾은 인터프리터를 훅 상태 디렉터리(아래 참조) 아래의
+`interpreter-path`(`bootstrap.ps1`의 경우 `interpreter-path-ps1`)에 캐시하고, 그
+인터프리터가 여전히 존재하는 동안 재사용하므로, PATH 탐색은 매 도구 호출 전이
+아니라 한 번만 실행됩니다. 새 탐색을 강제하려면 캐시 파일을 삭제하세요. 절대
+경로인 상태 디렉터리와 절대 경로인 캐시 경로만 인정됩니다.
+
+모든 표면은 이벤트와 매처마다 디스패처 항목 하나를 등록하며, 그 항목에 해당
+매처가 평가하는 모든 메시지를 나열합니다. 한 프로세스가 페이로드를 한 번 읽고,
+각 가드를 실행하고, 하나의 엔벨로프로 응답하므로, Write 한 번은 가드마다 하나씩이
+아니라 디스패처 하나만 시작합니다. Claude Code 엔진 설치는 또한 Write와 Edit에서
+적합성 게이트(`gate.py --hook`)를 별도 항목으로 실행합니다. Git for Windows가 없는
+Windows에서는 엔진 설치
 (`apothem install --harness claude-code`)를 사용하세요. 엔진 설치의 exec 형식
 훅에는 셸이 필요하지 않습니다. 디스패처는 독립형 표준 라이브러리 스크립트입니다.
 자체 `sys.path`를 부트스트랩하므로 호스트에 임포트 가능한 `apothem` 패키지가
@@ -44,12 +60,87 @@ sourceHash: "3a6c32f33850537e"
 `hooks/lib/resolve_root.py`를 로드하고, `hooks/emit_hook_context.py`와
 `hooks/session_start_bootstrap.py`에 위임합니다.
 
+## 벤더 계약
+
+Claude Code가 아닌 하니스는 스크립트 뒤에 `--contract <id>`를 붙여 같은
+디스패처를 실행합니다. 예:
+`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+계약(`hooks/lib/vendor_contract.py`)은 벤더의 이벤트 및 도구 이름 표기와 페이로드
+키를 핸들러가 읽는 Claude 형태로 변환하고, 엔벨로프를 벤더가 읽는 형태로 다시
+쓰며, 벤더가 모델에 넘기지 않는 이벤트는 버립니다. 플래그가 없으면 아무것도
+변환되지 않으며 출력은 바이트 단위까지 동일한 Claude 엔벨로프입니다. 이 플래그는
+디스패처의 문서화된 명령줄의 일부입니다: `dispatch.py [--contract <id>]
+<Event> [<message> ...]`.
+
+| 계약 | 읽는 형식 | 출력 | 전달되는 이벤트 |
+| --- | --- | --- | --- |
+| `codebuddy` | Claude의 stdin | Claude 엔벨로프 | SessionStart, UserPromptSubmit, PostToolUse |
+| `devin` | 소문자 도구 이름(`exec`, `write`, `edit`)을 쓰는 Claude의 stdin, `DEVIN_PROJECT_DIR`에서 얻는 프로젝트 루트 | Claude 엔벨로프 | SessionStart, UserPromptSubmit, PostToolUse |
+| `cursor` | camelCase 이벤트, `conversation_id`, `workspace_roots` | `{"additional_context": ...}` | SessionStart |
+| `copilot` | camelCase `sessionId`, `toolName`, `toolArgs`, 또는 PascalCase snake_case 형식 | `{"additionalContext": ...}` | SessionStart, PostToolUse, Notification |
+| `kiro` | Claude와 유사한 stdin, Kiro 도구 ID(`execute_bash`, `fs_write`, `str_replace`) | 순수 텍스트 | SessionStart, UserPromptSubmit |
+| `claude` | Claude의 stdin | Claude 엔벨로프 | 모든 이벤트 |
+
+`codebuddy`, `copilot`, `cursor`, `devin`, `kiro` 계약은 현재 Apothem 어댑터가
+설치합니다(`devin`은 Windsurf 어댑터가 설치). `claude` 계약은 기본 명령줄이
+변경되지 않았음을 증명합니다. 디스패처는 모든 계약에서 권고용으로 남습니다. 어떤
+형태도 권한, 결정, 차단, 다시 쓴 도구 입력을 담지 않습니다.
+
+Cursor와 Devin Local은 자체 훅뿐 아니라 Claude Code 설정 파일이 담은 훅도
+로드하므로, 같은 머신에 Apothem Claude Code 설치가 있으면 두 세트가 실행될 수
+있습니다. SessionStart 부트스트랩은 한 번만 전달됩니다. 벤더 자체 명령
+(`--contract cursor` 또는 `--contract devin`)과 기본 명령줄인 Claude Code 사본이
+훅 상태 디렉터리에서 세션과 소스마다 마커 하나를 공유하며, 두 번째로 실행되는
+쪽은 아무것도 출력하지 않습니다. 기본 명령줄은 프로세스 환경이 호스트를
+가리킬 때(`CURSOR_PROJECT_DIR`, `CURSOR_VERSION` 또는 `DEVIN_PROJECT_DIR`)만
+참여합니다. Claude Code, Codex, Qwen Code에서는 마커를 절대 읽지 않습니다. 마커는
+10초 동안 유효하므로, 같은 세션의 이후 시작(예: 두 번째 압축)은 여전히 복구
+컨텍스트를 전달합니다. PostToolUse 카운터는 중복 제거되지 않으므로, 컨텍스트 크기
+카운터는 두 곳에서 실행되어 임곗값에 일찍 도달합니다. 설치는 가져오기를 끄는
+벤더의 스위치를 명시하는 안내를 출력합니다(Cursor의 "Include
+Third-Party Plugins, Skills, and Other Configs", Devin의
+`read_config_from.claude`).
+
+명령은 벤더가 그 출력을 모델에 넘기는 곳에만 등록됩니다. Kiro는 `SessionStart`와
+`UserPromptSubmit`에 대해서만 훅의 stdout을 컨텍스트에 추가하므로, Kiro 파일은
+`SessionStart`만 등록합니다. Copilot은 `sessionStart`와 `postToolUse`에서
+`additionalContext`를 읽고 `preToolUse`에서는 권한 필드만 읽으므로, Copilot 파일은
+그 두 이벤트를 camelCase 이름으로 등록하고 가드는 등록하지 않습니다. 각 Copilot
+항목은 `bash` 명령과 `powershell` 명령을 담습니다. 두 파일 모두 Apothem 소유이며
+설치를 실행한 머신의 인터프리터와 프로젝트 경로를 명시합니다. 저장소가 커밋하는
+파일에 대해 이것이 무엇을 의미하는지는 하니스 페이지에서 설명합니다.
+
+Devin Local은 `SessionStart`, `UserPromptSubmit`, `PostToolUse`에서
+`additionalContext`를 읽고 `PreToolUse`에 대해서는 아무것도 문서화하지 않으므로,
+Windsurf 등록은 매처 없이 `SessionStart`와 `PostToolUse`를 담습니다(Devin의
+매처는 정규 표현식이며, 생략하면 모든 도구와 일치합니다). 이 등록은 로컬 재정의
+파일 `.devin/config.local.json`에 들어가며, Devin은 이 파일을 gitignore 대상으로
+문서화하고 `.git/info/exclude`를 통해 직접 git에서 제외합니다.
+Cursor의 `sessionStart` 훅은 대화의 초기 컨텍스트에 `additional_context`를
+추가합니다. 첫 버전은 그 이벤트만 등록합니다. Cursor의 `.cursor/hooks.json`은
+유일한 프로젝트 훅 파일이므로 운영자의 파일입니다. 설치는 그 파일에 항목 하나를
+병합하고, 운영자의 항목과 키를 유지하며, 손실 없이 다시 쓸 수 없는 파일은
+거부하고, 명령 안의 디스패처 경로로 자기 항목을 구별합니다. Cursor 데스크톱 앱은
+Windows에서 훅 명령을 PowerShell로 실행하므로, Windows 호스트에서는 명령이 `& `로
+시작합니다.
+
+다섯 파일 모두에서, 명령이 `--contract <id>`와 함께
+`.apothem/support/[<harness>/]hooks/dispatch.py`를 실행하는 항목은 어느 프로젝트
+경로 아래에서 작성되었든 Apothem의 항목입니다. 따라서 이름이 바뀌거나 이동되거나
+복제된 프로젝트도 항목 세트를 하나만 유지하며, 여러분의 훅(예: 여러분 트리의
+`hooks/dispatch.py`나 `python -m apothem.conformity.gate`)은 절대 대체되거나
+제거되지 않습니다. `apothem verify`는 파일에 Apothem 항목이 하나도 남지 않으면
+등록이 누락되었다고 보고하며, 파일을 읽을 수 없는 제거는 그것을 건너뛴 것으로
+보고합니다. `$`, 백틱, 큰따옴표 또는 백슬래시를 담은 프로젝트 경로나 인터프리터
+경로는 따옴표로 묶은 명령이 다른 파일을 실행하게 되므로, 설치 시 해당 경로를
+명시하며 거부됩니다.
+
 ## 메시지 컨텍스트
 
 이벤트별 Markdown 컨텍스트는 `src/apothem/hooks/messages/` 아래에 있습니다.
 
-- 세션 라이프사이클: `sessionstart.md`, `precompact.md`, `postcompact.md`,
-  `stop.md`, `posttooluse-proactive-compaction.md`
+- 세션 라이프사이클: `sessionstart.md`, `skill-index.md`, `precompact.md`,
+  `postcompact.md`, `stop.md`, `posttooluse-proactive-compaction.md`
 - 셸 호출: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
 - 파일 쓰기: `pretooluse-write.md`, `pretooluse-edit.md`,
   `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
@@ -63,25 +154,70 @@ Claude Code에서는 압축 후 세션이 재개될 때 SessionStart 훅이 `pos
 전달합니다. Claude Code가 PreCompact나 PostCompact 훅 출력을 어시스턴트에
 전달하지 않기 때문입니다.
 
+`skill-index.md`는 직접 작성하지 않고 생성됩니다. `scripts/dev/generate_skill_index.py`가
+스킬 및 명령 카탈로그로부터 작업 그룹당 한 줄씩 렌더링하며, 수동 스킬은
+`/apothem:<name>`으로 표시됩니다. Claude Code에서는 파일이 존재하면 SessionStart
+훅이 이를 세션 컨텍스트에 추가합니다. 이 파일이 존재하는 이유는 Claude Code가
+목록이 문자 예산을 넘으면 목록에서 스킬 설명을 빼 버리기 때문이며, 인덱스는 모든
+스킬을 작업별로 찾을 수 있게 유지합니다. 플러그인 설치는 수동 스킬을
+`/apothem:<name>`으로 표시하고, 엔진 설치는 접두사를 뺍니다. 텍스트는 1,600자 미만으로
+유지되며, `generate_skill_index.py
+--check`는 커밋된 파일이 카탈로그와 더 이상 일치하지 않으면 실패합니다.
+
+Apothem이 Claude Code 플러그인으로만 실행될 때는 시작 시 어떤 규칙 파일도 로드되지
+않습니다. 그러면 SessionStart 훅이 번들된 `rules/` 디렉터리를 가리키는 짧은 포인터를
+추가합니다. 그 디렉터리에 `apothem-rule-index.md`가 있으면, 포인터는 이 상태에서는
+아무것도 네 가지 핵심 규칙(`agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`)을 로드하지 않으므로 세션에 이를 먼저 읽으라고
+알리고, 어떤 작업에 어떤 규칙을 읽어야 하는지 알려 주는 인덱스를 명시합니다. 인덱스
+텍스트는 인라인되지 않습니다.
+
+프로젝트에 `knowledge-wiki` 스킬이 만든 지식 베이스가 있으면, SessionStart 훅은 그
+지문을 마지막 기준선에서 기록된 지문과 비교하고, 서로 다르면 스킬의 드리프트
+모드(`--mode drift --kb <path>`)를 제안하는 한 줄을 추가합니다. 지문은 페이지 수와
+가장 최근 로그 항목입니다. 기록된 사본은 베이스의 `log.md`에서 가장 최근의
+`baseline` 줄이며, 이 줄은 드리프트 모드만 작성합니다. 훅은 프로젝트 루트 아래의
+네 경로를 순서대로 살펴봅니다: `knowledge-base/`, `wiki/`, `docs/knowledge-base/`,
+`docs/wiki/`이며, `index.md`와 `log.md`를 모두 담은 디렉터리만 대상으로 합니다.
+지식 베이스가 없는 프로젝트는 1밀리초 미만의 비용만 듭니다. 지식 베이스가 있으면
+훅은 `log.md`의 마지막 256 KiB까지만 읽고 평면 디렉터리 세 개를 나열합니다. 트리를
+절대 순회하지 않으며 절대 쓰지 않습니다. 이 줄은 고정된 경로, 날짜, 페이지 수 두
+개를 담으며, 베이스의 텍스트는 절대 담지 않습니다. 베이스가 없거나, 기준선이
+없거나, 변경이 없거나, 읽을 수 없는 파일이 있으면 아무것도 출력하지 않으며,
+드리프트 모드가 새 기준선을 기록할 때까지 세션마다 반복됩니다. 다른 경로에 있는
+베이스는 모든 스킬 모드에서 작동하지만 세션 시작 줄은 받지 않습니다.
+
 각 컨텍스트 파일은 해당 이벤트가 발화하고 그 컨텍스트 인자가 설정 파일에
 등록되어 있을 때 디스패처가 로드합니다. 라이선스 주석 줄과 마지막
 `## Bindings` 섹션은 텍스트가 어시스턴트에 도달하기 전에 제거됩니다. 둘 다
 메인테이너와 적합성 게이트를 위해 존재합니다.
 
+아무것도 찾지 못한 가드는 아무것도 주입하지 않습니다. 발화한 가드는 메시지의
+`## Advisory` 섹션만, 찾은 내용(경로, 식별자, 프리미티브)을 채워 주입하고, 그 뒤에
+`Full procedure: <message-file>`을 붙입니다. 파일의 나머지 부분은 전체 절차이며,
+어시스턴트는 세부 사항이 필요할 때만 이를 읽습니다. 가드는 "프로젝트 내부"를 훅이
+설치된 트리가 아니라 항상 도구 호출의 작업 디렉터리 위에 있는 git 루트를 기준으로
+판단합니다.
+
 ## 런타임 계약
 
 등록된 모든 훅 명령은 같은 계약을 충족하며,
 `tests/hooks/test_hook_contract.py`가 플러그인, Claude Code 엔진 설치, Codex,
-Qwen Code에서 이를 검사합니다.
+Qwen Code, CodeBuddy 설치에서 이를 검사합니다(Kiro, Copilot, Cursor, Windsurf
+파일은 `tests/hooks/test_native_hook_registrations.py`가 각 계약에 대해 검사하고,
+`tests/integration/test_native_hook_files_roundtrip.py`,
+`test_cursor_hooks_roundtrip.py`, `test_windsurf_hooks_roundtrip.py`가 벤더가
+실행하는 방식대로 실행합니다).
 
 - **평범한 체크아웃에서 실행됩니다.** 종료 코드는 0이며, 표준 출력은 비어
   있거나 JSON 객체 하나입니다. 어떤 훅도 파일의 실행 비트에 의존하지 않습니다.
-- **한 번만 등록됩니다.** 각 이벤트, 매처, 메시지 쌍은 표면마다 한 번만
-  나타나므로, 한 도구 호출에서 훅이 두 번 실행되는 일은 절대 없습니다.
+- **한 번만 등록됩니다.** 각 이벤트와 매처는 표면마다 디스패처 항목 하나를
+  가지며, 그 항목이 평가하는 모든 메시지를 나열하므로, 한 도구 호출에서 가드가
+  두 번 실행되는 일은 절대 없습니다.
 - **상한이 있습니다.** 방출되는 어떤 텍스트도 10,000자를 넘지 않습니다.
   종속성 가드는 쓰기가 종속성 매니페스트나 잠금 파일을 대상으로 할 때만, 동적
   평가 가드는 콘텐츠나 명령에 평가 또는 안전하지 않은 역직렬화 프리미티브가
-  포함될 때만 메시지를 냅니다. 압축 권고는 세션당 최대 두 번 발화합니다.
+  포함될 때만 메시지를 냅니다. 압축 권고는 압축 주기당 최대 두 번 발화합니다.
 - **하니스가 전달하는 채널을 사용합니다.** PreToolUse 지침은
   `hookSpecificOutput`으로 전달됩니다. AskUserQuestion 가드는 `additionalContext`를
   반환하거나, 엄격 옵트인에서는 `permissionDecision: deny`를 반환합니다. Claude
@@ -89,8 +225,8 @@ Qwen Code에서 이를 검사합니다.
   복구 컨텍스트가 소스가 `compact`인 SessionStart 이벤트와 함께 도착합니다.
 - **프로젝트 코드를 절대 실행하지 않습니다.** 부트스트랩은 자체 설치 트리를
   해석하며, 열린 프로젝트에서 스크립트를 가져오는 일은 절대 없습니다. 세션 시작
-  지침은 설치된 트리에서 읽으며, 프로젝트 디렉터리는 플랜과 메모리 요약을 위해서만
-  읽습니다.
+  지침은 설치된 트리에서 읽으며, 프로젝트 디렉터리는 플랜과 메모리 요약, 그리고
+  지식 베이스 드리프트 검사를 위해서만 읽습니다.
 - **실패 시 열린 상태를 유지합니다(fail open).** 메시지 파일 누락, 인터프리터
   누락, 손상된 상태는 종료 코드 0과 유효한 엔벨로프를 냅니다.
 
@@ -100,9 +236,16 @@ Qwen Code에서 이를 검사합니다.
 | `APOTHEM_SESSION_END_ENABLED` | 꺼짐 | `1`, `true`, `yes`, `on`은 Stop에서 세션 종료 프로토콜을 활성화합니다. 컨텍스트를 반환하는 Stop 훅은 어시스턴트가 계속 진행하게 하므로, 이 프로토콜은 세션당 한 턴을 추가로 소비합니다. 훅이 유발한 계속 진행 뒤에 이미 이어지는 정지에서는 절대 발화하지 않습니다 |
 | `APOTHEM_SESSION_END_MIN_STOPS` | `3` | 세션 종료 프로토콜이 발화할 수 있기 전에 필요한 턴 종료 횟수 |
 | `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | 켜짐 | `0`, `false`, `no`, `off`는 압축 권고를 침묵시킵니다 |
-| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | 권고 창당 도구 호출 수 |
-| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | 권고 창당 도구 출력 바이트 수 |
+| `APOTHEM_CONTEXT_WINDOW_TOKENS` | 설정 안 됨 | 컨텍스트 창 크기. 이 값(또는 Claude Code의 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`)이 있으면 권고는 창의 50%와 75%에서 발화하고, 없으면 120,000 토큰과 250,000 토큰에서 발화합니다 |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | 권고 창당 도구 호출 수. 컨텍스트 크기를 측정할 수 없을 때만 사용됩니다 |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | 권고 창당 도구 출력 바이트 수. 컨텍스트 크기를 측정할 수 없을 때만 사용됩니다 |
 | `APOTHEM_HOOK_STATE_DIR` | 아래 참조 | 세션별 훅 상태를 위한 디렉터리 |
+
+압축 권고는 세션 트랜스크립트의 가장 최근 사용량 기록(입력 토큰과 캐시된 토큰의
+합)으로 컨텍스트를 측정하므로, 모델이 실제로 담고 있는 양을 반영합니다. 그 크기가
+급격히 줄어들면 압축으로 간주하고 두 번의 권고 예산을 다시 시작합니다.
+트랜스크립트를 사용할 수 없는 곳에서는 대신 도구 호출 수와 출력 바이트 수를
+셉니다.
 
 세션별 훅 상태는 모드 `0700`으로 생성된 사용자별 디렉터리에 있습니다. 설정된
 경우 `APOTHEM_HOOK_STATE_DIR`, 그렇지 않으면 Claude Code 플러그인의 경우

@@ -2,11 +2,12 @@
 title: "Apothem 对比原生 Windsurf 配置"
 description: "在 .devin/rules/ 下手工维护 Windsurf 的规则，与从 apothem 的共享配置档案渲染它们。"
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Windsurf 从 `.devin/rules/` 目录读取规则。Apothem 的 windsurf 适配器从共享
+Windsurf 现已成为 Devin Desktop，从 `.devin/rules/` 目录读取规则（这是首选位置，
+优先于 `.windsurf/rules/` 后备位置）。Apothem 的 windsurf 适配器从共享
 配置档案渲染这些基于目录的规则。本页将手工维护该配置与用 apothem 管理它进行
 对比。
 
@@ -17,14 +18,21 @@ Windsurf 从 `.devin/rules/` 目录读取规则。Apothem 的 windsurf 适配器
 | 编写规则 | 在 `.windsurf/rules/` 下手写每个文件 | 从共享语料库渲染 |
 | 保持单一规则格式 | 在 `.windsurf/rules/` 与单文件 `.windsurfrules` 之间手工取舍 | 适配器只写入 `.devin/rules/` |
 | 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 共享可复用的技能和命令 | 把每个技能文件夹手工复制到 `~/.agents/skills/` 并保持这些副本最新 | 由适配器写入 `~/.agents/skills/`，所有项目共用一份副本，并在 `apothem update` 时刷新 |
+| 让可复用的辅助器保持同步 | 在 `.devin/agents/` 下手写每个 Devin Local 子代理文件，并跟踪 Devin 的工具名称 | 十一个辅助器写入 `.devin/agents/`，其工具已转换，并在 `apothem update` 时刷新 |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness windsurf --project <path>` |
 
 ## Apothem 管理什么
 
-windsurf 适配器将共享规则渲染到 `.devin/rules/` 目录；它不写入单文件
-`.windsurfrules`。Windsurf 没有 PreToolUse 钩子，因此护栏意图存在于规则散文
+windsurf 适配器将共享规则渲染到一个文件
+`<project>/.devin/rules/apothem-rules.md` 中；它不写入单文件
+`.windsurfrules`。它还把 Apothem 的十一个辅助器作为 Devin Local 子代理写入
+`<project>/.devin/agents/`；需要 Web 工具的那三个要等到 Devin 记载其工具名称后
+才会写入。它在 `<project>/.devin/config.local.json` 中注册两个 Devin Local 钩子：
+一个会话引导和一个上下文大小提示；较旧的 Cascade 模式读取一种不同的钩子格式
+（`hooks.json`），适配器不写入它。它不注册工具调用守卫，因此护栏意图存在于规则散文
 之中，而非工具调用拦截点。每次对共享规则的变更都会在下一次 `apothem update`
-时重新渲染该目录。
+时重新渲染该文件。
 
 ## 迁移路径
 

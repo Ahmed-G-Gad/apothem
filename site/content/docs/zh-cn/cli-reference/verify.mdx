@@ -2,7 +2,7 @@
 title: "verify"
 description: "apothem verify 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,6 +17,8 @@ apothem verify --harness NAME|all [--profile PATH] [--project PATH]
 ```
 
 调用每个所选适配器的 `verify()` 实现。只有当所有所选适配器都报告其受管目标存在且有效时，才以 0 退出。未提供 `--profile` 时，该检查是**结构性**的——每个受管目标都必须存在且有效。提供 `--profile` 时，该检查还额外要求**配置档案保真度**，因此一个存在但已漂移的安装无法通过验证；它回答的是“被忠实安装的是否正是这份配置档案？”，而不只是“它是否存在？”。
+
+对于将技能写入你主目录的适配器，验证还会检查它所期望的每个技能文件夹都存在且带有一个 `SKILL.md`，无论是哪次安装写入的，因此在一台只安装了共享某个文件夹的工具之一的机器上也能通过验证。当某个文件夹缺失时，以及当一个与某个 Apothem 技能同名的文件夹属于并非由 Apothem 写入的内容时，验证会失败。失败的行会说明是哪种情况：在纯文本模式下，其后会跟一条 `Note:` 行；在 JSON 行中，一个 `user_level` 对象会列出 `missing` 和 `unlisted` 路径以及一个 `message`。运行 [`install`](/docs/cli-reference/install) 以恢复缺失的文件夹；将外来的文件夹重命名或移走，然后运行 [`update`](/docs/cli-reference/update)。
 
 `--harness all` 扫查会遵循配置档案的 `exclude_harnesses`——即 `install`/`update` 批处理所应用的相同排除项——因此验证绝不会将一个被有意排除的工具报告为缺失。提供 `--profile` 时，排除项来自它，否则来自默认配置档案；默认配置档案不可读或不存在时，会降级为完整的注册表。
 

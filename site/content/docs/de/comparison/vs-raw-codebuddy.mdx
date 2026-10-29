@@ -2,7 +2,7 @@
 title: "Apothem vs. rohe CodeBuddy-Regeln"
 description: "Warum man die Projektregeln von CodeBuddy über Apothem führt, statt pro Projekt .codebuddy/rules-Dateien von Hand zu verfassen."
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ CodeBuddy liest Projektregeln aus `.codebuddy/rules/*.md`. Du kannst diese Datei
 | Regeln über Harnesses hinweg abgestimmt halten | Pro Werkzeug neu ableiten | Automatisch projiziert |
 | Regeln aktualisieren | Jedes Projekt von Hand bearbeiten | `apothem update --harness codebuddy --project <path>` |
 | Konfiguration entfernen | Manuell löschen | `apothem uninstall` mit zeitgestempeltem Backup |
+| Wiederverwendbare Skills und Befehle teilen | Jeden Skill-Ordner von Hand nach `~/.codebuddy/skills/` kopieren und die Kopien aktuell halten | Vom Adapter nach `~/.codebuddy/skills/` geschrieben, eine gemeinsame Kopie für alle Projekte, und bei `apothem update` aufgefrischt |
 
 ## Was Apothem verwaltet
 
-Der codebuddy-Adapter rendert die gemeinsamen Regeln in eine dedizierte Datei `<project>/.codebuddy/rules/apothem-rules.md` und schreibt sonst nichts. Deine Memory-Datei `CODEBUDDY.md`, deine Berechtigungen und MCP-Server in `.codebuddy/settings.json` sowie alle anderen von dir verfassten Regeldateien bleiben vollständig im Besitz des Operators; der Adapter erkennt diese Oberflächen, bearbeitet sie aber nie. Jede Änderung an den gemeinsamen Regeln rendert die Datei beim nächsten `apothem update` neu.
+Der codebuddy-Adapter rendert die gemeinsamen Regeln in eine dedizierte Datei `<project>/.codebuddy/rules/apothem-rules.md`. Außerdem schreibt er zwei Ordner in deinem Home-Verzeichnis, die alle Projekte teilen: Die Skills und die als Skills verpackten Befehle kommen nach `~/.codebuddy/skills/`, und die Regeln und Templates, die diese Skills zitieren, kommen nach `~/.config/apothem/rules/` und `~/.config/apothem/templates/`. Deine Memory-Datei `CODEBUDDY.md`, deine Berechtigungen und MCP-Server in `.codebuddy/settings.json` sowie alle anderen von dir verfassten Regeldateien bleiben vollständig im Besitz des Operators; der Adapter erkennt diese Oberflächen, bearbeitet sie aber nie. Jede Änderung an den gemeinsamen Regeln rendert die Regeldatei beim nächsten `apothem update` neu.
 
 ## Migrationspfad
 

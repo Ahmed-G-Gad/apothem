@@ -2,7 +2,7 @@
 title: "Autorschafts-Header — SPDX-Lizenzzeile pro Datei"
 description: "Definieren und erzwingen Sie SPDX-Lizenzbezeichner-Marker pro Datei mit kanonischen einzeiligen Headern in der für jeden Dateityp passenden Kommentarsyntax."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ Die Disziplin muss jede künftige Sitzung und jeden künftigen Mitwirkenden übe
 4. **Pre-Commit-Hook** — der Hook `conformity-corpus-perwrite` führt jeden Matcher pro Schreibvorgang über den versionierten Baum mit `--strict` aus, einschließlich des Validators `file-header` (§8). Der Matcher `file-header` ist blockierend, daher blockiert ein Befund den Commit. Der Hook prüft nur. Er hat keinen Korrekturmodus und startet den Injektor (§7) nie; dieser läuft über `make headers-fix`.
 5. **Block `CLAUDE.md` für verbindliches Verhalten** — weist den Assistenten an, die kanonische SPDX-Zeile zu injizieren, sobald er eine zutreffende Datei anlegt.
 6. **Die Anweisungsdatei von GitHub Copilot** unter `.github/copilot-instructions.md` — weist Copilot an, bei der Dateierzeugung dasselbe zu tun.
-7. **PreToolUse-Hooks** unter `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — fangen Write- und Edit-Tool-Aufrufe auf zutreffenden Pfaden ab, damit die SPDX-Zeile bei der Dateierstellung injiziert wird, statt später als Befund des Validators entdeckt zu werden.
+7. **PreToolUse-Hooks** unter `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — fangen Write- und Edit-Tool-Aufrufe auf zutreffenden Pfaden ab, damit die SPDX-Zeile bei der Dateierstellung injiziert wird, statt später als Befund des Validators entdeckt zu werden. Der Prüfer des Guards, `src/apothem/hooks/lib/header_check.py`, verwendet ausschließlich die Standardbibliothek und liest die Fixture und die Ausnahmeliste aus dem Verzeichnis `schemas/` neben `hooks/`, sodass er auch unter dem Claude Code-Plugin funktioniert, wo das Paket `apothem` nicht importierbar ist. Er wendet die Variantentabellen und die Regeln für die Einfügestelle des Injektors auf Dateien innerhalb des Projekts an, und zwar nur in einem git-Projekt, das die Header-Fixture (`src/apothem/schemas/authorship-header.txt`) trägt, da die SPDX-Zeile die Konvention dieses Repositorys ist und kein Standard für jedes Projekt, das das Plugin öffnet.
 8. **Checkbox in der PR-Vorlage** — die an Mitwirkende gerichtete Zusicherung, dass jede neue Datei die kanonische SPDX-Zeile trägt.
 9. **Dieses Dokument** (`site/content/docs/reference/authorship-header.mdx`) — die kanonische, normative Erläuterung.
 

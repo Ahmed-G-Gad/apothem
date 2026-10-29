@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw(미리 보기)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "f13f9ce348ede92c"
+sourceHash: "4c7b4673820f1fa6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,8 +19,8 @@ apothem install --harness open-claw
 
 어댑터는 OpenClaw의 사용자 전역 구성 파일을 작성하고, 공유 프로필을 프로필
 문서로 투영하며, 하니스 루트 아래에 Apothem 지원 코호트를 설치합니다.
-OpenClaw의 네이티브 구성은 JSON이며, 머티리얼라이저는 빈 JSON 객체를
-렌더링하고 기존 파일은 자신의 키를 유지합니다.
+OpenClaw의 네이티브 구성은 JSON이며, 머티리얼라이저는 `skills.load.extraDirs`
+키 하나를 렌더링하고 기존 파일은 자신의 다른 키를 유지합니다.
 
 **작성되는 파일:** `~/.openclaw/openclaw.json`, 프로필 문서
 `~/.openclaw/apothem/rules/00-apothem-profile.md`, 그리고
@@ -32,15 +32,61 @@ OpenClaw의 네이티브 구성은 JSON이며, 머티리얼라이저는 빈 JSON
 
 ## 프로필에서 네이티브 구성으로의 매핑
 
-어댑터는 Apothem의 공유 프로필을 읽지만 구성 키는 작성하지 않습니다. 새 파일이거나
-비어 있는 `openclaw.json`은 빈 객체로 작성되고, 기존 파일은 자신의 키를
-유지합니다. 프로필의 신원, 선호, 규칙은 프로필 문서에 들어갑니다. 공유 커맨드,
-스킬, 규칙, 템플릿, 훅 프롬프트는 `~/.openclaw/.apothem/support/` 아래에 지원
+어댑터는 구성 키 하나를 작성합니다. OpenClaw가 읽는 추가 스킬 디렉터리 목록인
+`skills.load.extraDirs`에 `~/.openclaw/.apothem/support/skills`를 추가하며,
+OpenClaw는 이를 통해 설치된 스킬을 찾습니다. 이 항목은 여러분이 이미 나열한
+항목 뒤에 들어가며, 여러분의 다른 키는 그대로 유지됩니다. 프로필의 신원, 선호,
+규칙은 프로필 문서에 들어갑니다. 공유 커맨드, 스킬, 규칙, 템플릿, 훅 프롬프트는 `~/.openclaw/.apothem/support/` 아래에 지원
 자료로 설치됩니다.
 
 ## 호환성 참고 사항
 
-미리 보기 어댑터입니다. OpenClaw는 지원 하위 트리나 프로필 문서를 스스로 로드하지 않습니다. OpenClaw의 스킬 위치, 워크스페이스 지침 파일, 구성 중 어느 것도 그곳을 가리키지 않으므로, 설치 후 OpenClaw는 Apothem의 규칙, 스킬, MCP 서버 없이 실행됩니다. OpenClaw는 워크스페이스의 `skills/` 및 `.agents/skills/` 폴더, `~/.agents/skills`, 그리고 자신의 상태 디렉터리에서 스킬을 읽은 다음, `agents.defaults.skills` 아래의 스킬 이름 허용 목록으로 걸러냅니다. `skills.load.extraDirs`는 스킬 로더가 아니므로, `~/.openclaw/.apothem/support/skills` 아래의 Apothem 스킬은 그 폴더 중 하나에 배치하고 허용 목록에 이름을 적어야 비로소 로드됩니다. `apothem update`는 여러분이 `openclaw.json`에 추가한 키를 유지합니다. MCP 서버는 OpenClaw 구성의 `mcp.servers` 블록에 있으며, 이 블록은 `openclaw mcp add`와 관련 하위 명령으로 관리합니다. 어댑터는 그곳에 어떤 항목도 작성하지 않습니다. (OpenClaw 동작은 [스킬](https://docs.openclaw.ai/tools/skills) 및 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 문서에 따른 것이며, 2026-10-02에 확인했습니다.)
+미리 보기 어댑터입니다. OpenClaw는 `skills.load.extraDirs`를 통해 Apothem 스킬을
+로드하지만, 지원 하위 트리의 나머지나 프로필 문서는 스스로 로드하지 않습니다.
+OpenClaw의 워크스페이스 지침 파일이나 구성 중 어느 것도 그곳을 가리키지 않으므로,
+설치 후 OpenClaw는 Apothem의 규칙이나 MCP 서버 없이 실행됩니다.
+
+**이름 충돌.** OpenClaw는 다음 소스에서 우선순위가 높은 것부터 스킬을 읽으며, 같은
+스킬 이름이 둘 이상의 위치에 나타나면 가장 높은 소스가 이깁니다: 워크스페이스
+`skills/` 폴더, 워크스페이스 `.agents/skills/` 폴더, `~/.agents/skills`(기본 상태
+디렉터리일 때만), 상태 디렉터리의 `skills/` 폴더(기본값 `~/.openclaw/skills`),
+워크숍 스킬, 번들 및 커스터디언 스킬, 그리고 마지막으로
+`skills.load.extraDirs` 아래에 나열된 폴더와 플러그인 스킬. Apothem 디렉터리는
+`extraDirs` 항목이므로, 앞선 소스 중 어디에든 여러분이 두고 있는 같은 이름의
+스킬이 OpenClaw가 사용하는 스킬이 되며, 그 스킬의 Apothem 사본은 디스크에서
+사용되지 않은 채 남습니다. Apothem은 `openclaw.json`과
+`~/.openclaw/.apothem/support/` 아래에만 작성하고 앞선 폴더에는 절대 작성하지
+않으므로, 설치, 업데이트, 제거는 여러분이 그곳에 둔 스킬을 교체하지 않습니다.
+
+`agents.defaults.skills`는 스킬 이름의 허용 목록입니다. Apothem은 이를 편집하지
+않으므로, 허용 목록을 두고 있다면 원하는 Apothem 스킬이 그 목록에 적혀 있는지
+확인하세요. `apothem update`는 여러분이 `openclaw.json`에 추가한 키를 유지합니다.
+MCP 서버는 OpenClaw 구성의 `mcp.servers` 블록에 있으며, 이 블록은
+`openclaw mcp add`와 관련 하위 명령으로 관리합니다. 어댑터는 그곳에 어떤 항목도
+작성하지 않습니다. (OpenClaw 동작은 [스킬](https://docs.openclaw.ai/tools/skills),
+[스킬 구성](https://docs.openclaw.ai/tools/skills-config),
+[구성 확장](https://docs.openclaw.ai/gateway/config-extensions) 문서(2026-10-24에
+확인)와 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 문서(2026-10-02에 확인)에 따른
+것입니다.)
+
+**`openclaw.json`의 주석.** OpenClaw는 구성을 JSON5로 읽고, Apothem은 파일을 일반
+JSON으로 다시 씁니다. 파일에 주석이나 다른 JSON5 구문이 있고 항목이 없으면,
+Apothem은 파일을 건드리지 않고 설치는 그 키를 명시하는 메시지와 함께 중단됩니다.
+이 항목을 직접 파일에 병합하거나 파일을 일반 JSON으로 변환한 다음 설치를 다시
+실행하세요.
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  }
+}
+```
+
+여러분이 직접 추가한 항목은 여러분의 것으로 간주되며, 제거는 그 항목을 그대로
+둡니다.
 
 ## 검증
 
@@ -54,7 +100,10 @@ verify 명령은 다음을 확인합니다.
 2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
    구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
    `--profile PATH`를 추가하세요.
-3. 어댑터별 검증 루틴이 성공을 보고합니다.
+3. 네이티브 구성의 `skills.load.extraDirs`가
+   `~/.openclaw/.apothem/support/skills`를 나열합니다. 이 항목이 없으면 OpenClaw는
+   설치된 스킬을 로드하지 않습니다. `apothem update`가 이를 다시 추가합니다.
+4. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
 
@@ -63,7 +112,8 @@ apothem update --harness open-claw
 ```
 
 현재 공유 프로필 상태에서 프로필 문서를 다시 도출하고 지원 파일을 새로 고칩니다.
-`openclaw.json`은 이미 가지고 있는 키를 유지합니다.
+`openclaw.json`은 이미 가지고 있는 키를 유지하며, `skills.load.extraDirs`의
+Apothem 항목은 몇 번을 업데이트하든 한 번만 나열됩니다.
 `~/.config/apothem/profile.yaml`을 편집하거나 설치된 Apothem 패키지를
 업그레이드한 후에 실행하세요.
 
@@ -73,7 +123,8 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-어댑터가 추가한 항목, 즉 프로필 문서와 지원 하위 트리를 제거합니다. `openclaw.json`에
+어댑터가 추가한 항목, 즉 `skills.load.extraDirs`의 항목, 프로필 문서, 지원 하위
+트리를 제거합니다. 여러분이 직접 넣은 `extraDirs` 항목을 포함해 `openclaw.json`에
 있는 여러분의 키는 그대로 남으며, 이 파일은 Apothem이 직접 만들었고 여러분의
 항목이 하나도 남아 있지 않은 경우에만 삭제됩니다. 공유 프로필 YAML과 Apothem
 엔진은 영향을 받지 않습니다.
@@ -90,7 +141,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness open-claw`를 다시 실행 |
 | 검증 실패 | `apothem update --harness open-claw`를 실행한 다음 다시 검증 |
-| 예기치 않은 구성 내용 | Apothem은 `openclaw.json`에 키를 새로 작성하지 않고 이미 들어 있는 키를 유지하므로, 프로필 내용은 그곳에 들어가지 않습니다. 프로필 내용은 `~/.openclaw/apothem/rules/00-apothem-profile.md`에 들어갑니다. `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음, [업데이트](#업데이트) 아래의 명령을 다시 실행하세요 |
+| 예기치 않은 구성 내용 | Apothem은 `openclaw.json`에 `skills.load.extraDirs` 항목만 작성하고 이미 들어 있는 키를 유지하므로, 프로필 내용은 그곳에 들어가지 않습니다. 프로필 내용은 `~/.openclaw/apothem/rules/00-apothem-profile.md`에 들어갑니다. `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음, [업데이트](#업데이트) 아래의 명령을 다시 실행하세요 |
+| 설치가 `openclaw.json`의 주석이나 JSON5 구문에 관한 메시지와 함께 중단됨 | Apothem은 주석을 제거해야 하는 파일을 다시 쓰지 않습니다. [호환성 참고 사항](#호환성-참고-사항) 아래에 표시된 `skills.load.extraDirs` 항목을 직접 추가하거나 파일을 일반 JSON으로 변환한 다음 설치를 다시 실행하세요 |
+| Apothem 스킬이 OpenClaw에 나타나지 않음 | 워크스페이스, `~/.agents/skills`, 또는 `~/.openclaw/skills`에 있는 같은 이름의 스킬이 Apothem 사본보다 우선합니다([호환성 참고 사항](#호환성-참고-사항) 참조). 또한 `apothem verify --harness open-claw`를 실행하고, 두고 있는 `agents.defaults.skills` 허용 목록이 그 스킬을 명시하는지 확인하세요 |
 
 ## 구성 노브
 

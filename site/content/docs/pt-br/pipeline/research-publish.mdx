@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formata o artigo conforme o modelo do veículo e monta o pacote de submissão (suplementar, disponibilidade de dados/código, carta de apresentação, ética/conflito de interesse), com um plano de preprint/DOI."
 machineTranslated: true
-sourceHash: "775d7080efc5b935"
+sourceHash: "ef7a2e79372ed070"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Com argumentos:
 
 ## Entradas
 
-O entregável do artigo e o `_outputs/review-report.md` (as revisões da revisão por pares).
+O entregável do artigo e o `_outputs/review-report.md` (as revisões da revisão por pares e sua lista de não julgados).
 
 ## Saídas
 
-O pacote de submissão formatado para o veículo em um local natural do host (o manuscrito formatado + materiais suplementares + declaração de disponibilidade de dados / código + carta de apresentação + declarações de ética / conflito de interesse) + `_outputs/publication-record.md` + uma lista de verificação de submissão.
+O pacote de submissão formatado para o veículo em um local natural do host (o manuscrito formatado + materiais suplementares + declaração de disponibilidade de dados / código + carta de apresentação + declarações de ética / conflito de interesse) + `_outputs/publication-record.md` (incluindo o registro datado de regras do veículo: cada regra com sua página oficial de origem, a data de leitura e o estágio de submissão) + uma lista de verificação de submissão.
 
 ## A jusante
 
@@ -39,14 +39,19 @@ O pacote de submissão formatado para o veículo em um local natural do host (o 
 
 O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
-1. **Carregar contexto** — Ler o artigo e o relatório de revisão.
+1. **Carregar contexto** — Ler o artigo e o relatório de revisão; fixar o veículo,
+   o ciclo, a trilha e o tipo de artigo, e registrar cada regra do veículo com
+   sua página oficial de origem, a data de leitura e o estágio de submissão.
 2. **Verificar o Portão de sequência** — Confirmar que
    `_outputs/review-report.md` existe e que as revisões de severidade HIGH dele
    estão resolvidas (ou que o operador aceitou explicitamente o risco residual);
    caso contrário, interromper com `Blocked: run /research-review first`.
-3. **Formatar e empacotar** — Aplicar o modelo do veículo; montar suplementar,
-   disponibilidade de dados/código, carta de apresentação, declarações de ética
-   / conflito de interesse.
+3. **Formatar e empacotar** — Carregar cada regra do veículo com sua página de
+   origem, data de leitura e estágio de submissão, construir sobre o modelo
+   intocado do veículo, contar páginas e palavras do jeito do veículo e
+   inspecionar o PDF compilado; depois montar suplementar, disponibilidade de
+   dados/código, carta de apresentação, declarações de ética / conflito de
+   interesse.
 4. **Planejar o preprint / arquivamento** — Registrar o plano de preprint e DOI;
    construir a lista de verificação de submissão.
 5. **Atualizar o manifesto de transferência** — Registrar o pacote de submissão
@@ -56,7 +61,9 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 ## Piso de rigor
 
-A formatação honra a divulgação em estágios: para um veículo de revisão duplo-cega, autor, instituição e identidade do sistema são removidos para metadados submetidos separadamente e restaurados somente no estágio designado de versão final. O depósito de arquivamento carrega o pacote de evidências de reprodutibilidade escalonado ao veículo (dados, código, ambiente fixado, sementes, registro de hardware, resultados por instância e figuras).
+A formatação honra a divulgação em estágios: para um veículo de revisão duplo-cega, autor, instituição e identidade do sistema são removidos para metadados submetidos separadamente e restaurados somente no estágio designado de versão final. O depósito de arquivamento carrega o pacote de evidências de reprodutibilidade escalonado ao veículo (dados, código, ambiente fixado, sementes, registro de hardware, resultados por instância e figuras). Para um veículo duplo-cego, o arquivo suplementar e todo repositório ou conjunto de dados vinculado são inspecionados quanto à identidade, não apenas o manuscrito.
+
+As regras do veículo têm fonte e estágio. Somente as páginas oficiais do próprio alvo contam: um veículo vizinho, um ciclo anterior ou uma trilha irmã nunca serve de substituto, e uma remontagem para uma revisão ou para a versão final aplica os limites desse estágio, não os da submissão inicial. Uma regra sem página oficial por trás é perguntada ao operador e marcada como não verificada junto ao veículo. Os arquivos de modelo do veículo permanecem como foram emitidos, de modo que um arquivo inicial escrito localmente é relatado como tal. Páginas e palavras são contadas do jeito do veículo, com as seções excluídas registradas, e cada figura e tabela é verificada no tamanho e no formato que o veículo recebe.
 
 ## Modos de falha
 
@@ -65,6 +72,8 @@ A formatação honra a divulgação em estágios: para um veículo de revisão d
 | Blocked: run /research-review first | Nenhum relatório de revisão, ou revisões HIGH em aberto | Execute `/research-review` para produzir `_outputs/review-report.md`, ou resolva as revisões HIGH em aberto e execute `/research-review` novamente, ou aceite explicitamente o risco residual |
 | Revisão HIGH não atendida | Achado de revisão ignorado | Atenda à revisão e execute `/research-review` novamente |
 | Falta disponibilidade de dados/código | Superfície de reprodutibilidade ausente | Adicione a declaração de disponibilidade de dados / código antes da submissão |
+| Regra do veículo sem fonte | A regra vem de outro ciclo, trilha ou veículo vizinho, ou da memória | Fixe o alvo; registre a página oficial, a data de leitura e o estágio da regra, ou pergunte ao operador e marque-a como não verificada |
+| Modelo alterado | Uma edição local altera a geometria de página ou as configurações tipográficas do veículo | Restaure os arquivos do veículo e altere o leiaute somente por meio de opções que o modelo documenta |
 
 ## Exemplos
 

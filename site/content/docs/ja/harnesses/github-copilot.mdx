@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "72bf51d743f95bc8"
+sourceHash: "b1b8b4918d7d754d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,134 @@ sourceHash: "72bf51d743f95bc8"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-アダプターは、あなたの共有プロファイルと、共有の Apothem ルールおよびガバナンス面から、プロジェクトの命令ファイルを導出します。
+アダプターは、あなたの共有プロファイルと、共有の Apothem ルールおよびガバナンス面から、プロジェクトの命令ファイルを導出し、Apothem のヘルパーを Copilot のヘルパープロファイルとしてプロジェクト内に書き込み（[ヘルパープロファイル](#ヘルパープロファイル)を参照）、さらにフックを 2 つ登録します（[フック](#フック)を参照）。
 
-**書き込まれるファイル：** `<project>/.github/copilot-instructions.md`
+また、プロジェクトに触れる前に、Apothem のスキルと、それらが引用するルールとテンプレートを、あなたのユーザーホームに書き込みます（[プロジェクト外のファイル](#プロジェクト外のファイル)を参照）。
+
+**書き込まれるファイル：**
+
+- `<project>/.github/copilot-instructions.md`：命令ファイル。
+- `<project>/.github/agents/<name>.agent.md`：Apothem の各ヘルパーにつき 1 つ、プロジェクト内に。
+- `<project>/.github/hooks/apothem.json`：フックファイル、プロジェクト内に。そのフォルダー内にあるあなた自身のフックファイルには触れません。
+- `<project>/.apothem/support/github-copilot/hooks/`：フックスクリプト、プロジェクト内に。
+- `~/.agents/skills/<name>/SKILL.md`：Apothem の各スキルと各コマンドにつき 1 つ、あなたのユーザーホームに。
+- `~/.config/apothem/rules/` と `~/.config/apothem/templates/`：あなたのユーザーホームに。
+
+## プロジェクト外のファイル
+
+インストールは、プロジェクト内の何かを変更する前に、Apothem のスキルをあなたのユーザーホームにも書き込みます。
+
+| フォルダー | Apothem がそこに書き込むもの |
+| --- | --- |
+| `~/.agents/skills/` | Apothem の各スキルにつき `SKILL.md` を含むフォルダーを 1 つ、そして Apothem の各コマンドにつき 1 つ（コマンドは同じ名前のスキルになります）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | スキルと命令ファイルが参照するルールとテンプレート。 |
+
+これらのフォルダーは共有されます。プロジェクト専用ではありません。
+
+- `github-copilot` をインストールするすべてのプロジェクト、そしてそのフォルダーを指定する他のすべての Apothem のインストールが、同じコピーを使い同じファイルを書き込むため、インストールの順序は関係ありません。`~/.agents/skills/` は他のいくつかのツールも読みます。[ハーネスレジストリ](/docs/reference/harness-registry#共有ルート)にそれらが一覧されています。
+- `--project` は、書き込む命令ファイルと、インストールがどのプロジェクトに属するかを選びます。スキルの書き込み先は変わりません。
+- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、命令ファイル、`.github/agents/` 内のヘルパープロファイルファイル、フックファイル `.github/hooks/apothem.json`、そしてプロジェクトへのインストールが毎回作成する `.apothem/` フォルダーで、このフォルダーにはフックスクリプトも入ります。
+- ホームのフォルダーが最初に書き込まれます。それが失敗した場合、たとえばパス内のフォルダーがホームディレクトリの外へ出るリンクである場合（内側にとどまるリンクはたどられます）や書き込めない場合、インストールはプロジェクト内の何かが変わる前にエラーで停止します。
+- Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーはそのまま残され、インストールはその名前を挙げる警告を表示します。名前を変えるか移動してから、`apothem update` を実行してください。その名前が占有されている間、`apothem verify` は失敗します。
+- ファイルの合計は数メガバイトになります。
+
+インストールは、`--project` の外に書き込むフォルダーを挙げるメモを表示し、`--dry-run` はそれらを一覧表示します。
+
+## ヘルパープロファイル
+
+[これらのプロファイルに関する GitHub のリファレンス](https://docs.github.com/en/copilot/reference/custom-agents-configuration)によれば、Copilot はヘルパープロファイルを `<project>/.github/agents/<name>.agent.md` から読み取ります。
+インストールは、Apothem のヘルパーごとに 1 つのファイルをそのフォルダーに書き込みます。
+インストールはプロジェクト向けのみで、`~/.copilot/agents/` フォルダーは書き込みません。
+
+各ファイルはヘルパーの指示を変更せずに保持し、次のフロントマターキーを持ちます。
+
+| キー | Apothem が書き込むもの |
+| --- | --- |
+| `name`, `description` | ヘルパーの名前と説明。Copilot は説明を必須としています。 |
+| `tools` | ヘルパーが使えるツール。Copilot のツールエイリアスの一覧として。たとえば `["read", "search", "execute"]`。 |
+
+Copilot の `tools` キーはエイリアスの許可リストであり、ツールを拒否するキーはありません。
+そのため、ヘルパーの許可ツールと拒否ツールが 1 つの一覧にまとめられます。
+
+| Copilot のエイリアス | 対象 | 書き込まれる条件（ヘルパーに許可されているツール） |
+| --- | --- | --- |
+| `read` | Read, NotebookRead | `Read` |
+| `search` | Grep, Glob | `Grep` または `Glob` |
+| `edit` | Edit, MultiEdit, Write, NotebookEdit | `Write`、`Edit` または `MultiEdit` |
+| `execute` | Bash, PowerShell | `Bash` または `PowerShell` |
+| `web` | WebSearch, WebFetch | `WebSearch` または `WebFetch` |
+| `todo` | TodoWrite | `TodoWrite` |
+
+Copilot にはもう 1 つ、ヘルパーが他のヘルパーを起動できるようにするエイリアスがあります。それを許可されている Apothem のヘルパーはないため、このエイリアスは決して書き込まれません。
+ヘルパーがあるエイリアスの対象となるツールのいずれかを拒否している場合、そのエイリアスは除外されます。エイリアスがあると、ヘルパーがそのツールを使えてしまうためです。
+エイリアスのないツール（たとえば `Monitor`）は除外されます。
+`Bash(git status)` のようなパターン付きのツールにはエイリアスの形がありません。許可ツールとしては除外され、拒否ツールとしてはそのツール全体を拒否します。
+ファイルを編集できないヘルパーはその制限を保ちます。`edit` が付くことは決してありません。
+ヘルパーの一覧のツールがすべて除外された場合、ファイルには `tools: []` と書かれ、ヘルパーにはツールが与えられません。キーを省略すると、すべてのツールが与えられてしまいます。
+
+インストールは `model` キーを書き込まないため、ヘルパーはデフォルトのモデルを使います。また、Copilot が文書化している他のキー（`target`、`disable-model-invocation`、`user-invocable`、`mcp-servers`、`metadata`）、ターン数の上限、Apothem の `version`、`updated`、`portability` キーのいずれも書き込みません。
+
+知っておくべきこと：
+
+- `.github/agents/` はあなたのリポジトリの一部です。チームメイトと Copilot のクラウドコーディングサービスが同じファイルを読むため、プロジェクトと一緒にコミットするか、`.github/agents/` を `.gitignore` に記載してください。Apothem はあなたの代わりに選びません。
+- クラウドコーディングサービスは `web` と `todo` のエイリアスに従いません。`web` エイリアスはウェブ検索とページ取得の両方を対象とするため、`citation-auditor`、`fact-checker`、`research-scout` はそこでファイルの読み取りと検索はできますが、ウェブ検索もページ取得もできません。
+- Copilot CLI はリポジトリの `.claude/agents/` も読みますが、`~/.claude/agents/` は読まないため、Claude Code のインストールは Copilot には届きません。
+- Apothem のヘルパーのような名前（`<name>.agent.md`）を持つあなたのファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。アンインストールはそれを元に戻しません。他の名前のファイルには決して触れません。フォルダーに `<name>.md` と `<name>.agent.md` の両方がある場合に何が起こるかを、Copilot のドキュメントは述べていません。
+- 1 つの名前について Copilot が `.github/agents/` と `.claude/agents/` のどちらを優先するか、またクラウドコーディングサービスと VS Code が記載のないフロントマターキーをどう扱うかを、Apothem は確認していません。
+
+## フック
+
+[Copilot のフックのリファレンス](https://docs.github.com/en/copilot/reference/hooks-reference)によれば、Copilot は `<project>/.github/hooks/` 内の JSON ファイルからフックを実行します。
+インストールはそこに `apothem.json`（バージョン 1）というファイルを 1 つ書き込み、その中にフックを 2 つ置きます。
+
+| イベント | 実行されるもの |
+| --- | --- |
+| `sessionStart` | セッションのブートストラップ：セッションのメタデータ、スキルのインデックス、メモリーとプランの要約、そして常設の姿勢を、モデルのコンテキストに追加します。 |
+| `postToolUse`（すべてのツール） | プロアクティブなコンパクションのトラッカー。アクティビティを数え、コンパクションのサイクルごとに最大 2 回、状態を保存するかコンパクションするようモデルに伝えます。それ以外のときは何も出力しません。 |
+
+どちらもモデルにコンテキストを追加します。どちらもツール呼び出しやセッションをブロックしません。
+
+Apothem は Copilot に `preToolUse` のガードを登録しません。
+`preToolUse` について Copilot が読み取るのは権限フィールドと書き換えられたツール入力だけで、`additionalContext`（Apothem のガードが伝達に使うフィールド）は決して読み取りません。
+そこに登録したガードは、ツール呼び出しのたびにプロセスの起動コストがかかるうえ何も届けないため、書き込み・編集・シェルのガード、`AskUserQuestion` のチェック、セッション終了プロトコルは、それらを届けられるツールにとどまります。
+リファレンスが出力フィールドを挙げているのは Copilot の camelCase のイベント名についてであるため、フックはそれらのイベント名を使います。PascalCase のイベントから Copilot が `additionalContext` を読み取るかどうかは文書化されていません。
+
+**ファイルの書き込み先**
+
+| ファイル | 内容 |
+| --- | --- |
+| `<project>/.github/hooks/apothem.json` | 2 つのフックの登録。Apothem が所有するのはこの 1 ファイルです。 |
+| `<project>/.apothem/support/github-copilot/hooks/` | ディスパッチャースクリプト、そのヘルパー、そのメッセージファイル。 |
+
+各フックには `bash` コマンドと `powershell` コマンドがあります。
+どちらも同じディスパッチャーを実行します。`powershell` の方には前に呼び出し演算子（`&`）が付いており、PowerShell では引用符で囲んだプログラムパスの前にこれが必要です。
+`bash` コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+```
+
+`--contract copilot` は、ディスパッチャーに Copilot の camelCase の入力を読み取らせ、`{"additionalContext": ...}` を出力させます。これは Copilot がこの 2 つのイベントで読み取る形式です。
+
+**コミットには注意してください。クラウドエージェントについても。** `.github/hooks/` はあなたのリポジトリの一部であり、Copilot のクラウドコーディングサービスがそれを読みます。
+コマンドには、実行時に Apothem が見つけたインタープリターとプロジェクトの絶対パスが記され、スクリプトは `.apothem/` にあり、プロジェクトの `.gitignore` スニペットはこれを無視します。
+他のどのマシンでも、またクラウドサービス（`bash` コマンドしか実行しません）でも、コマンドは実行するものを見つけられません。
+失敗した `sessionStart` フックや `postToolUse` フックはブロックしないため、Copilot は失敗をログに記録し、実行は続行します。
+`.github/hooks/apothem.json` を `.gitignore` に追加するか、同じレイアウトを共有するチームの場合にのみコミットしてください。
+インストールは `.gitignore` を編集せず、これをメモとして表示します。
+
+**あなた自身のフック。** `.github/hooks/` 内のあなたのフックファイルは、決して読み取られることも変更されることもありません。
+`apothem.json` 自体にあなたが追加したフックは残ります。更新とアンインストールが置き換えまたは削除するのは、コマンドが Apothem のディスパッチャー（`--contract copilot` 付きの `.apothem/support/github-copilot/hooks/dispatch.py`。どのプロジェクトパスの下で書き込まれたかは問いません）を実行するエントリーだけです。
+名前が同じだけのあなたのフックや、`python -m apothem.conformity.gate` を実行するフックが、Apothem のものとみなされることはありません。
+有効な JSON でないファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。
+
+**シェルが誤読するパス。** `$`、バッククォート、ダブルクォート、バックスラッシュを含むプロジェクトパスやインタープリターパスは、何かが書き込まれる前に拒否されます。引用符で囲んだコマンドの中では、別のファイルを実行したり、コマンドが書き込まれる JSON を壊したりするためです。
+エラーはそのパスを挙げます。プロジェクトを移動するか名前を変えてから、再度インストールしてください。
+パス内のスペースやアポストロフィは問題ありません。
+
+**フックをオフにする。** Copilot が実行される環境で `APOTHEM_HOOKS_DISABLE=1` を設定すると Apothem のフックが無効になります。または `apothem.json` に `"disableAllHooks": true` を設定すると、その 1 ファイルがスキップされます。
+
+VS Code の旧来のローカルフックの規約（`command`、`windows`、`linux`、`osx` フィールドを持つイベント）は別の形式であり、バージョン 1 のファイルはそれを対象としていません。
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -33,12 +158,17 @@ GitHub は、短い命令ファイルほどコードレビューで全体が処�
 
 GitHub Copilot は、このアダプターが管理できる、ファイルベースのユーザーグローバルな命令パスを公開していません。
 Apothem は文書化されたプロジェクトスコープの命令ファイルを対象とし、IDE レベルのユーザー設定はオペレーターの所有のままにします。
+フックファイルは `.github/hooks/apothem.json` を 1 つだけ書き込み、`.github/hooks/` 内の他のファイルは書き込みません。
 
 Apothem リポジトリ内では、`.github/copilot-instructions.md` は、そのリポジトリのアシスタント命令面の中の 1 つの声です。
 そのリポジトリのチェックアウトでは、コンフォーミティゲートの複数面整合性チェックが、`AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` に共通する主張を比較します。
 報告されるのは、3 つのファイルのうち 1 つが欠いている共通の主張と、`AGENTS.md` が述べる主張に矛盾しているファイルです。
 このチェックは、Apothem があなたのプロジェクトに書き込む命令ファイルを読み取りません。
 ゲートはデフォルトでは助言的です。所見を報告し、`0` で終了します。
+
+GitHub Copilot は個人用スキルの場所の 1 つとして `~/.agents/skills/` を挙げているため、インストールが書き込むスキルは、Copilot が読み込めるようにあなたのマシン上にあります。
+GitHub 上で動作する面であるクラウドコーディングサービスとコードレビューは別の場所で実行され、あなたのホームフォルダーを参照できません。そのため、命令ファイル自体がディシプリンを含んでいます。
+記載のない `SKILL.md` のヘッダーキーを Copilot がどう扱うかを、Apothem は確認していません。スキルには `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、そして `metadata` マップが含まれます。
 
 ## 検証
 
@@ -49,8 +179,9 @@ apothem verify --harness github-copilot --project /path/to/project
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+2. `.github/agents/` フォルダーを含め、管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。`.github/agents/` については、フォルダーが存在することを確認し、各ヘルパーファイルがその中にあることは確認しません。コマンド `apothem diff --harness github-copilot --project /path/to/project` は、欠けているヘルパーファイルや古くなったヘルパーファイルを一覧表示します。フックファイル `.github/hooks/apothem.json` は、存在し、空ではなく、JSON として解析でき、Apothem のディスパッチャーを実行するエントリーを含んでいる必要があり、フックスクリプトは `.apothem/support/github-copilot/hooks/` にある必要があります。このチェックはフックを実行しません。
+3. どのインストールが書き込んだかにかかわらず、Apothem の各スキルフォルダーが `SKILL.md` とともに所定の場所にあり、Apothem の名前を持つスキルフォルダーがどれも、Apothem が書き込んだのではないものに属していないこと。チェックが失敗すると、欠けているフォルダーや外部のフォルダーの名前が挙げられます。
+4. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -59,6 +190,11 @@ apothem update --harness github-copilot --project /path/to/project
 ```
 
 現在の共有プロファイルの状態からプロジェクトの命令ファイルを再導出します。
+
+更新は、ファイルが現在のものと異なるスキルフォルダーも書き直します。
+スキルを書き込まなかった以前のリリースでインストールした場合、更新はスキルを追加します。
+現在のものと異なるヘルパープロファイルファイルを書き直し、欠けているものを追加します。
+また、フックスクリプトと `.github/hooks/apothem.json` 内の Apothem のフックも更新し、そのファイル内のあなたのフックは保持します。
 
 ## アンインストール
 
@@ -70,6 +206,17 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ファイルが削除されるのは、その中に他に何も残っていない場合のみです。
 変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+アンインストールは、`<project>/.github/agents/` に書き込んだヘルパープロファイルファイルも削除し、そこにある他のファイルは残します。フォルダーは空になった場合に削除されます。
+`<project>/.github/hooks/apothem.json` から Apothem のフックを、そのコマンド内のディスパッチャーのパスによって識別して削除するため、インストール記録がなくても機能します。そのファイル内のあなたのフックは保持します。
+ファイルは、その中に他に何もない場合に削除され、あなたの他のフックファイルには触れません。
+ファイルにアンインストールが読み取れないコメントがある場合は、ファイルをそのまま残し、フックをスキップしたことを理由とともに報告します。Apothem のエントリーは手で削除してください。
+`<project>/.apothem/support/github-copilot/hooks/` 内のフックスクリプトも削除されます。
+`~/.agents/skills/` に書き込んだスキルフォルダーと `~/.config/apothem/` 内のルールとテンプレートも削除しますが、それはそれらをまだ使っている他の Apothem のインストールがない場合に限ります。
+別のプロジェクトや、そのフォルダーを共有する別のツールが使っている可能性があります。
+その場合、アンインストールはフォルダーを残し、どのインストールがそれらを使っているかを表示し、最後のアンインストールがそれらを削除します。
+あなたがそれらのフォルダーに追加したファイルは残り、空になったフォルダーは削除されます。
+各フォルダーは、削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 
 ## コンフォーミティゲート
 
@@ -89,6 +236,11 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness github-copilot --project /path/to/project` を再実行する |
 | 検証が失敗した | `apothem update --harness github-copilot --project /path/to/project` を実行してから、再度検証する |
+| Copilot が Apothem のヘルパーを 1 つも一覧表示しない | `.github/agents/` に `.agent.md` ファイルがあり、それらが使用中のブランチ上にあることを確認する。`apothem diff --harness github-copilot --project /path/to/project` を実行する。`.github/agents` フォルダーについて保留中の行がある場合は、ヘルパーファイルが欠けているか古くなっているので、`apothem update --harness github-copilot --project /path/to/project` を実行する。`apothem verify` はこの確認にはならない。`.github/agents/` が存在すれば、その中にヘルパーファイルが 1 つもなくても成功する |
+| Apothem のフックが実行されない | `.github/hooks/apothem.json` が使用中のブランチ上にあり、このマシンに `.apothem/support/github-copilot/hooks/` が存在することを確認する。コマンドにはインストールを実行したマシンのインタープリターとプロジェクトのパスが記されるため、各マシンで `apothem install --harness github-copilot --project /path/to/project` を実行する。Copilot のクラウドコーディングサービスは `bash` コマンドしか実行せず、そのパスにインタープリターはない |
+| `apothem verify` が欠けているスキルフォルダーの名前を挙げる | `apothem install --harness github-copilot --project /path/to/project` を実行する。これでフォルダーが復元される |
+| インストールまたは更新が、スキルフォルダーをスキップしたと警告する | Apothem のスキルの名前を持つフォルダーがスキルフォルダー内にすでに存在し、Apothem が書き込んだものではない。名前を変えるか移動してから、`apothem update` を実行する |
+| インストールがプロジェクトを変更する前に停止する | ホーム内への書き込みが失敗した。エラーを読み、それが挙げるフォルダー（ホームディレクトリの外へ出るリンク、フォルダーがあるべき場所にあるファイル、または読み取り専用のフォルダー）を修正してから、再度インストールする |
 | 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness github-copilot --project /path/to/project` を再実行する |
 
 ## 設定ノブ

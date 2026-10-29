@@ -2,7 +2,7 @@
 title: "Apothem 对比原生 CodeBuddy 规则"
 description: "为何要让 CodeBuddy 的项目规则经由 Apothem 处理，而不是为每个项目手写 .codebuddy/rules 文件。"
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ CodeBuddy 从 `.codebuddy/rules/*.md` 读取项目规则。你可以逐项目、
 | 使规则在各工具间保持一致 | 逐个工具重新推导 | 自动投影 |
 | 更新规则 | 逐个项目手动编辑 | `apothem update --harness codebuddy --project <path>` |
 | 移除配置 | 手动删除 | `apothem uninstall`，附带带时间戳的备份 |
+| 共享可复用的技能和命令 | 把每个技能文件夹手工复制到 `~/.codebuddy/skills/` 并保持这些副本最新 | 由适配器写入 `~/.codebuddy/skills/`，所有项目共用一份副本，并在 `apothem update` 时刷新 |
 
 ## Apothem 管理的内容
 
-codebuddy 适配器会将共享规则渲染到专用文件 `<project>/.codebuddy/rules/apothem-rules.md` 中，且不写入其他任何内容。你的 `CODEBUDDY.md` 记忆文件、你的 `.codebuddy/settings.json` 权限与 MCP 服务器，以及你自己编写的任何其他规则文件，都完全归操作者所有——适配器会识别这些表面，但从不编辑它们。对共享规则的每次变更，都会在下一次 `apothem update` 时重新渲染该文件。
+codebuddy 适配器会将共享规则渲染到专用文件 `<project>/.codebuddy/rules/apothem-rules.md` 中。它还会在你的主目录中写入所有项目共享的两个文件夹：技能以及包装为技能的命令写入 `~/.codebuddy/skills/`，这些技能引用的规则和模板写入 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`。你的 `CODEBUDDY.md` 记忆文件、你的 `.codebuddy/settings.json` 权限与 MCP 服务器，以及你自己编写的任何其他规则文件，都完全归操作者所有——适配器会识别这些表面，但从不编辑它们。对共享规则的每次变更，都会在下一次 `apothem update` 时重新渲染该规则文件。
 
 ## 迁移路径
 

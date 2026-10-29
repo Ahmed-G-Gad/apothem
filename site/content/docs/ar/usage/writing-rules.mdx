@@ -2,7 +2,7 @@
 title: "كتابة القواعد"
 description: "أنشئ قواعد سلوك Apothem وحدِّد نطاقها وصُنها."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,19 @@ alwaysApply: true         # true for always-on; false for path-filtered
 | <bdi>`true`</bdi> | <bdi>`""`</bdi> (فارغ) | مفعّلة دائمًا: كل جلسة، وكل ملف |
 | <bdi>`false`</bdi> | نمط <bdi>glob</bdi> مثل <bdi>`"**/*.py"`</bdi> | مُرشَّحة بالمسار: فقط حين يطابق الملف النشط النمط |
 
+خمس من القواعد المشحونة مفعّلة دائمًا: <bdi>`agnostic-posture`</bdi>، و<bdi>`authority-inquiry`</bdi>،
+و<bdi>`session-closure`</bdi>، و<bdi>`context-management`</bdi>، وفهرس القواعد. تُكلِّف القاعدة
+المفعّلة دائمًا سياقًا في كل جلسة، لذا ينبغي أن تكون القاعدة الجديدة مُرشَّحة بالمسار بأنماط
+<bdi>glob</bdi> تُسمّي الملفات التي تحكمها؛ والمُرشِّح المؤلَّف من <bdi>`**`</bdi> وحده لا يحصر شيئًا، ويُحمِّل
+<bdi>Claude Code</bdi> تلك القاعدة عند الإطلاق كما يُحمِّل القاعدة المفعّلة دائمًا. ويُقيِّد
+المتن المشحون المجموعةَ المفعّلة دائمًا بتلك القائمة وبسقف للبايتات؛ والقاعدة التي تُرقّى إلى
+مفعّلة دائمًا تُغيِّر كليهما في التغيير نفسه. سمِّ كل قاعدة تُضيفها في فهرس القواعد
+(<bdi>`apothem-rule-index`</bdi>)، حتى تعثر عليها جلسة على إطار عمل لا يحصر القواعد بالمسار.
+وتأخذ القاعدة المرافقة (<bdi>`<parent>-<aspect>`</bdi>) قيمة <bdi>`pathFilter`</bdi> الخاصة بقاعدتها
+الأم، أو قيمة أضيق منها، فلا تُحمَّل أبدًا من دون قاعدتها الأم. لا تُعطِ قاعدةً من قواعدك
+الاسم <bdi>`apothem-rule-index`</bdi>: فالتثبيت يأخذ نسخة احتياطية من ملف القاعدة الذي يحمل
+ذلك الاسم ثم يكتب فوقه.
+
 ## مثال على قاعدة
 
 ```markdown
@@ -51,11 +64,23 @@ alwaysApply: false
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+يحتاج إطار العمل ذو نطاق المشروع إلى <bdi>`--project`</bdi> عند التحديث، كما في السطر الثاني؛
+أما إطار العمل ذو نطاق المستخدم فلا يحتاج إليه.
 
 ## التحقق من القواعد
 
+شغِّل أداة التحقّق من الـ<bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته. من نسخة مسحوبة من
+<bdi>Apothem</bdi>، يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمة قابلة للاستيراد؛ وبعد التثبيت بالسكربت،
+استخدم <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> مكانه.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+يأخذ الفحص الخاص بكل عملية كتابة مثل <bdi>`frontmatter-grep`</bdi> الملفَ المراد فحصه، أو
+<bdi>`--stdin`</bdi> لقراءة المحتوى من الدخل القياسي؛ ومن دون أيٍّ منهما ينتظر مُدخَلًا على
+الدخل القياسي. أما الفحص المستقلّ فيأخذ دليلًا جذرًا بدلًا من ذلك، كما في
+<bdi>`--check naming-grep .`</bdi>.

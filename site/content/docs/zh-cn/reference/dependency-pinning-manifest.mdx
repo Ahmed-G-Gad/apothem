@@ -2,7 +2,7 @@
 title: "依赖锁定清单"
 description: "依赖声明策略，涵盖 Python 运行时版本范围、开发工具链、发布工具锁文件，以及每个构建表面所批准的版本下限。"
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,16 +10,18 @@ sourceHash: "bb9b1e385a680545"
 
 ## 姿态
 
-Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一套更庞大的开发、审计、发布与文档工具链。运行时依赖在 `pyproject.toml` 中使用保守的下限；网站提交 `site/package-lock.json`；GitHub Actions 通过不可变 SHA 固定并附带版本注释，由 Renovate 进行升级。
+Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一套更庞大的开发、审计、发布与文档工具链。运行时依赖在 `pyproject.toml` 中使用保守的下限；网站提交 `site/package-lock.json`；GitHub Actions 通过不可变 SHA 固定并附带版本注释，由 Dependabot 进行升级。
 
 | 类别 | 声明方式 | 锁定策略 |
 |---|---|---|
 | 运行时 Python 依赖 | `pyproject.toml` 中的 `[project.dependencies]` | 下限范围；不提交 Python 运行时锁文件 |
 | 开发 / 安全工具 | `[project.optional-dependencies]` extras | 下限范围；CI 安装当前匹配的版本 |
 | 发布工具 | 发布工作流使用 `scripts/release/requirements-build-linux.txt`；本地构建使用 `[project.optional-dependencies]` 中的 `release` extra | 为发布工作流哈希锁定；由发布工具闭包生成。`release` extra 是下限范围 |
-| 仅 CI 工具 | `.github/workflows/*.yml` | 仅工作流使用的 pip 工具采用精确固定（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`） |
+| 仅 CI 工具 | `.github/workflows/*.yml` | 仅工作流使用的 pip 工具采用精确固定（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`、`pre-commit`、`ruff`） |
 | 文档站点 | `site/package.json` | 提交 `site/package-lock.json` 并由 `npm ci` 消费 |
-| GitHub Actions | 带版本注释的 SHA 固定 `uses:` 引用 | Renovate 提出更新；例外项携带 `action-pinning-exempt:` 标记 |
+| VS Code 打包器 | `tools/vsce/package.json` | 提交 `tools/vsce/package-lock.json`；release 与 publish 作业运行 `npm ci --ignore-scripts` |
+| Channel-smoke 工具 CLI | `tools/channel-smoke/package.json` | 提交 `tools/channel-smoke/package-lock.json` 并由 `npm ci` 消费 |
+| GitHub Actions | 带版本注释的 SHA 固定 `uses:` 引用 | Dependabot 每周提出更新；例外项携带 `action-pinning-exempt:` 标记 |
 
 ## 发布批准
 
@@ -56,4 +58,6 @@ pip freeze > requirements.dev.lock
 
 - **为什么 Python 用范围固定？** CLI 支持广泛的 Python 矩阵，CI 应在用户遇到问题之前用当前工具揭示兼容性问题。
 - **为什么提交 Node 锁文件？** 网站是一个已部署的静态产物；锁文件为那个公共表面提供确定性的 `npm ci` 构建。
-- **为什么用 SHA 固定 Actions？** 标签是可变的；SHA 是不可变的。Renovate 更新已固定的 SHA，而发布闸门记录任何有意的搁置。
+- **为什么用 SHA 固定 Actions？** 标签是可变的；SHA 是不可变的。Dependabot 提出 SHA 升级并重写每条版本注释，而发布闸门记录任何有意的搁置。
+- **更新机器人不触及的内容。** Dependabot 版本更新（`.github/dependabot.yml`）涵盖 GitHub Actions 固定、网站锁文件、vsce 打包器锁文件（`tools/vsce`）、channel smoke 所安装的工具 CLI 锁文件（`tools/channel-smoke`）以及 pre-commit 钩子。`pyproject.toml` 中的运行时下限、哈希锁定的发布依赖、`src/apothem/_vendor/vendor.txt` 中的 vendored 闭包，以及与 `pyproject.toml` 同步固定的 pre-commit 钩子都由人工调整，因为单个固定的升级会破坏与之保持一致的那些文件。网站的 `@types/node` 大版本跟随其 Node 下限（`engines` 与 `.nvmrc`，Node 22），因此 Dependabot 只提出其小版本与补丁更新；请将该大版本与下限一同提升。版本更新不会改动 npm 的 `overrides` 块。Dependabot 安全更新仍然涵盖每一个清单，因此一个安全拉取请求可能会提出上述某个固定的升级，或改动某个 override；请人工调整它或将其关闭。
+- **合并 Dependabot 拉取请求。** 仓库的 squash 默认设置采用 PR 标题。部分 Dependabot 标题（主要是点名某个目录的分组标题）会超出 72 字符的 squash 主题上限；PR Title 检查会列出它们，重新命名标题即可修复。更改工具锁文件的拉取请求不会运行任何 `ci.yml` 作业，因此由 npm audit 工作流对其进行审计与安装，针对 vsce 锁文件打包 VS Code 扩展并运行 vsce 发布测试，而针对 channel-smoke 锁文件则运行 channel smoke 工作流。Markdown Lint 工作流会在 pre-commit 钩子拉取请求上运行 markdownlint 钩子；其他钩子不会在 CI 中得到演练，因此请在合并之前于其分支上运行 `pre-commit run --all-files`。

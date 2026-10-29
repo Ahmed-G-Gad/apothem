@@ -2,7 +2,7 @@
 title: "Konsep"
 description: "Glosarium yang mendefinisikan profil bersama, adapter harness, aturan, hook, gerbang konformitas, skill, dan pekerja terdelegasi di Apothem."
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,11 @@ adapter.
 
 Berkas Markdown di bawah src/apothem/rules/ yang dimuat pada setiap interaksi (selalu aktif) atau
 hanya saat mengedit berkas di bawah jalur tertentu (terfilter-jalur). Aturan mengkodifikasi bagaimana
-harness harus berperilaku.
+harness harus berperilaku. Empat aturan selalu aktif: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, dan `context-management`. Indeks aturan, `apothem-rule-index`, dimuat bersama
+keempatnya dan menyebutkan setiap aturan lain beserta kapan aturan itu perlu dibaca. Harness yang tidak
+membatasi aturan berdasarkan jalur tidak memuat aturan lainnya sama sekali, sehingga indeks inilah cara
+sebuah sesi menemukannya.
 
 ## Hook
 

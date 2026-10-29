@@ -2,7 +2,7 @@
 title: "添加工具"
 description: "启用某个工具的适配器，使其原生配置从共享配置档案物化而来。"
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,7 @@ sourceHash: "86a3b203d53e58ea"
 3. 在不写入文件的情况下预览安装：
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. 安装该工具。对于用户作用域的工具：
@@ -64,7 +64,7 @@ sourceHash: "86a3b203d53e58ea"
 ## 验证
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 一行 `✓ <harness-id> is verified` 确认受管理的目标已存在且可解析。

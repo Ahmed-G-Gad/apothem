@@ -2,7 +2,7 @@
 title: "Internationalisierung (i18n)"
 description: "Wie die Apothem-Dokumentationsseite ihre Sprachkohorte deklariert, hreflang-Links für alternative Sprachen ausgibt und in zwölf Sprachen von rechts nach links rendert."
 machineTranslated: true
-sourceHash: "b3eb706603e79d8b"
+sourceHash: "fbe64d232e98a8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,12 @@ Sprache in das Routing eingebunden sind.
 - **Rechts-nach-links-Darstellung: aktiv.** Die gemeinsamen Stylesheets
   verwenden durchgängig logische CSS-Eigenschaften, sodass arabische Seiten unter
   `dir="rtl"` korrekt gerendert werden.
+- **Prüfung der Übersetzung: je Seite verfolgt.** Maschinell vorbefüllte
+  Sprachseiten werden ausgeliefert und tragen `machineTranslated: true` in ihrem
+  Frontmatter, bis ein Mensch sie prüft; das Flag ist Metadatum zur Verfolgung
+  der Prüfung, und die Seite zeigt es nicht an. Englisch ist der Fallback für
+  jede Seite, die einer Sprache fehlt. Dass 80 % der Seiten einer Sprache
+  geprüft sind, ist ein Prüfziel, keine Voraussetzung für die Veröffentlichung.
 - **Aktualität der Übersetzung: je Seite verfolgt.** Jede übersetzte Seite
   erfasst den englischen Text, aus dem sie übersetzt wurde. Wenn sich die
   englische Seite später ändert, zeigt die übersetzte Seite einen einzeiligen

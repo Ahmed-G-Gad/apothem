@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "8d3f64199c281e2a"
+sourceHash: "5e594da654351298"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,9 +21,217 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 어댑터는 공유 Apothem 규칙 및 거버넌스 표면으로부터 프로젝트 범위 Windsurf 규칙
-파일 하나를 작성합니다.
+파일 하나를 작성하고, Apothem의 도우미 열한 개를 프로젝트에 Devin Local
+서브에이전트로 작성하며([서브에이전트](#서브에이전트) 참조), Devin Local 훅 두
+개를 등록합니다([훅](#훅) 참조).
 
-**작성되는 파일:** `<project>/.devin/rules/apothem-rules.md`
+또한 Apothem의 스킬과 그 스킬이 인용하는 규칙 및 템플릿을, 프로젝트를 건드리기
+전에 사용자 홈에 작성합니다([프로젝트 외부의 파일](#프로젝트-외부의-파일) 참조).
+
+**작성되는 파일:**
+
+- `<project>/.devin/rules/apothem-rules.md`: 규칙 파일.
+- Apothem 도우미 열한 개에 대한 `<project>/.devin/agents/<name>.md`: 프로젝트 안.
+- `<project>/.devin/config.local.json`: 훅 등록, 프로젝트 안. 그 안에 있는 여러분 자신의 항목은 유지됩니다.
+- `<project>/.apothem/support/windsurf/hooks/`: 훅 스크립트, 프로젝트 안.
+- 각 Apothem 스킬과 커맨드에 대한 `~/.agents/skills/<name>/SKILL.md`: 사용자 홈 안.
+- `~/.config/apothem/rules/` 및 `~/.config/apothem/templates/`: 사용자 홈 안.
+
+## 프로젝트 외부의 파일
+
+설치는 프로젝트의 어떤 것도 변경하기 전에 Apothem의 스킬을 사용자 홈에도
+작성합니다.
+
+| 폴더 | Apothem이 그곳에 작성하는 것 |
+| --- | --- |
+| `~/.agents/skills/` | 각 Apothem 스킬마다 `SKILL.md`가 든 폴더 하나, 그리고 각 Apothem 커맨드마다 폴더 하나(커맨드는 같은 이름의 스킬이 됩니다). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 스킬과 규칙 파일이 참조하는 규칙과 템플릿. |
+
+이 폴더들은 공유됩니다. 프로젝트 전용이 아닙니다.
+
+- `windsurf`를 설치하는 모든 프로젝트와, 그 폴더를 지정하는 다른 모든 Apothem 설치는 같은 사본을 사용하고 같은 파일을 작성하므로, 설치 순서는 중요하지 않습니다. 다른 여러 도구도 `~/.agents/skills/`를 읽습니다. [하니스 레지스트리](/docs/reference/harness-registry#공유-루트)가 그 도구들을 나열합니다.
+- `--project`는 작성할 규칙 파일과 설치가 속하는 프로젝트를 선택합니다. 스킬이
+  가는 위치는 바꾸지 않습니다.
+- 설치는 저장소에 스킬 파일이나 규칙 파일을 추가하지 않습니다. 프로젝트에는 규칙
+  파일, `.devin/agents/`의 서브에이전트 파일, `.devin/config.local.json`의 훅
+  등록, 그리고 모든 프로젝트 설치가 만드는 `.apothem/` 폴더가 생기며, 이 폴더에는
+  훅 스크립트도 들어 있습니다.
+- 홈 폴더가 먼저 작성됩니다. 예를 들어 경로의 폴더가 홈 디렉터리 밖으로 나가는
+  링크이거나(홈 안에 머무는 링크는 따라갑니다) 쓸 수 없어서 이 작업이 실패하면,
+  설치는 프로젝트의 어떤 것도 변경되기 전에 오류와 함께 중단됩니다.
+- Apothem 스킬의 이름을 가졌지만 Apothem이 작성하지 않은 스킬 폴더는 그대로 두며,
+  설치는 그 폴더를 명시하는 경고를 출력합니다. 이름을 바꾸거나 옮긴 다음
+  `apothem update`를 실행하세요. 그 이름이 점유되어 있는 동안 `apothem verify`는 실패합니다.
+- 파일은 모두 합쳐 몇 메가바이트입니다.
+
+설치는 `--project` 밖에 작성하는 폴더를 명시하는 안내를 출력하며, `--dry-run`은
+그 폴더들을 나열합니다.
+
+## 서브에이전트
+
+새 Devin Desktop 탭이 시작되는 모드인 Devin Local은
+[Devin 서브에이전트 문서](https://docs.devin.ai/cli/subagents.md)에 따라
+`<project>/.devin/agents/`의 Markdown 파일에서 서브에이전트를 읽습니다. 이전
+모드인 Cascade에는 서브에이전트가 없습니다. 설치는 Apothem의 도우미 열네 개 중
+열한 개를 그 폴더에 작성합니다. 프로젝트용으로만 설치하며 사용자 수준
+서브에이전트 폴더(Linux와 macOS에서는 `~/.config/devin/agents/`, Windows에서는
+`%APPDATA%\devin\agents\`)는 작성하지 않습니다.
+
+각 파일은 도우미의 지침을 변경하지 않고 유지하며 다음 프런트매터 키를 담습니다.
+
+| 키 | Apothem이 작성하는 것 |
+| --- | --- |
+| `name`, `description` | 도우미의 이름과 설명. |
+| `allowed-tools` | 도우미가 사용할 수 있는 도구로, Devin 도구 이름의 목록입니다: `read`, `edit`, `grep`, `glob`, `exec`(도우미의 `Bash`), `write`. |
+
+Devin에는 도구를 거부하는 키가 없으므로, 도우미의 허용 도구에서 거부 도구를 뺀
+것이 하나의 `allowed-tools` 목록이 됩니다. 도우미의 `Bash`는 Devin에서 `exec`이며,
+Devin에 나열된 이름이 없는 도구는 제외됩니다. 읽기 전용 도우미는 `read`, `glob`,
+`grep`을 받고, 그중 명령을 실행하는 도우미는 `exec`도 받으며, `write`나 `edit`는
+결코 받지 않습니다.
+
+도우미 세 개는 설치되지 않습니다: `citation-auditor`, `fact-checker`,
+`research-scout`. 이들은 웹 검색과 웹 가져오기가 필요한데, Devin은 둘 중 어느
+것에 대해서도 `allowed-tools` 이름을 문서화하지 않으므로, 설치는 조사할 수 없는
+버전이나 모든 도구를 가진 버전을 작성하는 대신 이들을 보류합니다.
+`.devin/agents/`에 있는, 그 이름 중 하나를 가진 여러분의 파일은 절대 건드리지
+않습니다.
+
+설치는 `model` 키를 작성하지 않습니다. Devin은 서브에이전트를 자체 기본
+서브에이전트 모델에서 실행하며, 이는 서브에이전트를 시작한 세션의 모델이
+아닙니다. 또한 `max-nesting`도, Apothem의 `maxTurns`, `version`, `updated`,
+`portability` 키도 작성하지 않습니다.
+
+알아 둘 사항:
+
+- 사용자 정의 서브에이전트는 실험적입니다. Devin은 형식과 옵션이 변경될 수 있다고
+  표시하며, Devin Desktop에는 Devin Settings에 Subagents (Preview) 스위치가
+  있습니다(Devin CLI 설정 `subagents_enabled`는 기본적으로 켜져 있습니다).
+- 서브에이전트 파일은 일반 프로젝트 파일입니다. 프로젝트와 함께 커밋하거나
+  `.devin/agents/`를 `.gitignore`에 나열하세요. Apothem은 대신 선택하지 않습니다.
+- Apothem 도우미의 이름을 가진 여러분의 파일은 `~/.apothem/backups/` 아래에
+  저장된 다음 교체됩니다. 제거는 그 파일을 되돌려 놓지 않습니다. 다른 이름의
+  파일은 절대 건드리지 않습니다.
+- Devin은 공유 `.agents/agents/` 폴더도 읽는데, Apothem은 이 폴더에 절대 작성하지
+  않습니다. 또한 Devin CLI는 `.claude/` 폴더에서 서브에이전트를 가져오는 기능을
+  경로를 명시하지 않은 채 문서화합니다. Apothem은 Devin Desktop의 Local 모드가 그
+  가져오기를 적용하는지 확인하지 않았습니다.
+- Apothem은 웹 도구용 `allowed-tools` 이름, `model`이 받아들이는 값, 빈
+  `allowed-tools` 목록이 어떻게 읽히는지를 확인하지 않았습니다.
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
+## 훅
+
+Devin Local은
+[Devin 훅 문서](https://docs.devin.ai/cli/extensibility/hooks/overview.md)에 따라
+구성 파일의 `hooks` 키에서 훅을 실행합니다. 설치는 두 개를 등록합니다.
+
+| 이벤트 | 실행되는 것 |
+| --- | --- |
+| `SessionStart` | 세션 부트스트랩: 세션 메타데이터, 스킬 인덱스, 메모리 및 계획 요약, 상시 자세를 모델의 컨텍스트에 추가합니다. |
+| `PostToolUse`(모든 도구) | 선제적 압축 추적기. 활동을 세고, 압축 주기당 최대 두 번 모델에게 상태를 저장하거나 압축하라고 알립니다. 그 외에는 아무것도 출력하지 않습니다. |
+
+둘 다 모델에 컨텍스트를 추가합니다. 둘 다 도구 호출이나 세션을 차단하지
+않습니다.
+
+Apothem은 Devin에 `PreToolUse` 가드를 등록하지 않습니다. Devin의 문서는
+`UserPromptSubmit`, `SessionStart`, `PostToolUse`에 대해
+`additionalContext`(Apothem의 가드가 전달 수단으로 쓰는 필드)를 나열하고,
+`PreToolUse`에 대해서는 결정과 입력 재작성만 나열합니다. 그곳에 등록된 가드는
+도구 호출마다 프로세스 시작 비용을 치르면서 아무것도 전달하지 못할 수 있으므로,
+쓰기, 편집, 셸 가드, `AskUserQuestion` 검사, 세션 종료 프로토콜은 그것들을
+전달하는 도구에 남습니다. Apothem은 문서나 프로브가 Devin 이벤트의 가드가 모델에
+도달한다는 것을 보여 주면 그 이벤트에 가드를 등록할 것입니다.
+
+이것들은 Devin Local 훅입니다. 이전 Cascade 모드는 다른 훅 형식
+(`.devin/hooks.json`)을 읽으며, 설치는 이를 작성하지 않습니다.
+
+**파일이 가는 위치**
+
+| 파일 | 담고 있는 것 |
+| --- | --- |
+| `<project>/.devin/config.local.json` | 파일의 `hooks` 키에 병합된 두 훅 등록. Devin은 이 파일을 로컬 재정의이자 gitignore 대상으로 문서화하며, `.git/info/exclude`를 통해 로컬 구성 파일을 스스로 git에서 제외합니다. |
+| `<project>/.apothem/support/windsurf/hooks/` | 디스패처 스크립트, 그 보조 스크립트, 메시지 파일. |
+
+등록된 각 명령은 Apothem이 실행될 때 찾은 인터프리터와 프로젝트의 절대 경로를
+명시하므로 머신에 종속됩니다. 그래서 설치는 로컬 파일을 작성하고, 공유
+`<project>/.devin/config.json`, 독립형 `.devin/hooks.v1.json`, `.claude/` 설정은
+절대 작성하지 않습니다. 설치는 `.gitignore`를 편집하지 않습니다. Devin은 로컬
+구성 파일을 스스로 git에서 제외하므로(`.git/info/exclude`를 통해), 팀원의
+체크아웃은 여러분의 머신을 가리키는 명령을 받지 않습니다. `.gitignore`에
+`.apothem/`이 나열되어 있는지 확인하세요.
+
+**셸이 잘못 읽을 경로.** `$`, 백틱, 큰따옴표, 백슬래시가 포함된 프로젝트 또는
+인터프리터 경로는 무엇이든 작성되기 전에 거부됩니다. 따옴표로 묶인 명령 안에서
+그런 경로는 다른 파일을 실행하거나, 명령이 작성되는 JSON을 깨뜨립니다. 오류는 그
+경로를 명시합니다. 프로젝트를 옮기거나 이름을 바꾼 다음 설치를 다시 실행하세요.
+경로의 공백이나 아포스트로피는 문제없습니다.
+
+명령은 다음과 같으며, 두 경로 자리에 여러분의 인터프리터와 프로젝트 경로가
+들어갑니다.
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+`--contract devin`은 Devin의 소문자 도구 이름(`exec`, `write`, `edit`, `read`,
+`grep`, `glob`)을 Apothem의 핸들러가 검사하는 이름으로 매핑하고, 출력은 Claude
+Code가 읽는 것과 같은 엔벨로프로 둡니다. 매처는 작성되지 않습니다. Devin의 매처는
+정규 표현식이고, 생략된 매처는 모든 도구와 일치하며, `SessionStart`에는 일치시킬
+도구가 없습니다.
+
+**설치 후 확인할 사항**
+
+- 워크스페이스가 Restricted Mode에 있는 동안 Devin은 훅을 실행하지 않습니다. 먼저
+  워크스페이스를 신뢰하세요.
+- 훅이 로드되었는지 보려면 Devin Local의 Customizations에서 Hooks 탭을 열거나,
+  Devin CLI에서 `/hooks`를 실행하세요. 둘 다 각 훅을 그 소스 파일과 함께
+  나열합니다.
+- Devin의 문서는 Windows에서 훅 명령에 쓰이는 셸을 명시하지 않습니다. 명령은
+  `sh` 인용 방식을 사용하며, PowerShell은 호출 연산자 없이는 이를 파싱하지
+  못합니다. Apothem은 Devin Local이 Windows에서 무엇을 실행하는지 확인하지
+  않았습니다. 그곳에서 훅이 로드되지 않으면 이슈로 알려 주세요.
+
+**Devin은 Claude Code가 작성한 훅도 실행합니다.** Devin은
+`read_config_from.claude`가 켜져 있는 동안 `~/.claude/settings.json`,
+`.claude/settings.json`, `.claude/settings.local.json`의 훅을 로드하며, 이것이
+Devin CLI의 기본값입니다. Desktop 페이지는 Devin Local이 이를 적용하는지 밝히지
+않습니다. Claude Code용으로도 Apothem을 설치했다면 두 훅 세트가 모두 실행될 수
+있습니다. 여기의 `SessionStart` 명령과 그 Claude Code 사본은 Apothem의 훅 상태
+폴더에서 세션당 마커 하나를 공유하므로, 두 번째로 실행되는 쪽은 아무것도 출력하지
+않고 부트스트랩은 모델에 한 번만 도달합니다. Apothem은 Devin이 자신의 훅에
+설정하는 `DEVIN_PROJECT_DIR` 변수로 Devin을 식별합니다. 마커는 10초 동안
+유효하므로, 같은 세션이 나중에 다시 시작되면 여전히 전달됩니다. 컨텍스트 크기
+카운터는 두 곳 모두에서 실행되므로 그 임곗값에 일찍 도달하며, Apothem은 카운터의
+중복을 제거하지 않습니다. 이 훅만 로드하려면 사용자 구성
+(`~/.config/devin/config.json`, Windows에서는 `%APPDATA%\devin\config.json`) 또는
+프로젝트의 `.devin/config.json`에서 `"read_config_from"` 아래에
+`"claude": false`를 설정하세요. 그러면 Devin이 Claude Code의 규칙, 스킬, 커맨드,
+MCP 서버를 가져오는 것도 멈춥니다. 설치는 이를 안내로 출력합니다.
+
+**여러분 자신의 훅.** 등록은 키 단위로 여러분의 파일에 병합됩니다. 여러분이
+작성한 훅과 다른 키는 그대로 유지되고, 같은 이벤트 아래에 있는 여러분의 핸들러는
+Apothem의 핸들러 옆에 남으며, 업데이트는 명령이 Apothem 디스패처(어느 프로젝트
+경로 아래에 작성되었든 `--contract devin`을 붙인
+`.apothem/support/windsurf/hooks/dispatch.py`)를 실행하는 핸들러만 교체합니다.
+이름만 같거나 `python -m apothem.conformity.gate`를 실행하는 여러분의 훅은 절대
+Apothem의 것으로 간주되지 않습니다. 주석이나 다른 JSON5 구문이 있는 파일은
+그것들을 잃지 않고는 다시 작성할 수 없으므로, 설치는 그 파일에 대해
+`config.unparseable` 오류를 보고하고, 파일을 건드리지 않은 채 중단하며, 작성하기
+시작했던 다른 파일들은 다시 제거합니다. 주석을 제거하거나 두 항목을 직접
+추가하세요.
+
+**훅 끄기.** Apothem 훅을 끄려면 Devin의 환경에 `APOTHEM_HOOKS_DISABLE=1`을
+설정하세요.
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 프로필에서 네이티브 구성으로의 매핑
 
@@ -41,7 +249,17 @@ apothem install --harness windsurf --project /path/to/project
 Windsurf의 현재 규칙 표면은 `.devin/rules/` 아래에서 프로젝트 범위로
 지정됩니다(권장 위치이며, 하위 호환용 대체 위치인 `.windsurf/rules/`보다 우선함).
 워크플로와 머신 로컬 메모리는 운영자 소유입니다. Apothem은 이를 작성하지
-않습니다. 단일 파일 형식인 `.windsurfrules`는 의도적으로 작성하지 않습니다.
+않으며, Cascade 훅 파일과 공유 Devin 구성도 작성하지 않습니다. 단일 파일 형식인
+`.windsurfrules`는 의도적으로 작성하지 않습니다.
+
+Devin Desktop(Windsurf)은 `~/.agents/skills/`를 탐색하므로, 설치가 작성하는
+스킬은 추가 설정 없이 나타납니다. Claude Code 구성 가져오기가 켜져 있으면
+`~/.claude/skills/`에서 같은 이름을 나열할 수도 있습니다. Devin CLI 문서는 그
+가져오기를 기본적으로 켜진 것으로 하며, Desktop 페이지는 Local 모드가 이를
+적용하는지 밝히지 않습니다. Apothem은 Windsurf가 자신이 나열하지 않는 `SKILL.md`
+헤더 키를 어떻게 처리하는지 확인하지 않았습니다. 스킬은 `user-invocable`,
+`disable-model-invocation`, `allowed-tools`, `argument-hint`, 그리고 `metadata`
+맵을 담습니다.
 
 ## 검증
 
@@ -52,10 +270,19 @@ apothem verify --harness windsurf --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
-   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
-   `--profile PATH`를 추가하세요.
-3. 어댑터별 검증 루틴이 성공을 보고합니다.
+2. `.devin/agents/` 폴더와 훅 등록 `.devin/config.local.json`을 포함한 각 관리
+   대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은
+   파싱됩니다. 훅 파일에는 Apothem 디스패처를 실행하는 핸들러가 있어야 하므로(검사는
+   이를 실행하지 않습니다), 되돌려지거나 비워진 파일은 더 이상 검증을 통과하지
+   못합니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를
+   추가하세요. `.devin/agents/`에 대한 검사는 폴더가 존재하는지이며, 각 도우미
+   파일이 그 안에 있는지가 아닙니다.
+   `apothem diff --harness windsurf --project /path/to/project`는 누락되었거나
+   오래된 도우미 파일을 나열합니다.
+3. 모든 Apothem 스킬 폴더가 어느 설치가 작성했든 `SKILL.md`와 함께 제자리에
+   있고, Apothem 이름을 가진 스킬 폴더 중 Apothem이 작성하지 않은 것에 속하는
+   폴더는 없습니다. 실패한 검사는 누락되었거나 외부의 폴더를 명시합니다.
+4. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
 
@@ -64,6 +291,12 @@ apothem update --harness windsurf --project /path/to/project
 ```
 
 현재 공유 프로필 상태에서 프로젝트 규칙 파일을 다시 도출합니다.
+
+업데이트는 파일이 현재 파일과 다른 스킬 폴더도 다시 작성합니다.
+스킬을 작성하지 않던 이전 릴리스로 설치했다면 업데이트가 스킬을 추가합니다.
+현재 파일과 다른 서브에이전트 파일을 다시 작성하고, 누락된 파일을 추가합니다.
+또한 훅 스크립트와 `.devin/config.local.json`의 Apothem 핸들러를 새로 고치며,
+여러분 자신의 항목은 그대로 둡니다.
 
 ## 제거
 
@@ -78,6 +311,19 @@ apothem uninstall --harness windsurf --project /path/to/project
 백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지
 않습니다.
 
+제거는 `<project>/.devin/agents/`에 작성한 서브에이전트 파일도 제거하고 그곳의
+다른 파일은 유지합니다. 폴더는 비게 되면 제거됩니다.
+`<project>/.devin/config.local.json`에서 Apothem 훅 핸들러를 명령의 디스패처
+경로로 식별하여 제거하고, 여러분 자신의 훅과 키는 유지합니다. 파일은 Apothem이
+만들었고 그 안에 다른 것이 남지 않은 경우에만 삭제됩니다.
+`<project>/.apothem/support/windsurf/hooks/`의 훅 스크립트도 제거됩니다.
+`~/.agents/skills/`에 작성한 스킬 폴더와 `~/.config/apothem/`의 규칙 및 템플릿도
+제거하지만, 다른 Apothem 설치가 더 이상 사용하지 않을 때만 제거합니다. 다른
+프로젝트나 그 폴더를 공유하는 다른 도구가 사용 중일 수 있습니다. 그 경우 제거는
+폴더를 유지하고 어느 설치가 사용 중인지 출력하며, 마지막 제거가 폴더를
+제거합니다. 그 폴더들에 여러분이 추가한 파일은 남고, 비게 된 폴더는 제거됩니다.
+각 폴더는 제거되기 전에 `~/.apothem/backups/` 아래에 백업됩니다.
+
 ## 적합성 게이트
 
 ```bash
@@ -90,6 +336,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness windsurf --project /path/to/project`를 다시 실행 |
 | 검증 실패 | `apothem update --harness windsurf --project /path/to/project`를 실행한 다음 다시 검증 |
+| Devin Local에 Apothem 도우미가 하나도 나열되지 않음 | `apothem diff --harness windsurf --project /path/to/project`를 실행. `.devin/agents` 폴더에 대한 보류 중인 줄은 도우미 파일이 누락되었거나 오래되었다는 뜻이므로 `apothem update --harness windsurf --project /path/to/project`를 실행. `apothem verify`로는 이를 검사할 수 없음: `.devin/agents/`가 존재하면 그 안에 도우미 파일이 없어도 통과함. `diff`가 보류 중인 변경이 없다고 보고하면 Subagents (Preview) 설정이 켜져 있는지, 프로젝트가 Devin Desktop의 Local 모드에서 열려 있는지 확인한 다음 새 탭을 시작 |
+| Apothem 훅이 실행되지 않음 | Devin은 Restricted Mode인 워크스페이스에서 훅을 실행하지 않음: 워크스페이스를 신뢰. Apothem 항목이 로드되었는지 보려면 Devin Local의 Customizations에서 Hooks 탭을 열거나 Devin CLI에서 `/hooks`를 실행. Windows에서 Devin이 훅 명령을 어느 셸에서 실행하는지 Apothem은 확인하지 않았음 |
+| 설치가 `config.local.json`에 대해 `config.unparseable`을 보고함 | 파일에 다시 작성하면 사라질 주석이나 다른 구문이 있음. 주석을 제거하고 다시 설치하거나, Apothem 훅 항목 두 개를 직접 추가 |
+| Apothem 컨텍스트가 두 번 나타나거나 컨텍스트 크기 알림이 일찍 옴 | Devin은 Claude Code 설치가 작성한 훅도 실행함. `.devin/config.local.json`의 훅만 로드하려면 Devin 구성에서 `"read_config_from"` 아래에 `"claude": false`를 설정 |
+| `apothem verify`가 누락된 스킬 폴더를 명시함 | `apothem install --harness windsurf --project /path/to/project`를 실행. 이 명령이 폴더를 복원함 |
+| 설치나 업데이트가 스킬 폴더를 건너뛰었다고 경고함 | Apothem 스킬의 이름을 가진 폴더가 이미 스킬 폴더에 있고 Apothem이 작성하지 않았음. 이름을 바꾸거나 옮긴 다음 `apothem update`를 실행 |
+| 설치가 프로젝트를 변경하기 전에 중단됨 | 홈에서의 쓰기가 실패했음. 오류를 읽고, 오류가 명시하는 폴더(홈 디렉터리 밖으로 나가는 링크, 폴더가 있어야 할 자리의 파일, 읽기 전용 폴더)를 고친 다음 다시 설치 |
 | 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness windsurf --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브

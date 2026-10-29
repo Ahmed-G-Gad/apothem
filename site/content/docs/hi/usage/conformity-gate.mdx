@@ -2,7 +2,7 @@
 title: "अनुरूपता गेट"
 description: "इकोसिस्टम का स्वास्थ्य सत्यापित करने के लिए Apothem अनुरूपता गेट चलाएँ।"
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,27 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 `.github/workflows/` डायरेक्टरी नहीं होती, और कमिट-सब्जेक्ट वैलिडेटर तब करता है
 जब रूट में कोई कमिट इतिहास नहीं होता।
 
+छह वैलिडेटर रिपॉज़िटरी रूट से शुरू होते हैं और जिन फ़ाइलों की वे जाँच करते हैं
+उनके लिए पूरे वृक्ष में खोज करते हैं:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+ये नेस्टेड git चेकआउट, जैसे वर्कट्री, सबमॉड्यूल और नेस्टेड क्लोन, को छोड़ देते
+हैं, और उन डायरेक्टरियों को भी छोड़ देते हैं जिनमें निर्भरताएँ, वर्चुअल
+एनवायरनमेंट, कैश या बिल्ड आउटपुट होते हैं, जैसे `node_modules`, `venv` और `dist`।
+`no-global-plans-grep` में भटकी-योजनाओं की जाँच भी किसी नेस्टेड चेकआउट पर रुक
+जाती है। इनमें से किसी का भी रन उसी चेकआउट पर रिपोर्ट करता है जिसकी ओर उसे
+इंगित किया गया था, और किसी अन्य पर नहीं। जो वैलिडेटर एक निश्चित फ़ोल्डर पढ़ता
+है, जैसे `src/apothem/` के अंतर्गत `naming-grep`, वह उस फ़ोल्डर के नीचे का सब कुछ
+पढ़ता है।
+
 ## गेट बार
 
 | बार | जाँच | प्रकार |
@@ -74,12 +95,21 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+प्रति-लेखन वैलिडेटर जाँचने के लिए फ़ाइल लेता है, या मानक इनपुट से सामग्री पढ़ने
+के लिए `--stdin`; दोनों में से कोई न होने पर वह मानक इनपुट पर इनपुट की प्रतीक्षा
+करता है, इसलिए टर्मिनल से चलाते समय फ़ाइल पास करें। स्टैंडअलोन वैलिडेटर एक रूट
+डायरेक्टरी लेता है (छोड़ दिए जाने पर वर्तमान डायरेक्टरी)। `--list` दिखाता है कि
+हर वैलिडेटर किस समूह से संबंधित है।
 
 `--hook` मोड (`python -m apothem.conformity.gate --hook`) हार्नेस-प्रेषित एंट्री
 पॉइंट है: यह stdin से एक टूल-इनपुट JSON पेलोड पढ़ता है और लंबित लेखन के विरुद्ध

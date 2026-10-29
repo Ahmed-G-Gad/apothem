@@ -2,7 +2,7 @@
 title: "工具适配器抽象"
 description: "HarnessAdapter 协议——Apothem 适配器如何转译共享配置档案。"
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,17 +26,17 @@ Apothem 使用一份经模式校验的 YAML 配置文件作为语义层面的权
 适配器分为两种物化形态，两者在注册表中皆可见：
 
 - **单文件渲染器**将配置档案字段转译为一份工具原生的配置文件。例如，OpenCode 适配器通过物化器，从共享配置档案渲染其原生配置文件。
-- **规则面与支持树适配器**将 Apothem 载荷集合传播到该工具所记录的规则位置，在存在原生格式时把集合转换为原生格式，并把其余部分放在从原生锚点引用的 Apothem 自有支持子树下。Cursor 适配器将单个 `.cursor/rules/apothem-rules.mdc` 写入所提供的项目根目录，仅交付规则面。Claude Code 适配器不从配置档案渲染 `settings.json`。它将随附的设置模板复制到 `~/.claude/settings.json` 并填入钩子解释器，把 Apothem 约定目录（`agents/`、`rules/`、`skills/`、……）扁平化铺设在其旁边，并将配置档案写入 `CLAUDE.md` 中由哨兵界定的受管块。
+- **规则面与支持树适配器**将 Apothem 载荷集合传播到该工具所记录的规则位置，在存在原生格式时把集合转换为原生格式，并把其余部分放在从原生锚点引用的 Apothem 自有支持子树下。Cursor 适配器将单个 `.cursor/rules/apothem-rules.mdc` 写入所提供的项目根目录。在写入该文件之前，它会在用户主目录中写入两个共享文件夹：技能以及包装为技能的命令写入 `~/.agents/skills/`，而这些技能所引用的规则和模板写入 `~/.config/apothem/`。Claude Code 适配器不从配置档案渲染 `settings.json`。它将随附的设置模板复制到 `~/.claude/settings.json` 并填入钩子解释器，把 Apothem 约定目录（`agents/`、`rules/`、`skills/`、……）扁平化铺设在其旁边，并将配置档案写入 `CLAUDE.md` 中由哨兵界定的受管块。
 
 某个给定的适配器要么是**用户作用域**（写入主目录之下），要么是
-**项目作用域**（需要 `--project <path>` 并写入该目录树内部）；
-注册表记录了它属于哪一种。
+**项目作用域**（需要 `--project <path>` 并将其项目文件写入该目录树内部）；
+注册表记录了它属于哪一种。有七个项目作用域适配器（cursor、github-copilot、windsurf、zed、codebuddy、kiro 和 trae）还会在用户主目录中写入共享文件夹，例如 `~/.agents/skills/` 和 `~/.config/apothem/`，而 `--project` 不会改变这些文件夹的写入位置。
 
 ## 当前适配器拓扑
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -53,9 +53,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

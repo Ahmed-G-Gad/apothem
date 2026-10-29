@@ -2,7 +2,7 @@
 title: "Apothem बनाम कच्चा GitHub Copilot कॉन्फ़िगरेशन"
 description: "GitHub Copilot की copilot-instructions.md को हाथ से अनुरक्षित करने बनाम उसे Apothem की साझा प्रोफ़ाइल से रेंडर करने की तुलना।"
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,14 @@ Apothem का github-copilot अडैप्टर उस फ़ाइल क�
 | निर्देश लिखना | `.github/copilot-instructions.md` को हाथ से संपादित करें | रेंडर किया गया: साझा नियम फ़ाइल में अंतःस्थापित |
 | निर्देशों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
 | कॉन्फ़िग इंस्टॉल / हटाना | फ़ाइल को हाथ से लिखें और हटाएँ | `apothem install` / `apothem uninstall` |
+| पुनः उपयोग योग्य स्किल और कमांड साझा करना | हर स्किल फ़ोल्डर को हाथ से `~/.agents/skills/` में कॉपी करें और प्रतियों को अद्यतन रखें | अडैप्टर द्वारा `~/.agents/skills/` में लिखा जाता है, सभी प्रोजेक्ट के लिए एक ही प्रति, और `apothem update` पर रिफ़्रेश होता है |
 | कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness github-copilot --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
 github-copilot अडैप्टर साझा नियमों को `.github/copilot-instructions.md` में
-अंतःस्थापित करता है। Copilot एक IDE एक्सटेंशन के रूप में काम करता है और कोई
-टूल-कॉल हुक उजागर नहीं करता, इसलिए गार्डरेल का अभिप्राय पूरी तरह रेंडर किए गए
+अंतःस्थापित करता है। Copilot हुक को `.github/hooks/*.json` में दस्तावेज़ित करता है,
+जिसे अडैप्टर नहीं लिखता, इसलिए गार्डरेल का अभिप्राय पूरी तरह रेंडर किए गए
 निर्देशों में वहन किया जाता है। साझा नियमों में हर बदलाव अगले `apothem update` पर
 फ़ाइल को फिर से रेंडर करता है।
 

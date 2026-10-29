@@ -2,7 +2,7 @@
 title: "Conventions de commit"
 description: "Établit le format des messages de commit, l'étiquetage des versions, la discipline d'auteur exclusivement humaine et la cadence par tâche pour les artefacts git et le contrôle de version."
 machineTranslated: true
-sourceHash: "b14f720edd93a318"
+sourceHash: "b4f17475336ad671"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,15 @@ Le sujet est au mode impératif, en minuscules après les deux-points de type/sc
 
 ## 2. Discipline d'auteur (humaine uniquement)
 
-Chaque surface d'auteur dans chaque artefact git (sujet du commit, corps du commit, champ `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nom de branche, nom d'étiquette, annotation d'étiquette, nom de stash, corps des git-notes, titre de PR, description de PR) ne nomme **que des contributeurs humains**. L'environnement ne s'attribue jamais lui-même, ni le modèle de langage sous-jacent, ni l'environnement d'exécution / l'environnement / l'IDE / l'extension / l'éditeur, ni aucun autre outil automatisé, à aucune de ces surfaces. Les motifs interdits incluent `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, une narration de corps comme `generated with X` ou `co-authored by an automated helper`, et tout marqueur de la ligne de sujet signalant une paternité non humaine. La spécification complète se trouve à [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 ; l'application mécanique se trouve à [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+Chaque surface d'auteur dans chaque artefact git (sujet du commit, corps du commit, champ `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nom de branche, nom d'étiquette, annotation d'étiquette, nom de stash, corps des git-notes, titre de PR, description de PR) ne nomme **que des contributeurs humains**. L'environnement ne s'attribue jamais lui-même, ni le modèle de langage sous-jacent, ni l'environnement d'exécution / l'environnement / l'IDE / l'extension / l'éditeur, ni aucun autre outil automatisé, à aucune de ces surfaces. Les motifs interdits incluent `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, une narration de corps comme `generated with X` ou `co-authored by an automated helper`, et tout marqueur de la ligne de sujet signalant une paternité non humaine. La spécification complète se trouve à [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/production-ready-prs.md) §6 ; l'application mécanique se trouve à [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) Scan 3.
 
 ## 3. Étiquettes de version (gestion sémantique des versions)
 
-Les étiquettes de version suivent la **gestion sémantique des versions** (`vMAJOR.MINOR.PATCH`). La version antérieure à la 1.0 est `0.MINOR.PATCH` selon la convention pré-stable de la spécification ; les changements incompatibles incrémentent MINOR, les corrections de bogues incrémentent PATCH. L'étiquette est annotée (`git tag -a`) et signée au niveau de publication selon [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). La version du paquet se trouve dans le manifeste source (`pyproject.toml` `version`), et les surfaces d'exécution / porteuses de version dérivent de ces métadonnées du paquet.
+Les étiquettes de version suivent la **gestion sémantique des versions** (`vMAJOR.MINOR.PATCH`). Les changements incompatibles incrémentent MAJOR, les ajouts rétrocompatibles incrémentent MINOR et les corrections de bogues incrémentent PATCH. L'étiquette est annotée (`git tag -a`) et signée au niveau de publication selon [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). La version du paquet se trouve dans le manifeste source (`pyproject.toml` `version`), et les surfaces d'exécution / porteuses de version dérivent de ces métadonnées du paquet.
 
 ## 4. Cadence par tâche
 
-Les commits sont effectués par tâche au sérieux SHARED+, par phase à PERSONAL_USE et optionnels à EXPLORING. Le commit d'une tâche est effectué immédiatement après que les portails de vérification de la tâche ont réussi ; les commits différés accumulent du contexte et risquent de perdre la portée. La discipline complète se trouve à [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+Les commits sont effectués par tâche au sérieux SHARED+, par phase à PERSONAL_USE et optionnels à EXPLORING. Le commit d'une tâche est effectué immédiatement après que les portails de vérification de la tâche ont réussi ; les commits différés accumulent du contexte et risquent de perdre la portée. La discipline complète se trouve à [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/operational-mandates.md) §CM-13.
 
 ## 5. Validateurs
 

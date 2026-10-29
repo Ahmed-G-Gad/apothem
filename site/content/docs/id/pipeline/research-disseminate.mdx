@@ -2,7 +2,7 @@
 title: "/research-disseminate"
 description: "/research-disseminate — Mendorong diseminasi dan dampak pascapenerimaan: pengumuman preprint, artefak publik, deposit arsip FAIR, pelacakan altmetrics, lup sanggahan / revisi pengulas, dan jalur tahap 2 laporan teregistrasi — tahap terminal alur /research, setelah /research-publish."
 machineTranslated: true
-sourceHash: "0955b1a35b0c23ed"
+sourceHash: "e2a78434b72c92bd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Dengan argumen:
 
 ## Keluaran
 
-`_outputs/dissemination-plan.md` (pengumuman preprint, rencana artefak publik, catatan deposit arsip FAIR, rencana altmetrics dan pelacakan dampak, lup sanggahan / revisi, dan jalur tahap 2 laporan teregistrasi).
+`_outputs/dissemination-plan.md` (pengumuman preprint, rencana artefak publik dengan masukan awal, anggaran waktu, serta daftar pertanyaan dan cadangan untuk setiap presentasi, peta bagian setiap poster, tabel asal-usul gambar, dan hasil artefak yang dikompilasi, catatan deposit arsip FAIR, rencana altmetrics dan pelacakan dampak, lup sanggahan / revisi, dan jalur tahap 2 laporan teregistrasi).
 
 ## Hilir
 
@@ -40,15 +40,17 @@ Terminal — rencana diseminasi adalah artefak akhir pipeline. Loop bantahan dan
 Perintah ini mengikuti alur kerja standar alur `/research`:
 
 1. **Muat konteks** — Baca `_outputs/publication-record.md`, aturan-aturan, dan status suite yang ada.
-2. **Rencanakan preprint dan artefak publik** — Susun pengumuman preprint serta rencana presentasi / poster / blog.
+2. **Rencanakan preprint dan artefak publik** — Susun pengumuman preprint dan rencanakan setiap presentasi dan poster berdasarkan masukan awal, anggaran waktu, daftar pertanyaan dan cadangan, serta asal-usul gambar, dengan pemeriksaan PDF hasil kompilasi pada apa pun yang dibangun.
 3. **Catat deposit arsip FAIR** — Rencanakan deposit data + kode ke repositori FAIR dengan pengidentifikasi persisten.
 4. **Siapkan pelacakan dampak** — Rencanakan altmetrics dan pelacakan dampak terhadap jalur dampak proposal.
-5. **Persiapkan lup sanggahan** — Susun sanggahan pengulas dan jalur tahap 2 laporan teregistrasi bila berlaku.
+5. **Persiapkan lup sanggahan** — Baca batasan tahap tanggapan venue dari register aturan venue dalam catatan publikasi sebelum menyusun, lalu susun sanggahan pengulas dan jalur tahap 2 laporan teregistrasi bila berlaku.
 6. **Verifikasi dan terbitkan** — Pastikan rencana dapat dijalankan; terbitkan `_outputs/dissemination-plan.md` plus manifes serah terima. Operator melakukan tindakan publik.
 
 ## Landasan ketelitian
 
 Artefak publik membawa bahasa domain alami; ketika diseminasi mendahului de-anonimisasi, identitas penulis, institusi, dan sistem ditahan untuk tahap yang ditetapkan. Deposit FAIR adalah paket bukti-reproduksibilitas yang tahan-lama dan dapat-disitasi, diskalakan sesuai ambisi tempat-terbit, yang memungkinkan pihak independen mereproduksi studi.
+
+Presentasi dan poster direncanakan dari masukan awalnya: panjang slot, jenis presentasi, audiens, dan apakah sesi tanya jawab berbagi slot ditanyakan, tidak pernah diasumsikan. Bagian-bagian berjumlah sama dengan waktu bicara, dan waktu bicara ditambah tanya jawab dalam slot, transisi, dan cadangan berjumlah sama dengan slot. Gambar data adalah berkas milik makalah itu sendiri atau hasil pembuatan ulang dari data yang dicatat, tidak pernah digambar ulang secara manual atau dengan alat generatif. Tanggapan yang melanggar batasan venue yang dinyatakan (batas panjang, anonimitas berkas tanggapan, kebijakan tautan, penerimaan hasil baru) tidak dinyatakan siap.
 
 ## Mode kegagalan
 
@@ -57,6 +59,8 @@ Artefak publik membawa bahasa domain alami; ketika diseminasi mendahului de-anon
 | Tidak ada catatan deposit FAIR | Langkah pengarsipan dilewati | Pilih repositori FAIR (`--archive`) dan catat rencana deposit dengan pengidentifikasi persisten |
 | Rencana mencoba menerbitkan otomatis | Batas tahap dilampaui | Berhenti pada rencana yang siap; operator melakukan setiap tindakan publik |
 | Catatan publikasi hilang | `/research-publish` belum dijalankan | Jalankan `/research-publish` lebih dulu untuk menghasilkan paket tempat publikasi |
+| Gambar data yang digambar ulang pada presentasi atau poster | Gambar digambar lagi alih-alih digunakan ulang | Gunakan berkas milik makalah, atau buat ulang dari data yang dicatat |
+| Anggaran waktu presentasi tidak sesuai jumlahnya | Slot, waktu bicara, tanya jawab, atau cadangan tidak direncanakan | Tanyakan masukan awal, lalu tentukan ukuran bagian-bagian agar anggaran berjumlah sama dengan slot |
 
 ## Contoh
 

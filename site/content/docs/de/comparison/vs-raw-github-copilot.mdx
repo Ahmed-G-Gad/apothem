@@ -2,7 +2,7 @@
 title: "Apothem vs. rohe GitHub-Copilot-Konfiguration"
 description: "GitHub Copilots copilot-instructions.md von Hand pflegen versus sie aus Apothems gemeinsamem Profil rendern."
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,14 @@ Apothem gegenüber.
 | Anweisungen verfassen | `.github/copilot-instructions.md` von Hand bearbeiten | Gerendert: gemeinsame Regeln in die Datei eingebettet |
 | Anweisungen mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
 | Konfiguration installieren / entfernen | Die Datei von Hand schreiben und löschen | `apothem install` / `apothem uninstall` |
+| Wiederverwendbare Skills und Befehle teilen | Jeden Skill-Ordner von Hand nach `~/.agents/skills/` kopieren und die Kopien aktuell halten | Vom Adapter nach `~/.agents/skills/` geschrieben, eine gemeinsame Kopie für alle Projekte, und bei `apothem update` aufgefrischt |
 | Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness github-copilot --project <path>` |
 
 ## Was Apothem verwaltet
 
 Der github-copilot-Adapter bettet die gemeinsamen Regeln in
-`.github/copilot-instructions.md` ein. Copilot arbeitet als IDE-Erweiterung und
-stellt keine Hooks für Werkzeugaufrufe bereit, daher wird die Schutzabsicht
+`.github/copilot-instructions.md` ein. Copilot dokumentiert Hooks in
+`.github/hooks/*.json`, die der Adapter nicht schreibt, daher wird die Schutzabsicht
 vollständig in den gerenderten Anweisungen getragen. Jede Änderung an den
 gemeinsamen Regeln rendert die Datei beim nächsten `apothem update` neu.
 

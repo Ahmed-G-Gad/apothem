@@ -2,7 +2,7 @@
 title: "Abstracción del adaptador de entorno"
 description: "El protocolo HarnessAdapter — cómo los adaptadores de Apothem traducen el perfil compartido."
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,17 +42,21 @@ Los adaptadores se dividen en dos formas de materialización, ambas visibles en 
 registro:
 
 - **Los renderizadores de archivo único** traducen los campos del perfil a un único archivo de configuración nativo del entorno. El adaptador de OpenCode, por ejemplo, renderiza su archivo de configuración nativo a partir del perfil compartido mediante un materializador.
-- **Los adaptadores de superficie de reglas y de subárbol de soporte** propagan la cohorte de carga útil de Apothem a la ubicación de reglas documentada del entorno, convirtiendo las cohortes al formato nativo cuando existe uno y colocando el resto bajo un subárbol de soporte propiedad de Apothem al que se hace referencia desde el ancla nativa. El adaptador de Cursor escribe un único `.cursor/rules/apothem-rules.mdc` en la raíz de proyecto indicada y entrega solo la superficie de reglas. El adaptador de Claude Code no renderiza `settings.json` a partir del perfil. Copia la plantilla de ajustes incluida en `~/.claude/settings.json`, con el intérprete de hooks ya rellenado, aplana junto a ella los directorios de convención de Apothem (`agents/`, `rules/`, `skills/`, …) y escribe el perfil en un bloque gestionado delimitado por centinelas dentro de `CLAUDE.md`.
+- **Los adaptadores de superficie de reglas y de subárbol de soporte** propagan la cohorte de carga útil de Apothem a la ubicación de reglas documentada del entorno, convirtiendo las cohortes al formato nativo cuando existe uno y colocando el resto bajo un subárbol de soporte propiedad de Apothem al que se hace referencia desde el ancla nativa. El adaptador de Cursor escribe un único `.cursor/rules/apothem-rules.mdc` en la raíz de proyecto indicada. Antes de ese archivo escribe dos carpetas compartidas en el directorio personal del usuario: las skills, y los comandos envueltos como skills, van a `~/.agents/skills/`, y las reglas y plantillas que citan esas skills van a `~/.config/apothem/`. El adaptador de Claude Code no renderiza `settings.json` a partir del perfil. Copia la plantilla de ajustes incluida en `~/.claude/settings.json`, con el intérprete de hooks ya rellenado, aplana junto a ella los directorios de convención de Apothem (`agents/`, `rules/`, `skills/`, …) y escribe el perfil en un bloque gestionado delimitado por centinelas dentro de `CLAUDE.md`.
 
 Un adaptador dado es de **alcance de usuario** (escribe bajo el directorio de
 inicio) o de **alcance de proyecto** (requiere `--project <path>` y escribe
-dentro de ese árbol); el registro indica cuál.
+su archivo de proyecto dentro de ese árbol); el registro indica cuál. Siete
+adaptadores de alcance de proyecto (cursor, github-copilot, windsurf, zed,
+codebuddy, kiro y trae) también escriben carpetas compartidas en el directorio
+personal del usuario, como `~/.agents/skills/` y `~/.config/apothem/`, y
+`--project` no cambia adónde van.
 
 ## Topología actual de adaptadores
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -69,9 +73,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 

@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adaptateur d'environnement Apothem pour Qwen Code (bêta)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,6 +55,29 @@ Le bloc Apothem de `QWEN.md` se termine par une section consacrée aux fichiers
 de support Apothem, qui nomme le répertoire absolu sous
 `~/.qwen/.apothem/support/` par rapport auquel se résout chaque citation de
 style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
+
+**Listes d'outils des skills.** `Qwen Code` lit la liste d'autorisation d'outils
+d'un skill dans la clé de frontmatter en camelCase `allowedTools`, et la valeur
+doit être une liste YAML. Il ignore la clé à trait d'union `allowed-tools` écrite
+pour d'autres agents. Les skills installés portent donc `allowedTools` sous forme
+de liste, une entrée par ligne, à la place de la chaîne `allowed-tools` séparée
+par des virgules du corpus source. Chaque entrée conserve l'orthographe de la
+source, y compris des motifs tels que `Bash(git status *)`. Toutes les autres
+clés du skill, ainsi que le corps du skill, sont installés sans modification.
+
+**Dossiers de skills.** L'adaptateur écrit les skills dans `~/.qwen/skills/`.
+`Qwen Code` lit aussi `~/.agents/skills/` et, dans un projet, `.qwen/skills/` et
+`.agents/skills/`. Lorsque deux dossiers contiennent un skill du même nom, celui
+situé sous `.qwen` l'emporte ; un skill Apothem dans `~/.qwen/skills/` a donc
+priorité sur un skill du même nom qu'un autre adaptateur a écrit dans
+`~/.agents/skills/`.
+
+**Événements de hook.** L'adaptateur raccorde `SessionStart`, `PreToolUse`,
+`PreCompact`, `PostCompact` et `Stop`. `Qwen Code` définit 22 événements de hook,
+et chacun de ces cinq en fait partie. Trois des 22 (`SessionDelete`,
+`TodoCreated` et `TodoCompleted`) n'ont aucun événement `Claude Code` du même nom
+(`Claude Code` nomme les événements de todo `TaskCreated` et `TaskCompleted`) ;
+l'adaptateur n'en raccorde aucun.
 
 ## Vérification
 

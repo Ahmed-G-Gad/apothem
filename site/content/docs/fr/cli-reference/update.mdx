@@ -2,7 +2,7 @@
 title: "update"
 description: "Référence de la CLI pour la commande apothem update."
 machineTranslated: true
-sourceHash: "9090fc8d8546d5b0"
+sourceHash: "0f47915f4f7819de"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,6 +22,17 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 actuel. La commande utilise la même validation de profil, la même sélection
 `--harness all`, la même vérification de la portée de projet, le même
 comportement de dry-run et la même enveloppe JSON que `install`.
+
+Pour les adaptateurs à portée de projet qui écrivent des skills dans votre
+répertoire personnel (voir
+[`install`](/docs/cli-reference/install#dossiers-dans-votre-répertoire-personnel)),
+`update` met également ces dossiers à jour et affiche la même `Note:` qui les
+nomme. Un adaptateur installé avant qu'il n'écrive des skills les reçoit lors de
+sa prochaine mise à jour. Un dossier de skill qu'Apothem n'a pas écrit est ignoré
+avec un avertissement, comme pour [`install`](/docs/cli-reference/install#dossiers-dans-votre-répertoire-personnel).
+Une installation qui écrivait auparavant le dossier de skills partagé est
+réécrite, lors de sa prochaine mise à jour, sous la forme que partagent toutes
+les installations ; chaque dossier modifié est d'abord sauvegardé.
 
 L'alias en forme continue `apothem updating` (également accepté sous la forme
 `apothem Updating`) se résout vers le même gestionnaire.

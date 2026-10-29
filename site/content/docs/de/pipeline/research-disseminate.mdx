@@ -2,7 +2,7 @@
 title: "/research-disseminate"
 description: "/research-disseminate — Treibt Verbreitung und Wirkung nach der Annahme voran: Preprint-Ankündigung, öffentliche Artefakte, FAIR-Archivierungs-Deposit, Altmetrics-Verfolgung, die Erwiderungs- / Revisionsschleife der Gutachter und der Stufe-2-Pfad des registrierten Reports — die Abschlussstufe des /research-Flows, nach /research-publish."
 machineTranslated: true
-sourceHash: "0955b1a35b0c23ed"
+sourceHash: "e2a78434b72c92bd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Die `_outputs/publication-record.md` der Suite (das Venue-Paket + der Einreichun
 
 ## Ausgaben
 
-`_outputs/dissemination-plan.md` (die Preprint-Ankündigung, der Plan für öffentliche Artefakte, der Datensatz des FAIR-Archivierungs-Deposits, der Plan für Altmetrics und Wirkungsverfolgung, die Erwiderungs- / Revisionsschleife und der Stufe-2-Pfad des registrierten Reports).
+`_outputs/dissemination-plan.md` (die Preprint-Ankündigung, der Plan für öffentliche Artefakte mit der Aufnahme, dem Zeitbudget und der Fragen- und Reserveliste jedes Vortrags, der Abschnittskarte jedes Posters, einer Tabelle zur Herkunft der Abbildungen und dem Ergebnis des kompilierten Artefakts, der Datensatz des FAIR-Archivierungs-Deposits, der Plan für Altmetrics und Wirkungsverfolgung, die Erwiderungs- / Revisionsschleife und der Stufe-2-Pfad des registrierten Reports).
 
 ## Nachgelagert
 
@@ -40,15 +40,17 @@ Abschluss — der Verbreitungsplan ist das letzte Artefakt der Pipeline. Die Sch
 Der Befehl folgt dem Standard-Workflow des `/research`-Flows:
 
 1. **Kontext laden** — `_outputs/publication-record.md`, die Regeln und jeden bestehenden Suite-Zustand lesen.
-2. **Preprint und öffentliche Artefakte planen** — Die Preprint-Ankündigung und den Plan für Vortrag / Poster / Blog entwerfen.
+2. **Preprint und öffentliche Artefakte planen** — Die Preprint-Ankündigung entwerfen und jeden Vortrag und jedes Poster nach Aufnahme, Zeitbudget, Fragen- und Reserveliste und Herkunft der Abbildungen planen, mit einer Prüfung des kompilierten PDFs für alles, was erstellt wird.
 3. **Das FAIR-Archivierungs-Deposit festhalten** — Das Deposit von Daten + Code in ein FAIR-Repository mit persistenten Bezeichnern planen.
 4. **Wirkungsverfolgung einrichten** — Altmetrics und Wirkungsverfolgung gegenüber dem Wirkungspfad des Vorschlags planen.
-5. **Die Erwiderungsschleife vorbereiten** — Die Gutachter-Erwiderung und gegebenenfalls den Stufe-2-Pfad des registrierten Reports entwerfen.
+5. **Die Erwiderungsschleife vorbereiten** — Vor dem Entwerfen die Einschränkungen des Publikationsorts für die Antwortphase aus dem Register der Regeln des Publikationsorts im Publikationsdatensatz lesen, dann die Gutachter-Erwiderung und gegebenenfalls den Stufe-2-Pfad des registrierten Reports entwerfen.
 6. **Verifizieren und ausgeben** — Bestätigen, dass der Plan umsetzbar ist; `_outputs/dissemination-plan.md` plus das Übergabe-Manifest ausgeben. Der Operator führt die öffentlichen Aktionen aus.
 
 ## Rigorositätsuntergrenze
 
 Öffentliche Artefakte tragen natürliche Fachsprache; wo die Verbreitung der De-Anonymisierung vorausgeht, werden Autor, Institution und Systemidentität für die dafür vorgesehene Stufe zurückgehalten. Das FAIR-Deposit ist das dauerhafte, zitierbare Reproduzierbarkeitsnachweis-Paket, skaliert nach dem Anspruch des Publikationsorts, das es einer unabhängigen Partei erlaubt, die Studie zu reproduzieren.
+
+Vorträge und Poster werden ausgehend von ihrer Aufnahme geplant: Länge des Slots, Art des Vortrags, Publikum und ob Fragen den Slot teilen, werden erfragt, nie angenommen. Die Abschnitte summieren sich zur Redezeit, und Redezeit plus Fragen im Slot, Übergänge und Reserve summieren sich zum Slot. Eine Datenabbildung ist die eigene Datei des Papers oder eine Neuerzeugung aus den erfassten Daten, nie von Hand oder mit einem generativen Werkzeug neu gezeichnet. Eine Antwort, die eine genannte Einschränkung des Publikationsorts verletzt (Längenbegrenzung, Anonymität der Antwortdateien, Link-Richtlinie, Zulassung neuer Ergebnisse), wird nicht als fertig bezeichnet.
 
 ## Fehlermodi
 
@@ -57,6 +59,8 @@ Der Befehl folgt dem Standard-Workflow des `/research`-Flows:
 | Kein FAIR-Deposit-Datensatz | Archivierungsschritt übersprungen | Ein FAIR-Repository auswählen (`--archive`) und den Deposit-Plan mit persistenten Bezeichnern festhalten |
 | Plan versucht automatisch zu veröffentlichen | Stufengrenze überschritten | Beim fertigen Plan anhalten; der Operator führt jede öffentliche Aktion aus |
 | Publikationsdatensatz fehlt | `/research-publish` noch nicht ausgeführt | Zuerst `/research-publish` ausführen, um das Venue-Paket zu erzeugen |
+| Neu gezeichnete Datenabbildung in einem Vortrag oder Poster | Die Abbildung wurde neu gezeichnet statt wiederverwendet | Die Datei des Papers verwenden oder sie aus den erfassten Daten neu erzeugen |
+| Zeitbudget des Vortrags geht nicht auf | Slot, Redezeit, Fragen oder Reserve ungeplant gelassen | Die Aufnahme erfragen, dann die Abschnitte so bemessen, dass das Budget den Slot ergibt |
 
 ## Beispiele
 

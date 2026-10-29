@@ -2,7 +2,7 @@
 title: "マシン間同期検証チェックリスト"
 description: "完全な可搬性チェックを伴い、新しいホスト上で Claude Code アダプターが正しくインストール、検証、アンインストールされることを確認する検証手順。"
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**期待される結果:** インストーラーは既存のエンジンホームを検出し、再インストールや複製を行う代わりに fast-forward します。終了コードは 0 です。
+**期待される結果:** インストーラーは既存のエンジンホームを検出し、再インストールや複製を行う代わりに、その中でリリースタグをチェックアウトします。終了コードは 0 です。
 
 ### 3.2 前提条件のチェック
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

@@ -2,7 +2,7 @@
 title: "フロントマタースキーマ"
 description: "アーティファクトクラス全体にわたる、YAML フロントマターブロックの構造、クラスごとの必須キー、バリデーターによる強制ルールのリファレンスガイド。"
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 すべてのアーティファクトは、先頭に `---` 行で区切られた YAML フロントマターを持ちます。Markdown 系のファイルでは、フロントマターがファイルの最初の内容であり、[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) に従う正規の SPDX ヘッダー行は、閉じる `---` の後に続きます。
 
-コマンドのキーは `kebab-case` を使います。スキルのキーは、ソースコーパスが使う camelCase の表記である `userInvocable` を除き、`kebab-case` を使います（Claude Code のインストールでは `user-invocable` に名前が変わります）。ルールと委任ワーカーのキーは、セクション 2 の必須キー表に示されるとおり camelCase です。スカラー値は、引用符なしか、ダブルクォートで囲むかのどちらかです。コロン、ハッシュ記号、その他 YAML で意味を持つ文字を含む文字列値は、引用符で囲みます。
+コマンドのキーは `kebab-case` を使います。スキルのキーは、ソースコーパスが使う camelCase の表記である `userInvocable` を除き、`kebab-case` を使います（Claude Code のインストールでは `user-invocable` に名前が変わります）。Claude Code のインストールとプラグインは、スキルまたはコマンドの Apothem 専用キー（`version`、`updated`、`archetype`、`portability`）を、引用符付き文字列からなる末尾の `metadata:` マップの下へ、この固定の順序で移動します。Claude Code は未知のトップレベルキーを無視し、Agent Skills 標準は追加のキーを `metadata` に保持するためです。ソースファイルとその他すべてのハーネスはこれらをトップレベルに保持しますが、共有のユーザーレベルのスキルフォルダー（`~/.agents/skills/`、および `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/` の各フォルダー）は例外で、同じ方法で折りたたみます。ルールと委任ワーカーのキーは、セクション 2 の必須キー表に示されるとおり camelCase です。スカラー値は、引用符なしか、ダブルクォートで囲むかのどちらかです。コロン、ハッシュ記号、その他 YAML で意味を持つ文字を含む文字列値は、引用符で囲みます。
 
 ## 2. クラスごとの必須フィールド
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md`（ルート設定） | `name`、`version`、`updated`、`description`、`scope`、`portability` |
 | ルール（`src/apothem/rules/*.md`） | `name`、`description`、`pathFilter`、`alwaysApply` |
 | コマンド（`src/apothem/commands/*.md`） | `name`、`version`、`updated`、`description`、`argument-hint`、`disable-model-invocation`、`portability`、`allowed-tools` |
-| ヘルパー、別名委任ワーカー（`src/apothem/agents/*.md`） | `name`、`version`、`updated`、`description`、`tools`、`disallowedTools`、`maxTurns`、`effort` |
-| スキル（`src/apothem/skills/*/SKILL.md`） | `name`、`version`、`updated`、`description`、`archetype`、`userInvocable`、`disable-model-invocation`、`allowed-tools`。Claude Code のインストールとプラグインでは `userInvocable` が `user-invocable` に名前変更され、スキーマは、各スキルが 2 つの綴りのうちちょうど 1 つを持つことを要求し、両方を持つことは決して認めない |
+| ヘルパー、別名委任ワーカー（`src/apothem/agents/*.md`） | `name`、`version`、`updated`、`description`、`tools`（任意: これを省略したヘルパーはすべてのツールを継承します。`tools` を列挙するヘルパーに MCP サーバーを与えるには、プロファイルの `agent_mcp_servers` キーでそのサーバーを指定します）、`disallowedTools`、`maxTurns`、`effort` |
+| スキル（`src/apothem/skills/*/SKILL.md`） | `name`、`version`、`updated`、`description`、`archetype`、`userInvocable`、`disable-model-invocation`、`allowed-tools`。Claude Code のインストールとプラグイン、および共有のユーザーレベルのスキルフォルダーでは `userInvocable` が `user-invocable` に名前変更され、スキーマは、各スキルが 2 つの綴りのうちちょうど 1 つを持つことを要求し、両方を持つことは決して認めない。`Qwen Code` のインストールは `allowed-tools` を `allowedTools` リストとして書き込む。これは `Qwen Code` が読み取るキーと形式である |
 | 出力スタイル（`src/apothem/output-styles/*.md`） | `name`、`description`。出荷されるすべてのスタイルは `keep-coding-instructions: true` も設定しており、Claude Code がソフトウェアエンジニアリングの指示を保持するようにしている |
 
 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) にあるクラスごとのスキーマは、型、形式、enum、パターンの制約、および長さの制限を含む、制約の完全なセットを備えています: スキルまたはコマンドの `description` は最大 1,024 文字で、これは [Agent Skills](https://agentskills.io/specification) の上限です。

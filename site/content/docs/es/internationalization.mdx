@@ -2,7 +2,7 @@
 title: "Internacionalización (i18n)"
 description: "Cómo el sitio de documentación de Apothem declara su cohorte de locales, emite enlaces hreflang de idiomas alternativos y renderiza de derecha a izquierda en doce idiomas."
 machineTranslated: true
-sourceHash: "b3eb706603e79d8b"
+sourceHash: "fbe64d232e98a8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,13 @@ páginas de cada idioma.
 - **Renderizado de derecha a izquierda: activo.** Las hojas de estilo
   compartidas usan propiedades CSS lógicas en todas partes, de modo que las
   páginas en árabe se renderizan correctamente bajo `dir="rtl"`.
+- **Revisión de las traducciones: seguimiento por página.** Las páginas de
+  locale sembradas por máquina se sirven y llevan `machineTranslated: true` en
+  su frontmatter hasta que una persona las revisa; la marca es metadato de
+  seguimiento de la revisión y la página no la muestra. El inglés es el respaldo
+  para cualquier página que le falte a un locale. Tener revisado el 80 % de las
+  páginas de un locale es un objetivo de revisión, no una condición para
+  publicar.
 - **Actualidad de las traducciones: seguimiento por página.** Cada página de
   locale registra el texto en inglés a partir del cual se tradujo. Cuando la
   página en inglés cambia más tarde, la página traducida muestra una nota de una

@@ -2,7 +2,7 @@
 title: "Añadir un entorno"
 description: "Habilita un adaptador de entorno para que su configuración nativa se materialice desde el perfil compartido."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,7 @@ nativa de ese entorno desde tu perfil compartido.
 3. Previsualiza la instalación sin escribir archivos:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Instala el entorno. Para un entorno de ámbito de usuario:
@@ -67,7 +67,7 @@ nativa de ese entorno desde tu perfil compartido.
 ## Verificar
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Una línea `✓ <harness-id> is verified` confirma que los destinos gestionados existen

@@ -2,7 +2,7 @@
 title: "update"
 description: "Referencia de la CLI para el comando apothem update."
 machineTranslated: true
-sourceHash: "9090fc8d8546d5b0"
+sourceHash: "0f47915f4f7819de"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,6 +22,17 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 compartido actual. Usa la misma validación del perfil, la misma selección con
 `--harness all`, la misma comprobación del alcance de proyecto, el mismo
 comportamiento de ejecución en seco y el mismo sobre JSON que `install`.
+
+Para los adaptadores de alcance de proyecto que escriben skills en tu directorio
+personal (consulta
+[`install`](/docs/cli-reference/install#carpetas-en-tu-directorio-personal)),
+`update` también actualiza esas carpetas e imprime la misma `Note:` que las
+nombra. Un adaptador instalado antes de que escribiera skills las recibe en su
+siguiente actualización. Una carpeta de skill que Apothem no escribió se omite
+con una advertencia, igual que con [`install`](/docs/cli-reference/install#carpetas-en-tu-directorio-personal).
+Una instalación que antes escribió la carpeta de skills compartida se reescribe
+en la forma que comparten todas las instalaciones en su siguiente actualización;
+cada carpeta modificada se respalda primero.
 
 El alias en forma continua `apothem updating` (también aceptado como
 `apothem Updating`) se resuelve en el mismo manejador.

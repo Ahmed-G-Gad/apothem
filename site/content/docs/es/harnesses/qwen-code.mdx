@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adaptador de entorno de Apothem para Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,6 +55,29 @@ El bloque de Apothem en `QWEN.md` termina con una sección de archivos de soport
 de Apothem que nombra el directorio absoluto bajo `~/.qwen/.apothem/support/`
 contra el que se resuelve cada cita con estilo de repositorio
 (`rules/<name>.md`, `templates/...`, `hooks/...`).
+
+**Listas de herramientas de las skills.** `Qwen Code` lee la lista de
+herramientas permitidas de una skill desde la clave de frontmatter en camelCase
+`allowedTools`, y el valor debe ser una lista YAML. Ignora la clave con guion
+`allowed-tools` escrita para otros agentes. Por eso las skills instaladas llevan
+`allowedTools` como una lista, una entrada por línea, en lugar de la cadena
+`allowed-tools` separada por comas del corpus fuente. Cada entrada conserva la
+grafía de la fuente, incluidos patrones como `Bash(git status *)`. Todas las
+demás claves de la skill, y el cuerpo de la skill, se instalan sin cambios.
+
+**Carpetas de skills.** El adaptador escribe las skills en `~/.qwen/skills/`.
+`Qwen Code` también lee `~/.agents/skills/` y, dentro de un proyecto,
+`.qwen/skills/` y `.agents/skills/`. Cuando dos carpetas contienen una skill con
+el mismo nombre, gana la que está bajo `.qwen`, así que una skill de Apothem en
+`~/.qwen/skills/` tiene prioridad sobre una skill del mismo nombre que otro
+adaptador escribió en `~/.agents/skills/`.
+
+**Eventos de hook.** El adaptador conecta `SessionStart`, `PreToolUse`,
+`PreCompact`, `PostCompact` y `Stop`. `Qwen Code` define 22 eventos de hook y
+cada uno de estos cinco es uno de ellos. Tres de los 22 (`SessionDelete`,
+`TodoCreated` y `TodoCompleted`) no tienen ningún evento de `Claude Code` con el
+mismo nombre (`Claude Code` llama a los eventos de tareas `TaskCreated` y
+`TaskCompleted`); el adaptador no conecta ninguno de ellos.
 
 ## Verificación
 

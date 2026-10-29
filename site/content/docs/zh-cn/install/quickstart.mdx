@@ -2,7 +2,7 @@
 title: "快速开始"
 description: "安装 Apothem、编写配置档案、物化你的第一个工具并验证它——一份可复制粘贴的导览，附预期输出。"
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,14 +70,37 @@ apothem profile init
 apothem profile show --json
 ```
 
-该脚手架使用虚构的占位身份数据，在你安装任何工具输出之前编辑它是安全的。`show --json` 会将其读回并报告经过校验的配置档案：
+该脚手架使用虚构的占位身份数据，在你安装任何工具输出之前编辑它是安全的。`show --json` 会将其读回并报告经过校验的配置档案，所有默认值均已填入，首项为 `schema_version`。该命令将其打印在一行上；此处为展开后的形式：
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -100,7 +123,7 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-项目作用域的适配器写入项目内部，而不是你的主目录，因此它们需要一个 `--project PATH`。使用 `--dry-run` 可以预览任意安装而不写入文件：
+项目作用域的适配器将其规则文件写入项目内部，因此它们需要一个 `--project PATH`；其中七个还会将技能和共享规则写入你主目录中的文件夹，而 `--project` 不会改变这些内容的写入位置。使用 `--dry-run` 可以预览任意安装而不写入文件：
 
 ```bash
 apothem install --harness cursor --project . --dry-run

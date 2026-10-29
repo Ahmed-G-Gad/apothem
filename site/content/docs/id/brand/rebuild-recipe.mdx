@@ -2,7 +2,7 @@
 title: "Resep pembangunan ulang aset"
 description: "Regenerasi semua aset merek raster dari sumber SVG master dengan resvg dan Pillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ Ini adalah jalur pembaruan otoritatif untuk iterasi merek.
 
 Jalankan resep pembangunan ulang ketika:
 
-- SVG master (`assets/src/logo.svg` atau `assets/src/logo-dark.svg`) berubah.
+- Sebuah SVG master (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` atau `assets/src/logo-animated-light.svg`) berubah.
 - Master favicon ringkas (`assets/favicon.svg`) berubah.
 - Master kartu sosial (`assets/src/og-banner.svg` atau `assets/src/twitter-card.svg`) berubah.
 - Ukuran raster baru dibutuhkan.
@@ -61,7 +61,8 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Verifikasi
 
 Eksekusi yang berhasil meregenerasi raster mark terang dan gelap, set favicon
-PNG/ICO, ikon Apple touch, gambar OG/Twitter, dan mencerminkan subset yang
+PNG/ICO (ICO menyematkan lapisan 16, 32, dan 48 px), ikon Apple touch, ikon ekstensi
+VS Code (`vscode-extension/icon.png`), gambar OG/Twitter, dan mencerminkan subset yang
 disajikan di web —termasuk sumber logo hero yang dirujuk situs— ke `site/public/`.
 Setelah generasi, jalankan build situs dan periksa halaman Beranda, favicon tab
 peramban, dan PNG kartu sosial sebelum memublikasikan.

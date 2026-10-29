@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis — Mendamaikan sumber yang terkumpul menjadi peta mutakhir dan matriks literatur, memverifikasi setiap klaim secara adversarial, dan menyatakan celah penelitian yang eksplisit."
 machineTranslated: true
-sourceHash: "41141e6d1904a0ea"
+sourceHash: "c9f85b95a0e0ceb8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Dengan argumen:
 
 ## Keluaran
 
-`_inputs/synthesis.md` — peta mutakhir, matriks literatur, buku besar temuan yang diperdebatkan, dan pernyataan celah eksplisit dalam satu kalimat.
+`_inputs/synthesis.md` — peta mutakhir, matriks literatur, buku besar temuan yang diperdebatkan, dan pernyataan celah eksplisit dalam satu kalimat beserta cakupan pencarian yang menjadi landasannya. Sintesis ini melaporkan jumlah laporan sekaligus jumlah studi.
 
 ## Hilir
 
@@ -41,8 +41,8 @@ Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
 1. **Memuat konteks** — Membaca buku besar sumber dan ekstraksi per sumber.
 2. **Memverifikasi Gerbang Urutan** — Memastikan buku besar sumber ada; jika tidak, berhenti dengan `Blocked: run /research-sources first`.
-3. **Menyintesis** — Membangun peta mutakhir + matriks literatur; mendamaikan kesepakatan dan kontradiksi; menyatakan celah eksplisit.
-4. **Memverifikasi secara adversarial** — Setiap klaim penopang disangkal secara default terhadap dua sumber independen atau lebih.
+3. **Menyintesis** — Membangun peta mutakhir + matriks literatur, dengan membawa id studi, kelas bukti, dan status integritas setiap sumber dari buku besar; mendamaikan kesepakatan dan kontradiksi; menyatakan celah eksplisit dan menyebutkan cakupan pencarian yang menjadi landasannya.
+4. **Memverifikasi secara adversarial** — Setiap klaim penopang disangkal secara default terhadap dua studi independen atau lebih.
 5. **Memperbarui manifes serah terima** — Mencatat jalur sintesis dan buku besar klaim yang diperdebatkan.
 6. **Memancarkan sintesis** — `_inputs/synthesis.md`.
 
@@ -50,12 +50,19 @@ Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
 Sebelum pernyataan celah difinalkan, sintesis mendamaikan terminologi, temuan, dan rekomendasinya terhadap korpus saudara terkait (koherensi lintas-korpus); sebuah konflik dicatat dalam buku besar temuan yang diperdebatkan, tidak pernah diselaraskan secara diam-diam. Celah harus terselesaikan menjadi kontribusi yang khas dan parsimonis — bukan yang sudah ditutup oleh klaim yang dikuatkan, dan tidak dapat diuraikan menjadi elemen-elemen tumpang tindih yang tidak khas.
 
+## Menghitung bukti
+
+- **Studi, bukan laporan.** Laporan yang berbagi id studi di buku besar, studi yang berbagi sampel yang dikumpulkan, dan sumber yang saling menyitasi dihitung sebagai satu sumber; dua makalah dari satu kelompok penulis diperiksa terlebih dahulu apakah berbagi data. Peringkat kepastian menghitung studi independen dengan cara yang sama.
+- **Integritas.** Sumber yang ditarik atau dicabut tidak dihitung sebagai penguatan, dan sumber yang status integritasnya `concern` tidak pernah menjadi satu-satunya penopang suatu klaim.
+- **Bukti yang berlawanan dan cakupan.** Sintesis terdahulu yang ditemukan dalam pencarian menunjukkan lokasi studi primer dan tidak dihitung di samping studi-studi itu. Ketika kelas bukti yang berlawanan tidak menyisakan apa pun, temuan dicatat sebagai `none found in the searches recorded`, tidak pernah sebagai konsensus, dan kalimat celah menyebutkan cakupannya dengan istilah yang sama: indeks, istilah dan rentang tanggal, tanggal terakhir dijalankan, dan setiap putaran yang ditandai `incomplete`.
+
 ## Mode kegagalan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
 | Blocked: run /research-sources first | Tidak ada buku besar sumber | Jalankan `/research-sources` untuk menghasilkan `_inputs/source-ledger.md` |
-| Klaim bertahan tanpa ≥2 sumber | Penguatan tidak memadai | Tandai sebagai diperdebatkan atau tak terverifikasi; jangan menegaskan |
+| Klaim bertahan tanpa ≥2 studi independen | Penguatan tidak memadai, atau sumber-sumbernya berbagi studi atau sampel | Tandai sebagai diperdebatkan atau tak terverifikasi; jangan menegaskan |
+| Celah dinyatakan sebagai ketiadaan di bidang tersebut | Kalimat celah tidak didukung cakupan pencarian | Sebutkan pencarian yang dicatat sebagai cakupannya; jangan pernah menegaskan ketiadaan di luar pencarian tersebut |
 | Tidak ada pernyataan celah eksplisit | Sintesis tidak memiliki target | Turunkan ulang celah satu kalimat yang ditangani penelitian |
 
 ## Contoh

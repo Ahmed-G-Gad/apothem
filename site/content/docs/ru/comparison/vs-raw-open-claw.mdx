@@ -2,15 +2,16 @@
 title: "Apothem против сырой конфигурации Open-Claw"
 description: "Ручное сопровождение конфигурации Open-Claw против управления ею через общий профиль Apothem."
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw читает `~/.openclaw/openclaw.json`. Его `agents.defaults.skills` — это
-список разрешённых имён (а не загрузчик каталогов), а MCP — это поверхность CLI,
-поэтому Apothem не пишет ни одного ключа конфигурации; он устанавливает общие
-группы команд и skills под `~/.openclaw/.apothem/support/skills/` как вспомогательный
-материал.
+Open-Claw читает `~/.openclaw/openclaw.json`. Apothem устанавливает общие группы
+команд и skills под `~/.openclaw/.apothem/support/skills/` и пишет там один ключ,
+`skills.load.extraDirs`, который указывает этот каталог, чтобы OpenClaw загружал
+эти skills. Его `agents.defaults.skills` — это список разрешённых имён, которым
+владеете вы, а MCP — это поверхность CLI, поэтому Apothem не пишет ни то, ни
+другое.
 
 ## Статус
 
@@ -32,6 +33,9 @@ Open-Claw читает `~/.openclaw/openclaw.json`. Его `agents.defaults.skil
 Адаптер Open-Claw пишет `openclaw.json`, оборачивает слеш-команды Apothem в
 skills, копирует skills Apothem в указанный вспомогательный каталог и хранит
 правила, шаблоны, agents и материал хуков под вспомогательным поддеревом Apothem.
+OpenClaw читает `skills.load.extraDirs` с наименьшим приоритетом среди своих
+источников skills, поэтому skill с тем же именем в вашем рабочем пространстве,
+`~/.agents/skills` или `~/.openclaw/skills` используется вместо копии Apothem.
 
 ## Путь миграции
 

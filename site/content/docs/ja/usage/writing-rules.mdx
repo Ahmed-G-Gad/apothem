@@ -2,7 +2,7 @@
 title: "ルールの記述"
 description: "Apothem の振る舞いのルールを作成し、スコープを定め、保守します。"
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,8 @@ alwaysApply: true         # true for always-on; false for path-filtered
 | `true` | `""`（空） | 常時適用: すべてのセッション、すべてのファイル |
 | `false` | `"**/*.py"` のような glob | パスによる絞り込み: アクティブなファイルが glob に一致する場合のみ |
 
+同梱のルールのうち 5 つが常時適用です: `agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`、そしてルールインデックス。常時適用のルールはすべてのセッションでコンテキストを消費するため、新しいルールは、それが管理するファイルを指定する glob でパスによる絞り込みを行うべきです（SHOULD）。`**` だけのフィルターは何もスコープせず、Claude Code はそのルールを常時適用のルールと同様に起動時に読み込みます。同梱のコーパスは、常時適用の集合をこの一覧とバイト上限に収めています。常時適用に昇格させるルールは、同じ変更の中でその両方を変更します。追加する各ルールの名前はルールインデックス（`apothem-rule-index`）に記載してください。そうすれば、パスでルールをスコープしないハーネス上のセッションでもそのルールを見つけられます。コンパニオンルール（`<parent>-<aspect>`）は、親の `pathFilter` かそれより狭いものを使うため、親なしで読み込まれることはありません。自作のルールに `apothem-rule-index` という名前を付けないでください: インストールは、その名前のルールファイルをバックアップしてから上書きします。
+
 ## ルールの例
 
 ```markdown
@@ -51,11 +53,17 @@ alwaysApply: false
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+2 行目のように、プロジェクトスコープのハーネスは update に `--project` が必要です。ユーザースコープのハーネスには不要です。
 
 ## ルールの検証
 
+書いたルールファイルに対して frontmatter バリデーターを実行します。Apothem のチェックアウトからは、`PYTHONPATH=src` でパッケージをインポート可能にします。スクリプトでインストールした後は、その代わりに `PYTHONPATH="$HOME/.apothem/src"` を使います。
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+`frontmatter-grep` のような書き込みごとのチェックは、チェック対象のファイルを受け取るか、`--stdin` で標準入力から内容を読み取ります。どちらも指定しない場合は標準入力からの入力を待ちます。スタンドアロンのチェックは、代わりにルートディレクトリを受け取ります（`--check naming-grep .` のように）。

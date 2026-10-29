@@ -2,7 +2,7 @@
 title: "Eigenständige Laufzeit"
 description: "Wie Apothems Engine aus jedem Checkout läuft — gevendorte Abhängigkeiten, das Aufrufmodell PYTHONPATH=src und der Bootstrap des Plugin-Baums."
 machineTranslated: true
-sourceHash: "7e97d59d22d34fda"
+sourceHash: "df04c51efc417e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -114,8 +114,8 @@ Laufzeit niemals importiert, und zwar aus zwei bewussten Gründen: Die Engine
 **materialisiert ihre Kohorten** — Regeln, Skills, Befehle und Templates —
 direkt aus dem Baum in jeden Harness, sodass der Baum die lebendige Quelle der
 Wahrheit ist und nicht nur eine Laufzeit; und das `.git`-Verzeichnis bleibt an
-Ort und Stelle, sodass `apothem update` den bestehenden Klon per Fast-Forward
-aktualisiert, statt neu herunterzuladen.
+Ort und Stelle, sodass `apothem update` den Release-Tag im bestehenden Klon
+auscheckt, statt neu herunterzuladen.
 
 Dieses Layout der Ausführung aus dem Quellcode ist dasselbe Muster, das
 Werkzeuge wie `nvm`, `pyenv` und `oh-my-zsh` verwenden — wenige Megabyte

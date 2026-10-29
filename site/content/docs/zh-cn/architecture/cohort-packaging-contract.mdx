@@ -2,7 +2,7 @@
 title: "集合打包契约"
 description: "集合打包与插件清单的稳定、可供下游使用的契约——枚举集合并解析其按工具划分的原生目标，无需重新推导映射。"
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,7 @@ sourceHash: "ef3a145a60ec6690"
 
 ## 插件清单的角色
 
-`plugin.schema.json` 描述一个 `plugin.json`——一个自描述的目录成员包（`skills` / `commands` / `agents` / `hooks` / `rules`），带有必需的 `name`、SemVer `version` 和 `description`。可选元数据包括 `displayName`（代替 `name` 显示的名称）以及插件目录收录字段：`documentationUrl`、`supportUrl`、`privacyPolicyUrl` 和 `termsOfServiceUrl`，每个都是一个 `https://` URL，另有插件内部的一个 `icon` 路径。生成的 Claude Code 包设置了 `displayName`、`documentationUrl` 和 `supportUrl`。插件清单是工具适配器物化到其原生插件表面的单元；集合选择插件携带哪些成员，而传播清单解析这些成员在每个工具中的落地位置。
+`plugin.schema.json` 描述一个 `plugin.json`——一个自描述的目录成员包（`skills` / `commands` / `agents` / `hooks` / `rules`），带有必需的 `name`、SemVer `version` 和 `description`。可选元数据包括 `displayName`（代替 `name` 显示的名称）以及插件目录收录字段：`documentationUrl`、`supportUrl`、`privacyPolicyUrl` 和 `termsOfServiceUrl`，每个都是一个 `https://` URL，另有插件内部的一个 `icon` 路径。生成的 Claude Code 包设置了 `displayName`、`documentationUrl` 和 `supportUrl`。Anthropic 的目录会读取这些收录字段，而 Claude Code 在加载时忽略它们。claude.ai 市场同步会把这两个链接报告为无法识别的键并将其剥离，因此那里的市场会显示“1 with warnings”。该警告属于预期情况，插件照常加载、不受影响。插件清单是工具适配器物化到其原生插件表面的单元；集合选择插件携带哪些成员，而传播清单解析这些成员在每个工具中的落地位置。
 
 ## 打包决策——一个总括包，逻辑集合
 

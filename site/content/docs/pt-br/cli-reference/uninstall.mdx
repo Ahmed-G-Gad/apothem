@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referência da CLI para o comando apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,54 @@ instalado na mesma raiz ainda os usar. Quando o harness que você remove é o
 último nessa raiz, o comando primeiro copia cada armazenamento para a raiz de
 backups do Apothem (`~/.apothem/backups/`) e depois o remove com tudo o que há
 nele. Tudo o que você mantém em `plans/` nunca é removido.
+
+## Pastas compartilhadas no seu diretório pessoal
+
+Várias instalações podem usar uma mesma pasta no seu diretório pessoal: a pasta
+de skills (`~/.agents/skills/`, ou `~/.codebuddy/skills/`, `~/.kiro/skills/` ou
+`~/.trae/skills/`) e `~/.config/apothem/rules/` e
+`~/.config/apothem/templates/`. A página de [install](/docs/cli-reference/install#pastas-no-seu-diretório-pessoal)
+lista qual adaptador grava qual. O Apothem registra quais instalações usam cada
+pasta, e uma desinstalação segue uma regra: ela remove uma pasta somente quando
+nenhuma outra instalação do Apothem ainda a usa.
+
+- Desinstalar uma ferramenta mantém as skills enquanto outra instalação ainda as
+  usa, e informa isso. Uma ferramenta instalada em dois projetos conta como duas
+  instalações, então desinstalá-la do projeto A mantém as pastas enquanto o
+  projeto B ainda as usa. A última desinstalação as remove (consulte o segundo
+  exemplo abaixo).
+- Somente o que o próprio registro da instalação lista é removido. Uma
+  instalação feita antes de as pastas serem gerenciadas não tem esse registro,
+  então desinstalá-la não remove nada no seu diretório pessoal. Os arquivos que
+  você adicionou às pastas permanecem, assim como uma pasta que tem o nome de uma
+  skill do Apothem e que o Apothem não gravou.
+- Uma instalação cuja pasta de projeto não existe mais é ignorada, de modo que
+  um projeto excluído não mantém as pastas para sempre. A nota a nomeia.
+- Se o registro de uma instalação que poderia usar as pastas não puder ser lido,
+  a desinstalação para com um erro antes de remover qualquer coisa, e a
+  instalação permanece registrada. Repare ou mova o registro ilegível e execute o
+  comando novamente. Um registro danificado de uma ferramenta que nunca grava
+  essas pastas é ignorado.
+- Quando o último uso termina, as pastas que ficaram vazias também são
+  removidas. Cada pasta é salva em backup em `~/.apothem/backups/` antes de ser
+  removida.
+
+Cada desinstalação imprime uma `Note:` por pasta, por exemplo `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, ou
+`was removed: no other Apothem install uses it`. No envelope `--format json`, cada
+nota é uma entrada de `warnings` com `"outcome": "advisory"`,
+`"operation": "shared_root"` e `"role"` definido como `retained` ou `released`.
+Ela carrega `path`, `holders` (as instalações que mantêm a pasta), `stale`
+(instalações ignoradas) e `kept` e `total` (as entradas registradas mantidas e as
+entradas que a instalação listou).
+
+Se uma pasta permanece por causa de uma instalação que você não consegue
+encontrar, a nota a nomeia. Quando a pasta do projeto foi excluída, a instalação
+é ignorada e a pasta sai com a próxima desinstalação. Quando o projeto existe,
+mas você removeu à mão o bloco do Apothem do arquivo de regras dele, `uninstall`
+relata o harness como não instalado e não libera a reivindicação dele; execute
+`install` para esse harness e projeto e depois `uninstall` para liberá-la.
+`apothem verify` mostra se uma pasta ainda está completa.
 
 A remoção com `--harness all` é deliberadamente exaustiva: ela abrange todos os harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula durante a instalação — a limpeza alcança o estado que uma instalação anterior, mais ampla, possa ter deixado para trás. Os harnesses que nunca foram instalados recebem o mesmo aviso.
 
@@ -90,6 +138,16 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+Uma pasta de skills compartilhada permanece até que a última instalação que a usa
+seja removida:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Códigos de saída

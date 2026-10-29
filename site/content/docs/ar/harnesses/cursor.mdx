@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "محوّل إطار عمل Apothem لـ Cursor (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "555c36a18537fc13"
+sourceHash: "89536140f8fab5aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,212 @@ apothem install --harness cursor --project /path/to/project
 ```
 
 يُجسِّد المحوّل ملف قواعد <bdi>`.mdc`</bdi> واحدًا بنطاق المشروع من سطح القواعد
-والحوكمة المشترك في <bdi>Apothem</bdi>.
+والحوكمة المشترك في <bdi>Apothem</bdi>، ويكتب مساعِدات <bdi>Apothem</bdi> بوصفها عوامل
+فرعية لـ <bdi>Cursor</bdi> في المشروع (راجع [العوامل الفرعية](#العوامل-الفرعية))، ويضيف
+خطّافًا واحدًا إلى <bdi>`hooks.json`</bdi> الخاص بالمشروع (راجع [الخطّافات](#الخطّافات)).
 
-**الملفات المكتوبة:** <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>
+ويكتب أيضًا مهارات <bdi>Apothem</bdi>، والقواعد والقوالب التي تستشهد بها، في دليلك
+المنزلي، قبل أن يمسّ المشروع (راجع
+[الملفات خارج المشروع](#الملفات-خارج-المشروع)).
 
-هذا الملف هو التثبيت بأكمله: لا يُوضَع بجواره أي ملف قاعدة أو مهارة أو أمر أو قالب أو
-خطّاف، لذا ينصّ الملف على ذلك بدلًا من الإشارة إلى ملفات <bdi>Apothem</bdi> غير
-موجودة في المشروع.
+**الملفات المكتوبة:**
+
+- <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>، ملف القواعد.
+- <bdi>`<project>/.cursor/agents/<name>.md`</bdi> لكل مساعِد من مساعِدات <bdi>Apothem</bdi>، في المشروع.
+- <bdi>`<project>/.cursor/hooks.json`</bdi>، مع إضافة مُدخلة <bdi>`sessionStart`</bdi> واحدة إليه. وتبقى مُدخلاتك ومفاتيحك الخاصة فيه.
+- <bdi>`<project>/.apothem/support/cursor/hooks/`</bdi>، سكربتات الخطّافات، في المشروع.
+- <bdi>`~/.agents/skills/<name>/SKILL.md`</bdi> لكل مهارة وأمر من <bdi>Apothem</bdi>، في دليلك المنزلي.
+- <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi>، في دليلك المنزلي.
+
+يلخّص ملف القواعد الانضباطات ويسمّي تلك المجلّدات، كي يتمكّن
+النموذج من فتح مهارة أو ملف قاعدة حين تتطلّب مهمّة ذلك.
+
+## الملفات خارج المشروع
+
+يكتب التثبيت أيضًا مهارات <bdi>Apothem</bdi> في دليلك المنزلي، قبل أن يغيّر أي شيء
+في المشروع:
+
+| المجلّد | ما يكتبه <bdi>Apothem</bdi> فيه |
+| --- | --- |
+| <bdi>`~/.agents/skills/`</bdi> | لكل مهارة من <bdi>Apothem</bdi> مجلّد واحد يحوي <bdi>`SKILL.md`</bdi>، ولكل أمر من <bdi>Apothem</bdi> مجلّد (يصبح الأمر مهارة بالاسم نفسه). |
+| <bdi>`~/.config/apothem/rules/`</bdi>، <bdi>`~/.config/apothem/templates/`</bdi> | القواعد والقوالب التي تُحيل إليها المهارات وملف القواعد. |
+
+هذه المجلّدات مشتركة، وليست خاصة بالمشروع:
+
+- كل مشروع تثبّت فيه <bdi>`cursor`</bdi>، وكل تثبيت آخر لـ <bdi>Apothem</bdi> يسمّي المجلّد، يستخدم النسخة نفسها ويكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت به. وتقرأ أدوات أخرى عديدة <bdi>`~/.agents/skills/`</bdi> أيضًا؛ ويسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة).
+- يختار <bdi>`--project`</bdi> ملف القواعد الذي يُكتَب والمشروعَ الذي ينتمي إليه
+  التثبيت. ولا يغيّر المكان الذي تذهب إليه المهارات.
+- لا يضيف التثبيت أي ملف مهارة أو قاعدة إلى مستودعك. ويحصل المشروع على ملف
+  القواعد، وملفات العوامل الفرعية في <bdi>`.cursor/agents/`</bdi>، ومُدخلة الخطّاف في
+  <bdi>`.cursor/hooks.json`</bdi>، إضافةً إلى المجلّد <bdi>`.apothem/`</bdi> الذي يُنشئه كل
+  تثبيت على مستوى المشروع، والذي يحوي أيضًا سكربتات الخطّافات.
+- تُكتَب المجلّدات المنزلية أولًا. فإن فشل ذلك، مثلًا لأن مجلّدًا في المسار رابطٌ
+  يخرج من دليلك المنزلي (أما الرابط الذي يبقى داخله فيُتَّبَع) أو لا يمكن الكتابة فيه،
+  يتوقّف التثبيت مع الخطأ قبل أن يتغيّر أي شيء في المشروع.
+- مجلّد المهارة الذي يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>
+  يُترَك كما هو، ويطبع التثبيت تحذيرًا يسمّيه. أعد تسميته أو انقله، ثم شغّل
+  <bdi>`apothem update`</bdi>. ويفشل <bdi>`apothem verify`</bdi> ما دام ذلك الاسم محجوزًا.
+- يبلغ مجموع الملفات بضعة ميغابايتات.
+
+يطبع التثبيت ملاحظة تسمّي المجلّدات التي يكتبها خارج <bdi>`--project`</bdi>، ويسردها
+<bdi>`--dry-run`</bdi>.
+
+## العوامل الفرعية
+
+يقرأ <bdi>Cursor</bdi> العامل الفرعي من ملف <bdi>Markdown</bdi> في <bdi>`<project>/.cursor/agents/`</bdi>، وفق
+[وثائق العوامل الفرعية في <bdi>Cursor</bdi>](https://cursor.com/docs/subagents). ويكتب
+التثبيت ملفًا واحدًا لكل مساعِد من مساعِدات <bdi>Apothem</bdi> في ذلك المجلّد. وهو يثبّت
+للمشروع فقط ولا يكتب أي مجلّد <bdi>`~/.cursor/agents/`</bdi>.
+
+يُبقي كل ملف تعليمات المساعِد دون تغيير ويحمل مفاتيح البيانات الأمامية
+التالية:
+
+| المفتاح | ما يكتبه <bdi>Apothem</bdi> |
+| --- | --- |
+| <bdi>`name`</bdi>، <bdi>`description`</bdi> | اسم المساعِد ووصفه. |
+| <bdi>`readonly`</bdi> | <bdi>`true`</bdi> لخمسة مساعِدات: <bdi>`citation-auditor`</bdi>، و<bdi>`convention-auditor`</bdi>، و<bdi>`fact-checker`</bdi>، و<bdi>`memory-auditor`</bdi>، و<bdi>`research-scout`</bdi>. |
+
+لا يملك <bdi>Cursor</bdi> مفتاحًا يسرد الأدوات أو يحظرها: فالعامل الفرعي يرث كل أدوات
+أصله. والقيد الوحيد الذي يستطيع فرضه هو <bdi>`readonly: true`</bdi>، الذي لا يسمح بأي
+تعديلات على الملفات ولا بأي أوامر صدفة تغيّر الحالة. لذا لا يُكتَب السطران
+<bdi>`tools`</bdi> و<bdi>`disallowedTools`</bdi> الخاصان بالمساعِد، ولا يبقى القيد إلا في صورة تلك الراية:
+
+- المساعِدات الخمسة أعلاه للقراءة فقط ولا تملك <bdi>`Bash`</bdi>، لذا تحصل على
+  <bdi>`readonly: true`</bdi> وتُبقي صياغة القراءة فقط في أوصافها.
+- سبعة مساعِدات للقراءة فقط لكنها تُشغِّل أوامر (<bdi>`codebase-explorer`</bdi>،
+  و<bdi>`dependency-auditor`</bdi>، و<bdi>`design-critic`</bdi>، و<bdi>`prompt-evaluator`</bdi>، و<bdi>`quality-gate`</bdi>،
+  و<bdi>`security-scanner`</bdi>، و<bdi>`test-runner`</bdi>). وكان <bdi>`readonly: true`</bdi> سيوقف أيضًا
+  تشغيلات الاختبار والفحص الأسلوبي لديها، لذا لا تحصل على أي راية، وتُسقِط أوصافها
+  تسمية القراءة فقط التي لن يفرضها <bdi>Cursor</bdi>. ولا يتغيّر إلا الوصف: إذ تُنسَخ
+  التعليمات دون تغيير، فتظل تصف المساعِد بأنه للقراءة فقط وتذكر قيدًا على الأدوات
+  لا يحمله ملف <bdi>Cursor</bdi>. ويتبع النموذج ذلك النص، لكن <bdi>Cursor</bdi> لا يفرضه،
+  ويعمل المساعِد بكل أدوات الأصل.
+- <bdi>`mcp-builder`</bdi> و<bdi>`refactor-surgeon`</bdi> يكتبان الملفات ويبقيان دون تغيير.
+
+لا يكتب التثبيت أي مفتاح <bdi>`model`</bdi>، لذا يعمل المساعِد على النموذج الذي يستخدمه
+الأصل، ولا يكتب <bdi>`is_background`</bdi>، ولا حدًّا للأدوار، ولا مفاتيح <bdi>Apothem</bdi>:
+<bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`portability`</bdi>.
+
+أمور ينبغي معرفتها:
+
+- ملفات العوامل الفرعية ملفات مشروع عادية. أودِعها مع المشروع أو
+  أدرِج <bdi>`.cursor/agents/`</bdi> في <bdi>`.gitignore`</bdi>؛ ولا يختار <bdi>Apothem</bdi> نيابةً عنك.
+- يُحمِّل <bdi>Cursor</bdi> أيضًا مجلّدات المساعِدات المكتوبة لأدوات أخرى، ومنها
+  <bdi>`.claude/agents/`</bdi> في المشروع و<bdi>`~/.claude/agents/`</bdi> في دليلك المنزلي
+  (ويسرد [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة)
+  البقية). وعند تعارض الأسماء يتقدّم المشروع على المجلّد المنزلي ويتقدّم <bdi>`.cursor/`</bdi>
+  على الآخرين، لذا ففي مشروع فيه هذا التثبيت تحلّ الملفات الأصلية محلّ نسخ
+  <bdi>Claude Code</bdi> التي كان <bdi>Cursor</bdi> سيستوردها من <bdi>`~/.claude/agents/`</bdi>. ولا تقول
+  وثائق <bdi>Cursor</bdi> ما إذا كان يُحمِّل النسختين كلتيهما أو يُسقِط الأدنى منهما، ولا
+  ما إذا كان يطبّق السطرين <bdi>`tools`</bdi> و<bdi>`disallowedTools`</bdi> في ملف <bdi>Claude Code</bdi>
+  يستورده.
+- الملف الخاص بك الذي يحمل اسم مساعِد من <bdi>Apothem</bdi> يُحفَظ تحت
+  <bdi>`~/.apothem/backups/`</bdi> ثم يُستبدَل. ولا يُعيده إلغاء التثبيت.
+  ولا تُمَسّ الملفات ذات الأسماء الأخرى أبدًا.
+- لم يتحقّق <bdi>Apothem</bdi> مما إذا كان <bdi>Cursor</bdi> يقرأ ملفات <bdi>TOML</bdi> التي تكتبها
+  أداة أخرى في المجلّدات التي يستوردها، ولا مما إذا كان الإعداد <bdi>Third-Party Imports</bdi>
+  يوقف تلك المجلّدات المستوردة، ولا مما إذا كان يقرأ امتدادات غير <bdi>`.md`</bdi> أو
+  مجلّدات متداخلة في <bdi>`.cursor/agents/`</bdi>.
+
+## الخطّافات
+
+يُشغِّل <bdi>Cursor</bdi> الخطّافات من ملفات <bdi>`hooks.json`</bdi>، وفق
+[وثائق الخطّافات في <bdi>Cursor</bdi>](https://cursor.com/docs/hooks). ويضيف التثبيت
+مُدخلة واحدة إلى <bdi>`<project>/.cursor/hooks.json`</bdi>:
+
+| الحدث | ما يُشغَّل |
+| --- | --- |
+| <bdi>`sessionStart`</bdi> | تمهيد الجلسة: البيانات الوصفية للجلسة، وفهرس المهارات، وملخّصات الذاكرة والخطط، والوضعية الدائمة، تُضاف إلى السياق الأوّلي للمحادثة. |
+
+يضيف الخطّاف سياقًا للنموذج. ولا يحجب أي شيء، ولا ينتظر <bdi>Cursor</bdi> خطّاف
+<bdi>`sessionStart`</bdi>.
+
+لا يسجّل هذا الإصدار الأول شيئًا آخر. تسرد وثائق <bdi>Cursor</bdi> الحقل
+<bdi>`additional_context`</bdi> للحدث <bdi>`postToolUse`</bdi> أيضًا، وسيسجّل <bdi>Apothem</bdi> عدّاد
+حجم السياق هناك حالما يُظهر اختبار استقصائي أن السياق يصل إلى النموذج.
+ولا يسجّل أي حارس <bdi>`preToolUse`</bdi>: إذ لا يوثّق <bdi>Cursor</bdi> الحقل <bdi>`agent_message`</bdi>،
+وهو الحقل الذي سيتحدّث عبره الحارس، إلا لإجراء يرفضه، وحُرّاس <bdi>Apothem</bdi> لا ترفض
+أبدًا. وتبقى حُرّاس الكتابة والتعديل والصدفة، وفحص <bdi>`AskUserQuestion`</bdi>، وبروتوكول
+نهاية الجلسة، على الأدوات التي توصلها.
+
+**أين تذهب الملفات**
+
+| الملف | ما يحويه |
+| --- | --- |
+| <bdi>`<project>/.cursor/hooks.json`</bdi> | مُدخلة <bdi>`sessionStart`</bdi> واحدة، مدمجة في خريطة <bdi>`hooks`</bdi> في الملف. |
+| <bdi>`<project>/.apothem/support/cursor/hooks/`</bdi> | سكربت المُوزِّع، ووحداته المساعدة، وملفات رسائله. |
+
+<bdi>`hooks.json`</bdi> ملفك أنت، ويوثّق <bdi>Cursor</bdi> خطّافات المشروع بوصفها مُودَعة في نظام
+التحكّم بالإصدارات. ويضيف التثبيت مُدخلة <bdi>Apothem</bdi> بعد مُدخلاتك ويترك مُدخلاتك
+ومفاتيحك الأخرى كما كانت؛ ولا يستبدل التحديث إلا المُدخلة التي يُشغِّل أمرها مُوزِّع
+<bdi>Apothem</bdi> (<bdi>`.apothem/support/cursor/hooks/dispatch.py`</bdi>
+مع <bdi>`--contract cursor`</bdi>، أيًّا كان مسار المشروع الذي كُتِبت تحته)، ولا يُزيل
+إلغاء التثبيت إلا تلك المُدخلة. والخطّاف الخاص بك الذي يشاركه الاسم فقط، مثل
+<bdi>`tools/hooks/dispatch.py`</bdi> في مشروعك، أو الذي يُشغِّل <bdi>`python -m
+apothem.conformity.gate`</bdi>، لا يُعَدّ أبدًا خطّافًا لـ <bdi>Apothem</bdi>. ويحذف إلغاء
+التثبيت الملف حين لا يتبقى فيه شيء آخر، بعد حفظ نسخة منه تحت
+<bdi>`~/.apothem/backups/`</bdi>. والملف الذي يحوي تعليقات، أو فاصلة زائدة في النهاية، أو قيمة
+<bdi>`hooks`</bdi> بشكل خاطئ لا يمكن إعادة كتابته دون فقدان شيء، لذا يُبلِغ التثبيت عن
+خطأ <bdi>`config.unparseable`</bdi> لذلك الملف، ويتركه دون مساس ويتوقّف، مع إزالة الملفات
+الأخرى التي كان قد بدأ كتابتها مجدّدًا: أصلِح الملف، أو أضِف المُدخلة
+بنفسك.
+
+**الملف المُودَع يسمّي جهازك.** يحوي أمر المُدخلة المُفسِّرَ الذي عثر عليه
+<bdi>Apothem</bdi> حين عمل والمسارَ المطلق للمشروع، لذا فإن الزميل الذي يسحب الملف يحصل
+على أمر يشير إلى جهازك. ويُبلِغ <bdi>Cursor</bdi> عن الأمر الذي لا يستطيع العثور عليه بأنه
+فاشل وتستمرّ الجلسة، فلا ينكسر شيء، لكن الخطّاف لا يفعل شيئًا هناك. فلا تُودِع الملف
+إلا إن كان فريقك يتشارك ذلك التخطيط. ولا يوثّق <bdi>Cursor</bdi> أي صيغة غير مُودَعة
+لملف خطّافات المشروع. والمجلّد <bdi>`.apothem/`</bdi> هو مكان السكربتات، ومقتطف
+<bdi>`.gitignore`</bdi> الخاص بالمشروع يُبقيه خارج نظام التحكّم بالإصدارات.
+
+يبدو الأمر هكذا، مع المُفسِّر ومسار المشروع لديك في موضع
+المسارين:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+```
+
+على مضيف <bdi>Windows</bdi> يبدأ الأمر بـ <bdi>`& `</bdi>، مُعامِل الاستدعاء في <bdi>PowerShell</bdi>، لأن
+تطبيق سطح المكتب في <bdi>Cursor</bdi> يُشغِّل أوامر الخطّافات عبر <bdi>PowerShell</bdi>، حيث لا يُعَدّ
+السطر الذي يبدأ بمسار برنامج مقتبس استدعاءً. وتقرأ <bdi>`sh`</bdi> العلامة <bdi>`&`</bdi> في البداية
+بوصفها خطأً في الصياغة، لذا لا يحصل عليها أي مضيف آخر. وتسمّي الوثائق الصدفة لا
+طريقة الاقتباس، لذا فهذه قراءة <bdi>Apothem</bdi> لصياغة <bdi>PowerShell</bdi>.
+
+يقرأ <bdi>`--contract cursor`</bdi> الحقلين <bdi>`conversation_id`</bdi> و<bdi>`workspace_roots`</bdi> من
+<bdi>Cursor</bdi> ويُجيب بـ <bdi>`{"additional_context": ...}`</bdi> ولا شيء غيره.
+
+**مسارات قد تسيء الصدفة قراءتها.** يُرفَض مسار المشروع أو المُفسِّر الذي يحوي
+<bdi>`$`</bdi>، أو علامة اقتباس مائلة (<bdi>backtick</bdi>)، أو علامة اقتباس مزدوجة، أو شرطة
+مائلة عكسية، قبل كتابة أي شيء: فداخل الأمر المقتبس سيُشغِّل ملفًا مختلفًا، أو يكسر
+<bdi>JSON</bdi> الذي يُكتَب فيه الأمر. ويسمّي الخطأ المسار؛ انقل المشروع أو أعد تسميته
+ثم شغّل التثبيت مجدّدًا. والمسافة أو الفاصلة العليا في المسار لا تضرّ.
+
+**يُشغِّل <bdi>Cursor</bdi> أيضًا الخطّافات التي كتبها <bdi>Claude Code</bdi>.** يُحمِّل
+<bdi>Cursor</bdi> الخطّافات في <bdi>`~/.claude/settings.json`</bdi> و<bdi>`.claude/settings.json`</bdi>
+و<bdi>`.claude/settings.local.json`</bdi> ما دام الإعداد «<bdi>Include Third-Party Plugins, Skills, and
+Other Configs</bdi>» مفعّلًا (في <bdi>Cursor Settings</bdi>، تحت <bdi>Third-Party Imports</bdi>)، وهو
+الوضع الافتراضي، ويُشغِّل كل خطّاف مطابق من كل مصدر. وإن كنت قد ثبّتّ
+<bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> أيضًا، فقد تعمل مجموعتا الخطّافات كلتاهما. ويتشارك
+أمر <bdi>`sessionStart`</bdi> هنا ونسخته في <bdi>Claude Code</bdi> علامةً واحدة لكل جلسة في مجلّد
+حالة الخطّافات الخاص بـ <bdi>Apothem</bdi>، لذا يصمت أيّهما يعمل ثانيًا ويصل التمهيد إلى
+النموذج مرة واحدة؛ ويتعرّف <bdi>Apothem</bdi> على <bdi>Cursor</bdi> من المتغيّرين
+<bdi>`CURSOR_PROJECT_DIR`</bdi> و<bdi>`CURSOR_VERSION`</bdi> اللذين يضبطهما <bdi>Cursor</bdi> لخطّافاته.
+وتغطّي العلامة عشر ثوانٍ، لذا فإن بدءًا لاحقًا للجلسة نفسها، مثل عملية ضغط ثانية،
+يظل يوصل التمهيد. ويعمل عدّاد حجم السياق في نسخة <bdi>Claude Code</bdi> إضافةً إلى ذلك،
+ولا يُزيل <bdi>Apothem</bdi> تكرار العدّادات. ولتشغيل الخطّاف الموجود هنا وحده، أوقف ذلك
+الإعداد؛ وهذا يوقف أيضًا استيراد <bdi>Cursor</bdi> للإضافات والمهارات والإعدادات الأخرى من
+أطراف ثالثة. ويطبع التثبيت هذا بوصفه ملاحظة.
+
+**أمور ينبغي معرفتها.** يُعيد <bdi>Cursor</bdi> تحميل <bdi>`hooks.json`</bdi> حين يُحفَظ، لذا لا
+حاجة إلى إعادة التشغيل. وتعمل خطّافات المشروع في مساحات العمل الموثوقة. ويُشغِّل
+<bdi>Cursor</bdi> السحابي خطّافات المشروع في المستودع لكنه يؤجّل <bdi>`sessionStart`</bdi>، لذا لا
+تنطلق المُدخلة هناك. اضبط <bdi>`APOTHEM_HOOKS_DISABLE=1`</bdi> في بيئة <bdi>Cursor</bdi> لإسكات
+خطّاف <bdi>Apothem</bdi>.
+
+{/* TODO(clarify): Cursor's default hook timeout (the entry sets 30 seconds), how
+its CLI runs hook commands on Windows, whether one command string can serve both sh
+and PowerShell, and whether the postToolUse context reaches the model; see the Hooks
+section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -46,6 +245,14 @@ apothem install --harness cursor --project /path/to/project
 <bdi>`.cursor/rules/`</bdi> بنطاق المشروع؛ ولا يملك <bdi>Cursor</bdi> مسارًا موثّقًا
 قائمًا على الملفات للقواعد العامّة على مستوى المستخدم كي يديره هذا المحوّل.
 
+يُحمِّل <bdi>Cursor</bdi> المهارات من <bdi>`~/.agents/skills/`</bdi>، لذا تظهر المهارات التي يكتبها
+التثبيت في <bdi>Cursor</bdi> دون إعداد إضافي. ويُحمِّل <bdi>Cursor</bdi> أيضًا <bdi>`~/.claude/skills/`</bdi>،
+لذا فعلى جهاز فيه أيضًا تثبيت لـ <bdi>Claude Code</bdi> قد يسرد أسماء المهارات نفسها
+مرتين، ولا تقول وثائقه أيّ النسختين تتقدّم. ولم يتحقّق <bdi>Apothem</bdi> من كيفية
+تعامل <bdi>Cursor</bdi> مع مفتاح ترويسة في <bdi>`SKILL.md`</bdi> لا يسرده؛ وتحمل المهارات
+<bdi>`user-invocable`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>،
+و<bdi>`argument-hint`</bdi>، وخريطة <bdi>`metadata`</bdi>.
+
 ## التحقّق
 
 ```bash
@@ -55,10 +262,20 @@ apothem verify --harness cursor --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
-   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
-   المثبّتة تطابق ذلك الملف التعريفي.
-3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
+2. كل هدف مُدار موجود، بما في ذلك المجلّد <bdi>`.cursor/agents/`</bdi> وملف الخطّافات
+   <bdi>`.cursor/hooks.json`</bdi>؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. ويجب أن يحوي ملف الخطّافات مُدخلة تُشغِّل مُوزِّع <bdi>Apothem</bdi> (لا
+   يُشغِّله الفحص)، لذا فإن الملف الذي أُعيد إلى حالته السابقة أو أُفرِغ لم يعد يجتاز
+   التحقّق. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي. وبالنسبة إلى <bdi>`.cursor/agents/`</bdi> يتحقّق
+   الفحص من وجود المجلّد، لا من وجود كل ملف مساعِد فيه؛ ويسرد
+   <bdi>`apothem diff --harness cursor --project /path/to/project`</bdi> ملفات المساعِدات
+   المفقودة أو القديمة.
+3. كل مجلّد مهارة من <bdi>Apothem</bdi> في مكانه ومعه <bdi>`SKILL.md`</bdi>، أيًّا كان
+   التثبيت الذي كتبه، ولا يوجد مجلّد مهارة يحمل اسمًا من <bdi>Apothem</bdi> ويعود إلى
+   شيء لم يكتبه <bdi>Apothem</bdi>. ويسمّي الفحص الفاشل المجلّدات المفقودة أو
+   الدخيلة.
+4. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -67,6 +284,12 @@ apothem update --harness cursor --project /path/to/project
 ```
 
 يُعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
+
+ويُعيد التحديث أيضًا كتابة أي مجلّد مهارة تختلف ملفاته عن الملفات الحالية.
+وإن كنت قد ثبّتّ بإصدار سابق لم يكتب أي مهارات، فإن التحديث يضيفها.
+ويُعيد كتابة ملفات العوامل الفرعية التي تختلف عن الحالية، ويضيف أي ملفات مفقودة منها.
+ويُحدِّث كذلك سكربتات الخطّافات ومُدخلة <bdi>Apothem</bdi> في <bdi>`.cursor/hooks.json`</bdi>،
+تاركًا مُدخلاتك الخاصة دون مساس.
 
 ## إلغاء التثبيت
 
@@ -81,6 +304,23 @@ apothem uninstall --harness cursor --project /path/to/project
 احتياطية في المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا
 محرّك <bdi>Apothem</bdi>.
 
+ويُزيل إلغاء التثبيت أيضًا ملفات العوامل الفرعية التي كتبها في <bdi>`<project>/.cursor/agents/`</bdi>
+ويُبقي أي ملف آخر هناك؛ ويُزال المجلّد حين يبقى فارغًا.
+ويُزيل مُدخلة <bdi>Apothem</bdi> من <bdi>`<project>/.cursor/hooks.json`</bdi>، متعرّفًا عليها من
+مسار المُوزِّع في أمرها، ويُبقي مُدخلاتك ومفاتيحك الخاصة. ولا يُحذَف الملف إلا حين
+لا يتبقى فيه شيء آخر. وتُزال كذلك سكربتات الخطّافات في
+<bdi>`<project>/.apothem/support/cursor/hooks/`</bdi>.
+وإن كان في ملفٍ تعليقات لا يستطيع إلغاء التثبيت قراءتها، فإنه يترك ذلك الملف كما
+هو ويُبلِغ عن المُدخلة بأنها تُخطِّيت، مع السبب؛ أزِل مُدخلة <bdi>Apothem</bdi>
+يدويًا.
+ويُزيل مجلّدات المهارات التي كتبها في <bdi>`~/.agents/skills/`</bdi>
+والقواعد والقوالب في <bdi>`~/.config/apothem/`</bdi>، ولكن فقط حين لا يعود أي تثبيت آخر لـ <bdi>Apothem</bdi>
+يستخدمها. فقد يستخدمها مشروع آخر، أو أداة أخرى تشارك
+المجلّد. وفي تلك الحالة يُبقي إلغاء التثبيت المجلّدات، ويطبع التثبيت
+الذي يستخدمها، ويُزيلها آخر إلغاء تثبيت. وتبقى الملفات التي أضفتها إلى تلك
+المجلّدات، ويُزال المجلّد الذي يبقى فارغًا. ويُنسَخ كل
+مجلّد احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل إزالته.
+
 ## بوابة المطابقة
 
 ```bash
@@ -93,6 +333,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness cursor --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| لا يسرد <bdi>Cursor</bdi> أيًّا من مساعِدات <bdi>Apothem</bdi> | شغّل <bdi>`apothem diff --harness cursor --project /path/to/project`</bdi>. يعني سطر مُعلَّق للمجلّد <bdi>`.cursor/agents`</bdi> أن ملفات المساعِدات مفقودة أو قديمة، فشغّل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi>. ولا يُعَدّ <bdi>`apothem verify`</bdi> اختبارًا لهذا: فهو ينجح حين يوجد <bdi>`.cursor/agents/`</bdi>، حتى لو لم يكن فيه أي ملف مساعِد. وإن لم يُبلِغ <bdi>`diff`</bdi> عن أي تغييرات مُعلَّقة، فتأكّد من أن المشروع مفتوح في <bdi>Cursor</bdi> وابدأ دردشة جديدة |
+| لا يعمل خطّاف <bdi>Apothem</bdi> | لا يُشغِّل <bdi>Cursor</bdi> خطّافات المشروع إلا في مساحات العمل الموثوقة. افتح علامة التبويب <bdi>Hooks</bdi> في <bdi>Customize</bdi>، أو قناة الإخراج <bdi>Hooks</bdi>، لمعرفة ما إذا كانت المُدخلة قد حُمِّلت وما الذي أبلغت عنه. والملف المكتوب على جهاز آخر يسمّي مُفسِّر ذلك الجهاز، فيُبلِغ <bdi>Cursor</bdi> عن الأمر بأنه فاشل: شغّل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi> هنا |
+| يُبلِغ التثبيت عن <bdi>`config.unparseable`</bdi> للملف <bdi>`hooks.json`</bdi> | يحوي الملف تعليقات، أو فاصلة زائدة في النهاية، أو قيمة <bdi>`hooks`</bdi> بشكل خاطئ. أصلِح الملف وثبّت مجدّدًا، أو أضِف مُدخلة <bdi>`sessionStart`</bdi> بنفسك |
+| يظهر سياق <bdi>Apothem</bdi> مرتين | يُشغِّل <bdi>Cursor</bdi> أيضًا الخطّافات التي كتبها تثبيت <bdi>Claude Code</bdi>. أوقف «<bdi>Include Third-Party Plugins, Skills, and Other Configs</bdi>» في <bdi>Cursor Settings</bdi>، تحت <bdi>Third-Party Imports</bdi>، لتشغيل الخطّاف الموجود في <bdi>`.cursor/hooks.json`</bdi> وحده |
+| يسمّي <bdi>`apothem verify`</bdi> مجلّد مهارة مفقودًا | شغّل <bdi>`apothem install --harness cursor --project /path/to/project`</bdi>؛ فهو يستعيد المجلّد |
+| يحذّر تثبيت أو تحديث من أنه تخطّى مجلّد مهارة | يوجد بالفعل في مجلّد المهارات مجلّد يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>. أعد تسميته أو انقله، ثم شغّل <bdi>`apothem update`</bdi> |
+| يتوقّف التثبيت قبل أن يغيّر المشروع | فشلت عملية كتابة في دليلك المنزلي. اقرأ الخطأ، وأصلح المجلّد الذي يسمّيه (رابط يخرج من دليلك المنزلي، أو ملف في موضع مجلّد، أو مجلّد للقراءة فقط)، ثم ثبّت مجدّدًا |
 | محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط

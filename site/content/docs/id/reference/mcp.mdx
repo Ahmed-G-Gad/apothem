@@ -2,7 +2,7 @@
 title: "Server MCP"
 description: "Konfigurasi server Model Context Protocol — dimiliki operator dan didaftarkan melalui mekanisme MCP native setiap tool; beberapa adapter memproyeksikan inventaris MCP dari profil bersama, sisanya tidak menulis entri server apa pun."
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,66 @@ didaftarkan dengan `claude mcp add` ke `~/.claude.json` (lingkup user atau local
 dan `.mcp.json` tingkat proyek; adapter Claude Code tidak menulis kedua berkas
 itu, dan pengaturan Claude Code terkelola milik Apothem tidak pernah membawa blok
 `mcpServers`.
+
+## Memberi pembantu akses ke server MCP
+
+Agen riset hanya-baca (`research-scout`, `citation-auditor`) dikirimkan dengan
+daftar `tools` eksplisit berisi `Read, Glob, Grep, WebSearch, WebFetch`. Claude
+Code menerima tool MCP ke dalam daftar eksplisit sebuah subagen hanya ketika
+sebuah entri menyebut servernya, dalam bentuk `mcp__<server>__*`. Kunci
+`agent_mcp_servers` di profil menyebut server-server tersebut per agen:
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+Pemasangan Claude Code menambahkan satu entri `mcp__<server>__*` per server yang
+disebut ke baris `tools` setiap agen yang tercantum, dan tidak mengubah agen
+atau baris lain. Tanpa kunci ini setiap agen mempertahankan daftar polos,
+sehingga tidak ada agen yang menjangkau tool MCP. Tulis setiap nama server
+sebagaimana `/mcp` menampilkannya. Claude Code menulis `:` dan `.` sebagai `_`
+dalam nama tool, sehingga pemasangan merender server `plugin:bio-research:biorxiv`
+sebagai `mcp__plugin_bio-research_biorxiv__*`. Sebuah nama memuat huruf, angka,
+`-`, `_`, `:` dan `.`, diawali dan diakhiri dengan huruf atau angka, dan tidak
+pernah memuat dua dari `_`, `:` dan `.` secara berurutan (entri yang dirender
+akan memuat `__`); `*`, spasi putih, dan setiap karakter lain ditolak.
+Sebuah pemberian akses menyebut setiap tool dari server tersebut, termasuk tool
+yang menulis, jadi berikan akses hanya ke server yang Anda percayai untuk
+pencarian; instruksi agen membatasinya pada pencarian, tetapi harness hanya
+menegakkan nama-nama yang Anda cantumkan. Pemberian akses untuk agen yang tidak
+ada, atau agen tanpa daftar `tools` eksplisit, dilaporkan dan dilewati. Override
+per harness di bawah `harnesses.claude-code` menambah daftar bersama.
+
+Pemberian akses berlaku untuk pemasangan mesin (`apothem install`) di `Claude Code` dan di
+`Gemini CLI`. Di `Gemini CLI` pemasangan menambahkan satu entri `mcp_<server>_*` per
+server yang disebut ke daftar-izin `tools` agen yang tercantum, misalnya
+`mcp_your-scholarly-server_*`, dan tidak mengubah agen atau baris lain.
+`Gemini CLI` menamai setiap tool MCP `mcp_{serverName}_{toolName}` dan membaca
+server dari teks hingga garis bawah pertama setelah `mcp_`, sehingga nama server
+yang memuat garis bawah tidak dapat dialamatkan di sana. Apothem menulis
+pemberian akses `Gemini CLI` hanya untuk nama yang terdiri dari huruf, angka, dan
+`-`: nama yang memuat garis bawah, titik dua, atau titik valid untuk `Claude Code`
+tetapi dilewati untuk `Gemini CLI` dan dilaporkan, tidak pernah ditulis ulang
+menjadi nama lain. Agen yang sudah menjangkau setiap server MCP (tanpa daftar
+`tools`, atau dengan daftar yang memuat `mcp_*`) dibiarkan tidak berubah dan
+dilaporkan. `Gemini CLI` tidak memiliki daftar penolakan, sehingga server yang
+disebut oleh `disallowedTools` milik agen itu sendiri tidak mendapat entri dan
+dilaporkan: penolakan yang menang, seperti halnya di `Claude Code`. Pemberian
+akses Gemini membaca daftar `agent_mcp_servers` bersama dan override
+`harnesses.gemini-cli`, bukan override `harnesses.claude-code`. Harness lain
+mengabaikan kunci ini: `Qwen Code` tidak mendokumentasikan entri per server untuk
+`tools`; `OpenCode` mengendalikan tool melalui izin; `Codex` dan `Antigravity`
+tidak memancarkan daftar tool.
+
+Plugin Claude Code dirakit tanpa profil, sehingga kedua agennya mempertahankan
+daftar polos. Untuk memberi keduanya akses konektor tanpa menyunting berkas
+plugin, definisikan agen tingkat pengguna milik Anda sendiri di
+`~/.claude/agents/`, dengan nama pilihan Anda, yang membawa daftar `tools`
+hanya-baca yang sama ditambah entri `mcp__<server>__*` yang Anda inginkan.
 
 ## Menambahkan server
 

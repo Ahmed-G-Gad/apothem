@@ -2,7 +2,7 @@
 title: "Reglas"
 description: "Reglas de comportamiento siempre activas y filtradas por ruta que rigen la resolución de problemas, el oficio del código, la arquitectura limpia, la planificación y la calidad en todo el conjunto de reglas de comportamiento."
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,25 +13,11 @@ Bindings — y es o bien siempre activa, o bien filtrada por ruta.
 
 ## Reglas activas
 
-El registro canónico es la cohorte de reglas. El mismo conjunto en forma plana:
-
-| Regla | Alcance | Implementa |
-|------|-------|------------|
-| Auto Memory | Siempre activa | CM-26 |
-| Clean-Room Generation | Siempre activa | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Siempre activa | CM-21 |
-| Context Management | Siempre activa | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Filtrada por ruta | CM-12 / CM-24 (compañera) |
-| Conventions Vigilance | Siempre activa | CM-22 |
-| Interactive Questions | Siempre activa | Extensión de CM-2 |
-| Interactive Questions Sweep Matchers | Filtrada por ruta | Extensión de CM-2 (compañera) |
-| Operational Mandates | Siempre activa | CM-1–10 |
-| Worker Orchestration | Siempre activa | CM-17 / CM-25 |
-| Clean Architecture | Filtrada por ruta | CM-27 |
-| Large File Generation | Filtrada por ruta | CM-23 |
-| Performance Discipline | Filtrada por ruta | Eje de rendimiento |
-| Planning Techniques | Filtrada por ruta | CM-20 / CM-21 |
-| Python Senior Architect | Filtrada por ruta | CM-28 |
+El registro canónico es la cohorte de reglas de `src/apothem/rules/`. El
+[inventario generado](#inventario-de-reglas-generado) al pie de esta página
+enumera cada regla con su descripción y su archivo de origen. Cinco reglas son
+siempre activas y el resto están filtradas por ruta; la sección siguiente nombra
+las cinco que se cargan en cada sesión.
 
 ## Contrato de frontmatter
 
@@ -55,22 +41,41 @@ lista de globs y `alwaysApply` es `false`. El contrato legible por máquina es
 
 `pathFilter` y `alwaysApply` son neutrales respecto al entorno. Cada adaptador
 los traduce allí donde su entorno tiene un campo de alcance nativo. Claude Code
-solo lee `paths:` de una regla y carga al inicio cada regla que no lo tiene, así
+solo lee `paths:` de una regla y carga al inicio cada regla que no lo tiene, como
+hace con una regla cuyo `paths:` es solo `**`, así
 que la instalación del motor (`apothem install --harness claude-code`) escribe
 cada regla filtrada por ruta en `~/.claude/rules/` con una lista `paths:`
-construida a partir de su `pathFilter`, y copia sin cambios las reglas siempre
-activas. Las 28 reglas siempre activas se cargan en cada sesión; las 63
-compañeras filtradas por ruta se cargan cuando el asistente lee un archivo
-coincidente.
+construida a partir de su `pathFilter`, y escribe cada copia de regla sin su
+sección Bindings final. Cinco reglas se cargan en cada sesión:
+`agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management` y el índice de reglas. Las otras 90 reglas están filtradas
+por ruta y se cargan cuando el asistente lee un archivo coincidente. Añadir una
+regla al conjunto siempre activo cambia la lista principal y el límite de bytes
+en el mismo cambio.
+
+El índice de reglas, `apothem-rule-index`, es el único archivo siempre activo que
+nombra cada una de las demás reglas y la situación que la requiere. Un entorno que
+delimita las reglas por ruta carga una regla delimitada al tocar un archivo
+coincidente. Un entorno que no lo hace no carga ninguna de ellas, así que el
+índice, la frase del archivo de instrucciones que apunta a él y las reglas y skills
+que citan una regla por su ruta son la forma en que una sesión llega a ella.
+Después de una compactación del contexto, una regla delimitada ya no está en el
+contexto, y el índice indica al asistente que vuelva a leer cualquier regla que
+estuviera aplicando. Claude Code compara un filtro de ruta solo con archivos dentro
+del directorio de trabajo, así que las reglas de memoria automática, cuyos archivos
+residen bajo `~/.claude/projects/`, llegan a una sesión a través del índice y no
+mediante una coincidencia de ruta.
 
 OpenCode no tiene ningún campo de alcance por regla: combina en cada sesión
 cada archivo que nombra la lista `instructions` de su `opencode.json`. Por eso,
 la instalación de OpenCode (`apothem install --harness opencode`) lista tu
-documento de perfil y solo las reglas cuyo `alwaysApply` es `true`, con una ruta
+documento de perfil y solo las reglas cuyo `alwaysApply` es `true` (las cuatro
+reglas principales y el índice de reglas), con una ruta
 `~/.config/opencode/...` explícita por archivo, leída de los archivos de regla
 cuando se escribe la configuración. Cada regla, incluidas las filtradas por
 ruta, se sigue instalando bajo `~/.config/opencode/.apothem/support/rules/`,
-donde una regla, una skill o un comando que la cita la lee bajo demanda.
+donde el índice la nombra y una regla, una skill o un comando que la cita la lee
+bajo demanda.
 
 ## Disciplina de autoría
 

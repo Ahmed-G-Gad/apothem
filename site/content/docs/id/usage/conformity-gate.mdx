@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,27 @@ Validator alur kerja melakukan hal yang sama ketika proyek belum memiliki
 direktori `.github/workflows/`, dan validator subjek commit melakukannya ketika
 root tidak memiliki riwayat commit.
 
+Enam validator mulai dari root repositori dan menelusuri seluruh pohon untuk
+mencari berkas yang mereka periksa:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+Validator-validator ini melewati checkout git bersarang, seperti worktree,
+submodule, dan klon bersarang, serta melewati direktori yang menampung
+dependensi, lingkungan virtual, cache, atau keluaran build, seperti
+`node_modules`, `venv`, dan `dist`. Pemeriksaan rencana-nyasar di
+`no-global-plans-grep` juga berhenti pada checkout bersarang. Eksekusi salah
+satu validator ini melaporkan checkout yang ditunjuknya dan tidak ada yang lain.
+Validator yang membaca satu folder tetap, seperti `naming-grep` di bawah
+`src/apothem/`, membaca semua yang ada di bawah folder tersebut.
+
 ## Bar gerbang
 
 | Bar | Pemeriksaan | Jenis |
@@ -76,12 +97,21 @@ root tidak memiliki riwayat commit.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Validator per-penulisan menerima berkas yang akan diperiksa, atau `--stdin`
+untuk membaca konten dari standard input; tanpa keduanya, validator menunggu
+masukan di standard input, jadi berikan berkasnya saat Anda menjalankannya dari
+terminal. Validator standalone menerima direktori root (direktori saat ini jika
+dihilangkan). `--list` menunjukkan kelompok tempat setiap validator berada.
 
 Mode `--hook` (`python -m apothem.conformity.gate --hook`) adalah entry point
 yang di-dispatch oleh harness: mode ini membaca payload JSON tool-input dari

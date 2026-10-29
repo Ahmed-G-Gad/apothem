@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,49 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 남습니다. 제거하는 하니스가 해당 루트의 마지막 하니스이면, 명령은 먼저 각
 저장소를 Apothem 백업 루트(`~/.apothem/backups/`)로 복사한 다음, 그 안의 모든
 것과 함께 저장소를 제거합니다. `plans/`에 보관한 것은 절대 제거되지 않습니다.
+
+## 홈 디렉터리의 공유 폴더
+
+여러 설치가 홈 디렉터리의 한 폴더를 사용할 수 있습니다. 스킬 폴더
+(`~/.agents/skills/`, 또는 `~/.codebuddy/skills/`, `~/.kiro/skills/`, 또는
+`~/.trae/skills/`)와 `~/.config/apothem/rules/` 및
+`~/.config/apothem/templates/`입니다. [install](/docs/cli-reference/install#홈-디렉터리의-폴더)
+페이지는 어떤 어댑터가 어느 폴더에 쓰는지 나열합니다. Apothem은 각 폴더를 어떤
+설치가 사용하는지 기록하며, 제거는 한 가지 규칙을 따릅니다. 다른 Apothem 설치가
+더 이상 그 폴더를 사용하지 않을 때에만 폴더를 제거합니다.
+
+- 한 도구를 제거해도 다른 설치가 아직 스킬을 사용하는 동안에는 스킬이 유지되며,
+  명령이 그렇다고 알려 줍니다. 두 프로젝트에 설치된 한 도구는 두 개의 설치로
+  계산되므로, 프로젝트 A에서 그 도구를 제거해도 프로젝트 B가 아직 사용하는 동안에는
+  폴더가 유지됩니다. 마지막 제거가 폴더를 제거합니다(아래 두 번째 예제 참조).
+- 설치 자체의 기록에 나열된 것만 제거됩니다. 폴더가 관리되기 전에 이루어진
+  설치에는 그런 기록이 없으므로, 그 설치를 제거해도 홈에서는 아무것도 제거되지
+  않습니다. 여러분이 폴더에 추가한 파일은 남으며, Apothem 스킬의 이름을 가졌지만
+  Apothem이 쓰지 않은 폴더도 남습니다.
+- 프로젝트 폴더가 더 이상 존재하지 않는 설치는 무시되므로, 삭제된 프로젝트가
+  폴더를 영원히 붙잡아 두지 않습니다. 참고가 그 설치의 이름을 알려 줍니다.
+- 폴더를 사용할 수 있는 설치의 기록을 읽을 수 없으면, 제거는 아무것도 제거하기
+  전에 오류와 함께 중단되며, 그 설치는 기록된 상태로 남습니다. 읽을 수 없는
+  기록을 복구하거나 옮긴 다음 명령을 다시 실행하세요. 이 폴더들에 전혀 쓰지 않는
+  도구의 손상된 기록은 무시됩니다.
+- 마지막 사용이 사라지면 비게 된 폴더도
+  제거됩니다. 각 폴더는 제거되기 전에 `~/.apothem/backups/` 아래에 백업됩니다.
+
+각 제거는 폴더마다 하나의 `Note:`를 출력합니다. 예를 들어 `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, 또는
+`was removed: no other Apothem install uses it`입니다. `--format json` 봉투에서 각
+참고는 `"outcome": "advisory"`,
+`"operation": "shared_root"`, 그리고 `retained` 또는 `released`로 설정된 `"role"`이
+담긴 `warnings` 항목입니다. 이 항목은 `path`, `holders`(폴더를 유지시키는 설치),
+`stale`(무시된 설치), 그리고 `kept`와 `total`(유지된 기록 항목과 설치가 나열한
+항목)을 담습니다.
+
+찾을 수 없는 설치 때문에 폴더가 남아 있다면, 참고가 그 설치의 이름을 알려 줍니다.
+프로젝트 폴더가 삭제된 경우, 그 설치는 무시되고 폴더는 다음 제거 때 함께
+사라집니다. 프로젝트는 존재하지만 그 규칙 파일에서 Apothem 블록을 직접 제거한
+경우, `uninstall`은 그 하니스를 설치되지 않은 것으로 보고하며 그 점유를 해제하지
+않습니다. 해제하려면 해당 하니스와 프로젝트에 대해 `install`을 실행한 다음
+`uninstall`을 실행하세요. `apothem verify`는 폴더가 아직 온전한지 보여 줍니다.
 
 `--harness all` 제거는 의도적으로 빠짐없이 수행됩니다. 이 제거는 등록된 모든 하니스를 대상으로 하며, 여기에는 설치 중 프로필의 `exclude_harnesses`가 건너뛰는 하니스도 포함됩니다. 정리 작업은 이전에 더 넓은 범위로 설치했을 때 남았을 수 있는 상태까지 닿습니다. 한 번도 설치되지 않은 하니스에도 같은 알림이 표시됩니다.
 
@@ -90,6 +133,15 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+공유 스킬 폴더는 그 폴더를 사용하는 마지막 설치가 사라질 때까지 남습니다.
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## 종료 코드

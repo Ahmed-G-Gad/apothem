@@ -2,7 +2,7 @@
 title: "Kontrak pemaketan kohor"
 description: "Kontrak yang stabil dan dapat dikonsumsi hilir untuk pemaketan kohor dan manifest plugin — mengenumerasi kohor dan me-resolve target native per-harness-nya tanpa menurunkan ulang pemetaannya."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,7 +80,11 @@ sebagai pengganti `name`) dan bidang daftar direktori plugin:
 `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, dan `termsOfServiceUrl`,
 masing-masing berupa URL `https://`, ditambah jalur `icon` di dalam plugin.
 Paket Claude Code yang dihasilkan menetapkan `displayName`, `documentationUrl`,
-dan `supportUrl`. Manifest plugin adalah unit yang dimaterialisasikan adapter
+dan `supportUrl`. Direktori Anthropic membaca bidang daftar tersebut dan Claude
+Code mengabaikannya saat memuat. Sinkronisasi marketplace claude.ai melaporkan
+kedua tautan itu sebagai kunci yang tidak dikenali dan menghapusnya, sehingga
+marketplace di sana menampilkan "1 with warnings". Peringatan itu memang
+diharapkan, dan plugin dimuat tanpa perubahan. Manifest plugin adalah unit yang dimaterialisasikan adapter
 harness ke permukaan plugin native-nya; kohor memilih anggota mana yang dibawa
 sebuah plugin, dan manifest propagasi me-resolve tempat anggota-anggota itu
 mendarat per harness.

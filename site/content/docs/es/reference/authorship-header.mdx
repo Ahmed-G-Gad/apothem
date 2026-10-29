@@ -2,7 +2,7 @@
 title: "Encabezado de autoría — Línea de licencia SPDX por archivo"
 description: "Define y aplica marcadores de identificador de licencia SPDX por archivo usando encabezados canónicos de una sola línea en la sintaxis de comentario adecuada para cada tipo de archivo."
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ La disciplina debe sobrevivir a toda sesión futura y a todo colaborador futuro.
 4. **Hook de pre-commit** — el hook `conformity-corpus-perwrite` ejecuta cada comprobador por escritura, incluido el validador `file-header` (§8), sobre el árbol rastreado con `--strict`. El comprobador `file-header` es bloqueante, así que un hallazgo bloquea la confirmación. El hook solo comprueba. No tiene modo de corrección y nunca ejecuta el inyector (§7), que se ejecuta mediante `make headers-fix`.
 5. **Bloque de comportamiento obligatorio de `CLAUDE.md`** — instruye al asistente para que inyecte la línea SPDX canónica siempre que cree un archivo aplicable.
 6. **El archivo de instrucciones de GitHub Copilot** en `.github/copilot-instructions.md` — instruye a Copilot para que haga lo mismo al generar archivos.
-7. **Hooks PreToolUse** en `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptan las llamadas a las herramientas Write y Edit en las rutas aplicables, de modo que la línea SPDX se inyecte al crear el archivo, en lugar de descubrirse después como un hallazgo del validador.
+7. **Hooks PreToolUse** en `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptan las llamadas a las herramientas Write y Edit en las rutas aplicables, de modo que la línea SPDX se inyecte al crear el archivo, en lugar de descubrirse después como un hallazgo del validador. El comprobador del guard, `src/apothem/hooks/lib/header_check.py`, usa solo la biblioteca estándar y lee el fixture y la lista de exenciones del directorio `schemas/` junto a `hooks/`, de modo que también funciona con el plugin de Claude Code, donde el paquete `apothem` no se puede importar. Aplica las tablas de variantes y las reglas de punto de inserción del inyector a los archivos dentro del proyecto, y solo en un proyecto git que contenga el fixture del encabezado (`src/apothem/schemas/authorship-header.txt`), ya que la línea SPDX es la convención de este repositorio y no un valor predeterminado para todos los proyectos que abre el plugin.
 8. **Casilla de la plantilla de pull request** — afirmación, dirigida al colaborador, de que cada archivo nuevo lleva la línea SPDX canónica.
 9. **Este documento** (`site/content/docs/reference/authorship-header.mdx`) — explicación canónica y normativa.
 

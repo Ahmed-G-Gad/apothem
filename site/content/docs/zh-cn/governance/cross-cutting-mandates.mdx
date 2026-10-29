@@ -2,7 +2,7 @@
 title: "横切强制规定登记册（CM-1–CM-28）"
 description: "治理所有交互与流水线操作的生态系统内部横切强制规定（CM-1–CM-28）的完整登记册与定义。"
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## 登记册自引用豁免
 
-本文档正是规范的 CM-N 登记册——它是 `CM-1` 到 `CM-28` 这些标记被*定义*的来源。在*登记册自身的正文中*重述这些标记是规范做法，而不是泄露计划内部术语。代码库隔离不变量继续完全适用于所有*其他*工件（规则、辅助器、命令、钩子、schema、脚本、工具、测试、文档、README、变更日志、提交主题/正文、分支名、PR 标题/描述）：不得出现 `CM-N` / `TM-N` / `CP-N` 标记，只使用自然的领域语言。
+本文档正是规范的 CM-N 登记册——它是 `CM-1` 到 `CM-28` 这些标记被*定义*的来源。在*登记册自身的正文中*重述这些标记是规范做法，而不是泄露计划内部术语。代码库隔离不变量继续完全适用于所有不属于已发布文档的*其他*工件（规则、辅助器、命令、钩子、schema、脚本、工具、测试、README、CONTRIBUTING、变更日志、提交主题/正文、分支名、PR 标题/描述）：不得出现 `CM-N` / `TM-N` / `CP-N` 标记，只使用自然的领域语言。
+
+`site/content/docs/` 下的已发布文档页面可以通过 `CM-N` 编号援引某条强制规定，因为本登记册和规则参考页面为读者定义了这些编号。援引编号的页面应当（SHOULD）在其旁边用平实的文字说出该强制规定的名称，并且不得（MUST NOT）援引某条强制规定的计划内部章节编号。`TM-N` 和 `CP-N` 标记不得出现在已发布文档中，下方 CM-7 块中的其他禁止术语也同样如此。
 
 ## 命名空间
 
@@ -18,7 +20,7 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## 激活
 
-CM-1–10 + 认知身份治理所有交互。CM-11、CM-13（子规则 A 至 C）、CM-15、CM-16、CM-20 仅在 `/plan` 流水线内适用。CM-13 的子规则 D 适用于每一次 git 写入，子规则 E 适用于 `git mv` / `git rm` 的目标以及提交正文中的路径，无论是在该流水线之内还是之外。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 普遍适用（始终启用）。CM-23、CM-27、CM-28 在其声明的路径过滤范围内普遍适用。临时默认严肃度：PERSONAL_USE。
+CM-1–10 + 认知身份治理所有交互。CM-11、CM-13（子规则 A 至 C）、CM-15、CM-16、CM-20 仅在 `/plan` 流水线内适用。CM-13 的子规则 D 适用于每一次 git 写入，子规则 E 适用于 `git mv` / `git rm` 的目标以及提交正文中的路径，无论是在该流水线之内还是之外。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 普遍适用。CM-23、CM-27、CM-28 在其声明的路径过滤范围内普遍适用。临时默认严肃度：PERSONAL_USE。无论其规则是否在启动时加载，强制规定都具有约束力：四条规则在每个会话中加载（`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`），其余规则则在路径匹配时、通过规则索引，或通过援引它们的规则、技能或命令加载。
 
 ## CM-1–10（操作性）
 
@@ -28,7 +30,7 @@ CM-1–10 + 认知身份治理所有交互。CM-11、CM-13（子规则 A 至 C�
 
 > 这是 CM-7 面向代码库的一面；面向产品完整性的一面在 `src/apothem/rules/operational-mandates.md §CM-7` 中记录为**连贯产品（→TM-11）**。两个标签指的是同一条强制规定。
 
-代码库工件绝不能包含计划内部引用。**禁止术语（规范块——同级消费方交叉引用此枚举）：** TM-N、CM-N、CP-N、“Resumption Contract”、“Phase Output Registry”、“convention anchors”、阶段文件夹名、计划套件文件名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、严肃度级别名称（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**受保护的工件：** 源代码、测试、配置、schema、构建脚本、数据、资产、提交消息、分支名、PR 标题/描述、README、CONTRIBUTING、API 文档、变更日志——任何在 Apothem 源码树之外可见的工件（按工具划分的安装目标位置，例如 Claude Code 的 `~/.claude/`）。只使用自然的领域语言。**同级消费方**（各自以引用方式援引此块，而不是重新枚举）：`src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 违规指标。
+代码库工件绝不能包含计划内部引用。**禁止术语（规范块——同级消费方交叉引用此枚举）：** TM-N、CM-N、CP-N、“Resumption Contract”、“Phase Output Registry”、“convention anchors”、阶段文件夹名、计划套件文件名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、严肃度级别名称（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**受保护的工件：** 源代码、测试、配置、schema、构建脚本、数据、资产、提交消息、分支名、PR 标题/描述、README、CONTRIBUTING、API 文档、变更日志——任何在 Apothem 源码树之外可见的工件（按工具划分的安装目标位置，例如 Claude Code 的 `~/.claude/`）。只使用自然的领域语言。唯一的例外是 `site/content/docs/` 下的已发布文档，它可以按照上文登记册自引用豁免中所述援引 `CM-N` 编号。**同级消费方**（各自以引用方式援引此块，而不是重新枚举）：`src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 违规指标。
 
 ## CM-11（计划完整性）
 

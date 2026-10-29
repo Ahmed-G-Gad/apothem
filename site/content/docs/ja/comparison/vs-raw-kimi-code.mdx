@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Kimi Code 構成の比較"
 description: "Kimi Code のプロジェクトルートの AGENTS.md と .kimi-code/ のサポートファイルを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "95d0fa19ca3ddd46"
+sourceHash: "f5ddfe61adc7d28d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Apothem で管理する場合とを対比します。
 | タスク | 手作業の構成 | Apothem 管理 |
 | ---- | --------------- | --------------- |
 | `AGENTS.md` 命令面を書く | プロジェクトごとに手で書いて再同期する | 共有プロファイルからレンダリングされる 1 つの管理ブロック |
-| ルール、コマンド、スキル、エージェントを同期し続ける | プロジェクトごとに手作業でコピー | インストールのたびに `<project>/.kimi-code/.apothem/support/` の下へマテリアライズ |
+| ルール、コマンド、スキル、エージェントを同期し続ける | プロジェクトごとに手作業でコピー | インストールのたびに、スキルとコマンド（スキルとして）を `<project>/.kimi-code/skills/` の下へ、ヘルパーをサブエージェントとして `<project>/.kimi-code/agents/` の下へ、ルール、フック、テンプレートを `<project>/.kimi-code/.apothem/support/` の下へ配置 |
 | 更新時にオペレーターの文章を保持する | 手作業でマージ | センチネルで区切られたブロック。その外側にあるオペレーターの文章は保持される |
 | ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness kimi-code --project <path>` |
@@ -29,9 +29,13 @@ Apothem で管理する場合とを対比します。
 ## Apothem が管理するもの
 
 kimi-code アダプターは、共有ルールとガバナンス面をプロジェクトルートの `AGENTS.md` の
-管理ブロックへレンダリングし、コマンド、スキル、フック、エージェント、ルール、
-テンプレートの各コホートを `.kimi-code/.apothem/support/` の下にインストールします。
-`.kimi-code/mcp.json` は作成しません。MCP 面はオペレーター所有のままです。
+管理ブロックへレンダリングし、スキルと、スキルとしてラップしたコマンドを、Kimi Code が
+読み込むプロジェクトのスキルディレクトリである `.kimi-code/skills/` にインストールします。
+ヘルパーは `.kimi-code/agents/` 内の Kimi Code サブエージェントとなり、そのツール名は
+Kimi Code が照合する名前に変換されます。フック、ルール、テンプレートの各コホートは
+`.kimi-code/.apothem/support/` の下に置かれます。Kimi Code はフックをユーザースコープの
+`~/.kimi-code/config.toml` から読み込みますが、アダプターはこのファイルを書き込みません。
+アダプターは `.kimi-code/mcp.json` を作成しません。MCP 面はオペレーター所有のままです。
 Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AGENTS.md` から
 読み取ります。アダプターが書き込むのはプロジェクトルートの `AGENTS.md` だけであり、
 両方のファイルが存在する場合にどちらが優先されるかは、Kimi Code のドキュメントに
@@ -42,7 +46,7 @@ Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AG
 
 1. まだ共有プロファイルを作成していなければ、`apothem profile init` を実行して作成します。
 2. 既存の `AGENTS.md` のルールを、共有コーパスへ移します。
-3. `apothem install --harness kimi-code --project <path>` を実行して、`AGENTS.md` 命令面と、`.kimi-code/.apothem/support/` のサポートツリーをレンダリングします。
+3. `apothem install --harness kimi-code --project <path>` を実行して、`AGENTS.md` 命令面、`.kimi-code/skills/` のスキル、`.kimi-code/agents/` のサブエージェント、`.kimi-code/.apothem/support/` のサポートツリーをレンダリングします。
 4. `apothem verify --harness kimi-code --project <path>` を実行して、構成が配置されたことを確認します。
 5. 以降の変更には毎回 `apothem update --harness kimi-code --project <path>` を使います。
 

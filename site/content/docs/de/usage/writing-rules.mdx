@@ -2,7 +2,7 @@
 title: "Regeln schreiben"
 description: "Apothem-Verhaltensregeln verfassen, deren Geltungsbereich festlegen und pflegen."
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,21 @@ Der Geltungsbereich einer Regel wird durch zwei Frontmatter-Felder gesetzt, `alw
 | `true` | `""` (leer) | Immer aktiv: jede Sitzung, jede Datei |
 | `false` | ein Glob wie `"**/*.py"` | Pfadgefiltert: nur wenn die aktive Datei dem Glob entspricht |
 
+Fünf mitgelieferte Regeln sind immer aktiv: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management` und der Regelindex. Eine immer aktive Regel
+kostet in jeder Sitzung Kontext, daher SOLLTE eine neue Regel pfadgefiltert sein,
+mit Globs, die die Dateien benennen, die sie regelt; ein Filter aus `**` allein
+schränkt nichts ein, und Claude Code lädt eine solche Regel beim Start wie eine
+immer aktive. Der mitgelieferte Korpus begrenzt die immer aktive Menge auf diese
+Liste und auf eine Byte-Obergrenze; eine Regel, die zu „immer aktiv“ hochgestuft
+wird, ändert beides in derselben Änderung. Nenne jede Regel, die du hinzufügst, im
+Regelindex (`apothem-rule-index`), damit eine Sitzung auf einem Harness, der Regeln
+nicht nach Pfad eingrenzt, sie trotzdem findet. Eine Begleitregel
+(`<parent>-<aspect>`) übernimmt den `pathFilter` ihrer übergeordneten Regel oder
+einen engeren, sodass sie nie ohne ihre übergeordnete Regel geladen wird. Gib einer
+eigenen Regel nicht den Namen `apothem-rule-index`: Eine Installation sichert eine
+Regeldatei mit diesem Namen und überschreibt sie.
+
 ## Beispielregel
 
 ```markdown
@@ -51,11 +66,24 @@ Nachdem du eine Regel geschrieben hast, aktualisiere jeden installierten Harness
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+Ein projektbezogener Harness braucht beim Update `--project`, wie in der zweiten
+Zeile; ein benutzerbezogener Harness nicht.
 
 ## Regelvalidierung
 
+Führe den Frontmatter-Validator gegen die Regeldatei aus, die du geschrieben hast.
+Aus einem Apothem-Checkout macht `PYTHONPATH=src` das Paket importierbar; nach
+einer Skript-Installation verwende stattdessen `PYTHONPATH="$HOME/.apothem/src"`.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+Eine Prüfung pro Schreibvorgang wie `frontmatter-grep` nimmt die zu prüfende Datei
+entgegen oder `--stdin`, um den Inhalt von der Standardeingabe zu lesen; ohne
+beides wartet sie auf Eingaben über die Standardeingabe. Eine eigenständige
+Prüfung nimmt stattdessen ein Stammverzeichnis entgegen, wie in
+`--check naming-grep .`.

@@ -2,7 +2,7 @@
 title: "머신 간 동기화 검증 체크리스트"
 description: "Claude Code 어댑터가 완전한 이식성 검사와 함께 새 호스트에서 올바르게 설치, 검증, 제거되는지 확인하는 검증 절차입니다."
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**예상:** 설치 프로그램이 기존 엔진 홈을 감지하고, 다시 설치하거나 중복하는 대신 fast-forward합니다. 종료 코드 0.
+**예상:** 설치 프로그램이 기존 엔진 홈을 감지하고, 다시 설치하거나 중복하는 대신 그 안에서 릴리스 태그를 체크아웃합니다. 종료 코드 0.
 
 ### 3.2 사전 조건 검사됨
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

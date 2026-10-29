@@ -2,7 +2,7 @@
 title: "Flujo de instalación"
 description: "Cómo funcionan apothem install, update y uninstall de principio a fin."
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,7 +50,12 @@ Cada adaptador escribe en su propia raíz de instalación fija: el directorio
 personal del usuario para los adaptadores de alcance de usuario y la ruta local
 del proyecto para los adaptadores de alcance de proyecto. La CLI no expone un
 indicador `--scope`; los adaptadores de alcance de proyecto requieren
-`--project <path>`. Cada destino se documenta en
+`--project <path>`. Siete de los adaptadores de alcance de proyecto también
+escriben carpetas compartidas en el directorio personal del usuario, como
+`~/.agents/skills/` y `~/.config/apothem/`, antes de escribir el archivo de
+proyecto, y `--project` no cambia adónde van. La
+[referencia de install](/docs/cli-reference/install#carpetas-en-tu-directorio-personal)
+las enumera. Cada destino se documenta en
 `site/content/docs/harnesses/<harness>.mdx`.
 
 ## Manejo de errores

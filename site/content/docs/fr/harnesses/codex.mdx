@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptateur d'environnement Apothem pour Codex (bêta)."
 machineTranslated: true
-sourceHash: "7f434952ef208581"
+sourceHash: "ca4ad5f675a665ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,30 +61,91 @@ bonne surface de Codex : les instructions dans `AGENTS.md`, les hooks dans
 `~/.config/apothem/` comme matériel de support.
 
 Chaque auxiliaire converti définit `name`, `description` et
-`developer_instructions`. Un auxiliaire dont l'autorisation d'outils, une fois
-retirés les outils de sa propre liste `disallowedTools`, ne comprend aucun outil
-d'édition de fichiers (`Write`, `Edit`, `MultiEdit` ou `NotebookEdit`) définit
-aussi `sandbox_mode = "read-only"`, la restriction d'écriture propre à Codex.
-`Bash` ne compte pas comme un outil d'édition de fichiers : un auxiliaire
-auquel `Bash` est accordé, sans aucun de ces outils, reçoit donc tout de même ce
-paramètre. Aucun modèle ni effort de raisonnement n'est défini ; chaque
-auxiliaire hérite donc des choix de la session. Codex n'a ni liste d'outils ni
-limite de tours par auxiliaire ; les `tools` et `maxTurns` d'un auxiliaire ne
-sont donc pas repris.
+`developer_instructions`, qui porte le corps de l'auxiliaire. Aucun modèle ni
+effort de raisonnement n'est défini ; chaque auxiliaire hérite donc des choix
+de la session. Codex n'a ni liste d'outils ni limite de tours par auxiliaire ;
+les `tools` et `maxTurns` d'un auxiliaire ne sont donc pas repris.
+
+Les auxiliaires en lecture seule (voir la
+[référence des auxiliaires](/docs/reference/agents)) indiquent dans leurs
+instructions qu'ils ne modifient rien. La lecture seule est imposée par le bac
+à sable de la session parente, et non par le fichier TOML de l'auxiliaire :
+chaque auxiliaire s'exécute sous les paramètres de bac à sable et d'approbation
+de la session qui l'a lancé. Un fichier d'auxiliaire ne peut pas remplacer le
+mode de bac à sable, la politique d'approbation, le fournisseur de modèle ni
+les serveurs MCP de la session ; l'adaptateur n'en écrit donc aucun, et les
+instructions d'un auxiliaire peuvent lui demander d'éviter les modifications
+sans créer de bac à sable distinct en lecture seule. Pour rendre une limite de
+lecture seule contraignante, définissez les contrôles de bac à sable et
+d'approbation sur la session Codex elle-même. Une version de `Codex` antérieure
+à celle qui a ajouté cette restriction peut encore respecter `sandbox_mode`
+dans un fichier d'auxiliaire ; Apothem n'a pas établi de quelle version il
+s'agit, et n'écrit aucun `sandbox_mode` dans un cas comme dans l'autre.
 
 ## Notes de compatibilité
 
-`~/.agents/skills/` est une racine partagée dont Codex est propriétaire : huit
+`~/.agents/skills/` est une racine partagée dont Codex est propriétaire : neuf
 autres outils pris en charge la chargent aussi (le
 [registre des environnements](/docs/reference/harness-registry) les liste) ;
 les skills Apothem qu'une installation Codex y écrit apparaissent donc
-également dans ces outils, et une désinstallation de Codex les retire de ces
-outils. L'installation affiche une note qui nomme ces outils.
+également dans ces outils. Quatre de ces outils écrivent aussi eux-mêmes ce
+dossier lorsque vous les installez (le registre les liste comme
+co-installateurs), avec les mêmes fichiers qu'une installation Codex ; les
+skills sont donc présents sur une machine dépourvue d'installation Codex. Il en
+va de même pour les règles et templates de `~/.config/apothem/`, que sept
+adaptateurs de portée projet écrivent aussi. Le dossier se trouve toujours dans
+votre répertoire personnel, quelle que soit la valeur de `CODEX_HOME` : Codex
+lit `$HOME/.agents/skills` ; un `CODEX_HOME` autre que `~/.codex` déplace donc
+les fichiers Codex mais pas les skills. Chaque installation Apothem qui utilise
+le dossier y écrit les mêmes fichiers, et l'installation enregistre quelles
+installations l'utilisent ; l'ordre dans lequel vous installez n'a donc pas
+d'importance. Une désinstallation de Codex ne retire les skills que si aucune
+autre installation Apothem ne les utilise encore ; sinon, elle les conserve et
+indique quelles installations les utilisent (voir
+[Désinstallation](#désinstallation)). Le propriétaire enregistré est l'outil
+pour lequel l'éditeur documente le chemin. L'installation qui a placé les
+fichiers est celle qui les utilise encore, et la note d'installation la nomme.
+Un dossier de skill qu'Apothem n'a pas écrit et qui porte le même nom qu'un
+skill Apothem est laissé tel quel, avec un avertissement qui le nomme.
+L'installation affiche une note qui nomme ces outils.
+`~/.codex/agents/` est une seconde racine partagée : un autre outil pris en charge liste ce dossier comme emplacement de compatibilité (le
+registre le nomme), et sa documentation ne dit pas s'il lit les fichiers TOML
+qu'une installation `Codex` y écrit.
 
 Codex réserve `~/.codex/rules/` aux politiques d'exécution `.rules`. Apothem n'y
 place pas de règles comportementales Markdown ; il les conserve dans
 `~/.config/apothem/` et les référence depuis `AGENTS.md` et les skills
 installés.
+
+## Plugin Codex
+
+Apothem livre aussi un plugin Codex, ajouté depuis la marketplace de plugins du
+dépôt (le [guide d'installation](/docs/install) liste les commandes sous le
+canal 7). Le plugin est une amorce : il embarque un skill d'entrée qui exécute
+le moteur, et `apothem install --harness codex` écrit tout ce qui est listé
+ci-dessus.
+
+Le plugin se trouve dans `plugins/apothem/`. Son manifeste est un `plugin.json`
+à la racine, l'emplacement que Codex documente pour un nouveau paquet. Le
+manifeste ne nomme aucun chemin de skills, car Codex découvre le répertoire
+`skills/` d'un plugin depuis la racine du plugin. Un fichier
+`.codex-plugin/plugin.json` reste à côté comme solution de repli de
+compatibilité pour les versions de Codex qui ne lisent que cet ancien
+emplacement ; Codex le prend toujours en charge et traite le manifeste racine
+comme canonique pour l'identité du plugin. Les deux fichiers portent la version
+de la release, et un test les aligne sur la version du moteur.
+
+Le plugin n'embarque ni agents, ni hooks, ni serveurs MCP. Codex ne documente
+aucun composant d'agents personnalisés pour les plugins ; le moteur continue
+donc d'écrire les agents dans `~/.codex/agents/*.toml`. Les hooks embarqués
+dans un plugin sont limités aux plugins installés manuellement dans Codex
+desktop et ne sont pas approuvés automatiquement ; le moteur continue donc de
+les écrire dans `~/.codex/hooks.json`.
+
+L'entrée de marketplace définit le bloc `policy` que Codex demande aux auteurs
+de toujours inclure : `policy.installation` vaut `AVAILABLE` et
+`policy.authentication` vaut `ON_INSTALL`, les valeurs par défaut que Codex
+documente pour une nouvelle entrée.
 
 ## Vérification
 
@@ -110,6 +171,15 @@ apothem update --harness codex
 Actualise l'amorce Codex, les agents convertis, les skills et les cohortes de
 support.
 
+Les dossiers de skills de `~/.agents/skills/` sont écrits sous une forme
+unique, partagée par chaque installation Apothem de ce dossier : les clés
+d'en-tête `version`, `updated`, `archetype` et `portability` de `SKILL.md` se
+trouvent sous une table `metadata`, et `userInvocable` s'écrit
+`user-invocable`. La première mise à jour après la montée de version réécrit
+sous cette forme les dossiers qu'une installation Codex a écrits auparavant, et
+sauvegarde chaque dossier qu'elle modifie. `apothem rollback --harness codex`
+les restaure.
+
 ## Désinstallation
 
 ```bash
@@ -119,10 +189,16 @@ apothem uninstall --harness codex
 Supprime le bloc Apothem de `~/.codex/AGENTS.md` et conserve tout texte situé en
 dehors de ce bloc, et supprime les entrées d'Apothem de `~/.codex/hooks.json` en
 conservant les vôtres. Supprime aussi les fichiers Apothem de `~/.codex/hooks/`,
-`~/.codex/agents/`, `~/.agents/skills/` et `~/.config/apothem/{rules,templates}/` ;
-les autres fichiers de ces dossiers restent en place. Les skills retirés de
-`~/.agents/skills/` disparaissent aussi des autres outils qui chargent ce dossier
-(voir [Notes de compatibilité](#notes-de-compatibilité)). Chaque fichier est
+`~/.codex/agents/`, `~/.agents/skills/` et `~/.config/apothem/{rules,templates}/`,
+sauf si une autre installation Apothem les utilise encore (la désinstallation
+conserve ceux-là et les liste) ; les autres fichiers de ces dossiers restent en
+place. Les skills retirés de `~/.agents/skills/` disparaissent aussi des autres
+outils qui chargent ce dossier (voir
+[Notes de compatibilité](#notes-de-compatibilité)). Si vous avez défini
+`CODEX_HOME` sur un dossier autre que `~/.codex` et installé avec une version
+antérieure, les copies que cette version a écrites à côté de ce dossier
+(`<CODEX_HOME>/../.agents/skills/` et `<CODEX_HOME>/../.config/apothem/`) ne
+sont pas supprimées ; supprimez-les à la main. Chaque fichier est
 sauvegardé sous `~/.apothem/backups/` avant d'être modifié ou supprimé. Le YAML
 du profil partagé et le moteur Apothem ne sont pas affectés.
 

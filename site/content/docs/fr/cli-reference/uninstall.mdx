@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Référence de la CLI pour la commande apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,6 +43,59 @@ l'environnement que vous supprimez est le dernier à cette racine, la commande
 copie d'abord chaque magasin dans la racine de sauvegarde d'Apothem
 (`~/.apothem/backups/`), puis le supprime avec tout son contenu. Tout ce que
 vous conservez dans `plans/` n'est jamais supprimé.
+
+## Dossiers partagés dans votre répertoire personnel
+
+Plusieurs installations peuvent utiliser un même dossier de votre répertoire
+personnel : le dossier de skills (`~/.agents/skills/`, ou `~/.codebuddy/skills/`,
+`~/.kiro/skills/` ou `~/.trae/skills/`) ainsi que `~/.config/apothem/rules/` et
+`~/.config/apothem/templates/`. La page [install](/docs/cli-reference/install#dossiers-dans-votre-répertoire-personnel)
+indique quel adaptateur écrit lequel. Apothem enregistre les installations qui
+utilisent chaque dossier, et une désinstallation suit une seule règle : elle ne
+supprime un dossier que lorsqu'aucune autre installation Apothem ne l'utilise
+encore.
+
+- Désinstaller un outil conserve les skills tant qu'une autre installation les
+  utilise encore, et le signale. Un même outil installé dans deux projets compte
+  comme deux installations : le désinstaller du projet A conserve donc les
+  dossiers tant que le projet B les utilise encore. La dernière désinstallation
+  les supprime (voir le second exemple ci-dessous).
+- Seul ce que liste l'enregistrement propre à l'installation est supprimé. Une
+  installation effectuée avant que les dossiers ne soient gérés n'a pas
+  d'enregistrement de ce type : la désinstaller ne supprime donc rien dans votre
+  répertoire personnel. Les fichiers que vous avez ajoutés aux dossiers restent
+  en place, tout comme un dossier qui porte le nom d'un skill Apothem et
+  qu'Apothem n'a pas écrit.
+- Une installation dont le dossier de projet n'existe plus est ignorée, de sorte
+  qu'un projet supprimé ne conserve pas les dossiers indéfiniment. La note la
+  nomme.
+- Si l'enregistrement d'une installation susceptible d'utiliser les dossiers ne
+  peut pas être lu, la désinstallation s'arrête avec une erreur avant de
+  supprimer quoi que ce soit, et l'installation reste enregistrée. Réparez ou
+  déplacez l'enregistrement illisible, puis relancez la commande. Un
+  enregistrement endommagé d'un outil qui n'écrit jamais dans ces dossiers est
+  ignoré.
+- Lorsque la dernière utilisation disparaît, les dossiers laissés vides sont
+  également supprimés. Chaque dossier est sauvegardé sous `~/.apothem/backups/`
+  avant d'être supprimé.
+
+Chaque désinstallation affiche une `Note:` par dossier, par exemple `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, ou
+`was removed: no other Apothem install uses it`. Dans l'enveloppe `--format json`,
+chaque note est une entrée `warnings` avec `"outcome": "advisory"`,
+`"operation": "shared_root"` et `"role"` défini à `retained` ou `released`. Elle
+porte `path`, `holders` (les installations qui conservent le dossier), `stale`
+(les installations ignorées), ainsi que `kept` et `total` (les entrées
+enregistrées conservées et les entrées que l'installation listait).
+
+Si un dossier reste en place à cause d'une installation que vous ne retrouvez
+pas, la note la nomme. Lorsque le dossier du projet a été supprimé,
+l'installation est ignorée et le dossier disparaît à la prochaine
+désinstallation. Lorsque le projet existe mais que vous avez retiré à la main le
+bloc Apothem de son fichier de règles, `uninstall` signale l'environnement comme
+non installé et ne libère pas sa revendication ; exécutez `install` pour cet
+environnement et ce projet, puis `uninstall`, afin de la libérer.
+`apothem verify` indique si un dossier est toujours complet.
 
 Une suppression `--harness all` est délibérément exhaustive : elle couvre
 chaque environnement enregistré, y compris ceux que le champ `exclude_harnesses`
@@ -106,6 +159,16 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+Un dossier de skills partagé reste en place jusqu'à ce que la dernière
+installation qui l'utilise disparaisse :
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Codes de sortie

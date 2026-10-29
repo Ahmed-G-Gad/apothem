@@ -2,7 +2,7 @@
 title: "خوادم MCP"
 description: "إعداد خوادم Model Context Protocol — مملوكة للمُشغِّل ومُسجَّلة عبر آلية MCP الأصلية لكل أداة؛ تُسقِط بضعة محوّلات جرد MCP من الملف التعريفي المشترك، ولا يكتب الباقي أي مُدخَلات خوادم."
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,6 +49,64 @@ sourceHash: "493b667087182d32"
 المستخدم أو النطاق المحلي) وفي <bdi>`.mcp.json`</bdi> على مستوى المشروع؛ ولا يكتب
 محوّل <bdi>Claude Code</bdi> أيًّا من الملفين، ولا تحمل إعدادات <bdi>Claude Code</bdi>
 التي يديرها <bdi>Apothem</bdi> كتلة <bdi>`mcpServers`</bdi> أبدًا.
+
+## منح مساعِد الوصول إلى خوادم MCP
+
+تُشحَن عوامل البحث المخصّصة للقراءة فقط (<bdi>`research-scout`</bdi>، و<bdi>`citation-auditor`</bdi>)
+مع قائمة <bdi>`tools`</bdi> صريحة هي <bdi>`Read, Glob, Grep, WebSearch, WebFetch`</bdi>. ولا
+يقبل <bdi>Claude Code</bdi> أداة <bdi>MCP</bdi> في القائمة الصريحة لعامل فرعي إلا عندما
+يُسمّي مُدخَلٌ الخادمَ، بالصيغة <bdi>`mcp__<server>__*`</bdi>. ويُسمّي المفتاح
+<bdi>`agent_mcp_servers`</bdi> في الملف التعريفي تلك الخوادم لكل عامل:
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+يُضيف تثبيت <bdi>Claude Code</bdi> مُدخَلًا واحدًا <bdi>`mcp__<server>__*`</bdi> لكل خادم
+مُسمّى إلى سطر <bdi>`tools`</bdi> لكل عامل مُدرَج، ولا يُغيِّر أي عامل آخر أو سطر آخر.
+ومن دون المفتاح يحتفظ كل عامل بالقائمة العادية، فلا يصل أي عامل إلى أداة <bdi>MCP</bdi>.
+اكتب اسم كل خادم كما يعرضه <bdi>`/mcp`</bdi>. يكتب <bdi>Claude Code</bdi> الحرفين
+<bdi>`:`</bdi> و<bdi>`.`</bdi> بالصورة <bdi>`_`</bdi> في أسماء الأدوات، لذا يُصيِّر التثبيت
+الخادم <bdi>`plugin:bio-research:biorxiv`</bdi> بالصورة
+<bdi>`mcp__plugin_bio-research_biorxiv__*`</bdi>. ويحمل الاسم حروفًا وأرقامًا و<bdi>`-`</bdi>
+و<bdi>`_`</bdi> و<bdi>`:`</bdi> و<bdi>`.`</bdi>، ويبدأ وينتهي بحرف أو رقم، ولا يحمل أبدًا
+اثنين من <bdi>`_`</bdi> و<bdi>`:`</bdi> و<bdi>`.`</bdi> متتاليين (لأن المُدخَل المُصيَّر
+سيحمل <bdi>`__`</bdi>)؛ ويُرفَض <bdi>`*`</bdi> والمسافات البيضاء وكل حرف آخر.
+والمنحة تُسمّي كل أداة من أدوات ذلك الخادم، بما فيها أي أداة تكتب، لذا لا تمنح إلا
+خادمًا تثق به لعمليات البحث؛ فتعليمات العوامل تقصرها على عمليات البحث، لكن إطار العمل
+لا يفرض إلا الأسماء التي تُدرِجها. والمنحة لعامل غير موجود، أو لعامل بلا قائمة
+<bdi>`tools`</bdi> صريحة، يُبلَّغ عنها وتُتخطّى. والتجاوز الخاص بإطار عمل تحت
+<bdi>`harnesses.claude-code`</bdi> يُضيف إلى القوائم المشتركة.
+
+تنطبق المنحة على تثبيت المحرّك (<bdi>`apothem install`</bdi>) على <bdi>`Claude Code`</bdi>
+وعلى <bdi>`Gemini CLI`</bdi>. وعلى <bdi>`Gemini CLI`</bdi> يُضيف التثبيت مُدخَلًا واحدًا
+<bdi>`mcp_<server>_*`</bdi> لكل خادم مُسمّى إلى قائمة سماح <bdi>`tools`</bdi> للعامل
+المُدرَج، مثل <bdi>`mcp_your-scholarly-server_*`</bdi>، ولا يُغيِّر أي عامل آخر أو سطر آخر.
+يُسمّي <bdi>`Gemini CLI`</bdi> كل أداة <bdi>MCP</bdi> بالصيغة
+<bdi>`mcp_{serverName}_{toolName}`</bdi> ويقرأ الخادم من النص حتى أول شرطة سفلية بعد
+<bdi>`mcp_`</bdi>، لذا لا يمكن مخاطبة خادم في اسمه شرطة سفلية هناك. ولا يكتب
+<bdi>Apothem</bdi> منحة <bdi>`Gemini CLI`</bdi> إلا لاسم من حروف وأرقام و<bdi>`-`</bdi>:
+فالاسم الذي فيه شرطة سفلية أو نقطتان رأسيتان أو نقطة صالح لـ <bdi>`Claude Code`</bdi>
+لكنه يُتخطّى لـ <bdi>`Gemini CLI`</bdi> ويُبلَّغ عنه، ولا يُعاد كتابته أبدًا إلى اسم آخر.
+والعامل الذي يصل أصلًا إلى كل خادم <bdi>MCP</bdi> (بلا قائمة <bdi>`tools`</bdi>، أو بقائمة
+تحمل <bdi>`mcp_*`</bdi>) يُترَك دون تغيير ويُبلَّغ عنه. ولا يملك <bdi>`Gemini CLI`</bdi>
+قائمة حظر، لذا فإن الخادم الذي تُسمّيه <bdi>`disallowedTools`</bdi> الخاصة بالعامل لا يحصل
+على مُدخَل ويُبلَّغ عنه: الحظر يغلب، كما على <bdi>`Claude Code`</bdi>. وتقرأ منحة
+<bdi>Gemini</bdi> قوائم <bdi>`agent_mcp_servers`</bdi> المشتركة والتجاوز
+<bdi>`harnesses.gemini-cli`</bdi>، لا التجاوز <bdi>`harnesses.claude-code`</bdi>. وتتجاهل
+أُطُر العمل الأخرى المفتاح: لا يُوثِّق <bdi>`Qwen Code`</bdi> أي مُدخَل لكل خادم في
+<bdi>`tools`</bdi>؛ ويتحكّم <bdi>`OpenCode`</bdi> في الأدوات عبر الأذونات؛ ولا يُصدِر
+<bdi>`Codex`</bdi> و<bdi>`Antigravity`</bdi> أي قائمة أدوات.
+
+تُجمَّع إضافة <bdi>Claude Code</bdi> من دون ملف تعريفي، لذا يحتفظ عاملاها بالقائمة
+العادية. ولمنحهما الوصول إلى الموصِّلات من دون تحرير ملفات الإضافة، عرِّف عاملًا على
+مستوى المستخدم خاصًا بك في <bdi>`~/.claude/agents/`</bdi>، باسم من اختيارك، يحمل قائمة
+<bdi>`tools`</bdi> نفسها المخصّصة للقراءة فقط إضافة إلى مُدخَلات <bdi>`mcp__<server>__*`</bdi>
+التي تريدها.
 
 ## إضافة خادم
 

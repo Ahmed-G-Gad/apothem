@@ -2,7 +2,7 @@
 title: "하니스 간 규약 수렴"
 description: "벤더마다 구성 형식과 시행 표면이 다른데도, Apothem이 하나의 운영자 워크플로를 열일곱 개 하니스에 걸쳐 일관되게 유지하는 방법."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,12 +20,14 @@ Apothem의 임무는 운영자의 워크플로가 모든 하니스에서 동일�
 
 | 형태 | 하니스(예시) | Apothem이 내보내는 것 |
 | --- | --- | --- |
-| 디렉터리 내 평면 `.md` 규칙 파일 | claude-code, windsurf, trae | 하니스의 규칙 트리에 그대로 복사되는 원본 규칙 파일 |
-| Cursor `.mdc` 규칙 | cursor | Cursor가 기대하는 메타데이터 헤더를 담은 `.mdc` 규칙 세트 |
+| 디렉터리 내 평면 `.md` 규칙 파일 | claude-code | 하니스의 규칙 트리에 그대로 복사되는 원본 규칙 파일 |
+| 규칙 디렉터리 내 병합된 규칙 파일 하나 | windsurf, trae | 하니스가 읽는 활성화 프런트매터를 담은 `apothem-rules.md` 파일 하나 |
+| Cursor `.mdc` 규칙 | cursor | Cursor가 기대하는 메타데이터 헤더를 담은 `.mdc` 규칙 파일 하나 |
 | 단일 파일 지시 문서 | codex, gemini-cli, github-copilot, zed | 프로필의 규칙 세트로부터 조립된, 연결된 하나의 문서 —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules` |
 
-평면 `.md` 하니스는 규칙을 그대로 가져갑니다. `.mdc` 하니스는 각 규칙을 Cursor 메타데이터
-헤더로 감싸야 합니다. 단일 파일 하니스는 전체 규칙 세트를 안정적인 섹션 순서로 하나의
+평면 `.md` 하니스는 규칙을 그대로 가져갑니다. 병합 파일 하니스는 규칙이 언제 적용될지를
+프런트매터로 정하는 규칙 파일 하나를 가져갑니다. `.mdc` 하니스는 규칙 파일 맨 위에 Cursor
+메타데이터 헤더가 있어야 합니다. 단일 파일 하니스는 전체 규칙 세트를 안정적인 섹션 순서로 하나의
 문서에 평탄화해야 하며, 그래야 운영자가 대상과 무관하게 같은 규약을 같은 순서로
 읽습니다. 중립적 프로필이 단일 진실 공급원이며, 분기는 전적으로 각 어댑터의
 렌더링 단계에 존재합니다.

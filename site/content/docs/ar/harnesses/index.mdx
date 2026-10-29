@@ -2,7 +2,7 @@
 title: "محوّلات أُطُر العمل"
 description: "محوّلات أُطُر عمل Apothem — ملف تعريفي مشترك واحد، وسبعة عشر هدفًا مدعومًا."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,12 +80,40 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## المهارات في دليلك المنزلي
+
+تكتب سبعة محوّلات ذات نطاق المشروع ملف قواعد واحدًا في مشروعك (وستّة منها تكتب
+أيضًا مساعِدات Apothem هناك بوصفها ملفات عوامل فرعية؛ وتسمّي صفحة كل إطار عمل
+المجلّد)، وتكتب أيضًا مهارات Apothem، والقواعد والقوالب التي تستشهد بها المهارات،
+في مجلّدات داخل دليلك المنزلي:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- كل تثبيت يسمّي مجلّدًا يكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت
+  به، وتخدم نسخة واحدة كل المشاريع.
+- يكتب التثبيت المجلّدات المنزلية أولًا. فإن فشل ذلك، يتوقّف قبل أن يغيّر
+  المشروع، ولا يضيف أي ملف مهارة أو قاعدة إلى مستودعك.
+- لا يُزيل إلغاء التثبيت مجلّدًا مشتركًا إلا حين لا يعود أي تثبيت آخر لـ Apothem
+  يستخدمه، ويذكر أي تثبيت يُبقيه.
+- مجلّد المهارة الذي يحمل اسم مهارة من Apothem ولم يكتبه Apothem يُترَك كما
+  هو، مع تحذير.
+
+تسرد صفحة كل إطار عمل مجلّداتها. ويُبيّن
+[سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة) أي الأدوات
+تتشارك أي مجلّد.
 
 راجع [تجريد محوّل إطار العمل](/docs/architecture/harness-adapter-abstraction)
 للاطّلاع على مواصفة البروتوكول.

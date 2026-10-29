@@ -2,7 +2,7 @@
 title: "इंस्टॉलेशन वर्कफ़्लो"
 description: "apothem install, update और uninstall एंड-टू-एंड कैसे काम करते हैं।"
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,11 @@ flowchart TD
 प्रत्येक अडैप्टर अपने स्वयं के निश्चित इंस्टॉल रूट में लिखता है: यूज़र-स्कोप
 अडैप्टर के लिए यूज़र-होम और प्रोजेक्ट-स्कोप अडैप्टर के लिए प्रोजेक्ट-लोकल। CLI
 कोई `--scope` फ़्लैग प्रकट नहीं करती; प्रोजेक्ट-स्कोप अडैप्टर को `--project <path>`
-की आवश्यकता होती है। प्रत्येक गंतव्य `site/content/docs/harnesses/<harness>.mdx`
+की आवश्यकता होती है। प्रोजेक्ट-स्कोप अडैप्टर में से सात, प्रोजेक्ट फ़ाइल लिखने से
+पहले, यूज़र होम में साझा फ़ोल्डर भी लिखते हैं, जैसे `~/.agents/skills/` और
+`~/.config/apothem/`, और `--project` यह नहीं बदलता कि वे कहाँ जाते हैं।
+[इंस्टॉल संदर्भ](/docs/cli-reference/install#आपकी-होम-डायरेक्टरी-में-फ़ोल्डर)
+उन्हें सूचीबद्ध करता है। प्रत्येक गंतव्य `site/content/docs/harnesses/<harness>.mdx`
 पर प्रलेखित है।
 
 ## त्रुटि प्रबंधन

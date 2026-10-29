@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,6 +53,27 @@ lorsque le projet n'a pas encore de répertoire `.github/workflows/`, et le
 validateur des sujets de commit également lorsque la racine n'a aucun
 historique de commits.
 
+Six validateurs partent de la racine du dépôt et parcourent toute
+l'arborescence à la recherche des fichiers qu'ils vérifient :
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+Ceux-ci ignorent les checkouts git imbriqués, tels que les worktrees, les
+sous-modules et les clones imbriqués, et ignorent les répertoires qui
+contiennent des dépendances, des environnements virtuels, des caches ou des
+sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification
+des plans égarés de `no-global-plans-grep` s'arrête également à un checkout
+imbriqué. Une exécution de l'un d'eux rend compte du checkout sur lequel elle a
+été pointée, et de rien d'autre. Un validateur qui lit un dossier fixe, tel que
+`naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous ce dossier.
+
 ## Barres du portail
 
 | Barre | Vérification | Type |
@@ -79,12 +100,22 @@ historique de commits.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Un validateur par écriture prend le fichier à vérifier, ou `--stdin` pour lire
+le contenu depuis l'entrée standard ; sans l'un ni l'autre, il attend une
+entrée sur l'entrée standard, donc passez le fichier lorsque vous l'exécutez
+depuis un terminal. Un validateur autonome prend un répertoire racine (le
+répertoire courant s'il est omis). `--list` indique à quel groupe appartient
+chaque validateur.
 
 Le mode `--hook` (`python -m apothem.conformity.gate --hook`) est le point
 d'entrée appelé par l'environnement : il lit sur stdin une charge utile JSON

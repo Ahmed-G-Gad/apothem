@@ -2,7 +2,7 @@
 title: "المساعِدون"
 description: "عوامل مساعِدة دائمة للبحث والتدقيق والجودة والتنسيق، مع عقود البيانات الأمامية وبروتوكولات لعزل النشر."
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,24 +49,72 @@ maxTurns: <integer>
 ---
 ```
 
+الحقل <bdi>`tools`</bdi> اختياري. والمساعِد الذي يحذفه يرث كل أداة تملكها الجلسة، بما فيها
+أدوات <bdi>MCP</bdi> الموصولة، ويحمل <bdi>`disallowedTools`</bdi> قيده. وكل المساعِدين
+الأربعة عشر المشحونين يُدرِجون <bdi>`tools`</bdi>.
+
+## خوادم MCP الموصولة
+
+المساعِد الذي يُدرِج <bdi>`tools`</bdi> لا يستطيع استدعاء إلا ما يُدرِجه. ولا يقبل
+<bdi>Claude Code</bdi> أداة <bdi>MCP</bdi> في تلك القائمة إلا عندما يُسمّي المُدخَل الخادم،
+كما في <bdi>`mcp__<server>__*`</bdi>؛ أمّا <bdi>`mcp__*`</bdi> المجرّد فمُوثَّق بوصفه مُدخَلًا
+في <bdi>`disallowedTools`</bdi> ولا مكان آخر. وأسماء الخوادم ملك الشخص الذي يوصلها، لذا لا
+يستطيع مساعِد مشحون تسميتها.
+
+يبحث <bdi>`citation-auditor`</bdi> و<bdi>`research-scout`</bdi> عن المصادر العلمية. ويُشحَن
+كلٌّ منهما مع <bdi>`tools: Read, Glob, Grep, WebSearch, WebFetch`</bdi> ويحظر الأدوات التي
+تكتب الملفات، أو تُشغِّل الأوامر، أو تبدأ مساعِدين آخرين، أو تنشر: <bdi>`Write`</bdi>،
+و<bdi>`Edit`</bdi>، و<bdi>`MultiEdit`</bdi>، و<bdi>`NotebookEdit`</bdi>، و<bdi>`Bash`</bdi>،
+و<bdi>`PowerShell`</bdi>، و<bdi>`Monitor`</bdi>، و<bdi>`Agent`</bdi>، و<bdi>`Artifact`</bdi>،
+وأدوات قائمة المهام. ومن دون إعداد في الملف التعريفي، لا يصل أيٌّ منهما إلى أداة
+<bdi>MCP</bdi>، ويبحث كلاهما عن المصادر عبر البحث على الويب وجلب الويب.
+
+لمنح أحدهما فهرسًا علميًا موصولًا، سمِّ الخادم في المفتاح <bdi>`agent_mcp_servers`</bdi>
+في الملف التعريفي، الذي يربط اسم عامل بأسماء خوادم. عندئذٍ يُلحِق تثبيت المحرّك لـ
+<bdi>Claude Code</bdi> (<bdi>`apothem install`</bdi>) مُدخَلًا واحدًا
+<bdi>`mcp__<server>__*`</bdi> لكل خادم مُسمّى بسطر <bdi>`tools`</bdi> لذلك العامل، ولا يُغيِّر
+أي عامل آخر. ويفعل تثبيت <bdi>Gemini CLI</bdi> الشيء نفسه بمُدخَل واحد
+<bdi>`mcp_<server>_*`</bdi> لكل خادم في قائمة سماح <bdi>`tools`</bdi> للعامل، لاسم خادم من
+حروف وأرقام و<bdi>`-`</bdi>. وعلى كليهما، يبقى الخادم الذي تُسمّيه <bdi>`disallowedTools`</bdi>
+الخاصة بالعامل محظورًا. والمُدخَل يقبل كل أداة من أدوات ذلك الخادم، بما فيها أي أداة
+تكتب، لذا لا تُسمِّ إلا خادمًا تثق به لعمليات البحث: فتعليمات المساعِدين تقصرهم على
+استدعاءات البحث، والاستعلام، والقراءة، والتحقّق، والحلّ، لكن إطار العمل لا يفرض إلا
+الأسماء التي يُدرِجها سطر <bdi>`tools`</bdi>. والاسم لعامل غير موجود، أو لعامل بلا سطر
+<bdi>`tools`</bdi> صريح، يُبلَّغ عنه ويُتخطّى.
+
+تتجاهل أُطُر العمل غير <bdi>Claude Code</bdi> و<bdi>Gemini CLI</bdi> المفتاح. وتُجمَّع شجرة
+إضافة <bdi>Claude Code</bdi> من دون ملف تعريفي وتحتفظ بالقائمة العادية، لذا يُعرِّف مستخدم
+الإضافة عاملًا على مستوى المستخدم تحت <bdi>`~/.claude/agents/`</bdi> بدلًا من ذلك. وصيغة
+الملف التعريفي، وقواعد أسماء الخوادم، وذلك الحلّ البديل موجودة في
+[منح مساعِد الوصول إلى خوادم MCP](/docs/reference/mcp#منح-مساعِد-الوصول-إلى-خوادم-mcp).
+
 ## التحويل لكل إطار عمل
 
 المساعِد الذي لا تتضمّن منحةُ <bdi>`tools`</bdi> الخاصة به، بعد <bdi>`disallowedTools`</bdi>،
 أي أداة لتحرير الملفات (<bdi>`Write`</bdi>، أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>، أو
-<bdi>`NotebookEdit`</bdi>) هو مساعِد للقراءة فقط. وكل إطار عمل يحوّل المساعِدين إمّا أن
-يفرض هذا القيد أصليًا أو يُسقِط وسم «للقراءة فقط»:
+<bdi>`NotebookEdit`</bdi>) هو مساعِد للقراءة فقط. والمساعِد الذي لا يملك منحة
+<bdi>`tools`</bdi> يكون للقراءة فقط عندما تحظر <bdi>`disallowedTools`</bdi> على الأقل
+<bdi>`Write`</bdi> و<bdi>`Edit`</bdi>. وكل إطار عمل يحوّل المساعِدين إمّا أن يفرض هذا القيد
+أصليًا، أو يذكره في تعليمات المساعِد، أو يُسقِط وسم «للقراءة فقط»:
 
 | إطار العمل | قيد الأدوات | قيد الأدوار | النموذج والجهد |
 | --- | --- | --- | --- |
-| <bdi>Claude Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> كما كُتبت | <bdi>`maxTurns`</bdi> | موروث (غير مضبوط) |
-| <bdi>Codex</bdi> | <bdi>`sandbox_mode = "read-only"`</bdi> للمساعِدين المخصّصين للقراءة فقط | غير متاح | موروث (غير مضبوط) |
-| <bdi>Gemini CLI</bdi> | قائمة سماح <bdi>`tools`</bdi> بأسماء أدوات <bdi>Gemini</bdi> | <bdi>`max_turns`</bdi> | موروث (غير مضبوط) |
-| <bdi>Qwen Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بأسماء أدوات <bdi>Qwen</bdi> | بلا مقابل | <bdi>`model: inherit`</bdi> |
-| <bdi>OpenCode</bdi> | <bdi>`permission`</bdi> (<bdi>`allow`</bdi> / <bdi>`deny`</bdi> لكل أداة) | بلا مقابل | موروث (غير مضبوط) |
+| <bdi>Claude Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> كما كُتبت، إضافة إلى أي مُدخَلات <bdi>`mcp__<server>__*`</bdi> يُضيفها المفتاح <bdi>`agent_mcp_servers`</bdi> في الملف التعريفي إلى سطر <bdi>`tools`</bdi> مُدرَج؛ ومن دون <bdi>`tools`</bdi> تُورَث كل أداة، بما فيها <bdi>MCP</bdi> | <bdi>`maxTurns`</bdi> | موروث (غير مضبوط) |
+| <bdi>Codex</bdi> | لا يُصدَر شيء؛ تذكره تعليمات المساعِد، ويحكم صندوقُ الحماية للجلسة الأم عملياتِ الكتابة | غير متاح | موروث (غير مضبوط) |
+| <bdi>Gemini CLI</bdi> | قائمة سماح <bdi>`tools`</bdi> بأسماء أدوات <bdi>Gemini</bdi>، إضافة إلى أي مُدخَلات <bdi>`mcp_<server>_*`</bdi> يُضيفها المفتاح <bdi>`agent_mcp_servers`</bdi> في الملف التعريفي إلى قائمة صريحة مُدرَجة؛ ومن دون <bdi>`tools`</bdi>، قائمة السماح التي تقتضيها حالات الحظر إضافة إلى <bdi>`mcp_*`</bdi> | <bdi>`max_turns`</bdi> | موروث (غير مضبوط) |
+| <bdi>Qwen Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بأسماء أدوات <bdi>Qwen</bdi>؛ ومن دون <bdi>`tools`</bdi> لا تُصدَر قائمة، فتُورَث أدوات <bdi>MCP</bdi> وتنطبق حالات الحظر | بلا مقابل | <bdi>`model: inherit`</bdi> |
+| <bdi>OpenCode</bdi> | <bdi>`permission`</bdi> (<bdi>`allow`</bdi> / <bdi>`deny`</bdi> لكل أداة)؛ وأدوات <bdi>MCP</bdi> غير مُقيَّدة | بلا مقابل | موروث (غير مضبوط) |
 | <bdi>Antigravity</bdi> | لا يُصدَر شيء؛ ويُسقِط الوصف عبارة «للقراءة فقط» | غير متاح | موروث (غير مضبوط) |
+| <bdi>CodeBuddy</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بوصفها سلاسل مفصولة بفواصل، مقصورة على أسماء الأدوات التي يُوثِّقها <bdi>CodeBuddy</bdi>؛ ولا مُدخَل <bdi>MCP</bdi> | <bdi>`maxTurns`</bdi> | موروث (غير مضبوط) |
+| <bdi>Trae</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بوصفها سلاسل مفصولة بفواصل، مقصورة على أسماء الأدوات التي يُوثِّقها <bdi>Trae</bdi>؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | موروث (غير مضبوط) |
+| <bdi>GitHub Copilot</bdi> | قائمة سماح <bdi>`tools`</bdi> من الأسماء البديلة لـ <bdi>Copilot</bdi> (<bdi>`read`</bdi>، و<bdi>`search`</bdi>، و<bdi>`edit`</bdi>، و<bdi>`execute`</bdi>، و<bdi>`web`</bdi>، و<bdi>`agent`</bdi>، و<bdi>`todo`</bdi>) مع دمج حالات الحظر فيها، لأن <bdi>Copilot</bdi> لا يملك مفتاح حظر؛ ويُستبعَد الاسم البديل الذي يشمل أداة محظورة؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | موروث (غير مضبوط) |
+| <bdi>Cursor</bdi> | لا قائمة أدوات (لا يملك <bdi>Cursor</bdi> قائمة)؛ <bdi>`readonly: true`</bdi> للمساعِدين الخمسة المخصّصين للقراءة فقط من دون <bdi>`Bash`</bdi>، ويُسقِط المساعِدون الآخرون المخصّصون للقراءة فقط وسم «للقراءة فقط» | غير متاح | موروث (غير مضبوط) |
+| <bdi>Kimi Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بوصفها قوائم بأسماء أدوات <bdi>Kimi Code</bdi> (يصبح <bdi>`WebFetch`</bdi> هو <bdi>`FetchURL`</bdi>، ويصبح <bdi>`TodoWrite`</bdi> هو <bdi>`TodoList`</bdi>؛ وتُستبعَد الأسماء التي لا أداة لها في <bdi>Kimi Code</bdi>)؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | موروث (غير مضبوط) |
+| <bdi>Kiro</bdi> | قائمة سماح <bdi>`tools`</bdi> من فئات أدوات <bdi>Kiro</bdi> (<bdi>`read`</bdi>، و<bdi>`write`</bdi>، و<bdi>`shell`</bdi>، و<bdi>`web`</bdi>، و<bdi>`subagent`</bdi>) مع دمج حالات الحظر فيها، لأن القائمة هي القيد الوحيد المكتوب؛ وتُستبعَد الفئة التي تشمل أداة محظورة؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | موروث (غير مضبوط) |
+| <bdi>Windsurf</bdi> | قائمة سماح <bdi>`allowed-tools`</bdi> بأسماء أدوات <bdi>Devin</bdi> (<bdi>`read`</bdi>، و<bdi>`edit`</bdi>، و<bdi>`grep`</bdi>، و<bdi>`glob`</bdi>، و<bdi>`exec`</bdi>، و<bdi>`write`</bdi>) مع دمج حالات الحظر فيها، لأن <bdi>Devin</bdi> لا يملك مفتاح حظر؛ ولا يُثبَّت المساعِدون الثلاثة الذين يحتاجون إلى أدوات الويب؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | نموذج العامل الفرعي الافتراضي لدى <bdi>Devin</bdi> (غير مضبوط) |
 
-تتلقّى <bdi>Hermes</bdi> و<bdi>Open-Claw</bdi> و<bdi>Kimi Code</bdi> ملفات المساعِدين
-بوصفها مادة دعم، لا بوصفها مساعِدين أصليين.
+تتلقّى <bdi>Hermes</bdi> و<bdi>Open-Claw</bdi> ملفات المساعِدين بوصفها مادة دعم، لا بوصفها
+مساعِدين أصليين.
 
 ## التنسيق
 

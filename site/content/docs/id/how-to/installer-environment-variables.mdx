@@ -2,7 +2,7 @@
 title: "Variabel lingkungan pemasang"
 description: "Kendalikan pemasang skrip (tujuan, sumber, harness, profil, verifikasi) dengan variabel lingkungan."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ menyetel variabel lingkungan sebelum Anda menjalankannya.
 | `APOTHEM_VERIFY` | `signature` memverifikasi tanda tangan GPG tag rilis; `checksum` memasang arsip platform rilis setelah memeriksa SHA-256-nya terhadap `SHA256SUMS` rilis (integritas, bukan bukti siapa yang memublikasikannya) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Basis unduhan untuk mode checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Pohon sumber lokal eksplisit yang digunakan alih-alih mengkloning | tidak disetel (kloning) |
-| `APOTHEM_HARNESS` | Harness yang dipasang | `claude-code` |
+| `APOTHEM_HARNESS` | Harness bercakupan pengguna yang dipasang (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). Pemasang tidak meneruskan `--project`, sehingga harness bercakupan proyek gagal dengan `project.required`; pasang harness tersebut setelahnya dengan `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Jalur ke YAML profil bersama | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Melewati langkah verifikasi pasca-instalasi ketika disetel ke `1` | `0` (verifikasi berjalan) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Memasang prasyarat `click` / `rich` yang hilang secara otomatis, tanpa meminta konfirmasi, ketika disetel ke `1` | `0` (meminta konfirmasi, atau menolak dalam pipe non-interaktif) |
@@ -80,10 +80,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Langkah-langkah (POSIX bash)
 
-1. Pasang harness non-default:
+1. Pasang harness bercakupan pengguna non-default:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Patok tujuan instalasi dan pilih branch `main` yang bergerak. Branch bukan tag
@@ -108,7 +108,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Setel setiap variabel pada `$env:` sebelum menjalankan pemasang:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -132,7 +132,15 @@ Pemasang mencetak `✓ Harness <name> installed`, lalu (kecuali
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Konfirmasikan secara independen:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Untuk harness bercakupan proyek seperti Cursor, jalankan sendiri pemasangan dan
+verifikasi setelah pemasang, dengan `--project`:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Ketika profil belum ada, pemasang membuatnya dari contoh dan terus berjalan

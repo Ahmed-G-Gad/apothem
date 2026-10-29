@@ -2,7 +2,7 @@
 title: "Trae"
 description: "适用于 Trae（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "0e9e61064d66a5da"
+sourceHash: "97ae18e3fc9b0b70"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,63 @@ sourceHash: "0e9e61064d66a5da"
 apothem install --harness trae --project /path/to/project
 ```
 
-适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Trae 规则文件。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Trae 规则文件，并将 Apothem 的辅助器作为 Trae 子代理写入项目中（参见[子代理](#子代理)）。
 
-**写入的文件：** `<project>/.trae/rules/apothem-rules.md`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
+
+**写入的文件：**
+
+- `<project>/.trae/rules/apothem-rules.md`，即规则文件。
+- 每个 Apothem 辅助器对应一个 `<project>/.trae/agents/<name>.md`，位于项目中。
+- 每个 Apothem 技能和命令对应一个 `~/.trae/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.trae/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和规则文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `trae` 的每个项目都使用同一份 `~/.trae/skills/`，并且每次安装都会向其中写入相同的文件。Trae 是唯一读取该文件夹的工具。`~/.config/apothem/` 下的规则和模板也会由其他工具的安装写入，文件相同。
+- `--project` 决定要写入哪个规则文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是规则文件和 `.trae/agents/` 中的子代理文件，以及每次项目安装都会创建的 `.apothem/` 数据文件夹。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
+
+## 子代理
+
+根据 [Trae 子代理文档](https://docs.trae.ai/ide/subagents)，Trae 从 `<project>/.trae/agents/` 中的 Markdown 文件读取子代理。安装会为每个 Apothem 辅助器在该文件夹中写入一个文件。它只为项目安装：文档给出的用户级文件夹是 `~/.trae-cn/agents/`，而 Trae 的其他所有用户文件夹都位于 `~/.trae/` 下，Apothem 尚未确认国际版安装读取的是哪一个，因此两者都不写入。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。Trae 两者都需要。 |
+| `tools` | 辅助器被允许使用的工具，写成一个以逗号分隔的字符串。 |
+| `disallowedTools` | 辅助器被拒绝使用的工具，写成一个以逗号分隔的字符串。Trae 会让它优先于 `tools` 生效。辅助器没有被拒绝的工具时省略。 |
+
+只会写入 Trae 子代理页面上列出的工具名称：
+
+```text
+Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
+```
+
+来源中列出但不在该列表中的工具（例如 `MultiEdit` 或 `PowerShell`）在两个字段中都会被省去。带有模式的工具，例如 `Bash(rm *)`，在逗号列表中没有对应的形式：作为允许的工具时它会被省去，作为拒绝的工具时它会拒绝整个工具。不能编辑文件的辅助器会保留这一限制：它的工具中不列出 `Write` 或 `Edit`，并拒绝这两者。Trae 没有记载任何轮次上限，因此不会写入辅助器的 `maxTurns`。安装不写入 `model` 键，因此辅助器使用聊天框中选定的模型；也不写入 `mcpServers` 键。
+
+需要了解的事项：
+
+- Trae 的英文文档说，在它加载 `.trae/agents/` 之前，需要打开 **Settings > Beta > Subagents > Enable Subagents Directory**。它后来更新的中文页面说，该功能通常默认开启。如果 Trae 一个辅助器都没有列出，请检查该开关。
+- 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.trae/agents/`；Apothem 不替你做选择。
+- 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
+- Trae 的文档没有说明它如何处理一个未列出的前置元数据键，也没有说明 `.trae/agents/` 在合并后的"全新 TRAE"的第二个窗口中是否像在 IDE 窗口中一样生效。
 
 ## 配置档案到原生配置的映射
 
@@ -29,7 +83,9 @@ apothem install --harness trae --project /path/to/project
 
 ## 兼容性说明
 
-Trae 当前的规则表面位于 `.trae/rules/` 下，作用范围为项目级；全局规则位于 `~/.trae/user_rules` 下。适配器写入一个专用的 `apothem-rules.md` 文件，并且绝不覆盖该目录中的其他规则文件或你的全局规则。`.trae/mcp.json` 工具服务器表面和 `.trae/skills/` 技能表面归操作者所有；Apothem 不写入它们。
+Trae 当前的规则表面位于 `.trae/rules/` 下，作用范围为项目级；全局规则位于 `~/.trae/user_rules` 下。适配器写入一个专用的 `apothem-rules.md` 文件，并且绝不覆盖该目录中的其他规则文件或你的全局规则。`.trae/mcp.json` 工具服务器表面和项目的 `.trae/skills/` 技能表面归操作者所有；Apothem 不写入它们。
+
+Trae 为全局技能记载的是 `~/.trae/skills/`。它只有在打开设置 `Enable .agents Skills Directory` 之后才会读取跨工具的 `.agents/skills/` 文件夹，因此安装写入 Trae 自己的文件夹。中国版（TRAE CN）记载的则是 `~/.trae-cn/skills/`；其更新日志说，TRAE CN 与国际版的全局技能目录相互兼容，但仅限个人版。安装只写入 `~/.trae/skills/`，Apothem 尚未确认 TRAE CN 的其他版本是否读取它。Apothem 也尚未确认 Trae 如何处理一个未列出的 `SKILL.md` 头部键。
 
 ## 验证
 
@@ -40,8 +96,9 @@ apothem verify --harness trae --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+2. 每个受管目标都存在，包括 `.trae/agents/` 文件夹；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.trae/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；命令 `apothem diff --harness trae --project /path/to/project` 会列出缺失或过期的辅助器文件。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -51,6 +108,8 @@ apothem update --harness trae --project /path/to/project
 
 根据当前的共享配置档案状态，重新派生项目规则文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。它会重写与当前文件不同的子代理文件，并添加任何缺失的子代理文件。
+
 ## 卸载
 
 ```bash
@@ -58,6 +117,8 @@ apothem uninstall --harness trae --project /path/to/project
 ```
 
 从 `<project>/.trae/rules/apothem-rules.md` 中移除 Apothem 块，以及 Apothem 写在该块上方的前置元数据，并保留其中的其他任何文本。只有当该文件中不再剩下其他内容时，才会删除该文件。更改之前，会先将该文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+卸载还会移除它在 `<project>/.trae/agents/` 中写入的子代理文件，并保留其中的其他任何文件；该文件夹变空时会被移除。它会移除它在 `~/.trae/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -71,6 +132,10 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness trae --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness trae --project /path/to/project`，然后再次验证 |
+| Trae 一个 Apothem 辅助器都没有列出 | 打开 Settings > Beta > Subagents > Enable Subagents Directory，然后开始一个新的聊天 |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness trae --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness trae --project /path/to/project` |
 
 ## 配置开关

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,25 @@ apothem install --harness hermes
 
 ## 配置档案到原生配置的映射
 
-该适配器读取 Apothem 的共享配置档案，并渲染原生 YAML 配置，其中包括配置档案的 MCP 清单。MCP 服务器来自配置档案的 `mcp_servers` 部分，每次安装与更新时都渲染到 `config.yaml` 中，而非复制为文件。配置档案的身份、偏好与规则写入配置档案文档本身。共享的命令、技能、辅助器定义、规则、模板与钩子提示词，则作为支持材料落在 `~/.hermes/.apothem/support/` 下。
+该适配器读取 Apothem 的共享配置档案，并渲染原生 YAML 配置，其中包括配置档案的 MCP 清单。MCP 服务器来自配置档案的 `mcp_servers` 部分，每次安装与更新时都渲染到 `config.yaml` 中，而非复制为文件。适配器还会将 `~/.hermes/.apothem/support/skills` 添加到 `skills.external_dirs`，即 Hermes 读取的额外技能目录列表，Hermes 正是通过它找到已安装的技能。该条目排在你已列出的所有条目之后，你的其他键保持原样。配置档案的身份、偏好与规则写入配置档案文档本身。共享的命令、技能、辅助器定义、规则、模板与钩子提示词，则作为支持材料落在 `~/.hermes/.apothem/support/` 下。
 
 ## 兼容性说明
 
-预览版适配器。Hermes 不会自行加载支持树或配置档案文档：`config.yaml` 中没有任何内容指向那里，Hermes 读取的上下文文件也没有任何一个指向那里，因此安装之后，Hermes 运行时不带有 Apothem 的规则、技能或钩子。Hermes 从 `~/.hermes/skills/` 以及 `config.yaml` 中 `skills.external_dirs` 下列出的每个文件夹读取技能；要使用 Apothem 技能，请自行将 `~/.hermes/.apothem/support/skills` 添加到该列表中；`apothem update` 会保留你添加到 `config.yaml` 中的键。适配器将配置档案的 MCP 清单写在顶层 `mcp_servers` 键下，Hermes 从该处读取 MCP 服务器。较早的 Apothem 发布将其写在 `auxiliary.mcp` 下，而 Hermes 会将该处读取为用于 MCP 工具分派的辅助模型；当该区块仍与此类发布会根据你当前的共享配置档案写入的内容相符时，`apothem update` 和 `apothem uninstall` 都会将其移除（该区块在何种情况下会保留，参见[卸载](#卸载)）。（Hermes 的行为依据其用户指南中关于[技能](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)和 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) 的页面，于 2026-10-02 查阅。）
+预览版适配器。Hermes 通过 `skills.external_dirs` 加载 Apothem 技能，但不会自行加载支持树的其余部分或配置档案文档：`config.yaml` 中没有其他任何内容指向那里，Hermes 读取的上下文文件也没有任何一个指向那里，因此安装之后，Hermes 运行时不带有 Apothem 的规则或钩子。
+
+**名称冲突。** Hermes 为技能记载了以下优先顺序：项目的技能（`<project>/.hermes/skills/` 和 `<project>/.agents/skills/`），然后是 `~/.hermes/skills/`，然后是 `skills.create_dir`，然后是 `skills.external_dirs` 下列出的文件夹。Apothem 目录是一个 `external_dirs` 条目，因此它排在最后。所查阅的 Hermes 文档没有说明当两个位置存放着同名技能时 Hermes 会加载哪一份副本；Apothem 将该顺序理解为更早的位置胜出，因此可以预期你保存在更早位置中的同名技能会优先于 Apothem 副本。Apothem 只写入 `config.yaml` 以及 `~/.hermes/.apothem/support/` 之下，绝不写入那些更早的位置，因此安装、更新和卸载都不会替换你保存在那里的技能。
+
+`apothem update` 会保留你添加到 `config.yaml` 中的键，包括 `skills.config` 以及你自己的 `skills.external_dirs` 条目。适配器将配置档案的 MCP 清单写在顶层 `mcp_servers` 键下，Hermes 从该处读取 MCP 服务器。较早的 Apothem 发布将其写在 `auxiliary.mcp` 下，而 Hermes 会将该处读取为用于 MCP 工具分派的辅助模型；当该区块仍与此类发布会根据你当前的共享配置档案写入的内容相符时，`apothem update` 和 `apothem uninstall` 都会将其移除（该区块在何种情况下会保留，参见[卸载](#卸载)）。（Hermes 的行为依据其用户指南中关于[技能](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)（于 2026-10-24 查阅）和 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)（于 2026-10-02 查阅）的页面。）
+
+**`config.yaml` 中的注释。** Apothem 使用一个会丢弃注释的 YAML 库重写该文件。当该文件带有你的注释且缺少该条目时，Apothem 会保持该文件不变，安装会停止，并显示一条写明该键的消息。请自行添加该条目，然后再次运行安装：
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+你自己添加的条目算作你的：如果你已经列出了该目录，Apothem 会原样保留你的条目，卸载也会将其保留在原处。
 
 ## 验证
 
@@ -41,7 +55,8 @@ verify 命令确认：
 
 1. 原生配置存在于预期路径。
 2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+3. 原生配置中的 `skills.external_dirs` 列出了 `~/.hermes/.apothem/support/skills`。没有该条目时，Hermes 不会加载已安装的技能；`apothem update` 会将其重新添加。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -49,7 +64,7 @@ verify 命令确认：
 apothem update --harness hermes
 ```
 
-根据共享配置档案的当前状态重新派生原生配置。
+根据共享配置档案的当前状态重新派生原生配置；无论你更新多少次，`skills.external_dirs` 中的 Apothem 条目都只列出一次。
 在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
@@ -58,7 +73,7 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-移除适配器添加的内容：其安装时在 `config.yaml` 中记录的 `mcp_servers` 条目（你自己的键会保留，且只有当该文件由 Apothem 创建、并且其中不再留有任何属于你的内容时，才会删除该文件）、配置档案文档以及支持树。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加的内容：其安装时在 `config.yaml` 中记录的 `mcp_servers` 条目和 `skills.external_dirs` 条目（你自己的键会保留，包括你自己的 `external_dirs` 条目和 `skills.config`，且只有当该文件由 Apothem 创建、并且其中不再留有任何属于你的内容时，才会删除该文件）、配置档案文档以及支持树。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 对于由较早发布完成的安装（它将配置档案的服务器写在 `auxiliary.mcp` 下），当该区块仍与那次发布会根据位于 `~/.config/apothem/profile.yaml` 的当前共享配置档案写入的内容相符时，该区块也会被移除。这与 `apothem update` 所应用的规则相同，因此不先更新就直接卸载，只要配置档案的 MCP 服务器没有变化，就不会留下过时的区块。你编辑过的区块、不再与你当前配置档案的 MCP 服务器相符的区块，或者没有可读取的共享配置档案可供比对的区块，会保留原位，而你的其余 `auxiliary` 设置始终会保留。
 
@@ -75,6 +90,8 @@ python -m apothem.conformity.gate --all .
 | 找不到配置文件 | 重新运行 `apothem install --harness hermes` |
 | 验证失败 | 运行 `apothem update --harness hermes`，然后再次验证 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness hermes` |
+| 安装停止，并显示一条关于 `config.yaml` 中注释的消息 | Apothem 不会重写一个需要从中删除注释的文件。请自行添加 [兼容性说明](#兼容性说明) 下所示的 `skills.external_dirs` 条目，然后再次运行安装 |
+| 某个 Apothem 技能没有出现在 Hermes 中 | 项目中或 `~/.hermes/skills/` 中的同名技能可能优先于 Apothem 副本：Hermes 记载了查找顺序，但没有记载冲突规则（参见[兼容性说明](#兼容性说明)）。另外请运行 `apothem verify --harness hermes` |
 
 ## 配置开关
 

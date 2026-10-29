@@ -2,7 +2,7 @@
 title: "トラブルシューティング"
 description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,20 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 `/plugin marketplace add ahmed-g-gad/apothem` は、マーケットプレイスの一覧を GitHub から取得します。
 失敗した場合は、マシンが `https://github.com/ahmed-g-gad/apothem` に到達できること（ネットワーク、プロキシ、ファイアウォールのルール）を確認してから、再試行してください。
 部分的な取得でマーケットプレイスが以前に追加されていた場合は、`/plugin install apothem@apothem` を実行する前に、それを削除して再追加してください。
+
+### プラグインホストのマーケットプレイスの追加がタイムアウトする
+
+マーケットプレイスを追加するプラグインホストのコマンドは、そのリポジトリをクローンし、30 秒で中断します。
+このリポジトリの完全なクローンは、WSL 配下の Windows ドライブのような低速なディスクではそれより長くかかることがあり、また以前の完全なクローンが原因で、後の更新がタイムアウトしたときにプラグインが古いバージョンのまま止まることもあります。
+プラグインが必要とする 2 つのフォルダーだけを取得してください。
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+その後、ホストのプラグインを一覧表示すると、`apothem@apothem` の現在のバージョンが表示されます。
 
 ### npx が古いバージョンを提供する
 

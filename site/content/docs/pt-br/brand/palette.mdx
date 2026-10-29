@@ -2,7 +2,7 @@
 title: "Paleta de marca"
 description: "Cores de marca centrais do Apothem e as quinze cores de marca dos harnesses, que são definidas na página Cores dos harnesses. Os tokens de design canônicos em assets/design-tokens.css são a única fonte da verdade para as cores centrais; o site espelha esses valores."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,13 @@ semânticos — pertence aos tokens de design em
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (e seu espelho `assets/design-tokens.json`). O tema do site em
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-espelha esses valores de tokens nas variáveis CSS que o tema do Fumadocs consome. Cada
-valor abaixo é um passo da rampa slate ou emerald nesses tokens de design; um nome de passo como slate-600 se refere ao valor dessa rampa.
+reapresenta os valores dos tokens semânticos como OKLCH nas variáveis CSS que o tema do Fumadocs
+consome: as variáveis de fundo da página, texto, primária, borda e anel de foco resolvem para os passos
+exatos dos tokens (a verificação `lib/theme-tokens.test.mjs` mantém as variáveis de fundo, primeiro
+plano, primária e anel fiéis a eles). As rampas `apothem-*`, `polygon-*` e `field-*` declaradas no
+mesmo arquivo são aproximações derivadas das rampas dos tokens, não cópias, e não fazem parte da
+especificação. Cada valor abaixo é um passo da rampa slate ou emerald nos tokens de design; um nome
+de passo como slate-600 se refere ao valor dessa rampa.
 
 | Papel | Token (CSS) | Modo claro | Modo escuro | Uso |
 |---|---|---|---|---|

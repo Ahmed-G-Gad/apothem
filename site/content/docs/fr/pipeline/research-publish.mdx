@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formate l'article selon le modèle de la revue et assemble le dossier de soumission (matériel supplémentaire, disponibilité des données/du code, lettre de présentation, éthique/conflit d'intérêts), avec un plan de préprint/DOI."
 machineTranslated: true
-sourceHash: "775d7080efc5b935"
+sourceHash: "ef7a2e79372ed070"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Avec des arguments :
 
 ## Entrées
 
-Le livrable de l'article et `_outputs/review-report.md` (les révisions de l'évaluation par les pairs).
+Le livrable de l'article et `_outputs/review-report.md` (les révisions de l'évaluation par les pairs et sa liste des éléments non jugés).
 
 ## Sorties
 
-Le dossier de soumission formaté pour la revue à un emplacement naturel de l'hôte (le manuscrit formaté + le matériel supplémentaire + la déclaration de disponibilité des données / du code + la lettre de présentation + les déclarations d'éthique / de conflit d'intérêts) + `_outputs/publication-record.md` + une liste de contrôle de soumission.
+Le dossier de soumission formaté pour la revue à un emplacement naturel de l'hôte (le manuscrit formaté + le matériel supplémentaire + la déclaration de disponibilité des données / du code + la lettre de présentation + les déclarations d'éthique / de conflit d'intérêts) + `_outputs/publication-record.md` (y compris le registre daté des règles du lieu de publication : chaque règle avec sa page source officielle, sa date de lecture et son étape de soumission) + une liste de contrôle de soumission.
 
 ## En aval
 
@@ -39,16 +39,18 @@ Le dossier de soumission formaté pour la revue à un emplacement naturel de l'h
 
 La commande suit le flux de travail standard du pipeline `/research` :
 
-1. **Charger le contexte** — Lire l'article et le rapport d'évaluation.
+1. **Charger le contexte** — Lire l'article et le rapport d'évaluation ; épingler le lieu de publication, le cycle, la piste et le type d'article, et consigner chaque règle du lieu de publication avec sa page source officielle, sa date de lecture et son étape de soumission.
 2. **Vérifier le Portail de séquence** — Confirmer que `_outputs/review-report.md` existe et que ses révisions de gravité HIGH sont résolues (ou que l'opérateur a explicitement accepté le risque résiduel) ; sinon, s'arrêter avec `Blocked: run /research-review first`.
-3. **Formater et empaqueter** — Appliquer le modèle de la revue ; assembler le matériel supplémentaire, la disponibilité des données/du code, la lettre de présentation, les déclarations d'éthique / de conflit d'intérêts.
+3. **Formater et empaqueter** — Reporter chaque règle du lieu de publication avec sa page source, sa date de lecture et son étape de soumission, construire sur le modèle intact du lieu de publication, compter les pages et les mots à la manière du lieu de publication, et inspecter le PDF compilé ; puis assembler le matériel supplémentaire, la disponibilité des données/du code, la lettre de présentation, les déclarations d'éthique / de conflit d'intérêts.
 4. **Planifier le préprint / l'archivage** — Enregistrer le plan de préprint et de DOI ; construire la liste de contrôle de soumission.
 5. **Mettre à jour le manifeste de transfert** — Enregistrer le dossier de soumission et le registre de publication.
 6. **Émettre le dossier** — Le dossier de soumission formaté pour la revue + `_outputs/publication-record.md`.
 
 ## Seuil de rigueur
 
-Le formatage honore la divulgation par étapes : pour un lieu de publication en double aveugle, l'identité de l'auteur, de l'institution et du système est réduite à des métadonnées soumises séparément et restaurée seulement à l'étape désignée de version prête pour l'impression. Le dépôt d'archivage porte le dossier de preuves de reproductibilité mis à l'échelle du lieu de publication (données, code, environnement épinglé, graines, journal du matériel, résultats par instance et figures).
+Le formatage honore la divulgation par étapes : pour un lieu de publication en double aveugle, l'identité de l'auteur, de l'institution et du système est réduite à des métadonnées soumises séparément et restaurée seulement à l'étape désignée de version prête pour l'impression. Le dépôt d'archivage porte le dossier de preuves de reproductibilité mis à l'échelle du lieu de publication (données, code, environnement épinglé, graines, journal du matériel, résultats par instance et figures). Pour un lieu de publication en double aveugle, l'archive supplémentaire et chaque dépôt ou jeu de données lié sont inspectés à la recherche d'éléments d'identité, et pas seulement le manuscrit.
+
+Les règles du lieu de publication sont sourcées et rattachées à une étape. Seules les pages officielles propres à la cible comptent : un lieu de publication voisin, un cycle antérieur ou une piste sœur n'en tient jamais lieu, et une reconstruction pour une révision ou pour la version prête pour l'impression applique les limites de cette étape, et non celles de la soumission initiale. Une règle qu'aucune page officielle n'étaye est demandée à l'opérateur et marquée comme non vérifiée auprès du lieu de publication. Les fichiers du modèle du lieu de publication restent tels que publiés, de sorte qu'un fichier de départ écrit localement est signalé comme tel. Les pages et les mots sont comptés à la manière du lieu de publication, avec les sections exclues consignées, et chaque figure et chaque tableau sont vérifiés à la taille et au format que reçoit le lieu de publication.
 
 ## Modes de défaillance
 
@@ -57,6 +59,8 @@ Le formatage honore la divulgation par étapes : pour un lieu de publication en 
 | Blocked: run /research-review first | Aucun rapport d'évaluation, ou révisions HIGH ouvertes | Exécutez `/research-review` pour produire `_outputs/review-report.md`, ou résolvez les révisions HIGH ouvertes puis réexécutez `/research-review`, ou acceptez explicitement le risque résiduel |
 | Révision HIGH non traitée | Constat d'évaluation ignoré | Traitez la révision et réexécutez `/research-review` |
 | Disponibilité des données/du code manquante | Surface de reproductibilité absente | Ajoutez la déclaration de disponibilité des données / du code avant la soumission |
+| Règle du lieu de publication sans source | La règle provient d'un autre cycle, d'une autre piste ou d'un lieu de publication voisin, ou de la mémoire | Épinglez la cible ; consignez la page officielle, la date de lecture et l'étape de la règle, ou demandez à l'opérateur et marquez-la comme non vérifiée |
+| Modèle modifié | Une modification locale change la géométrie des pages ou les réglages typographiques du lieu de publication | Restaurez les fichiers du lieu de publication et ne modifiez la mise en page qu'au moyen des options que documente le modèle |
 
 ## Exemples
 

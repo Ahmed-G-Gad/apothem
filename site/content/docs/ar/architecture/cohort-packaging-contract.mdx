@@ -2,7 +2,7 @@
 title: "عقد تحزيم الحزم"
 description: "العقد المستقرّ القابل للاستهلاك من الجهات اللاحقة لتحزيم الحزم وبيانات الإضافات — تعداد الحزم وحلّ أهدافها الأصلية لكل إطار عمل دون إعادة اشتقاق التعيين."
 machineTranslated: true
-sourceHash: "ef3a145a60ec6690"
+sourceHash: "160ad0153ff55a2d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,7 +81,10 @@ sourceHash: "ef3a145a60ec6690"
 و<bdi>`privacyPolicyUrl`</bdi>، و<bdi>`termsOfServiceUrl`</bdi>، وكلٌّ منها عنوان
 <bdi>`https://`</bdi>، إضافةً إلى مسار <bdi>`icon`</bdi> داخل الإضافة. وتضبط رزمة
 <bdi>Claude Code</bdi> المُولَّدة الحقول <bdi>`displayName`</bdi>
-و<bdi>`documentationUrl`</bdi> و<bdi>`supportUrl`</bdi>. بيان الإضافة هو الوحدة التي
+و<bdi>`documentationUrl`</bdi> و<bdi>`supportUrl`</bdi>. ويقرأ دليل <bdi>Anthropic</bdi> حقول
+الإدراج، ويتجاهلها <bdi>Claude Code</bdi> وقت التحميل. وتُبلغ مزامنة سوق <bdi>claude.ai</bdi>
+عن الرابطين بوصفهما مفتاحين غير معروفين وتُجرِّدهما، فيعرض السوق هناك
+«<bdi>1 with warnings</bdi>». وهذا التحذير متوقَّع، وتُحمَّل الإضافة دون تغيير. بيان الإضافة هو الوحدة التي
 يُجسِّدها محوّل إطار العمل في سطح الإضافات الأصلي لديه؛ وتختار الحزم الأعضاء الذين
 تحملهم الإضافة، ويحلّ بيان الانتشار المكان الذي يستقرّ فيه هؤلاء الأعضاء لكل إطار
 عمل.

@@ -2,7 +2,7 @@
 title: "Apothem 对比原生 GitHub Copilot 配置"
 description: "手工维护 GitHub Copilot 的 copilot-instructions.md，与从 Apothem 的共享配置档案渲染它。"
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,12 +17,13 @@ Apothem 管理它进行对比。
 | 编写指令 | 手工编辑 `.github/copilot-instructions.md` | 渲染：共享规则内嵌进该文件 |
 | 与其他工具保持指令对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
 | 安装 / 移除配置 | 手工写入和删除该文件 | `apothem install` / `apothem uninstall` |
+| 共享可复用的技能和命令 | 把每个技能文件夹手工复制到 `~/.agents/skills/` 并保持这些副本最新 | 由适配器写入 `~/.agents/skills/`，所有项目共用一份副本，并在 `apothem update` 时刷新 |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness github-copilot --project <path>` |
 
 ## Apothem 管理什么
 
 github-copilot 适配器将共享规则内嵌进 `.github/copilot-instructions.md`。
-Copilot 作为 IDE 扩展运行，不暴露工具调用钩子，因此护栏意图完全承载于渲染出的
+Copilot 在 `.github/hooks/*.json` 中记载钩子，而适配器不写入这些文件，因此护栏意图完全承载于渲染出的
 指令之中。每次对共享规则的变更都会在下一次 `apothem update` 时重新渲染该文件。
 
 ## 迁移路径

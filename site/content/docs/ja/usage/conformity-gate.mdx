@@ -2,7 +2,7 @@
 title: "コンフォーミティゲート"
 description: "Apothem のコンフォーミティゲートを実行して、エコシステムの健全性を検証します。"
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,6 +45,26 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 バリデーターも、プロジェクトにまだ `.github/workflows/` ディレクトリがない場合に同じ動作を
 し、コミットサブジェクトバリデーターは、ルートにコミット履歴がない場合に同じ動作をします。
 
+6 つのバリデーターは、リポジトリのルートから開始し、チェック対象のファイルをツリー全体から
+探します。
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+これらは、ワークツリー、サブモジュール、入れ子のクローンなど、入れ子になった git チェック
+アウトをスキップし、`node_modules`、`venv`、`dist` など、依存関係、仮想環境、キャッシュ、
+ビルド出力を保持するディレクトリもスキップします。`no-global-plans-grep` の迷子プランの
+チェックも、入れ子のチェックアウトで止まります。これらのいずれかの実行は、指定された
+チェックアウトについてのみ報告し、それ以外については何も報告しません。`src/apothem/` の下を
+読む `naming-grep` のように、1 つの固定フォルダーを読むバリデーターは、そのフォルダーの下の
+すべてを読みます。
+
 ## ゲートのバー
 
 | バー | チェック | 種別 |
@@ -71,12 +91,21 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+書き込みごとのバリデーターは、チェック対象のファイルを受け取るか、`--stdin` で標準入力から
+内容を読み取ります。どちらも指定しない場合は標準入力からの入力を待つため、ターミナルから
+実行するときはファイルを渡してください。スタンドアロンバリデーターは、ルートディレクトリを
+受け取ります（省略した場合はカレントディレクトリ）。`--list` は、各バリデーターがどちらの
+グループに属するかを示します。
 
 `--hook` モード（`python -m apothem.conformity.gate --hook`）は、ハーネスからディスパッチ
 されるエントリーポイントです。標準入力からツール入力の JSON ペイロードを読み取り、保留中の

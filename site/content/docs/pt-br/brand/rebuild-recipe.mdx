@@ -2,7 +2,7 @@
 title: "Receita de reconstrução de recursos"
 description: "Regenere todos os recursos de marca em formato raster a partir das fontes SVG mestras com resvg e Pillow."
 machineTranslated: true
-sourceHash: "7ffb351825fa59ff"
+sourceHash: "5fbb8f47ac02d1c1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ marca.
 
 Execute a receita de reconstrução quando:
 
-- O SVG mestre (`assets/src/logo.svg` ou `assets/src/logo-dark.svg`) mudar.
+- Um SVG mestre (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` ou `assets/src/logo-animated-light.svg`) mudar.
 - O mestre do favicon compacto (`assets/favicon.svg`) mudar.
 - Um mestre de cartão social (`assets/src/og-banner.svg` ou `assets/src/twitter-card.svg`) mudar.
 - Um novo tamanho raster for necessário.
@@ -36,7 +36,7 @@ e compõe os conjuntos raster com [Pillow](https://python-pillow.org/):
   [releases do resvg](https://github.com/linebender/resvg/releases) —
   `resvg-win64.zip` no Windows, `resvg-linux-x86_64.tar.gz` no Linux ou
   `resvg-macos.zip` no macOS — extraia-o para o seu `PATH` ou aponte o script
-  para ele com `--resvg <caminho>`.
+  para ele com `--resvg <path>`.
 
 ## Uso
 
@@ -62,7 +62,9 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Verificação
 
 Uma execução bem-sucedida regenera os rasters da marca nas versões clara e escura,
-o conjunto de favicon PNG/ICO, os ícones Apple touch, as imagens OG/Twitter, e
+o conjunto de favicon PNG/ICO (o ICO incorpora camadas de 16, 32 e 48 px), os
+ícones Apple touch, o ícone da extensão do VS Code
+(`vscode-extension/icon.png`), as imagens OG/Twitter, e
 espelha o subconjunto servido na web —incluindo as fontes do logo principal que o
 site referencia— em `site/public/`. Após a geração, execute a compilação do site e
 inspecione a página inicial, o favicon da aba do navegador e os PNGs dos cartões

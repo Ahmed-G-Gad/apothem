@@ -2,7 +2,7 @@
 title: "デプロイチェックリスト"
 description: "Apothem エコシステムをデプロイまたは共有する前の事前検証チェックリスト"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ frontmatter をパースし、YAML エラーと欠落している必須フィー
 
 - [ ] `name` — kebab-case のコマンド名
 - [ ] `version`、`updated`、`description`、`argument-hint`、`portability`、`allowed-tools` が存在すること
-- [ ] `disable-model-invocation` が存在し、意図したものであること（ガイダンスのみのコマンドでは `true`）
+- [ ] `disable-model-invocation` が存在し、意図したものであること（読み取り専用または助言のみのコマンドでは `false`。`true` は、コマンドの実行が作業ツリーの外の状態を変更する場合、またはオペレーターがタイミングを選ぶことに依存する場合に限る）
 - [ ] `effort` キーがないこと：`command.schema.json` は `additionalProperties: false` を設定しており、これを許可しません
 
 ### 委任ワーカー

@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "62b3de71f4c3ce39"
+sourceHash: "43036c087a25d729"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,45 @@ GEMINI.md
 Tidak ada direktori aturan per-alat, sehingga seluruh permukaan Apothem
 mendarat di berkas `.rules` datar di urutan teratas daftar tersebut.
 
-**Berkas yang ditulis:** `<project>/.rules`
+Adaptor juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
+
+**Berkas yang ditulis:**
+
+- `<project>/.rules`, berkas instruksi.
+- `~/.agents/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.agents/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas instruksi. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `zed`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#root-bersama) mencantumkannya.
+- `--project` memilih berkas instruksi yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas instruksi, ditambah folder data `.apothem/` yang
+  dibuat oleh setiap instalasi proyek.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -63,6 +101,16 @@ Berkas instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
 (`.zed/settings.json` `context_servers`) dimiliki operator; Apothem tidak
 menulisnya.
 
+Zed memuat skill global hanya dari `~/.agents/skills/`, dalam tata letak datar
+dengan satu folder per skill, yaitu tata letak yang ditulis instalasi. Zed
+mensyaratkan worktree tepercaya untuk skill lokal-proyek, dan dokumentasinya
+tidak mengaitkan syarat semacam itu dengan folder global. Satu laporan menyebut
+adanya batas ukuran pada katalog skill yang dikirim Zed ke model; Apothem belum
+memastikannya, ataupun apakah skill yang menonaktifkan pemanggilan oleh model
+ikut terhitung di dalamnya. Nama dan deskripsi skill Apothem berjumlah sekitar
+20 KB. Apothem juga belum memastikan bagaimana Zed memperlakukan kunci header
+`SKILL.md` yang tidak dicantumkannya.
+
 ## Verifikasi
 
 ```bash
@@ -73,7 +121,11 @@ Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
 2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+3. Setiap folder skill Apothem ada di tempatnya dengan sebuah `SKILL.md`,
+   instalasi mana pun yang menulisnya, dan tidak ada folder skill dengan nama
+   Apothem yang milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal
+   menyebutkan folder yang hilang atau asing.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -83,6 +135,9 @@ apothem update --harness zed --project /path/to/project
 
 Menurunkan ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
 
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari berkas saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+
 ## Pencopotan
 
 ```bash
@@ -90,6 +145,15 @@ apothem uninstall --harness zed --project /path/to/project
 ```
 
 Menghapus blok terkelola Apothem dari berkas konfigurasi native `.rules` dan mempertahankan teks Anda sendiri. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+Pencopotan juga menghapus folder skill yang ditulisnya di `~/.agents/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada lagi
+instalasi Apothem lain yang memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin masih memakainya. Dalam kasus itu pencopotan mempertahankan
+folder tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir
+menghapusnya. Berkas yang Anda tambahkan ke folder tersebut tetap ada, dan folder
+yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
 
 ## Gerbang konformitas
 
@@ -103,6 +167,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness zed --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness zed --project /path/to/project`, lalu verifikasi lagi |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness zed --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness zed --project /path/to/project` |
 
 ## Tombol konfigurasi

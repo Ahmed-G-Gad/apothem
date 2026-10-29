@@ -2,7 +2,7 @@
 title: "Sikap agnostik-host"
 description: "Bagaimana Apothem mencapai sikap agnostik-host melalui profil bersama dan adaptor harness."
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,8 @@ jarak dari inti ke setiap tepi, identik di setiap arah. Itulah
 desainnya: satu profil bersama di pusat, tujuh belas harness berjarak-sama di
 keliling, setiap materialisasi berjarak sama dari sumber kebenaran. Inti
 tidak berubah saat tepi berubah; tepi-tepi berbagi satu hubungan dengan
-inti. Penyimpangan secara struktural mustahil.
+inti. Karena setiap harness diturunkan dari satu profil, penyimpangan dapat dideteksi
+(`apothem status` melaporkannya) dan dapat dikoreksi (`apothem update` mematerialisasikannya ulang).
 
 ## Jaminan portabilitas
 

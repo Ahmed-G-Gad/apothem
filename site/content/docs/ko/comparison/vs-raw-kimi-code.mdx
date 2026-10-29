@@ -2,7 +2,7 @@
 title: "Apothem 대 수동 Kimi Code 구성"
 description: "Kimi Code의 프로젝트 루트 AGENTS.md와 .kimi-code/ 지원 파일을 손으로 유지하는 것과 Apothem의 공유 프로필에서 렌더링하는 것의 비교."
 machineTranslated: true
-sourceHash: "95d0fa19ca3ddd46"
+sourceHash: "f5ddfe61adc7d28d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ Kimi Code는 프로젝트 루트의 `AGENTS.md`를 지침 파일로 읽고, 운�
 | 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
 | `AGENTS.md` 지침 표면 작성 | 프로젝트마다 직접 작성하고 다시 동기화 | 공유 프로필에서 렌더링된 관리 블록 하나 |
-| 규칙, 커맨드, 스킬, 에이전트를 동기화 상태로 유지 | 프로젝트마다 수동 복사 | 설치할 때마다 `<project>/.kimi-code/.apothem/support/` 아래에 머티리얼라이즈 |
+| 규칙, 커맨드, 스킬, 에이전트를 동기화 상태로 유지 | 프로젝트마다 수동 복사 | 설치할 때마다 스킬과 커맨드(스킬로)는 `<project>/.kimi-code/skills/` 아래에, 헬퍼는 서브에이전트로 `<project>/.kimi-code/agents/` 아래에, 규칙, 훅, 템플릿은 `<project>/.kimi-code/.apothem/support/` 아래에 |
 | 갱신 시 운영자 산문 보존 | 수동 병합 | 센티넬로 구분된 블록. 그 바깥의 운영자 산문은 보존됨 |
 | 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness kimi-code --project <path>` |
@@ -27,8 +27,12 @@ Kimi Code는 프로젝트 루트의 `AGENTS.md`를 지침 파일로 읽고, 운�
 ## Apothem이 관리하는 것
 
 kimi-code 어댑터는 공유 규칙과 거버넌스 표면을 프로젝트 루트 `AGENTS.md`의 관리
-블록으로 렌더링하고, 커맨드, 스킬, 훅, 에이전트, 규칙, 템플릿 코호트를
-`.kimi-code/.apothem/support/` 아래에 설치합니다. `.kimi-code/mcp.json`은 작성하지
+블록으로 렌더링하고, 스킬과 스킬로 감싼 커맨드를 Kimi Code가 로드하는 프로젝트
+스킬 디렉터리인 `.kimi-code/skills/`에 설치합니다. 헬퍼는 `.kimi-code/agents/`의
+Kimi Code 서브에이전트가 되며, 그 도구 이름은 Kimi Code가 매칭하는 이름으로
+변환됩니다. 훅, 규칙, 템플릿 코호트는 `.kimi-code/.apothem/support/` 아래에
+둡니다. Kimi Code는 사용자 범위의 `~/.kimi-code/config.toml`에서 훅을 읽으며,
+어댑터는 이 파일을 작성하지 않습니다. 어댑터는 `.kimi-code/mcp.json`을 작성하지
 않으며, MCP 표면은 운영자 소유로 남습니다. Kimi Code는 프로젝트 지침을
 `AGENTS.md` 또는 `.kimi-code/AGENTS.md`에서 읽습니다. 어댑터는 프로젝트 루트의
 `AGENTS.md`만 쓰며, Kimi Code 문서는 두 파일이 모두 있을 때 어느 쪽이 우선하는지
@@ -40,7 +44,8 @@ kimi-code 어댑터는 공유 규칙과 거버넌스 표면을 프로젝트 루�
 1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행합니다.
 2. 기존 `AGENTS.md`의 규칙을 공유 코퍼스로 옮깁니다.
 3. `apothem install --harness kimi-code --project <path>`를 실행해 `AGENTS.md`
-   지침 표면과 `.kimi-code/.apothem/support/` 지원 하위 트리를 렌더링합니다.
+   지침 표면, `.kimi-code/skills/` 스킬, `.kimi-code/agents/` 서브에이전트,
+   `.kimi-code/.apothem/support/` 지원 하위 트리를 렌더링합니다.
 4. `apothem verify --harness kimi-code --project <path>`를 실행해 구성이
    안착했는지 확인합니다.
 5. 이후의 모든 변경에는 `apothem update --harness kimi-code --project <path>`를

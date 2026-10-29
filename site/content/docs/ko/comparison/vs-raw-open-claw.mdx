@@ -2,14 +2,15 @@
 title: "Apothem 대 원시 Open-Claw 설정"
 description: "Open-Claw 설정을 직접 유지보수하는 것 대 Apothem의 공유 프로필을 통해 관리하는 것."
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw는 `~/.openclaw/openclaw.json`을 읽습니다. 그
-`agents.defaults.skills`는 이름 허용 목록(디렉터리 로더가 아님)이고 MCP는 CLI
-표면이므로, Apothem은 어떤 설정 키도 작성하지 않습니다. 공유 명령 코호트와 스킬
-코호트를 `~/.openclaw/.apothem/support/skills/` 아래에 지원 자료로 설치합니다.
+Open-Claw는 `~/.openclaw/openclaw.json`을 읽습니다. Apothem은 공유 명령 코호트와
+스킬 코호트를 `~/.openclaw/.apothem/support/skills/` 아래에 설치하고, 그 파일에
+키 하나, `skills.load.extraDirs`를 작성합니다. 이 키는 그 디렉터리를 나열하여
+OpenClaw가 스킬을 로드하게 합니다. 그 `agents.defaults.skills`는 여러분이 소유하는
+이름 허용 목록이고 MCP는 CLI 표면이므로, Apothem은 둘 다 작성하지 않습니다.
 
 ## 상태
 
@@ -30,6 +31,9 @@ Open-Claw는 `~/.openclaw/openclaw.json`을 읽습니다. 그
 Open-Claw 어댑터는 `openclaw.json`을 작성하고, Apothem의 슬래시 명령을 스킬로
 감싸며, Apothem 스킬을 참조된 지원 디렉터리로 복사하고, 규칙·템플릿·에이전트·훅
 자료를 Apothem 지원 하위 트리 아래에 보관합니다.
+OpenClaw는 스킬 소스 중 가장 낮은 우선순위로 `skills.load.extraDirs`를 읽으므로,
+워크스페이스, `~/.agents/skills`, 또는 `~/.openclaw/skills`에 같은 이름의 스킬이
+있으면 Apothem 사본 대신 그것이 사용됩니다.
 
 ## 마이그레이션 경로
 

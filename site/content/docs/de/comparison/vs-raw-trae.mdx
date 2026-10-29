@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Trae-Konfiguration"
 description: "Die Regeln von Trae unter .trae/rules/ von Hand pflegen, verglichen mit dem Rendern aus dem gemeinsamen Profil von Apothem."
 machineTranslated: true
-sourceHash: "065945ba50500576"
+sourceHash: "a74a13015bc510bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,6 +19,7 @@ gegenüber.
 | Regeln verfassen | Jede Datei unter `.trae/rules/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | Die Apothem-Oberfläche getrennt halten | Daran denken, `project_rules.md` nicht zu überladen | Der Adapter schreibt eine dedizierte `apothem-rules.md` |
 | Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Wiederverwendbare Skills und Befehle teilen | Jeden Skill-Ordner von Hand nach `~/.trae/skills/` kopieren und die Kopien aktuell halten | Vom Adapter nach `~/.trae/skills/` geschrieben, eine gemeinsame Kopie für alle Projekte, und bei `apothem update` aufgefrischt |
 | Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness trae --project <path>` |
 
 ## Was Apothem verwaltet

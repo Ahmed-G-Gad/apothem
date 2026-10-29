@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptador de harness do Apothem para o Open-Claw (Prévia)."
 machineTranslated: true
-sourceHash: "f13f9ce348ede92c"
+sourceHash: "4c7b4673820f1fa6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,8 @@ apothem install --harness open-claw
 O adaptador grava o arquivo de configuração global de usuário do OpenClaw,
 projeta o perfil compartilhado em um documento de perfil e instala os cohorts de
 suporte do Apothem sob a raiz do harness. A configuração nativa do OpenClaw é
-JSON; o materializador renderiza um objeto JSON vazio, e um arquivo existente
-mantém as suas chaves.
+JSON; o materializador renderiza uma chave, `skills.load.extraDirs`, e um
+arquivo existente mantém as suas outras chaves.
 
 **Arquivos gravados:** `~/.openclaw/openclaw.json`, o documento de perfil
 `~/.openclaw/apothem/rules/00-apothem-profile.md` e arquivos de suporte sob
@@ -34,16 +34,64 @@ ao qual cada citação no estilo do repositório (`rules/<name>.md`,
 
 ## Mapeamento do perfil para a configuração nativa
 
-O adaptador lê o perfil compartilhado do Apothem, mas não redige nenhuma chave
-de configuração: um `openclaw.json` novo ou vazio é gravado como um objeto
-vazio, e um arquivo existente mantém as suas chaves. A identidade, as
+O adaptador redige uma chave de configuração. Ele adiciona
+`~/.openclaw/.apothem/support/skills` a `skills.load.extraDirs`, a lista de
+diretórios de skills extras que o OpenClaw lê, que é como o OpenClaw encontra as
+skills instaladas. A entrada vai depois de quaisquer entradas que você já liste, e as
+suas outras chaves permanecem como estão. A identidade, as
 preferências e as regras do perfil vão para o documento de perfil. Os comandos,
 skills, regras, templates e prompts de hook compartilhados são instalados como
 material de suporte sob `~/.openclaw/.apothem/support/`.
 
 ## Notas de compatibilidade
 
-Adaptador em prévia. O OpenClaw não carrega por conta própria a subárvore de suporte nem o documento de perfil: nenhum de seus locais de skills, nenhum de seus arquivos de instruções do workspace, nem sua configuração, aponta para lá; por isso, após a instalação, o OpenClaw roda sem as regras, as skills ou os servidores MCP do Apothem. O OpenClaw lê skills das pastas `skills/` e `.agents/skills/` do seu workspace, de `~/.agents/skills` e do seu diretório de estado, e depois as filtra pela lista de permissão de nomes de skills em `agents.defaults.skills`. `skills.load.extraDirs` não é um carregador de skills; portanto, as skills do Apothem em `~/.openclaw/.apothem/support/skills` só são carregadas depois que você as coloca em uma dessas pastas e as nomeia nessa lista de permissão. `apothem update` mantém as chaves que você adiciona a `openclaw.json`. Os servidores MCP ficam no bloco `mcp.servers` da configuração do OpenClaw, que você gerencia com `openclaw mcp add` e os subcomandos relacionados; o adaptador não grava entradas ali. (Comportamento do OpenClaw conforme suas documentações de [skills](https://docs.openclaw.ai/tools/skills) e de [CLI de MCP](https://docs.openclaw.ai/cli/mcp), lidas em 2026-10-02.)
+Adaptador em prévia. O OpenClaw carrega as skills do Apothem por meio de
+`skills.load.extraDirs`, mas não carrega por conta própria o restante da árvore de suporte nem
+o documento de perfil: nenhum de seus arquivos de instruções do workspace, nem sua
+configuração, aponta para lá; por isso, após a instalação, o OpenClaw roda sem as regras nem os
+servidores MCP do Apothem.
+
+**Conflitos de nome.** O OpenClaw lê skills destas fontes, da maior precedência
+para a menor, e quando o mesmo nome de skill aparece em mais de um lugar a fonte mais alta
+vence: a pasta `skills/` do workspace, a pasta `.agents/skills/` do workspace,
+`~/.agents/skills` (somente com o diretório de estado padrão), a pasta `skills/` do
+diretório de estado (`~/.openclaw/skills` por padrão), as skills de workshop,
+as skills incluídas e de custodian e, por último, as pastas listadas em
+`skills.load.extraDirs` junto com as skills de plugins. O diretório do Apothem é uma
+entrada de `extraDirs`, então uma skill de mesmo nome que você mantenha em qualquer uma das
+fontes anteriores é a que o OpenClaw usa, e a cópia do Apothem dessa skill
+fica sem uso no disco. O Apothem grava somente em `openclaw.json` e sob
+`~/.openclaw/.apothem/support/`, nunca nessas pastas anteriores, então a instalação, a
+atualização e a desinstalação não substituem uma skill que você mantenha ali.
+
+`agents.defaults.skills` é a lista de permissão de nomes de skills; o Apothem não a edita,
+então, se você mantiver uma, verifique se ela nomeia as skills do Apothem que você deseja.
+`apothem update` mantém as chaves que você adiciona a `openclaw.json`. Os servidores MCP ficam no
+bloco `mcp.servers` da configuração do OpenClaw, que você gerencia com
+`openclaw mcp add` e os subcomandos relacionados; o adaptador não grava entradas
+ali. (Comportamento do OpenClaw conforme suas documentações de [skills](https://docs.openclaw.ai/tools/skills),
+[configuração de skills](https://docs.openclaw.ai/tools/skills-config) e
+[extensões de configuração](https://docs.openclaw.ai/gateway/config-extensions),
+lidas em 2026-10-24, e sua documentação de [CLI de MCP](https://docs.openclaw.ai/cli/mcp), lida
+em 2026-10-02.)
+
+**Comentários em `openclaw.json`.** O OpenClaw lê sua configuração como JSON5, e o Apothem
+reescreve o arquivo como JSON simples. Quando o arquivo contém comentários ou outra sintaxe
+JSON5 e a entrada está ausente, o Apothem deixa o arquivo intacto e a instalação
+é interrompida com uma mensagem que nomeia a chave. Mescle você mesmo esta entrada no seu arquivo,
+ou converta o arquivo para JSON simples, e depois execute a instalação novamente:
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  }
+}
+```
+
+Uma entrada que você mesmo adiciona conta como sua: a desinstalação a mantém no lugar.
 
 ## Verificação
 
@@ -57,7 +105,10 @@ O comando verify confirma que:
 2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
    as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
    para também confirmar que os arquivos instalados correspondem a esse perfil.
-3. A rotina de verificação específica do adaptador informa sucesso.
+3. `skills.load.extraDirs` na configuração nativa lista
+   `~/.openclaw/.apothem/support/skills`. Sem essa entrada, o OpenClaw não
+   carrega as skills instaladas; `apothem update` a adiciona de volta.
+4. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -67,8 +118,9 @@ apothem update --harness open-claw
 
 Deriva novamente o documento de perfil a partir do estado atual do perfil
 compartilhado e atualiza os arquivos de suporte; `openclaw.json` mantém as
-chaves que já tem. Execute após editar `~/.config/apothem/profile.yaml` ou
-atualizar o pacote do Apothem instalado.
+chaves que já tem, e a entrada do Apothem em `skills.load.extraDirs` continua listada
+uma única vez, não importa quantas vezes você atualize. Execute após editar
+`~/.config/apothem/profile.yaml` ou atualizar o pacote do Apothem instalado.
 
 ## Desinstalação
 
@@ -76,8 +128,9 @@ atualizar o pacote do Apothem instalado.
 apothem uninstall --harness open-claw
 ```
 
-Remove o que o adaptador adicionou: o documento de perfil e a árvore de suporte.
-As suas próprias chaves em `openclaw.json` permanecem, e o arquivo é excluído
+Remove o que o adaptador adicionou: sua entrada em `skills.load.extraDirs`, o
+documento de perfil e a árvore de suporte. As suas próprias chaves em `openclaw.json`
+permanecem, incluindo as suas próprias entradas de `extraDirs`, e o arquivo é excluído
 somente quando o Apothem o criou e nada seu restou. O YAML do perfil
 compartilhado e o motor do Apothem não são afetados.
 
@@ -93,7 +146,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness open-claw` |
 | Falha na verificação | Execute `apothem update --harness open-claw` e depois verifique novamente |
-| Conteúdo de configuração inesperado | O Apothem não grava chaves em `openclaw.json` e mantém as chaves que já existem nele, por isso o conteúdo do perfil não chega ali. O conteúdo do perfil é gravado em `~/.openclaw/apothem/rules/00-apothem-profile.md`: verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e, em seguida, execute novamente o comando em [Atualização](#atualização) |
+| Conteúdo de configuração inesperado | O Apothem redige apenas a entrada `skills.load.extraDirs` em `openclaw.json` e mantém as chaves que já existem nele, por isso o conteúdo do perfil não chega ali. O conteúdo do perfil é gravado em `~/.openclaw/apothem/rules/00-apothem-profile.md`: verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e, em seguida, execute novamente o comando em [Atualização](#atualização) |
+| A instalação é interrompida com uma mensagem sobre comentários ou sintaxe JSON5 em `openclaw.json` | O Apothem não reescreve um arquivo do qual teria de remover comentários. Adicione você mesmo a entrada `skills.load.extraDirs` mostrada em [Notas de compatibilidade](#notas-de-compatibilidade), ou converta o arquivo para JSON simples, e depois execute a instalação novamente |
+| Uma skill do Apothem não aparece no OpenClaw | Uma skill de mesmo nome no workspace, em `~/.agents/skills` ou em `~/.openclaw/skills` tem precedência sobre a cópia do Apothem (consulte [Notas de compatibilidade](#notas-de-compatibilidade)). Execute também `apothem verify --harness open-claw` e verifique se alguma lista de permissão `agents.defaults.skills` que você mantenha nomeia a skill |
 
 ## Ajustes de configuração
 

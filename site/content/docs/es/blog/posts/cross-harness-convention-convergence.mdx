@@ -2,7 +2,7 @@
 title: "Convergencia de convenciones entre entornos"
 description: "Cómo Apothem mantiene coherente un único flujo de trabajo del operador en diecisiete entornos, pese a los formatos de configuración y las superficies de enforcement divergentes de cada proveedor."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,12 +21,15 @@ adaptador renderiza esa intención en la forma que su entorno espera.
 
 | Forma | Entornos (ejemplos) | Lo que emite Apothem |
 | --- | --- | --- |
-| Archivos de reglas `.md` planos en un directorio | claude-code, windsurf, trae | Archivos de reglas en bruto copiados en el árbol de reglas del entorno |
-| Reglas `.mdc` de Cursor | cursor | Un conjunto de reglas `.mdc` que lleva la cabecera de metadatos que Cursor espera |
+| Archivos de reglas `.md` planos en un directorio | claude-code | Archivos de reglas en bruto copiados en el árbol de reglas del entorno |
+| Un archivo de reglas fusionado en un directorio de reglas | windsurf, trae | Un único archivo `apothem-rules.md` con el frontmatter de activación que lee el entorno |
+| Reglas `.mdc` de Cursor | cursor | Un único archivo de reglas `.mdc` que lleva la cabecera de metadatos que Cursor espera |
 | Documento de instrucciones de archivo único | codex, gemini-cli, github-copilot, zed | Un documento concatenado —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— ensamblado a partir del conjunto de reglas del perfil |
 
-Un entorno de `.md` plano toma las reglas tal cual. Un entorno `.mdc` necesita
-la cabecera de metadatos de Cursor envuelta alrededor de cada regla. Un entorno
+Un entorno de `.md` plano toma las reglas tal cual. Un entorno de archivo
+fusionado toma un único archivo de reglas cuyo frontmatter establece cuándo se
+aplican las reglas. Un entorno `.mdc` necesita la cabecera de metadatos de
+Cursor al principio de su archivo de reglas. Un entorno
 de archivo único necesita todo el conjunto de reglas aplanado en un solo
 documento con un orden de secciones estable, para que el operador lea las mismas
 convenciones en la misma secuencia sin importar el destino. El perfil neutral es

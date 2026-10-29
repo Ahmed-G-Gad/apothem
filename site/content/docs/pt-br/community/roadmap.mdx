@@ -2,7 +2,7 @@
 title: "Roteiro"
 description: "Roteiro público do Apothem — recursos futuros e melhorias planejadas."
 machineTranslated: true
-sourceHash: "66086baa5064d245"
+sourceHash: "de42c4df27e49c66"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,8 +26,8 @@ A linha atual entrega o gerenciador de configuração de harnesses agnóstico ao
 host: um perfil compartilhado (`~/.config/apothem/profile.yaml`) materializado
 em configuração nativa de harness para os adaptadores registrados, conduzido
 pela linha de comando `apothem` (`quickstart` · `install` · `update` ·
-`uninstall` · `rollback` · `verify` · `status` · `diff` · `harnesses` ·
-`profile` · `doctor` · `migrate-workspace` · `completion`).
+`uninstall` · `rollback` · `backups` · `verify` · `status` · `diff` ·
+`harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
 
 | Item | Status | Notas |
 | ---- | ------ | ----- |
@@ -40,6 +40,8 @@ pela linha de comando `apothem` (`quickstart` · `install` · `update` ·
 | Infraestrutura de auditoria e de revisão de desvio | entregue | Scanners de inventário e de desvio por trás dos comandos de auditoria |
 | Conformity gate | entregue | Validadores de cabeçalhos de autoria, nomenclatura, qualidade de código, linguagem evasiva e reciprocidade de vínculos sobre cada superfície materializada, com goldens de diff de comportamento travando a saída de cada adaptador |
 | Memória durável e aprendizado contínuo opcional | entregue | Uma camada de memória persistente e um laço de aprendizado opcional (opt-in) que carregam convenções confirmadas entre sessões |
+| Distribuição npm / npx | entregue | O pacote `@ahmed-g-gad/apothem` executa o engine por meio de `npx @ahmed-g-gad/apothem` |
+| Listagem do plugin do Claude Code | entregue | Instalado com `/plugin marketplace add ahmed-g-gad/apothem` |
 | Pipeline de CI/CD e cadeia de suprimentos de lançamentos assinados | entregue | Toda mudança precisa passar por lint, testes, verificações de tipo, um build da documentação e verificações da cadeia de suprimentos antes do lançamento |
 
 ## Curto prazo
@@ -47,8 +49,8 @@ pela linha de comando `apothem` (`quickstart` · `install` · `update` ·
 | Item | Status | Notas |
 | ---- | ------ | ----- |
 | Guias de documentação | em andamento | Mais guias focados em tarefas, diagramas e exemplos para configurações reais de harness |
-| Distribuição npm / npx | planejado | Manter o ponto de entrada npx `@ahmed-g-gad/apothem` alinhado a cada lançamento e ampliar sua cobertura de plataformas |
-| Listagem do plugin do Claude Code | planejado | Expandir a listagem do plugin à medida que a superfície do marketplace se estabiliza |
+| Cobertura de plataformas do npx | planejado | Manter o ponto de entrada npx `@ahmed-g-gad/apothem` alinhado a cada lançamento e ampliar sua cobertura de plataformas |
+| Crescimento da listagem do plugin | planejado | Expandir a listagem do plugin à medida que a superfície do marketplace se estabiliza |
 | Mais adaptadores de harness | planejado | Harnesses adicionais à medida que suas convenções de configuração se estabilizam e os usuários os solicitam |
 | Melhorias no schema do perfil | planejado | Superfícies de substituição por harness mais ricas e diagnósticos de validação mais rigorosos |
 | Validação do perfil no conformity gate | planejado | Validar o perfil compartilhado contra seu schema como uma verificação do gate |

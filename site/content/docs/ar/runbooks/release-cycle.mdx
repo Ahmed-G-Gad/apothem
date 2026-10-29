@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,6 +87,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -179,12 +180,119 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 يفشل الفحص عندما يكون الإصدار مسودّةً أو إصدارًا تجريبيًا (prerelease)، أو عندما لا يكون سير عمل مطلوب لإيداع الوسم أخضر، أو عندما يغيب ملف <bdi>SBOM</bdi>، أو عندما يصف إصدارًا آخر، أو عندما يُغفل حزمةً مُضمَّنة (vendored). وتُسمّي رسالة الفشل السببَ.
 
-عند نجاح الفحص، وافِق على تشغيل <bdi>`Publish npm`</bdi> المنتظر بالطريقة نفسها المذكورة في القسم 2.3 (يأتي معرّف التشغيل من <bdi>`gh run list --workflow=publish-npm.yml`</bdi>). ينشر سير العمل <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع. ووافِق كذلك على تشغيل <bdi>`Publish VS Code Extension`</bdi> المنتظر. وهو يحزّم <bdi>`apothem.vsix`</bdi> وينشره على <bdi>Visual Studio Marketplace</bdi> بالمعرّف <bdi>`ahmed-g-gad.apothem-vscode`</bdi>. لا تعمل خطوة النشر إلا حين يساوي متغيّر المستودع <bdi>`VSCODE_MARKETPLACE_READY`</bdi> القيمة <bdi>`true`</bdi> ويكون سرّ <bdi>`VSCE_PAT`</bdi> مضبوطًا؛ وفي غير ذلك يحزّم التشغيل الامتداد ويتخطّى النشر.
+عند نجاح الفحص، وافِق على تشغيل <bdi>`Publish npm`</bdi> المنتظر بالطريقة نفسها المذكورة في القسم 2.3 (يأتي معرّف التشغيل من <bdi>`gh run list --workflow=publish-npm.yml`</bdi>). ينشر سير العمل <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع. ووافِق كذلك على تشغيل <bdi>`Publish VS Code Extension`</bdi> المنتظر. وهو يحزّم <bdi>`apothem.vsix`</bdi> وينشره على <bdi>Visual Studio Marketplace</bdi> بالمعرّف <bdi>`ahmed-g-gad.apothem-vscode`</bdi>. لا تعمل خطوة النشر إلا حين يساوي متغيّر المستودع <bdi>`VSCODE_MARKETPLACE_READY`</bdi> القيمة <bdi>`true`</bdi> ويكون اعتماد واحد مهيّأً: المتغيّر <bdi>`VSCE_AUTH=oidc`</bdi> (النشر الموثوق في <bdi>Marketplace</bdi>، بلا سرّ مخزَّن)، أو المتغيّرات <bdi>`VSCE_AUTH=entra`</bdi> و<bdi>`AZURE_CLIENT_ID`</bdi> و<bdi>`AZURE_TENANT_ID`</bdi> (رمز <bdi>Microsoft Entra ID</bdi> قصير العمر، بلا سرّ مخزَّن)، أو سرّ <bdi>`VSCE_PAT`</bdi>. وفي غياب أيٍّ منها يحزّم التشغيل الامتداد ويتخطّى النشر. الاعتماد مفتاح تبديل لا إعادة محاولة: فالنشر الفاشل عبر أحد المسارات لا يرتدّ إلى مسار آخر من تلقاء نفسه. إعداد كل مسار موجود في [النشر على <bdi>Marketplace</bdi> عبر <bdi>Trusted Publishing</bdi>](#النشر-على-marketplace-عبر-trusted-publishing) (المُفضَّل) و[النشر على <bdi>Marketplace</bdi> عبر <bdi>Microsoft Entra ID</bdi>](#النشر-على-marketplace-عبر-microsoft-entra-id) أدناه.
 
 لإعادة النشر بعد تشغيل فاشل، شغِّل سير العمل يدويًا للوسم نفسه
 (<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>). يتخطّى سير العمل
 النشر عندما تكون النسخة موجودة بالفعل في السجلّ، لأن نسخ <bdi>npm</bdi> غير قابلة
 للتغيير.
+
+#### النشر على Marketplace عبر Trusted Publishing
+
+يتيح النشر الموثوق (<bdi>Trusted Publishing</bdi>) لـ <bdi>Marketplace</bdi> أن يقبل رمز <bdi>GitHub OIDC</bdi> الخاص بهذا المستودع مباشرةً: إذ يستبدل <bdi>`vsce publish --oidc`</bdi> رمزَ مهمة النشر باعتماد <bdi>Marketplace</bdi> قصير العمر. لا يوجد سرّ مخزَّن ولا مورد <bdi>Azure</bdi>، لذا فهذا هو المسار المُفضَّل. ويبقى مسار <bdi>Entra</bdi> أدناه وسرّ <bdi>`VSCE_PAT`</bdi> بديلَين يختارهما المشغِّل.
+
+1. **استخدم إصدارًا من <bdi>vsce</bdi> يدعمه.** على هذا المسار تفحص مهمة النشر إصدار <bdi>vsce</bdi> المقفَل في <bdi>`tools/vsce`</bdi> قبل أن تنشر، وتتوقّف بخطأ يُسمّي الإصدار الأدنى حين يكون القفل أقدم منه. يقترح <bdi>Dependabot</bdi> تحديثات <bdi>vsce</bdi> لملف القفل ذاك؛ ادمج التحديث الذي يبلغ الإصدار الأدنى قبل أن تبدّل المسار.
+2. **أنشئ السياسة.** سجّل الدخول بصفتك مالكًا (<bdi>Owner</bdi>) للناشر، وافتح
+   <bdi>`https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`</bdi>، وأضف
+   سياسة تحت **<bdi>Trusted Publishing</bdi>**:
+   - اسم السياسة: أي اسم، مثل <bdi>`apothem-release`</bdi>
+   - مالك المستودع: <bdi>`Ahmed-G-Gad`</bdi>
+   - المستودع: <bdi>`apothem`</bdi>
+   - سير العمل: <bdi>`publish-vscode.yml`</bdi>
+   - البيئة: <bdi>`release`</bdi>
+
+   أسماء الحقول هي التي يسردها دليل النشر في <bdi>VS Code</bdi>، في قسمه عن النشر باستخدام <bdi>GitHub Actions</bdi> و<bdi>Trusted Publishing</bdi>
+   (<bdi>`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`</bdi>).
+   غير مؤكَّد: ما إذا كان كل ناشر يرى تبويب <bdi>Trusted Publishing</bdi> حتى الآن. إن لم يظهر لك، فاستخدم مسار <bdi>Entra</bdi>.
+3. **بدّل المسار.** أبقِ <bdi>`VSCODE_MARKETPLACE_READY`</bdi> مضبوطًا على <bdi>`true`</bdi> واضبط المُحدِّد. اضبطه حين لا يكون أي وسم في الانتظار، لأن دفع الوسم التالي ينشر عبر هذا المسار.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **انشر.** يَنشر دفعُ الوسم التالي، أو تشغيلٌ يدوي لوسم موجود، عبر <bdi>Trusted Publishing</bdi>. لا يملك هذا المسار تشغيلًا تجريبيًا: النشر الأول هو الفحص، والتشغيل اليدوي مع <bdi>`dry_run`</bdi> لا يفعل سوى التحذير من أن شيئًا لم يُتحقَّق منه.
+5. **ارجع إلى البديل إن فشل.** احذف المُحدِّد وشغِّل سير العمل يدويًا مرّة أخرى للوسم نفسه؛ ومع ضبط سرّ <bdi>`VSCE_PAT`</bdi> ينشر مسار الرمز. النشر الفاشل لم ينشر شيئًا، لذا يمكن تشغيل الوسم نفسه يدويًا مرّة أخرى.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### النشر على Marketplace عبر Microsoft Entra ID
+
+يستبدل مسار <bdi>Entra</bdi> رمزَ الوصول الشخصي المخزَّن برمز قصير العمر. يطلب <bdi>`publish-vscode.yml`</bdi> من <bdi>GitHub</bdi> رمز <bdi>OIDC</bdi>، ويستبدله الإجراء <bdi>`Azure/login`</bdi> بتسجيل دخول إلى <bdi>Entra</bdi> عبر اعتماد اتحادي (federated credential)، وينشر <bdi>`vsce publish --azure-credential`</bdi> بالرمز الناتج. لا يوجد أي سرّ عميل (client secret). ويبقى سرّ <bdi>`VSCE_PAT`</bdi> بديلًا احتياطيًا يختاره المشغِّل؛ ولا ينتقل سير العمل إليه من تلقاء نفسه أبدًا.
+
+يدعم إصدار <bdi>vsce</bdi> المثبَّت في <bdi>`tools/vsce`</bdi> هذا المسار. ويحتاج المسار إلى مستأجر (tenant) في <bdi>Entra</bdi>، وتسجيل تطبيق، وعضوية في الناشر، وهو ما لا يحتاجه <bdi>Trusted Publishing</bdi> أعلاه؛ استخدمه حين لا يكون <bdi>Trusted Publishing</bdi> متاحًا للناشر.
+
+1. **تحقّق من الشروط المسبقة.** اعثر على الحساب الذي يملك الناشر <bdi>`ahmed-g-gad`</bdi> (تبويب <bdi>Members</bdi> في
+   <bdi>`https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`</bdi>) وعلى
+   مستأجر <bdi>Entra</bdi> الذي يمكنك فيه تسجيل التطبيقات. غير مؤكَّد: ما إذا كان يجب أن يطابق مستأجرُ مالك الناشر مستأجرَ التطبيق، وما إذا كان يجب ربط مؤسسة <bdi>Azure DevOps</bdi> المسمّاة <bdi>`Ahmed-G-Gad`</bdi> بـ <bdi>Entra</bdi> (<bdi>`dev.azure.com/Ahmed-G-Gad`</bdi>، <bdi>Organization settings</bdi>، <bdi>Microsoft Entra</bdi>). لا يذكر أي مصدر أيًّا من الأمرين. إن فشلت الخطوة 5 أو 6، فتحقّق من هذين أولًا.
+
+2. **سجّل التطبيق.** في <bdi>`https://entra.microsoft.com`</bdi>، افتح <bdi>App registrations</bdi>، ثم <bdi>New registration</bdi>. سمِّه <bdi>`apothem-vscode-publish`</bdi>، واختر مستأجرًا واحدًا (single tenant)، واترك عنوان إعادة التوجيه (redirect URI) فارغًا. ومن <bdi>Overview</bdi>، انسخ <bdi>Application (client) ID</bdi> و<bdi>Directory (tenant) ID</bdi>. لا تُنشئ أي سرّ عميل ولا تمنح أي صلاحية <bdi>API</bdi>. تحتاج الخطوة إلى حقوق مالك التطبيق أو إلى دور في <bdi>Entra</bdi> مثل <bdi>Application Administrator</bdi>.
+
+3. **أضف الاعتماد الاتحادي.** على ذلك التطبيق، افتح <bdi>Certificates & secrets</bdi>، ثم <bdi>Federated credentials</bdi>، ثم <bdi>Add credential</bdi>، واختر السيناريو "GitHub Actions deploying Azure resources". أدخل المؤسسة <bdi>`Ahmed-G-Gad`</bdi>، والمستودع <bdi>`apothem`</bdi>، ونوع الكيان <bdi>`Environment`</bdi>، واسم البيئة <bdi>`release`</bdi>، واسم الاعتماد <bdi>`apothem-release`</bdi>. يجب أن تكون الحقول المولَّدة كما يلي:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   المطابقة دقيقة وحسّاسة لحالة الأحرف. إن فشل تسجيل دخول لاحق مع <bdi>AADSTS700213</bdi> أو <bdi>AADSTS7002138</bdi>، فقارن الاعتماد بسطر <bdi>`subject claim`</bdi> الذي يكتبه <bdi>`Azure/login`</bdi> في سجلّ المهمة. ويعني <bdi>AADSTS70021</bdi> مباشرةً بعد الإنشاء أن الاعتماد لم ينتشر بعد؛ انتظر بضع دقائق وأعد المحاولة.
+
+4. **اضبط متغيّرات المستودع.** ما دام <bdi>`VSCODE_MARKETPLACE_READY`</bdi> يساوي <bdi>`true`</bdi>، يصبح مسار <bdi>Entra</bdi> فعّالًا بمجرّد ضبط المتغيّرات الثلاثة كلها، لذا اضبطها حين لا يكون أي وسم إصدار في انتظار الموافقة. ومن دون <bdi>`VSCODE_MARKETPLACE_READY=true`</bdi> لا يجري أي تسجيل دخول ويتخطّى التشغيل النشر.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   اترك <bdi>`VSCODE_MARKETPLACE_READY`</bdi> و<bdi>`VSCE_PAT`</bdi> على حالهما. حين يكون <bdi>`VSCE_AUTH`</bdi> مساويًا لـ <bdi>`entra`</bdi> لكن <bdi>`AZURE_CLIENT_ID`</bdi> أو <bdi>`AZURE_TENANT_ID`</bdi> فارغ، يسجّل سير العمل تحذيرًا، سواء أكان <bdi>`VSCE_PAT`</bdi> مضبوطًا أم لا، ولا يستخدم مسار <bdi>Entra</bdi>. ثم يستخدم سرّ <bdi>`VSCE_PAT`</bdi> إن كان مضبوطًا؛ ومن دون السرّ لا ينشر شيئًا وينتهي التشغيل مع ذلك أخضر، لذا ابحث عن التحذير.
+
+5. **شغِّل التشغيل التجريبي.** شغِّل سير العمل يدويًا لوسم إصدار موجود مع ضبط <bdi>`dry_run`</bdi>. على مسار <bdi>Entra</bdi> يسجّل الدخول، ويطبع ملف تعريف <bdi>Azure DevOps</bdi>، ويتحقّق من الوصول إلى الناشر دون نشر. لا يملك مسار الرمز تشغيلًا تجريبيًا: إن أظهر السجلّ <bdi>`Marketplace credential mode: pat`</bdi>، ينتهي التشغيل أخضر مع تحذير دون أن يتحقّق من شيء. وافِق على تشغيل بيئة <bdi>`release`</bdi> المنتظر.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   المتوقّع: <bdi>`Marketplace credential mode: entra`</bdi>، وسطر <bdi>`subject claim`</bdi> مساوٍ لقيمة subject في الخطوة 3، والقيمتان <bdi>`id`</bdi> و<bdi>`displayName`</bdi> لملف التعريف كما تطبعهما أول خطوة من التشغيل التجريبي. يُتوقَّع أن تفشل خطوة التحقّق بالرمز 403 حتى الخطوة 6. غير مؤكَّد: أن تسجيل دخول بلا اشتراك <bdi>Azure</bdi> يُنتِج رمزًا لـ <bdi>Marketplace</bdi> عبر <bdi>Azure CLI</bdi>. وهذا التشغيل هو أول اختبار لذلك. إن فشل هنا، فسجّل بدلًا من ذلك هوية مُدارة مُعيَّنة من المستخدم (user-assigned managed identity) ضمن اشتراك، وهو المسار الذي توثّقه <bdi>Microsoft</bdi>.
+
+6. **أضف التطبيق إلى الناشر.** في تبويب <bdi>Members</bdi> من الخطوة 1، سجّل الدخول بصفتك مالكًا للناشر وأضف عضوًا باستخدام قيمة <bdi>`id`</bdi> لملف التعريف من الخطوة 5، بالدور <bdi>Contributor</bdi>. غير مؤكَّد: تسمية الحقل في مربّع الحوار، وما إذا كان يقبل المعرّف قبل أن يصبح التطبيق عضوًا في مؤسسة <bdi>Azure DevOps</bdi>. تضيف <bdi>Azure DevOps</bdi> هويات التطبيقات لكل مؤسسة على حدة كقاعدة عامة. إن رفض مربّع الحوار المعرّف، فأضف كيان الخدمة (service principal) إلى المؤسسة <bdi>`Ahmed-G-Gad`</bdi> (<bdi>Organization settings</bdi>، <bdi>Users</bdi>، باستخدام <bdi>Object ID</bdi> الخاص بـ <bdi>Enterprise application</bdi>) وأعد المحاولة. وغير مؤكَّد أيضًا: ما إذا كان ملف التعريف موجودًا قبل أول استدعاء تُجريه الهوية إلى <bdi>Azure DevOps</bdi>.
+
+7. **كرّر التشغيل التجريبي.** تنجح خطوة التحقّق الآن بالرسالة "verification succeeded for the publisher"؛ ولا تزال رسائلها تذكر <bdi>Personal Access Token</bdi>، لأن رمز <bdi>Entra</bdi> يسلك المسار نفسه. يُثبت الفحص عضوية الناشر (<bdi>Creator</bdi> أو <bdi>Owner</bdi> أو <bdi>Contributor</bdi> أو <bdi>Reader</bdi>)، لا صلاحيات النشر. غير مؤكَّد: أن <bdi>Contributor</bdi> يكفي لنشر تحديث. يقول وصف <bdi>Microsoft</bdi> للدور إنه يكفي، ولا يُظهر أي مصدر نشرًا به، لذا فالنشر الحقيقي الأول هو البرهان.
+
+8. **انشر إصدارًا.** ضع الوسم كما في القسم 2.2 ووافِق على التشغيل. تعمل الخطوة <bdi>`Publish to Visual Studio Marketplace (Entra ID)`</bdi>، وتُدرِج ترويسة بيئتها <bdi>`AZURE_TENANT_ID`</bdi> وحده، وتُتخطّى خطوة الرمز الاحتياطية، ويطبع <bdi>vsce</bdi> النص <bdi>`DONE Published ahmed-g-gad.apothem-vscode`</bdi>. ويُدرِج معرض <bdi>Marketplace</bdi> النسخة الجديدة بعد نحو أربع دقائق.
+
+9. **قرّر بشأن الرمز.** احتفظ بـ <bdi>`VSCE_PAT`</bdi> حتى أول نشر ناجح عبر <bdi>Entra</bdi>، ثم احذف السرّ إن لم تكن تريد بديلًا احتياطيًا. وبمجرّد حذفه، يترك متغيّرُ <bdi>Entra</bdi> المحذوف أو الفارغ التشغيلَ أخضر بلا نشر: مع تحذير حين يظل <bdi>`VSCE_AUTH`</bdi> مساويًا لـ <bdi>`entra`</bdi>، ومع إشعار التخطّي وحده حين لا يكون كذلك. اقرأ تعليقات التشغيل التوضيحية (annotations) بعد كل وسم. وللاحتفاظ ببديل احتياطي بعد إيقاف رموز الوصول الشخصية العامّة (global)، أنشئ رمزًا مقصورًا على المؤسسة <bdi>`Ahmed-G-Gad`</bdi> بالنطاق المخصّص <bdi>Marketplace Manage</bdi> وأقصر مدّة صلاحية تقبلها، وخزّنه باسم <bdi>`VSCE_PAT`</bdi>. غير مؤكَّد: تسميات البوابة في هذه الخطوة مأخوذة من الذاكرة، لا من مصدر أوّلي؛ وتصف <bdi>Microsoft</bdi> الرموز المقصورة على المؤسسة بأنها حلّ التفافي مؤقّت ويمكنها أن تتوقّف عن قبولها؛ وتتعارض صفحات <bdi>Microsoft</bdi> بشأن تاريخ إيقاف الرموز العامّة.
+
+10. **ارجع إلى الرمز.** احذف المُحدِّد وشغِّل سير العمل يدويًا مرّة أخرى، ثم وافِق على التشغيل. النشر الفاشل عبر <bdi>Entra</bdi> لم ينشر شيئًا، لذا يمكن تشغيل الوسم نفسه يدويًا مرّة أخرى؛ تحقّق من صفحة <bdi>Marketplace</bdi> أولًا، لأن النسخة التي وصلت لا يمكن نشرها مرّتين.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+حين يفشل النشر عبر <bdi>Entra</bdi>، اقرأ سجلّ الخطوة:
+
+- الرسالة التي تبدأ بـ "Can not acquire a Microsoft Entra ID access token" تعني أن تسجيل الدخول أو سلسلة الاعتماد قد فشلت. تحقّق من خطوة <bdi>`Sign in to Microsoft Entra ID`</bdi> ومن الاعتماد الاتحادي أولًا. إن كان تسجيل الدخول أخضر، فأزِل <bdi>`AZURE_TENANT_ID`</bdi> من <bdi>`env`</bdi> في خطوة <bdi>vsce</bdi> ضمن سير العمل؛ فسير عمل إصدار الامتداد الذي تعتمده <bdi>GitHub</bdi> نفسها لا يُصدِّره.
+- تعني "InvalidAccessException" أو "not allowed" أن هوية الرمز ليست عضوًا في الناشر. قارن قيمة <bdi>`id`</bdi> لملف التعريف من التشغيل التجريبي بتبويب <bdi>Members</bdi>.
+- تعني الاستجابة 403 من خطوة التحقّق في التشغيل التجريبي أن التطبيق لا يملك دورًا بعد.
+
+تنطبق ثلاثة قيود على هذا المسار:
+
+- تُمنح <bdi>`id-token: write`</bdi> لمهمة النشر كلها، لذا يمكن لكل خطوة فيها أن تطلب رمز <bdi>OIDC</bdi>، في وضع الرمز أيضًا. ويرتبط subject الرمز ببيئة <bdi>`release`</bdi>، التي تتطلّب موافقة مُراجِع.
+- لا تملك بيئة <bdi>`release`</bdi> أي سياسة فروع أو وسوم للنشر، لذا يمكن لأي مرجع (ref) يوافق عليه مشرف أن يحصل على الرمز ذي subject البيئة. ويحتاج تقييدها بوسوم <bdi>`v*.*.*`</bdi> إلى التحقّق أولًا مما يُشغِّله <bdi>`release.yml`</bdi> و<bdi>`publish-npm.yml`</bdi>.
+- تغيير اسم المستودع أو نقله يغيّر صيغة subject في <bdi>OIDC</bdi> ويكسر الاعتماد الاتحادي بصمت. انسخ قيمة subject من سجلّ <bdi>`Azure/login`</bdi> إلى الاعتماد مرّة أخرى بعد أي تغيير للاسم.
+
+### 2.5 تحديث القيم المثبَّتة لبصمات القوالب
+
+بعد أن يوجد الوسم، اضبط <bdi>`_LATEST_RELEASE`</bdi> و<bdi>`_LATEST_RELEASE_DIGESTS`</bdi> في
+<bdi>`tests/unit/test_template_digests.py`</bdi> على الإصدار الجديد وعلى بصمة <bdi>SHA-256</bdi>
+لكل قالب نصي عادي كما شحنه ذلك الإصدار
+(<bdi>`git show vX.Y.Z:<template path> | sha256sum`</bdi>). افعل ذلك في التغيير التالي على
+<bdi>`main`</bdi>، وأضف البصمة السابقة إلى <bdi>`earlier_digests`</bdi> في مُدخل البيان حين
+يكون القالب قد تغيّر. تستخرج مهمة <bdi>`release-preflight`</bdi> في <bdi>CI</bdi> كل وسم،
+لذا تفشل مع ذكر أسماء الوسوم إلى أن تُحدَّث القيم المثبَّتة.
 
 ## 3. أسطح التوزيع
 

@@ -2,7 +2,7 @@
 title: "概念"
 description: "术语表，定义 Apothem 中的共享配置档案、工具适配器、规则、钩子、合规闸门、技能和委派工作者。"
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ Claude Code, Cursor, Gemini CLI, etc.
 
 ## 行为规则
 
-src/apothem/rules/ 下的 Markdown 文件，会在每次交互时加载（始终启用），或仅在编辑特定路径下的文件时加载（按路径过滤）。规则将工具应有的行为明确成文。
+src/apothem/rules/ 下的 Markdown 文件，会在每次交互时加载（始终启用），或仅在编辑特定路径下的文件时加载（按路径过滤）。规则将工具应有的行为明确成文。有四条规则始终启用：`agnostic-posture`、`authority-inquiry`、`session-closure` 和 `context-management`。规则索引 `apothem-rule-index` 与它们一同加载，列出其他每条规则以及何时阅读它。不按路径限定规则范围的工具不会加载其他任何规则，因此会话要靠该索引找到它们。
 
 ## 钩子
 

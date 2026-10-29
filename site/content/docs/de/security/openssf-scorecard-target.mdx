@@ -2,7 +2,7 @@
 title: "OpenSSF-Scorecard-Haltung"
 description: "Apothems OpenSSF-Scorecard-Ziel und die Nachweisoberflächen, mit denen die Bewertung weiter verbessert wird."
 machineTranslated: true
-sourceHash: "94c192fa1985b563"
+sourceHash: "41707bcf572f98ce"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Die Live-Bewertung steht im [Scorecard-Viewer](https://securityscorecards.dev/vi
 | **Code-Review** | Branch-Schutz + CODEOWNERS | Pull Requests sind für `main` für alle außer Repository-Administratoren erforderlich; der Branch-Schutz verlangt 0 genehmigende Reviews, solange das Projekt einen Maintainer hat (siehe [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); der Scorecard-Verlauf bleibt begrenzt, bis geprüfte PRs existieren. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Ein neues Projekt mit einem einzigen Maintainer kann keinen Beitragsverlauf über mehrere Organisationen hinweg fabrizieren; dies verbessert sich natürlich, sobald Mitwirkende hinzukommen. |
 | **Dangerous-Workflow** | Workflow-Audit | Kein `pull_request_target`; Actions sind per SHA gepinnt und mit expliziten Berechtigungen eingegrenzt. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate deckt GitHub Actions, Python-Manifeste, hash-gesperrte Release-Anforderungen und npm-Oberflächen ab und hält dabei gruppierte Abhängigkeits-PRs verfügbar. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot schlägt gruppierte wöchentliche Updates für die GitHub-Actions-Pins, die Website, die Lockfile des vsce-Packagers und die pre-commit-Hooks vor sowie monatliche Updates für die channel-smoke-Lockfile; Dependabot-Sicherheitsupdates decken jedes erkannte Manifest ab. `.gitattributes` hält genau diese Datei im Quellarchiv, das Scorecard liest. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis-Eigenschaftstests prüfen Invarianten von Parser und Frontmatter; die Upstream-Scorecard erkennt Hypothesis möglicherweise nicht als Fuzzer-Integration an. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | MIT-Lizenz im Wurzelverzeichnis des Repositorys. |
 | **Maintained** | Git-Verlauf | Der aktuelle Release-Commit und die aktive Workflow-Kadenz belegen die Pflege; sehr neue Repositorys erhalten möglicherweise eine Alterswarnung. |

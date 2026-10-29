@@ -2,7 +2,7 @@
 title: "编写规则"
 description: "编写、限定作用域并维护 Apothem 行为规则。"
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,8 @@ alwaysApply: true         # true for always-on; false for path-filtered
 | `true` | `""`（空） | 始终启用：每个会话、每个文件 |
 | `false` | 形如 `"**/*.py"` 的 glob | 路径过滤：仅当活动文件匹配该 glob 时 |
 
+有五条随附的规则是始终启用的：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management` 以及规则索引。始终启用的规则在每个会话中都会占用上下文，因此新规则 SHOULD 采用路径过滤，并使用能够指明其所治理文件的 glob；仅为 `**` 的过滤器不限定任何作用域，Claude Code 会像对待始终启用的规则一样在启动时加载该规则。随附的规则语料将始终启用集合限定为上述列表，并限定在一个字节上限之内；将某条规则提升为始终启用时，要在同一变更中同时更改这两者。请在规则索引（`apothem-rule-index`）中列出你添加的每条规则，以便在不按路径限定规则作用域的工具上，会话仍能找到它。配套规则（`<parent>-<aspect>`）沿用其父规则的 `pathFilter`，或使用更窄的过滤器，因此它绝不会在没有父规则的情况下被加载。不要将你自己的规则命名为 `apothem-rule-index`：安装会备份并覆盖具有该名称的规则文件。
+
 ## 示例规则
 
 ```markdown
@@ -51,11 +53,17 @@ alwaysApply: false
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+项目作用域的工具在更新时需要 `--project`，如第二行所示；用户作用域的工具则不需要。
 
 ## 规则验证
 
+针对你编写的规则文件运行前置元数据校验器。在 Apothem 检出中，`PYTHONPATH=src` 使该软件包可以被导入；脚本安装之后，请改用 `PYTHONPATH="$HOME/.apothem/src"`。
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+诸如 `frontmatter-grep` 的逐写入检查接受要检查的文件，或者接受 `--stdin` 以从标准输入读取内容；两者都不提供时，它会等待标准输入上的输入。独立检查则接受一个根目录，如 `--check naming-grep .`。

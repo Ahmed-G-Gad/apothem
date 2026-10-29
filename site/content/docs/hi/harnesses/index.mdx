@@ -2,7 +2,7 @@
 title: "हार्नेस अडैप्टर"
 description: "Apothem हार्नेस अडैप्टर — एक साझा प्रोफ़ाइल, सत्रह समर्थित लक्ष्य।"
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,12 +80,40 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## आपकी होम डायरेक्टरी में स्किल
+
+सात प्रोजेक्ट-स्कोप अडैप्टर आपके प्रोजेक्ट में एक नियम फ़ाइल लिखते हैं (उनमें से छह
+Apothem के सहायकों को भी वहाँ सबएजेंट फ़ाइलों के रूप में लिखते हैं; हर हार्नेस पेज
+फ़ोल्डर का नाम बताता है), और वे Apothem की स्किल, और स्किल जिन नियमों और टेम्पलेट
+का हवाला देती हैं, उन्हें भी आपकी होम डायरेक्टरी के फ़ोल्डरों में लिखते हैं:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- फ़ोल्डर का नाम लेने वाला हर इंस्टॉल वही फ़ाइलें लिखता है, इसलिए आप किस क्रम में
+  इंस्टॉल करते हैं इससे फ़र्क नहीं पड़ता, और एक ही प्रति हर प्रोजेक्ट की सेवा करती है।
+- इंस्टॉल पहले होम फ़ोल्डर लिखता है। यदि यह विफल होता है, तो वह प्रोजेक्ट बदलने से
+  पहले रुक जाता है, और वह आपकी रिपॉज़िटरी में कोई स्किल या नियम फ़ाइल नहीं जोड़ता।
+- अनइंस्टॉल किसी साझा फ़ोल्डर को केवल तभी हटाता है जब कोई अन्य Apothem इंस्टॉल अब भी
+  उसका उपयोग न कर रहा हो, और बताता है कि कौन-सा इंस्टॉल उसे रखे हुए है।
+- Apothem स्किल के नाम वाला कोई स्किल फ़ोल्डर जिसे Apothem ने नहीं लिखा, एक चेतावनी
+  के साथ छोड़ दिया जाता है।
+
+हर हार्नेस पेज अपने फ़ोल्डर सूचीबद्ध करता है।
+[हार्नेस रजिस्ट्री](/docs/reference/harness-registry#साझा-रूट) दिखाती है कि कौन-से
+टूल कौन-सा फ़ोल्डर साझा करते हैं।
 
 प्रोटोकॉल विनिर्देश के लिए [हार्नेस अडैप्टर एब्स्ट्रैक्शन](/docs/architecture/harness-adapter-abstraction)
 देखें।

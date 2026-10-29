@@ -2,7 +2,7 @@
 title: "Início rápido"
 description: "Instale o Apothem, escreva um perfil, materialize seu primeiro harness e verifique-o — um roteiro de copiar e colar com a saída esperada."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,14 +106,39 @@ apothem profile show --json
 
 O esqueleto usa dados de identidade fictícios, como marcadores de posição, e
 pode ser editado com segurança antes de você instalar qualquer saída de harness.
-`show --json` o lê de volta e relata o perfil validado:
+`show --json` o lê de volta e relata o perfil validado com todos os padrões
+preenchidos, começando por `schema_version`. O comando o imprime em uma única
+linha; aqui ele aparece expandido:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -140,9 +165,11 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Os adaptadores de escopo de projeto gravam dentro de um projeto em vez do seu
-diretório pessoal, então precisam de um `--project PATH`. Pré-visualize qualquer
-instalação sem gravar arquivos usando `--dry-run`:
+Os adaptadores de escopo de projeto gravam seu arquivo de regras dentro de um
+projeto, então precisam de um `--project PATH`; sete deles também gravam skills e
+regras compartilhadas em pastas do seu diretório pessoal, e `--project` não muda
+para onde elas vão. Pré-visualize qualquer instalação sem gravar arquivos usando
+`--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

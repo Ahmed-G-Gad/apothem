@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Zed-Konfiguration"
 description: "Die flache .rules-Anweisungsdatei von Zed von Hand pflegen, verglichen mit ihrer Erzeugung aus dem gemeinsamen Profil von Apothem."
 machineTranslated: true
-sourceHash: "2c5b5e0dd0dfe386"
+sourceHash: "693a56d0ed665ef9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,7 @@ Pflegen dieser Konfiguration von Hand der Verwaltung mit Apothem gegenüber.
 | Anweisungen verfassen | Die `.rules`-Datei von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | Eine frühere `.rules` bewahren | Selbst daran denken, sie vorab beiseitezukopieren | Der Adapter sichert die vorhandene Datei vor dem Ersetzen |
 | Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Wiederverwendbare Skills und Befehle teilen | Jeden Skill-Ordner von Hand nach `~/.agents/skills/` kopieren und die Kopien aktuell halten | Vom Adapter nach `~/.agents/skills/` geschrieben, eine gemeinsame Kopie für alle Projekte, und bei `apothem update` aufgefrischt |
 | Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness zed --project <path>` |
 
 ## Was Apothem verwaltet

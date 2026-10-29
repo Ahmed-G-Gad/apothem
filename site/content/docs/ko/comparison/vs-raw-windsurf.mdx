@@ -2,11 +2,12 @@
 title: "Apothem 대 원시 Windsurf 구성"
 description: ".devin/rules/ 아래에서 Windsurf의 규칙을 직접 손으로 유지하는 것과 apothem의 공유 프로필에서 렌더링하는 것의 비교."
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Windsurf는 `.devin/rules/` 디렉터리에서 규칙을 읽습니다. Apothem의 windsurf
+Windsurf는 이제 Devin Desktop이며 `.devin/rules/` 디렉터리(`.windsurf/rules/`
+대체 위치보다 우선하는 권장 위치)에서 규칙을 읽습니다. Apothem의 windsurf
 어댑터는 디렉터리 기반 규칙을 공유 프로필에서 렌더링합니다. 이 페이지는 그
 구성을 직접 손으로 유지하는 것과 apothem으로 관리하는 것을 대비합니다.
 
@@ -17,14 +18,23 @@ Windsurf는 `.devin/rules/` 디렉터리에서 규칙을 읽습니다. Apothem�
 | 규칙 작성 | `.windsurf/rules/` 아래의 각 파일을 직접 작성 | 공유 코퍼스에서 렌더링 |
 | 규칙 형식 하나 유지 | `.windsurf/rules/`와 단일 `.windsurfrules` 파일 중에서 직접 선택 | 어댑터는 `.devin/rules/`만 작성 |
 | 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 재사용 가능한 스킬과 커맨드 공유 | 각 스킬 폴더를 `~/.agents/skills/`에 직접 복사하고 사본을 최신 상태로 유지 | 어댑터가 `~/.agents/skills/`에 모든 프로젝트용 사본 하나로 작성하고, `apothem update` 시 갱신 |
+| 재사용 가능한 헬퍼를 동기화 상태로 유지 | 각 Devin Local 서브에이전트 파일을 `.devin/agents/` 아래에 직접 작성하고 Devin의 도구 이름을 추적 | 헬퍼 11개를 도구를 변환하여 `.devin/agents/`에 작성하고, `apothem update` 시 갱신 |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness windsurf --project <path>` |
 
 ## apothem이 관리하는 것
 
-windsurf 어댑터는 공유 규칙을 `.devin/rules/` 디렉터리로 렌더링하며, 단일
-파일 `.windsurfrules`는 작성하지 않습니다. Windsurf에는 PreToolUse 훅이 없으므로,
-가드레일 의도는 도구 호출 가로채기 지점이 아니라 규칙 산문 안에 존재합니다. 공유
-규칙에 대한 모든 변경은 다음 `apothem update` 시 디렉터리를 다시 렌더링합니다.
+windsurf 어댑터는 공유 규칙을 파일 하나,
+`<project>/.devin/rules/apothem-rules.md`로 렌더링하며, 단일 파일
+`.windsurfrules`는 작성하지 않습니다. 또한 Apothem 헬퍼 중 11개를
+`<project>/.devin/agents/`에 Devin Local 서브에이전트로 작성합니다. 웹 도구가
+필요한 나머지 3개는 Devin이 그 도구 이름을 문서화할 때까지 대기합니다. Devin Local
+훅 두 개, 즉 세션 부트스트랩과 컨텍스트 크기 권고를
+`<project>/.devin/config.local.json`에 등록합니다. 이전의 Cascade 모드는 다른 훅
+형식(`hooks.json`)을 읽으며, 어댑터는 이를 작성하지 않습니다. 도구 호출 가드는
+등록하지 않으므로, 가드레일 의도는 도구 호출 가로채기 지점이 아니라 규칙 산문
+안에 존재합니다. 공유 규칙에 대한 모든 변경은 다음 `apothem update` 시 파일을
+다시 렌더링합니다.
 
 ## 마이그레이션 경로
 

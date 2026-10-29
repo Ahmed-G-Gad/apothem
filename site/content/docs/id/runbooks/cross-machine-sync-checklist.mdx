@@ -2,7 +2,7 @@
 title: "Daftar Periksa Verifikasi Sinkronisasi Antar-Mesin"
 description: "Prosedur verifikasi untuk memastikan adapter Claude Code terpasang, tervalidasi, dan terhapus dengan benar pada host baru, dengan pemeriksaan portabilitas yang lengkap."
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Diharapkan:** Pemasang mendeteksi engine home yang sudah ada, melakukan fast-forward alih-alih menginstal ulang atau menduplikasi; kode keluar 0.
+**Diharapkan:** Pemasang mendeteksi engine home yang sudah ada, melakukan checkout tag rilis di dalamnya alih-alih menginstal ulang atau menduplikasi; kode keluar 0.
 
 ### 3.2 Prasyarat Diperiksa
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

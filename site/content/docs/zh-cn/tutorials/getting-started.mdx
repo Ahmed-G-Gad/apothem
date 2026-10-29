@@ -2,7 +2,7 @@
 title: "入门：从零到一个可用的工具"
 description: "从一台空白机器到一份已物化、已验证的工具配置的端到端演练。"
 machineTranslated: true
-sourceHash: "35d8b7420a9a02a8"
+sourceHash: "daa3b8225766a994"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,16 +40,25 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 安装器执行以下步骤：
 
 1. **前置条件检查。** 安装程序会找到真正的 Python 3.10+ 解释器，并确认两个运行时库（`click` 和 `rich`）可以被导入。如果缺少其中之一，它会指出缺失的库并停止，同时打印安装命令；设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 可以不经提示直接安装，因为通过管道运行时无法提示。
-2. **源码放置。** 随附的源码树会被克隆到 `~/.apothem`（可通过 `APOTHEM_HOME` 环境变量覆盖）。重新运行时会快进已有的克隆，而不是重复复制。
+2. **源码放置。** 随附的源码树会被克隆到 `~/.apothem`（可通过 `APOTHEM_HOME` 环境变量覆盖）。重新运行时会在已有的克隆中检出发布标签，而不是重复复制。
 3. **配置档案引导。** 如果你还没有配置档案，安装程序会将示例配置档案复制到 `~/.config/apothem/profile.yaml`，并在同一次运行中据此安装并验证 Claude Code，同时警告身份字段是占位内容。
 
 你可以通过环境变量来引导安装。你最可能用到的几个：
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+安装器只安装用户作用域的工具。之后再安装项目作用域的工具，并指明项目：
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 其他可识别的变量包括 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程仓库，以及检出哪个 git ref：未设置时会解析并验证最新的已签名发布标签；设置为某个标签可将其固定，设置为 `main` 则跟随会持续变动的分支（分支不是已签名的标签，因此还需要 `APOTHEM_ALLOW_UNVERIFIED=1`））、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证失败降级为警告，并允许 `main` 这类非标签 ref）、`APOTHEM_SOURCE`（使用现有的本地检出，而不是克隆），以及 `APOTHEM_SKIP_VERIFY=1`（跳过安装后的验证；我们希望运行该验证，因此请保持它未设置）。
@@ -131,7 +140,7 @@ apothem install --harness cursor --project .
 apothem verify --harness claude-code
 ```
 
-`verify` 会检查该工具预期的配置文件是否存在，并且与配置档案所声明的内容相符。一次干净的运行意味着物化成功。
+`verify` 会检查该工具受管理的配置文件是否存在并且可以解析。加上 `--profile PATH` 后，当某个已安装的文件偏离了该配置档案本应生成的内容时，它也会失败。一次干净的运行意味着物化成功。
 
 要对每个已注册的适配器进行一次全机健康检查，运行：
 
@@ -150,8 +159,8 @@ apothem doctor
 ## 接下来去哪里
 
 - **添加另一个工具。** [工具列表](/docs/harnesses)涵盖每个受支持的平台及其适配器名称。使用一个新的 `--harness` 重复第 3 步。
-- **深入某一项任务。** [操作指南](/docs/how-to)是面向任务的做法，涵盖编写规则、编写计划以及运行合规闸门。
-- **查阅具体细节。** [参考](/docs/harnesses)完整记录每个适配器、配置档案 schema 以及 CLI 表面。
+- **深入某一项任务。** [操作方案](/docs/how-to)涵盖添加工具、编辑配置档案以及驱动安装器。[使用指南](/docs/usage)涵盖编写规则、编写计划以及运行合规闸门。
+- **查阅具体细节。** [参考](/docs/reference)记录每个产物类别以及配置档案 schema，[CLI 参考](/docs/cli-reference)涵盖每条命令。每个适配器在[工具](/docs/harnesses)下都有自己的页面。
 - **规划比单个会话更长久的工作。** [可恢复的规划](/docs/concepts/resumable-planning)解释 Apothem 如何将长时间运行的工作外置到项目本地的 `.apothem/plans/` 套件中，使任何机器上的新会话都能就地恢复它。
 
 ## 推荐的下一步

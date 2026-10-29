@@ -2,13 +2,13 @@
 title: "Apothem versus konfigurasi manual Cursor"
 description: "Memelihara aturan MDC Cursor di bawah .cursor/rules/ dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "c2a9e94f668e10b1"
+sourceHash: "3ac88ae9bc4bc63a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Cursor membaca aturan dalam format MDC di bawah `.cursor/rules/`. Format MDC
 membutuhkan bidang frontmatter — `description`, `globs`, dan `alwaysApply`.
-Adapter cursor Apothem merender file `.mdc` tersebut dari profil bersama.
+Adapter cursor Apothem merender satu file aturan `.mdc` dari profil bersama.
 Halaman ini membandingkan memelihara konfigurasi itu dengan tangan terhadap
 mengelolanya dengan Apothem.
 
@@ -18,24 +18,31 @@ mengelolanya dengan Apothem.
 | ---- | --------------- | --------------- |
 | Menulis aturan | Menulis tiap file `.mdc` di bawah `.cursor/rules/` dengan tangan | Dirender dari korpus bersama |
 | Menulis frontmatter MDC | Menyusun `description` / `globs` / `alwaysApply` per file dengan tangan | Dihasilkan oleh adapter |
-| Menjaga satu format aturan | Memilih dengan tangan antara aturan MDC dan satu file `.cursorrules` | Adapter hanya menulis file MDC di `.cursor/rules/` |
+| Menjaga satu format aturan | Memilih dengan tangan antara aturan MDC dan satu file `.cursorrules` | Adapter menulis satu file MDC, `.cursor/rules/apothem-rules.mdc`, dan tidak menulis `.cursorrules` |
 | Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Berbagi skill dan command yang dapat digunakan ulang | Menyalin tiap folder skill ke `~/.agents/skills/` dengan tangan dan menjaga salinannya tetap mutakhir | Ditulis ke `~/.agents/skills/` oleh adapter, satu salinan untuk semua proyek, dan disegarkan pada `apothem update` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness cursor --project <path>` |
 
 ## Apa yang dikelola Apothem
 
-Adapter cursor merender aturan bersama menjadi file `.mdc` di bawah
-`.cursor/rules/`, menghasilkan frontmatter MDC yang diperlukan (`description`,
-`globs`, `alwaysApply`) untuk tiap file. Adapter hanya menulis format MDC
+Adapter cursor merender aturan bersama menjadi satu file `.mdc`,
+`<project>/.cursor/rules/apothem-rules.mdc`, menghasilkan frontmatter MDC yang
+diperlukan (`description`, `globs`, `alwaysApply`). Adapter hanya menulis format MDC
 berbasis direktori yang dibaca Cursor; ia tidak menulis satu file `.cursorrules`.
-Cursor tidak memiliki hook PreToolUse, sehingga maksud pagar pengaman berada di
-dalam prosa aturan.
+Adapter juga menulis skill, dan command yang dibungkus sebagai skill, ke
+`~/.agents/skills/`, serta aturan dan templat yang dirujuk skill tersebut ke
+`~/.config/apothem/`, keduanya di direktori home Anda.
+Cursor mendokumentasikan hook dalam file `hooks.json` dan melalui format plugin-nya.
+Adapter tidak membangun plugin; ia menambahkan satu entri `sessionStart` ke
+`.cursor/hooks.json` milik proyek, yang memuat bootstrap sesi, dan membiarkan
+entri Anda sendiri apa adanya. Adapter tidak mendaftarkan penjaga pemanggilan
+alat, sehingga maksud pagar pengaman berada di dalam prosa aturan.
 
 ## Jalur migrasi
 
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
 2. Pindahkan aturan dari `.cursor/rules/` yang sudah ada (dan `.cursorrules` apa pun) ke korpus bersama.
-3. Jalankan `apothem install --harness cursor --project <path>` untuk merender berkas `.mdc` dengan frontmatter MDC yang benar.
+3. Jalankan `apothem install --harness cursor --project <path>` untuk merender `apothem-rules.mdc` dengan frontmatter MDC yang benar.
 4. Jalankan `apothem verify --harness cursor --project <path>` untuk memastikan konfigurasi sudah terpasang.
 5. Gunakan `apothem update --harness cursor --project <path>` untuk setiap perubahan berikutnya.
 

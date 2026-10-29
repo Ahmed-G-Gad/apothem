@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adapter harness Apothem untuk Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,6 +59,17 @@ daftar-izin `tools` Gemini yang berisi nama-nama alat Gemini, dan `maxTurns`
 menjadi `max_turns`. Karena itu, helper read-only tidak mendapat alat
 `write_file` maupun `replace`. Tidak ada model yang disetel, sehingga setiap
 helper mewarisi model sesi.
+
+Helper yang dicantumkan oleh kunci `agent_mcp_servers` milik profil juga
+mendapat satu entri `mcp_<server>_*` per server yang disebutkan di daftar-izin
+`tools`-nya, sehingga helper itu dapat memanggil alat server tersebut dan tidak
+ada server lain; tanpa kunci itu setiap helper mempertahankan daftar-izin biasa
+(lihat
+[Server MCP](/docs/reference/mcp#memberi-pembantu-akses-ke-server-mcp)). Apothem
+menulis izin di sini hanya untuk nama server yang terdiri dari huruf, angka, dan
+`-`, karena `Gemini CLI` tidak dapat merujuk nama yang mengandung garis bawah;
+nama lain apa pun dilewati dan dilaporkan, demikian pula izin untuk helper yang
+sudah menjangkau setiap server MCP.
 
 ## Catatan kompatibilitas
 

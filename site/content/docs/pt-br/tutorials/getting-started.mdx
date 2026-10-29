@@ -2,7 +2,7 @@
 title: "Primeiros passos: do zero a um harness funcional"
 description: "Um passo a passo de ponta a ponta, de uma máquina vazia até uma configuração de harness materializada e verificada."
 machineTranslated: true
-sourceHash: "35d8b7420a9a02a8"
+sourceHash: "daa3b8225766a994"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,17 +50,27 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 O instalador executa estas etapas:
 
 1. **Verificação de pré-requisitos.** O instalador encontra um interpretador Python 3.10+ real e confirma que as duas bibliotecas de runtime (`click` e `rich`) são importáveis. Se uma estiver faltando, ele a nomeia, para e imprime o comando de instalação; defina `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sem pedir confirmação, já que uma execução por pipe não pode perguntar.
-2. **Posicionamento do código-fonte.** A árvore empacotada é clonada em `~/.apothem` (substitua esse local pela variável de ambiente `APOTHEM_HOME`). Uma nova execução faz fast-forward do clone existente, em vez de duplicá-lo.
+2. **Posicionamento do código-fonte.** A árvore empacotada é clonada em `~/.apothem` (substitua esse local pela variável de ambiente `APOTHEM_HOME`). Uma nova execução faz checkout da tag de lançamento no clone existente, em vez de duplicá-lo.
 3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para `~/.config/apothem/profile.yaml`, instala e verifica o Claude Code a partir dele na mesma execução, e avisa que os campos de identidade são marcadores de posição.
 
 Você pode orientar a instalação com variáveis de ambiente. As que você
 provavelmente mais usará:
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+O instalador instala apenas harnesses de escopo de usuário. Instale depois um
+harness de escopo de projeto, indicando o projeto:
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto clonar e qual ref do git fazer checkout; sem definir, resolve e verifica a tag de lançamento assinada mais recente; defina uma tag para fixá-la, ou `main` para a branch móvel, que também exige `APOTHEM_ALLOW_UNVERIFIED=1`, pois uma branch não é uma tag assinada), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa uma falha na verificação da assinatura da tag para um aviso e permite uma ref que não seja tag, como `main`), `APOTHEM_SOURCE` (usa um checkout local existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (pula a verificação pós-instalação, que queremos executar, então deixe-a sem definir).
@@ -159,9 +169,10 @@ gravada corretamente:
 apothem verify --harness claude-code
 ```
 
-`verify` checa se os arquivos de configuração esperados do harness existem e
-correspondem ao que o perfil declara. Uma execução limpa significa que a
-materialização foi bem-sucedida.
+`verify` checa se os arquivos de configuração gerenciados do harness existem e
+podem ser analisados. Adicione `--profile PATH` e ele também falha quando um
+arquivo instalado divergiu do que esse perfil produziria. Uma execução limpa
+significa que a materialização foi bem-sucedida.
 
 Para uma verificação de saúde da máquina inteira, abrangendo todos os
 adaptadores registrados, execute:
@@ -196,11 +207,14 @@ harness.
 - **Adicione outra ferramenta.** A [lista de harnesses](/docs/harnesses) cobre
   todas as plataformas suportadas e o nome de adaptador de cada uma. Repita a
   Etapa 3 com um novo `--harness`.
-- **Aprofunde-se em uma única tarefa.** Os [guias práticos](/docs/how-to) são
-  receitas focadas em tarefas para escrever regras, criar planos e executar o
+- **Aprofunde-se em uma única tarefa.** As [receitas práticas](/docs/how-to)
+  cobrem adicionar um harness, editar o perfil e conduzir o instalador. Os
+  [guias de uso](/docs/usage) cobrem escrever regras, criar planos e executar o
   conformity gate.
-- **Consulte detalhes específicos.** A [referência](/docs/harnesses) documenta
-  por completo cada adaptador, o schema do perfil e a superfície da CLI.
+- **Consulte detalhes específicos.** A [referência](/docs/reference) documenta
+  cada classe de artefato e o schema do perfil, e a
+  [referência da CLI](/docs/cli-reference) cobre todos os comandos. Cada
+  adaptador tem sua própria página em [harnesses](/docs/harnesses).
 - **Planeje trabalho que dura além de uma sessão.** O [planejamento retomável](/docs/concepts/resumable-planning)
   explica como o Apothem externaliza o trabalho de longa duração para uma suíte
   `.apothem/plans/` local do projeto, de modo que uma nova sessão em qualquer

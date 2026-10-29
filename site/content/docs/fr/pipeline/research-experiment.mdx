@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Exécute l'étude conçue et capture les données brutes avec une traçabilité complète, ainsi qu'un manifeste de reproductibilité (environnement, graine, protocole, versions épinglées)."
 machineTranslated: true
-sourceHash: "669b49f8909599c4"
+sourceHash: "83b92abde30e8dc0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Avec arguments :
 
 ## Sorties
 
-`_outputs/experiment-log.md` (la trace horodatée du protocole), les données brutes à un emplacement naturel pour l'hôte, et `_outputs/reproducibility-manifest.md` (environnement, graine, protocole, versions épinglées).
+`_outputs/experiment-log.md` (la trace horodatée du protocole, plus le dossier de clôture d'une campagne autonome), les données brutes à un emplacement naturel pour l'hôte, et `_outputs/reproducibility-manifest.md` (environnement, graine, protocole, versions épinglées).
 
 ## En aval
 
@@ -48,7 +48,9 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 ## Seuil de rigueur
 
-L'exécution lance une passe pilote pour calibrer les budgets et les plages, puis la comparaison complète sous un plan d'utilisation de calcul déclaré (allocation de cœurs, plafonds de mémoire, parallélisation sûre des répétitions indépendantes). Chaque méthode stochastique exécute son régime de répétitions préenregistré avec des graines consignées et un matériel journalisé. Une boucle d'expérimentation autonome, optionnelle et désactivée par défaut, est disponible : face à un harnais figé, elle propose une modification à une seule cible mutable, l'exécute au budget fixé, ne la conserve que si elle bat le titulaire, et journalise chaque essai.
+L'exécution lance une passe pilote pour calibrer les budgets et les plages, puis la comparaison complète sous un plan d'utilisation de calcul déclaré (allocation de cœurs, plafonds de mémoire, parallélisation sûre des répétitions indépendantes). Chaque méthode stochastique exécute son régime de répétitions préenregistré avec des graines consignées et un matériel journalisé. Une boucle d'expérimentation autonome, optionnelle et désactivée par défaut, est disponible. Face à un harnais figé, elle propose une modification à une seule cible mutable, énonce une prédiction réfutable avant chaque exécution, et l'exécute au budget fixé. La métrique principale est lue dans le journal d'exécution sous forme de deux signaux : un signal de recherche qui oriente la boucle, et un signal d'admission issu d'un ensemble disjoint, qui confirme ou rejette une modification avant qu'elle ne soit conservée : la modification doit franchir l'étape de recherche, puis battre le titulaire à l'admission de plus que la marge de bruit énoncée (ou l'égaler tout en réduisant la complexité). Chaque essai est journalisé et chaque requête d'admission est comptée et divulguée.
+
+Un ensemble final intact est évalué une seule fois, à la clôture. Une campagne qui n'en a pas étiquette son résultat comme contaminé par la sélection et exploratoire, et tout chiffre rapporté par la campagne est remesuré selon le régime de répétitions ci-dessus. L'opérateur confirme une seule fois la cible, le harnais, la métrique, les ensembles d'évaluation, la règle d'acceptation, le budget et l'espace de travail, et peut fixer des critères d'arrêt ; à l'arrêt, le dossier de clôture (nombres d'essais, de conservations, de rejets, de plantages et de requêtes d'admission, le gain par rapport à la référence, et le résultat sur l'ensemble intact) est versé au journal de l'expérience afin que l'étape d'analyse puisse classer le résultat sélectionné par la boucle.
 
 ## Modes de défaillance
 
@@ -57,6 +59,7 @@ L'exécution lance une passe pilote pour calibrer les budgets et les plages, pui
 | Blocked: run /research-design first | Aucune conception d'étude | Exécuter `/research-design` pour produire `_inputs/study-design.md` |
 | Exécution non reproductible | Enregistrement de la graine / de l'environnement manquant | Consigner le manifeste de reproductibilité complet avant de continuer |
 | Écart de protocole non documenté | Changement en cours d'exécution non consigné | Consigner l'écart dans le journal de l'expérience ; le divulguer lors de l'analyse |
+| Résultat de la boucle présenté comme confirmatoire | La boucle s'est orientée sur son ensemble d'admission, ou aucun ensemble intact n'a été lu à la clôture | Étiqueter le résultat comme contaminé par la sélection et exploratoire ; le signal de recherche oriente, le signal d'admission décide, et l'ensemble intact est lu une seule fois |
 
 ## Exemples
 

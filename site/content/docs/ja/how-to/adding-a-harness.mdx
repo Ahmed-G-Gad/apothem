@@ -2,7 +2,7 @@
 title: "ハーネスを追加する"
 description: "ハーネスアダプターを有効化し、そのネイティブ構成を共有プロファイルから生成します。"
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,7 +46,7 @@ sourceHash: "86a3b203d53e58ea"
 3. ファイルを書き込まずにインストールをプレビューします:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. ハーネスをインストールします。ユーザースコープのハーネスの場合:
@@ -69,7 +69,7 @@ sourceHash: "86a3b203d53e58ea"
 ## 検証
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 `✓ <harness-id> is verified` という行は、管理対象のターゲットが存在し、

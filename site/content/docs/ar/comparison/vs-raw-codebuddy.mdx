@@ -2,7 +2,7 @@
 title: "Apothem مقابل قواعد CodeBuddy الخام"
 description: "لماذا تُمرَّر قواعد مشروع CodeBuddy عبر Apothem بدلًا من تأليف ملفات .codebuddy/rules يدويًا لكل مشروع."
 machineTranslated: true
-sourceHash: "54d7b1eeaef0f675"
+sourceHash: "d697b70fa109d91a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ sourceHash: "54d7b1eeaef0f675"
 | إبقاء القواعد متوائمة عبر أُطُر العمل | إعادة اشتقاقها لكل أداة | تُسقَط تلقائيًا |
 | تحديث القواعد | تحرير كل مشروع يدويًا | <bdi>`apothem update --harness codebuddy --project <path>`</bdi> |
 | إزالة التهيئة | حذف يدوي | <bdi>`apothem uninstall`</bdi> مع نسخة احتياطية موسومة بالوقت |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى <bdi>`~/.codebuddy/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوّل في <bdi>`~/.codebuddy/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
 
 ## ما الذي يديره Apothem
 
-يُولّد محوّل <bdi>codebuddy</bdi> القواعد المشتركة في ملف مخصّص هو <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi>، ولا يكتب شيئًا غيره. أما ملف ذاكرتك <bdi>`CODEBUDDY.md`</bdi>، وأذوناتك وخوادم <bdi>MCP</bdi> في <bdi>`.codebuddy/settings.json`</bdi>، وأي ملفات قواعد أخرى تؤلّفها، فتبقى كلها ملكًا كاملًا للمشغِّل؛ يتعرّف المحوّل على تلك الأسطح لكنه لا يحرّرها أبدًا. ويُعاد توليد الملف عند كل <bdi>`apothem update`</bdi> تالٍ بعد أي تغيير في القواعد المشتركة.
+يُولّد محوّل <bdi>codebuddy</bdi> القواعد المشتركة في ملف مخصّص هو <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi>. ويكتب أيضًا مجلدين في دليلك المنزلي تتشاركهما كل المشاريع: تذهب المهارات، والأوامر المغلَّفة بوصفها مهارات، إلى <bdi>`~/.codebuddy/skills/`</bdi>، وتذهب القواعد والقوالب التي تستشهد بها تلك المهارات إلى <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi>. أما ملف ذاكرتك <bdi>`CODEBUDDY.md`</bdi>، وأذوناتك وخوادم <bdi>MCP</bdi> في <bdi>`.codebuddy/settings.json`</bdi>، وأي ملفات قواعد أخرى تؤلّفها، فتبقى كلها ملكًا كاملًا للمشغِّل؛ يتعرّف المحوّل على تلك الأسطح لكنه لا يحرّرها أبدًا. ويُعاد توليد ملف القواعد عند كل <bdi>`apothem update`</bdi> تالٍ بعد أي تغيير في القواعد المشتركة.
 
 ## مسار الترحيل
 

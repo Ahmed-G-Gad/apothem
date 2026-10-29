@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "مرجع واجهة سطر الأوامر لأمر apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,6 +35,48 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 الأخير في ذلك الجذر، ينسخ الأمر كل مخزن أولًا إلى جذر النسخ الاحتياطي الخاص بـ
 <bdi>Apothem</bdi> (<bdi>`~/.apothem/backups/`</bdi>)، ثم يزيله بكل ما فيه. وأي شيء
 تحتفظ به في <bdi>`plans/`</bdi> لا يُزال أبدًا.
+
+## المجلّدات المشتركة في دليلك المنزلي
+
+يمكن لعدّة تثبيتات أن تستخدم مجلّدًا واحدًا في دليلك المنزلي: مجلّد المهارات
+(<bdi>`~/.agents/skills/`</bdi>، أو <bdi>`~/.codebuddy/skills/`</bdi>، أو <bdi>`~/.kiro/skills/`</bdi>، أو
+<bdi>`~/.trae/skills/`</bdi>) و<bdi>`~/.config/apothem/rules/`</bdi> و
+<bdi>`~/.config/apothem/templates/`</bdi>. وتسرد صفحة [التثبيت](/docs/cli-reference/install#المجلّدات-في-دليلك-المنزلي)
+أيّ محوّل يكتب أيّها. ويسجّل <bdi>Apothem</bdi> التثبيتات التي تستخدم كل مجلّد،
+ويتبع إلغاء التثبيت قاعدة واحدة: لا يُزيل مجلّدًا إلا حين لا يعود أي تثبيت آخر لـ
+<bdi>Apothem</bdi> يستخدمه.
+
+- يُبقي إلغاء تثبيت أداة واحدة المهاراتِ ما دام تثبيت آخر يستخدمها، ويقول ذلك.
+  وتُعَدّ الأداة الواحدة المثبّتة في مشروعين تثبيتين، لذا فإن إلغاء تثبيتها من المشروع
+  A يُبقي المجلّدات ما دام المشروع B يستخدمها. وآخر إلغاء تثبيت يُزيلها (انظر المثال
+  الثاني أدناه).
+- لا يُزال إلا ما يسرده سجلّ التثبيت الخاص. والتثبيت الذي جرى قبل أن تصبح المجلّدات
+  مُدارة ليس له مثل هذا السجلّ، لذا فإن إلغاء تثبيته لا يُزيل شيئًا من دليلك المنزلي.
+  وتبقى الملفات التي أضفتها إلى المجلّدات، وكذلك المجلّد الذي يحمل اسم مهارة من
+  <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>.
+- يُتجاهَل التثبيت الذي لم يعد مجلّد مشروعه موجودًا، فلا يُبقي مشروعٌ محذوف المجلّداتِ
+  إلى الأبد. وتسمّيه الملاحظة.
+- إذا تعذّرت قراءة سجلّ تثبيتٍ يمكن أن يستخدم المجلّدات، يتوقّف إلغاء التثبيت مع خطأ
+  قبل أن يُزيل أي شيء، ويبقى التثبيت مُسجَّلًا. أصلِح السجلّ غير المقروء أو انقله، ثم
+  شغّل الأمر مجدّدًا. أما السجلّ التالف لأداة لا تكتب هذه المجلّدات أبدًا فيُتجاهَل.
+- حين يذهب آخر استخدام، تُزال أيضًا المجلّدات التي تبقى فارغة. ويُنسَخ كل مجلّد
+  احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل إزالته.
+
+يطبع كل إلغاء تثبيت ملاحظة <bdi>`Note:`</bdi> واحدة لكل مجلّد، مثل <bdi>`Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`</bdi>، أو
+<bdi>`was removed: no other Apothem install uses it`</bdi>. وفي غلاف <bdi>`--format json`</bdi> تكون كل
+ملاحظة مُدخَلًا في <bdi>`warnings`</bdi> يحمل <bdi>`"outcome": "advisory"`</bdi>،
+و<bdi>`"operation": "shared_root"`</bdi>، و<bdi>`"role"`</bdi> مضبوطًا على <bdi>`retained`</bdi> أو <bdi>`released`</bdi>. وهو
+يحمل <bdi>`path`</bdi>، و<bdi>`holders`</bdi> (التثبيتات التي تُبقي المجلّد)، و<bdi>`stale`</bdi> (التثبيتات
+المُتجاهَلة)، و<bdi>`kept`</bdi> و<bdi>`total`</bdi> (المُدخلات المُسجَّلة التي أُبقيت والمُدخلات التي سردها
+التثبيت).
+
+إذا بقي مجلّد بسبب تثبيت لا تستطيع العثور عليه، فإن الملاحظة تسمّيه. وحين يكون مجلّد
+المشروع قد حُذف، يُتجاهَل التثبيت ويذهب المجلّد مع إلغاء التثبيت التالي. وحين يكون
+المشروع موجودًا لكنك أزلت كتلة <bdi>Apothem</bdi> من ملف قواعده يدويًا، يُبلغ
+<bdi>`uninstall`</bdi> عن إطار العمل بأنه غير مثبّت ولا يتخلّى عن مطالبته؛ شغّل
+<bdi>`install`</bdi> لإطار العمل ذاك والمشروع ذاك، ثم <bdi>`uninstall`</bdi>، للتخلّي عنها.
+ويُظهر <bdi>`apothem verify`</bdi> ما إذا كان المجلّد لا يزال مكتملًا.
 
 الإزالة بـ <bdi>`--harness all`</bdi> شاملة عمدًا: تغطّي كل إطار عمل مُسجَّل، بما في ذلك أي إطار عمل
 يتخطّاه <bdi>`exclude_harnesses`</bdi> في الملف التعريفي أثناء التثبيت، فيصل التنظيف إلى حالة ربما
@@ -96,6 +138,15 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+يبقى مجلّد المهارات المشترك حتى يذهب آخر تثبيت يستخدمه:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## رموز الخروج

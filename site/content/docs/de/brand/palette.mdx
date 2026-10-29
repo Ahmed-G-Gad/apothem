@@ -2,7 +2,7 @@
 title: "Markenpalette"
 description: "Apothem-Kernmarkenfarben und die fünfzehn Harness-Markenfarben, die auf der Seite „Harness-Farben“ definiert sind. Die einzige Quelle der Wahrheit für die Kernfarben sind die kanonischen Design-Tokens in assets/design-tokens.css; die Website spiegelt diese Werte."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,14 @@ semantischen Farbtöne — gehört zu den Design-Tokens in
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (und ihrem Spiegel `assets/design-tokens.json`). Das Website-Theme in
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-spiegelt diese Token-Werte in die CSS-Variablen, die das Fumadocs-Theme konsumiert. Jeder
-Wert unten ist ein Schritt der Slate- oder Emerald-Rampe in diesen Design-Tokens; ein Schrittname wie slate-600 bezeichnet den Wert dieser Rampe.
+gibt die semantischen Token-Werte als OKLCH in den CSS-Variablen wieder, die das Fumadocs-Theme
+konsumiert: Die Variablen für Seitenhintergrund, Text, Primärfarbe, Rahmen und Fokusring lösen
+sich in die exakten Token-Schritte auf (die Prüfung `lib/theme-tokens.test.mjs` bindet die
+Variablen für Hintergrund, Vordergrund, Primärfarbe und Ring an sie). Die in derselben Datei
+deklarierten Rampen `apothem-*`, `polygon-*` und `field-*` sind abgeleitete Näherungen der
+Token-Rampen, keine Kopien, und nicht Teil der Spezifikation. Jeder Wert unten ist ein Schritt
+der Slate- oder Emerald-Rampe in den Design-Tokens; ein Schrittname wie slate-600 bezeichnet den
+Wert dieser Rampe.
 
 | Rolle | Token (CSS) | Heller Modus | Dunkler Modus | Verwendung |
 |---|---|---|---|---|

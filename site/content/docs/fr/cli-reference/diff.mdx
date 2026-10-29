@@ -2,7 +2,7 @@
 title: "diff"
 description: "Référence de la CLI pour la commande apothem diff."
 machineTranslated: true
-sourceHash: "c72e575434a36191"
+sourceHash: "c04c91f0e63a082f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,6 +38,11 @@ magasins de données partagés sous `.apothem/`. Juste après une installation,
 `diff` ne signale aucun changement en attente ; une réinstallation n'écrit alors
 rien et ne crée aucune nouvelle sauvegarde. `install --dry-run` affiche le même
 plan.
+
+Pour les adaptateurs qui écrivent des skills dans votre répertoire personnel, le
+plan liste ces dossiers avec leurs chemins dans le répertoire personnel, avant
+les fichiers du projet, et un dossier de skill qu'Apothem n'a pas écrit apparaît
+sous la forme d'un avertissement `skill_conflict`.
 
 Pour les cibles détenues par l'opérateur — des fichiers qui portent à la fois
 votre propre contenu et un bloc géré par Apothem — le diff montre les lignes

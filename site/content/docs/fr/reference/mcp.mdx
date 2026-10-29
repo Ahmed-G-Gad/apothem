@@ -2,7 +2,7 @@
 title: "Serveurs MCP"
 description: "Configuration des serveurs Model Context Protocol — propriété de l'opérateur et enregistrés via le mécanisme MCP natif de chaque outil ; quelques adaptateurs projettent l'inventaire MCP du profil partagé, les autres n'écrivent aucune entrée de serveur."
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,72 @@ serveurs s'enregistrent avec `claude mcp add` dans `~/.claude.json` (portée
 utilisateur ou locale) et dans un `.mcp.json` au niveau du projet ; l'adaptateur
 Claude Code n'écrit aucun de ces deux fichiers, et les paramètres Claude Code
 gérés par Apothem ne portent jamais de bloc `mcpServers`.
+
+## Donner à un auxiliaire l'accès aux serveurs MCP
+
+Les agents de recherche en lecture seule (`research-scout`, `citation-auditor`)
+sont livrés avec une liste `tools` explicite composée de
+`Read, Glob, Grep, WebSearch, WebFetch`. Claude Code n'admet un outil MCP dans
+la liste explicite d'un sous-agent que lorsqu'une entrée nomme le serveur, sous
+la forme `mcp__<server>__*`. La clé `agent_mcp_servers` du profil nomme ces
+serveurs par agent :
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+L'installation de Claude Code ajoute une entrée `mcp__<server>__*` par serveur
+nommé à la ligne `tools` de chaque agent listé, et ne modifie aucun autre agent
+ni aucune autre ligne. Sans la clé, chaque agent conserve la liste simple, de
+sorte qu'aucun agent n'atteint un outil MCP. Écrivez chaque nom de serveur tel
+que `/mcp` l'affiche. Claude Code écrit `:` et `.` sous la forme `_` dans les
+noms d'outils, de sorte que l'installation rend le serveur
+`plugin:bio-research:biorxiv` sous la forme
+`mcp__plugin_bio-research_biorxiv__*`. Un nom contient des lettres, des
+chiffres, `-`, `_`, `:` et `.`, commence et se termine par une lettre ou un
+chiffre, et ne contient jamais deux caractères parmi `_`, `:` et `.` à la suite
+(l'entrée rendue contiendrait un `__`) ; `*`, les espaces et tout autre
+caractère sont rejetés.
+Un octroi nomme chaque outil de ce serveur, y compris ceux qui écrivent,
+n'octroyez donc qu'un serveur auquel vous faites confiance pour des recherches ;
+les instructions des agents les limitent aux recherches, mais l'environnement
+n'applique que les noms que vous listez. Un octroi pour un agent qui n'existe
+pas, ou pour un agent sans liste `tools` explicite, est signalé et ignoré. Une
+surcharge par environnement sous `harnesses.claude-code` s'ajoute aux listes
+partagées.
+
+L'octroi s'applique à l'installation par le moteur (`apothem install`) sur
+`Claude Code` et sur `Gemini CLI`. Sur `Gemini CLI`, l'installation ajoute une
+entrée `mcp_<server>_*` par serveur nommé à la liste d'autorisation `tools` de
+l'agent listé, par exemple `mcp_your-scholarly-server_*`, et ne modifie aucun
+autre agent ni aucune autre ligne. `Gemini CLI` nomme chaque outil MCP
+`mcp_{serverName}_{toolName}` et lit le serveur dans le texte jusqu'au premier
+trait de soulignement après `mcp_`, de sorte qu'un nom de serveur contenant un
+trait de soulignement ne peut pas y être adressé. Apothem n'écrit un octroi
+`Gemini CLI` que pour un nom composé de lettres, de chiffres et de `-` : un nom
+contenant un trait de soulignement, un deux-points ou un point est valide pour
+`Claude Code` mais est ignoré pour `Gemini CLI` et signalé, jamais réécrit en
+un autre nom. Un agent qui atteint déjà chaque serveur MCP (pas de liste
+`tools`, ou une liste qui contient `mcp_*`) est laissé inchangé et signalé.
+`Gemini CLI` n'a pas de liste de refus, de sorte qu'un serveur que nomme le
+propre `disallowedTools` de l'agent ne reçoit aucune entrée et est signalé : le
+refus l'emporte, comme sur `Claude Code`. L'octroi Gemini lit les listes
+partagées `agent_mcp_servers` et la surcharge `harnesses.gemini-cli`, pas celle
+de `harnesses.claude-code`. Les autres environnements ignorent la clé :
+`Qwen Code` ne documente aucune entrée par serveur pour `tools` ; `OpenCode`
+contrôle les outils par des permissions ; `Codex` et `Antigravity` n'émettent
+aucune liste d'outils.
+
+Le plugin Claude Code est assemblé sans profil, de sorte que ses deux agents
+conservent la liste simple. Pour leur donner accès à des connecteurs sans
+modifier les fichiers du plugin, définissez votre propre agent de niveau
+utilisateur dans `~/.claude/agents/`, sous un nom de votre choix, qui porte la
+même liste `tools` en lecture seule plus les entrées `mcp__<server>__*` que
+vous souhaitez.
 
 ## Ajouter un serveur
 

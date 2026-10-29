@@ -2,11 +2,12 @@
 title: "Apothem مقابل تهيئة Windsurf الخام"
 description: "صيانة قواعد Windsurf يدويًا ضمن .devin/rules/ مقابل رسمها من ملف تعريف apothem المشترك."
 machineTranslated: true
-sourceHash: "e3bc9da3b1b1af38"
+sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يقرأ <bdi>Windsurf</bdi> القواعد من مجلد `.devin/rules/`. يرسم محوِّل
+أصبح <bdi>Windsurf</bdi> الآن <bdi>Devin Desktop</bdi>، ويقرأ القواعد من مجلد `.devin/rules/`
+(الموقع المفضَّل، الذي يتقدّم على الموقع الاحتياطي `.windsurf/rules/`). يرسم محوِّل
 <bdi>windsurf</bdi> في <bdi>Apothem</bdi> القواعد المعتمدة على المجلد من الملف التعريفي المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
 <bdi>apothem</bdi>.
 
@@ -17,15 +18,21 @@ sourceHash: "e3bc9da3b1b1af38"
 | تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مُصيَّرة من الحزمة المشتركة |
 | الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين `.windsurf/rules/` وملف `.windsurfrules` المفرد | يكتب المحوِّل `.devin/rules/` فقط |
 | إبقاء القواعد متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى `~/.agents/skills/` وإبقاء النسخ محدَّثة | يكتبها المحوِّل في `~/.agents/skills/`، نسخة واحدة لكل المشاريع، ويُحدِّثها عند `apothem update` |
+| إبقاء المساعِدات القابلة لإعادة الاستخدام متزامنة | كتابة كل ملف وكيل فرعي لـ <bdi>Devin Local</bdi> يدويًا ضمن `.devin/agents/` وتتبّع أسماء أدوات <bdi>Devin</bdi> | أحد عشر مساعِدًا تُكتب في `.devin/agents/` مع ترجمة أدواتها، وتُحدَّث عند `apothem update` |
 | التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf --project <path>` |
 
 ## ما الذي يديره apothem
 
-يرسم محوِّل <bdi>windsurf</bdi> القواعد المشتركة في مجلد `.devin/rules/`؛ وهو
-لا يكتب ملف `.windsurfrules` مفردًا. لا يملك <bdi>Windsurf</bdi> خطّاف
-<bdi>PreToolUse</bdi>، لذا يعيش قصد المتراس في نثر القاعدة لا في نقطة اعتراض
-لاستدعاء الأداة. كل تغيير في القواعد المشتركة يعيد رسم المجلد عند
-`apothem update` التالي.
+يرسم محوِّل <bdi>windsurf</bdi> القواعد المشتركة في ملف واحد،
+`<project>/.devin/rules/apothem-rules.md`؛ وهو لا يكتب ملف `.windsurfrules` مفردًا.
+ويكتب أيضًا أحد عشر من مساعِدات <bdi>Apothem</bdi> بوصفها وكلاء فرعيين لـ <bdi>Devin Local</bdi>
+في `<project>/.devin/agents/`؛ أما الثلاثة التي تحتاج إلى أدوات الويب فتنتظر إلى أن يوثّق
+<bdi>Devin</bdi> أسماء أدواتها. ويسجّل خطّافين لـ <bdi>Devin Local</bdi>، تمهيدًا للجلسة وتنبيهًا
+استشاريًا لحجم السياق، في `<project>/.devin/config.local.json`؛ أما وضع <bdi>Cascade</bdi>
+الأقدم فيقرأ صيغة خطّافات مختلفة (`hooks.json`) لا يكتبها المحوِّل. ولا يسجّل أيّ حارس
+لاستدعاءات الأدوات، لذا يعيش قصد المتراس في نثر القاعدة لا في نقطة اعتراض لاستدعاء الأداة.
+كل تغيير في القواعد المشتركة يعيد رسم الملف عند `apothem update` التالي.
 
 ## مسار الترحيل
 

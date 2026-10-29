@@ -2,7 +2,7 @@
 title: "Postura agnóstica respecto al host"
 description: "Cómo Apothem logra una postura agnóstica respecto al host a través del perfil compartido y los adaptadores de entorno."
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,8 @@ distancia única desde el núcleo hasta cada arista, idéntica en todas las dire
 es el diseño: un perfil compartido en el centro, diecisiete entornos equidistantes en el
 perímetro, cada materialización a la misma distancia de la fuente de verdad. El
 núcleo no cambia cuando cambia una arista; las aristas comparten una única relación con el
-núcleo. La deriva es estructuralmente imposible.
+núcleo. Como cada entorno procede de un único perfil, la deriva es detectable
+(`apothem status` informa de ella) y corregible (`apothem update` la vuelve a materializar).
 
 ## Garantías de portabilidad
 

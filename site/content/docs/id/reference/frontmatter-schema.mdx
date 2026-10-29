@@ -2,7 +2,7 @@
 title: "Skema Frontmatter"
 description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Pada berkas keluarga Markdown, frontmatter adalah konten pertama berkas, dan baris header SPDX kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) mengikuti `---` penutup.
 
-Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber (instalasi Claude Code mengganti namanya menjadi `user-invocable`). Kunci aturan dan pekerja terdelegasi menggunakan camelCase, sebagaimana tercantum dalam tabel kunci wajib di bagian 2. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter YAML penting lainnya diberi tanda kutip.
+Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber (instalasi Claude Code mengganti namanya menjadi `user-invocable`). Instalasi Claude Code dan plugin juga memindahkan kunci khusus Apothem (`version`, `updated`, `archetype`, `portability`) dari sebuah skill atau command ke bawah peta `metadata:` di bagian akhir yang berisi string bertanda kutip, dalam urutan tetap tersebut, karena Claude Code mengabaikan kunci tingkat atas yang tidak dikenal dan standar Agent Skills menyimpan kunci tambahan di `metadata`; berkas sumber dan setiap harness lain mempertahankannya di tingkat atas, kecuali folder skill tingkat pengguna bersama (`~/.agents/skills/` serta folder `~/.codebuddy/skills/`, `~/.kiro/skills/`, dan `~/.trae/skills/`), yang melipatnya dengan cara yang sama. Kunci aturan dan pekerja terdelegasi menggunakan camelCase, sebagaimana tercantum dalam tabel kunci wajib di bagian 2. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter YAML penting lainnya diberi tanda kutip.
 
 ## 2. Field Wajib per Kelas
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (konfigurasi root) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Aturan (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Command (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Pembantu, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema mewajibkan setiap skill membawa tepat salah satu dari kedua ejaan tersebut, tidak pernah keduanya |
+| Pembantu, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (opsional: pembantu yang menghilangkannya mewarisi setiap tool; untuk memberikan server MCP kepada pembantu yang mencantumkan `tools`, sebutkan server tersebut di kunci `agent_mcp_servers` pada profil), `disallowedTools`, `maxTurns`, `effort` |
+| Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin, serta folder skill tingkat pengguna bersama, mengganti nama `userInvocable` menjadi `user-invocable`, dan skema mewajibkan setiap skill membawa tepat salah satu dari kedua ejaan tersebut, tidak pernah keduanya; instalasi `Qwen Code` menulis `allowed-tools` sebagai daftar `allowedTools`, yaitu kunci dan bentuk yang dibaca `Qwen Code` |
 | Output-style (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 
 Skema per kelas di [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).

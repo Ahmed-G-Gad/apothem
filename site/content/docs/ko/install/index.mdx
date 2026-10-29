@@ -2,7 +2,7 @@
 title: "설치"
 description: "Apothem 설치 개요 — 여덟 개의 설치 채널과 각 채널의 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 검증 단계: Claude Code 플러그인, npm 심, 원샷 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 직접 엔진."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,19 +63,20 @@ npm 심(채널 2), VS Code 계열 확장(채널 4), 명령줄 부트스트랩(�
 
 설치 후에는 Apothem 명령 세트, 번들된 위임 작업자, 스킬, 그리고 네 가지
 [출력 스타일](/docs/reference/output-styles)(`/output-style`로 또는 `/config`에서
-하나를 고릅니다)을 모든 Claude Code 세션에서 사용할 수 있습니다. 플러그인 명령에는
-플러그인의 접두사가 붙습니다: `/apothem:plan-spec`, `/apothem:security-audit` 등.
-다른 명령이 그 이름을 쓰지 않는 동안에는 Claude Code가 짧은 형식(`/plan-spec`)도
-받아들입니다. 두 이름은 Claude Code 자체가 사용합니다. `/plan`은 플랜 모드로
-들어가고 `/code-review`는 번들된 리뷰를 실행하므로, Apothem 명령을 쓰려면
-`/apothem:plan`과 `/apothem:code-review`를 입력하세요. 플러그인 대신 Apothem 엔진이
-Claude Code에 설치하는 경우, 명령은 접두사 없이 `~/.claude/skills/` 아래의 개인
-스킬이 되며, 개인 `code-review` 스킬이 번들된 `/code-review`를 대체합니다(그
-`/review` 별칭은 여전히 번들된 것을 실행합니다). 두 이름, `projectify`와
-`workflow`는 명령과 스킬 양쪽으로 제공됩니다. 둘 다 있으면 Claude Code는 스킬을
-실행하므로, 플러그인은 스킬을 실행하고 엔진 설치는 `~/.claude/skills/<name>/`에
-스킬만 쓰며 명령에서 파생한 스킬은 쓰지 않습니다. 전체 명령 카탈로그는
-[슬래시 명령](/docs/reference/commands)을 참조하세요.
+하나를 고릅니다)을 모든 Claude Code 세션에서 사용할 수 있습니다. 플러그인은 각
+명령을 스킬로 제공합니다. 스킬은 `SKILL.md`와, 필요할 때 로드하는 세부 내용을 담아
+그 옆에 두는 `references/` 폴더로 이루어지므로, Claude Code는 플러그인의 접두사를
+붙여 호출합니다: `/apothem:plan-spec`, `/apothem:security-audit` 등. 두 이름은
+Claude Code 자체가 사용합니다. `/plan`은 플랜 모드로 들어가고 `/code-review`는
+번들된 리뷰를 실행하므로, Apothem 명령을 쓰려면 `/apothem:plan`과
+`/apothem:code-review`를 입력하세요. 플러그인 대신 Apothem 엔진이 Claude Code에
+설치하는 경우, 같은 스킬이 접두사 없이 `~/.claude/skills/`에 쓰이며, 개인
+`code-review` 스킬이 번들된 `/code-review`를 대체합니다(그 `/review` 별칭은
+여전히 번들된 것을 실행합니다). 두 이름, `projectify`와 `workflow`는 네이티브
+스킬이기도 합니다. 플러그인과 엔진 설치가 제공하는 것은 네이티브 스킬이며, 명령에서
+파생한 스킬이 아닙니다. 명령이 어떻게 나뉘는지는
+[Claude Code](/docs/harnesses/claude-code#커맨드-스킬과-참조-파일)를, 전체 명령
+카탈로그는 [슬래시 명령](/docs/reference/commands)을 참조하세요.
 
 **검증:** Claude Code 내부에서 `/plugin`을 실행하여 **apothem**이 설치됨으로
 나열되는지 확인하거나, 터미널에서 드리프트 보고서를 확인하세요.
@@ -312,13 +313,19 @@ Python 3.10+.
 호스트와 하니스 slug가 들어 있습니다.
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+두 `--sparse` 경로는 저장소 전체가 아니라 마켓플레이스 목록과 플러그인만
+가져옵니다. 전체 클론은 WSL 아래의 Windows 드라이브처럼 느린 디스크에서 호스트의
+30초 클론 제한을 넘길 수 있습니다.
+
 채널 5와 채널 6의 확장과 마찬가지로 이것은 엔진으로 셸 아웃하는
-**부트스트랩**입니다. 이 플러그인을 통해 설치를 실행하여 전체 하니스를
-머티리얼라이즈하세요.
+**부트스트랩**입니다. 플러그인은 진입 스킬 하나를 번들합니다. 그 매니페스트는 루트의
+`plugin.json`이며, [플러그인 호스트의 하니스 페이지](/docs/harnesses/codex#codex-플러그인)가
+레이아웃과 플러그인이 엔진에 맡기는 작업을 설명합니다. 이 플러그인을 통해 설치를
+실행하여 전체 하니스를 머티리얼라이즈하세요.
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

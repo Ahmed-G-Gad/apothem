@@ -2,7 +2,7 @@
 title: "diff"
 description: "apothem diff 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "c72e575434a36191"
+sourceHash: "c04c91f0e63a082f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,6 +19,8 @@ apothem diff --harness NAME [--profile PATH] [--project PATH]
 `diff` 是一个只读的检查命令。它运行与 `install` 命令相同的物化过程，但处于试运行模式——不会向磁盘写入任何内容。对于每个待应用的目标，它会渲染一条通俗易懂的操作说明（例如 `Write file`、`Merge directory`、`Install skills` 或 `Prune stale files`）、目标路径、一个预览状态（`would create`、`would update`、`would remove` 或 `no change`），以及——对于将被合并的操作者自有锚点——该更改的统一差异。该状态通过将源内容与磁盘上当前的目标进行比较计算得出，因此已经一致的目标显示为 `no change`，并在默认视图中隐藏。它回答的是“`apothem install` 此刻会对这个工具做什么？”，而不实际做出更改。
 
 该计划覆盖安装所写入的每一条路径：清单条目、工具自身的配置文件（例如 `opencode.json` 或 `config.yaml`）、共享配置档案所投射到的指令锚点或配置档案文档（例如 `CLAUDE.md`），以及 `.apothem/` 下的共享数据存储。安装刚完成后，`diff` 不会报告任何待应用的更改；此时重新安装不会写入任何内容，也不会创建新的备份。`install --dry-run` 显示相同的计划。
+
+对于将技能写入你主目录的适配器，计划会在项目文件之前列出这些文件夹及其主目录路径，而并非由 Apothem 写入的技能文件夹会显示为一条 `skill_conflict` 警告。
 
 对于操作者自有的目标——同时携带你自己的内容和一个由 Apothem 管理的块的文件——差异会显示将要更改的确切行。对于其他目标，则汇总计划的操作和预览状态。
 

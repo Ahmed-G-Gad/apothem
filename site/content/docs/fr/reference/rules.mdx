@@ -2,7 +2,7 @@
 title: "Règles"
 description: "Règles comportementales toujours actives et filtrées par chemin régissant la résolution de problèmes, l'artisanat du code, l'architecture propre, la planification et la qualité à travers l'ensemble des règles comportementales."
 machineTranslated: true
-sourceHash: "84db4f5243d1ad02"
+sourceHash: "7a9aadd37c0f6b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,26 +13,11 @@ Bindings — et est soit toujours active, soit filtrée par chemin.
 
 ## Règles actives
 
-Le registre canonique est la cohorte de règles. Le même ensemble sous forme
-plate :
-
-| Règle | Portée | Implémente |
-|------|-------|------------|
-| Auto Memory | Toujours active | CM-26 |
-| Clean-Room Generation | Toujours active | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Toujours active | CM-21 |
-| Context Management | Toujours active | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Filtrée par chemin | CM-12 / CM-24 (compagnon) |
-| Conventions Vigilance | Toujours active | CM-22 |
-| Interactive Questions | Toujours active | extension de CM-2 |
-| Interactive Questions Sweep Matchers | Filtrée par chemin | extension de CM-2 (compagnon) |
-| Operational Mandates | Toujours active | CM-1–10 |
-| Worker Orchestration | Toujours active | CM-17 / CM-25 |
-| Clean Architecture | Filtrée par chemin | CM-27 |
-| Large File Generation | Filtrée par chemin | CM-23 |
-| Performance Discipline | Filtrée par chemin | Axe de performance |
-| Planning Techniques | Filtrée par chemin | CM-20 / CM-21 |
-| Python Senior Architect | Filtrée par chemin | CM-28 |
+Le registre canonique est la cohorte de règles dans `src/apothem/rules/`.
+L'[inventaire généré](#inventaire-généré-des-règles) au bas de cette page liste
+chaque règle avec sa description et son fichier source. Cinq règles sont
+toujours actives et les autres sont filtrées par chemin ; la section suivante
+nomme les cinq qui se chargent à chaque session.
 
 ## Contrat de frontmatter
 
@@ -58,22 +43,41 @@ est
 `pathFilter` et `alwaysApply` sont neutres vis-à-vis de l'environnement. Chaque
 adaptateur les traduit là où son environnement dispose d'un champ de portée
 natif. Claude Code ne lit que `paths:` dans une règle et charge au lancement
-toute règle qui en est dépourvue ; l'installation par le moteur
+toute règle qui en est dépourvue, comme il le fait pour une règle dont `paths:`
+vaut `**` seul ; l'installation par le moteur
 (`apothem install --harness claude-code`) écrit donc chaque règle filtrée par
 chemin dans `~/.claude/rules/` avec une liste `paths:` construite à partir de
-son `pathFilter`, et copie les règles toujours actives sans modification. Les 28
-règles toujours actives se chargent à chaque session ; les 63 compagnons filtrés
-par chemin se chargent lorsque l'assistant lit un fichier correspondant.
+son `pathFilter`, et écrit chaque copie de règle sans sa section Bindings
+finale. Cinq règles se chargent à chaque session : `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management` et l'index des
+règles. Les 90 autres règles sont filtrées par chemin et se chargent lorsque
+l'assistant lit un fichier correspondant. Ajouter une règle à l'ensemble
+toujours actif modifie la liste de base et le plafond d'octets dans le même
+changement.
+
+L'index des règles, `apothem-rule-index`, est l'unique fichier toujours actif
+qui nomme chaque autre règle et la situation qui l'appelle. Un environnement
+qui délimite les règles par chemin charge une règle délimitée lorsqu'un fichier
+correspondant est touché. Un environnement qui ne le fait pas n'en charge
+aucune, de sorte que l'index, la phrase du fichier d'instructions qui pointe
+vers lui, et les règles et skills qui citent une règle par son chemin sont la
+façon dont une session l'atteint. Après une compaction du contexte, une règle
+délimitée n'est plus dans le contexte, et l'index indique à l'assistant de
+relire toute règle qu'il appliquait. Claude Code ne compare un filtre de chemin
+qu'aux fichiers situés dans le répertoire de travail, de sorte que les règles
+de mémoire automatique, dont les fichiers vivent sous `~/.claude/projects/`,
+atteignent une session par l'index et non par une correspondance de chemin.
 
 OpenCode ne dispose d'aucun champ de portée par règle : il combine dans chaque
 session tous les fichiers que nomme la liste `instructions` de son
 `opencode.json`. L'installation OpenCode (`apothem install --harness opencode`)
 liste donc votre document de profil et uniquement les règles dont `alwaysApply`
-vaut `true`, à raison d'un chemin `~/.config/opencode/...` explicite par
-fichier, lu depuis les fichiers de règles au moment où la configuration est
-écrite. Chaque règle, y compris les règles filtrées par chemin, est tout de même
-installée sous `~/.config/opencode/.apothem/support/rules/`, où une règle, une
-skill ou une commande qui en cite une la lit à la demande.
+vaut `true` (les quatre règles de base et l'index des règles), à raison d'un
+chemin `~/.config/opencode/...` explicite par fichier, lu depuis les fichiers
+de règles au moment où la configuration est écrite. Chaque règle, y compris les
+règles filtrées par chemin, est tout de même installée sous
+`~/.config/opencode/.apothem/support/rules/`, où l'index la nomme et où une
+règle, une skill ou une commande qui en cite une la lit à la demande.
 
 ## Discipline de rédaction
 

@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,9 @@ apothem install --harness antigravity
 そのため、Apothem の各ルールはインストール時に変換されます。
 常に適用されるルールには `trigger: always_on` が、パスにスコープされたルールには同じパターンを `globs` に持つ `trigger: glob` が、それ以外のルールには `trigger: model_decision` が付与されます。
 すべてのルールは自身の `description` を保持します。
-Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きいルールをオンデマンドのポインターに変えます。
+5 つのルールが常に適用されます：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`、そしてルールインデックスの `apothem-rule-index` で、インデックスは他のすべてのルールとそれをいつ読むべきかを名指しします。
+その他のルールは `trigger: glob` を持ちます。
+Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きいルールをオンデマンドのポインターに変えます。5 つのルールは合計で約 11,000 トークンなので、どれもポインターには変えられません。
 
 **プラグインマニフェスト。** `plugin.json` は、Antigravity のプラグインスキーマが認める 2 つのキーである `name` と `description` のみを持ちます。
 

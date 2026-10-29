@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adapter harness Apothem untuk Antigravity (Pratinjau)."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,9 +41,14 @@ sehingga setiap aturan Apothem dikonversi saat instalasi. Aturan yang selalu
 berlaku mendapat `trigger: always_on`; aturan yang dibatasi pada jalur tertentu
 mendapat `trigger: glob` dengan pola yang sama di `globs`; aturan lainnya
 mendapat `trigger: model_decision`. Setiap aturan mempertahankan `description`
-miliknya. Antigravity membagi satu anggaran 20.000 token di antara aturan
-always-on dan, begitu anggaran itu terlampaui, mengubah aturan yang terbesar
-menjadi penunjuk sesuai permintaan.
+miliknya. Lima aturan selalu berlaku: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, dan indeks aturan
+`apothem-rule-index`, yang menyebutkan setiap aturan lain dan kapan aturan itu
+perlu dibaca. Aturan lainnya membawa `trigger: glob`. Antigravity membagi satu
+anggaran 20.000 token di antara aturan always-on dan, begitu anggaran itu
+terlampaui, mengubah aturan yang terbesar menjadi penunjuk sesuai permintaan;
+kelima aturan tersebut berjumlah sekitar 11.000 token, sehingga tidak ada yang
+diubah menjadi penunjuk.
 
 **Manifest plugin.** `plugin.json` hanya membawa `name` dan `description`, dua
 kunci yang diterima oleh skema plugin Antigravity.

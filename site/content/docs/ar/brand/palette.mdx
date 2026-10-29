@@ -2,7 +2,7 @@
 title: "لوحة العلامة"
 description: "ألوان علامة Apothem الأساسية وألوان علامة أُطُر العمل الخمسة عشر، المُعرَّفة في صفحة «ألوان علامات أُطُر العمل». المصدر الوحيد للحقيقة بالنسبة إلى الألوان الأساسية هو رموز التصميم المرجعية في assets/design-tokens.css؛ ويعكس الموقع تلك القيم."
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,11 +11,15 @@ sourceHash: "7bb26cf570fc6357"
 تعود ملكية اللوحة المرجعية — مدرّج <bdi>slate</bdi> المحايد، ومدرّج التمييز <bdi>emerald</bdi>،
 والدرجات اللونية الدلالية — إلى رموز التصميم في
 [<bdi>`assets/design-tokens.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
-(ومرآتها <bdi>`assets/design-tokens.json`</bdi>). وتعكس سمة الموقع في
+(ومرآتها <bdi>`assets/design-tokens.json`</bdi>). وتعيد سمة الموقع في
 [<bdi>`site/app/global.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-قيم تلك الرموز في متغيّرات <bdi>CSS</bdi> التي تستهلكها سمة <bdi>Fumadocs</bdi>. وكل
-قيمة أدناه هي خطوة من مدرّج <bdi>slate</bdi> أو <bdi>emerald</bdi> في رموز التصميم تلك؛
-واسم الخطوة مثل <bdi>slate-600</bdi> يشير إلى قيمة ذلك المدرّج عند تلك الخطوة.
+صياغة قيم الرموز الدلالية بصيغة <bdi>OKLCH</bdi> في متغيّرات <bdi>CSS</bdi> التي تستهلكها سمة <bdi>Fumadocs</bdi>: إذ
+تُحَلّ متغيّرات خلفية الصفحة والنص واللون الأساسي والحدود وحلقة التركيز إلى خطوات الرموز ذاتها تمامًا (ويُلزِم
+فحص <bdi>`lib/theme-tokens.test.mjs`</bdi> متغيّرات الخلفية والمقدّمة واللون الأساسي والحلقة بمطابقتها).
+أمّا المدرّجات <bdi>`apothem-*`</bdi> و<bdi>`polygon-*`</bdi> و<bdi>`field-*`</bdi> المُعلَنة في الملف نفسه فهي
+تقريبات مشتقّة من مدرّجات الرموز، لا نُسَخ منها، وليست جزءًا من المواصفة. وكل قيمة أدناه هي خطوة من
+مدرّج <bdi>slate</bdi> أو <bdi>emerald</bdi> في رموز التصميم؛ واسم الخطوة مثل <bdi>slate-600</bdi>
+يشير إلى قيمة ذلك المدرّج.
 
 | الدور | الرمز (<bdi>CSS</bdi>) | الوضع الفاتح | الوضع الداكن | الاستخدام |
 |---|---|---|---|---|

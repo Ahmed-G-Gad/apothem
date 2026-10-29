@@ -2,7 +2,7 @@
 title: "مرجع واجهة سطر الأوامر"
 description: "مرجع واجهة سطر الأوامر في Apothem — جميع الأوامر الفرعية والرايات."
 machineTranslated: true
-sourceHash: "60add6555ac816ea"
+sourceHash: "23e6a1450707e054"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,9 +76,9 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. |
 | <bdi>`--dry-run`</bdi> | معاينة التحديث دون كتابة ملفات. |
 
-يُعيد <bdi>`update`</bdi> تجسيد مُخرَجات إطار العمل. ولا يُحدِّث حزمة واجهة سطر
-الأوامر الخاصة بـ <bdi>Apothem</bdi>؛ استخدم مدير الحزم الذي ثبّت <bdi>Apothem</bdi>
-لترقيات الحزمة.
+يُعيد <bdi>`update`</bdi> تجسيد مُخرَجات إطار العمل. ولا يُرقّي محرّك <bdi>Apothem</bdi>
+نفسه؛ حدِّث المحرّك عبر القناة التي ثبّتّه بها (مسار <bdi>`/plugin`</bdi>، أو <bdi>`npx`</bdi>،
+أو سكربتات المُثبِّت والتحديث)، كما هو موضَّح في [التحديث](/docs/install/updating).
 
 ### <bdi>`apothem uninstall`</bdi>
 
@@ -139,6 +139,7 @@ apothem status [--profile PATH] [--project PATH]
 | <bdi>`in-sync`</bdi> | مُثبَّت ومطابق لخط أساس الملف التعريفي. |
 | <bdi>`drift`</bdi> | مُثبَّت لكنه لم يعد مطابقًا — عالِجه بـ <bdi>`apothem update`</bdi>. |
 | <bdi>`unknown`</bdi> | مُثبَّت، لكن تعذّرت قراءة الملف التعريفي الأساس. |
+| <bdi>`needs-project`</bdi> | أُبلِغ عن إطار عمل ذي نطاق مشروع من دون <bdi>`--project`</bdi>، فتعذّر تحديد هدفه. |
 
 تُجيب <bdi>`installed`</bdi> عن السؤال «هل ثبّت <bdi>Apothem</bdi> هنا؟»، لا عن
 «هل إطار العمل هذا موجود على الجهاز؟». وهي مبنيّة على مُنتَجات <bdi>Apothem</bdi>

@@ -2,7 +2,7 @@
 title: "Konventionskonvergenz über Harnesses hinweg"
 description: "Wie Apothem einen einzigen Operator-Workflow über siebzehn Harnesses hinweg konsistent hält, trotz divergierender Anbieter-Konfigurationsformate und Enforcement-Flächen."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,12 +21,15 @@ rendert diese Absicht in die Form, die sein Harness erwartet.
 
 | Form | Harnesses (Beispiele) | Was Apothem ausgibt |
 | --- | --- | --- |
-| Flache `.md`-Regeldateien in einem Verzeichnis | claude-code, windsurf, trae | Rohe Regeldateien, in den Regelbaum des Harness kopiert |
-| Cursor-`.mdc`-Regeln | cursor | Ein `.mdc`-Regelsatz mit dem Metadaten-Header, den Cursor erwartet |
+| Flache `.md`-Regeldateien in einem Verzeichnis | claude-code | Rohe Regeldateien, in den Regelbaum des Harness kopiert |
+| Eine zusammengeführte Regeldatei in einem Regelverzeichnis | windsurf, trae | Eine `apothem-rules.md`-Datei mit dem Aktivierungs-Frontmatter, das das Harness liest |
+| Cursor-`.mdc`-Regeln | cursor | Eine `.mdc`-Regeldatei mit dem Metadaten-Header, den Cursor erwartet |
 | Anweisungsdokument in einer einzigen Datei | codex, gemini-cli, github-copilot, zed | Ein verkettetes Dokument —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— zusammengesetzt aus dem Regelsatz des Profils |
 
-Ein flaches `.md`-Harness übernimmt die Regeln wörtlich. Ein `.mdc`-Harness
-braucht den Cursor-Metadaten-Header um jede Regel gewickelt. Ein
+Ein flaches `.md`-Harness übernimmt die Regeln wörtlich. Ein Harness mit
+zusammengeführter Datei übernimmt eine Regeldatei, deren Frontmatter festlegt,
+wann die Regeln gelten. Ein `.mdc`-Harness braucht den Cursor-Metadaten-Header
+am Anfang seiner Regeldatei. Ein
 Einzeldatei-Harness braucht den gesamten Regelsatz in ein einziges Dokument
 abgeflacht, mit stabiler Abschnittsreihenfolge, damit der Operator dieselben
 Konventionen in derselben Reihenfolge liest, unabhängig vom Ziel. Das neutrale

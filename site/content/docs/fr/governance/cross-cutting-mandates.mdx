@@ -2,7 +2,7 @@
 title: "Registre des mandats transversaux (CM-1–CM-28)"
 description: "Registre complet et définitions des mandats transversaux internes à l'écosystème (CM-1–CM-28) qui régissent toutes les interactions et les opérations du pipeline."
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## Exemption d'autoréférence du registre
 
-Ce document EST le registre canonique CM-N — c'est la source où les jetons `CM-1` à `CM-28` sont *définis*. Réénoncer ces jetons *à l'intérieur du corps même du registre* est canonique, et non une fuite de terminologie interne aux plans. L'invariant d'isolation de la base de code continue de s'appliquer pleinement à tous les *autres* artefacts (règles, auxiliaires, commandes, hooks, schémas, scripts, outils, tests, documentation, README, journaux de modifications, sujets/corps de commits, noms de branches, titres/descriptions de PR) : aucun jeton `CM-N` / `TM-N` / `CP-N`, uniquement du langage de domaine naturel.
+Ce document EST le registre canonique CM-N — c'est la source où les jetons `CM-1` à `CM-28` sont *définis*. Réénoncer ces jetons *à l'intérieur du corps même du registre* est canonique, et non une fuite de terminologie interne aux plans. L'invariant d'isolation de la base de code continue de s'appliquer pleinement à tous les *autres* artefacts qui ne relèvent pas de la documentation publiée (règles, auxiliaires, commandes, hooks, schémas, scripts, outils, tests, README, CONTRIBUTING, journaux de modifications, sujets/corps de commits, noms de branches, titres/descriptions de PR) : aucun jeton `CM-N` / `TM-N` / `CP-N`, uniquement du langage de domaine naturel.
+
+Les pages de documentation publiées sous `site/content/docs/` peuvent citer un mandat par son identifiant `CM-N`, car ce registre et la page de référence des règles définissent ces identifiants pour les lecteurs. Une page qui cite un identifiant DEVRAIT nommer le mandat en termes simples à côté de celui-ci, et NE DOIT PAS citer les numéros de section internes aux plans d'un mandat. Les jetons `TM-N` et `CP-N` restent hors de la documentation publiée, tout comme les autres termes interdits du bloc CM-7 ci-dessous.
 
 ## Espaces de noms
 
@@ -18,7 +20,7 @@ Ce document EST le registre canonique CM-N — c'est la source où les jetons `C
 
 ## Activation
 
-CM-1–10 + l'identité cognitive régissent toutes les interactions. CM-11, CM-13 (sous-règles A à C), CM-15, CM-16, CM-20 ne s'appliquent qu'au sein du pipeline `/plan`. La sous-règle D de CM-13 s'applique à chaque écriture git, et la sous-règle E aux cibles de `git mv` / `git rm` et aux chemins du corps des commits, à l'intérieur comme à l'extérieur de ce pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 s'appliquent universellement (toujours actifs). CM-23, CM-27, CM-28 s'appliquent universellement dans la portée de filtre de chemin qu'ils déclarent. Niveau de sérieux par défaut en mode ad hoc : PERSONAL_USE.
+CM-1–10 + l'identité cognitive régissent toutes les interactions. CM-11, CM-13 (sous-règles A à C), CM-15, CM-16, CM-20 ne s'appliquent qu'au sein du pipeline `/plan`. La sous-règle D de CM-13 s'applique à chaque écriture git, et la sous-règle E aux cibles de `git mv` / `git rm` et aux chemins du corps des commits, à l'intérieur comme à l'extérieur de ce pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 s'appliquent universellement. CM-23, CM-27, CM-28 s'appliquent universellement dans la portée de filtre de chemin qu'ils déclarent. Niveau de sérieux par défaut en mode ad hoc : PERSONAL_USE. Un mandat s'applique, que sa règle soit chargée ou non au lancement : quatre règles se chargent dans chaque session (`agnostic-posture`, `authority-inquiry`, `session-closure`, `context-management`), et les autres se chargent sur un chemin correspondant, via l'index des règles, ou via une règle, une skill ou une commande qui les cite.
 
 ## CM-1–10 (Opérationnels)
 
@@ -28,7 +30,7 @@ CM-1–10 + l'identité cognitive régissent toutes les interactions. CM-11, CM-
 
 > Il s'agit de la facette de CM-7 tournée vers la base de code ; la facette de complétude du produit est documentée sous le nom **Produit cohérent (→TM-11)** dans `src/apothem/rules/operational-mandates.md §CM-7`. Les deux libellés désignent le même mandat.
 
-Les artefacts de la base de code ne doivent JAMAIS contenir de références internes aux plans. **Termes interdits (bloc canonique — les consommateurs apparentés renvoient à cette énumération) :** TM-N, CM-N, CP-N, « Resumption Contract », « Phase Output Registry », « convention anchors », noms de dossiers de phase, noms de fichiers de la suite de planification (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), noms de niveaux de sérieux (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefacts protégés :** code source, tests, configurations, schémas, scripts de build, données, ressources, messages de commit, noms de branches, titres/descriptions de PR, README, CONTRIBUTING, documentation d'API, journaux de modifications — tout artefact visible en dehors de l'arborescence des sources d'Apothem (les destinations d'installation par environnement, telles que `~/.claude/` pour Claude Code). Uniquement du langage de domaine naturel. **Consommateurs apparentés** (chacun cite ce bloc par référence plutôt que de le réénumérer) : `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 indicateurs de violation.
+Les artefacts de la base de code ne doivent JAMAIS contenir de références internes aux plans. **Termes interdits (bloc canonique — les consommateurs apparentés renvoient à cette énumération) :** TM-N, CM-N, CP-N, « Resumption Contract », « Phase Output Registry », « convention anchors », noms de dossiers de phase, noms de fichiers de la suite de planification (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), noms de niveaux de sérieux (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefacts protégés :** code source, tests, configurations, schémas, scripts de build, données, ressources, messages de commit, noms de branches, titres/descriptions de PR, README, CONTRIBUTING, documentation d'API, journaux de modifications — tout artefact visible en dehors de l'arborescence des sources d'Apothem (les destinations d'installation par environnement, telles que `~/.claude/` pour Claude Code). Uniquement du langage de domaine naturel. La seule exception est la documentation publiée sous `site/content/docs/`, qui peut citer des identifiants `CM-N` comme décrit dans l'exemption d'autoréférence du registre ci-dessus. **Consommateurs apparentés** (chacun cite ce bloc par référence plutôt que de le réénumérer) : `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 indicateurs de violation.
 
 ## CM-11 (Intégrité du plan)
 

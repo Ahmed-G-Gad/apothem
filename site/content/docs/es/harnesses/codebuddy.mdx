@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptador de entorno de Apothem para Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "84f84790325354af"
+sourceHash: "ad1685e4b265a2d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,190 @@ apothem install --harness codebuddy --project /path/to/project
 ```
 
 El adaptador escribe un archivo de reglas con alcance de proyecto a partir de la
-superficie compartida de reglas y gobernanza de Apothem.
+superficie compartida de reglas y gobernanza de Apothem, los ayudantes de
+Apothem como subagentes de CodeBuddy en el proyecto (consulta
+[Subagentes](#subagentes)) y dos hooks (consulta [Hooks](#hooks)).
 
-**Archivos escritos:** `<project>/.codebuddy/rules/apothem-rules.md`
+También escribe las skills de Apothem, y las reglas y plantillas que citan, en
+tu directorio personal, antes de tocar el proyecto (consulta
+[Archivos fuera del proyecto](#archivos-fuera-del-proyecto)).
+
+**Archivos escritos:**
+
+- `<project>/.codebuddy/rules/apothem-rules.md`, el archivo de reglas.
+- `<project>/.codebuddy/agents/<name>.md` por cada ayudante de Apothem, en el proyecto.
+- `<project>/.codebuddy/settings.local.json`, el registro de hooks, en el proyecto. Tus propias entradas en él se conservan.
+- `<project>/.apothem/support/hooks/`, los scripts de hook, en el proyecto.
+- `~/.codebuddy/skills/<name>/SKILL.md` por cada skill y comando de Apothem, en tu directorio personal.
+- `~/.config/apothem/rules/` y `~/.config/apothem/templates/`, en tu directorio personal.
+
+## Archivos fuera del proyecto
+
+La instalación también escribe las skills de Apothem en tu directorio personal,
+antes de cambiar nada en el proyecto:
+
+| Carpeta | Lo que Apothem escribe allí |
+| --- | --- |
+| `~/.codebuddy/skills/` | Una carpeta con un `SKILL.md` por cada skill de Apothem, y una por cada comando de Apothem (un comando se convierte en una skill del mismo nombre). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Las reglas y plantillas a las que se refieren las skills y el archivo de reglas. |
+
+Estas carpetas son compartidas. No son privadas del proyecto:
+
+- Cada proyecto en el que instalas `codebuddy` usa la misma copia de `~/.codebuddy/skills/`, y la instalación escribe en ella los mismos archivos cada vez. CodeBuddy es la única herramienta que lee esa carpeta. Las reglas y plantillas bajo `~/.config/apothem/` también las escriben las instalaciones de las demás herramientas, con los mismos archivos.
+- `--project` elige el archivo de reglas que se escribe y el proyecto al que
+  pertenece la instalación. No cambia adónde van las skills.
+- La instalación no añade ningún archivo de skill ni de regla a tu repositorio. El
+  proyecto recibe el archivo de reglas, los archivos de subagentes en
+  `.codebuddy/agents/`, el registro de hooks en `.codebuddy/settings.local.json`,
+  además de la carpeta `.apothem/` que crea toda instalación de proyecto, que
+  también contiene los scripts de hook.
+- Las carpetas del directorio personal se escriben primero. Si eso falla, por
+  ejemplo porque una carpeta de la ruta es un enlace que sale de tu directorio
+  personal (un enlace que permanece dentro de él se sigue) o no se puede
+  escribir, la instalación se detiene con el error antes de que cambie nada en
+  el proyecto.
+- Una carpeta de skill con el nombre de una skill de Apothem que Apothem no
+  escribió se deja intacta, y la instalación imprime una advertencia que la
+  nombra. Cámbiale el nombre o muévela y luego ejecuta `apothem update`.
+  `apothem verify` falla mientras ese nombre esté ocupado.
+- Los archivos suman unos pocos megabytes.
+
+La instalación imprime una nota que nombra las carpetas que escribe fuera de
+`--project`, y `--dry-run` las lista.
+
+## Subagentes
+
+CodeBuddy lee un subagente desde un archivo Markdown en `<project>/.codebuddy/agents/`
+(agentes de proyecto) o `~/.codebuddy/agents/` (agentes de usuario), según la
+[documentación de subagentes de CodeBuddy](https://www.codebuddy.ai/docs/cli/sub-agents).
+La instalación escribe un archivo por cada ayudante de Apothem solo en la carpeta
+del proyecto, y no escribe nada en `~/.codebuddy/agents/`.
+
+Cada archivo conserva sin cambios las instrucciones del ayudante y lleva estas
+claves de frontmatter:
+
+| Clave | Lo que Apothem escribe |
+| --- | --- |
+| `name`, `description` | El nombre y la descripción del ayudante. |
+| `tools` | Las herramientas permitidas del ayudante, como una única cadena separada por comas. |
+| `disallowedTools` | Las herramientas que se le deniegan al ayudante, como una única cadena separada por comas. Se omite cuando el ayudante no tiene ninguna. |
+| `maxTurns` | El límite de turnos del ayudante. |
+
+Solo se escriben los nombres de herramientas que muestra la documentación de
+CodeBuddy. Su [página de Settings](https://www.codebuddy.ai/docs/cli/settings)
+lista las herramientas, y su página de subagentes nombra una herramienta más, que
+la lista siguiente incluye:
+
+```text
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
+```
+
+Una herramienta que nombra el origen y que no está en esa lista (por ejemplo
+`PowerShell` o `TodoWrite`) se deja fuera de ambos campos. Una herramienta con un
+patrón, como `Bash(rm *)`, no tiene forma en una lista separada por comas: como
+herramienta permitida se deja fuera, y como herramienta denegada deniega la
+herramienta entera. Un ayudante que no puede editar archivos conserva ese límite:
+no lista `Write` ni `Edit` entre sus herramientas y deniega ambas. La instalación
+no escribe ninguna clave `model`, así que un ayudante se ejecuta con el modelo que
+selecciona CodeBuddy, ni ninguna clave `permissionMode` o `hooks`.
+
+Aspectos a tener en cuenta:
+
+- Los archivos de subagentes son archivos de proyecto normales. Confírmalos con el
+  proyecto o incluye `.codebuddy/agents/` en `.gitignore`; Apothem no elige por ti.
+- CodeBuddy carga los archivos de subagentes añadidos a mano al inicio de la
+  siguiente sesión, así que inicia una sesión nueva después de la instalación.
+- Un archivo tuyo con el nombre de un ayudante de Apothem se guarda bajo
+  `~/.apothem/backups/` y luego se reemplaza. La desinstalación no lo restaura.
+  Los archivos con otros nombres nunca se tocan.
+- La página de Subagents del IDE de CodeBuddy muestra claves que la página de la
+  CLI no lista, y Apothem no ha confirmado que el IDE acepte `disallowedTools` ni
+  `maxTurns`.
+
+## Hooks
+
+CodeBuddy ejecuta hooks desde la clave `hooks` de sus archivos de ajustes, según
+la [documentación de hooks de CodeBuddy](https://www.codebuddy.ai/docs/cli/hooks),
+que marca los hooks como Beta. La instalación registra dos:
+
+| Evento | Lo que se ejecuta |
+| --- | --- |
+| `SessionStart` | El arranque de la sesión: los metadatos de la sesión, el índice de skills, los resúmenes de memoria y de planes y la postura permanente, añadidos al contexto del modelo. |
+| `PostToolUse` (cada herramienta) | El rastreador de compactación proactiva. Cuenta la actividad y, como máximo dos veces por ciclo de compactación, indica al modelo que guarde su estado o compacte. En otro caso no dice nada. |
+
+Ambos añaden contexto para el modelo. Ninguno bloquea una llamada a herramienta ni
+una sesión.
+
+Apothem no registra ninguna guarda `PreToolUse` en CodeBuddy. La documentación de
+CodeBuddy lista `additionalContext` (el campo a través del cual hablan las guardas
+de Apothem) para `SessionStart`, `UserPromptSubmit` y `PostToolUse`, y lista solo
+campos de permisos y de entrada para `PreToolUse`. Una guarda registrada allí
+costaría un inicio de proceso en cada llamada a herramienta y podría no entregar
+nada, así que las guardas de escritura, edición y shell, la comprobación de
+`AskUserQuestion` y el protocolo de fin de sesión se quedan en las herramientas
+que los entregan. Apothem registrará una guarda en un evento de CodeBuddy cuando
+la documentación, o una prueba, muestre que llega al modelo.
+
+**Dónde van los archivos**
+
+| Archivo | Lo que contiene |
+| --- | --- |
+| `<project>/.codebuddy/settings.local.json` | Los dos registros de hooks, fusionados en la clave `hooks` del archivo. CodeBuddy documenta este archivo como local para ti y no confirmado. |
+| `<project>/.apothem/support/hooks/` | El script despachador, sus auxiliares y sus archivos de mensajes. |
+
+Cada comando registrado nombra el intérprete que Apothem encontró al ejecutarse y
+la ruta absoluta del proyecto, así que es específico de la máquina. Por eso la
+instalación escribe el archivo local y nunca el `<project>/.codebuddy/settings.json`
+confirmado. La instalación no edita `.gitignore`: comprueba que el tuyo incluye
+`.codebuddy/settings.local.json` y `.apothem/`, para que la copia de trabajo de un
+compañero de equipo no reciba comandos que apuntan a tu máquina.
+
+**Rutas que el shell interpretaría mal.** Una ruta de proyecto o de intérprete que
+contiene `$`, una comilla invertida, una comilla doble o una barra invertida se
+rechaza antes de escribir nada: dentro del comando entre comillas ejecutaría un
+archivo diferente, o rompería el JSON en el que se escribe el comando. El error
+nombra la ruta; mueve o cambia el nombre del proyecto y ejecuta de nuevo la
+instalación. Un espacio o un apóstrofo en una ruta no es problema.
+
+Un comando tiene este aspecto, con tu intérprete y la ruta de tu proyecto en lugar
+de las dos rutas:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+```
+
+`--contract codebuddy` no cambia nada en la salida: CodeBuddy lee el mismo
+sobre que Claude Code. CodeBuddy ejecuta los comandos de hook a través de tu
+shell, y a través de Git Bash en Windows (no admite ni cmd.exe ni PowerShell), así
+que los comandos usan el entrecomillado de bash y una ruta de intérprete con
+barras normales. Instala Git for Windows si CodeBuddy lo pide.
+
+**Revisa los hooks una vez ejecutada la instalación.** CodeBuddy toma una
+instantánea de sus ajustes al iniciarse, no recarga en caliente un archivo de
+ajustes que escribió otra herramienta y aplica los hooks añadidos externamente
+solo después de que los revises en su panel `/hooks`. Después de `apothem install`
+(y después de una actualización que cambie los hooks), reinicia CodeBuddy y
+confirma las entradas de Apothem en `/hooks`. La instalación imprime esto como una
+nota. La documentación no dice si la revisión se repite después de cada cambio,
+así que abre `/hooks` de nuevo después de una actualización.
+
+**Tus propios hooks.** El registro se fusiona en tu archivo por clave. Los hooks y
+demás claves que escribiste se quedan como estaban, un manejador tuyo bajo el
+mismo evento y el mismo matcher se queda junto al de Apothem, y una actualización
+reemplaza solo los manejadores cuyo comando ejecuta el despachador de Apothem
+(`.apothem/support/hooks/dispatch.py` con `--contract codebuddy`, sea cual sea la
+ruta de proyecto bajo la que se escribió). Un hook tuyo que solo comparte el
+nombre, como `tools/hooks/dispatch.py` en tu proyecto, o que ejecuta
+`python -m apothem.conformity.gate`, nunca se toma por uno de Apothem. Un archivo
+con comentarios u otra sintaxis JSON5 no se puede reescribir sin perderlos, así
+que la instalación informa de un error `config.unparseable` para ese archivo y lo
+deja intacto: elimina los comentarios, o añade tú mismo las dos entradas.
+
+**Desactivar los hooks.** Establece `APOTHEM_HOOKS_DISABLE=1` en el entorno de
+CodeBuddy para silenciar los hooks de Apothem, o establece el ajuste propio de
+CodeBuddy `disableAllHooks` para desactivar todos los hooks.
 
 ## Asignación del perfil a la configuración nativa
 
@@ -42,16 +223,26 @@ reemplace el contenido gestionado por Apothem.
 La superficie de reglas de CodeBuddy tiene alcance de proyecto bajo
 `.codebuddy/rules/`. El adaptador escribe un archivo `apothem-rules.md`
 dedicado que coexiste con cualquier archivo de reglas que el operador redacte
-en el mismo directorio. El archivo de memoria de proyecto `CODEBUDDY.md`,
-`.codebuddy/settings.json` y el `.mcp.json` del proyecto (servidores MCP) son
-propiedad del operador; Apothem no los escribe. CodeBuddy también documenta
-skills, comandos, subagentes y hooks; el adaptador no escribe ninguno de ellos
-y, en su lugar, referencia las disciplinas dentro del archivo de reglas. Cuando
+en el mismo directorio. El archivo de memoria de proyecto `CODEBUDDY.md`, el
+`.codebuddy/settings.json` confirmado y el `.mcp.json` del proyecto (servidores
+MCP) son propiedad del operador; Apothem no los escribe. CodeBuddy también
+documenta comandos de barra; el adaptador no escribe ninguno y, en su lugar,
+referencia las disciplinas dentro del archivo de reglas. Sí escribe subagentes y
+dos hooks en el proyecto (consulta [Subagentes](#subagentes) y [Hooks](#hooks)),
+y skills, y los comandos de Apothem como skills, en tu carpeta de usuario
+(consulta [Archivos fuera del proyecto](#archivos-fuera-del-proyecto)). Cuando
 un proyecto no tiene `CODEBUDDY.md`, CodeBuddy Code lee `AGENTS.md` como
 memoria del proyecto, así que un `AGENTS.md` que escribe otro adaptador también llega a CodeBuddy. Las convenciones de la superficie del proveedor en las que se apoya el
 adaptador están fijadas en
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, capturadas en una
 instantánea frente a la documentación en vivo de CodeBuddy.
+
+CodeBuddy documenta `~/.codebuddy/skills/` para las skills de usuario y no
+menciona `~/.agents/skills/`, así que la instalación escribe la carpeta de
+CodeBuddy y no la compartida entre herramientas. Esa carpeta solo la lee
+CodeBuddy. Su página de skills lista `disable-model-invocation`, `user-invocable`
+y `allowed-tools`, y no lista ninguna clave `metadata` ni `argument-hint`; Apothem
+no ha confirmado que CodeBuddy las acepte.
 
 ## Verificación
 
@@ -63,7 +254,20 @@ El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
 2. El archivo de reglas gestionado está presente y no está vacío.
-3. La rutina de verificación específica del adaptador informa éxito.
+3. El registro de hooks `.codebuddy/settings.local.json` existe, no está vacío
+   y se analiza como JSON, y los scripts de hook están en
+   `.apothem/support/hooks/`. El archivo debe contener un manejador que ejecute el
+   despachador de Apothem (la comprobación no lo ejecuta), así que un archivo que
+   se revirtió o se vació ya no se verifica.
+4. La carpeta `.codebuddy/agents/` existe. La comprobación es sobre la carpeta, no
+   sobre cada archivo de ayudante que contiene; el comando
+   `apothem diff --harness codebuddy --project /path/to/project` lista los
+   archivos de ayudante que faltan o están desactualizados.
+5. Cada carpeta de skill de Apothem está en su sitio con un `SKILL.md`, sea cual
+   sea la instalación que la escribió, y ninguna carpeta de skill con un nombre
+   de Apothem pertenece a algo que Apothem no escribió. Una comprobación fallida
+   nombra las carpetas que faltan o son ajenas.
+6. La rutina de verificación específica del adaptador informa éxito.
 
 ## Actualización
 
@@ -76,6 +280,13 @@ del perfil compartido. `install` y `update` son idempotentes: volver a
 ejecutarlos sobrescribe el archivo gestionado con el contenido renderizado más
 reciente.
 
+La actualización también reescribe cualquier carpeta de skill cuyos archivos
+difieran de los actuales. Si instalaste con una versión anterior que no escribía
+skills, la actualización las añade. Reescribe los archivos de subagentes que
+difieren de los actuales y añade los que faltan. También actualiza los scripts de
+hook y los manejadores de Apothem en `.codebuddy/settings.local.json`, sin tocar
+tus propias entradas; después, reinicia CodeBuddy y vuelve a comprobar `/hooks`.
+
 ## Desinstalación
 
 ```bash
@@ -83,6 +294,22 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
 Elimina el bloque de Apothem de `apothem-rules.md` y conserva cualquier otro texto que contenga. El archivo solo se borra cuando no queda nada más en él. Antes del cambio, se guarda una copia con marca de tiempo del archivo en `~/.apothem/backups/`; no queda ningún archivo de copia de seguridad en el proyecto. El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+
+La desinstalación también elimina los archivos de subagentes que escribió en
+`<project>/.codebuddy/agents/` y conserva cualquier otro archivo allí; la carpeta
+se elimina cuando queda vacía. Elimina los manejadores de hooks de Apothem de
+`<project>/.codebuddy/settings.local.json`, reconociéndolos por la ruta del
+despachador en su comando, y conserva tus propios hooks y claves. El archivo se
+elimina solo cuando Apothem lo creó y no queda nada más en él. Los scripts de
+hook de `<project>/.apothem/support/hooks/` también se eliminan. Elimina las
+carpetas de skills que escribió en `~/.codebuddy/skills/` y las reglas y
+plantillas de `~/.config/apothem/`, pero solo cuando ninguna otra instalación de
+Apothem las sigue usando. Otro proyecto, u otra herramienta que comparte la
+carpeta, puede hacerlo. En ese caso la desinstalación conserva las carpetas,
+imprime qué instalación las usa, y la última desinstalación las elimina. Los
+archivos que añadiste a esas carpetas se quedan, y una carpeta que queda vacía se
+elimina. Cada carpeta se respalda bajo `~/.apothem/backups/` antes de
+eliminarse.
 
 ## Puerta de conformidad
 
@@ -96,6 +323,12 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness codebuddy --project /path/to/project` |
 | La verificación falló | Ejecuta `apothem update --harness codebuddy --project /path/to/project` y luego verifica de nuevo |
+| CodeBuddy no lista un ayudante de Apothem | CodeBuddy carga los archivos de subagentes al inicio de una sesión. Inicia una sesión nueva |
+| Los hooks de Apothem no se ejecutan | CodeBuddy aplica los hooks que escribió otra herramienta solo después de un reinicio y una revisión en su panel `/hooks`. Reinicia CodeBuddy, abre `/hooks` y confirma las entradas de Apothem. En Windows CodeBuddy necesita Git Bash |
+| Una instalación informa de `config.unparseable` para `settings.local.json` | El archivo tiene comentarios u otra sintaxis que una reescritura perdería. Elimina los comentarios e instala de nuevo, o añade tú mismo las dos entradas de hooks de Apothem |
+| `apothem verify` nombra una carpeta de skill que falta | Ejecuta `apothem install --harness codebuddy --project /path/to/project`; restaura la carpeta |
+| Una instalación o actualización advierte que omitió una carpeta de skill | Ya existe en la carpeta de skills una carpeta con el nombre de una skill de Apothem y Apothem no la escribió. Cámbiale el nombre o muévela y luego ejecuta `apothem update` |
+| Una instalación se detiene antes de cambiar el proyecto | Falló una escritura en tu directorio personal. Lee el error, corrige la carpeta que nombra (un enlace que sale de tu directorio personal, un archivo donde debería haber una carpeta o una carpeta de solo lectura) e instala de nuevo |
 | Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness codebuddy --project /path/to/project` |
 
 ## Opciones de configuración

@@ -2,7 +2,7 @@
 title: "Контрольный список развёртывания"
 description: "Контрольный список предварительной проверки для развёртывания или совместного использования экосистемы Apothem"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ frontmatter каждого артефакта и помечает ошибки Y
 
 - [ ] `name` — имя команды в kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` присутствуют
-- [ ] `disable-model-invocation` присутствует и намеренно (`true` для команд, предназначенных только для руководства)
+- [ ] `disable-model-invocation` присутствует и намеренно (`false` для команд только для чтения или рекомендательных команд; `true` только когда выполнение команды меняет состояние за пределами рабочего дерева или зависит от выбора момента оператором)
 - [ ] Ключа `effort` нет: `command.schema.json` задаёт `additionalProperties: false` и его не допускает
 
 ### Делегированные исполнители

@@ -2,14 +2,16 @@
 title: "Apothem と素の Open-Claw 設定の比較"
 description: "Open-Claw 設定を手で保守するか、Apothem の共有プロファイル経由で管理するか。"
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Open-Claw は `~/.openclaw/openclaw.json` を読み込みます。その
-`agents.defaults.skills` は名前の許可リスト（ディレクトリローダーではありません）
-で、MCP は CLI 面であるため、Apothem は設定キーを一切書き込みません。共有のコマンド
-群とスキル群を `~/.openclaw/.apothem/support/skills/` の下にサポート材料として設置します。
+Open-Claw は `~/.openclaw/openclaw.json` を読み込みます。Apothem は共有のコマンド
+群とスキル群を `~/.openclaw/.apothem/support/skills/` の下に設置し、その設定ファイルに
+キーを 1 つ、`skills.load.extraDirs` を書き込みます。このキーはそのディレクトリを列挙し、
+OpenClaw がスキルを読み込むようにします。Open-Claw の `agents.defaults.skills` は
+あなたが所有する名前の許可リストで、MCP は CLI 面であるため、Apothem はどちらも
+書き込みません。
 
 ## ステータス
 
@@ -31,6 +33,9 @@ Open-Claw は `~/.openclaw/openclaw.json` を読み込みます。その
 Open-Claw アダプターは `openclaw.json` を書き込み、Apothem のスラッシュコマンドを
 スキルとして包み、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、
 テンプレート、agents、hook 材料を Apothem サポートサブツリーの下に保持します。
+OpenClaw は `skills.load.extraDirs` をスキルのソースの中で最も低い優先順位で読み込む
+ため、あなたのワークスペース、`~/.agents/skills`、または `~/.openclaw/skills` にある
+同じ名前のスキルが、Apothem のコピーの代わりに使われます。
 
 ## 移行手順
 

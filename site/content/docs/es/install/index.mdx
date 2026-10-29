@@ -2,7 +2,7 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,20 +69,21 @@ Tras la instalación, el conjunto de comandos de Apothem, los trabajadores
 delegados incluidos, las skills y los cuatro
 [output-styles](/docs/reference/output-styles) (elige uno con
 `/output-style` o desde `/config`) están disponibles en cada sesión de Claude
-Code. Los comandos del plugin llevan el prefijo del plugin:
-`/apothem:plan-spec`, `/apothem:security-audit` y el resto. Claude Code también
-acepta la forma corta (`/plan-spec`) mientras ningún otro comando use ese
-nombre. Dos nombres los ocupa el propio Claude Code: `/plan` entra en el modo de
-plan y `/code-review` ejecuta la revisión integrada, así que escribe
-`/apothem:plan` y `/apothem:code-review` para los comandos de Apothem. Cuando el
-motor de Apothem se instala en Claude Code en lugar del plugin, los comandos
-pasan a ser skills personales bajo `~/.claude/skills/` sin prefijo, y una skill
-personal `code-review` reemplaza el `/code-review` integrado (su alias `/review`
-sigue ejecutando el integrado). Dos nombres, `projectify` y `workflow`, se
-distribuyen a la vez como comando y como skill; Claude Code ejecuta la skill
-cuando existen ambos, así que el plugin ejecuta la skill y la instalación del
-motor escribe solo la skill, no una skill derivada del comando, en
-`~/.claude/skills/<name>/`. Consulta [Comandos de barra](/docs/reference/commands)
+Code. El plugin distribuye cada comando como una skill, un `SKILL.md` con el
+detalle que carga bajo demanda en una carpeta `references/` junto a él, así que
+Claude Code lo invoca con el prefijo del plugin: `/apothem:plan-spec`,
+`/apothem:security-audit` y el resto. Dos nombres los ocupa el propio Claude
+Code: `/plan` entra en el modo de plan y `/code-review` ejecuta la revisión
+integrada, así que escribe `/apothem:plan` y `/apothem:code-review` para los
+comandos de Apothem. Cuando el motor de Apothem se instala en Claude Code en
+lugar del plugin, las mismas skills se escriben en `~/.claude/skills/` sin
+prefijo, y una skill personal `code-review` reemplaza el `/code-review`
+integrado (su alias `/review` sigue ejecutando el integrado). Dos nombres,
+`projectify` y `workflow`, son también skills nativas; la skill nativa es la
+que distribuyen el plugin y la instalación del motor, no una skill derivada del
+comando. Consulta
+[Claude Code](/docs/harnesses/claude-code#skills-de-comando-y-archivos-de-referencia)
+para ver cómo se dividen los comandos, y [Comandos de barra](/docs/reference/commands)
 para ver el catálogo completo de comandos.
 
 **Verifica:** ejecuta `/plugin` dentro de Claude Code y confirma que **apothem**
@@ -339,13 +340,20 @@ Añade el repositorio como marketplace de plugins y luego instala el plugin — 
 comando lleva el host y el slug de entorno exactos:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+Las dos rutas `--sparse` obtienen solo el listado del marketplace y el plugin,
+no el repositorio completo; un clon completo puede superar el límite de clonado
+de 30 segundos del host en un disco lento, como una unidad de Windows bajo WSL.
+
 Como las extensiones de los canales 5 y 6, este es un **arranque** que delega en
-el motor. Materializa el entorno completo ejecutando la instalación a través de
-él:
+el motor. El plugin incluye una skill de entrada; su manifiesto es un
+`plugin.json` en la raíz, y la
+[página de entorno del host de plugin](/docs/harnesses/codex#plugin-de-codex) describe la
+estructura y lo que el plugin deja al motor. Materializa el entorno completo
+ejecutando la instalación a través de él:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

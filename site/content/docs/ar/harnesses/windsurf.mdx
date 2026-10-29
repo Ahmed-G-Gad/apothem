@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "محوّل إطار عمل Apothem لـ Windsurf (إصدار عام)."
 machineTranslated: true
-sourceHash: "8d3f64199c281e2a"
+sourceHash: "5e594da654351298"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,9 +22,220 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 يكتب المحوّل ملف قواعد واحدًا لـ <bdi>Windsurf</bdi> على نطاق المشروع انطلاقًا من
-القواعد المشتركة لـ <bdi>Apothem</bdi> وسطح الحوكمة.
+القواعد المشتركة لـ <bdi>Apothem</bdi> وسطح الحوكمة، ويكتب أحد عشر من مساعِدات
+<bdi>Apothem</bdi> بوصفها عوامل فرعية لـ <bdi>Devin Local</bdi> في المشروع (راجع
+[العوامل الفرعية](#العوامل-الفرعية))، ويسجّل خطّافين لـ <bdi>Devin Local</bdi> (راجع
+[الخطّافات](#الخطّافات)).
 
-**الملفات المكتوبة:** <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi>
+ويكتب أيضًا مهارات <bdi>Apothem</bdi>، والقواعد والقوالب التي تستشهد بها، في دليلك
+المنزلي، قبل أن يمسّ المشروع (راجع
+[الملفات خارج المشروع](#الملفات-خارج-المشروع)).
+
+**الملفات المكتوبة:**
+
+- <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi>، ملف القواعد.
+- <bdi>`<project>/.devin/agents/<name>.md`</bdi> لأحد عشر مساعِدًا من مساعِدات <bdi>Apothem</bdi>، في المشروع.
+- <bdi>`<project>/.devin/config.local.json`</bdi>، تسجيل الخطّافات، في المشروع. وتبقى مُدخلاتك الخاصة فيه.
+- <bdi>`<project>/.apothem/support/windsurf/hooks/`</bdi>، سكربتات الخطّافات، في المشروع.
+- <bdi>`~/.agents/skills/<name>/SKILL.md`</bdi> لكل مهارة وأمر من <bdi>Apothem</bdi>، في دليلك المنزلي.
+- <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi>، في دليلك المنزلي.
+
+## الملفات خارج المشروع
+
+يكتب التثبيت أيضًا مهارات <bdi>Apothem</bdi> في دليلك المنزلي، قبل أن يغيّر أي شيء
+في المشروع:
+
+| المجلّد | ما يكتبه <bdi>Apothem</bdi> فيه |
+| --- | --- |
+| <bdi>`~/.agents/skills/`</bdi> | لكل مهارة من <bdi>Apothem</bdi> مجلّد واحد يحوي <bdi>`SKILL.md`</bdi>، ولكل أمر من <bdi>Apothem</bdi> مجلّد (يصبح الأمر مهارة بالاسم نفسه). |
+| <bdi>`~/.config/apothem/rules/`</bdi>، <bdi>`~/.config/apothem/templates/`</bdi> | القواعد والقوالب التي تُحيل إليها المهارات وملف القواعد. |
+
+هذه المجلّدات مشتركة، وليست خاصة بالمشروع:
+
+- كل مشروع تثبّت فيه <bdi>`windsurf`</bdi>، وكل تثبيت آخر لـ <bdi>Apothem</bdi> يسمّي المجلّد، يستخدم النسخة نفسها ويكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت به. وتقرأ أدوات أخرى عديدة <bdi>`~/.agents/skills/`</bdi> أيضًا؛ ويسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة).
+- يختار <bdi>`--project`</bdi> ملف القواعد الذي يُكتَب والمشروعَ الذي ينتمي إليه
+  التثبيت. ولا يغيّر المكان الذي تذهب إليه المهارات.
+- لا يضيف التثبيت أي ملف مهارة أو قاعدة إلى مستودعك. ويحصل المشروع على ملف
+  القواعد، وملفات العوامل الفرعية في <bdi>`.devin/agents/`</bdi>، وتسجيل الخطّافات
+  في <bdi>`.devin/config.local.json`</bdi>، إضافةً إلى المجلّد <bdi>`.apothem/`</bdi> الذي
+  يُنشئه كل تثبيت على مستوى المشروع، والذي يحوي أيضًا سكربتات الخطّافات.
+- تُكتَب المجلّدات المنزلية أولًا. فإن فشل ذلك، مثلًا لأن مجلّدًا في المسار رابطٌ
+  يخرج من دليلك المنزلي (أما الرابط الذي يبقى داخله فيُتَّبَع) أو لا يمكن الكتابة فيه،
+  يتوقّف التثبيت مع الخطأ قبل أن يتغيّر أي شيء في المشروع.
+- مجلّد المهارة الذي يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>
+  يُترَك كما هو، ويطبع التثبيت تحذيرًا يسمّيه. أعد تسميته أو انقله، ثم شغّل
+  <bdi>`apothem update`</bdi>. ويفشل <bdi>`apothem verify`</bdi> ما دام ذلك الاسم محجوزًا.
+- يبلغ مجموع الملفات بضعة ميغابايتات.
+
+يطبع التثبيت ملاحظة تسمّي المجلّدات التي يكتبها خارج <bdi>`--project`</bdi>، ويسردها
+<bdi>`--dry-run`</bdi>.
+
+## العوامل الفرعية
+
+يقرأ <bdi>Devin Local</bdi>، الذي تبدأ عليه علامات التبويب الجديدة في <bdi>Devin Desktop</bdi>،
+العاملَ الفرعي من ملف <bdi>Markdown</bdi> في <bdi>`<project>/.devin/agents/`</bdi>، وفق
+[وثائق العوامل الفرعية في <bdi>Devin</bdi>](https://docs.devin.ai/cli/subagents.md). أما
+<bdi>Cascade</bdi>، الوضع الأقدم، فليس فيه عوامل فرعية. ويكتب التثبيت أحد عشر من
+مساعِدات <bdi>Apothem</bdi> الأربعة عشر في ذلك المجلّد. وهو يثبّت للمشروع فقط ولا
+يكتب أي مجلّد عوامل فرعية على مستوى المستخدم (<bdi>`~/.config/devin/agents/`</bdi> على
+<bdi>Linux</bdi> و<bdi>macOS</bdi>، و<bdi>`%APPDATA%\devin\agents\`</bdi> على <bdi>Windows</bdi>).
+
+يُبقي كل ملف تعليمات المساعِد دون تغيير ويحمل مفاتيح البيانات الأمامية
+التالية:
+
+| المفتاح | ما يكتبه <bdi>Apothem</bdi> |
+| --- | --- |
+| <bdi>`name`</bdi>، <bdi>`description`</bdi> | اسم المساعِد ووصفه. |
+| <bdi>`allowed-tools`</bdi> | الأدوات التي يجوز للمساعِد استخدامها، بوصفها قائمة بأسماء أدوات <bdi>Devin</bdi>: <bdi>`read`</bdi>، و<bdi>`edit`</bdi>، و<bdi>`grep`</bdi>، و<bdi>`glob`</bdi>، و<bdi>`exec`</bdi> (أداة <bdi>`Bash`</bdi> الخاصة بالمساعِد)، و<bdi>`write`</bdi>. |
+
+لا يملك <bdi>Devin</bdi> مفتاحًا يحظر أداة، لذا تصبح الأدوات المسموح بها للمساعِد،
+مطروحًا منها أدواته المحظورة، قائمةَ <bdi>`allowed-tools`</bdi> الوحيدة. وأداة <bdi>`Bash`</bdi>
+الخاصة بالمساعِد هي <bdi>`exec`</bdi> في <bdi>Devin</bdi>، والأداة التي لا يسرد لها <bdi>Devin</bdi>
+اسمًا تُستبعَد. وتحصل المساعِدات للقراءة فقط على <bdi>`read`</bdi> و<bdi>`glob`</bdi>
+و<bdi>`grep`</bdi>، إضافةً إلى <bdi>`exec`</bdi> لتلك التي تُشغِّل أوامر، ولا تحصل أبدًا على
+<bdi>`write`</bdi> أو <bdi>`edit`</bdi>.
+
+ثلاثة مساعِدات لا تُثبَّت: <bdi>`citation-auditor`</bdi>، و<bdi>`fact-checker`</bdi>،
+و<bdi>`research-scout`</bdi>. فهي تحتاج إلى البحث على الويب وجلب صفحات الويب، ولا يوثّق
+<bdi>Devin</bdi> اسمًا في <bdi>`allowed-tools`</bdi> لأيٍّ منهما، لذا يحجبها التثبيت بدلًا من
+كتابة نسخة لا تستطيع البحث أو نسخة تملك كل الأدوات. والملف الخاص بك في
+<bdi>`.devin/agents/`</bdi> الذي يحمل أحد تلك الأسماء لا يُمَسّ أبدًا.
+
+لا يكتب التثبيت أي مفتاح <bdi>`model`</bdi>. ويُشغِّل <bdi>Devin</bdi> العامل الفرعي على نموذجه
+الافتراضي الخاص بالعوامل الفرعية، وهو ليس نموذج الجلسة التي بدأته. ولا يكتب كذلك
+<bdi>`max-nesting`</bdi> ولا أيًّا من مفاتيح <bdi>Apothem</bdi>: <bdi>`maxTurns`</bdi> و<bdi>`version`</bdi>
+و<bdi>`updated`</bdi> و<bdi>`portability`</bdi>.
+
+أمور ينبغي معرفتها:
+
+- العوامل الفرعية المخصّصة تجريبية. إذ يصف <bdi>Devin</bdi> الصيغة والخيارات بأنها عرضة
+  للتغيير، ويحوي <bdi>Devin Desktop</bdi> مفتاح <bdi>Subagents (Preview)</bdi> في <bdi>Devin Settings</bdi>
+  (والإعداد <bdi>`subagents_enabled`</bdi> في <bdi>Devin CLI</bdi> مفعّل افتراضيًا).
+- ملفات العوامل الفرعية ملفات مشروع عادية. أودِعها مع المشروع أو
+  أدرِج <bdi>`.devin/agents/`</bdi> في <bdi>`.gitignore`</bdi>؛ ولا يختار <bdi>Apothem</bdi> نيابةً عنك.
+- الملف الخاص بك الذي يحمل اسم مساعِد من <bdi>Apothem</bdi> يُحفَظ تحت
+  <bdi>`~/.apothem/backups/`</bdi> ثم يُستبدَل. ولا يُعيده إلغاء التثبيت.
+  ولا تُمَسّ الملفات ذات الأسماء الأخرى أبدًا.
+- يقرأ <bdi>Devin</bdi> أيضًا المجلّد المشترك <bdi>`.agents/agents/`</bdi>، الذي لا يكتبه
+  <bdi>Apothem</bdi> أبدًا، وتوثّق <bdi>Devin CLI</bdi> استيراد العوامل الفرعية من مجلّد
+  <bdi>`.claude/`</bdi> دون تسمية المسار. ولم يتحقّق <bdi>Apothem</bdi> من أن الوضع
+  <bdi>Local</bdi> في <bdi>Devin Desktop</bdi> يطبّق ذلك الاستيراد.
+- لم يتحقّق <bdi>Apothem</bdi> من أسماء <bdi>`allowed-tools`</bdi> لأدوات الويب، ولا من القيم
+  التي يقبلها <bdi>`model`</bdi>، ولا من كيفية قراءة قائمة <bdi>`allowed-tools`</bdi> فارغة.
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
+## الخطّافات
+
+يُشغِّل <bdi>Devin Local</bdi> الخطّافات من المفتاح <bdi>`hooks`</bdi> في ملفات إعداده، وفق
+[وثائق الخطّافات في <bdi>Devin</bdi>](https://docs.devin.ai/cli/extensibility/hooks/overview.md).
+ويسجّل التثبيت خطّافين:
+
+| الحدث | ما يُشغَّل |
+| --- | --- |
+| <bdi>`SessionStart`</bdi> | تمهيد الجلسة: البيانات الوصفية للجلسة، وفهرس المهارات، وملخّصات الذاكرة والخطط، والوضعية الدائمة، تُضاف إلى سياق النموذج. |
+| <bdi>`PostToolUse`</bdi> (كل أداة) | متتبّع الضغط الاستباقي. يَعُدّ النشاط، ويطلب من النموذج، مرتين على الأكثر في كل دورة ضغط، أن يحفظ حالته أو يضغط السياق. ويبقى صامتًا فيما عدا ذلك. |
+
+كلاهما يضيف سياقًا للنموذج. ولا يحجب أيٌّ منهما استدعاء أداة أو جلسة.
+
+لا يسجّل <bdi>Apothem</bdi> أي حارس <bdi>`PreToolUse`</bdi> على <bdi>Devin</bdi>. إذ تسرد وثائق
+<bdi>Devin</bdi> الحقل <bdi>`additionalContext`</bdi> (الحقل الذي تتحدّث عبره حُرّاس <bdi>Apothem</bdi>)
+للأحداث <bdi>`UserPromptSubmit`</bdi> و<bdi>`SessionStart`</bdi> و<bdi>`PostToolUse`</bdi>، ولا تسرد
+للحدث <bdi>`PreToolUse`</bdi> إلا قرارًا وإعادة كتابة للمُدخَل. والحارس المسجَّل هناك
+سيكلّف بدء عملية في كل استدعاء أداة وقد لا يوصل شيئًا، لذا تبقى حُرّاس الكتابة
+والتعديل والصدفة، وفحص <bdi>`AskUserQuestion`</bdi>، وبروتوكول نهاية الجلسة، على الأدوات
+التي توصلها. وسيسجّل <bdi>Apothem</bdi> حارسًا على حدث في <bdi>Devin</bdi> حالما تُظهر
+الوثائق، أو اختبار استقصائي، أنه يصل إلى النموذج.
+
+هذه خطّافات <bdi>Devin Local</bdi>. أما الوضع الأقدم <bdi>Cascade</bdi> فيقرأ صيغة خطّافات
+مختلفة (<bdi>`.devin/hooks.json`</bdi>)، لا يكتبها التثبيت.
+
+**أين تذهب الملفات**
+
+| الملف | ما يحويه |
+| --- | --- |
+| <bdi>`<project>/.devin/config.local.json`</bdi> | تسجيلا الخطّافين، مدمجَين في المفتاح <bdi>`hooks`</bdi> في الملف. يوثّق <bdi>Devin</bdi> هذا الملف بوصفه التجاوز المحلّي ومُستبعَدًا عبر <bdi>gitignore</bdi>، ويستبعد ملفات الإعداد المحلّية من <bdi>git</bdi> بنفسه عبر <bdi>`.git/info/exclude`</bdi>. |
+| <bdi>`<project>/.apothem/support/windsurf/hooks/`</bdi> | سكربت المُوزِّع، ووحداته المساعدة، وملفات رسائله. |
+
+يسمّي كل أمر مسجَّل المُفسِّر الذي عثر عليه <bdi>Apothem</bdi> حين عمل، والمسار المطلق
+للمشروع، لذا فهو خاص بالجهاز. ولهذا يكتب التثبيت الملف المحلّي ولا يكتب أبدًا الملف
+المشترك <bdi>`<project>/.devin/config.json`</bdi>، ولا الملف المستقل
+<bdi>`.devin/hooks.v1.json`</bdi>، ولا إعدادات <bdi>`.claude/`</bdi>. ولا يعدّل التثبيت
+<bdi>`.gitignore`</bdi>. إذ يستبعد <bdi>Devin</bdi> ملفات إعداده المحلّية من <bdi>git</bdi> بنفسه (عبر
+<bdi>`.git/info/exclude`</bdi>)، لذا لا تتلقّى النسخة المسحوبة لدى زميلك أوامر تشير إلى
+جهازك؛ وتأكّد من أن <bdi>`.gitignore`</bdi> لديك يسرد <bdi>`.apothem/`</bdi>.
+
+**مسارات قد تسيء الصدفة قراءتها.** يُرفَض مسار المشروع أو المُفسِّر الذي يحوي
+<bdi>`$`</bdi>، أو علامة اقتباس مائلة (<bdi>backtick</bdi>)، أو علامة اقتباس مزدوجة، أو شرطة
+مائلة عكسية، قبل كتابة أي شيء: فداخل الأمر المقتبس سيُشغِّل ملفًا مختلفًا، أو يكسر
+<bdi>JSON</bdi> الذي يُكتَب فيه الأمر. ويسمّي الخطأ المسار؛ انقل المشروع أو أعد تسميته
+ثم شغّل التثبيت مجدّدًا. والمسافة أو الفاصلة العليا في المسار لا تضرّ.
+
+يبدو الأمر هكذا، مع المُفسِّر ومسار المشروع لديك في موضع
+المسارين:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+يربط <bdi>`--contract devin`</bdi> أسماء أدوات <bdi>Devin</bdi> المكتوبة بأحرف صغيرة (<bdi>`exec`</bdi>،
+و<bdi>`write`</bdi>، و<bdi>`edit`</bdi>، و<bdi>`read`</bdi>، و<bdi>`grep`</bdi>، و<bdi>`glob`</bdi>) بالأسماء التي
+تختبرها معالِجات <bdi>Apothem</bdi>، ويُبقي المُخرَج بالمغلّف نفسه الذي يقرؤه
+<bdi>Claude Code</bdi>. ولا يُكتَب أي مُطابِق: فمُطابِق <bdi>Devin</bdi> تعبير نمطي، والمُطابِق
+المحذوف يطابق كل أداة، و<bdi>`SessionStart`</bdi> ليس فيه أداة تُطابَق.
+
+**أمور ينبغي فحصها بعد التثبيت**
+
+- لا يُشغِّل <bdi>Devin</bdi> أي خطّاف ما دامت مساحة العمل في <bdi>Restricted Mode</bdi>. امنح
+  مساحة العمل الثقة أولًا.
+- لمعرفة ما إذا كانت الخطّافات قد حُمِّلت، افتح علامة التبويب <bdi>Hooks</bdi> في
+  <bdi>Customizations</bdi> الخاصة بـ <bdi>Devin Local</bdi>، أو شغّل <bdi>`/hooks`</bdi> في
+  <bdi>Devin CLI</bdi>. وكلاهما يسرد كل خطّاف مع ملفه المصدر.
+- لا تسمّي وثائق <bdi>Devin</bdi> أي صدفة لأوامر الخطّافات على <bdi>Windows</bdi>. وتستخدم
+  الأوامر اقتباس <bdi>`sh`</bdi>، الذي لن تحلّله <bdi>PowerShell</bdi> دون مُعامِل استدعاء.
+  ولم يتحقّق <bdi>Apothem</bdi> مما يُشغِّله <bdi>Devin Local</bdi> على <bdi>Windows</bdi>؛ فإن لم
+  تُحمَّل الخطّافات هناك، فأبلِغ عن ذلك في تذكرة (<bdi>issue</bdi>).
+
+**يُشغِّل <bdi>Devin</bdi> أيضًا الخطّافات التي كتبها <bdi>Claude Code</bdi>.** يُحمِّل
+<bdi>Devin</bdi> الخطّافات في <bdi>`~/.claude/settings.json`</bdi> و<bdi>`.claude/settings.json`</bdi>
+و<bdi>`.claude/settings.local.json`</bdi> ما دام <bdi>`read_config_from.claude`</bdi> مفعّلًا، وهو
+الوضع الافتراضي في <bdi>Devin CLI</bdi>؛ ولا تقول صفحات <bdi>Desktop</bdi> ما إذا كان
+<bdi>Devin Local</bdi> يطبّقه. وإن كنت قد ثبّتّ <bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> أيضًا،
+فقد تعمل مجموعتا الخطّافات كلتاهما. ويتشارك أمر <bdi>`SessionStart`</bdi> هنا ونسخته في
+<bdi>Claude Code</bdi> علامةً واحدة لكل جلسة في مجلّد حالة الخطّافات الخاص بـ
+<bdi>Apothem</bdi>، لذا يصمت أيّهما يعمل ثانيًا ويصل التمهيد إلى النموذج مرة واحدة؛
+ويتعرّف <bdi>Apothem</bdi> على <bdi>Devin</bdi> من المتغيّر <bdi>`DEVIN_PROJECT_DIR`</bdi> الذي يضبطه
+<bdi>Devin</bdi> لخطّافاته. وتغطّي العلامة عشر ثوانٍ، لذا فإن بدءًا لاحقًا للجلسة نفسها
+يظل يوصل التمهيد. ويعمل عدّاد حجم السياق في كلا الموضعين، فتُبلَغ عتباته مبكرًا، ولا
+يُزيل <bdi>Apothem</bdi> تكرار العدّادات. ولتحميل هذه الخطّافات وحدها، اضبط
+<bdi>`"claude": false`</bdi> تحت <bdi>`"read_config_from"`</bdi> في إعداد المستخدم لديك
+(<bdi>`~/.config/devin/config.json`</bdi>، أو <bdi>`%APPDATA%\devin\config.json`</bdi> على <bdi>Windows</bdi>) أو في
+ملف <bdi>`.devin/config.json`</bdi> الخاص بالمشروع؛ وهذا يوقف أيضًا استيراد <bdi>Devin</bdi>
+لقواعد <bdi>Claude Code</bdi> ومهاراته وأوامره وخوادم <bdi>MCP</bdi> الخاصة به. ويطبع التثبيت
+هذا بوصفه ملاحظة.
+
+**خطّافاتك الخاصة.** يُدمَج التسجيل في ملفك حسب المفتاح. وتبقى الخطّافات والمفاتيح
+الأخرى التي كتبتها كما كانت، ويبقى معالِج خاص بك تحت الحدث نفسه بجوار معالِج
+<bdi>Apothem</bdi>، ولا يستبدل التحديث إلا المعالِجات التي يُشغِّل أمرها مُوزِّع
+<bdi>Apothem</bdi> (<bdi>`.apothem/support/windsurf/hooks/dispatch.py`</bdi> مع
+<bdi>`--contract devin`</bdi>، أيًّا كان مسار المشروع الذي كُتِب تحته). والخطّاف الخاص بك
+الذي يشاركه الاسم فقط، أو الذي يُشغِّل <bdi>`python -m apothem.conformity.gate`</bdi>، لا
+يُعَدّ أبدًا خطّافًا لـ <bdi>Apothem</bdi>. والملف الذي يحوي تعليقات أو صياغة <bdi>JSON5</bdi>
+أخرى لا يمكن إعادة كتابته دون فقدانها، لذا يُبلِغ التثبيت عن خطأ
+<bdi>`config.unparseable`</bdi> لذلك الملف، ويتركه دون مساس ويتوقّف، مع إزالة الملفات
+الأخرى التي كان قد بدأ كتابتها مجدّدًا: أزِل التعليقات، أو أضِف المُدخلتين
+بنفسك.
+
+**إيقاف الخطّافات.** اضبط <bdi>`APOTHEM_HOOKS_DISABLE=1`</bdi> في بيئة <bdi>Devin</bdi>
+لإسكات خطّافات <bdi>Apothem</bdi>.
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -43,8 +254,18 @@ apothem install --harness windsurf --project /path/to/project
 سطح القواعد الحالي في <bdi>Windsurf</bdi> على نطاق المشروع تحت
 <bdi>`.devin/rules/`</bdi> (الموقع المُفضَّل، الذي تكون له الأسبقية على الموقع
 الاحتياطي <bdi>`.windsurf/rules/`</bdi> المُبقى للتوافق مع الإصدارات السابقة). سير
-العمل والذكريات المحلّية للجهاز يملكها المُشغِّل؛ ولا يكتبها <bdi>Apothem</bdi>. ولا
+العمل والذكريات المحلّية للجهاز يملكها المُشغِّل؛ ولا يكتبها <bdi>Apothem</bdi>، ولا يكتب
+ملف خطّافات <bdi>Cascade</bdi> ولا إعداد <bdi>Devin</bdi> المشترك. ولا
 تُكتَب صيغة الملف الواحد <bdi>`.windsurfrules`</bdi> عن قصد.
+
+يكتشف <bdi>Devin Desktop</bdi> (<bdi>Windsurf</bdi>) المجلّد <bdi>`~/.agents/skills/`</bdi>، لذا تظهر
+المهارات التي يكتبها التثبيت دون إعداد إضافي. ويمكنه أيضًا سرد الأسماء نفسها من
+<bdi>`~/.claude/skills/`</bdi> حين يكون استيراد إعداد <bdi>Claude Code</bdi> لديه مفعّلًا؛ وتجعل
+وثائق <bdi>Devin CLI</bdi> ذلك الاستيراد مفعّلًا افتراضيًا، ولا تقول صفحات <bdi>Desktop</bdi>
+ما إذا كان الوضع <bdi>Local</bdi> يطبّقه. ولم يتحقّق <bdi>Apothem</bdi> من كيفية تعامل
+<bdi>Windsurf</bdi> مع مفتاح ترويسة في <bdi>`SKILL.md`</bdi> لا يسرده؛ وتحمل المهارات
+<bdi>`user-invocable`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>، و<bdi>`argument-hint`</bdi>،
+وخريطة <bdi>`metadata`</bdi>.
 
 ## التحقّق
 
@@ -55,8 +276,20 @@ apothem verify --harness windsurf --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
-3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
+2. كل هدف مُدار موجود، بما في ذلك المجلّد <bdi>`.devin/agents/`</bdi> وتسجيل الخطّافات
+   <bdi>`.devin/config.local.json`</bdi>؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات
+   <bdi>JSON</bdi> أو <bdi>YAML</bdi>. ويجب أن يحوي ملف الخطّافات معالِجًا يُشغِّل مُوزِّع
+   <bdi>Apothem</bdi> (لا يُشغِّله الفحص)، لذا فإن الملف الذي أُعيد إلى حالته السابقة أو
+   أُفرِغ لم يعد يجتاز التحقّق. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن
+   الملفات المثبّتة تطابق ذلك الملف التعريفي. وبالنسبة إلى <bdi>`.devin/agents/`</bdi>
+   يتحقّق الفحص من وجود المجلّد، لا من وجود كل ملف مساعِد فيه؛ ويسرد
+   <bdi>`apothem diff --harness windsurf --project /path/to/project`</bdi> ملفات المساعِدات
+   المفقودة أو القديمة.
+3. كل مجلّد مهارة من <bdi>Apothem</bdi> في مكانه ومعه <bdi>`SKILL.md`</bdi>، أيًّا كان
+   التثبيت الذي كتبه، ولا يوجد مجلّد مهارة يحمل اسمًا من <bdi>Apothem</bdi> ويعود إلى
+   شيء لم يكتبه <bdi>Apothem</bdi>. ويسمّي الفحص الفاشل المجلّدات المفقودة أو
+   الدخيلة.
+4. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -65,6 +298,12 @@ apothem update --harness windsurf --project /path/to/project
 ```
 
 يُعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
+
+ويُعيد التحديث أيضًا كتابة أي مجلّد مهارة تختلف ملفاته عن الملفات الحالية.
+وإن كنت قد ثبّتّ بإصدار سابق لم يكتب أي مهارات، فإن التحديث يضيفها.
+ويُعيد كتابة ملفات العوامل الفرعية التي تختلف عن الحالية، ويضيف أي ملفات مفقودة منها.
+ويُحدِّث كذلك سكربتات الخطّافات ومعالِجات <bdi>Apothem</bdi> في
+<bdi>`.devin/config.local.json`</bdi>، تاركًا مُدخلاتك الخاصة دون مساس.
 
 ## إلغاء التثبيت
 
@@ -79,6 +318,20 @@ apothem uninstall --harness windsurf --project /path/to/project
 المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
 <bdi>Apothem</bdi>.
 
+ويُزيل إلغاء التثبيت أيضًا ملفات العوامل الفرعية التي كتبها في <bdi>`<project>/.devin/agents/`</bdi>
+ويُبقي أي ملف آخر هناك؛ ويُزال المجلّد حين يبقى فارغًا.
+ويُزيل معالِجات خطّافات <bdi>Apothem</bdi> من <bdi>`<project>/.devin/config.local.json`</bdi>،
+متعرّفًا عليها من مسار المُوزِّع في أمرها، ويُبقي خطّافاتك ومفاتيحك الخاصة. ولا يُحذَف
+الملف إلا حين يكون <bdi>Apothem</bdi> قد أنشأه ولا يتبقى فيه شيء آخر. وتُزال كذلك سكربتات
+الخطّافات في <bdi>`<project>/.apothem/support/windsurf/hooks/`</bdi>.
+ويُزيل مجلّدات المهارات التي كتبها في <bdi>`~/.agents/skills/`</bdi>
+والقواعد والقوالب في <bdi>`~/.config/apothem/`</bdi>، ولكن فقط حين لا يعود أي تثبيت آخر لـ <bdi>Apothem</bdi>
+يستخدمها. فقد يستخدمها مشروع آخر، أو أداة أخرى تشارك
+المجلّد. وفي تلك الحالة يُبقي إلغاء التثبيت المجلّدات، ويطبع التثبيت
+الذي يستخدمها، ويُزيلها آخر إلغاء تثبيت. وتبقى الملفات التي أضفتها إلى تلك
+المجلّدات، ويُزال المجلّد الذي يبقى فارغًا. ويُنسَخ كل
+مجلّد احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل إزالته.
+
 ## بوابة المطابقة
 
 ```bash
@@ -91,6 +344,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness windsurf --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| لا يسرد <bdi>Devin Local</bdi> أيًّا من مساعِدات <bdi>Apothem</bdi> | شغّل <bdi>`apothem diff --harness windsurf --project /path/to/project`</bdi>. يعني سطر مُعلَّق للمجلّد <bdi>`.devin/agents`</bdi> أن ملفات المساعِدات مفقودة أو قديمة، فشغّل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi>. ولا يُعَدّ <bdi>`apothem verify`</bdi> اختبارًا لهذا: فهو ينجح حين يوجد <bdi>`.devin/agents/`</bdi>، حتى لو لم يكن فيه أي ملف مساعِد. وإن لم يُبلِغ <bdi>`diff`</bdi> عن أي تغييرات مُعلَّقة، فتأكّد من أن الإعداد <bdi>Subagents (Preview)</bdi> مفعّل وأن المشروع مفتوح في الوضع <bdi>Local</bdi> في <bdi>Devin Desktop</bdi>، ثم ابدأ علامة تبويب جديدة |
+| لا تعمل خطّافات <bdi>Apothem</bdi> | لا يُشغِّل <bdi>Devin</bdi> أي خطّاف في مساحة عمل في <bdi>Restricted Mode</bdi>: امنح مساحة العمل الثقة. افتح علامة التبويب <bdi>Hooks</bdi> في <bdi>Customizations</bdi> الخاصة بـ <bdi>Devin Local</bdi>، أو شغّل <bdi>`/hooks`</bdi> في <bdi>Devin CLI</bdi>، لمعرفة ما إذا كانت مُدخلات <bdi>Apothem</bdi> قد حُمِّلت. وعلى <bdi>Windows</bdi> لم يتحقّق <bdi>Apothem</bdi> من الصدفة التي يُشغِّل فيها <bdi>Devin</bdi> أوامر الخطّافات |
+| يُبلِغ التثبيت عن <bdi>`config.unparseable`</bdi> للملف <bdi>`config.local.json`</bdi> | يحوي الملف تعليقات أو صياغة أخرى ستفقدها إعادة الكتابة. أزِل التعليقات وثبّت مجدّدًا، أو أضِف مُدخلتَي خطّافات <bdi>Apothem</bdi> بنفسك |
+| يظهر سياق <bdi>Apothem</bdi> مرتين، أو يأتي تذكير حجم السياق مبكرًا | يُشغِّل <bdi>Devin</bdi> أيضًا الخطّافات التي كتبها تثبيت <bdi>Claude Code</bdi>. اضبط <bdi>`"claude": false`</bdi> تحت <bdi>`"read_config_from"`</bdi> في إعداد <bdi>Devin</bdi> لديك لتحميل الخطّافات في <bdi>`.devin/config.local.json`</bdi> وحدها |
+| يسمّي <bdi>`apothem verify`</bdi> مجلّد مهارة مفقودًا | شغّل <bdi>`apothem install --harness windsurf --project /path/to/project`</bdi>؛ فهو يستعيد المجلّد |
+| يحذّر تثبيت أو تحديث من أنه تخطّى مجلّد مهارة | يوجد بالفعل في مجلّد المهارات مجلّد يحمل اسم مهارة من <bdi>Apothem</bdi> ولم يكتبه <bdi>Apothem</bdi>. أعد تسميته أو انقله، ثم شغّل <bdi>`apothem update`</bdi> |
+| يتوقّف التثبيت قبل أن يغيّر المشروع | فشلت عملية كتابة في دليلك المنزلي. اقرأ الخطأ، وأصلح المجلّد الذي يسمّيه (رابط يخرج من دليلك المنزلي، أو ملف في موضع مجلّد، أو مجلّد للقراءة فقط)، ثم ثبّت مجدّدًا |
 | محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط

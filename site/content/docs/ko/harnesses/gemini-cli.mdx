@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Gemini CLI(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,6 +55,15 @@ GEMINI.md
 Gemini `tools` 허용 목록이 되고, `maxTurns`는 `max_turns`가 됩니다. 따라서 읽기
 전용 도우미는 `write_file`이나 `replace` 도구를 받지 않습니다. 모델은 설정하지
 않으므로 각 도우미는 세션 모델을 상속합니다.
+
+프로필의 `agent_mcp_servers` 키가 나열하는 도우미는 지정된 서버마다 `tools` 허용
+목록에 `mcp_<server>_*` 항목 하나를 추가로 받으므로, 그 서버의 도구는 호출할 수
+있고 다른 서버의 도구는 호출할 수 없습니다. 키가 없으면 모든 도우미가 일반 허용
+목록을 유지합니다([MCP 서버](/docs/reference/mcp#헬퍼에-mcp-서버-접근-권한-부여하기)
+참조). `Gemini CLI`는 밑줄이 든 이름을 지정할 수 없으므로, Apothem은 문자, 숫자,
+`-`로 이루어진 서버 이름에 대해서만 여기에 권한을 작성합니다. 그 밖의 이름은
+건너뛰고 보고하며, 이미 모든 MCP 서버에 도달하는 도우미에 대한 권한도 마찬가지로
+건너뛰고 보고합니다.
 
 ## 호환성 참고 사항
 

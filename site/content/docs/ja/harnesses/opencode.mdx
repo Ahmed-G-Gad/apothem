@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "OpenCode（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f70b4b53a67405ec"
+sourceHash: "f4ee42d9d05adcf7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,7 @@ apothem install --harness opencode
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、あなたのプロファイルドキュメントと Apothem の常時適用ルールを指定する `instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーのいずれかへ伝播します。
+アダプターは、あなたのプロファイルドキュメント、4 つのコアルール、ルールインデックスを指定する `instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーのいずれかへ伝播します。
 既存の、一致する Apothem 管理の子要素は、置き換えの前にバックアップされます。
 
 ## 互換性に関する注意
@@ -40,15 +40,18 @@ apothem install --harness opencode
 OpenCode は、`instructions` リストが指定するすべてのファイルを、すべてのセッションに結合します（[OpenCode のルール](https://opencode.ai/docs/rules/)）。
 そのため、このリストは最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` であるルールのみを、それぞれ 1 つの明示的な `~/.config/opencode/.apothem/support/rules/<name>.md` パスとして指定します。
 OpenCode は先頭の `~/` をあなたのホームディレクトリに展開します。
-パスでフィルタリングされるルール、テンプレート、フックプロンプトは、`~/.config/opencode/.apothem/support/` 配下に参照素材としてインストールされたまま残り、それを参照するルール、スキル、コマンドがオンデマンドで読み込みます。
+それらのルールは、`agnostic-posture`、`authority-inquiry`、`context-management`、`session-closure`、そしてルールインデックスの `apothem-rule-index` です。
+OpenCode はどのルールもパスでスコープしないため、それ以外のすべてのルールはオンデマンドで読み込まれます。
+それらは `~/.config/opencode/.apothem/support/` 配下に参照素材としてインストールされたまま残り、インデックスが各ルールとそれを必要とする状況を名指しします。
+ルール、テンプレート、フックプロンプトを参照するルール、スキル、コマンドは、そこからそれを読み込みます。
 コマンド、スキル、ヘルパー定義はネイティブの検出場所を使用します。
 
 プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` は、共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持し、Apothem サポートファイルのセクションで終わります。
 このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.config/opencode/.apothem/support/` 配下の絶対ディレクトリを示します。
 このドキュメントは最初の `instructions` エントリであるため、OpenCode はすべてのセッションでこれを読み込みます。
 
-以前のリリースが書き込んだ `opencode.json` には、すべてのルールを読み込む単一のグロブ `~/.config/opencode/.apothem/support/rules/*.md` が記載されています。
-`apothem install` と `apothem update` はそれを常時適用のリストに置き換え、`apothem uninstall` は両方の形式を削除します。
+以前のリリースが書き込んだ `opencode.json` には、すべてのルールを読み込む単一のグロブ `~/.config/opencode/.apothem/support/rules/*.md`、または当時常時適用だった 28 のルールそれぞれの明示的なパスが記載されています。
+`apothem install` と `apothem update` はどちらの形式も上記のリストに置き換え、起動時にもはや読み込まれない 24 のパスを取り除きます。`apothem uninstall` はそれらすべてを削除します。
 あなた自身の `instructions` エントリは、いずれの場合も保持されます。
 
 ## 検証

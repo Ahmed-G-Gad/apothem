@@ -2,7 +2,7 @@
 title: "Internasionalisasi (i18n)"
 description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa alternatif hreflang, dan merender kanan-ke-kiri, di seluruh dua belas bahasa."
 machineTranslated: true
-sourceHash: "b3eb706603e79d8b"
+sourceHash: "fbe64d232e98a8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,12 @@ dihubungkan ke perutean.
 - **Render kanan-ke-kiri: aktif.** Lembar gaya bersama menggunakan properti
   CSS logis di seluruhnya, sehingga halaman bahasa Arab dirender dengan benar
   di bawah `dir="rtl"`.
+- **Tinjauan terjemahan: dilacak per halaman.** Halaman lokal hasil mesin
+  disajikan dan membawa `machineTranslated: true` di frontmatter-nya sampai
+  seorang manusia meninjaunya; flag itu adalah metadata pelacakan tinjauan dan
+  halaman tidak menampilkannya. Bahasa Inggris menjadi cadangan untuk halaman
+  apa pun yang tidak dimiliki suatu lokal. Tertinjaunya 80% halaman suatu lokal
+  adalah target tinjauan, bukan gerbang untuk penerbitan.
 - **Kesegaran terjemahan: dilacak per halaman.** Setiap halaman lokal mencatat
   teks bahasa Inggris yang menjadi sumber terjemahannya. Ketika halaman bahasa
   Inggris kemudian berubah, halaman terjemahan menampilkan catatan satu baris

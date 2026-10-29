@@ -2,7 +2,7 @@
 title: "Manifiesto de fijación de dependencias"
 description: "Política de declaración de dependencias que abarca los rangos de tiempo de ejecución de Python, las herramientas de desarrollo, los archivos de bloqueo de las herramientas de lanzamiento y los pisos de versión ratificados para cada superficie de compilación."
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,18 @@ de ejecución más una cadena de herramientas más amplia de desarrollo, auditor
 lanzamiento y documentación. Las dependencias de tiempo de ejecución usan
 límites inferiores conservadores en `pyproject.toml`; el sitio web versiona
 `site/package-lock.json`; las GitHub Actions se fijan por SHA inmutable con
-comentarios de versión y se actualizan mediante Renovate.
+comentarios de versión y se actualizan mediante Dependabot.
 
 | Clase | Declaración | Política de bloqueo |
 |---|---|---|
 | Dependencias de tiempo de ejecución de Python | `[project.dependencies]` en `pyproject.toml` | Rangos con límite inferior; sin bloqueo de tiempo de ejecución de Python versionado |
 | Herramientas de desarrollo / seguridad | extras de `[project.optional-dependencies]` | Rangos con límite inferior; CI instala las versiones coincidentes actuales |
 | Herramientas de lanzamiento | `scripts/release/requirements-build-linux.txt` para los flujos de trabajo de lanzamiento; el extra `release` de `[project.optional-dependencies]` para las compilaciones locales | Bloqueado por hash para los flujos de trabajo de lanzamiento; generado a partir del cierre de las herramientas de lanzamiento. El extra `release` es un rango con límite inferior |
-| Herramientas solo de CI | `.github/workflows/*.yml` | Las herramientas pip exclusivas de los flujos de trabajo usan fijaciones exactas (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Herramientas solo de CI | `.github/workflows/*.yml` | Las herramientas pip exclusivas de los flujos de trabajo usan fijaciones exactas (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Sitio de documentación | `site/package.json` | `site/package-lock.json` versionado y consumido por `npm ci` |
-| GitHub Actions | Referencias `uses:` fijadas por SHA con comentarios de versión | Renovate propone actualizaciones; las excepciones llevan marcadores `action-pinning-exempt:` |
+| Empaquetador de VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` versionado; los trabajos de lanzamiento y publicación ejecutan `npm ci --ignore-scripts` |
+| CLI de entornos del channel smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` versionado y consumido por `npm ci` |
+| GitHub Actions | Referencias `uses:` fijadas por SHA con comentarios de versión | Dependabot propone actualizaciones semanales; las excepciones llevan marcadores `action-pinning-exempt:` |
 
 ## Ratificación del lanzamiento
 
@@ -73,5 +75,36 @@ Node reproducible.
   estático desplegado; el archivo de bloqueo da compilaciones `npm ci`
   deterministas para esa superficie pública.
 - **¿Por qué Actions fijadas por SHA?** Las etiquetas son mutables; los SHA son
-  inmutables. Renovate actualiza los SHA fijados, mientras que la puerta de
-  lanzamiento registra cualquier retención intencionada.
+  inmutables. Dependabot propone los incrementos de SHA y reescribe cada
+  comentario de versión, mientras que la puerta de lanzamiento registra
+  cualquier retención intencionada.
+- **Lo que el bot de actualizaciones no toca.** Las actualizaciones de versión
+  de Dependabot (`.github/dependabot.yml`) cubren las fijaciones de GitHub
+  Actions, el archivo de bloqueo del sitio web, el archivo de bloqueo del
+  empaquetador vsce (`tools/vsce`), el archivo de bloqueo de las CLI de entornos
+  que instala el channel smoke (`tools/channel-smoke`) y los hooks de
+  pre-commit. Los pisos de tiempo de ejecución en `pyproject.toml`, los
+  requisitos de lanzamiento bloqueados por hash, el cierre vendorizado en
+  `src/apothem/_vendor/vendor.txt` y los hooks de pre-commit fijados en
+  sincronía con `pyproject.toml` se mueven a mano, porque el incremento de una
+  sola fijación rompería los archivos con los que concuerdan.
+  La versión mayor de `@types/node` del sitio web sigue su piso de Node
+  (`engines` y `.nvmrc`, Node 22), por lo que Dependabot solo propone sus
+  actualizaciones menores y de parche; sube esa versión mayor junto con el piso.
+  Las actualizaciones de versión dejan intactos los bloques `overrides` de npm.
+  Las actualizaciones de seguridad de Dependabot siguen cubriendo todos los
+  manifiestos, de modo que un pull request de seguridad puede proponer una de
+  estas fijaciones, o mover un override; adáptalo a mano o ciérralo.
+- **Fusionar un pull request de Dependabot.** El valor predeterminado de squash
+  del repositorio toma el título del PR. Algunos títulos de Dependabot, sobre
+  todo los agrupados que nombran un directorio, superan el asunto de squash de
+  72 caracteres; la comprobación PR Title los señala, y cambiar el título los
+  corrige. Un pull request que cambia un archivo de bloqueo de herramientas no
+  ejecuta ningún trabajo de `ci.yml`, así que el flujo de trabajo de auditoría
+  de npm lo audita y lo instala, empaqueta la extensión de VS Code para el
+  archivo de bloqueo de vsce y ejecuta las pruebas de lanzamiento de vsce, y el
+  flujo de trabajo del channel smoke se ejecuta para el archivo de bloqueo de
+  channel-smoke. El flujo de trabajo Markdown Lint ejecuta el hook de
+  markdownlint en un pull request de hooks de pre-commit; los demás hooks no se
+  ejercitan en CI, así que ejecuta `pre-commit run --all-files` en su rama antes
+  de fusionarlo.

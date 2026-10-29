@@ -2,7 +2,7 @@
 title: "Registri Mandat Lintas-Bidang (CM-1–CM-28)"
 description: "Registri dan definisi lengkap mandat lintas-bidang internal-ekosistem (CM-1–CM-28) yang mengatur semua interaksi dan operasi pipeline."
 machineTranslated: true
-sourceHash: "ed82dc2de7476ce6"
+sourceHash: "4846a17b8baba99a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "ed82dc2de7476ce6"
 
 ## Pengecualian rujukan-diri registri
 
-Dokumen ini ADALAH registri CM-N kanonik — inilah sumber tempat token `CM-1` hingga `CM-28` *didefinisikan*. Menyatakan ulang token-token ini *di dalam isi registri itu sendiri* bersifat kanonik, bukan kebocoran terminologi internal-rencana. Invarian isolasi-basis-kode tetap berlaku dengan kekuatan penuh pada setiap artefak *lainnya* (aturan, pembantu, command, hook, skema, skrip, alat, pengujian, dokumentasi, README, changelog, subjek/isi commit, nama branch, judul/deskripsi PR): tanpa token `CM-N` / `TM-N` / `CP-N`, hanya bahasa domain yang alami.
+Dokumen ini ADALAH registri CM-N kanonik — inilah sumber tempat token `CM-1` hingga `CM-28` *didefinisikan*. Menyatakan ulang token-token ini *di dalam isi registri itu sendiri* bersifat kanonik, bukan kebocoran terminologi internal-rencana. Invarian isolasi-basis-kode tetap berlaku dengan kekuatan penuh pada setiap artefak *lainnya* yang bukan dokumentasi terpublikasi (aturan, pembantu, command, hook, skema, skrip, alat, pengujian, README, CONTRIBUTING, changelog, subjek/isi commit, nama branch, judul/deskripsi PR): tanpa token `CM-N` / `TM-N` / `CP-N`, hanya bahasa domain yang alami.
+
+Halaman dokumentasi terpublikasi di bawah `site/content/docs/` boleh mengutip sebuah mandat dengan id `CM-N`-nya, karena registri ini dan halaman referensi aturan mendefinisikan id tersebut bagi pembaca. Halaman yang mengutip sebuah id SEBAIKNYA menyebut mandat tersebut dengan kata-kata biasa di sampingnya, dan TIDAK BOLEH mengutip nomor bagian internal-rencana dari sebuah mandat. Token `TM-N` dan `CP-N` tetap berada di luar dokumentasi terpublikasi, demikian pula istilah terlarang lainnya dalam blok CM-7 di bawah.
 
 ## Namespace
 
@@ -18,7 +20,7 @@ Dokumen ini ADALAH registri CM-N kanonik — inilah sumber tempat token `CM-1` h
 
 ## Aktivasi
 
-CM-1–10 + identitas kognitif mengatur semua interaksi. CM-11, CM-13 (sub-aturan A sampai C), CM-15, CM-16, CM-20 hanya berlaku di dalam pipeline `/plan`. Sub-aturan D dari CM-13 berlaku untuk setiap penulisan ke git, dan sub-aturan E untuk target `git mv` / `git rm` serta jalur di isi commit, baik di dalam maupun di luar pipeline tersebut. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 berlaku secara universal (selalu aktif). CM-23, CM-27, CM-28 berlaku secara universal di dalam cakupan path-filter yang dideklarasikannya. Tingkat keseriusan default ad-hoc: PERSONAL_USE.
+CM-1–10 + identitas kognitif mengatur semua interaksi. CM-11, CM-13 (sub-aturan A sampai C), CM-15, CM-16, CM-20 hanya berlaku di dalam pipeline `/plan`. Sub-aturan D dari CM-13 berlaku untuk setiap penulisan ke git, dan sub-aturan E untuk target `git mv` / `git rm` serta jalur di isi commit, baik di dalam maupun di luar pipeline tersebut. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 berlaku secara universal. CM-23, CM-27, CM-28 berlaku secara universal di dalam cakupan path-filter yang dideklarasikannya. Tingkat keseriusan default ad-hoc: PERSONAL_USE. Sebuah mandat tetap mengatur terlepas dari apakah aturannya dimuat saat peluncuran atau tidak: empat aturan dimuat di setiap sesi (`agnostic-posture`, `authority-inquiry`, `session-closure`, `context-management`), dan sisanya dimuat pada jalur yang cocok, melalui indeks aturan, atau melalui aturan, skill, atau command yang mengutipnya.
 
 ## CM-1–10 (Operasional)
 
@@ -28,7 +30,7 @@ CM-1–10 + identitas kognitif mengatur semua interaksi. CM-11, CM-13 (sub-atura
 
 > Ini adalah faset CM-7 yang berhadapan dengan basis kode; faset kelengkapan-produk didokumentasikan sebagai **Produk Koheren (→TM-11)** di `src/apothem/rules/operational-mandates.md §CM-7`. Kedua label merujuk pada mandat yang sama.
 
-Artefak basis kode TIDAK BOLEH PERNAH memuat rujukan internal-rencana. **Istilah terlarang (blok kanonik — konsumen saudara merujuk silang enumerasi ini):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", nama folder fase, nama berkas suite rencana (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), nama tingkat keseriusan (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefak yang dilindungi:** kode sumber, pengujian, konfigurasi, skema, skrip build, data, aset, pesan commit, nama branch, judul/deskripsi PR, README, CONTRIBUTING, dokumentasi API, changelog — setiap artefak yang terlihat di luar pohon sumber Apothem (tujuan pemasangan per-harness seperti `~/.claude/` untuk Claude Code). Hanya bahasa domain yang alami. **Konsumen saudara** (masing-masing mengutip blok ini melalui rujukan alih-alih mengenumerasi ulang): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, indikator pelanggaran §CM-7 di `src/apothem/rules/operational-mandates.md`.
+Artefak basis kode TIDAK BOLEH PERNAH memuat rujukan internal-rencana. **Istilah terlarang (blok kanonik — konsumen saudara merujuk silang enumerasi ini):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", nama folder fase, nama berkas suite rencana (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), nama tingkat keseriusan (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefak yang dilindungi:** kode sumber, pengujian, konfigurasi, skema, skrip build, data, aset, pesan commit, nama branch, judul/deskripsi PR, README, CONTRIBUTING, dokumentasi API, changelog — setiap artefak yang terlihat di luar pohon sumber Apothem (tujuan pemasangan per-harness seperti `~/.claude/` untuk Claude Code). Hanya bahasa domain yang alami. Satu-satunya pengecualian adalah dokumentasi terpublikasi di bawah `site/content/docs/`, yang boleh mengutip id `CM-N` sebagaimana dijelaskan dalam pengecualian rujukan-diri registri di atas. **Konsumen saudara** (masing-masing mengutip blok ini melalui rujukan alih-alih mengenumerasi ulang): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, indikator pelanggaran §CM-7 di `src/apothem/rules/operational-mandates.md`.
 
 ## CM-11 (Integritas Rencana)
 

@@ -2,7 +2,7 @@
 title: "新しいハーネスアダプターの作成"
 description: "新しい Apothem ハーネスアダプターを作成・公開するためのランブック。"
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,16 @@ Apothem へのファーストパーティ組み込み、またはサードパー
 
 [ハーネスアダプターの作成](/docs/examples/authoring-a-harness-adapter)の例に従い、
 対象ハーネス向けに `HarnessAdapter` を実装します。
+
+アダプターがプレーンテキストのテンプレート（JSON でも YAML でもないファイル）を
+`mode: write_text` と `ownership_class: operator-owned` で書き込む場合、`uninstall`
+がそのファイルを削除するのは、それが Apothem の出荷したテンプレートの未編集のコピーである間だけです。
+後のリリースでテンプレートが変更されたときは、同じ変更の中で、以前のテキストの SHA-256 ダイジェストを
+そのマニフェストエントリーの `earlier_digests` リストに追加してください。そうしないと、`uninstall` は
+以前のリリースが書き込んだ未編集のコピーをすべてその場に残します。ダイジェストは、最新のリリースタグにおけるテキストから
+`git show <tag>:<template path> | sha256sum` で取得します。テンプレートには
+`${...}` のパストークンを含めてはなりません。出荷されたテンプレートが考慮されていない場合、
+`tests/unit/test_template_digests.py` は失敗します。
 
 ### 2. ドキュメントページを書く
 

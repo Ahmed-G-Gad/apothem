@@ -2,7 +2,7 @@
 title: "Arsitektur Pekerja Terdelegasi"
 description: "Cara Apothem memproyeksikan satu kohor kapabilitas pekerja-terdelegasi ke tujuh belas harness dengan permukaan hook dan format aturan yang berbeda-beda."
 machineTranslated: true
-sourceHash: "a0655f91d2726ce9"
+sourceHash: "f7b510f076abbabd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,8 @@ di seluruhnya.
 ## Matriks kapabilitas pekerja-terdelegasi per-harness
 
 Matriks di bawah ini mencakup seluruh tujuh belas harness. Kolom: permukaan hook PreToolUse
-yang diekspos setiap harness, format yang digunakan Apothem untuk mengaktifkan aturan, kelas
+yang dihubungkan adapter (bila sebuah harness mendokumentasikan hook yang tidak didaftarkan
+adapter, sel tersebut menyatakannya), format yang digunakan Apothem untuk mengaktifkan aturan, kelas
 adapter (lihat [Kelas adapter](#penjelasan-kelas-adapter)), dan
 apakah adapter merender konfigurasi native melalui materializer.
 
@@ -30,28 +31,28 @@ apakah adapter merender konfigurasi native melalui materializer.
 |---------|-------------------------|------------------------|---------------|--------------|
 | antigravity | Permukaan hook native tersedia; hanya materi pendukung Apothem | `GEMINI.md` plus aturan plugin Antigravity CLI | Class I | tidak ada |
 | claude-code | Native PreToolUse / PostToolUse / Stop / SessionStart | Aturan datar `.md` di bawah `rules/` | Class II-A | tidak ada (templat pengaturan vendor) |
-| codebuddy | Tidak ada | Berkas aturan proyek `.codebuddy/rules/apothem-rules.md` | Class I | tidak ada |
+| codebuddy | SessionStart dan PostToolUse native di `.codebuddy/settings.local.json`; tanpa pengaman PreToolUse (vendor tidak mendokumentasikan `additionalContext` di sana) | Berkas aturan proyek `.codebuddy/rules/apothem-rules.md` | Class I | tidak ada |
 | codex | Hook siklus-hidup native `hooks.json` | `AGENTS.md` plus aturan pendukung yang dirujuk oleh skill terpasang | Class I | tidak ada |
-| cursor | Tidak ada | Aturan workspace `.mdc` (frontmatter MDC: `description` / `globs` / `alwaysApply`) | Class I | tidak ada |
-| gemini-cli | Hanya materi pendukung | Aturan disematkan dalam satu `GEMINI.md` | Class I | tidak ada |
-| github-copilot | Tidak ada (ekstensi IDE, tanpa hook pemanggilan-alat) | Aturan dalam `.github/copilot-instructions.md` | Class I | tidak ada |
+| cursor | `sessionStart` native di `.cursor/hooks.json` proyek; belum ada hook peristiwa-alat | Satu berkas aturan workspace `.mdc` (frontmatter MDC: `description` / `globs` / `alwaysApply`) | Class I | tidak ada |
+| gemini-cli | Permukaan hook native tersedia; hanya materi pendukung Apothem | Aturan disematkan dalam satu `GEMINI.md` | Class I | tidak ada |
+| github-copilot | sessionStart dan postToolUse native di `.github/hooks/apothem.json`; tanpa pengaman preToolUse (vendor hanya membaca kolom izin di sana) | Aturan dalam `.github/copilot-instructions.md` | Class I | tidak ada |
 | glm | Tidak ada (backend model; tanpa permukaan alat pekerja) | `.apothem/providers/glm.toml` konfigurasi penyedia backend (tanpa kohor aturan) | Class I | tidak ada |
 | hermes | Hanya materi pendukung | `config.yaml` plus direktori skill eksternal | Class II-B | `config.yaml` |
 | kimi-code | Hanya materi pendukung | `AGENTS.md` plus aturan pendukung di bawah `.kimi-code/.apothem/support/` | Class I | tidak ada |
-| kiro | Tidak ada (hook pekerja Kiro di luar cakupan adapter) | Berkas steering `.kiro/steering/apothem-rules.md` | Class I | tidak ada |
+| kiro | SessionStart native di `.kiro/hooks/apothem.json`; tanpa hook peristiwa-alat (vendor mengabaikan keluarannya) | Berkas steering `.kiro/steering/apothem-rules.md` | Class I | tidak ada |
 | open-claw | Hanya materi pendukung | `openclaw.json` plus direktori skill tambahan | Class II-B | `openclaw.json` |
 | opencode | Hanya materi pendukung | JSON yang dirender profil plus command, skill, dan agen native | Class II-B | `opencode.json` |
 | qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus command, skill, dan agen native | Class II-B | `settings.json` / `QWEN.md` |
 | trae | Tidak ada | Berkas aturan proyek `.trae/rules/apothem-rules.md` | Class I | tidak ada |
-| windsurf | Tidak ada | Aturan dalam `.devin/rules/` | Class I | tidak ada |
+| windsurf | SessionStart dan PostToolUse native untuk Devin Local di `.devin/config.local.json`; tanpa pengaman PreToolUse (vendor tidak mendokumentasikan kanal konteks di sana) | Satu berkas aturan dalam `.devin/rules/` | Class I | tidak ada |
 | zed | Tidak ada | Berkas datar `.rules` di akar proyek | Class I | tidak ada |
 
 
 Catatan tentang matriks:
 
-- **claude-code** adalah adapter rujukan. Ia membawa hook PreToolUse,
-  PostToolUse, Stop, dan SessionStart native serta menyertakan templat pengaturan
-  vendor. Ia menulis satu blok terkelola yang dibatasi sentinel ke dalam
+- **claude-code** adalah adapter dengan permukaan native terluas. Ia membawa hook
+  PreToolUse, PostToolUse, Stop, dan SessionStart native serta menyertakan templat
+  pengaturan vendor. Ia menulis satu blok terkelola yang dibatasi sentinel ke dalam
   `CLAUDE.md` dan membiarkan prosa operator di luar sentinel tidak berubah.
 - **codex** memasang hook siklus-hidup native melalui `hooks.json`, mengonversi
   pekerja ke TOML, membungkus prompt command sebagai skill Codex, dan membiarkan
@@ -60,7 +61,7 @@ Catatan tentang matriks:
   dan memasang plugin Apothem di bawah
   `~/.gemini/antigravity-cli/plugins/apothem/`. Berkas hook dipertahankan sebagai
   materi pendukung sampai adapter memiliki penerjemahan skema-hook Antigravity.
-- **cursor** mengaktifkan aturan melalui berkas `.mdc` yang membawa frontmatter
+- **cursor** mengaktifkan aturan melalui satu berkas `.mdc` yang membawa frontmatter
   MDC vendor (`description`, `globs`, `alwaysApply`); adapter tidak menulis
   berkas tunggal `.cursorrules`.
 - **windsurf** menggunakan `.devin/rules/`; adapter tidak menulis berkas tunggal
@@ -119,10 +120,14 @@ CLI terhadap suatu harness:
 
 - `apothem install --harness <H>` mempropagasi subset manifest untuk `<H>`
   dan, untuk adapter Class II-A / II-B, merender konfigurasi native-harness.
-- `apothem verify --harness <H>` memeriksa konfigurasi terpasang terhadap apa
-  yang akan dihasilkan profil saat ini dan melaporkan penyimpangan.
-- `apothem doctor` melaporkan status per-harness di seluruh adapter yang
-  terdaftar — terpasang / tidak ada / menyimpang.
+- `apothem verify --harness <H>` memeriksa bahwa berkas terkelola ada dan
+  dapat diurai. Dengan `--profile PATH`, perintah ini juga memeriksanya terhadap apa
+  yang akan dihasilkan profil tersebut dan gagal bila ada penyimpangan.
+- `apothem status` melaporkan apakah setiap harness terpasang dan apakah harness itu
+  telah menyimpang dari profil bersama saat ini.
+- `apothem doctor` melaporkan kesehatan per-harness di seluruh adapter yang
+  terdaftar: `ok`, `not_installed`, `needs_project`, `verify_failed`,
+  `hook_failed`, atau `error`.
 
 Lihat [referensi CLI](/docs/cli-reference) untuk seluruh permukaan command.
 
@@ -134,7 +139,7 @@ dalam matriks tereduksi menjadi salah satu dari ini.
 
 | Sumbu | Rentang yang teramati di seluruh tujuh belas harness |
 |------|---------------------------------------------|
-| Permukaan hook | Multi-peristiwa native (claude-code, codex, qwen-code) → hanya materi-hook pendukung (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → tidak ada (codebuddy, cursor, github-copilot, glm, kiro, trae, windsurf, zed) |
+| Permukaan hook | Multi-peristiwa native (claude-code, codex, qwen-code) → native pada peristiwa yang dikirim vendor ke model (codebuddy: SessionStart dan PostToolUse; cursor: sessionStart; github-copilot: sessionStart dan postToolUse; kiro: SessionStart; windsurf: SessionStart dan PostToolUse) → hanya materi-hook pendukung (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → tidak ada hook yang didaftarkan adapter (glm, trae, zed) |
 | Format aktivasi aturan | `.md` datar (claude-code) → aturan plugin (antigravity) → workspace `.mdc` (cursor) → aturan direktori (codebuddy, trae, windsurf) → berkas steering (kiro) → berkas datar akar-proyek (zed) → satu berkas tersemat (codex, gemini-cli, github-copilot, kimi-code) → materi pendukung yang dirujuk-konfigurasi (hermes, open-claw, opencode, qwen-code) → konfigurasi penyedia backend (glm) |
 | Kelas adapter | Class I propagasi-mentah → Class II-A mentah + pengaturan vendor → Class II-B permukaan-tunggal yang dirender-profil |
 

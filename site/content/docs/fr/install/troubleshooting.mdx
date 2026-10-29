@@ -2,7 +2,7 @@
 title: "Dépannage"
 description: "Solutions aux échecs d'installation et aux problèmes d'exécution courants d'Apothem sur les voies plugin, npx et installateur."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,6 +66,24 @@ depuis GitHub. En cas d'échec, confirmez que la machine peut atteindre
 pare-feu), puis réessayez. Si le marketplace a été ajouté précédemment lors d'une
 récupération partielle, supprimez-le et rajoutez-le avant d'exécuter
 `/plugin install apothem@apothem`.
+
+### L'ajout du marketplace de l'hôte à plugins expire
+
+La commande de l'hôte à plugins qui ajoute un marketplace clone son dépôt et
+abandonne au bout de 30 secondes. Un clone complet de ce dépôt peut prendre plus
+de temps sur un disque lent, tel qu'un lecteur Windows sous WSL, et un clone
+complet antérieur peut aussi laisser le plugin bloqué à une ancienne version
+lorsqu'une actualisation ultérieure expire. Ne récupérez que les deux dossiers
+dont le plugin a besoin :
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+La liste des plugins de l'hôte affiche alors la version actuelle de
+`apothem@apothem`.
 
 ### npx sert une version obsolète
 

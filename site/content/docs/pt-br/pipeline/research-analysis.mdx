@@ -2,14 +2,14 @@
 title: "/research-analysis"
 description: "/research-analysis — Analisa os dados brutos conforme o plano pré-registrado: testes planejados, tamanhos de efeito com intervalos de confiança, verificações de robustez e desvios divulgados."
 machineTranslated: true
-sourceHash: "63b072fd3548eba2"
+sourceHash: "6bfe62bf33b6bccc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Papel:** Investigador principal (análise)
 **Posição no pipeline:** meio da cadeia
 
-Analisa os dados brutos conforme o plano pré-registrado — executa os testes estatísticos planejados, reporta tamanhos de efeito com intervalos de confiança (não apenas valores p), aplica correção para comparações múltiplas onde aplicável, executa verificações de robustez / sensibilidade e divulga cada desvio em relação ao pré-registro.
+Analisa os dados brutos conforme o plano pré-registrado — executa os testes estatísticos planejados sobre a unidade de análise independente, reporta tamanhos de efeito com intervalos de confiança (intervalos de credibilidade sob um plano bayesiano; não apenas valores p), aplica correção para comparações múltiplas onde aplicável, declara como os dados ausentes foram tratados, executa verificações de robustez / sensibilidade e divulga cada desvio em relação ao pré-registro.
 
 ## Invocação canônica
 
@@ -29,7 +29,7 @@ Os dados brutos no local natural do host que a etapa de experimento registrou, m
 
 ## Saídas
 
-`_outputs/analysis.md` (os testes pré-registrados com tamanhos de efeito e ICs, a correção para comparações múltiplas, as verificações de robustez e os desvios divulgados) + figuras / tabelas em um local natural do host.
+`_outputs/analysis.md` (os testes pré-registrados com tamanhos de efeito, ICs, unidade de análise e um julgamento de viés por domínio para cada resultado principal; a correção para comparações múltiplas; o tratamento de dados ausentes; as verificações de robustez; e os desvios divulgados) + figuras / tabelas em um local natural do host.
 
 ## A jusante
 
@@ -41,10 +41,18 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 1. **Carregar o contexto** — Ler os dados brutos e o pré-registro.
 2. **Verificar a Comporta de sequência** — Confirmar que as saídas do experimento existem; caso contrário, interromper com `Blocked: run /research-experiment first`.
-3. **Analisar** — Executar os testes pré-registrados; reportar tamanhos de efeito + ICs; corrigir para comparações múltiplas; executar verificações de robustez / sensibilidade.
-4. **Divulgar os desvios** — Registrar cada afastamento do plano pré-registrado.
+3. **Analisar** — Executar os testes pré-registrados sobre a unidade de análise independente; diagnosticar os pressupostos sem deixar que os diagnósticos escolham o teste; reportar tamanhos de efeito + ICs; corrigir para comparações múltiplas; declarar o tratamento de dados ausentes; executar verificações de robustez / sensibilidade.
+4. **Divulgar os desvios** — Registrar cada afastamento do plano pré-registrado. A passagem para uma alternativa que o pré-registro nomeia é registrada como uma adaptação planejada; qualquer outra substituição é um desvio.
 5. **Atualizar o manifesto de transferência** — Registrar o caminho da análise e as figuras / tabelas.
 6. **Emitir a análise** — `_outputs/analysis.md` + figuras / tabelas.
+
+## Disciplina estatística
+
+- **O teste segue o projeto.** O teste primário pré-registrado se mantém, a menos que o próprio gatilho de alternativa do pré-registro seja acionado; um teste de triagem que não rejeita não mostra que um pressuposto se sustenta.
+- **n conta unidades independentes.** Medidas repetidas, subamostras, conglomerados e sementes são agregados à unidade ou modelados como dependência, nunca contados como réplicas independentes.
+- **Um resultado nulo é lido de três formas.** O intervalo do tamanho de efeito, o resultado de equivalência frente ao menor efeito de interesse e uma declaração de sensibilidade (o menor efeito detectável no n analisado alcançado) são reportados juntos. O poder calculado a partir do efeito observado nunca é reportado.
+- **Planos bayesianos em seus próprios termos.** Um plano bayesiano pré-registrado reporta o resumo da posterior com seu intervalo de credibilidade, executa verificações de sensibilidade à priori, de diagnóstico computacional e preditivas a posteriori antes que qualquer posterior seja reportada, e usa uma região de equivalência prática fixada de antemão para resultados nulos.
+- **Viés no nível do resultado e figuras.** Cada resultado principal traz um julgamento baixo / algumas preocupações / alto por domínio, semeado a partir do livro-razão de ameaças à validade do projeto e nunca somado em uma pontuação única, e cada figura atende ao piso de codificação, divulgação de incerteza e acessibilidade.
 
 ## Piso de rigor
 
@@ -67,6 +75,8 @@ auditável.
 |---------|-------|----------|
 | Blocked: run /research-experiment first | Sem dados brutos | Execute `/research-experiment` para produzir os dados + o log |
 | Valor p reportado sem tamanho de efeito | Relato estatístico incompleto | Reporte tamanhos de efeito + intervalos de confiança |
+| Observações dependentes contadas como réplicas | Medidas repetidas, subamostras, conglomerados ou sementes tratados como independentes | Agregue à unidade independente ou modele a dependência; n conta unidades |
+| Poder observado reportado para um resultado nulo | Poder calculado a partir do efeito observado | Remova-o; reporte o intervalo, o resultado de equivalência e a declaração de sensibilidade |
 | Desvio de análise não divulgado | O plano se afastou silenciosamente | Divulgue o desvio em relação ao pré-registro |
 
 ## Exemplos

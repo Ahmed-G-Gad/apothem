@@ -2,7 +2,7 @@
 title: "Apothem vs. configuração bruta do GitHub Copilot"
 description: "Manter à mão o copilot-instructions.md do GitHub Copilot versus renderizá-lo a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,14 @@ o gerenciamento dela pelo Apothem.
 | Escrever instruções | Editar à mão `.github/copilot-instructions.md` | Renderizadas: regras compartilhadas incorporadas ao arquivo |
 | Manter as instruções alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
 | Instalar / remover a configuração | Escrever e excluir o arquivo à mão | `apothem install` / `apothem uninstall` |
+| Compartilhar skills e comandos reutilizáveis | Copiar à mão cada pasta de skill para `~/.agents/skills/` e manter as cópias atualizadas | Gravados em `~/.agents/skills/` pelo adaptador, uma cópia para todos os projetos, e atualizados no `apothem update` |
 | Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness github-copilot --project <path>` |
 
 ## O que o Apothem gerencia
 
 O adaptador github-copilot embute as regras compartilhadas em
-`.github/copilot-instructions.md`. O Copilot opera como uma extensão de IDE e não
-expõe hooks de chamada de ferramenta, então a intenção de proteção é carregada
+`.github/copilot-instructions.md`. O Copilot documenta hooks em
+`.github/hooks/*.json`, que o adaptador não grava, então a intenção de proteção é carregada
 inteiramente nas instruções renderizadas. Cada mudança nas regras compartilhadas
 re-renderiza o arquivo no próximo `apothem update`.
 

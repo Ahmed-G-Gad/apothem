@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de harness do Apothem para o Claude Code (GA)."
 machineTranslated: true
-sourceHash: "f60950ab3aa08ee9"
+sourceHash: "57393f27f1d98c86"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,9 +49,10 @@ cada linha fora das sentinelas. A seção de arquivos de suporte nomeia o
 diretório absoluto em relação ao qual cada citação no estilo do repositório nas
 regras, skills e agentes instalados é resolvida: `rules/<name>.md` sob
 `~/.claude/rules/`, e `templates/...`, `schemas/...`, `hooks/...` e
-`conformity/...` sob `~/.claude/.apothem/support/`. O restante da superfície de
-governança do Apothem chega ao Claude Code pela árvore `rules/` propagada e pelo
-hook SessionStart. O OpenCode também carrega `~/.claude/CLAUDE.md` quando não
+`conformity/...` sob `~/.claude/.apothem/support/`. Ela também aponta para o
+índice de regras, `~/.claude/rules/apothem-rule-index.md`. O restante da
+superfície de governança do Apothem chega ao Claude Code pela árvore `rules/`
+propagada e pelo hook SessionStart. O OpenCode também carrega `~/.claude/CLAUDE.md` quando não
 existe nenhum `~/.config/opencode/AGENTS.md`, então o bloco não nomeia nenhuma
 ferramenta específica como seu leitor.
 
@@ -97,14 +98,128 @@ do menu `/`. Todo output-style define `keep-coding-instructions: true`, de modo
 que selecionar um deles mantém as instruções de engenharia de software
 integradas do Claude Code.
 
+Ambos também carregam as chaves de frontmatter exclusivas do Apothem (`version`, `updated`,
+`archetype`, `portability`) sob um mapa `metadata:` final de strings entre aspas,
+nessa ordem fixa. O Claude Code ignora chaves de nível superior desconhecidas, e o formato
+aberto de skill mantém os extras específicos de cliente em `metadata`. Os arquivos de origem não
+mudam. As pastas de skill de nível de usuário (`~/.agents/skills/`,
+`~/.codebuddy/skills/`, `~/.kiro/skills/` e `~/.trae/skills/`) usam a mesma
+forma `metadata`, de modo que instalações que compartilham uma pasta nunca reescrevem os
+arquivos umas das outras. Todos os outros harnesses recebem as chaves no nível superior, como antes.
+
+### Regras e o que é carregado na inicialização
+
+O Claude Code carrega um arquivo de regra na inicialização, a menos que seu frontmatter traga uma
+lista `paths:` que defina seu escopo. Com `paths:`, ele carrega a regra quando lê ou
+edita um arquivo correspondente. Uma lista composta apenas de `**` não define escopo algum, então essa regra
+também é carregada na inicialização; nenhuma regra do Apothem usa uma assim. A instalação converte o
+`pathFilter` de cada regra nessa lista. Cinco regras não trazem nenhum e são carregadas em toda sessão: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management` e o índice de regras,
+`apothem-rule-index`. Todas as outras regras são instaladas sob `~/.claude/rules/`
+com `paths:` e são carregadas quando um arquivo correspondente é tocado.
+
+O Claude Code compara esses globs, com a semântica do `.gitignore`, ao caminho
+do arquivo relativo ao diretório de trabalho, e nunca a um arquivo fora
+dele. O diretório de memória automática fica sob `~/.claude/projects/`, então
+`auto-memory` e `auto-memory-topic-files` nunca são carregadas por correspondência de caminho. Editar
+`~/.claude/CLAUDE.md` ou um arquivo sob `~/.claude/rules/` a partir de outro projeto
+também não carrega as regras com escopo nesses arquivos. Essas regras chegam a uma sessão
+pelo índice.
+
+O índice nomeia cada regra e a situação que a exige. Uma etapa que cita
+`rules/<name>.md` como seu procedimento lê esse arquivo primeiro. Depois de uma
+compactação de contexto, leia novamente qualquer regra que você estava aplicando: o Claude Code não
+reinjeta uma regra com escopo de caminho até que um arquivo correspondente seja tocado de novo. O nome
+`apothem-rule-index.md` é reservado, porque uma instalação faz backup e sobrescreve
+um arquivo de regra com esse nome.
+
+As regras que regem as próprias superfícies do Apothem têm escopo em `CLAUDE.md`,
+`AGENTS.md` e no Markdown sob `rules/`, `commands/`, `skills/`, `agents/`,
+`hooks/` e `output-styles/`. Um repositório de aplicação raramente contém esses
+arquivos, então nele essas regras chegam a uma sessão pelo índice, por uma skill,
+um comando ou um auxiliar que as cita, e pelos hooks, não por uma correspondência
+de caminho.
+
+As cópias das regras são gravadas sem a seção final `## Bindings`, assim como
+as skills de comando. A seção contém referências recíprocas para mantenedores e
+para o conformity gate. Os arquivos de origem a mantêm, assim como as cópias que outros
+harnesses recebem.
+
+Para manter uma regra com escopo ativa em toda sessão, você pode tentar importá-la a partir de um texto
+fora do bloco do Apothem em `~/.claude/CLAUDE.md`, por exemplo
+`@rules/definitiveness.md`. A página de memória do Claude Code documenta a importação e
+diz que um caminho importado é resolvido em relação ao arquivo que o importa. Ela não diz
+como a lista `paths` de uma regra importada é tratada, e o Apothem não verificou
+isso. Confirme com o hook `InstructionsLoaded` que a regra é carregada na inicialização e
+não é carregada uma segunda vez por correspondência de caminho.
+
+### Skills de comando e arquivos de referência
+
+Depois de uma compactação de contexto, o Claude Code reanexa apenas os primeiros 5.000 tokens
+de cada skill invocada, e recomenda um `SKILL.md` de cerca de 500 linhas ou
+menos, com os detalhes em arquivos irmãos. Os prompts de comando chegam a 67 KB, então a
+emissão para o Claude Code divide cada um em um `SKILL.md` enxuto mais arquivos sob
+`references/`:
+
+- A seção `## Bindings` é descartada. Ela é texto de mantenedor para o
+  conformity gate, e o modelo nunca precisa dela.
+- O Pipeline Contract, as Foundational Stanzas, a Decision Tree, os exemplos, as seções
+  de modo e alguns inventários citados passam para arquivos de referência. O título
+  permanece, e um ponteiro de uma linha abaixo dele nomeia o arquivo e diz quando lê-lo.
+  Os ponteiros do Pipeline Contract e das Foundational Stanzas também
+  listam o que o arquivo cobre.
+- Quando o `SKILL.md` ainda passa de 15.800 bytes, as maiores etapas do Workflow passam
+  para `references/step-NN-<slug>.md`, da maior para a menor, até que ele caiba. O slug é
+  o título da etapa sem o prefixo `Step N:` e sem um id de mandato ou disciplina
+  final entre parênteses. Etapas com menos de 600 bytes permanecem inline.
+  Se isso não bastar, as seções Output, Mandates, Critical Rules e Instructions
+  são movidas, nessa ordem.
+- Uma nota curta depois do preâmbulo diz ao modelo onde estão os arquivos
+  (`${CLAUDE_SKILL_DIR}/references/`) e que ele MUST reler os que
+  regem sua etapa atual depois de uma compactação.
+
+Todo `SKILL.md` emitido, incluindo a nota `## Installed Reference Paths` que a
+instalação acrescenta, fica em 17.000 bytes ou menos para uma raiz de instalação de até
+140 caracteres. O plugin distribui os mesmos arquivos sem essa nota, e seus
+comandos são skills sob `skills/`, então ele não tem pasta `commands/`; a
+invocação `/apothem:<name>` não muda. A divisão é determinística e
+reversível: o texto do `SKILL.md` e de seus arquivos de referência reconstrói o comando
+de origem sem Bindings. Os arquivos de origem, e a saída para todos os outros
+harnesses, não mudam. Outras ferramentas também leem skills de `~/.claude/skills/`,
+então veem os mesmos arquivos; `apothem install` as nomeia.
+
+Para ver os números de cada comando, execute o script de medição a partir de um
+checkout:
+
+```bash
+python scripts/dev/measure_claude_skills.py          # per-command table
+python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
+```
+
+Ele informa os tamanhos da origem, do `SKILL.md` e das referências, a folga até o orçamento
+e uma contagem estimada de tokens, e lista as skills nativas para comparação.
+`research-suite`, uma skill nativa cuja origem não é dividida, é a única skill
+acima do limite.
+
 ## Notas de compatibilidade
 
-Os prompts de comando são convertidos em diretórios de skill; agentes, regras,
-skills e output-styles são copiados como estão. A instalação valida que o perfil
+Os prompts de comando são convertidos em diretórios de skill e as regras são renderizadas como
+descrito acima; skills e output-styles são copiados como estão, e os agentes são
+copiados como foram escritos, exceto que um auxiliar listado na chave `agent_mcp_servers` do perfil
+ganha uma entrada `mcp__<server>__*` por servidor nomeado em sua linha `tools` (consulte
+[Servidores MCP](/docs/reference/mcp#dar-a-um-auxiliar-acesso-a-servidores-mcp)).
+A instalação valida que o perfil
 está bem formado e que todas as vinculações de hook em settings.json são
 resolvíveis. O adaptador não cria nenhuma entrada de servidor MCP: registre os
 servidores com `claude mcp add` (consulte
 [Servidores MCP](/docs/reference/mcp)).
+
+`~/.claude/agents/` é uma raiz compartilhada que pertence ao `Claude Code`, assim como
+`~/.claude/skills/`: outras ferramentas suportadas carregam essas pastas, então os agentes e
+as skills que uma instalação do `Claude Code` grava ali também aparecem nessas ferramentas, e
+a instalação exibe uma nota que as nomeia. O
+[registro de harnesses](/docs/reference/harness-registry) lista os leitores de cada
+raiz.
 
 O Claude Code aplica todas as vinculações de hook em settings.json a cada início de sessão. Cada adaptador é verificado contra seu próprio harness nativo — não existe um harness "de referência" privilegiado.
 
@@ -176,6 +291,11 @@ O pacote `apothem` instalado e o repositório de código-fonte não são afetado
 ```bash
 python -m apothem.conformity.gate --all .
 ```
+
+Executado contra o repositório, o gate exige a seção `## Bindings` em toda
+regra, comando, auxiliar e skill. Executado contra uma árvore `~/.claude/` instalada, ele
+aceita uma cópia de regra ou de skill que não tem essa seção, porque a instalação
+a omite, e ainda verifica uma seção que esteja presente.
 
 ## Solução de problemas
 

@@ -2,7 +2,7 @@
 title: "시작하기: 아무것도 없는 상태에서 동작하는 하니스까지"
 description: "빈 머신에서 머티리얼라이즈되고 검증된 하니스 구성까지 처음부터 끝까지 안내하는 워크스루입니다."
 machineTranslated: true
-sourceHash: "35d8b7420a9a02a8"
+sourceHash: "daa3b8225766a994"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,17 +49,27 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 설치 프로그램은 다음 단계를 수행합니다.
 
 1. **전제 조건 확인.** 설치 프로그램은 실제 Python 3.10 이상 인터프리터를 찾고, 두 런타임 라이브러리(`click`과 `rich`)를 임포트할 수 있는지 확인합니다. 하나라도 없으면 그 이름을 알려 주고 중단한 뒤 설치 명령을 출력합니다. 파이프로 실행하면 프롬프트를 띄울 수 없으므로, 묻지 않고 설치하려면 `APOTHEM_AUTO_INSTALL_DEPS=1`을 설정하세요.
-2. **소스 배치.** 번들된 트리는 `~/.apothem`에 클론됩니다(`APOTHEM_HOME` 환경 변수로 재정의). 다시 실행하면 기존 클론을 중복으로 만드는 대신 fast-forward합니다.
+2. **소스 배치.** 번들된 트리는 `~/.apothem`에 클론됩니다(`APOTHEM_HOME` 환경 변수로 재정의). 다시 실행하면 기존 클론을 중복으로 만드는 대신 그 클론에서 릴리스 태그를 체크아웃합니다.
 3. **프로필 부트스트랩.** 아직 프로필이 없으면 설치 프로그램은 예시 프로필을 `~/.config/apothem/profile.yaml`에 복사하고, 같은 실행에서 그 프로필로 Claude Code를 설치하고 검증하며, 신원 필드가 자리표시자라고 경고합니다.
 
 환경 변수로 설치를 조정할 수 있습니다. 가장 자주 사용할 만한 변수는 다음과
 같습니다.
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+설치 프로그램은 사용자 범위 하니스만 설치합니다. 프로젝트 범위 하니스는 그 뒤에
+프로젝트를 지정하여 설치하세요.
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 그 밖에 인식되는 변수는 `APOTHEM_REPO`와 `APOTHEM_REF`입니다. 이 변수들은 어떤 원격 저장소를 클론하고 어떤 git ref를 체크아웃할지 정합니다. 설정하지 않으면 서명된 최신 릴리스 태그를 해석하고 검증합니다. 특정 태그로 고정하려면 그 태그를, 움직이는 브랜치를 쓰려면 `main`을 설정하세요(브랜치는 서명된 태그가 아니므로 `APOTHEM_ALLOW_UNVERIFIED=1`도 필요합니다). `APOTHEM_ALLOW_UNVERIFIED=1`은 태그 서명 검증 실패를 경고로 낮추고, `main` 같은 태그가 아닌 ref를 허용합니다. `APOTHEM_SOURCE`는 클론 대신 기존 로컬 체크아웃을 사용합니다. `APOTHEM_SKIP_VERIFY=1`은 설치 후 검증을 건너뛰는데, 이 튜토리얼에서는 그 검증을 실행하려 하므로 설정하지 않은 채로 두세요.
@@ -154,8 +164,9 @@ apothem install --harness cursor --project .
 apothem verify --harness claude-code
 ```
 
-`verify`는 하니스에 필요한 구성 파일이 존재하고 프로필이 선언한 내용과 일치하는지
-확인합니다. 깨끗한 실행은 머티리얼라이즈가 성공했음을 뜻합니다.
+`verify`는 하니스의 관리 대상 구성 파일이 존재하고 파싱되는지 확인합니다.
+`--profile PATH`를 추가하면, 설치된 파일이 그 프로필이 생성할 내용에서 벗어났을 때도
+실패합니다. 깨끗한 실행은 머티리얼라이즈가 성공했음을 뜻합니다.
 
 등록된 모든 어댑터에 걸쳐 머신 전체 상태 점검을 하려면 다음을 실행하세요.
 
@@ -185,10 +196,12 @@ apothem doctor
 
 - **다른 도구 추가하기.** [하니스 목록](/docs/harnesses)은 지원되는 모든 플랫폼과
   그 어댑터 이름을 다룹니다. 새 `--harness`로 3단계를 반복하세요.
-- **한 가지 작업을 더 깊이 다루기.** [사용법 가이드](/docs/how-to)는 규칙 작성,
-  플랜 작성, 적합성 게이트 실행을 위한 작업 중심 레시피입니다.
-- **세부 사항 찾아보기.** [레퍼런스](/docs/harnesses)는 각 어댑터, 프로필 스키마,
-  CLI 표면 전체를 문서화합니다.
+- **한 가지 작업을 더 깊이 다루기.** [하우투 레시피](/docs/how-to)는 하니스 추가,
+  프로필 편집, 설치 프로그램 구동을 다룹니다. [사용 가이드](/docs/usage)는 규칙 작성,
+  플랜 작성, 적합성 게이트 실행을 다룹니다.
+- **세부 사항 찾아보기.** [레퍼런스](/docs/reference)는 각 아티팩트 클래스와 프로필
+  스키마를 문서화하며, [CLI 레퍼런스](/docs/cli-reference)는 모든 명령을 다룹니다.
+  각 어댑터는 [하니스](/docs/harnesses) 아래에 자체 페이지가 있습니다.
 - **세션보다 오래 지속되는 작업 계획하기.**
   [재개 가능한 계획](/docs/concepts/resumable-planning)은 Apothem이 장기 실행
   작업을 프로젝트 로컬 `.apothem/plans/` 스위트로 외부화하여, 어느 머신의 새

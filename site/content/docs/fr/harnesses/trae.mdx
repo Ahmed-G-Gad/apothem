@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Adaptateur d'environnement Apothem pour Trae (GA)."
 machineTranslated: true
-sourceHash: "0e9e61064d66a5da"
+sourceHash: "97ae18e3fc9b0b70"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,107 @@ apothem install --harness trae --project /path/to/project
 ```
 
 L'adaptateur écrit un fichier de règles Trae de portée projet à partir des
-règles partagées d'Apothem et de la surface de gouvernance.
+règles partagées d'Apothem et de la surface de gouvernance, et écrit les
+auxiliaires d'Apothem en tant que subagents Trae dans le projet (voir
+[Subagents](#subagents)).
 
-**Fichiers écrits :** `<project>/.trae/rules/apothem-rules.md`
+Il écrit aussi les skills d'Apothem, ainsi que les règles et templates qu'ils
+citent, dans votre répertoire personnel, avant de toucher au projet (voir
+[Fichiers hors du projet](#fichiers-hors-du-projet)).
+
+**Fichiers écrits :**
+
+- `<project>/.trae/rules/apothem-rules.md`, le fichier de règles.
+- `<project>/.trae/agents/<name>.md` pour chaque auxiliaire Apothem, dans le projet.
+- `~/.trae/skills/<name>/SKILL.md` pour chaque skill et chaque commande Apothem, dans votre répertoire personnel.
+- `~/.config/apothem/rules/` et `~/.config/apothem/templates/`, dans votre répertoire personnel.
+
+## Fichiers hors du projet
+
+L'installation écrit aussi les skills d'Apothem dans votre répertoire personnel,
+avant de modifier quoi que ce soit dans le projet :
+
+| Dossier | Ce qu'Apothem y écrit |
+| --- | --- |
+| `~/.trae/skills/` | Un dossier contenant un `SKILL.md` pour chaque skill Apothem, et un pour chaque commande Apothem (une commande devient un skill du même nom). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Les règles et templates auxquels renvoient les skills et le fichier de règles. |
+
+Ces dossiers sont partagés. Ils ne sont pas propres au projet :
+
+- Chaque projet dans lequel vous installez `trae` utilise la même copie de `~/.trae/skills/`, et l'installation y écrit les mêmes fichiers à chaque fois. Trae est le seul outil qui lit ce dossier. Les règles et templates sous `~/.config/apothem/` sont également écrits par les installations des autres outils, avec les mêmes fichiers.
+- `--project` choisit le fichier de règles à écrire et le projet auquel
+  l'installation appartient. Il ne change pas l'emplacement des skills.
+- L'installation n'ajoute aucun fichier de skill ni de règle à votre dépôt. Le
+  projet reçoit le fichier de règles et les fichiers de subagents dans
+  `.trae/agents/`, plus le dossier de données `.apothem/` que crée toute
+  installation de projet.
+- Les dossiers du répertoire personnel sont écrits en premier. Si cela échoue,
+  par exemple parce qu'un dossier du chemin est un lien qui sort de votre
+  répertoire personnel (un lien qui reste à l'intérieur est suivi) ou ne peut
+  pas être écrit, l'installation s'arrête avec l'erreur avant que quoi que ce
+  soit ne change dans le projet.
+- Un dossier de skill portant le nom d'un skill Apothem qu'Apothem n'a pas
+  écrit est laissé tel quel, et l'installation affiche un avertissement qui le
+  nomme. Renommez-le ou déplacez-le, puis exécutez `apothem update`.
+  `apothem verify` échoue tant que ce nom est occupé.
+- Les fichiers totalisent quelques mégaoctets.
+
+L'installation affiche une note qui nomme les dossiers qu'elle écrit hors de
+`--project`, et `--dry-run` les liste.
+
+## Subagents
+
+Trae lit un subagent depuis un fichier Markdown dans `<project>/.trae/agents/`,
+selon la [documentation des subagents de Trae](https://docs.trae.ai/ide/subagents).
+L'installation écrit un fichier par auxiliaire Apothem dans ce dossier. Elle
+installe pour le projet uniquement : la documentation donne comme dossier de
+niveau utilisateur `~/.trae-cn/agents/` alors que tous les autres dossiers
+utilisateur de Trae se trouvent sous `~/.trae/`, et Apothem n'a pas confirmé
+lequel une installation internationale lit ; elle n'écrit donc ni l'un ni
+l'autre.
+
+Chaque fichier conserve les instructions de l'auxiliaire inchangées et porte
+ces clés de frontmatter :
+
+| Clé | Ce qu'Apothem écrit |
+| --- | --- |
+| `name`, `description` | Le nom et la description de l'auxiliaire. Trae exige les deux. |
+| `tools` | Les outils autorisés de l'auxiliaire, sous forme d'une seule chaîne séparée par des virgules. |
+| `disallowedTools` | Les outils refusés à l'auxiliaire, sous forme d'une seule chaîne séparée par des virgules. Trae l'applique par-dessus `tools`. Omis quand l'auxiliaire n'en a aucun. |
+
+Seuls les noms d'outils figurant sur la page des subagents de Trae sont écrits :
+
+```text
+Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
+```
+
+Un outil nommé par la source qui ne figure pas dans cette liste (par exemple
+`MultiEdit` ou `PowerShell`) est omis des deux champs. Un outil avec un motif,
+comme `Bash(rm *)`, n'a pas de forme dans une liste séparée par des virgules :
+en tant qu'outil autorisé, il est omis, et en tant qu'outil refusé, il refuse
+l'outil entier. Un auxiliaire qui ne peut pas éditer de fichiers conserve cette
+limite : il ne liste ni `Write` ni `Edit` parmi ses outils et refuse les deux.
+Trae ne documente aucune limite de tours, donc le `maxTurns` de l'auxiliaire
+n'est pas écrit. L'installation n'écrit aucune clé `model`, de sorte qu'un
+auxiliaire utilise le modèle choisi dans la zone de chat, ni aucune clé
+`mcpServers`.
+
+À savoir :
+
+- La documentation anglaise de Trae indique d'activer **Settings > Beta >
+  Subagents > Enable Subagents Directory** avant qu'il ne charge
+  `.trae/agents/`. Sa page chinoise, mise à jour plus tard, indique que la
+  fonctionnalité est généralement activée par défaut. Si Trae ne liste aucun
+  des auxiliaires, vérifiez ce commutateur.
+- Les fichiers de subagents sont des fichiers de projet ordinaires.
+  Commitez-les avec le projet ou listez `.trae/agents/` dans `.gitignore` ;
+  Apothem ne choisit pas à votre place.
+- Un fichier à vous portant le nom d'un auxiliaire Apothem est enregistré sous
+  `~/.apothem/backups/` puis remplacé. La désinstallation ne le remet pas en
+  place. Les fichiers portant d'autres noms ne sont jamais touchés.
+- La documentation de Trae ne dit pas comment il traite une clé de frontmatter
+  qu'elle ne liste pas, ni si `.trae/agents/` s'applique dans la seconde fenêtre
+  du « all-new TRAE » fusionné comme dans la fenêtre de l'IDE.
 
 ## Correspondance entre le profil et la configuration native
 
@@ -43,7 +141,19 @@ La surface de règles actuelle de Trae a une portée de projet, sous
 L'adaptateur écrit un fichier dédié, `apothem-rules.md`, et n'écrase jamais les
 autres fichiers de règles de ce répertoire ni vos règles globales. La
 surface de serveurs d'outils `.trae/mcp.json` et la surface de skills
-`.trae/skills/` sont détenues par l'opérateur ; Apothem ne les écrit pas.
+`.trae/skills/` du projet sont détenues par l'opérateur ; Apothem ne les écrit
+pas.
+
+Trae documente `~/.trae/skills/` pour les skills globaux. Il ne lit le dossier
+inter-outils `.agents/skills/` qu'après activation du paramètre `Enable .agents Skills
+Directory` ; l'installation écrit donc le dossier Trae. L'édition chinoise
+(TRAE CN) documente `~/.trae-cn/skills/` à la place ; son journal des
+modifications indique que les répertoires de skills globaux de TRAE CN et de
+l'édition internationale sont compatibles, pour l'édition personnelle
+uniquement. L'installation écrit `~/.trae/skills/` uniquement, et Apothem n'a
+pas confirmé si les autres éditions de TRAE CN le lisent. Apothem n'a pas non
+plus confirmé comment Trae traite une clé d'en-tête de `SKILL.md` qu'il ne
+liste pas.
 
 ## Vérification
 
@@ -54,11 +164,19 @@ apothem verify --harness trae --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
-   configurations JSON ou YAML s'analysent correctement. Ajoutez
-   `--profile PATH` pour vérifier en plus que les fichiers installés
-   correspondent à ce profil.
-3. La routine de vérification propre à l'adaptateur signale un succès.
+2. Chaque cible gérée existe, y compris le dossier `.trae/agents/` ; les
+   fichiers gérés ne sont pas vides, et les configurations JSON ou YAML
+   s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que
+   les fichiers installés correspondent à ce profil. Pour `.trae/agents/`, la
+   vérification porte sur l'existence du dossier, et non sur la présence de
+   chaque fichier d'auxiliaire ; la commande
+   `apothem diff --harness trae --project /path/to/project` liste les fichiers
+   d'auxiliaires manquants ou obsolètes.
+3. Chaque dossier de skill Apothem est en place avec un `SKILL.md`, quelle que
+   soit l'installation qui l'a écrit, et aucun dossier de skill portant un nom
+   Apothem n'appartient à quelque chose qu'Apothem n'a pas écrit. Une
+   vérification en échec nomme les dossiers manquants ou étrangers.
+4. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -68,6 +186,11 @@ apothem update --harness trae --project /path/to/project
 
 Redérive le fichier de règles du projet à partir de l'état actuel du profil
 partagé.
+
+La mise à jour réécrit aussi tout dossier de skill dont les fichiers diffèrent
+des fichiers actuels. Si vous avez installé avec une version antérieure qui
+n'écrivait aucun skill, la mise à jour les ajoute. Elle réécrit les fichiers de
+subagents qui diffèrent des fichiers actuels, et ajoute ceux qui manquent.
 
 ## Désinstallation
 
@@ -82,6 +205,18 @@ modification, une copie horodatée du fichier est enregistrée sous
 `~/.apothem/backups/` ; aucun fichier de sauvegarde n'est laissé dans le projet.
 Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
+La désinstallation supprime aussi les fichiers de subagents qu'elle a écrits
+dans `<project>/.trae/agents/` et conserve tout autre fichier qui s'y trouve ;
+le dossier est supprimé lorsqu'il reste vide. Elle supprime les dossiers de
+skills qu'elle a écrits dans `~/.trae/skills/` ainsi que les règles et
+templates de `~/.config/apothem/`, mais seulement si aucune autre installation
+Apothem ne les utilise encore. Un autre projet, ou un autre outil qui partage
+le dossier, peut les utiliser. Dans ce cas, la désinstallation conserve les
+dossiers, affiche quelle installation les utilise, et la dernière
+désinstallation les supprime. Les fichiers que vous avez ajoutés à ces dossiers
+restent, et un dossier laissé vide est supprimé. Chaque dossier est sauvegardé
+sous `~/.apothem/backups/` avant d'être supprimé.
+
 ## Portail de conformité
 
 ```bash
@@ -94,6 +229,10 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Fichier de configuration introuvable | Relancez `apothem install --harness trae --project /path/to/project` |
 | Échec de la vérification | Exécutez `apothem update --harness trae --project /path/to/project`, puis vérifiez à nouveau |
+| Trae ne liste aucun des auxiliaires Apothem | Activez Settings > Beta > Subagents > Enable Subagents Directory, puis démarrez un nouveau chat |
+| `apothem verify` nomme un dossier de skill manquant | Exécutez `apothem install --harness trae --project /path/to/project` ; il restaure le dossier |
+| Une installation ou une mise à jour avertit qu'elle a ignoré un dossier de skill | Un dossier portant le nom d'un skill Apothem existe déjà dans le dossier des skills et Apothem ne l'a pas écrit. Renommez-le ou déplacez-le, puis exécutez `apothem update` |
+| Une installation s'arrête avant de modifier le projet | Une écriture dans votre répertoire personnel a échoué. Lisez l'erreur, corrigez le dossier qu'elle nomme (un lien qui sort de votre répertoire personnel, un fichier là où un dossier est attendu, ou un dossier en lecture seule), puis relancez l'installation |
 | Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness trae --project /path/to/project` |
 
 ## Paramètres de configuration

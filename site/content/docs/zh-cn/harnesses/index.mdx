@@ -2,7 +2,7 @@
 title: "工具适配器"
 description: "Apothem 工具适配器——一个共享配置档案，十七个受支持的目标。"
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,11 +67,30 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## 你用户主目录中的技能
+
+有七个项目范围的适配器会向你的项目写入一个规则文件（其中六个还会将 Apothem 的辅助器作为子代理文件写入项目；每个工具页面都会指出该文件夹），并且它们还会将 Apothem 的技能以及这些技能引用的规则和模板写入你用户主目录中的文件夹：
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- 每个指定某个文件夹的安装都写入相同的文件，因此安装的顺序无关紧要，一份副本即可服务于每个项目。
+- 安装会最先写入主目录中的文件夹。如果写入失败，它会在改动项目之前停止，并且不会向你的仓库添加任何技能或规则文件。
+- 只有当没有其他 Apothem 安装仍在使用某个共享文件夹时，卸载才会移除它，并会说明是哪一次安装保留了它。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，并伴有一条警告。
+
+每个工具页面都列出了它的文件夹。[工具注册表](/docs/reference/harness-registry#共享根目录)显示了哪些工具共享哪个文件夹。
 
 协议规范参见[工具适配器抽象](/docs/architecture/harness-adapter-abstraction)。

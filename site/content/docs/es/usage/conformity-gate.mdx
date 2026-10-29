@@ -2,7 +2,7 @@
 title: "Puerta de conformidad"
 description: "Ejecuta la puerta de conformidad de Apothem para verificar la salud del ecosistema."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,27 @@ cuando el proyecto todavía no tiene un directorio `.github/workflows/`, y el
 validador de asuntos de commit lo hace cuando la raíz no tiene historial de
 commits.
 
+Seis validadores parten de la raíz del repositorio y buscan en todo el árbol los
+archivos que comprueban:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+Estos omiten los checkouts de git anidados, como worktrees, submódulos y clones
+anidados, y omiten los directorios que contienen dependencias, entornos
+virtuales, cachés o resultados de compilación, como `node_modules`, `venv` y
+`dist`. La comprobación de planes extraviados de `no-global-plans-grep` también
+se detiene en un checkout anidado. Una ejecución de cualquiera de ellos informa
+sobre el checkout al que se apuntó y sobre nada más. Un validador que lee una
+carpeta fija, como `naming-grep` bajo `src/apothem/`, lee todo lo que hay debajo
+de esa carpeta.
+
 ## Barras de la puerta
 
 | Barra | Comprobación | Tipo |
@@ -76,12 +97,22 @@ commits.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Un validador por escritura recibe el archivo que debe comprobar, o `--stdin` para
+leer el contenido desde la entrada estándar; sin ninguno de los dos, espera
+entrada en la entrada estándar, así que pasa el archivo cuando lo ejecutes desde
+una terminal. Un validador independiente recibe un directorio raíz (el
+directorio actual cuando se omite). `--list` muestra a qué grupo pertenece cada
+validador.
 
 El modo `--hook` (`python -m apothem.conformity.gate --hook`) es el punto de
 entrada que despacha el entorno: lee desde stdin una carga útil JSON de entrada

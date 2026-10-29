@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "适用于 Antigravity（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ apothem install --harness antigravity
 
 `~/.gemini/GEMINI.md` 中的 Apothem 区块以一个 Apothem 支持文件小节结尾，该小节写明每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于插件的 `rules/` 下，`templates/...` 和 `hooks/...` 位于插件的 `.apothem/support/` 下。
 
-**插件规则。** Antigravity 会丢弃插件 `rules/` 目录中任何不以有效 `trigger` 开头的文件（[Antigravity 规则文档](https://antigravity.google/docs/rules)），因此每条 Apothem 规则都会在安装时被转换。始终适用的规则获得 `trigger: always_on`；限定于特定路径的规则获得 `trigger: glob`，并在 `globs` 中带有相同的模式；其他任何规则获得 `trigger: model_decision`。每条规则都保留其 `description`。Antigravity 让所有始终开启的规则共享 20,000 个令牌的预算，超出该预算时会将其中最大的规则转为按需加载的指针。
+**插件规则。** Antigravity 会丢弃插件 `rules/` 目录中任何不以有效 `trigger` 开头的文件（[Antigravity 规则文档](https://antigravity.google/docs/rules)），因此每条 Apothem 规则都会在安装时被转换。始终适用的规则获得 `trigger: always_on`；限定于特定路径的规则获得 `trigger: glob`，并在 `globs` 中带有相同的模式；其他任何规则获得 `trigger: model_decision`。每条规则都保留其 `description`。有五条规则始终适用：`agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`，以及规则索引 `apothem-rule-index`，后者指明其他每条规则以及何时读取它。其他规则带有 `trigger: glob`。Antigravity 让所有始终开启的规则共享 20,000 个令牌的预算，超出该预算时会将其中最大的规则转为按需加载的指针；这五条规则总计约 11,000 个令牌，因此没有一条会被转为指针。
 
 **插件清单。** `plugin.json` 只携带 `name` 和 `description`，即 Antigravity 插件 schema 所接受的两个键。
 

@@ -2,7 +2,7 @@
 title: "Adaptor harness"
 description: "Adaptor harness Apothem — satu profil bersama, tujuh belas target yang didukung."
 machineTranslated: true
-sourceHash: "8796396f3c02c398"
+sourceHash: "f4177d0bff3cb602"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,12 +80,44 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Skill di direktori home pengguna Anda
+
+Tujuh adaptor berlingkup proyek menulis satu berkas aturan ke dalam proyek Anda
+(enam di antaranya juga menulis helper Apothem di sana sebagai berkas subagent;
+setiap halaman harness menyebutkan foldernya), dan adaptor tersebut juga menulis
+skill Apothem, beserta aturan dan templat yang dikutip skill tersebut, ke folder
+di direktori home pengguna Anda:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Setiap instalasi yang menyebut sebuah folder menulis berkas yang sama,
+  sehingga urutan pemasangan Anda tidak berpengaruh, dan satu salinan melayani
+  semua proyek.
+- Instalasi menulis folder home lebih dulu. Jika itu gagal, instalasi berhenti
+  sebelum mengubah proyek, dan tidak menambahkan berkas skill atau aturan ke
+  repositori Anda.
+- Pencopotan menghapus folder bersama hanya ketika tidak ada lagi instalasi
+  Apothem lain yang memakainya, dan menyebutkan instalasi mana yang
+  mempertahankannya.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, disertai peringatan.
+
+Setiap halaman harness mencantumkan foldernya.
+[Registri harness](/docs/reference/harness-registry#root-bersama) menunjukkan
+alat mana yang berbagi folder mana.
 
 Lihat [Abstraksi adaptor harness](/docs/architecture/harness-adapter-abstraction)
 untuk spesifikasi protokol.

@@ -2,7 +2,7 @@
 title: "स्किल"
 description: "SKILL.md फ़ाइलों में पुन: प्रयोज्य, पहचान-योग्य तकनीकें, प्लान सूट और इकोसिस्टम ऑडिट के लिए पहचान संकेतों, प्रक्रियाओं और प्रवर्तन हुक के साथ।"
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 | हार्नेस | इंस्टॉल क्या बदलता है |
 | --- | --- |
 | Claude Code (इंस्टॉल और प्लगइन) | `userInvocable` का नाम बदलकर `user-invocable` करता है, वह कुंजी जिसे Claude Code पढ़ता है। Claude Code camelCase कुंजी को अनदेखा करता है, इसलिए नाम बदले बिना `userInvocable: false` चिह्नित स्किल फिर भी `/` मेनू में दिखाई देती। |
-| Codex | `SKILL.md` को जैसा है वैसा छोड़ता है और हर उस स्किल के बगल में `policy.allow_implicit_invocation: false` के साथ `agents/openai.yaml` लिखता है जिसका स्रोत `disable-model-invocation: true` सेट करता है, क्योंकि Codex उस कुंजी को अनदेखा करता है। |
+| साझा उपयोगकर्ता-स्तरीय स्किल फ़ोल्डर: `~/.agents/skills/` (Codex, Cursor, GitHub Copilot, Windsurf, और Zed द्वारा लिखा गया) तथा `~/.codebuddy/skills/`, `~/.kiro/skills/`, और `~/.trae/skills/` | इनमें से किसी एक फ़ोल्डर को लिखने वाले हर इंस्टॉल के लिए एक ही रूप, ताकि इंस्टॉल कभी एक-दूसरे की फ़ाइलें दोबारा न लिखें। यह `userInvocable` का नाम बदलकर `user-invocable` करता है, `version`, `updated`, `archetype`, और `portability` को उद्धृत स्ट्रिंग के एक अंतिम `metadata:` मैप के अंतर्गत ले जाता है, और हर उस स्किल के बगल में `policy.allow_implicit_invocation: false` के साथ `agents/openai.yaml` लिखता है जिसका स्रोत `disable-model-invocation: true` सेट करता है, क्योंकि Codex उस कुंजी को अनदेखा करता है और `~/.agents/skills/` को पढ़ता है, चाहे उसे किसी Codex अडैप्टर ने लिखा हो या नहीं। स्किल के रूप में लपेटा गया कमांड अपना मुख्य भाग पूरा रखता है और एक निश्चित टिप्पणी से शुरू होता है जो नियम और टेम्पलेट फ़ोल्डरों, `~/.config/apothem/rules/` और `~/.config/apothem/templates/`, का नाम बताती है। बची हुई शीर्ष-स्तरीय कुंजियाँ `name`, `description`, `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`, और `metadata` हैं। |
+| Qwen Code | अल्पविराम-विभाजित `allowed-tools` स्ट्रिंग को एक `allowedTools` सूची के रूप में, प्रति पंक्ति एक YAML प्रविष्टि, दोबारा लिखता है, क्योंकि `Qwen Code` केवल camelCase कुंजी पढ़ता है और एक सूची की माँग करता है। हर प्रविष्टि स्रोत की वर्तनी बनाए रखती है, जिसमें `Bash(git status *)` जैसे पैटर्न शामिल हैं। हर अन्य कुंजी और स्किल का मुख्य भाग अपरिवर्तित इंस्टॉल होते हैं। |
 | अन्य हार्नेस | कोई परिवर्तन नहीं। |
 
 `skill.schema.json` उपयोगकर्ता-आह्वान-योग्यता फ़्लैग की दोनों में से कोई भी

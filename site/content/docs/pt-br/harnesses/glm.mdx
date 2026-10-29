@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adaptador de harness do Apothem para o GLM (Z.ai) como backend de modelo configurável."
 machineTranslated: true
-sourceHash: "1de53f25ee125b1a"
+sourceHash: "026e29a055db8a67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,15 +11,19 @@ sourceHash: "1de53f25ee125b1a"
 **Status:** GA
 **Configuração nativa:** `<project>/.apothem/providers/glm.toml`
 
-O GLM (Z.ai) é um **backend de modelo**, não uma ferramenta de programação
-própria. A Z.ai não distribui nenhuma linha de comando própria do GLM; em vez
-disso, uma ferramenta que fala o protocolo compatível com a Anthropic ou
-compatível com a OpenAI é apontada para o GLM pela definição de uma URL base de
-backend e de uma chave. O Apothem ainda conta o GLM entre os seus adaptadores de
-harness, de modo que você o seleciona com `--harness glm` como qualquer outro. O
-adaptador `glm` grava um arquivo de configuração de provedor que registra ambas
-as superfícies de compatibilidade, para que qualquer ferramenta compatível possa
-ser conectada à família de modelos GLM.
+O adaptador `glm` configura o GLM (Z.ai) como um **backend de modelo**. Uma
+ferramenta que fala o protocolo compatível com a Anthropic ou compatível com a
+OpenAI é apontada para o GLM pela definição de uma URL base de backend e de uma
+chave, e você seleciona o adaptador com `--harness glm` como qualquer outro. Ele
+grava um arquivo de configuração de provedor que registra ambas as superfícies
+de compatibilidade, para que qualquer ferramenta compatível possa ser conectada
+à família de modelos GLM.
+
+A Z.ai também distribui uma ferramenta de programação própria, o ZCode, que a
+[documentação](https://docs.z.ai/devpack/tool/zcode) da Z.ai chama de "Agentic
+Development Environment". Este adaptador não configura o ZCode. O Apothem não
+verificou a superfície de configuração própria do ZCode, então o adaptador não
+grava nada para ele.
 
 ## Instalação
 
@@ -51,15 +55,32 @@ marcadores de posição `<GLM_MODEL_ID>` que você preenche a partir da
 [documentação da Z.ai](https://docs.z.ai/devpack/tool/claude) atual. Nada do
 perfil compartilhado vai para este arquivo; ele é um template fixo.
 
+### Mapeamento de papéis para modelos
+
+As declarações da própria Z.ai sobre o mapeamento de papéis para modelos
+divergem, então o arquivo deixa os três valores `ANTHROPIC_DEFAULT_*_MODEL` como
+marcadores de posição e traz um comentário `TODO(clarify)` acima deles. Você
+decide qual mapeamento usar:
+
+- O exemplo manual de `settings.json` no guia de configuração compatível com a
+  Anthropic do fornecedor mapeia opus e sonnet para `glm-5.3[1m]` e haiku para
+  `glm-5.3-flash[1m]`, e define `CLAUDE_CODE_AUTO_COMPACT_WINDOW` como `1000000`.
+- O mapeamento padrão declarado no mesmo guia lista `GLM-5.3-Flash` para os três
+  papéis.
+- A ferramenta `@z_ai/coding-helper` da Z.ai usa `glm-5.3-flash` por padrão,
+  acrescenta `[1m]` aos três papéis e grava uma janela de compactação de `1048576`.
+
+O Apothem não fixa nenhum desses valores e não escolhe entre eles.
+
 ## Notas de compatibilidade
 
-Como o GLM é um backend e não uma ferramenta de programação, ele não expõe
-nenhuma superfície para regras, comandos, skills ou hooks — o adaptador grava
-apenas o arquivo de provedor do backend e nada mais. Sua chave da Z.ai e suas
-escolhas de ID de modelo permanecem de propriedade do operador. As convenções da
-superfície do fornecedor das quais o adaptador depende estão fixadas em
-`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, com snapshot feito
-contra a documentação ao vivo da Z.ai.
+O backend GLM não expõe nenhuma superfície para regras, comandos, skills ou
+hooks, então o adaptador grava apenas o arquivo de provedor do backend e nada
+mais. O Apothem não verificou se o ZCode expõe essas superfícies. Sua chave da
+Z.ai e suas escolhas de ID de modelo permanecem de propriedade do operador. As
+convenções da superfície do fornecedor das quais o adaptador depende estão
+fixadas em `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, com snapshot
+feito contra a documentação ao vivo da Z.ai.
 
 O GLM executa a família de modelos GLM da Z.ai; consulte a
 [referência de configuração do fornecedor](https://docs.z.ai/devpack/tool/claude)
@@ -98,10 +119,14 @@ valores para o novo arquivo.
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Remove o arquivo de provedor somente quando o Apothem o criou e ele ainda é o
+Remove o arquivo de provedor somente quando o Apothem o criou e ele ainda é um
 template não editado, fazendo antes o backup dele sob a raiz de backups do
-Apothem. Um arquivo que você criou ou editou é deixado no lugar. O YAML do
-perfil compartilhado e o motor do Apothem não são afetados.
+Apothem. Um arquivo não editado gravado por uma versão anterior conta quando o
+registro de instalação do Apothem para o projeto mostra que ele gravou o arquivo:
+o manifesto registra o digest de cada template que o projeto já distribuiu. Sem
+um registro de instalação, apenas uma cópia exata do template atual é removida.
+Um arquivo que você criou ou editou é deixado no lugar. O YAML do perfil
+compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

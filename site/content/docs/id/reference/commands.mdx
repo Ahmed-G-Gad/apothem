@@ -2,19 +2,21 @@
 title: "Perintah"
 description: "Definisi slash-command yang mengimplementasikan pipeline plan-suite beserta audit untuk tinjauan kode, arsitektur, keamanan, dependensi, dan dokumentasi."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Definisi slash-command berada sebagai berkas `.md` datar di bawah `src/apothem/commands/`.
 Kumpulan kanonisnya dipimpin oleh pipeline plan-suite yang sadar arsitektur, yang
-dikirim sebagai tujuh perintah kelas satu — satu per tahap, masing-masing dapat
-dipanggil langsung sebagai `/plan-<stage>`. Tidak ada dispatcher monolitik; setiap
-tahap adalah berkas perintah terdaftar tersendiri di
-`src/apothem/commands/plan-<stage>.md`.
+dikirim sebagai delapan perintah tahap kelas satu, masing-masing dapat dipanggil
+langsung sebagai `/plan-<stage>`, ditambah `/plan`, orkestrator yang menjalankan
+rantai tahap dari awal hingga akhir. Setiap tahap adalah berkas perintah terdaftar
+tersendiri di `src/apothem/commands/plan-<stage>.md`, dan `/plan` tidak
+mengimplementasikan ulang satu pun di antaranya.
 
 | Pemanggilan | Berkas perintah | Deskripsi |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Menjalankan tahap spec, generate, review, dan design sebagai satu alur kerja terverifikasi, dengan konfirmasi di setiap serah terima; execute tetap menjadi langkah manual |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Menyempurnakan konten tak terstruktur menjadi prosa bermutu spesifikasi |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Mematerialisasi suite rencana dari prosa / kebutuhan |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensik dengan kartu skor |
@@ -69,9 +71,12 @@ yang boleh dijalankan harness tanpa bertanya selama perintah aktif, sehingga
 secara bawaan tetap hanya-baca: tool yang menimbulkan efek samping (Bash,
 PowerShell, Write, Edit, NotebookEdit, WebFetch) muncul hanya sebagai aturan
 berlingkup seperti `Bash(git log *)`, dan wildcard `"*"` polos ditolak oleh
-skema. Perintah dengan efek samping yang tidak dapat dibatalkan (`freshify`,
-`github-deploy-fresh`, `github-deploy-next`) menetapkan
-`disable-model-invocation: true`, sehingga hanya operator yang memulainya.
+skema. Perintah dengan efek samping yang tidak dapat dibatalkan atau dengan waktu
+yang dipilih operator menetapkan `disable-model-invocation: true`, sehingga hanya
+operator yang memulainya: `freshify`, `github-deploy-fresh`, `github-deploy-next`,
+`release-readiness`, `elevate`, `fortress`, `workflow`, `plan-execute`,
+`research-experiment`, dan `research-publish`. 35 perintah lainnya menetapkan
+`false` dan dicocokkan dengan permintaan berdasarkan deskripsinya.
 
 ## Disiplin penulisan
 

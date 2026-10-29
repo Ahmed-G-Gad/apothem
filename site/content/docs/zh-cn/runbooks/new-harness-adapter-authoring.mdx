@@ -2,7 +2,7 @@
 title: "编写新的工具适配器"
 description: "编写并发布新的 Apothem 工具适配器的操作手册。"
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,15 @@ sourceHash: "340d6137117f067e"
 
 按照 [编写工具适配器](/docs/examples/authoring-a-harness-adapter)
 示例，为目标工具实现 `HarnessAdapter`。
+
+如果适配器以 `mode: write_text` 和 `ownership_class: operator-owned`
+写入一个纯文本模板（不是 JSON 或 YAML 的文件），则只有当该文件是 Apothem
+所发布模板的未经编辑的副本时，`uninstall` 才会删除它。当之后的某个版本更改了该模板时，
+请在同一次更改中将先前文本的 SHA-256 摘要添加到该清单条目的 `earlier_digests` 列表中，
+否则 `uninstall` 会保留较早版本写入的每一份未经编辑的副本。
+使用 `git show <tag>:<template path> | sha256sum` 获取最新发布标签处文本的摘要；
+该模板不得带有任何 `${...}` 路径标记。当某个已发布的模板未被记录在案时，
+`tests/unit/test_template_digests.py` 会失败。
 
 ### 2. 编写文档页面
 

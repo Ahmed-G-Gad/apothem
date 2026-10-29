@@ -2,7 +2,7 @@
 title: "Apothem と素の GitHub Copilot 構成の比較"
 description: "GitHub Copilot の copilot-instructions.md を手作業で保守するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,15 @@ Apothem の github-copilot アダプターは、そのファイルを共有プ�
 | 指示を書く | `.github/copilot-instructions.md` を手で編集 | レンダリング：共有ルールをファイルに埋め込み |
 | 指示を他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
 | 構成をインストール・削除する | ファイルを手で書き・削除 | `apothem install` / `apothem uninstall` |
+| 再利用可能なスキルとコマンドを共有する | 各スキルフォルダーを `~/.agents/skills/` へ手でコピーし、コピーを最新に保つ | アダプターが `~/.agents/skills/` に書き込み、すべてのプロジェクトで 1 つのコピーを共有し、`apothem update` で更新 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness github-copilot --project <path>` |
 
 ## Apothem が管理するもの
 
 github-copilot アダプターは共有ルールを `.github/copilot-instructions.md` に
-埋め込みます。Copilot は IDE 拡張として動作し、ツール呼び出しのフックを公開
-しないため、ガードレールの意図はレンダリングされた指示の中で完全に担われます。
+埋め込みます。Copilot はフックを `.github/hooks/*.json` で文書化していますが、
+アダプターはこれを書き込まないため、ガードレールの意図はレンダリングされた指示の中で
+完全に担われます。
 共有ルールへの変更はすべて、次の `apothem update` でファイルを再レンダリング
 します。
 

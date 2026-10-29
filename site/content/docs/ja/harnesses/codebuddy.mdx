@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "84f84790325354af"
+sourceHash: "ad1685e4b265a2d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,127 @@ apothem install --harness codebuddy --project /path/to/project
 ```
 
 アダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトスコープのルールファイルを
-1 つ書き込みます。
+1 つ書き込み、Apothem のヘルパーを CodeBuddy サブエージェントとしてプロジェクト内に書き込み（[サブエージェント](#サブエージェント)を参照）、フックを 2 つ書き込みます（[フック](#フック)を参照）。
 
-**書き込まれるファイル：** `<project>/.codebuddy/rules/apothem-rules.md`
+また、プロジェクトに触れる前に、Apothem のスキルと、それらが引用するルールとテンプレートを、あなたのユーザーホームに書き込みます（[プロジェクト外のファイル](#プロジェクト外のファイル)を参照）。
+
+**書き込まれるファイル：**
+
+- `<project>/.codebuddy/rules/apothem-rules.md`：ルールファイル。
+- `<project>/.codebuddy/agents/<name>.md`：Apothem の各ヘルパーにつき 1 つ、プロジェクト内に。
+- `<project>/.codebuddy/settings.local.json`：フックの登録。プロジェクト内に。その中のあなた自身のエントリーは残ります。
+- `<project>/.apothem/support/hooks/`：フックスクリプト。プロジェクト内に。
+- `~/.codebuddy/skills/<name>/SKILL.md`：Apothem の各スキルと各コマンドにつき 1 つ、あなたのユーザーホームに。
+- `~/.config/apothem/rules/` と `~/.config/apothem/templates/`：あなたのユーザーホームに。
+
+## プロジェクト外のファイル
+
+インストールは、プロジェクト内の何かを変更する前に、Apothem のスキルをあなたのユーザーホームにも書き込みます。
+
+| フォルダー | Apothem がそこに書き込むもの |
+| --- | --- |
+| `~/.codebuddy/skills/` | Apothem の各スキルにつき `SKILL.md` を含むフォルダーを 1 つ、そして Apothem の各コマンドにつき 1 つ（コマンドは同じ名前のスキルになります）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | スキルとルールファイルが参照するルールとテンプレート。 |
+
+これらのフォルダーは共有されます。プロジェクト専用ではありません。
+
+- `codebuddy` をインストールするすべてのプロジェクトが `~/.codebuddy/skills/` の同じコピーを使い、インストールは毎回同じファイルをそこに書き込みます。そのフォルダーを読むツールは CodeBuddy だけです。`~/.config/apothem/` 配下のルールとテンプレートは、他のツールのインストールによっても、同じファイルで書き込まれます。
+- `--project` は、書き込むルールファイルと、インストールがどのプロジェクトに属するかを選びます。スキルの書き込み先は変わりません。
+- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、ルールファイル、`.codebuddy/agents/` 内のサブエージェントファイル、`.codebuddy/settings.local.json` 内のフックの登録、そしてプロジェクトへのインストールが毎回作成する `.apothem/` フォルダーで、このフォルダーにはフックスクリプトも置かれます。
+- ホームのフォルダーが最初に書き込まれます。それが失敗した場合、たとえばパス内のフォルダーがホームディレクトリの外へ出るリンクである場合（内側にとどまるリンクはたどられます）や書き込めない場合、インストールはプロジェクト内の何かが変わる前にエラーで停止します。
+- Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーはそのまま残され、インストールはその名前を挙げる警告を表示します。名前を変えるか移動してから、`apothem update` を実行してください。その名前が占有されている間、`apothem verify` は失敗します。
+- ファイルの合計は数メガバイトになります。
+
+インストールは、`--project` の外に書き込むフォルダーを挙げるメモを表示し、`--dry-run` はそれらを一覧表示します。
+
+## サブエージェント
+
+[CodeBuddy のサブエージェントに関するドキュメント](https://www.codebuddy.ai/docs/cli/sub-agents)によれば、CodeBuddy はサブエージェントを `<project>/.codebuddy/agents/`（プロジェクトのエージェント）または `~/.codebuddy/agents/`（ユーザーのエージェント）内の Markdown ファイルから読み取ります。
+インストールは、Apothem のヘルパーごとに 1 つのファイルをプロジェクトのフォルダーにのみ書き込み、`~/.codebuddy/agents/` には何も書き込みません。
+
+各ファイルはヘルパーの指示を変更せずに保持し、次のフロントマターキーを持ちます。
+
+| キー | Apothem が書き込むもの |
+| --- | --- |
+| `name`, `description` | ヘルパーの名前と説明。 |
+| `tools` | ヘルパーが使えるツール。カンマ区切りの 1 つの文字列として。 |
+| `disallowedTools` | ヘルパーが拒否されるツール。カンマ区切りの 1 つの文字列として。ヘルパーに拒否されるツールがない場合は省略されます。 |
+| `maxTurns` | ヘルパーのターン数の上限。 |
+
+書き込まれるのは、CodeBuddy のドキュメントに示されているツール名だけです。
+その[Settings ページ](https://www.codebuddy.ai/docs/cli/settings)がツールを一覧にしており、サブエージェントのページがもう 1 つのツールを挙げています。次の一覧にはそれも含まれます。
+
+```text
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
+```
+
+ソースが挙げるツールのうちその一覧にないもの（たとえば `PowerShell` や `TodoWrite`）は、両方のフィールドから除外されます。
+`Bash(rm *)` のようなパターン付きのツールは、カンマ区切りの一覧では表現できません。許可ツールとしては除外され、拒否ツールとしてはツール全体を拒否します。
+ファイルを編集できないヘルパーはその制限を保ちます。ツールの中に `Write` も `Edit` も挙げず、その両方を拒否します。
+インストールは `model` キーを書き込まないため、ヘルパーは CodeBuddy が選択するモデルで動作します。また、`permissionMode` キーも `hooks` キーも書き込みません。
+
+知っておくべきこと：
+
+- サブエージェントファイルは通常のプロジェクトファイルです。プロジェクトと一緒にコミットするか、`.codebuddy/agents/` を `.gitignore` に記載してください。Apothem はあなたの代わりに選びません。
+- CodeBuddy は、手作業で追加されたサブエージェントファイルを次のセッションの開始時に読み込むため、インストール後に新しいセッションを開始してください。
+- Apothem のヘルパーの名前を持つあなたのファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。アンインストールはそれを元に戻しません。他の名前のファイルには決して触れません。
+- CodeBuddy の IDE の Subagents ページには CLI のページに記載のないキーが示されており、IDE が `disallowedTools` や `maxTurns` を受け付けるかどうかを、Apothem は確認していません。
+
+## フック
+
+[CodeBuddy のフックに関するドキュメント](https://www.codebuddy.ai/docs/cli/hooks)によれば、CodeBuddy はその設定ファイルの `hooks` キーからフックを実行します。このドキュメントはフックをベータとしています。
+インストールは 2 つを登録します。
+
+| イベント | 実行されるもの |
+| --- | --- |
+| `SessionStart` | セッションブートストラップ：セッションのメタデータ、スキルのインデックス、メモリとプランの要約、常設の姿勢を、モデルのコンテキストに追加します。 |
+| `PostToolUse`（すべてのツール） | プロアクティブなコンパクションのトラッカー。アクティビティを数え、コンパクションサイクルごとに最大 2 回、状態を保存するかコンパクションするようモデルに伝えます。それ以外の場合は何も出力しません。 |
+
+どちらもモデルにコンテキストを追加します。どちらもツール呼び出しやセッションをブロックしません。
+
+Apothem は CodeBuddy に `PreToolUse` ガードを登録しません。
+CodeBuddy のドキュメントは、`SessionStart`、`UserPromptSubmit`、`PostToolUse` について `additionalContext`（Apothem のガードが伝達に使うフィールド）を挙げており、`PreToolUse` については権限と入力のフィールドだけを挙げています。
+そこに登録したガードは、ツール呼び出しのたびにプロセスの起動コストがかかり、何も届けない可能性があるため、書き込み、編集、シェルのガード、`AskUserQuestion` のチェック、セッション終了プロトコルは、それらを届けるツールに残ります。
+Apothem は、ドキュメントまたはプローブによってそれがモデルに届くことが示された時点で、CodeBuddy のイベントにガードを登録します。
+
+**ファイルの書き込み先**
+
+| ファイル | 保持するもの |
+| --- | --- |
+| `<project>/.codebuddy/settings.local.json` | 2 つのフックの登録。ファイルの `hooks` キーにマージされます。CodeBuddy はこのファイルを、あなたのローカルなものでありコミットされないものとして文書化しています。 |
+| `<project>/.apothem/support/hooks/` | ディスパッチャースクリプト、そのヘルパー、そのメッセージファイル。 |
+
+登録された各コマンドには、Apothem が実行時に見つけたインタープリターと、プロジェクトの絶対パスが記されるため、マシン固有になります。
+そのため、インストールはローカルのファイルに書き込み、コミットされる `<project>/.codebuddy/settings.json` には決して書き込みません。
+インストールは `.gitignore` を編集しません。チームメイトのチェックアウトがあなたのマシンを指すコマンドを受け取らないよう、あなたのファイルに `.codebuddy/settings.local.json` と `.apothem/` が記載されていることを確認してください。
+
+**シェルが誤読するパス。** `$`、バッククォート、二重引用符、バックスラッシュを含むプロジェクトまたはインタープリターのパスは、何かが書き込まれる前に拒否されます。引用符で囲まれたコマンドの中では、別のファイルを実行したり、コマンドが書き込まれる JSON を壊したりするためです。
+エラーはそのパスを挙げます。プロジェクトを移動するか名前を変えてから、インストールを再度実行してください。
+パス内のスペースやアポストロフィは問題ありません。
+
+コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+```
+
+`--contract codebuddy` は出力に対しては何もしません。CodeBuddy は Claude Code と同じエンベロープを読むためです。
+CodeBuddy はフックコマンドをあなたのシェルを通じて、Windows では Git Bash を通じて実行するため（cmd.exe と PowerShell のどちらもサポートしません）、コマンドは bash のクォートとスラッシュ区切りのインタープリターパスを使います。
+CodeBuddy が求めた場合は、Git for Windows をインストールしてください。
+
+**インストールの実行後にフックを確認する。** CodeBuddy は起動時に設定のスナップショットを取り、別のツールが書き込んだ設定ファイルをホットロードせず、外部から追加されたフックは、あなたがその `/hooks` パネルで確認した後にのみ適用します。
+`apothem install` の後（およびフックを変更する更新の後）は、CodeBuddy を再起動し、`/hooks` で Apothem のエントリーを確認してください。
+インストールはこれをメモとして表示します。
+変更のたびに確認が繰り返されるかどうかをドキュメントは述べていないため、更新の後にもう一度 `/hooks` を開いてください。
+
+**あなた自身のフック。** 登録はキー単位であなたのファイルにマージされます。
+あなたが書いたフックや他のキーはそのまま残り、同じイベントとマッチャーの下にあるあなたのハンドラーは Apothem のものと並んで残ります。更新は、コマンドが Apothem のディスパッチャー（`--contract codebuddy` 付きの `.apothem/support/hooks/dispatch.py`。どのプロジェクトパスの下で書き込まれたかは問いません）を実行するハンドラーだけを置き換えます。
+名前を共有するだけのあなたのフック（たとえばプロジェクト内の `tools/hooks/dispatch.py`）や、`python -m apothem.conformity.gate` を実行するあなたのフックが、Apothem のものと見なされることは決してありません。
+コメントやその他の JSON5 構文を含むファイルは、それらを失わずに書き直すことができないため、インストールはそのファイルについて `config.unparseable` エラーを報告し、ファイルには触れません。コメントを削除するか、2 つのエントリーを自分で追加してください。
+
+**フックを無効にする。** CodeBuddy の環境で `APOTHEM_HOOKS_DISABLE=1` を設定すると Apothem のフックを沈黙させ、CodeBuddy 自身の `disableAllHooks` 設定を設定するとすべてのフックを無効にします。
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -39,14 +157,21 @@ Apothem のファイルは `alwaysApply: true` を持つため、ガバナンス
 
 CodeBuddy のルール面は、`.codebuddy/rules/` 配下のプロジェクトスコープです。アダプターは専用の
 `apothem-rules.md` ファイルを書き込み、このファイルは同じディレクトリでオペレーターが作成する
-任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクトメモリファイル、
+任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクトメモリファイル、コミットされる
 `.codebuddy/settings.json`、プロジェクトの `.mcp.json`（MCP サーバー）はオペレーターの所有であり、
-Apothem はそれらを書き込みません。CodeBuddy はスキル、コマンド、サブエージェント、フックも
-文書化していますが、アダプターはそのいずれも書き込まず、代わりにルールファイル内で規律を参照します。
+Apothem はそれらを書き込みません。CodeBuddy はスラッシュコマンドも文書化していますが、アダプターは
+それを書き込まず、代わりにルールファイル内で規律を参照します。サブエージェントと 2 つのフックは
+プロジェクトに書き込み（[サブエージェント](#サブエージェント)と[フック](#フック)を参照）、スキルと、
+スキルとしての Apothem のコマンドは、あなたのユーザーフォルダーに書き込みます
+（[プロジェクト外のファイル](#プロジェクト外のファイル)を参照）。
 プロジェクトに `CODEBUDDY.md` がない場合、CodeBuddy Code は `AGENTS.md` をプロジェクトメモリとして
 読み取るため、別のアダプターが書き込む `AGENTS.md` も CodeBuddy に届きます。アダプターが依拠する
 ベンダー面の規約は `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` にピン留めされて
 おり、公開中の CodeBuddy ドキュメントに対してスナップショットが取られています。
+
+CodeBuddy はユーザースキル用に `~/.codebuddy/skills/` を文書化しており、`~/.agents/skills/` には言及していないため、インストールはツール横断のフォルダーではなく CodeBuddy のフォルダーに書き込みます。
+そのフォルダーを読むのは CodeBuddy だけです。
+そのスキルのページは `disable-model-invocation`、`user-invocable`、`allowed-tools` を挙げており、`metadata` キーも `argument-hint` キーも挙げていません。CodeBuddy がそれらを受け付けるかどうかを、Apothem は確認していません。
 
 ## 検証
 
@@ -58,7 +183,10 @@ verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
 2. 管理対象のルールファイルが存在し、空でないこと。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+3. フックの登録 `.codebuddy/settings.local.json` が存在し、空でなく、JSON として解析でき、フックスクリプトが `.apothem/support/hooks/` にあること。このファイルは Apothem のディスパッチャーを実行するハンドラーを保持していなければならないため（チェックはそれを実行しません）、元に戻されたファイルや空にされたファイルはもはや検証に通りません。
+4. `.codebuddy/agents/` フォルダーが存在すること。チェックはフォルダーに対するもので、その中の各ヘルパーファイルに対するものではありません。コマンド `apothem diff --harness codebuddy --project /path/to/project` は、欠けているヘルパーファイルや古くなったヘルパーファイルを一覧表示します。
+5. どのインストールが書き込んだかにかかわらず、Apothem の各スキルフォルダーが `SKILL.md` とともに所定の場所にあり、Apothem の名前を持つスキルフォルダーがどれも、Apothem が書き込んだのではないものに属していないこと。チェックが失敗すると、欠けているフォルダーや外部のフォルダーの名前が挙げられます。
+6. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -70,6 +198,11 @@ apothem update --harness codebuddy --project /path/to/project
 `install` と `update` は冪等です。再実行すると、管理対象のファイルが最新のレンダリング済み
 コンテンツで上書きされます。
 
+更新は、ファイルが現在のものと異なるスキルフォルダーも書き直します。
+スキルを書き込まなかった以前のリリースでインストールした場合、更新はスキルを追加します。
+現在のものと異なるサブエージェントファイルを書き直し、欠けているものを追加します。
+また、フックスクリプトと `.codebuddy/settings.local.json` 内の Apothem のハンドラーを更新し、あなた自身のエントリーには触れません。その後、CodeBuddy を再起動し、もう一度 `/hooks` を確認してください。
+
 ## アンインストール
 
 ```bash
@@ -77,6 +210,16 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
 `apothem-rules.md` から Apothem のブロックを削除し、そこにあるほかの文章は残します。ファイルは、ほかに何も残っていない場合にのみ削除されます。変更の前に、ファイルのタイムスタンプ付きのコピーが `~/.apothem/backups/` の下に保存されます。プロジェクトにバックアップファイルは残りません。共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+アンインストールは、`<project>/.codebuddy/agents/` に書き込んだサブエージェントファイルも削除し、そこにある他のファイルは残します。フォルダーは空になった場合に削除されます。
+`<project>/.codebuddy/settings.local.json` から Apothem のフックのハンドラーを、そのコマンド内のディスパッチャーのパスで識別して削除し、あなた自身のフックとキーは残します。
+このファイルは、Apothem が作成したもので、その中に他に何も残っていない場合にのみ削除されます。
+`<project>/.apothem/support/hooks/` 内のフックスクリプトも削除されます。
+`~/.codebuddy/skills/` に書き込んだスキルフォルダーと `~/.config/apothem/` 内のルールとテンプレートも削除しますが、それはそれらをまだ使っている他の Apothem のインストールがない場合に限ります。
+別のプロジェクトや、そのフォルダーを共有する別のツールが使っている可能性があります。
+その場合、アンインストールはフォルダーを残し、どのインストールがそれらを使っているかを表示し、最後のアンインストールがそれらを削除します。
+あなたがそれらのフォルダーに追加したファイルは残り、空になったフォルダーは削除されます。
+各フォルダーは、削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 
 ## コンフォーミティゲート
 
@@ -90,6 +233,12 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness codebuddy --project /path/to/project` を再実行する |
 | 検証が失敗した | `apothem update --harness codebuddy --project /path/to/project` を実行してから、再度検証する |
+| CodeBuddy が Apothem のヘルパーを一覧表示しない | CodeBuddy はサブエージェントファイルをセッションの開始時に読み込む。新しいセッションを開始する |
+| Apothem のフックが実行されない | CodeBuddy は、別のツールが書き込んだフックを、再起動とその `/hooks` パネルでの確認の後にのみ適用する。CodeBuddy を再起動し、`/hooks` を開いて Apothem のエントリーを確認する。Windows では CodeBuddy に Git Bash が必要 |
+| インストールが `settings.local.json` について `config.unparseable` を報告する | ファイルに、書き直すと失われるコメントやその他の構文がある。コメントを削除して再度インストールするか、Apothem の 2 つのフックのエントリーを自分で追加する |
+| `apothem verify` が欠けているスキルフォルダーの名前を挙げる | `apothem install --harness codebuddy --project /path/to/project` を実行する。これでフォルダーが復元される |
+| インストールまたは更新が、スキルフォルダーをスキップしたと警告する | Apothem のスキルの名前を持つフォルダーがスキルフォルダー内にすでに存在し、Apothem が書き込んだものではない。名前を変えるか移動してから、`apothem update` を実行する |
+| インストールがプロジェクトを変更する前に停止する | ホーム内への書き込みが失敗した。エラーを読み、それが挙げるフォルダー（ホームディレクトリの外へ出るリンク、フォルダーがあるべき場所にあるファイル、または読み取り専用のフォルダー）を修正してから、再度インストールする |
 | 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness codebuddy --project /path/to/project` を再実行する |
 
 ## 設定ノブ

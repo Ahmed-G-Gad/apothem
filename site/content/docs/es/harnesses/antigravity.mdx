@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptador de entorno de Apothem para Antigravity (vista previa)."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,9 +41,14 @@ se resuelve cada cita con estilo de repositorio: `rules/<name>.md` bajo el
 así que cada regla de Apothem se convierte durante la instalación. Una regla que
 siempre se aplica recibe `trigger: always_on`; una regla limitada a rutas recibe
 `trigger: glob` con los mismos patrones en `globs`; cualquier otra regla recibe
-`trigger: model_decision`. Cada regla conserva su `description`. Antigravity
-comparte un presupuesto de 20,000 tokens entre las reglas siempre activas y,
-cuando se supera, convierte las más grandes en referencias bajo demanda.
+`trigger: model_decision`. Cada regla conserva su `description`. Cinco reglas
+siempre se aplican: `agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management` y el índice de reglas `apothem-rule-index`, que nombra cada
+una de las demás reglas y cuándo leerla. Las demás reglas llevan
+`trigger: glob`. Antigravity comparte un presupuesto de 20,000 tokens entre las
+reglas siempre activas y, cuando se supera, convierte las más grandes en
+referencias bajo demanda; las cinco reglas suman unos 11,000 tokens, así que
+ninguna se convierte en una referencia.
 
 **Manifiesto del plugin.** `plugin.json` lleva solo `name` y `description`, las
 dos claves que admite el esquema de plugins de Antigravity.

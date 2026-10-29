@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration manuelle de Zed"
 description: "Maintenir à la main le fichier d'instructions plat .rules de Zed face à le rendre depuis le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "2c5b5e0dd0dfe386"
+sourceHash: "693a56d0ed665ef9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,6 +18,7 @@ maintenance manuelle de cette configuration à sa gestion avec Apothem.
 | Rédiger les instructions | Écrire à la main le fichier `.rules` | Rendu depuis le corpus partagé |
 | Préserver un `.rules` antérieur | Penser à le copier de côté vous-même | L'adaptateur sauvegarde le fichier existant avant de le remplacer |
 | Garder les règles alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Partager des skills et des commandes réutilisables | Copier à la main chaque dossier de skill dans `~/.agents/skills/` et garder les copies à jour | Écrits dans `~/.agents/skills/` par l'adaptateur, une seule copie pour tous les projets, et actualisés lors de `apothem update` |
 | Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness zed --project <path>` |
 
 ## Ce qu'Apothem gère

@@ -2,15 +2,15 @@
 title: "Apothem مقابل تهيئة Open-Claw الخام"
 description: "صيانة تهيئة Open-Claw يدويًا مقابل إدارتها عبر الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "a6ba7755dc99bd3f"
+sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يقرأ <bdi>Open-Claw</bdi> ملف `~/.openclaw/openclaw.json`. حقله
-`agents.defaults.skills` هو قائمة أسماء مسموح بها (وليس مُحمِّل أدلّة)، و<bdi>MCP</bdi>
-سطح <bdi>CLI</bdi>، لذا لا يؤلّف <bdi>Apothem</bdi> أي مفاتيح تهيئة؛ بل يثبّت
-مجموعات الأوامر والمهارات المشتركة تحت `~/.openclaw/.apothem/support/skills/` بوصفها مواد
-دعم.
+يقرأ <bdi>Open-Claw</bdi> ملف `~/.openclaw/openclaw.json`. يثبّت <bdi>Apothem</bdi>
+مجموعات الأوامر والمهارات المشتركة تحت `~/.openclaw/.apothem/support/skills/` ويؤلّف مفتاحًا
+واحدًا هناك، `skills.load.extraDirs`، يسرد ذلك الدليل كي يحمّل <bdi>OpenClaw</bdi> المهارات.
+أما حقله `agents.defaults.skills` فهو قائمة أسماء مسموح بها تملكها أنت، و<bdi>MCP</bdi> سطح
+<bdi>CLI</bdi>، لذا لا يؤلّف <bdi>Apothem</bdi> أيًّا منهما.
 
 ## الحالة
 
@@ -31,6 +31,9 @@ sourceHash: "a6ba7755dc99bd3f"
 يكتب محوِّل <bdi>Open-Claw</bdi> ملف `openclaw.json`، ويلفّ أوامر الشَّرطة المائلة
 الخاصة بـ <bdi>Apothem</bdi> بوصفها مهارات، وينسخ مهارات <bdi>Apothem</bdi> إلى
 دليل الدعم المُشار إليه، ويحفظ القواعد والقوالب و<bdi>agents</bdi> ومادة الخطّاف تحت شجرة دعم <bdi>Apothem</bdi> الفرعية.
+يقرأ <bdi>OpenClaw</bdi> المفتاح `skills.load.extraDirs` بأدنى أسبقية بين مصادر مهاراته، لذا
+تُستخدَم مهارة بالاسم نفسه في مساحة عملك، أو في `~/.agents/skills`، أو في
+`~/.openclaw/skills` بدلًا من نسخة <bdi>Apothem</bdi>.
 
 ## مسار الهجرة
 

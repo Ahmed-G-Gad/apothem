@@ -2,7 +2,7 @@
 title: "Postura agnóstica de host"
 description: "Como o Apothem alcança uma postura agnóstica de host via o perfil compartilhado e os adaptadores de harness."
 machineTranslated: true
-sourceHash: "dc0e6903e3076aa0"
+sourceHash: "13ce18f1ac65a634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,8 @@ do **centro** de um polígono regular ao **ponto médio de um de seus lados** �
 é o design: um perfil compartilhado no centro, dezessete harnesses equidistantes no
 perímetro, cada materialização à mesma distância da fonte da verdade. O
 núcleo não muda quando uma aresta muda; as arestas compartilham uma única relação com
-o núcleo. A divergência é estruturalmente impossível.
+o núcleo. Como cada harness deriva de um único perfil, a divergência é detectável
+(`apothem status` a reporta) e corrigível (`apothem update` rematerializa a configuração).
 
 ## Garantias de portabilidade
 

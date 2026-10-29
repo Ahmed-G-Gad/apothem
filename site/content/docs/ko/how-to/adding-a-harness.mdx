@@ -2,7 +2,7 @@
 title: "하니스 추가하기"
 description: "하니스 어댑터를 활성화하여 공유 프로필로부터 그 네이티브 구성이 머티리얼라이즈되도록 합니다."
 machineTranslated: true
-sourceHash: "86a3b203d53e58ea"
+sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,7 @@ sourceHash: "86a3b203d53e58ea"
 3. 파일을 쓰지 않고 설치를 미리 봅니다:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. 하니스를 설치합니다. 사용자 범위 하니스의 경우:
@@ -67,7 +67,7 @@ sourceHash: "86a3b203d53e58ea"
 ## 검증
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 `✓ <harness-id> is verified` 줄은 관리되는 대상이 존재하며 파싱됨을 확인합니다.

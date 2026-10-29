@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,13 @@ apothem install --harness antigravity
 규칙은 설치 시 변환됩니다. 항상 적용되는 규칙은 `trigger: always_on`을 받고,
 경로로 범위가 지정된 규칙은 `globs`에 같은 패턴을 담은 `trigger: glob`을 받으며,
 그 밖의 규칙은 `trigger: model_decision`을 받습니다. 모든 규칙은 자신의
-`description`을 유지합니다. Antigravity는 상시 적용 규칙 전체에 걸쳐
+`description`을 유지합니다. 다섯 개의 규칙이 항상 적용됩니다: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, 그리고 다른 모든
+규칙과 그 규칙을 언제 읽어야 하는지를 명시하는 규칙 색인 `apothem-rule-index`.
+나머지 규칙은 `trigger: glob`을 담습니다. Antigravity는 상시 적용 규칙 전체에 걸쳐
 20,000토큰 예산 하나를 공유하며, 이 예산을 넘으면 가장 큰 규칙을 필요할 때
-불러오는 포인터로 바꿉니다.
+불러오는 포인터로 바꿉니다. 다섯 개의 규칙은 약 11,000토큰이므로 어느 것도
+포인터로 바뀌지 않습니다.
 
 **플러그인 매니페스트.** `plugin.json`은 Antigravity의 플러그인 스키마가
 허용하는 두 키인 `name`과 `description`만 담습니다.

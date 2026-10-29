@@ -2,7 +2,7 @@
 title: "ブランドパレット"
 description: "Apothem のコアブランドカラーと、15 のハーネスブランドカラー（ハーネスの色ページで定義されています）。コアカラーの信頼できる唯一の情報源は、assets/design-tokens.css にある正規のデザイントークンで、サイトはそれらの値をミラーします。"
 machineTranslated: true
-sourceHash: "7bb26cf570fc6357"
+sourceHash: "3bcc75f8676fd187"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,8 +12,11 @@ sourceHash: "7bb26cf570fc6357"
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 （およびそのミラーである `assets/design-tokens.json`）にあるデザイントークンが所有します。
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-にあるサイトテーマは、これらのトークン値を、Fumadocs テーマが使用する CSS 変数へミラーします。以下のすべての値は、
-これらのデザイントークンにおけるスレートまたはエメラルドのランプのステップです。slate-600 のようなステップ名は、そのランプの値を指します。
+にあるサイトテーマは、セマンティックなトークン値を、Fumadocs テーマが使用する CSS 変数の中で OKLCH として再記述します。
+ページの背景、テキスト、プライマリ、ボーダー、フォーカスリングの各変数は、トークンの正確なステップに解決されます（
+`lib/theme-tokens.test.mjs` のチェックが、背景、前景、プライマリ、リングの各変数をそれらに一致させます）。同じファイルで宣言されている
+`apothem-*`、`polygon-*`、`field-*` のランプは、トークンランプから導出した近似値であってコピーではなく、仕様の一部ではありません。以下のすべての値は、
+デザイントークンにおけるスレートまたはエメラルドのランプのステップです。slate-600 のようなステップ名は、そのランプの値を指します。
 
 | 役割 | トークン（CSS） | ライトモード | ダークモード | 用途 |
 |---|---|---|---|---|

@@ -2,7 +2,7 @@
 title: "Diagramme du pipeline CI/CD"
 description: "Carte visuelle et décomposition par couloirs des étapes du flux de travail de build, de test, de lint, de sécurité et de publication qui contrôlent chaque changement de code et chaque publication."
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -94,6 +94,9 @@ flowchart LR
   par accident. L'audit de licences (`license-audit.yml`) échoue lorsqu'une
   licence de dépendance ne figure pas dans sa liste d'autorisation. Il s'exécute
   chaque semaine et lorsque les fichiers de dépendances ou de licences changent.
+  La porte REUSE (`reuse.yml`) s'exécute à chaque modification et échoue
+  lorsqu'un fichier n'a pas de ligne de licence ou qu'une expression SPDX ne
+  s'analyse pas.
   `release.yml` génère le SBOM de chaque version étiquetée.
 - **Couloir de publication** — les flux de travail de publication sont déclenchés
   par les push de tags ; les publieurs npm et VS Code peuvent aussi être relancés

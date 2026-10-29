@@ -2,7 +2,7 @@
 title: "verify"
 description: "Referencia de la CLI para el comando apothem verify."
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,6 +23,18 @@ gestionados están presentes y son válidos. Sin `--profile`, la comprobación e
 `--profile`, la comprobación exige además **fidelidad al perfil**, de modo que
 una instalación presente pero desviada no supera verify, y responde a «¿está
 ESTE perfil instalado fielmente?» en lugar de solo a «¿existe?».
+
+Para un adaptador que escribe skills en tu directorio personal, verify también
+comprueba que cada carpeta de skill que espera exista con un `SKILL.md`, sea cual
+sea la instalación que la escribió, de modo que una máquina donde solo está
+instalada una de las herramientas que comparten una carpeta supera la
+verificación. Falla cuando falta una carpeta, y cuando una carpeta con el nombre
+de una skill de Apothem pertenece a algo que Apothem no escribió. Una fila
+fallida indica cuál de los dos casos es: en modo plain le sigue una línea
+`Note:`, y en la fila JSON un objeto `user_level` lista las rutas `missing` y
+`unlisted` y un `message`. Ejecuta [`install`](/docs/cli-reference/install) para
+restaurar una carpeta que falta; cambia el nombre de una carpeta ajena o muévela
+y luego ejecuta [`update`](/docs/cli-reference/update).
 
 Un barrido con `--harness all` respeta el `exclude_harnesses` del perfil — las
 mismas exclusiones que aplicó el lote de `install`/`update` —, de modo que

@@ -2,7 +2,7 @@
 title: "verify"
 description: "CLI-Referenz für den Befehl apothem verify."
 machineTranslated: true
-sourceHash: "d9d421ce85d96684"
+sourceHash: "9147e25d2829a90c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,6 +24,19 @@ verwalteten Ziele vorhanden und gültig sind. Ohne `--profile` ist die Prüfung
 vorhandene, aber abgedriftete Installation bei verify durchfällt; die Prüfung
 beantwortet also „Ist DIESES Profil originalgetreu installiert?“ statt nur
 „Existiert es?“.
+
+Für einen Adapter, der Skills in Ihr Home-Verzeichnis schreibt, prüft verify
+außerdem, dass jeder erwartete Skill-Ordner mit einer `SKILL.md` existiert,
+gleichgültig, welche Installation ihn geschrieben hat, sodass ein Rechner, auf dem
+nur eines der Werkzeuge installiert ist, die sich einen Ordner teilen, die
+Prüfung besteht. Sie schlägt fehl, wenn ein Ordner fehlt und wenn ein Ordner mit
+dem Namen eines Apothem-Skills zu etwas gehört, das Apothem nicht geschrieben
+hat. Eine fehlgeschlagene Zeile sagt, welcher Fall vorliegt: Im Plain-Modus folgt
+ihr eine `Note:`-Zeile, und in der JSON-Zeile listet ein `user_level`-Objekt
+`missing`- und `unlisted`-Pfade sowie eine `message` auf. Führen Sie
+[`install`](/docs/cli-reference/install) aus, um einen fehlenden Ordner
+wiederherzustellen; benennen Sie einen fremden Ordner um oder verschieben Sie ihn
+und führen Sie dann [`update`](/docs/cli-reference/update) aus.
 
 Ein Durchlauf mit `--harness all` berücksichtigt `exclude_harnesses` im Profil —
 dieselben Ausschlüsse, die der `install`/`update`-Batch angewendet hat —, sodass

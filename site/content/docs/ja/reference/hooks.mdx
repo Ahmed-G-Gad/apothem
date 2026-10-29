@@ -2,22 +2,28 @@
 title: "フック"
 description: "SessionStart、PreToolUse、PostToolUse、Stop で発火するツールイベントハンドラー。git の隔離とプラン規律を強制するメッセージコンテキストを読み込み、テスト済みのランタイム契約とユーザーごとの状態を備えます。"
 machineTranslated: true
-sourceHash: "3a6c32f33850537e"
+sourceHash: "2fe3999ec76b34d3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 フックはツールイベントで発火し、アシスタントが追加のシステムプロンプトとして扱う
 メッセージコンテキストを読み込みます。配線は、Claude Code の `settings.json` のフックブロック
 （エンジンインストール）またはプラグインの `hooks.json`（プラグインインストール）、
-Codex の `hooks.json` フックファイル、そして Qwen Code の `settings.json` のフックマップにあります。
+Codex の `hooks.json` フックファイル、Qwen Code の `settings.json` のフックマップ、CodeBuddy の
+`.codebuddy/settings.local.json` のフックキー（SessionStart と PostToolUse のみ）、
+Kiro のフックファイル `.kiro/hooks/apothem.json`（SessionStart のみ）、
+GitHub Copilot のフックファイル `.github/hooks/apothem.json`（sessionStart と
+postToolUse のみ）、Windsurf（Devin Local）の `.devin/config.local.json` のフック
+キー（SessionStart と PostToolUse のみ）、そして Cursor のプロジェクトフックファイル
+`.cursor/hooks.json`（sessionStart のみ）にあります。
 
 | イベント | タイムアウト | 目的 |
 |-------|--------:|---------|
-| SessionStart | 30 秒 | メモリを読み取り、プランの状態を確認し、準備状況を報告する。圧縮の後には、復旧コンテキストを届ける |
+| SessionStart | 30 秒 | メモリを読み取り、プランの状態を確認し、準備状況を報告する。圧縮の後には、復旧コンテキストを届ける。ベースライン以降に変化したナレッジベースを知らせる |
 | PreCompact | 30 秒 | 圧縮の前に状態が外部化されていることを検証する（Codex、Qwen Code。Claude Code には登録されない） |
 | PostCompact | 30 秒 | 圧縮の後に作業状態を復元する（Codex、Qwen Code。Claude Code には登録されない） |
 | Stop | 60 秒 | セッション終了プロトコル、オプトイン |
-| PostToolUse | 10 秒 | 予防的圧縮のアドバイザリー、セッションごとに最大 2 回 |
+| PostToolUse | 10 秒 | コンテキストサイズのアドバイザリー: 最初の目安で状態を保存し、2 番目の目安ではセッションが長くなっていることがオペレーターに伝えられる。圧縮サイクルごとに最大 2 回。Claude Code ではバックグラウンドで実行される |
 | PreToolUse（シェル: Bash、PowerShell、`run_shell_command`） | 10 秒 | git 成果物の隔離、プランの局所性、動的評価ガード |
 | PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 秒 | プラン参照の隔離、著作者ヘッダー、プランの局所性、依存関係ガードと動的評価ガード |
 | PreToolUse (AskUserQuestion) | 10 秒 | `(Recommended)` マーカーの整形式性 |
@@ -32,9 +38,19 @@ Codex は `<harness-root>/hooks/` 配下にマテリアライズします。
 Claude Code のエントリは exec 形式（`command` と `args`）を使うため、シェルを必要としません。
 Claude Code プラグインは、各フックを Claude Code のデフォルトのフックシェル（macOS と Linux では
 `sh`、Windows では Git Bash）で
-`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]`
 として実行します。ブートストラップは Python 3.10 以降のインタープリターを見つけ、同梱の
-ディスパッチャーを実行します。Git for Windows のない Windows では、エンジンインストール
+ディスパッチャーを実行します。見つけたインタープリターは、フック状態ディレクトリ（後述）の配下の
+`interpreter-path`（`bootstrap.ps1` では `interpreter-path-ps1`）にキャッシュされ、そのインタープリターが
+まだ存在する間は再利用されます。そのため PATH の探索は、ツール呼び出しのたびではなく 1 回だけ
+実行されます。新たな探索を強制するには、キャッシュファイルを削除してください。絶対パスの状態
+ディレクトリと絶対パスのキャッシュ済みパスだけが尊重されます。
+
+すべての面は、イベントとマッチャーごとに 1 つのディスパッチャーエントリを登録し、そのマッチャーが
+評価するすべてのメッセージを列挙します。1 つのプロセスがペイロードを 1 回読み取り、各ガードを実行し、
+1 つのエンベロープで応答するため、Write はガードごとに 1 つではなく 1 つのディスパッチャーを起動します。
+Claude Code のエンジンインストールは、Write と Edit に対してコンフォーミティゲート（`gate.py --hook`）も
+独自のエントリとして実行します。Git for Windows のない Windows では、エンジンインストール
 （`apothem install --harness claude-code`）を使用してください。その exec 形式のフックは
 シェルを必要としません。
 ディスパッチャーは標準ライブラリのみのスタンドアロンスクリプトです。自身の
@@ -45,12 +61,83 @@ Claude Code プラグインは、各フックを Claude Code のデフォルト�
 `hooks/lib/resolve_root.py` を読み込み、`hooks/emit_hook_context.py` と
 `hooks/session_start_bootstrap.py` に委譲します。
 
+## ベンダー契約
+
+Claude Code ではないハーネスは、同じディスパッチャーを、スクリプトの後に `--contract <id>` を付けて
+実行します。たとえば
+`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`
+のようにします。契約（`hooks/lib/vendor_contract.py`）は、ベンダーのイベント名とツール名の綴り、
+およびペイロードのキーを、ハンドラーが読む Claude の形に変換し、エンベロープをベンダーが読む形に
+書き換え、ベンダーがモデルに渡さないイベントを落とします。このフラグがなければ何も変換されず、
+出力はバイト単位で Claude のエンベロープそのものです。このフラグは、ディスパッチャーの
+文書化されたコマンドラインの一部です: `dispatch.py [--contract <id>]
+<Event> [<message> ...]`。
+
+| 契約 | 読み取るもの | 出力 | 届けられるイベント |
+| --- | --- | --- | --- |
+| `codebuddy` | Claude の stdin | Claude のエンベロープ | SessionStart、UserPromptSubmit、PostToolUse |
+| `devin` | 小文字のツール名（`exec`、`write`、`edit`）を持つ Claude の stdin。プロジェクトルートは `DEVIN_PROJECT_DIR` から | Claude のエンベロープ | SessionStart、UserPromptSubmit、PostToolUse |
+| `cursor` | camelCase のイベント、`conversation_id`、`workspace_roots` | `{"additional_context": ...}` | SessionStart |
+| `copilot` | camelCase の `sessionId`、`toolName`、`toolArgs`、または PascalCase と snake_case の形式 | `{"additionalContext": ...}` | SessionStart、PostToolUse、Notification |
+| `kiro` | Claude に似た stdin、Kiro のツール ID（`execute_bash`、`fs_write`、`str_replace`） | 素のテキスト | SessionStart、UserPromptSubmit |
+| `claude` | Claude の stdin | Claude のエンベロープ | すべてのイベント |
+
+`codebuddy`、`copilot`、`cursor`、`devin`、`kiro` の各契約は、現在 Apothem のアダプターによって
+インストールされます（`devin` は Windsurf アダプターによって）。`claude` 契約は、デフォルトの
+コマンドラインが変わっていないことを証明します。ディスパッチャーはどの契約のもとでもアドバイザリーに
+とどまります。どの形も、権限、判定、ブロック、書き換えられたツール入力を運びません。
+
+Cursor と Devin Local は、自身のフックに加えて Claude Code の設定ファイルが持つフックも読み込むため、
+同じマシンに Apothem の Claude Code インストールがあると、2 組のフックが実行されることがあります。
+SessionStart のブートストラップは 1 回だけ届けられます。ベンダー自身のコマンド
+（`--contract cursor` または `--contract devin`）と、デフォルトのコマンドラインである Claude Code の
+コピーは、フック状態ディレクトリにあるセッションとソースごとの 1 つのマーカーを共有し、後から実行された
+ほうは何も出力しません。デフォルトのコマンドラインがこれに参加するのは、プロセス環境がホストを示す
+場合（`CURSOR_PROJECT_DIR`、`CURSOR_VERSION` または `DEVIN_PROJECT_DIR`）だけです。Claude Code、
+Codex、Qwen Code のもとでは、マーカーを読むことは決してありません。マーカーの拘束は 10 秒間なので、
+2 回目の圧縮のような同じセッションの後からの開始でも、復旧コンテキストは届けられます。PostToolUse の
+カウンターは重複排除されないため、コンテキストサイズのカウンターは両方の場所で動き、しきい値に早く
+到達します。インストールは、インポートを無効にするためのベンダーのスイッチを示す注記を出力します
+（Cursor の「Include Third-Party Plugins, Skills, and Other Configs」、Devin の
+`read_config_from.claude`）。
+
+コマンドが登録されるのは、ベンダーがその出力をモデルに渡す場所だけです。Kiro は、`SessionStart` と
+`UserPromptSubmit` についてのみフックの stdout をコンテキストに加えるため、Kiro のファイルは
+`SessionStart` だけを登録します。Copilot は `sessionStart` と `postToolUse` から `additionalContext` を
+読み、`preToolUse` からは権限のフィールドしか読まないため、Copilot のファイルはこの 2 つのイベントを
+camelCase の名前で登録し、ガードは登録しません。各 Copilot エントリは `bash` と `powershell` の
+コマンドを持ちます。どちらのファイルも Apothem が所有し、インストールを実行したマシンの
+インタープリターとプロジェクトパスを記します。リポジトリがコミットするファイルにとってそれが何を
+意味するかは、各ハーネスのページで説明しています。
+
+Devin Local は `SessionStart`、`UserPromptSubmit`、`PostToolUse` から `additionalContext` を読み、
+`PreToolUse` については何も文書化していないため、Windsurf の登録は `SessionStart` と `PostToolUse` を
+マッチャーなしで持ちます（Devin のマッチャーは正規表現で、省略するとすべてのツールに一致します）。
+登録はローカルのオーバーライド `.devin/config.local.json` に置かれます。Devin はこのファイルを
+gitignore 対象として文書化し、自身で `.git/info/exclude` を通じて git から除外します。
+Cursor の `sessionStart` フックは、`additional_context` を会話の初期コンテキストに加えます。最初の
+バージョンはそのイベントだけを登録します。Cursor の `.cursor/hooks.json` は唯一のプロジェクト
+フックファイルなので、オペレーターのものです。インストールはそこに 1 つのエントリをマージし、
+オペレーターのエントリとキーを保持し、損失なしに書き換えられないファイルは拒否し、コマンド内の
+ディスパッチャーのパスで自身のエントリを見分けます。Cursor のデスクトップアプリは Windows では
+フックコマンドを PowerShell で実行するため、Windows ホストではコマンドが `& ` で始まります。
+
+5 つのファイルすべてにおいて、エントリが Apothem のものであるのは、そのコマンドが
+`.apothem/support/[<harness>/]hooks/dispatch.py` を `--contract <id>` 付きで実行する場合であり、
+どのプロジェクトパスのもとで書かれたかは問いません。そのため、名前を変えた、移動した、または
+クローンしたプロジェクトでもエントリは 1 組のままで、自分のツリーにある `hooks/dispatch.py` や
+`python -m apothem.conformity.gate` のようなあなた自身のフックが置き換えられたり削除されたりすることは
+決してありません。`apothem verify` は、ファイルに Apothem のエントリが 1 つも残っていなくなった時点で
+登録の欠落を報告し、ファイルを読めないアンインストールはそれをスキップとして報告します。`$`、
+バッククォート、二重引用符、バックスラッシュを含むプロジェクトパスまたはインタープリターパスは、
+引用されたコマンドが別のファイルを実行してしまうため、インストール時にそのパスを示して拒否されます。
+
 ## メッセージコンテキスト
 
 イベントごとの Markdown コンテキストは `src/apothem/hooks/messages/` 配下に置かれます。
 
-- セッションのライフサイクル: `sessionstart.md`、`precompact.md`、`postcompact.md`、
-  `stop.md`、`posttooluse-proactive-compaction.md`
+- セッションのライフサイクル: `sessionstart.md`、`skill-index.md`、`precompact.md`、
+  `postcompact.md`、`stop.md`、`posttooluse-proactive-compaction.md`
 - シェル呼び出し: `pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`
 - ファイル書き込み: `pretooluse-write.md`、`pretooluse-edit.md`、
   `pretooluse-notebookedit.md`、`pretooluse-write-plan-guard.md`、
@@ -64,25 +151,68 @@ Claude Code では、Claude Code が PreCompact と PostCompact のフック出�
 渡さないため、`postcompact.md` は、圧縮の後にセッションが再開したときに SessionStart フックに
 よって届けられます。
 
+`skill-index.md` は手で書かれるのではなく生成されます。`scripts/dev/generate_skill_index.py` が
+スキルとコマンドのカタログからそれをレンダリングし、タスクグループごとに 1 行とし、手動スキルは
+`/apothem:<name>` として示されます。Claude Code では、このファイルが存在するとき、SessionStart フックが
+それをセッションのコンテキストに加えます。このファイルが存在するのは、Claude Code がスキルの一覧が
+文字数の予算を超えるとその一覧からスキルの説明を落とすためであり、インデックスはすべてのスキルを
+タスクから見つけられる状態に保ちます。プラグインインストールでは手動スキルが `/apothem:<name>` として
+示され、エンジンインストールではこの接頭辞が落とされます。テキストは 1,600 文字未満に保たれ、
+`generate_skill_index.py
+--check` は、コミットされたファイルがカタログと一致しなくなると失敗します。
+
+Apothem を Claude Code プラグインとしてだけ実行する場合、起動時に読み込まれるルールファイルは
+ありません。そのとき SessionStart フックは、同梱の `rules/` ディレクトリへの短いポインターを加えます。
+そのディレクトリに `apothem-rule-index.md` がある場合、ポインターは、この形態では何もそれらを
+読み込まないため 4 つのコアルール（`agnostic-posture`、`authority-inquiry`、`session-closure`、
+`context-management`）を最初に読むようセッションに伝え、どのタスクにどのルールを読むべきかを示す
+インデックスの名前も挙げます。インデックスのテキストはインライン化されません。
+
+プロジェクトに `knowledge-wiki` スキルで作られたナレッジベースがある場合、SessionStart フックは
+そのフィンガープリントを前回のベースラインで記録されたものと比較し、異なっていれば、スキルの
+ドリフトモード（`--mode drift --kb <path>`）を提案する 1 行を加えます。フィンガープリントはページ数と
+最新のログエントリです。記録されたコピーは、ベースの `log.md` にある最新の `baseline` 行で、
+これを書くのはドリフトモードだけです。フックはプロジェクトルート配下の 4 つのパスを順に調べます:
+`knowledge-base/`、`wiki/`、`docs/knowledge-base/`、`docs/wiki/`。対象は `index.md` と `log.md` の
+両方を持つディレクトリだけです。ナレッジベースのないプロジェクトのコストは 1 ミリ秒未満です。
+ある場合、フックは `log.md` の末尾から最大 256 KiB を読み、3 つのフラットなディレクトリを列挙します。
+ツリーを走査することも、書き込むことも決してありません。その行が持つのは固定のパス、日付、2 つの
+ページ数だけで、ベースのテキストを含むことは決してありません。ベースがない、ベースラインがない、
+変化がない、または読めないファイルがある場合には何も出力せず、ドリフトモードが新しいベースラインを
+記録するまで、セッションごとに繰り返されます。それ以外のパスにあるベースは、スキルのすべてのモードで
+動作しますが、セッション開始時の行は得られません。
+
 各コンテキストファイルは、そのイベントが発火し、かつそのコンテキスト引数が設定ファイルに
 登録されているときに、ディスパッチャーによって読み込まれます。ライセンスのコメント行と末尾の
 `## Bindings` セクションは、テキストがアシスタントに届く前に取り除かれます。どちらも
 メンテナーとコンフォーミティゲートのために存在します。
 
+何も見つけなかったガードは何も注入しません。発火したガードは、そのメッセージの `## Advisory`
+セクションだけを、見つけたもの（パス、識別子、プリミティブ）で埋めて注入し、その後に
+`Full procedure: <message-file>` を続けます。ファイルの残りは完全な手順であり、アシスタントは詳細が
+必要なときにだけそれを読みます。ガードは「プロジェクトの内側」を、ツール呼び出しの作業ディレクトリの
+上にある git ルートに対して判断し、フックがインストールされているツリーに対して判断することは
+決してありません。
+
 ## ランタイム契約
 
 登録されたすべてのフックコマンドは、同じ契約を満たします。この契約は、プラグイン、
-Claude Code のエンジンインストール、Codex、Qwen Code に対して
-`tests/hooks/test_hook_contract.py` によってチェックされます。
+Claude Code のエンジンインストール、Codex、Qwen Code、CodeBuddy のインストールに対して
+`tests/hooks/test_hook_contract.py` によってチェックされます（Kiro、Copilot、Cursor、Windsurf の
+ファイルは `tests/hooks/test_native_hook_registrations.py` によってそれぞれの契約と照合され、
+`tests/integration/test_native_hook_files_roundtrip.py`、
+`test_cursor_hooks_roundtrip.py`、`test_windsurf_hooks_roundtrip.py` によってベンダーが実行するとおりに
+実行されます）。
 
 - **素のチェックアウトから実行される。** 終了コード 0 で終了し、標準出力は空か 1 つの
   JSON オブジェクトです。ファイルの実行ビットに依存するフックはありません。
-- **1 回だけ登録される。** イベント、マッチャー、メッセージの各組は面ごとに 1 回だけ現れるため、
-  1 回のツール呼び出しでフックが 2 回実行されることは決してありません。
+- **1 回だけ登録される。** 各イベントとマッチャーは面ごとに 1 つのディスパッチャーエントリを持ち、
+  そのエントリが評価するすべてのメッセージを列挙するため、1 回のツール呼び出しでガードが 2 回
+  実行されることは決してありません。
 - **上限がある。** 出力されるテキストが 10,000 文字を超えることはありません。依存関係ガードは、
   書き込みが依存関係マニフェストまたはロックファイルを対象とする場合にのみ発言し、動的評価ガードは、
   コンテンツまたはコマンドが評価または安全でないデシリアライズのプリミティブを含む場合にのみ
-  発言します。圧縮アドバイザリーは、セッションごとに最大 2 回発火します。
+  発言します。圧縮アドバイザリーは、圧縮サイクルごとに最大 2 回発火します。
 - **ハーネスが届けるチャネルを使う。** PreToolUse のガイダンスは
   `hookSpecificOutput` で運ばれます。AskUserQuestion ガードは `additionalContext` を返すか、
   厳格なオプトインのもとでは `permissionDecision: deny` を返します。Claude Code は
@@ -91,7 +221,7 @@ Claude Code のエンジンインストール、Codex、Qwen Code に対して
 - **プロジェクトのコードを決して実行しない。** ブートストラップは自身のインストール済みツリーを
   解決し、開かれたプロジェクトからスクリプトを取得することは決してありません。セッション開始時の
   ガイダンスはインストール済みツリーから読み取られます。プロジェクトディレクトリが読み取られるのは、
-  プランとメモリの要約のためだけです。
+  プランとメモリの要約、およびナレッジベースのドリフトチェックのためだけです。
 - **フェイルオープンする。** メッセージファイルの欠落、インタープリターの欠落、破損した状態は、
   終了コード 0 と有効なエンベロープをもたらします。
 
@@ -101,9 +231,15 @@ Claude Code のエンジンインストール、Codex、Qwen Code に対して
 | `APOTHEM_SESSION_END_ENABLED` | オフ | `1`、`true`、`yes`、`on` のいずれかで、Stop でのセッション終了プロトコルを有効にします。コンテキストを返す Stop フックはアシスタントに処理を続行させるため、このプロトコルはセッションごとに 1 ターン余分にかかります。フックによる続行の後にすでに続いている停止では、決して発火しません |
 | `APOTHEM_SESSION_END_MIN_STOPS` | `3` | セッション終了プロトコルが発火できるようになるまでのターン終了の回数 |
 | `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | オン | `0`、`false`、`no`、`off` のいずれかで、圧縮アドバイザリーを抑止します |
-| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | アドバイザリーウィンドウあたりのツール呼び出し数 |
-| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | アドバイザリーウィンドウあたりのツール出力のバイト数 |
+| `APOTHEM_CONTEXT_WINDOW_TOKENS` | 未設定 | コンテキストウィンドウのサイズ。これ（または Claude Code の `CLAUDE_CODE_AUTO_COMPACT_WINDOW`）があるとアドバイザリーはウィンドウの 50% と 75% で発火し、ない場合は 120,000 トークンと 250,000 トークンで発火します |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | アドバイザリーウィンドウあたりのツール呼び出し数。コンテキストサイズを測定できない場合にのみ使われます |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | アドバイザリーウィンドウあたりのツール出力のバイト数。コンテキストサイズを測定できない場合にのみ使われます |
 | `APOTHEM_HOOK_STATE_DIR` | 下記を参照 | セッションごとのフック状態を置くディレクトリ |
+
+圧縮アドバイザリーは、セッションのトランスクリプトにある最新の使用量レコード（入力トークンと
+キャッシュ済みトークン）からコンテキストを測定するため、モデルが実際に保持しているものを反映します。
+そのサイズが急激に下がると圧縮とみなされ、2 回のアドバイザリーの予算がリセットされます。
+トランスクリプトが利用できない場合は、代わりにツール呼び出しと出力バイト数を数えます。
 
 セッションごとのフック状態は、モード `0700` で作成されるユーザーごとのディレクトリに置かれます。
 設定されていれば `APOTHEM_HOOK_STATE_DIR`、そうでなければ Claude Code プラグインでは

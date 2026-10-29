@@ -2,7 +2,7 @@
 title: "Internationalisation (i18n)"
 description: "Comment le site de documentation d'Apothem déclare sa cohorte de locales, émet des liens hreflang vers les langues alternatives et assure le rendu de droite à gauche dans douze langues."
 machineTranslated: true
-sourceHash: "b3eb706603e79d8b"
+sourceHash: "fbe64d232e98a8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,6 +35,13 @@ de chaque langue sont raccordées au routage.
 - **Rendu de droite à gauche : actif.** Les feuilles de style partagées
   utilisent partout des propriétés CSS logiques, de sorte que les pages arabes
   s'affichent correctement sous `dir="rtl"`.
+- **Relecture des traductions : suivie page par page.** Les pages de locale
+  amorcées par traduction automatique sont servies et portent
+  `machineTranslated: true` dans leur frontmatter jusqu'à ce qu'un humain les
+  relise ; ce drapeau est une métadonnée de suivi de la relecture et la page ne
+  l'affiche pas. L'anglais sert de repli pour toute page qu'une locale n'a pas.
+  Faire relire 80 % des pages d'une locale est un objectif de relecture, et non
+  une condition de publication.
 - **Fraîcheur des traductions : suivie page par page.** Chaque page de locale
   enregistre le texte anglais à partir duquel elle a été traduite. Lorsque la
   page anglaise change par la suite, la page traduite affiche une note d'une

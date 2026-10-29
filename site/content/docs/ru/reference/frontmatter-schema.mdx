@@ -2,7 +2,7 @@
 title: "Схема фронтматтера"
 description: "Справочное руководство по структуре блока YAML-фронтматтера, обязательным ключам по классам и правилам их применения валидаторами для всех классов артефактов."
 machineTranslated: true
-sourceHash: "e0fad965a556b755"
+sourceHash: "6b7ec2a30917de07"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "e0fad965a556b755"
 
 Каждый артефакт несёт YAML-фронтматтер в начале, ограниченный строками `---`. В файлах семейства Markdown фронтматтер — это первое содержимое файла, а каноническая строка заголовка SPDX согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) следует за закрывающим `---`.
 
-Ключи команд записываются в `kebab-case`. Ключи навыков записываются в `kebab-case`, за исключением `userInvocable` — написания в camelCase, которое использует исходный корпус (установка Claude Code переименовывает его в `user-invocable`). Ключи правил и делегированных исполнителей записываются в camelCase, как показано в таблице обязательных ключей в разделе 2. Скалярные значения указываются либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие символы, значимые для YAML, заключаются в кавычки.
+Ключи команд записываются в `kebab-case`. Ключи навыков записываются в `kebab-case`, за исключением `userInvocable` — написания в camelCase, которое использует исходный корпус (установка Claude Code переименовывает его в `user-invocable`). Установка для Claude Code и плагин также переносят ключи, специфичные для Apothem (`version`, `updated`, `archetype`, `portability`), навыка или команды в замыкающую карту `metadata:` из строк в кавычках, в этом фиксированном порядке, поскольку Claude Code игнорирует неизвестные ключи верхнего уровня, а стандарт Agent Skills хранит дополнительные ключи в `metadata`; исходные файлы и все остальные окружения оставляют их на верхнем уровне, за исключением общих папок навыков уровня пользователя (`~/.agents/skills/` и папок `~/.codebuddy/skills/`, `~/.kiro/skills/` и `~/.trae/skills/`), которые сворачивают их таким же образом. Ключи правил и делегированных исполнителей записываются в camelCase, как показано в таблице обязательных ключей в разделе 2. Скалярные значения указываются либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие символы, значимые для YAML, заключаются в кавычки.
 
 ## 2. Обязательные поля по классам
 
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (корневая конфигурация) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Правила (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Команды (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Помощники, они же делегированные исполнители (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; установка для Claude Code и плагин переименовывают `userInvocable` в `user-invocable`, а схема требует, чтобы каждый навык нёс ровно одно из двух написаний, но не оба сразу |
+| Помощники, они же делегированные исполнители (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (необязательный: помощник, который его опускает, наследует все инструменты; чтобы дать помощнику, перечисляющему `tools`, MCP-сервер, укажите этот сервер в ключе профиля `agent_mcp_servers`), `disallowedTools`, `maxTurns`, `effort` |
+| Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; установка для Claude Code и плагин, а также общие папки навыков уровня пользователя, переименовывают `userInvocable` в `user-invocable`, а схема требует, чтобы каждый навык нёс ровно одно из двух написаний, но не оба сразу; установка `Qwen Code` записывает `allowed-tools` как список `allowedTools` — ключ и форму, которые читает `Qwen Code` |
 | Output-стили (`src/apothem/output-styles/*.md`) | `name`, `description`; каждый поставляемый стиль также задаёт `keep-coding-instructions: true`, чтобы Claude Code сохранял свои инструкции по программной инженерии |
 
 Схемы по классам в [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) содержат полный набор ограничений, включая ограничения типа, формата, enum и шаблона, а также ограничения длины: `description` навыка или команды — не более 1024 символов, это предел [Agent Skills](https://agentskills.io/specification).

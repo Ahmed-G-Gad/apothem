@@ -2,7 +2,7 @@
 title: "Editar el perfil"
 description: "Cambia el perfil compartido y vuelve a materializar cada entorno instalado."
 machineTranslated: true
-sourceHash: "7359e9f71919f942"
+sourceHash: "7cd78310423a8038"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,17 @@ El perfil es un único documento YAML. Sus claves de nivel superior:
 - `harnesses` — anulaciones por entorno indexadas por id de entorno.
 - `exclude_harnesses` — ids de entorno omitidos por los comandos en lote
   (`--harness all`).
+- `mcp_servers` — definiciones de servidores MCP indexadas por nombre de servidor.
+- `agent_mcp_servers` — por nombre de trabajador delegado, los servidores MCP a los
+  que ese trabajador puede llamar
+  (consulta [Dar a un trabajador delegado acceso a servidores MCP](/docs/reference/mcp#dar-a-un-trabajador-delegado-acceso-a-servidores-mcp)).
+  Vacío por defecto, así que ningún trabajador delegado llega a una herramienta MCP.
+- `workspace` — dónde guarda Apothem su directorio de trabajo compartido
+  (`directory_name`, `scope`).
+- `schema_version` — versión opcional del esquema del perfil; un perfil sin ella se
+  lee como versión 1.
+
+Todos los campos se enumeran en [Campos del perfil](/docs/reference/profile-fields).
 
 ## Pasos
 

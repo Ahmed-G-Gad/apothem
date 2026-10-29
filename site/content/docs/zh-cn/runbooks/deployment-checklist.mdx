@@ -2,7 +2,7 @@
 title: "部署检查清单"
 description: "在部署或共享 Apothem 生态系统之前的飞行前验证检查清单"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ frontmatter，并标记 YAML 错误和缺失的必填字段。如需临时
 
 - [ ] `name`——kebab-case 命令名
 - [ ] `version`、`updated`、`description`、`argument-hint`、`portability`、`allowed-tools` 均存在
-- [ ] `disable-model-invocation` 存在且为有意设置（仅供指引的命令为 `true`）
+- [ ] `disable-model-invocation` 存在且为有意设置（只读或咨询类命令为 `false`；仅当运行该命令会改变工作树之外的状态，或依赖操作者选择执行时机时，才为 `true`）
 - [ ] 不得包含 `effort` 键：`command.schema.json` 设置了 `additionalProperties: false`，且不接受该键
 
 ### 委派工作者

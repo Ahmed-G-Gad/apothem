@@ -2,7 +2,7 @@
 title: "Aktualisieren"
 description: "Apothem und Harness-Adapter aktualisieren."
 machineTranslated: true
-sourceHash: "f659c0450ac5624c"
+sourceHash: "04ad375058d55ffd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,7 @@ sourceHash: "f659c0450ac5624c"
 Aktualisieren Sie den Marketplace-Eintrag und aktualisieren Sie anschließend das Plugin über das `/plugin`-
 Menü innerhalb von Claude Code:
 
-```text title="In Claude Code"
+```text title="Inside Claude Code"
 /plugin marketplace update apothem
 ```
 
@@ -30,7 +30,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Eine installerbasierte Einrichtung aktualisieren
 
-Führen Sie den Installer erneut aus — er ist idempotent und führt einen vorhandenen Baum per Fast-Forward weiter —
+Führen Sie den Installer erneut aus — er ist idempotent und checkt in einem vorhandenen Baum das Release-Tag aus —
 oder führen Sie das dedizierte Update-Skript aus:
 
 ```bash title="macOS · Linux · WSL2 · BSD"

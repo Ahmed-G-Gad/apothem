@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adapter harness Apothem untuk Cursor (GA)."
 machineTranslated: true
-sourceHash: "555c36a18537fc13"
+sourceHash: "89536140f8fab5aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,14 +18,228 @@ apothem install --harness cursor --project /path/to/project
 ```
 
 Adapter merender satu berkas aturan `.mdc` berlingkup proyek dari permukaan
-aturan dan tata kelola Apothem bersama.
+aturan dan tata kelola Apothem bersama, menulis helper Apothem sebagai subagent
+Cursor di dalam proyek (lihat [Subagent](#subagent)), dan menambahkan satu hook
+ke `hooks.json` proyek (lihat [Hook](#hook)).
 
-**Berkas yang ditulis:** `<project>/.cursor/rules/apothem-rules.mdc`
+Adapter juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
 
-Berkas itu adalah keseluruhan instalasi: tidak ada berkas aturan, skill,
-command, templat, atau hook yang ditempatkan di sampingnya, sehingga berkas
-tersebut menyatakan hal itu alih-alih menunjuk ke berkas Apothem yang tidak ada
-di proyek.
+**Berkas yang ditulis:**
+
+- `<project>/.cursor/rules/apothem-rules.mdc`, berkas aturan.
+- `<project>/.cursor/agents/<name>.md` untuk setiap helper Apothem, di dalam proyek.
+- `<project>/.cursor/hooks.json`, dengan satu entri `sessionStart` ditambahkan ke dalamnya. Entri dan kunci milik Anda di dalamnya tetap ada.
+- `<project>/.apothem/support/cursor/hooks/`, skrip hook, di dalam proyek.
+- `~/.agents/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+Berkas aturan merangkum disiplin-disiplin tersebut dan menyebutkan folder-folder
+itu, sehingga model dapat membuka skill atau berkas aturan ketika sebuah tugas
+membutuhkannya.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.agents/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas aturan. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `cursor`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#root-bersama) mencantumkannya.
+- `--project` memilih berkas aturan yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas aturan, berkas subagent di `.cursor/agents/`, entri
+  hook di `.cursor/hooks.json`, ditambah folder `.apothem/` yang dibuat oleh
+  setiap instalasi proyek, yang juga menampung skrip hook.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
+
+## Subagent
+
+Cursor membaca subagent dari berkas Markdown di `<project>/.cursor/agents/`,
+menurut [dokumentasi subagent Cursor](https://cursor.com/docs/subagents).
+Instalasi menulis satu berkas per helper Apothem ke folder tersebut. Instalasi
+ini hanya untuk proyek dan tidak menulis folder `~/.cursor/agents/`.
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. |
+| `readonly` | `true` untuk lima helper: `citation-auditor`, `convention-auditor`, `fact-checker`, `memory-auditor` dan `research-scout`. |
+
+Cursor tidak memiliki kunci yang mencantumkan atau menolak alat: subagent
+mewarisi setiap alat dari induknya. Satu-satunya batas yang dapat diterapkannya
+adalah `readonly: true`, yang tidak mengizinkan suntingan berkas dan perintah
+shell yang mengubah keadaan. Jadi baris `tools` dan `disallowedTools` milik
+helper tidak ditulis, dan batas itu bertahan hanya sebagai flag tersebut:
+
+- Lima helper di atas bersifat hanya-baca dan tidak memiliki `Bash`, sehingga
+  mendapatkan `readonly: true` dan mempertahankan kata-kata hanya-baca dalam
+  deskripsinya.
+- Tujuh helper bersifat hanya-baca tetapi menjalankan perintah (`codebase-explorer`,
+  `dependency-auditor`, `design-critic`, `prompt-evaluator`, `quality-gate`,
+  `security-scanner` dan `test-runner`). `readonly: true` juga akan menghentikan
+  eksekusi pengujian dan lint mereka, sehingga helper tersebut tidak mendapatkan
+  flag, dan deskripsinya membuang label hanya-baca yang tidak akan diterapkan
+  Cursor. Hanya deskripsi yang berubah: instruksinya disalin tanpa perubahan,
+  sehingga instruksi itu masih menyebut helper hanya-baca dan menyebutkan
+  pembatasan alat yang tidak dimiliki berkas Cursor. Model mengikuti teks itu,
+  tetapi Cursor tidak menerapkannya, dan helper berjalan dengan setiap alat
+  yang dimiliki induknya.
+- `mcp-builder` dan `refactor-surgeon` menulis berkas dan tidak diubah.
+
+Instalasi tidak menulis kunci `model`, sehingga helper berjalan dengan model yang
+dipakai induknya, dan tidak menulis `is_background`, batas giliran, maupun kunci
+`version`, `updated` dan `portability` milik Apothem.
+
+Hal yang perlu diketahui:
+
+- Berkas subagent adalah berkas proyek biasa. Commit berkas itu bersama proyek atau
+  cantumkan `.cursor/agents/` di `.gitignore`; Apothem tidak memilihkannya untuk Anda.
+- Cursor juga memuat folder helper yang ditulis untuk alat lain, di antaranya
+  `.claude/agents/` di proyek dan `~/.claude/agents/` di direktori home Anda
+  ([registri harness](/docs/reference/harness-registry#root-bersama) mencantumkan
+  sisanya). Saat terjadi bentrok nama, proyek mengalahkan folder home dan
+  `.cursor/` mengalahkan yang lain, sehingga di proyek dengan instalasi ini
+  berkas native menggantikan salinan Claude Code yang akan diimpor Cursor dari
+  `~/.claude/agents/`. Dokumentasi Cursor tidak menyebutkan apakah Cursor memuat
+  kedua salinan atau membuang yang lebih rendah, maupun apakah Cursor menerapkan
+  baris `tools` dan `disallowedTools` dari berkas Claude Code yang diimpornya.
+- Berkas milik Anda dengan nama helper Apothem disimpan di bawah
+  `~/.apothem/backups/` lalu diganti. Pencopotan tidak mengembalikannya.
+  Berkas dengan nama lain tidak pernah disentuh.
+- Apothem belum memastikan apakah Cursor membaca berkas TOML yang ditulis alat
+  lain ke folder yang diimpornya, apakah pengaturan Third-Party Imports
+  mematikan folder impor tersebut, atau apakah Cursor membaca ekstensi selain
+  `.md` atau folder bersarang di `.cursor/agents/`.
+
+## Hook
+
+Cursor menjalankan hook dari berkas `hooks.json`, menurut
+[dokumentasi hook Cursor](https://cursor.com/docs/hooks). Instalasi menambahkan
+satu entri ke `<project>/.cursor/hooks.json`:
+
+| Peristiwa | Apa yang dijalankan |
+| --- | --- |
+| `sessionStart` | Bootstrap sesi: metadata sesi, indeks skill, ringkasan memori dan plan, serta postur tetap, ditambahkan ke konteks awal percakapan. |
+
+Hook ini menambahkan konteks bagi model. Hook ini tidak memblokir apa pun, dan
+Cursor tidak menunggu hook `sessionStart`.
+
+Versi pertama ini tidak mendaftarkan hal lain. Dokumentasi Cursor juga
+mencantumkan `additional_context` untuk `postToolUse`, dan Apothem akan
+mendaftarkan penghitung ukuran konteks di sana setelah sebuah probe menunjukkan
+bahwa konteks itu mencapai model. Apothem tidak mendaftarkan penjaga
+`preToolUse`: Cursor mendokumentasikan `agent_message`, bidang yang akan dipakai
+penjaga untuk berbicara, hanya untuk tindakan yang ditolaknya, dan penjaga
+Apothem tidak pernah menolak. Penjaga tulis, sunting dan shell, pemeriksaan
+`AskUserQuestion` dan protokol akhir sesi tetap berada di alat yang
+menyampaikannya.
+
+**Ke mana berkas ditulis**
+
+| Berkas | Isinya |
+| --- | --- |
+| `<project>/.cursor/hooks.json` | Satu entri `sessionStart`, digabungkan ke peta `hooks` berkas itu. |
+| `<project>/.apothem/support/cursor/hooks/` | Skrip dispatcher, helper-nya, dan berkas pesannya. |
+
+`hooks.json` adalah berkas milik Anda, dan Cursor mendokumentasikan hook proyek
+sebagai sesuatu yang di-commit ke kontrol versi. Instalasi menambahkan entri
+Apothem setelah entri Anda dan membiarkan entri serta kunci lain Anda seperti
+semula; pembaruan hanya mengganti entri yang perintahnya menjalankan dispatcher
+Apothem (`.apothem/support/cursor/hooks/dispatch.py` dengan `--contract cursor`,
+di jalur proyek mana pun perintah itu ditulis), dan pencopotan hanya menghapus
+entri tersebut. Hook milik Anda yang hanya berbagi nama, seperti
+`tools/hooks/dispatch.py` di proyek Anda, atau yang menjalankan `python -m
+apothem.conformity.gate`, tidak pernah dianggap milik Apothem. Pencopotan
+menghapus berkas itu ketika tidak ada lagi yang tersisa di dalamnya, setelah
+menyimpan salinan di bawah `~/.apothem/backups/`. Berkas dengan komentar, koma
+di akhir, atau nilai `hooks` dengan bentuk yang salah tidak dapat ditulis ulang
+tanpa kehilangan sesuatu, sehingga instalasi melaporkan galat
+`config.unparseable` untuk berkas itu, membiarkannya tidak tersentuh dan
+berhenti, dengan berkas lain yang sudah mulai ditulisnya dihapus kembali:
+perbaiki berkas itu, atau tambahkan entri itu sendiri.
+
+**Berkas yang di-commit menyebut mesin Anda.** Perintah entri itu memuat
+interpreter yang ditemukan Apothem saat dijalankan dan jalur absolut proyek,
+sehingga rekan tim yang melakukan checkout berkas itu mendapatkan perintah yang
+menunjuk ke mesin Anda. Cursor melaporkan perintah yang tidak dapat ditemukannya
+sebagai gagal dan sesi tetap berjalan, sehingga tidak ada yang rusak, tetapi
+hook tidak melakukan apa pun di sana. Commit berkas itu hanya jika tim Anda
+memakai tata letak yang sama. Cursor tidak mendokumentasikan varian berkas hook
+proyek yang tidak di-commit. Folder `.apothem/` adalah tempat skrip berada, dan
+cuplikan `.gitignore` proyek menjauhkannya dari kontrol versi.
+
+Sebuah perintah terlihat seperti ini, dengan interpreter dan jalur proyek Anda
+menggantikan kedua jalur tersebut:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+```
+
+Pada host Windows, perintah diawali dengan `& `, operator panggilan PowerShell,
+karena aplikasi desktop Cursor menjalankan perintah hook melalui PowerShell, di
+mana baris yang diawali jalur program yang dikutip bukanlah sebuah panggilan.
+`sh` membaca `&` di awal sebagai galat sintaks, sehingga host lain tidak
+mendapatkannya. Dokumentasi menyebutkan shell-nya tetapi tidak pengutipannya,
+sehingga ini adalah pembacaan Apothem atas sintaks PowerShell.
+
+`--contract cursor` membaca `conversation_id` dan `workspace_roots` milik Cursor
+dan menjawab dengan `{"additional_context": ...}` saja.
+
+**Jalur yang akan salah dibaca shell.** Jalur proyek atau interpreter yang
+mengandung `$`, backtick, tanda kutip ganda, atau backslash ditolak sebelum apa
+pun ditulis: di dalam perintah yang dikutip, jalur itu akan menjalankan berkas
+lain, atau merusak JSON tempat perintah itu ditulis. Galat menyebutkan jalur
+tersebut; pindahkan atau ganti nama proyek dan jalankan instalasi lagi. Spasi
+atau apostrof dalam jalur tidak masalah.
+
+**Cursor juga menjalankan hook yang ditulis Claude Code.** Cursor memuat hook di
+`~/.claude/settings.json`, `.claude/settings.json` dan `.claude/settings.local.json`
+selama "Include Third-Party Plugins, Skills, and Other Configs" aktif (di Cursor
+Settings, di bawah Third-Party Imports), yang merupakan default, dan Cursor
+menjalankan setiap hook yang cocok dari setiap sumber. Jika Anda juga memasang
+Apothem untuk Claude Code, kedua set hook dapat berjalan. Perintah
+`sessionStart` di sini dan salinannya di Claude Code berbagi satu penanda per
+sesi di folder keadaan hook Apothem, sehingga mana pun yang berjalan kedua akan
+diam dan bootstrap mencapai model satu kali; Apothem mengenali Cursor dari
+variabel `CURSOR_PROJECT_DIR` dan `CURSOR_VERSION` yang ditetapkan Cursor untuk
+hook-nya. Penanda itu mencakup sepuluh detik, sehingga permulaan berikutnya dari
+sesi yang sama, seperti pemadatan kedua, tetap menyampaikannya. Penghitung
+ukuran konteks dari salinan Claude Code berjalan sebagai tambahan, dan Apothem
+tidak menghapus duplikasi penghitung tersebut. Untuk menjalankan hanya hook di
+sini, matikan pengaturan itu; itu juga menghentikan Cursor mengimpor plugin,
+skill, dan konfigurasi lain dari pihak ketiga. Instalasi mencetak hal ini
+sebagai catatan.
+
+**Hal yang perlu diketahui.** Cursor memuat ulang `hooks.json` saat berkas itu
+disimpan, sehingga restart tidak diperlukan. Hook proyek berjalan di workspace
+tepercaya. Cloud Cursor menjalankan hook proyek milik repositori tetapi menunda
+`sessionStart`, sehingga entri itu tidak terpicu di sana. Tetapkan
+`APOTHEM_HOOKS_DISABLE=1` di lingkungan Cursor untuk membungkam hook Apothem.
+
+{/* TODO(clarify): Cursor's default hook timeout (the entry sets 30 seconds), how
+its CLI runs hook commands on Windows, whether one command string can serve both sh
+and PowerShell, and whether the postToolUse context reaches the model; see the Hooks
+section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -46,6 +260,15 @@ Adapter menulis ke direktori `.cursor/rules/` berlingkup proyek secara default;
 Cursor tidak memiliki jalur aturan global-pengguna berbasis berkas yang
 terdokumentasi untuk dikelola oleh adapter ini.
 
+Cursor memuat skill dari `~/.agents/skills/`, sehingga skill yang ditulis
+instalasi muncul di Cursor tanpa penyiapan lebih lanjut. Cursor juga memuat
+`~/.claude/skills/`, sehingga di mesin yang juga memiliki instalasi Claude Code,
+Cursor dapat mencantumkan nama skill yang sama dua kali, dan dokumentasinya
+tidak menyebutkan salinan mana yang menang. Apothem belum memastikan bagaimana
+Cursor memperlakukan kunci header `SKILL.md` yang tidak dicantumkannya; skill
+membawa `user-invocable`, `disable-model-invocation`, `allowed-tools`,
+`argument-hint`, dan sebuah peta `metadata`.
+
 ## Verifikasi
 
 ```bash
@@ -55,10 +278,22 @@ apothem verify --harness cursor --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
-   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
-   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+2. Setiap target terkelola ada, termasuk folder `.cursor/agents/` dan berkas
+   hook `.cursor/hooks.json`; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Berkas hook harus memuat entri yang menjalankan
+   dispatcher Apothem (pemeriksaan tidak menjalankannya), sehingga berkas yang
+   dikembalikan atau dikosongkan tidak lagi lolos verifikasi. Tambahkan
+   `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok
+   dengan profil tersebut. Untuk `.cursor/agents/`, yang diperiksa adalah
+   keberadaan folder tersebut, bukan keberadaan setiap berkas helper di
+   dalamnya; perintah
+   `apothem diff --harness cursor --project /path/to/project` mencantumkan
+   berkas helper yang hilang atau usang.
+3. Setiap folder skill Apothem ada di tempatnya dengan sebuah `SKILL.md`,
+   instalasi mana pun yang menulisnya, dan tidak ada folder skill dengan nama
+   Apothem yang milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal
+   menyebutkan folder yang hilang atau asing.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -67,6 +302,12 @@ apothem update --harness cursor --project /path/to/project
 ```
 
 Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
+
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari berkas saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+Pembaruan menulis ulang berkas subagent yang berbeda dari berkas saat ini, dan menambahkan yang hilang.
+Pembaruan juga menyegarkan skrip hook dan entri Apothem di `.cursor/hooks.json`,
+tanpa menyentuh entri milik Anda.
 
 ## Pencopotan
 
@@ -81,6 +322,24 @@ Sebelum perubahan dilakukan, salinan berkas dengan cap waktu disimpan di bawah
 `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML
 profil bersama dan mesin Apothem tidak terpengaruh.
 
+Pencopotan juga menghapus berkas subagent yang ditulisnya di `<project>/.cursor/agents/`
+dan mempertahankan berkas lain di sana; folder itu dihapus ketika menjadi kosong.
+Pencopotan menghapus entri Apothem dari `<project>/.cursor/hooks.json`, mengenalinya
+dari jalur dispatcher dalam perintahnya, dan mempertahankan entri dan kunci milik
+Anda. Berkas itu dihapus hanya ketika tidak ada lagi yang tersisa di dalamnya. Skrip hook di
+`<project>/.apothem/support/cursor/hooks/` juga dihapus.
+Jika sebuah berkas memiliki komentar yang tidak dapat dibaca pencopotan,
+pencopotan membiarkan berkas itu apa adanya dan melaporkan entri tersebut
+sebagai dilewati, beserta alasannya; hapus entri Apothem secara manual.
+Pencopotan menghapus folder skill yang ditulisnya di `~/.agents/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada lagi
+instalasi Apothem lain yang memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin masih memakainya. Dalam kasus itu pencopotan mempertahankan
+folder tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir
+menghapusnya. Berkas yang Anda tambahkan ke folder tersebut tetap ada, dan folder
+yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
+
 ## Gerbang konformitas
 
 ```bash
@@ -93,6 +352,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness cursor --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness cursor --project /path/to/project`, lalu verifikasi lagi |
+| Cursor tidak mencantumkan satu pun helper Apothem | Jalankan `apothem diff --harness cursor --project /path/to/project`. Baris tertunda untuk folder `.cursor/agents` berarti berkas helper hilang atau usang, jadi jalankan `apothem update --harness cursor --project /path/to/project`. `apothem verify` bukan pengujian untuk hal ini: perintah itu lolos ketika `.cursor/agents/` ada, bahkan tanpa berkas helper di dalamnya. Jika `diff` tidak melaporkan perubahan tertunda, periksa bahwa proyek terbuka di Cursor dan mulai obrolan baru |
+| Hook Apothem tidak berjalan | Cursor menjalankan hook proyek hanya di workspace tepercaya. Buka tab Hooks di Customize, atau kanal keluaran Hooks, untuk melihat apakah entri itu dimuat dan apa yang dilaporkannya. Berkas yang ditulis di mesin lain menyebut interpreter mesin itu, sehingga Cursor melaporkan perintah tersebut sebagai gagal: jalankan `apothem update --harness cursor --project /path/to/project` di sini |
+| Instalasi melaporkan `config.unparseable` untuk `hooks.json` | Berkas itu memiliki komentar, koma di akhir, atau nilai `hooks` dengan bentuk yang salah. Perbaiki berkas itu dan pasang lagi, atau tambahkan sendiri entri `sessionStart` |
+| Konteks Apothem muncul dua kali | Cursor juga menjalankan hook yang ditulis instalasi Claude Code. Matikan "Include Third-Party Plugins, Skills, and Other Configs" di Cursor Settings, di bawah Third-Party Imports, untuk menjalankan hanya hook di `.cursor/hooks.json` |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness cursor --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness cursor --project /path/to/project` |
 
 ## Tombol konfigurasi

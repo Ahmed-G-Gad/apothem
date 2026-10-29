@@ -2,7 +2,7 @@
 title: "नियम लिखना"
 description: "Apothem के व्यवहार-नियम लिखें, उनका दायरा तय करें और उन्हें बनाए रखें।"
 machineTranslated: true
-sourceHash: "310b05b6b5b3dd5d"
+sourceHash: "bc1f3351f9a5fd2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,21 @@ alwaysApply: true         # true for always-on; false for path-filtered
 | `true` | `""` (खाली) | हमेशा-चालू: हर सत्र, हर फ़ाइल |
 | `false` | ग्लोब जैसे `"**/*.py"` | पथ-फ़िल्टर्ड: केवल तब जब सक्रिय फ़ाइल ग्लोब से मेल खाए |
 
+पाँच शिप किए गए नियम हमेशा-चालू हैं: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, और नियम सूचकांक। हमेशा-चालू नियम हर सत्र
+में संदर्भ खर्च करता है, इसलिए नए नियम को (SHOULD) पथ-फ़िल्टर्ड होना चाहिए, ऐसे
+ग्लोब के साथ जो उन फ़ाइलों को नामित करें जिन्हें वह नियंत्रित करता है; केवल `**`
+का फ़िल्टर कुछ भी सीमित नहीं करता, और Claude Code उस नियम को हमेशा-चालू नियम की
+तरह लॉन्च पर लोड करता है। शिप किया गया कॉर्पस हमेशा-चालू सेट को उसी सूची और एक
+बाइट सीमा तक सीमित रखता है; हमेशा-चालू में पदोन्नत किया गया नियम उसी परिवर्तन में
+दोनों को बदलता है। आप जो भी नियम जोड़ें, उसे नियम सूचकांक
+(`apothem-rule-index`) में नामित करें, ताकि ऐसे हार्नेस पर चलने वाला सत्र भी उसे
+ढूँढ ले जो नियमों को पथ के अनुसार सीमित नहीं करता। एक सहयोगी नियम
+(`<parent>-<aspect>`) अपने पैरेंट का `pathFilter`, या उससे संकरा कोई फ़िल्टर, लेता
+है, ताकि वह अपने पैरेंट के बिना कभी लोड न हो। अपने किसी नियम को
+`apothem-rule-index` नाम न दें: इंस्टॉल उस नाम वाली नियम फ़ाइल का बैकअप लेकर उसे
+अधिलेखित कर देता है।
+
 ## उदाहरण नियम
 
 ```markdown
@@ -51,11 +66,23 @@ alwaysApply: false
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+प्रोजेक्ट-स्कोप हार्नेस को update पर `--project` चाहिए, जैसा कि दूसरी पंक्ति में
+है; उपयोगकर्ता-स्कोप हार्नेस को नहीं।
 
 ## नियम सत्यापन
 
+आपने जो नियम फ़ाइल लिखी है, उस पर फ़्रंटमैटर वैलिडेटर चलाएँ। Apothem चेकआउट से,
+`PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है; स्क्रिप्ट इंस्टॉल के बाद, उसकी जगह
+`PYTHONPATH="$HOME/.apothem/src"` का उपयोग करें।
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+`frontmatter-grep` जैसी प्रति-लेखन जाँच जाँचने के लिए फ़ाइल लेती है, या मानक इनपुट
+से सामग्री पढ़ने के लिए `--stdin`; दोनों में से कोई न होने पर वह मानक इनपुट पर
+इनपुट की प्रतीक्षा करती है। स्टैंडअलोन जाँच इसके बजाय एक रूट डायरेक्टरी लेती है,
+जैसे `--check naming-grep .`।

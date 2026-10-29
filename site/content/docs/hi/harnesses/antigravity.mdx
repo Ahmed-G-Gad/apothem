@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "684a01ac9350b73f"
+sourceHash: "a97b457853f5e1e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,8 +42,12 @@ apothem install --harness antigravity
 होता है उसे `trigger: always_on` मिलता है; पथों तक सीमित नियम को `globs` में
 उन्हीं पैटर्नों के साथ `trigger: glob` मिलता है; किसी भी अन्य नियम को
 `trigger: model_decision` मिलता है। हर नियम अपना `description` बनाए रखता है।
-Antigravity हमेशा-चालू नियमों के बीच 20,000-टोकन का एक बजट साझा करता है और उस
-सीमा के पार सबसे बड़े नियमों को माँग-पर पॉइंटरों में बदल देता है।
+पाँच नियम हमेशा लागू होते हैं: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, और नियम इंडेक्स `apothem-rule-index`, जो
+हर अन्य नियम और उसे कब पढ़ना है, इसका नाम बताता है। बाकी नियम `trigger: glob` रखते
+हैं। Antigravity हमेशा-चालू नियमों के बीच 20,000-टोकन का एक बजट साझा करता है और उस
+सीमा के पार सबसे बड़े नियमों को माँग-पर पॉइंटरों में बदल देता है; पाँचों नियम लगभग
+11,000 टोकन के होते हैं, इसलिए किसी को भी पॉइंटर में नहीं बदला जाता।
 
 **प्लगइन मैनिफ़ेस्ट।** `plugin.json` केवल `name` और `description` रखता है, यानी
 वे दो कुंजियाँ जिन्हें Antigravity का प्लगइन स्कीमा स्वीकार करता है।

@@ -2,7 +2,7 @@
 title: "Skills"
 description: "Técnicas reutilizáveis e detectáveis em arquivos SKILL.md, com sinais de detecção, procedimentos e hooks de aplicação para suítes de planejamento e auditorias do ecossistema."
 machineTranslated: true
-sourceHash: "a79c145dd94e1f10"
+sourceHash: "1da6fb98ea6f21d4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ diferentes, por isso a instalação as traduz somente para esse harness:
 | Harness | O que a instalação altera |
 | --- | --- |
 | Claude Code (instalação e plugin) | Renomeia `userInvocable` para `user-invocable`, a chave que o Claude Code lê. O Claude Code ignora a chave em camelCase, então, sem a renomeação, uma skill marcada com `userInvocable: false` ainda apareceria no menu `/`. |
-| Codex | Deixa o `SKILL.md` como está e grava `agents/openai.yaml` com `policy.allow_implicit_invocation: false` ao lado de cada skill cuja origem define `disable-model-invocation: true`, porque o Codex ignora essa chave. |
+| Pastas de skills compartilhadas no nível do usuário: `~/.agents/skills/` (gravada por Codex, Cursor, GitHub Copilot, Windsurf e Zed) e `~/.codebuddy/skills/`, `~/.kiro/skills/` e `~/.trae/skills/` | Uma única forma para toda instalação que grava uma dessas pastas, de modo que as instalações nunca reescrevem os arquivos umas das outras. Ela renomeia `userInvocable` para `user-invocable`, move `version`, `updated`, `archetype` e `portability` para um mapa `metadata:` final de strings entre aspas e grava `agents/openai.yaml` com `policy.allow_implicit_invocation: false` ao lado de cada skill cuja origem define `disable-model-invocation: true`, porque o Codex ignora essa chave e lê `~/.agents/skills/` quer um adaptador do Codex a tenha gravado ou não. Um comando encapsulado como skill mantém seu corpo inteiro e começa com uma nota fixa que nomeia as pastas de regras e de templates, `~/.config/apothem/rules/` e `~/.config/apothem/templates/`. As chaves de nível superior que restam são `name`, `description`, `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint` e `metadata`. |
+| Qwen Code | Reescreve a string `allowed-tools` separada por vírgulas como uma lista `allowedTools`, uma entrada YAML por linha, porque o `Qwen Code` lê somente a chave em camelCase e exige uma lista. Cada entrada mantém a grafia da origem, incluindo padrões como `Bash(git status *)`. Todas as outras chaves e o corpo da skill são instalados sem alteração. |
 | Outros harnesses | Nenhuma alteração. |
 
 `skill.schema.json` aceita qualquer uma das grafias da flag de invocabilidade

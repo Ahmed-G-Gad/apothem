@@ -2,13 +2,13 @@
 title: "Apothem 대 수동 Cursor 구성"
 description: "`.cursor/rules/` 아래의 Cursor MDC 규칙을 손으로 유지하는 것 대 Apothem의 공유 프로필에서 렌더링하는 것."
 machineTranslated: true
-sourceHash: "c2a9e94f668e10b1"
+sourceHash: "3ac88ae9bc4bc63a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Cursor는 `.cursor/rules/` 아래에서 MDC 형식의 규칙을 읽습니다. MDC 형식은
 frontmatter 필드 — `description`, `globs`, `alwaysApply` — 를 요구합니다.
-Apothem의 cursor 어댑터는 그 `.mdc` 파일들을 공유 프로필에서 렌더링합니다.
+Apothem의 cursor 어댑터는 `.mdc` 규칙 파일 하나를 공유 프로필에서 렌더링합니다.
 이 페이지는 그 구성을 손으로 유지하는 것과 Apothem으로 관리하는 것을
 대비합니다.
 
@@ -18,23 +18,31 @@ Apothem의 cursor 어댑터는 그 `.mdc` 파일들을 공유 프로필에서 �
 | ---- | --------------- | --------------- |
 | 규칙 작성 | `.cursor/rules/` 아래의 각 `.mdc` 파일을 직접 작성 | 공유 코퍼스에서 렌더링 |
 | MDC frontmatter 작성 | 파일마다 `description` / `globs` / `alwaysApply`를 직접 작성 | 어댑터가 생성 |
-| 규칙 형식 하나 유지 | MDC 규칙과 단일 `.cursorrules` 파일 중에서 직접 선택 | 어댑터는 `.cursor/rules/`의 MDC 파일만 작성 |
+| 규칙 형식 하나 유지 | MDC 규칙과 단일 `.cursorrules` 파일 중에서 직접 선택 | 어댑터는 MDC 파일 하나, `.cursor/rules/apothem-rules.mdc`를 작성하며 `.cursorrules`는 작성하지 않음 |
 | 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 재사용 가능한 스킬과 커맨드 공유 | 각 스킬 폴더를 `~/.agents/skills/`에 직접 복사하고 사본을 최신 상태로 유지 | 어댑터가 `~/.agents/skills/`에 모든 프로젝트용 사본 하나로 작성하고, `apothem update` 시 갱신 |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness cursor --project <path>` |
 
 ## Apothem이 관리하는 것
 
-cursor 어댑터는 공유 규칙을 `.cursor/rules/` 아래의 `.mdc` 파일로 렌더링하고,
-각 파일에 필요한 MDC frontmatter(`description`, `globs`, `alwaysApply`)를
-생성합니다. 어댑터는 Cursor가 읽는 디렉터리 기반 MDC 형식만 작성하며, 단일
-파일 `.cursorrules`는 작성하지 않습니다.
-Cursor에는 PreToolUse 훅이 없으므로, 가드레일 의도는 규칙 산문 안에 존재합니다.
+cursor 어댑터는 공유 규칙을 `.mdc` 파일 하나,
+`<project>/.cursor/rules/apothem-rules.mdc`로 렌더링하고, 필요한 MDC
+frontmatter(`description`, `globs`, `alwaysApply`)를 생성합니다. 어댑터는
+Cursor가 읽는 디렉터리 기반 MDC 형식만 작성하며, 단일 파일 `.cursorrules`는
+작성하지 않습니다. 또한 스킬과 스킬로 감싼 커맨드를 `~/.agents/skills/`에,
+그 스킬들이 인용하는 규칙과 템플릿을 `~/.config/apothem/`에 작성하며, 둘 다
+홈 디렉터리 안에 있습니다.
+Cursor는 `hooks.json` 파일과 자체 플러그인 형식을 통해 훅을 문서화합니다.
+어댑터는 플러그인을 빌드하지 않으며, 프로젝트의 `.cursor/hooks.json`에 세션
+부트스트랩을 로드하는 `sessionStart` 항목 하나를 추가하고 여러분 자신의 항목은
+그대로 둡니다. 도구 호출 가드는 등록하지 않으므로, 가드레일 의도는 규칙 산문
+안에 존재합니다.
 
 ## 마이그레이션 경로
 
 1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행해 만듭니다.
 2. 기존 `.cursor/rules/`(및 모든 `.cursorrules`)의 규칙을 공유 코퍼스로 옮깁니다.
-3. `apothem install --harness cursor --project <path>`를 실행해 올바른 MDC frontmatter를 갖춘 `.mdc` 파일을 렌더링합니다.
+3. `apothem install --harness cursor --project <path>`를 실행해 올바른 MDC frontmatter를 갖춘 `apothem-rules.mdc`를 렌더링합니다.
 4. `apothem verify --harness cursor --project <path>`를 실행해 구성이 반영되었는지 확인합니다.
 5. 이후의 모든 변경에는 `apothem update --harness cursor --project <path>`를 사용합니다.
 

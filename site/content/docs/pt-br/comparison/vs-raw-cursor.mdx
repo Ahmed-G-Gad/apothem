@@ -2,13 +2,13 @@
 title: "Apothem versus a configuração manual do Cursor"
 description: "Manter à mão as regras MDC do Cursor sob .cursor/rules/ versus renderizá-las a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "c2a9e94f668e10b1"
+sourceHash: "3ac88ae9bc4bc63a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 O Cursor lê regras no formato MDC sob `.cursor/rules/`. O formato MDC exige
 campos de frontmatter — `description`, `globs` e `alwaysApply`. O adaptador de
-cursor do Apothem renderiza esses arquivos `.mdc` a partir do perfil
+cursor do Apothem renderiza um único arquivo de regras `.mdc` a partir do perfil
 compartilhado. Esta página contrasta manter essa configuração à mão com
 gerenciá-la com o Apothem.
 
@@ -18,25 +18,31 @@ gerenciá-la com o Apothem.
 | ---- | --------------- | --------------- |
 | Escrever regras | Escrever à mão cada arquivo `.mdc` em `.cursor/rules/` | Renderizadas a partir do corpus compartilhado |
 | Escrever o frontmatter MDC | Redigir à mão `description` / `globs` / `alwaysApply` em cada arquivo | Gerado pelo adaptador |
-| Manter um único formato de regras | Escolher à mão entre regras MDC e um único arquivo `.cursorrules` | O adaptador escreve apenas arquivos MDC em `.cursor/rules/` |
+| Manter um único formato de regras | Escolher à mão entre regras MDC e um único arquivo `.cursorrules` | O adaptador escreve um único arquivo MDC, `.cursor/rules/apothem-rules.mdc`, e nenhum `.cursorrules` |
 | Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Compartilhar skills e comandos reutilizáveis | Copiar à mão cada pasta de skill para `~/.agents/skills/` e manter as cópias atualizadas | Gravados em `~/.agents/skills/` pelo adaptador, uma cópia para todos os projetos, e atualizados no `apothem update` |
 | Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness cursor --project <path>` |
 
 ## O que o Apothem gerencia
 
-O adaptador de cursor renderiza as regras compartilhadas em arquivos `.mdc` sob
-`.cursor/rules/`, gerando o frontmatter MDC exigido (`description`, `globs`,
-`alwaysApply`) para cada arquivo. O adaptador escreve apenas o formato MDC
+O adaptador de cursor renderiza as regras compartilhadas em um único arquivo `.mdc`,
+`<project>/.cursor/rules/apothem-rules.mdc`, gerando o frontmatter MDC exigido
+(`description`, `globs`, `alwaysApply`). O adaptador escreve apenas o formato MDC
 baseado em diretórios que o Cursor lê; ele não escreve um único arquivo
-`.cursorrules`.
-O Cursor não tem um hook PreToolUse, então a intenção das barreiras de proteção
-vive na prosa das regras.
+`.cursorrules`. Ele também grava as skills, e os comandos encapsulados como skills,
+em `~/.agents/skills/`, e as regras e os templates que essas skills citam em
+`~/.config/apothem/`, ambos no seu diretório pessoal.
+O Cursor documenta hooks em arquivos `hooks.json` e por meio do seu formato de plugin. O
+adaptador não constrói nenhum plugin; ele adiciona uma única entrada `sessionStart` ao
+`.cursor/hooks.json` do projeto, que carrega o bootstrap da sessão, e deixa as suas
+próprias entradas como estão. Ele não registra nenhuma proteção de chamadas de
+ferramentas, então a intenção das barreiras de proteção vive na prosa das regras.
 
 ## Caminho de migração
 
 1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
 2. Mova as regras do seu `.cursor/rules/` existente (e de qualquer `.cursorrules`) para o corpus compartilhado.
-3. Execute `apothem install --harness cursor --project <path>` para renderizar os arquivos `.mdc` com o frontmatter MDC correto.
+3. Execute `apothem install --harness cursor --project <path>` para renderizar `apothem-rules.mdc` com o frontmatter MDC correto.
 4. Execute `apothem verify --harness cursor --project <path>` para confirmar que a configuração foi gravada.
 5. Use `apothem update --harness cursor --project <path>` para cada mudança posterior.
 

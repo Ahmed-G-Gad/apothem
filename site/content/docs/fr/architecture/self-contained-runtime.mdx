@@ -2,7 +2,7 @@
 title: "Runtime autonome"
 description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances vendorisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
 machineTranslated: true
-sourceHash: "7e97d59d22d34fda"
+sourceHash: "df04c51efc417e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -113,8 +113,8 @@ n'importe jamais, pour deux raisons délibérées : le moteur **matérialise ses
 cohortes** — règles, skills, commandes et templates — directement depuis l'arbre
 dans chaque environnement, de sorte que l'arbre est la source de vérité vivante
 et pas seulement un runtime ; et le répertoire `.git` reste en place pour
-qu'`apothem update` fasse avancer le clone existant en fast-forward au lieu de
-le retélécharger.
+qu'`apothem update` extraie le tag de version dans le clone existant au lieu
+de le retélécharger.
 
 Cette disposition d'exécution depuis le code source suit le même motif que des
 outils comme `nvm`, `pyenv` et `oh-my-zsh` — quelques mégaoctets de code source

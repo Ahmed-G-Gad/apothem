@@ -2,7 +2,7 @@
 title: "マルチハーネスアダプター設計の内側"
 description: "Apothem の HarnessAdapter プロトコルと、1 つのプロファイルを 17 のハーネスへ物質化する 3 つのアダプタークラスの技術的な深掘り。"
 machineTranslated: true
-sourceHash: "66f90956d4db4557"
+sourceHash: "33968cc40c47c003"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,10 +80,10 @@ Open-Claw の `openclaw.json`、OpenCode の `opencode.json`、あるいは Qwen
 [規約収束の深掘り](/docs/blog/posts/cross-harness-convention-convergence)
 が、それを詳しく扱っています。
 
-## claude-code：フルサーフェスの参照アダプター
+## claude-code：フルサーフェスのアダプター
 
 claude-code アダプターは、最も広い設定面 —— ルール、agents、hooks、
-output-styles、設定、規約ディレクトリ —— のための参照実装です。これはクラス
+output-styles、設定、規約ディレクトリ —— を持ちます。これはクラス
 II-A に属します。Apothem の素のテンプレートを伝播し、規約ディレクトリを平坦化
 し、そして `src/apothem/harnesses/claude_code/templates/` の下にベンダー設定
 テンプレートを同梱します。`materializer.py` は携えていません —— プロファイル

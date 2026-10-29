@@ -2,14 +2,14 @@
 title: "/research-review"
 description: "/research-review — Crítica adversarial de nivel de revisión por pares del artículo: una tarjeta de puntuación del revisor de siete ejes (novedad, rigor, reproducibilidad, claridad, ética, revisión estadística, conformidad con las directrices de presentación de informes) más una lista de revisiones obligatorias clasificada por gravedad."
 machineTranslated: true
-sourceHash: "73915d388b353eda"
+sourceHash: "0f888b58aa245da1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Investigador principal (revisión por pares)
 **Posición en la canalización:** mitad de la cadena
 
-Somete el artículo a una crítica adversarial de nivel de revisión por pares frente a los estándares del lugar de publicación: novedad, rigor, reproducibilidad, claridad, ética, revisión estadística y conformidad con las directrices de presentación de informes. Emite una tarjeta de puntuación del revisor de **siete ejes** más una lista de revisiones obligatorias clasificada por gravedad, con una justificación de motor concreto por hallazgo. Refutación por defecto.
+Somete el artículo a una crítica adversarial de nivel de revisión por pares frente a los estándares del lugar de publicación: novedad, rigor, reproducibilidad, claridad, ética, revisión estadística y conformidad con las directrices de presentación de informes. Emite una tarjeta de puntuación del revisor de **siete ejes** más una lista de revisiones obligatorias clasificada por gravedad, con una justificación de motor concreto por hallazgo. Refutación por defecto, y cada punto se apoya en las propias palabras y la evidencia del borrador, nunca en el prestigio del lugar de publicación, la institución o los autores.
 
 ## Invocación canónica
 
@@ -20,16 +20,18 @@ Somete el artículo a una crítica adversarial de nivel de revisión por pares f
 Con argumentos:
 
 ```bash
-/research-review [--suite-name NAME]
+/research-review [--suite-name NAME] [--venue STANDARD] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]
 ```
 
 ## Entradas
 
-El entregable del artículo en la ubicación natural del host que registró la etapa del artículo.
+El entregable del artículo en la ubicación natural del host que registró la etapa del artículo. Con `--paper`, el artículo es un archivo PDF o de texto que tú suministras (o texto pegado), no un entregable de una suite de investigación, y no se necesita ninguna suite.
 
 ## Salidas
 
 `_outputs/review-report.md` — la tarjeta de puntuación del revisor de **siete ejes** (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de presentación de informes), la lista de revisiones obligatorias clasificada por gravedad (HIGH / MEDIUM / LOW) con una justificación de motor concreto por hallazgo, el paquete de reproducibilidad y el veredicto de reejecución, la auditoría de integridad de citas, y el veredicto general `accept · minor-revision · major-revision · reject`.
+
+Con `--paper`, el informe se escribe en `.apothem/plans/<date>--review-<slug>.md` en la raíz del proyecto (o en la ruta de `--out`): una tarjeta de puntuación de siete ejes con una línea por rol de revisor, filas de comprobación de ecuaciones, ablaciones y líneas base, revisiones obligatorias ordenadas por gravedad, hasta cinco preguntas para los autores y una decisión trasladada a la escala de recomendación que indiques. Se etiqueta como una lectura asistida por modelo, no como revisión por pares.
 
 ## Aguas abajo
 
@@ -41,12 +43,25 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar el contexto** — Leer el entregable del artículo.
 2. **Verificar la puerta de secuencia** — Confirmar que el artículo, `_outputs/analysis.md` y `_inputs/synthesis.md` existen y no están vacíos; en caso contrario, detenerse con `Blocked: run /research-paper first`.
-3. **Revisar de forma adversarial** — Puntuar los siete ejes (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de informe); ejecutar la reejecución de reproducibilidad y la auditoría de integridad de citas; refutación por defecto; localizar defectos concretos con evidencia.
-4. **Clasificar las revisiones** — Ordenar las revisiones obligatorias HIGH / MEDIUM / LOW con una justificación de impulsor concreto.
+3. **Revisar de forma adversarial** — Puntuar los siete ejes (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de informe); tipificar cada afirmación como descriptiva, asociativa o causal y comprobar los errores de valoración recurrentes; comprobar que las figuras codifican con honestidad y se leen sin color; ejecutar la reejecución de reproducibilidad y la auditoría de integridad de citas; refutación por defecto; localizar defectos concretos con evidencia.
+4. **Clasificar las revisiones** — Ordenar las revisiones obligatorias HIGH / MEDIUM / LOW con una justificación de impulsor concreto. Un eje que la revisión no puede juzgar no recibe veredicto; permanece en la lista de no juzgados con su motivo, y el veredicto general lo deja entre paréntesis.
 5. **Actualizar el manifiesto de traspaso** — Registrar el informe de revisión y el veredicto de la tarjeta de puntuación.
 6. **Emitir la revisión** — `_outputs/review-report.md`.
 
+## Revisar el artículo de otra persona
+
+`--paper` revisa un manuscrito que no forma parte de una suite de investigación, por ejemplo un envío que te pidieron arbitrar o un borrador de un colega.
+
+- **Perfil del lugar de publicación.** `--venue` toma el id de un perfil genérico (por ejemplo `empirical-conference` o `field-journal`). Un lugar de publicación con nombre usa el perfil genérico más cercano y el informe lo indica. Apothem solo incluye perfiles genéricos y nunca afirma los criterios propios de ningún lugar de publicación; las directrices que suministras rigen cuando las pegas, y la cabecera del informe registra su fuente, su fecha y el año o ciclo y la sección que cubren.
+- **Versión del manuscrito.** El informe registra qué versión se leyó (preprint, manuscrito aceptado, versión de registro o desconocida), cualquier marcador de versión que lleve el archivo, de dónde procede y la fecha en que se leyó, de modo que la revisión queda fijada a una revisión concreta.
+- **Roles de revisor.** Los roles predeterminados son métodos, dominio y escéptico. `--roles` cambia la lista. Cuando los roles discrepan, el informe muestra la discrepancia en lugar de promediarla.
+- **Confidencialidad.** Se te pregunta una vez si el artículo es un envío confidencial, un artículo publicado o tu propio borrador. Cuando la respuesta se desconoce, se aplica el tratamiento más estricto: las búsquedas usan títulos, identificadores o términos temáticos genéricos y nunca frases del manuscrito.
+- **Novedad.** Sin una suite no hay mapa del trabajo previo, por lo que la revisión usa los trabajos vecinos que nombra el artículo más un registro de búsqueda acotado. Una búsqueda vacía nunca se toma como evidencia de novedad, y la confianza en la novedad sigue siendo baja salvo que el registro cubra un índice académico.
+- **Anonimato.** Para tu propia comprobación de preparación en un lugar de publicación de doble ciego, la revisión inspecciona las superficies más allá de la prosa (propiedades del documento, archivos incluidos y enlazados, historial del repositorio, archivos suplementarios, figuras renderizadas); una que no puede abrir va a la lista de no juzgados, nunca a la lista limpia. Para un envío confidencial que se te asigna, la revisión no busca la identidad en esas superficies: una identidad encontrada sin buscarla se te notifica como fuga y no entra en ninguna puntuación.
+
 ## Umbral de rigor
+
+Ningún veredicto de eje, hallazgo ni confianza se apoya en una métrica a nivel de revista, un recuento de citas, un índice a nivel de autor ni la reputación del lugar de publicación, la institución o los autores; una revisión que cita una cifra de ese tipo la cita de forma descriptiva, con lo que mide, su fuente y la fecha. Los hallazgos de gravedad HIGH incluyen una imagen experimental con un empalme, una composición o un paso de procesamiento no declarados, y un resultado registrado que difiere del informado sin motivo declarado. La revisión estadística comprueba que n cuenta la unidad independiente y no medidas repetidas, particiones o semillas de una misma unidad.
 
 La revisión puntúa las afirmaciones empíricas frente al listón de la puerta de avance —replicación adecuada, significancia no paramétrica con un tamaño del efecto y rangos de diferencia crítica, y paridad de presupuesto entre los métodos comparados— y trata el veredicto como una puerta de avance explícita: un artículo avanza solo cuando supera el listón del lugar de publicación de forma convincente y significativa, con la superación registrada. Bajo un lugar de publicación de doble ciego, el revisor también señala cualquier fuga de identidad como un defecto de anonimización.
 
@@ -55,7 +70,9 @@ La revisión puntúa las afirmaciones empíricas frente al listón de la puerta 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Blocked: run /research-paper first | No hay artículo | Ejecuta `/research-paper` para producir el manuscrito |
+| Blocked: no paper supplied | Falta el archivo de `--paper` o es ilegible | Pasa un archivo PDF o de texto legible, o pega el texto |
 | Puntuación caritativa | El revisor asumió el mejor caso | Refutación por defecto; puntúa según la evidencia presente |
+| Punto apoyado en el prestigio | Se usó como evidencia un lugar de publicación, una institución, un autor, una métrica a nivel de revista o un recuento de citas | Elimínalo; reformula el punto a partir de las propias palabras y la evidencia del borrador |
 | Hallazgo sin justificación | Revisión afirmada, no justificada | Adjunta una justificación de motor concreto a cada hallazgo |
 
 ## Ejemplos
@@ -63,6 +80,9 @@ La revisión puntúa las afirmaciones empíricas frente al listón de la puerta 
 ```bash
 # Revisa el artículo por pares y emite una tarjeta de puntuación del revisor
 /research-review --suite-name <name>
+
+# Revisa un PDF suministrado frente a un perfil genérico de lugar de publicación en una escala de 1 a 10
+/research-review --paper ./submission.pdf --venue empirical-conference --scale 1-10
 ```
 
 ## Referencias cruzadas

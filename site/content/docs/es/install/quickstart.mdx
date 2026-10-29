@@ -2,7 +2,7 @@
 title: "Guía rápida"
 description: "Instala Apothem, redacta un perfil, materializa tu primer entorno y verifícalo — un recorrido para copiar y pegar con la salida esperada."
 machineTranslated: true
-sourceHash: "eb82f45cf9d58284"
+sourceHash: "7a414de2fdc9eea3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,14 +107,39 @@ apothem profile show --json
 
 El esqueleto usa datos de identidad ficticios como marcadores de posición y es
 seguro editarlo antes de instalar cualquier salida de entorno. `show --json` lo
-vuelve a leer e informa del perfil validado:
+vuelve a leer e informa del perfil validado con todos los valores predeterminados
+rellenados, empezando por `schema_version`. El comando lo imprime en una sola
+línea; aquí se muestra expandido:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -141,9 +166,11 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Los adaptadores de ámbito de proyecto escriben dentro de un proyecto en lugar de
-en tu directorio personal, por lo que necesitan un `--project PATH`. Previsualiza
-cualquier instalación sin escribir archivos con `--dry-run`:
+Los adaptadores de ámbito de proyecto escriben su archivo de reglas dentro de un
+proyecto, por lo que necesitan un `--project PATH`; siete de ellos también escriben
+skills y reglas compartidas en carpetas de tu directorio personal, y `--project` no
+cambia adónde van. Previsualiza cualquier instalación sin escribir archivos con
+`--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

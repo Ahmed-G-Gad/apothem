@@ -2,7 +2,7 @@
 title: "Convergência de convenções entre harnesses"
 description: "Como o Apothem mantém um único fluxo de trabalho do operador consistente em dezessete harnesses, apesar dos formatos de configuração e das superfícies de enforcement divergentes de cada fornecedor."
 machineTranslated: true
-sourceHash: "561e11e1683b2b47"
+sourceHash: "af168c881e9225e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,13 +21,15 @@ adaptador renderiza essa intenção na forma que seu harness espera.
 
 | Forma | Harnesses (exemplos) | O que o Apothem emite |
 | --- | --- | --- |
-| Arquivos de regras `.md` planos em um diretório | claude-code, windsurf, trae | Arquivos de regras brutos copiados para a árvore de regras do harness |
-| Regras `.mdc` do Cursor | cursor | Um conjunto de regras `.mdc` carregando o cabeçalho de metadados que o Cursor espera |
+| Arquivos de regras `.md` planos em um diretório | claude-code | Arquivos de regras brutos copiados para a árvore de regras do harness |
+| Um arquivo de regras mesclado em um diretório de regras | windsurf, trae | Um arquivo `apothem-rules.md` com o frontmatter de ativação que o harness lê |
+| Regras `.mdc` do Cursor | cursor | Um arquivo de regras `.mdc` carregando o cabeçalho de metadados que o Cursor espera |
 | Documento de instruções de arquivo único | codex, gemini-cli, github-copilot, zed | Um documento concatenado —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— montado a partir do conjunto de regras do perfil |
 
-Um harness de `.md` plano recebe as regras tal como estão. Um harness `.mdc`
-precisa do cabeçalho de metadados do Cursor envolto em torno de cada regra. Um
-harness de arquivo único precisa que todo o conjunto de regras seja achatado em
+Um harness de `.md` plano recebe as regras tal como estão. Um harness de arquivo
+mesclado recebe um arquivo de regras cujo frontmatter define quando as regras se
+aplicam. Um harness `.mdc` precisa do cabeçalho de metadados do Cursor no topo do
+seu arquivo de regras. Um harness de arquivo único precisa que todo o conjunto de regras seja achatado em
 um único documento com ordenação de seções estável, de modo que o operador leia
 as mesmas convenções na mesma sequência independentemente do alvo. O perfil
 neutro é a única fonte de verdade; a divergência mora inteiramente na etapa de

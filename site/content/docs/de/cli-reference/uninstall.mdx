@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "CLI-Referenz für den Befehl apothem uninstall."
 machineTranslated: true
-sourceHash: "ea57bfdd779c5084"
+sourceHash: "85553b3611d8d842"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,6 +44,59 @@ den Sie entfernen, der letzte an dieser Wurzel, kopiert der Befehl zuerst jeden
 Datenspeicher in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) und
 entfernt ihn dann samt allem, was er enthält. Alles, was Sie in `plans/`
 aufbewahren, wird niemals entfernt.
+
+## Gemeinsame Ordner in Ihrem Home-Verzeichnis
+
+Mehrere Installationen können einen Ordner in Ihrem Home-Verzeichnis gemeinsam
+verwenden: den Skills-Ordner (`~/.agents/skills/` oder `~/.codebuddy/skills/`,
+`~/.kiro/skills/` oder `~/.trae/skills/`) sowie `~/.config/apothem/rules/` und
+`~/.config/apothem/templates/`. Die Seite [install](/docs/cli-reference/install#ordner-in-ihrem-home-verzeichnis)
+listet auf, welcher Adapter welchen Ordner schreibt. Apothem vermerkt, welche
+Installationen jeden Ordner verwenden, und eine Deinstallation folgt einer Regel:
+Sie entfernt einen Ordner nur, wenn keine andere Apothem-Installation ihn noch
+verwendet.
+
+- Die Deinstallation eines Werkzeugs behält die Skills, solange eine andere
+  Installation sie noch verwendet, und teilt dies mit. Ein Werkzeug, das in zwei
+  Projekten installiert ist, zählt als zwei Installationen; die Deinstallation
+  aus Projekt A behält die Ordner also, solange Projekt B sie noch verwendet.
+  Die letzte Deinstallation entfernt sie (siehe das zweite Beispiel unten).
+- Entfernt wird nur, was der eigene Eintrag der Installation auflistet. Eine
+  Installation, die vorgenommen wurde, bevor die Ordner verwaltet wurden, hat
+  keinen solchen Eintrag, daher entfernt ihre Deinstallation nichts in Ihrem
+  Home-Verzeichnis. Dateien, die Sie den Ordnern hinzugefügt haben, bleiben
+  bestehen, ebenso ein Ordner, der den Namen eines Apothem-Skills trägt und den
+  Apothem nicht geschrieben hat.
+- Eine Installation, deren Projektordner nicht mehr existiert, wird ignoriert,
+  sodass ein gelöschtes Projekt die Ordner nicht dauerhaft festhält. Der Hinweis
+  benennt sie.
+- Wenn sich der Eintrag einer Installation, die die Ordner verwenden könnte, nicht
+  lesen lässt, bricht die Deinstallation mit einem Fehler ab, bevor sie etwas
+  entfernt, und die Installation bleibt vermerkt. Reparieren oder verschieben Sie
+  den unlesbaren Eintrag und führen Sie den Befehl dann erneut aus. Ein
+  beschädigter Eintrag eines Werkzeugs, das diese Ordner nie schreibt, wird
+  ignoriert.
+- Wenn die letzte Verwendung wegfällt, werden auch die leer gebliebenen Ordner
+  entfernt. Jeder Ordner wird unter `~/.apothem/backups/` gesichert, bevor er
+  entfernt wird.
+
+Jede Deinstallation gibt einen `Note:` je Ordner aus, zum Beispiel `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)` oder
+`was removed: no other Apothem install uses it`. Im `--format json`-Umschlag ist
+jeder Hinweis ein `warnings`-Eintrag mit `"outcome": "advisory"`,
+`"operation": "shared_root"` und `"role"` mit dem Wert `retained` oder `released`.
+Er trägt `path`, `holders` (die Installationen, die den Ordner behalten), `stale`
+(ignorierte Installationen) sowie `kept` und `total` (die behaltenen vermerkten
+Einträge und die Einträge, die die Installation aufgelistet hat).
+
+Wenn ein Ordner wegen einer Installation bestehen bleibt, die Sie nicht finden
+können, benennt der Hinweis sie. Wurde der Projektordner gelöscht, wird die
+Installation ignoriert, und der Ordner wird mit der nächsten Deinstallation
+entfernt. Existiert das Projekt, Sie haben aber den Apothem-Block von Hand aus
+seiner Regeldatei entfernt, meldet `uninstall` den Harness als nicht installiert
+und gibt seinen Anspruch nicht frei; führen Sie `install` für diesen Harness und
+dieses Projekt aus und dann `uninstall`, um ihn freizugeben. `apothem verify`
+zeigt, ob ein Ordner noch vollständig ist.
 
 Eine Entfernung mit `--harness all` ist bewusst erschöpfend: Sie umfasst jeden
 registrierten Harness, einschließlich derjenigen, die `exclude_harnesses` im
@@ -111,6 +164,16 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+Ein gemeinsamer Skills-Ordner bleibt bestehen, bis die letzte Installation, die
+ihn verwendet, entfernt wird:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Exit-Codes

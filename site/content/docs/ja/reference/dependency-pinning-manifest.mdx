@@ -2,7 +2,7 @@
 title: "依存関係ピン留めマニフェスト"
 description: "Python ランタイムの範囲、開発ツール、リリースツールのロックファイル、各ビルド面に対する承認済みのバージョン下限を網羅する依存関係宣言ポリシー。"
 machineTranslated: true
-sourceHash: "bb9b1e385a680545"
+sourceHash: "9d1cc24fb6245844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,16 +15,18 @@ Apothem は、小さなランタイム依存関係のセットに加えて、よ
 リリース・ドキュメントのツールチェーンを備えた Python CLI です。ランタイム依存関係は
 `pyproject.toml` で保守的な下限を使用します。ウェブサイトは
 `site/package-lock.json` をコミットします。GitHub Actions はバージョンコメント付きで
-不変の SHA によってピン留めされ、Renovate によって更新されます。
+不変の SHA によってピン留めされ、Dependabot によって更新されます。
 
 | クラス | 宣言 | ロックポリシー |
 |---|---|---|
 | ランタイム Python 依存関係 | `pyproject.toml` 内の `[project.dependencies]` | 下限の範囲。コミットされる Python ランタイムロックはなし |
 | 開発 / セキュリティツール | `[project.optional-dependencies]` の extras | 下限の範囲。CI は現在一致するバージョンをインストール |
 | リリースツール | リリースワークフロー向けは `scripts/release/requirements-build-linux.txt`。ローカルビルド向けは `[project.optional-dependencies]` の `release` extra | リリースワークフロー向けにハッシュロック。リリースツールのクロージャから生成。`release` extra は下限の範囲 |
-| CI 専用ツール | `.github/workflows/*.yml` | ワークフロー専用の pip ツールは厳密なピン（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`）を使用 |
+| CI 専用ツール | `.github/workflows/*.yml` | ワークフロー専用の pip ツールは厳密なピン（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`、`pre-commit`、`ruff`）を使用 |
 | ドキュメントサイト | `site/package.json` | `site/package-lock.json` をコミットし、`npm ci` が消費 |
-| GitHub Actions | バージョンコメント付きの SHA ピン `uses:` 参照 | Renovate が更新を提案。例外には `action-pinning-exempt:` マーカーが付く |
+| VS Code パッケージャー | `tools/vsce/package.json` | `tools/vsce/package-lock.json` をコミット。リリースおよび公開ジョブは `npm ci --ignore-scripts` を実行 |
+| channel-smoke のハーネス CLI | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` をコミットし、`npm ci` が消費 |
+| GitHub Actions | バージョンコメント付きの SHA ピン `uses:` 参照 | Dependabot が毎週更新を提案。例外には `action-pinning-exempt:` マーカーが付く |
 
 ## リリース承認
 
@@ -68,5 +70,32 @@ pip freeze > requirements.dev.lock
   CI はユーザーが遭遇する前に、現在のツールとの互換性の問題を明らかにすべきです。
 - **なぜコミットされる Node ロックか？** ウェブサイトはデプロイされる静的成果物です。
   ロックファイルは、その公開面に対して決定的な `npm ci` ビルドをもたらします。
-- **なぜ SHA ピンの Actions か？** タグは可変ですが、SHA は不変です。Renovate は
-  ピン留めされた SHA を更新し、リリースゲートは意図的な保留をすべて記録します。
+- **なぜ SHA ピンの Actions か？** タグは可変ですが、SHA は不変です。Dependabot は
+  SHA の更新を提案して各バージョンコメントを書き換え、リリースゲートは意図的な保留を
+  すべて記録します。
+- **更新ボットが触れないもの。** Dependabot のバージョン更新
+  （`.github/dependabot.yml`）は、GitHub Actions のピン、ウェブサイトの
+  ロックファイル、vsce パッケージャーのロックファイル（`tools/vsce`）、channel smoke が
+  インストールするハーネス CLI のロックファイル（`tools/channel-smoke`）、および
+  pre-commit フックを対象とします。`pyproject.toml` のランタイム下限、ハッシュロックされた
+  リリース要件、`src/apothem/_vendor/vendor.txt` のベンダリングされたクロージャ、
+  そして `pyproject.toml` と歩調を合わせてピン留めされた pre-commit フックは手作業で
+  更新します。単一のピンだけを上げると、それらが整合しているファイルが壊れるためです。
+  ウェブサイトの `@types/node` のメジャーバージョンは Node の下限（`engines` と
+  `.nvmrc`、Node 22）に従うため、Dependabot はそのマイナーおよびパッチ更新のみを
+  提案します。そのメジャーバージョンは下限と一緒に引き上げてください。
+  バージョン更新は npm の `overrides` ブロックには手を付けません。Dependabot の
+  セキュリティ更新は引き続きすべてのマニフェストを対象とするため、セキュリティの
+  プルリクエストがこれらのピンのいずれかを提案したり、override を動かしたりすることが
+  あります。その場合は手作業で調整するか、クローズしてください。
+- **Dependabot のプルリクエストのマージ。** リポジトリのスカッシュの既定では PR の
+  タイトルが使われます。Dependabot のタイトルの一部、主にディレクトリ名を含む
+  グループ化されたものは、72 文字のスカッシュ件名を超えます。PR Title チェックが
+  それらを指摘し、タイトルの変更で修正できます。ツールのロックファイルを変更する
+  プルリクエストでは `ci.yml` のジョブが一切実行されないため、npm audit ワークフローが
+  それを監査してインストールし、vsce のロックファイルについては VS Code 拡張機能を
+  パッケージ化して vsce のリリーステストを実行し、channel-smoke のロックファイルに
+  ついては channel smoke ワークフローが実行されます。Markdown Lint ワークフローは、
+  pre-commit フックのプルリクエストに対して markdownlint フックを実行します。
+  その他のフックは CI で実行されないため、マージする前にそのブランチで
+  `pre-commit run --all-files` を実行してください。

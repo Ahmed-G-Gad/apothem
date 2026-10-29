@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "d322cf544cab7ca9"
+sourceHash: "290e07a124d79a3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,6 +87,7 @@ python scripts/release/bump_version.py X.Y.Z
   gemini-extension.json
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/plugin.json
   plugins/apothem/.codex-plugin/plugin.json
   CITATION.cff
   ```
@@ -199,13 +200,249 @@ tidak ada token registri yang disimpan di repositori. Setujui juga run
 `Publish VS Code Extension` yang sedang menunggu. Run ini mengemas
 `apothem.vsix` dan memublikasikannya ke Visual Studio Marketplace sebagai
 `ahmed-g-gad.apothem-vscode`. Langkah publikasi hanya berjalan selama
-variabel repositori `VSCODE_MARKETPLACE_READY` bernilai `true` dan rahasia
-`VSCE_PAT` telah diatur; jika tidak, run ini mengemas ekstensi dan melewati publikasi.
+variabel repositori `VSCODE_MARKETPLACE_READY` bernilai `true` dan satu
+kredensial dikonfigurasi: variabel `VSCE_AUTH=oidc` (Trusted Publishing
+Marketplace, tanpa rahasia tersimpan), variabel `VSCE_AUTH=entra`,
+`AZURE_CLIENT_ID` dan `AZURE_TENANT_ID` (token Microsoft Entra ID berumur
+pendek, tanpa rahasia tersimpan), atau rahasia `VSCE_PAT`. Tanpa satu pun, run
+ini mengemas ekstensi dan melewati publikasi. Kredensial adalah sakelar, bukan
+percobaan ulang: publikasi yang gagal pada satu rute tidak beralih ke rute lain
+dengan sendirinya. Penyiapan untuk setiap rute ada di
+[Publikasi Marketplace dengan Trusted Publishing](#publikasi-marketplace-dengan-trusted-publishing)
+(diutamakan) dan
+[Publikasi Marketplace dengan Microsoft Entra ID](#publikasi-marketplace-dengan-microsoft-entra-id)
+di bawah.
 
 Untuk memublikasikan lagi setelah run yang gagal, dispatch alur kerja untuk
 tag yang sama (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Alur
 kerja melewati publikasi ketika versi sudah ada di registri, karena versi npm
 tidak dapat diubah.
+
+#### Publikasi Marketplace dengan Trusted Publishing
+
+Trusted Publishing memungkinkan Marketplace menerima token OIDC GitHub milik
+repositori ini secara langsung: `vsce publish --oidc` menukar token job publish
+dengan kredensial Marketplace berumur pendek. Tidak ada rahasia tersimpan dan
+tidak ada sumber daya Azure, sehingga ini adalah rute yang diutamakan. Rute
+Entra di bawah dan rahasia `VSCE_PAT` tetap menjadi alternatif yang dipilih
+operator.
+
+1. **Gunakan rilis vsce yang mendukungnya.** Pada rute ini job publish
+   memeriksa rilis vsce yang dikunci di `tools/vsce` sebelum memublikasikan, dan
+   berhenti dengan galat yang menyebutkan rilis minimum ketika kuncinya lebih
+   lama. Dependabot mengusulkan pembaruan vsce untuk lockfile tersebut; gabungkan
+   pembaruan yang mencapai rilis minimum sebelum Anda beralih.
+2. **Buat kebijakan.** Masuk sebagai Owner penerbit, buka
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`, dan
+   tambahkan kebijakan di bawah **Trusted Publishing**:
+   - Nama kebijakan: nama apa pun, seperti `apothem-release`
+   - Pemilik repositori: `Ahmed-G-Gad`
+   - Repositori: `apothem`
+   - Alur kerja: `publish-vscode.yml`
+   - Environment: `release`
+
+   Nama-nama kolom tersebut adalah yang dicantumkan panduan publikasi VS Code,
+   di bagiannya tentang publikasi dengan GitHub Actions dan Trusted Publishing
+   (`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`).
+   Belum terkonfirmasi: apakah setiap penerbit sudah melihat tab Trusted
+   Publishing. Jika penerbit Anda tidak melihatnya, gunakan rute Entra.
+3. **Alihkan rute.** Biarkan `VSCODE_MARKETPLACE_READY` bernilai `true` dan
+   atur pemilihnya. Atur ketika tidak ada tag yang sedang menunggu, karena push
+   tag berikutnya memublikasikan melalui rute ini.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **Publikasikan.** Push tag berikutnya, atau dispatch untuk tag yang sudah
+   ada, memublikasikan melalui Trusted Publishing. Rute ini tidak memiliki dry
+   run: publikasi pertama adalah pemeriksaannya, dan dispatch dengan `dry_run`
+   hanya memperingatkan bahwa tidak ada yang diverifikasi.
+5. **Kembali ke rute cadangan jika gagal.** Hapus pemilihnya dan dispatch lagi
+   untuk tag yang sama; dengan rahasia `VSCE_PAT` diatur, rute token
+   memublikasikan. Publikasi yang gagal tidak memublikasikan apa pun, sehingga
+   tag yang sama dapat di-dispatch lagi.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
+
+#### Publikasi Marketplace dengan Microsoft Entra ID
+
+Rute Entra mengganti token akses pribadi yang tersimpan dengan token berumur
+pendek. `publish-vscode.yml` meminta token OIDC kepada GitHub, aksi
+`Azure/login` menukarnya dengan sign-in Entra melalui kredensial federasi, dan
+`vsce publish --azure-credential` memublikasikan dengan token yang dihasilkan.
+Tidak ada rahasia klien. Rahasia `VSCE_PAT` tetap menjadi cadangan yang dipilih
+operator; alur kerja tidak pernah beralih ke sana dengan sendirinya.
+
+Rilis vsce yang dipatok di `tools/vsce` mendukung rute ini. Rute ini memerlukan
+tenant Entra, pendaftaran aplikasi, dan keanggotaan penerbit, yang tidak
+diperlukan Trusted Publishing di atas; gunakan rute ini ketika Trusted
+Publishing tidak tersedia bagi penerbit.
+
+1. **Periksa prasyaratnya.** Temukan akun yang memiliki penerbit
+   `ahmed-g-gad` (tab Members di
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`) dan
+   tenant Entra tempat Anda dapat mendaftarkan aplikasi. Belum terkonfirmasi:
+   apakah tenant pemilik penerbit harus cocok dengan tenant aplikasi, dan
+   apakah organisasi Azure DevOps `Ahmed-G-Gad` harus terhubung ke Entra
+   (`dev.azure.com/Ahmed-G-Gad`, Organization settings, Microsoft Entra). Tidak
+   ada sumber yang menyatakan salah satunya. Jika langkah 5 atau 6 gagal,
+   periksa hal-hal ini terlebih dahulu.
+
+2. **Daftarkan aplikasi.** Di `https://entra.microsoft.com`, buka App
+   registrations, lalu New registration. Beri nama `apothem-vscode-publish`,
+   pilih single tenant, dan biarkan redirect URI kosong. Dari Overview, salin
+   Application (client) ID dan Directory (tenant) ID. Jangan buat rahasia klien
+   dan jangan berikan izin API apa pun. Langkah ini memerlukan hak pemilik
+   aplikasi atau peran Entra seperti Application Administrator.
+
+3. **Tambahkan kredensial federasi.** Pada aplikasi tersebut, buka Certificates
+   & secrets, Federated credentials, Add credential, lalu pilih skenario
+   "GitHub Actions deploying Azure resources". Masukkan organisasi
+   `Ahmed-G-Gad`, repositori `apothem`, tipe entitas `Environment`, nama
+   environment `release`, dan nama kredensial `apothem-release`. Kolom yang
+   dihasilkan harus berbunyi:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   Pencocokan bersifat persis dan peka huruf besar-kecil. Jika sign-in
+   berikutnya gagal dengan AADSTS700213 atau AADSTS7002138, bandingkan
+   kredensial dengan baris `subject claim` yang ditulis `Azure/login` ke log
+   job. AADSTS70021 tepat setelah pembuatan berarti kredensial belum
+   tersebar; tunggu beberapa menit dan coba lagi.
+
+4. **Atur variabel repositori.** Selama `VSCODE_MARKETPLACE_READY` bernilai
+   `true`, rute Entra aktif segera setelah ketiganya diatur, jadi aturlah
+   ketika tidak ada tag rilis yang sedang menunggu persetujuan. Tanpa
+   `VSCODE_MARKETPLACE_READY=true` tidak ada yang melakukan sign-in dan run
+   melewati publikasi.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   Biarkan `VSCODE_MARKETPLACE_READY` dan `VSCE_PAT` apa adanya. Ketika
+   `VSCE_AUTH` bernilai `entra` tetapi `AZURE_CLIENT_ID` atau `AZURE_TENANT_ID`
+   kosong, alur kerja mencatat peringatan, baik `VSCE_PAT` diatur maupun tidak,
+   dan tidak menggunakan rute Entra. Alur kerja kemudian menggunakan rahasia
+   `VSCE_PAT` jika rahasia itu diatur; tanpa rahasia, alur kerja tidak
+   memublikasikan apa pun dan run tetap berakhir hijau, jadi carilah
+   peringatannya.
+
+5. **Jalankan dry run.** Dispatch alur kerja untuk tag rilis yang sudah ada
+   dengan `dry_run` diatur. Pada rute Entra, alur kerja melakukan sign-in,
+   mencetak profil Azure DevOps, dan memverifikasi akses penerbit tanpa
+   memublikasikan. Rute token tidak memiliki dry run: jika log menampilkan
+   `Marketplace credential mode: pat`, run berakhir hijau dengan peringatan dan
+   tidak memverifikasi apa pun. Setujui run environment `release` yang sedang
+   menunggu.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   Yang diharapkan: `Marketplace credential mode: entra`, baris `subject claim`
+   yang sama dengan subject di langkah 3, serta `id` dan `displayName` profil
+   yang dicetak oleh langkah dry-run pertama. Langkah verifikasi diperkirakan
+   gagal dengan 403 hingga langkah 6. Belum terkonfirmasi: bahwa sign-in tanpa
+   langganan Azure menghasilkan token untuk Marketplace melalui Azure CLI. Run
+   ini adalah pengujian pertamanya. Jika gagal di sini, daftarkan managed
+   identity yang ditetapkan pengguna (user-assigned) di sebuah langganan
+   sebagai gantinya, yang merupakan rute yang didokumentasikan Microsoft.
+
+6. **Tambahkan aplikasi ke penerbit.** Di tab Members dari langkah 1, masuk
+   sebagai Owner penerbit dan tambahkan anggota menggunakan `id` profil dari
+   langkah 5, dengan peran Contributor. Belum terkonfirmasi: label kolom pada
+   dialog, dan apakah dialog menerima id tersebut sebelum aplikasi menjadi
+   anggota organisasi Azure DevOps. Azure DevOps menambahkan identitas aplikasi
+   per organisasi sebagai aturan umum. Jika dialog menolak id tersebut,
+   tambahkan service principal ke organisasi `Ahmed-G-Gad` (Organization
+   settings, Users, menggunakan Object ID Enterprise application) dan coba lagi.
+   Juga belum terkonfirmasi: apakah profil sudah ada sebelum panggilan Azure
+   DevOps pertama dari identitas tersebut.
+
+7. **Ulangi dry run.** Langkah verifikasi kini berhasil dengan "verification
+   succeeded for the publisher"; pesannya masih menyebut Personal Access Token,
+   karena token Entra melewati jalur yang sama. Pemeriksaan ini membuktikan
+   keanggotaan penerbit (Creator, Owner, Contributor, atau Reader), bukan hak
+   publikasi. Belum terkonfirmasi: bahwa Contributor cukup untuk memublikasikan
+   pembaruan. Deskripsi peran dari Microsoft menyatakan cukup, dan tidak ada
+   sumber yang menunjukkan publikasi dengan peran itu, sehingga publikasi nyata
+   pertama adalah buktinya.
+
+8. **Publikasikan rilis.** Buat tag seperti di §2.2 dan setujui run-nya.
+   Langkah `Publish to Visual Studio Marketplace (Entra ID)` berjalan, header
+   environment-nya hanya mencantumkan `AZURE_TENANT_ID`, langkah cadangan token
+   dilewati, dan vsce mencetak `DONE Published ahmed-g-gad.apothem-vscode`.
+   Galeri Marketplace mencantumkan versi baru setelah sekitar empat menit.
+
+9. **Putuskan tentang token.** Pertahankan `VSCE_PAT` hingga publikasi Entra
+   pertama yang berhasil, lalu hapus rahasia tersebut jika tidak menginginkan
+   cadangan. Setelah rahasia itu hilang, variabel Entra yang terhapus atau
+   kosong membuat run hijau tanpa publikasi: dengan peringatan ketika
+   `VSCE_AUTH` masih bernilai `entra`, dan hanya dengan pemberitahuan lewati
+   ketika tidak. Baca anotasi run setelah setiap tag. Untuk mempertahankan
+   cadangan melewati pensiunnya token akses pribadi global, buat token
+   bercakupan organisasi untuk `Ahmed-G-Gad` dengan cakupan kustom Marketplace
+   Manage dan masa berlaku terpendek yang Anda terima, lalu simpan sebagai
+   `VSCE_PAT`. Belum terkonfirmasi: label portal dalam langkah ini berasal dari
+   ingatan, bukan dari sumber primer; Microsoft menyebut token bercakupan
+   organisasi sebagai solusi sementara dan dapat berhenti menghormatinya; dan
+   halaman-halaman Microsoft tidak sepakat tentang tanggal pensiun token global.
+
+10. **Kembali ke token.** Hapus pemilihnya dan dispatch lagi, lalu setujui
+    run-nya. Publikasi Entra yang gagal tidak memublikasikan apa pun, sehingga
+    tag yang sama dapat di-dispatch lagi; periksa halaman Marketplace terlebih
+    dahulu, karena versi yang sudah mendarat tidak dapat dipublikasikan dua kali.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+Ketika publikasi Entra gagal, baca log langkahnya:
+
+- Pesan yang diawali "Can not acquire a Microsoft Entra ID access token"
+  berarti sign-in atau rantai kredensial gagal. Periksa langkah
+  `Sign in to Microsoft Entra ID` dan kredensial federasi terlebih dahulu. Jika
+  sign-in hijau, hapus `AZURE_TENANT_ID` dari `env` langkah vsce di alur kerja;
+  alur kerja rilis ekstensi milik GitHub sendiri tidak mengekspornya.
+- "InvalidAccessException" atau "not allowed" berarti identitas token bukan
+  anggota penerbit. Bandingkan `id` profil dari dry run dengan tab Members.
+- 403 dari langkah verifikasi dry-run berarti aplikasi belum memiliki peran.
+
+Tiga batasan berlaku untuk rute ini:
+
+- `id-token: write` diberikan kepada seluruh job publish, sehingga setiap
+  langkah di dalamnya dapat meminta token OIDC, juga dalam mode token. Subject
+  token terikat pada environment `release`, yang memerlukan persetujuan
+  peninjau.
+- Environment `release` tidak memiliki kebijakan branch atau tag deployment,
+  sehingga ref apa pun yang disetujui pemelihara dapat memperoleh token
+  environment-subject. Membatasinya ke tag `v*.*.*` memerlukan pemeriksaan
+  terlebih dahulu atas apa yang di-dispatch `release.yml` dan `publish-npm.yml`.
+- Penggantian nama atau pemindahan repositori mengubah format subject OIDC dan
+  diam-diam merusak kredensial federasi. Salin lagi subject dari log
+  `Azure/login` ke kredensial setelah penggantian nama apa pun.
+
+### 2.5 Segarkan pin digest templat
+
+Setelah tag ada, atur `_LATEST_RELEASE` dan `_LATEST_RELEASE_DIGESTS` di
+`tests/unit/test_template_digests.py` ke rilis baru dan digest SHA-256 dari
+setiap templat teks biasa sebagaimana dikirimkan rilis tersebut
+(`git show vX.Y.Z:<template path> | sha256sum`). Lakukan ini dalam perubahan
+berikutnya ke `main`, dan tambahkan digest sebelumnya ke `earlier_digests` milik
+entri manifest ketika templat berubah. Job CI `release-preflight` melakukan
+checkout setiap tag, sehingga job ini gagal dengan menyebutkan nama-nama tag
+hingga pin disegarkan.
 
 ## 3. Permukaan Distribusi
 

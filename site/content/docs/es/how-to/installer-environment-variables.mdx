@@ -2,7 +2,7 @@
 title: "Variables de entorno del instalador"
 description: "Controla el instalador por script (destino, origen, entorno, perfil, verificación) con variables de entorno."
 machineTranslated: true
-sourceHash: "64d4512dc0ce59b4"
+sourceHash: "3210277a66924394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ estableciendo variables de entorno antes de ejecutarlo.
 | `APOTHEM_VERIFY` | `signature` verifica la firma GPG de la etiqueta de lanzamiento; `checksum` instala el archivo comprimido de la plataforma del lanzamiento después de comprobar su SHA-256 con el `SHA256SUMS` del lanzamiento (integridad, no prueba de quién lo publicó) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de descarga para el modo de suma de comprobación | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Árbol de código fuente local explícito que se usa en lugar de clonar | sin definir (se clona) |
-| `APOTHEM_HARNESS` | Entorno que se instala | `claude-code` |
+| `APOTHEM_HARNESS` | Entorno de ámbito de usuario que se instala (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). El instalador no pasa `--project`, así que un entorno de ámbito de proyecto falla con `project.required`; instálalos después con `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Ruta al YAML del perfil compartido | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Con el valor `1`, omite el paso de verificación posterior a la instalación | `0` (la verificación se ejecuta) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Con el valor `1`, instala automáticamente y sin preguntar los requisitos previos `click` / `rich` que falten | `0` (pregunta, o rechaza en una tubería no interactiva) |
@@ -78,10 +78,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Pasos (bash POSIX)
 
-1. Instala un entorno distinto del predeterminado:
+1. Instala un entorno de ámbito de usuario distinto del predeterminado:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Fija el destino de instalación y selecciona la rama móvil `main`. Una rama no
@@ -106,7 +106,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Establece cada variable en `$env:` antes de ejecutar el instalador:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -130,7 +130,15 @@ El instalador imprime `✓ Harness <name> installed` y después (a menos que
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Confírmalo de forma independiente:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+Para un entorno de ámbito de proyecto como Cursor, ejecuta tú mismo la instalación y la
+verificación después del instalador, con `--project`:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 Cuando el perfil todavía no existía, el instalador crea uno a partir del ejemplo

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f51d1e3b53ab82e6"
+sourceHash: "b334fd06ee17113f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,18 +31,39 @@ apothem install --harness hermes
 アダプターは Apothem の共有プロファイルを読み取り、プロファイルの MCP インベントリを含む
 ネイティブの YAML 設定をレンダリングします。MCP サーバーは、プロファイルの `mcp_servers`
 セクションから取得されます。ファイルとしてコピーされるのではなく、インストールと更新のたびに
-`config.yaml` へレンダリングされます。プロファイルのアイデンティティ、プリファレンス、ルールは
-プロファイルドキュメントに入ります。共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、
+`config.yaml` へレンダリングされます。アダプターはまた、Hermes が読む追加のスキルディレクトリの
+リストである `skills.external_dirs` に `~/.hermes/.apothem/support/skills` を追加します。これにより
+Hermes はインストールされたスキルを見つけます。このエントリーは、あなたがすでに列挙している
+エントリーの後に置かれ、あなたの他のキーはそのまま残ります。プロファイルのアイデンティティ、
+プリファレンス、ルールはプロファイルドキュメントに入ります。共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、
 フックプロンプトは、サポート資料として `~/.hermes/.apothem/support/` 配下に配置されます。
 
 ## 互換性に関する注意
 
 プレビュー版のアダプターです。
-Hermes は、サポートツリーもプロファイルドキュメントも自ら読み込みません。`config.yaml` 内のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルール、スキル、フックなしで動作します。
-Hermes は `~/.hermes/skills/` と、`config.yaml` の `skills.external_dirs` 配下に列挙されたすべてのフォルダーからスキルを読み取ります。Apothem のスキルを使うには、`~/.hermes/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
+Hermes は `skills.external_dirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自ら読み込みません。`config.yaml` 内の他のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルールとフックなしで動作します。
+
+**名前の衝突。** Hermes はスキルについて次の優先順位を文書化しています：プロジェクトのスキル（`<project>/.hermes/skills/` と `<project>/.agents/skills/`）、次に `~/.hermes/skills/`、次に `skills.create_dir`、次に `skills.external_dirs` 配下に列挙されたフォルダーです。
+Apothem のディレクトリは `external_dirs` のエントリーなので、最後になります。
+確認した Hermes のドキュメントは、2 つの場所に同じ名前のスキルがある場合に Hermes がどちらのコピーを読み込むかを述べていません。Apothem はこの順序を先の場所が勝つものと解釈しているため、先の場所にあなたが置いている同じ名前のスキルが Apothem のコピーより優先されると考えてください。
+Apothem は `config.yaml` と `~/.hermes/.apothem/support/` 配下にのみ書き込み、それより前の場所には決して書き込まないため、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
+
+`apothem update` は、`skills.config` やあなた自身の `skills.external_dirs` のエントリーを含め、あなたが `config.yaml` に追加したキーを保持します。
 アダプターはプロファイルの MCP インベントリを、Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
 以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と `apothem uninstall` はどちらも、そのブロックが、そうしたリリースがあなたの現在の共有プロファイルから書き込むであろう内容と一致している場合は、そのブロックを削除します（そのブロックが残る場合については[アンインストール](#アンインストール)を参照）。
-（Hermes の振る舞いは、Hermes のユーザーガイドの[スキル](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) に関するページに基づき、2026-10-02 に参照したものです。）
+（Hermes の振る舞いは、Hermes のユーザーガイドの[スキル](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)（2026-10-24 に参照）と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)（2026-10-02 に参照）に関するページに基づきます。）
+
+**`config.yaml` 内のコメント。** Apothem は、コメントを削除する YAML ライブラリでファイルを書き直します。
+ファイルにあなたのコメントが含まれていてエントリーがない場合、Apothem はファイルに手を付けず、インストールはそのキーを挙げるメッセージを出して停止します。
+エントリーを自分で追加してから、再度インストールを実行してください。
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+あなたが自分で追加したエントリーはあなたのものとみなされます。このディレクトリをすでに列挙している場合、Apothem はあなたのエントリーをそのまま保持し、アンインストールはそれをそのまま残します。
 
 ## 検証
 
@@ -54,7 +75,8 @@ verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
 2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+3. ネイティブ設定の `skills.external_dirs` に `~/.hermes/.apothem/support/skills` が記載されていること。そのエントリーがないと Hermes はインストールされたスキルを読み込みません。`apothem update` がそれを再び追加します。
+4. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -62,7 +84,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness hermes
 ```
 
-現在の共有プロファイルの状態からネイティブ設定を再導出します。
+現在の共有プロファイルの状態からネイティブ設定を再導出します。`skills.external_dirs` 内の Apothem のエントリーは、何度更新しても 1 回だけ記載されたままです。
 `~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
@@ -71,7 +93,7 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-アダプターが追加したものを削除します。対象は、インストールが `config.yaml` に記録した `mcp_servers` のエントリ（あなた自身のキーは残り、ファイルが削除されるのは Apothem がそれを作成し、かつあなたのものが何も残っていない場合のみです）、プロファイルドキュメント、およびサポートツリーです。
+アダプターが追加したものを削除します。対象は、インストールが `config.yaml` に記録した `mcp_servers` のエントリと `skills.external_dirs` のエントリ（あなた自身の `external_dirs` のエントリや `skills.config` を含め、あなた自身のキーは残り、ファイルが削除されるのは Apothem がそれを作成し、かつあなたのものが何も残っていない場合のみです）、プロファイルドキュメント、およびサポートツリーです。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 以前のリリースが作成したインストール（プロファイルのサーバーを `auxiliary.mcp` の下に書き込んでいたもの）でも、そのブロックは、`~/.config/apothem/profile.yaml` にあるあなたの現在の共有プロファイルから、そのリリースが書き込むであろう内容と一致している場合に削除されます。
@@ -91,6 +113,8 @@ python -m apothem.conformity.gate --all .
 | 設定ファイルが見つからない | `apothem install --harness hermes` を再実行する |
 | 検証が失敗した | `apothem update --harness hermes` を実行してから、再度検証する |
 | 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness hermes` を再実行する |
+| インストールが、`config.yaml` 内のコメントに関するメッセージを出して停止する | Apothem は、コメントを取り除かなければならないファイルを書き直さない。[互換性に関する注意](#互換性に関する注意)に示した `skills.external_dirs` のエントリーを自分で追加してから、再度インストールを実行する |
+| Apothem のスキルが Hermes に表示されない | プロジェクト内または `~/.hermes/skills/` にある同じ名前のスキルが、Apothem のコピーより優先される可能性がある。Hermes は検索順序を文書化しているが、衝突時のルールは文書化していない（[互換性に関する注意](#互換性に関する注意)を参照）。また、`apothem verify --harness hermes` を実行する |
 
 ## 設定ノブ
 

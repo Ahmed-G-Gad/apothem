@@ -2,14 +2,14 @@
 title: "/research-design"
 description: "/research-design — Opérationnalise les hypothèses en prédictions testables et conçoit l'étude (variables, contrôles, échantillon, puissance), puis gèle le plan d'analyse sous forme de préenregistrement."
 machineTranslated: true
-sourceHash: "7086ac7a2433484e"
+sourceHash: "6cf7d93ab189ec25"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rôle :** Investigateur principal (conception de l'étude)
 **Position dans le pipeline :** intermédiaire
 
-Opérationnalise les hypothèses en prédictions testables et conçoit l'étude ou l'expérience — variables, contrôles, échantillon, instruments, analyse de puissance, menaces à la validité — puis produit un préenregistrement qui gèle le plan d'analyse avant la collecte des données.
+Opérationnalise les hypothèses en prédictions testables et conçoit l'étude ou l'expérience — variables, conditions de contrôle, unité expérimentale, allocation et masquage, échantillon, instruments, analyse de puissance, menaces à la validité — puis produit un préenregistrement qui gèle le plan d'analyse avant la collecte des données.
 
 ## Invocation canonique
 
@@ -29,7 +29,7 @@ Avec arguments :
 
 ## Sorties
 
-`_inputs/study-design.md` (prédictions opérationnalisées, spécification des variables, contrôles, échantillon, instruments, analyse de puissance, menaces à la validité) + `_inputs/preregistration.md` (le plan d'analyse gelé).
+`_inputs/study-design.md` (prédictions opérationnalisées, spécification des variables, conditions de contrôle, unité expérimentale, plan d'allocation et de masquage, échantillon, instruments, analyse de puissance, menaces à la validité) + `_inputs/preregistration.md` (le plan d'analyse gelé, y compris les conditions de contrôle avec leurs critères de réussite, le plan d'allocation et de masquage, le traitement des résultats manquants et toute analyse intermédiaire).
 
 ## En aval
 
@@ -41,10 +41,18 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 1. **Charger le contexte** — Lire la synthèse et les hypothèses de la spécification.
 2. **Vérifier le Portail de Séquence** — Confirmer que `_inputs/proposal.md` (et les `_inputs/synthesis.md` et `_spec/research-spec.md` en amont) existe ; sinon, s'arrêter avec `Blocked: run /research-proposal first`.
-3. **Concevoir l'étude** — Opérationnaliser les prédictions ; spécifier variables, contrôles, échantillon, instruments, puissance ; énumérer les menaces à la validité.
-4. **Préenregistrer** — Geler le plan d'analyse avant toute collecte de données.
+3. **Concevoir l'étude** — Opérationnaliser les prédictions ; spécifier variables, conditions de contrôle et instruments ; fixer l'unité expérimentale, l'allocation à graine fixée, le plan de masquage et l'ordre d'exécution ; dimensionner l'échantillon pour l'analyse prévue ; énumérer les menaces à la validité.
+4. **Préenregistrer** — Geler le plan d'analyse, les conditions de contrôle, l'allocation et le masquage avant toute collecte de données.
 5. **Mettre à jour le manifeste de transfert** — Enregistrer les chemins de la conception de l'étude et du préenregistrement.
 6. **Émettre la conception** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Structure et dimensionnement
+
+- **La structure est fixée dans la conception, non dans l'analyse.** La conception nomme l'unité expérimentale et l'unité d'analyse, la procédure d'allocation avec son calendrier à graine fixée et, lorsque les unités sont incluses l'une après l'autre, sa dissimulation, qui est masqué (ou pourquoi le masquage est infaisable), les facteurs de nuisance et la manière dont chacun est bloqué, randomisé ou maintenu constant, ainsi que l'ordre d'exécution. Elle planifie le comparateur et les contrôles positifs et négatifs que l'expérience exécutera. Un contrôle ajouté après le gel est un écart divulgué.
+- **Les balayages à un seul facteur ne peuvent pas montrer une interaction.** Lorsque des composants ou des paramètres sont soupçonnés d'interagir, la conception ajoute un plan conjoint sur l'ensemble suspect et préenregistre l'interaction qu'elle revendique.
+- **Le plus petit effet d'intérêt provient de la spécification.** Il se rattache aux métriques de réussite de la spécification ou à un seuil de signification pratique que la synthèse fonde. L'effet rapporté par une étude antérieure borne la plage plausible et ne tient jamais lieu de plus petit effet d'intérêt.
+- **Dimensionner pour l'analyse qui sera exécutée.** L'objectif de chaque affirmation principale (supériorité, non-infériorité ou équivalence) et sa latéralité sont fixés dans la conception, et chacune est dotée d'une puissance calculée à son propre plus petit effet d'intérêt, au seuil par test que laisse la correction déclarée. Le N requis est rapporté comme une plage couvrant l'effet plausible ; lorsque la faisabilité plafonne N, le plus petit effet détectable à ce N est rapporté et le plus petit effet d'intérêt est déclaré non couvert par la puissance.
+- **Marges et simulation.** N compte des unités indépendantes et est majoré pour la corrélation intra-grappe ; la cible de collecte découle du N analysé au moyen d'un taux de perte consigné. Lorsqu'aucune forme close ne correspond à l'analyse prévue, la puissance est estimée par simulation, avec l'outil, la version, la graine et l'erreur de Monte-Carlo consignés, et une règle séquentielle fixe son nombre d'analyses intermédiaires et sa frontière dans le préenregistrement.
 
 ## Seuil de rigueur
 
@@ -55,7 +63,9 @@ Pour une étude porteuse de comparaison, la conception fixe, et préenregistre, 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Blocked: run /research-proposal first | Pas de plan de référence | Exécutez `/research-proposal` pour produire `_inputs/proposal.md` |
-| Conception sous-puissante | Échantillon trop petit pour l'effet | Réexécutez l'analyse de puissance ; redimensionnez l'échantillon |
+| Conception sous-puissante | Échantillon trop petit pour l'effet | Réexécutez l'analyse de puissance pour l'analyse prévue ; redimensionnez l'échantillon, ou rapportez le plus petit effet détectable et déclarez que le plus petit effet d'intérêt n'est pas couvert par la puissance |
+| Structure laissée à l'analyse | Unité, allocation, masquage ou ordre d'exécution non fixés dans la conception | Fixez-les dans la conception et le préenregistrement ; aucun test appliqué après coup ne sépare un facteur de confusion que le plan a intégré |
+| Estimation antérieure utilisée comme effet cible | L'effet rapporté par une seule étude tient lieu de plus petit effet d'intérêt | Fondez la cible sur les métriques de réussite de la spécification ; n'utilisez l'étude antérieure que pour borner la plage |
 | Plan d'analyse non gelé | Préenregistrement omis | Rédigez `_inputs/preregistration.md` avant la collecte des données |
 
 ## Exemples

@@ -2,7 +2,7 @@
 title: "Création d'un nouvel adaptateur d'environnement"
 description: "Runbook pour créer et publier un nouvel adaptateur d'environnement Apothem."
 machineTranslated: true
-sourceHash: "340d6137117f067e"
+sourceHash: "faa7ed1671f73dd4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,17 @@ intégration native dans Apothem ou en tant que paquet tiers.
 
 Suivez l'exemple [Création d'un adaptateur d'environnement](/docs/examples/authoring-a-harness-adapter)
 pour implémenter `HarnessAdapter` pour l'environnement cible.
+
+Si l'adaptateur écrit un modèle en texte brut (un fichier qui n'est ni JSON ni YAML)
+avec `mode: write_text` et `ownership_class: operator-owned`, `uninstall`
+supprime le fichier uniquement tant qu'il s'agit d'une copie non modifiée d'un modèle
+livré par Apothem. Lorsqu'une version ultérieure modifie le modèle, ajoutez le condensé SHA-256
+du texte précédent à la liste `earlier_digests` de cette entrée du manifeste dans le même
+changement, sinon `uninstall` laisse en place chaque copie non modifiée écrite par la version
+antérieure. Calculez le condensé du texte à la dernière étiquette de version avec
+`git show <tag>:<template path> | sha256sum` ; le modèle ne doit contenir aucun
+jeton de chemin `${...}`. `tests/unit/test_template_digests.py` échoue lorsqu'un modèle
+livré n'est pas pris en compte.
 
 ### 2. Rédigez la page de documentation
 

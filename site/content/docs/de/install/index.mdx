@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,21 +72,21 @@ Nach der Installation stehen der Apothem-Befehlssatz, die mitgelieferten
 delegierten Worker, die Skills und die vier
 [Ausgabestile](/docs/reference/output-styles) (wählen Sie einen mit
 `/output-style` oder über `/config`) in jeder Claude Code-Sitzung zur
-Verfügung. Plugin-Befehle tragen das Präfix des Plugins: `/apothem:plan-spec`,
-`/apothem:security-audit` und die übrigen. Claude Code akzeptiert auch die
-Kurzform (`/plan-spec`), solange kein anderer Befehl diesen Namen verwendet.
-Zwei Namen belegt Claude Code selbst: `/plan` wechselt in den Plan-Modus, und
-`/code-review` führt das mitgelieferte Review aus; geben Sie daher
-`/apothem:plan` und `/apothem:code-review` für die Apothem-Befehle ein. Wenn
-statt des Plugins die Apothem-Engine die Installation in Claude Code vornimmt,
-werden Befehle zu persönlichen Skills unter `~/.claude/skills/` ohne Präfix,
-und ein persönlicher `code-review`-Skill ersetzt das mitgelieferte
-`/code-review` (sein Alias `/review` führt weiterhin das mitgelieferte aus).
-Zwei Namen, `projectify` und `workflow`, werden sowohl als Befehl als auch als
-Skill ausgeliefert; Claude Code führt den Skill aus, wenn beides existiert,
-daher führt das Plugin den Skill aus, und die Engine-Installation schreibt nur
-den Skill, nicht einen aus dem Befehl abgeleiteten Skill, nach
-`~/.claude/skills/<name>/`. Siehe [Slash-Befehle](/docs/reference/commands) für
+Verfügung. Das Plugin liefert jeden Befehl als Skill aus, eine `SKILL.md`,
+deren bei Bedarf geladene Details in einem `references/`-Ordner daneben liegen;
+daher ruft Claude Code ihn mit dem Präfix des Plugins auf: `/apothem:plan-spec`,
+`/apothem:security-audit` und die übrigen. Zwei Namen belegt Claude Code
+selbst: `/plan` wechselt in den Plan-Modus, und `/code-review` führt das
+mitgelieferte Review aus; geben Sie daher `/apothem:plan` und
+`/apothem:code-review` für die Apothem-Befehle ein. Wenn statt des Plugins die
+Apothem-Engine die Installation in Claude Code vornimmt, werden dieselben
+Skills ohne Präfix nach `~/.claude/skills/` geschrieben, und ein persönlicher
+`code-review`-Skill ersetzt das mitgelieferte `/code-review` (sein Alias
+`/review` führt weiterhin das mitgelieferte aus). Zwei Namen, `projectify` und
+`workflow`, sind außerdem native Skills; das Plugin und die Engine-Installation
+liefern den nativen Skill aus, nicht einen aus dem Befehl abgeleiteten Skill.
+Siehe [Claude Code](/docs/harnesses/claude-code#command-skills-und-referenzdateien)
+dazu, wie die Befehle aufgeteilt sind, und [Slash-Befehle](/docs/reference/commands) für
 den vollständigen Befehlskatalog.
 
 **Verifizieren:** Führen Sie `/plugin` innerhalb von Claude Code aus und
@@ -348,13 +348,21 @@ Fügen Sie das Repository als Plugin-Marketplace hinzu und installieren Sie dann
 das Plugin — der Befehl enthält den exakten Host- und Harness-Slug:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+Die beiden `--sparse`-Pfade laden nur die Marketplace-Liste und das Plugin,
+nicht das ganze Repository; ein vollständiger Klon kann auf einem langsamen
+Datenträger, etwa einem Windows-Laufwerk unter WSL, das 30-Sekunden-Klonlimit
+des Hosts überschreiten.
+
 Wie die Erweiterungen aus Kanal 5 und Kanal 6 ist dies ein **Bootstrap**, der
-die Engine per Shell aufruft. Materialisieren Sie den vollständigen Harness,
-indem Sie die Installation darüber ausführen:
+die Engine per Shell aufruft. Das Plugin bündelt einen Einstiegs-Skill; sein
+Manifest ist eine `plugin.json` im Stammverzeichnis, und die
+[Harness-Seite des Plugin-Hosts](/docs/harnesses/codex#codex-plugin) beschreibt
+den Aufbau und was das Plugin der Engine überlässt. Materialisieren Sie den
+vollständigen Harness, indem Sie die Installation darüber ausführen:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

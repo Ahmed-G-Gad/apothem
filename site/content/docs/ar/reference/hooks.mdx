@@ -2,7 +2,7 @@
 title: "الخطّافات"
 description: "معالِجات أحداث الأدوات التي تنطلق عند SessionStart وPreToolUse وPostToolUse وStop، وتُحمِّل سياقات رسائل تفرض عزل git وانضباط الخطط، مع عقد وقت تشغيل مُختبَر وحالة لكل مستخدم."
 machineTranslated: true
-sourceHash: "3a6c32f33850537e"
+sourceHash: "2fe3999ec76b34d3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,15 +11,23 @@ sourceHash: "3a6c32f33850537e"
 الخاص بـ <bdi>Claude Code</bdi> (تثبيت المحرّك) أو في <bdi>`hooks.json`</bdi> الخاص
 بالإضافة (تثبيت الإضافة)، وفي ملف الخطّافات <bdi>`hooks.json`</bdi> الخاص بـ
 <bdi>Codex</bdi>، وفي خريطة الخطّافات في <bdi>`settings.json`</bdi> الخاص بـ
-<bdi>Qwen Code</bdi>.
+<bdi>Qwen Code</bdi>، وفي مفتاح الخطّافات في
+<bdi>`.codebuddy/settings.local.json`</bdi> الخاص بـ <bdi>CodeBuddy</bdi> (<bdi>SessionStart</bdi>
+و<bdi>PostToolUse</bdi> فقط)، وفي ملف خطّافات <bdi>Kiro</bdi> <bdi>`.kiro/hooks/apothem.json`</bdi>
+(<bdi>SessionStart</bdi> فقط)، وفي ملف خطّافات <bdi>GitHub Copilot</bdi>
+<bdi>`.github/hooks/apothem.json`</bdi> (<bdi>sessionStart</bdi> و<bdi>postToolUse</bdi>
+فقط)، وفي مفتاح الخطّافات في <bdi>`.devin/config.local.json`</bdi> الخاص بـ
+<bdi>Windsurf</bdi> (<bdi>Devin Local</bdi>) (<bdi>SessionStart</bdi> و<bdi>PostToolUse</bdi>
+فقط)، وفي ملف خطّافات المشروع الخاص بـ <bdi>Cursor</bdi> <bdi>`.cursor/hooks.json`</bdi>
+(<bdi>sessionStart</bdi> فقط).
 
 | الحدث | المهلة | الغرض |
 |-------|--------:|---------|
-| <bdi>SessionStart</bdi> | 30 ثانية | قراءة الذاكرة، وفحص حالة الخطة، والإبلاغ عن الجاهزية؛ وبعد الضغط، تسليم سياق الاستعادة |
+| <bdi>SessionStart</bdi> | 30 ثانية | قراءة الذاكرة، وفحص حالة الخطة، والإبلاغ عن الجاهزية؛ وبعد الضغط، تسليم سياق الاستعادة؛ والتنبيه إلى قاعدة معرفة تغيّرت منذ خطّ أساسها |
 | <bdi>PreCompact</bdi> | 30 ثانية | التحقّق من إخراج الحالة خارجيًا قبل الضغط (<bdi>Codex</bdi>، و<bdi>Qwen Code</bdi>؛ غير مُسجَّل على <bdi>Claude Code</bdi>) |
 | <bdi>PostCompact</bdi> | 30 ثانية | استعادة حالة العمل بعد الضغط (<bdi>Codex</bdi>، و<bdi>Qwen Code</bdi>؛ غير مُسجَّل على <bdi>Claude Code</bdi>) |
 | <bdi>Stop</bdi> | 60 ثانية | بروتوكول نهاية الجلسة، اختياري |
-| <bdi>PostToolUse</bdi> | 10 ثوانٍ | تنبيه استباقي بالضغط، مرتين على الأكثر لكل جلسة |
+| <bdi>PostToolUse</bdi> | 10 ثوانٍ | تنبيه بحجم السياق: حفظ الحالة عند العلامة الأولى، وعند الثانية يُبلَّغ المُشغِّل بأن الجلسة طويلة؛ مرتين على الأكثر لكل دورة ضغط؛ ويعمل في الخلفية على <bdi>Claude Code</bdi> |
 | <bdi>PreToolUse</bdi> (الصدفة: <bdi>Bash</bdi>، و<bdi>PowerShell</bdi>، و<bdi>`run_shell_command`</bdi>) | 10 ثوانٍ | عزل مُنتَجات <bdi>Git</bdi>، ومحلّية الخطط، وحارس التقييم الديناميكي |
 | <bdi>PreToolUse (Write/Edit/NotebookEdit/apply_patch)</bdi> | 10 ثوانٍ | عزل مراجع الخطط، وترويسة التأليف، ومحلّية الخطط، وحارسا الاعتماديات والتقييم الديناميكي |
 | <bdi>PreToolUse (AskUserQuestion)</bdi> | 10 ثوانٍ | سلامة صياغة الواسم <bdi>`(Recommended)`</bdi> |
@@ -34,10 +42,21 @@ sourceHash: "3a6c32f33850537e"
 <bdi>`<harness-root>/hooks/`</bdi>. تستخدم مُدخَلات <bdi>Claude Code</bdi> صيغة التنفيذ
 المباشر (<bdi>`command`</bdi> مع <bdi>`args`</bdi>)، فلا تحتاج إلى صدفة. وتُشغِّل إضافة
 <bdi>Claude Code</bdi> كل خطّاف بالصيغة
-<bdi>`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`</bdi>،
+<bdi>`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]`</bdi>،
 في صدفة الخطّافات الافتراضية لـ <bdi>Claude Code</bdi> (<bdi>`sh`</bdi> على
 <bdi>macOS</bdi> و<bdi>Linux</bdi>، و<bdi>Git Bash</bdi> على <bdi>Windows</bdi>)؛ ويعثر
-برنامج التمهيد على مُفسِّر <bdi>Python 3.10+</bdi> ويُشغِّل المُوزِّع المُحزَّم. وعلى
+برنامج التمهيد على مُفسِّر <bdi>Python 3.10+</bdi> ويُشغِّل المُوزِّع المُحزَّم. ويُخزِّن
+المُفسِّرَ الذي عثر عليه مؤقتًا في <bdi>`interpreter-path`</bdi>
+(<bdi>`interpreter-path-ps1`</bdi> لـ <bdi>`bootstrap.ps1`</bdi>) تحت دليل حالة الخطّافات
+(أدناه) ويُعيد استخدامه ما دام المُفسِّر لا يزال موجودًا، فيجري فحص <bdi>PATH</bdi>
+مرة واحدة بدلًا من أن يجري قبل كل استدعاء أداة؛ احذف ملف التخزين المؤقت لفرض فحص
+جديد. ولا يُعتَدّ إلا بدليل حالة مطلق وبمسار مُخزَّن مطلق.
+
+يُسجِّل كل سطح مُدخَل مُوزِّع واحدًا لكل حدث ومُطابِق، يسرد كل رسالة يُقيِّمها ذلك
+المُطابِق: عملية واحدة تقرأ الحمولة مرة واحدة، وتُشغِّل كل حارس، وتُجيب بغلاف واحد،
+فتبدأ عملية <bdi>Write</bdi> مُوزِّعًا واحدًا بدلًا من واحد لكل حارس. ويُشغِّل تثبيت
+المحرّك لـ <bdi>Claude Code</bdi> أيضًا بوابة المطابقة (<bdi>`gate.py --hook`</bdi>) على
+<bdi>Write</bdi> و<bdi>Edit</bdi> بوصفها مُدخَلًا مستقلًا. وعلى
 <bdi>Windows</bdi> من دون <bdi>Git for Windows</bdi>، استخدم تثبيت المحرّك
 (<bdi>`apothem install --harness claude-code`</bdi>)، الذي لا تحتاج خطّافاته ذات صيغة
 التنفيذ المباشر إلى صدفة. المُوزِّع برنامج نصّي مستقل يعتمد على المكتبة القياسية
@@ -48,11 +67,92 @@ sourceHash: "3a6c32f33850537e"
 <bdi>`hooks/lib/resolve_root.py`</bdi> لحلّ جذر المنظومة، ويُفوِّض إلى
 <bdi>`hooks/emit_hook_context.py`</bdi> و<bdi>`hooks/session_start_bootstrap.py`</bdi>.
 
+## عقود المورّدين
+
+يُشغِّل إطار العمل الذي ليس <bdi>Claude Code</bdi> المُوزِّعَ نفسه مع
+<bdi>`--contract <id>`</bdi> بعد البرنامج النصّي، مثلًا
+<bdi>`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`</bdi>.
+ويُترجِم العقد (<bdi>`hooks/lib/vendor_contract.py`</bdi>) تهجئات المورّد للأحداث وأسماء
+الأدوات ومفاتيح الحمولة إلى شكل <bdi>Claude</bdi> الذي تقرؤه المُعالِجات، ويُعيد كتابة
+الغلاف إلى الشكل الذي يقرؤه المورّد، ويُسقِط الحدث الذي لا يُسلِّمه المورّد إلى النموذج.
+ومن دون الراية لا يُترجَم شيء ويكون الخرج غلاف <bdi>Claude</bdi>، بايتًا ببايت. والراية
+جزء من سطر الأوامر المُوثَّق للمُوزِّع: <bdi>`dispatch.py [--contract <id>]
+<Event> [<message> ...]`</bdi>.
+
+| العقد | يقرأ | الخرج | الأحداث المُسلَّمة |
+| --- | --- | --- | --- |
+| <bdi>`codebuddy`</bdi> | دخل <bdi>Claude</bdi> القياسي | غلاف <bdi>Claude</bdi> | <bdi>SessionStart</bdi>، و<bdi>UserPromptSubmit</bdi>، و<bdi>PostToolUse</bdi> |
+| <bdi>`devin`</bdi> | دخل <bdi>Claude</bdi> القياسي بأسماء أدوات بأحرف صغيرة (<bdi>`exec`</bdi>، و<bdi>`write`</bdi>، و<bdi>`edit`</bdi>)؛ وجذر المشروع من <bdi>`DEVIN_PROJECT_DIR`</bdi> | غلاف <bdi>Claude</bdi> | <bdi>SessionStart</bdi>، و<bdi>UserPromptSubmit</bdi>، و<bdi>PostToolUse</bdi> |
+| <bdi>`cursor`</bdi> | أحداث بصيغة <bdi>camelCase</bdi>، و<bdi>`conversation_id`</bdi>، و<bdi>`workspace_roots`</bdi> | <bdi>`{"additional_context": ...}`</bdi> | <bdi>SessionStart</bdi> |
+| <bdi>`copilot`</bdi> | <bdi>`sessionId`</bdi> و<bdi>`toolName`</bdi> و<bdi>`toolArgs`</bdi> بصيغة <bdi>camelCase</bdi>، أو الصيغة <bdi>PascalCase</bdi> مع <bdi>snake_case</bdi> | <bdi>`{"additionalContext": ...}`</bdi> | <bdi>SessionStart</bdi>، و<bdi>PostToolUse</bdi>، و<bdi>Notification</bdi> |
+| <bdi>`kiro`</bdi> | دخل قياسي شبيه بدخل <bdi>Claude</bdi>، ومُعرِّفات أدوات <bdi>Kiro</bdi> (<bdi>`execute_bash`</bdi>، و<bdi>`fs_write`</bdi>، و<bdi>`str_replace`</bdi>) | نص مجرّد | <bdi>SessionStart</bdi>، و<bdi>UserPromptSubmit</bdi> |
+| <bdi>`claude`</bdi> | دخل <bdi>Claude</bdi> القياسي | غلاف <bdi>Claude</bdi> | كل حدث |
+
+يُثبِّت مُحوّلٌ من <bdi>Apothem</bdi> اليوم العقودَ <bdi>`codebuddy`</bdi> و<bdi>`copilot`</bdi>
+و<bdi>`cursor`</bdi> و<bdi>`devin`</bdi> و<bdi>`kiro`</bdi> (<bdi>`devin`</bdi> يُثبِّته محوّل
+<bdi>Windsurf</bdi>)؛ ويُثبِت العقد <bdi>`claude`</bdi> أن سطر الأوامر الافتراضي لم يتغيّر.
+ويبقى المُوزِّع استشاريًا في ظل كل عقد: لا يحمل أي شكل إذنًا، ولا قرارًا، ولا حظرًا،
+ولا دخل أداة مُعادًا كتابته.
+
+يُحمِّل <bdi>Cursor</bdi> و<bdi>Devin Local</bdi> الخطّافات التي تحملها ملفات إعدادات
+<bdi>Claude Code</bdi> إلى جانب خطّافاتهما، لذا قد تعمل مجموعتان عند وجود تثبيت
+<bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> على الجهاز نفسه. ويُسلَّم تمهيد
+<bdi>SessionStart</bdi> مرة واحدة: يتشارك أمر المورّد الخاص
+(<bdi>`--contract cursor`</bdi> أو <bdi>`--contract devin`</bdi>) ونسخة <bdi>Claude Code</bdi>،
+وهي سطر الأوامر الافتراضي، علامةً واحدة لكل جلسة ومصدر في دليل حالة الخطّافات، وأيّهما
+يعمل ثانيًا يبقى صامتًا. ولا يشارك سطر الأوامر الافتراضي إلا عندما تُسمّي بيئة العملية
+المضيف (<bdi>`CURSOR_PROJECT_DIR`</bdi> أو <bdi>`CURSOR_VERSION`</bdi> أو
+<bdi>`DEVIN_PROJECT_DIR`</bdi>)؛ وفي ظل <bdi>Claude Code</bdi> و<bdi>Codex</bdi>
+و<bdi>Qwen Code</bdi> لا يقرأ العلامة أبدًا. وتسري العلامة عشر ثوانٍ، فيظل بدء لاحق
+للجلسة نفسها، مثل ضغط ثانٍ، يُسلِّم سياق استعادته. ولا يُزال تكرار أي عدّاد لـ
+<bdi>PostToolUse</bdi>، لذا يعمل عدّاد حجم السياق في الموضعين ويبلغ عتباته مبكرًا.
+ويطبع التثبيت ملاحظة تُسمّي مفتاح المورّد لإيقاف الاستيراد (في <bdi>Cursor</bdi>:
+"Include Third-Party Plugins, Skills, and Other Configs"؛ وفي <bdi>Devin</bdi>:
+<bdi>`read_config_from.claude`</bdi>).
+
+لا يُسجَّل أمر إلا حيث يُسلِّم المورّد خرجه إلى النموذج. يُضيف <bdi>Kiro</bdi> الخرج
+القياسي للخطّاف إلى السياق لـ <bdi>`SessionStart`</bdi> و<bdi>`UserPromptSubmit`</bdi>
+فقط، لذا يُسجِّل ملف <bdi>Kiro</bdi> الحدث <bdi>`SessionStart`</bdi> وحده. ويقرأ
+<bdi>Copilot</bdi> القيمة <bdi>`additionalContext`</bdi> من <bdi>`sessionStart`</bdi>
+و<bdi>`postToolUse`</bdi> ولا يقرأ من <bdi>`preToolUse`</bdi> إلا حقول الأذونات، لذا يُسجِّل
+ملف <bdi>Copilot</bdi> هذين الحدثين، بأسمائهما بصيغة <bdi>camelCase</bdi>، ولا يُسجِّل أي
+حارس. ويحمل كل مُدخَل في <bdi>Copilot</bdi> أمرًا لـ <bdi>`bash`</bdi> وأمرًا لـ
+<bdi>`powershell`</bdi>. وكلا الملفين مملوك لـ <bdi>Apothem</bdi> ويُسمّي المُفسِّر ومسار
+المشروع على الجهاز الذي أجرى التثبيت؛ وتشرح صفحات أُطر العمل ما يعنيه ذلك لملف
+يُودِعه مستودع.
+
+يقرأ <bdi>Devin Local</bdi> القيمة <bdi>`additionalContext`</bdi> من <bdi>`SessionStart`</bdi>
+و<bdi>`UserPromptSubmit`</bdi> و<bdi>`PostToolUse`</bdi> ولا يُوثِّق شيئًا لـ
+<bdi>`PreToolUse`</bdi>، لذا يحمل تسجيل <bdi>Windsurf</bdi> الحدثين <bdi>`SessionStart`</bdi>
+و<bdi>`PostToolUse`</bdi>، من دون مُطابِق (مُطابِق <bdi>Devin</bdi> تعبير نمطي، والمُطابِق
+المحذوف يُطابِق كل أداة). ويُوضَع في ملف التجاوز المحلي
+<bdi>`.devin/config.local.json`</bdi>، الذي يُوثِّقه <bdi>Devin</bdi> بوصفه مُتجاهَلًا في
+<bdi>git</bdi> ويستثنيه من <bdi>git</bdi> بنفسه عبر <bdi>`.git/info/exclude`</bdi>.
+يُضيف خطّاف <bdi>`sessionStart`</bdi> في <bdi>Cursor</bdi> القيمة
+<bdi>`additional_context`</bdi> إلى السياق الأولي للمحادثة؛ وتُسجِّل النسخة الأولى ذلك
+الحدث وحده. والملف <bdi>`.cursor/hooks.json`</bdi> في <bdi>Cursor</bdi> هو ملف خطّافات
+المشروع الوحيد، لذا فهو ملك المُشغِّل: يدمج التثبيت فيه مُدخَلًا واحدًا، ويحتفظ
+بمُدخَلات المُشغِّل ومفاتيحه، ويرفض ملفًا لا يستطيع إعادة كتابته من دون فقد، ويُميِّز
+مُدخَله الخاص بمسار المُوزِّع في الأمر. ويُشغِّل تطبيق سطح المكتب لـ <bdi>Cursor</bdi>
+أوامر الخطّافات عبر <bdi>PowerShell</bdi> على <bdi>Windows</bdi>، لذا يبدأ الأمر على مضيف
+<bdi>Windows</bdi> بـ <bdi>`& `</bdi>.
+
+عبر الملفات الخمسة كلها، يكون المُدخَل لـ <bdi>Apothem</bdi> عندما يُشغِّل أمره
+<bdi>`.apothem/support/[<harness>/]hooks/dispatch.py`</bdi> مع <bdi>`--contract <id>`</bdi>،
+أيًّا كان مسار المشروع الذي كُتب تحته. لذا يحتفظ المشروع المُعاد تسميته أو المنقول أو
+المُستنسَخ بمجموعة واحدة من المُدخَلات، ولا يُستبدَل خطّاف من خطّافاتك أو يُزال أبدًا، مثل
+<bdi>`hooks/dispatch.py`</bdi> في شجرتك الخاصة أو <bdi>`python -m apothem.conformity.gate`</bdi>.
+ويُبلِغ <bdi>`apothem verify`</bdi> عن غياب التسجيل حالما لا يبقى في الملف أي مُدخَل من
+مُدخَلات <bdi>Apothem</bdi>، ويُبلِغ إلغاء التثبيت الذي لا يستطيع قراءة الملف عنه بوصفه
+مُتخطًّى. ويُرفَض عند التثبيت مسار المشروع أو المُفسِّر الذي يحتوي على <bdi>`$`</bdi> أو
+علامة اقتباس خلفية أو علامة اقتباس مزدوجة أو شرطة مائلة عكسية، مع تسمية المسار، لأن
+الأمر المُقتبَس سيُشغِّل ملفًا مختلفًا.
+
 ## سياقات الرسائل
 
 تعيش سياقات <bdi>Markdown</bdi> لكل حدث تحت <bdi>`src/apothem/hooks/messages/`</bdi>:
 
-- دورة حياة الجلسة: <bdi>`sessionstart.md`</bdi>، و<bdi>`precompact.md`</bdi>،
+- دورة حياة الجلسة: <bdi>`sessionstart.md`</bdi>، و<bdi>`skill-index.md`</bdi>، و<bdi>`precompact.md`</bdi>،
   و<bdi>`postcompact.md`</bdi>، و<bdi>`stop.md`</bdi>،
   و<bdi>`posttooluse-proactive-compaction.md`</bdi>
 - استدعاءات الصدفة: <bdi>`pretooluse-bash.md`</bdi>، و<bdi>`pretooluse-bash-plan-guard.md`</bdi>
@@ -68,24 +168,69 @@ sourceHash: "3a6c32f33850537e"
 <bdi>`postcompact.md`</bdi> عندما تُستأنَف الجلسة بعد الضغط، لأن <bdi>Claude Code</bdi>
 لا يُمرِّر مُخرَجات خطّاف <bdi>PreCompact</bdi> أو <bdi>PostCompact</bdi> إلى المساعد.
 
+الملف <bdi>`skill-index.md`</bdi> مُولَّد، لا مكتوب: يُصيِّره
+<bdi>`scripts/dev/generate_skill_index.py`</bdi> من فهرس المهارات والأوامر، سطرًا واحدًا لكل
+مجموعة مهام، مع عرض المهارات اليدوية بالصيغة <bdi>`/apothem:<name>`</bdi>. وعلى
+<bdi>Claude Code</bdi> يُضيفه خطّاف <bdi>SessionStart</bdi> إلى سياق الجلسة عندما يكون الملف
+موجودًا. وهو موجود لأن <bdi>Claude Code</bdi> يُسقِط أوصاف المهارات من قائمته حالما تتجاوز
+القائمة ميزانيتها من الأحرف، ويُبقي الفهرس كل مهارة قابلة للعثور عليها بحسب المهمة. ويعرض
+تثبيت الإضافة المهارات اليدوية بالصيغة <bdi>`/apothem:<name>`</bdi>؛ ويُسقِط تثبيت المحرّك
+البادئة. ويبقى النص دون 1,600 حرف، ويُخفِق <bdi>`generate_skill_index.py
+--check`</bdi> عندما لا يعود الملف المُودَع مطابقًا للفهرس.
+
+عندما يعمل <bdi>Apothem</bdi> بوصفه إضافة لـ <bdi>Claude Code</bdi> وحدها، لا يُحمَّل أي
+ملف قواعد عند الإطلاق. فيُضيف خطّاف <bdi>SessionStart</bdi> حينئذٍ مؤشّرًا قصيرًا إلى الدليل
+المُحزَّم <bdi>`rules/`</bdi>. وإذا كان ذلك الدليل يحتوي على <bdi>`apothem-rule-index.md`</bdi>،
+فإن المؤشّر يُخبر الجلسة أيضًا بأن تقرأ القواعد الأساسية الأربع أولًا، لأن لا شيء يُحمِّلها
+في هذا الوضع (<bdi>`agnostic-posture`</bdi>، و<bdi>`authority-inquiry`</bdi>،
+و<bdi>`session-closure`</bdi>، و<bdi>`context-management`</bdi>)، ويُسمّي الفهرس، الذي
+يقول أي قاعدة تُقرأ لأي مهمة. ولا يُدرَج نص الفهرس مضمّنًا.
+
+عندما يحتوي المشروع على قاعدة معرفة صنعتها مهارة <bdi>`knowledge-wiki`</bdi>، يُقارن خطّاف
+<bdi>SessionStart</bdi> بصمتها بالبصمة المُسجَّلة عند آخر خطّ أساس، وإذا اختلفتا، يُضيف
+سطرًا واحدًا يقترح وضع الانجراف في المهارة (<bdi>`--mode drift --kb <path>`</bdi>). والبصمة
+هي عدد الصفحات مع أحدث مُدخَل في السجل؛ والنسخة المُسجَّلة هي أحدث سطر <bdi>`baseline`</bdi>
+في <bdi>`log.md`</bdi> الخاص بالقاعدة، الذي لا يكتبه إلا وضع الانجراف. ويفحص الخطّاف أربعة
+مسارات تحت جذر المشروع، بالترتيب: <bdi>`knowledge-base/`</bdi>، و<bdi>`wiki/`</bdi>،
+و<bdi>`docs/knowledge-base/`</bdi>، و<bdi>`docs/wiki/`</bdi>، ولا يعتدّ إلا بدليل يحتوي على
+<bdi>`index.md`</bdi> و<bdi>`log.md`</bdi> كليهما. والمشروع الذي لا يحتوي على قاعدة يدفع أقل
+من جزء من الألف من الثانية. ومع وجودها، يقرأ الخطّاف على الأكثر آخر 256 KiB من
+<bdi>`log.md`</bdi> ويسرد ثلاثة أدلّة مسطّحة؛ ولا يجتاز الشجرة أبدًا ولا يكتب أبدًا. ويحمل
+السطر مسارًا ثابتًا، وتاريخًا، وعددَي صفحات، ولا يحمل أبدًا نصًّا من القاعدة. ويبقى صامتًا
+عندما لا توجد قاعدة، أو لا يوجد خطّ أساس، أو لا يوجد تغيير، أو يوجد ملف لا يستطيع قراءته،
+ويتكرّر في كل جلسة إلى أن يُسجِّل وضع الانجراف خطّ أساس جديدًا. والقاعدة الموجودة في أي
+مسار آخر تعمل في كل أوضاع المهارة لكنها لا تحصل على سطر عند بدء الجلسة.
+
 يُحمِّل المُوزِّع كل ملف سياق عندما ينطلق حدثه وتكون وسيطة سياقه مُسجَّلة في ملف
 الإعدادات. ويُزال سطر تعليق الترخيص وقسم <bdi>`## Bindings`</bdi> الختامي قبل أن يصل
 النص إلى المساعد؛ فكلاهما موجود للمشرفين ولبوابة المطابقة.
+
+الحارس الذي لا يجد شيئًا لا يحقن شيئًا. والحارس الذي ينطلق لا يحقن إلا قسم
+<bdi>`## Advisory`</bdi> من رسالته، مملوءًا بما وجده (المسار، والمُعرِّف، والبدائية)، متبوعًا
+بـ <bdi>`Full procedure: <message-file>`</bdi>. وبقية الملف هي الإجراء الكامل، الذي لا
+يقرؤه المساعد إلا عندما يحتاج إلى التفاصيل. وتحكم الحرّاس على "داخل المشروع" قياسًا إلى
+جذر <bdi>git</bdi> فوق دليل العمل لاستدعاء الأداة، ولا تحكم أبدًا قياسًا إلى الشجرة التي
+ثُبِّت فيها الخطّاف.
 
 ## عقد وقت التشغيل
 
 يفي كل أمر خطّاف مُسجَّل بالعقد نفسه، الذي يفحصه
 <bdi>`tests/hooks/test_hook_contract.py`</bdi> على الإضافة، وعلى تثبيت المحرّك لـ
-<bdi>Claude Code</bdi>، وعلى <bdi>Codex</bdi>، وعلى <bdi>Qwen Code</bdi>:
+<bdi>Claude Code</bdi>، وعلى <bdi>Codex</bdi>، وعلى <bdi>Qwen Code</bdi>، وعلى تثبيت
+<bdi>CodeBuddy</bdi> (تُفحَص ملفات <bdi>Kiro</bdi> و<bdi>Copilot</bdi> و<bdi>Cursor</bdi>
+و<bdi>Windsurf</bdi> قياسًا إلى عقودها بواسطة
+<bdi>`tests/hooks/test_native_hook_registrations.py`</bdi>، وتُشغَّل كما يُشغِّلها المورّدون
+بواسطة <bdi>`tests/integration/test_native_hook_files_roundtrip.py`</bdi>،
+و<bdi>`test_cursor_hooks_roundtrip.py`</bdi>، و<bdi>`test_windsurf_hooks_roundtrip.py`</bdi>):
 
 - **يعمل من نسخة مسحوبة عادية.** يخرج بالرمز 0، ويكون الخرج القياسي فارغًا أو كائن
   <bdi>JSON</bdi> واحدًا. ولا يعتمد أي خطّاف على بِتّ التنفيذ لملف.
-- **مُسجَّل مرة واحدة.** تظهر كل تركيبة من الحدث والمُطابِق والرسالة مرة واحدة لكل
-  سطح، فلا يعمل خطّاف أبدًا مرتين على استدعاء أداة واحد.
+- **مُسجَّل مرة واحدة.** لكل حدث ومُطابِق مُدخَل مُوزِّع واحد لكل سطح، يسرد كل رسالة
+  يُقيِّمها، فلا يعمل حارس أبدًا مرتين على استدعاء أداة واحد.
 - **محدود.** لا يتجاوز أي نص مُصدَر 10,000 حرف. ولا يتكلّم حارس الاعتماديات إلا عندما
   تستهدف الكتابة بيان اعتماديات أو ملف قفل، ولا يتكلّم حارس التقييم الديناميكي إلا
   عندما يحتوي المحتوى أو الأمر على بدائية تقييم أو إلغاء تسلسل غير آمن. وينطلق تنبيه
-  الضغط مرتين على الأكثر لكل جلسة.
+  الضغط مرتين على الأكثر لكل دورة ضغط.
 - **يستخدم القنوات التي يُسلِّمها إطار العمل.** تنتقل توجيهات <bdi>PreToolUse</bdi> في
   <bdi>`hookSpecificOutput`</bdi>؛ ويُعيد حارس <bdi>AskUserQuestion</bdi> القيمة
   <bdi>`additionalContext`</bdi>، أو <bdi>`permissionDecision: deny`</bdi> في ظل
@@ -94,7 +239,7 @@ sourceHash: "3a6c32f33850537e"
   مع حدث <bdi>SessionStart</bdi> الذي يكون مصدره <bdi>`compact`</bdi>.
 - **لا يُشغِّل شيفرة المشروع أبدًا.** يَحُلّ برنامج التمهيد شجرته المُثبَّتة الخاصة به
   ولا يأخذ أبدًا برنامجًا نصّيًا من المشروع المفتوح. وتُقرأ توجيهات بدء الجلسة من
-  الشجرة المُثبَّتة؛ ولا يُقرأ دليل المشروع إلا لملخّصات الخطط والذاكرة.
+  الشجرة المُثبَّتة؛ ولا يُقرأ دليل المشروع إلا لملخّصات الخطط والذاكرة ولفحص انجراف قاعدة المعرفة.
 - **يُخفِق بصورة مفتوحة.** ملف الرسالة المفقود، أو المُفسِّر المفقود، أو الحالة
   التالفة يُنتِج الخروج بالرمز 0 وغلافًا صالحًا.
 
@@ -104,9 +249,15 @@ sourceHash: "3a6c32f33850537e"
 | <bdi>`APOTHEM_SESSION_END_ENABLED`</bdi> | مُعطَّل | القيم <bdi>`1`</bdi> أو <bdi>`true`</bdi> أو <bdi>`yes`</bdi> أو <bdi>`on`</bdi> تُفعِّل بروتوكول نهاية الجلسة عند <bdi>Stop</bdi>. وخطّاف <bdi>Stop</bdi> الذي يُعيد سياقًا يجعل المساعد يتابع، لذا يُكلِّف البروتوكول دورًا إضافيًا واحدًا لكل جلسة؛ ولا ينطلق أبدًا عند توقّف يلي أصلًا متابعةً دفعها خطّاف |
 | <bdi>`APOTHEM_SESSION_END_MIN_STOPS`</bdi> | <bdi>`3`</bdi> | عدد نهايات الأدوار قبل أن يجوز انطلاق بروتوكول نهاية الجلسة |
 | <bdi>`APOTHEM_PROACTIVE_COMPACTION_ENABLED`</bdi> | مُفعَّل | القيم <bdi>`0`</bdi> أو <bdi>`false`</bdi> أو <bdi>`no`</bdi> أو <bdi>`off`</bdi> تُسكِت تنبيه الضغط |
-| <bdi>`APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD`</bdi> | <bdi>`18`</bdi> | استدعاءات الأدوات لكل نافذة تنبيه |
-| <bdi>`APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD`</bdi> | <bdi>`20000`</bdi> | بايتات مُخرَجات الأدوات لكل نافذة تنبيه |
+| <bdi>`APOTHEM_CONTEXT_WINDOW_TOKENS`</bdi> | غير مضبوط | حجم نافذة السياق؛ معه (أو مع <bdi>`CLAUDE_CODE_AUTO_COMPACT_WINDOW`</bdi> الخاص بـ <bdi>Claude Code</bdi>) تنطلق التنبيهات عند 50% و75% من النافذة، وإلا فعند 120,000 و250,000 رمز |
+| <bdi>`APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD`</bdi> | <bdi>`18`</bdi> | استدعاءات الأدوات لكل نافذة تنبيه، ولا تُستخدَم إلا عندما يتعذّر قياس حجم السياق |
+| <bdi>`APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD`</bdi> | <bdi>`20000`</bdi> | بايتات مُخرَجات الأدوات لكل نافذة تنبيه، ولا تُستخدَم إلا عندما يتعذّر قياس حجم السياق |
 | <bdi>`APOTHEM_HOOK_STATE_DIR`</bdi> | انظر أدناه | دليل حالة الخطّافات لكل جلسة |
+
+يقيس تنبيه الضغط السياقَ من أحدث سجل استخدام في نصّ الجلسة (رموز الدخل مع الرموز
+المُخزَّنة مؤقتًا)، فيعكس ما يحمله النموذج فعلًا. والانخفاض الحادّ في ذلك الحجم يُعلِّم
+ضغطًا ويُعيد بدء ميزانية التنبيهين. وحيث لا يتوفّر نصّ للجلسة، يعدّ استدعاءات الأدوات
+وبايتات المُخرَجات بدلًا من ذلك.
 
 تعيش حالة الخطّافات لكل جلسة في دليل خاص بكل مستخدم يُنشأ بالوضع <bdi>`0700`</bdi>:
 <bdi>`APOTHEM_HOOK_STATE_DIR`</bdi> عند ضبطه، وإلا <bdi>`${CLAUDE_PLUGIN_DATA}/state`</bdi>

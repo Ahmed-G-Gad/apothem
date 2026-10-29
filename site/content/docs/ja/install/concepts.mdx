@@ -2,7 +2,7 @@
 title: "コンセプト"
 description: "Apothem における共有プロファイル、ハーネスアダプター、ルール、フック、コンフォーミティゲート、スキル、委任ワーカーを定義する用語集。"
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,10 @@ Apothem をインストールするということは、常に次を意味しま
 
 すべてのインタラクションで読み込まれる（常時オン）、または特定のパス配下のファイルを編集する
 ときのみ読み込まれる（パスフィルター付き）、src/apothem/rules/ 配下の Markdown ファイルです。
-ルールはハーネスがどう振る舞うべきかを成文化します。
+ルールはハーネスがどう振る舞うべきかを成文化します。4 つのルールは常時オンです: `agnostic-posture`、
+`authority-inquiry`、`session-closure`、`context-management`。ルールインデックスの `apothem-rule-index` は
+それらとともに読み込まれ、他のすべてのルールとそれをいつ読むべきかを名指しします。ルールをパスでスコープしない
+ハーネスは他のルールをいずれも読み込まないため、インデックスはセッションがそれらを見つける手段となります。
 
 ## フック
 

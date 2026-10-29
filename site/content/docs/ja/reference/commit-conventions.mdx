@@ -2,7 +2,7 @@
 title: "コミット規約"
 description: "git 制果物とバージョン管理のために、コミットメッセージの形式、リリースのタグ付け、人間のみの作者規律、そしてタスクごとのケイデンスを確立する。"
 machineTranslated: true
-sourceHash: "b14f720edd93a318"
+sourceHash: "b4f17475336ad671"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,15 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. 作者規律（人間のみ）
 
-すべての git 制果物のすべての作者面（コミット件名、コミット本文、`Author:` フィールド、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、stash 名、git-notes 本文、PR タイトル、PR 説明）は、**人間のコントリビューターのみ**を記載します。ハーネスは、自分自身、基盤となる言語モデル、ランタイム / ハーネス / IDE / 拡張機能 / ベンダー、あるいはその他のいかなる自動化ツールも、これらの面のいずれにも決して帰属させません。禁止されるパターンには、`Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、`generated with X` や `co-authored by an automated helper` のような本文の記述、そして人間でない作者を示すあらゆる件名行のマーカーが含まれます。完全な仕様は [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 にあります。機械的な強制は [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3 にあります。
+すべての git 成果物のすべての作者面（コミット件名、コミット本文、`Author:` フィールド、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、stash 名、git-notes 本文、PR タイトル、PR 説明）は、**人間のコントリビューターのみ**を記載します。ハーネスは、自分自身、基盤となる言語モデル、ランタイム / ハーネス / IDE / 拡張機能 / ベンダー、あるいはその他のいかなる自動化ツールも、これらの面のいずれにも決して帰属させません。禁止されるパターンには、`Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、`generated with X` や `co-authored by an automated helper` のような本文の記述、そして人間でない作者を示すあらゆる件名行のマーカーが含まれます。完全な仕様は [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/production-ready-prs.md) §6 にあります。機械的な強制は [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) Scan 3 にあります。
 
 ## 3. リリースタグ（セマンティックバージョニング）
 
-リリースタグは **セマンティックバージョニング**（`vMAJOR.MINOR.PATCH`）に従います。1.0 より前のバージョンは、仕様の安定前の規約に従って `0.MINOR.PATCH` です。破壊的変更は MINOR を、バグ修正は PATCH をインクリメントします。タグは注釈付き（`git tag -a`）で、[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy) に従って公開層で署名されます。パッケージのバージョンはソースマニフェスト（`pyproject.toml` の `version`）にあり、ランタイム / バージョンを担う面はそのパッケージメタデータから派生します。
+リリースタグは **セマンティックバージョニング**（`vMAJOR.MINOR.PATCH`）に従います。破壊的変更は MAJOR を、後方互換性のある追加は MINOR を、バグ修正は PATCH をインクリメントします。タグは注釈付き（`git tag -a`）で、[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy) に従って公開層で署名されます。パッケージのバージョンはソースマニフェスト（`pyproject.toml` の `version`）にあり、ランタイム / バージョンを担う面はそのパッケージメタデータから派生します。
 
 ## 4. タスクごとのケイデンス
 
-コミットは SHARED+ のシリアスネスではタスクごと、PERSONAL_USE ではフェーズごとに行われ、EXPLORING では任意です。タスクのコミットは、そのタスクの検証ゲートが通過した直後に行われます。先延ばしにしたコミットはコンテキストを蓄積し、スコープを失うリスクがあります。完全な規律は [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13 にあります。
+コミットは SHARED+ のシリアスネスではタスクごと、PERSONAL_USE ではフェーズごとに行われ、EXPLORING では任意です。タスクのコミットは、そのタスクの検証ゲートが通過した直後に行われます。先延ばしにしたコミットはコンテキストを蓄積し、スコープを失うリスクがあります。完全な規律は [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/operational-mandates.md) §CM-13 にあります。
 
 ## 5. バリデーター
 

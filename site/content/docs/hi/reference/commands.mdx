@@ -2,19 +2,21 @@
 title: "कमांड"
 description: "प्लान-सूट पाइपलाइन को लागू करने वाली स्लैश-कमांड परिभाषाएँ, साथ ही कोड, आर्किटेक्चर, सुरक्षा, निर्भरताओं और दस्तावेज़ीकरण समीक्षा के लिए ऑडिट।"
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 स्लैश-कमांड परिभाषाएँ `src/apothem/commands/` के अंतर्गत सपाट `.md` फ़ाइलों के
 रूप में रहती हैं। विहित सेट में सबसे ऊपर आर्किटेक्चर-जागरूक प्लान-सूट पाइपलाइन
-है, जो सात प्रथम-श्रेणी कमांड के रूप में शिप होती है — प्रति चरण एक, और प्रत्येक
-को सीधे `/plan-<stage>` के रूप में बुलाया जा सकता है। कोई एकल अखंड डिस्पैचर नहीं
-है; हर चरण `src/apothem/commands/plan-<stage>.md` पर अपनी स्वयं की पंजीकृत कमांड
-फ़ाइल है।
+है, जो आठ प्रथम-श्रेणी चरण कमांड के रूप में शिप होती है, जिनमें से प्रत्येक को सीधे
+`/plan-<stage>` के रूप में बुलाया जा सकता है, साथ ही `/plan`, वह ऑर्केस्ट्रेटर जो
+चरण-शृंखला को शुरू से अंत तक चलाता है। हर चरण
+`src/apothem/commands/plan-<stage>.md` पर अपनी स्वयं की पंजीकृत कमांड फ़ाइल है, और
+`/plan` उनमें से किसी को दोबारा लागू नहीं करता।
 
 | आह्वान | कमांड फ़ाइल | विवरण |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | spec, generate, review और design चरणों को एक सत्यापित वर्कफ़्लो के रूप में चलाएँ, हर हस्तांतरण पर पुष्टि करते हुए; execute एक मैनुअल चरण ही रहता है |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | असंरचित सामग्री को विनिर्देश-स्तरीय गद्य में परिष्कृत करें |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | गद्य / आवश्यकताओं से एक प्लान सूट मूर्त रूप में तैयार करें |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | स्कोरकार्ड के साथ फ़ॉरेंसिक ऑडिट |
@@ -66,10 +68,12 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 हुए कोई हार्नेस बिना पूछे चला सकता है, इसलिए यह डिफ़ॉल्ट रूप से केवल-पठन रहता है:
 कोई साइड-इफ़ेक्ट वाला टूल (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch)
 केवल `Bash(git log *)` जैसे दायरा-सीमित नियम के रूप में आता है, और स्कीमा सादे
-`"*"` वाइल्डकार्ड को अस्वीकार करता है। अपरिवर्तनीय साइड इफ़ेक्ट वाले कमांड
-(`freshify`, `github-deploy-fresh`, `github-deploy-next`)
-`disable-model-invocation: true` सेट करते हैं, ताकि उन्हें केवल ऑपरेटर ही शुरू
-करे।
+`"*"` वाइल्डकार्ड को अस्वीकार करता है। अपरिवर्तनीय साइड इफ़ेक्ट या ऑपरेटर द्वारा
+चुने गए समय वाले कमांड `disable-model-invocation: true` सेट करते हैं, ताकि उन्हें
+केवल ऑपरेटर ही शुरू करे: `freshify`, `github-deploy-fresh`, `github-deploy-next`,
+`release-readiness`, `elevate`, `fortress`, `workflow`, `plan-execute`,
+`research-experiment` और `research-publish`। बाकी 35 कमांड `false` सेट करते हैं
+और अपने विवरण के आधार पर किसी अनुरोध से मिलाए जाते हैं।
 
 ## लेखन अनुशासन
 

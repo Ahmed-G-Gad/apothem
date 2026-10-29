@@ -2,7 +2,7 @@
 title: "completion"
 description: "apothem completion 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "fccf7d9dc0484b37"
+sourceHash: "9ab2c1cd3f4b9f04"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,7 +65,7 @@ Apothem 绝不会无声地编辑操作者的 shell 启动文件。安装器会�
 | 代码 | 含义 |
 |---|---|
 | 0 | 已输出补全脚本 |
-| 64 | 请求了不受支持的 shell，或发生了其他用法错误（在 `--json` 下，为一个 `cli.usage` 错误信封） |
+| 64 | 请求了不受支持的 shell，或发生了其他用法错误，例如未知的选项。`completion` 没有 `--json` 模式：它打印一个脚本，而传入 `--json` 本身就是一个用法错误。 |
 
 ## 另请参阅
 

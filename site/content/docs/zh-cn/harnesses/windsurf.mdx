@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "适用于 Windsurf（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "8d3f64199c281e2a"
+sourceHash: "5e594da654351298"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,9 +19,119 @@ Windsurf 现已成为 Devin Desktop，`.devin/rules/` 是首选的工作区规�
 apothem install --harness windsurf --project /path/to/project
 ```
 
-适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Windsurf 规则文件。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Windsurf 规则文件，将 Apothem 的十一个辅助器作为 Devin Local 子代理写入项目中（参见[子代理](#子代理)），并注册两个 Devin Local 钩子（参见[钩子](#钩子)）。
 
-**写入的文件：** `<project>/.devin/rules/apothem-rules.md`
+它还会在改动项目之前，将 Apothem 的技能以及这些技能引用的规则和模板写入你的用户主目录（参见[项目之外的文件](#项目之外的文件)）。
+
+**写入的文件：**
+
+- `<project>/.devin/rules/apothem-rules.md`，即规则文件。
+- 十一个 Apothem 辅助器各对应一个 `<project>/.devin/agents/<name>.md`，位于项目中。
+- `<project>/.devin/config.local.json`，即钩子注册，位于项目中。你自己在其中的条目会保留。
+- `<project>/.apothem/support/windsurf/hooks/`，即钩子脚本，位于项目中。
+- 每个 Apothem 技能和命令对应一个 `~/.agents/skills/<name>/SKILL.md`，位于你的用户主目录中。
+- `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`，位于你的用户主目录中。
+
+## 项目之外的文件
+
+安装还会在改动项目中的任何内容之前，将 Apothem 的技能写入你的用户主目录：
+
+| 文件夹 | Apothem 在其中写入的内容 |
+| --- | --- |
+| `~/.agents/skills/` | 每个 Apothem 技能对应一个带有 `SKILL.md` 的文件夹，每个 Apothem 命令也对应一个（命令会成为同名的技能）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 技能和规则文件所引用的规则和模板。 |
+
+这些文件夹是共享的，并非项目私有：
+
+- 你安装 `windsurf` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- `--project` 决定要写入哪个规则文件以及安装属于哪个项目。它不会改变技能的写入位置。
+- 安装不会向你的仓库添加任何技能或规则文件。项目获得的是规则文件、`.devin/agents/` 中的子代理文件、`.devin/config.local.json` 中的钩子注册，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
+- 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
+- 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会保持原样，安装会打印一条指出该文件夹的警告。将其重命名或移走，然后运行 `apothem update`。只要该名称被占用，`apothem verify` 就会失败。
+- 这些文件总计几兆字节。
+
+安装会打印一条说明，指出它在 `--project` 之外写入的文件夹，`--dry-run` 也会列出这些文件夹。
+
+## 子代理
+
+根据 [Devin 子代理文档](https://docs.devin.ai/cli/subagents.md)，新的 Devin Desktop 标签页启动时所用的 Devin Local 从 `<project>/.devin/agents/` 中的 Markdown 文件读取子代理。较旧的 Cascade 模式没有子代理。安装会将 Apothem 十四个辅助器中的十一个写入该文件夹。它只为项目安装，不写入任何用户级子代理文件夹（Linux 和 macOS 上为 `~/.config/devin/agents/`，Windows 上为 `%APPDATA%\devin\agents\`）。
+
+每个文件保留辅助器的指令不变，并带有以下前置元数据键：
+
+| 键 | Apothem 写入的内容 |
+| --- | --- |
+| `name`, `description` | 辅助器的名称和描述。 |
+| `allowed-tools` | 辅助器被允许使用的工具，写成一个 Devin 工具名称列表：`read`、`edit`、`grep`、`glob`、`exec`（辅助器的 `Bash`）和 `write`。 |
+
+Devin 没有拒绝工具的键，因此辅助器被允许的工具减去其被拒绝的工具，就成为唯一的 `allowed-tools` 列表。辅助器的 `Bash` 在 Devin 中是 `exec`，而 Devin 没有列出名称的工具会被省去。只读辅助器获得 `read`、`glob` 和 `grep`，运行命令的辅助器另加 `exec`，并且它们绝不会获得 `write` 或 `edit`。
+
+有三个辅助器不会被安装：`citation-auditor`、`fact-checker` 和 `research-scout`。它们需要网页搜索和网页抓取，而 Devin 没有为其中任何一个记载 `allowed-tools` 名称，因此安装会保留它们，而不是写入一个无法进行研究的版本或一个拥有所有工具的版本。你自己在 `.devin/agents/` 中与这些名称之一同名的文件绝不会被触碰。
+
+安装不写入 `model` 键。Devin 在它自己的默认子代理模型上运行子代理，该模型并不是启动该子代理的会话所用的模型。安装也不写入 `max-nesting`，也不写入 Apothem 的 `maxTurns`、`version`、`updated` 和 `portability` 键中的任何一个。
+
+需要了解的事项：
+
+- 自定义子代理是实验性的。Devin 将其格式和选项标注为可能变更，并且 Devin Desktop 在 Devin Settings 中有一个 Subagents (Preview) 开关（Devin CLI 设置 `subagents_enabled` 默认开启）。
+- 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.devin/agents/`；Apothem 不替你做选择。
+- 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
+- Devin 还会读取共享的 `.agents/agents/` 文件夹（Apothem 从不写入该文件夹），并且 Devin CLI 记载了从 `.claude/` 文件夹导入子代理的功能，但没有指出路径。Apothem 尚未确认 Devin Desktop 的 Local 模式是否会应用该导入。
+- Apothem 尚未确认网页工具的 `allowed-tools` 名称、`model` 接受哪些值，以及空的 `allowed-tools` 列表会被如何解读。
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
+## 钩子
+
+根据 [Devin 钩子文档](https://docs.devin.ai/cli/extensibility/hooks/overview.md)，Devin Local 运行其配置文件中 `hooks` 键下的钩子。安装会注册两个：
+
+| 事件 | 运行的内容 |
+| --- | --- |
+| `SessionStart` | 会话引导：会话元数据、技能索引、记忆和计划摘要以及常设姿态，添加到模型的上下文中。 |
+| `PostToolUse`（每个工具） | 主动压缩跟踪器。它统计活动，并且在每个压缩周期内最多两次告诉模型保存其状态或进行压缩。其他时候它保持静默。 |
+
+两者都为模型添加上下文。两者都不会阻止工具调用或会话。
+
+Apothem 不在 Devin 上注册 `PreToolUse` 守卫。Devin 的文档为 `UserPromptSubmit`、`SessionStart` 和 `PostToolUse` 列出了 `additionalContext`（Apothem 的守卫借以传达的字段），而为 `PreToolUse` 只列出了一个决策和一次输入改写。注册在那里的守卫会在每次工具调用时付出一次进程启动的代价，并且可能什么都传达不到，因此写入、编辑和 shell 守卫、`AskUserQuestion` 检查以及会话结束协议都保留在能够传达它们的工具上。一旦文档或一次探测表明某个 Devin 事件能够到达模型，Apothem 就会在该事件上注册守卫。
+
+这些是 Devin Local 钩子。较旧的 Cascade 模式读取一种不同的钩子格式（`.devin/hooks.json`），安装不会写入它。
+
+**文件的写入位置**
+
+| 文件 | 它存放的内容 |
+| --- | --- |
+| `<project>/.devin/config.local.json` | 两个钩子注册，合并到该文件的 `hooks` 键中。Devin 将该文件记载为本地覆盖文件并被 gitignore，并且会通过 `.git/info/exclude` 自行将本地配置文件排除在 git 之外。 |
+| `<project>/.apothem/support/windsurf/hooks/` | 分发器脚本、它的辅助脚本以及它的消息文件。 |
+
+每条注册的命令都写明了 Apothem 运行时找到的解释器以及项目的绝对路径，因此它是特定于机器的。这就是为什么安装写入本地文件，而从不写入共享的 `<project>/.devin/config.json`、独立的 `.devin/hooks.v1.json` 或 `.claude/` 设置。安装不会编辑 `.gitignore`。Devin 会自行（通过 `.git/info/exclude`）将其本地配置文件排除在 git 之外，因此队友的检出不会收到指向你机器的命令；请检查你的 `.gitignore` 是否列出了 `.apothem/`。
+
+**shell 会误读的路径。** 包含 `$`、反引号、双引号或反斜杠的项目路径或解释器路径会在写入任何内容之前被拒绝：在带引号的命令内部，它会运行一个不同的文件，或者破坏写入该命令的 JSON。错误信息会指出该路径；移动或重命名项目，然后再次运行安装。路径中的空格或撇号没有问题。
+
+命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+`--contract devin` 将 Devin 的小写工具名称（`exec`、`write`、`edit`、`read`、`grep`、`glob`）映射到 Apothem 的处理程序所检测的名称上，并让输出保持为 Claude Code 读取的同一种信封格式。不会写入匹配器：Devin 的匹配器是一个正则表达式，省略时匹配每个工具，而 `SessionStart` 没有可匹配的工具。
+
+**安装后需要检查的事项**
+
+- 工作区处于受限模式（Restricted Mode）时，Devin 不运行任何钩子。请先信任该工作区。
+- 要查看钩子是否已加载，请打开 Devin Local 的 Customizations 中的 Hooks 标签页，或在 Devin CLI 中运行 `/hooks`。两者都会列出每个钩子及其来源文件。
+- Devin 的文档没有指出 Windows 上运行钩子命令所用的 shell。这些命令使用 `sh` 的引号规则，PowerShell 在没有调用运算符的情况下无法解析。Apothem 尚未确认 Devin Local 在 Windows 上运行的是什么；如果钩子在那里无法加载，请在 issue 中说明。
+
+**Devin 也会运行 Claude Code 写入的钩子。** 当 `read_config_from.claude` 开启时（这是 Devin CLI 的默认设置），Devin 会加载 `~/.claude/settings.json`、`.claude/settings.json` 和 `.claude/settings.local.json` 中的钩子；Desktop 页面没有说明 Devin Local 是否应用它。如果你也为 Claude Code 安装了 Apothem，两套钩子都可能运行。这里的 `SessionStart` 命令与它在 Claude Code 中的副本在 Apothem 的钩子状态文件夹中共享每个会话一个的标记，因此后运行的那个保持静默，引导内容只到达模型一次；Apothem 通过 Devin 为其钩子设置的 `DEVIN_PROJECT_DIR` 变量识别出 Devin。该标记覆盖十秒，因此同一会话稍后的一次启动仍会传达。上下文大小计数器会在两处都运行，因此其阈值会提前达到，并且 Apothem 不会对计数器去重。要只加载这些钩子，请在你的用户配置（`~/.config/devin/config.json`，Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"claude": false`；这也会阻止 Devin 导入 Claude Code 的规则、技能、命令和 MCP 服务器。安装会将此作为一条说明打印出来。
+
+**你自己的钩子。** 注册按键合并到你的文件中。你写入的钩子和其他键保持原样，你在同一事件下的处理程序会留在 Apothem 的处理程序旁边，而更新只替换其命令运行 Apothem 分发器的处理程序（带有 `--contract devin` 的 `.apothem/support/windsurf/hooks/dispatch.py`，无论它是写在哪个项目路径下的）。你自己的钩子如果只是名称相同，或者运行的是 `python -m apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。带有注释或其他 JSON5 语法的文件无法在不丢失它们的情况下被重写，因此安装会针对该文件报告 `config.unparseable` 错误，保持该文件不变并停止，同时再次移除它已开始写入的其他文件：删除注释，或者自己添加这两个条目。
+
+**关闭钩子。** 在 Devin 的环境中设置 `APOTHEM_HOOKS_DISABLE=1`，即可让 Apothem 钩子静默。
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 配置档案到原生配置的映射
 
@@ -31,7 +141,9 @@ apothem install --harness windsurf --project /path/to/project
 
 ## 兼容性说明
 
-Windsurf 当前的规则表面位于 `.devin/rules/` 下，作用范围为项目级（这是首选位置，优先于用于向后兼容的回退位置 `.windsurf/rules/`）。工作流和机器本地的记忆归操作者所有；Apothem 不写入它们。单文件形式的 `.windsurfrules` 被有意不写入。
+Windsurf 当前的规则表面位于 `.devin/rules/` 下，作用范围为项目级（这是首选位置，优先于用于向后兼容的回退位置 `.windsurf/rules/`）。工作流和机器本地的记忆归操作者所有；Apothem 不写入它们，也不写入 Cascade 钩子文件和共享的 Devin 配置。单文件形式的 `.windsurfrules` 被有意不写入。
+
+Devin Desktop（Windsurf）会发现 `~/.agents/skills/`，因此安装写入的技能无需进一步设置即可出现。当它的 Claude Code 配置导入开启时，它还可能从 `~/.claude/skills/` 列出相同的名称；Devin CLI 文档将该导入设为默认开启，而 Desktop 页面没有说明 Local 模式是否应用它。Apothem 尚未确认 Windsurf 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
 
 ## 验证
 
@@ -42,8 +154,9 @@ apothem verify --harness windsurf --project /path/to/project
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
-3. 适配器专属的验证例程报告成功。
+2. 每个受管目标都存在，包括 `.devin/agents/` 文件夹和钩子注册 `.devin/config.local.json`；受管文件非空，并且 JSON 或 YAML 配置可以解析。钩子文件必须包含一个运行 Apothem 分发器的处理程序（检查不会运行它），因此被还原或清空的文件将不再通过验证。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。对于 `.devin/agents/`，检查的是该文件夹存在，而不是每个辅助器文件都在其中；命令 `apothem diff --harness windsurf --project /path/to/project` 会列出缺失或过期的辅助器文件。
+3. 每个 Apothem 技能文件夹都已就位并带有 `SKILL.md`，无论是哪一次安装写入的；并且没有任何带有 Apothem 名称的技能文件夹属于并非由 Apothem 写入的内容。检查失败时会指出缺失或外来的文件夹。
+4. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -53,6 +166,8 @@ apothem update --harness windsurf --project /path/to/project
 
 根据当前的共享配置档案状态，重新派生项目规则文件。
 
+更新还会重写其文件与当前文件不同的任何技能文件夹。如果你使用的是一个不写入技能的早期版本进行安装，更新会添加这些技能。它会重写与当前文件不同的子代理文件，并添加任何缺失的子代理文件。它还会刷新钩子脚本以及 `.devin/config.local.json` 中的 Apothem 处理程序，而不触碰你自己的条目。
+
 ## 卸载
 
 ```bash
@@ -60,6 +175,8 @@ apothem uninstall --harness windsurf --project /path/to/project
 ```
 
 从 `<project>/.devin/rules/apothem-rules.md` 中移除 Apothem 块，以及 Apothem 写在该块上方的前置元数据，并保留其中的其他任何文本。只有当该文件中不再剩下其他内容时，才会删除该文件。更改之前，会先将该文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+卸载还会移除它在 `<project>/.devin/agents/` 中写入的子代理文件，并保留其中的其他任何文件；该文件夹变空时会被移除。它会从 `<project>/.devin/config.local.json` 中移除 Apothem 钩子处理程序（通过其命令中的分发器路径识别它们），并保留你自己的钩子和键。只有当该文件由 Apothem 创建且其中不再剩下其他内容时，才会删除该文件。`<project>/.apothem/support/windsurf/hooks/` 中的钩子脚本也会被移除。它会移除它在 `~/.agents/skills/` 中写入的技能文件夹以及 `~/.config/apothem/` 中的规则和模板，但仅当没有其他 Apothem 安装仍在使用它们时才会移除。另一个项目，或者共享该文件夹的另一个工具，可能仍在使用。在这种情况下，卸载会保留这些文件夹，打印出是哪一次安装在使用它们，并由最后一次卸载移除它们。你添加到这些文件夹中的文件会保留，变空的文件夹会被移除。每个文件夹在被移除之前都会备份到 `~/.apothem/backups/` 下。
 
 ## 合规闸门
 
@@ -73,6 +190,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness windsurf --project /path/to/project` |
 | 验证失败 | 运行 `apothem update --harness windsurf --project /path/to/project`，然后再次验证 |
+| Devin Local 一个 Apothem 辅助器都没有列出 | 运行 `apothem diff --harness windsurf --project /path/to/project`。如果有一行针对 `.devin/agents` 文件夹的待处理项，说明辅助器文件缺失或已过期，因此运行 `apothem update --harness windsurf --project /path/to/project`。`apothem verify` 无法检验这一点：只要 `.devin/agents/` 存在，即使其中没有任何辅助器文件，它也会通过。如果 `diff` 报告没有待处理的更改，请检查 Subagents (Preview) 设置是否已开启，以及项目是否在 Devin Desktop 的 Local 模式中打开，然后开始一个新的标签页 |
+| Apothem 钩子没有运行 | 在处于受限模式（Restricted Mode）的工作区中，Devin 不运行任何钩子：请信任该工作区。打开 Devin Local 的 Customizations 中的 Hooks 标签页，或在 Devin CLI 中运行 `/hooks`，查看 Apothem 条目是否已加载。在 Windows 上，Apothem 尚未确认 Devin 运行钩子命令所用的 shell |
+| 安装针对 `config.local.json` 报告 `config.unparseable` | 该文件带有注释或其他在重写时会丢失的语法。删除注释后再次安装，或者自己添加这两个 Apothem 钩子条目 |
+| Apothem 上下文出现两次，或者上下文大小提醒提前出现 | Devin 也会运行 Claude Code 安装写入的钩子。在你的 Devin 配置中，在 `"read_config_from"` 下设置 `"claude": false`，即可只加载 `.devin/config.local.json` 中的钩子 |
+| `apothem verify` 指出缺失某个技能文件夹 | 运行 `apothem install --harness windsurf --project /path/to/project`；它会恢复该文件夹 |
+| 安装或更新警告它跳过了某个技能文件夹 | 技能文件夹中已存在一个与某个 Apothem 技能同名的文件夹，且它并非由 Apothem 写入。将其重命名或移走，然后运行 `apothem update` |
+| 安装在改动项目之前停止 | 在你的主目录中的一次写入失败了。阅读错误信息，修复它指出的文件夹（一个指向你主目录之外的链接、一个本应是文件夹的位置上的文件，或者一个只读文件夹），然后再次安装 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness windsurf --project /path/to/project` |
 
 ## 配置开关

@@ -2,7 +2,7 @@
 title: "مرجع واجهة سطر الأوامر"
 description: "مرجع واجهة سطر الأوامر لـ Apothem — موجز كل أمر، وخياراته، ورموز خروجه لواجهة سطر الأوامر apothem."
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,7 +39,8 @@ sourceHash: "4012ab11dba3c29d"
 
 ## عقد مخرجات <bdi>JSON</bdi>
 
-يقبل كل أمر <bdi>`--json`</bdi> (اختصارًا لـ <bdi>`--format json`</bdi>) ويكتب حينئذٍ
+يقبل كل أمر باستثناء <bdi>`completion`</bdi> (الذي يُصدِر سكربت صدفة)
+<bdi>`--json`</bdi> (اختصارًا لـ <bdi>`--format json`</bdi>) ويكتب حينئذٍ
 مستند <bdi>JSON</bdi> واحدًا بالضبط إلى <bdi>stdout</bdi>. يبدأ كل مستند بمفتاح
 <bdi>`schema_version`</bdi> في المستوى الأعلى، وهو عدد صحيح قيمته اليوم
 <bdi>`1`</bdi>:

@@ -2,7 +2,7 @@
 title: "Fehlerbehebung"
 description: "Lösungen für häufige Apothem-Installationsfehler und Laufzeitprobleme über die Plugin-, npx- und Installer-Pfade hinweg."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,6 +69,24 @@ GitHub ab. Wenn dies fehlschlägt, vergewissern Sie sich, dass der Rechner
 Firewall-Regeln), und versuchen Sie es erneut. Wenn der Marketplace zuvor unter
 einem unvollständigen Abruf hinzugefügt wurde, entfernen Sie ihn und fügen Sie
 ihn erneut hinzu, bevor Sie `/plugin install apothem@apothem` ausführen.
+
+### Das Hinzufügen des Marketplace des Plugin-Hosts läuft in eine Zeitüberschreitung
+
+Der Befehl des Plugin-Hosts, der einen Marketplace hinzufügt, klont dessen
+Repository und gibt nach 30 Sekunden auf. Ein vollständiger Klon dieses
+Repositorys kann auf einem langsamen Datenträger, etwa einem Windows-Laufwerk
+unter WSL, länger dauern, und ein früherer vollständiger Klon kann das Plugin
+außerdem auf einer alten Version festhalten, wenn eine spätere Aktualisierung in
+eine Zeitüberschreitung läuft. Laden Sie nur die beiden Ordner, die das Plugin
+benötigt:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+Die Liste der Plugins des Hosts zeigt danach die aktuelle Version von `apothem@apothem`.
 
 ### npx liefert eine veraltete Version
 

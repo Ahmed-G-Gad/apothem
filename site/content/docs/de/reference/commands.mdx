@@ -2,18 +2,20 @@
 title: "Befehle"
 description: "Slash-Befehlsdefinitionen, die die Plan-Suite-Pipeline implementieren, plus Audits für Code, Architektur, Sicherheit, Abhängigkeiten und Dokumentationsprüfung."
 machineTranslated: true
-sourceHash: "9efa4c5a74f0b51f"
+sourceHash: "fee2a74aa199f41c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Slash-Befehlsdefinitionen liegen als flache `.md`-Dateien unter `src/apothem/commands/`. Der
 kanonische Satz wird von der architekturbewussten Plan-Suite-Pipeline angeführt, die
-als sieben erstklassige Befehle ausgeliefert wird — einer pro Stufe, jeder direkt als
-`/plan-<stage>` aufrufbar. Es gibt keinen monolithischen Dispatcher; jede Stufe ist ihre eigene
-registrierte Befehlsdatei unter `src/apothem/commands/plan-<stage>.md`.
+als acht erstklassige Stufenbefehle ausgeliefert wird, jeder direkt als `/plan-<stage>`
+aufrufbar, plus `/plan`, der Orchestrator, der die Stufenkette von Anfang bis Ende steuert. Jede Stufe
+ist ihre eigene registrierte Befehlsdatei unter `src/apothem/commands/plan-<stage>.md`, und
+`/plan` implementiert keine von ihnen neu.
 
 | Aufruf | Befehlsdatei | Beschreibung |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Die Stufen spec, generate, review und design als einen verifizierten Workflow ausführen und bei jeder Übergabe bestätigen; execute bleibt ein manueller Schritt |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Unstrukturierten Inhalt zu spezifikationsreifer Prosa verfeinern |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Eine Plan-Suite aus Prosa / Anforderungen materialisieren |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Forensisches Audit mit Scorecards |
@@ -67,9 +69,12 @@ Harness ohne Rückfrage ausführen darf, solange der Befehl aktiv ist, und bleib
 daher standardmäßig schreibgeschützt: Ein Werkzeug mit Seiteneffekten (Bash,
 PowerShell, Write, Edit, NotebookEdit, WebFetch) erscheint nur als eingegrenzte
 Regel wie `Bash(git log *)`, und der bloße Platzhalter `"*"` wird vom Schema
-abgelehnt. Befehle mit irreversiblen Seiteneffekten (`freshify`,
-`github-deploy-fresh`, `github-deploy-next`) setzen
-`disable-model-invocation: true`, sodass nur der Operator sie startet.
+abgelehnt. Befehle mit irreversiblen Seiteneffekten oder vom Operator gewähltem
+Zeitpunkt setzen `disable-model-invocation: true`, sodass nur der Operator sie
+startet: `freshify`, `github-deploy-fresh`, `github-deploy-next`,
+`release-readiness`, `elevate`, `fortress`, `workflow`, `plan-execute`,
+`research-experiment` und `research-publish`. Die übrigen 35 Befehle setzen `false`
+und werden anhand ihrer Beschreibung einer Anfrage zugeordnet.
 
 ## Autorendisziplin
 

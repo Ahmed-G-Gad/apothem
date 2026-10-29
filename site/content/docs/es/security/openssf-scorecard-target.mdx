@@ -2,7 +2,7 @@
 title: "Postura de OpenSSF Scorecard"
 description: "El objetivo de OpenSSF Scorecard de Apothem y las superficies de evidencia que se usan para seguir mejorando la puntuación."
 machineTranslated: true
-sourceHash: "94c192fa1985b563"
+sourceHash: "41707bcf572f98ce"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ La puntuación en vivo está en el [visor de Scorecard](https://securityscorecar
 | **Code-Review** | Protección de ramas + CODEOWNERS | Las pull requests son obligatorias para `main` para todos excepto los administradores del repositorio, y la protección de ramas exige 0 revisiones de aprobación mientras el proyecto tenga un solo mantenedor (consulta [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); el historial de Scorecard sigue siendo limitado hasta que existan PR revisadas. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Un proyecto nuevo con un solo mantenedor no puede fabricar un historial de contribuciones de varias organizaciones; esto mejora de forma natural a medida que se incorporan colaboradores. |
 | **Dangerous-Workflow** | Auditoría de flujos de trabajo | Sin `pull_request_target`; las Actions están fijadas por SHA y acotadas con permisos explícitos. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate cubre GitHub Actions, los manifiestos de Python, los requisitos de lanzamiento bloqueados por hash y las superficies de npm, y mantiene disponibles las PR de dependencias agrupadas. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot propone actualizaciones semanales agrupadas para las fijaciones de GitHub Actions, el sitio web, el archivo de bloqueo del empaquetador vsce y los hooks de pre-commit, y actualizaciones mensuales para el archivo de bloqueo de channel-smoke; las actualizaciones de seguridad de Dependabot cubren todos los manifiestos detectados. `.gitattributes` mantiene este único archivo en el archivo comprimido del código fuente que lee Scorecard. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Las pruebas de propiedades de Hypothesis ejercitan los invariantes del analizador y del frontmatter; es posible que el Scorecard upstream no acredite a Hypothesis como integración de fuzzer. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Licencia MIT en la raíz del repositorio. |
 | **Maintained** | Historial de Git | El commit de lanzamiento actual y la cadencia activa de los flujos de trabajo demuestran el mantenimiento; los repositorios muy nuevos pueden recibir una advertencia de antigüedad. |

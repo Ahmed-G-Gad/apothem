@@ -2,7 +2,7 @@
 title: "completion"
 description: "apothem completion コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "fccf7d9dc0484b37"
+sourceHash: "9ab2c1cd3f4b9f04"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,7 +73,7 @@ Apothem が、オペレーターのシェル起動ファイルを黙って編集
 | コード | 意味 |
 |---|---|
 | 0 | 補完スクリプトが出力された |
-| 64 | サポートされていないシェルが要求された、またはその他の使用法エラー（`--json` のもとでは、`cli.usage` エラーエンベロープ） |
+| 64 | サポートされていないシェルが要求された、または不明なオプションなどのその他の使用法エラー。`completion` には `--json` モードがありません。スクリプトを出力するため、`--json` を渡すこと自体が使用法エラーになります。 |
 
 ## 関連項目
 

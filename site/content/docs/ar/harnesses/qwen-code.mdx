@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "محوّل إطار عمل Apothem لـ Qwen Code (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "fa2139684f0e0f58"
+sourceHash: "f5b172839bc072f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,6 +52,27 @@ apothem install --harness qwen-code
 الذي يُسمّي الدليل المطلق تحت <bdi>`~/.qwen/.apothem/support/`</bdi> الذي تُحَلّ نسبةً
 إليه كل إحالة بأسلوب المستودع (<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>،
 و<bdi>`hooks/...`</bdi>).
+
+**قوائم أدوات المهارات.** يقرأ <bdi>`Qwen Code`</bdi> قائمة الأدوات المسموح بها للمهارة من
+مفتاح البيانات الأمامية <bdi>`allowedTools`</bdi> المكتوب بصيغة <bdi>camelCase</bdi>، ويجب أن تكون
+القيمة قائمة <bdi>YAML</bdi>. ويتجاهل المفتاح ذا الشَّرطة <bdi>`allowed-tools`</bdi> المكتوب
+للوكلاء الآخرين. لذلك تحمل المهارات المثبّتة <bdi>`allowedTools`</bdi> بوصفه قائمة، مُدخلةً
+واحدة في كل سطر، بدلًا من سلسلة <bdi>`allowed-tools`</bdi> المفصولة بفواصل في مجموعة
+المصادر. وتحتفظ كل مُدخلة بتهجئة المصدر، بما في ذلك أنماط مثل
+<bdi>`Bash(git status *)`</bdi>. وتُثبَّت كل مفاتيح المهارة الأخرى، ومتن المهارة، دون تغيير.
+
+**مجلّدات المهارات.** يكتب المحوّل المهارات في <bdi>`~/.qwen/skills/`</bdi>. ويقرأ
+<bdi>`Qwen Code`</bdi> أيضًا <bdi>`~/.agents/skills/`</bdi>، وداخل المشروع <bdi>`.qwen/skills/`</bdi>
+و<bdi>`.agents/skills/`</bdi>. وحين يحوي مجلّدان مهارةً بالاسم نفسه، تتقدّم تلك الموجودة
+تحت <bdi>`.qwen`</bdi>، لذا تكون الأسبقية لمهارة <bdi>Apothem</bdi> في <bdi>`~/.qwen/skills/`</bdi>
+على مهارة بالاسم نفسه كتبها محوّل آخر في <bdi>`~/.agents/skills/`</bdi>.
+
+**أحداث الخطّافات.** يربط المحوّل <bdi>`SessionStart`</bdi>، و<bdi>`PreToolUse`</bdi>، و<bdi>`PreCompact`</bdi>،
+و<bdi>`PostCompact`</bdi>، و<bdi>`Stop`</bdi>. ويُعرِّف <bdi>`Qwen Code`</bdi> اثنين وعشرين حدث خطّاف،
+وكل واحد من هذه الخمسة واحدٌ منها. وثلاثة من الاثنين والعشرين (<bdi>`SessionDelete`</bdi>،
+و<bdi>`TodoCreated`</bdi>، و<bdi>`TodoCompleted`</bdi>) ليس لها حدث في <bdi>`Claude Code`</bdi> بالاسم
+نفسه (إذ يسمّي <bdi>`Claude Code`</bdi> حدثَي المهام <bdi>`TaskCreated`</bdi> و<bdi>`TaskCompleted`</bdi>)؛
+ولا يربط المحوّل أيًّا منها.
 
 ## التحقّق
 

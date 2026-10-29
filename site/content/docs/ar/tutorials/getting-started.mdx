@@ -2,7 +2,7 @@
 title: "البدء: من الصفر إلى إطار عمل عامل"
 description: "جولة شاملة من جهاز فارغ إلى إعداد إطار عمل مُجسَّد ومُتحقَّق منه."
 machineTranslated: true
-sourceHash: "35d8b7420a9a02a8"
+sourceHash: "daa3b8225766a994"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,17 +48,27 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 يُنفِّذ المُثبِّت هذه الخطوات:
 
 1. **فحص المتطلّبات المسبقة.** يعثر المُثبِّت على مُفسِّر <bdi>Python 3.10+</bdi> حقيقي، ويتأكّد من أن مكتبتَي زمن التشغيل (<bdi>`click`</bdi> و<bdi>`rich`</bdi>) قابلتان للاستيراد. وإذا كانت إحداهما مفقودة، يُسمّيها ويتوقّف ويطبع أمر تثبيتها؛ واضبط <bdi>`APOTHEM_AUTO_INSTALL_DEPS=1`</bdi> للتثبيت دون مطالبة، لأن التشغيل المُمرَّر عبر الأنبوب لا يستطيع المطالبة.
-2. **وضع المصدر.** تُستنسَخ الشجرة المُحزَّمة إلى <bdi>`~/.apothem`</bdi> (تجاوز ذلك بمتغيّر البيئة <bdi>`APOTHEM_HOME`</bdi>). وإعادة التشغيل تُقدّم النسخة المستنسخة الموجودة تقديمًا سريعًا بدلًا من تكرارها.
+2. **وضع المصدر.** تُستنسَخ الشجرة المُحزَّمة إلى <bdi>`~/.apothem`</bdi> (تجاوز ذلك بمتغيّر البيئة <bdi>`APOTHEM_HOME`</bdi>). وإعادة التشغيل تسحب وسم الإصدار في النسخة المستنسخة الموجودة بدلًا من تكرارها.
 3. **تمهيد الملف التعريفي.** إن لم يكن لديك ملف تعريفي بعد، ينسخ المُثبِّت الملف التعريفي المثال إلى <bdi>`~/.config/apothem/profile.yaml`</bdi>، ويثبّت <bdi>Claude Code</bdi> ويتحقّق منه بناءً عليه في التشغيل نفسه، ويُحذّرك من أن حقول الهوية عناصر نائبة.
 
 يمكنك توجيه التثبيت بمتغيّرات البيئة. وهذه هي التي يُرجَّح أن تستخدمها أكثر من
 غيرها:
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+لا يُثبِّت المُثبِّت إلا أُطُر العمل ذات نطاق المستخدم. ثبِّت إطار عمل ذا نطاق
+مشروع بعد ذلك، مع تسمية المشروع:
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 ومن المتغيّرات الأخرى المعترَف بها <bdi>`APOTHEM_REPO`</bdi> و<bdi>`APOTHEM_REF`</bdi> (أيّ مستودع بعيد يُستنسَخ وأيّ مرجع <bdi>git</bdi> يُسحَب؛ وعند تركه غير مضبوط يُحَلّ أحدث وسم إصدار موقَّع ويُتحقَّق منه؛ اضبط وسمًا لتقييدها به، أو <bdi>`main`</bdi> للفرع المتحرّك، وهو ليس وسمًا موقَّعًا، لذا يحتاج أيضًا إلى <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>)، و<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> (يُخفِّض فشل التحقّق من توقيع الوسم إلى تحذير، ويسمح بمرجع ليس وسمًا مثل <bdi>`main`</bdi>)، و<bdi>`APOTHEM_SOURCE`</bdi> (يستخدم نسخة مسحوبة محلية موجودة بدلًا من الاستنساخ)، و<bdi>`APOTHEM_SKIP_VERIFY=1`</bdi> (يتخطّى التحقّق بعد التثبيت، وهو ما نريد تشغيله؛ فاتركه غير مضبوط).
@@ -151,8 +161,9 @@ apothem install --harness cursor --project .
 apothem verify --harness claude-code
 ```
 
-يفحص <bdi>`verify`</bdi> أن ملفات الإعداد المتوقَّعة لإطار العمل موجودة وتطابق ما
-يُعلِنه الملف التعريفي. والتشغيل النظيف يعني أن التجسيد نجح.
+يفحص <bdi>`verify`</bdi> أن ملفات الإعداد المُدارة لإطار العمل موجودة وقابلة للتحليل. وأضِف
+<bdi>`--profile PATH`</bdi> فيفشل أيضًا عندما يكون ملف مُثبَّت قد انحرف عمّا كان
+سيُنتِجه ذلك الملف التعريفي. والتشغيل النظيف يعني أن التجسيد نجح.
 
 ولفحص الصحّة على مستوى الجهاز كله عبر كل محوّل مُسجَّل، شغِّل:
 
@@ -181,10 +192,13 @@ apothem doctor
 
 - **أضِف أداة أخرى.** تغطّي [قائمة أُطُر العمل](/docs/harnesses) كل منصّة مدعومة
   واسم محوّلها. كرِّر الخطوة 3 بقيمة <bdi>`--harness`</bdi> جديدة.
-- **تعمَّق في مهمة واحدة.** [أدلّة الإرشاد العملي](/docs/how-to) وصفات تتمحور
-  حول المهام لكتابة القواعد، وتأليف الخطط، وتشغيل بوابة المطابقة.
-- **ابحث عن التفاصيل.** يوثّق [المرجع](/docs/harnesses) كل محوّل، ومخطط الملف
-  التعريفي، وسطح <bdi>CLI</bdi> بالكامل.
+- **تعمَّق في مهمة واحدة.** تغطّي [وصفات الإرشاد العملي](/docs/how-to) إضافة
+  إطار عمل، وتحرير الملف التعريفي، وقيادة المُثبِّت. وتغطّي
+  [أدلّة الاستخدام](/docs/usage) كتابة القواعد، وتأليف الخطط، وتشغيل
+  بوابة المطابقة.
+- **ابحث عن التفاصيل.** يوثّق [المرجع](/docs/reference) كل صنف أثَر ومخطط الملف
+  التعريفي، ويغطّي [مرجع واجهة سطر الأوامر](/docs/cli-reference) كل أمر. ولكل
+  محوّل صفحته الخاصة تحت [أُطُر العمل](/docs/harnesses).
 - **خطِّط لعمل يدوم أطول من جلسة.** يشرح
   [التخطيط القابل للاستئناف](/docs/concepts/resumable-planning) كيف يُخرِج
   <bdi>Apothem</bdi> العمل الطويل الأمد إلى حزمة <bdi>`.apothem/plans/`</bdi> محلية

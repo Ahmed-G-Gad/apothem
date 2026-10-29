@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adapter harness Apothem untuk Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "84f84790325354af"
+sourceHash: "ad1685e4b265a2d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,192 @@ apothem install --harness codebuddy --project /path/to/project
 ```
 
 Adapter menulis satu berkas aturan berlingkup proyek dari permukaan aturan dan
-tata kelola Apothem bersama.
+tata kelola Apothem bersama, helper Apothem sebagai subagent CodeBuddy di dalam
+proyek (lihat [Subagent](#subagent)), dan dua hook (lihat
+[Hook](#hook)).
 
-**Berkas yang ditulis:** `<project>/.codebuddy/rules/apothem-rules.md`
+Adapter juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
+
+**Berkas yang ditulis:**
+
+- `<project>/.codebuddy/rules/apothem-rules.md`, berkas aturan.
+- `<project>/.codebuddy/agents/<name>.md` untuk setiap helper Apothem, di dalam proyek.
+- `<project>/.codebuddy/settings.local.json`, pendaftaran hook, di dalam proyek. Entri milik Anda di dalamnya tetap ada.
+- `<project>/.apothem/support/hooks/`, skrip hook, di dalam proyek.
+- `~/.codebuddy/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.codebuddy/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas aturan. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `codebuddy` memakai salinan `~/.codebuddy/skills/` yang sama, dan instalasi menulis berkas yang sama ke dalamnya setiap kali. CodeBuddy adalah satu-satunya alat yang membaca folder itu. Aturan dan templat di bawah `~/.config/apothem/` juga ditulis oleh instalasi alat-alat lain, dengan berkas yang sama.
+- `--project` memilih berkas aturan yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas aturan, berkas subagent di `.codebuddy/agents/`,
+  pendaftaran hook di `.codebuddy/settings.local.json`, ditambah folder `.apothem/`
+  yang dibuat oleh setiap instalasi proyek, yang juga menampung skrip hook.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
+
+## Subagent
+
+CodeBuddy membaca subagent dari berkas Markdown di `<project>/.codebuddy/agents/`
+(agen proyek) atau `~/.codebuddy/agents/` (agen pengguna), menurut
+[dokumentasi subagent CodeBuddy](https://www.codebuddy.ai/docs/cli/sub-agents).
+Instalasi menulis satu berkas per helper Apothem hanya ke folder proyek, dan
+tidak menulis apa pun ke `~/.codebuddy/agents/`.
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. |
+| `tools` | Alat yang boleh dipakai helper, sebagai satu string yang dipisahkan koma. |
+| `disallowedTools` | Alat yang ditolak bagi helper, sebagai satu string yang dipisahkan koma. Dihilangkan ketika helper tidak memilikinya. |
+| `maxTurns` | Batas giliran helper. |
+
+Hanya nama alat yang ditunjukkan dokumentasi CodeBuddy yang ditulis.
+[Halaman Settings](https://www.codebuddy.ai/docs/cli/settings)-nya mencantumkan
+alat-alat tersebut, dan halaman subagent-nya menyebutkan satu alat lagi, yang
+disertakan dalam daftar di bawah:
+
+```text
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
+```
+
+Alat yang disebut sumber tetapi tidak ada dalam daftar itu (misalnya `PowerShell`
+atau `TodoWrite`) dihilangkan dari kedua bidang. Alat dengan pola, seperti
+`Bash(rm *)`, tidak memiliki bentuk dalam daftar koma: sebagai alat yang
+diizinkan, alat itu dihilangkan, dan sebagai alat yang ditolak, alat itu menolak
+seluruh alat tersebut. Helper yang tidak dapat menyunting berkas mempertahankan
+batas itu: helper tersebut tidak mencantumkan `Write` atau `Edit` di antara
+alatnya dan menolak keduanya. Instalasi tidak menulis kunci `model`, sehingga
+helper berjalan dengan model yang dipilih CodeBuddy, dan tidak menulis kunci
+`permissionMode` maupun `hooks`.
+
+Hal yang perlu diketahui:
+
+- Berkas subagent adalah berkas proyek biasa. Commit berkas itu bersama proyek atau
+  cantumkan `.codebuddy/agents/` di `.gitignore`; Apothem tidak memilihkannya untuk Anda.
+- CodeBuddy memuat berkas subagent yang ditambahkan secara manual pada awal sesi
+  berikutnya, jadi mulailah sesi baru setelah instalasi.
+- Berkas milik Anda dengan nama helper Apothem disimpan di bawah
+  `~/.apothem/backups/` lalu diganti. Pencopotan tidak mengembalikannya.
+  Berkas dengan nama lain tidak pernah disentuh.
+- Halaman Subagents IDE CodeBuddy menunjukkan kunci yang tidak dicantumkan
+  halaman CLI, dan Apothem belum memastikan bahwa IDE menerima `disallowedTools`
+  atau `maxTurns`.
+
+## Hook
+
+CodeBuddy menjalankan hook dari kunci `hooks` di berkas pengaturannya, menurut
+[dokumentasi hook CodeBuddy](https://www.codebuddy.ai/docs/cli/hooks), yang
+menandai hook sebagai Beta. Instalasi mendaftarkan dua hook:
+
+| Peristiwa | Apa yang dijalankan |
+| --- | --- |
+| `SessionStart` | Bootstrap sesi: metadata sesi, indeks skill, ringkasan memori dan plan, serta postur tetap, ditambahkan ke konteks model. |
+| `PostToolUse` (setiap alat) | Pelacak pemadatan proaktif. Pelacak ini menghitung aktivitas dan, paling banyak dua kali per siklus pemadatan, meminta model menyimpan keadaannya atau memadatkan. Selain itu pelacak ini diam. |
+
+Keduanya menambahkan konteks bagi model. Tidak satu pun yang memblokir pemanggilan
+alat atau sesi.
+
+Apothem tidak mendaftarkan penjaga `PreToolUse` di CodeBuddy. Dokumentasi
+CodeBuddy mencantumkan `additionalContext` (bidang yang dipakai penjaga Apothem
+untuk berbicara) untuk `SessionStart`, `UserPromptSubmit` dan `PostToolUse`, dan
+hanya mencantumkan bidang izin dan masukan untuk `PreToolUse`. Penjaga yang
+didaftarkan di sana akan memakan biaya satu permulaan proses pada setiap
+pemanggilan alat dan mungkin tidak menyampaikan apa pun, sehingga penjaga tulis,
+sunting dan shell, pemeriksaan `AskUserQuestion` dan protokol akhir sesi tetap
+berada di alat yang menyampaikannya. Apothem akan mendaftarkan penjaga pada
+peristiwa CodeBuddy setelah dokumentasi, atau sebuah probe, menunjukkan bahwa
+penjaga itu mencapai model.
+
+**Ke mana berkas ditulis**
+
+| Berkas | Isinya |
+| --- | --- |
+| `<project>/.codebuddy/settings.local.json` | Dua pendaftaran hook, digabungkan ke kunci `hooks` berkas itu. CodeBuddy mendokumentasikan berkas ini sebagai lokal bagi Anda dan tidak di-commit. |
+| `<project>/.apothem/support/hooks/` | Skrip dispatcher, helper-nya, dan berkas pesannya. |
+
+Setiap perintah yang didaftarkan menyebut interpreter yang ditemukan Apothem saat
+dijalankan, dan jalur absolut proyek, sehingga perintah itu spesifik untuk mesin.
+Karena itulah instalasi menulis berkas lokal dan tidak pernah menulis
+`<project>/.codebuddy/settings.json` yang di-commit. Instalasi tidak menyunting
+`.gitignore`: periksa bahwa berkas milik Anda mencantumkan
+`.codebuddy/settings.local.json` dan `.apothem/`, sehingga checkout milik rekan
+tim tidak menerima perintah yang menunjuk ke mesin Anda.
+
+**Jalur yang akan salah dibaca shell.** Jalur proyek atau interpreter yang
+mengandung `$`, backtick, tanda kutip ganda, atau backslash ditolak sebelum apa
+pun ditulis: di dalam perintah yang dikutip, jalur itu akan menjalankan berkas
+lain, atau merusak JSON tempat perintah itu ditulis. Galat menyebutkan jalur
+tersebut; pindahkan atau ganti nama proyek dan jalankan instalasi lagi. Spasi
+atau apostrof dalam jalur tidak masalah.
+
+Sebuah perintah terlihat seperti ini, dengan interpreter dan jalur proyek Anda
+menggantikan kedua jalur tersebut:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+```
+
+`--contract codebuddy` tidak mengubah apa pun pada keluaran: CodeBuddy membaca
+amplop yang sama dengan yang dibaca Claude Code. CodeBuddy menjalankan perintah
+hook melalui shell Anda, dan melalui Git Bash di Windows (CodeBuddy tidak
+mendukung cmd.exe maupun PowerShell), sehingga perintah memakai pengutipan bash
+dan jalur interpreter dengan garis miring maju. Pasang Git for Windows jika
+CodeBuddy memintanya.
+
+**Tinjau hook setelah instalasi selesai.** CodeBuddy mengambil snapshot
+pengaturannya saat dimulai, tidak memuat secara langsung berkas pengaturan yang
+ditulis alat lain, dan menerapkan hook yang ditambahkan dari luar hanya setelah
+Anda meninjaunya di panel `/hooks`-nya. Setelah `apothem install` (dan setelah
+pembaruan yang mengubah hook), restart CodeBuddy dan konfirmasikan entri Apothem
+di `/hooks`. Instalasi mencetak hal ini sebagai catatan. Dokumentasi tidak
+menyebutkan apakah peninjauan itu berulang setelah setiap perubahan, jadi buka
+`/hooks` lagi setelah pembaruan.
+
+**Hook milik Anda.** Pendaftaran digabungkan ke berkas Anda berdasarkan kunci.
+Hook dan kunci lain yang Anda tulis tetap seperti semula, handler milik Anda di
+bawah peristiwa dan matcher yang sama tetap berada di samping milik Apothem, dan
+pembaruan hanya mengganti handler yang perintahnya menjalankan dispatcher Apothem
+(`.apothem/support/hooks/dispatch.py` dengan `--contract codebuddy`, di jalur
+proyek mana pun perintah itu ditulis). Hook milik Anda yang hanya berbagi nama,
+seperti `tools/hooks/dispatch.py` di proyek Anda, atau yang menjalankan
+`python -m apothem.conformity.gate`, tidak pernah dianggap milik Apothem. Berkas
+dengan komentar atau sintaks JSON5 lain tidak dapat ditulis ulang tanpa
+kehilangannya, sehingga instalasi melaporkan galat `config.unparseable` untuk
+berkas itu dan membiarkannya tidak tersentuh: hapus komentarnya, atau tambahkan
+kedua entri itu sendiri.
+
+**Mematikan hook.** Tetapkan `APOTHEM_HOOKS_DISABLE=1` di lingkungan CodeBuddy
+untuk membungkam hook Apothem, atau tetapkan pengaturan `disableAllHooks` milik
+CodeBuddy sendiri untuk mematikan setiap hook.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -42,16 +225,26 @@ Apothem.
 Permukaan aturan CodeBuddy berlingkup proyek di bawah `.codebuddy/rules/`.
 Adapter menulis berkas `apothem-rules.md` khusus yang berdampingan dengan
 berkas aturan apa pun yang ditulis operator di direktori yang sama. Berkas
-memori proyek `CODEBUDDY.md`, `.codebuddy/settings.json`, dan `.mcp.json`
-proyek (server MCP) adalah milik operator; Apothem tidak menulisnya. CodeBuddy
-juga mendokumentasikan skill, command, subagen, dan hook; adapter tidak menulis
-satu pun dari semua itu dan sebagai gantinya merujuk disiplin-disiplin tersebut
-di dalam berkas aturan. Ketika sebuah proyek tidak memiliki `CODEBUDDY.md`,
+memori proyek `CODEBUDDY.md`, `.codebuddy/settings.json` yang di-commit, dan
+`.mcp.json` proyek (server MCP) adalah milik operator; Apothem tidak menulisnya.
+CodeBuddy juga mendokumentasikan slash command; adapter tidak menulis satu pun
+dan sebagai gantinya merujuk disiplin-disiplin tersebut di dalam berkas aturan.
+Adapter memang menulis subagent dan dua hook ke proyek (lihat
+[Subagent](#subagent) dan [Hook](#hook)), serta skill, dan command Apothem
+sebagai skill, ke folder pengguna Anda (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)). Ketika sebuah proyek tidak memiliki `CODEBUDDY.md`,
 CodeBuddy Code membaca `AGENTS.md` sebagai memori proyek, sehingga
 `AGENTS.md` yang ditulis adapter lain juga menjangkau CodeBuddy. Konvensi permukaan vendor yang
 menjadi sandaran adapter dipatok di
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, yang di-snapshot
 terhadap dokumentasi CodeBuddy yang berlaku.
+
+CodeBuddy mendokumentasikan `~/.codebuddy/skills/` untuk skill pengguna dan tidak
+menyebut `~/.agents/skills/`, sehingga instalasi menulis folder CodeBuddy dan
+bukan folder lintas alat. Folder itu hanya dibaca oleh CodeBuddy. Halaman
+skill-nya mencantumkan `disable-model-invocation`, `user-invocable`, dan
+`allowed-tools`, dan tidak mencantumkan kunci `metadata` atau `argument-hint`;
+Apothem belum memastikan bahwa CodeBuddy menerimanya.
 
 ## Verifikasi
 
@@ -63,7 +256,20 @@ Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
 2. Berkas aturan terkelola ada dan tidak kosong.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+3. Pendaftaran hook `.codebuddy/settings.local.json` ada, tidak kosong, dan
+   dapat diurai sebagai JSON, dan skrip hook berada di
+   `.apothem/support/hooks/`. Berkas itu harus memuat handler yang menjalankan
+   dispatcher Apothem (pemeriksaan tidak menjalankannya), sehingga berkas yang
+   dikembalikan ke keadaan semula atau dikosongkan tidak lagi lolos verifikasi.
+4. Folder `.codebuddy/agents/` ada. Pemeriksaan dilakukan pada folder, bukan
+   pada setiap berkas helper di dalamnya; perintah
+   `apothem diff --harness codebuddy --project /path/to/project` mencantumkan
+   berkas helper yang hilang atau kedaluwarsa.
+5. Setiap folder skill Apothem ada di tempatnya dengan `SKILL.md`, instalasi
+   mana pun yang menulisnya, dan tidak ada folder skill dengan nama Apothem yang
+   milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal menyebutkan
+   folder yang hilang atau asing.
+6. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -75,6 +281,13 @@ Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
 `install` dan `update` bersifat idempoten — menjalankannya ulang menimpa berkas
 terkelola dengan konten hasil render terbaru.
 
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari versi saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+Pembaruan menulis ulang berkas subagent yang berbeda dari versi saat ini, dan menambahkan yang hilang.
+Pembaruan juga menyegarkan skrip hook dan handler Apothem di
+`.codebuddy/settings.local.json`, tanpa menyentuh entri milik Anda; restart
+CodeBuddy dan periksa `/hooks` lagi sesudahnya.
+
 ## Pencopotan
 
 ```bash
@@ -82,6 +295,21 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
 Menghapus blok Apothem dari `apothem-rules.md` dan mempertahankan teks lain di dalamnya. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+Pencopotan juga menghapus berkas subagent yang ditulisnya di `<project>/.codebuddy/agents/`
+dan mempertahankan berkas lain di sana; folder itu dihapus jika dibiarkan kosong.
+Pencopotan menghapus handler hook Apothem dari `<project>/.codebuddy/settings.local.json`,
+mengenalinya dari jalur dispatcher dalam perintahnya, dan mempertahankan hook serta
+kunci milik Anda. Berkas itu dihapus hanya ketika Apothem yang membuatnya dan tidak ada
+lagi yang tersisa di dalamnya. Skrip hook di `<project>/.apothem/support/hooks/` juga ikut dihapus.
+Pencopotan menghapus folder skill yang ditulisnya di `~/.codebuddy/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada instalasi
+Apothem lain yang masih memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin memakainya. Dalam hal itu pencopotan mempertahankan folder-folder
+tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir yang
+menghapusnya. Berkas yang Anda tambahkan ke folder-folder itu tetap ada, dan folder
+yang dibiarkan kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
 
 ## Gerbang konformitas
 
@@ -95,6 +323,12 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness codebuddy --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness codebuddy --project /path/to/project`, lalu verifikasi lagi |
+| CodeBuddy tidak mencantumkan helper Apothem | CodeBuddy memuat berkas subagent pada awal sesi. Mulailah sesi baru |
+| Hook Apothem tidak berjalan | CodeBuddy menerapkan hook yang ditulis alat lain hanya setelah restart dan peninjauan di panel `/hooks`-nya. Restart CodeBuddy, buka `/hooks` dan konfirmasikan entri Apothem. Di Windows CodeBuddy memerlukan Git Bash |
+| Instalasi melaporkan `config.unparseable` untuk `settings.local.json` | Berkas itu memiliki komentar atau sintaks lain yang akan hilang jika ditulis ulang. Hapus komentarnya lalu pasang lagi, atau tambahkan sendiri kedua entri hook Apothem |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness codebuddy --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness codebuddy --project /path/to/project` |
 
 ## Tombol konfigurasi

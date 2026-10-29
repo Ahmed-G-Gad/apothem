@@ -2,14 +2,14 @@
 title: "/research-analysis"
 description: "/research-analysis — Analyse les données brutes selon le plan préenregistré : tests planifiés, tailles d'effet avec intervalles de confiance, contrôles de robustesse et déviations divulguées."
 machineTranslated: true
-sourceHash: "63b072fd3548eba2"
+sourceHash: "6bfe62bf33b6bccc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rôle :** Chercheur principal (analyse)
 **Position dans le pipeline :** milieu de chaîne
 
-Analyse les données brutes selon le plan préenregistré — exécute les tests statistiques planifiés, rapporte les tailles d'effet avec intervalles de confiance (pas seulement les valeurs p), applique la correction pour comparaisons multiples le cas échéant, exécute des contrôles de robustesse / sensibilité, et divulgue chaque déviation par rapport au préenregistrement.
+Analyse les données brutes selon le plan préenregistré — exécute les tests statistiques planifiés sur l'unité d'analyse indépendante, rapporte les tailles d'effet avec intervalles de confiance (intervalles de crédibilité sous un plan bayésien ; pas seulement les valeurs p), applique la correction pour comparaisons multiples le cas échéant, indique comment les données manquantes ont été traitées, exécute des contrôles de robustesse / sensibilité, et divulgue chaque déviation par rapport au préenregistrement.
 
 ## Invocation canonique
 
@@ -29,7 +29,7 @@ Les données brutes à l'emplacement naturel de l'hôte enregistré par l'étape
 
 ## Sorties
 
-`_outputs/analysis.md` (les tests préenregistrés avec tailles d'effet et IC, la correction pour comparaisons multiples, les contrôles de robustesse et les déviations divulguées) + figures / tableaux à un emplacement naturel de l'hôte.
+`_outputs/analysis.md` (les tests préenregistrés avec tailles d'effet, IC, unité d'analyse et un jugement de biais par domaine pour chaque résultat principal ; la correction pour comparaisons multiples ; le traitement des données manquantes ; les contrôles de robustesse ; et les déviations divulguées) + figures / tableaux à un emplacement naturel de l'hôte.
 
 ## En aval
 
@@ -41,10 +41,18 @@ La commande suit le flux de travail standard du pipeline `/research` :
 
 1. **Charger le contexte** — Lire les données brutes et le préenregistrement.
 2. **Vérifier le Portail de séquence** — Confirmer que les sorties de l'expérience existent ; sinon, s'arrêter avec `Blocked: run /research-experiment first`.
-3. **Analyser** — Exécuter les tests préenregistrés ; rapporter les tailles d'effet + IC ; corriger pour comparaisons multiples ; exécuter les contrôles de robustesse / sensibilité.
-4. **Divulguer les déviations** — Consigner chaque écart par rapport au plan préenregistré.
+3. **Analyser** — Exécuter les tests préenregistrés sur l'unité d'analyse indépendante ; diagnostiquer les hypothèses sans laisser les diagnostics choisir le test ; rapporter les tailles d'effet + IC ; corriger pour comparaisons multiples ; indiquer le traitement des données manquantes ; exécuter les contrôles de robustesse / sensibilité.
+4. **Divulguer les déviations** — Consigner chaque écart par rapport au plan préenregistré. Le passage à une solution de repli que nomme le préenregistrement est consigné comme une adaptation planifiée ; toute autre substitution est une déviation.
 5. **Mettre à jour le manifeste de transfert** — Consigner le chemin de l'analyse et les figures / tableaux.
 6. **Émettre l'analyse** — `_outputs/analysis.md` + figures / tableaux.
+
+## Discipline statistique
+
+- **Le test suit le plan.** Le test principal préenregistré est maintenu sauf si le propre déclencheur de repli du préenregistrement se déclenche ; un test de dépistage qui ne rejette pas ne montre pas qu'une hypothèse tient.
+- **n compte des unités indépendantes.** Les mesures répétées, sous-échantillons, grappes et graines sont agrégés à l'unité ou modélisés comme dépendance, jamais comptés comme des réplicats indépendants.
+- **Un résultat nul se lit de trois façons.** L'intervalle de la taille d'effet, le résultat d'équivalence par rapport au plus petit effet d'intérêt et un énoncé de sensibilité (le plus petit effet détectable au n analysé atteint) sont rapportés ensemble. Une puissance calculée à partir de l'effet observé n'est jamais rapportée.
+- **Les plans bayésiens selon leurs propres termes.** Un plan bayésien préenregistré rapporte le résumé a posteriori avec son intervalle de crédibilité, exécute des contrôles de sensibilité à l'a priori, de diagnostic de calcul et prédictifs a posteriori avant que toute loi a posteriori ne soit rapportée, et utilise une région d'équivalence pratique fixée à l'avance pour les résultats nuls.
+- **Biais au niveau du résultat et figures.** Chaque résultat principal porte un jugement faible / quelques préoccupations / élevé par domaine, amorcé à partir du registre des menaces à la validité de la conception et jamais additionné en un score unique, et chaque figure satisfait au seuil d'encodage, de divulgation de l'incertitude et d'accessibilité.
 
 ## Seuil de rigueur
 
@@ -56,6 +64,8 @@ Une méthode stochastique est exécutée au moins trente répétitions indépend
 |---------|-------|----------|
 | Blocked: run /research-experiment first | Aucune donnée brute | Exécuter `/research-experiment` pour produire les données + le journal |
 | Valeur p rapportée sans taille d'effet | Rapport statistique incomplet | Rapporter les tailles d'effet + intervalles de confiance |
+| Observations dépendantes comptées comme réplicats | Mesures répétées, sous-échantillons, grappes ou graines traités comme indépendants | Agréger à l'unité indépendante ou modéliser la dépendance ; n compte des unités |
+| Puissance observée rapportée pour un résultat nul | Puissance calculée à partir de l'effet observé | La supprimer ; rapporter l'intervalle, le résultat d'équivalence et l'énoncé de sensibilité |
 | Déviation d'analyse non divulguée | Le plan a dévié en silence | Divulguer la déviation par rapport au préenregistrement |
 
 ## Exemples

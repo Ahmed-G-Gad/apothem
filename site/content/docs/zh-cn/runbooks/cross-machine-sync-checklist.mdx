@@ -2,7 +2,7 @@
 title: "跨主机同步验证清单"
 description: "用于在全新主机上确认 Claude Code 适配器能够正确安装、校验并卸载的验证流程，包含完整的可移植性检查。"
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**预期：** 安装器检测到已存在的引擎主目录，执行快进而非重新安装或重复安装；退出码 0。
+**预期：** 安装器检测到已存在的引擎主目录，在其中检出发布标签，而非重新安装或重复安装；退出码 0。
 
 ### 3.2 前置条件已检查
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

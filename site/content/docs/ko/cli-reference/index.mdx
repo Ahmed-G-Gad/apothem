@@ -2,7 +2,7 @@
 title: "CLI 참조"
 description: "Apothem CLI 참조 — apothem 명령줄 인터페이스의 명령별 개요, 옵션, 종료 코드."
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,8 @@ sourceHash: "4012ab11dba3c29d"
 
 ## JSON 출력 계약
 
-모든 명령은 `--json`(`--format json`의 축약형)을 받으며, 그 경우 stdout에
+`completion`(셸 스크립트를 출력함)을 제외한 모든 명령은 `--json`
+(`--format json`의 축약형)을 받으며, 그 경우 stdout에
 정확히 하나의 JSON 문서를 씁니다. 각 문서는 최상위 `schema_version` 키로
 시작하며, 이 키는 현재 `1`인 정수입니다.
 

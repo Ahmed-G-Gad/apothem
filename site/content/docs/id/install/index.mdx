@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "9bbe909880e8e0b6"
+sourceHash: "1d9aa6524933a4c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,20 +68,22 @@ hook-nya, yang semuanya dapat dijalankan dari pohon plugin mandiri:
 Setelah instalasi, set perintah Apothem, pekerja terdelegasi yang disertakan,
 skill, dan empat [output-style](/docs/reference/output-styles) (pilih salah
 satu dengan `/output-style` atau dari `/config`) tersedia di setiap sesi Claude
-Code. Perintah plugin membawa awalan plugin: `/apothem:plan-spec`,
-`/apothem:security-audit`, dan seterusnya. Claude Code juga menerima bentuk
-pendek (`/plan-spec`) selama tidak ada perintah lain yang menggunakan nama itu.
-Dua nama sudah dipakai oleh Claude Code sendiri: `/plan` masuk ke mode rencana
-dan `/code-review` menjalankan tinjauan bawaan, jadi ketik `/apothem:plan` dan
+Code. Plugin mengirim setiap perintah sebagai skill, yaitu sebuah `SKILL.md`
+dengan detail yang dimuatnya sesuai kebutuhan di folder `references/` di
+sebelahnya, sehingga Claude Code memanggilnya dengan awalan plugin:
+`/apothem:plan-spec`, `/apothem:security-audit`, dan seterusnya. Dua nama sudah
+dipakai oleh Claude Code sendiri: `/plan` masuk ke mode rencana dan
+`/code-review` menjalankan tinjauan bawaan, jadi ketik `/apothem:plan` dan
 `/apothem:code-review` untuk perintah Apothem. Ketika mesin Apothem dipasang ke
-Claude Code alih-alih plugin, perintah menjadi skill pribadi di bawah
-`~/.claude/skills/` tanpa awalan, dan skill pribadi `code-review` menggantikan
-`/code-review` bawaan (aliasnya, `/review`, tetap menjalankan yang bawaan). Dua
-nama, `projectify` dan `workflow`, dikirim sebagai perintah sekaligus skill;
-Claude Code menjalankan skill bila keduanya ada, sehingga plugin menjalankan
-skill tersebut dan instalasi mesin hanya menulis skill, bukan skill yang
-diturunkan dari perintah, ke `~/.claude/skills/<name>/`. Lihat
-[Perintah slash](/docs/reference/commands) untuk katalog perintah lengkap.
+Claude Code alih-alih plugin, skill yang sama ditulis ke `~/.claude/skills/`
+tanpa awalan, dan skill pribadi `code-review` menggantikan `/code-review`
+bawaan (aliasnya, `/review`, tetap menjalankan yang bawaan). Dua nama,
+`projectify` dan `workflow`, juga merupakan skill native; skill native itulah
+yang dikirim oleh plugin dan instalasi mesin, bukan skill yang diturunkan dari
+perintah. Lihat
+[Claude Code](/docs/harnesses/claude-code#skill-command-dan-berkas-referensi)
+untuk cara perintah dipecah, dan [Perintah slash](/docs/reference/commands)
+untuk katalog perintah lengkap.
 
 **Verifikasi:** jalankan `/plugin` di dalam Claude Code dan konfirmasikan bahwa
 **apothem** tercantum sebagai terpasang, atau periksa laporan penyimpangan dari
@@ -350,13 +352,20 @@ Tambahkan repositori sebagai marketplace plugin, lalu pasang plugin-nya —
 perintahnya memuat slug host dan harness yang persis:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
 
+Kedua path `--sparse` hanya mengambil daftar marketplace dan plugin, bukan
+seluruh repositori; clone penuh dapat melampaui batas clone 30 detik milik host
+pada disk yang lambat, seperti drive Windows di bawah WSL.
+
 Seperti ekstensi kanal 5 dan kanal 6, ini adalah **bootstrap** yang memanggil
-mesin melalui shell. Materialisasikan harness lengkap dengan menjalankan
-instalasi melaluinya:
+mesin melalui shell. Plugin ini membundel satu skill entri; manifesnya adalah
+`plugin.json` di root, dan
+[halaman harness host plugin](/docs/harnesses/codex#plugin-codex) menjelaskan
+tata letaknya serta apa yang diserahkan plugin kepada mesin. Materialisasikan
+harness lengkap dengan menjalankan instalasi melaluinya:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Adapter harness Apothem untuk Kiro (GA)."
 machineTranslated: true
-sourceHash: "d53472ff7c450563"
+sourceHash: "91ec41080bf29036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,209 @@ apothem install --harness kiro --project /path/to/project
 ```
 
 Adapter menulis satu berkas steering Kiro berlingkup proyek dari permukaan
-aturan dan tata kelola Apothem bersama.
+aturan dan tata kelola Apothem bersama, helper Apothem sebagai berkas agen
+kustom Kiro di dalam proyek (lihat [Berkas agen kustom](#berkas-agen-kustom)),
+dan satu hook (lihat [Hook](#hook)).
 
-**Berkas yang ditulis:** `<project>/.kiro/steering/apothem-rules.md`
+Adapter juga menulis skill Apothem, beserta aturan dan templat yang dikutipnya,
+ke direktori home pengguna Anda, sebelum menyentuh proyek (lihat
+[Berkas di luar proyek](#berkas-di-luar-proyek)).
+
+**Berkas yang ditulis:**
+
+- `<project>/.kiro/steering/apothem-rules.md`, berkas steering.
+- `<project>/.kiro/agents/<name>.md` untuk setiap helper Apothem, di dalam proyek.
+- `<project>/.kiro/hooks/apothem.json`, berkas hook, di dalam proyek. Berkas hook milik Anda di folder itu tidak disentuh.
+- `<project>/.apothem/support/kiro/hooks/`, skrip hook, di dalam proyek.
+- `~/.kiro/skills/<name>/SKILL.md` untuk setiap skill dan command Apothem, di direktori home pengguna Anda.
+- `~/.config/apothem/rules/` dan `~/.config/apothem/templates/`, di direktori home pengguna Anda.
+
+## Berkas di luar proyek
+
+Instalasi juga menulis skill Apothem ke direktori home pengguna Anda, sebelum
+mengubah apa pun di dalam proyek:
+
+| Folder | Apa yang ditulis Apothem di sana |
+| --- | --- |
+| `~/.kiro/skills/` | Satu folder berisi `SKILL.md` untuk setiap skill Apothem, dan satu untuk setiap command Apothem (sebuah command menjadi skill dengan nama yang sama). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | Aturan dan templat yang dirujuk oleh skill dan berkas steering. |
+
+Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
+
+- Setiap proyek tempat Anda memasang `kiro` memakai salinan `~/.kiro/skills/` yang sama, dan instalasi menulis berkas yang sama ke dalamnya setiap kali. Kiro adalah satu-satunya alat yang membaca folder itu. Aturan dan templat di bawah `~/.config/apothem/` juga ditulis oleh instalasi alat-alat lain, dengan berkas yang sama.
+- `--project` memilih berkas steering yang ditulis dan proyek tempat instalasi
+  itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
+- Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
+  Proyek mendapatkan berkas steering, berkas agen kustom di `.kiro/agents/`,
+  berkas hook `.kiro/hooks/apothem.json`, ditambah folder `.apothem/` yang
+  dibuat oleh setiap instalasi proyek, yang juga menampung skrip hook.
+- Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
+  folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
+  (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
+  instalasi berhenti dengan galat sebelum apa pun di dalam proyek berubah.
+- Folder skill dengan nama skill Apothem yang tidak ditulis oleh Apothem
+  dibiarkan, dan instalasi mencetak peringatan yang menyebutkan namanya. Ganti
+  nama atau pindahkan folder itu, lalu jalankan `apothem update`. `apothem verify` gagal selama nama itu masih terpakai.
+- Total ukuran berkas-berkas tersebut beberapa megabita.
+
+Instalasi mencetak catatan yang menyebutkan folder yang ditulisnya di luar `--project`,
+dan `--dry-run` mencantumkannya.
+
+## Berkas agen kustom
+
+Kiro membaca agen kustom dari berkas Markdown di `<project>/.kiro/agents/`,
+menurut [dokumentasi agen kustom Kiro](https://kiro.dev/docs/custom-agents/).
+Instalasi menulis satu berkas per helper Apothem ke folder tersebut, keempat
+belasnya. Instalasi ini menargetkan Kiro IDE 1.0 dan Kiro CLI V3
+(`kiro-cli --v3`), versi yang membaca format Markdown. Instalasi tidak menulis
+profil JSON maupun kunci CLI 2.x yang lebih lama, karena V3 melewati profil JSON
+yang memiliki `allowedTools` tanpa blok `permissions`. Instalasi ini hanya untuk proyek: folder pengguna `~/.kiro/agents/` tidak ditulis.
+
+Setiap berkas mempertahankan instruksi helper tanpa perubahan dan membawa kunci
+frontmatter berikut:
+
+| Kunci | Apa yang ditulis Apothem |
+| --- | --- |
+| `name`, `description` | Nama dan deskripsi helper. Agen utama Kiro memilih helper berdasarkan deskripsinya. |
+| `tools` | Alat yang boleh dipakai helper, sebagai daftar kategori alat Kiro: `["read", "shell"]`. Dihilangkan ketika helper tidak membatasi apa pun. |
+
+Kiro memiliki satu daftar untuk alat, sehingga alat yang diizinkan dan ditolak
+bagi helper menjadi daftar itu. Kategorinya adalah `read`, `write`, `shell`,
+`web` dan `subagent`:
+
+| Alat helper | Kategori Kiro |
+| --- | --- |
+| `Read`, `Glob`, `Grep` | `read` |
+| `Write`, `Edit`, `MultiEdit`, `NotebookEdit` | `write` |
+| `Bash`, `PowerShell` | `shell` |
+| `WebSearch`, `WebFetch` | `web` |
+| `Agent`, `Task` | `subagent` |
+
+Alat tanpa kategori (`TodoWrite`, `Monitor`, `Artifact`, `TaskCreate`,
+`TaskUpdate`, sebuah entri MCP) tidak dicantumkan. Sebuah kategori tidak
+dicantumkan ketika helper ditolak menggunakan alat apa pun di dalamnya, sehingga
+helper tidak pernah memperoleh alat yang ditolak baginya: helper yang tidak
+dapat menyunting berkas tidak mendapatkan kategori `write`. Helper yang semua
+alat izinnya tersisihkan ditulis dengan `tools: []`, sehingga helper itu tidak
+diberi setiap alat. Dua helper (`mcp-builder` dan `refactor-surgeon`) membawa
+`write`, sembilan membawa `shell`, dan tiga membawa `web`. Instalasi tidak
+menulis kunci `model`, sehingga helper berjalan dengan model yang dipilih Kiro,
+dan tidak menulis `permissions`, `excludedTools`, `resources`, `mcpServers`
+maupun `hooks`.
+
+Hal yang perlu diketahui:
+
+- Kiro tidak memuat berkas agen kustom sebuah workspace sampai Anda memercayai
+  workspace itu. Kiro CLI 2.33 dan yang lebih baru menanyakan "Trust this
+  workspace?" saat pertama kali Anda memulai sesi V3 interaktif di sebuah folder.
+  Jika Kiro tidak mencantumkan satu pun helper, percayai folder itu dan mulai
+  sesi baru.
+- Apothem belum memastikan apakah Kiro CLI 2.x memuat agen Markdown V3. Gunakan
+  IDE, atau jalankan `kiro-cli --v3`.
+- Berkas agen adalah berkas proyek biasa. Commit berkas itu bersama proyek atau
+  cantumkan `.kiro/agents/` di `.gitignore`; Apothem tidak memilihkannya untuk Anda.
+- Berkas milik Anda dengan nama helper Apothem disimpan di bawah
+  `~/.apothem/backups/` lalu diganti. Pencopotan tidak mengembalikannya.
+  Berkas dengan nama lain, termasuk profil JSON, tidak pernah disentuh.
+- Halaman-halaman Kiro tidak sepakat apakah agen kustom melihat skill di
+  `~/.kiro/skills/` secara default: halaman skill menyebutkan bahwa agen
+  membutuhkan resource `skill://`, sedangkan referensi konfigurasi menyebutkan
+  bahwa agen mewarisi skill default. Instalasi tidak menambahkan kunci
+  `resources`, sehingga helper melihat skill hanya jika pembacaan kedua yang
+  berlaku.
+- [Halaman alat bawaan](https://kiro.dev/docs/tools/) Kiro mencantumkan alat
+  yang umumnya disertakan setiap kategori. Kategori `read` mencakup alat
+  pencarian berkas dan pencarian teks (`glob` dan `grep` CLI 2.x), itulah
+  sebabnya `Glob` dan `Grep` dipetakan ke sana. Kategori itu juga mencakup
+  `code` (analisis kode dengan pohon sintaks) dan `introspect` (menjawab
+  pertanyaan tentang Kiro sendiri), sehingga helper dengan `read` dapat memakai
+  keduanya. Halaman itu juga mencantumkan `code` di bawah `write`, dan tidak
+  menyebutkan apakah alat itu menyunting berkas.
+- Apothem belum memastikan apa yang dilakukan Kiro dengan kunci `tools` yang
+  dihilangkan, atau kunci frontmatter mana yang diwajibkan Kiro selain `name`.
+
+## Hook
+
+Kiro menjalankan hook dari berkas JSON di `<project>/.kiro/hooks/`, menurut
+[dokumentasi hook Kiro](https://kiro.dev/docs/hooks/). Instalasi menulis satu
+berkas di sana, `apothem.json` (versi berkas hook `v1`), dengan satu hook:
+
+| Pemicu | Apa yang dijalankan |
+| --- | --- |
+| `SessionStart` | Bootstrap sesi: metadata sesi, indeks skill, ringkasan memori dan plan, serta postur tetap, ditambahkan ke konteks model. |
+
+Hook ini menambahkan konteks bagi model. Hook ini tidak memblokir pemanggilan
+alat maupun sesi.
+
+Apothem tidak mendaftarkan hook `PreToolUse` atau `PostToolUse` di Kiro. Kiro
+menambahkan keluaran perintah ke konteks model hanya untuk `SessionStart` dan
+`UserPromptSubmit` dan mengabaikannya untuk peristiwa alat. Penjaga yang
+didaftarkan pada peristiwa alat akan memakan satu permulaan proses pada setiap
+pemanggilan alat tanpa menyampaikan apa pun, sehingga penjaga tulis, sunting
+dan shell, peringatan ukuran konteks dan protokol akhir sesi tetap berada di
+alat yang menyampaikannya. Instalasi tidak menulis hook untuk
+`UserPromptSubmit`, dan tidak menulis hook ke folder pengguna `~/.kiro/hooks/`.
+
+**Ke mana berkas ditulis**
+
+| Berkas | Isinya |
+| --- | --- |
+| `<project>/.kiro/hooks/apothem.json` | Pendaftaran hook. Apothem memiliki satu berkas ini. |
+| `<project>/.apothem/support/kiro/hooks/` | Skrip dispatcher, helper-nya, dan berkas pesannya. |
+
+Perintah di berkas hook terlihat seperti ini, dengan interpreter dan jalur
+proyek Anda menggantikan kedua jalur tersebut:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+```
+
+`--contract kiro` membuat dispatcher mencetak konteks sebagai teks biasa, yang
+merupakan apa yang ditambahkan Kiro ke konteks untuk `SessionStart`. Kiro tidak
+mendokumentasikan shell untuk tindakan perintah di Windows. Perintah ditulis
+untuk sh dan cmd.exe, dengan jalur interpreter bergaris miring maju dalam tanda
+kutip; jika Kiro menjalankannya di bawah PowerShell di mesin Anda, jalur yang
+dikutip memerlukan operator panggilan (`&`) di depannya, dan Anda dapat
+menambahkannya secara manual.
+
+**Percayai workspace.** Kiro CLI 2.33 dan yang lebih baru memuat hook sebuah
+workspace hanya setelah Anda memercayai workspace itu: Kiro menanyakan "Trust
+this workspace?" saat pertama kali Anda memulai sesi V3 interaktif
+(`kiro-cli --v3`) di sebuah folder. Sesi Kiro Web tidak menjalankan hook.
+Instalasi mencetak hal ini sebagai catatan.
+
+**Commit dengan hati-hati.** Perintah itu memuat interpreter yang ditemukan
+Apothem saat dijalankan dan jalur absolut proyek, sehingga berkas itu khusus
+untuk mesin Anda, dan skrip yang dijalankannya berada di `.apothem/`, yang
+diabaikan oleh cuplikan `.gitignore` proyek. Jika Anda meng-commit
+`.kiro/hooks/apothem.json`, checkout rekan tim mendapatkan hook yang tidak
+menunjuk ke apa pun: Kiro menampilkan peringatan untuk perintah yang gagal dan
+sesi tetap berjalan. Tambahkan `.kiro/hooks/apothem.json` ke `.gitignore`, atau
+commit berkas itu hanya untuk tim yang memakai tata letak yang sama. Instalasi
+tidak menyunting `.gitignore`.
+
+**Hook milik Anda.** Berkas hook milik Anda di `.kiro/hooks/` tidak pernah
+dibaca atau diubah. Hook yang Anda tambahkan ke `apothem.json` itu sendiri tetap
+ada: pembaruan dan pencopotan hanya mengganti atau menghapus hook yang
+perintahnya menjalankan dispatcher Apothem
+(`.apothem/support/kiro/hooks/dispatch.py` dengan `--contract kiro`, di jalur
+proyek mana pun perintah itu ditulis). Hook milik Anda yang hanya berbagi nama,
+atau yang menjalankan `python -m apothem.conformity.gate`, tidak pernah dianggap
+milik Apothem. Berkas yang bukan JSON valid disimpan di bawah
+`~/.apothem/backups/` dan diganti.
+
+**Jalur yang akan salah dibaca shell.** Jalur proyek atau interpreter yang
+mengandung `$`, backtick, tanda kutip ganda, atau backslash ditolak sebelum apa
+pun ditulis: di dalam perintah yang dikutip, jalur itu akan menjalankan berkas
+lain, atau merusak JSON tempat perintah itu ditulis. Galat menyebutkan jalur
+tersebut; pindahkan atau ganti nama proyek dan jalankan instalasi lagi. Spasi
+atau apostrof dalam jalur tidak masalah.
+
+**Mematikan hook.** Tetapkan `APOTHEM_HOOKS_DISABLE=1` di lingkungan Kiro untuk
+membungkam hook Apothem. Pembaruan menulis ulang entri Apothem, sehingga
+suntingan padanya tidak bertahan, dengan satu pengecualian: tetapkan
+`"enabled": false` padanya, yang didokumentasikan Kiro sebagai melewati hook
+tanpa menghapusnya, dan pembaruan mempertahankan itu.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -41,7 +241,14 @@ Permukaan steering Kiro berlingkup proyek di bawah `.kiro/steering/`. Adapter
 menulis berkas steering khusus `apothem-rules.md` dengan front matter
 `inclusion: always` dan tidak pernah menimpa berkas fondasi Kiro yang ditulis
 operator (`product.md`, `tech.md`, `structure.md`). Spec Kiro (`.kiro/specs/`)
-dan hook agen dimiliki operator; Apothem tidak menulisnya.
+dimiliki operator; Apothem tidak menulisnya. Adapter menulis satu berkas hook,
+`.kiro/hooks/apothem.json`, dan tidak ada berkas lain di `.kiro/hooks/`.
+
+Kiro mendokumentasikan `~/.kiro/skills/` untuk skill global dan tidak menyebut
+`~/.agents/skills/`, sehingga instalasi menulis folder Kiro dan bukan folder
+lintas alat. Skill workspace dengan nama yang sama mengalahkan skill global.
+Apothem belum memastikan bagaimana Kiro memperlakukan kunci header `SKILL.md`
+yang tidak dicantumkannya.
 
 ## Verifikasi
 
@@ -52,10 +259,22 @@ apothem verify --harness kiro --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
-   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
-   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
-3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+2. Setiap target terkelola ada, termasuk folder `.kiro/agents/`; berkas
+   terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai.
+   Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang
+   cocok dengan profil tersebut. Untuk `.kiro/agents/`, yang diperiksa adalah
+   keberadaan folder tersebut, bukan keberadaan setiap berkas helper di
+   dalamnya; perintah `apothem diff --harness kiro --project /path/to/project`
+   mencantumkan berkas helper yang hilang atau usang.
+   Berkas hook `.kiro/hooks/apothem.json` harus ada, tidak kosong, dapat diurai
+   sebagai JSON, dan memuat hook yang menjalankan dispatcher Apothem, dan skrip
+   hook harus berada di `.apothem/support/kiro/hooks/`. Pemeriksaan tidak
+   menjalankan hook.
+3. Setiap folder skill Apothem ada di tempatnya dengan sebuah `SKILL.md`,
+   instalasi mana pun yang menulisnya, dan tidak ada folder skill dengan nama
+   Apothem yang milik sesuatu yang tidak ditulis Apothem. Pemeriksaan yang gagal
+   menyebutkan folder yang hilang atau asing.
+4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -64,6 +283,12 @@ apothem update --harness kiro --project /path/to/project
 ```
 
 Menurunkan ulang berkas steering proyek dari status profil bersama saat ini.
+
+Pembaruan juga menulis ulang setiap folder skill yang berkasnya berbeda dari berkas saat ini.
+Jika Anda memasang dengan rilis sebelumnya yang tidak menulis skill, pembaruan menambahkannya.
+Pembaruan menulis ulang berkas agen kustom yang berbeda dari berkas saat ini, dan menambahkan yang hilang.
+Pembaruan juga menyegarkan skrip hook dan hook Apothem di `.kiro/hooks/apothem.json`,
+dengan mempertahankan hook milik Anda di berkas itu.
 
 ## Pencopotan
 
@@ -78,6 +303,24 @@ Sebelum perubahan, salinan bertanda waktu dari berkas disimpan di bawah
 `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML
 profil bersama dan mesin Apothem tidak terpengaruh.
 
+Pencopotan juga menghapus berkas agen kustom yang ditulisnya di `<project>/.kiro/agents/`
+dan mempertahankan berkas lain di sana; folder itu dihapus ketika menjadi kosong.
+Pencopotan menghapus hook Apothem dari `<project>/.kiro/hooks/apothem.json`, mengenalinya
+dari jalur dispatcher dalam perintahnya, sehingga berfungsi tanpa catatan instalasi, dan
+mempertahankan hook milik Anda di berkas itu. Berkas itu dihapus ketika tidak ada lagi isi lain di dalamnya,
+dan berkas hook Anda yang lain tidak disentuh. Jika berkas itu memiliki komentar yang
+tidak dapat dibaca pencopotan, pencopotan membiarkan berkas itu apa adanya dan melaporkan hook
+sebagai dilewati, beserta alasannya; hapus hook Apothem secara manual. Skrip hook di
+`<project>/.apothem/support/kiro/hooks/` juga dihapus.
+Pencopotan menghapus folder skill yang ditulisnya di `~/.kiro/skills/` serta
+aturan dan templat di `~/.config/apothem/`, tetapi hanya ketika tidak ada lagi
+instalasi Apothem lain yang memakainya. Proyek lain, atau alat lain yang berbagi
+folder itu, mungkin masih memakainya. Dalam kasus itu pencopotan mempertahankan
+folder tersebut, mencetak instalasi mana yang memakainya, dan pencopotan terakhir
+menghapusnya. Berkas yang Anda tambahkan ke folder tersebut tetap ada, dan folder
+yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
+`~/.apothem/backups/` sebelum dihapus.
+
 ## Gerbang konformitas
 
 ```bash
@@ -90,6 +333,11 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness kiro --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness kiro --project /path/to/project`, lalu verifikasi lagi |
+| Kiro tidak mencantumkan satu pun helper Apothem | Percayai workspace (CLI menanyakan "Trust this workspace?" pada sesi V3 interaktif pertama di sebuah folder), dan gunakan IDE atau `kiro-cli --v3` |
+| Hook Apothem tidak berjalan | Percayai workspace (CLI menanyakan "Trust this workspace?" pada sesi V3 interaktif pertama di sebuah folder), dan gunakan IDE atau `kiro-cli --v3`. Sesi Kiro Web tidak menjalankan hook. Peringatan tentang perintah di awal sesi berarti interpreter atau folder `.apothem/support/kiro/hooks/` tidak ada di mesin ini: jalankan `apothem install --harness kiro --project /path/to/project` di sana |
+| `apothem verify` menyebutkan folder skill yang hilang | Jalankan `apothem install --harness kiro --project /path/to/project`; perintah itu memulihkan folder tersebut |
+| Instalasi atau pembaruan memperingatkan bahwa ia melewati sebuah folder skill | Folder dengan nama skill Apothem sudah ada di folder skill dan tidak ditulis oleh Apothem. Ganti nama atau pindahkan folder itu, lalu jalankan `apothem update` |
+| Instalasi berhenti sebelum mengubah proyek | Penulisan di direktori home Anda gagal. Baca galatnya, perbaiki folder yang disebutkannya (tautan yang keluar dari direktori home Anda, berkas di tempat yang seharusnya folder, atau folder hanya-baca), lalu pasang lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness kiro --project /path/to/project` |
 
 ## Tombol konfigurasi

@@ -2,15 +2,16 @@
 title: "Apothem против сырой конфигурации Hermes"
 description: "Ручное сопровождение конфигурации Hermes в сравнении с управлением ею через общий профиль Apothem."
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes читает `~/.hermes/config.yaml`. Apothem записывает нативную конфигурацию
 YAML (проецируя перечень MCP из профиля в `mcp_servers`) и устанавливает общие
-группы команд и навыков под `~/.hermes/.apothem/support/skills/`. Собственный
-`skills.config` в Hermes — это список пакетов из реестра, поэтому Apothem его не
-создаёт.
+группы команд и навыков под `~/.hermes/.apothem/support/skills/`, который он
+указывает в `skills.external_dirs`, чтобы Hermes их загружал. Собственный
+`skills.config` в Hermes хранит настройки отдельных навыков, поэтому Apothem его
+не создаёт.
 
 ## Статус
 
@@ -31,9 +32,13 @@ YAML (проецируя перечень MCP из профиля в `mcp_server
 
 Адаптер Hermes записывает `config.yaml`, оборачивает слеш-команды Apothem в
 навыки, копирует навыки Apothem во вспомогательный каталог и хранит правила,
-шаблоны, исполнителей и материал хуков в поддереве поддержки Apothem. Hermes
-загружает эти навыки только после того, как вы добавите
-`~/.hermes/.apothem/support/skills` в `skills.external_dirs` в `config.yaml`.
+шаблоны, исполнителей и материал хуков в поддереве поддержки Apothem. Он также
+добавляет `~/.hermes/.apothem/support/skills` в `skills.external_dirs` в
+`config.yaml`, чтобы Hermes загружал эти навыки. Этот список стоит последним в
+задокументированном порядке приоритета Hermes, поэтому навык с тем же именем в
+вашем проекте или в `~/.hermes/skills/`, вероятно, будет иметь приоритет над
+копией Apothem; в просмотренной документации Hermes правило разрешения таких
+конфликтов не указано.
 
 ## Путь миграции
 
@@ -41,11 +46,10 @@ YAML (проецируя перечень MCP из профиля в `mcp_server
    этого не сделали.
 2. Перенесите переиспользуемые навыки или промпты команд Hermes в общий корпус.
 3. Выполните `apothem install --harness hermes`, чтобы отрендерить нативную
-   конфигурацию и вспомогательный каталог навыков.
-4. Добавьте `~/.hermes/.apothem/support/skills` в `skills.external_dirs` в
-   `config.yaml`, чтобы Hermes загружал установленные навыки. `apothem update`
-   сохраняет ключи, которые вы добавляете в `config.yaml`.
-5. Выполните `apothem verify --harness hermes`, чтобы подтвердить, что
+   конфигурацию, которая указывает вспомогательный каталог навыков в
+   `skills.external_dirs`, и установить навыки. `apothem update` сохраняет
+   ключи, которые вы добавляете в `config.yaml`.
+4. Выполните `apothem verify --harness hermes`, чтобы подтвердить, что
    конфигурация на месте.
 
 ## Читать далее

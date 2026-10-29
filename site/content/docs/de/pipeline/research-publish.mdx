@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einreichungspaket zusammen (Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik/Interessenkonflikt), mit einem Preprint-/DOI-Plan."
 machineTranslated: true
-sourceHash: "775d7080efc5b935"
+sourceHash: "ef7a2e79372ed070"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Mit Argumenten:
 
 ## Eingaben
 
-Das Paper-Liefergut und `_outputs/review-report.md` (die Peer-Review-Überarbeitungen).
+Das Paper-Liefergut und `_outputs/review-report.md` (die Peer-Review-Überarbeitungen und seine Liste des Nicht-Beurteilten).
 
 ## Ausgaben
 
-Das nach dem Publikationsort formatierte Einreichungspaket an einem host-natürlichen Ort (das formatierte Manuskript + Supplementmaterialien + Erklärung zur Daten-/Code-Verfügbarkeit + Anschreiben + Ethik-/Interessenkonflikterklärungen) + `_outputs/publication-record.md` + eine Einreichungs-Checkliste.
+Das nach dem Publikationsort formatierte Einreichungspaket an einem host-natürlichen Ort (das formatierte Manuskript + Supplementmaterialien + Erklärung zur Daten-/Code-Verfügbarkeit + Anschreiben + Ethik-/Interessenkonflikterklärungen) + `_outputs/publication-record.md` (einschließlich des datierten Registers der Regeln des Publikationsorts: jede Regel mit ihrer offiziellen Quellseite, ihrem Lesedatum und ihrer Einreichungsstufe) + eine Einreichungs-Checkliste.
 
 ## Stromabwärts
 
@@ -39,16 +39,18 @@ Das nach dem Publikationsort formatierte Einreichungspaket an einem host-natürl
 
 Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
-1. **Kontext laden** — Das Paper und den Review-Bericht lesen.
+1. **Kontext laden** — Das Paper und den Review-Bericht lesen; Publikationsort, Zyklus, Track und Artikeltyp festlegen und jede Regel des Publikationsorts mit ihrer offiziellen Quellseite, ihrem Lesedatum und ihrer Einreichungsstufe festhalten.
 2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass `_outputs/review-report.md` existiert und seine HIGH-Überarbeitungen behoben sind (oder der Operator das Restrisiko ausdrücklich akzeptiert hat); andernfalls mit `Blocked: run /research-review first` anhalten.
-3. **Formatieren & packen** — Die Vorlage des Publikationsorts anwenden; Supplement, Daten-/Code-Verfügbarkeit, Anschreiben sowie Ethik- und COI-Erklärungen zusammenstellen.
+3. **Formatieren & packen** — Jede Regel des Publikationsorts mit ihrer Quellseite, ihrem Lesedatum und ihrer Einreichungsstufe mitführen, auf der unveränderten Vorlage des Publikationsorts aufbauen, Seiten und Wörter auf die Weise des Publikationsorts zählen und das kompilierte PDF prüfen; dann Supplement, Daten-/Code-Verfügbarkeit, Anschreiben sowie Ethik- und COI-Erklärungen zusammenstellen.
 4. **Preprint / Archivierung planen** — Den Preprint- und DOI-Plan festhalten; die Einreichungs-Checkliste erstellen.
 5. **Das Übergabe-Manifest aktualisieren** — Das Einreichungspaket und den Publikationsdatensatz festhalten.
 6. **Das Paket ausgeben** — Das nach dem Publikationsort formatierte Einreichungspaket + `_outputs/publication-record.md`.
 
 ## Rigorositätsuntergrenze
 
-Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publikationsort werden Autor, Institution und Systemidentität auf separat eingereichte Metadaten reduziert und erst in der dafür vorgesehenen Druckfahnen-Stufe wiederhergestellt. Das Archivierungs-Deposit trägt das am Publikationsort skalierte Reproduzierbarkeitsnachweis-Paket (Daten, Code, eingefrorene Umgebung, Seeds, Hardware-Protokoll, Ergebnisse pro Instanz und Abbildungen).
+Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publikationsort werden Autor, Institution und Systemidentität auf separat eingereichte Metadaten reduziert und erst in der dafür vorgesehenen Druckfahnen-Stufe wiederhergestellt. Das Archivierungs-Deposit trägt das am Publikationsort skalierte Reproduzierbarkeitsnachweis-Paket (Daten, Code, eingefrorene Umgebung, Seeds, Hardware-Protokoll, Ergebnisse pro Instanz und Abbildungen). Bei einem doppelblinden Publikationsort werden das Supplement-Archiv und jedes verlinkte Repository oder jeder verlinkte Datensatz auf Identität geprüft, nicht nur das Manuskript.
+
+Die Regeln des Publikationsorts sind belegt und stufenbezogen. Nur die eigenen offiziellen Seiten des Ziels zählen: Ein benachbarter Publikationsort, ein früherer Zyklus oder ein Schwester-Track ist nie ein Ersatz, und eine Neuerstellung für eine Überarbeitung oder für die Druckfahnen-Stufe setzt die Begrenzungen dieser Stufe durch, nicht die der Ersteinreichung. Eine Regel ohne offizielle Seite dahinter wird beim Operator erfragt und als nicht gegen den Publikationsort verifiziert markiert. Die Vorlagendateien des Publikationsorts bleiben wie herausgegeben, sodass eine lokal geschriebene Ausgangsdatei als solche gemeldet wird. Seiten und Wörter werden auf die Weise des Publikationsorts gezählt, wobei die ausgenommenen Abschnitte festgehalten werden, und jede Abbildung und Tabelle wird in der Größe und dem Format geprüft, die der Publikationsort erhält.
 
 ## Fehlermodi
 
@@ -57,6 +59,8 @@ Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publika
 | Blocked: run /research-review first | Kein Review-Bericht oder offene HIGH-Überarbeitungen | Führen Sie `/research-review` aus, um `_outputs/review-report.md` zu erzeugen, oder beheben Sie die offenen HIGH-Überarbeitungen und führen Sie `/research-review` erneut aus, oder akzeptieren Sie das Restrisiko ausdrücklich |
 | Unbearbeitete HIGH-Überarbeitung | Review-Befund übersprungen | Bearbeiten Sie die Überarbeitung und führen Sie `/research-review` erneut aus |
 | Fehlende Daten-/Code-Verfügbarkeit | Reproduzierbarkeitsoberfläche fehlt | Fügen Sie vor der Einreichung die Erklärung zur Daten-/Code-Verfügbarkeit hinzu |
+| Regel des Publikationsorts ohne Quelle | Die Regel stammt aus einem anderen Zyklus, Track oder benachbarten Publikationsort oder aus dem Gedächtnis | Legen Sie das Ziel fest; halten Sie für die Regel die offizielle Seite, das Lesedatum und die Stufe fest, oder fragen Sie den Operator und markieren Sie sie als nicht verifiziert |
+| Vorlage verändert | Eine lokale Bearbeitung ändert die Seitengeometrie oder die Satzeinstellungen des Publikationsorts | Stellen Sie die Dateien des Publikationsorts wieder her und ändern Sie das Layout nur über Optionen, die die Vorlage dokumentiert |
 
 ## Beispiele
 

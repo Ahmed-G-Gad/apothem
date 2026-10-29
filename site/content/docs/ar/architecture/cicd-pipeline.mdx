@@ -2,7 +2,7 @@
 title: "مخطّط خط أنابيب CI/CD"
 description: "خريطة بصرية وتفصيل بالمسارات لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي يُشترَط اجتيازها لكلّ تغيير في الشيفرة وكلّ إصدار."
 machineTranslated: true
-sourceHash: "d9a69ec274df9173"
+sourceHash: "954db6336e032a1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ flowchart LR
 
 - **مسار التحليل الساكن** — تغذية راجعة سريعة. يغطّي <bdi>Ruff</bdi> أسلوب <bdi>Python</bdi> ومجموعةً منتقاةً من القواعد؛ ويفرض <bdi>mypy</bdi> انضباط الأنواع عند <bdi>strict</bdi>؛ ويعمل مُتحقِّق <bdi>frontmatter</bdi> بوصفه بوّابة لامتثال مخطّط القِطَع للقواعد والمهارات والعمّال المُفوَّضين والأوامر. لا يقع <bdi>markdownlint</bdi> في هذا المسار: فهو يعمل بوصفه خطّاف <bdi>pre-commit</bdi> فقط، ولا يُشغِّله <bdi>CI</bdi> (راجع [اصطلاحات <bdi>Markdown</bdi>](/docs/reference/markdown-conventions)).
 - **مسار الاختبار** — يختبر <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الخطّافات عبر مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi> هو البوّابة البنيوية الأساسية لاتّساق القِطَع المتقاطعة؛ ويعمل <bdi>`chaos_pass.py`</bdi> في مهمّة الجودة في <bdi>CI</bdi> عند عمليات الدفع وطلبات السحب إلى <bdi>`main`</bdi> (مُصفّاة بحسب المسارات) لرصد التدهور تحت مدخلات متدهورة. ويعمل مُشغِّلو قياس الأداء لكل صنف تحت <bdi>`src/apothem/benchmarks/`</bdi> في <bdi>CI</bdi> عبر مجموعة <bdi>pytest</bdi> وعبر مهمّة <bdi>`metrics`</bdi>. ويجمع كل تشغيل كامل لـ <bdi>pytest</bdi> في <bdi>CI</bdi> الملفَّ <bdi>`tests/unit/test_benchmarks.py`</bdi>، الذي يستدعي كل مُشغِّل ما عدا <bdi>`bench_install.py`</bdi>. وتُشغِّل مهمّة <bdi>`metrics`</bdi> الملفَّ <bdi>`scripts/dev/collect_metrics.py`</bdi>، الذي يُشغِّل <bdi>`bench_hooks.py --json`</bdi> ويسجّل النتيجة بوصفها <bdi>`hook_e2e_ms`</bdi>. ولا يقيس <bdi>`bench_tests.py`</bdi> و<bdi>`bench_install.py`</bdi> التشغيلات الفعلية إلا عبر <bdi>`make benchmarks`</bdi>. ولا يوجد أي سير عمل يُشغِّل <bdi>`make benchmarks`</bdi>.
-- **مسار الأمن** — يلتقط <bdi>gitleaks</bdi> في <bdi>`ci.yml`</bdi> بيانات الاعتماد المُودَعة عن طريق الخطأ. ويفشل تدقيق التراخيص (<bdi>`license-audit.yml`</bdi>) عند وجود ترخيص اعتمادية خارج قائمة السماح الخاصة به، ويعمل أسبوعيًا وعند تغيّر ملفات الاعتماديات أو التراخيص. ويولّد <bdi>`release.yml`</bdi> <bdi>SBOM</bdi> لكل إصدار موسوم.
+- **مسار الأمن** — يلتقط <bdi>gitleaks</bdi> في <bdi>`ci.yml`</bdi> بيانات الاعتماد المُودَعة عن طريق الخطأ. ويفشل تدقيق التراخيص (<bdi>`license-audit.yml`</bdi>) عند وجود ترخيص اعتمادية خارج قائمة السماح الخاصة به، ويعمل أسبوعيًا وعند تغيّر ملفات الاعتماديات أو التراخيص. وتعمل بوابة <bdi>REUSE</bdi> (<bdi>`reuse.yml`</bdi>) عند كل تغيير وتفشل عندما يخلو ملف من سطر الترخيص أو يتعذّر تحليل تعبير <bdi>SPDX</bdi>. ويولّد <bdi>`release.yml`</bdi> <bdi>SBOM</bdi> لكل إصدار موسوم.
 - **مسار النشر** — تُشغَّل سير عمل الإصدار عند دفع الوسوم، ويمكن أيضًا إعادة تشغيل ناشِري <bdi>npm</bdi> و<bdi>VS Code</bdi> يدويًا عبر الإرسال اليدوي لوسم موجود. ويؤكّد التحقّق من الوسم الموقَّع منشأ فرع الإصدار، وتُشتقّ ملاحظات الإصدار من تنسيق <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>. وينشر موقع المشروع من <bdi>`site/dist/`</bdi> إلى هدف <bdi>GitHub Pages</bdi> عند الدفع إلى <bdi>`main`</bdi> الذي يمسّ مدخلات بنائه، أو عند الإرسال اليدوي.
 
 ## التهيئة الملموسة

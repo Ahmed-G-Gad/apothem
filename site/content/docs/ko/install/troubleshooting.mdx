@@ -2,7 +2,7 @@
 title: "문제 해결"
 description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
 machineTranslated: true
-sourceHash: "dc2d96527e950504"
+sourceHash: "218cead5defe61ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,6 +38,18 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ### `/plugin marketplace add`가 실패함
 
 `/plugin marketplace add ahmed-g-gad/apothem`은 GitHub에서 마켓플레이스 목록을 가져옵니다. 실패하는 경우, 머신이 `https://github.com/ahmed-g-gad/apothem`에 도달할 수 있는지(네트워크, 프록시, 또는 방화벽 규칙) 확인한 다음 다시 시도하세요. 부분 가져오기 상태에서 마켓플레이스가 이전에 추가된 경우, `/plugin install apothem@apothem`을 실행하기 전에 제거하고 다시 추가하세요.
+
+### 플러그인 호스트의 마켓플레이스 추가가 시간 초과됨
+
+마켓플레이스를 추가하는 플러그인 호스트의 명령은 해당 저장소를 클론하며 30초가 지나면 포기합니다. 이 저장소의 전체 클론은 WSL 아래의 Windows 드라이브처럼 느린 디스크에서 그보다 오래 걸릴 수 있으며, 이전에 받은 전체 클론 때문에 이후의 새로 고침이 시간 초과될 때 플러그인이 오래된 버전에 머물 수도 있습니다. 플러그인에 필요한 두 폴더만 가져오세요:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+그러면 호스트의 플러그인 목록에 `apothem@apothem`의 현재 버전이 표시됩니다.
 
 ### npx가 오래된 버전을 제공함
 

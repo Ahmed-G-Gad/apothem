@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "محوّل إطار عمل Apothem لـ Gemini CLI (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,6 +60,15 @@ GEMINI.md
 <bdi>Gemini</bdi>، ويصبح <bdi>`maxTurns`</bdi> هو <bdi>`max_turns`</bdi>. لذا لا يحصل
 المساعِد المقصور على القراءة على أداة <bdi>`write_file`</bdi> أو <bdi>`replace`</bdi>.
 لا يُضبَط أي نموذج، لذا يرث كل مساعِد نموذج الجلسة.
+
+والمساعِد الذي يسرده المفتاح <bdi>`agent_mcp_servers`</bdi> في الملف التعريفي يحصل أيضًا على
+مُدخلة <bdi>`mcp_<server>_*`</bdi> واحدة لكل خادم مُسمّى في قائمة السماح <bdi>`tools`</bdi>
+الخاصة به، بحيث يستطيع استدعاء أدوات ذلك الخادم دون أدوات أي خادم آخر؛ ومن دون
+المفتاح يحتفظ كل مساعِد بقائمة السماح العادية (راجع
+[خوادم <bdi>MCP</bdi>](/docs/reference/mcp#منح-مساعِد-الوصول-إلى-خوادم-mcp)). ولا يكتب
+<bdi>Apothem</bdi> منحةً هنا إلا لاسم خادم مؤلَّف من حروف وأرقام و<bdi>`-`</bdi>، لأن
+<bdi>`Gemini CLI`</bdi> لا يستطيع مخاطبة اسم فيه شرطة سفلية؛ وأي اسم آخر يُتخطّى ويُبلَّغ
+عنه، وكذلك المنحة لمساعِد يصل بالفعل إلى كل خادم <bdi>MCP</bdi>.
 
 ## ملاحظات التوافق
 

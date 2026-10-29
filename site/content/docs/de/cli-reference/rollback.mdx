@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "cff52dcbcba63390"
+sourceHash: "398c0c678cace0b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,6 +36,20 @@ Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
   Harness sie noch verwendet;
 - entfernt die Verzeichnisse, die die Installation angelegt hat, sobald sie
   leer sind.
+
+Eine Datei oder ein Ordner in Ihrem Home-Verzeichnis, die bzw. den auch andere
+Installationen verwenden (ein Skills-Ordner oder `~/.config/apothem/`), wird wie
+die gemeinsamen Datenspeicher behandelt: Rollback behält sie bzw. ihn, solange
+eine andere Installation sie bzw. ihn noch aufführt, und stellt sie bzw. ihn nur
+für die letzte Installation, die sie bzw. ihn verwendet, wieder her oder entfernt
+sie bzw. ihn. Ein Ordner, den diese Installation bereits vorgefunden hat (ein
+zweites Werkzeug, das nach dem ersten installiert wurde), wird mit der letzten
+Installation entfernt, die ihn verwendet, wenn eine Installation ihn angelegt
+hat, die ihn inzwischen freigegeben hat, sodass das Zurücksetzen jedes Werkzeugs
+nichts zurücklässt. Wenn sich der Eintrag einer Installation, die den Ordner
+verwenden könnte, nicht lesen lässt, bricht Rollback mit einem Fehler ab, bevor
+es etwas ändert, und schreibt keinen `rollback`-Eintrag; reparieren Sie den
+Eintrag und führen Sie den Befehl erneut aus.
 
 Alles, was rollback entfernt oder ersetzt, wird zuerst in die
 Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein

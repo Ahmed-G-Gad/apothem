@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "cff52dcbcba63390"
+sourceHash: "398c0c678cace0b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,6 +31,18 @@ libro mayor, empezando por el cambio más reciente, el comando:
 - elimina los almacenes de datos compartidos (`memory`, `contexts`, `learning`)
   que la instalación creó, a menos que otro entorno instalado todavía los use;
 - elimina los directorios que la instalación creó, una vez que están vacíos.
+
+Un archivo o una carpeta de tu directorio personal que otras instalaciones
+también usan (una carpeta de skills, o `~/.config/apothem/`) se trata como los
+almacenes de datos compartidos: rollback lo conserva mientras otra instalación
+todavía lo liste, y lo restaura o elimina solo para la última instalación que lo
+usa. Una carpeta que esta instalación encontró ya en su lugar (una segunda
+herramienta instalada después de la primera) desaparece con la última
+instalación que la usa cuando la creó una instalación que desde entonces la ha
+soltado, de modo que revertir todas las herramientas no deja nada atrás. Cuando
+no se puede leer el registro de una instalación que podría usar la carpeta,
+rollback se detiene con un error antes de cambiar nada y no escribe ningún
+registro `rollback`; repara el registro y vuelve a ejecutarlo.
 
 Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
 de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede

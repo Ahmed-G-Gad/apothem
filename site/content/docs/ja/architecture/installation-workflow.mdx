@@ -2,7 +2,7 @@
 title: "インストールワークフロー"
 description: "apothem install、update、uninstall がエンドツーエンドでどのように動作するか。"
 machineTranslated: true
-sourceHash: "31ff2cefbdd10a97"
+sourceHash: "a022a59478259b3c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,7 +49,12 @@ flowchart TD
 各アダプターは自身の固定インストールルートに書き込みます。ユーザースコープの
 アダプターはユーザーホームに、プロジェクトスコープのアダプターはプロジェクト
 ローカルに書き込みます。CLI は `--scope` フラグを公開しません。プロジェクト
-スコープのアダプターには `--project <path>` が必要です。各書き込み先は
+スコープのアダプターには `--project <path>` が必要です。プロジェクトスコープの
+アダプターのうち 7 つは、プロジェクトファイルを書き込む前に、`~/.agents/skills/` や
+`~/.config/apothem/` などの共有フォルダーもユーザーホームに書き込み、`--project` は
+それらの書き込み先を変更しません。
+[install リファレンス](/docs/cli-reference/install#ホームディレクトリ内のフォルダー)
+にそれらが列挙されています。各書き込み先は
 `site/content/docs/harnesses/<harness>.mdx` に文書化されています。
 
 ## エラー処理

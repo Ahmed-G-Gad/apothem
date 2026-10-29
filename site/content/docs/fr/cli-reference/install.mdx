@@ -2,7 +2,7 @@
 title: "install"
 description: "Référence de la CLI pour la commande apothem install."
 machineTranslated: true
-sourceHash: "838431066489b516"
+sourceHash: "16be1a92f6de53b3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,10 +45,17 @@ création est signalée comme une entrée `warnings` avec
 
 ## Aperçu du rayon d'impact
 
-`install --harness all` se déploie sur des portées mixtes : les adaptateurs à portée de projet écrivent sous la racine `--project` fournie, tandis que les adaptateurs à portée d'utilisateur écrivent sous votre répertoire personnel — en dehors de cette racine. Avant que l'installation n'écrive le moindre fichier, la commande affiche les cibles concrètes regroupées sous deux en-têtes : celles situées à l'intérieur de la racine du projet et celles situées sous votre répertoire personnel. La seule exception est `--clean` : son étape de remise à zéro s'exécute avant cet aperçu, écrit une sauvegarde et supprime les cibles précédentes, comme décrit ci-dessous.
+`install --harness all` se déploie sur des portées mixtes : les adaptateurs à portée de projet écrivent sous la racine `--project` fournie, tandis que les adaptateurs à portée d'utilisateur écrivent sous votre répertoire personnel — en dehors de cette racine. Avant que l'installation n'écrive le moindre fichier, la commande affiche les cibles concrètes regroupées sous deux en-têtes : celles situées à l'intérieur de la racine du projet et celles situées sous votre répertoire personnel. Un troisième en-tête liste les
+dossiers partagés de votre répertoire personnel dans lesquels les adaptateurs à
+portée de projet écrivent, en dehors de `--project` : le dossier de skills et
+`~/.config/apothem/` (voir
+[Dossiers dans votre répertoire personnel](#dossiers-dans-votre-répertoire-personnel)).
+La seule exception est `--clean` : son étape de remise à zéro s'exécute avant cet aperçu, écrit une sauvegarde et supprime les cibles précédentes, comme décrit ci-dessous.
 
-Lorsque la sélection écrit en dehors de la racine du projet, une confirmation
-interactive protège les écritures enracinées dans le répertoire personnel.
+Lorsque la sélection écrit en dehors de la racine du projet, que ce soit dans le
+dossier d'un adaptateur enraciné dans le répertoire personnel ou dans un dossier
+partagé, une confirmation interactive protège les écritures enracinées dans le
+répertoire personnel.
 `--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json`
 poursuivent chacun sans demander de confirmation. Seul `--dry-run` n'écrit
 rien ; `--format json` ignore l'aperçu et l'invite de confirmation, mais
@@ -58,6 +65,55 @@ remise à zéro s'exécute d'abord, sous sa propre confirmation par cible : elle
 écrit une sauvegarde sous `~/.apothem/backups` et supprime les cibles qu'elle
 confirme. Ces suppressions et la sauvegarde restent en place lorsque l'invite
 d'installation est refusée.
+
+## Dossiers dans votre répertoire personnel
+
+Sept adaptateurs à portée de projet écrivent les skills d'Apothem, ainsi que les
+règles et templates que ces skills citent, dans des dossiers de votre
+répertoire personnel :
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- `--project` sélectionne le fichier de règles et le projet auquel appartient
+  l'installation. Il ne change pas l'emplacement des skills : une installation
+  avec `--project A` et une autre avec `--project B` écrivent les mêmes dossiers.
+- Chaque installation qui nomme un dossier écrit les mêmes fichiers. Une
+  seconde installation les trouve et signale `unchanged`, et l'ordre dans lequel
+  vous installez n'a pas d'importance.
+- Les dossiers du répertoire personnel sont écrits avant tout élément du
+  projet. Si une écriture y échoue, l'installation de l'adaptateur s'arrête avec
+  l'erreur et le projet reste inchangé. L'erreur nomme le chemin qui fait
+  obstacle, par exemple un fichier nommé `~/.agents` là où le dossier doit se
+  trouver.
+- Chaque dossier de skill est écrit dans un dossier caché
+  `.<name>.apothem-staging` placé à côté de lui, puis renommé à sa place une fois
+  complet ; une écriture échouée ou interrompue ne laisse donc jamais un dossier
+  de skill à moitié écrit sous son nom final. Relancez l'installation pour
+  terminer ; elle remplace un dossier de staging restant.
+- Un lien symbolique situé sur l'un de ces dossiers ou au-dessus, comme ceux que
+  créent les gestionnaires de dotfiles pour `~/.config` ou `~/.agents`, est suivi
+  lorsqu'il mène à un emplacement situé dans votre répertoire personnel. Un lien
+  qui sort de votre répertoire personnel arrête l'installation avec
+  `target escapes the allowed materialization root`, tout comme un lien situé à
+  l'intérieur d'un dossier de skill.
+- L'installation n'ajoute aucun fichier de skill ni de règle à votre dépôt. Le
+  projet reçoit le fichier de règles de l'adaptateur, plus le dossier de données
+  `.apothem/` que crée chaque installation de projet.
+- Un dossier de skill qui porte le nom d'un skill Apothem et qu'Apothem n'a pas
+  écrit est ignoré. L'installation affiche une ligne `Warning:` et l'enveloppe
+  `--format json` porte une entrée `warnings` avec `"outcome": "warning"` et
+  `"operation": "skill_conflict"` qui nomme le dossier. Renommez ou déplacez le
+  dossier, puis exécutez [`update`](/docs/cli-reference/update).
+- Chacune de ces installations, mises à jour et dry runs affiche une
+  `Note:` qui nomme les dossiers qu'elle écrit en dehors de `--project`. Dans
+  l'enveloppe JSON, il s'agit d'une entrée `warnings` avec
+  `"operation": "user_level_write"` et une liste `paths`.
 
 ## Notes sur les capacités
 
@@ -77,11 +133,40 @@ L'installation et la mise à jour affichent aussi des avis sous forme de lignes
 `Note:`. Un avis ne modifie jamais ce que l'installation écrit. Lorsqu'une
 installation écrit dans une racine partagée, un chemin que d'autres outils
 chargent aussi (par exemple le dossier de skills `~/.agents/skills/`), la note
-nomme ces outils. Lorsqu'une installation cible un outil qui charge déjà du
-contenu Apothem depuis la racine partagée d'une autre installation, la note
-nomme cette installation. Dans l'enveloppe `--format json`, chaque avis est une
-entrée `warnings` avec `"outcome": "advisory"` et
-`"operation": "shared_root"`.
+nomme ces outils, et place entre parenthèses un outil qui ne charge ce chemin
+que sous une condition, par exemple `Open-Claw (only under its default state
+directory)`. Une installation qui écrit un dossier que d'autres installations
+écrivent aussi (le rôle `holder`) indique que le dossier reste en place jusqu'à
+la désinstallation de la dernière installation Apothem qui l'utilise, et nomme
+les installations qui l'utilisent actuellement. Lorsqu'une installation cible
+un outil qui charge déjà du contenu Apothem depuis la racine partagée d'une
+autre installation, la note nomme l'installation qui l'y a placé : le
+propriétaire enregistré tant qu'il utilise encore le dossier, sinon la plus
+ancienne installation qui l'utilise. Dans l'enveloppe `--format json`, chaque
+avis est une entrée `warnings` avec `"outcome": "advisory"` et
+`"operation": "shared_root"` ; son `role` vaut `owner`, `holder` ou `reader`,
+`holders` liste les installations qui utilisent le dossier, et
+`owner_of_record` nomme le propriétaire enregistré.
+
+Une installation qui enregistre des hooks affiche aussi des notes sur le
+fichier de hooks. Un avis `hook_review` nomme l'étape dont l'outil a besoin
+avant d'exécuter les hooks (un redémarrage et une revue, ou l'approbation de
+l'espace de travail), ou le risque d'un fichier de hooks qu'un dépôt commite et
+qui nomme l'interpréteur de cette machine. Un avis `hook_import` apparaît pour
+un outil qui exécute aussi les hooks présents dans les fichiers de paramètres de
+Claude Code, comme ceux qu'écrit l'installation Apothem pour Claude Code, et
+nomme le commutateur propre à l'outil qui désactive cet import ainsi que ce que
+ce commutateur arrête également. Chacun est une entrée `warnings` avec
+`"outcome": "advisory"`, le `harness`, le `path` du fichier de hooks et un
+`message`.
+
+Une commande de hook place le chemin du projet et celui de l'interpréteur entre
+guillemets doubles, que `sh`, Git Bash et PowerShell lisent chacun. Un chemin
+contenant `$`, un accent grave, un guillemet double ou une barre oblique inverse
+ferait exécuter un autre fichier à la commande ; l'installation (et
+`--dry-run`) s'arrête donc avec une erreur qui nomme le chemin et n'écrit rien ;
+déplacez ou renommez le projet, puis relancez la commande. Une espace ou une
+apostrophe dans un chemin ne pose pas de problème.
 
 Les serveurs MCP du profil font l'objet de trois avis, chacun nommant le champ
 du profil concerné :
@@ -115,6 +200,14 @@ les commentaires, les virgules finales et la syntaxe JSON5. Par conséquent :
   nomme les clés que l'installation ajouterait ; vous pouvez ainsi convertir
   le fichier en JSON ou en YAML simple, ou ajouter ces clés à la main et
   relancer la commande.
+- Lorsqu'une clé que l'installation remplit avec un mapping ou une liste (par
+  exemple `skills.external_dirs` dans `config.yaml`) contient dans votre fichier
+  une valeur scalaire, ou l'autre forme de conteneur, l'installation n'écrit rien
+  pour cet environnement et se termine avec le code 1 et le même code d'erreur,
+  car remplir la clé supprimerait votre valeur. L'erreur nomme la clé ;
+  donnez-lui la forme qu'elle indique, ou supprimez-la, puis relancez la
+  commande. Une clé que vous avez laissée vide (`skills:` sans rien en dessous)
+  est remplie.
 
 ## Options
 

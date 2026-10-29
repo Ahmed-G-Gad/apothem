@@ -2,7 +2,7 @@
 title: "بوابة المطابقة"
 description: "شغّل بوابة المطابقة في Apothem للتحقّق من سلامة المنظومة."
 machineTranslated: true
-sourceHash: "72287ea47c540903"
+sourceHash: "1e86535725961fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,6 +47,27 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 <bdi>`.github/workflows/`</bdi> بعد، وكذلك تفعل أداة التحقّق من عنوان الكوميت عندما لا
 يكون للجذر سجلّ كوميتات.
 
+تبدأ ست أدوات تحقّق من جذر المستودع وتبحث في الشجرة كلها عن الملفات التي
+تفحصها:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+تتخطّى هذه الأدوات نسخ <bdi>git</bdi> المسحوبة المتداخلة، مثل أشجار العمل والوحدات
+الفرعية والنسخ المستنسخة المتداخلة، وتتخطّى الأدلة التي تحوي الاعتماديات أو البيئات
+الافتراضية أو ذاكرات التخزين المؤقت أو مخرجات البناء، مثل <bdi>`node_modules`</bdi>
+و<bdi>`venv`</bdi> و<bdi>`dist`</bdi>. ويتوقّف فحص الخطط الشاردة في
+<bdi>`no-global-plans-grep`</bdi> أيضًا عند نسخة مسحوبة متداخلة. وتشغيل أيٍّ من هذه
+الأدوات يُبلِغ عن النسخة المسحوبة التي وُجِّه إليها ولا شيء غيرها. أما أداة التحقّق التي
+تقرأ مجلدًا ثابتًا واحدًا، مثل <bdi>`naming-grep`</bdi> تحت <bdi>`src/apothem/`</bdi>،
+فتقرأ كل ما تحت ذلك المجلد.
+
 ## أشرطة البوابة
 
 | الشريط | الفحص | النوع |
@@ -73,12 +94,20 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+تأخذ أداة التحقّق الخاصة بكل عملية كتابة الملفَ المراد فحصه، أو <bdi>`--stdin`</bdi>
+لقراءة المحتوى من الدخل القياسي؛ ومن دون أيٍّ منهما تنتظر مُدخَلًا على الدخل القياسي،
+لذا مرِّر الملف عند تشغيلها من طرفية. وتأخذ أداة التحقّق المستقلّة دليلًا جذرًا (الدليل
+الحالي عند حذفه). ويُبيِّن <bdi>`--list`</bdi> المجموعة التي تنتمي إليها كل أداة تحقّق.
 
 وضع <bdi>`--hook`</bdi> (<bdi>`python -m apothem.conformity.gate --hook`</bdi>) هو نقطة
 الدخول التي يستدعيها إطار العمل: يقرأ حمولة <bdi>JSON</bdi> لمُدخَلات الأداة من

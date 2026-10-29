@@ -2,7 +2,7 @@
 title: "MCP 服务器"
 description: "Model Context Protocol 服务器配置——归操作者所有，并通过每个工具的原生 MCP 机制注册；少数适配器会投射共享配置档案的 MCP 清单，其余适配器不编写任何服务器条目。"
 machineTranslated: true
-sourceHash: "493b667087182d32"
+sourceHash: "d8daaaca1ee297e9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,24 @@ Model Context Protocol（MCP）服务器**归操作者所有**。Apothem 在共�
 ## MCP 服务器在何处注册
 
 每个工具都通过其自身的原生机制注册 MCP 服务器，Apothem 遵从该表面而不是覆盖它。在 Claude Code 上，服务器通过 `claude mcp add` 注册到 `~/.claude.json`（用户或本地作用域）以及项目级的 `.mcp.json` 中；Claude Code 适配器不会写入这两个文件中的任何一个，并且 Apothem 受管的 Claude Code 设置绝不携带 `mcpServers` 区块。
+
+## 让辅助器访问 MCP 服务器
+
+只读研究智能体（`research-scout`、`citation-auditor`）随附一个显式的 `tools` 列表：`Read, Glob, Grep, WebSearch, WebFetch`。只有当某个条目以 `mcp__<server>__*` 的形式指明服务器时，Claude Code 才会将 MCP 工具纳入子智能体的显式列表。配置档案的 `agent_mcp_servers` 键按智能体指明这些服务器：
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+Claude Code 安装会为每个指明的服务器向每个所列智能体的 `tools` 行添加一个 `mcp__<server>__*` 条目，且不改动任何其他智能体或行。没有该键时，每个智能体都保留普通列表，因此没有智能体能访问 MCP 工具。请按 `/mcp` 显示的样子书写每个服务器名称。Claude Code 在工具名称中将 `:` 和 `.` 写作 `_`，因此安装会把服务器 `plugin:bio-research:biorxiv` 渲染为 `mcp__plugin_bio-research_biorxiv__*`。名称可包含字母、数字、`-`、`_`、`:` 和 `.`，必须以字母或数字开头和结尾，并且绝不能连续出现 `_`、`:` 和 `.` 中的任意两个（否则渲染出的条目会包含 `__`）；`*`、空白以及其他所有字符都会被拒绝。授权会指明该服务器的每一个工具，包括任何会写入的工具，因此只应授权你信任其用于查询的服务器；智能体的指令将它们限制为查询，但工具只强制执行你列出的名称。针对不存在的智能体、或没有显式 `tools` 列表的智能体的授权，会被报告并跳过。`harnesses.claude-code` 下的逐工具覆盖会追加到共享列表上。
+
+该授权适用于 `Claude Code` 和 `Gemini CLI` 上的引擎安装（`apothem install`）。在 `Gemini CLI` 上，安装会为每个指明的服务器向所列智能体的 `tools` 允许列表添加一个 `mcp_<server>_*` 条目，例如 `mcp_your-scholarly-server_*`，且不改动任何其他智能体或行。`Gemini CLI` 将每个 MCP 工具命名为 `mcp_{serverName}_{toolName}`，并从 `mcp_` 之后直到第一个下划线的文本中读取服务器，因此含有下划线的服务器名称在那里无法被指向。Apothem 只为由字母、数字和 `-` 组成的名称写入 `Gemini CLI` 授权：含有下划线、冒号或句点的名称对 `Claude Code` 有效，但对 `Gemini CLI` 会被跳过并报告，绝不会被改写为另一个名称。已经能访问每个 MCP 服务器的智能体（没有 `tools` 列表，或列表中含有 `mcp_*`）保持不变并被报告。`Gemini CLI` 没有拒绝列表，因此智能体自身的 `disallowedTools` 所指明的服务器不会获得条目并会被报告：拒绝优先，与在 `Claude Code` 上一样。Gemini 授权读取共享的 `agent_mcp_servers` 列表和 `harnesses.gemini-cli` 覆盖，而不读取 `harnesses.claude-code` 覆盖。其他工具会忽略该键：`Qwen Code` 没有为 `tools` 文档化逐服务器条目；`OpenCode` 通过权限控制工具；`Codex` 和 `Antigravity` 不输出工具列表。
+
+Claude Code 插件是在没有配置档案的情况下组装的，因此它的两个智能体保留普通列表。要在不编辑插件文件的情况下为它们提供连接器访问权限，请在 `~/.claude/agents/` 中以你自选的名称定义一个你自己的用户级智能体，让它携带同样的只读 `tools` 列表，外加你想要的 `mcp__<server>__*` 条目。
 
 ## 添加服务器
 

@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "8d3f64199c281e2a"
+sourceHash: "5e594da654351298"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,9 +19,148 @@ Windsurf は現在 Devin Desktop となっており、`.devin/rules/` が推奨�
 apothem install --harness windsurf --project /path/to/project
 ```
 
-アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Windsurf ルールファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Windsurf ルールファイルを 1 つ書き込み、Apothem のヘルパーのうち 11 個を Devin Local サブエージェントとしてプロジェクト内に書き込み（[サブエージェント](#サブエージェント)を参照）、2 つの Devin Local フックを登録します（[フック](#フック)を参照）。
 
-**書き込まれるファイル：** `<project>/.devin/rules/apothem-rules.md`
+また、プロジェクトに触れる前に、Apothem のスキルと、それらが引用するルールとテンプレートを、あなたのユーザーホームに書き込みます（[プロジェクト外のファイル](#プロジェクト外のファイル)を参照）。
+
+**書き込まれるファイル：**
+
+- `<project>/.devin/rules/apothem-rules.md`：ルールファイル。
+- `<project>/.devin/agents/<name>.md`：Apothem の 11 個のヘルパーにつき 1 つずつ、プロジェクト内に。
+- `<project>/.devin/config.local.json`：フックの登録。プロジェクト内に。その中のあなた自身のエントリーは残ります。
+- `<project>/.apothem/support/windsurf/hooks/`：フックスクリプト。プロジェクト内に。
+- `~/.agents/skills/<name>/SKILL.md`：Apothem の各スキルと各コマンドにつき 1 つ、あなたのユーザーホームに。
+- `~/.config/apothem/rules/` と `~/.config/apothem/templates/`：あなたのユーザーホームに。
+
+## プロジェクト外のファイル
+
+インストールは、プロジェクト内の何かを変更する前に、Apothem のスキルをあなたのユーザーホームにも書き込みます。
+
+| フォルダー | Apothem がそこに書き込むもの |
+| --- | --- |
+| `~/.agents/skills/` | Apothem の各スキルにつき `SKILL.md` を含むフォルダーを 1 つ、そして Apothem の各コマンドにつき 1 つ（コマンドは同じ名前のスキルになります）。 |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | スキルとルールファイルが参照するルールとテンプレート。 |
+
+これらのフォルダーは共有されます。プロジェクト専用ではありません。
+
+- `windsurf` をインストールするすべてのプロジェクトと、そのフォルダーを指定する他のすべての Apothem のインストールが同じコピーを使い、同じファイルを書き込むため、インストールの順序は関係ありません。他のいくつかのツールも `~/.agents/skills/` を読みます。[ハーネスレジストリ](/docs/reference/harness-registry#共有ルート)がそれらを一覧にしています。
+- `--project` は、書き込むルールファイルと、インストールがどのプロジェクトに属するかを選びます。スキルの書き込み先は変わりません。
+- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、ルールファイル、`.devin/agents/` 内のサブエージェントファイル、`.devin/config.local.json` 内のフックの登録、そしてプロジェクトへのインストールが毎回作成する `.apothem/` フォルダーで、このフォルダーにはフックスクリプトも置かれます。
+- ホームのフォルダーが最初に書き込まれます。それが失敗した場合、たとえばパス内のフォルダーがホームディレクトリの外へ出るリンクである場合（内側にとどまるリンクはたどられます）や書き込めない場合、インストールはプロジェクト内の何かが変わる前にエラーで停止します。
+- Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーはそのまま残され、インストールはその名前を挙げる警告を表示します。名前を変えるか移動してから、`apothem update` を実行してください。その名前が占有されている間、`apothem verify` は失敗します。
+- ファイルの合計は数メガバイトになります。
+
+インストールは、`--project` の外に書き込むフォルダーを挙げるメモを表示し、`--dry-run` はそれらを一覧表示します。
+
+## サブエージェント
+
+[Devin のサブエージェントに関するドキュメント](https://docs.devin.ai/cli/subagents.md)によれば、新しい Devin Desktop のタブが起動時に使う Devin Local は、サブエージェントを `<project>/.devin/agents/` 内の Markdown ファイルから読み取ります。
+旧来のモードである Cascade にはサブエージェントがありません。
+インストールは、Apothem の 14 個のヘルパーのうち 11 個をそのフォルダーに書き込みます。
+インストールはプロジェクト向けのみで、ユーザーレベルのサブエージェントフォルダー（Linux と macOS では `~/.config/devin/agents/`、Windows では `%APPDATA%\devin\agents\`）には書き込みません。
+
+各ファイルはヘルパーの指示を変更せずに保持し、次のフロントマターキーを持ちます。
+
+| キー | Apothem が書き込むもの |
+| --- | --- |
+| `name`, `description` | ヘルパーの名前と説明。 |
+| `allowed-tools` | ヘルパーが使えるツール。Devin のツール名の一覧として：`read`、`edit`、`grep`、`glob`、`exec`（ヘルパーの `Bash`）、`write`。 |
+
+Devin にはツールを拒否するキーがないため、ヘルパーの許可ツールから拒否ツールを除いたものが 1 つの `allowed-tools` 一覧になります。
+ヘルパーの `Bash` は Devin では `exec` になり、Devin に記載された名前がないツールは除外されます。
+読み取り専用のヘルパーは `read`、`glob`、`grep` を受け取り、コマンドを実行するものはそれに加えて `exec` を受け取ります。`write` や `edit` は決して受け取りません。
+
+3 つのヘルパーはインストールされません：`citation-auditor`、`fact-checker`、`research-scout`。
+これらは Web 検索と Web フェッチを必要としますが、Devin はどちらについても `allowed-tools` の名前を文書化していないため、インストールは、調査ができないバージョンやすべてのツールを持つバージョンを書き込む代わりに、それらを保留します。
+`.devin/agents/` 内にある、これらの名前のいずれかを持つあなたのファイルには決して触れません。
+
+インストールは `model` キーを書き込みません。
+Devin はサブエージェントを自身のデフォルトのサブエージェントモデルで実行し、それはサブエージェントを開始したセッションのモデルではありません。
+また、`max-nesting` も、Apothem の `maxTurns`、`version`、`updated`、`portability` キーのいずれも書き込みません。
+
+知っておくべきこと：
+
+- カスタムサブエージェントは実験的です。Devin はその形式とオプションを変更される可能性があるものとしており、Devin Desktop には Devin Settings に Subagents (Preview) スイッチがあります（Devin CLI の設定 `subagents_enabled` はデフォルトでオンです）。
+- サブエージェントファイルは通常のプロジェクトファイルです。プロジェクトと一緒にコミットするか、`.devin/agents/` を `.gitignore` に記載してください。Apothem はあなたの代わりに選びません。
+- Apothem のヘルパーの名前を持つあなたのファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。アンインストールはそれを元に戻しません。他の名前のファイルには決して触れません。
+- Devin は共有の `.agents/agents/` フォルダーも読みますが、Apothem はそこに決して書き込みません。また Devin CLI は、`.claude/` フォルダーからのサブエージェントのインポートを、パスを挙げずに文書化しています。Devin Desktop の Local モードがそのインポートを適用するかどうかを、Apothem は確認していません。
+- Apothem は、Web ツール用の `allowed-tools` の名前、`model` が受け付ける値、空の `allowed-tools` 一覧がどう読まれるかを確認していません。
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
+## フック
+
+[Devin のフックに関するドキュメント](https://docs.devin.ai/cli/extensibility/hooks/overview.md)によれば、Devin Local はその設定ファイルの `hooks` キーからフックを実行します。
+インストールは 2 つを登録します。
+
+| イベント | 実行されるもの |
+| --- | --- |
+| `SessionStart` | セッションブートストラップ：セッションのメタデータ、スキルのインデックス、メモリとプランの要約、常設の姿勢を、モデルのコンテキストに追加します。 |
+| `PostToolUse`（すべてのツール） | プロアクティブなコンパクションのトラッカー。アクティビティを数え、コンパクションサイクルごとに最大 2 回、状態を保存するかコンパクションするようモデルに伝えます。それ以外の場合は何も出力しません。 |
+
+どちらもモデルにコンテキストを追加します。どちらもツール呼び出しやセッションをブロックしません。
+
+Apothem は Devin に `PreToolUse` ガードを登録しません。
+Devin のドキュメントは、`UserPromptSubmit`、`SessionStart`、`PostToolUse` について `additionalContext`（Apothem のガードが伝達に使うフィールド）を挙げており、`PreToolUse` については判定と入力の書き換えだけを挙げています。
+そこに登録したガードは、ツール呼び出しのたびにプロセスの起動コストがかかり、何も届けない可能性があるため、書き込み、編集、シェルのガード、`AskUserQuestion` のチェック、セッション終了プロトコルは、それらを届けるツールに残ります。
+Apothem は、ドキュメントまたはプローブによってそれがモデルに届くことが示された時点で、Devin のイベントにガードを登録します。
+
+これらは Devin Local のフックです。
+旧来の Cascade モードは別のフック形式（`.devin/hooks.json`）を読みますが、インストールはそれを書き込みません。
+
+**ファイルの書き込み先**
+
+| ファイル | 保持するもの |
+| --- | --- |
+| `<project>/.devin/config.local.json` | 2 つのフックの登録。ファイルの `hooks` キーにマージされます。Devin はこのファイルをローカルのオーバーライドであり gitignore されるものとして文書化しており、ローカルの設定ファイルを `.git/info/exclude` を通じて自ら git から除外します。 |
+| `<project>/.apothem/support/windsurf/hooks/` | ディスパッチャースクリプト、そのヘルパー、そのメッセージファイル。 |
+
+登録された各コマンドには、Apothem が実行時に見つけたインタープリターと、プロジェクトの絶対パスが記されるため、マシン固有になります。
+そのため、インストールはローカルのファイルに書き込み、共有の `<project>/.devin/config.json`、単独の `.devin/hooks.v1.json`、`.claude/` の設定には決して書き込みません。
+インストールは `.gitignore` を編集しません。
+Devin は自身のローカル設定ファイルを（`.git/info/exclude` を通じて）自ら git から除外するため、チームメイトのチェックアウトがあなたのマシンを指すコマンドを受け取ることはありません。あなたの `.gitignore` に `.apothem/` が記載されていることを確認してください。
+
+**シェルが誤読するパス。** `$`、バッククォート、二重引用符、バックスラッシュを含むプロジェクトまたはインタープリターのパスは、何かが書き込まれる前に拒否されます。引用符で囲まれたコマンドの中では、別のファイルを実行したり、コマンドが書き込まれる JSON を壊したりするためです。
+エラーはそのパスを挙げます。プロジェクトを移動するか名前を変えてから、インストールを再度実行してください。
+パス内のスペースやアポストロフィは問題ありません。
+
+コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+`--contract devin` は、Devin の小文字のツール名（`exec`、`write`、`edit`、`read`、`grep`、`glob`）を Apothem のハンドラーが判定する名前に対応付け、出力は Claude Code が読むのと同じエンベロープのままにします。
+マッチャーは書き込まれません。Devin のマッチャーは正規表現であり、省略したものはすべてのツールに一致し、`SessionStart` には一致させるツールがありません。
+
+**インストール後に確認すること**
+
+- ワークスペースが Restricted Mode の間、Devin はフックを実行しません。まずワークスペースを信頼してください。
+- フックが読み込まれたかどうかを確認するには、Devin Local の Customizations にある Hooks タブを開くか、Devin CLI で `/hooks` を実行します。どちらも各フックをそのソースファイルとともに一覧表示します。
+- Devin のドキュメントは、Windows でフックコマンドに使うシェルを挙げていません。コマンドは `sh` のクォートを使っており、PowerShell は呼び出し演算子なしではこれを解析しません。Windows で Devin Local が何を実行するかを Apothem は確認していません。そこでフックが読み込まれない場合は、issue でお知らせください。
+
+**Devin は Claude Code が書き込んだフックも実行します。** Devin は、`read_config_from.claude` がオンの間、`~/.claude/settings.json`、`.claude/settings.json`、`.claude/settings.local.json` 内のフックを読み込みます。これは Devin CLI でのデフォルトであり、Desktop のページは Devin Local がこれを適用するかどうかを述べていません。
+Claude Code 向けにも Apothem をインストールした場合、両方のフックのセットが実行される可能性があります。
+ここの `SessionStart` コマンドと、その Claude Code 側のコピーは、Apothem のフック状態フォルダー内でセッションごとに 1 つのマーカーを共有するため、2 番目に実行される方は何も出力せず、ブートストラップはモデルに 1 回だけ届きます。Apothem は、Devin がフックのために設定する `DEVIN_PROJECT_DIR` 変数から Devin を見分けます。
+マーカーの有効期間は 10 秒なので、同じセッションの後の開始でも配信されます。
+コンテキストサイズのカウンターは両方の場所で実行されるため、そのしきい値には早く到達し、Apothem はカウンターの重複を排除しません。
+これらのフックだけを読み込むには、ユーザー設定（`~/.config/devin/config.json`、Windows では `%APPDATA%\devin\config.json`）またはプロジェクトの `.devin/config.json` で、`"read_config_from"` の下に `"claude": false` を設定します。これにより、Devin が Claude Code のルール、スキル、コマンド、MCP サーバーをインポートすることも止まります。
+インストールはこれをメモとして表示します。
+
+**あなた自身のフック。** 登録はキー単位であなたのファイルにマージされます。
+あなたが書いたフックや他のキーはそのまま残り、同じイベントの下にあるあなたのハンドラーは Apothem のものと並んで残ります。更新は、コマンドが Apothem のディスパッチャー（`--contract devin` 付きの `.apothem/support/windsurf/hooks/dispatch.py`。どのプロジェクトパスの下で書き込まれたかは問いません）を実行するハンドラーだけを置き換えます。
+名前を共有するだけのあなたのフックや、`python -m apothem.conformity.gate` を実行するあなたのフックが、Apothem のものと見なされることは決してありません。
+コメントやその他の JSON5 構文を含むファイルは、それらを失わずに書き直すことができないため、インストールはそのファイルについて `config.unparseable` エラーを報告し、ファイルには触れずに停止し、書き込みを始めていた他のファイルは再び削除されます。コメントを削除するか、2 つのエントリーを自分で追加してください。
+
+**フックを無効にする。** Devin の環境で `APOTHEM_HOOKS_DISABLE=1` を設定すると、Apothem のフックを沈黙させます。
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -34,8 +173,12 @@ Apothem 管理のブロックはその後に続きます。ブロックの後に
 ## 互換性に関する注意
 
 Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクトスコープです（推奨される場所であり、後方互換のフォールバックである `.windsurf/rules/` より優先されます）。
-ワークフローとマシンローカルなメモリはオペレーターの所有であり、Apothem はそれらを書き込みません。
+ワークフローとマシンローカルなメモリはオペレーターの所有であり、Apothem はそれらを書き込みません。Cascade のフックファイルも共有の Devin 設定も書き込みません。
 単一ファイル形式の `.windsurfrules` は意図的に書き込まれません。
+
+Devin Desktop（Windsurf）は `~/.agents/skills/` を検出するため、インストールが書き込むスキルは追加の設定なしで表示されます。
+Claude Code の設定インポートがオンの場合は、`~/.claude/skills/` からも同じ名前を一覧表示することがあります。Devin CLI のドキュメントではそのインポートはデフォルトでオンとされており、Desktop のページは Local モードがそれを適用するかどうかを述べていません。
+記載のない `SKILL.md` のヘッダーキーを Windsurf がどう扱うかを、Apothem は確認していません。スキルは `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、および `metadata` マップを持ちます。
 
 ## 検証
 
@@ -46,8 +189,9 @@ apothem verify --harness windsurf --project /path/to/project
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
-3. アダプター固有の検証ルーチンが成功を報告すること。
+2. `.devin/agents/` フォルダーとフックの登録 `.devin/config.local.json` を含め、管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。フックファイルは Apothem のディスパッチャーを実行するハンドラーを保持していなければならないため（チェックはそれを実行しません）、元に戻されたファイルや空にされたファイルはもはや検証に通りません。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。`.devin/agents/` については、フォルダーが存在することを確認し、各ヘルパーファイルがその中にあることは確認しません。`apothem diff --harness windsurf --project /path/to/project` は、欠けているヘルパーファイルや古くなったヘルパーファイルを一覧表示します。
+3. どのインストールが書き込んだかにかかわらず、Apothem の各スキルフォルダーが `SKILL.md` とともに所定の場所にあり、Apothem の名前を持つスキルフォルダーがどれも、Apothem が書き込んだのではないものに属していないこと。チェックが失敗すると、欠けているフォルダーや外部のフォルダーの名前が挙げられます。
+4. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -56,6 +200,11 @@ apothem update --harness windsurf --project /path/to/project
 ```
 
 現在の共有プロファイルの状態から、プロジェクトのルールファイルを再導出します。
+
+更新は、ファイルが現在のものと異なるスキルフォルダーも書き直します。
+スキルを書き込まなかった以前のリリースでインストールした場合、更新はスキルを追加します。
+現在のものと異なるサブエージェントファイルを書き直し、欠けているものを追加します。
+また、フックスクリプトと `.devin/config.local.json` 内の Apothem のハンドラーを更新し、あなた自身のエントリーには触れません。
 
 ## アンインストール
 
@@ -67,6 +216,16 @@ apothem uninstall --harness windsurf --project /path/to/project
 このファイルは、その中に他に何も残っていない場合にのみ削除されます。
 変更の前に、このファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+アンインストールは、`<project>/.devin/agents/` に書き込んだサブエージェントファイルも削除し、そこにある他のファイルは残します。フォルダーは空になった場合に削除されます。
+`<project>/.devin/config.local.json` から Apothem のフックハンドラーを、そのコマンド内のディスパッチャーのパスで識別して削除し、あなた自身のフックとキーは残します。
+このファイルは、Apothem が作成し、その中に他に何も残っていない場合にのみ削除されます。
+`<project>/.apothem/support/windsurf/hooks/` 内のフックスクリプトも削除されます。
+`~/.agents/skills/` に書き込んだスキルフォルダーと `~/.config/apothem/` 内のルールとテンプレートも削除しますが、それは他の Apothem のインストールがまだそれらを使っていない場合に限ります。
+別のプロジェクトや、そのフォルダーを共有する別のツールが使っている可能性があります。
+その場合、アンインストールはフォルダーを残し、どのインストールがそれらを使っているかを表示し、最後のアンインストールがそれらを削除します。
+あなたがそれらのフォルダーに追加したファイルは残り、空になったフォルダーは削除されます。
+各フォルダーは、削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 
 ## コンフォーミティゲート
 
@@ -80,6 +239,13 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness windsurf --project /path/to/project` を再実行する |
 | 検証が失敗した | `apothem update --harness windsurf --project /path/to/project` を実行してから、再度検証する |
+| Devin Local が Apothem のヘルパーを 1 つも一覧表示しない | `apothem diff --harness windsurf --project /path/to/project` を実行する。`.devin/agents` フォルダーについて保留中の行がある場合は、ヘルパーファイルが欠けているか古くなっているので、`apothem update --harness windsurf --project /path/to/project` を実行する。`apothem verify` はこれを確かめるものではない。`.devin/agents/` が存在すれば、その中にヘルパーファイルが 1 つもなくても合格する。`diff` が保留中の変更を報告しない場合は、Subagents (Preview) 設定がオンであることと、プロジェクトが Devin Desktop の Local モードで開かれていることを確認してから、新しいタブを開始する |
+| Apothem のフックが実行されない | Devin は Restricted Mode のワークスペースではフックを実行しない。ワークスペースを信頼する。Devin Local の Customizations にある Hooks タブを開くか、Devin CLI で `/hooks` を実行して、Apothem のエントリーが読み込まれたかどうかを確認する。Windows では、Devin がフックコマンドをどのシェルで実行するかを Apothem は確認していない |
+| インストールが `config.local.json` について `config.unparseable` を報告する | ファイルに、書き直すと失われるコメントやその他の構文がある。コメントを削除して再度インストールするか、2 つの Apothem のフックエントリーを自分で追加する |
+| Apothem のコンテキストが 2 回表示される、またはコンテキストサイズのリマインダーが早く来る | Devin は Claude Code のインストールが書き込んだフックも実行する。Devin の設定で `"read_config_from"` の下に `"claude": false` を設定すると、`.devin/config.local.json` 内のフックだけが読み込まれる |
+| `apothem verify` が欠けているスキルフォルダーの名前を挙げる | `apothem install --harness windsurf --project /path/to/project` を実行する。これでフォルダーが復元される |
+| インストールまたは更新が、スキルフォルダーをスキップしたと警告する | Apothem のスキルの名前を持つフォルダーがスキルフォルダー内にすでに存在し、Apothem が書き込んだものではない。名前を変えるか移動してから、`apothem update` を実行する |
+| インストールがプロジェクトを変更する前に停止する | ホーム内への書き込みが失敗した。エラーを読み、それが挙げるフォルダー（ホームディレクトリの外へ出るリンク、フォルダーがあるべき場所にあるファイル、または読み取り専用のフォルダー）を修正してから、再度インストールする |
 | 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness windsurf --project /path/to/project` を再実行する |
 
 ## 設定ノブ

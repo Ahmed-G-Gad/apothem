@@ -2,7 +2,7 @@
 title: "著作者ヘッダー — ファイルごとの SPDX ライセンス行"
 description: "ファイルタイプごとに適切なコメント構文で、正規の単一行ヘッダーを用いて、ファイルごとの SPDX ライセンス識別子マーカーを定義し、強制します。"
 machineTranslated: true
-sourceHash: "9c0a567f38d65f5b"
+sourceHash: "c3e4f3695b73611c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,7 +144,7 @@ Markdown と MDX のファイルでは、SPDX 行は常にそのコメントラ�
 4. **pre-commit フック** — `conformity-corpus-perwrite` フックが、`--strict` を付けて追跡対象のツリー全体に対して、Write ごとのマッチャーすべてを実行します。その中には `file-header` バリデーター（§8）も含まれます。`file-header` マッチャーはブロッキングなので、指摘事項があるとコミットはブロックされます。このフックはチェックのみを行います。修正モードはなく、インジェクター（§7）を実行することもありません。インジェクターは `make headers-fix` を通じて実行されます。
 5. **`CLAUDE.md` の必須動作ブロック** — 適用対象のファイルを作成するときは常に、正規の SPDX 行を注入するようアシスタントに指示します。
 6. **GitHub Copilot の指示ファイル**（`.github/copilot-instructions.md`）— ファイル生成時に同じことを行うよう Copilot に指示します。
-7. **PreToolUse フック**（`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`）— 適用対象のパスに対する Write/Edit ツールの呼び出しを横取りし、SPDX 行が後からバリデーターの指摘事項として見つかるのではなく、ファイルの作成時に注入されるようにします。
+7. **PreToolUse フック**（`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`）— 適用対象のパスに対する Write/Edit ツールの呼び出しを横取りし、SPDX 行が後からバリデーターの指摘事項として見つかるのではなく、ファイルの作成時に注入されるようにします。ガードのチェッカーである `src/apothem/hooks/lib/header_check.py` は標準ライブラリのみを使用し、フィクスチャと除外リストを `hooks/` の隣にある `schemas/` ディレクトリから読み取るため、`apothem` パッケージをインポートできない Claude Code プラグインのもとでも動作します。チェッカーは、プロジェクト内のファイルに対して、インジェクターのバリアント表と挿入位置のルールを適用します。ただし、ヘッダーのフィクスチャ（`src/apothem/schemas/authorship-header.txt`）を持つ git プロジェクトでのみ適用します。SPDX 行はこのリポジトリの規約であり、プラグインが開くすべてのプロジェクトの既定ではないためです。
 8. **プルリクエストテンプレートのチェックボックス** — すべての新しいファイルが正規の SPDX 行を持つことを、コントリビューターが表明するためのものです。
 9. **本ドキュメント**（`site/content/docs/reference/authorship-header.mdx`）— 正規かつ規範的な解説です。
 

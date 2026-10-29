@@ -2,7 +2,7 @@
 title: "Deployment-Checkliste"
 description: "Vorab-Verifizierungscheckliste zum Bereitstellen oder Teilen des Apothem-Ökosystems"
 machineTranslated: true
-sourceHash: "23417f8798d91fef"
+sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ Regeln enthalten keinen Schlüssel `version`, `updated`, `scope` oder `portabili
 
 - [ ] `name` — Befehlsname in kebab-case
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` vorhanden
-- [ ] `disable-model-invocation` vorhanden und beabsichtigt (`true` für rein anleitende Befehle)
+- [ ] `disable-model-invocation` vorhanden und beabsichtigt (`false` für schreibgeschützte oder beratende Befehle; `true` nur, wenn die Ausführung des Befehls Zustand außerhalb des Arbeitsbaums ändert oder davon abhängt, dass der Operator den Zeitpunkt wählt)
 - [ ] Kein Schlüssel `effort`: `command.schema.json` setzt `additionalProperties: false` und lässt ihn nicht zu
 
 ### Delegierte Worker

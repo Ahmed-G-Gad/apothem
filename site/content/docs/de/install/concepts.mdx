@@ -2,7 +2,7 @@
 title: "Konzepte"
 description: "Glossar mit Definitionen für gemeinsame Profile, Harness-Adapter, Regeln, Hooks, Konformitäts-Gates, Skills und delegierte Worker in Apothem."
 machineTranslated: true
-sourceHash: "629015f2d24e58a5"
+sourceHash: "193a5b7bebde1a9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,10 @@ Adapter materialisieren.
 
 Eine Markdown-Datei unter src/apothem/rules/, die bei jeder Interaktion geladen wird (always-on) oder
 nur beim Bearbeiten von Dateien unter einem bestimmten Pfad (pfadgefiltert). Regeln kodifizieren, wie sich der
-Harness verhalten soll.
+Harness verhalten soll. Vier Regeln sind always-on: `agnostic-posture`, `authority-inquiry`,
+`session-closure` und `context-management`. Der Regelindex, `apothem-rule-index`, wird mit
+ihnen geladen und nennt jede andere Regel und wann sie zu lesen ist. Ein Harness, der Regeln nicht
+nach Pfad eingrenzt, lädt keine der übrigen, daher findet eine Sitzung sie über den Index.
 
 ## Hook
 

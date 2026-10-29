@@ -2,7 +2,7 @@
 title: "CLI-Referenz"
 description: "Apothem-CLI-Referenz — Übersicht, Optionen und Exit-Codes je Befehl für die apothem-Befehlszeilenschnittstelle."
 machineTranslated: true
-sourceHash: "4012ab11dba3c29d"
+sourceHash: "d05ea2b5171674a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,9 @@ Aliase selbst.
 
 ## JSON-Ausgabevertrag
 
-Jeder Befehl akzeptiert `--json` (Kurzform für `--format json`) und schreibt dann
-genau ein JSON-Dokument nach stdout. Jedes Dokument beginnt mit einem
+Jeder Befehl außer `completion` (der ein Shell-Skript ausgibt) akzeptiert
+`--json` (Kurzform für `--format json`) und schreibt dann genau ein
+JSON-Dokument nach stdout. Jedes Dokument beginnt mit einem
 `schema_version`-Schlüssel auf oberster Ebene, einer Ganzzahl, die derzeit `1`
 ist:
 

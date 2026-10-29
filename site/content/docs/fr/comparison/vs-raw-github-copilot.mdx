@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration GitHub Copilot brute"
 description: "Maintenir à la main le copilot-instructions.md de GitHub Copilot versus le rendre depuis le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,14 +18,15 @@ gestion avec Apothem.
 | Rédiger les instructions | Modifier à la main `.github/copilot-instructions.md` | Rendu : règles partagées intégrées dans le fichier |
 | Garder les instructions alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
 | Installer / supprimer la configuration | Écrire et supprimer le fichier à la main | `apothem install` / `apothem uninstall` |
+| Partager des skills et des commandes réutilisables | Copier à la main chaque dossier de skill dans `~/.agents/skills/` et garder les copies à jour | Écrits dans `~/.agents/skills/` par l'adaptateur, une seule copie pour tous les projets, et actualisés lors de `apothem update` |
 | Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness github-copilot --project <path>` |
 
 ## Ce que gère Apothem
 
 L'adaptateur github-copilot intègre les règles partagées dans
-`.github/copilot-instructions.md`. Copilot fonctionne comme une extension d'IDE
-et n'expose aucun hook d'appel d'outil, de sorte que l'intention de garde-fou est
-portée entièrement dans les instructions rendues. Chaque changement des règles
+`.github/copilot-instructions.md`. Copilot documente les hooks dans
+`.github/hooks/*.json`, que l'adaptateur n'écrit pas, de sorte que l'intention de
+garde-fou est portée entièrement dans les instructions rendues. Chaque changement des règles
 partagées re-rend le fichier lors du prochain `apothem update`.
 
 ## Chemin de migration

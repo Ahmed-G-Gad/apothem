@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "适用于 Gemini CLI（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "98f3f393b45bba9f"
+sourceHash: "231513ffdb2dcb22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,6 +37,8 @@ GEMINI.md
 `.gemini/commands/` 中每个转换后的命令都包含一个 `description` 和一个 `prompt`。提示词只包含该命令的指令；源文件顶部的 Apothem 元数据（版本、工具列表及类似字段）被省略，因此模型绝不会将其当作指令读取。Gemini 只有在你输入自定义命令时才会运行它。
 
 `.gemini/agents/` 中的辅助程序定义保留其工具限制和轮次限制：源文件中的 `tools` 授权减去 `disallowedTools` 后，成为一个由 Gemini 工具名称组成的 Gemini `tools` 允许列表，`maxTurns` 则变为 `max_turns`。因此，只读的辅助程序不会获得 `write_file` 或 `replace` 工具。不设置任何模型，因此每个辅助程序都继承会话模型。
+
+配置档案的 `agent_mcp_servers` 键所列出的辅助程序还会在其 `tools` 允许列表中为每个指定的服务器获得一个 `mcp_<server>_*` 条目，因此它可以调用该服务器的工具，而不能调用其他任何服务器的工具；没有该键时，每个辅助程序都保留普通的允许列表（参见 [MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。Apothem 只为由字母、数字和 `-` 组成的服务器名称在此写入授权，因为 `Gemini CLI` 无法寻址带有下划线的名称；任何其他名称都会被跳过并报告，为已经能够访问每个 MCP 服务器的辅助程序所做的授权也是如此。
 
 ## 兼容性说明
 

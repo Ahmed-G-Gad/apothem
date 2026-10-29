@@ -2,7 +2,7 @@
 title: "Apothem 対 Gemini CLI の手動設定"
 description: "Gemini CLI の GEMINI.md ルールファイルを手作業で保守する場合と、Apothem の共有プロファイルからレンダリングする場合の比較。"
 machineTranslated: true
-sourceHash: "1571985a6318fd28"
+sourceHash: "e239aa7e0b2101a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ gemini-cli アダプターは、それを共有プロファイルからレンダ
 
 ## Apothem が管理するもの
 
-gemini-cli アダプターは、プロジェクト全体のガイダンスを載せ、Apothem の素材を指す、センチネルで区切られた Apothem ブロックを `<project>/GEMINI.md` に書き込みます。ルール、テンプレート、フックは `<project>/.gemini/.apothem/support/` の下にサポートファイルとして配置され、コマンド、スキル、エージェントは `<project>/.gemini/` の下に配置されます。Gemini CLI には PreToolUse フックがないため、ガードレールの意図は、ツール呼び出しの傍受点ではなく、ルールの文章で表現されます。共有ルールへの変更はすべて、次回の `apothem update` で `GEMINI.md` を再レンダリングします。
+gemini-cli アダプターは、プロジェクト全体のガイダンスを載せ、Apothem の素材を指す、センチネルで区切られた Apothem ブロックを `<project>/GEMINI.md` に書き込みます。ルール、テンプレート、フックは `<project>/.gemini/.apothem/support/` の下にサポートファイルとして配置され、コマンド、スキル、エージェントは `<project>/.gemini/` の下に配置されます。Gemini CLI は `settings.json` の `hooks` オブジェクトを文書化していますが、これはオペレーター所有のままであるため、アダプターはフックを登録せず、ガードレールの意図は、ツール呼び出しの傍受点ではなく、ルールの文章で表現されます。共有ルールへの変更はすべて、次回の `apothem update` で `GEMINI.md` を再レンダリングします。
 
 ## 移行パス
 

@@ -2,7 +2,7 @@
 title: "Apothem против сырой конфигурации GitHub Copilot"
 description: "Ручное сопровождение copilot-instructions.md GitHub Copilot против его рендеринга из общего профиля Apothem."
 machineTranslated: true
-sourceHash: "8619aad7bba087e4"
+sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,14 @@ GitHub Copilot читает свои инструкции из `.github/copilot-
 | Писать инструкции | Вручную редактировать `.github/copilot-instructions.md` | Отрендерено: общие правила встроены в файл |
 | Согласовывать инструкции с другими окружениями | Вручную, для каждого инструмента | Автоматически при `apothem update` |
 | Установка / удаление конфигурации | Создавать и удалять файл вручную | `apothem install` / `apothem uninstall` |
+| Делиться переиспользуемыми навыками и командами | Вручную копировать каждую папку навыка в `~/.agents/skills/` и поддерживать копии актуальными | Записываются адаптером в `~/.agents/skills/`, одна копия для всех проектов, и обновляются при `apothem update` |
 | Проверка корректности конфигурации | Ручная инспекция | `apothem verify --harness github-copilot --project <path>` |
 
 ## Чем управляет Apothem
 
 Адаптер github-copilot встраивает общие правила в
-`.github/copilot-instructions.md`. Copilot работает как расширение IDE и не
-предоставляет хуков вызова инструментов, поэтому намерение ограждения целиком
+`.github/copilot-instructions.md`. Copilot документирует хуки в
+`.github/hooks/*.json`, которые адаптер не записывает, поэтому намерение ограждения целиком
 несётся в отрендеренных инструкциях. Каждое изменение общих правил повторно
 рендерит файл при следующем `apothem update`.
 

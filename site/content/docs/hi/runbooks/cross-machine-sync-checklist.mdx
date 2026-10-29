@@ -2,7 +2,7 @@
 title: "क्रॉस-मशीन सिंक सत्यापन चेकलिस्ट"
 description: "पूर्ण पोर्टेबिलिटी जाँचों के साथ एक नए होस्ट पर Claude Code अडैप्टर के सही ढंग से इंस्टॉल, सत्यापित और अनइंस्टॉल होने की पुष्टि करने की सत्यापन प्रक्रिया।"
 machineTranslated: true
-sourceHash: "b6f6f7d6a489e8c7"
+sourceHash: "649ffe348614b809"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,7 +62,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**अपेक्षित:** इंस्टॉलर मौजूदा इंजन होम का पता लगाता है और पुनः-इंस्टॉल या डुप्लिकेट करने के बजाय फ़ास्ट-फ़ॉरवर्ड करता है; एग्ज़िट कोड 0।
+**अपेक्षित:** इंस्टॉलर मौजूदा इंजन होम का पता लगाता है और पुनः-इंस्टॉल या डुप्लिकेट करने के बजाय उसमें रिलीज़ टैग चेक आउट करता है; एग्ज़िट कोड 0।
 
 ### 3.2 पूर्व-शर्त-जाँचित
 
@@ -103,7 +103,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

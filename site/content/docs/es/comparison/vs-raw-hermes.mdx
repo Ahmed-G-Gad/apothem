@@ -2,15 +2,16 @@
 title: "Apothem frente a la configuración manual de Hermes"
 description: "Mantener a mano la configuración de Hermes frente a gestionarla mediante el perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes lee `~/.hermes/config.yaml`. Apothem escribe la configuración YAML
 nativa (proyecta el inventario de MCP del perfil en `mcp_servers`) e instala
 cohortes compartidas de comandos y skills bajo
-`~/.hermes/.apothem/support/skills/`. El propio `skills.config` de Hermes es
-una lista de paquetes de registro, así que Apothem no lo redacta.
+`~/.hermes/.apothem/support/skills/`, que incluye en `skills.external_dirs` para
+que Hermes las cargue. El propio `skills.config` de Hermes contiene ajustes por
+skill, así que Apothem no lo redacta.
 
 ## Estado
 
@@ -32,9 +33,13 @@ que no son de skills siguen siendo material de soporte de Apothem.
 El adaptador de Hermes escribe `config.yaml`, envuelve los comandos de barra de
 Apothem como skills, copia las skills de Apothem en el directorio de soporte y
 mantiene las reglas, las plantillas, los agentes y el material de hooks bajo el
-subárbol de soporte de Apothem. Hermes carga esas skills solo después de que
-añadas `~/.hermes/.apothem/support/skills` a `skills.external_dirs` en
-`config.yaml`.
+subárbol de soporte de Apothem. También añade
+`~/.hermes/.apothem/support/skills` a `skills.external_dirs` en `config.yaml`,
+para que Hermes cargue esas skills. Esa lista va en último lugar en el orden de
+precedencia documentado de Hermes, así que es probable que una skill con el
+mismo nombre en tu proyecto o en `~/.hermes/skills/` prevalezca sobre la copia
+de Apothem; la documentación de Hermes revisada no indica la regla para ese
+conflicto.
 
 ## Ruta de migración
 
@@ -43,11 +48,10 @@ añadas `~/.hermes/.apothem/support/skills` a `skills.external_dirs` en
 2. Mueve las skills o los prompts de comandos reutilizables de Hermes al corpus
    compartido.
 3. Ejecuta `apothem install --harness hermes` para renderizar la configuración
-   nativa y el directorio de skills de soporte.
-4. Añade `~/.hermes/.apothem/support/skills` a `skills.external_dirs` en
-   `config.yaml` para que Hermes cargue las skills instaladas. `apothem update`
+   nativa, que incluye el directorio de skills de soporte en
+   `skills.external_dirs`, y para instalar las skills. `apothem update`
    conserva las claves que añadas a `config.yaml`.
-5. Ejecuta `apothem verify --harness hermes` para confirmar que la
+4. Ejecuta `apothem verify --harness hermes` para confirmar que la
    configuración quedó escrita.
 
 ## Lee a continuación

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Adaptador de harness do Apothem para o Kiro (GA)."
 machineTranslated: true
-sourceHash: "d53472ff7c450563"
+sourceHash: "91ec41080bf29036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,195 @@ apothem install --harness kiro --project /path/to/project
 ```
 
 O adaptador grava um arquivo de direcionamento (steering) do Kiro com escopo de
-projeto a partir da superfície compartilhada de regras e governança do Apothem.
+projeto a partir da superfície compartilhada de regras e governança do Apothem,
+os auxiliares do Apothem como arquivos de agente personalizado do Kiro no projeto
+(consulte [Arquivos de agente personalizado](#arquivos-de-agente-personalizado)) e
+um hook (consulte [Hooks](#hooks)).
 
-**Arquivos gravados:** `<project>/.kiro/steering/apothem-rules.md`
+Ele também grava as skills do Apothem, e as regras e templates que elas citam, no
+seu diretório pessoal, antes de tocar no projeto (consulte
+[Arquivos fora do projeto](#arquivos-fora-do-projeto)).
+
+**Arquivos gravados:**
+
+- `<project>/.kiro/steering/apothem-rules.md`, o arquivo de direcionamento.
+- `<project>/.kiro/agents/<name>.md` para cada auxiliar do Apothem, no projeto.
+- `<project>/.kiro/hooks/apothem.json`, o arquivo de hook, no projeto. Seus próprios arquivos de hook nessa pasta não são tocados.
+- `<project>/.apothem/support/kiro/hooks/`, os scripts de hook, no projeto.
+- `~/.kiro/skills/<name>/SKILL.md` para cada skill e comando do Apothem, no seu diretório pessoal.
+- `~/.config/apothem/rules/` e `~/.config/apothem/templates/`, no seu diretório pessoal.
+
+## Arquivos fora do projeto
+
+A instalação também grava as skills do Apothem no seu diretório pessoal, antes de
+alterar qualquer coisa no projeto:
+
+| Pasta | O que o Apothem grava ali |
+| --- | --- |
+| `~/.kiro/skills/` | Uma pasta com um `SKILL.md` para cada skill do Apothem, e uma para cada comando do Apothem (um comando se torna uma skill de mesmo nome). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | As regras e os templates aos quais as skills e o arquivo de direcionamento se referem. |
+
+Essas pastas são compartilhadas. Elas não são privadas do projeto:
+
+- Todo projeto em que você instala `kiro` usa a mesma cópia de `~/.kiro/skills/`, e a instalação grava os mesmos arquivos nela a cada vez. O Kiro é a única ferramenta que lê essa pasta. As regras e os templates sob `~/.config/apothem/` também são gravados pelas instalações das outras ferramentas, com os mesmos arquivos.
+- `--project` escolhe o arquivo de direcionamento a gravar e a qual projeto a
+  instalação pertence. Ele não muda para onde vão as skills.
+- A instalação não adiciona nenhum arquivo de skill ou de regra ao seu repositório. O projeto
+  recebe o arquivo de direcionamento, os arquivos de agente personalizado em `.kiro/agents/`, o arquivo de hook
+  `.kiro/hooks/apothem.json`, além da pasta `.apothem/` que toda instalação de projeto
+  cria, que também guarda os scripts de hook.
+- As pastas do diretório pessoal são gravadas primeiro. Se isso falhar, por exemplo porque uma
+  pasta no caminho é um link que sai do seu diretório pessoal (um link que
+  permanece dentro dele é seguido) ou não pode ser gravada, a instalação para
+  com o erro antes que qualquer coisa no projeto mude.
+- Uma pasta de skill com o nome de uma skill do Apothem que o Apothem não gravou é
+  deixada intacta, e a instalação exibe um aviso que a nomeia. Renomeie-a ou mova-a
+  e depois execute `apothem update`. `apothem verify` falha enquanto esse nome estiver ocupado.
+- Os arquivos somam alguns megabytes.
+
+A instalação exibe uma nota que nomeia as pastas que ela grava fora de `--project`,
+e `--dry-run` as lista.
+
+## Arquivos de agente personalizado
+
+O Kiro lê um agente personalizado de um arquivo Markdown em `<project>/.kiro/agents/`, conforme
+a [documentação de agentes personalizados do Kiro](https://kiro.dev/docs/custom-agents/). A
+instalação grava um arquivo por auxiliar do Apothem nessa pasta, todos os catorze. Ela
+tem como alvo o Kiro IDE 1.0 e o Kiro CLI V3 (`kiro-cli --v3`), as versões que leem
+o formato Markdown. Ela não grava nenhum perfil JSON nem nenhuma das chaves mais antigas da CLI 2.x,
+porque o V3 ignora um perfil JSON que tem `allowedTools` e nenhum bloco
+`permissions`. Ela instala apenas para o projeto: a pasta de usuário `~/.kiro/agents/` não é gravada.
+
+Cada arquivo mantém as instruções do auxiliar inalteradas e traz estas chaves de
+frontmatter:
+
+| Chave | O que o Apothem grava |
+| --- | --- |
+| `name`, `description` | O nome e a descrição do auxiliar. O agente principal do Kiro escolhe um auxiliar pela sua descrição. |
+| `tools` | As ferramentas que o auxiliar pode usar, como uma lista de categorias de ferramentas do Kiro: `["read", "shell"]`. Omitida quando o auxiliar não restringe nada. |
+
+O Kiro tem uma única lista de ferramentas, então as ferramentas permitidas e negadas do auxiliar se tornam essa
+lista. As categorias são `read`, `write`, `shell`, `web` e `subagent`:
+
+| Ferramenta do auxiliar | Categoria do Kiro |
+| --- | --- |
+| `Read`, `Glob`, `Grep` | `read` |
+| `Write`, `Edit`, `MultiEdit`, `NotebookEdit` | `write` |
+| `Bash`, `PowerShell` | `shell` |
+| `WebSearch`, `WebFetch` | `web` |
+| `Agent`, `Task` | `subagent` |
+
+Uma ferramenta sem categoria (`TodoWrite`, `Monitor`, `Artifact`, `TaskCreate`,
+`TaskUpdate`, uma entrada MCP) é deixada de fora. Uma categoria é deixada de fora quando o auxiliar
+tem negada qualquer ferramenta dela, então um auxiliar nunca ganha uma ferramenta que lhe foi negada: um auxiliar
+que não pode editar arquivos não recebe a categoria `write`. Um auxiliar cujas ferramentas permitidas são todas
+descartadas é gravado com `tools: []`, para que não receba todas as ferramentas. Dois auxiliares
+(`mcp-builder` e `refactor-surgeon`) trazem `write`, nove trazem `shell` e
+três trazem `web`. A instalação não grava nenhuma chave `model`, então um auxiliar é executado no
+modelo que o Kiro seleciona, nem nenhuma de `permissions`, `excludedTools`, `resources`,
+`mcpServers` ou `hooks`.
+
+Pontos a saber:
+
+- O Kiro não carrega os arquivos de agente personalizado de um workspace até que você confie no workspace.
+  O Kiro CLI 2.33 e posteriores pergunta "Trust this workspace?" na primeira vez que você inicia
+  uma sessão V3 interativa em uma pasta. Se o Kiro não listar nenhum dos auxiliares, confie
+  na pasta e inicie uma nova sessão.
+- O Apothem não confirmou se o Kiro CLI 2.x carrega um agente Markdown V3. Use
+  a IDE ou execute `kiro-cli --v3`.
+- Os arquivos de agente são arquivos comuns do projeto. Faça commit deles com o projeto ou
+  liste `.kiro/agents/` no `.gitignore`; o Apothem não escolhe por você.
+- Um arquivo seu com o nome de um auxiliar do Apothem é salvo em
+  `~/.apothem/backups/` e depois substituído. A desinstalação não o restaura.
+  Arquivos com outros nomes, incluindo perfis JSON, nunca são tocados.
+- As páginas do Kiro divergem sobre se um agente personalizado vê as skills em
+  `~/.kiro/skills/` por padrão: a página de skills diz que um agente precisa de um recurso
+  `skill://`, enquanto a referência de configuração diz que um agente herda as skills
+  padrão. A instalação não adiciona nenhuma chave `resources`, então os auxiliares veem as skills somente
+  se a segunda leitura for válida.
+- A [página Built-in tools](https://kiro.dev/docs/tools/) do Kiro lista as ferramentas
+  que cada categoria normalmente inclui. A categoria `read` inclui as ferramentas de busca de arquivos
+  e de busca de texto (`glob` e `grep` da CLI 2.x), e é por isso que `Glob` e
+  `Grep` são mapeadas ali. Ela também inclui `code` (análise de código por árvore sintática) e
+  `introspect` (responde a perguntas sobre o próprio Kiro), então um auxiliar com `read`
+  pode usar ambas. A página também lista `code` sob `write`, e não diz
+  se a ferramenta edita arquivos.
+- O Apothem não confirmou o que o Kiro faz com uma chave `tools` omitida, nem quais
+  chaves de frontmatter o Kiro exige além de `name`.
+
+## Hooks
+
+O Kiro executa hooks a partir de arquivos JSON em `<project>/.kiro/hooks/`, conforme a
+[documentação de hooks do Kiro](https://kiro.dev/docs/hooks/). A instalação grava um
+arquivo ali, `apothem.json` (versão de arquivo de hook `v1`), com um hook:
+
+| Gatilho | O que é executado |
+| --- | --- |
+| `SessionStart` | O bootstrap da sessão: metadados da sessão, o índice de skills, os resumos de memória e de plano e a postura permanente, adicionados ao contexto do modelo. |
+
+O hook adiciona contexto para o modelo. Ele não bloqueia uma chamada de ferramenta nem uma sessão.
+
+O Apothem não registra nenhum hook `PreToolUse` ou `PostToolUse` no Kiro. O Kiro adiciona a
+saída de um comando ao contexto do modelo apenas para `SessionStart` e `UserPromptSubmit`
+e a ignora para eventos de ferramenta. Uma proteção registrada em um evento de ferramenta
+custaria o início de um processo a cada chamada de ferramenta e não entregaria nada, então as proteções de gravação, edição
+e shell, o aviso de tamanho de contexto e o protocolo de fim de sessão permanecem nas
+ferramentas que os entregam. A instalação não grava nenhum hook para `UserPromptSubmit`,
+e não grava nenhum hook na pasta de usuário `~/.kiro/hooks/`.
+
+**Para onde vão os arquivos**
+
+| Arquivo | O que ele contém |
+| --- | --- |
+| `<project>/.kiro/hooks/apothem.json` | O registro do hook. O Apothem é dono deste único arquivo. |
+| `<project>/.apothem/support/kiro/hooks/` | O script despachante, seus auxiliares e seus arquivos de mensagem. |
+
+O comando no arquivo de hook tem esta aparência, com o seu interpretador e o caminho do seu projeto
+no lugar dos dois caminhos:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+```
+
+`--contract kiro` faz o despachante imprimir o contexto como texto simples, que é
+o que o Kiro adiciona ao contexto para `SessionStart`. O Kiro não documenta nenhum shell para
+ações de comando no Windows. O comando é escrito para sh e cmd.exe, com um
+caminho de interpretador com barras normais entre aspas; se o Kiro o executar sob o PowerShell na
+sua máquina, o caminho entre aspas precisa de um operador de chamada (`&`) na frente, e você pode
+adicioná-lo manualmente.
+
+**Confie no workspace.** O Kiro CLI 2.33 e posteriores carrega os hooks de um workspace somente
+depois que você confia no workspace: ele pergunta "Trust this workspace?" na primeira vez que você
+inicia uma sessão V3 interativa (`kiro-cli --v3`) em uma pasta. As sessões do Kiro Web
+não executam hooks. A instalação exibe isso como uma nota.
+
+**Faça commit com cuidado.** O comando nomeia o interpretador que o Apothem encontrou quando
+foi executado e o caminho absoluto do projeto, então o arquivo é específico da sua
+máquina, e os scripts que ele executa estão em `.apothem/`, que o snippet de
+`.gitignore` de um projeto ignora. Se você fizer commit de `.kiro/hooks/apothem.json`, o
+checkout de um colega de equipe recebe um hook que não aponta para nada: o Kiro mostra um aviso para
+o comando com falha e a sessão continua. Adicione `.kiro/hooks/apothem.json` ao
+`.gitignore`, ou faça commit dele somente para uma equipe que compartilha o mesmo layout. A
+instalação não edita o `.gitignore`.
+
+**Seus próprios hooks.** Arquivos de hook seus em `.kiro/hooks/` nunca são lidos nem
+alterados. Um hook que você adiciona ao próprio `apothem.json` permanece: uma atualização e uma desinstalação
+substituem ou removem apenas os hooks cujo comando executa o despachante do Apothem
+(`.apothem/support/kiro/hooks/dispatch.py` com `--contract kiro`, seja qual for o
+caminho de projeto sob o qual foi gravado). Um hook seu que apenas compartilha o nome, ou
+que executa `python -m apothem.conformity.gate`, nunca é tomado pelo do Apothem. Um arquivo
+que não é JSON válido é salvo em `~/.apothem/backups/` e substituído.
+
+**Caminhos que o shell leria errado.** Um caminho de projeto ou de interpretador que contém
+`$`, um acento grave, aspas duplas ou uma barra invertida é recusado antes que qualquer coisa seja
+gravada: dentro do comando entre aspas ele executaria um arquivo diferente, ou quebraria o
+JSON no qual o comando é gravado. O erro nomeia o caminho; mova ou renomeie o
+projeto e execute a instalação novamente. Um espaço ou um apóstrofo em um caminho não causa problema.
+
+**Desativando o hook.** Defina `APOTHEM_HOOKS_DISABLE=1` no ambiente do Kiro para
+silenciar o hook do Apothem. Uma atualização regrava a entrada do Apothem, então uma edição nela
+não dura, com uma exceção: defina `"enabled": false` nela, o que o Kiro
+documenta como ignorar um hook sem excluí-lo, e uma atualização mantém isso.
 
 ## Mapeamento do perfil para a configuração nativa
 
@@ -41,8 +227,15 @@ A superfície de direcionamento do Kiro tem escopo de projeto sob
 `.kiro/steering/`. O adaptador grava um arquivo de direcionamento dedicado
 `apothem-rules.md` com o front matter `inclusion: always` e nunca sobrescreve os
 arquivos de base do Kiro redigidos pelo operador (`product.md`, `tech.md`,
-`structure.md`). As especificações (specs) do Kiro (`.kiro/specs/`) e os hooks
-de agente pertencem ao operador; o Apothem não os grava.
+`structure.md`). As especificações (specs) do Kiro (`.kiro/specs/`) pertencem ao
+operador; o Apothem não as grava. Ele grava um arquivo de hook,
+`.kiro/hooks/apothem.json`, e nenhum outro arquivo em `.kiro/hooks/`.
+
+O Kiro documenta `~/.kiro/skills/` para skills globais e não menciona
+`~/.agents/skills/`, então a instalação grava a pasta do Kiro e não a
+pasta compartilhada entre ferramentas. Uma skill do workspace com o mesmo nome prevalece sobre a global.
+O Apothem não confirmou como o Kiro trata uma chave de cabeçalho de `SKILL.md` que ele não
+lista.
 
 ## Verificação
 
@@ -53,10 +246,21 @@ apothem verify --harness kiro --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
-   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
-   para também confirmar que os arquivos instalados correspondem a esse perfil.
-3. A rotina de verificação específica do adaptador informa sucesso.
+2. Cada destino gerenciado existe, incluindo a pasta `.kiro/agents/`; os arquivos
+   gerenciados não estão vazios, e as configurações JSON ou YAML podem ser
+   analisadas. Adicione `--profile PATH` para também confirmar que os arquivos
+   instalados correspondem a esse perfil. Para `.kiro/agents/` a verificação é que
+   a pasta existe, não que cada arquivo de auxiliar esteja nela; o comando
+   `apothem diff --harness kiro --project /path/to/project`
+   lista os arquivos de auxiliar que estão ausentes ou desatualizados.
+   O arquivo de hook `.kiro/hooks/apothem.json` deve existir, não estar vazio, ser
+   analisado como JSON e conter um hook que executa o despachante do Apothem, e os scripts
+   de hook devem estar em `.apothem/support/kiro/hooks/`. A verificação não executa o hook.
+3. Toda pasta de skill do Apothem está no lugar com um `SKILL.md`, seja qual for a
+   instalação que a gravou, e nenhuma pasta de skill com um nome do Apothem pertence a
+   algo que o Apothem não gravou. Uma verificação com falha nomeia as pastas ausentes ou
+   alheias.
+4. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -66,6 +270,12 @@ apothem update --harness kiro --project /path/to/project
 
 Deriva novamente o arquivo de direcionamento do projeto a partir do estado atual
 do perfil compartilhado.
+
+A atualização também regrava qualquer pasta de skill cujos arquivos difiram dos atuais.
+Se você instalou com uma versão anterior que não gravava skills, a atualização as adiciona.
+Ela regrava os arquivos de agente personalizado que diferem dos atuais e adiciona os que estiverem ausentes.
+Ela também atualiza os scripts de hook e o hook do Apothem em `.kiro/hooks/apothem.json`,
+mantendo qualquer hook seu nesse arquivo.
 
 ## Desinstalação
 
@@ -80,6 +290,23 @@ cópia do arquivo com carimbo de data e hora é salva sob `~/.apothem/backups/`;
 nenhum arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e
 o motor do Apothem não são afetados.
 
+A desinstalação também remove os arquivos de agente personalizado que gravou em `<project>/.kiro/agents/`
+e mantém qualquer outro arquivo ali; a pasta é removida quando fica vazia.
+Ela remove o hook do Apothem de `<project>/.kiro/hooks/apothem.json`, reconhecendo-o
+pelo caminho do despachante no seu comando, então funciona sem um registro de instalação, e
+mantém qualquer hook seu nesse arquivo. O arquivo é excluído quando nada mais resta nele,
+e seus outros arquivos de hook não são tocados. Se o arquivo tiver comentários que a
+desinstalação não consegue ler, ela deixa o arquivo como está e informa o hook como
+ignorado, com o motivo; remova o hook do Apothem manualmente. Os scripts de hook em
+`<project>/.apothem/support/kiro/hooks/` também são removidos.
+Ela remove as pastas de skill que gravou em `~/.kiro/skills/` e as
+regras e templates em `~/.config/apothem/`, mas somente quando nenhuma outra instalação do
+Apothem ainda as usa. Outro projeto, ou outra ferramenta que compartilha a
+pasta, pode usá-las. Nesse caso a desinstalação mantém as pastas, exibe qual instalação
+as usa, e a última desinstalação as remove. Os arquivos que você adicionou a essas
+pastas permanecem, e uma pasta que fica vazia é removida. Cada
+pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
+
 ## Conformity gate
 
 ```bash
@@ -92,6 +319,11 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness kiro --project /path/to/project` |
 | Falha na verificação | Execute `apothem update --harness kiro --project /path/to/project` e depois verifique novamente |
+| O Kiro não lista nenhum dos auxiliares do Apothem | Confie no workspace (a CLI pergunta "Trust this workspace?" na primeira sessão V3 interativa em uma pasta) e use a IDE ou `kiro-cli --v3` |
+| O hook do Apothem não é executado | Confie no workspace (a CLI pergunta "Trust this workspace?" na primeira sessão V3 interativa em uma pasta) e use a IDE ou `kiro-cli --v3`. As sessões do Kiro Web não executam hooks. Um aviso sobre o comando no início de uma sessão significa que o interpretador ou a pasta `.apothem/support/kiro/hooks/` está ausente nesta máquina: execute `apothem install --harness kiro --project /path/to/project` nela |
+| `apothem verify` nomeia uma pasta de skill ausente | Execute `apothem install --harness kiro --project /path/to/project`; ele restaura a pasta |
+| Uma instalação ou atualização avisa que ignorou uma pasta de skill | Uma pasta com o nome de uma skill do Apothem já existe na pasta de skills e o Apothem não a gravou. Renomeie-a ou mova-a e depois execute `apothem update` |
+| Uma instalação para antes de alterar o projeto | Uma gravação no seu diretório pessoal falhou. Leia o erro, corrija a pasta que ele nomeia (um link que sai do seu diretório pessoal, um arquivo onde deveria haver uma pasta ou uma pasta somente leitura) e instale novamente |
 | Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness kiro --project /path/to/project` |
 
 ## Ajustes de configuração

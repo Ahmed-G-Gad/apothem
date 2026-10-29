@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "84f84790325354af"
+sourceHash: "ad1685e4b265a2d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,178 @@ apothem install --harness codebuddy --project /path/to/project
 ```
 
 어댑터는 공유 Apothem 규칙과 거버넌스 표면으로부터 프로젝트 범위 규칙 파일
-하나를 작성합니다.
+하나를 작성하고, Apothem의 도우미를 프로젝트에 CodeBuddy 서브에이전트로
+작성하며([서브에이전트](#서브에이전트) 참조), 훅 두 개를 작성합니다([훅](#훅)
+참조).
 
-**작성되는 파일:** `<project>/.codebuddy/rules/apothem-rules.md`
+또한 Apothem의 스킬과 그 스킬이 인용하는 규칙 및 템플릿을, 프로젝트를 건드리기
+전에 사용자 홈에 작성합니다([프로젝트 외부의 파일](#프로젝트-외부의-파일) 참조).
+
+**작성되는 파일:**
+
+- `<project>/.codebuddy/rules/apothem-rules.md`: 규칙 파일.
+- 각 Apothem 도우미에 대한 `<project>/.codebuddy/agents/<name>.md`: 프로젝트 안.
+- `<project>/.codebuddy/settings.local.json`: 훅 등록, 프로젝트 안. 그 안에 있는 여러분 자신의 항목은 유지됩니다.
+- `<project>/.apothem/support/hooks/`: 훅 스크립트, 프로젝트 안.
+- 각 Apothem 스킬과 커맨드에 대한 `~/.codebuddy/skills/<name>/SKILL.md`: 사용자 홈 안.
+- `~/.config/apothem/rules/` 및 `~/.config/apothem/templates/`: 사용자 홈 안.
+
+## 프로젝트 외부의 파일
+
+설치는 프로젝트의 어떤 것도 변경하기 전에 Apothem의 스킬을 사용자 홈에도
+작성합니다.
+
+| 폴더 | Apothem이 그곳에 작성하는 것 |
+| --- | --- |
+| `~/.codebuddy/skills/` | 각 Apothem 스킬마다 `SKILL.md`가 든 폴더 하나, 그리고 각 Apothem 커맨드마다 폴더 하나(커맨드는 같은 이름의 스킬이 됩니다). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | 스킬과 규칙 파일이 참조하는 규칙과 템플릿. |
+
+이 폴더들은 공유됩니다. 프로젝트 전용이 아닙니다.
+
+- `codebuddy`를 설치하는 모든 프로젝트는 `~/.codebuddy/skills/`의 같은 사본을 사용하며, 설치는 매번 같은 파일을 그곳에 작성합니다. 그 폴더를 읽는 도구는 CodeBuddy뿐입니다. `~/.config/apothem/` 아래의 규칙과 템플릿은 다른 도구의 설치도 같은 파일로 작성합니다.
+- `--project`는 작성할 규칙 파일과 설치가 속하는 프로젝트를 선택합니다. 스킬이
+  가는 위치는 바꾸지 않습니다.
+- 설치는 저장소에 스킬 파일이나 규칙 파일을 추가하지 않습니다. 프로젝트에는 규칙
+  파일, `.codebuddy/agents/`의 서브에이전트 파일, `.codebuddy/settings.local.json`의
+  훅 등록, 그리고 모든 프로젝트 설치가 만드는 `.apothem/` 폴더가 생기며, 이
+  폴더에는 훅 스크립트도 들어 있습니다.
+- 홈 폴더가 먼저 작성됩니다. 예를 들어 경로의 폴더가 홈 디렉터리 밖으로 나가는
+  링크이거나(홈 안에 머무는 링크는 따라갑니다) 쓸 수 없어서 이 작업이 실패하면,
+  설치는 프로젝트의 어떤 것도 변경되기 전에 오류와 함께 중단됩니다.
+- Apothem 스킬의 이름을 가졌지만 Apothem이 작성하지 않은 스킬 폴더는 그대로 두며,
+  설치는 그 폴더를 명시하는 경고를 출력합니다. 이름을 바꾸거나 옮긴 다음
+  `apothem update`를 실행하세요. 그 이름이 점유되어 있는 동안 `apothem verify`는 실패합니다.
+- 파일은 모두 합쳐 몇 메가바이트입니다.
+
+설치는 `--project` 밖에 작성하는 폴더를 명시하는 안내를 출력하며, `--dry-run`은
+그 폴더들을 나열합니다.
+
+## 서브에이전트
+
+CodeBuddy는
+[CodeBuddy 서브에이전트 문서](https://www.codebuddy.ai/docs/cli/sub-agents)에 따라
+`<project>/.codebuddy/agents/`(프로젝트 에이전트) 또는 `~/.codebuddy/agents/`
+(사용자 에이전트)의 Markdown 파일에서 서브에이전트를 읽습니다. 설치는 Apothem
+도우미마다 파일 하나를 프로젝트 폴더에만 작성하며, `~/.codebuddy/agents/`에는
+아무것도 작성하지 않습니다.
+
+각 파일은 도우미의 지침을 변경하지 않고 유지하며 다음 프런트매터 키를 담습니다.
+
+| 키 | Apothem이 작성하는 것 |
+| --- | --- |
+| `name`, `description` | 도우미의 이름과 설명. |
+| `tools` | 도우미의 허용 도구로, 쉼표로 구분된 문자열 하나입니다. |
+| `disallowedTools` | 도우미에게 거부된 도구로, 쉼표로 구분된 문자열 하나입니다. 도우미에게 거부된 도구가 없으면 생략됩니다. |
+| `maxTurns` | 도우미의 턴 제한. |
+
+CodeBuddy의 문서가 보여 주는 도구 이름만 작성됩니다. 문서의
+[Settings 페이지](https://www.codebuddy.ai/docs/cli/settings)가 도구를 나열하고,
+서브에이전트 페이지가 도구 하나를 더 명시하며, 아래 목록은 그것을 포함합니다.
+
+```text
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
+```
+
+소스가 명시하지만 그 목록에 없는 도구(예: `PowerShell` 또는 `TodoWrite`)는 두
+필드 모두에서 제외됩니다. `Bash(rm *)`처럼 패턴이 있는 도구는 쉼표 목록에서 표현할
+형태가 없습니다. 허용 도구로서는 제외되고, 거부 도구로서는 도구 전체를 거부합니다.
+파일을 편집할 수 없는 도우미는 그 제한을 유지합니다. 도구 중에 `Write`나 `Edit`를
+나열하지 않으며 둘 다 거부합니다. 설치는 `model` 키를 작성하지 않으므로 도우미는
+CodeBuddy가 선택하는 모델에서 실행되며, `permissionMode`나 `hooks` 키도 작성하지
+않습니다.
+
+알아 둘 사항:
+
+- 서브에이전트 파일은 일반 프로젝트 파일입니다. 프로젝트와 함께 커밋하거나
+  `.codebuddy/agents/`를 `.gitignore`에 나열하세요. Apothem은 대신 선택하지 않습니다.
+- CodeBuddy는 수동으로 추가된 서브에이전트 파일을 다음 세션이 시작될 때 로드하므로,
+  설치 후에는 새 세션을 시작하세요.
+- Apothem 도우미의 이름을 가진 여러분의 파일은 `~/.apothem/backups/` 아래에
+  저장된 다음 교체됩니다. 제거는 그 파일을 되돌려 놓지 않습니다. 다른 이름의
+  파일은 절대 건드리지 않습니다.
+- CodeBuddy의 IDE Subagents 페이지는 CLI 페이지가 나열하지 않는 키를 보여 주며,
+  Apothem은 IDE가 `disallowedTools`나 `maxTurns`를 받아들이는지 확인하지
+  않았습니다.
+
+## 훅
+
+CodeBuddy는 [CodeBuddy 훅 문서](https://www.codebuddy.ai/docs/cli/hooks)에 따라
+설정 파일의 `hooks` 키에서 훅을 실행하며, 이 문서는 훅을 Beta로 표시합니다.
+설치는 두 개를 등록합니다.
+
+| 이벤트 | 실행되는 것 |
+| --- | --- |
+| `SessionStart` | 세션 부트스트랩: 세션 메타데이터, 스킬 인덱스, 메모리 및 계획 요약, 상시 자세를 모델의 컨텍스트에 추가합니다. |
+| `PostToolUse`(모든 도구) | 선제적 압축 추적기. 활동을 세고, 압축 주기당 최대 두 번 모델에게 상태를 저장하거나 압축하라고 알립니다. 그 외에는 아무것도 출력하지 않습니다. |
+
+둘 다 모델에 컨텍스트를 추가합니다. 둘 다 도구 호출이나 세션을 차단하지
+않습니다.
+
+Apothem은 CodeBuddy에 `PreToolUse` 가드를 등록하지 않습니다. CodeBuddy의 문서는
+`SessionStart`, `UserPromptSubmit`, `PostToolUse`에 대해
+`additionalContext`(Apothem의 가드가 전달 수단으로 쓰는 필드)를 나열하고,
+`PreToolUse`에 대해서는 권한 및 입력 필드만 나열합니다. 그곳에 등록된 가드는
+도구 호출마다 프로세스 시작 비용을 치르면서 아무것도 전달하지 못할 수 있으므로,
+쓰기, 편집, 셸 가드, `AskUserQuestion` 검사, 세션 종료 프로토콜은 그것들을
+전달하는 도구에 남습니다. Apothem은 문서나 프로브가 CodeBuddy 이벤트의 가드가
+모델에 도달한다는 것을 보여 주면 그 이벤트에 가드를 등록할 것입니다.
+
+**파일이 가는 위치**
+
+| 파일 | 담고 있는 것 |
+| --- | --- |
+| `<project>/.codebuddy/settings.local.json` | 파일의 `hooks` 키에 병합된 두 훅 등록. CodeBuddy는 이 파일을 여러분에게 로컬이며 커밋되지 않는 것으로 문서화합니다. |
+| `<project>/.apothem/support/hooks/` | 디스패처 스크립트, 그 보조 스크립트, 메시지 파일. |
+
+등록된 각 명령은 Apothem이 실행될 때 찾은 인터프리터와 프로젝트의 절대 경로를
+명시하므로 머신에 종속됩니다. 그래서 설치는 로컬 파일을 작성하고, 커밋되는
+`<project>/.codebuddy/settings.json`은 절대 작성하지 않습니다. 설치는
+`.gitignore`를 편집하지 않습니다. 팀원의 체크아웃이 여러분의 머신을 가리키는
+명령을 받지 않도록, 여러분의 파일에 `.codebuddy/settings.local.json`과
+`.apothem/`이 나열되어 있는지 확인하세요.
+
+**셸이 잘못 읽을 경로.** `$`, 백틱, 큰따옴표, 백슬래시가 포함된 프로젝트 또는
+인터프리터 경로는 무엇이든 작성되기 전에 거부됩니다. 따옴표로 묶인 명령 안에서
+그런 경로는 다른 파일을 실행하거나, 명령이 작성되는 JSON을 깨뜨립니다. 오류는 그
+경로를 명시합니다. 프로젝트를 옮기거나 이름을 바꾼 다음 설치를 다시 실행하세요.
+경로의 공백이나 아포스트로피는 문제없습니다.
+
+명령은 다음과 같으며, 두 경로 자리에 여러분의 인터프리터와 프로젝트 경로가
+들어갑니다.
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+```
+
+`--contract codebuddy`는 출력에 대해 아무 작업도 하지 않습니다. CodeBuddy는 Claude
+Code와 같은 엔벨로프를 읽습니다. CodeBuddy는 훅 명령을 여러분의 셸을 통해, 그리고
+Windows에서는 Git Bash를 통해 실행하므로(cmd.exe와 PowerShell은 둘 다 지원하지
+않습니다), 명령은 bash 인용 방식과 슬래시를 쓰는 인터프리터 경로를 사용합니다.
+CodeBuddy가 요청하면 Git for Windows를 설치하세요.
+
+**설치가 실행된 뒤 훅을 검토하세요.** CodeBuddy는 시작할 때 설정의 스냅샷을 찍고,
+다른 도구가 작성한 설정 파일을 즉시 다시 로드하지 않으며, 외부에서 추가된 훅은
+`/hooks` 패널에서 검토한 뒤에만 적용합니다. `apothem install` 후에(그리고 훅을
+변경하는 업데이트 후에) CodeBuddy를 재시작하고 `/hooks`에서 Apothem 항목을
+확인하세요. 설치는 이를 안내로 출력합니다. 문서는 변경될 때마다 검토가
+반복되는지 밝히지 않으므로, 업데이트 후에는 `/hooks`를 다시 여세요.
+
+**여러분 자신의 훅.** 등록은 키 단위로 여러분의 파일에 병합됩니다. 여러분이
+작성한 훅과 다른 키는 그대로 유지되고, 같은 이벤트와 매처 아래에 있는 여러분의
+핸들러는 Apothem의 핸들러 옆에 남으며, 업데이트는 명령이 Apothem 디스패처(어느
+프로젝트 경로 아래에 작성되었든 `--contract codebuddy`를 붙인
+`.apothem/support/hooks/dispatch.py`)를 실행하는 핸들러만 교체합니다. 프로젝트의
+`tools/hooks/dispatch.py`처럼 이름만 같거나 `python -m apothem.conformity.gate`를
+실행하는 여러분의 훅은 절대 Apothem의 것으로 간주되지 않습니다. 주석이나 다른
+JSON5 구문이 있는 파일은 그것들을 잃지 않고는 다시 작성할 수 없으므로, 설치는 그
+파일에 대해 `config.unparseable` 오류를 보고하고 파일을 건드리지 않습니다. 주석을
+제거하거나 두 항목을 직접 추가하세요.
+
+**훅 끄기.** Apothem 훅을 끄려면 CodeBuddy의 환경에 `APOTHEM_HOOKS_DISABLE=1`을
+설정하고, 모든 훅을 비활성화하려면 CodeBuddy 자체의 `disableAllHooks` 설정을
+설정하세요.
 
 ## 프로필-네이티브 구성 매핑
 
@@ -40,14 +209,24 @@ Apothem의 파일은 `alwaysApply: true`를 담고 있으므로 거버넌스 표
 CodeBuddy의 규칙 표면은 `.codebuddy/rules/` 아래에서 프로젝트 범위로
 지정됩니다. 어댑터는 운영자가 같은 디렉터리에 작성하는 어떤 규칙 파일과도
 공존하는 전용 `apothem-rules.md` 파일을 작성합니다. `CODEBUDDY.md` 프로젝트
-메모리 파일, `.codebuddy/settings.json`, 프로젝트 `.mcp.json`(MCP 서버)은
-운영자 소유이며, Apothem은 이를 작성하지 않습니다. CodeBuddy는 스킬, 커맨드,
-서브에이전트, 훅도 문서화하지만, 어댑터는 이 중 어느 것도 작성하지 않고 대신
-규칙 파일 안에서 해당 규율을 참조합니다. 프로젝트에 `CODEBUDDY.md`가 없으면
+메모리 파일, 커밋되는 `.codebuddy/settings.json`, 프로젝트 `.mcp.json`(MCP
+서버)은 운영자 소유이며, Apothem은 이를 작성하지 않습니다. CodeBuddy는 슬래시
+커맨드도 문서화하지만, 어댑터는 이를 작성하지 않고 대신 규칙 파일 안에서 해당
+규율을 참조합니다. 어댑터는 서브에이전트와 훅 두 개를 프로젝트에
+작성하고([서브에이전트](#서브에이전트) 및 [훅](#훅) 참조), 스킬과 스킬로 변환한
+Apothem의 커맨드를 사용자 폴더에 작성합니다
+([프로젝트 외부의 파일](#프로젝트-외부의-파일) 참조). 프로젝트에 `CODEBUDDY.md`가 없으면
 CodeBuddy Code가 `AGENTS.md`를 프로젝트 메모리로 읽으므로, 다른 어댑터가 작성한
 `AGENTS.md`도 CodeBuddy에 도달합니다. 어댑터가 의존하는 벤더 표면 규약은
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`에 고정되어 있으며,
 현재 게시된 CodeBuddy 문서를 기준으로 스냅샷됩니다.
+
+CodeBuddy는 사용자 스킬에 대해 `~/.codebuddy/skills/`를 문서화하고
+`~/.agents/skills/`는 언급하지 않으므로, 설치는 도구 간 공용 폴더가 아니라
+CodeBuddy 폴더에 작성합니다. 그 폴더는 CodeBuddy만 읽습니다. CodeBuddy의 스킬
+페이지는 `disable-model-invocation`, `user-invocable`, `allowed-tools`를 나열하고
+`metadata`나 `argument-hint` 키는 나열하지 않습니다. Apothem은 CodeBuddy가 이를
+받아들이는지 확인하지 않았습니다.
 
 ## 검증
 
@@ -59,7 +238,18 @@ verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
 2. 관리 대상 규칙 파일이 존재하며 비어 있지 않습니다.
-3. 어댑터별 검증 루틴이 성공을 보고합니다.
+3. 훅 등록 `.codebuddy/settings.local.json`이 존재하고, 비어 있지 않으며, JSON으로
+   파싱되고, 훅 스크립트가 `.apothem/support/hooks/`에 있습니다. 파일에는 Apothem
+   디스패처를 실행하는 핸들러가 있어야 하므로(검사는 이를 실행하지 않습니다),
+   되돌려지거나 비워진 파일은 더 이상 검증을 통과하지 못합니다.
+4. `.codebuddy/agents/` 폴더가 존재합니다. 검사는 폴더에 대한 것이며, 그 안의 각
+   도우미 파일에 대한 것이 아닙니다. 명령
+   `apothem diff --harness codebuddy --project /path/to/project`는 누락되었거나
+   오래된 도우미 파일을 나열합니다.
+5. 모든 Apothem 스킬 폴더가 어느 설치가 작성했든 `SKILL.md`와 함께 제자리에
+   있고, Apothem 이름을 가진 스킬 폴더 중 Apothem이 작성하지 않은 것에 속하는
+   폴더는 없습니다. 실패한 검사는 누락되었거나 외부의 폴더를 명시합니다.
+6. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
 
@@ -71,6 +261,13 @@ apothem update --harness codebuddy --project /path/to/project
 `update`는 멱등적입니다 — 다시 실행하면 관리 대상 파일을 최신 렌더링 콘텐츠로
 덮어씁니다.
 
+업데이트는 파일이 현재 파일과 다른 스킬 폴더도 다시 작성합니다.
+스킬을 작성하지 않던 이전 릴리스로 설치했다면 업데이트가 스킬을 추가합니다.
+현재 파일과 다른 서브에이전트 파일을 다시 작성하고, 누락된 파일을 추가합니다.
+또한 훅 스크립트와 `.codebuddy/settings.local.json`의 Apothem 핸들러를 새로
+고치며, 여러분 자신의 항목은 그대로 둡니다. 그 후에 CodeBuddy를 재시작하고
+`/hooks`를 다시 확인하세요.
+
 ## 제거
 
 ```bash
@@ -78,6 +275,19 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
 `apothem-rules.md`에서 Apothem 블록을 제거하고 그 안의 다른 텍스트는 유지합니다. 파일에 다른 내용이 남지 않은 경우에만 파일을 삭제합니다. 변경 전에 파일의 타임스탬프가 찍힌 사본을 `~/.apothem/backups/` 아래에 저장하며, 프로젝트에는 백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+
+제거는 `<project>/.codebuddy/agents/`에 작성한 서브에이전트 파일도 제거하고
+그곳의 다른 파일은 유지합니다. 폴더는 비게 되면 제거됩니다.
+`<project>/.codebuddy/settings.local.json`에서 Apothem 훅 핸들러를 명령의
+디스패처 경로로 식별하여 제거하고, 여러분 자신의 훅과 키는 유지합니다. 파일은
+Apothem이 만들었고 그 안에 다른 것이 남지 않은 경우에만 삭제됩니다.
+`<project>/.apothem/support/hooks/`의 훅 스크립트도 제거됩니다.
+`~/.codebuddy/skills/`에 작성한 스킬 폴더와 `~/.config/apothem/`의 규칙 및
+템플릿도 제거하지만, 다른 Apothem 설치가 더 이상 사용하지 않을 때만 제거합니다.
+다른 프로젝트나 그 폴더를 공유하는 다른 도구가 사용 중일 수 있습니다. 그 경우
+제거는 폴더를 유지하고 어느 설치가 사용 중인지 출력하며, 마지막 제거가 폴더를
+제거합니다. 그 폴더들에 여러분이 추가한 파일은 남고, 비게 된 폴더는 제거됩니다.
+각 폴더는 제거되기 전에 `~/.apothem/backups/` 아래에 백업됩니다.
 
 ## 적합성 게이트
 
@@ -91,6 +301,12 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness codebuddy --project /path/to/project`를 다시 실행 |
 | 검증 실패 | `apothem update --harness codebuddy --project /path/to/project`를 실행한 후 다시 검증 |
+| CodeBuddy에 Apothem 도우미가 나열되지 않음 | CodeBuddy는 세션이 시작될 때 서브에이전트 파일을 로드함. 새 세션을 시작 |
+| Apothem 훅이 실행되지 않음 | CodeBuddy는 다른 도구가 작성한 훅을 재시작과 `/hooks` 패널에서의 검토 후에만 적용함. CodeBuddy를 재시작하고 `/hooks`를 열어 Apothem 항목을 확인. Windows에서 CodeBuddy에는 Git Bash가 필요함 |
+| 설치가 `settings.local.json`에 대해 `config.unparseable`을 보고함 | 파일에 다시 작성하면 사라질 주석이나 다른 구문이 있음. 주석을 제거하고 다시 설치하거나, 두 Apothem 훅 항목을 직접 추가 |
+| `apothem verify`가 누락된 스킬 폴더를 명시함 | `apothem install --harness codebuddy --project /path/to/project`를 실행. 이 명령이 폴더를 복원함 |
+| 설치나 업데이트가 스킬 폴더를 건너뛰었다고 경고함 | Apothem 스킬의 이름을 가진 폴더가 이미 스킬 폴더에 있고 Apothem이 작성하지 않았음. 이름을 바꾸거나 옮긴 다음 `apothem update`를 실행 |
+| 설치가 프로젝트를 변경하기 전에 중단됨 | 홈에서의 쓰기가 실패했음. 오류를 읽고, 오류가 명시하는 폴더(홈 디렉터리 밖으로 나가는 링크, 폴더가 있어야 할 자리의 파일, 읽기 전용 폴더)를 고친 다음 다시 설치 |
 | 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness codebuddy --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브

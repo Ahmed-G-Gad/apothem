@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard 态势"
 description: "Apothem 的 OpenSSF Scorecard 目标，以及用于持续提升分数的证据表面。"
 machineTranslated: true
-sourceHash: "94c192fa1985b563"
+sourceHash: "41707bcf572f98ce"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Apothem 以 OpenSSF Scorecard 的最高分为目标，同时让公开门面如�
 | **Code-Review** | 分支保护 + CODEOWNERS | 除仓库管理员外，所有人向 `main` 提交变更都须经拉取请求；在项目仅有一位维护者期间，分支保护要求 0 个批准评审（参见 [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)）；在存在经评审的 PR 之前，Scorecard 历史仍然有限。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 一个新的单人维护者项目无法凭空制造多机构的贡献历史；随着贡献者加入，此项会自然改善。 |
 | **Dangerous-Workflow** | 工作流审计 | 不使用 `pull_request_target`；Actions 按 SHA 固定，并以显式权限限定作用域。 |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate 覆盖 GitHub Actions、Python 清单、哈希锁定的发布依赖要求以及 npm 表面，同时保持分组依赖 PR 可用。 |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot 为 GitHub Actions 固定版本、网站、vsce 打包器锁文件以及 pre-commit 钩子提出分组的每周更新，并为 channel-smoke 锁文件提出每月更新；Dependabot 安全更新覆盖每一个检测到的清单。`.gitattributes` 将这一个文件保留在 Scorecard 读取的源码归档中。 |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 属性测试检验解析器与 frontmatter 的不变式；上游 Scorecard 可能不会将 Hypothesis 计为模糊测试集成。 |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 仓库根目录下的 MIT 许可证。 |
 | **Maintained** | Git 历史 | 当前的发布提交与活跃的工作流节奏显示项目仍在维护；非常新的仓库可能会收到年龄警告。 |

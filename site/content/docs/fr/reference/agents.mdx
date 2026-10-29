@@ -2,7 +2,7 @@
 title: "Auxiliaires"
 description: "Auxiliaires persistants pour la recherche, l'audit, la qualité et l'orchestration, avec contrats de frontmatter et protocoles d'isolation de déploiement."
 machineTranslated: true
-sourceHash: "18a785a98f21c750"
+sourceHash: "69d30b01ea2c1815"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,25 +51,78 @@ maxTurns: <integer>
 ---
 ```
 
+`tools` est facultatif. Un auxiliaire qui l'omet hérite de chaque outil dont
+dispose la session, outils MCP connectés compris, et `disallowedTools` porte sa
+limite. Les quatorze auxiliaires livrés listent tous `tools`.
+
+## Serveurs MCP connectés
+
+Un auxiliaire qui liste `tools` ne peut appeler que ce qu'il liste. Claude Code
+n'admet un outil MCP dans cette liste que lorsque l'entrée nomme le serveur,
+comme dans `mcp__<server>__*` ; un `mcp__*` seul est documenté comme entrée de
+`disallowedTools` et nulle part ailleurs. Les noms de serveurs appartiennent à
+la personne qui les connecte, de sorte qu'un auxiliaire livré ne peut pas les
+nommer.
+
+`citation-auditor` et `research-scout` recherchent des sources savantes. Chacun
+est livré avec `tools: Read, Glob, Grep, WebSearch, WebFetch` et refuse les
+outils qui écrivent des fichiers, exécutent des commandes, lancent d'autres
+auxiliaires ou publient : `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Bash`,
+`PowerShell`, `Monitor`, `Agent`, `Artifact` et les outils de liste de tâches.
+Sans réglage de profil, aucun des deux n'atteint un outil MCP, et tous deux
+recherchent les sources par la recherche web et la récupération web.
+
+Pour donner à l'un d'eux un index savant connecté, nommez le serveur dans la
+clé `agent_mcp_servers` du profil, qui associe un nom d'agent à des noms de
+serveurs. L'installation de Claude Code par le moteur (`apothem install`)
+ajoute alors une entrée `mcp__<server>__*` par serveur nommé à la ligne `tools`
+de cet agent, et ne modifie aucun autre agent. L'installation de Gemini CLI
+fait de même avec une entrée `mcp_<server>_*` par serveur dans la liste
+d'autorisation `tools` de l'agent, pour un nom de serveur composé de lettres,
+de chiffres et de `-`. Sur les deux, un serveur que nomme le propre
+`disallowedTools` de l'agent reste refusé. L'entrée admet chaque outil de ce
+serveur, y compris ceux qui écrivent, ne nommez donc qu'un serveur auquel vous
+faites confiance pour des recherches : les instructions des auxiliaires les
+limitent aux appels de recherche, de consultation, de lecture, de vérification
+et de résolution, mais l'environnement n'applique que les noms que liste la
+ligne `tools`. Un nom pour un agent qui n'existe pas, ou qui n'a pas de ligne
+`tools` explicite, est signalé et ignoré.
+
+Les environnements autres que Claude Code et Gemini CLI ignorent la clé.
+L'arborescence du plugin Claude Code est assemblée sans profil et conserve la
+liste simple, de sorte qu'un utilisateur du plugin définit plutôt un agent de
+niveau utilisateur sous `~/.claude/agents/`. La syntaxe du profil, les règles
+sur les noms de serveurs et ce contournement se trouvent sur
+[Donner à un auxiliaire l'accès aux serveurs MCP](/docs/reference/mcp#donner-à-un-auxiliaire-laccès-aux-serveurs-mcp).
+
 ## Conversion par environnement
 
 Un auxiliaire dont l'octroi `tools`, après application de `disallowedTools`,
 n'inclut aucun outil de modification de fichiers (`Write`, `Edit`, `MultiEdit`
-ou `NotebookEdit`) est en lecture seule. Chaque environnement qui convertit les
-auxiliaires applique cette limite nativement ou retire la mention de lecture
-seule :
+ou `NotebookEdit`) est en lecture seule. Un auxiliaire sans octroi `tools` est
+en lecture seule lorsque `disallowedTools` refuse au moins `Write` et `Edit`.
+Chaque environnement qui convertit les auxiliaires applique cette limite
+nativement, l'énonce dans les instructions de l'auxiliaire ou retire la mention
+de lecture seule :
 
 | Environnement | Limite d'outils | Limite de tours | Modèle et effort |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` tels qu'écrits | `maxTurns` | hérité (non défini) |
-| Codex | `sandbox_mode = "read-only"` pour les auxiliaires en lecture seule | non disponible | hérité (non défini) |
-| Gemini CLI | liste d'autorisation `tools` de noms d'outils Gemini | `max_turns` | hérité (non défini) |
-| Qwen Code | `tools` / `disallowedTools` en noms d'outils Qwen | non mappé | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` par outil) | non mappé | hérité (non défini) |
+| Claude Code | `tools` / `disallowedTools` tels qu'écrits, plus les éventuelles entrées `mcp__<server>__*` que la clé `agent_mcp_servers` du profil ajoute à une ligne `tools` listée ; sans `tools`, chaque outil est hérité, MCP compris | `maxTurns` | hérité (non défini) |
+| Codex | aucune émise ; les instructions de l'auxiliaire l'énoncent, et le bac à sable de la session parente régit les écritures | non disponible | hérité (non défini) |
+| Gemini CLI | liste d'autorisation `tools` de noms d'outils Gemini, plus les éventuelles entrées `mcp_<server>_*` que la clé `agent_mcp_servers` du profil ajoute à une liste explicite listée ; sans `tools`, la liste d'autorisation qu'impliquent les refus plus `mcp_*` | `max_turns` | hérité (non défini) |
+| Qwen Code | `tools` / `disallowedTools` en noms d'outils Qwen ; sans `tools`, aucune liste n'est émise, de sorte que les outils MCP sont hérités et que les refus s'appliquent | non mappé | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` par outil) ; les outils MCP ne sont pas restreints | non mappé | hérité (non défini) |
 | Antigravity | aucune émise ; la description retire « read-only » | non disponible | hérité (non défini) |
+| CodeBuddy | `tools` / `disallowedTools` sous forme de chaînes séparées par des virgules, limitées aux noms d'outils que documente CodeBuddy ; aucune entrée MCP | `maxTurns` | hérité (non défini) |
+| Trae | `tools` / `disallowedTools` sous forme de chaînes séparées par des virgules, limitées aux noms d'outils que documente Trae ; aucune entrée MCP | non disponible | hérité (non défini) |
+| GitHub Copilot | liste d'autorisation `tools` d'alias Copilot (`read`, `search`, `edit`, `execute`, `web`, `agent`, `todo`) dans laquelle les refus sont intégrés, car Copilot n'a pas de clé de refus ; un alias qui couvre un outil refusé est omis ; aucune entrée MCP | non disponible | hérité (non défini) |
+| Cursor | aucune liste d'outils (Cursor n'en a pas) ; `readonly: true` pour les cinq auxiliaires en lecture seule sans `Bash`, et les autres auxiliaires en lecture seule retirent la mention « read-only » | non disponible | hérité (non défini) |
+| Kimi Code | `tools` / `disallowedTools` sous forme de listes de noms d'outils Kimi Code (`WebFetch` devient `FetchURL`, `TodoWrite` devient `TodoList` ; les noms pour lesquels Kimi Code n'a pas d'outil sont omis) ; aucune entrée MCP | non disponible | hérité (non défini) |
+| Kiro | liste d'autorisation `tools` de catégories d'outils Kiro (`read`, `write`, `shell`, `web`, `subagent`) dans laquelle les refus sont intégrés, car la liste est la seule restriction écrite ; une catégorie qui couvre un outil refusé est omise ; aucune entrée MCP | non disponible | hérité (non défini) |
+| Windsurf | liste d'autorisation `allowed-tools` de noms d'outils Devin (`read`, `edit`, `grep`, `glob`, `exec`, `write`) dans laquelle les refus sont intégrés, car Devin n'a pas de clé de refus ; les trois auxiliaires qui ont besoin d'outils web ne sont pas installés ; aucune entrée MCP | non disponible | modèle de sous-agent par défaut de Devin (non défini) |
 
-Hermes, Open-Claw et Kimi Code reçoivent les fichiers des auxiliaires comme
-matériel de support, et non comme auxiliaires natifs.
+Hermes et Open-Claw reçoivent les fichiers des auxiliaires comme matériel de
+support, et non comme auxiliaires natifs.
 
 ## Orchestration
 

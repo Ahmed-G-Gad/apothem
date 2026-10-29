@@ -2,15 +2,16 @@
 title: "Apothem im Vergleich zur manuellen Hermes-Konfiguration"
 description: "Die Hermes-Konfiguration von Hand pflegen oder sie über das gemeinsame Profil von Apothem verwalten."
 machineTranslated: true
-sourceHash: "97e1ef224eb577e6"
+sourceHash: "c84a80aba06cd6d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes liest `~/.hermes/config.yaml`. Apothem schreibt die native
 YAML-Konfiguration (und projiziert dabei das MCP-Inventar des Profils in
 `mcp_servers`) und installiert gemeinsame Befehls- und Skill-Kohorten unter
-`~/.hermes/.apothem/support/skills/`. Das eigene `skills.config` von Hermes ist
-eine Liste von Registry-Paketen, daher verfasst Apothem es nicht.
+`~/.hermes/.apothem/support/skills/`, die es unter `skills.external_dirs`
+aufführt, damit Hermes sie lädt. Das eigene `skills.config` von Hermes enthält
+Einstellungen je Skill, daher verfasst Apothem es nicht.
 
 ## Status
 
@@ -32,9 +33,12 @@ Skills sind, bleiben Apothem-Unterstützungsmaterial.
 Der Hermes-Adapter schreibt `config.yaml`, verpackt Apothem-Slash-Befehle als
 Skills, kopiert Apothem-Skills in das Unterstützungsverzeichnis und hält Regeln,
 Templates, Agenten und Hook-Material unter dem Apothem-Unterstützungs-Teilbaum.
-Hermes lädt diese Skills erst, nachdem Sie
-`~/.hermes/.apothem/support/skills` in `config.yaml` zu `skills.external_dirs`
-hinzugefügt haben.
+Außerdem fügt er `~/.hermes/.apothem/support/skills` in `config.yaml` zu
+`skills.external_dirs` hinzu, damit Hermes diese Skills lädt. Diese Liste steht
+in der dokumentierten Rangfolge von Hermes an letzter Stelle, daher hat ein Skill
+gleichen Namens in Ihrem Projekt oder in `~/.hermes/skills/` vermutlich Vorrang
+vor der Apothem-Kopie; die geprüfte Hermes-Dokumentation nennt die Regel für
+solche Namenskonflikte nicht.
 
 ## Migrationspfad
 
@@ -43,11 +47,10 @@ hinzugefügt haben.
 2. Verschieben Sie wiederverwendbare Hermes-Skills oder Befehls-Prompts in das
    gemeinsame Korpus.
 3. Führen Sie `apothem install --harness hermes` aus, um die native
-   Konfiguration und das Unterstützungsverzeichnis für Skills zu rendern.
-4. Fügen Sie `~/.hermes/.apothem/support/skills` in `config.yaml` zu
-   `skills.external_dirs` hinzu, damit Hermes die installierten Skills lädt.
+   Konfiguration zu rendern, die das Unterstützungsverzeichnis für Skills unter
+   `skills.external_dirs` aufführt, und um die Skills zu installieren.
    `apothem update` behält Schlüssel, die Sie zu `config.yaml` hinzufügen.
-5. Führen Sie `apothem verify --harness hermes` aus, um zu bestätigen, dass die
+4. Führen Sie `apothem verify --harness hermes` aus, um zu bestätigen, dass die
    Konfiguration angekommen ist.
 
 ## Als Nächstes lesen

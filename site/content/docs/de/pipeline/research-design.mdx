@@ -2,14 +2,14 @@
 title: "/research-design"
 description: "/research-design — Operationalisiert die Hypothesen zu testbaren Vorhersagen und entwirft die Studie (Variablen, Kontrollen, Stichprobe, Teststärke), dann friert es den Analyseplan als Präregistrierung ein."
 machineTranslated: true
-sourceHash: "7086ac7a2433484e"
+sourceHash: "6cf7d93ab189ec25"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rolle:** Leitende:r Forscher:in (Studiendesign)
 **Pipeline-Position:** Mitte der Kette
 
-Operationalisiert die Hypothesen zu testbaren Vorhersagen und entwirft die Studie oder das Experiment — Variablen, Kontrollen, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität — und erstellt dann eine Präregistrierung, die den Analyseplan vor der Datenerhebung einfriert.
+Operationalisiert die Hypothesen zu testbaren Vorhersagen und entwirft die Studie oder das Experiment — Variablen, Kontrollbedingungen, experimentelle Einheit, Zuteilung und Verblindung, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität — und erstellt dann eine Präregistrierung, die den Analyseplan vor der Datenerhebung einfriert.
 
 ## Kanonischer Aufruf
 
@@ -29,7 +29,7 @@ Mit Argumenten:
 
 ## Ausgaben
 
-`_inputs/study-design.md` (operationalisierte Vorhersagen, Variablenspezifikation, Kontrollen, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität) + `_inputs/preregistration.md` (der eingefrorene Analyseplan).
+`_inputs/study-design.md` (operationalisierte Vorhersagen, Variablenspezifikation, Kontrollbedingungen, experimentelle Einheit, Zuteilungs- und Verblindungsplan, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität) + `_inputs/preregistration.md` (der eingefrorene Analyseplan, einschließlich der Kontrollbedingungen mit ihren Bestehenskriterien, des Zuteilungs- und Verblindungsplans, des Umgangs mit fehlenden Ergebnissen und etwaiger Zwischenauswertungen).
 
 ## Nachgelagert
 
@@ -41,10 +41,18 @@ Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
 
 1. **Kontext laden** — Die Synthese und die Hypothesen der Spezifikation lesen.
 2. **Das Sequenz-Gate prüfen** — Bestätigen, dass `_inputs/proposal.md` (und die vorgelagerten `_inputs/synthesis.md` und `_spec/research-spec.md`) existiert; andernfalls mit `Blocked: run /research-proposal first` anhalten.
-3. **Die Studie entwerfen** — Vorhersagen operationalisieren; Variablen, Kontrollen, Stichprobe, Instrumente, Teststärke spezifizieren; Bedrohungen der Validität aufzählen.
-4. **Präregistrieren** — Den Analyseplan vor jeglicher Datenerhebung einfrieren.
+3. **Die Studie entwerfen** — Vorhersagen operationalisieren; Variablen, Kontrollbedingungen und Instrumente spezifizieren; die experimentelle Einheit, die geseedete Zuteilung, den Verblindungsplan und die Durchlaufreihenfolge festlegen; die Stichprobe für die geplante Analyse bemessen; Bedrohungen der Validität aufzählen.
+4. **Präregistrieren** — Den Analyseplan, die Kontrollbedingungen, die Zuteilung und die Verblindung vor jeglicher Datenerhebung einfrieren.
 5. **Das Übergabe-Manifest aktualisieren** — Die Pfade von Studiendesign und Präregistrierung erfassen.
 6. **Das Design ausgeben** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Struktur und Bemessung
+
+- **Die Struktur wird im Design festgelegt, nicht in der Analyse.** Das Design benennt die experimentelle Einheit und die Analyseeinheit, das Zuteilungsverfahren mit seinem geseedeten Plan und, wenn Einheiten nacheinander aufgenommen werden, dessen Verdeckung, wer verblindet ist (oder warum Verblindung nicht möglich ist), die Störfaktoren und wie jeder geblockt, randomisiert oder konstant gehalten wird, sowie die Durchlaufreihenfolge. Es plant den Vergleichsarm sowie die Positiv- und Negativkontrollen, die das Experiment ausführen wird. Eine nach dem Einfrieren hinzugefügte Kontrolle ist eine offengelegte Abweichung.
+- **Ein-Faktor-Sweeps können keine Wechselwirkung zeigen.** Wo vermutet wird, dass Komponenten oder Parameter wechselwirken, ergänzt das Design ein gemeinsames Layout über die verdächtige Menge und präregistriert die Wechselwirkung, die es behauptet.
+- **Der kleinste interessierende Effekt stammt aus der Spezifikation.** Er geht auf die Erfolgsmetriken der Spezifikation oder auf eine Schwelle praktischer Bedeutsamkeit zurück, die die Synthese begründet. Der berichtete Effekt einer früheren Studie begrenzt den plausiblen Bereich und tritt nie an die Stelle des kleinsten interessierenden Effekts.
+- **Für die Analyse bemessen, die laufen wird.** Das Ziel jeder primären Behauptung (Überlegenheit, Nicht-Unterlegenheit oder Äquivalenz) und ihre Seitigkeit werden im Design festgelegt, und jede wird bei ihrem eigenen kleinsten interessierenden Effekt auf die Teststärke hin ausgelegt, und zwar bei der Schwelle pro Test, die die deklarierte Korrektur übrig lässt. Das erforderliche N wird als Bereich über den plausiblen Effekt berichtet; wenn die Machbarkeit N begrenzt, wird der kleinste nachweisbare Effekt bei diesem N berichtet und der kleinste interessierende Effekt als nicht ausreichend teststark angegeben.
+- **Zuschläge und Simulation.** N zählt unabhängige Einheiten und wird für die Korrelation innerhalb von Clustern erhöht; das Erhebungsziel ergibt sich aus dem analysierten N über eine festgehaltene Ausfallrate. Wo keine geschlossene Formel zur geplanten Analyse passt, wird die Teststärke per Simulation geschätzt, wobei Werkzeug, Version, Seed und Monte-Carlo-Fehler festgehalten werden, und eine sequenzielle Regel legt ihre Anzahl an Zwischenauswertungen und ihre Grenze in der Präregistrierung fest.
 
 ## Rigorositätsuntergrenze
 
@@ -55,7 +63,9 @@ Für eine vergleichstragende Studie legt das Design die empirische Untergrenze f
 | Symptom | Ursache | Wiederherstellung |
 |---------|-------|----------|
 | Blocked: run /research-proposal first | Kein Plan von Bestand | Führen Sie `/research-proposal` aus, um `_inputs/proposal.md` zu erzeugen |
-| Unterpowertes Design | Stichprobe zu klein für den Effekt | Führen Sie die Teststärkeanalyse erneut aus; passen Sie die Stichprobengröße an |
+| Unterpowertes Design | Stichprobe zu klein für den Effekt | Führen Sie die Teststärkeanalyse für die geplante Analyse erneut aus; passen Sie die Stichprobengröße an, oder berichten Sie den kleinsten nachweisbaren Effekt und geben Sie an, dass der kleinste interessierende Effekt nicht ausreichend teststark ist |
+| Struktur der Analyse überlassen | Einheit, Zuteilung, Verblindung oder Durchlaufreihenfolge nicht im Design festgelegt | Legen Sie sie im Design und in der Präregistrierung fest; kein nachträglich angewandter Test trennt eine Konfundierung, die das Layout eingebaut hat |
+| Frühere Schätzung als Zieleffekt verwendet | Der berichtete Effekt einer einzelnen Studie tritt an die Stelle des kleinsten interessierenden Effekts | Begründen Sie das Ziel in den Erfolgsmetriken der Spezifikation; verwenden Sie die frühere Studie nur, um den Bereich zu begrenzen |
 | Analyseplan nicht eingefroren | Präregistrierung übersprungen | Verfassen Sie `_inputs/preregistration.md` vor der Datenerhebung |
 
 ## Beispiele

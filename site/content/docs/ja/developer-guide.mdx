@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "887c6c6136f1dccb"
+sourceHash: "642b586866c9d377"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -160,7 +160,7 @@ portability: "unix-only"
 
 ### 常時オン
 
-ルールはあらゆる場所に適用されます。
+ルールはあらゆる場所に適用されます。常時オンのルールは 5 つです: `agnostic-posture`、`authority-inquiry`、`session-closure`、`context-management`、そしてルールインデックス（`apothem-rule-index`）。常時オンのルールはどれもすべてのセッションでコンテキストを消費するため、この集合は小さく保たれています。
 
 ```yaml
 pathFilter: ""
@@ -265,14 +265,17 @@ alwaysApply: false
 
 ルールが持つのはこの 4 つのフィールドだけです — `version` / `updated` / `scope` / `portability` / `implements` は持ちません。
 
+新しいルールはパスフィルター型です。新しい常時オンのルールを追加するには、同じ変更でコアリストとバイト上限を引き上げる必要があります: `tests/unit/test_always_on_core.py` のリストと、`conformity/always_on_budget_grep.py` の上限です。
+コンパニオンルール（`<parent>-<aspect>`）は、親の `pathFilter`、またはそれより狭いものを使います。
+
 例:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -285,6 +288,7 @@ alwaysApply: true
 ```
 
 関心事がそのルールに合致するファミリーの表を選びます。
+また、`src/apothem/rules/apothem-rule-index.md` の、そのルールを必要とする状況の行にルール名を記載します。ルールがインデックスにない場合、`tests/unit/test_always_on_core.py` は失敗します。
 
 ### 5. CHANGELOG.md に追記する
 
@@ -328,14 +332,15 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
 `disable-model-invocation: true` にすると、コマンドはオペレーターだけが呼び出せるものになります。`false` の場合、リクエストがコマンドの説明に一致するとき、モデルがそれを実行できます。
-ほとんどのコマンドは `true` を使いますが、計画パイプラインとリサーチパイプラインのステージの大半は `false` を使います。
+読み取り専用のコマンドと助言を行うコマンドでは、既定値は `false` で、説明はユースケースから書き始めます。45 個のコマンドのうち 35 個がこれを使います。
+作業ツリーの外の状態を変更するコマンド、またはオペレーターがタイミングを選ぶことに依存するコマンドは `true` のままです（10 個のコマンド）。
 `src/apothem/commands/README.md` の呼び出し表には、すべてのコマンドの設定が列挙されています。新しいコマンドには行を追加してください。
 `allowed-tools` は読み取り専用に保ってください: それを尊重するハーネスは、確認を求めずにそれらのツールを実行します。
 副作用のあるツールは、`Bash(git log *)` のようなスコープ付きのルールとしてのみ許可してください。スキーマは `"*"` と、スコープなしで書かれた `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit`、`WebFetch` のいずれかを拒否します。
@@ -349,6 +354,10 @@ allowed-tools: "Read, Glob, Grep"
 - 概要レベルの指示
 - 手順を含む Workflow セクション
 - 返却契約 / 出力形式
+
+あるハーネスのスキル出力は、各コマンドを、スリムな `SKILL.md` と、H2 セクションごとの `references/` ファイルに分割します。
+コマンドには `## Workflow` セクションを 1 つだけ持たせ、すべてのコードフェンスを閉じ、新しい種類の H2 は `src/apothem/lib/claude_skill_split.py` で分類してください。未分類の種類があると、`tests/unit/test_claude_skill_split.py` は失敗します。
+ルールは `src/apothem/commands/README.md` の Skill-emission split contract に記載されています。
 
 ### 4. README と CHANGELOG.md を更新する
 
@@ -642,10 +651,10 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### 振る舞い評価
 
-`evals/` 配下のスイートは、形式ではなく振る舞いを測定します: 64 件のトリガーケース（モデルが呼び出せる各コマンドとサブエージェントが、その領域のリクエストでは発火し、ニアミスでは反応しないこと）、32 件の結果ケース（計画ステージ、リサーチステージ、監査の観点ごとに 1 件）、6 組のルール効果ペア（常時オンのルールのテキストがある場合とない場合）です。
+`evals/` 配下のスイートは、形式ではなく振る舞いを測定します: 148 件のトリガーケース（モデルが呼び出せる各コマンド、スキル、サブエージェントが、その領域のリクエストでは発火し、ニアミスでは反応しないこと、そしてユーザーのみが呼び出せる 6 個のコマンドが自ら開始しないこと）、32 件の結果ケース（計画ステージ、リサーチステージ、監査の観点ごとに 1 件）、6 組のルール効果ペア（抽出したルールのテキストがある場合とない場合）です。
 ケースは単なるデータであり、`python -m pytest tests/unit/test_eval_suite.py` によって無料で検証されます。ケースの実行は課金対象で、手動で行います。
 `Evals` ワークフロー、ローカルでの実行、ケースの追加方法については、[振る舞い評価を実行する](/docs/how-to/evals)を参照してください。
-ペアを持つ常時オンのルールを編集した後は、`python scripts/dev/sync_eval_rule_cases.py` を実行してください。
+ペアを持つルールを編集した後は、`python scripts/dev/sync_eval_rule_cases.py` を実行してください。
 
 ### ベンチマーク
 
@@ -659,6 +668,8 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 常時オンの予算チェック（`always-on-budget-grep`）は、Bindings セクションとコンパニオンポインター行を除外して、空白区切りの単語を数えます。
 その JSON レポートには `always-on-loaded` も含まれます: ハーネスが読み込む、フロントマターを除去した本文のバイト数、文字数、単語数を、常時オンのルール全体で合計したものです。
+出荷されるルールディレクトリを対象にした場合、この合計がバイト上限（`always-on-ceiling-bytes` として報告されます）を超えるか、ルールインデックスがそれ自体の上限を超えると、チェックは失敗します。
+Claude Code は Bindings セクションを除いたルールのコピーを読み込むため、その読み込みサイズは、このチェックが報告する値より小さくなります。
 
 ## エコシステム監査: 検証の実行
 

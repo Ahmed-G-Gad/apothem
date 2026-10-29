@@ -2,7 +2,7 @@
 title: "تجريد محول إطار العمل"
 description: "بروتوكول HarnessAdapter — كيف تترجم محولات Apothem الملف التعريفي المشترك."
 machineTranslated: true
-sourceHash: "3e2bf8f9744fc759"
+sourceHash: "da20d21cbe60d343"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,17 +27,20 @@ sourceHash: "3e2bf8f9744fc759"
 تنقسم المحوِّلات إلى شكلين من أشكال التجسيد، وكلاهما ظاهر في السجلّ:
 
 - **عارِضات الملفّ الواحد** تترجم حقول الملف التعريفي إلى ملفّ تهيئة واحد أصليّ لإطار العمل. مثال ذلك محوِّل <bdi>OpenCode</bdi> الذي يُجسِّد ملف تهيئته الأصلي من الملف التعريفي المشترك عبر مُجسِّد.
-- **محوِّلات سطح القواعد وشجرة الدعم** تنشر حزمة حمولة <bdi>Apothem</bdi> إلى موقع القواعد الموثَّق لدى إطار العمل، فتحوّل الحزمةَ إلى الصيغة الأصلية حيث توجد واحدة، وتُركِن البقيّة تحت شجرة دعم فرعية يملكها <bdi>Apothem</bdi> ومُشار إليها من المرساة الأصلية. يكتب محوِّل <bdi>Cursor</bdi> ملفًّا واحدًا <bdi>`.cursor/rules/apothem-rules.mdc`</bdi> في جذر المشروع المُزوَّد، ويُسلِّم سطح القواعد فقط. ولا يُجسِّد محوِّل <bdi>Claude Code</bdi> ملف <bdi>`settings.json`</bdi> من الملف التعريفي؛ بل ينسخ قالب الإعدادات المُضمَّن إلى <bdi>`~/.claude/settings.json`</bdi> مع تعبئة مُفسِّر الخطّافات، ويسطّح أدلّة اصطلاحات <bdi>Apothem</bdi> (<bdi>`agents/`</bdi> و<bdi>`rules/`</bdi> و<bdi>`skills/`</bdi> …) بجانبه، ويكتب الملف التعريفي في كتلة مُدارة محدودة بعلامات حارسة داخل <bdi>`CLAUDE.md`</bdi>.
+- **محوِّلات سطح القواعد وشجرة الدعم** تنشر حزمة حمولة <bdi>Apothem</bdi> إلى موقع القواعد الموثَّق لدى إطار العمل، فتحوّل الحزمةَ إلى الصيغة الأصلية حيث توجد واحدة، وتُركِن البقيّة تحت شجرة دعم فرعية يملكها <bdi>Apothem</bdi> ومُشار إليها من المرساة الأصلية. يكتب محوِّل <bdi>Cursor</bdi> ملفًّا واحدًا <bdi>`.cursor/rules/apothem-rules.mdc`</bdi> في جذر المشروع المُزوَّد. وقبل ذلك الملف يكتب مجلّدين مشتركين في الدليل المنزلي للمستخدم: تذهب المهارات، والأوامر المُغلَّفة بوصفها مهارات، إلى <bdi>`~/.agents/skills/`</bdi>، وتذهب القواعد والقوالب التي تستشهد بها تلك المهارات إلى <bdi>`~/.config/apothem/`</bdi>. ولا يُجسِّد محوِّل <bdi>Claude Code</bdi> ملف <bdi>`settings.json`</bdi> من الملف التعريفي؛ بل ينسخ قالب الإعدادات المُضمَّن إلى <bdi>`~/.claude/settings.json`</bdi> مع تعبئة مُفسِّر الخطّافات، ويسطّح أدلّة اصطلاحات <bdi>Apothem</bdi> (<bdi>`agents/`</bdi> و<bdi>`rules/`</bdi> و<bdi>`skills/`</bdi> …) بجانبه، ويكتب الملف التعريفي في كتلة مُدارة محدودة بعلامات حارسة داخل <bdi>`CLAUDE.md`</bdi>.
 
 أي محوِّل بعينه إمّا أن يكون **بنطاق المستخدم** (يكتب تحت الدليل المنزلي) أو
-**بنطاق المشروع** (يتطلّب <bdi>`--project <path>`</bdi> ويكتب داخل تلك الشجرة)؛
-ويُسجِّل السجلّ أيّهما.
+**بنطاق المشروع** (يتطلّب <bdi>`--project <path>`</bdi> ويكتب ملف مشروعه داخل تلك
+الشجرة)؛ ويُسجِّل السجلّ أيّهما. وتكتب سبعة محوِّلات بنطاق المشروع (cursor
+وgithub-copilot وwindsurf وzed وcodebuddy وkiro وtrae) أيضًا مجلّدات مشتركة في الدليل
+المنزلي للمستخدم، مثل <bdi>`~/.agents/skills/`</bdi> و<bdi>`~/.config/apothem/`</bdi>،
+ولا يُغيّر <bdi>`--project`</bdi> مكان كتابتها.
 
 ## طوبولوجيا المحوِّلات الحاليّة
 
 ```mermaid
 %% provenance: hand-authored %%
-%% verified: 2026-06-09 %%
+%% verified: 2026-10-25 %%
 %% cross-reference: src/apothem/harnesses/ (adapter sub-packages) %%
 flowchart TD
     accTitle: Apothem adapter topology
@@ -54,9 +57,9 @@ flowchart TD
 
     CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
-    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
-    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]
-    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>(rules surface)"]
+    CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
+    WS --> WSN["&lt;project&gt;/.devin/rules/apothem-rules.md<br/>+ ~/.agents/skills/ and ~/.config/apothem/<br/>(project rules file + user-home folders)"]
     ETC --> ETCN["each harness's documented<br/>native surface or Apothem-owned<br/>support subtree"]
 ```
 
