@@ -85,6 +85,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   so every version and security update for the two lockfiles failed and none
   reached a pull request. The release archives and GitHub source archives
   still leave them out.
+- **OpenSSF Scorecard reads the workflows.** `scorecard.yml` runs the
+  Scorecard action with `file_mode: git`, so Scorecard reads a clone of the
+  repository. It read a GitHub archive of `main`, which leaves out `.github/`
+  apart from `dependabot.yml`, so it found no workflows and reported
+  Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
+  inconclusive.
 
 ## [1.5.0] - 2026-10-28
 

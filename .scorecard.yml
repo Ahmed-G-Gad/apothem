@@ -5,11 +5,12 @@
 # code scanning alert:
 # https://github.com/ossf/scorecard/blob/main/config/README.md
 #
-# It lives at the repository root because Scorecard, in the action's default
-# archive file mode, reads a GitHub archive of the default branch, and
-# .gitattributes marks .github/ export-ignore, which leaves that folder out of
-# every archive except .github/dependabot.yml. Scorecard also looks for
-# .github/scorecard.yml, but cannot see it there.
+# It lives at the repository root, where Scorecard finds it in either file
+# mode. .github/workflows/scorecard.yml runs the action in git mode, which
+# reads a clone. The action's default archive mode reads a GitHub archive of
+# the default branch, and .gitattributes marks .github/ export-ignore, which
+# leaves that folder out of every archive except .github/dependabot.yml, so
+# that mode would miss a .github/scorecard.yml.
 #
 # fuzzing: the Hypothesis property tests under tests/property/ generate inputs
 # across the search space for the frontmatter parser, the materialize round
