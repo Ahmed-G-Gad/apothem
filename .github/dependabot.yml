@@ -101,10 +101,14 @@ updates:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
+  # Weekly, unlike the channel-smoke lockfile: the Marketplace publish route
+  # can depend on a vsce release (Trusted Publishing needs vsce 4.1.0 or
+  # later), so a new vsce reaches a pull request within a week of its cooldown.
   - package-ecosystem: npm
     directory: /.github/vsce
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
       time: "06:00"
       timezone: Etc/UTC
     cooldown:

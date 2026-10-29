@@ -33,6 +33,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
   release-cycle runbook gains the setup procedure.
 
+### Changed
+
+- **Dependabot checks the vsce packager weekly.** The `.github/vsce` lockfile
+  was checked monthly, so a new vsce release waited up to a month after its
+  seven-day cooldown before a pull request proposed it. It is now checked
+  every Monday, like the website and the pre-commit hooks, because the
+  Marketplace publish route depends on the vsce release: Trusted Publishing
+  needs vsce 4.1.0 or later.
+
 ## [1.5.0] - 2026-10-28
 
 ### Added
