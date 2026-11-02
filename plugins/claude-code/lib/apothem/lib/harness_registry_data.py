@@ -1060,6 +1060,13 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://docs.devin.ai/desktop/devin-local/customizations.md",
         ),
         retrieved="2026-11-02",
+        # OpenCode falls back to ~/.claude/CLAUDE.md only when no
+        # ~/.config/opencode/AGENTS.md exists, and skips it when
+        # OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1 or OPENCODE_DISABLE_CLAUDE_CODE=1
+        # is set (the OpenCode rules page, read 2026-11-02).
+        reader_conditions={
+            "opencode": "only when no ~/.config/opencode/AGENTS.md exists"
+        },
     ),
     SharedRoot(
         path="<project>/AGENTS.md",

@@ -153,6 +153,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Hermes page lists the project files through which another install's block
   reaches Hermes. No Apothem install writes a project `CLAUDE.md`, which Devin
   also imports.
+- **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** OpenCode
+  reads that file only as a fallback, when no `~/.config/opencode/AGENTS.md`
+  exists, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+  `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. The notes named OpenCode without
+  that condition; they now say
+  `OpenCode (only when no ~/.config/opencode/AGENTS.md exists)`, as they
+  already do for the Open-Claw and Hermes conditions.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

@@ -102,12 +102,14 @@ def test_claude_code_agents_folder_is_shared_with_cursor(tmp_path: Path) -> None
 def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
     tmp_path: Path,
 ) -> None:
-    # ~/.claude/CLAUDE.md has two readers; the note reads as several tools.
+    # ~/.claude/CLAUDE.md has two readers; the note reads as several tools, and
+    # OpenCode loads the file only when it has no global AGENTS.md of its own.
     advisories = shared_root_advisories("claude-code", home=tmp_path, project=None)
     entry = _owner_entry(advisories, "~/.claude/CLAUDE.md")
     assert entry["readers"] == ["opencode", "windsurf"]
     assert str(entry["message"]) == (
-        "~/.claude/CLAUDE.md is shared: OpenCode, Windsurf also load it. "
+        "~/.claude/CLAUDE.md is shared: OpenCode (only when no "
+        "~/.config/opencode/AGENTS.md exists), Windsurf also load it. "
         "Installing or uninstalling Claude Code changes what those tools load."
     )
 
@@ -283,6 +285,27 @@ def test_reader_note_carries_the_condition_the_reader_loads_the_root_under(
     assert str(reader[0]["message"]) == (
         "Open-Claw (only under its default state directory) also loads "
         "~/.agents/skills/, which holds Apothem content from an Apothem install."
+    )
+
+
+def test_opencode_reader_note_carries_its_claude_md_condition(tmp_path: Path) -> None:
+    claude_md = tmp_path / ".claude" / "CLAUDE.md"
+    claude_md.parent.mkdir()
+    claude_md.write_text(
+        "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nx\n<!-- END APOTHEM MANAGED BLOCK -->\n",
+        encoding="utf-8",
+    )
+    advisories = shared_root_advisories(
+        "opencode", home=tmp_path, project=None, holders=lambda _path: ["claude-code"]
+    )
+    reader = [
+        a for a in advisories if a["role"] == "reader" and a["path"] == str(claude_md)
+    ]
+    assert len(reader) == 1
+    assert str(reader[0]["message"]) == (
+        "OpenCode (only when no ~/.config/opencode/AGENTS.md exists) also loads "
+        "~/.claude/CLAUDE.md, which holds Apothem content from the Claude Code "
+        "install."
     )
 
 

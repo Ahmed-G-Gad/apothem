@@ -255,6 +255,14 @@ def test_open_claw_reads_agents_skills_only_under_its_default_state_dir() -> Non
     assert "default state directory" in root.reader_conditions["open-claw"]
 
 
+def test_opencode_loads_claude_md_only_without_its_global_agents_md() -> None:
+    # The OpenCode rules page: ~/.config/opencode/AGENTS.md takes precedence
+    # over ~/.claude/CLAUDE.md, which OpenCode reads only as a fallback.
+    root = _DECLARED["~/.claude/CLAUDE.md"]
+    assert "https://opencode.ai/docs/rules/" in root.evidence
+    assert "~/.config/opencode/AGENTS.md" in root.reader_conditions["opencode"]
+
+
 @pytest.mark.parametrize(
     ("path", "owner"),
     [("~/.claude/agents", "claude-code"), ("~/.codex/agents", "codex")],
