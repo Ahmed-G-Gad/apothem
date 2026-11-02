@@ -19,7 +19,7 @@ The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewe
 | **Code-Review** | Branch protection + CODEOWNERS | Pull requests are required for `main` for everyone except repository admins, and branch protection requires 0 approving reviews while the project has one maintainer (see [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); Scorecard history remains limited until reviewed PRs exist. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | A new solo-maintainer project cannot manufacture multi-organization contribution history; this improves naturally as contributors join. |
 | **Dangerous-Workflow** | Workflow audit | No `pull_request_target`; Actions are SHA-pinned and scoped with explicit permissions. |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot proposes grouped weekly updates for the GitHub Actions pins, the website, the vsce packager lockfile, the hash-locked CI pip and the pre-commit hooks, and monthly updates for the channel-smoke lockfile; Dependabot security updates cover every detected manifest. `.gitattributes` keeps this one file in the source archive Scorecard reads. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot proposes grouped weekly updates for the GitHub Actions pins, the website, the vsce packager lockfile, the hash-locked CI pip and the pre-commit hooks, and monthly updates for the channel-smoke lockfile; Dependabot security updates cover every detected manifest except the CI dependency closures in `scripts/ci/`, which `scripts/dev/refresh_ci_locks.py` regenerates when an alert names a locked package. `.gitattributes` keeps this one file in GitHub source archives, which a scan in the action's default archive mode reads; the Scorecard workflow runs in git mode and reads it from the clone. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis property tests exercise parser and frontmatter invariants; upstream Scorecard may not credit Hypothesis as a fuzzer integration. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | MIT license at repository root. |
 | **Maintained** | Git history | Current release commit and active workflow cadence demonstrate maintenance; very new repositories may receive an age warning. |
@@ -34,6 +34,10 @@ The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewe
 ## Score interpretation
 
 Scorecard scores each check on a 0-10 scale and the overall score is a weighted mean. Controls that depend on repository history, third-party registration, or contributor diversity are tracked explicitly instead of overclaimed. Drift on any file-controlled check triggers immediate remediation.
+
+The Scorecard workflow runs the action with `file_mode: git`, so Scorecard reads a clone of the repository. Source archives leave out `.github/` (`export-ignore` in `.gitattributes`), so the action's default archive mode would hide the workflows from Dangerous-Workflow, Token-Permissions, Pinned-Dependencies, and Packaging.
+
+Pinned-Dependencies stays below 10 by design. The SLSA generator is referenced by its release tag, the sole exception to SHA pinning, because its provenance is anchored on that tag. The single-tool pins (`ruff`, `bandit`, `pip-audit`, `pip-licenses`, `pre-commit`) are exact versions without hashes, and the evals workflow installs the Claude Code CLI at a version chosen per run.
 
 ## Refresh cadence
 
