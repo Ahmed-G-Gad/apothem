@@ -161,7 +161,7 @@ The registry stays synchronized through these checks:
 | Check | Purpose |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirms each adapter has a convention pin that is at most 90 days old, cites at least one vendor URL, and has no overdue discovery target. CI runs it on every pull request, weekly, and before a release. |
-| `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. The weekly convention monitor runs it. |
+| `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. A host name that resolves only to a placeholder address no server can hold, which a vendor's name servers can return for the region the check runs from, gets no request: it is reported as unroutable, does not fail the check, and its pages need a check by hand. The weekly convention monitor runs it, warns about each such host on every run, and lists its pages in the issue it files. |
 | `python -m apothem.conformity.gate --all .` | Runs the documentation and implementation conformity checks. |
 | `python -m pytest` | Exercises registry fixture tests and adapter contract tests. |
 

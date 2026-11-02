@@ -125,6 +125,21 @@ def test_pipeline_nav_lists_every_command_exactly_once() -> None:
         )
 
 
+def test_pipeline_command_index_is_the_same_block_in_every_locale() -> None:
+    """The overview's command index lists every shipped command, in English and every locale."""
+    pages = [_DOCS_ROOT / "pipeline" / "index.mdx"]
+    pages += sorted(_DOCS_ROOT.glob("*/pipeline/index.mdx"))
+    assert len(pages) == 1 + len(_LOCALES)
+    english = _generated_region(pages[0].read_text(encoding="utf-8"))
+    listed = re.findall(
+        r"^\| \[/([a-z0-9-]+)\]\(/docs/pipeline/", english, flags=re.MULTILINE
+    )
+    assert sorted(listed) == _shipped_command_names()
+    for page in pages[1:]:
+        region = _generated_region(page.read_text(encoding="utf-8"))
+        assert region == english, f"{page.relative_to(_DOCS_ROOT)} command index drift"
+
+
 def test_pipeline_overview_diagram_shows_every_plan_stage() -> None:
     """The /plan flow diagram includes every ``plan-*`` command, ``/plan-amend`` included."""
     page = (_DOCS_ROOT / "pipeline" / "index.mdx").read_text(encoding="utf-8")

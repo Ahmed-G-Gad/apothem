@@ -112,6 +112,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reached its timestamp. Each lock records its lock date, cooldown, cutoff and
   exceptions, and `--check` reproduces them. The locks are at lock date
   2026-10-29 with cutoff 2026-10-22.
+- **The weekly vendor URL check names the hosts it cannot check.**
+  CodeBuddy's documentation host answers `0.0.0.1` to name lookups from the
+  United States, where GitHub's hosted runners are, so the check never
+  reached the twelve CodeBuddy pages the pins cite. It waited out three
+  30-second timeouts on each, about 20 of the job's 30 minutes, and counted
+  them as unreachable. A host whose name resolves only to an address no
+  server can hold, anything in `0.0.0.0/8` or `::`, is now reported as
+  `unroutable` and gets no request. Like an unreachable URL, it does not fail
+  the check. Each run carries a warning naming such a host, and the issue the
+  monitor files lists its URLs to check by hand.
 
 ### Fixed
 
@@ -151,6 +161,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   apart from `dependabot.yml`, so it found no workflows and reported
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
+- **The pipeline overview's command index is current in every translation.**
+  The docs generator wrote the index of shipped commands into the English page
+  only, so the eleven translated overviews kept older summaries for every
+  command. It now writes the same index into each translated page, and
+  `tests/unit/docs/test_site_generated_lists.py` fails when a translation's
+  index differs from the English one.
+
+### Security
+
+- **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
+  locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
+  10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
+  through a crafted glob pattern). vsce 4.0.0 and 4.1.0 still require
+  `minimatch` 10.x, which has no fixed release, so `tools/vsce/package.json`
+  overrides it. vsce did not reach the affected code, which runs only at
+  optimization level 2 or higher: it matches its own ignore list and the
+  extension's `.vscodeignore` at the default level. The packaged extension is
+  unchanged.
 
 ## [1.5.0] - 2026-10-28
 

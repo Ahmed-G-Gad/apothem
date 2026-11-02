@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adapter harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -119,14 +119,14 @@ Hal yang perlu diketahui:
   Berkas dengan nama lain tidak pernah disentuh.
 - Devin juga membaca folder bersama `.agents/agents/`, yang tidak pernah ditulis
   Apothem, dan Devin CLI mendokumentasikan impor subagent dari folder `.claude/`
-  tanpa menyebutkan jalurnya. Apothem belum memastikan apakah mode Local Devin
-  Desktop menerapkan impor tersebut.
+  tanpa menyebutkan jalurnya. Devin Local menemukan berkasnya dengan cara yang
+  sama seperti Devin CLI, sehingga impor tersebut juga berlaku di sana.
 - Apothem belum memastikan nama `allowed-tools` untuk alat web, nilai mana yang
   diterima `model`, atau bagaimana daftar `allowed-tools` yang kosong dibaca.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Hook
@@ -210,8 +210,8 @@ untuk dicocokkan.
 **Devin juga menjalankan hook yang ditulis Claude Code.** Devin memuat hook di
 `~/.claude/settings.json`, `.claude/settings.json` dan
 `.claude/settings.local.json` selama `read_config_from.claude` aktif, yang
-merupakan default-nya untuk Devin CLI; halaman Desktop tidak menyebutkan apakah
-Devin Local menerapkannya. Jika Anda juga memasang Apothem untuk Claude Code,
+merupakan default-nya: Devin Local menemukan berkasnya dengan cara yang sama
+seperti Devin CLI. Jika Anda juga memasang Apothem untuk Claude Code,
 kedua set hook dapat berjalan. Perintah `SessionStart` di sini dan salinannya di
 Claude Code berbagi satu penanda per sesi di folder keadaan hook Apothem,
 sehingga mana pun yang berjalan kedua akan diam dan bootstrap mencapai model
@@ -242,9 +242,8 @@ komentarnya, atau tambahkan kedua entri itu sendiri.
 **Mematikan hook.** Tetapkan `APOTHEM_HOOKS_DISABLE=1` di lingkungan Devin untuk
 membungkam hook Apothem.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Pemetaan profil ke konfigurasi native
@@ -269,10 +268,10 @@ maupun konfigurasi Devin bersama. Bentuk berkas tunggal `.windsurfrules`
 sengaja tidak ditulis.
 
 Devin Desktop (Windsurf) menemukan `~/.agents/skills/`, sehingga skill yang
-ditulis instalasi muncul tanpa penyiapan lebih lanjut. Devin Desktop juga dapat
-mencantumkan nama yang sama dari `~/.claude/skills/` ketika impor konfigurasi
-Claude Code-nya aktif; dokumentasi Devin CLI menjadikan impor itu aktif secara
-default, dan halaman Desktop tidak menyebutkan apakah mode Local menerapkannya.
+ditulis instalasi muncul tanpa penyiapan lebih lanjut. Impor Claude Code-nya,
+yang aktif secara default, membaca skill hanya dari folder `.claude/skills/`
+proyek, sehingga tidak ada dokumentasi bahwa skill yang ditulis instalasi
+Apothem untuk Claude Code ke `~/.claude/skills/` juga muncul di sana.
 Apothem belum memastikan bagaimana Windsurf memperlakukan kunci header
 `SKILL.md` yang tidak dicantumkannya; skill membawa `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint`, dan sebuah peta

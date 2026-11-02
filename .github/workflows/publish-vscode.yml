@@ -122,6 +122,11 @@ jobs:
       # The Entra publish path loads @azure/identity, so the affected flow can be
       # reached and the override stays. The PAT path does not load it.
       # Drop the override once @azure/identity requires msal-node 7.1 or later.
+      # It also overrides minimatch to 11.0.1, which fixes GHSA-g3hv-75wg-m249:
+      # vsce 4.0.0 and 4.1.0 still declare minimatch ^10.2.6, and no 10.x
+      # release has the fix. vsce calls only minimatch(path, pattern, options),
+      # which 11.x keeps. Drop the override once the locked @vscode/vsce
+      # declares a minimatch range that admits 11.0.1 or later.
       - name: Install vsce from its lockfile
         run: npm ci --prefix ../vsce-tool/tools/vsce --ignore-scripts --no-audit --no-fund
       - name: Package .vsix
