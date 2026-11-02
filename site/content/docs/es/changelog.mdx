@@ -146,9 +146,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   as its last project context fallback, only when the project has no
   `.hermes.md`, `AGENTS.md` or `CLAUDE.md`, and the note gives that condition.
   Those installs now name these tools among the ones that load the file, and a
-  Windsurf install names the install whose Apothem block it finds there. The
-  Windsurf and Cursor pages show the `read_config_from` keys that turn Devin's
-  imports off. No Apothem install writes a project `CLAUDE.md`, which Devin
+  Windsurf or Hermes install names the install whose Apothem block it finds
+  there. Hermes's entry in the project `AGENTS.md` note now gives its condition
+  too: it loads that file only when the project has no `.hermes.md` or
+  `HERMES.md` and no `AGENTS.override.md` beside it. The Windsurf and Cursor
+  pages show the `read_config_from` keys that turn Devin's imports off, and the
+  Hermes page lists the project files through which another install's block
+  reaches Hermes. No Apothem install writes a project `CLAUDE.md`, which Devin
   also imports.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin

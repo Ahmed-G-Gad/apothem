@@ -145,6 +145,40 @@ def test_cursor_rules_file_is_shared_with_hermes_and_windsurf(tmp_path: Path) ->
     )
 
 
+def test_project_agents_md_note_gives_the_hermes_condition(tmp_path: Path) -> None:
+    # A .hermes.md or HERMES.md comes first in Hermes's order, and an
+    # AGENTS.override.md beside AGENTS.md is loaded instead of it.
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories("kimi-code", home=tmp_path, project=project)
+    message = str(_owner_entry(advisories, "<project>/AGENTS.md")["message"])
+    assert (
+        "GitHub Copilot, Hermes (only when the project has no .hermes.md or "
+        "HERMES.md and no AGENTS.override.md beside it), Kiro," in message
+    )
+
+
+def test_hermes_install_names_the_install_whose_cursor_rules_block_it_finds(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "proj"
+    rules = project / ".cursor" / "rules" / "apothem-rules.mdc"
+    rules.parent.mkdir(parents=True)
+    rules.write_text(
+        "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nx\n<!-- END APOTHEM MANAGED BLOCK -->\n",
+        encoding="utf-8",
+    )
+    found = shared_root_advisories(
+        "hermes", home=home, project=project, holders=lambda _path: ["cursor"]
+    )
+    assert [str(a["message"]) for a in found if a["role"] == "reader"] == [
+        "Hermes (only when the project has no .hermes.md, AGENTS.md or CLAUDE.md) "
+        "also loads <project>/.cursor/rules/apothem-rules.mdc, which holds Apothem "
+        "content from the Cursor install."
+    ]
+
+
 @pytest.mark.parametrize(
     ("base", "relative", "owner", "owner_name"),
     [
@@ -403,7 +437,7 @@ def test_cli_codex_install_lists_the_readers(cli_env: tuple[Path, Path]) -> None
     assert {w["outcome"] for w in shared} == {"advisory"}
 
 
-def test_cli_windsurf_install_names_the_cursor_rules_file_devin_loads(
+def test_cli_reader_installs_name_the_cursor_install_in_its_rules_file(
     cli_env: tuple[Path, Path], tmp_path: Path
 ) -> None:
     _home, profile = cli_env
@@ -430,10 +464,17 @@ def test_cli_windsurf_install_names_the_cursor_rules_file_devin_loads(
     # its readers.
     owner = shared_notes("cursor", "owner")
     assert [w["readers"] for w in owner] == [["hermes", "windsurf"]]
-    # The Windsurf install then says the file holds the Cursor install's block.
-    reader = shared_notes("windsurf", "reader")
-    assert [w["owner_of_record"] for w in reader] == ["cursor"]
-    assert "from the Cursor install" in str(reader[0]["message"])
+    # The Windsurf install then says the file holds the Cursor install's block,
+    # and so does a Hermes install given the project, with its condition.
+    for harness, condition in (
+        ("windsurf", ""),
+        ("hermes", "(only when the project has no .hermes.md, AGENTS.md or CLAUDE.md)"),
+    ):
+        reader = shared_notes(harness, "reader")
+        assert [w["owner_of_record"] for w in reader] == ["cursor"]
+        message = str(reader[0]["message"])
+        assert condition in message
+        assert "from the Cursor install" in message
 
 
 # --- Hook review advisories ---------------------------------------------------

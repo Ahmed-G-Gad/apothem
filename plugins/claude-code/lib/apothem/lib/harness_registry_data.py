@@ -919,10 +919,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # Devin Desktop's Local agent finds its files the way the CLI does (the Devin
 # Local Customizations page, read 2026-11-02). So Windsurf is a reader of
 # <project>/AGENTS.md, ~/.claude/CLAUDE.md and the Cursor rules file. No install
-# writes a project CLAUDE.md, so that path is not a shared root. Hermes loads the
-# Cursor rules file too, as the last fallback of its one-per-session project
-# context file, only when the project has no .hermes.md, AGENTS.md or CLAUDE.md
-# (its pinned context-files page, read 2026-11-02).
+# writes a project CLAUDE.md, so that path is not a shared root. Hermes loads one
+# kind of project context per session, first match wins, in the order
+# .hermes.md or HERMES.md, the AGENTS.md chain, CLAUDE.md, then the Cursor rules
+# (.cursorrules with every .cursor/rules/*.mdc), per its pinned context-files page
+# (read 2026-11-02) and agent/prompt_builder.py (read 2026-11-03). So it loads the
+# Cursor rules file only when the project has no .hermes.md, AGENTS.md or
+# CLAUDE.md, and <project>/AGENTS.md only when the project has no .hermes.md or
+# HERMES.md and no AGENTS.override.md beside it, which replaces it.
 # TODO(clarify): the Cursor rules block speaks to Cursor ("Inside Cursor, ..."),
 # and Hermes and Devin Local now load it as well. Decide whether it becomes
 # harness-neutral like the shared anchors test_shared_roots.py checks, or keeps
@@ -1086,6 +1090,10 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
+        reader_conditions={
+            "hermes": "only when the project has no .hermes.md or HERMES.md and no "
+            "AGENTS.override.md beside it"
+        },
     ),
     SharedRoot(
         path="<project>/GEMINI.md",
@@ -1121,8 +1129,8 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
     ),
     # Devin's Cursor import reads .cursor/rules/*.mdc and keeps a rule with
     # alwaysApply: true active in every session; the file's frontmatter sets it.
-    # Hermes reads .cursor/rules/*.mdc in the working directory as its last
-    # project context fallback.
+    # Hermes reads .cursor/rules/*.mdc, with .cursorrules, in the working
+    # directory as the last kind of project context it looks for.
     SharedRoot(
         path="<project>/.cursor/rules/apothem-rules.mdc",
         owner="cursor",

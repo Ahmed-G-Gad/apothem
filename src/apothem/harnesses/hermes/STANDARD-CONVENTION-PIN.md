@@ -39,10 +39,17 @@
     writes `<project>/.cursor/rules/apothem-rules.mdc`, so the registry lists
     Hermes as a reader of that file, only when the project has no `.hermes.md`,
     `AGENTS.md` or `CLAUDE.md` (the pinned context-files page, re-read
-    2026-11-02).
-  - TODO(clarify): the Hermes context-files page contradicts itself on
-    `AGENTS.override.md`: its "Priority system" section lists it in the chain,
-    while its "At startup" scan step omits it.
+    2026-11-02). The registry also gives Hermes's load of `<project>/AGENTS.md`,
+    where the Kimi Code install writes its block, a condition: only when the
+    project has no `.hermes.md` or `HERMES.md` and no `AGENTS.override.md`
+    beside it.
+  - Resolved 2026-11-03: the context-files page lists `AGENTS.override.md` in
+    its "Priority system" section but leaves it out of its "At startup" scan
+    step. The pinned `agent/prompt_builder.py` settles it: in each directory of
+    the `AGENTS.md` chain, from the git root down to the working directory,
+    `_agents_md_candidates` takes the first non-empty `AGENTS.override.md`,
+    `AGENTS.md` or `agents.md`, and `build_context_files_prompt` loads only the
+    first kind of project context that has a non-empty file.
   - TODO(clarify): the skills page states the precedence order, but the
     2026-10-24 check quotes no sentence saying which copy Hermes loads when two
     sources hold a skill of the same name; the adapter reads the order as
@@ -70,6 +77,8 @@ Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607f
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/reference/slash-commands.md> (slash commands)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/skills.md> (skill directories, `skills.config`; retrieved 2026-10-02)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/hooks.md> (hooks and plugins; retrieved 2026-10-02)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md> (context-file priority; retrieved 2026-11-02)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/agent/prompt_builder.py> (the order of the project context kinds and the `AGENTS.md` chain; retrieved 2026-11-03)
 
 ## Discovery Targets
 

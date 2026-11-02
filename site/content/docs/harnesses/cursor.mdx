@@ -245,10 +245,11 @@ adapter writes to the project-scoped `.cursor/rules/` directory by default;
 Cursor has no documented file-based user-global rules path for this adapter to
 manage.
 
-Devin Desktop also loads the rules file this install writes. Devin Local, in
-Devin Desktop, imports `.cursor/rules/*.mdc` by default and keeps a rule with
-`alwaysApply: true`, which this file's frontmatter sets, active in every
-session. One more tool loads the file only as the last fallback for its project
+[Devin Desktop](/docs/harnesses/windsurf) also loads the rules file this install
+writes. Devin Local, in Devin Desktop, imports `.cursor/rules/*.mdc` by default
+and keeps a rule with `alwaysApply: true`, which this file's frontmatter sets,
+active in every session. [One more tool](/docs/harnesses/hermes) loads the file
+only as the last fallback for its project
 instructions, when the project has no instruction file of its own and no
 `AGENTS.md` or `CLAUDE.md`. So installing or uninstalling `cursor` also changes
 what those tools load, and the install prints a note that names both, with that
