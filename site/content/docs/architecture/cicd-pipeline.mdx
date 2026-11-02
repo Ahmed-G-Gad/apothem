@@ -71,8 +71,8 @@ flowchart LR
 - **Static analysis lane** — fast feedback. Ruff covers Python style and a
   curated rule set; mypy enforces type discipline at strict; the frontmatter
   validator gates artifact-schema compliance for rules, skills, delegated
-  workers, and commands. markdownlint is not in this lane: it runs only as a
-  pre-commit hook, and CI does not run it (see
+  workers, and commands. markdownlint is not in this lane: the Markdown Lint
+  workflow runs its pre-commit hook in CI on changed Markdown (see
   [Markdown conventions](/docs/reference/markdown-conventions)).
 - **Test lane** — `pytest tests/hooks` exercises the hook runtime against the
   full event matrix; `validate_ecosystem.py` is the primary structural gate
