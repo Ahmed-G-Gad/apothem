@@ -5,10 +5,12 @@
 Several harnesses load the same instruction file. A project ``AGENTS.md`` is
 read by Codex, Cursor, GitHub Copilot, Kiro, Devin Desktop, OpenCode, Hermes,
 Antigravity, CodeBuddy and Zed as well as Kimi Code; a project ``GEMINI.md`` is
-read by Antigravity, the Copilot CLI and Zed as well as Gemini CLI; and
+read by Antigravity, the Copilot CLI and Zed as well as Gemini CLI;
 ``~/.gemini/GEMINI.md`` is the global context file of both Gemini CLI and
-Antigravity. An Apothem block written there must not tell every one of those
-tools that it is one particular harness.
+Antigravity; and Devin Desktop imports the Cursor rules file
+``.cursor/rules/apothem-rules.mdc``, which Hermes also loads as its last
+project context fallback. An Apothem block written there must not tell
+every one of those tools that it is one particular harness.
 
 The registry records each such path once, with the adapter it belongs to (its
 owner), the other adapters that write the same bytes to it (its co-installers),
@@ -43,6 +45,7 @@ _SHARED_ANCHOR_TEMPLATES = (
     "harnesses/gemini_cli/templates/GEMINI.md",
     "harnesses/antigravity/templates/GEMINI.md",
     "harnesses/github_copilot/templates/copilot-instructions.md",
+    "harnesses/cursor/templates/apothem-rules.mdc",
 )
 
 _DISPLAY_NAMES = sorted(
