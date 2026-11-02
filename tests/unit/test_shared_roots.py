@@ -301,6 +301,17 @@ def test_windsurf_reads_the_rule_files_of_the_cursor_and_claude_code_installs(
     )
 
 
+def test_hermes_reads_the_cursor_rules_file_only_as_its_last_fallback() -> None:
+    # Hermes loads one project context file per session, first match wins, and
+    # the Cursor rules come after .hermes.md, AGENTS.md and CLAUDE.md.
+    root = _DECLARED["<project>/.cursor/rules/apothem-rules.mdc"]
+    assert root.readers == ("hermes", "windsurf")
+    assert root.reader_conditions == {
+        "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+    }
+    assert any("NousResearch/hermes-agent" in url for url in root.evidence)
+
+
 def test_the_cursor_rules_file_keeps_the_frontmatter_devin_loads_always() -> None:
     # Devin keeps an imported Cursor rule active in every session only with
     # alwaysApply: true; with globs alone it applies to matching files.

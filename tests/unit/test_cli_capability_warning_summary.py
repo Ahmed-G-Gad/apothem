@@ -179,9 +179,10 @@ def test_json_warning_count_identical_with_and_without_verbose(
 def _is_folder_note(line: str) -> bool:
     """Return True for an advisory note, not the capability summary.
 
-    The advisories are the notes about the shared user-home folders and, for a
-    harness that registers hooks, the two hook notes (the hook file, and the hooks
-    Claude Code's settings files add).
+    The advisories are the shared-root notes (the shared user-home folders, and the
+    project rules file Hermes and Windsurf also load), the note naming the folders
+    written outside --project and, for a harness that registers hooks, the two hook
+    notes (the hook file, and the hooks Claude Code's settings files add).
     """
     return (
         "is shared:" in line
@@ -226,9 +227,9 @@ def test_single_harness_plain_groups_verbose_expands(
     plain_proj.mkdir()
     plain = run(plain_proj)
     # Cursor writes the shared ~/.agents/skills/ and a project rules file that
-    # Windsurf also loads, so every install also carries a note about each, one
-    # naming the folders it writes outside --project, and two notes about its
-    # hook file; the capability summary is the other one.
+    # Hermes and Windsurf also load, so every install also carries a note about
+    # each, one naming the folders it writes outside --project, and two notes
+    # about its hook file; the capability summary is the other one.
     shared = [line for line in plain.splitlines() if "is shared:" in line]
     assert len(shared) == 2
     assert any("~/.agents/skills/ is shared:" in line for line in shared)

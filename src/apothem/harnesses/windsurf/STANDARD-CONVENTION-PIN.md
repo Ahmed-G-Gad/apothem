@@ -231,7 +231,8 @@
   subpath, so the `~/.claude/rules/` folder the Claude Code install writes is not
   recorded either.
 - TODO(clarify): the Cursor rules block addresses Cursor ("Inside Cursor, ...")
-  and Devin Local now loads it beside the adapter's own `.devin/rules/` file.
+  and Devin Local now loads it beside the adapter's own `.devin/rules/` file
+  (Hermes loads it too, as a fallback).
   Whether that block becomes harness-neutral is open; the registry comment
   records the same question.
 - Web-fetch / browser-retrieval (`web_fetch` = **yes**): Devin Local shares the

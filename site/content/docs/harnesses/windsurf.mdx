@@ -260,23 +260,27 @@ Windsurf treats a `SKILL.md` header key it does not list; the skills carry
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 and a `metadata` map.
 
-Devin Local also imports the rule files of other tools, and that import is on
-by default. Two of those files can hold an Apothem block: the project rules
-file that the Apothem install for another editor writes, and the
-`~/.claude/CLAUDE.md` file that the Apothem install for Claude Code writes:
+Devin Local also imports rule files that other tools use, and those imports are
+on by default. Three of them can hold an Apothem block: the project rules file
+that the Apothem install for another editor writes, the `~/.claude/CLAUDE.md`
+file that the Apothem install for Claude Code writes, and the project
+instructions file that the Apothem install for Kimi Code writes:
 
 ```text
 <project>/.cursor/rules/apothem-rules.mdc
 ~/.claude/CLAUDE.md
+<project>/AGENTS.md
 ```
 
-When either file holds an Apothem block, Devin Local loads it as well as the
-rules file in `.devin/rules/`, and installing `windsurf` prints a note that
+When any of these files holds an Apothem block, Devin Local loads it as well as
+the rules file in `.devin/rules/`, and installing `windsurf` prints a note that
 names the file and the install that wrote it. The first file is written for
-that editor, so what it says about folders and hooks does not apply to Devin.
-To load only the `.devin/rules/` file, turn the import off in
-`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` on Windows) or in
-the project's `.devin/config.json`:
+that editor, so its lines about the editor's subagent folder and hook file do
+not apply to Devin; the skills folder and `~/.config/apothem/` it names are the
+ones this install writes too. To keep the first two files out of Devin Local,
+turn their imports off in `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` on Windows) or in the project's
+`.devin/config.json`:
 
 ```json
 {
@@ -289,7 +293,10 @@ the project's `.devin/config.json`:
 
 Turning a key off also stops the rest of that tool's import: the first key
 stops that editor's MCP servers too, and `claude` stops Claude Code's skills,
-commands, hooks and MCP servers.
+commands, hooks and MCP servers. The third file comes in through the
+`agents_standard` import, which also reads the other standard rules files and
+your own project instructions, so set `"agents_standard": false` only if Devin
+should read none of them.
 
 ## Verification
 

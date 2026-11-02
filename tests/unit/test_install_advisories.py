@@ -113,16 +113,35 @@ def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
 
 
 def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
-    # The Cursor rules file has one reader (Windsurf); the note reads as one tool.
+    # The project Copilot instructions file has one reader (Zed); the note reads
+    # as one tool.
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories(
+        "github-copilot", home=tmp_path, project=project
+    )
+    entry = _owner_entry(advisories, "<project>/.github/copilot-instructions.md")
+    assert entry["path"] == str(project / ".github" / "copilot-instructions.md")
+    assert entry["readers"] == ["zed"]
+    assert str(entry["message"]) == (
+        "<project>/.github/copilot-instructions.md is shared: Zed also loads it. "
+        "Installing or uninstalling GitHub Copilot changes what that tool loads."
+    )
+
+
+def test_cursor_rules_file_is_shared_with_hermes_and_windsurf(tmp_path: Path) -> None:
+    # Hermes loads the file only as its last project context fallback, so the
+    # note carries that condition; Windsurf loads it unconditionally.
     project = tmp_path / "proj"
     project.mkdir()
     advisories = shared_root_advisories("cursor", home=tmp_path, project=project)
     entry = _owner_entry(advisories, "<project>/.cursor/rules/apothem-rules.mdc")
     assert entry["path"] == str(project / ".cursor" / "rules" / "apothem-rules.mdc")
-    assert entry["readers"] == ["windsurf"]
+    assert entry["readers"] == ["hermes", "windsurf"]
     assert str(entry["message"]) == (
-        "<project>/.cursor/rules/apothem-rules.mdc is shared: Windsurf also loads "
-        "it. Installing or uninstalling Cursor changes what that tool loads."
+        "<project>/.cursor/rules/apothem-rules.mdc is shared: Hermes (only when the "
+        "project has no .hermes.md, AGENTS.md or CLAUDE.md), Windsurf also load it. "
+        "Installing or uninstalling Cursor changes what those tools load."
     )
 
 
@@ -407,9 +426,10 @@ def test_cli_windsurf_install_names_the_cursor_rules_file_devin_loads(
             and Path(str(w["path"])) == rules
         ]
 
-    # The Cursor install writes the rules file and names Windsurf as a reader.
+    # The Cursor install writes the rules file and names Hermes and Windsurf as
+    # its readers.
     owner = shared_notes("cursor", "owner")
-    assert [w["readers"] for w in owner] == [["windsurf"]]
+    assert [w["readers"] for w in owner] == [["hermes", "windsurf"]]
     # The Windsurf install then says the file holds the Cursor install's block.
     reader = shared_notes("windsurf", "reader")
     assert [w["owner_of_record"] for w in reader] == ["cursor"]

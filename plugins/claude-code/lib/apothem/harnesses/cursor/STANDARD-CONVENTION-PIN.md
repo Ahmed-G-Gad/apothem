@@ -80,6 +80,13 @@
   clash). The native copy is the one that carries `readonly`, the only restriction
   the Subagents page documents. Cursor still loads `~/.claude/agents/` in every
   project without a native copy, so it stays a reader of that shared root.
+- Shared roots (rules file, recorded 2026-11-02): the project rules file
+  `<project>/.cursor/rules/apothem-rules.mdc` is a shared root that Cursor owns.
+  Devin Desktop's Local agent (Windsurf) imports `.cursor/rules/*.mdc` by default
+  and keeps an `alwaysApply: true` rule active in every session, and Hermes loads
+  it as its last project context fallback, only when the project has no
+  `.hermes.md`, `AGENTS.md` or `CLAUDE.md`. The registry lists both as readers,
+  and the install names them. The block it holds is written for Cursor.
 - TODO(clarify): whether Cursor honors `tools` and `disallowedTools` in a
   Claude-format file found in `.claude/agents/` or `~/.claude/agents/`. The
   Subagents page lists the keys `name`, `description`, `model`, `readonly` and

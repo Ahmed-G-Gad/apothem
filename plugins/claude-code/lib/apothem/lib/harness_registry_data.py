@@ -919,10 +919,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # Devin Desktop's Local agent finds its files the way the CLI does (the Devin
 # Local Customizations page, read 2026-11-02). So Windsurf is a reader of
 # <project>/AGENTS.md, ~/.claude/CLAUDE.md and the Cursor rules file. No install
-# writes a project CLAUDE.md, so that path is not a shared root.
+# writes a project CLAUDE.md, so that path is not a shared root. Hermes loads the
+# Cursor rules file too, as the last fallback of its one-per-session project
+# context file, only when the project has no .hermes.md, AGENTS.md or CLAUDE.md
+# (its pinned context-files page, read 2026-11-02).
 # TODO(clarify): the Cursor rules block speaks to Cursor ("Inside Cursor, ..."),
-# and Devin Local now loads it as well. Decide whether it becomes harness-neutral
-# like the shared anchors test_shared_roots.py checks, or keeps its Cursor text.
+# and Hermes and Devin Local now load it as well. Decide whether it becomes
+# harness-neutral like the shared anchors test_shared_roots.py checks, or keeps
+# its Cursor text.
 # These gaps are open, so the tools they name are not readers yet:
 # TODO(clarify): ~/.agents/skills/ - the 2026-10-24 vendor check found no default
 # load for Antigravity (its docs name ~/.gemini/config/skills/ and the workspace
@@ -1117,17 +1121,23 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
     ),
     # Devin's Cursor import reads .cursor/rules/*.mdc and keeps a rule with
     # alwaysApply: true active in every session; the file's frontmatter sets it.
+    # Hermes reads .cursor/rules/*.mdc in the working directory as its last
+    # project context fallback.
     SharedRoot(
         path="<project>/.cursor/rules/apothem-rules.mdc",
         owner="cursor",
-        readers=("windsurf",),
+        readers=("hermes", "windsurf"),
         evidence=(
             "https://cursor.com/docs/rules",
+            "https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md",
             "https://docs.devin.ai/cli/reference/configuration/read-config-from.md#cursor",
             "https://docs.devin.ai/cli/extensibility/rules.md#rules-from-other-tools",
             "https://docs.devin.ai/desktop/devin-local/customizations.md",
         ),
         retrieved="2026-11-02",
+        reader_conditions={
+            "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+        },
     ),
 )
 

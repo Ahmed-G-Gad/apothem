@@ -34,7 +34,12 @@
     any of them. `apothem verify` requires the entry.
   - Context files: Hermes loads one project context type per session, first
     match wins, in the order `.hermes.md`, `AGENTS.override.md`, `AGENTS.md`,
-    `CLAUDE.md`, `.cursorrules`. The adapter writes none of them.
+    `CLAUDE.md`, `.cursorrules` (with `.cursor/rules/*.mdc`, both read from the
+    working directory only). The adapter writes none of them. The Cursor install
+    writes `<project>/.cursor/rules/apothem-rules.mdc`, so the registry lists
+    Hermes as a reader of that file, only when the project has no `.hermes.md`,
+    `AGENTS.md` or `CLAUDE.md` (the pinned context-files page, re-read
+    2026-11-02).
   - TODO(clarify): the Hermes context-files page contradicts itself on
     `AGENTS.override.md`: its "Priority system" section lists it in the chain,
     while its "At startup" scan step omits it.

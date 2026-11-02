@@ -111,7 +111,7 @@ co-installer puts Apothem content in front of every reader.
 | `<project>/GEMINI.md` | Gemini CLI | none | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | none | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | none | Zed |
-| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | none | Windsurf |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | none | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` and `~/.config/apothem/templates/` hold the files
 Apothem's own skills and instruction files cite. No other tool loads them, so
@@ -120,9 +120,12 @@ write a skills folder of their own (`~/.codebuddy/skills/`, `~/.kiro/skills/`,
 and `~/.trae/skills/`); only that tool loads it, so it is not a shared root.
 
 A reader is listed only where its vendor docs show a default load of that
-exact path. One reader carries a condition, and the install note repeats it:
+exact path. Two readers carry a condition, and the install note repeats it:
 `Open-Claw` indexes `~/.agents/skills/` only under its default state directory
-(it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere). The `Cursor`
+(it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere), and `Hermes`
+loads `<project>/.cursor/rules/apothem-rules.mdc` only when the project has no
+`.hermes.md`, `AGENTS.md` or `CLAUDE.md`, because it loads one project context
+file per session and the `Cursor` rules come last in its order. The `Cursor`
 docs list `~/.codex/agents/` as a `Codex` compatibility folder but do not say
 which file formats `Cursor` parses there, and a `Codex` install writes TOML
 files, so whether `Cursor` reads those helpers is not confirmed. The `Cursor`
@@ -148,10 +151,13 @@ the VS Code docs list that folder for the Anthropic Claude agent, not for the
 agent `GitHub Copilot` runs.
 
 The Apothem block an owner writes into a shared instruction file names no
-single tool as its reader. `tests/unit/test_shared_roots.py` fails when the adapters that
+single tool as its reader, with one exception: the block the `Cursor` install
+writes into `<project>/.cursor/rules/apothem-rules.mdc` is written for
+`Cursor`, and `Hermes` and `Windsurf` load it as well.
+`tests/unit/test_shared_roots.py` fails when the adapters that
 write a registry target are not exactly its owner and its co-installers, and when a registry target named like a
 cross-tool instruction file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`) has no declared owner. The one exception is
+`copilot-instructions.md`) has no declared owner, apart from
 `~/.codex/AGENTS.md`, which no other registered harness documents loading.
 
 ## Validation hooks
