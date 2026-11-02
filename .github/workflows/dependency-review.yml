@@ -125,6 +125,12 @@ jobs:
           # never evaluated or printed. To re-derive the list, remove these
           # entries on a branch that changes one of the two lockfiles and read
           # the "incompatible licenses" list Dependency review prints.
+          #
+          # Third named exception: the hash-locked CI tool closures in
+          # scripts/ci, which CI jobs install with pip and nothing ships.
+          # wcwidth, which prettytable brings into the pip-licenses lock,
+          # declares MIT, but GitHub's licence detection reports
+          # `HPND-Markus-Kuhn AND MIT` for it.
           allow-dependencies-licenses: >-
             pkg:npm/%40img/sharp-libvips-darwin-arm64,
             pkg:npm/%40img/sharp-libvips-darwin-x64,
@@ -172,7 +178,8 @@ jobs:
             pkg:npm/tslib,
             pkg:npm/typed-rest-client,
             pkg:npm/version-range,
-            pkg:npm/xmlbuilder
+            pkg:npm/xmlbuilder,
+            pkg:pypi/wcwidth
           comment-summary-in-pr: never
 
   dispatch-noop:
