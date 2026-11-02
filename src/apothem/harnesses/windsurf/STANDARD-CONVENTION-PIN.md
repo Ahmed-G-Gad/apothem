@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-28
+- Snapshot date: 2026-11-02
+- Snapshot note (moved pages): the Devin docs moved the Desktop pages this pin cites. The Cascade skills, hooks, memories, `AGENTS.md` and MCP pages now redirect to the Devin Local Customizations page, the Devin Local page to the Devin Local Overview page, and the Cascade web search page to the one Cascade (legacy) page. Those three pages, the CLI pages they defer to and the CLI team settings page were read on 2026-11-02 from the raw Markdown each page serves, and the claims below are re-checked against them. Previous 2026-10-28.
 - Snapshot note (hooks): the adapter now registers Devin Local hooks. The CLI hooks overview, the lifecycle hooks page, the configuration import page and the Devin Local page were re-read on 2026-10-28 from the raw Markdown each page serves, and the Cascade hooks page the day before. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs eleven of Apothem's fourteen agents as Devin Local subagents in `<project>/.devin/agents/`. The subagents page, the Devin Local page, the extensibility overview, the configuration import page, the plugins page, the skills page, the models page and both changelogs were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`.
@@ -13,12 +14,32 @@
 
 ## Official Surface Refresh
 
+- Re-pinned 2026-11-02 after the Devin docs moved the Desktop pages. Read that day
+  on `docs.devin.ai`:
+  - Cascade is retired: "Devin Desktop no longer starts new Cascade conversations
+    and no longer opens old ones", and "The agent selector no longer offers
+    Cascade" (<https://docs.devin.ai/desktop/cascade.md#overview>). The one
+    Cascade (legacy) page keeps the workflows and worktrees sections and has no
+    hooks, skills, memories, rules, `AGENTS.md`, MCP or web search section.
+  - Devin Local uses the CLI's files: "Because Devin Local shares its agent
+    harness with Devin CLI, every customization uses the Devin CLI format and
+    discovery, and a customization you write for one works in the other"
+    (<https://docs.devin.ai/desktop/devin-local/customizations.md>). The entries
+    below that said the Desktop pages leave this open are corrected in place.
+  - The files the adapter writes stay documented: `.devin/rules/` (the Rule files
+    section), `~/.agents/skills/` (the Skill scopes table: "`~/.agents/skills/`
+    is also read"), `.devin/agents/` (the CLI subagents page, which the Overview's
+    Subagents section defers to) and the `hooks` key of `.devin/config.local.json`
+    (the CLI hooks page, which the Hooks section defers to). No adapter path
+    changes.
 - Re-pinned 2026-10-27 for the native agents surface (Devin Local only). Read that
   day on `docs.devin.ai`:
   - Agents, which agent: custom subagents exist for the Devin Local agent only.
-    The legacy Cascade agent has "no Cascade equivalent at all", and new Desktop
-    conversations never start on Cascade. The adapter therefore targets Devin
-    Local and ignores Cascade for agents.
+    The Devin Local page read that day said Cascade has "no Cascade equivalent at
+    all"; that page now redirects to the Overview, which drops the sentence, and
+    the Cascade (legacy) page says Desktop no longer starts or opens Cascade
+    conversations (re-read 2026-11-02). The adapter therefore targets Devin Local
+    and ignores Cascade for agents.
   - Agents, locations: project `.devin/agents/<name>.md` or
     `.devin/agents/<name>/AGENT.md` (`AGENTS.md`, `agent.md` and `agents.md` are
     also accepted as the file name, in that order of precedence), and also
@@ -29,7 +50,10 @@
     `<plugin>:<name>`. The Desktop pages defer to the CLI page for where the
     folders are discovered, and the Desktop changelog (v3.6.21, 2026-07-29)
     confirms the flat `agents/<name>.md` form and the Subagents (Preview)
-    toggle; no Desktop page lists the roots.
+    toggle; no Desktop page lists the roots. Re-read 2026-11-02: the Overview's
+    Subagents section shows both layouts and still sends readers to the CLI page
+    "for where these directories are discovered"
+    (<https://docs.devin.ai/desktop/devin-local/overview.md#subagents>).
   - Agents, file: Markdown with the same YAML frontmatter as skills, then the
     body as the subagent's system prompt. Keys, all optional: `name` (default the
     file or directory name; a name equal to a built-in, `subagent_explore` or
@@ -55,49 +79,81 @@
     the `.claude/` directory, without naming a subpath. The two pages describe
     the CLI, not Desktop's Local agent.
 - Refreshed 2026-10-03 against `docs.devin.ai`. The windsurf harness is Devin
-  Desktop (rebranded 2026-06-02); the slug stays `windsurf`. Devin Desktop now
-  has two agents: the Devin Local agent, the default for new tabs, which
-  configures MCP in the Devin CLI config files, and the legacy Cascade agent.
-- Rules (resolved): the Memories & Rules page lists workspace rules at
-  `.devin/rules/*.md` (preferred) or `.windsurf/rules/*.md` (fallback), 12,000
-  characters per file, plus the legacy `.windsurfrules` file and `AGENTS.md` in
-  any directory; the global rule file is
-  `~/.codeium/windsurf/memories/global_rules.md`. The Devin CLI rules page
-  documents the same `.devin/rules/` precedence for the CLI. The adapter's
-  `<project>/.devin/rules/apothem-rules.md` therefore sits at the preferred
-  location. The earlier `docs.devin.ai/desktop/cascade/workspace-rules` page now
-  answers 404.
-- Skills (resolved): `.devin/skills/` (preferred) or the legacy
-  `.windsurf/skills/` in the workspace; `~/.codeium/windsurf/skills/` or
-  `~/.config/devin/skills/` globally. Devin Desktop also discovers
-  `.agents/skills/` and `~/.agents/skills/`, so a Codex install's skills reach it.
-  This settles the earlier open question: skills follow the same
-  `.devin/`-over-`.windsurf/` order as rules. The adapter writes Apothem's
+  Desktop (rebranded 2026-06-02); the slug stays `windsurf`. Devin Desktop then
+  had two agents: the Devin Local agent, the default for new tabs, which
+  configures MCP in the Devin CLI config files, and the legacy Cascade agent,
+  which Desktop no longer starts (re-read 2026-11-02).
+- Rules (resolved; re-read 2026-11-02): the Customizations page
+  (<https://docs.devin.ai/desktop/devin-local/customizations.md#rule-files>)
+  lists workspace rules at `.devin/rules/*.md`, one rule per file with a
+  `trigger` of `always_on`, `glob`, `model_decision` or `manual`, a single
+  always-on `.devin/global_rules.md`, and the same two in the home directory
+  (`~/.devin/rules/*.md`, `~/.devin/global_rules.md`). `AGENTS.md`,
+  `AGENTS.local.md` and `AGENT.md` are always-on rules at the workspace root and
+  in each directory down to the one the agent works in
+  (<https://docs.devin.ai/desktop/devin-local/customizations.md#agents-md>). The
+  legacy `.windsurf/rules/*.md`, `.windsurf/global_rules.md` and `.windsurfrules`
+  are imported by default, and "Rule files in both `.devin/rules/` and
+  `.windsurf/rules/` load". The Devin CLI rules page says "`.devin/` is the
+  preferred location and takes precedence over `.windsurf/`". The adapter's
+  `<project>/.devin/rules/apothem-rules.md`, with `trigger: always_on`, therefore
+  sits at the preferred location. The Memories & Rules page this entry cited
+  before (read 2026-10-03: a 12,000-character limit per file, and
+  `~/.codeium/windsurf/memories/global_rules.md` as the global file) described
+  Cascade and now redirects to the Customizations page, which states neither.
+  The earlier `docs.devin.ai/desktop/cascade/workspace-rules` page now answers
+  404.
+- Skills (resolved; re-read 2026-11-02): the Customizations page's Skill scopes
+  table (<https://docs.devin.ai/desktop/devin-local/customizations.md#skill-scopes>)
+  lists `.devin/skills/<name>/` in the workspace ("`.agents/skills/` and the
+  legacy `.windsurf/skills/` are also read") and `~/.config/devin/skills/<name>/`
+  globally ("`~/.agents/skills/` is also read"), so a Codex install's skills
+  reach Devin Local. The CLI skills page adds `~/.codeium/<channel>/skills/`
+  (stable reads `~/.codeium/windsurf/skills/`) and `%APPDATA%\devin\skills\` on
+  Windows. The Cascade skills page this entry cited before now redirects to the
+  Customizations page. This settles the earlier open question: skills sit in
+  `.devin/skills/`, and the legacy `.windsurf/` folder is also read, as with
+  rules. The adapter writes Apothem's
   skills, plus its commands wrapped as skills, to `~/.agents/skills/`, the one
   user-level copy shared with Codex, Cursor, GitHub Copilot, and Zed, and not to
-  the Windsurf-specific folders. Windsurf may also list the same names from
-  `~/.claude/skills/` when its Claude Code config import is on (the Devin CLI
-  docs make that import on by default; the Desktop pages do not say whether the
-  Local agent applies it).
+  the Windsurf-specific folders. The Claude Code import (`read_config_from.claude`,
+  on by default) reads the project's `.claude/skills/**/SKILL.md` and names no
+  user-level `~/.claude/skills/`
+  (<https://docs.devin.ai/cli/reference/configuration/read-config-from.md>, read
+  2026-11-02), so the skills an Apothem Claude Code install writes to
+  `~/.claude/skills/` are not documented to load here as well. (This entry said
+  before that they could, when that import is on.)
   TODO(clarify): the vendor docs do not say how Windsurf treats a `SKILL.md`
   frontmatter key it does not list. The shared emission sets `user-invocable`,
   `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
   `metadata` map; probe Windsurf with the full set before a release and, if it
   rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
-- Hooks (resolved, two agents, two formats): the legacy Cascade agent reads
-  `hooks.json` at `.devin/hooks.json` in the workspace (the legacy
-  `.windsurf/hooks.json` is used only when the `.devin` file is absent or defines
-  no hooks), `~/.codeium/windsurf/hooks.json` for the user, and OS-level system
-  paths; all levels merge. The Devin Local agent, the default for new tabs, has
-  its own format and files (next section). The adapter targets Devin Local and
-  writes no Cascade hook file. The earlier "unverified" flag is cleared.
-- MCP (corrected): Cascade reads `~/.config/devin/mcp_config.json`
-  (`%APPDATA%\devin\mcp_config.json` on Windows), and the Devin Local agent
-  uses the Devin CLI config files. The earlier
-  `~/.codeium/windsurf/mcp_config.json` path is no longer in the docs.
-  Operator-owned; the adapter authors no entries.
-- Memories: auto-generated memories apply to the legacy Cascade agent only and
-  stay on the machine; the Devin Local agent does not persist memories.
+- Hooks (resolved, two agents, two formats): the Cascade hooks page (read
+  2026-10-27) said the legacy Cascade agent reads `hooks.json` at
+  `.devin/hooks.json` in the workspace (the legacy `.windsurf/hooks.json` only
+  when the `.devin` file is absent or defines no hooks),
+  `~/.codeium/windsurf/hooks.json` for the user, and OS-level system paths, all
+  levels merged. That page now redirects to the Customizations page, and the
+  Cascade (legacy) page keeps only the `post_setup_worktree` example in
+  `.windsurf/hooks.json` (<https://docs.devin.ai/desktop/cascade.md#setup-hook>,
+  re-read 2026-11-02). The Devin Local agent, the only one Desktop still starts,
+  has its own format and files (next section). The adapter targets Devin Local
+  and writes no Cascade hook file. The earlier "unverified" flag is cleared.
+- MCP (corrected; re-read 2026-11-02): Devin Local reads `.devin/mcp_config.json`
+  in the project ("checked into version control"), the local override
+  `.devin/mcp_config.local.json` (gitignored) and the user file
+  `~/.config/devin/mcp_config.json`
+  (<https://docs.devin.ai/desktop/devin-local/customizations.md#configuration>).
+  The Cascade MCP page cited before, which gave `~/.config/devin/mcp_config.json`
+  (`%APPDATA%\devin\mcp_config.json` on Windows) for Cascade, now redirects
+  there. The earlier `~/.codeium/windsurf/mcp_config.json` path is gone from the
+  Desktop pages; the CLI's Windsurf import still reads
+  `~/.codeium/<channel>/mcp_config.json`. Operator-owned; the adapter authors no
+  entries.
+- Memories: auto-generated memories applied to the legacy Cascade agent only and
+  stayed on the machine; the Devin Local agent does not persist memories (the
+  Memories & Rules page, read 2026-10-03). That page now redirects to the
+  Customizations page, which lists no memories (re-read 2026-11-02).
 - The adapter delivers the project rules file, the shared skills folder above
   and, for the Devin Local agent, eleven of Apothem's agents as subagents in
   `<project>/.devin/agents/` and two hooks in `<project>/.devin/config.local.json`.
@@ -143,37 +199,55 @@
   may not be able to apply a patch.
 - TODO(clarify): the `.claude/` subagent import. The extensibility overview says
   the CLI imports custom subagents from the `.claude/` directory, the
-  configuration import page has no agents row, and neither names a subpath or
-  says that Devin Desktop's Local agent applies it. Until a probe settles it,
-  Windsurf is not recorded as a reader of `~/.claude/agents/`.
-- TODO(clarify): whether Devin Desktop's Local agent discovers the same folders as
-  the CLI (`.agents/agents/`, `~/.config/devin/agents/`); the Desktop pages defer
-  to the CLI page and list none.
+  configuration import page has no agents row, and neither names a subpath
+  (re-read 2026-11-02). The Customizations page now says Devin Local uses the
+  CLI's discovery, so the import is expected to apply there too. Until a probe
+  names the path, Windsurf is not recorded as a reader of `~/.claude/agents/`.
+- Resolved 2026-11-02: Devin Desktop's Local agent discovers the same folders as
+  the CLI (`.agents/agents/`, `~/.config/devin/agents/`). The Customizations page
+  says every customization "uses the Devin CLI format and discovery", and the
+  Customize page it describes has a Subagents tab; the Overview still lists no
+  folder and defers to the CLI page.
 - TODO(clarify): how Devin treats a frontmatter key it does not list; the rules
   `devin doctor` applies are unpublished. The adapter writes only listed keys.
-- Open question (review by 2026-12-31): the Devin CLI imports other tools'
-  rules by default (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and
-  `~/.claude/CLAUDE.md`). If Devin Desktop's Local agent applies the same
-  defaults, Apothem's Cursor and Claude Code blocks also load there. The
-  Desktop docs do not say, so the registry records no shared root for it yet.
-- Web-fetch / browser-retrieval (`web_fetch` = **yes**): Cascade searches the
-  web and documentation through `@web` and `@docs` mentions and URL parsing,
-  gated by the "Enable Web Search" admin setting — the backing dimension for
-  `rules/source-accessibility.md` step 1. Evidence: vendor-doc-url
-  <https://docs.devin.ai/desktop/cascade/web-search>; snapshot-id living docs;
-  snapshot-date 2026-10-03.
+- Open question (review by 2026-12-31): whether the registry records Windsurf as
+  a reader of the other tools' rule files. The Devin CLI imports them by default
+  (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and `~/.claude/CLAUDE.md`).
+  Until 2026-10-28 the Desktop docs did not say whether Devin Desktop's Local
+  agent applies the same defaults; since 2026-11-02 the Customizations page says
+  it uses the Devin CLI's discovery, so Apothem's Cursor and Claude Code blocks
+  are expected to load there too. The registry records no shared root for it
+  yet; adding one changes the install advisories and is left to a separate
+  change.
+- Web-fetch / browser-retrieval (`web_fetch` = **yes**): Devin Local shares the
+  Devin CLI's tools, which include `webfetch` (the lifecycle hooks page's tool
+  table). Web search on the open Internet is the "Enable Web Search" team
+  setting, off by default for enterprise teams, and it "does not affect the
+  agent's ability to read specific URLs, which is performed locally on the
+  user's machine" — the backing dimension for `rules/source-accessibility.md`
+  step 1. Evidence: vendor-doc-url
+  <https://docs.devin.ai/cli/enterprise/team-settings.md#enable-web-search> and
+  <https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md>; snapshot-id
+  living docs; snapshot-date 2026-11-02. The Cascade web search page cited
+  before (read 2026-10-03: `@web` and `@docs` mentions and URL parsing) now
+  redirects to the Cascade (legacy) page, which has no web search section.
 
 ## Hooks
 
 Read 2026-10-28 (<https://docs.devin.ai/cli/extensibility/hooks/overview.md>,
-<https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md>,
-<https://docs.devin.ai/desktop/devin-local.md>), with the CLI changelog and the
-Desktop changelog read 2026-10-27. The hooks pages describe the Devin CLI. The
-Cascade hooks page says the Devin Local agent has its own lifecycle hooks, with a
-different configuration format, on those pages, and the Devin Local page lists
-hooks in its Customizations surface, so the adapter treats the CLI's format as
-Devin Local's. The legacy Cascade agent has a different format that the adapter
-does not write.
+<https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md>), with the CLI
+changelog and the Desktop changelog read 2026-10-27 and the Devin Local pages
+re-read 2026-11-02. The hooks pages describe the Devin CLI. The Customizations
+page says "every customization uses the Devin CLI format and discovery", that
+"Hooks are configured in `.devin/hooks.v1.json` in your project or at the user
+level", and sends readers to the CLI hooks page "for the hook events, the
+configuration format, exit codes, and examples"
+(<https://docs.devin.ai/desktop/devin-local/customizations.md#hooks>), so the
+CLI's format is Devin Local's. Before 2026-11-02 the adapter inferred this from
+the Cascade hooks page and the Devin Local page, which both now redirect. The
+CLI hooks page still lists the eight events and the project and user files
+below (re-read 2026-11-02). The legacy Cascade agent had a different format that
+the adapter does not write.
 
 - Files, project: `.devin/hooks.v1.json` (the recommended standalone file: the
   hooks object is the whole file, no wrapper key), the `hooks` key of
@@ -222,15 +296,21 @@ does not write.
   `webfetch`, ...), so Claude Code matchers such as `Bash` or `Edit` are not
   Devin's names.
 - Activation: hooks load and run only in a workspace that is not in Restricted
-  Mode (the Devin Local page: they "neither load nor run" there). The CLI's
-  `/hooks` command lists the loaded hooks with
+  Mode (the Overview: Devin Local and every ACP agent "are disabled, and hooks
+  neither load nor run" there,
+  <https://docs.devin.ai/desktop/devin-local/overview.md#restricted-mode>,
+  re-read 2026-11-02). The CLI's `/hooks` command lists the loaded hooks with
   their source files, and the Desktop changelog (v3.5.17, 2026-07-17) says the
   Hooks tab in Devin Local's Customizations lists them with their source and
-  trigger events. The install prints a note with these two ways to check.
+  trigger events; the Customizations page now calls it the Customize page, whose
+  tabs, Hooks among them, list "what the agent has loaded"
+  (<https://docs.devin.ai/desktop/devin-local/customizations.md#customize>). The
+  install prints a note with these two ways to check.
 - Claude Code import: `.claude/` hooks load while `read_config_from.claude` is on,
   and the configuration page states it is on by default when `read_config_from`
-  is not set. The Desktop pages do not say whether the Local agent applies that
-  default. If the Apothem Claude Code install wrote its hooks to
+  is not set. Since 2026-11-02 the Customizations page says Devin Local uses the
+  Devin CLI's discovery, which includes this import; no Desktop page names
+  `read_config_from` itself. If the Apothem Claude Code install wrote its hooks to
   `~/.claude/settings.json`, Devin can run both sets. The install prints a note
   naming the switch (`"claude": false` under `read_config_from` in the user config
   or the project's `.devin/config.json`) and what turning it off also stops
@@ -255,14 +335,17 @@ does not write.
   never written. A file with comments is refused with `config.unparseable` and
   left as it is. An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file.
 - TODO(clarify): which shell Devin runs a hook command in on Windows. The
-  Cascade page names `bash -c` and `powershell -Command`, and the Local pages name
-  none (the changelog's PowerShell default is for the `exec` tool). The adapter
+  Cascade hooks page named `bash -c` and `powershell -Command` (read 2026-10-27;
+  it now redirects to the Customizations page), and the Local pages name none
+  (the changelog's PowerShell default is for the `exec` tool). The adapter
   writes bash quoting (`"<interpreter>" "<script>" ...`), which PowerShell would
   not parse without a call operator; the install note says to confirm the hooks
   loaded.
-- TODO(clarify): whether Devin Desktop's Local agent applies the CLI's
-  `read_config_from` defaults, and whether it reads the project `.devin/` files
-  of an ancestor directory the way the CLI does.
+- Resolved 2026-11-02: Devin Desktop's Local agent applies the CLI's
+  `read_config_from` defaults and reads the project `.devin/` files of an
+  ancestor directory the way the CLI does. The Customizations page says every
+  customization "uses the Devin CLI format and discovery"; no Desktop page names
+  either rule itself.
 - TODO(clarify): where `fail_closed` sits in the schema; the adapter relies on
   the default (fail open).
 - Local config is excluded from git by Devin itself: "Local config files are
@@ -275,22 +358,51 @@ does not write.
   (`.devin/hooks.json`, `.windsurf/hooks.json`, `~/.codeium/windsurf/hooks.json`).
   The changelog says Windsurf-format command and write hooks fire on GPT models
   (v3000.11.92) and `post_setup_worktree` runs for Local sessions (Desktop v3.8.20),
-  so some are read; no page says which. The adapter does not rely on it.
+  so some are read; no page says which (the Customizations page and the CLI's
+  Windsurf import name none, re-read 2026-11-02). The adapter does not rely on it.
 - TODO(clarify): whether Devin trims or caps `additionalContext`; the SessionStart
   bootstrap is a few kilobytes.
 
 ## Vendor Sources
 
+Retrieved 2026-11-02 (the Desktop pages that the Cascade skills, hooks, memories,
+`AGENTS.md`, MCP and web search pages and the Devin Local page now redirect to,
+and the CLI pages they defer to).
+
+- <https://docs.devin.ai/desktop/devin-local/customizations.md> (every
+  customization uses the Devin CLI format and discovery; the Customize page and
+  its tabs)
+- <https://docs.devin.ai/desktop/devin-local/customizations.md#rule-files> (rule
+  files, `trigger` values, the legacy `.windsurf/` imports; replaces the Cascade
+  memories page)
+- <https://docs.devin.ai/desktop/devin-local/customizations.md#agents-md>
+  (`AGENTS.md`, `AGENTS.local.md` and `AGENT.md`; replaces the Cascade `AGENTS.md`
+  page)
+- <https://docs.devin.ai/desktop/devin-local/customizations.md#skill-scopes>
+  (skill folders, among them the one the adapter writes; replaces the Cascade
+  skills page)
+- <https://docs.devin.ai/desktop/devin-local/customizations.md#configuration>
+  (MCP config files; replaces the Cascade MCP page)
+- <https://docs.devin.ai/desktop/devin-local/customizations.md#hooks> (hooks in
+  the CLI format, none in Restricted Mode; replaces the Cascade hooks page)
+- <https://docs.devin.ai/desktop/devin-local/overview.md#restricted-mode> (no
+  agent and no hook in Restricted Mode; replaces the Devin Local page)
+- <https://docs.devin.ai/desktop/devin-local/overview.md#subagents> (the
+  Subagents (Preview) toggle, the flat and directory layouts, discovery left to
+  the CLI page; replaces the Devin Local page)
+- <https://docs.devin.ai/desktop/cascade.md> (Cascade (legacy): no new or
+  reopened Cascade conversations, workflows for Cascade only, the
+  `post_setup_worktree` hook in `.windsurf/hooks.json`; replaces the Cascade web
+  search page)
+- <https://docs.devin.ai/cli/extensibility/skills/overview.md> (the global skill
+  folders, among them `~/.codeium/<channel>/skills/`)
+- <https://docs.devin.ai/cli/enterprise/team-settings.md#enable-web-search> (web
+  search setting; specific URLs are read locally)
+
 Retrieved 2026-10-03 unless marked.
 
-- <https://docs.devin.ai/desktop/cascade/memories> (memories and rules)
-- <https://docs.devin.ai/desktop/cascade/agents-md> (`AGENTS.md`)
-- <https://docs.devin.ai/desktop/cascade/mcp> (`mcp_config.json`)
-- <https://docs.devin.ai/desktop/cascade/web-search> (web search)
-- <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules)
-- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports)
-- <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-24, the folder the adapter writes)
-- <https://docs.devin.ai/desktop/cascade/hooks.md> (Cascade hooks, a different format from the Devin Local hooks the adapter writes; retrieved 2026-10-27)
+- <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules; re-read 2026-11-02 for `.devin/` over `.windsurf/`)
+- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports; re-read 2026-11-02 for the Claude Code and Windsurf rows)
 
 Retrieved 2026-10-28 (the hooks the adapter writes).
 
@@ -303,15 +415,11 @@ Retrieved 2026-10-28 (the hooks the adapter writes).
   `claude` import option and its default, the project and user config examples)
 - <https://docs.devin.ai/cli/reference/configuration/global-vs-local.md> (local
   config files, `.devin/config.local.json`, and their exclusion from git)
-- <https://docs.devin.ai/desktop/devin-local.md> (Restricted Mode, the
-  Customizations surface that lists hooks)
 
 Retrieved 2026-10-27 (the agents the adapter writes).
 
 - <https://docs.devin.ai/cli/subagents.md> (agent folders, layouts, keys,
   `allowed-tools`, the experimental label, the `subagents_enabled` switch)
-- <https://docs.devin.ai/desktop/devin-local.md> (the Subagents (Preview)
-  toggle, no Cascade equivalent, hooks and workflows on Devin Local)
 - <https://docs.devin.ai/desktop/changelog.md> (flat `agents/<name>.md` files and
   the toggle in v3.6.21, the Subagents section in Customizations)
 - <https://docs.devin.ai/cli/extensibility/index.md> (the `.claude/` import
@@ -367,9 +475,9 @@ requires the full `apothem install --harness windsurf --project <path>` engine r
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the preferred `.devin/rules/` directory (`.windsurf/rules/` backward-compat fallback). Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run. |
 | Agents | No — requires `apothem install` | The engine writes eleven of the fourteen as Devin Local subagents to the project's `.devin/agents/`. Nothing persists before that run. |
-| Workflows | No — adapter scope | The vendor documents workflows (`.windsurf/workflows/`), which reach the legacy Cascade agent only; the adapter authors none. |
+| Workflows | No — adapter scope | The vendor documents workflows (`.devin/workflows/`, or the legacy `.windsurf/workflows/`) for the legacy Cascade agent only ("Devin Local does not support them"), and Desktop no longer starts Cascade conversations; the adapter authors none. |
 | Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/windsurf/hooks/` and registers SessionStart and PostToolUse in `<project>/.devin/config.local.json`. Nothing persists before that run, and Devin runs no hook while the workspace is in Restricted Mode. |
-| MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and the shared `config.json` and `hooks.v1.json` are operator-owned; the adapter authors no entries. The Cascade `hooks.json` is not written. |
+| MCP / Settings | No — operator-owned | `.devin/mcp_config.json`, `.devin/mcp_config.local.json` and `~/.config/devin/mcp_config.json` (MCP) and the shared `config.json` and `hooks.v1.json` are operator-owned; the adapter authors no entries. The Cascade `hooks.json` is not written. |
 
 The Devin CLI documents plugins and team marketplaces, but Apothem ships no
 Devin plugin, so a

@@ -126,6 +126,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Windsurf and Trae convention pins follow the moved vendor pages.**
+  Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
+  Local Customizations page, a Devin Local Overview page and one Cascade
+  (legacy) page, and TRAE moved its Chinese-edition skills page and changelog.
+  Every citation now points at the current page, and each claim was checked
+  against it. The Customizations page now says Devin Local finds its rules,
+  skills, hooks and subagents the way the Devin CLI does, so the Windsurf
+  install note no longer says the Desktop docs leave the Claude Code hook
+  import open. The Claude Code import reads skills from the project's
+  `.claude/skills/` only, so the docs no longer say Devin may list the
+  `~/.claude/skills/` copy too. Devin Desktop no longer starts Cascade
+  conversations. The Windsurf rules file links the Customizations page; no
+  file the install writes moves.
 - **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
   from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
   `tools/channel-smoke`. Dependabot cannot open pull requests for npm

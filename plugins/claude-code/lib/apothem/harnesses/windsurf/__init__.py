@@ -5,7 +5,7 @@
 Materializes the apothem rules surface into the operator-supplied
 project root at ``<project>/.devin/rules/apothem-rules.md`` — the
 preferred workspace-rules surface per the vendor's current docs
-(https://docs.devin.ai/desktop/cascade/memories). The windsurf
+(https://docs.devin.ai/desktop/devin-local/customizations#rule-files). The windsurf
 harness rebranded to Devin Desktop (OTA 2026-06-02); ``.devin/rules/``
 now TAKES PRECEDENCE over the retained backward-compat fallback at
 ``.windsurf/rules/``, so Apothem writes the canonical target into

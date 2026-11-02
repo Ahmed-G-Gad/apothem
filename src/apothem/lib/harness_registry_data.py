@@ -909,7 +909,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # reader, and removing the last install that holds the folder removes it from
 # every reader, so the install advisories name the readers. Evidence retrieved
 # 2026-10-02, except ~/.agents/skills/ and the two agents roots, which were read
-# on 2026-10-24.
+# on 2026-10-24, and the Devin Desktop pages, re-read on 2026-11-02 after they
+# moved.
 #
 # A reader is listed only where the vendor docs show a default load of that exact
 # path. These gaps are open, so the tools they name are not readers yet:
@@ -920,18 +921,19 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # and ~/.agents/skills is not documented) or Hermes (its docs name
 # ~/.agents/skills only as a skills.external_dirs example).
 # TODO(clarify): ~/.claude/skills/ - only the VS Code docs list it for GitHub
-# Copilot, Windsurf reads it only when its Claude Code config import is on (the
-# Devin CLI docs make that import on by default; the Desktop pages do not say
-# whether the Local agent applies it), Kimi Code lists it only in its older docs,
-# and Qwen Code reads it only through its skills.directories setting.
+# Copilot, Windsurf's Claude Code config import names only the project's
+# .claude/skills/ (the Devin CLI configuration import page, read 2026-11-02),
+# Kimi Code lists it only in its older docs, and Qwen Code reads it only through
+# its skills.directories setting.
 # ~/.claude/agents/ is not an open gap: VS Code lists it for its Anthropic Claude
 # harness, not for the Local harness Copilot uses, so Copilot is not a reader. A
 # VS Code page that names it for the Local harness would add Copilot.
 # TODO(clarify): ~/.claude/agents/ for Windsurf - the Devin CLI extensibility page
 # (read 2026-10-27) says the CLI imports custom subagents from the .claude/
 # directory without naming a subpath, and the configuration import page lists no
-# agents row. Windsurf is not a reader until a probe names the path and shows that
-# Devin Desktop's Local agent applies the import.
+# agents row. Windsurf is not a reader until a probe names the path; the Devin
+# Local Customizations page (read 2026-11-02) says Devin Desktop's Local agent
+# uses the CLI's discovery, so the import applies there once the path is known.
 # The adapters that write the user-level rules and templates corpus besides Codex.
 SUPPORT_CO_INSTALLERS: tuple[str, ...] = (
     "codebuddy",
@@ -963,7 +965,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://docs.openclaw.ai/tools/skills",
             "https://opencode.ai/docs/skills/",
             "https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/",
-            "https://docs.devin.ai/desktop/cascade/skills",
+            "https://docs.devin.ai/desktop/devin-local/customizations#skill-scopes",
             "https://zed.dev/docs/ai/skills",
         ),
         retrieved="2026-10-24",
@@ -1063,7 +1065,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md",
             "https://kiro.dev/docs/steering/",
             "https://opencode.ai/docs/rules/",
-            "https://docs.devin.ai/desktop/cascade/agents-md.md",
+            "https://docs.devin.ai/desktop/devin-local/customizations.md#agents-md",
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
