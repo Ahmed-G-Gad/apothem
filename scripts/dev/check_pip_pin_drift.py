@@ -25,10 +25,13 @@ workflows and not others:
    ``<interpreter> -m pip install``) is pinned the way OpenSSF Scorecard's
    Pinned-Dependencies check counts it: it carries a literal
    ``--require-hashes``, or is ``--no-deps -e <local path>`` with no other
-   requirement, or installs only ``*.whl`` files. The exceptions are listed in
-   ``STEP_D_TOOL_PINS`` and ``ENGINE_PREREQUISITE_INSTALLS``. Text that merely
-   mentions ``pip install`` (a ``grep`` pattern, an ``echo``) does not start a
-   command and is not judged.
+   requirement, or installs only ``*.whl`` files. That covers the single-tool
+   installs too: each CI tool installs from its own hash-locked file
+   (``requirements-ci-ruff.txt``, ``-bandit.txt``, ``-pip-audit.txt``,
+   ``-pip-licenses.txt``, ``-pre-commit.txt``), so an unhashed
+   ``pip install ruff==X`` fails. The one exception is
+   ``ENGINE_PREREQUISITE_INSTALLS``. Text that merely mentions ``pip install``
+   (a ``grep`` pattern, an ``echo``) does not start a command and is not judged.
 
 Limits: only workflow files are scanned (not composite actions under
 ``.github/actions``), and only backslash line continuations are joined, so a
@@ -74,19 +77,7 @@ _CHAIN_SPLIT_RE = re.compile(r"&&|\|\||;|\|")
 # `--upgrade pip` / `-U pip`) or `pip` followed by a version operator.
 _PIP_ITSELF_RE = re.compile(r"^pip(?:$|(?:==|>=|<=|~=|!=|<|>)\S*)")
 
-# Single-tool installs that wait for the maintainer's decision on whether to
-# hash-lock them or accept them as exact pins. Each exact pin is the Scorecard
-# finding that remains; the file name plus the requirement keys the entry, so a
-# version bump of a tool updates this list in the same change. Remove an entry
-# when its install moves to a hash-locked file.
-STEP_D_TOOL_PINS: dict[str, frozenset[str]] = {
-    "ci.yml": frozenset({"bandit[toml]==1.9.4", "pip-audit==2.10.1"}),
-    "conformity.yml": frozenset({"ruff==0.15.20"}),
-    "license-audit.yml": frozenset({"pip-licenses==5.5.5"}),
-    "markdown-lint.yml": frozenset({"pre-commit==4.7.0"}),
-    "pip-audit.yml": frozenset({"pip-audit==2.10.1"}),
-}
-
+# The only install that rule (d) does not hold to Scorecard's definition.
 # npm-shim.yml installs the engine's own host prerequisites (HOST_PREREQUISITES
 # in src/apothem/__main__.py) through an interpreter held in a shell variable,
 # `"$APOTHEM_PYTHON" -m pip install "${specs[@]}"`. Scorecard does not scan that
@@ -146,6 +137,7 @@ class Report:
     hash_count: int = 0
     install_sites: int = 0
     judged_installs: int = 0
+    exempt_installs: int = 0
 
 
 def _logical_lines(text: str) -> list[tuple[int, str]]:
@@ -307,12 +299,10 @@ def _is_scorecard_pinned(install: _Install) -> bool:
 
 
 def _is_allow_listed(install: _Install, workflow_name: str) -> bool:
-    """Return True when every requirement is an allow-listed tool pin of the file."""
+    """Return True when every requirement is an allow-listed install of the file."""
     if install.editable or install.has_requirement_file or not install.positional:
         return False
-    allowed = STEP_D_TOOL_PINS.get(workflow_name, frozenset()) | (
-        ENGINE_PREREQUISITE_INSTALLS.get(workflow_name, frozenset())
-    )
+    allowed = ENGINE_PREREQUISITE_INSTALLS.get(workflow_name, frozenset())
     return all(requirement in allowed for requirement in install.positional)
 
 
@@ -328,7 +318,10 @@ def _check_scorecard_pinning(
     """Rule (d): report a command-position ``pip install`` that Scorecard flags."""
     report.judged_installs += 1
     install = _parse_install(rest)
-    if _is_scorecard_pinned(install) or _is_allow_listed(install, workflow_name):
+    if _is_scorecard_pinned(install):
+        return
+    if _is_allow_listed(install, workflow_name):
+        report.exempt_installs += 1
         return
     shown = " ".join(_tokens(rest)) or "(no requirement)"
     report.problems.append(
@@ -398,7 +391,8 @@ def check(repo_root: Path) -> Report:
     mentions ``PIP_PIN_VERSION``, and every workflow line that installs pip
     itself uses ``--require-hashes -r scripts/ci/requirements-ci-pip.txt``,
     and every other command-position ``pip install`` is Scorecard-pinned or
-    allow-listed. Each problem names the file and the change that fixes it.
+    the exempt engine-prerequisite install. Each problem names the file and the
+    change that fixes it.
     """
     report = Report()
     _check_lock(repo_root / LOCK_RELPATH, report)
@@ -420,11 +414,12 @@ def main() -> int:
             print(f"  - {problem}", file=sys.stderr)
         return 1
 
+    pinned = report.judged_installs - report.exempt_installs
     print(
         f"pip lock coherent: pip=={report.version} with {report.hash_count} hash(es); "
         f"{report.install_sites} workflow pip install(s) use {LOCK_RELPATH}; "
-        f"{report.judged_installs} other pip install(s) are Scorecard-pinned or "
-        "allow-listed"
+        f"{pinned} other pip install(s) are Scorecard-pinned; "
+        f"{report.exempt_installs} engine-prerequisite install(s) are exempt"
     )
     return 0
 

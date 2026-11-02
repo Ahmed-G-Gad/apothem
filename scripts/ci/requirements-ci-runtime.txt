@@ -7,25 +7,32 @@
 # Install command:
 #   python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
 #
-# One universal lock for every supported interpreter and platform: a line
-# that carries an environment marker applies only where the marker is true.
-# Every package carries the hashes of all its files, wheels and sdist, so an
-# interpreter without a wheel yet (the advisory pre-release cell) builds
-# from the hashed sdist; pip prefers a wheel wherever one exists. pip
-# checks hashes only when it downloads: a runner that already has a version
-# reports "Requirement already satisfied" and verifies nothing. The lock
-# holds only files uploaded before the lock date, so a release newer than
-# that date is not installed until the next refresh.
+# One universal lock for Python 3.10 and later on every platform: a line that
+# carries an environment marker applies only where the marker is true. Every
+# package carries the hashes of all its files, wheels and sdist, so an
+# interpreter without a wheel yet (the advisory pre-release cell) builds from
+# the hashed sdist; pip prefers a wheel wherever one exists. pip checks hashes
+# only when it downloads: a runner that already has a version reports
+# "Requirement already satisfied" and verifies nothing.
 #
-# Do not edit by hand and do not bump a single pin: every lock in this folder
-# is a closure, regenerated whole. To refresh them all:
+# The lock holds only files uploaded before the cutoff below, the lock date
+# minus the cooldown, so a release younger than the cooldown is not installed
+# until a later refresh. Only requirements-ci-pip.txt pins pip.
+#
+# Do not edit by hand and do not bump a single pin: every lock in this folder is
+# a closure, regenerated whole from the table in scripts/dev/ci_lock_table.py.
+# To refresh them all:
 #   python scripts/dev/refresh_ci_locks.py
-# To verify a committed lock against its recorded date (needs uv and network):
+# A security fix younger than the cooldown needs --cooldown-days 0, which takes
+# files uploaded before 00:00 UTC of the lock date, or, for a fix uploaded on
+# that day, a cooldown exception for its package in the table.
+# To verify a committed lock against its recorded dates (needs uv and network):
 #   python scripts/dev/refresh_ci_locks.py --check
-# tests/scripts/test_ci_locks_fresh.py fails when pyproject.toml asks for a
-# version this lock does not pin.
+# tests/scripts/test_ci_locks_fresh.py fails when a lock drifts from its inputs.
 #
 # Locked as of: 2026-10-29T00:00:00Z
+# Cooldown: 7 days
+# Cutoff: 2026-10-22T00:00:00Z
 # Compiled with: uv 0.11.14
 attrs==26.1.0 \
     --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309 \

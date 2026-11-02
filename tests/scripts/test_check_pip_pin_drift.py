@@ -370,9 +370,8 @@ def test_missing_workflow_directory_is_reported(tmp_path: Path) -> None:
 
 # --- rule (d): installs are pinned the way Scorecard counts them -------------
 
-DEV_LOCK_INSTALL = (
-    "python -m pip install --require-hashes -r scripts/ci/requirements-ci-dev.txt"
-)
+INSTALL_PREFIX = "python -m pip install --require-hashes -r scripts/ci/"
+DEV_LOCK_INSTALL = f"{INSTALL_PREFIX}requirements-ci-dev.txt"
 
 
 def _rule_d(problems: list[str]) -> list[str]:
@@ -477,63 +476,152 @@ def test_rule_d_reports_a_plain_project_install(tmp_path: Path) -> None:
     assert "pip install ." in problems[0]
 
 
-@pytest.mark.parametrize(
-    ("name", "line"),
-    [
-        ("ci.yml", 'python -m pip install "bandit[toml]==1.9.4"'),
-        ("ci.yml", 'python -m pip install "pip-audit==2.10.1"'),
-        ("conformity.yml", "python -m pip install ruff==0.15.20"),
-        ("license-audit.yml", "python -m pip install pip-licenses==5.5.5"),
-        ("markdown-lint.yml", 'python -m pip install "pre-commit==4.7.0"'),
-        ("pip-audit.yml", 'python -m pip install "pip-audit==2.10.1"'),
-        ("npm-shim.yml", '"$APOTHEM_PYTHON" -m pip install "${specs[@]}"'),
-    ],
-)
-def test_rule_d_allows_the_listed_tool_pins(
+# The six single-tool installs that rule (d) used to allow as exact pins. Each
+# now installs from its own hash-locked file, so the unhashed form must fail.
+FORMER_TOOL_PINS = [
+    ("ci.yml", 'python -m pip install "bandit[toml]==1.9.4"'),
+    ("ci.yml", 'python -m pip install "pip-audit==2.10.1"'),
+    ("conformity.yml", "python -m pip install ruff==0.15.20"),
+    ("license-audit.yml", "python -m pip install pip-licenses==5.5.5"),
+    ("markdown-lint.yml", 'python -m pip install "pre-commit==4.7.0"'),
+    ("pip-audit.yml", 'python -m pip install "pip-audit==2.10.1"'),
+]
+TOOL_LOCK_INSTALLS = [
+    ("ci.yml", f"{INSTALL_PREFIX}requirements-ci-bandit.txt"),
+    ("ci.yml", f"{INSTALL_PREFIX}requirements-ci-pip-audit.txt"),
+    ("conformity.yml", f"{INSTALL_PREFIX}requirements-ci-ruff.txt"),
+    ("license-audit.yml", f"{INSTALL_PREFIX}requirements-ci-pip-licenses.txt"),
+    ("markdown-lint.yml", f"{INSTALL_PREFIX}requirements-ci-pre-commit.txt"),
+    ("pip-audit.yml", f"{INSTALL_PREFIX}requirements-ci-pip-audit.txt"),
+]
+
+
+@pytest.mark.parametrize(("name", "line"), FORMER_TOOL_PINS)
+def test_rule_d_no_longer_allows_a_single_tool_pin(
     tmp_path: Path, name: str, line: str
 ) -> None:
-    assert _install_problems(tmp_path, line, name) == []
+    problems = _install_problems(tmp_path, line, name)
+    assert len(problems) == 1, problems
+    assert f"{name}:8" in problems[0]
+    assert "--require-hashes -r scripts/ci/requirements-ci-" in problems[0]
+
+
+@pytest.mark.parametrize(("name", "line"), TOOL_LOCK_INSTALLS)
+def test_rule_d_accepts_a_tool_install_from_its_lock(
+    tmp_path: Path, name: str, line: str
+) -> None:
+    root = _build_tree(tmp_path, _lock_text(), {name: _workflow_text(line)})
+    report = check_pip_pin_drift.check(root)
+    assert report.problems == []
+    # The tool locks are not the pip lock: they are judged by rule (d), not (c).
+    assert report.install_sites == 0
+    assert report.judged_installs == 2
+    assert report.exempt_installs == 0
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        f"{INSTALL_PREFIX}requirements-ci-pip-audit.txt",
+        f"{INSTALL_PREFIX}requirements-ci-pip-licenses.txt",
+        f"{INSTALL_PREFIX}requirements-ci-ruff.txt",
+    ],
+)
+def test_a_tool_lock_name_is_not_taken_for_the_pip_lock(
+    tmp_path: Path, line: str
+) -> None:
+    root = _build_tree(tmp_path, _lock_text(), {"ci.yml": _workflow_text(line)})
+    report = check_pip_pin_drift.check(root)
+    assert report.install_sites == 0
+    assert not any("installs pip without the lock" in p for p in report.problems)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        # A tool lock named without --require-hashes is as unpinned as any file.
+        "python -m pip install -r scripts/ci/requirements-ci-ruff.txt",
+        "python -m pip install --no-deps -r scripts/ci/requirements-ci-bandit.txt",
+        # The tool lock is a file, not a package name.
+        "python -m pip install requirements-ci-ruff.txt",
+    ],
+)
+def test_rule_d_rejects_a_tool_lock_install_without_hashes(
+    tmp_path: Path, line: str
+) -> None:
+    problems = _install_problems(tmp_path, line, "conformity.yml")
+    assert len(problems) == 1, problems
+
+
+def test_rule_d_allows_only_the_engine_prerequisite_install(tmp_path: Path) -> None:
+    line = '"$APOTHEM_PYTHON" -m pip install "${specs[@]}"'
+    root = _build_tree(tmp_path, _lock_text(), {"npm-shim.yml": _workflow_text(line)})
+    report = check_pip_pin_drift.check(root)
+    assert _rule_d(report.problems) == []
+    assert report.exempt_installs == 1
 
 
 @pytest.mark.parametrize(
     ("name", "line"),
     [
-        # A version bump of a listed tool is a new pin: the list moves with it.
-        ("conformity.yml", "python -m pip install ruff==0.16.0"),
-        ("ci.yml", 'python -m pip install "pip-audit==2.11.0"'),
-        # A listed requirement is allowed only in its own workflow.
-        ("ci.yml", "python -m pip install ruff==0.15.20"),
-        ("conformity.yml", 'python -m pip install "pip-audit==2.10.1"'),
-        # The allow-list covers a requirement, not a mixed install.
-        ("ci.yml", 'python -m pip install "pip-audit==2.10.1" pytest==9.2.0'),
-        ("ci.yml", 'python -m pip install -e . "pip-audit==2.10.1"'),
-        # Another exact pin that is not listed.
-        ("ci.yml", "python -m pip install pytest==9.2.0"),
+        # The allowance is for that requirement in that workflow only.
+        ("ci.yml", '"$APOTHEM_PYTHON" -m pip install "${specs[@]}"'),
         ("npm-shim.yml", 'python -m pip install "$other"'),
+        ("npm-shim.yml", 'python -m pip install "${specs[@]}" pytest'),
+        ("npm-shim.yml", 'python -m pip install -e . "${specs[@]}"'),
+        # Another exact pin that is not allow-listed.
+        ("ci.yml", "python -m pip install pytest==9.2.0"),
+        ("conformity.yml", "python -m pip install ruff==0.16.0"),
     ],
 )
-def test_rule_d_rejects_a_pin_that_is_not_listed(
+def test_rule_d_rejects_what_the_allow_list_does_not_name(
     tmp_path: Path, name: str, line: str
 ) -> None:
     problems = _install_problems(tmp_path, line, name)
     assert len(problems) == 1, problems
 
 
-def test_the_allow_list_names_only_exact_single_tool_pins() -> None:
-    listed = {
-        (name, requirement)
-        for table in (
-            check_pip_pin_drift.STEP_D_TOOL_PINS,
-            check_pip_pin_drift.ENGINE_PREREQUISITE_INSTALLS,
-        )
-        for name, requirements in table.items()
-        for requirement in requirements
-    }
-    assert ("ci.yml", "bandit[toml]==1.9.4") in listed
-    assert ("pip-audit.yml", "pip-audit==2.10.1") in listed
-    for name, requirement in listed:
-        assert name.endswith(".yml")
-        assert "==" in requirement or requirement.startswith("${")
+def test_the_single_tool_allow_list_is_gone() -> None:
+    assert not hasattr(check_pip_pin_drift, "STEP_D_TOOL_PINS")
+    allow_list = check_pip_pin_drift.ENGINE_PREREQUISITE_INSTALLS
+    assert allow_list == {"npm-shim.yml": frozenset({"${specs[@]}"})}
+
+
+def test_exempt_installs_are_counted_apart_from_pinned_ones(tmp_path: Path) -> None:
+    root = _build_tree(
+        tmp_path,
+        _lock_text(),
+        {
+            "ci.yml": _workflow_text(DEV_LOCK_INSTALL),
+            "npm-shim.yml": _workflow_text(
+                '"$APOTHEM_PYTHON" -m pip install "${specs[@]}"'
+            ),
+        },
+    )
+    report = check_pip_pin_drift.check(root)
+    assert report.problems == []
+    assert report.judged_installs == 4
+    assert report.exempt_installs == 1
+
+
+def test_main_summary_separates_pinned_and_exempt_installs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _build_tree(
+        tmp_path,
+        _lock_text(),
+        {
+            "ci.yml": _workflow_text(DEV_LOCK_INSTALL),
+            "npm-shim.yml": _workflow_text(
+                '"$APOTHEM_PYTHON" -m pip install "${specs[@]}"'
+            ),
+        },
+    )
+    monkeypatch.setattr(check_pip_pin_drift, "_REPO_ROOT", root)
+    assert check_pip_pin_drift.main() == 0
+    out = capsys.readouterr().out
+    assert "3 other pip install(s) are Scorecard-pinned" in out
+    assert "1 engine-prerequisite install(s) are exempt" in out
 
 
 def test_rule_d_judges_each_chained_install(tmp_path: Path) -> None:

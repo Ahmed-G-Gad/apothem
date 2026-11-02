@@ -11,20 +11,23 @@
 # hooks. These stay hand edits for version updates, because a single-pin bump
 # would be wrong (a security update can still open a pull request for one;
 # adapt it by hand or close it):
-#   - pyproject.toml: deliberate floors, and click is pinned exactly for the
-#     completion golden (comment beside it).
+#   - pyproject.toml: deliberate floors; click is pinned exactly for the
+#     completion golden, and ruff and mypy in lockstep with their pre-commit
+#     hooks and the CI locks (comments beside them).
 #   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
 #     regenerated whole with `pip download`; setuptools must equal pyproject's
 #     build-system pin (tests/scripts/test_normalize_sdist.py). The single-
 #     package pip lock beside it (scripts/ci/requirements-ci-pip.txt) is the
 #     opposite case and is Dependabot's: one pin, rewritten with its hashes.
-#   - scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt: closures that
-#     CI installs with --require-hashes, regenerated whole with
-#     `python scripts/dev/refresh_ci_locks.py` (like the release closure). The
-#     /scripts/ci entry below limits version updates to pip, so Dependabot
-#     never bumps one pin inside a closure. A security alert against a locked
-#     package is answered by running that script, not by merging a single-pin
-#     pull request.
+#   - scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt and the five
+#     tool locks beside them, requirements-ci-{ruff,bandit,pip-audit,
+#     pip-licenses,pre-commit}.txt: closures that CI installs with
+#     --require-hashes, regenerated whole with
+#     `python scripts/dev/refresh_ci_locks.py` (like the release closure), with
+#     the same seven-day cooldown as the entries below. The /scripts/ci entry
+#     below limits version updates to pip, so Dependabot never bumps one pin
+#     inside a closure. A security alert against a locked package is answered
+#     by running that script, not by merging a single-pin pull request.
 #   - src/apothem/_vendor/vendor.txt: records the vendored source tree beside
 #     it; a bump means re-vendoring (docs: architecture/vendoring-strategy).
 #   - npm `overrides` blocks. Version updates leave them alone; a security
@@ -171,10 +174,14 @@ updates:
         patterns: ["*"]
     ignore:
       # Each moves in lockstep with a pin outside this file (see the comment
-      # beside each hook): ruff with pyproject.toml and conformity.yml, mypy
-      # with pyproject.toml, gitleaks with GL_VERSION in ci.yml. The mypy
-      # hook's additional_dependencies mirror pyproject.toml's runtime pins
-      # and floors, so they move with it too.
+      # beside each hook): ruff with pyproject.toml, the ruff lock and the dev
+      # lock, mypy with pyproject.toml and the dev lock, gitleaks with
+      # GL_VERSION in ci.yml. The mypy hook's additional_dependencies carry the
+      # dev lock's versions, so they move with a lock refresh.
+      # tests/scripts/test_ci_tool_locks.py fails when a ruff or mypy pin, or one
+      # of those dependencies, differs. A security pull request for ruff or mypy
+      # edits only pyproject.toml, so the lockstep test fails on it: adapt it by
+      # hand (scripts/ci/README.md, Bumping ruff and Bumping mypy).
       - dependency-name: "*ruff-pre-commit"
       - dependency-name: "*mirrors-mypy"
       - dependency-name: "*gitleaks"
@@ -189,14 +196,19 @@ updates:
   # both --hash lines in one pull request. The drift check keeps the pin at
   # pip 26.2 or later (scripts/dev/check_pip_pin_drift.py).
   #
-  # The other files in this folder (requirements-ci-dev.txt and its siblings)
-  # are universal closures that scripts/dev/refresh_ci_locks.py regenerates
-  # whole. `allow` limits version updates to pip, so Dependabot opens no pull
-  # request for a single pin inside a closure, which it would rewrite for one
-  # platform. Dependabot alerts can list the locked packages. Answer one by
-  # running the refresh script. If Dependabot opens single-pin pull requests
-  # anyway, move the closures to a sibling folder with a limit-0 entry like
-  # /scripts/release below.
+  # The other files in this folder (requirements-ci-dev.txt, -runtime.txt,
+  # -test.txt, -prereqs.txt and the tool locks -ruff.txt, -bandit.txt,
+  # -pip-audit.txt, -pip-licenses.txt and -pre-commit.txt) are universal
+  # closures that scripts/dev/refresh_ci_locks.py regenerates whole. None of
+  # them pins pip: the refresh passes --no-emit-package pip and
+  # tests/scripts/test_ci_locks_fresh.py checks it. `allow` limits version
+  # updates to the dependency named pip, an exact match that leaves pip-audit
+  # and pip-licenses alone, so Dependabot opens no pull request for a single
+  # pin inside a closure, which it would rewrite for one platform. Dependabot
+  # alerts can list the locked packages. Answer one by running the refresh
+  # script. If Dependabot opens single-pin pull requests anyway, move the
+  # closures to a sibling folder with a limit-0 entry like /scripts/release
+  # below.
   - package-ecosystem: pip
     directory: /scripts/ci
     schedule:

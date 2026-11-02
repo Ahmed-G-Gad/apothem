@@ -37,33 +37,51 @@ repos:
   # Python — ruff (lint + format)
   # ---------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Lockstep: keep in sync with the ruff floor in pyproject.toml [project.optional-dependencies].dev.
-    rev: v0.15.20
+    # Lockstep: keep equal to the exact ruff pin in pyproject.toml
+    # [project.optional-dependencies].dev, scripts/ci/requirements-ci-ruff.txt and
+    # scripts/ci/requirements-ci-dev.txt; tests/scripts/test_ci_tool_locks.py
+    # fails when they differ. Dependabot ignores this hook (dependabot.yml).
+    rev: v0.17.1
     hooks:
       - id: ruff
         args: [--fix]
         types_or: [python, pyi]
       - id: ruff-format
-        types_or: [python, pyi]
+        # Markdown too: ruff 0.17 formats the Python code blocks in Markdown
+        # files, and CI runs `ruff format --check .` over the whole tree, so the
+        # hook has to format the same files or a commit passes here and fails
+        # the required quality checks.
+        types_or: [python, pyi, markdown]
 
   # ---------------------------------------------------------------------------
   # Python — mypy (type checking)
   # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    # Lockstep: keep equal to the exact mypy pin in pyproject.toml
+    # [project.optional-dependencies].dev and to scripts/ci/requirements-ci-dev.txt;
+    # tests/scripts/test_ci_tool_locks.py fails when they differ. Dependabot
+    # ignores this hook and its additional_dependencies (dependabot.yml).
+    rev: v2.4.0
     hooks:
       - id: mypy
+        # Empty args drop the mirror's default --ignore-missing-imports, so mypy
+        # runs with only the pyproject.toml settings, as CI's `python -m mypy`
+        # does, and a library missing below fails the hook instead of passing.
+        args: []
         pass_filenames: false
         additional_dependencies:
-          # Floors kept in lockstep with pyproject.toml [project.dependencies]
-          # so the isolated mypy venv type-checks against the same library
-          # versions a `pip install -e .[dev]` resolves.
+          # Exact pins equal to the versions in scripts/ci/requirements-ci-dev.txt,
+          # so the hook type-checks against the dev lock's versions of these
+          # libraries. tests/scripts/test_ci_tool_locks.py fails when one differs
+          # or a runtime dependency or types-* stub of the dev extra is missing:
+          # after a lock refresh, copy the dev lock's new versions here
+          # (scripts/ci/README.md, Bumping mypy).
           - click==8.4.2
-          - rich>=15.0.0
-          - pyyaml>=6.0.3
-          - jsonschema>=4.26.0
-          - types-PyYAML
-          - types-jsonschema>=4.26.0.20260518
+          - rich==15.0.0
+          - pyyaml==6.0.3
+          - jsonschema==4.26.0
+          - types-PyYAML==6.0.12.20260906
+          - types-jsonschema==4.26.0.20261006
 
   # ---------------------------------------------------------------------------
   # Markdown

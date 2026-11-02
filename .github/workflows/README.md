@@ -31,9 +31,9 @@ top-level `.github/README.md` would, and none exists.
 | `markdown-lint.yml` | push (main), PR (main), dispatch | Runs the markdownlint pre-commit hook over every tracked Markdown file with the version `.pre-commit-config.yaml` pins and the policy in `.markdownlint.json`, so a Dependabot hooks update is linted before it merges. |
 | `pr-title.yml` | PR (main), including title edits | Checks that the squash-merge subject (`<title> (#<number>)`) fits the 72-character Conventional Commits cap, with `scripts/dev/check_pr_title_squash_length.py`. Retitling a pull request re-runs it, and the repository's squash default takes the PR title, so a long Dependabot title is fixed by a retitle before merging. |
 | `dependency-review.yml` | PR (main) | Blocks PRs that introduce dependencies with known vulnerabilities or disallowed licenses, evaluated against the manifest/lockfile diff. |
-| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved-latest dependencies (pip-audit resolves `.[dev]` itself, so no workflow `pip install` runs), the frozen vendored closure, the hash-locked release build tooling, the hash-locked CI pip, and the four hash-locked CI dependency locks (audited on Python 3.10 and 3.12), plus a PR/push gate on changes to them. |
+| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved-latest dependencies (pip-audit resolves `.[dev]` itself, so no workflow `pip install` runs), the frozen vendored closure, the hash-locked release build tooling, the hash-locked CI pip, and the nine hash-locked CI locks (the four dependency locks and the five tool locks), plus a PR/push gate on changes to them. Every audit asks the OSV service, which lists GitHub's advisories sooner than the PyPI feed, and runs on Python 3.12. |
 | `npm-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `npm audit` of the documentation site's dependency tree and the two tool lockfiles (`tools/vsce`, `tools/channel-smoke`), plus a PR/push gate on each. A pull request that changes a tool lockfile also installs it, and one that changes `tools/vsce` also packages the VS Code extension and runs the vsce release tests and the lockfile-location test (`tool-lockfile-tests` job), because such a pull request runs no `ci.yml` job. Sibling of `pip-audit.yml`, whose path filters cover the Python surface only — without this the npm tree is unaudited. Fails on high/critical. |
-| `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the hash-locked runtime dependency closure (`scripts/ci/requirements-ci-runtime.txt`) for copyleft or otherwise MIT-incompatible licenses; mirrors the dependency-review allow-list. |
+| `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the hash-locked runtime dependency closure (`scripts/ci/requirements-ci-runtime.txt`) for copyleft or otherwise MIT-incompatible licenses, with `pip-licenses` installed from its own hash-locked file (`scripts/ci/requirements-ci-pip-licenses.txt`); mirrors the dependency-review allow-list. |
 | `reuse.yml` | push (main), PR, schedule (weekly), dispatch | `reuse lint` over the whole tree on every change: every file carries an SPDX license line or a `REUSE.toml` annotation, every `LICENSES/` text is used, and every SPDX expression parses. A release needs it green. |
 | `evals.yml` | dispatch only (runs when the `RUN_PAID_EVALS` variable is `true`) | Behavioural eval suite under `evals/` with `claude plugin eval` against a staged copy of the plugin package. Billed per run: the cost ceiling, the model, the judge model and the CLI version are required inputs; uploads `eval-results`. |
 | `badges.yml` | workflow_run (CI completed on main), dispatch | Generates the shields.io endpoint JSONs after CI completes and uploads them as the `badges` artifact for the static site to serve. |
@@ -111,13 +111,27 @@ top-level `.github/README.md` would, and none exists.
   `python -m pip install --require-hashes -r scripts/ci/requirements-ci-<name>.txt`
   (`dev`, `runtime`, `test`, `prereqs`; index in `scripts/ci/README.md`), then
   the package itself, where a job needs it, with `python -m pip install --no-deps -e .`.
-  The locks hold the versions as of the lock date written in each file, so CI
-  tests those versions until `python scripts/dev/refresh_ci_locks.py` regenerates
-  them; `pip-audit.yml` resolves the newest allowed versions each week as the
-  early warning. `scripts/dev/check_pip_pin_drift.py` (rule d) fails the build
-  on any other `pip install` that OpenSSF Scorecard would count as unpinned,
-  except the single-tool exact pins it lists. A `setup-python` step with
-  `cache: pip` names the lock its job installs in `cache-dependency-path`.
+  The locks hold the versions as of the lock date written in each file, less a
+  seven-day cooldown (the cutoff also written there), so CI tests those versions
+  until `python scripts/dev/refresh_ci_locks.py` regenerates them;
+  `pip-audit.yml` resolves the newest allowed versions each week as the early
+  warning. `scripts/dev/check_pip_pin_drift.py` (rule d) fails the build on any
+  other `pip install` that OpenSSF Scorecard would count as unpinned, except the
+  npm shim's engine-prerequisite install. A `setup-python` step with
+  `cache: pip` names the locks its job installs in `cache-dependency-path`, one
+  path per line.
+- **Tool locks.** The CI tools install the same way from a lock of their own,
+  with no version in the workflow: `ruff` (`conformity.yml`), `bandit`
+  (`ci.yml`, `security-scan`), `pip-audit` (`ci.yml`, `supply-chain-scan`, and
+  `pip-audit.yml`; Python 3.11 or later), `pip-licenses` (`license-audit.yml`)
+  and `pre-commit` (`markdown-lint.yml`; Python 3.11 or later) use
+  `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt`.
+  The tool versions are the specs in `scripts/dev/ci_lock_table.py`. A tool lock
+  never pins pip, so Dependabot's pip pin stays the only one, and a job that
+  installs both installs the pip lock first. A workflow with `paths` filters
+  matches the tool lock it installs, so a refresh that changes only that lock
+  still runs its job. `tests/scripts/test_ci_tool_locks.py` checks the install
+  lines, the filters, the cache keys and the Python version.
 
 ## Working in this folder
 
