@@ -49,7 +49,6 @@ Une exécution multi-travailleurs dans ce dépôt suit trois conventions :
   publiée (ou le répertoire `.apothem/plans/` du projet pour l'état de travail en
   cours, selon la *Discipline des plans* ; une arborescence `.plans/` héritée
   est migrée via `apothem migrate-workspace`).
-  {/* [Machine-seeded — pending review] */}
 
 Lorsque la tâche d'un travailleur comporte plusieurs étapes, la trace de travail
 du travailleur est enregistrée dans
@@ -88,12 +87,10 @@ multi-travailleurs, stratégies de refactorisation, journaux de débogage, notes
 d'exploration — vivent exclusivement à `<project-root>/.apothem/plans/` (le
 répertoire de plans canonique ; une arborescence `<project-root>/.plans/`
 héritée est migrée via `apothem migrate-workspace`).
-{/* [Machine-seeded — pending review] */}
 
 Le répertoire `<project-root>/.apothem/plans/` (et l'ancien
 `<project-root>/.plans/`) est **gitignoré** selon l'extrait
 canonique de `.gitignore` documenté à
-{/* [Machine-seeded — pending review] */}
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
 Les plans **NE DOIVENT JAMAIS** être validés dans l'historique git d'un projet.
 Les plans transitent par les états du cycle de vie

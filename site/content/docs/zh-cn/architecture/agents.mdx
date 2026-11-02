@@ -25,7 +25,6 @@ sourceHash: "e139310dc56fef79"
 - **返回契约是显式的。** 每次工作者调用都指定预期的返回形状——结构化摘要、最大 token 预算、必需字段、失败模式措辞。调度器拒绝格式错误的返回，而不是静默地重新提示。
 - **共享状态即文件系统。** 委派工作者不跨调度边界共享内存。两个工作者都需要的状态通过发布树下的命名文件流转（或者，对于进行中的工作状态，按照*计划准则*经由项目的
   `.apothem/plans/` 目录；旧版 `.plans/` 树通过 `apothem migrate-workspace` 迁移）。
-  {/* [Machine-seeded — pending review] */}
 
 当一个工作者的任务是多步骤时，该工作者的工作痕迹按照*计划准则*记录在
 `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` 中；调度器读取该计划来协调下游工作者。计划绝不提交到 git。
@@ -49,11 +48,10 @@ python scripts/inject-header.py --mode fix-in-place <path>
 ## 计划准则
 
 助手**绝不能**生成向工具配置目录或任何其他全局计划位置写入的代码、脚本或散文。规划制品——多工作者协调计划、重构策略、调试日志、探索笔记——仅存放于 `<project-root>/.apothem/plans/`（规范的计划目录；旧版 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 迁移）。
-{/* [Machine-seeded — pending review] */}
 
 `<project-root>/.apothem/plans/` 目录（以及旧版 `<project-root>/.plans/`）按照
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) 中记录的规范 `.gitignore` 片段被 **gitignore**。
-{/* [Machine-seeded — pending review] */}计划**绝不能**提交到项目的 git 历史。计划经历生命周期状态 **draft → in-progress → converged**（提升为 ADR）**→ abandoned / superseded**，记录在每个计划的 frontmatter `status:` 字段中。计划文件名遵循
+计划**绝不能**提交到项目的 git 历史。计划经历生命周期状态 **draft → in-progress → converged**（提升为 ADR）**→ abandoned / superseded**，记录在每个计划的 frontmatter `status:` 字段中。计划文件名遵循
 `YYYY-MM-DD--<kebab-case-slug>.md`。
 
 ```mermaid

@@ -44,10 +44,9 @@ Sebuah eksekusi multi-pekerja di repositori ini mengikuti tiga konvensi:
 - **State bersama adalah sistem berkas.** Pekerja terdelegasi tidak berbagi
   memori melintasi batas dispatch. State yang dibutuhkan dua pekerja
   mengalir melalui sebuah berkas bernama di bawah pohon yang dipublikasikan (atau direktori
-  `.apothem/plans/` proyek untuk state kerja yang sedang berjalan per *Disiplin
-  Plans*).
-{/* [Machine-seeded — pending review] */}
-  (`.apothem/plans/` adalah direktori plans kanonik; pohon `.plans/` lama dimigrasikan melalui `apothem migrate-workspace`.)
+  `.apothem/plans/` proyek — pohon `.plans/` warisan ditingkatkan melalui
+  `apothem migrate-workspace` — untuk state kerja yang sedang berjalan per
+  *Disiplin Plans*).
 
 Ketika tugas seorang pekerja bersifat multi-langkah, jejak kerja pekerja tersebut
 dicatat di `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` per *Disiplin
@@ -81,15 +80,13 @@ Asisten **TIDAK BOLEH** menghasilkan kode, skrip, atau prosa yang menulis
 ke direktori konfigurasi harness atau lokasi plans global lainnya.
 Artefak perencanaan — plan koordinasi multi-pekerja, strategi
 refaktor, jurnal debugging, catatan eksplorasi — berada
-secara eksklusif di `<project-root>/.apothem/plans/`.
-{/* [Machine-seeded — pending review] */}
-(direktori plans kanonik; pohon `<project-root>/.plans/` lama dimigrasikan melalui `apothem migrate-workspace`)
+secara eksklusif di `<project-root>/.apothem/plans/` (direktori plans kanonik);
+pohon `<project-root>/.plans/` warisan ditingkatkan melalui
+`apothem migrate-workspace`.
 
-Direktori `<project-root>/.apothem/plans/` bersifat **gitignored** per
-{/* [Machine-seeded — pending review] */}
-(dan `<project-root>/.plans/` lama)
-snippet `.gitignore` kanonis yang didokumentasikan di
-[`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline). Plans **TIDAK
+Direktori `<project-root>/.apothem/plans/` (dan `<project-root>/.plans/` warisan)
+bersifat **gitignored** per snippet `.gitignore` kanonis yang didokumentasikan di
+[`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline). Plans **TIDAK PERNAH
 BOLEH** di-commit ke riwayat git sebuah proyek. Plans bertransisi
 melalui state siklus-hidup **draft → in-progress → converged**
 (promosikan ke ADR) **→ abandoned / superseded**, yang dicatat dalam

@@ -29,11 +29,21 @@ métadonnées que la CLI lit :
 - `verify` — détecter la dérive entre le profil et la configuration sur disque.
 
 Comme le contrat est un `typing.Protocol`, un adaptateur le satisfait par sa
-forme, et non par héritage. La CLI charge les adaptateurs dynamiquement via
-`importlib.metadata` depuis la table
-`[project.entry-points."apothem.harnesses"]` dans `pyproject.toml`. Ajouter un
-environnement signifie publier un sous-paquet qui expose le protocole — sans
-modifier le répartiteur central.
+forme, et non par héritage. À l'exécution, la CLI résout chaque adaptateur à
+partir d'un registre statique — la table `HARNESS_REGISTRY` dans
+`src/apothem/lib/harness_registry_data.py`, dont `harness_registry.py` déclare
+qu'elle *fait autorité à l'exécution* — de sorte qu'un simple checkout charge
+chaque adaptateur sans aucune métadonnée de point d'entrée installée sur
+`sys.path`. La table `[project.entry-points."apothem.harnesses"]` dans
+`pyproject.toml` et le balayage `discover_adapters()` du système de fichiers
+constituent un contrôle de parité de conformance, et non le résolveur
+d'exécution : un test affirme que l'ensemble d'adaptateurs découvert égale le
+registre statique, de sorte qu'un adaptateur conforme à la convention mais non
+enregistré ressort comme une régression de couverture plutôt que d'être résolu
+silencieusement. Ajouter un environnement revient donc à l'enregistrer dans les
+données du registre (et à le refléter dans la table des points d'entrée pour la
+parité d'empaquetage) — le test de parité échoue bruyamment si l'un des deux
+est oublié.
 
 ## Un sous-paquet par adaptateur
 

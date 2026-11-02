@@ -48,7 +48,6 @@ Ein Lauf mit mehreren Workern in diesem Repository folgt drei Konventionen:
   `.apothem/plans/`-Verzeichnis des Projekts für den laufenden Arbeitszustand
   gemäß *Plans-Disziplin*; ein veralteter `.plans/`-Baum wird per
   `apothem migrate-workspace` migriert).
-{/* [Machine-seeded — pending review] */}
 
 Wenn die Aufgabe eines Workers mehrstufig ist, wird die Arbeitsspur des Workers in
 `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` gemäß *Plans-Disziplin*
@@ -86,13 +85,11 @@ Refactoring-Strategien, Debugging-Journale, Erkundungsnotizen — leben
 ausschließlich unter `<project-root>/.apothem/plans/` (das kanonische
 Plans-Verzeichnis; ein veralteter `<project-root>/.plans/`-Baum wird per
 `apothem migrate-workspace` migriert).
-{/* [Machine-seeded — pending review] */}
 
 Das Verzeichnis `<project-root>/.apothem/plans/` (und das veraltete
 `<project-root>/.plans/`) ist gemäß dem in
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline)
 dokumentierten kanonischen `.gitignore`-Ausschnitt **gitignoriert**. Pläne
-{/* [Machine-seeded — pending review] */}
 **DÜRFEN NIEMALS** in die git-Historie eines Projekts committet werden. Pläne
 durchlaufen die Lebenszyklus-Zustände **draft → in-progress → converged**
 (zu ADR befördern) **→ abandoned / superseded**, festgehalten im Feld `status:`

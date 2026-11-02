@@ -37,7 +37,7 @@ Un reporte persistente y acotado en `<suite>/_outputs/audit-report-<YYYY-MM-DD>.
 
 ## Fases del flujo de trabajo
 
-1. **Resolver el objetivo** — Resuelve la suite a partir del argumento, o elige la suite modificada más recientemente bajo `.apothem/plans/` (`.plans/` es un respaldo retrocompatible admitido) y declara la resolución.
+1. **Resolver el objetivo** — Resuelve la suite a partir del argumento, o elige la suite modificada más recientemente bajo `.apothem/plans/` y declara la resolución.
 2. **Evaluar la etapa** — Detecta qué artefactos existen (spec lista / generada / revisada / ejecutada) y nombra la brecha más pequeña hacia un todo revisado y ejecutable.
 3. **Llevar a un todo revisable** — Ejecuta solo las etapas aguas arriba que faltan, delegando en el comando canónico de cada brecha; nunca reejecutes una etapa satisfecha solo para refrescar la prosa.
 4. **Auditoría forense** — Aplica las dimensiones de auditoría de `/plan-review`, el catálogo de técnicas de planificación y la puerta de pre-emisión de quince barras.

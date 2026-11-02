@@ -37,7 +37,7 @@ Ein persistenter, begrenzter Bericht unter `<suite>/_outputs/audit-report-<YYYY-
 
 ## Workflow-Phasen
 
-1. **Ziel auflösen** — Löst die Suite aus dem Argument auf oder wählt die zuletzt geänderte Suite unter `.apothem/plans/` (`.plans/` ist ein unterstützter abwärtskompatibler Fallback) und nennt die Auflösung.
+1. **Ziel auflösen** — Löst die Suite aus dem Argument auf oder wählt die zuletzt geänderte Suite unter `.apothem/plans/` und nennt die Auflösung.
 2. **Stufe bewerten** — Erkennt, welche Artefakte existieren (spec-bereit / generiert / geprüft / ausgeführt), und nennt die kleinste Lücke zu einem geprüften, ausführbaren Ganzen.
 3. **Zu einem prüfbaren Ganzen bringen** — Führt nur die fehlenden vorgelagerten Stufen aus und delegiert an den kanonischen Befehl jeder Lücke; führt eine erfüllte Stufe niemals nur zum Auffrischen der Prosa erneut aus.
 4. **Forensisches Audit** — Wendet die Audit-Dimensionen von `/plan-review`, den Planungstechnik-Katalog und das fünfzehnstufige Pre-Emission-Gate an.

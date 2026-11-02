@@ -24,10 +24,18 @@ CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以�
 - `is_installed` — 报告该工具的配置是否存在。
 - `verify` — 检测配置档案与磁盘配置之间的漂移。
 
-由于该契约是一个 `typing.Protocol`，适配器靠形态而非继承去满足它。CLI
-通过 `importlib.metadata` 从 `pyproject.toml` 中的
-`[project.entry-points."apothem.harnesses"]` 表动态加载适配器。新增一个
-工具意味着发布一个暴露该协议的子包——无需改动核心调度器。
+由于该契约是一个 `typing.Protocol`，适配器靠形态而非继承去满足它。
+在运行时，CLI 从一个静态注册表解析每个适配器——即
+`src/apothem/lib/harness_registry_data.py` 中的 `HARNESS_REGISTRY` 表，
+`harness_registry.py` 将其声明为*在运行时具有权威性*——因此普通检出无需
+`sys.path` 上存在任何已安装的入口点元数据，即可加载每个适配器。
+`pyproject.toml` 中的 `[project.entry-points."apothem.harnesses"]` 表，
+以及基于文件系统的 `discover_adapters()` 扫查，是一项一致性对等检查，
+而不是运行时解析器：一项测试断言所发现的适配器集合等于静态注册表，
+因此一个约定正确但未注册的适配器会作为覆盖回归浮现出来，
+而不是被静默地解析。新增一个工具因而意味着在注册表数据中注册它
+（并为保持打包对等而在入口点表中予以镜像）——若漏掉其中任何一处，
+对等测试都会显式失败。
 
 ## 每个适配器一个子包
 

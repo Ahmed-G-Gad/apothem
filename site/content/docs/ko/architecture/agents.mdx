@@ -36,7 +36,6 @@ sourceHash: "e139310dc56fef79"
 - **공유 상태는 파일 시스템이다.** 위임 작업자는 디스패치 경계를 넘어 메모리를 공유하지
   않습니다. 두 작업자가 필요로 하는 상태는 게시된 트리 아래의 명명된 파일(또는 진행 중인 작업
   상태의 경우 *플랜 규율* 에 따라 프로젝트의 `.apothem/plans/` 디렉터리)을 통해 흐릅니다.
-  {/* [Machine-seeded — pending review] */}
   (정규 플랜 디렉터리이며, 레거시 `.plans/` 트리는 `apothem migrate-workspace`
   로 마이그레이션됩니다.)
 
@@ -69,14 +68,13 @@ vendored 콘텐츠, `.audit/` 임시 파일, `<project-root>/.apothem/plans/` �
 어시스턴트는 하니스 구성 디렉터리나 다른 모든 전역 플랜 위치에 쓰는 코드, 스크립트, 또는
 산문을 생성 **해서는 안 됩니다(MUST NOT)**. 계획 아티팩트 —— 다중 작업자 조율 플랜,
 리팩터링 전략, 디버깅 저널, 탐색 노트 —— 는 `<project-root>/.apothem/plans/` 에만 존재합니다.
-{/* [Machine-seeded — pending review] */}
 (정규 플랜 디렉터리이며, 레거시 `<project-root>/.plans/` 트리는 `apothem migrate-workspace`
 로 마이그레이션됩니다)
 
 `<project-root>/.apothem/plans/` 디렉터리(그리고 레거시 `<project-root>/.plans/`)는
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline)
 에 문서화된 정규 `.gitignore` 스니펫에 따라 **gitignore** 됩니다.
-{/* [Machine-seeded — pending review] */} 플랜은 프로젝트의 git
+플랜은 프로젝트의 git
 히스토리에 **결코 커밋되어서는 안 됩니다(MUST NEVER)**. 플랜은 생명 주기 상태
 **draft → in-progress → converged**(ADR로 승격) **→ abandoned / superseded** 를 거치며,
 각 플랜의 frontmatter `status:` 필드에 기록됩니다. 플랜 파일 이름은

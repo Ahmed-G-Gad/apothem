@@ -17,7 +17,7 @@ Claude Code के लिए `~/.claude/`)। `CLAUDE.md` की धारा 7 
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-16 %%
+%% verified: 2026-06-22 %%
 %% provenance: README.md (Quick Start · Location) %%
 %% cross-reference: site/content/docs/architecture/source-layout.mdx (Directory Layout summary) %%
 graph TD
@@ -33,8 +33,8 @@ graph TD
     HOOKS --> HOOKS_LIB["lib/<br/>bootstrap.{ps1,sh}<br/>find-python.{ps1,sh}<br/>resolve_root.py"]
     HOOKS --> HOOKS_MSGS["messages/<br/>(static context per event)"]
     HOOKS --> HOOKS_PY["dispatch.py<br/>session_start_bootstrap.py<br/>emit_hook_context.py"]
-    ROOT --> TOOLS["scripts/<br/>validate_hooks.py<br/>validate_ecosystem.py<br/>chaos_pass.py<br/>src/apothem/benchmarks/<br/>lib/"]
-    ROOT --> TESTS["tests/hooks/<br/>(pytest coverage)"]
+    ROOT --> TOOLS["scripts/dev/<br/>validate_hooks.py · validate_ecosystem.py<br/>chaos_pass.py · audit_all.py<br/>src/apothem/benchmarks/ · lib/"]
+    ROOT --> TESTS["tests/<br/>unit/ · integration/ · conformity/<br/>commands/ · packaging/ · property/ · hooks/"]
     ROOT --> DOCS["site/content/docs/<br/>reference/ · architecture/<br/>governance/ · harnesses/<br/>runbooks/ · developer-guide.mdx"]
     ROOT --> MEMORY["memory/<br/>MEMORY.md (index)<br/>promotion-ledger.md<br/>expertise-gap-log.md<br/>{topic}.md files"]
     ROOT --> PLANS["plans/<br/>(per-suite folders<br/>PREAMBLE · MASTER-PLAN<br/>per-phase directories<br/>_spec/ · _inputs/ scratch tiers)"]

@@ -50,7 +50,6 @@ convenciones:
   dos trabajadores necesitan fluye a través de un archivo con nombre bajo el
   árbol publicado (o el directorio `.apothem/plans/` del proyecto para el estado de
   trabajo en curso, según la *Disciplina de planes*).
-  {/* [Machine-seeded — pending review] */}
   Un árbol `.plans/` heredado se migra mediante `apothem migrate-workspace`.
 
 Cuando la tarea de un trabajador es de varios pasos, la traza de trabajo del
@@ -90,12 +89,10 @@ trabajadores, estrategias de refactorización, diarios de depuración, notas de
 exploración— viven exclusivamente en `<project-root>/.apothem/plans/` (el
 directorio canónico de planes; un árbol `<project-root>/.plans/` heredado se
 migra mediante `apothem migrate-workspace`).
-{/* [Machine-seeded — pending review] */}
 
 El directorio `<project-root>/.apothem/plans/` está **gitignorado** (y el
 `<project-root>/.plans/` heredado) según el fragmento
 canónico de `.gitignore` documentado en
-{/* [Machine-seeded — pending review] */}
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
 Los planes **NUNCA DEBEN** confirmarse en el historial de git de un proyecto.
 Los planes transitan por los estados del ciclo de vida

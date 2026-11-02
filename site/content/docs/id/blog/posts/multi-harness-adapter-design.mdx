@@ -27,11 +27,20 @@ operasi yang dipanggil CLI dan metadata yang dibaca CLI:
 - `verify` — mendeteksi penyimpangan (drift) antara profil dan konfigurasi di disk.
 
 Karena kontraknya berupa `typing.Protocol`, sebuah adapter memenuhinya
-berdasarkan bentuk, bukan pewarisan. CLI memuat adapter secara dinamis melalui
-`importlib.metadata` dari tabel
-`[project.entry-points."apothem.harnesses"]` di `pyproject.toml`. Menambahkan
-sebuah harness berarti menerbitkan subpaket yang memaparkan protokol — tanpa
-menyunting dispatcher inti.
+berdasarkan bentuk, bukan pewarisan. Saat runtime, CLI me-resolve setiap adapter
+dari sebuah registri statis — tabel `HARNESS_REGISTRY` di
+`src/apothem/lib/harness_registry_data.py`, yang dideklarasikan oleh
+`harness_registry.py` sebagai *otoritatif saat runtime* — sehingga sebuah
+checkout biasa memuat setiap adapter tanpa metadata entry point terpasang apa
+pun di `sys.path`. Tabel `[project.entry-points."apothem.harnesses"]` di
+`pyproject.toml` dan sapuan `discover_adapters()` pada sistem berkas adalah
+pemeriksaan paritas konformansi, bukan resolver runtime: sebuah pengujian
+menegaskan bahwa himpunan adapter yang ditemukan setara dengan registri statis,
+sehingga adapter yang benar-secara-konvensi tetapi tidak terdaftar muncul
+sebagai regresi cakupan alih-alih ter-resolve secara diam-diam. Oleh karena
+itu, menambahkan sebuah harness berarti mendaftarkannya di data registri (dan
+mencerminkannya di tabel entry point demi paritas pengemasan) — pengujian
+paritas gagal dengan nyaring jika salah satunya terlewat.
 
 ## Satu subpaket per adapter
 

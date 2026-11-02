@@ -49,8 +49,7 @@ convenções:
   trabalhadores precisam flui por um arquivo nomeado sob a árvore publicada (ou
   o diretório `.apothem/plans/` do projeto para o estado de trabalho em andamento,
   conforme a *Disciplina de planos*).
-{/* [Machine-seeded — pending review] */}
-  (uma árvore `.plans/` legada é migrada via `apothem migrate-workspace`.)
+  (Uma árvore `.plans/` legada é migrada via `apothem migrate-workspace`.)
 
 Quando a tarefa de um trabalhador é de múltiplas etapas, o rastro de trabalho do
 trabalhador é registrado em
@@ -87,13 +86,11 @@ diretório de configuração de harness ou em qualquer outra localização globa
 de planos. Os artefatos de planejamento — planos de coordenação entre múltiplos
 trabalhadores, estratégias de refatoração, diários de depuração, notas de
 exploração — vivem exclusivamente em `<project-root>/.apothem/plans/`
-{/* [Machine-seeded — pending review] */}
 (o diretório canônico de planos; uma árvore `<project-root>/.plans/` legada é
 migrada via `apothem migrate-workspace`).
 
 O diretório `<project-root>/.apothem/plans/` (e o `<project-root>/.plans/`
 legado) é **gitignorado** conforme o trecho
-{/* [Machine-seeded — pending review] */}
 canônico de `.gitignore` documentado em
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
 Os planos **NUNCA DEVEM** ser confirmados no histórico git de um projeto. Os
