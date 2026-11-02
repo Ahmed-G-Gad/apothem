@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -114,14 +114,14 @@ Devin에 나열된 이름이 없는 도구는 제외됩니다. 읽기 전용 도
   파일은 절대 건드리지 않습니다.
 - Devin은 공유 `.agents/agents/` 폴더도 읽는데, Apothem은 이 폴더에 절대 작성하지
   않습니다. 또한 Devin CLI는 `.claude/` 폴더에서 서브에이전트를 가져오는 기능을
-  경로를 명시하지 않은 채 문서화합니다. Apothem은 Devin Desktop의 Local 모드가 그
-  가져오기를 적용하는지 확인하지 않았습니다.
+  경로를 명시하지 않은 채 문서화합니다. Devin Local은 Devin CLI와 같은 방식으로
+  파일을 찾으므로, 그 가져오기는 그곳에서도 적용됩니다.
 - Apothem은 웹 도구용 `allowed-tools` 이름, `model`이 받아들이는 값, 빈
   `allowed-tools` 목록이 어떻게 읽히는지를 확인하지 않았습니다.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 훅
@@ -198,9 +198,9 @@ Code가 읽는 것과 같은 엔벨로프로 둡니다. 매처는 작성되지 �
 
 **Devin은 Claude Code가 작성한 훅도 실행합니다.** Devin은
 `read_config_from.claude`가 켜져 있는 동안 `~/.claude/settings.json`,
-`.claude/settings.json`, `.claude/settings.local.json`의 훅을 로드하며, 이것이
-Devin CLI의 기본값입니다. Desktop 페이지는 Devin Local이 이를 적용하는지 밝히지
-않습니다. Claude Code용으로도 Apothem을 설치했다면 두 훅 세트가 모두 실행될 수
+`.claude/settings.json`, `.claude/settings.local.json`의 훅을 로드하며,
+Devin Local은 Devin CLI와 같은 방식으로 파일을 찾으므로 이것이 기본값입니다.
+Claude Code용으로도 Apothem을 설치했다면 두 훅 세트가 모두 실행될 수
 있습니다. 여기의 `SessionStart` 명령과 그 Claude Code 사본은 Apothem의 훅 상태
 폴더에서 세션당 마커 하나를 공유하므로, 두 번째로 실행되는 쪽은 아무것도 출력하지
 않고 부트스트랩은 모델에 한 번만 도달합니다. Apothem은 Devin이 자신의 훅에
@@ -228,9 +228,8 @@ Apothem의 것으로 간주되지 않습니다. 주석이나 다른 JSON5 구문
 **훅 끄기.** Apothem 훅을 끄려면 Devin의 환경에 `APOTHEM_HOOKS_DISABLE=1`을
 설정하세요.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 프로필에서 네이티브 구성으로의 매핑
@@ -253,10 +252,10 @@ Windsurf의 현재 규칙 표면은 `.devin/rules/` 아래에서 프로젝트 �
 `.windsurfrules`는 의도적으로 작성하지 않습니다.
 
 Devin Desktop(Windsurf)은 `~/.agents/skills/`를 탐색하므로, 설치가 작성하는
-스킬은 추가 설정 없이 나타납니다. Claude Code 구성 가져오기가 켜져 있으면
-`~/.claude/skills/`에서 같은 이름을 나열할 수도 있습니다. Devin CLI 문서는 그
-가져오기를 기본적으로 켜진 것으로 하며, Desktop 페이지는 Local 모드가 이를
-적용하는지 밝히지 않습니다. Apothem은 Windsurf가 자신이 나열하지 않는 `SKILL.md`
+스킬은 추가 설정 없이 나타납니다. 기본적으로 켜져 있는 Claude Code 가져오기는
+프로젝트의 `.claude/skills/` 폴더에서만 스킬을 읽으므로, Claude Code용 Apothem
+설치가 `~/.claude/skills/`에 작성하는 스킬이 그곳에도 나타난다고 문서화되어 있지
+않습니다. Apothem은 Windsurf가 자신이 나열하지 않는 `SKILL.md`
 헤더 키를 어떻게 처리하는지 확인하지 않았습니다. 스킬은 `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint`, 그리고 `metadata`
 맵을 담습니다.

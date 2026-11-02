@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "محوّل إطار عمل Apothem لـ Windsurf (إصدار عام)."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -118,14 +118,14 @@ apothem install --harness windsurf --project /path/to/project
   ولا تُمَسّ الملفات ذات الأسماء الأخرى أبدًا.
 - يقرأ <bdi>Devin</bdi> أيضًا المجلّد المشترك <bdi>`.agents/agents/`</bdi>، الذي لا يكتبه
   <bdi>Apothem</bdi> أبدًا، وتوثّق <bdi>Devin CLI</bdi> استيراد العوامل الفرعية من مجلّد
-  <bdi>`.claude/`</bdi> دون تسمية المسار. ولم يتحقّق <bdi>Apothem</bdi> من أن الوضع
-  <bdi>Local</bdi> في <bdi>Devin Desktop</bdi> يطبّق ذلك الاستيراد.
+  <bdi>`.claude/`</bdi> دون تسمية المسار. ويعثر <bdi>Devin Local</bdi> على ملفاته بالطريقة
+  نفسها التي تتبعها <bdi>Devin CLI</bdi>، لذا ينطبق ذلك الاستيراد هناك أيضًا.
 - لم يتحقّق <bdi>Apothem</bdi> من أسماء <bdi>`allowed-tools`</bdi> لأدوات الويب، ولا من القيم
   التي يقبلها <bdi>`model`</bdi>، ولا من كيفية قراءة قائمة <bdi>`allowed-tools`</bdi> فارغة.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## الخطّافات
@@ -202,8 +202,8 @@ subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. *
 **يُشغِّل <bdi>Devin</bdi> أيضًا الخطّافات التي كتبها <bdi>Claude Code</bdi>.** يُحمِّل
 <bdi>Devin</bdi> الخطّافات في <bdi>`~/.claude/settings.json`</bdi> و<bdi>`.claude/settings.json`</bdi>
 و<bdi>`.claude/settings.local.json`</bdi> ما دام <bdi>`read_config_from.claude`</bdi> مفعّلًا، وهو
-الوضع الافتراضي في <bdi>Devin CLI</bdi>؛ ولا تقول صفحات <bdi>Desktop</bdi> ما إذا كان
-<bdi>Devin Local</bdi> يطبّقه. وإن كنت قد ثبّتّ <bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> أيضًا،
+مفعّل افتراضيًا، إذ يعثر <bdi>Devin Local</bdi> على ملفاته بالطريقة نفسها التي تتبعها
+<bdi>Devin CLI</bdi>. وإن كنت قد ثبّتّ <bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> أيضًا،
 فقد تعمل مجموعتا الخطّافات كلتاهما. ويتشارك أمر <bdi>`SessionStart`</bdi> هنا ونسخته في
 <bdi>Claude Code</bdi> علامةً واحدة لكل جلسة في مجلّد حالة الخطّافات الخاص بـ
 <bdi>Apothem</bdi>، لذا يصمت أيّهما يعمل ثانيًا ويصل التمهيد إلى النموذج مرة واحدة؛
@@ -232,9 +232,8 @@ subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. *
 **إيقاف الخطّافات.** اضبط <bdi>`APOTHEM_HOOKS_DISABLE=1`</bdi> في بيئة <bdi>Devin</bdi>
 لإسكات خطّافات <bdi>Apothem</bdi>.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
@@ -259,10 +258,10 @@ section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 تُكتَب صيغة الملف الواحد <bdi>`.windsurfrules`</bdi> عن قصد.
 
 يكتشف <bdi>Devin Desktop</bdi> (<bdi>Windsurf</bdi>) المجلّد <bdi>`~/.agents/skills/`</bdi>، لذا تظهر
-المهارات التي يكتبها التثبيت دون إعداد إضافي. ويمكنه أيضًا سرد الأسماء نفسها من
-<bdi>`~/.claude/skills/`</bdi> حين يكون استيراد إعداد <bdi>Claude Code</bdi> لديه مفعّلًا؛ وتجعل
-وثائق <bdi>Devin CLI</bdi> ذلك الاستيراد مفعّلًا افتراضيًا، ولا تقول صفحات <bdi>Desktop</bdi>
-ما إذا كان الوضع <bdi>Local</bdi> يطبّقه. ولم يتحقّق <bdi>Apothem</bdi> من كيفية تعامل
+المهارات التي يكتبها التثبيت دون إعداد إضافي. أما استيراده من <bdi>Claude Code</bdi>، المفعّل
+افتراضيًا، فيقرأ المهارات من مجلّد <bdi>`.claude/skills/`</bdi> في المشروع فقط، لذا ليس
+موثّقًا أن المهارات التي يكتبها تثبيت <bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi> في
+<bdi>`~/.claude/skills/`</bdi> تظهر هناك أيضًا. ولم يتحقّق <bdi>Apothem</bdi> من كيفية تعامل
 <bdi>Windsurf</bdi> مع مفتاح ترويسة في <bdi>`SKILL.md`</bdi> لا يسرده؛ وتحمل المهارات
 <bdi>`user-invocable`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>، و<bdi>`argument-hint`</bdi>،
 وخريطة <bdi>`metadata`</bdi>.
