@@ -225,12 +225,14 @@ def test_single_harness_plain_groups_verbose_expands(
     plain_proj = tmp_path / "plain"
     plain_proj.mkdir()
     plain = run(plain_proj)
-    # Cursor writes the shared ~/.agents/skills/, so every install also carries
-    # a note about that folder and one naming the folders it writes outside
-    # --project, and two notes about its hook file; the capability summary is the
-    # other one.
+    # Cursor writes the shared ~/.agents/skills/ and a project rules file that
+    # Windsurf also loads, so every install also carries a note about each, one
+    # naming the folders it writes outside --project, and two notes about its
+    # hook file; the capability summary is the other one.
     shared = [line for line in plain.splitlines() if "is shared:" in line]
-    assert len(shared) == 1
+    assert len(shared) == 2
+    assert any("~/.agents/skills/ is shared:" in line for line in shared)
+    assert any(".cursor/rules/apothem-rules.mdc is shared:" in line for line in shared)
     plain_notes = [
         line
         for line in plain.splitlines()
