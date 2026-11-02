@@ -2,7 +2,7 @@
 title: "依存関係ピン留めマニフェスト"
 description: "Python ランタイムの範囲、開発ツール、リリースツールのロックファイル、各ビルド面に対する承認済みのバージョン下限を網羅する依存関係宣言ポリシー。"
 machineTranslated: true
-sourceHash: "9d1cc24fb6245844"
+sourceHash: "e0f45350884dbc03"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,10 +19,12 @@ Apothem は、小さなランタイム依存関係のセットに加えて、よ
 
 | クラス | 宣言 | ロックポリシー |
 |---|---|---|
-| ランタイム Python 依存関係 | `pyproject.toml` 内の `[project.dependencies]` | 下限の範囲。コミットされる Python ランタイムロックはなし |
-| 開発 / セキュリティツール | `[project.optional-dependencies]` の extras | 下限の範囲。CI は現在一致するバージョンをインストール |
+| ランタイム Python 依存関係 | `pyproject.toml` 内の `[project.dependencies]` | ユーザー向けには下限の範囲。パッケージに Python ランタイムロックは同梱しない。CI はこれらの依存関係をハッシュロックしたクロージャをインストールする（CI の依存関係ロックを参照） |
+| 開発 / セキュリティツール | `[project.optional-dependencies]` の extras | 下限の範囲。ただし `ruff` と `mypy` は例外で、`dev` extra が CI の実行するバージョンに厳密にピン留めする（ruff については CI のツールロックを参照）。CI は dev extra をハッシュロックされたクロージャからインストールする（CI の依存関係ロックを参照） |
 | リリースツール | リリースワークフロー向けは `scripts/release/requirements-build-linux.txt`。ローカルビルド向けは `[project.optional-dependencies]` の `release` extra | リリースワークフロー向けにハッシュロック。リリースツールのクロージャから生成。`release` extra は下限の範囲 |
-| CI 専用ツール | `.github/workflows/*.yml` | ワークフロー専用の pip ツールは厳密なピン（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`、`pre-commit`、`ruff`）を使用 |
+| CI の pip | `scripts/ci/requirements-ci-pip.txt` | ハッシュロック。`pip==X.Y.Z` のピン 1 つに wheel と sdist のハッシュを付けたもので、pip をアップグレードするすべてのワークフローが `--require-hashes -r` でインストールする。Dependabot がアップグレードを提案してハッシュを書き換え、`scripts/dev/check_pip_pin_drift.py` がピンを pip 26.2 以降に保つ |
+| CI の依存関係ロック | `scripts/ci/requirements-ci-dev.txt`、`-runtime.txt`、`-test.txt`、`-prereqs.txt` | ハッシュロックされたユニバーサルなクロージャ。`uv pip compile` で `pyproject.toml` から（`-prereqs.txt` はエンジンのホスト前提条件から）コンパイルする。基準はロック日から 7 日間のクールダウンを差し引いた時点で、どちらも各ファイルに記録される。インストールは `--require-hashes -r` で行う（パッケージ自体は `--no-deps -e .`）。CI は `scripts/dev/refresh_ci_locks.py` が再生成するまでロックされたバージョンをテストし、`pip-audit.yml` は許容される最新バージョンとロックを毎週監査する。ロックが入力を満たさなくなると `tests/scripts/test_ci_locks_fresh.py` が失敗する |
+| CI のツールロック | `scripts/ci/requirements-ci-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt`、`-pre-commit.txt` | ワークフローが実行するツールごとに 1 つのハッシュロックされたクロージャ。同じスクリプトが `scripts/dev/ci_lock_table.py` の厳密な指定からコンパイルし、ロック日とクールダウンは依存関係ロックと共通で、`--require-hashes -r` でインストールする。ツールのバージョンを書くワークフローはない。`pre-commit` は Python 3.11 以降を必要とするため、そのロックも同様である。`pip-audit` のロックも 3.11 向けにコンパイルする。3.10 をサポートする最新の `filelock` に未修正のアドバイザリがあるためである。pip をピン留めするのは CI の pip のロックだけである |
 | ドキュメントサイト | `site/package.json` | `site/package-lock.json` をコミットし、`npm ci` が消費 |
 | VS Code パッケージャー | `tools/vsce/package.json` | `tools/vsce/package-lock.json` をコミット。リリースおよび公開ジョブは `npm ci --ignore-scripts` を実行 |
 | channel-smoke のハーネス CLI | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` をコミットし、`npm ci` が消費 |
@@ -33,19 +35,35 @@ Apothem は、小さなランタイム依存関係のセットに加えて、よ
 | 面 | 承認済みの状態 | 根拠 |
 |---|---|---|
 | ランタイム依存関係 | 現在の下限は `pyproject.toml` の `[project.dependencies]` にある | リリース前に承認された現在の安定下限。既知のランタイム CVE による阻害要因はなし |
-| 開発ツール | 現在の下限は `pyproject.toml` の `dev` extra にある | リリース前に承認された最新の安定下限 |
+| 開発ツール | 現在の下限は `pyproject.toml` の `dev` extra にある。`ruff` と `mypy` はそこで厳密にピン留めされている | リリース前に承認された最新の安定下限。ruff と mypy はフック、CI、コントリビューター向けにそれぞれ 1 つのバージョンにピン留めされ、mypy フックは列挙するライブラリを dev ロックのバージョンにピン留めする。これらのバージョンが食い違うと `tests/scripts/test_ci_tool_locks.py` が失敗する |
 | セキュリティツール | 現在の下限は `pyproject.toml` の `security` extra にある | リリース前に承認された現在のスキャナー下限 |
 | リリースツール | ハッシュロックされたクロージャは `scripts/release/requirements-build-linux.txt` にある | リリースワークフローは `--require-hashes` を付けてインストールする。ローカルのスクリプトは、変動する依存関係を黙ってインストールする代わりに、`build` がすでに存在することを要求する |
+| CI の pip | ハッシュロックされたピンは `scripts/ci/requirements-ci-pip.txt` にある | pip 26.2 以降で CVE-2026-13346 が修正される。ワークフローは `--require-hashes` を付けてインストールするため、ダウンロードは公開されたハッシュと照合される |
+| CI の依存関係ロック | ハッシュロックされたクロージャは `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` にある | ワークフローは `--require-hashes` を付けてインストールする。各ファイルはロック日、クールダウン、カットオフを記録し、鮮度テストが `pyproject.toml` との整合を保つ |
+| CI のツールロック | ハッシュロックされたクロージャは `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` にある | ワークフローは `--require-hashes` を付けてインストールし、ツールのバージョンを記載しない。指定は `scripts/dev/ci_lock_table.py` にあり、ロック日、クールダウン、カットオフは依存関係ロックと同じ |
 | ドキュメントツール | 現在の範囲は `site/package.json` にあり、厳密な解決は `site/package-lock.json` にある | ロックファイルの更新後、`npm outdated` は古くなったドキュメント依存関係を返さない |
 | GitHub Actions | 現在のリリースでは既存の SHA ピンを保持する。SLSA の再利用可能ワークフローは、文書化されたタグピンの例外のままであり、`release.yml` 内で `action-pinning-exempt:` コメントによって示される | 公開 CI の再実行はグリーンである。リリース面の変動を避けるため、アクションのメジャーバージョンの広範なアップグレードは、意図的に依存関係自動化の PR に委ねられている |
 | npm パッケージング | `publish-npm.yml` ワークフローは `v*.*.*` のタグのプッシュで実行され、`workflow_dispatch` がフォールバックとなる | 唯一の公開 npm パッケージは `@ahmed-g-gad/apothem`。公開は、`scripts/release/check-release-ready.sh` が通過した後に与えられる、オペレーターによる `release` 環境の承認を待つ |
 
 ## ロック
 
-Python のロックファイルは、コントリビューターがオンデマンドで生成します。
-Apothem のランタイムクロージャが小さいこと、CLI が複数の Python マイナーバージョンを
-サポートしていること、CI が意図的に最新の一致するツールバージョンで実行されることから、
-これらはコミットされません。
+コントリビューター自身の Python ロックファイルはオンデマンドで生成し、コミットしません。
+Apothem のランタイムクロージャは小さく、CLI は複数の Python マイナーバージョンを
+サポートしているためです。CI は例外で、`scripts/ci/` 内のハッシュロックされたファイルを
+インストールします。依存関係ロック 4 つ（`requirements-ci-dev.txt`、`-runtime.txt`、
+`-test.txt`、`-prereqs.txt`）と、ワークフローが実行するツールごとのロック 1 つずつ
+（`-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt`、`-pre-commit.txt`）
+です。`python scripts/dev/refresh_ci_locks.py` は 9 つすべてを、ロック日から
+Dependabot と同じ 7 日間のクールダウンを差し引いた時点でコンパイルします。そのため CI は、
+ロック日の時点で公開から 1 週間以上たったリリースをテストし、ファイルを更新すると
+テスト対象のリリースも新しくなります。各ファイルはロック日、クールダウン、その結果の
+カットオフを記録し、`--check` はそのカットオフを再現します。クールダウンより新しい
+緊急のセキュリティ修正には、`--cooldown-days 0` を付けた更新の実行か、
+`scripts/dev/ci_lock_table.py` でのそのパッケージ向けのクールダウン例外が必要です。
+この例外は、そのパッケージだけクールダウンを解除します。毎週の `pip-audit.yml` の実行は、
+`pyproject.toml` が許容する最新バージョンと 9 つのロックを監査し、OSV サービスに
+アドバイザリを問い合わせます。コントリビューターは引き続き `pip install -e ".[dev]"`
+でインストールします。
 
 ```sh
 # Astral uv:
@@ -66,8 +84,11 @@ pip freeze > requirements.dev.lock
 
 ## 根拠
 
-- **なぜ Python に範囲ピンか？** CLI は幅広い Python マトリクスをサポートしており、
-  CI はユーザーが遭遇する前に、現在のツールとの互換性の問題を明らかにすべきです。
+- **なぜ Python に範囲ピンか？** CLI は幅広い Python マトリクスをサポートしているため、
+  `pyproject.toml` は保守的な下限を保ちます。CI はそれらの範囲をハッシュロックした
+  クロージャをインストールし、メンテナーがそれを `scripts/dev/refresh_ci_locks.py` で
+  更新します（毎週を想定しています）。さらに毎週の `pip-audit.yml` の実行が許容される
+  最新バージョンを解決し、現在のツールとの問題を明らかにします。
 - **なぜコミットされる Node ロックか？** ウェブサイトはデプロイされる静的成果物です。
   ロックファイルは、その公開面に対して決定的な `npm ci` ビルドをもたらします。
 - **なぜ SHA ピンの Actions か？** タグは可変ですが、SHA は不変です。Dependabot は
@@ -76,11 +97,20 @@ pip freeze > requirements.dev.lock
 - **更新ボットが触れないもの。** Dependabot のバージョン更新
   （`.github/dependabot.yml`）は、GitHub Actions のピン、ウェブサイトの
   ロックファイル、vsce パッケージャーのロックファイル（`tools/vsce`）、channel smoke が
-  インストールするハーネス CLI のロックファイル（`tools/channel-smoke`）、および
-  pre-commit フックを対象とします。`pyproject.toml` のランタイム下限、ハッシュロックされた
+  インストールするハーネス CLI のロックファイル（`tools/channel-smoke`）、CI が
+  インストールするハッシュロックされた pip（`scripts/ci/requirements-ci-pip.txt`）、
+  および pre-commit フックを対象とします。`scripts/ci` 内のほかの 9 つのファイルは
+  `scripts/dev/refresh_ci_locks.py` で丸ごと再生成するクロージャで、どれも pip を
+  ピン留めしません。このフォルダーに対する Dependabot のバージョン更新は pip に限られます。
+  `pyproject.toml` のランタイム下限、ハッシュロックされた
   リリース要件、`src/apothem/_vendor/vendor.txt` のベンダリングされたクロージャ、
   そして `pyproject.toml` と歩調を合わせてピン留めされた pre-commit フックは手作業で
   更新します。単一のピンだけを上げると、それらが整合しているファイルが壊れるためです。
+  ruff と mypy のフックはそのうちの 2 つです。`tests/scripts/test_ci_tool_locks.py` は、
+  `pyproject.toml` の ruff の厳密なピン、フックの rev、ruff ロック、dev ロックが
+  同じバージョンになるまで、また mypy の厳密なピン、mypy フックの rev、そのフックが
+  列挙するライブラリが dev ロックと一致するまで失敗します。そのため、どちらかの
+  ツールに対する Dependabot のセキュリティプルリクエストは手作業で調整します。
   ウェブサイトの `@types/node` のメジャーバージョンは Node の下限（`engines` と
   `.nvmrc`、Node 22）に従うため、Dependabot はそのマイナーおよびパッチ更新のみを
   提案します。そのメジャーバージョンは下限と一緒に引き上げてください。

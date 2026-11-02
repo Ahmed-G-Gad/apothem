@@ -2,7 +2,7 @@
 title: "Manifiesto de fijación de dependencias"
 description: "Política de declaración de dependencias que abarca los rangos de tiempo de ejecución de Python, las herramientas de desarrollo, los archivos de bloqueo de las herramientas de lanzamiento y los pisos de versión ratificados para cada superficie de compilación."
 machineTranslated: true
-sourceHash: "9d1cc24fb6245844"
+sourceHash: "e0f45350884dbc03"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,10 +21,12 @@ comentarios de versión y se actualizan mediante Dependabot.
 
 | Clase | Declaración | Política de bloqueo |
 |---|---|---|
-| Dependencias de tiempo de ejecución de Python | `[project.dependencies]` en `pyproject.toml` | Rangos con límite inferior; sin bloqueo de tiempo de ejecución de Python versionado |
-| Herramientas de desarrollo / seguridad | extras de `[project.optional-dependencies]` | Rangos con límite inferior; CI instala las versiones coincidentes actuales |
+| Dependencias de tiempo de ejecución de Python | `[project.dependencies]` en `pyproject.toml` | Rangos con límite inferior para los usuarios; el paquete no incluye ningún bloqueo de tiempo de ejecución de Python. CI instala un cierre bloqueado por hash de estas dependencias (ver Bloqueos de dependencias de CI) |
+| Herramientas de desarrollo / seguridad | extras de `[project.optional-dependencies]` | Rangos con límite inferior, salvo `ruff` y `mypy`, que el extra `dev` fija exactamente en las versiones que ejecuta CI (para ruff, ver Bloqueos de herramientas de CI); CI instala el extra dev desde un cierre bloqueado por hash (ver Bloqueos de dependencias de CI) |
 | Herramientas de lanzamiento | `scripts/release/requirements-build-linux.txt` para los flujos de trabajo de lanzamiento; el extra `release` de `[project.optional-dependencies]` para las compilaciones locales | Bloqueado por hash para los flujos de trabajo de lanzamiento; generado a partir del cierre de las herramientas de lanzamiento. El extra `release` es un rango con límite inferior |
-| Herramientas solo de CI | `.github/workflows/*.yml` | Las herramientas pip exclusivas de los flujos de trabajo usan fijaciones exactas (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| pip de CI | `scripts/ci/requirements-ci-pip.txt` | Bloqueado por hash: una sola fijación `pip==X.Y.Z` con los hashes de su wheel y su sdist, que cada flujo de trabajo que actualiza pip instala con `--require-hashes -r`. Dependabot propone las actualizaciones y reescribe los hashes; `scripts/dev/check_pip_pin_drift.py` mantiene la fijación en pip 26.2 o posterior |
+| Bloqueos de dependencias de CI | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` y `-prereqs.txt` | Cierres universales bloqueados por hash, compilados con `uv pip compile` a partir de `pyproject.toml` (o, en el caso de `-prereqs.txt`, de los requisitos previos del host del motor) a una fecha de bloqueo menos un período de espera de 7 días, ambos registrados en cada archivo, e instalados con `--require-hashes -r` (el propio paquete con `--no-deps -e .`). CI prueba las versiones bloqueadas hasta que `scripts/dev/refresh_ci_locks.py` las regenera; `pip-audit.yml` audita cada semana las versiones permitidas más recientes y también los bloqueos. `tests/scripts/test_ci_locks_fresh.py` falla cuando un bloqueo ya no satisface sus entradas |
+| Bloqueos de herramientas de CI | `scripts/ci/requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` y `-pre-commit.txt` | Un cierre bloqueado por hash por cada herramienta que ejecutan los flujos de trabajo, compilado por el mismo script a partir de una especificación exacta en `scripts/dev/ci_lock_table.py`, con la misma fecha de bloqueo y el mismo período de espera, e instalado con `--require-hashes -r`. Ningún flujo de trabajo escribe una versión de herramienta. `pre-commit` necesita Python 3.11 o posterior, así que su bloqueo también, y el bloqueo de `pip-audit` se compila igualmente para 3.11 porque el `filelock` más reciente que admite 3.10 tiene avisos de seguridad sin corregir. Ningún bloqueo salvo el pip de CI fija pip |
 | Sitio de documentación | `site/package.json` | `site/package-lock.json` versionado y consumido por `npm ci` |
 | Empaquetador de VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` versionado; los trabajos de lanzamiento y publicación ejecutan `npm ci --ignore-scripts` |
 | CLI de entornos del channel smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` versionado y consumido por `npm ci` |
@@ -35,19 +37,39 @@ comentarios de versión y se actualizan mediante Dependabot.
 | Superficie | Estado ratificado | Justificación |
 |---|---|---|
 | Dependencias de tiempo de ejecución | Los límites inferiores actuales viven en `pyproject.toml` `[project.dependencies]` | Pisos estables actuales ratificados antes del lanzamiento; no hay ningún CVE de tiempo de ejecución conocido que lo bloquee |
-| Herramientas de desarrollo | Los límites inferiores actuales viven en el extra `dev` de `pyproject.toml` | Pisos estables más recientes ratificados antes del lanzamiento |
+| Herramientas de desarrollo | Los límites inferiores actuales viven en el extra `dev` de `pyproject.toml`; `ruff` y `mypy` son allí las fijaciones exactas | Pisos estables más recientes ratificados antes del lanzamiento; ruff y mypy se fijan cada uno en una sola versión para los hooks, CI y los colaboradores, el hook de mypy fija las bibliotecas que enumera en las versiones del bloqueo dev, y `tests/scripts/test_ci_tool_locks.py` falla cuando difieren |
 | Herramientas de seguridad | Los límites inferiores actuales viven en el extra `security` de `pyproject.toml` | Pisos de escáner actuales ratificados antes del lanzamiento |
 | Herramientas de lanzamiento | El cierre bloqueado por hash vive en `scripts/release/requirements-build-linux.txt` | El flujo de trabajo de lanzamiento instala con `--require-hashes`; los scripts locales exigen que `build` ya exista en lugar de instalar en silencio dependencias cambiantes |
+| pip de CI | La fijación bloqueada por hash vive en `scripts/ci/requirements-ci-pip.txt` | pip 26.2 o posterior corrige CVE-2026-13346; los flujos de trabajo lo instalan con `--require-hashes`, así que la descarga se comprueba contra su hash publicado |
+| Bloqueos de dependencias de CI | Los cierres bloqueados por hash viven en `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Los flujos de trabajo los instalan con `--require-hashes`; cada uno registra su fecha de bloqueo, su período de espera y su fecha de corte, y la prueba de vigencia los mantiene en sincronía con `pyproject.toml` |
+| Bloqueos de herramientas de CI | Los cierres bloqueados por hash viven en `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | Los flujos de trabajo los instalan con `--require-hashes` y no escriben ninguna versión de herramienta; las especificaciones viven en `scripts/dev/ci_lock_table.py`, y la fecha de bloqueo, el período de espera y la fecha de corte coinciden con los de los bloqueos de dependencias |
 | Herramientas de documentación | Los rangos actuales viven en `site/package.json`; la resolución exacta vive en `site/package-lock.json` | `npm outdated` no devuelve ninguna dependencia de documentación obsoleta tras actualizar el archivo de bloqueo |
 | GitHub Actions | Se conservan las fijaciones por SHA existentes para el lanzamiento actual; el flujo de trabajo reutilizable de SLSA sigue siendo la excepción documentada fijada por etiqueta, marcada con un comentario `action-pinning-exempt:` en `release.yml` | La reejecución de CI pública está en verde; las actualizaciones amplias de versión mayor de las actions se dejan intencionadamente a los pull requests de automatización de dependencias para evitar cambios innecesarios en la superficie de lanzamiento |
 | Empaquetado de npm | El flujo de trabajo `publish-npm.yml` se ejecuta con el push de la etiqueta `v*.*.*`, con `workflow_dispatch` como alternativa | El único paquete público de npm es `@ahmed-g-gad/apothem`; la publicación espera la aprobación del operador del entorno `release`, que se concede después de que `scripts/release/check-release-ready.sh` supere la verificación |
 
 ## Bloqueo
 
-Los archivos de bloqueo de Python se generan bajo demanda por el colaborador.
-No se versionan porque el cierre de tiempo de ejecución de Apothem es pequeño,
-la CLI admite múltiples versiones menores de Python y CI ejercita
-intencionadamente las versiones de herramientas coincidentes más recientes.
+Los archivos de bloqueo de Python propios de los colaboradores se generan bajo
+demanda y no se versionan: el cierre de tiempo de ejecución de Apothem es
+pequeño y la CLI admite múltiples versiones menores de Python. CI es la
+excepción. Instala los archivos bloqueados por hash de `scripts/ci/`: cuatro
+bloqueos de dependencias (`requirements-ci-dev.txt`, `-runtime.txt`,
+`-test.txt` y `-prereqs.txt`) y un bloqueo por cada herramienta que ejecutan
+los flujos de trabajo (`-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`,
+`-pip-licenses.txt` y `-pre-commit.txt`).
+`python scripts/dev/refresh_ci_locks.py` compila los nueve a una fecha de
+bloqueo menos un período de espera de 7 días que coincide con el de
+Dependabot, de modo que CI prueba las versiones que tenían al menos una semana
+en la fecha de bloqueo, y actualizar los archivos las hace avanzar. Cada
+archivo registra la fecha de bloqueo, el período de espera y la fecha de corte
+resultante, y `--check` reproduce esa fecha de corte. Una corrección de
+seguridad urgente más reciente que el período de espera necesita una
+actualización con `--cooldown-days 0`, o una excepción al período de espera
+para su paquete en `scripts/dev/ci_lock_table.py`, que elimina el período de
+espera solo para ese paquete. La ejecución semanal de `pip-audit.yml` audita
+las versiones más recientes que permite `pyproject.toml` además de los nueve
+bloqueos, y consulta al servicio OSV los avisos de seguridad. Los
+colaboradores siguen instalando con `pip install -e ".[dev]"`.
 
 ```sh
 # Astral uv:
@@ -69,8 +91,12 @@ Node reproducible.
 ## Justificación
 
 - **¿Por qué fijaciones por rango para Python?** La CLI admite una matriz de
-  Python amplia y CI debería revelar problemas de compatibilidad con las
-  herramientas actuales antes de que los usuarios los encuentren.
+  Python amplia, así que `pyproject.toml` mantiene pisos conservadores. CI
+  instala cierres bloqueados por hash de esos rangos, que el mantenedor
+  actualiza con `scripts/dev/refresh_ci_locks.py` (la cadencia prevista es
+  semanal), y la ejecución semanal de `pip-audit.yml` resuelve las versiones
+  permitidas más recientes para revelar problemas con las herramientas
+  actuales.
 - **¿Por qué un bloqueo de Node versionado?** El sitio web es un artefacto
   estático desplegado; el archivo de bloqueo da compilaciones `npm ci`
   deterministas para esa superficie pública.
@@ -82,12 +108,23 @@ Node reproducible.
   de Dependabot (`.github/dependabot.yml`) cubren las fijaciones de GitHub
   Actions, el archivo de bloqueo del sitio web, el archivo de bloqueo del
   empaquetador vsce (`tools/vsce`), el archivo de bloqueo de las CLI de entornos
-  que instala el channel smoke (`tools/channel-smoke`) y los hooks de
-  pre-commit. Los pisos de tiempo de ejecución en `pyproject.toml`, los
+  que instala el channel smoke (`tools/channel-smoke`), el pip bloqueado por
+  hash que instala CI (`scripts/ci/requirements-ci-pip.txt`) y los hooks de
+  pre-commit. Los otros nueve archivos de `scripts/ci` son cierres que
+  `scripts/dev/refresh_ci_locks.py` regenera completos; ninguno fija pip, y las
+  actualizaciones de versión de Dependabot para esa carpeta se limitan a pip.
+  Los pisos de tiempo de ejecución en `pyproject.toml`, los
   requisitos de lanzamiento bloqueados por hash, el cierre vendorizado en
   `src/apothem/_vendor/vendor.txt` y los hooks de pre-commit fijados en
   sincronía con `pyproject.toml` se mueven a mano, porque el incremento de una
-  sola fijación rompería los archivos con los que concuerdan.
+  sola fijación rompería los archivos con los que concuerdan. Los hooks de ruff
+  y mypy son dos de ellos: `tests/scripts/test_ci_tool_locks.py` falla hasta
+  que la fijación exacta de ruff en `pyproject.toml`, la rev del hook, el
+  bloqueo de ruff y el bloqueo dev lleven una misma versión, y hasta que la
+  fijación exacta de mypy, la rev del hook de mypy y las bibliotecas que ese
+  hook enumera coincidan con el bloqueo dev. Por eso, un pull request de
+  seguridad de Dependabot para cualquiera de las dos herramientas se adapta a
+  mano.
   La versión mayor de `@types/node` del sitio web sigue su piso de Node
   (`engines` y `.nvmrc`, Node 22), por lo que Dependabot solo propone sus
   actualizaciones menores y de parche; sube esa versión mayor junto con el piso.

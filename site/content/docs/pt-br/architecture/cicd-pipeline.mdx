@@ -2,7 +2,7 @@
 title: "Diagrama do pipeline de CI/CD"
 description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada lançamento."
 machineTranslated: true
-sourceHash: "954db6336e032a1d"
+sourceHash: "7e2fefad4781e0ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,9 +74,9 @@ flowchart LR
   Python e um conjunto curado de regras; o mypy impõe disciplina de tipos no
   modo strict; o validador de frontmatter controla a conformidade dos artefatos
   com o schema para regras, skills, trabalhadores delegados e comandos. O
-  markdownlint não faz parte desta faixa: ele roda apenas como hook de
-  pre-commit, e o CI não o executa (consulte [Convenções de
-  Markdown](/docs/reference/markdown-conventions)).
+  markdownlint não faz parte desta faixa: seu hook de pre-commit roda no CI
+  pelo fluxo de trabalho Markdown Lint quando arquivos Markdown mudam
+  (consulte [Convenções de Markdown](/docs/reference/markdown-conventions)).
 - **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra
   a matriz completa de eventos; `validate_ecosystem.py` é o principal portão
   estrutural para a consistência entre artefatos; `chaos_pass.py` roda no job de
