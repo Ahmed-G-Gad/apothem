@@ -68,7 +68,7 @@ CI runs the equivalent commands directly (Ruff, mypy, pytest, the ecosystem swee
 Pre-commit installation is part of the **One-time setup** above (the `pre-commit install` line). With the hooks installed, every `git commit` runs the ratified hook set from `.pre-commit-config.yaml`:
 
 - **Generic hygiene** — `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-json`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `mixed-line-ending` (normalizes to LF, except the CRLF files listed under [Line endings](#line-endings)).
-- **Python** — `ruff` (lint, `--fix`) and `ruff-format`, then `mypy`.
+- **Python** — `ruff` (lint, `--fix`) and `ruff-format`, then `mypy`. The hooks run the same ruff and mypy versions as `pip install -e ".[dev]"` and CI, and the mypy hook pins the dev lock's versions of the libraries it lists: the exact pins in `pyproject.toml`, the hook revs and the CI locks move together (see [Bumping ruff](scripts/ci/README.md#bumping-ruff) and [Bumping mypy](scripts/ci/README.md#bumping-mypy)).
 - **Markdown / YAML** — `markdownlint` and `yamllint`.
 - **Secrets** — `gitleaks`.
 - **Commit message** — `conventional-pre-commit` (commit-msg stage, enforcing Conventional Commits).

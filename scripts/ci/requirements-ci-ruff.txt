@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: MIT
+
+# Hash-locked requirements for CI: ruff, the linter and formatter, at the exact
+# version of the dev extra.
+# Installed by conformity.yml (conformity-fixture-sweep). Install command:
+#   python -m pip install --require-hashes -r scripts/ci/requirements-ci-ruff.txt
+#
+# ruff is pinned exactly in five places that must agree: the dev extra of
+# pyproject.toml, the ruff-pre-commit rev in .pre-commit-config.yaml, the spec
+# in scripts/dev/ci_lock_table.py, the dev lock and this lock;
+# tests/scripts/test_ci_tool_locks.py fails when they differ. To move ruff,
+# change the first three together, then refresh every lock.
+#
+# One universal lock for Python 3.10 and later on every platform: a line that
+# carries an environment marker applies only where the marker is true. Every
+# package carries the hashes of all its files, wheels and sdist, so an
+# interpreter without a wheel yet (the advisory pre-release cell) builds from
+# the hashed sdist; pip prefers a wheel wherever one exists. pip checks hashes
+# only when it downloads: a runner that already has a version reports
+# "Requirement already satisfied" and verifies nothing.
+#
+# The lock holds only files uploaded before the cutoff below, the lock date
+# minus the cooldown, so a release younger than the cooldown is not installed
+# until a later refresh. Only requirements-ci-pip.txt pins pip.
+#
+# Do not edit by hand and do not bump a single pin: every lock in this folder is
+# a closure, regenerated whole from the table in scripts/dev/ci_lock_table.py.
+# To refresh them all:
+#   python scripts/dev/refresh_ci_locks.py
+# A security fix younger than the cooldown needs --cooldown-days 0, which takes
+# files uploaded before 00:00 UTC of the lock date, or, for a fix uploaded on
+# that day, a cooldown exception for its package in the table.
+# To verify a committed lock against its recorded dates (needs uv and network):
+#   python scripts/dev/refresh_ci_locks.py --check
+# tests/scripts/test_ci_locks_fresh.py fails when a lock drifts from its inputs.
+#
+# Locked as of: 2026-10-29T00:00:00Z
+# Cooldown: 7 days
+# Cutoff: 2026-10-22T00:00:00Z
+# Compiled with: uv 0.11.14
+ruff==0.17.1 \
+    --hash=sha256:056c5d5fa0ac790051ae165d7035c7bf956d02de2db557f2e9b31d877a505fca \
+    --hash=sha256:1796c41eafec66f4635125dd1e074a7aa27b8d20c187d484360acf11d247fc4a \
+    --hash=sha256:1de0030a8aa78c65c5fecb84b2e5c390ac684c0452875a02afc7c083d49a496a \
+    --hash=sha256:29b454f18ca3eeaf37fbf140841dcf27d36109e29dee9aae8acecb68c26c6f74 \
+    --hash=sha256:42400b9a6ff8515ff27796f07f92e0195be011c86e81e381606f58ea5502fef4 \
+    --hash=sha256:4c0d6cb5f8fbac77eec9af49f4fc0eaf856b05545e372b0694d24b4e76b1c640 \
+    --hash=sha256:5bb796c5112e9fb9527f2ef2faa0a130d6312d19de92bcfaddd70dbb2d41020f \
+    --hash=sha256:5df76f16580fab58d0f6c98a3ac254a4abceb7b2489b8b678335869cff77b3d7 \
+    --hash=sha256:684154861a819bf1f433669d2a0ce9c3e54677c65b8ebb866cc2a7ec86345785 \
+    --hash=sha256:78beced4a3c94dfedbee4b999b95b6a27b35820fdc0afbacc6d37a8da26c1cd1 \
+    --hash=sha256:7feefc63921202894f0e158b0e32f45a5950d70a7fb693ccb9264816c25b1c05 \
+    --hash=sha256:80e53b0e5faa3c5667f035daaa032893ae42b7cfe708c886d39ed131e54688ab \
+    --hash=sha256:872e03dd231744d6c5ec5c8af6be52b71323fc6ee096e4c8b34d9f844ee3b978 \
+    --hash=sha256:8eadb09a788010be29c895418bdfa513e4e1c65e64b94e5b19e4cd381f6cc7fb \
+    --hash=sha256:8f9aa5b5bd5fa1937803ea609c8f153b8de39bf3e0e149897ae34b0c5b52f467 \
+    --hash=sha256:a6ef98e51de8ef38082f90653ceeb84944bd7673783eea13e1647c5b9b064189 \
+    --hash=sha256:bd8f5a55b10f371642eacd0e8665a42a8b97da15c9a7187c79e697b77b5e0ce4 \
+    --hash=sha256:ce05e6f3973611d9550a600e04bb531061e368baba31610eb57c1509a8f21a0a

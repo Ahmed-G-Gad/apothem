@@ -73,8 +73,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   each week and now audits the locks too, `check_pip_pin_drift.py` fails on
   any other workflow `pip install` that Scorecard counts as unpinned, and
   Dependabot's version updates for `scripts/ci` are limited to the pip lock.
-  The single-tool pins (`ruff`, `bandit`, `pip-audit`, `pip-licenses`,
-  `pre-commit`) are unchanged.
+- **The CI tools install from hash-locked files.** `ruff`, `bandit`,
+  `pip-audit`, `pip-licenses` and `pre-commit` no longer install as exact
+  version pins. Each installs with `--require-hashes` from its own file in
+  `scripts/ci/` (`requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`,
+  `-pip-licenses.txt` and `-pre-commit.txt`), so every download is checked
+  against its published hash and OpenSSF Scorecard counts the installs as
+  pinned; only the SLSA generator's release tag and the evals workflow's
+  Claude Code CLI install keep Pinned-Dependencies below 10. The tool versions
+  are written once, in `scripts/dev/ci_lock_table.py`, and
+  `check_pip_pin_drift.py` now fails on any unhashed tool install. The
+  pip-audit lock leaves pip out, and `refresh_ci_locks.py` now excludes pip
+  from every lock, because a second pip pin would replace the one in
+  `requirements-ci-pip.txt` that Dependabot maintains. The pre-commit lock needs
+  Python 3.11, which `markdown-lint.yml` already uses. The pip-audit lock is
+  compiled for Python 3.11 too: the newest `filelock` that supports 3.10 has
+  published advisories that only a release for 3.11 or later fixes, and
+  Dependency review and Scorecard read a lock line whatever its environment
+  marker says.
+- **`pip-audit.yml` audits the new locks with OSV, on Python 3.12.** The weekly
+  run, and any pull request that touches a lock, audits the nine locks beside
+  the pip lock. Every audit in the workflow now asks the OSV service
+  (`pip-audit -s osv`) instead of pip-audit's default PyPI feed, which lists an
+  advisory later than GitHub does: on 2026-10-29 a high advisory against
+  `virtualenv` 21.14.12, published on 2026-10-23, was in OSV and not in that
+  feed. The audits run on one interpreter, so the lines that apply only below
+  Python 3.11 are no longer audited by `pip-audit.yml`; Dependabot alerts,
+  Dependency review and Scorecard still read them.
+- **ruff and mypy each have one version.** ruff is pinned to 0.17.1 where
+  `pyproject.toml` named a floor, and the `ruff-pre-commit` hook, the ruff lock
+  and the dev lock carry the same version. mypy is pinned to 2.4.0, the version
+  in the dev lock, and the mypy pre-commit hook moves from 2.1.0 to it. The hook
+  also pins the dev lock's versions of click, rich, PyYAML, jsonschema and their
+  type stubs, and no longer passes `--ignore-missing-imports`, so it runs mypy
+  with the same settings as CI. `tests/scripts/test_ci_tool_locks.py` fails
+  when any of these differ, so a Dependabot security pull request for either
+  tool is adapted by hand. The tree needs no source change at either version.
+  The `ruff-format` pre-commit hook now also formats Markdown files, because
+  ruff 0.17 formats the Python code blocks in them and CI's
+  `ruff format --check .` checks them.
+- **The CI locks wait a week.** All nine locks now wait out a seven-day
+  cooldown that matches Dependabot's: `refresh_ci_locks.py` locks the files
+  uploaded before the lock date less seven days, `--cooldown-days N` changes
+  that, and `--cooldown-days 0` locks every file uploaded before 00:00 UTC of
+  the lock date, for an urgent security fix. Dependabot's cooldown does not
+  apply to its security updates, so a row of `scripts/dev/ci_lock_table.py` can
+  lift it for one package with `cooldown_exceptions`: the pre-commit lock takes
+  `virtualenv` 21.14.13, which fixes GHSA-cx6f-vjhg-g3cc (high) but was uploaded
+  after the cutoff. The refresh refuses an exception once the cutoff has
+  reached its timestamp. Each lock records its lock date, cooldown, cutoff and
+  exceptions, and `--check` reproduces them. The locks are at lock date
+  2026-10-29 with cutoff 2026-10-22.
 
 ### Fixed
 

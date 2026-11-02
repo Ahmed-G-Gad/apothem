@@ -19,11 +19,11 @@ version comments and are bumped by Dependabot.
 | Class | Declaration | Lock policy |
 |---|---|---|
 | Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges for users; no Python runtime lock ships with the package. CI installs a hash-locked closure of them (see CI dependency locks) |
-| Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs the dev extra from a hash-locked closure (see CI dependency locks) |
+| Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges, except `ruff` and `mypy`, which the `dev` extra pins exactly to the versions CI runs (see CI tool locks for ruff); CI installs the dev extra from a hash-locked closure (see CI dependency locks) |
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
 | CI pip | `scripts/ci/requirements-ci-pip.txt` | Hash-locked: one `pip==X.Y.Z` pin with the hashes of its wheel and sdist, installed with `--require-hashes -r` by every workflow that upgrades pip. Dependabot proposes the upgrades and rewrites the hashes; `scripts/dev/check_pip_pin_drift.py` holds the pin at pip 26.2 or later |
-| CI dependency locks | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` and `-prereqs.txt` | Hash-locked universal closures compiled with `uv pip compile` from `pyproject.toml` as of a lock date recorded in each file, installed with `--require-hashes -r` (the package itself with `--no-deps -e .`). CI tests the locked versions until `scripts/dev/refresh_ci_locks.py` regenerates them; `pip-audit.yml` audits the newest allowed versions weekly and audits the locks. `tests/scripts/test_ci_locks_fresh.py` fails when a lock no longer satisfies `pyproject.toml` |
-| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| CI dependency locks | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` and `-prereqs.txt` | Hash-locked universal closures compiled with `uv pip compile` from `pyproject.toml` (or, for `-prereqs.txt`, the engine's host prerequisites) as of a lock date, less a 7-day cooldown, recorded in each file, installed with `--require-hashes -r` (the package itself with `--no-deps -e .`). CI tests the locked versions until `scripts/dev/refresh_ci_locks.py` regenerates them; `pip-audit.yml` audits the newest allowed versions weekly and audits the locks. `tests/scripts/test_ci_locks_fresh.py` fails when a lock no longer satisfies its inputs |
+| CI tool locks | `scripts/ci/requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` and `-pre-commit.txt` | One hash-locked closure per tool the workflows run, compiled by the same script from an exact spec in `scripts/dev/ci_lock_table.py`, with the same lock date and cooldown, and installed with `--require-hashes -r`. No workflow spells a tool version. `pre-commit` needs Python 3.11 or later, so its lock does too, and the `pip-audit` lock is compiled for 3.11 as well because the newest `filelock` that supports 3.10 has unfixed advisories. No lock but the CI pip pins pip |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
 | VS Code packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
 | Channel-smoke harness CLIs | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` committed and consumed by `npm ci` |
@@ -34,11 +34,12 @@ version comments and are bumped by Dependabot.
 | Surface | Ratified state | Rationale |
 |---|---|---|
 | Runtime deps | Current lower bounds live in `pyproject.toml` `[project.dependencies]` | Current stable floors ratified before release; no known runtime CVE blocker |
-| Dev tooling | Current lower bounds live in `pyproject.toml` `dev` extra | Latest stable floors ratified before release |
+| Dev tooling | Current lower bounds live in `pyproject.toml` `dev` extra; `ruff` and `mypy` are the exact pins there | Latest stable floors ratified before release; ruff and mypy are each pinned to one version for the hooks, CI and contributors, the mypy hook pins the dev lock's versions of the libraries it lists, and `tests/scripts/test_ci_tool_locks.py` fails when they differ |
 | Security tooling | Current lower bounds live in `pyproject.toml` `security` extra | Current scanner floors ratified before release |
 | Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
 | CI pip | Hash-locked pin lives in `scripts/ci/requirements-ci-pip.txt` | pip 26.2 or later closes CVE-2026-13346; workflows install it with `--require-hashes`, so the download is checked against its published hash |
-| CI dependency locks | Hash-locked closures live in `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Workflows install them with `--require-hashes`; each records its lock date, and the freshness test keeps them in step with `pyproject.toml` |
+| CI dependency locks | Hash-locked closures live in `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Workflows install them with `--require-hashes`; each records its lock date, cooldown and cutoff, and the freshness test keeps them in step with `pyproject.toml` |
+| CI tool locks | Hash-locked closures live in `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | Workflows install them with `--require-hashes` and carry no tool version; the specs live in `scripts/dev/ci_lock_table.py`, and the lock date, cooldown and cutoff match the dependency locks |
 | Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
 | GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception, marked with an `action-pinning-exempt:` comment in `release.yml` | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
 | npm packaging | `publish-npm.yml` workflow runs on the `v*.*.*` tag push, with `workflow_dispatch` as the fallback | The single public npm package is `@ahmed-g-gad/apothem`; publication waits for the operator's approval of the `release` environment, given after `scripts/release/check-release-ready.sh` passes |
@@ -48,11 +49,19 @@ version comments and are bumped by Dependabot.
 Contributors' own Python lock files are generated on demand and are not
 committed: Apothem's runtime closure is small and the CLI supports multiple
 Python minor versions. CI is the exception. It installs the hash-locked files
-in `scripts/ci/` (`requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` and
-`-prereqs.txt`), which `python scripts/dev/refresh_ci_locks.py` compiles from
-`pyproject.toml` as of a lock date, so CI tests the versions locked on that
-date and refreshing the files moves them forward. The weekly `pip-audit.yml`
-run audits the newest versions `pyproject.toml` allows as well as the locks.
+in `scripts/ci/`: four dependency locks (`requirements-ci-dev.txt`,
+`-runtime.txt`, `-test.txt` and `-prereqs.txt`) and one lock per tool the
+workflows run (`-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt`
+and `-pre-commit.txt`). `python scripts/dev/refresh_ci_locks.py` compiles all
+nine as of a lock date, less a 7-day cooldown that matches Dependabot's, so CI
+tests the releases that were at least a week old on the lock date and
+refreshing the files moves them forward. Each file records the lock date, the
+cooldown and the resulting cutoff, and `--check` reproduces the cutoff. An
+urgent security fix that is younger than the cooldown needs a refresh run with
+`--cooldown-days 0`, or a cooldown exception for its package in
+`scripts/dev/ci_lock_table.py`, which lifts the cooldown for that package alone.
+The weekly `pip-audit.yml` run audits the newest versions `pyproject.toml`
+allows as well as the nine locks, asking the OSV service for advisories.
 Contributors keep installing with `pip install -e ".[dev]"`.
 
 ```sh
@@ -89,12 +98,17 @@ The website is different: `site/package-lock.json` is committed and CI uses
   lockfile, the vsce packager lockfile (`tools/vsce`), the harness-CLI
   lockfile the channel smoke installs (`tools/channel-smoke`), the hash-locked
   pip that CI installs (`scripts/ci/requirements-ci-pip.txt`) and the pre-commit
-  hooks. The other four files in `scripts/ci` are closures regenerated whole
-  with `scripts/dev/refresh_ci_locks.py`, and Dependabot's version updates for
-  that folder are limited to pip.
+  hooks. The other nine files in `scripts/ci` are closures regenerated whole
+  with `scripts/dev/refresh_ci_locks.py`, none of them pins pip, and
+  Dependabot's version updates for that folder are limited to pip.
   The runtime floors in `pyproject.toml`, the hash-locked release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
   and the pre-commit hooks pinned in lockstep with `pyproject.toml` move by
-  hand, because a single-pin bump would break the files they agree with.
+  hand, because a single-pin bump would break the files they agree with. The
+  ruff and mypy hooks are two of them: `tests/scripts/test_ci_tool_locks.py`
+  fails until the exact ruff pin in `pyproject.toml`, the hook rev, the ruff
+  lock and the dev lock carry one version, and until the exact mypy pin, the
+  mypy hook rev and the libraries that hook lists match the dev lock, so a
+  Dependabot security pull request for either tool is adapted by hand.
   The website's `@types/node` major follows its Node floor (`engines` and
   `.nvmrc`, Node 22), so Dependabot proposes only its minor and patch updates;
   raise that major together with the floor.
