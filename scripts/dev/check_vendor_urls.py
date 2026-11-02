@@ -79,8 +79,10 @@ _TEMPORARY_DNS_ERRORS: Final[frozenset[int]] = frozenset(
     code for code in (getattr(socket, "EAI_AGAIN", None),) if code is not None
 )
 # Addresses no server can hold. RFC 6890 marks 0.0.0.0/8 as never valid as a
-# destination, and RFC 4291 the IPv6 unspecified address. A request to one
-# of them reaches no server; on Linux it waits out its timeout every time.
+# destination, and RFC 4291 the IPv6 unspecified address. On Linux a request
+# to 0.0.0.1 through 0.255.255.255 waits out its timeout, while one to 0.0.0.0
+# or :: goes to this machine itself, where it is refused or answered by a
+# local service. Either way no vendor server answers.
 _NO_SERVER_NETWORKS: Final[tuple[ipaddress.IPv4Network, ipaddress.IPv6Network]] = (
     ipaddress.IPv4Network("0.0.0.0/8"),
     ipaddress.IPv6Network("::/128"),
@@ -257,7 +259,7 @@ def fetch(url: str, *, attempts: int = 3, timeout: float = 30.0) -> FetchResult:
     host = parts.hostname or ""
     unroutable = _unroutable_addresses(host)
     if unroutable:
-        # No attempt could reach a server, so send no request.
+        # No attempt could reach the vendor's server, so send no request.
         return FetchResult(
             None,
             None,
