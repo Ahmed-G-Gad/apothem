@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptateur d'environnement Apothem pour Windsurf (GA)."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -126,14 +126,14 @@ qui l'a lancé. Elle n'écrit pas non plus de `max-nesting` ni aucune des clés
   place. Les fichiers portant d'autres noms ne sont jamais touchés.
 - Devin lit aussi le dossier partagé `.agents/agents/`, qu'Apothem n'écrit
   jamais, et la CLI Devin documente une importation de subagents depuis un
-  dossier `.claude/` sans en nommer le chemin. Apothem n'a pas confirmé que le
-  mode Local de Devin Desktop applique cette importation.
+  dossier `.claude/` sans en nommer le chemin. Devin Local trouve ses fichiers
+  de la même façon que la CLI Devin, donc cette importation s'y applique aussi.
 - Apothem n'a pas confirmé les noms `allowed-tools` des outils web, les valeurs
   qu'accepte `model`, ni la façon dont une liste `allowed-tools` vide est lue.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Hooks
@@ -219,8 +219,8 @@ expression régulière, un matcher omis correspond à tous les outils, et
 **Devin exécute aussi les hooks écrits par Claude Code.** Devin charge les hooks
 de `~/.claude/settings.json`, `.claude/settings.json` et
 `.claude/settings.local.json` tant que `read_config_from.claude` est activé, ce
-qui est sa valeur par défaut pour la CLI Devin ; les pages Desktop ne disent pas
-si Devin Local l'applique. Si vous avez aussi installé Apothem pour Claude Code,
+qui est sa valeur par défaut : Devin Local trouve ses fichiers de la même façon
+que la CLI Devin. Si vous avez aussi installé Apothem pour Claude Code,
 les deux ensembles de hooks peuvent s'exécuter. La commande `SessionStart` d'ici
 et sa copie Claude Code partagent un seul marqueur par session dans le dossier
 d'état des hooks d'Apothem ; celle qui s'exécute en second reste donc silencieuse
@@ -253,9 +253,8 @@ commentaires, ou ajoutez vous-même les deux entrées.
 **Désactiver les hooks.** Définissez `APOTHEM_HOOKS_DISABLE=1` dans
 l'environnement de Devin pour rendre les hooks Apothem silencieux.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Correspondance entre le profil et la configuration native
@@ -280,11 +279,11 @@ pas plus que le fichier de hooks de Cascade ni la configuration Devin partagée.
 La forme à fichier unique `.windsurfrules` n'est volontairement pas écrite.
 
 Devin Desktop (Windsurf) découvre `~/.agents/skills/`, de sorte que les skills
-qu'écrit l'installation apparaissent sans configuration supplémentaire. Il peut
-aussi lister les mêmes noms depuis `~/.claude/skills/` lorsque son importation de
-la configuration Claude Code est activée ; la documentation de la CLI Devin
-active cette importation par défaut, et les pages Desktop ne disent pas si le
-mode Local l'applique. Apothem n'a pas confirmé comment Windsurf traite une clé
+qu'écrit l'installation apparaissent sans configuration supplémentaire. Son
+importation de Claude Code, activée par défaut, ne lit les skills que dans le
+dossier `.claude/skills/` du projet ; il n'est donc pas documenté que les skills
+qu'une installation d'Apothem pour Claude Code écrit dans `~/.claude/skills/` y
+apparaissent aussi. Apothem n'a pas confirmé comment Windsurf traite une clé
 d'en-tête de `SKILL.md` qu'il ne liste pas ; les skills portent
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 et une table `metadata`.

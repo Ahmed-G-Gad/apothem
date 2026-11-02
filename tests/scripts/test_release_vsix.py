@@ -318,6 +318,10 @@ def test_the_vsce_version_guard_accepts_only_4_1_or_later(
     result = subprocess.run(
         [node, "-e", match[1], version],
         capture_output=True,
+        # The comparison reads no input. Without this, node inherits the test
+        # worker's stdin, the pipe pytest-xdist reads its commands from, and on
+        # Windows CI it stalled past the timeout.
+        stdin=subprocess.DEVNULL,
         timeout=60,
         check=False,
     )

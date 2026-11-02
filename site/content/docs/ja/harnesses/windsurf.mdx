@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,12 +83,12 @@ Devin はサブエージェントを自身のデフォルトのサブエージ�
 - カスタムサブエージェントは実験的です。Devin はその形式とオプションを変更される可能性があるものとしており、Devin Desktop には Devin Settings に Subagents (Preview) スイッチがあります（Devin CLI の設定 `subagents_enabled` はデフォルトでオンです）。
 - サブエージェントファイルは通常のプロジェクトファイルです。プロジェクトと一緒にコミットするか、`.devin/agents/` を `.gitignore` に記載してください。Apothem はあなたの代わりに選びません。
 - Apothem のヘルパーの名前を持つあなたのファイルは、`~/.apothem/backups/` 配下に保存されてから置き換えられます。アンインストールはそれを元に戻しません。他の名前のファイルには決して触れません。
-- Devin は共有の `.agents/agents/` フォルダーも読みますが、Apothem はそこに決して書き込みません。また Devin CLI は、`.claude/` フォルダーからのサブエージェントのインポートを、パスを挙げずに文書化しています。Devin Desktop の Local モードがそのインポートを適用するかどうかを、Apothem は確認していません。
+- Devin は共有の `.agents/agents/` フォルダーも読みますが、Apothem はそこに決して書き込みません。また Devin CLI は、`.claude/` フォルダーからのサブエージェントのインポートを、パスを挙げずに文書化しています。Devin Local は Devin CLI と同じ方法でファイルを見つけるため、そのインポートはそこでも適用されます。
 - Apothem は、Web ツール用の `allowed-tools` の名前、`model` が受け付ける値、空の `allowed-tools` 一覧がどう読まれるかを確認していません。
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## フック
@@ -142,7 +142,7 @@ Devin は自身のローカル設定ファイルを（`.git/info/exclude` を通
 - フックが読み込まれたかどうかを確認するには、Devin Local の Customizations にある Hooks タブを開くか、Devin CLI で `/hooks` を実行します。どちらも各フックをそのソースファイルとともに一覧表示します。
 - Devin のドキュメントは、Windows でフックコマンドに使うシェルを挙げていません。コマンドは `sh` のクォートを使っており、PowerShell は呼び出し演算子なしではこれを解析しません。Windows で Devin Local が何を実行するかを Apothem は確認していません。そこでフックが読み込まれない場合は、issue でお知らせください。
 
-**Devin は Claude Code が書き込んだフックも実行します。** Devin は、`read_config_from.claude` がオンの間、`~/.claude/settings.json`、`.claude/settings.json`、`.claude/settings.local.json` 内のフックを読み込みます。これは Devin CLI でのデフォルトであり、Desktop のページは Devin Local がこれを適用するかどうかを述べていません。
+**Devin は Claude Code が書き込んだフックも実行します。** Devin は、`read_config_from.claude` がオンの間、`~/.claude/settings.json`、`.claude/settings.json`、`.claude/settings.local.json` 内のフックを読み込みます。Devin Local は Devin CLI と同じ方法でファイルを見つけるため、この設定はデフォルトでオンです。
 Claude Code 向けにも Apothem をインストールした場合、両方のフックのセットが実行される可能性があります。
 ここの `SessionStart` コマンドと、その Claude Code 側のコピーは、Apothem のフック状態フォルダー内でセッションごとに 1 つのマーカーを共有するため、2 番目に実行される方は何も出力せず、ブートストラップはモデルに 1 回だけ届きます。Apothem は、Devin がフックのために設定する `DEVIN_PROJECT_DIR` 変数から Devin を見分けます。
 マーカーの有効期間は 10 秒なので、同じセッションの後の開始でも配信されます。
@@ -157,9 +157,8 @@ Claude Code 向けにも Apothem をインストールした場合、両方の�
 
 **フックを無効にする。** Devin の環境で `APOTHEM_HOOKS_DISABLE=1` を設定すると、Apothem のフックを沈黙させます。
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## プロファイルからネイティブ設定へのマッピング
@@ -177,7 +176,7 @@ Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクト
 単一ファイル形式の `.windsurfrules` は意図的に書き込まれません。
 
 Devin Desktop（Windsurf）は `~/.agents/skills/` を検出するため、インストールが書き込むスキルは追加の設定なしで表示されます。
-Claude Code の設定インポートがオンの場合は、`~/.claude/skills/` からも同じ名前を一覧表示することがあります。Devin CLI のドキュメントではそのインポートはデフォルトでオンとされており、Desktop のページは Local モードがそれを適用するかどうかを述べていません。
+デフォルトでオンになっている Claude Code のインポートは、プロジェクトの `.claude/skills/` フォルダーからのみスキルを読み込むため、Claude Code 向けの Apothem のインストールが `~/.claude/skills/` に書き込むスキルがそこにも表示されるとは文書化されていません。
 記載のない `SKILL.md` のヘッダーキーを Windsurf がどう扱うかを、Apothem は確認していません。スキルは `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、および `metadata` マップを持ちます。
 
 ## 検証

@@ -106,11 +106,12 @@ co-installer puts Apothem content in front of every reader.
 | `~/.claude/skills/` | Claude Code | none | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | none | Cursor |
 | `~/.codex/agents/` | Codex | none | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | none | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | none | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | none | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | none | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | none | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | none | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | none | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` and `~/.config/apothem/templates/` hold the files
 Apothem's own skills and instruction files cite. No other tool loads them, so
@@ -119,15 +120,29 @@ write a skills folder of their own (`~/.codebuddy/skills/`, `~/.kiro/skills/`,
 and `~/.trae/skills/`); only that tool loads it, so it is not a shared root.
 
 A reader is listed only where its vendor docs show a default load of that
-exact path. One reader carries a condition, and the install note repeats it:
-`Open-Claw` indexes `~/.agents/skills/` only under its default state directory
-(it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere). The `Cursor`
+exact path. The registry records three conditions, and the install note repeats
+each one. `Open-Claw` indexes `~/.agents/skills/` only under its default state
+directory (it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere).
+`Hermes` loads one kind of project context per session, first match wins, in
+the order `.hermes.md` or `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, then the
+`Cursor` rules. So it loads `<project>/AGENTS.md` only when the project has no
+`.hermes.md` or `HERMES.md` and no `AGENTS.override.md` beside it, and
+`<project>/.cursor/rules/apothem-rules.mdc` only when the project has no
+`.hermes.md`, `AGENTS.md` or `CLAUDE.md`. The `Cursor`
 docs list `~/.codex/agents/` as a `Codex` compatibility folder but do not say
 which file formats `Cursor` parses there, and a `Codex` install writes TOML
 files, so whether `Cursor` reads those helpers is not confirmed. The `Cursor`
 install also writes its own `<project>/.cursor/agents/` copy of the helpers,
 which the vendor's precedence ranks above the folders it imports, so in an
 installed project the native copy supersedes the one from `~/.claude/agents/`.
+
+`Windsurf` reads other tools' rule files through Devin's configuration import,
+which is on by default, and Devin Desktop's Local agent finds its files the way
+the Devin CLI does. So it loads the `~/.claude/CLAUDE.md` block the
+`Claude Code` install writes, and the `Cursor` install's
+`<project>/.cursor/rules/apothem-rules.mdc`, whose `alwaysApply: true`
+frontmatter keeps it active in every session. The import also reads a project
+`CLAUDE.md`, which no Apothem install writes.
 
 Some tools are deliberately not readers of `~/.agents/skills/`: the
 `Antigravity`, `CodeBuddy`, `Kiro`, and `Trae` docs do not say they load it by
@@ -139,10 +154,13 @@ the VS Code docs list that folder for the Anthropic Claude agent, not for the
 agent `GitHub Copilot` runs.
 
 The Apothem block an owner writes into a shared instruction file names no
-single tool as its reader. `tests/unit/test_shared_roots.py` fails when the adapters that
+single tool as its reader, with one exception: the block the `Cursor` install
+writes into `<project>/.cursor/rules/apothem-rules.mdc` is written for
+`Cursor`, and `Hermes` and `Windsurf` load it as well.
+`tests/unit/test_shared_roots.py` fails when the adapters that
 write a registry target are not exactly its owner and its co-installers, and when a registry target named like a
 cross-tool instruction file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`) has no declared owner. The one exception is
+`copilot-instructions.md`) has no declared owner, apart from
 `~/.codex/AGENTS.md`, which no other registered harness documents loading.
 
 ## Validation hooks
@@ -152,7 +170,7 @@ The registry stays synchronized through these checks:
 | Check | Purpose |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirms each adapter has a convention pin that is at most 90 days old, cites at least one vendor URL, and has no overdue discovery target. CI runs it on every pull request, weekly, and before a release. |
-| `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. The weekly convention monitor runs it. |
+| `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. A host name that resolves only to a placeholder address no server can hold, which a vendor's name servers can return for the region the check runs from, gets no request: it is reported as unroutable, does not fail the check, and its pages need a check by hand. The weekly convention monitor runs it, warns about each such host on every run, and lists its pages in the issue it files. |
 | `python -m apothem.conformity.gate --all .` | Runs the documentation and implementation conformity checks. |
 | `python -m pytest` | Exercises registry fixture tests and adapter contract tests. |
 

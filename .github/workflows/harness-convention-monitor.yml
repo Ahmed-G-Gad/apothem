@@ -7,8 +7,11 @@
 # files, validates snapshot dates, and reports a drift alert when any pin is
 # missing, malformed, future-dated, or stale. A second job fetches every
 # vendor URL the pins and harness templates cite and reports any that has
-# moved or died. Each job keeps one open issue: a later finding is added to
-# it as a comment rather than filed as a new issue.
+# moved or died. A host whose name resolves only to an address no server can
+# hold, such as 0.0.0.1, gets no request: the run flags it with a warning,
+# and the issue lists its URLs to check by hand. Each job keeps one open
+# issue: a later finding is added to it as a comment rather than filed as a
+# new issue.
 #
 # Schedule: weekly, 06:17 UTC on Mondays, so a pin is caught within a week
 # of crossing the 90-day line and a moved vendor page within a week of the
@@ -182,6 +185,29 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+      # A host that got no request is a gap in every run, including one that
+      # files no issue, so the run itself carries a warning for it.
+      - name: Flag hosts the check sent no request to
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('vendor-url-report.json', 'utf8'));
+            } catch (e) {
+              return;  // The upload step already warns when the report is missing.
+            }
+            const unchecked = new Map();
+            for (const u of (report.urls || []).filter(u => u.outcome === 'unroutable')) {
+              const reason = u.error || 'a host resolves to no usable address';
+              unchecked.set(reason, (unchecked.get(reason) || 0) + 1);
+            }
+            for (const [reason, count] of unchecked) {
+              core.warning(`Not checked: ${reason}, so no request was sent for ${count} cited URLs. Check them by hand.`);
+            }
+
       - name: File vendor-URL issue
         if: steps.urls.outcome == 'failure'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
@@ -201,12 +227,27 @@ jobs:
                 })
                 .join('\n');
               const unreachable = (report.counts && report.counts.unreachable) || 0;
+              // Group the URLs that got no request under the reason, which
+              // names the host and the address it resolves to.
+              const unchecked = new Map();
+              for (const u of (report.urls || []).filter(u => u.outcome === 'unroutable')) {
+                const reason = u.error || 'a host resolves to no usable address';
+                unchecked.set(reason, [...(unchecked.get(reason) || []), u.url]);
+              }
+              const uncheckedRows = [...unchecked]
+                .map(([reason, urls]) => [`- ${reason}:`, ...urls.map(url => `  - ${url}`)].join('\n'))
+                .join('\n');
               body = [
                 `Moved or dead vendor URLs found on ${today}.`,
                 '',
                 rows || '_(report parsed but no moved or dead rows; inspect artifact)_',
                 '',
                 `Unreachable this run, not counted as moved or dead: ${unreachable}.`,
+                ...(uncheckedRows ? [
+                  '',
+                  'Not checked, because the host name resolves only to an address no server can hold, so no request was sent. Check these pages by hand:',
+                  uncheckedRows,
+                ] : []),
                 '',
                 `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
                 '',

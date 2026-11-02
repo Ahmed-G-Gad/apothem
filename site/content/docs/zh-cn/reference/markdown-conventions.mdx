@@ -2,7 +2,7 @@
 title: "Markdown 约定"
 description: "统一 Markdown 风格、标题结构、代码围栏声明、内部链接格式、作者署名头以及校验器的强制执行。"
 machineTranslated: true
-sourceHash: "ff7f4b87c251190c"
+sourceHash: "2d1ebbade2c0173f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,6 +36,6 @@ GitHub 风格 Markdown（GFM）是宿主风格。每个工件在 GitHub 的网�
 
 ## 6. 校验器
 
-[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 中的 pre-commit `markdownlint` 钩子使用 [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) 中的规则策略运行 `markdownlint-cli`，并强制执行 §§1–4 中的大部分规则。CI 不运行 markdownlint，因此该钩子就是它运行的地方。该策略关闭了 MD013（行长度）、MD033（内联 HTML）和 MD041（首行标题）。它还关闭了 MD038，因为规范的选项标签后缀 ` (Recommended)` 在代码跨度内保留其前导空格；并关闭了 MD060，因为没有任何表格列样式能接受语料库所使用的、带有紧凑 `|---|` 分隔行的紧凑单元格表格。MD024 只检查同级标题，因此每个发布在 `CHANGELOG.md` 中重复出现的 Added、Changed、Fixed 和 Security 标题都能通过。每项选择的理由都写在该钩子旁边。该钩子会跳过测试夹具目录树 `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/` 和 `tests/scripts/inject-header/fixtures/`，这些目录树的字节由测试设定。它仍然会检查 `plugins/claude-code/`，该目录由 `src/apothem/` 生成，因此要在其 `src/apothem/` 源头修复那里的发现项，并用 `python scripts/dev/assemble_plugin_tree.py` 重新生成插件树。
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 中的 pre-commit `markdownlint` 钩子使用 [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) 中的规则策略运行 `markdownlint-cli`，并强制执行 §§1–4 中的大部分规则。[Markdown Lint 工作流](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/markdown-lint.yml)会在每次向 `main` 推送时以及每个触及 Markdown 的拉取请求中，在 CI 里运行同一个钩子，因此 CI 使用该钩子所固定的版本进行检查。该策略关闭了 MD013（行长度）、MD033（内联 HTML）和 MD041（首行标题）。它还关闭了 MD038，因为规范的选项标签后缀 ` (Recommended)` 在代码跨度内保留其前导空格；并关闭了 MD060，因为没有任何表格列样式能接受语料库所使用的、带有紧凑 `|---|` 分隔行的紧凑单元格表格。MD024 只检查同级标题，因此每个发布在 `CHANGELOG.md` 中重复出现的 Added、Changed、Fixed 和 Security 标题都能通过。每项选择的理由都写在该钩子旁边。该钩子会跳过测试夹具目录树 `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/` 和 `tests/scripts/inject-header/fixtures/`，这些目录树的字节由测试设定。它还会跳过 `plugins/claude-code/`，该目录由 `python scripts/dev/assemble_plugin_tree.py` 从 `src/apothem/` 生成：一个命令的每个编号步骤都会成为单独的文件，所以步骤文件中的列表从该步骤的编号开始。`src/apothem/` 中的源文件会接受检查，因此插件内容中的发现项要在那里修复，然后重新生成插件树。
 
 位于 `src/apothem/conformity/file_header_grep.py` 的 `file-header-grep` 检查 §5。位于 `src/apothem/conformity/link_check.py` 的 `link-check` 校验器检查 §4 的链接解析纪律——它针对源文件所在的目录解析相对链接，并针对 `site/content/docs/` 页面集合解析 `/docs/...`（以及 `/<locale>/docs/...`）站点路由，标记任何无法解析到磁盘上页面的链接。两者都是建议性的逐次写入匹配器。它们在 pre-commit 的 `conformity-corpus-perwrite` 钩子中运行，也在 [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) 中 Conformity 工作流的 `corpus-perwrite-gate` 作业中运行，并且在这两个地方都只报告发现项，而不会使运行失败。[`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) 中 CI 质量作业的 `python -m apothem.conformity.gate --all . --strict` 只覆盖独立校验器，因此这两者它都不会运行。

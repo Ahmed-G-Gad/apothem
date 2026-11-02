@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -118,15 +118,15 @@ Devin में `exec` है, और जिस टूल के लिए Devin
   वाली फ़ाइलों को कभी नहीं छुआ जाता।
 - Devin साझा `.agents/agents/` फ़ोल्डर भी पढ़ता है, जिसे Apothem कभी नहीं लिखता,
   और Devin CLI पथ बताए बिना एक `.claude/` फ़ोल्डर से सबएजेंट का आयात प्रलेखित
-  करता है। Apothem ने पुष्टि नहीं की है कि Devin Desktop का Local मोड वह आयात
-  लागू करता है।
+  करता है। Devin Local अपनी फ़ाइलें उसी तरह ढूँढता है जैसे Devin CLI, इसलिए वह
+  आयात वहाँ भी लागू होता है।
 - Apothem ने वेब टूल के लिए `allowed-tools` नामों की, `model` कौन-से मान स्वीकार
   करता है इसकी, या खाली `allowed-tools` सूची कैसे पढ़ी जाती है इसकी पुष्टि नहीं की
   है।
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## हुक
@@ -204,8 +204,8 @@ Apothem Devin पर कोई `PreToolUse` गार्ड पंजीकृ�
 **Devin वे हुक भी चलाता है जो Claude Code ने लिखे।** जब तक
 `read_config_from.claude` चालू है, Devin `~/.claude/settings.json`,
 `.claude/settings.json` और `.claude/settings.local.json` के हुक लोड करता है, और
-Devin CLI के लिए यही इसका डिफ़ॉल्ट है; Desktop पृष्ठ यह नहीं बताते कि Devin Local
-इसे लागू करता है या नहीं। यदि आपने Claude Code के लिए भी Apothem इंस्टॉल किया है,
+यही इसका डिफ़ॉल्ट है: Devin Local अपनी फ़ाइलें उसी तरह ढूँढता है जैसे Devin CLI।
+यदि आपने Claude Code के लिए भी Apothem इंस्टॉल किया है,
 तो हुक के दोनों सेट चल सकते हैं। यहाँ का `SessionStart` कमांड और उसकी Claude Code
 प्रति Apothem के हुक स्थिति फ़ोल्डर में प्रति सत्र एक मार्कर साझा करते हैं, इसलिए जो
 भी दूसरे क्रम पर चलता है वह मौन रहता है और बूटस्ट्रैप मॉडल तक एक बार पहुँचता है;
@@ -234,9 +234,8 @@ Code के नियम, स्किल, कमांड और MCP सर्�
 **हुक बंद करना।** Apothem हुक को मौन करने के लिए Devin के परिवेश में
 `APOTHEM_HOOKS_DISABLE=1` सेट करें।
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
@@ -259,10 +258,10 @@ Windsurf की वर्तमान नियम सतह `.devin/rules/` क
 `.windsurfrules` रूप जानबूझकर नहीं लिखा जाता।
 
 Devin Desktop (Windsurf) `~/.agents/skills/` खोजता है, इसलिए इंस्टॉल द्वारा लिखी
-गई स्किल बिना किसी अतिरिक्त सेटअप के दिखाई देती हैं। जब इसका Claude Code कॉन्फ़िग
-आयात चालू हो, तो यह `~/.claude/skills/` से भी वही नाम सूचीबद्ध कर सकता है; Devin
-CLI दस्तावेज़ उस आयात को डिफ़ॉल्ट रूप से चालू बताते हैं, और Desktop पृष्ठ यह नहीं
-बताते कि Local मोड इसे लागू करता है या नहीं। Apothem ने पुष्टि नहीं की है कि
+गई स्किल बिना किसी अतिरिक्त सेटअप के दिखाई देती हैं। इसका Claude Code आयात, जो
+डिफ़ॉल्ट रूप से चालू है, स्किल केवल प्रोजेक्ट के `.claude/skills/` फ़ोल्डर से पढ़ता
+है, इसलिए यह प्रलेखित नहीं है कि Claude Code के लिए किया गया Apothem इंस्टॉल
+`~/.claude/skills/` में जो स्किल लिखता है, वे वहाँ भी दिखाई देती हैं। Apothem ने पुष्टि नहीं की है कि
 Windsurf किसी ऐसी `SKILL.md` हेडर कुंजी के साथ कैसा व्यवहार करता है जिसे वह
 सूचीबद्ध नहीं करता; स्किल `user-invocable`, `disable-model-invocation`,
 `allowed-tools`, `argument-hint`, और एक `metadata` मैप रखती हैं।
