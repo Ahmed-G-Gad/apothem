@@ -2,7 +2,7 @@
 title: "Postur OpenSSF Scorecard"
 description: "Target OpenSSF Scorecard milik Apothem dan permukaan bukti yang digunakan untuk menjaga skor terus membaik."
 machineTranslated: true
-sourceHash: "41707bcf572f98ce"
+sourceHash: "2a073782c97e3b02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,21 +21,25 @@ Skor aktual ada di [penampil Scorecard](https://securityscorecards.dev/viewer/?u
 | **Code-Review** | Proteksi branch + CODEOWNERS | Pull request diwajibkan untuk `main` bagi semua orang kecuali admin repositori, dan proteksi branch mensyaratkan 0 tinjauan yang menyetujui selama proyek memiliki satu pemelihara (lihat [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); riwayat Scorecard tetap terbatas hingga ada PR yang ditinjau. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Proyek baru dengan satu pemelihara tidak dapat membuat-buat riwayat kontribusi multi-organisasi; ini membaik secara alami seiring bergabungnya kontributor. |
 | **Dangerous-Workflow** | Audit alur kerja | Tidak ada `pull_request_target`; Actions dipatok per SHA dan dicakup dengan izin eksplisit. |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot mengusulkan pembaruan mingguan yang dikelompokkan untuk pin GitHub Actions, situs web, lockfile pengemas vsce, dan hook pre-commit, serta pembaruan bulanan untuk lockfile channel-smoke; pembaruan keamanan Dependabot mencakup setiap manifest yang terdeteksi. `.gitattributes` mempertahankan satu berkas ini di arsip sumber yang dibaca Scorecard. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot mengusulkan pembaruan mingguan yang dikelompokkan untuk pin GitHub Actions, situs web, lockfile pengemas vsce, pip CI yang dikunci-hash, dan hook pre-commit, serta pembaruan bulanan untuk lockfile channel-smoke; pembaruan keamanan Dependabot mencakup setiap manifest yang terdeteksi kecuali penutupan dependensi dan perkakas CI di `scripts/ci/`, yang diregenerasi oleh `scripts/dev/refresh_ci_locks.py` ketika sebuah peringatan menyebut paket yang terkunci. `.gitattributes` mempertahankan satu berkas ini di arsip sumber GitHub, yang dibaca oleh pemindaian dalam mode arsip default action; alur kerja Scorecard berjalan dalam mode git dan membacanya dari klon. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Tes properti Hypothesis menguji invarian parser dan frontmatter; Scorecard upstream mungkin tidak mengakui Hypothesis sebagai integrasi fuzzer. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Lisensi MIT di akar repositori. |
 | **Maintained** | Riwayat Git | Commit rilis saat ini dan irama alur kerja yang aktif menunjukkan pemeliharaan; repositori yang sangat baru mungkin menerima peringatan usia. |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Alur kerja rilis, Pages, dan npmjs.com yang menghasilkan sdist, wheel, SBOM, provenans SLSA, dan tanda tangan Sigstore. |
-| **Pinned-Dependencies** | Audit alur kerja + persyaratan yang dikunci-hash | Actions dipatok per SHA; pemasangan perkakas rilis menggunakan `--require-hashes`; perkakas pip khusus alur kerja menggunakan patokan yang persis. |
+| **Pinned-Dependencies** | Audit alur kerja + persyaratan yang dikunci-hash | Actions dipatok per SHA; perkakas rilis, peningkatan pip CI, dependensi proyek dan pengujian CI, serta perkakas CI (`ruff`, `bandit`, `pip-audit`, `pip-licenses`, `pre-commit`) dipasang dengan `--require-hashes`. Pemasangan proyek, pengujian, dan perkakas membaca sembilan lockfile di `scripts/ci/`; peningkatan pip dan perkakas rilis masing-masing membaca lockfile tersendiri, dan paket itu sendiri dipasang dengan `--no-deps -e .`. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Kueri CodeQL `security-extended` di seluruh Python dan Actions. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Kebijakan pengungkapan terkoordinasi, matriks versi yang didukung, dan lini masa respons. |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Tanda tangan keyless Sigstore, provenans SLSA, SBOM, checksum, dan artefak rilis. |
 | **Token-Permissions** | Audit alur kerja | Alur kerja secara default menggunakan izin baca-saja; cakupan tulis bersifat lokal-job dan terikat pada operasi deployment/paket. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Pemindaian kerentanan mingguan dan pemindaian CI dengan unggahan SARIF; gerbang dependency-review memblokir pull request yang memperkenalkan dependensi yang rentan atau berlisensi tidak diizinkan. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Pemindaian kerentanan mingguan dan pemindaian CI dengan unggahan SARIF; gerbang dependency-review memblokir pull request yang memperkenalkan dependensi yang rentan atau berlisensi tidak diizinkan. Pemeriksaan itu sendiri mencari di OSV dependensi yang ditemukannya di manifest repositori, sehingga `pip-audit.yml` juga bertanya ke OSV (`pip-audit -s osv`) dan temuan di sana cocok dengan temuan dalam pemeriksaan. |
 
 ## Interpretasi skor
 
 Scorecard menilai setiap pemeriksaan pada skala 0-10 dan skor keseluruhan adalah rata-rata tertimbang. Kontrol yang bergantung pada riwayat repositori, pendaftaran pihak ketiga, atau keragaman kontributor dilacak secara eksplisit alih-alih diklaim berlebihan. Penyimpangan pada pemeriksaan apa pun yang dikendalikan berkas memicu remediasi segera.
+
+Alur kerja Scorecard menjalankan action dengan `file_mode: git`, sehingga Scorecard membaca klon repositori. Arsip sumber tidak menyertakan `.github/` (`export-ignore` di `.gitattributes`), sehingga mode arsip default action akan menyembunyikan alur kerja dari Dangerous-Workflow, Token-Permissions, Pinned-Dependencies, dan Packaging.
+
+Pinned-Dependencies sengaja tetap di bawah 10, karena dua alasan. Generator SLSA dirujuk melalui tag rilisnya, satu-satunya pengecualian dari pin SHA, karena provenansnya bertumpu pada tag tersebut. Alur kerja evals memasang CLI Claude Code dengan `npm install --global` pada versi yang dipilih per eksekusi. Pemasangan Python yang dipindai Scorecard di alur kerja adalah yang dikunci-hash, pemasangan lokal paket itu sendiri, atau wheel yang dibangun dalam eksekusi yang sama.
 
 ## Irama penyegaran
 

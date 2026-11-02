@@ -2,7 +2,7 @@
 title: "Позиция по OpenSSF Scorecard"
 description: "Целевой показатель OpenSSF Scorecard для Apothem и поверхности доказательств, используемые для того, чтобы оценка продолжала улучшаться."
 machineTranslated: true
-sourceHash: "41707bcf572f98ce"
+sourceHash: "2a073782c97e3b02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,21 +21,25 @@ Apothem стремится к максимальной оценке OpenSSF Scor
 | **Code-Review** | Защита веток + CODEOWNERS | Pull request обязательны для `main` для всех, кроме администраторов репозитория, а защита веток требует 0 одобряющих рецензий, пока у проекта один сопровождающий (см. [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); история Scorecard остаётся ограниченной, пока не появятся отрецензированные PR. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Новый проект с одним сопровождающим не может сфабриковать историю вкладов нескольких организаций; это естественным образом улучшится по мере присоединения участников. |
 | **Dangerous-Workflow** | Аудит рабочих процессов | Нет `pull_request_target`; Actions закреплены по SHA и ограничены явными разрешениями. |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot предлагает сгруппированные еженедельные обновления для закреплённых версий GitHub Actions, веб-сайта, lock-файла упаковщика vsce и хуков pre-commit, а также ежемесячные обновления для lock-файла channel-smoke; обновления безопасности Dependabot охватывают каждый обнаруженный манифест. `.gitattributes` сохраняет этот единственный файл в архиве исходного кода, который читает Scorecard. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot предлагает сгруппированные еженедельные обновления для закреплённых версий GitHub Actions, веб-сайта, lock-файла упаковщика vsce, зафиксированного по хешам pip для CI и хуков pre-commit, а также ежемесячные обновления для lock-файла channel-smoke; обновления безопасности Dependabot охватывают каждый обнаруженный манифест, кроме замыканий зависимостей и инструментов CI в `scripts/ci/`: их заново генерирует `scripts/dev/refresh_ci_locks.py`, когда оповещение называет пакет, закреплённый в lock-файле. `.gitattributes` сохраняет этот единственный файл в архивах исходного кода GitHub, которые читает сканирование action в режиме архива по умолчанию; рабочий процесс Scorecard работает в режиме git и читает файл из клона. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Тесты свойств Hypothesis проверяют инварианты парсера и фронтматтера; вышестоящий Scorecard может не засчитать Hypothesis как интеграцию фаззера. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Лицензия MIT в корне репозитория. |
 | **Maintained** | История Git | Текущий коммит релиза и активный ритм рабочих процессов подтверждают сопровождение; очень новые репозитории могут получить предупреждение о возрасте. |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Рабочие процессы релиза, Pages и npmjs.com, производящие sdist, wheel, SBOM, происхождение SLSA и подписи Sigstore. |
-| **Pinned-Dependencies** | Аудит рабочих процессов + требования, зафиксированные по хешам | Actions закреплены по SHA; установки релизного инструментария используют `--require-hashes`; pip-инструменты, используемые только в рабочих процессах, закреплены на точных версиях. |
+| **Pinned-Dependencies** | Аудит рабочих процессов + требования, зафиксированные по хешам | Actions закреплены по SHA; релизный инструментарий, обновление pip в CI, зависимости проекта и тестов в CI и инструменты CI (`ruff`, `bandit`, `pip-audit`, `pip-licenses`, `pre-commit`) устанавливаются с `--require-hashes`. Установки проекта, тестов и инструментов читают девять lock-файлов в `scripts/ci/`; обновление pip и релизный инструментарий читают каждый свой lock-файл, а сам пакет устанавливается через `--no-deps -e .`. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Запросы CodeQL `security-extended` по Python и Actions. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Политика скоординированного раскрытия, матрица поддерживаемых версий и сроки реагирования. |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Бесключевые подписи Sigstore, происхождение SLSA, SBOM, контрольные суммы и артефакты релиза. |
 | **Token-Permissions** | Аудит рабочих процессов | Рабочие процессы по умолчанию используют разрешения только на чтение; области записи локальны для задания и привязаны к операциям развёртывания и пакетов. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Еженедельное сканирование уязвимостей и сканирование в CI с загрузкой SARIF; шлюз dependency-review блокирует pull request, которые вводят уязвимые зависимости или зависимости с недопустимыми лицензиями. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Еженедельное сканирование уязвимостей и сканирование в CI с загрузкой SARIF; шлюз dependency-review блокирует pull request, которые вводят уязвимые зависимости или зависимости с недопустимыми лицензиями. Сама проверка ищет в OSV зависимости, найденные в манифестах репозитория, поэтому `pip-audit.yml` тоже обращается к OSV (`pip-audit -s osv`), и находка там совпадает с находкой в проверке. |
 
 ## Интерпретация оценки
 
 Scorecard оценивает каждую проверку по шкале от 0 до 10, а общая оценка — это взвешенное среднее. Контроли, зависящие от истории репозитория, сторонней регистрации или разнообразия участников, отслеживаются явно, а не завышаются. Дрейф по любой проверке, контролируемой файлами, запускает немедленное исправление.
+
+Рабочий процесс Scorecard запускает action с `file_mode: git`, поэтому Scorecard читает клон репозитория. Архивы исходного кода не содержат `.github/` (`export-ignore` в `.gitattributes`), поэтому режим архива по умолчанию скрыл бы рабочие процессы от Dangerous-Workflow, Token-Permissions, Pinned-Dependencies и Packaging.
+
+Pinned-Dependencies намеренно остаётся ниже 10 по двум причинам. Генератор SLSA указан по тегу релиза — это единственное исключение из закрепления по SHA, потому что его происхождение привязано к этому тегу. Рабочий процесс evals устанавливает Claude Code CLI командой `npm install --global` с версией, выбираемой при каждом запуске. Установки Python, которые Scorecard сканирует в рабочих процессах, либо зафиксированы по хешам, либо являются локальными установками самого пакета или wheel, собранных в том же запуске.
 
 ## Ритм обновления
 

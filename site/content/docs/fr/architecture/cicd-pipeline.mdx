@@ -2,7 +2,7 @@
 title: "Diagramme du pipeline CI/CD"
 description: "Carte visuelle et décomposition par couloirs des étapes du flux de travail de build, de test, de lint, de sécurité et de publication qui contrôlent chaque changement de code et chaque publication."
 machineTranslated: true
-sourceHash: "954db6336e032a1d"
+sourceHash: "7e2fefad4781e0ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,9 +74,9 @@ flowchart LR
   un ensemble de règles sélectionnées ; mypy impose la discipline de typage en
   mode strict ; le validateur de frontmatter contrôle la conformité des artefacts
   au schéma pour les règles, les skills, les travailleurs délégués et les
-  commandes. markdownlint ne fait pas partie de ce couloir : il ne s'exécute que
-  comme hook de pre-commit, et la CI ne l'exécute pas (voir
-  [Conventions Markdown](/docs/reference/markdown-conventions)).
+  commandes. markdownlint ne fait pas partie de ce couloir : le flux de travail
+  Markdown Lint exécute son hook de pre-commit en CI sur les fichiers Markdown
+  modifiés (voir [Conventions Markdown](/docs/reference/markdown-conventions)).
 - **Couloir de tests** — `pytest tests/hooks` exerce le runtime des hooks contre
   la matrice complète des événements ; `validate_ecosystem.py` est le principal
   portail structurel de la cohérence inter-artefacts ; `chaos_pass.py` s'exécute

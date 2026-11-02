@@ -2,7 +2,7 @@
 title: "Manifes Penyematan Dependensi"
 description: "Kebijakan deklarasi dependensi yang mencakup rentang runtime Python, perkakas pengembangan, berkas kunci perkakas rilis, dan batas bawah versi yang diratifikasi untuk setiap permukaan build."
 machineTranslated: true
-sourceHash: "9d1cc24fb6245844"
+sourceHash: "e0f45350884dbc03"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,10 +21,12 @@ SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Dependabot
 
 | Kelas | Deklarasi | Kebijakan penguncian |
 |---|---|---|
-| Dependensi runtime Python | `[project.dependencies]` di `pyproject.toml` | Rentang batas bawah; tanpa kunci runtime Python yang di-commit |
-| Perkakas pengembangan / keamanan | extras `[project.optional-dependencies]` | Rentang batas bawah; CI memasang versi yang cocok saat ini |
+| Dependensi runtime Python | `[project.dependencies]` di `pyproject.toml` | Rentang batas bawah untuk pengguna; tidak ada kunci runtime Python yang disertakan bersama paket. CI memasang penutupan yang dikunci hash dari dependensi itu (lihat Kunci dependensi CI) |
+| Perkakas pengembangan / keamanan | extras `[project.optional-dependencies]` | Rentang batas bawah, kecuali `ruff` dan `mypy`, yang disematkan secara eksak oleh extra `dev` ke versi yang dijalankan CI (lihat Kunci perkakas CI untuk ruff); CI memasang extra dev dari penutupan yang dikunci hash (lihat Kunci dependensi CI) |
 | Perkakas rilis | `scripts/release/requirements-build-linux.txt` untuk alur kerja rilis; extra `release` di `[project.optional-dependencies]` untuk build lokal | Dikunci hash untuk alur kerja rilis; dihasilkan dari penutupan perkakas rilis. Extra `release` adalah rentang batas bawah |
-| Perkakas khusus CI | `.github/workflows/*.yml` | Perkakas pip khusus alur kerja menggunakan penyematan eksak (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| pip CI | `scripts/ci/requirements-ci-pip.txt` | Dikunci hash: satu penyematan `pip==X.Y.Z` dengan hash wheel dan sdist-nya, dipasang dengan `--require-hashes -r` oleh setiap alur kerja yang meningkatkan pip. Dependabot mengusulkan peningkatannya dan menulis ulang hash; `scripts/dev/check_pip_pin_drift.py` menahan penyematan pada pip 26.2 atau yang lebih baru |
+| Kunci dependensi CI | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt`, dan `-prereqs.txt` | Penutupan universal yang dikunci hash, dikompilasi dengan `uv pip compile` dari `pyproject.toml` (atau, untuk `-prereqs.txt`, prasyarat host untuk mesin) per tanggal penguncian, dikurangi masa tunggu 7 hari (keduanya dicatat di setiap berkas), dipasang dengan `--require-hashes -r` (paket itu sendiri dengan `--no-deps -e .`). CI menguji versi yang dikunci sampai `scripts/dev/refresh_ci_locks.py` meregenerasinya; `pip-audit.yml` mengaudit versi terbaru yang diizinkan setiap minggu dan mengaudit kunci. `tests/scripts/test_ci_locks_fresh.py` gagal ketika sebuah kunci tidak lagi memenuhi masukannya |
+| Kunci perkakas CI | `scripts/ci/requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt`, dan `-pre-commit.txt` | Satu penutupan yang dikunci hash per perkakas yang dijalankan alur kerja, dikompilasi oleh skrip yang sama dari spesifikasi eksak di `scripts/dev/ci_lock_table.py`, dengan tanggal penguncian dan masa tunggu yang sama, dan dipasang dengan `--require-hashes -r`. Tidak ada alur kerja yang menuliskan versi perkakas. `pre-commit` memerlukan Python 3.11 atau yang lebih baru, sehingga kuncinya juga memerlukannya, dan kunci `pip-audit` dikompilasi untuk 3.11 juga karena `filelock` terbaru yang mendukung 3.10 memiliki advisori keamanan yang belum diperbaiki. Tidak ada kunci selain pip CI yang menyematkan pip |
 | Situs dokumentasi | `site/package.json` | `site/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
 | Pengemas VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` di-commit; job rilis dan publikasi menjalankan `npm ci --ignore-scripts` |
 | CLI harness channel-smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
@@ -35,19 +37,38 @@ SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Dependabot
 | Permukaan | Status yang diratifikasi | Rasionel |
 |---|---|---|
 | Dependensi runtime | Batas bawah saat ini berada di `pyproject.toml` `[project.dependencies]` | Batas bawah stabil saat ini diratifikasi sebelum rilis; tidak ada penghalang CVE runtime yang diketahui |
-| Perkakas pengembangan | Batas bawah saat ini berada di extra `dev` dari `pyproject.toml` | Batas bawah stabil terbaru diratifikasi sebelum rilis |
+| Perkakas pengembangan | Batas bawah saat ini berada di extra `dev` dari `pyproject.toml`; `ruff` dan `mypy` adalah penyematan eksak di sana | Batas bawah stabil terbaru diratifikasi sebelum rilis; ruff dan mypy masing-masing disematkan pada satu versi untuk hook, CI, dan kontributor, hook mypy menyematkan versi kunci dev untuk pustaka yang dicantumkannya, dan `tests/scripts/test_ci_tool_locks.py` gagal ketika versinya berbeda |
 | Perkakas keamanan | Batas bawah saat ini berada di extra `security` dari `pyproject.toml` | Batas bawah pemindai saat ini diratifikasi sebelum rilis |
 | Perkakas rilis | Penutupan yang dikunci hash berada di `scripts/release/requirements-build-linux.txt` | Alur kerja rilis memasang dengan `--require-hashes`; skrip lokal mensyaratkan `build` sudah ada alih-alih diam-diam memasang dependensi yang bergerak |
+| pip CI | Penyematan yang dikunci hash berada di `scripts/ci/requirements-ci-pip.txt` | pip 26.2 atau yang lebih baru mengatasi CVE-2026-13346; alur kerja memasangnya dengan `--require-hashes`, sehingga unduhan diperiksa terhadap hash yang dipublikasikan |
+| Kunci dependensi CI | Penutupan yang dikunci hash berada di `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Alur kerja memasangnya dengan `--require-hashes`; masing-masing mencatat tanggal penguncian, masa tunggu, dan tanggal batasnya, dan pengujian kesegaran menjaga keselarasannya dengan `pyproject.toml` |
+| Kunci perkakas CI | Penutupan yang dikunci hash berada di `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | Alur kerja memasangnya dengan `--require-hashes` dan tidak membawa versi perkakas; spesifikasinya berada di `scripts/dev/ci_lock_table.py`, dan tanggal penguncian, masa tunggu, serta tanggal batas sama dengan kunci dependensi |
 | Perkakas dokumentasi | Rentang saat ini berada di `site/package.json`; resolusi eksak berada di `site/package-lock.json` | `npm outdated` tidak mengembalikan dependensi dokumentasi yang usang setelah penyegaran berkas kunci |
 | GitHub Actions | Penyematan SHA yang ada dipertahankan untuk rilis saat ini; alur kerja SLSA yang dapat dipakai ulang tetap menjadi pengecualian yang disematkan dengan tag dan didokumentasikan, ditandai dengan komentar `action-pinning-exempt:` di `release.yml` | Eksekusi ulang CI publik hijau; peningkatan versi mayor action yang luas sengaja diserahkan ke PR otomasi dependensi untuk menghindari gejolak pada permukaan rilis |
 | Pengemasan npm | Alur kerja `publish-npm.yml` berjalan pada push tag `v*.*.*`, dengan `workflow_dispatch` sebagai cadangan | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi menunggu persetujuan operator atas environment `release`, yang diberikan setelah `scripts/release/check-release-ready.sh` lolos |
 
 ## Penguncian
 
-Berkas kunci Python dihasilkan sesuai permintaan oleh kontributor. Berkas
-tersebut tidak di-commit karena penutupan runtime Apothem kecil, CLI mendukung
-beberapa versi minor Python, dan CI sengaja menguji dengan versi perkakas yang
-cocok terbaru.
+Berkas kunci Python milik kontributor sendiri dihasilkan sesuai permintaan dan
+tidak di-commit: penutupan runtime Apothem kecil dan CLI mendukung beberapa
+versi minor Python. CI adalah pengecualiannya. CI memasang berkas yang dikunci
+hash di `scripts/ci/`: empat kunci dependensi (`requirements-ci-dev.txt`,
+`-runtime.txt`, `-test.txt`, dan `-prereqs.txt`) dan satu kunci per perkakas
+yang dijalankan alur kerja (`-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`,
+`-pip-licenses.txt`, dan `-pre-commit.txt`).
+`python scripts/dev/refresh_ci_locks.py` mengompilasi kesembilannya per tanggal
+penguncian, dikurangi masa tunggu 7 hari yang sama dengan milik Dependabot,
+sehingga CI menguji rilis yang berusia minimal seminggu pada tanggal penguncian
+dan penyegaran berkas memajukannya. Setiap berkas mencatat tanggal penguncian,
+masa tunggu, dan tanggal batas yang dihasilkan, dan `--check` mereproduksi
+tanggal batas tersebut. Perbaikan keamanan mendesak yang lebih baru daripada
+masa tunggu memerlukan eksekusi penyegaran dengan `--cooldown-days 0`, atau
+pengecualian masa tunggu untuk paketnya di `scripts/dev/ci_lock_table.py`, yang
+mencabut masa tunggu hanya untuk paket tersebut.
+Eksekusi `pip-audit.yml` mingguan mengaudit versi terbaru yang diizinkan
+`pyproject.toml` serta kesembilan kunci, dengan menanyakan advisori keamanan ke
+layanan OSV.
+Kontributor tetap memasang dengan `pip install -e ".[dev]"`.
 
 ```sh
 # Astral uv:
@@ -69,8 +90,11 @@ dapat direproduksi.
 ## Rasionel
 
 - **Mengapa penyematan rentang untuk Python?** CLI mendukung matriks Python yang
-  luas dan CI seharusnya mengungkap masalah kompatibilitas dengan perkakas saat
-  ini sebelum pengguna menemuinya.
+  luas, sehingga `pyproject.toml` mempertahankan batas bawah yang konservatif.
+  CI memasang penutupan yang dikunci hash dari rentang tersebut, yang disegarkan
+  pemelihara dengan `scripts/dev/refresh_ci_locks.py` (irama yang dimaksudkan
+  adalah mingguan), dan eksekusi `pip-audit.yml` mingguan me-resolve versi
+  terbaru yang diizinkan untuk mengungkap masalah dengan perkakas saat ini.
 - **Mengapa kunci Node yang di-commit?** Situs web adalah artefak statis yang
   di-deploy; berkas kunci memberikan build `npm ci` yang deterministik untuk
   permukaan publik tersebut.
@@ -81,12 +105,21 @@ dapat direproduksi.
 - **Apa yang tidak disentuh bot pembaruan.** Pembaruan versi Dependabot
   (`.github/dependabot.yml`) mencakup penyematan GitHub Actions, berkas kunci
   situs web, berkas kunci pengemas vsce (`tools/vsce`), berkas kunci CLI harness
-  yang dipasang oleh channel smoke (`tools/channel-smoke`), dan hook pre-commit.
+  yang dipasang oleh channel smoke (`tools/channel-smoke`), pip yang dikunci hash
+  dan dipasang oleh CI (`scripts/ci/requirements-ci-pip.txt`), dan hook pre-commit.
+  Sembilan berkas lain di `scripts/ci` adalah penutupan yang diregenerasi utuh
+  dengan `scripts/dev/refresh_ci_locks.py`, tidak satu pun menyematkan pip, dan
+  pembaruan versi Dependabot untuk folder itu terbatas pada pip.
   Batas bawah runtime di `pyproject.toml`, persyaratan rilis yang dikunci hash,
   penutupan vendor di `src/apothem/_vendor/vendor.txt`, dan hook pre-commit yang
   disematkan seiring dengan `pyproject.toml` diubah secara manual, karena
   peningkatan satu penyematan saja akan merusak berkas-berkas yang harus selaras
-  dengannya.
+  dengannya. Hook ruff dan mypy termasuk di antaranya:
+  `tests/scripts/test_ci_tool_locks.py` gagal sampai penyematan ruff yang eksak
+  di `pyproject.toml`, rev hook, kunci ruff, dan kunci dev membawa satu versi,
+  dan sampai penyematan mypy yang eksak, rev hook mypy, serta pustaka yang
+  dicantumkan hook itu cocok dengan kunci dev, sehingga pull request keamanan
+  Dependabot untuk salah satu perkakas itu disesuaikan secara manual.
   Versi mayor `@types/node` situs web mengikuti batas bawah Node-nya (`engines`
   dan `.nvmrc`, Node 22), sehingga Dependabot hanya mengusulkan pembaruan minor
   dan patch-nya; naikkan versi mayor tersebut bersamaan dengan batas bawahnya.

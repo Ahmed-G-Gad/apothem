@@ -2,7 +2,7 @@
 title: "Manifeste d'épinglage des dépendances"
 description: "Politique de déclaration des dépendances couvrant les plages du runtime Python, l'outillage de développement, les fichiers de verrouillage de l'outillage de publication et les planchers de version ratifiés pour chaque surface de build."
 machineTranslated: true
-sourceHash: "9d1cc24fb6245844"
+sourceHash: "e0f45350884dbc03"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,10 +22,12 @@ avec des commentaires de version et sont mises à niveau par Dependabot.
 
 | Classe | Déclaration | Politique de verrouillage |
 |---|---|---|
-| Dépendances d'exécution Python | `[project.dependencies]` dans `pyproject.toml` | Plages à borne inférieure ; aucun verrou d'exécution Python commité |
-| Outillage de développement / sécurité | extras de `[project.optional-dependencies]` | Plages à borne inférieure ; la CI installe les versions correspondantes actuelles |
+| Dépendances d'exécution Python | `[project.dependencies]` dans `pyproject.toml` | Plages à borne inférieure pour les utilisateurs ; aucun verrou d'exécution Python n'est livré avec le paquet. La CI en installe une fermeture verrouillée par hash (voir Verrous de dépendances de la CI) |
+| Outillage de développement / sécurité | extras de `[project.optional-dependencies]` | Plages à borne inférieure, sauf `ruff` et `mypy`, que l'extra `dev` épingle exactement aux versions qu'exécute la CI (voir Verrous d'outils de la CI pour ruff) ; la CI installe l'extra dev à partir d'une fermeture verrouillée par hash (voir Verrous de dépendances de la CI) |
 | Outillage de publication | `scripts/release/requirements-build-linux.txt` pour les flux de travail de publication ; l'extra `release` de `[project.optional-dependencies]` pour les builds locaux | Verrouillé par hash pour les flux de travail de publication ; généré à partir de la fermeture de l'outillage de publication. L'extra `release` est une plage à borne inférieure |
-| Outils propres à la CI | `.github/workflows/*.yml` | Les outils pip propres au flux de travail utilisent des épinglages exacts (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| pip de la CI | `scripts/ci/requirements-ci-pip.txt` | Verrouillé par hash : un épinglage `pip==X.Y.Z` avec les hashes de son wheel et de son sdist, installé avec `--require-hashes -r` par chaque flux de travail qui met pip à niveau. Dependabot propose les mises à niveau et réécrit les hashes ; `scripts/dev/check_pip_pin_drift.py` maintient l'épinglage à pip 26.2 ou plus récent |
+| Verrous de dépendances de la CI | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` et `-prereqs.txt` | Fermetures universelles verrouillées par hash compilées avec `uv pip compile` à partir de `pyproject.toml` (ou, pour `-prereqs.txt`, des prérequis hôte du moteur) à une date de verrouillage, moins un délai de carence de 7 jours, consignés dans chaque fichier, installées avec `--require-hashes -r` (le paquet lui-même avec `--no-deps -e .`). La CI teste les versions verrouillées jusqu'à ce que `scripts/dev/refresh_ci_locks.py` les régénère ; `pip-audit.yml` audite chaque semaine les versions autorisées les plus récentes et audite les verrous. `tests/scripts/test_ci_locks_fresh.py` échoue quand un verrou ne satisfait plus ses entrées |
+| Verrous d'outils de la CI | `scripts/ci/requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` et `-pre-commit.txt` | Une fermeture verrouillée par hash pour chaque outil que les flux de travail exécutent, compilée par le même script à partir d'une spécification exacte dans `scripts/dev/ci_lock_table.py`, avec la même date de verrouillage et le même délai de carence, et installée avec `--require-hashes -r`. Aucun flux de travail n'indique de version d'outil. `pre-commit` nécessite Python 3.11 ou plus récent, donc son verrou aussi, et le verrou de `pip-audit` est lui aussi compilé pour 3.11, parce que le `filelock` le plus récent qui prend en charge 3.10 a des avis de sécurité non corrigés. Aucun verrou autre que le pip de la CI n'épingle pip |
 | Site de documentation | `site/package.json` | `site/package-lock.json` commité et consommé par `npm ci` |
 | Empaqueteur VS Code | `tools/vsce/package.json` | `tools/vsce/package-lock.json` commité ; les tâches de publication et de mise en ligne exécutent `npm ci --ignore-scripts` |
 | CLI des harnais du channel-smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` commité et consommé par `npm ci` |
@@ -36,20 +38,38 @@ avec des commentaires de version et sont mises à niveau par Dependabot.
 | Surface | État ratifié | Justification |
 |---|---|---|
 | Dépendances d'exécution | Les bornes inférieures actuelles vivent dans `pyproject.toml` `[project.dependencies]` | Planchers stables actuels ratifiés avant la publication ; aucune CVE d'exécution connue ne bloque |
-| Outillage de développement | Les bornes inférieures actuelles vivent dans l'extra `dev` de `pyproject.toml` | Derniers planchers stables ratifiés avant la publication |
+| Outillage de développement | Les bornes inférieures actuelles vivent dans l'extra `dev` de `pyproject.toml` ; `ruff` et `mypy` y sont les épinglages exacts | Derniers planchers stables ratifiés avant la publication ; ruff et mypy sont chacun épinglés à une seule version pour les hooks, la CI et les contributeurs, le hook mypy épingle les versions du verrou dev pour les bibliothèques qu'il liste, et `tests/scripts/test_ci_tool_locks.py` échoue quand elles diffèrent |
 | Outillage de sécurité | Les bornes inférieures actuelles vivent dans l'extra `security` de `pyproject.toml` | Planchers de scanner actuels ratifiés avant la publication |
 | Outillage de publication | La fermeture verrouillée par hash vit dans `scripts/release/requirements-build-linux.txt` | Le flux de travail de publication installe avec `--require-hashes` ; les scripts locaux exigent que `build` existe déjà au lieu d'installer silencieusement des dépendances mouvantes |
+| pip de la CI | L'épinglage verrouillé par hash vit dans `scripts/ci/requirements-ci-pip.txt` | pip 26.2 ou plus récent corrige CVE-2026-13346 ; les flux de travail l'installent avec `--require-hashes`, de sorte que le téléchargement est vérifié par rapport à son hash publié |
+| Verrous de dépendances de la CI | Les fermetures verrouillées par hash vivent dans `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Les flux de travail les installent avec `--require-hashes` ; chacune consigne sa date de verrouillage, son délai de carence et sa date de coupure, et le test de fraîcheur les maintient en phase avec `pyproject.toml` |
+| Verrous d'outils de la CI | Les fermetures verrouillées par hash vivent dans `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | Les flux de travail les installent avec `--require-hashes` et ne portent aucune version d'outil ; les spécifications vivent dans `scripts/dev/ci_lock_table.py`, et la date de verrouillage, le délai de carence et la date de coupure correspondent à ceux des verrous de dépendances |
 | Outillage de documentation | Les plages actuelles vivent dans `site/package.json` ; la résolution exacte vit dans `site/package-lock.json` | `npm outdated` ne renvoie aucune dépendance de documentation obsolète après l'actualisation du fichier de verrouillage |
 | GitHub Actions | Les épinglages SHA existants sont conservés pour la publication actuelle ; le flux de travail réutilisable SLSA reste l'exception documentée épinglée par étiquette, signalée par un commentaire `action-pinning-exempt:` dans `release.yml` | La réexécution de la CI publique est au vert ; les mises à niveau larges de version majeure des actions sont intentionnellement laissées aux pull requests d'automatisation des dépendances, pour éviter les remaniements de la surface de publication |
 | Empaquetage npm | Le flux de travail `publish-npm.yml` s'exécute au push de l'étiquette `v*.*.*`, avec `workflow_dispatch` comme solution de repli | Le seul paquet npm public est `@ahmed-g-gad/apothem` ; la publication attend l'approbation de l'environnement `release` par l'opérateur, donnée après que `scripts/release/check-release-ready.sh` a réussi |
 
 ## Verrouillage
 
-Les fichiers de verrouillage Python sont générés à la demande par le
-contributeur. Ils ne sont pas commités parce que la fermeture d'exécution
-d'Apothem est petite, que la CLI prend en charge plusieurs versions mineures de
-Python et que la CI exerce intentionnellement les versions d'outillage
-correspondantes les plus récentes.
+Les fichiers de verrouillage Python propres aux contributeurs sont générés à la
+demande et ne sont pas commités : la fermeture d'exécution d'Apothem est petite
+et la CLI prend en charge plusieurs versions mineures de Python. La CI fait
+exception. Elle installe les fichiers verrouillés par hash de `scripts/ci/` :
+quatre verrous de dépendances (`requirements-ci-dev.txt`, `-runtime.txt`,
+`-test.txt` et `-prereqs.txt`) et un verrou par outil que les flux de travail
+exécutent (`-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` et
+`-pre-commit.txt`). `python scripts/dev/refresh_ci_locks.py` compile les neuf à
+une date de verrouillage, moins un délai de carence de 7 jours identique à celui
+de Dependabot, de sorte que la CI teste les versions qui avaient au moins une
+semaine à la date de verrouillage et que l'actualisation des fichiers les fait
+avancer. Chaque fichier consigne la date de verrouillage, le délai de carence et
+la date de coupure qui en résulte, et `--check` reproduit la date de coupure. Un
+correctif de sécurité urgent plus récent que le délai de carence demande une
+exécution d'actualisation avec `--cooldown-days 0`, ou une exception au délai de
+carence pour son paquet dans `scripts/dev/ci_lock_table.py`, qui lève le délai
+de carence pour ce seul paquet. L'exécution hebdomadaire de `pip-audit.yml`
+audite les versions les plus récentes que `pyproject.toml` autorise ainsi que
+les neuf verrous, en interrogeant le service OSV sur les avis de sécurité. Les
+contributeurs continuent d'installer avec `pip install -e ".[dev]"`.
 
 ```sh
 # Astral uv:
@@ -71,8 +91,12 @@ reproductible.
 ## Justification
 
 - **Pourquoi des épinglages par plage pour Python ?** La CLI prend en charge une
-  large matrice Python et la CI devrait révéler les problèmes de compatibilité
-  avec l'outillage actuel avant que les utilisateurs ne les rencontrent.
+  large matrice Python, donc `pyproject.toml` garde des planchers prudents. La
+  CI installe des fermetures verrouillées par hash de ces plages, que le
+  mainteneur actualise avec `scripts/dev/refresh_ci_locks.py` (la cadence
+  prévue est hebdomadaire), et l'exécution hebdomadaire de `pip-audit.yml`
+  résout les versions autorisées les plus récentes pour révéler les problèmes
+  avec l'outillage actuel.
 - **Pourquoi un verrou Node commité ?** Le site web est un artefact statique
   déployé ; le fichier de verrouillage donne des builds `npm ci` déterministes
   pour cette surface publique.
@@ -84,12 +108,24 @@ reproductible.
   de Dependabot (`.github/dependabot.yml`) couvrent les épinglages des GitHub
   Actions, le fichier de verrouillage du site web, le fichier de verrouillage de
   l'empaqueteur vsce (`tools/vsce`), le fichier de verrouillage des CLI de
-  harnais qu'installe le channel smoke (`tools/channel-smoke`) et les hooks
-  pre-commit. Les planchers d'exécution de `pyproject.toml`, les exigences de
+  harnais qu'installe le channel smoke (`tools/channel-smoke`), le pip verrouillé
+  par hash qu'installe la CI (`scripts/ci/requirements-ci-pip.txt`) et les hooks
+  pre-commit. Les neuf autres fichiers de `scripts/ci` sont des fermetures
+  régénérées en entier avec `scripts/dev/refresh_ci_locks.py`, aucune n'épingle
+  pip, et les mises à jour de version de Dependabot pour ce dossier se limitent
+  à pip.
+  Les planchers d'exécution de `pyproject.toml`, les exigences de
   publication verrouillées par hash, la fermeture vendorisée de
   `src/apothem/_vendor/vendor.txt` et les hooks pre-commit épinglés en phase
   avec `pyproject.toml` évoluent à la main, car la mise à niveau d'un seul
-  épinglage casserait les fichiers avec lesquels ils concordent.
+  épinglage casserait les fichiers avec lesquels ils concordent. Les hooks ruff
+  et mypy en font partie : `tests/scripts/test_ci_tool_locks.py` échoue tant que
+  l'épinglage exact de ruff dans `pyproject.toml`, la révision du hook, le
+  verrou ruff et le verrou dev ne portent pas une même version, et tant que
+  l'épinglage exact de mypy, la révision du hook mypy et les bibliothèques que
+  ce hook liste ne correspondent pas au verrou dev ; une pull request de
+  sécurité de Dependabot pour l'un ou l'autre de ces outils est donc adaptée à
+  la main.
   La version majeure de `@types/node` du site web suit son plancher Node
   (`engines` et `.nvmrc`, Node 22) ; Dependabot ne propose donc que ses mises à
   jour mineures et correctives ; relevez cette version majeure en même temps que

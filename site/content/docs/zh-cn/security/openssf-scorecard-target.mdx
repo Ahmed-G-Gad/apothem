@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard 态势"
 description: "Apothem 的 OpenSSF Scorecard 目标，以及用于持续提升分数的证据表面。"
 machineTranslated: true
-sourceHash: "41707bcf572f98ce"
+sourceHash: "2a073782c97e3b02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,21 +21,25 @@ Apothem 以 OpenSSF Scorecard 的最高分为目标，同时让公开门面如�
 | **Code-Review** | 分支保护 + CODEOWNERS | 除仓库管理员外，所有人向 `main` 提交变更都须经拉取请求；在项目仅有一位维护者期间，分支保护要求 0 个批准评审（参见 [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)）；在存在经评审的 PR 之前，Scorecard 历史仍然有限。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 一个新的单人维护者项目无法凭空制造多机构的贡献历史；随着贡献者加入，此项会自然改善。 |
 | **Dangerous-Workflow** | 工作流审计 | 不使用 `pull_request_target`；Actions 按 SHA 固定，并以显式权限限定作用域。 |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot 为 GitHub Actions 固定版本、网站、vsce 打包器锁文件以及 pre-commit 钩子提出分组的每周更新，并为 channel-smoke 锁文件提出每月更新；Dependabot 安全更新覆盖每一个检测到的清单。`.gitattributes` 将这一个文件保留在 Scorecard 读取的源码归档中。 |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot 为 GitHub Actions 固定版本、网站、vsce 打包器锁文件、哈希锁定的 CI pip 以及 pre-commit 钩子提出分组的每周更新，并为 channel-smoke 锁文件提出每月更新；Dependabot 安全更新覆盖每一个检测到的清单，但 `scripts/ci/` 中的 CI 依赖闭包与工具闭包除外，当某条告警点名某个已锁定的包时，由 `scripts/dev/refresh_ci_locks.py` 重新生成这些闭包。`.gitattributes` 将这一个文件保留在 GitHub 源码归档中，该 action 在默认归档模式下的扫描会读取这些归档；Scorecard 工作流以 git 模式运行，并从克隆中读取该文件。 |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 属性测试检验解析器与 frontmatter 的不变式；上游 Scorecard 可能不会将 Hypothesis 计为模糊测试集成。 |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 仓库根目录下的 MIT 许可证。 |
 | **Maintained** | Git 历史 | 当前的发布提交与活跃的工作流节奏显示项目仍在维护；非常新的仓库可能会收到年龄警告。 |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | 发布、Pages 与 npmjs.com 工作流，产出 sdist、wheel、SBOM、SLSA 出处溯源与 Sigstore 签名。 |
-| **Pinned-Dependencies** | 工作流审计 + 哈希锁定的依赖要求 | Actions 按 SHA 固定；发布工具的安装使用 `--require-hashes`；仅用于工作流的 pip 工具使用精确版本固定。 |
+| **Pinned-Dependencies** | 工作流审计 + 哈希锁定的依赖要求 | Actions 按 SHA 固定；发布工具、CI 的 pip 升级、CI 的项目依赖与测试依赖，以及 CI 工具（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）的安装均使用 `--require-hashes`。项目、测试与工具的安装读取 `scripts/ci/` 中的九个锁文件；pip 升级与发布工具各自读取一个独立的锁文件，而包本身通过 `--no-deps -e .` 安装。 |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | 针对 Python 与 Actions 的 CodeQL `security-extended` 查询。 |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 协调披露策略、受支持版本矩阵与响应时间线。 |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 无密钥签名、SLSA 出处溯源、SBOM、校验和以及发布产物。 |
 | **Token-Permissions** | 工作流审计 | 工作流默认使用只读权限；写入作用域限定于作业本地，并与部署／打包操作绑定。 |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 每周漏洞扫描与 CI 扫描，并上传 SARIF；依赖评审闸门会阻止引入存在漏洞或许可证不被允许的依赖的拉取请求。 |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 每周漏洞扫描与 CI 扫描，并上传 SARIF；依赖评审闸门会阻止引入存在漏洞或许可证不被允许的依赖的拉取请求。该检查本身会在 OSV 中查询它在仓库清单里发现的依赖，因此 `pip-audit.yml` 也向 OSV 查询（`pip-audit -s osv`），那里的发现项与该检查中的发现项一致。 |
 
 ## 分数解读
 
 Scorecard 按 0-10 分制为每项检查评分，总分为加权平均值。依赖仓库历史、第三方注册或贡献者多样性的控制项会被明确跟踪，而不是被夸大宣称。任何受文件控制的检查一旦出现漂移，都会触发立即修复。
+
+Scorecard 工作流以 `file_mode: git` 运行该 action，因此 Scorecard 读取的是仓库的克隆。源码归档会省略 `.github/`（`.gitattributes` 中的 `export-ignore`），因此该 action 的默认归档模式会让 Dangerous-Workflow、Token-Permissions、Pinned-Dependencies 与 Packaging 看不到这些工作流。
+
+Pinned-Dependencies 有意保持低于 10 分，原因有两个。SLSA 生成器通过其发布标签引用，这是 SHA 固定的唯一例外，因为它的出处溯源锚定在该标签上。evals 工作流使用 `npm install --global` 安装 Claude Code CLI，所用版本在每次运行时选定。Scorecard 在工作流中扫描的 Python 安装，要么是哈希锁定的，要么是对包本身或同一次运行中构建的 wheel 的本地安装。
 
 ## 刷新节奏
 

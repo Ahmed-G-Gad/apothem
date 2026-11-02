@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard の姿勢"
 description: "Apothem の OpenSSF Scorecard 目標と、スコアを改善し続けるために用いる証拠面。"
 machineTranslated: true
-sourceHash: "41707bcf572f98ce"
+sourceHash: "2a073782c97e3b02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,21 +21,25 @@ Apothem は OpenSSF Scorecard の最高スコアを目標としつつ、新し�
 | **Code-Review** | ブランチ保護 + CODEOWNERS | リポジトリ管理者を除くすべての人に対して、`main` にはプルリクエストが必要です。プロジェクトのメンテナーが 1 人である間、ブランチ保護は承認レビューを 0 件と要求します（[branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) を参照）。レビュー済みの PR が存在するまで、Scorecard の履歴は限定的なままです。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 新しい単独メンテナーのプロジェクトは、複数組織にわたる貢献履歴を作り出すことはできません。これは、コントリビューターが参加するにつれて自然に改善します。 |
 | **Dangerous-Workflow** | ワークフロー監査 | `pull_request_target` はありません。Actions は SHA で固定され、明示的な権限でスコープが限定されています。 |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot は、GitHub Actions のピン、Web サイト、vsce パッケージャーのロックファイル、pre-commit フックに対してはグループ化された週次の更新を、channel-smoke のロックファイルに対しては月次の更新を提案します。Dependabot のセキュリティ更新は、検出されたすべてのマニフェストをカバーします。`.gitattributes` は、この 1 つのファイルを Scorecard が読み取るソースアーカイブに残します。 |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot は、GitHub Actions のピン、Web サイト、vsce パッケージャーのロックファイル、ハッシュロックされた CI の pip、pre-commit フックに対してはグループ化された週次の更新を、channel-smoke のロックファイルに対しては月次の更新を提案します。Dependabot のセキュリティ更新は、`scripts/ci/` にある CI の依存関係とツールのクロージャを除く、検出されたすべてのマニフェストをカバーします。これらのクロージャは、アラートがロック済みのパッケージを名指しした場合に `scripts/dev/refresh_ci_locks.py` が再生成します。`.gitattributes` は、この 1 つのファイルを GitHub のソースアーカイブに残します。アクションの既定のアーカイブモードでのスキャンはそのアーカイブを読み取りますが、Scorecard ワークフローは git モードで実行され、クローンからこのファイルを読み取ります。 |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis のプロパティテストが、パーサーと frontmatter の不変条件を検証します。上流の Scorecard は、Hypothesis をファザーの統合として評価しない場合があります。 |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | リポジトリのルートにある MIT ライセンス。 |
 | **Maintained** | Git 履歴 | 現在のリリースコミットとアクティブなワークフローの頻度が、メンテナンスが行われていることを示します。非常に新しいリポジトリは、経過期間に関する警告を受ける場合があります。 |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist、wheel、SBOM、SLSA 来歴、Sigstore 署名を生成する、リリース、Pages、npmjs.com のワークフロー。 |
-| **Pinned-Dependencies** | ワークフロー監査 + ハッシュロックされた要件 | Actions は SHA で固定されています。リリースツールのインストールは `--require-hashes` を使用します。ワークフロー専用の pip ツールは、正確なピンを使用します。 |
+| **Pinned-Dependencies** | ワークフロー監査 + ハッシュロックされた要件 | Actions は SHA で固定されています。リリースツール、CI の pip アップグレード、CI のプロジェクト依存関係とテスト依存関係、CI ツール（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）のインストールは `--require-hashes` を使用します。プロジェクト、テスト、ツールのインストールは `scripts/ci/` にある 9 つのロックを読み取ります。pip アップグレードとリリースツールはそれぞれ専用のロックを読み取り、パッケージ自体は `--no-deps -e .` でインストールされます。 |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python と Actions を対象とする CodeQL の `security-extended` クエリ。 |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 協調的開示ポリシー、サポート対象バージョンのマトリクス、対応のタイムライン。 |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore のキーレス署名、SLSA 来歴、SBOM、チェックサム、リリース成果物。 |
 | **Token-Permissions** | ワークフロー監査 | ワークフローは既定で読み取り専用の権限を持ちます。書き込みスコープはジョブローカルで、デプロイ／パッケージ操作に結び付けられています。 |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 毎週の脆弱性スキャンと、SARIF アップロードを伴う CI スキャン。dependency-review ゲートは、脆弱性のある依存関係や許可されていないライセンスの依存関係を導入するプルリクエストをブロックします。 |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 毎週の脆弱性スキャンと、SARIF アップロードを伴う CI スキャン。dependency-review ゲートは、脆弱性のある依存関係や許可されていないライセンスの依存関係を導入するプルリクエストをブロックします。チェック自体が、リポジトリのマニフェストで見つけた依存関係を OSV で照会するため、`pip-audit.yml` も OSV に問い合わせ（`pip-audit -s osv`）、そこでの検出結果はチェックでの検出結果と一致します。 |
 
 ## スコアの解釈
 
 Scorecard は各チェックを 0〜10 のスケールで採点し、総合スコアは加重平均です。リポジトリの履歴、サードパーティへの登録、コントリビューターの多様性に依存するコントロールは、過大に主張するのではなく明示的に追跡されます。ファイルで制御されるチェックのいずれかでドリフトが生じると、即座の是正がトリガーされます。
+
+Scorecard ワークフローは、アクションを `file_mode: git` で実行するため、Scorecard はリポジトリのクローンを読み取ります。ソースアーカイブは `.github/` を除外する（`.gitattributes` の `export-ignore`）ため、アクションの既定のアーカイブモードでは、Dangerous-Workflow、Token-Permissions、Pinned-Dependencies、Packaging からワークフローが見えなくなります。
+
+Pinned-Dependencies は、2 つの理由により、設計上 10 を下回ったままです。SLSA ジェネレーターは、SHA 固定の唯一の例外として、リリースタグで参照されます。その来歴がそのタグに紐づけられているためです。evals ワークフローは、実行ごとに選ばれるバージョンで、`npm install --global` により Claude Code CLI をインストールします。Scorecard がワークフロー内でスキャンする Python のインストールは、ハッシュロックされているか、パッケージ自体または同じ実行でビルドされた wheel のローカルインストールです。
 
 ## 更新の周期
 

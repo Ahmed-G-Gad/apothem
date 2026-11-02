@@ -2,7 +2,7 @@
 title: "Manifest zur Abhängigkeitsfixierung"
 description: "Richtlinie zur Abhängigkeitsdeklaration, die Python-Laufzeitbereiche, Entwicklungswerkzeuge, Lock-Dateien der Release-Werkzeuge und ratifizierte Versionsuntergrenzen für jede Build-Oberfläche abdeckt."
 machineTranslated: true
-sourceHash: "9d1cc24fb6245844"
+sourceHash: "e0f45350884dbc03"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,10 +22,12 @@ aktualisiert.
 
 | Klasse | Deklaration | Lock-Richtlinie |
 |---|---|---|
-| Python-Laufzeitabhängigkeiten | `[project.dependencies]` in `pyproject.toml` | Untergrenzenbereiche; kein committeter Python-Laufzeit-Lock |
-| Entwicklungs- / Sicherheitswerkzeuge | `[project.optional-dependencies]`-Extras | Untergrenzenbereiche; CI installiert die aktuell passenden Versionen |
+| Python-Laufzeitabhängigkeiten | `[project.dependencies]` in `pyproject.toml` | Untergrenzenbereiche für Nutzer; mit dem Paket wird kein Python-Laufzeit-Lock ausgeliefert. CI installiert davon eine hash-gesperrte Hülle (siehe CI-Abhängigkeits-Locks) |
+| Entwicklungs- / Sicherheitswerkzeuge | `[project.optional-dependencies]`-Extras | Untergrenzenbereiche, außer `ruff` und `mypy`, die das Extra `dev` exakt auf die Versionen fixiert, die CI ausführt (siehe CI-Werkzeug-Locks für ruff); CI installiert das dev-Extra aus einer hash-gesperrten Hülle (siehe CI-Abhängigkeits-Locks) |
 | Release-Werkzeuge | `scripts/release/requirements-build-linux.txt` für Release-Workflows; das `release`-Extra in `[project.optional-dependencies]` für lokale Builds | Hash-gesperrt für Release-Workflows; aus der Hülle der Release-Werkzeuge erzeugt. Das `release`-Extra ist ein Untergrenzenbereich |
-| Nur-CI-Werkzeuge | `.github/workflows/*.yml` | Workflow-eigene pip-Werkzeuge verwenden exakte Fixierungen (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| CI-pip | `scripts/ci/requirements-ci-pip.txt` | Hash-gesperrt: eine Fixierung `pip==X.Y.Z` mit den Hashes von Wheel und sdist, von jedem Workflow, der pip aktualisiert, mit `--require-hashes -r` installiert. Dependabot schlägt die Upgrades vor und schreibt die Hashes neu; `scripts/dev/check_pip_pin_drift.py` hält die Fixierung bei pip 26.2 oder neuer |
+| CI-Abhängigkeits-Locks | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` und `-prereqs.txt` | Hash-gesperrte universelle Hüllen, mit `uv pip compile` aus `pyproject.toml` (oder, für `-prereqs.txt`, aus den Host-Voraussetzungen der Engine) zum Stand eines Lock-Datums kompiliert, abzüglich einer Wartezeit von 7 Tagen, in jeder Datei festgehalten, mit `--require-hashes -r` installiert (das Paket selbst mit `--no-deps -e .`). CI testet die gesperrten Versionen, bis `scripts/dev/refresh_ci_locks.py` sie neu erzeugt; `pip-audit.yml` prüft wöchentlich die neuesten erlaubten Versionen und prüft die Locks. `tests/scripts/test_ci_locks_fresh.py` schlägt fehl, wenn ein Lock seine Eingaben nicht mehr erfüllt |
+| CI-Werkzeug-Locks | `scripts/ci/requirements-ci-ruff.txt`, `-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` und `-pre-commit.txt` | Eine hash-gesperrte Hülle pro Werkzeug, das die Workflows ausführen, vom selben Skript aus einer exakten Spezifikation in `scripts/dev/ci_lock_table.py` kompiliert, mit demselben Lock-Datum und derselben Wartezeit, und mit `--require-hashes -r` installiert. Kein Workflow nennt eine Werkzeugversion. `pre-commit` benötigt Python 3.11 oder neuer, daher gilt das auch für seinen Lock, und der Lock von `pip-audit` wird ebenfalls für 3.11 kompiliert, weil das neueste `filelock`, das 3.10 unterstützt, unbehobene Sicherheitshinweise hat. Kein Lock außer dem CI-pip fixiert pip |
 | Dokumentationsseite | `site/package.json` | `site/package-lock.json` committet und von `npm ci` konsumiert |
 | VS-Code-Packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committet; Release- und Veröffentlichungsjobs führen `npm ci --ignore-scripts` aus |
 | Harness-CLIs für den Channel-Smoke | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` committet und von `npm ci` konsumiert |
@@ -36,19 +38,38 @@ aktualisiert.
 | Oberfläche | Ratifizierter Zustand | Begründung |
 |---|---|---|
 | Laufzeitabhängigkeiten | Aktuelle Untergrenzen stehen in `pyproject.toml` unter `[project.dependencies]` | Aktuelle stabile Untergrenzen vor dem Release ratifiziert; kein bekannter CVE-Blocker zur Laufzeit |
-| Entwicklungswerkzeuge | Aktuelle Untergrenzen stehen im Extra `dev` von `pyproject.toml` | Neueste stabile Untergrenzen vor dem Release ratifiziert |
+| Entwicklungswerkzeuge | Aktuelle Untergrenzen stehen im Extra `dev` von `pyproject.toml`; `ruff` und `mypy` sind dort die exakten Fixierungen | Neueste stabile Untergrenzen vor dem Release ratifiziert; ruff und mypy sind jeweils auf eine einzige Version für die Hooks, CI und Mitwirkende fixiert, der mypy-Hook fixiert die Versionen des dev-Locks für die Bibliotheken, die er auflistet, und `tests/scripts/test_ci_tool_locks.py` schlägt fehl, wenn sie voneinander abweichen |
 | Sicherheitswerkzeuge | Aktuelle Untergrenzen stehen im Extra `security` von `pyproject.toml` | Aktuelle Untergrenzen der Scanner vor dem Release ratifiziert |
 | Release-Werkzeuge | Die hash-gesperrte Abhängigkeitsmenge steht in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden ist, statt schwankende Abhängigkeiten stillschweigend zu installieren |
+| CI-pip | Die hash-gesperrte Fixierung steht in `scripts/ci/requirements-ci-pip.txt` | pip 26.2 oder neuer schließt CVE-2026-13346; Workflows installieren die Fixierung mit `--require-hashes`, sodass der Download gegen den veröffentlichten Hash geprüft wird |
+| CI-Abhängigkeits-Locks | Die hash-gesperrten Hüllen stehen in `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Workflows installieren sie mit `--require-hashes`; jede hält ihr Lock-Datum, ihre Wartezeit und ihren Stichtag fest, und der Aktualitätstest hält sie im Gleichschritt mit `pyproject.toml` |
+| CI-Werkzeug-Locks | Die hash-gesperrten Hüllen stehen in `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | Workflows installieren sie mit `--require-hashes` und tragen keine Werkzeugversion; die Spezifikationen stehen in `scripts/dev/ci_lock_table.py`, und Lock-Datum, Wartezeit und Stichtag stimmen mit den Abhängigkeits-Locks überein |
 | Dokumentationswerkzeuge | Aktuelle Bereiche stehen in `site/package.json`; die exakte Auflösung steht in `site/package-lock.json` | `npm outdated` meldet nach der Aktualisierung der Lock-Datei keine veraltete Dokumentationsabhängigkeit |
 | GitHub Actions | Bestehende SHA-Pins werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte, per Tag fixierte Ausnahme und ist in `release.yml` mit einem Kommentar `action-pinning-exempt:` gekennzeichnet | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden bewusst den PRs der Abhängigkeitsautomatisierung überlassen, um Unruhe an der Release-Oberfläche zu vermeiden |
 | npm-Paketierung | Der Workflow `publish-npm.yml` läuft beim Push des Tags `v*.*.*`; `workflow_dispatch` dient als Ausweichweg | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung wartet auf die Genehmigung der Umgebung `release` durch den Operator, die erteilt wird, nachdem `scripts/release/check-release-ready.sh` erfolgreich durchgelaufen ist |
 
 ## Sperrung
 
-Python-Lock-Dateien werden vom Mitwirkenden bei Bedarf erzeugt. Sie werden nicht
-committet, weil Apothems Laufzeithülle klein ist, die CLI mehrere
-Python-Nebenversionen unterstützt und CI absichtlich die neuesten passenden
-Werkzeugversionen ausübt.
+Die eigenen Python-Lock-Dateien der Mitwirkenden werden bei Bedarf erzeugt und
+nicht committet: Apothems Laufzeithülle ist klein, und die CLI unterstützt
+mehrere Python-Nebenversionen. CI ist die Ausnahme. Sie installiert die
+hash-gesperrten Dateien in `scripts/ci/`: vier Abhängigkeits-Locks
+(`requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` und `-prereqs.txt`) und
+einen Lock pro Werkzeug, das die Workflows ausführen (`-ruff.txt`,
+`-bandit.txt`, `-pip-audit.txt`, `-pip-licenses.txt` und `-pre-commit.txt`).
+`python scripts/dev/refresh_ci_locks.py` kompiliert alle neun zum Stand eines
+Lock-Datums, abzüglich einer Wartezeit von 7 Tagen, die der von Dependabot
+entspricht, sodass CI die Releases testet, die am Lock-Datum mindestens eine
+Woche alt waren, und das Aktualisieren der Dateien sie vorrücken lässt. Jede
+Datei hält das Lock-Datum, die Wartezeit und den daraus folgenden Stichtag
+fest, und `--check` reproduziert den Stichtag. Ein dringender Sicherheitsfix,
+der jünger als die Wartezeit ist, erfordert einen Aktualisierungslauf mit
+`--cooldown-days 0` oder eine Ausnahme von der Wartezeit für sein Paket in
+`scripts/dev/ci_lock_table.py`, die die Wartezeit nur für dieses Paket
+aufhebt. Der wöchentliche Lauf von `pip-audit.yml` prüft die neuesten
+Versionen, die `pyproject.toml` erlaubt, sowie die neun Locks, wobei er den
+OSV-Dienst nach Sicherheitshinweisen fragt. Mitwirkende installieren weiterhin
+mit `pip install -e ".[dev]"`.
 
 ```sh
 # Astral uv:
@@ -70,8 +91,12 @@ Node-Hülle hat.
 ## Begründung
 
 - **Warum Bereichsfixierungen für Python?** Die CLI unterstützt eine breite
-  Python-Matrix, und CI sollte Kompatibilitätsprobleme mit aktuellen Werkzeugen
-  aufdecken, bevor Nutzer auf sie stoßen.
+  Python-Matrix, daher hält `pyproject.toml` konservative Untergrenzen. CI
+  installiert hash-gesperrte Hüllen dieser Bereiche, die der Maintainer mit
+  `scripts/dev/refresh_ci_locks.py` aktualisiert (wöchentlich ist die
+  vorgesehene Kadenz), und der wöchentliche Lauf von `pip-audit.yml` löst die
+  neuesten erlaubten Versionen auf, um Probleme mit aktuellen Werkzeugen
+  aufzudecken.
 - **Warum ein committeter Node-Lock?** Die Website ist ein bereitgestelltes
   statisches Artefakt; die Lock-Datei liefert deterministische `npm ci`-Builds
   für diese öffentliche Oberfläche.
@@ -82,13 +107,24 @@ Node-Hülle hat.
 - **Was der Update-Bot nicht anfasst.** Die Dependabot-Versionsupdates
   (`.github/dependabot.yml`) decken die GitHub-Actions-Pins, die Lock-Datei der
   Website, die Lock-Datei des vsce-Packagers (`tools/vsce`), die Lock-Datei der
-  Harness-CLIs, die der Channel-Smoke installiert (`tools/channel-smoke`), und
-  die Pre-Commit-Hooks ab. Die Laufzeit-Untergrenzen in `pyproject.toml`, die
+  Harness-CLIs, die der Channel-Smoke installiert (`tools/channel-smoke`), das
+  hash-gesperrte pip, das CI installiert (`scripts/ci/requirements-ci-pip.txt`),
+  und die Pre-Commit-Hooks ab. Die übrigen neun Dateien in `scripts/ci` sind
+  Hüllen, die als Ganzes mit `scripts/dev/refresh_ci_locks.py` neu erzeugt
+  werden, keine von ihnen fixiert pip, und die Dependabot-Versionsupdates für
+  diesen Ordner beschränken sich auf pip.
+  Die Laufzeit-Untergrenzen in `pyproject.toml`, die
   hash-gesperrten Release-Anforderungen, die vendorte Hülle in
   `src/apothem/_vendor/vendor.txt` und die Pre-Commit-Hooks, die im Gleichschritt
   mit `pyproject.toml` fixiert sind, werden von Hand angehoben, weil die
   Anhebung einer einzelnen Fixierung die Dateien brechen würde, mit denen sie
-  übereinstimmen müssen.
+  übereinstimmen müssen. Die ruff- und mypy-Hooks gehören dazu:
+  `tests/scripts/test_ci_tool_locks.py` schlägt fehl, bis die exakte
+  ruff-Fixierung in `pyproject.toml`, die Hook-Revision, der ruff-Lock und der
+  dev-Lock dieselbe Version tragen und bis die exakte mypy-Fixierung, die
+  mypy-Hook-Revision und die Bibliotheken, die dieser Hook auflistet, zum
+  dev-Lock passen, sodass ein Dependabot-Sicherheits-Pull-Request für eines der
+  beiden Werkzeuge von Hand angepasst wird.
   Die Major-Version von `@types/node` der Website folgt ihrer Node-Untergrenze
   (`engines` und `.nvmrc`, Node 22), daher schlägt Dependabot nur deren Minor-
   und Patch-Aktualisierungen vor; heben Sie diese Major-Version zusammen mit
