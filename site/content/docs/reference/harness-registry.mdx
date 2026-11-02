@@ -106,11 +106,12 @@ co-installer puts Apothem content in front of every reader.
 | `~/.claude/skills/` | Claude Code | none | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | none | Cursor |
 | `~/.codex/agents/` | Codex | none | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | none | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | none | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | none | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | none | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | none | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | none | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | none | Windsurf |
 
 `~/.config/apothem/rules/` and `~/.config/apothem/templates/` hold the files
 Apothem's own skills and instruction files cite. No other tool loads them, so
@@ -128,6 +129,14 @@ files, so whether `Cursor` reads those helpers is not confirmed. The `Cursor`
 install also writes its own `<project>/.cursor/agents/` copy of the helpers,
 which the vendor's precedence ranks above the folders it imports, so in an
 installed project the native copy supersedes the one from `~/.claude/agents/`.
+
+`Windsurf` reads other tools' rule files through Devin's configuration import,
+which is on by default, and Devin Desktop's Local agent finds its files the way
+the Devin CLI does. So it loads the `~/.claude/CLAUDE.md` block the
+`Claude Code` install writes, and the `Cursor` install's
+`<project>/.cursor/rules/apothem-rules.mdc`, whose `alwaysApply: true`
+frontmatter keeps it active in every session. The import also reads a project
+`CLAUDE.md`, which no Apothem install writes.
 
 Some tools are deliberately not readers of `~/.agents/skills/`: the
 `Antigravity`, `CodeBuddy`, `Kiro`, and `Trae` docs do not say they load it by

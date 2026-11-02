@@ -260,6 +260,37 @@ Windsurf treats a `SKILL.md` header key it does not list; the skills carry
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 and a `metadata` map.
 
+Devin Local also imports the rule files of other tools, and that import is on
+by default. Two of those files can hold an Apothem block: the project rules
+file that the Apothem install for another editor writes, and the
+`~/.claude/CLAUDE.md` file that the Apothem install for Claude Code writes:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+```
+
+When either file holds an Apothem block, Devin Local loads it as well as the
+rules file in `.devin/rules/`, and installing `windsurf` prints a note that
+names the file and the install that wrote it. The first file is written for
+that editor, so what it says about folders and hooks does not apply to Devin.
+To load only the `.devin/rules/` file, turn the import off in
+`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` on Windows) or in
+the project's `.devin/config.json`:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Turning a key off also stops the rest of that tool's import: the first key
+stops that editor's MCP servers too, and `claude` stops Claude Code's skills,
+commands, hooks and MCP servers.
+
 ## Verification
 
 ```bash

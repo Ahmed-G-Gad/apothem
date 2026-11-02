@@ -115,6 +115,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Install notes name Windsurf as a reader of the Cursor and Claude Code rule
+  files.** Devin imports `.cursor/rules/*.mdc` and `~/.claude/CLAUDE.md` by
+  default, and Devin Local in Devin Desktop finds its files the way the Devin
+  CLI does, so the Apothem rules file the Cursor install writes and the block
+  the Claude Code install writes in `~/.claude/CLAUDE.md` reach Windsurf too.
+  Those installs now name Windsurf among the tools that load the file, and a
+  Windsurf install names the install whose Apothem block it finds there. The
+  Windsurf page shows the `read_config_from` keys that turn either import off.
+  No Apothem install writes a project `CLAUDE.md`, which Devin also imports.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade
