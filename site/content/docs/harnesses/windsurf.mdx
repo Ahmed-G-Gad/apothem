@@ -114,14 +114,14 @@ Things to know:
   Files with other names are never touched.
 - Devin also reads the shared `.agents/agents/` folder, which Apothem never writes,
   and the Devin CLI documents an import of subagents from a `.claude/` folder
-  without naming the path. Apothem has not confirmed that Devin Desktop's Local
-  mode applies that import.
+  without naming the path. Devin Local finds its files the way the Devin CLI
+  does, so that import applies there too.
 - Apothem has not confirmed the `allowed-tools` names for web tools, which values
   `model` accepts, or how an empty `allowed-tools` list is read.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Hooks
@@ -198,8 +198,8 @@ matcher is a regular expression, an omitted one matches every tool, and
 **Devin also runs the hooks Claude Code wrote.** Devin loads the hooks in
 `~/.claude/settings.json`, `.claude/settings.json` and
 `.claude/settings.local.json` while `read_config_from.claude` is on, which is its
-default for the Devin CLI; the Desktop pages do not say whether Devin Local
-applies it. If you also installed Apothem for Claude Code, both sets of hooks can
+default: Devin Local finds its files the way the Devin CLI does. If you also
+installed Apothem for Claude Code, both sets of hooks can
 run. The `SessionStart` command here and the Claude Code copy of it share one
 marker per session in Apothem's hook state folder, so whichever runs second is
 silent and the bootstrap reaches the model once; Apothem finds Devin from the
@@ -227,9 +227,8 @@ two entries yourself.
 **Turning the hooks off.** Set `APOTHEM_HOOKS_DISABLE=1` in Devin's environment to
 silence the Apothem hooks.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Profile-to-native-config mapping
@@ -253,10 +252,10 @@ nor the shared Devin config. The single-file `.windsurfrules`
 form is intentionally not written.
 
 Devin Desktop (Windsurf) discovers `~/.agents/skills/`, so the skills the
-install writes appear without further setup. It can also list the same names
-from `~/.claude/skills/` when its Claude Code config import is on; the Devin CLI
-documentation makes that import on by default, and the Desktop pages do not say
-whether the Local mode applies it. Apothem has not confirmed how
+install writes appear without further setup. Its Claude Code import, on by
+default, reads skills from the project's `.claude/skills/` folder only, so the
+skills an Apothem install for Claude Code writes to `~/.claude/skills/` are not
+documented to appear there as well. Apothem has not confirmed how
 Windsurf treats a `SKILL.md` header key it does not list; the skills carry
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 and a `metadata` map.

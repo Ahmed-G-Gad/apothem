@@ -97,9 +97,10 @@ def test_capabilities_template_path_resolves_to_existing_file() -> None:
 
 
 def test_capabilities_names_native_mcp_surface() -> None:
-    # Devin Desktop's Cascade MCP is a vendor-native, operator-owned surface at
+    # Devin Local's user MCP file is a vendor-native, operator-owned surface at
     # ~/.config/devin/mcp_config.json the adapter recognizes
-    # (docs.devin.ai/desktop/cascade/mcp, retrieved 2026-10-03).
+    # (docs.devin.ai/desktop/devin-local/customizations#configuration, retrieved
+    # 2026-11-02).
     capabilities = _capabilities()
     mcp = capabilities["mcp_servers"]
     assert isinstance(mcp, list)

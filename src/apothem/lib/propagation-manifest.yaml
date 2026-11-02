@@ -553,7 +553,8 @@ harnesses:
     # (requires_project = True) and supplies the operator-supplied --project
     # value via the project-scope CLI plumbing. Skills and command skills
     # install at the shared user-level skills folder ~/.agents/skills/ (vendor
-    # docs at https://docs.devin.ai/desktop/cascade/skills) and the rules and
+    # docs at https://docs.devin.ai/desktop/devin-local/customizations#skill-scopes)
+    # and the rules and
     # templates corpus at ~/.config/apothem/, ahead of the project rule.
     install:
       # User-level entries run first, so a failure writing the user home
@@ -591,8 +592,8 @@ harnesses:
       # backed up first. Project scope only; the shared .agents/agents/ folder,
       # which Devin also reads, stays unwritten.
       # TODO(clarify): the allowed-tools names of Devin's web tools, which values
-      # `model` accepts, and whether Devin Desktop applies the CLI's .claude/
-      # subagent import.
+      # `model` accepts, and the folder the CLI's .claude/ subagent import reads
+      # (Devin Desktop uses the CLI's discovery, so the import applies there).
       - source: "agents/"
         target: "${PROJECT_ROOT}/.devin/agents/"
         mode: devin_agents
@@ -624,8 +625,10 @@ harnesses:
       # TODO(clarify): the shell Devin runs a hook command in on Windows is not
       # documented; the command is quoted for sh and would need a call operator
       # under PowerShell.
-      # TODO(clarify): whether Devin Desktop's Local agent applies the CLI's
-      # read_config_from defaults. Devin excludes local config files from git
+      # Devin Desktop's Local agent applies the CLI's read_config_from defaults:
+      # every customization uses the Devin CLI format and discovery
+      # (https://docs.devin.ai/desktop/devin-local/customizations.md, retrieved
+      # 2026-11-02). Devin excludes local config files from git
       # itself, through .git/info/exclude
       # (https://docs.devin.ai/cli/reference/configuration/global-vs-local.md,
       # retrieved 2026-10-28), so the registration stays out of the repository.

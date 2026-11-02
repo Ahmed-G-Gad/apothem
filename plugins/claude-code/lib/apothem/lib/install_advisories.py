@@ -273,7 +273,8 @@ def shared_root_advisories(
 #: lives in a folder repositories commit and holds this machine's paths
 #: (https://docs.github.com/en/copilot/reference/hooks-reference, retrieved
 #: 2026-10-28). Devin Local loads no hook in Restricted Mode
-#: (https://docs.devin.ai/desktop/devin-local.md, retrieved 2026-10-28) and its
+#: (https://docs.devin.ai/desktop/devin-local/overview.md#restricted-mode,
+#: retrieved 2026-11-02) and its
 #: config.local.json is gitignored
 #: (https://docs.devin.ai/cli/extensibility/hooks/overview.md, retrieved
 #: 2026-10-28). Cursor's project hook file is checked into version control, runs
@@ -346,19 +347,20 @@ _HOOK_REVIEW: dict[str, tuple[str, str]] = {
 #: (https://cursor.com/docs/reference/third-party-hooks, retrieved 2026-10-27).
 #: Devin loads them while read_config_from.claude is on, its default for the CLI
 #: (https://docs.devin.ai/cli/extensibility/hooks/overview.md and
-#: /cli/reference/configuration/read-config-from.md, retrieved 2026-10-28); the
-#: Desktop pages do not say whether the Local agent applies that default. The
-#: SessionStart command each install registers and the Claude Code copy of it
-#: share one per-session marker, so whichever runs second is silent; no
-#: PostToolUse counter is de-duplicated.
+#: /cli/reference/configuration/read-config-from.md, retrieved 2026-10-28), and
+#: Devin Local in Devin Desktop uses the CLI's discovery
+#: (https://docs.devin.ai/desktop/devin-local/customizations.md, retrieved
+#: 2026-11-02). The SessionStart command each install registers and the Claude
+#: Code copy of it share one per-session marker, so whichever runs second is
+#: silent; no PostToolUse counter is de-duplicated.
 _HOOK_IMPORT: dict[str, tuple[str, str]] = {
     "windsurf": (
         ".devin/config.local.json",
         "Devin Local also loads the hooks Claude Code's settings files hold "
         "(~/.claude/settings.json, .claude/settings.json and "
         ".claude/settings.local.json) while read_config_from.claude is on, "
-        "which is its default for the Devin CLI; the Desktop docs do not say "
-        "whether the Local agent applies it. If this machine also has the "
+        "which is its default: Devin Local finds its files the way the Devin "
+        "CLI does. If this machine also has the "
         "Apothem Claude Code install, both sets can run: the SessionStart "
         "command in {path} and the Claude Code copy of it share one marker per "
         "session, so whichever runs second is silent and the bootstrap reaches "
