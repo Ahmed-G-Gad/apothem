@@ -112,6 +112,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reached its timestamp. Each lock records its lock date, cooldown, cutoff and
   exceptions, and `--check` reproduces them. The locks are at lock date
   2026-10-29 with cutoff 2026-10-22.
+- **The weekly vendor URL check names the hosts it cannot check.**
+  CodeBuddy's documentation host answers `0.0.0.1` to name lookups from the
+  United States, where GitHub's hosted runners are, so the check never
+  reached the twelve CodeBuddy pages the pins cite. It waited out three
+  30-second timeouts on each, about 20 of the job's 30 minutes, and counted
+  them as unreachable. A host whose name resolves only to an address no
+  server can hold, anything in `0.0.0.0/8` or `::`, is now reported as
+  `unroutable` and gets no request. Like an unreachable URL, it does not fail
+  the check. Each run carries a warning naming such a host, and the issue the
+  monitor files lists its URLs to check by hand.
 
 ### Fixed
 

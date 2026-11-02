@@ -74,8 +74,8 @@ flowchart LR
   Python e um conjunto curado de regras; o mypy impõe disciplina de tipos no
   modo strict; o validador de frontmatter controla a conformidade dos artefatos
   com o schema para regras, skills, trabalhadores delegados e comandos. O
-  markdownlint não faz parte desta faixa: o fluxo de trabalho Markdown Lint
-  executa o hook de pre-commit dele no CI sobre os arquivos Markdown alterados
+  markdownlint não faz parte desta faixa: seu hook de pre-commit roda no CI
+  pelo fluxo de trabalho Markdown Lint quando arquivos Markdown mudam
   (consulte [Convenções de Markdown](/docs/reference/markdown-conventions)).
 - **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra
   a matriz completa de eventos; `validate_ecosystem.py` é o principal portão

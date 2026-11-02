@@ -74,9 +74,10 @@ flowchart LR
   un ensemble de règles sélectionnées ; mypy impose la discipline de typage en
   mode strict ; le validateur de frontmatter contrôle la conformité des artefacts
   au schéma pour les règles, les skills, les travailleurs délégués et les
-  commandes. markdownlint ne fait pas partie de ce couloir : le flux de travail
-  Markdown Lint exécute son hook de pre-commit en CI sur les fichiers Markdown
-  modifiés (voir [Conventions Markdown](/docs/reference/markdown-conventions)).
+  commandes. markdownlint ne fait pas partie de ce couloir : son hook de
+  pre-commit s'exécute dans la CI, via le flux de travail Markdown Lint,
+  lorsque des fichiers Markdown changent (voir
+  [Conventions Markdown](/docs/reference/markdown-conventions)).
 - **Couloir de tests** — `pytest tests/hooks` exerce le runtime des hooks contre
   la matrice complète des événements ; `validate_ecosystem.py` est le principal
   portail structurel de la cohérence inter-artefacts ; `chaos_pass.py` s'exécute

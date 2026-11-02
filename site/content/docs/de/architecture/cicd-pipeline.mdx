@@ -70,8 +70,8 @@ flowchart LR
   und ein kuratiertes Regelwerk ab; mypy erzwingt Typdisziplin im Strict-Modus;
   der Frontmatter-Validator prüft die Schemakonformität der Artefakte für Regeln,
   Skills, delegierte Worker und Befehle. markdownlint gehört nicht zu dieser
-  Spur: Der Markdown-Lint-Workflow führt seinen Pre-Commit-Hook in der CI für
-  geänderte Markdown-Dateien aus (siehe
+  Spur: Sein Pre-Commit-Hook läuft in der CI im Markdown-Lint-Workflow, wenn
+  sich Markdown-Dateien ändern (siehe
   [Markdown-Konventionen](/docs/reference/markdown-conventions)).
 - **Test-Spur** — `pytest tests/hooks` übt die Hook-Laufzeit gegen die vollständige
   Ereignismatrix aus; `validate_ecosystem.py` ist das primäre strukturelle Gate

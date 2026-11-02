@@ -14,12 +14,12 @@ Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一�
 
 | 类别 | 声明方式 | 锁定策略 |
 |---|---|---|
-| 运行时 Python 依赖 | `pyproject.toml` 中的 `[project.dependencies]` | 面向用户的下限范围；包不附带 Python 运行时锁文件。CI 安装它们的哈希锁定闭包（参见 CI 依赖锁文件） |
-| 开发 / 安全工具 | `[project.optional-dependencies]` extras | 下限范围，但 `ruff` 与 `mypy` 除外，`dev` extra 将它们精确固定到 CI 所运行的版本（关于 ruff，参见 CI 工具锁文件）；CI 从哈希锁定闭包安装 dev extra（参见 CI 依赖锁文件） |
+| 运行时 Python 依赖 | `pyproject.toml` 中的 `[project.dependencies]` | 面向用户的下限范围；包中不附带 Python 运行时锁文件。CI 安装这些依赖的哈希锁定闭包（见 CI 依赖锁） |
+| 开发 / 安全工具 | `[project.optional-dependencies]` extras | 下限范围，但 `ruff` 和 `mypy` 除外：`dev` extra 将二者精确固定为 CI 运行的版本（ruff 见 CI 工具锁）；CI 从哈希锁定闭包安装 dev extra（见 CI 依赖锁） |
 | 发布工具 | 发布工作流使用 `scripts/release/requirements-build-linux.txt`；本地构建使用 `[project.optional-dependencies]` 中的 `release` extra | 为发布工作流哈希锁定；由发布工具闭包生成。`release` extra 是下限范围 |
-| CI pip | `scripts/ci/requirements-ci-pip.txt` | 哈希锁定：一个 `pip==X.Y.Z` 固定，附带其 wheel 与 sdist 的哈希，由每个升级 pip 的工作流使用 `--require-hashes -r` 安装。Dependabot 提出升级并重写哈希；`scripts/dev/check_pip_pin_drift.py` 将该固定保持在 pip 26.2 或更高版本 |
-| CI 依赖锁文件 | `scripts/ci/requirements-ci-dev.txt`、`-runtime.txt`、`-test.txt` 与 `-prereqs.txt` | 哈希锁定的通用闭包，使用 `uv pip compile` 从 `pyproject.toml`（对 `-prereqs.txt` 则是引擎的主机前置条件）编译，以某个锁定日期为准再减去 7 天的冷却期，记录在每个文件中，使用 `--require-hashes -r` 安装（包本身使用 `--no-deps -e .`）。CI 测试已锁定的版本，直到 `scripts/dev/refresh_ci_locks.py` 重新生成它们；`pip-audit.yml` 每周审计允许的最新版本，并审计这些锁文件。`tests/scripts/test_ci_locks_fresh.py` 在某个锁文件不再满足其输入时失败 |
-| CI 工具锁文件 | `scripts/ci/requirements-ci-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt` 与 `-pre-commit.txt` | 工作流所运行的每个工具对应一个哈希锁定闭包，由同一个脚本根据 `scripts/dev/ci_lock_table.py` 中的精确规格编译，使用相同的锁定日期与冷却期，并使用 `--require-hashes -r` 安装。没有任何工作流指定工具版本。`pre-commit` 需要 Python 3.11 或更高版本，因此它的锁文件也是如此；`pip-audit` 锁文件同样针对 3.11 编译，因为支持 3.10 的最新 `filelock` 存在尚未修复的安全公告。除 CI pip 之外，没有任何锁文件固定 pip |
+| CI pip | `scripts/ci/requirements-ci-pip.txt` | 哈希锁定：一个 `pip==X.Y.Z` 固定，附带其 wheel 与 sdist 的哈希，由每个升级 pip 的工作流以 `--require-hashes -r` 安装。Dependabot 提出升级并重写哈希；`scripts/dev/check_pip_pin_drift.py` 将该固定保持在 pip 26.2 或更高版本 |
+| CI 依赖锁 | `scripts/ci/requirements-ci-dev.txt`、`-runtime.txt`、`-test.txt` 与 `-prereqs.txt` | 哈希锁定的通用闭包，用 `uv pip compile` 从 `pyproject.toml`（`-prereqs.txt` 则从引擎的宿主前置条件）编译，基准为锁定日期减去 7 天冷却期，二者都记录在各文件中；以 `--require-hashes -r` 安装（包本身用 `--no-deps -e .` 安装）。在 `scripts/dev/refresh_ci_locks.py` 重新生成之前，CI 一直测试锁定的版本；`pip-audit.yml` 每周审计允许的最新版本，并审计这些锁。当某个锁不再满足其输入时，`tests/scripts/test_ci_locks_fresh.py` 失败 |
+| CI 工具锁 | `scripts/ci/requirements-ci-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt` 与 `-pre-commit.txt` | 工作流运行的每个工具各有一个哈希锁定闭包，由同一脚本依据 `scripts/dev/ci_lock_table.py` 中的精确规格编译，使用相同的锁定日期与冷却期，并以 `--require-hashes -r` 安装。没有工作流写明工具版本。`pre-commit` 需要 Python 3.11 或更高版本，因此其锁也是如此；`pip-audit` 的锁同样针对 3.11 编译，因为支持 3.10 的最新 `filelock` 存在未修复的安全公告。除 CI pip 外，没有锁固定 pip |
 | 文档站点 | `site/package.json` | 提交 `site/package-lock.json` 并由 `npm ci` 消费 |
 | VS Code 打包器 | `tools/vsce/package.json` | 提交 `tools/vsce/package-lock.json`；release 与 publish 作业运行 `npm ci --ignore-scripts` |
 | Channel-smoke 工具 CLI | `tools/channel-smoke/package.json` | 提交 `tools/channel-smoke/package-lock.json` 并由 `npm ci` 消费 |
@@ -30,19 +30,19 @@ Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一�
 | 表面 | 已批准状态 | 理由 |
 |---|---|---|
 | 运行时依赖 | 当前下限位于 `pyproject.toml` `[project.dependencies]` | 发布前批准当前稳定下限；无已知运行时 CVE 阻断项 |
-| 开发工具 | 当前下限位于 `pyproject.toml` `dev` extra；其中 `ruff` 与 `mypy` 为精确固定 | 发布前批准最新稳定下限；ruff 与 mypy 各自固定到一个版本，供钩子、CI 与贡献者使用，mypy 钩子固定的是它所列出的库在 dev 锁文件中的版本，当它们不一致时 `tests/scripts/test_ci_tool_locks.py` 会失败 |
+| 开发工具 | 当前下限位于 `pyproject.toml` `dev` extra；`ruff` 与 `mypy` 在其中精确固定 | 发布前批准最新稳定下限；ruff 与 mypy 各自固定为同一个版本，供钩子、CI 与贡献者共用，mypy 钩子将其列出的库固定为 dev 锁中的版本，版本不一致时 `tests/scripts/test_ci_tool_locks.py` 失败 |
 | 安全工具 | 当前下限位于 `pyproject.toml` `security` extra | 发布前批准当前扫描器下限 |
 | 发布工具 | 哈希锁定闭包位于 `scripts/release/requirements-build-linux.txt` | 发布工作流以 `--require-hashes` 安装；本地脚本要求 `build` 已存在，而非静默安装漂移的依赖 |
-| CI pip | 哈希锁定的固定位于 `scripts/ci/requirements-ci-pip.txt` | pip 26.2 或更高版本修复了 CVE-2026-13346；工作流以 `--require-hashes` 安装它，因此下载内容会对照其已发布的哈希进行校验 |
-| CI 依赖锁文件 | 哈希锁定闭包位于 `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | 工作流以 `--require-hashes` 安装它们；每个文件都记录其锁定日期、冷却期与截止时间，而新鲜度测试使它们与 `pyproject.toml` 保持同步 |
-| CI 工具锁文件 | 哈希锁定闭包位于 `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | 工作流以 `--require-hashes` 安装它们，且不携带工具版本；规格位于 `scripts/dev/ci_lock_table.py`，锁定日期、冷却期与截止时间同依赖锁文件一致 |
+| CI pip | 哈希锁定的固定位于 `scripts/ci/requirements-ci-pip.txt` | pip 26.2 或更高版本修复了 CVE-2026-13346；工作流以 `--require-hashes` 安装它，因此下载内容会与其公布的哈希比对 |
+| CI 依赖锁 | 哈希锁定闭包位于 `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | 工作流以 `--require-hashes` 安装它们；每个文件记录其锁定日期、冷却期与截止时间，新鲜度测试使它们与 `pyproject.toml` 保持同步 |
+| CI 工具锁 | 哈希锁定闭包位于 `scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt` | 工作流以 `--require-hashes` 安装它们，且不写明工具版本；规格位于 `scripts/dev/ci_lock_table.py`，锁定日期、冷却期与截止时间与依赖锁一致 |
 | 文档工具 | 当前范围位于 `site/package.json`；精确解析位于 `site/package-lock.json` | 锁文件刷新后 `npm outdated` 不返回任何陈旧的文档依赖 |
 | GitHub Actions | 当前发布保留既有 SHA 固定；SLSA 可复用工作流仍是已记录的标签固定例外，在 `release.yml` 中以 `action-pinning-exempt:` 注释标记 | 公共 CI 重跑结果为绿；为避免发布表面的频繁变动，广泛的 action 大版本升级有意留给依赖自动化的拉取请求 |
 | npm 打包 | `publish-npm.yml` 工作流在 `v*.*.*` 标签推送时运行，并以 `workflow_dispatch` 作为后备 | 唯一的公共 npm 包是 `@ahmed-g-gad/apothem`；发布会等待操作者对 `release` 环境的批准，该批准在 `scripts/release/check-release-ready.sh` 通过之后给出 |
 
 ## 锁定
 
-贡献者自己的 Python 锁文件按需生成，不被提交：Apothem 的运行时闭包很小，CLI 支持多个 Python 小版本。CI 是例外。它安装 `scripts/ci/` 中的哈希锁定文件：四个依赖锁文件（`requirements-ci-dev.txt`、`-runtime.txt`、`-test.txt` 与 `-prereqs.txt`），以及工作流所运行的每个工具各一个锁文件（`-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt` 与 `-pre-commit.txt`）。`python scripts/dev/refresh_ci_locks.py` 以某个锁定日期为准、再减去与 Dependabot 一致的 7 天冷却期，编译全部九个文件，因此 CI 测试的是在锁定日期当天已发布至少一周的版本，刷新这些文件会使它们向前推进。每个文件都记录锁定日期、冷却期以及由此得出的截止时间，`--check` 会重现该截止时间。发布时间不足冷却期的紧急安全修复，需要用 `--cooldown-days 0` 运行一次刷新，或在 `scripts/dev/ci_lock_table.py` 中为其包设置冷却期例外，该例外只对那一个包解除冷却期。每周的 `pip-audit.yml` 运行会审计 `pyproject.toml` 允许的最新版本以及这九个锁文件，并向 OSV 服务查询安全公告。贡献者仍然使用 `pip install -e ".[dev]"` 安装。
+贡献者自己的 Python 锁文件按需生成，不会提交：Apothem 的运行时闭包很小，且 CLI 支持多个 Python 小版本。CI 是例外。它安装 `scripts/ci/` 中的哈希锁定文件：四个依赖锁（`requirements-ci-dev.txt`、`-runtime.txt`、`-test.txt` 与 `-prereqs.txt`），以及工作流运行的每个工具各一个锁（`-ruff.txt`、`-bandit.txt`、`-pip-audit.txt`、`-pip-licenses.txt` 与 `-pre-commit.txt`）。`python scripts/dev/refresh_ci_locks.py` 以锁定日期减去 7 天冷却期（与 Dependabot 的冷却期一致）为基准编译全部九个文件，因此 CI 测试的是在锁定日期时已发布至少一周的版本，刷新这些文件会让这些版本向前推进。每个文件记录锁定日期、冷却期以及由此得出的截止时间，`--check` 会重现该截止时间。比冷却期更新的紧急安全修复需要以 `--cooldown-days 0` 运行一次刷新，或在 `scripts/dev/ci_lock_table.py` 中为其包设置冷却期例外，该例外只对这一个包解除冷却期。每周的 `pip-audit.yml` 运行会审计 `pyproject.toml` 允许的最新版本以及这九个锁，并向 OSV 服务查询安全公告。贡献者仍使用 `pip install -e ".[dev]"` 安装。
 
 ```sh
 # Astral uv:
@@ -61,8 +61,8 @@ pip freeze > requirements.dev.lock
 
 ## 理由
 
-- **为什么 Python 用范围固定？** CLI 支持广泛的 Python 矩阵，因此 `pyproject.toml` 保持保守的下限。CI 安装这些范围的哈希锁定闭包，维护者用 `scripts/dev/refresh_ci_locks.py` 刷新它们（预期的节奏是每周一次），而每周的 `pip-audit.yml` 运行会解析允许的最新版本，以揭示当前工具的问题。
+- **为什么 Python 用范围固定？** CLI 支持广泛的 Python 矩阵，因此 `pyproject.toml` 保持保守的下限。CI 安装这些范围的哈希锁定闭包，由维护者用 `scripts/dev/refresh_ci_locks.py` 刷新（预期节奏为每周一次），而每周的 `pip-audit.yml` 运行会解析允许的最新版本，以揭示与当前工具之间的问题。
 - **为什么提交 Node 锁文件？** 网站是一个已部署的静态产物；锁文件为那个公共表面提供确定性的 `npm ci` 构建。
 - **为什么用 SHA 固定 Actions？** 标签是可变的；SHA 是不可变的。Dependabot 提出 SHA 升级并重写每条版本注释，而发布闸门记录任何有意的搁置。
-- **更新机器人不触及的内容。** Dependabot 版本更新（`.github/dependabot.yml`）涵盖 GitHub Actions 固定、网站锁文件、vsce 打包器锁文件（`tools/vsce`）、channel smoke 所安装的工具 CLI 锁文件（`tools/channel-smoke`）、CI 所安装的哈希锁定 pip（`scripts/ci/requirements-ci-pip.txt`）以及 pre-commit 钩子。`scripts/ci` 中其余的九个文件是用 `scripts/dev/refresh_ci_locks.py` 整体重新生成的闭包，其中没有一个固定 pip，而 Dependabot 对该文件夹的版本更新仅限于 pip。`pyproject.toml` 中的运行时下限、哈希锁定的发布依赖、`src/apothem/_vendor/vendor.txt` 中的 vendored 闭包，以及与 `pyproject.toml` 同步固定的 pre-commit 钩子都由人工调整，因为单个固定的升级会破坏与之保持一致的那些文件。ruff 与 mypy 钩子就是其中两项：`tests/scripts/test_ci_tool_locks.py` 会一直失败，直到 `pyproject.toml` 中精确的 ruff 固定、钩子 rev、ruff 锁文件与 dev 锁文件都带有同一个版本，并且直到精确的 mypy 固定、mypy 钩子 rev 以及该钩子所列出的库与 dev 锁文件一致，因此针对其中任一工具的 Dependabot 安全拉取请求都要人工调整。网站的 `@types/node` 大版本跟随其 Node 下限（`engines` 与 `.nvmrc`，Node 22），因此 Dependabot 只提出其小版本与补丁更新；请将该大版本与下限一同提升。版本更新不会改动 npm 的 `overrides` 块。Dependabot 安全更新仍然涵盖每一个清单，因此一个安全拉取请求可能会提出上述某个固定的升级，或改动某个 override；请人工调整它或将其关闭。
+- **更新机器人不触及的内容。** Dependabot 版本更新（`.github/dependabot.yml`）涵盖 GitHub Actions 固定、网站锁文件、vsce 打包器锁文件（`tools/vsce`）、channel smoke 所安装的工具 CLI 锁文件（`tools/channel-smoke`）、CI 安装的哈希锁定 pip（`scripts/ci/requirements-ci-pip.txt`）以及 pre-commit 钩子。`scripts/ci` 中的其余九个文件是用 `scripts/dev/refresh_ci_locks.py` 整体重新生成的闭包，其中没有一个固定 pip，且 Dependabot 对该文件夹的版本更新仅限于 pip。`pyproject.toml` 中的运行时下限、哈希锁定的发布依赖、`src/apothem/_vendor/vendor.txt` 中的 vendored 闭包，以及与 `pyproject.toml` 同步固定的 pre-commit 钩子都由人工调整，因为单个固定的升级会破坏与之保持一致的那些文件。ruff 与 mypy 钩子就是其中两个：`tests/scripts/test_ci_tool_locks.py` 会一直失败，直到 `pyproject.toml` 中 ruff 的精确固定、钩子 rev、ruff 锁与 dev 锁使用同一版本，并且 mypy 的精确固定、mypy 钩子 rev 以及该钩子列出的库都与 dev 锁一致；因此，针对这两个工具中任一个的 Dependabot 安全拉取请求需要人工调整。网站的 `@types/node` 大版本跟随其 Node 下限（`engines` 与 `.nvmrc`，Node 22），因此 Dependabot 只提出其小版本与补丁更新；请将该大版本与下限一同提升。版本更新不会改动 npm 的 `overrides` 块。Dependabot 安全更新仍然涵盖每一个清单，因此一个安全拉取请求可能会提出上述某个固定的升级，或改动某个 override；请人工调整它或将其关闭。
 - **合并 Dependabot 拉取请求。** 仓库的 squash 默认设置采用 PR 标题。部分 Dependabot 标题（主要是点名某个目录的分组标题）会超出 72 字符的 squash 主题上限；PR Title 检查会列出它们，重新命名标题即可修复。更改工具锁文件的拉取请求不会运行任何 `ci.yml` 作业，因此由 npm audit 工作流对其进行审计与安装，针对 vsce 锁文件打包 VS Code 扩展并运行 vsce 发布测试，而针对 channel-smoke 锁文件则运行 channel smoke 工作流。Markdown Lint 工作流会在 pre-commit 钩子拉取请求上运行 markdownlint 钩子；其他钩子不会在 CI 中得到演练，因此请在合并之前于其分支上运行 `pre-commit run --all-files`。

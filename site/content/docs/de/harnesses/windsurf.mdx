@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Apothem-Harness-Adapter für Windsurf (GA)."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -123,15 +123,15 @@ Gut zu wissen:
   nicht wieder her. Dateien mit anderen Namen werden nie angefasst.
 - Devin liest außerdem den gemeinsamen Ordner `.agents/agents/`, den Apothem nie
   schreibt, und die Devin CLI dokumentiert einen Import von Subagenten aus einem
-  Ordner `.claude/`, ohne den Pfad zu nennen. Apothem hat nicht bestätigt, dass
-  der Local-Modus von Devin Desktop diesen Import anwendet.
+  Ordner `.claude/`, ohne den Pfad zu nennen. Devin Local findet seine Dateien
+  auf dieselbe Weise wie die Devin CLI, daher gilt dieser Import auch dort.
 - Apothem hat nicht bestätigt, welche `allowed-tools`-Namen für Web-Werkzeuge
   gelten, welche Werte `model` akzeptiert oder wie eine leere `allowed-tools`-Liste
   gelesen wird.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Hooks
@@ -216,8 +216,8 @@ Werkzeug, auf das er passen könnte.
 **Devin führt auch die Hooks aus, die Claude Code geschrieben hat.** Devin lädt
 die Hooks in `~/.claude/settings.json`, `.claude/settings.json` und
 `.claude/settings.local.json`, solange `read_config_from.claude` eingeschaltet
-ist, was für die Devin CLI die Standardeinstellung ist; die Desktop-Seiten sagen
-nicht, ob Devin Local sie anwendet. Wenn Sie Apothem auch für Claude Code
+ist, was die Standardeinstellung ist: Devin Local findet seine Dateien auf
+dieselbe Weise wie die Devin CLI. Wenn Sie Apothem auch für Claude Code
 installiert haben, können beide Hook-Sätze laufen. Der `SessionStart`-Befehl hier
 und dessen Kopie für Claude Code teilen sich eine Markierung pro Sitzung im
 Hook-Zustandsordner von Apothem, sodass der zweite, der läuft, still bleibt und
@@ -249,9 +249,8 @@ oder fügen Sie die beiden Einträge selbst hinzu.
 **Die Hooks ausschalten.** Setzen Sie `APOTHEM_HOOKS_DISABLE=1` in Devins
 Umgebung, um die Apothem-Hooks stummzuschalten.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Zuordnung von Profil zu nativer Konfiguration
@@ -277,11 +276,11 @@ wenig die Cascade-Hook-Datei oder die gemeinsame Devin-Konfiguration. Die
 Einzeldatei-Form `.windsurfrules` wird absichtlich nicht geschrieben.
 
 Devin Desktop (Windsurf) erkennt `~/.agents/skills/`, sodass die Skills, die die
-Installation schreibt, ohne weitere Einrichtung erscheinen. Es kann dieselben
-Namen auch aus `~/.claude/skills/` auflisten, wenn sein Import der
-Konfiguration von Claude Code eingeschaltet ist; laut der Devin-CLI-Dokumentation ist
-dieser Import standardmäßig eingeschaltet, und die Desktop-Seiten sagen nicht, ob
-der Local-Modus ihn anwendet. Apothem hat nicht bestätigt, wie Windsurf einen
+Installation schreibt, ohne weitere Einrichtung erscheinen. Sein Import aus
+Claude Code, standardmäßig eingeschaltet, liest Skills nur aus dem Ordner
+`.claude/skills/` des Projekts; daher ist nicht dokumentiert, dass die Skills,
+die eine Installation von Apothem für Claude Code in `~/.claude/skills/`
+schreibt, dort ebenfalls erscheinen. Apothem hat nicht bestätigt, wie Windsurf einen
 `SKILL.md`-Header-Schlüssel behandelt, den es nicht auflistet; die Skills tragen
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`
 und eine `metadata`-Map.

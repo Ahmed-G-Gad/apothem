@@ -23,6 +23,13 @@ it:
   500, 502, 503, 504 and Cloudflare's origin errors 520 to 524 are retried
   first. A server fault or an outage says nothing about whether the page
   moved, so these are reported but do not fail the check.
+- ``unroutable``: the host name resolves only to addresses that no server
+  can hold (0.0.0.0/8, or the IPv6 unspecified address), so no request is
+  sent. A vendor's DNS can answer this way for the region the check runs
+  from: www.codebuddy.ai answers 0.0.0.1 to networks in the United States,
+  where GitHub's hosted runners are. The page goes unchecked, which says
+  nothing about whether it moved, so these are reported but do not fail the
+  check.
 
 The report is JSON. The exit code is 2 when any URL is ``moved`` or ``dead``,
 0 otherwise. The harness-convention monitor runs this weekly.
@@ -31,6 +38,7 @@ The report is JSON. The exit code is 2 when any URL is ``moved`` or ``dead``,
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 import socket
@@ -70,6 +78,15 @@ _RETRIED_STATUSES: Final[frozenset[int]] = frozenset(
 _TEMPORARY_DNS_ERRORS: Final[frozenset[int]] = frozenset(
     code for code in (getattr(socket, "EAI_AGAIN", None),) if code is not None
 )
+# Addresses no server can hold. RFC 6890 marks 0.0.0.0/8 as never valid as a
+# destination, and RFC 4291 the IPv6 unspecified address. On Linux a request
+# to 0.0.0.1 through 0.255.255.255 waits out its timeout, while one to 0.0.0.0
+# or :: goes to this machine itself, where it is refused or answered by a
+# local service. Either way no vendor server answers.
+_NO_SERVER_NETWORKS: Final[tuple[ipaddress.IPv4Network, ipaddress.IPv6Network]] = (
+    ipaddress.IPv4Network("0.0.0.0/8"),
+    ipaddress.IPv6Network("::/128"),
+)
 _USER_AGENT: Final[str] = (
     "Mozilla/5.0 (compatible; apothem-vendor-url-check/1.0; "
     "+https://github.com/ahmed-g-gad/apothem)"
@@ -87,6 +104,9 @@ class FetchResult:
     #: up on its own: the host name no longer resolves, or its certificate
     #: fails verification.
     lasting: bool = False
+    #: The addresses the host name resolved to, set when no server can hold
+    #: any of them, in which case no request was sent.
+    unroutable: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -175,7 +195,13 @@ def _benign_redirect(url: str, final_url: str) -> bool:
 
 
 def classify(url: str, result: FetchResult) -> str:
-    """Return ``ok``, ``moved``, ``dead``, ``blocked`` or ``unreachable``."""
+    """Return the outcome for *result*.
+
+    One of ``ok``, ``moved``, ``dead``, ``blocked``, ``unreachable`` or
+    ``unroutable``; the module docstring defines each.
+    """
+    if result.unroutable:
+        return "unroutable"
     if result.status is None:
         return "dead" if result.lasting else "unreachable"
     if result.status >= 500:
@@ -199,10 +225,47 @@ def _is_lasting(reason: object) -> bool:
     return False
 
 
+def _holds_no_server(address: str) -> bool:
+    try:
+        parsed = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return any(parsed in network for network in _NO_SERVER_NETWORKS)
+
+
+def _unroutable_addresses(host: str) -> list[str]:
+    """Return the addresses *host* resolves to when no server can hold any.
+
+    An empty list means the name has a usable address or does not resolve;
+    the request then meets any failure itself, and fetch() classifies it.
+    """
+    if not host:
+        return []
+    try:
+        answers = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except (OSError, UnicodeError):
+        return []
+    addresses = sorted({str(answer[4][0]) for answer in answers})
+    if addresses and all(_holds_no_server(address) for address in addresses):
+        return addresses
+    return []
+
+
 def fetch(url: str, *, attempts: int = 3, timeout: float = 30.0) -> FetchResult:
     """GET *url*, following redirects, with retries on network errors."""
-    if urlsplit(url).scheme not in {"http", "https"}:
+    parts = urlsplit(url)
+    if parts.scheme not in {"http", "https"}:
         return FetchResult(None, None, "not an http(s) URL")
+    host = parts.hostname or ""
+    unroutable = _unroutable_addresses(host)
+    if unroutable:
+        # No attempt could reach the vendor's server, so send no request.
+        return FetchResult(
+            None,
+            None,
+            f"{host} resolves only to {', '.join(unroutable)}",
+            unroutable=tuple(unroutable),
+        )
     error = "no attempt made"
     for attempt in range(attempts):
         # The scheme is checked above, so only http(s) URLs are opened.
@@ -283,7 +346,14 @@ def main(argv: list[str] | None = None, *, fetcher: Fetcher = fetch) -> int:
         "url_count": len(reports),
         "counts": {
             outcome: sum(1 for r in reports if r.outcome == outcome)
-            for outcome in ("ok", "moved", "dead", "blocked", "unreachable")
+            for outcome in (
+                "ok",
+                "moved",
+                "dead",
+                "blocked",
+                "unreachable",
+                "unroutable",
+            )
         },
         "urls": [asdict(report) for report in reports],
     }

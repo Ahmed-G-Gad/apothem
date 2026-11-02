@@ -19,12 +19,12 @@ sourceHash: "e0f45350884dbc03"
 
 | الصنف | الإعلان | سياسة القفل |
 |---|---|---|
-| اعتماديات وقت تشغيل <bdi>Python</bdi> | <bdi>`[project.dependencies]`</bdi> في <bdi>`pyproject.toml`</bdi> | نطاقات بحد أدنى للمستخدمين؛ ولا يُشحَن مع الحزمة أي قفل وقت تشغيل <bdi>Python</bdi>. يُثبِّت <bdi>CI</bdi> إغلاقًا مقفولًا بالتجزئة لها (راجع أقفال اعتماديات <bdi>CI</bdi>) |
-| أدوات التطوير / الأمان | <bdi>extras</bdi> الخاصة بـ<bdi>`[project.optional-dependencies]`</bdi> | نطاقات بحد أدنى، باستثناء <bdi>`ruff`</bdi> و<bdi>`mypy`</bdi> اللذين تُثبِّتهما الإضافة <bdi>`dev`</bdi> تثبيتًا دقيقًا على الإصدارات التي يُشغِّلها <bdi>CI</bdi> (راجع أقفال أدوات <bdi>CI</bdi> بخصوص <bdi>ruff</bdi>)؛ ويُثبِّت <bdi>CI</bdi> الإضافة <bdi>dev</bdi> من إغلاق مقفول بالتجزئة (راجع أقفال اعتماديات <bdi>CI</bdi>) |
+| اعتماديات وقت تشغيل <bdi>Python</bdi> | <bdi>`[project.dependencies]`</bdi> في <bdi>`pyproject.toml`</bdi> | نطاقات بحد أدنى للمستخدمين؛ ولا يأتي مع الحزمة أي قفل لوقت تشغيل <bdi>Python</bdi>. ويُثبِّت <bdi>CI</bdi> إغلاقًا مقفولًا بالتجزئة لهذه الاعتماديات (انظر أقفال اعتماديات <bdi>CI</bdi>) |
+| أدوات التطوير / الأمان | <bdi>extras</bdi> الخاصة بـ<bdi>`[project.optional-dependencies]`</bdi> | نطاقات بحد أدنى، باستثناء <bdi>`ruff`</bdi> و<bdi>`mypy`</bdi>، إذ يُثبِّت <bdi>extra</bdi> <bdi>`dev`</bdi> كلًّا منهما تثبيتًا دقيقًا على الإصدار الذي يُشغِّله <bdi>CI</bdi> (انظر أقفال أدوات <bdi>CI</bdi> بخصوص <bdi>ruff</bdi>)؛ ويُثبِّت <bdi>CI</bdi> مكوّنات <bdi>extra</bdi> <bdi>dev</bdi> من إغلاق مقفول بالتجزئة (انظر أقفال اعتماديات <bdi>CI</bdi>) |
 | أدوات الإصدار | <bdi>`scripts/release/requirements-build-linux.txt`</bdi> لسير عمل الإصدار؛ و<bdi>extra</bdi> <bdi>`release`</bdi> في <bdi>`[project.optional-dependencies]`</bdi> لعمليات البناء المحلية | مقفولة بالتجزئة لسير عمل الإصدار؛ مُولَّدة من إغلاق أدوات الإصدار. أما <bdi>extra</bdi> <bdi>`release`</bdi> فنطاق بحد أدنى |
-| <bdi>pip</bdi> الخاص بـ<bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-pip.txt`</bdi> | مقفول بالتجزئة: تثبيت واحد <bdi>`pip==X.Y.Z`</bdi> مع تجزئات <bdi>wheel</bdi> و<bdi>sdist</bdi> الخاصة به، يُثبِّته بـ<bdi>`--require-hashes -r`</bdi> كل سير عمل يُرقّي <bdi>pip</bdi>. يقترح <bdi>Dependabot</bdi> الترقيات ويعيد كتابة التجزئات؛ ويُبقي <bdi>`scripts/dev/check_pip_pin_drift.py`</bdi> التثبيت عند <bdi>pip 26.2</bdi> أو أحدث |
-| أقفال اعتماديات <bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-dev.txt`</bdi>، و<bdi>`-runtime.txt`</bdi>، و<bdi>`-test.txt`</bdi> و<bdi>`-prereqs.txt`</bdi> | إغلاقات شاملة مقفولة بالتجزئة مُصرَّفة بالأمر <bdi>`uv pip compile`</bdi> من <bdi>`pyproject.toml`</bdi> (أو، في حالة <bdi>`-prereqs.txt`</bdi>، من المتطلبات المسبقة للمحرّك على المضيف) حتى تاريخ قفل بعد خصم فترة انتظار مدتها 7 أيام، ويُسجَّل تاريخ القفل وفترة الانتظار في كل ملف، وتُثبَّت بـ<bdi>`--require-hashes -r`</bdi> (أما الحزمة نفسها فبـ<bdi>`--no-deps -e .`</bdi>). يختبر <bdi>CI</bdi> الإصدارات المقفولة إلى أن يعيد <bdi>`scripts/dev/refresh_ci_locks.py`</bdi> توليدها؛ ويدقّق <bdi>`pip-audit.yml`</bdi> أحدث الإصدارات المسموح بها أسبوعيًا ويدقّق الأقفال. ويفشل <bdi>`tests/scripts/test_ci_locks_fresh.py`</bdi> عندما لا يعود قفل ما يستوفي مدخلاته |
-| أقفال أدوات <bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-ruff.txt`</bdi>، و<bdi>`-bandit.txt`</bdi>، و<bdi>`-pip-audit.txt`</bdi>، و<bdi>`-pip-licenses.txt`</bdi> و<bdi>`-pre-commit.txt`</bdi> | إغلاق واحد مقفول بالتجزئة لكل أداة تُشغِّلها سِيَر العمل، يُصرِّفه السكربت نفسه من مواصفة دقيقة في <bdi>`scripts/dev/ci_lock_table.py`</bdi>، بتاريخ القفل نفسه وفترة الانتظار نفسها، ويُثبَّت بـ<bdi>`--require-hashes -r`</bdi>. لا يذكر أي سير عمل إصدار أداة. تحتاج <bdi>`pre-commit`</bdi> إلى <bdi>Python 3.11</bdi> أو أحدث، ولذا يحتاجه قفلها أيضًا، ويُصرَّف قفل <bdi>`pip-audit`</bdi> لـ<bdi>3.11</bdi> أيضًا لأن أحدث إصدار من <bdi>`filelock`</bdi> يدعم <bdi>3.10</bdi> له نشرات أمنية غير مُصلَحة. ولا يوجد قفل يُثبِّت <bdi>pip</bdi> سوى <bdi>pip</bdi> الخاص بـ<bdi>CI</bdi> |
+| <bdi>pip</bdi> في <bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-pip.txt`</bdi> | مقفول بالتجزئة: تثبيت واحد <bdi>`pip==X.Y.Z`</bdi> مع تجزئتَي حزمتَي <bdi>wheel</bdi> و<bdi>sdist</bdi>، ويُثبِّته بـ<bdi>`--require-hashes -r`</bdi> كلُّ سير عمل يُرقّي <bdi>pip</bdi>. يقترح <bdi>Dependabot</bdi> الترقيات ويعيد كتابة التجزئات؛ ويُبقي <bdi>`scripts/dev/check_pip_pin_drift.py`</bdi> التثبيت على <bdi>pip 26.2</bdi> أو أحدث |
+| أقفال اعتماديات <bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-dev.txt`</bdi> و<bdi>`-runtime.txt`</bdi> و<bdi>`-test.txt`</bdi> و<bdi>`-prereqs.txt`</bdi> | إغلاقات موحَّدة لكل المنصات مقفولة بالتجزئة، تُولَّد بـ<bdi>`uv pip compile`</bdi> من <bdi>`pyproject.toml`</bdi> (ومن متطلبات المضيف المسبقة للمحرّك في حالة <bdi>`-prereqs.txt`</bdi>) بحسب تاريخ قفل مطروحًا منه مهلة انتظار مدتها 7 أيام، ويُسجَّل كلاهما في كل ملف، وتُثبَّت بـ<bdi>`--require-hashes -r`</bdi> (والحزمة نفسها بـ<bdi>`--no-deps -e .`</bdi>). يختبر <bdi>CI</bdi> الإصدارات المقفولة إلى أن يعيد <bdi>`scripts/dev/refresh_ci_locks.py`</bdi> توليدها؛ ويدقّق <bdi>`pip-audit.yml`</bdi> أسبوعيًا أحدث الإصدارات المسموح بها، ويدقّق الأقفال أيضًا. ويفشل <bdi>`tests/scripts/test_ci_locks_fresh.py`</bdi> عندما يكفّ قفل عن تلبية مدخلاته |
+| أقفال أدوات <bdi>CI</bdi> | <bdi>`scripts/ci/requirements-ci-ruff.txt`</bdi> و<bdi>`-bandit.txt`</bdi> و<bdi>`-pip-audit.txt`</bdi> و<bdi>`-pip-licenses.txt`</bdi> و<bdi>`-pre-commit.txt`</bdi> | إغلاق واحد مقفول بالتجزئة لكل أداة يُشغِّلها سير العمل، يُولِّده السكربت نفسه من مواصفة دقيقة في <bdi>`scripts/dev/ci_lock_table.py`</bdi>، بتاريخ القفل ومهلة الانتظار نفسيهما، ويُثبَّت بـ<bdi>`--require-hashes -r`</bdi>. ولا يذكر أي سير عمل إصدارَ أداة. يحتاج <bdi>`pre-commit`</bdi> إلى <bdi>Python 3.11</bdi> أو أحدث، وكذلك قفله، ويُولَّد قفل <bdi>`pip-audit`</bdi> لـ<bdi>3.11</bdi> أيضًا، لأن أحدث إصدار من <bdi>`filelock`</bdi> يدعم <bdi>3.10</bdi> عليه تنبيهات أمنية لم تُصلَح. ولا يُثبِّت <bdi>pip</bdi> أيُّ قفل سوى قفل <bdi>pip</bdi> في <bdi>CI</bdi> |
 | موقع التوثيق | <bdi>`site/package.json`</bdi> | <bdi>`site/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
 | مُحزِّم <bdi>VS Code</bdi> | <bdi>`tools/vsce/package.json`</bdi> | <bdi>`tools/vsce/package-lock.json`</bdi> مُودَع؛ وتُشغِّل مهام الإصدار والنشر <bdi>`npm ci --ignore-scripts`</bdi> |
 | واجهات سطر أوامر الأدوات المضيفة لاختبار القنوات السريع | <bdi>`tools/channel-smoke/package.json`</bdi> | <bdi>`tools/channel-smoke/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
@@ -35,35 +35,34 @@ sourceHash: "e0f45350884dbc03"
 | السطح | الحالة المُصادَق عليها | المسوّغ |
 |---|---|---|
 | اعتماديات وقت التشغيل | تعيش الحدود الدنيا الحالية في <bdi>`pyproject.toml`</bdi> ضمن <bdi>`[project.dependencies]`</bdi> | حدود دنيا مستقرّة حالية مُصادَق عليها قبل الإصدار؛ ولا يوجد مُعيق <bdi>CVE</bdi> معروف لوقت التشغيل |
-| أدوات التطوير | تعيش الحدود الدنيا الحالية في الإضافة <bdi>`dev`</bdi> من <bdi>`pyproject.toml`</bdi>؛ و<bdi>`ruff`</bdi> و<bdi>`mypy`</bdi> هما التثبيتان الدقيقتان فيها | أحدث الحدود الدنيا المستقرّة المُصادَق عليها قبل الإصدار؛ ويُثبَّت كل من <bdi>ruff</bdi> و<bdi>mypy</bdi> على إصدار واحد للخطافات و<bdi>CI</bdi> والمساهمين، ويُثبِّت خطاف <bdi>mypy</bdi> إصدارات قفل <bdi>dev</bdi> للمكتبات التي يسردها، ويفشل <bdi>`tests/scripts/test_ci_tool_locks.py`</bdi> عندما تختلف |
+| أدوات التطوير | تعيش الحدود الدنيا الحالية في الإضافة <bdi>`dev`</bdi> من <bdi>`pyproject.toml`</bdi>؛ وفيها التثبيتان الدقيقان لـ<bdi>`ruff`</bdi> و<bdi>`mypy`</bdi> | أحدث الحدود الدنيا المستقرّة المُصادَق عليها قبل الإصدار؛ ويُثبَّت كلٌّ من <bdi>ruff</bdi> و<bdi>mypy</bdi> على إصدار واحد للخطافات و<bdi>CI</bdi> والمساهمين، ويُثبِّت خطاف <bdi>mypy</bdi> المكتباتِ التي يسردها على إصداراتها في قفل <bdi>dev</bdi>، ويفشل <bdi>`tests/scripts/test_ci_tool_locks.py`</bdi> عند أي اختلاف بينها |
 | أدوات الأمان | تعيش الحدود الدنيا الحالية في الإضافة <bdi>`security`</bdi> من <bdi>`pyproject.toml`</bdi> | حدود دنيا حالية للماسحات مُصادَق عليها قبل الإصدار |
 | أدوات الإصدار | يعيش الإغلاق المقفول بالتجزئة في <bdi>`scripts/release/requirements-build-linux.txt`</bdi> | يُثبِّت سير عمل الإصدار بـ<bdi>`--require-hashes`</bdi>؛ وتشترط السكربتات المحلية وجود <bdi>`build`</bdi> مسبقًا بدلًا من تثبيت اعتماديات متحركة بصمت |
-| <bdi>pip</bdi> الخاص بـ<bdi>CI</bdi> | يعيش التثبيت المقفول بالتجزئة في <bdi>`scripts/ci/requirements-ci-pip.txt`</bdi> | <bdi>pip 26.2</bdi> أو أحدث يعالج <bdi>CVE-2026-13346</bdi>؛ وتُثبِّته سِيَر العمل بـ<bdi>`--require-hashes`</bdi>، فيُتحقَّق من التنزيل بمقارنته بتجزئته المنشورة |
-| أقفال اعتماديات <bdi>CI</bdi> | تعيش الإغلاقات المقفولة بالتجزئة في <bdi>`scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt`</bdi> | تُثبِّتها سِيَر العمل بـ<bdi>`--require-hashes`</bdi>؛ ويسجّل كل منها تاريخ قفله وفترة الانتظار وتاريخ القطع، ويُبقيها اختبار الحداثة متّسقة مع <bdi>`pyproject.toml`</bdi> |
-| أقفال أدوات <bdi>CI</bdi> | تعيش الإغلاقات المقفولة بالتجزئة في <bdi>`scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt`</bdi> | تُثبِّتها سِيَر العمل بـ<bdi>`--require-hashes`</bdi> ولا تحمل أي إصدار أداة؛ وتعيش المواصفات في <bdi>`scripts/dev/ci_lock_table.py`</bdi>، ويطابق تاريخ القفل وفترة الانتظار وتاريخ القطع ما في أقفال الاعتماديات |
+| <bdi>pip</bdi> في <bdi>CI</bdi> | يعيش التثبيت المقفول بالتجزئة في <bdi>`scripts/ci/requirements-ci-pip.txt`</bdi> | يسدّ <bdi>pip 26.2</bdi> أو أحدث الثغرة <bdi>CVE-2026-13346</bdi>؛ ويُثبِّته سير العمل بـ<bdi>`--require-hashes`</bdi>، فيُطابَق التنزيل مع تجزئته المنشورة |
+| أقفال اعتماديات <bdi>CI</bdi> | تعيش الإغلاقات المقفولة بالتجزئة في <bdi>`scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt`</bdi> | يُثبِّتها سير العمل بـ<bdi>`--require-hashes`</bdi>؛ ويُسجِّل كلٌّ منها تاريخ قفله ومهلة الانتظار والتاريخ الفاصل، ويُبقيها اختبار الحداثة متوافقة مع <bdi>`pyproject.toml`</bdi> |
+| أقفال أدوات <bdi>CI</bdi> | تعيش الإغلاقات المقفولة بالتجزئة في <bdi>`scripts/ci/requirements-ci-{ruff,bandit,pip-audit,pip-licenses,pre-commit}.txt`</bdi> | يُثبِّتها سير العمل بـ<bdi>`--require-hashes`</bdi> دون أن يذكر أي إصدار للأدوات؛ وتعيش المواصفات في <bdi>`scripts/dev/ci_lock_table.py`</bdi>، ويطابق تاريخ القفل ومهلة الانتظار والتاريخ الفاصل ما في أقفال الاعتماديات |
 | أدوات التوثيق | تعيش النطاقات الحالية في <bdi>`site/package.json`</bdi>، ويعيش الحلّ الدقيق في <bdi>`site/package-lock.json`</bdi> | لا يُرجِع <bdi>`npm outdated`</bdi> أي اعتمادية توثيق متقادمة بعد تحديث ملف القفل |
 | <bdi>GitHub Actions</bdi> | تُستبقى تثبيتات <bdi>SHA</bdi> الموجودة للإصدار الحالي؛ ويبقى سير عمل <bdi>SLSA</bdi> القابل لإعادة الاستخدام الاستثناءَ الموثَّق المُثبَّت بوسم، ويحمل تعليقَ <bdi>`action-pinning-exempt:`</bdi> في <bdi>`release.yml`</bdi> | إعادة تشغيل <bdi>CI</bdi> العام خضراء؛ وتُترَك عمدًا ترقيات الإصدارات الرئيسية الواسعة لـ<bdi>actions</bdi> إلى طلبات سحب أتمتة الاعتماديات، لتفادي اضطراب سطح الإصدار |
 | تحزيم <bdi>npm</bdi> | يعمل سير عمل <bdi>`publish-npm.yml`</bdi> عند دفع الوسم <bdi>`v*.*.*`</bdi>، مع <bdi>`workflow_dispatch`</bdi> بديلًا احتياطيًا | الحزمة <bdi>npm</bdi> العامة الوحيدة هي <bdi>`@ahmed-g-gad/apothem`</bdi>؛ وينتظر النشر موافقة المُشغِّل على بيئة <bdi>`release`</bdi>، وتُمنَح هذه الموافقة بعد اجتياز <bdi>`scripts/release/check-release-ready.sh`</bdi> |
 
 ## القفل
 
-تُولَّد ملفات قفل <bdi>Python</bdi> الخاصة بالمساهمين عند الطلب ولا تُودَع: إغلاق وقت
-تشغيل <bdi>Apothem</bdi> صغير، وتدعم واجهة سطر الأوامر عدة إصدارات فرعية من <bdi>Python</bdi>.
-أما <bdi>CI</bdi> فهو الاستثناء؛ إذ يُثبِّت الملفات المقفولة بالتجزئة في <bdi>`scripts/ci/`</bdi>:
-أربعة أقفال اعتماديات (<bdi>`requirements-ci-dev.txt`</bdi>، و<bdi>`-runtime.txt`</bdi>،
-و<bdi>`-test.txt`</bdi> و<bdi>`-prereqs.txt`</bdi>) وقفل واحد لكل أداة تُشغِّلها سِيَر العمل
-(<bdi>`-ruff.txt`</bdi>، و<bdi>`-bandit.txt`</bdi>، و<bdi>`-pip-audit.txt`</bdi>،
-و<bdi>`-pip-licenses.txt`</bdi> و<bdi>`-pre-commit.txt`</bdi>). ويُصرِّف الأمر
-<bdi>`python scripts/dev/refresh_ci_locks.py`</bdi> الأقفال التسعة جميعها حتى تاريخ قفل
-بعد خصم فترة انتظار مدتها 7 أيام تطابق فترة الانتظار في <bdi>Dependabot</bdi>، فيختبر <bdi>CI</bdi>
-الإصدارات التي مضى على صدورها أسبوع على الأقل في تاريخ القفل، ويُقدِّمها تحديثُ الملفات
-إلى الأمام. ويسجّل كل ملف تاريخ القفل وفترة الانتظار وتاريخ القطع الناتج، ويعيد
-<bdi>`--check`</bdi> إنتاج تاريخ القطع. أما الإصلاح الأمني العاجل الأحدث من فترة الانتظار
-فيحتاج إلى تشغيل تحديث بالخيار <bdi>`--cooldown-days 0`</bdi>، أو إلى استثناء من فترة الانتظار
-لحزمته في <bdi>`scripts/dev/ci_lock_table.py`</bdi>، وهو يرفع فترة الانتظار عن تلك الحزمة وحدها.
-ويدقّق التشغيل الأسبوعي لـ<bdi>`pip-audit.yml`</bdi> أحدث الإصدارات التي يسمح بها
-<bdi>`pyproject.toml`</bdi> إضافةً إلى الأقفال التسعة، مستعلمًا من خدمة <bdi>OSV</bdi> عن النشرات الأمنية.
-يواصل المساهمون التثبيت بالأمر <bdi>`pip install -e ".[dev]"`</bdi>.
+تُولَّد ملفات قفل <bdi>Python</bdi> الخاصة بالمساهمين عند الطلب ولا تُودَع، لأن إغلاق وقت
+تشغيل <bdi>Apothem</bdi> صغير، ولأن واجهة سطر الأوامر تدعم عدة إصدارات فرعية من <bdi>Python</bdi>.
+ويُستثنى <bdi>CI</bdi> من ذلك، إذ يُثبِّت الملفات المقفولة بالتجزئة في <bdi>`scripts/ci/`</bdi>: أربعة
+أقفال اعتماديات (<bdi>`requirements-ci-dev.txt`</bdi> و<bdi>`-runtime.txt`</bdi> و<bdi>`-test.txt`</bdi>
+و<bdi>`-prereqs.txt`</bdi>)، وقفل واحد لكل أداة يُشغِّلها سير العمل (<bdi>`-ruff.txt`</bdi>
+و<bdi>`-bandit.txt`</bdi> و<bdi>`-pip-audit.txt`</bdi> و<bdi>`-pip-licenses.txt`</bdi>
+و<bdi>`-pre-commit.txt`</bdi>). ويُولِّد <bdi>`python scripts/dev/refresh_ci_locks.py`</bdi> الملفات
+التسعة كلها بحسب تاريخ قفل مطروحًا منه مهلة انتظار مدتها 7 أيام تطابق مهلة <bdi>Dependabot</bdi>،
+فيختبر <bdi>CI</bdi> الإصدارات التي مضى على نشرها أسبوع على الأقل في تاريخ القفل، ويُقدِّمها
+تحديث الملفات إلى إصدارات أحدث. ويُسجِّل كل ملف تاريخ القفل ومهلة الانتظار والتاريخ الفاصل
+الناتج، ويُعيد <bdi>`--check`</bdi> إنتاج ذلك التاريخ الفاصل. ويحتاج إصلاح أمني عاجل أحدث من
+مهلة الانتظار إلى تشغيل تحديث بـ<bdi>`--cooldown-days 0`</bdi>، أو إلى استثناء من مهلة الانتظار
+لحزمته في <bdi>`scripts/dev/ci_lock_table.py`</bdi> يرفع المهلة عن تلك الحزمة وحدها. ويدقّق
+التشغيل الأسبوعي لـ<bdi>`pip-audit.yml`</bdi> أحدث الإصدارات التي يسمح بها <bdi>`pyproject.toml`</bdi>
+إضافةً إلى الأقفال التسعة، ويستعلم خدمة <bdi>OSV</bdi> عن التنبيهات الأمنية. ويواصل المساهمون
+التثبيت بـ<bdi>`pip install -e ".[dev]"`</bdi>.
 
 ```sh
 # Astral uv:
@@ -84,10 +83,10 @@ pip freeze > requirements.dev.lock
 ## المسوّغ
 
 - **لماذا تثبيت بالنطاقات لـ<bdi>Python</bdi>؟** تدعم واجهة سطر الأوامر مصفوفة <bdi>Python</bdi> واسعة،
-  لذا يُبقي <bdi>`pyproject.toml`</bdi> على حدود دنيا متحفظة. ويُثبِّت <bdi>CI</bdi> إغلاقات مقفولة
-  بالتجزئة لتلك النطاقات، يحدّثها المشرف بالسكربت <bdi>`scripts/dev/refresh_ci_locks.py`</bdi>
-  (الوتيرة المقصودة أسبوعية)، ويحلّ التشغيل الأسبوعي لـ<bdi>`pip-audit.yml`</bdi> أحدث الإصدارات
-  المسموح بها لكشف المشكلات مع الأدوات الحالية.
+  لذا يحتفظ <bdi>`pyproject.toml`</bdi> بحدود دنيا متحفظة. ويُثبِّت <bdi>CI</bdi> إغلاقات مقفولة بالتجزئة
+  لهذه النطاقات، يُحدِّثها القائم على صيانة المشروع بـ<bdi>`scripts/dev/refresh_ci_locks.py`</bdi>
+  (والوتيرة المقصودة أسبوعية)، ويحلّ التشغيل الأسبوعي لـ<bdi>`pip-audit.yml`</bdi> أحدث الإصدارات
+  المسموح بها ليكشف المشكلات مع الأدوات الحالية.
 - **لماذا قفل <bdi>Node</bdi> مُودَع؟** الموقع مُنتَج ساكن منشور؛ ويمنح ملف القفل عمليات بناء
   <bdi>`npm ci`</bdi> حتمية لذلك السطح العام.
 - **لماذا <bdi>Actions</bdi> مُثبَّتة بـ<bdi>SHA</bdi>؟** الوسوم قابلة للتغيير؛ أما <bdi>SHA</bdi> فغير قابلة
@@ -96,19 +95,20 @@ pip freeze > requirements.dev.lock
 - **ما لا تلمسه أداة التحديث الآلية.** تغطي تحديثات الإصدارات في <bdi>Dependabot</bdi>
   (<bdi>`.github/dependabot.yml`</bdi>) تثبيتات <bdi>GitHub Actions</bdi>، وملف قفل الموقع،
   وملف قفل مُحزِّم <bdi>vsce</bdi> (<bdi>`tools/vsce`</bdi>)، وملف قفل واجهات سطر أوامر الأدوات
-  المضيفة الذي يُثبِّته اختبار القنوات السريع (<bdi>`tools/channel-smoke`</bdi>)، و<bdi>pip</bdi> المقفول
-  بالتجزئة الذي يُثبِّته <bdi>CI</bdi> (<bdi>`scripts/ci/requirements-ci-pip.txt`</bdi>)، وخطافات
-  <bdi>pre-commit</bdi>. أما الملفات التسعة الأخرى في <bdi>`scripts/ci`</bdi> فهي إغلاقات يُعاد توليدها
-  كاملةً بـ<bdi>`scripts/dev/refresh_ci_locks.py`</bdi>، ولا يُثبِّت أيٌّ منها <bdi>pip</bdi>، وتقتصر
-  تحديثات الإصدارات في <bdi>Dependabot</bdi> لذلك المجلد على <bdi>pip</bdi>.
+  المضيفة الذي يُثبِّته اختبار القنوات السريع (<bdi>`tools/channel-smoke`</bdi>)، و<bdi>pip</bdi>
+  المقفول بالتجزئة الذي يُثبِّته <bdi>CI</bdi> (<bdi>`scripts/ci/requirements-ci-pip.txt`</bdi>)،
+  وخطافات <bdi>pre-commit</bdi>. والملفات التسعة الأخرى في <bdi>`scripts/ci`</bdi> إغلاقاتٌ يُعاد
+  توليدها كاملةً بـ<bdi>`scripts/dev/refresh_ci_locks.py`</bdi>، ولا يُثبِّت أيٌّ منها <bdi>pip</bdi>،
+  وتقتصر تحديثات الإصدارات في <bdi>Dependabot</bdi> لذلك المجلد على <bdi>pip</bdi>.
   أما الحدود الدنيا لوقت التشغيل في <bdi>`pyproject.toml`</bdi>، ومتطلبات
   الإصدار المقفولة بالتجزئة، والإغلاق المُضمَّن في <bdi>`src/apothem/_vendor/vendor.txt`</bdi>،
   وخطافات <bdi>pre-commit</bdi> المُثبَّتة بالتوازي مع <bdi>`pyproject.toml`</bdi>، فتُحدَّث يدويًا،
-  لأن ترقية تثبيت منفرد ستكسر الملفات التي تتوافق معها. وخطافا <bdi>ruff</bdi> و<bdi>mypy</bdi> اثنان
-  منها: يفشل <bdi>`tests/scripts/test_ci_tool_locks.py`</bdi> إلى أن يحمل تثبيت <bdi>ruff</bdi> الدقيق في
-  <bdi>`pyproject.toml`</bdi> و<bdi>rev</bdi> الخطاف وقفل <bdi>ruff</bdi> وقفل <bdi>dev</bdi> إصدارًا واحدًا،
-  وإلى أن يطابق تثبيت <bdi>mypy</bdi> الدقيق و<bdi>rev</bdi> خطاف <bdi>mypy</bdi> والمكتبات التي يسردها
-  ذلك الخطاف قفل <bdi>dev</bdi>، لذا يُكيَّف طلب سحب أمني من <bdi>Dependabot</bdi> لأيٍّ من الأداتين يدويًا.
+  لأن ترقية تثبيت منفرد ستكسر الملفات التي تتوافق معها. وخطافا <bdi>ruff</bdi> و<bdi>mypy</bdi>
+  اثنان منها: يفشل <bdi>`tests/scripts/test_ci_tool_locks.py`</bdi> إلى أن يحمل التثبيت الدقيق
+  لـ<bdi>ruff</bdi> في <bdi>`pyproject.toml`</bdi> و<bdi>rev</bdi> الخطاف وقفل <bdi>ruff</bdi> وقفل
+  <bdi>dev</bdi> إصدارًا واحدًا، وإلى أن يطابق التثبيت الدقيق لـ<bdi>mypy</bdi> و<bdi>rev</bdi> خطاف
+  <bdi>mypy</bdi> والمكتبات التي يسردها ذلك الخطاف قفلَ <bdi>dev</bdi>. لذا يُكيَّف يدويًا أي طلب
+  سحب أمني من <bdi>Dependabot</bdi> لأيٍّ من الأداتين.
   يتبع الإصدار الرئيسي لـ<bdi>`@types/node`</bdi> في الموقع الحدَّ الأدنى لـ<bdi>Node</bdi>
   (<bdi>`engines`</bdi> و<bdi>`.nvmrc`</bdi>، <bdi>Node 22</bdi>)، فلا يقترح <bdi>Dependabot</bdi> إلا
   تحديثاته الفرعية والتصحيحية؛ ارفع ذلك الإصدار الرئيسي مع الحد الأدنى معًا.

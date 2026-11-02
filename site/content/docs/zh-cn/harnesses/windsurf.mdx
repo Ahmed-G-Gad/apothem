@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "适用于 Windsurf（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,12 +74,12 @@ Devin 没有拒绝工具的键，因此辅助器被允许的工具减去其被�
 - 自定义子代理是实验性的。Devin 将其格式和选项标注为可能变更，并且 Devin Desktop 在 Devin Settings 中有一个 Subagents (Preview) 开关（Devin CLI 设置 `subagents_enabled` 默认开启）。
 - 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.devin/agents/`；Apothem 不替你做选择。
 - 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
-- Devin 还会读取共享的 `.agents/agents/` 文件夹（Apothem 从不写入该文件夹），并且 Devin CLI 记载了从 `.claude/` 文件夹导入子代理的功能，但没有指出路径。Apothem 尚未确认 Devin Desktop 的 Local 模式是否会应用该导入。
+- Devin 还会读取共享的 `.agents/agents/` 文件夹（Apothem 从不写入该文件夹），并且 Devin CLI 记载了从 `.claude/` 文件夹导入子代理的功能，但没有指出路径。Devin Local 查找文件的方式与 Devin CLI 相同，因此该导入在那里同样适用。
 - Apothem 尚未确认网页工具的 `allowed-tools` 名称、`model` 接受哪些值，以及空的 `allowed-tools` 列表会被如何解读。
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 钩子
@@ -122,15 +122,14 @@ Apothem 不在 Devin 上注册 `PreToolUse` 守卫。Devin 的文档为 `UserPro
 - 要查看钩子是否已加载，请打开 Devin Local 的 Customizations 中的 Hooks 标签页，或在 Devin CLI 中运行 `/hooks`。两者都会列出每个钩子及其来源文件。
 - Devin 的文档没有指出 Windows 上运行钩子命令所用的 shell。这些命令使用 `sh` 的引号规则，PowerShell 在没有调用运算符的情况下无法解析。Apothem 尚未确认 Devin Local 在 Windows 上运行的是什么；如果钩子在那里无法加载，请在 issue 中说明。
 
-**Devin 也会运行 Claude Code 写入的钩子。** 当 `read_config_from.claude` 开启时（这是 Devin CLI 的默认设置），Devin 会加载 `~/.claude/settings.json`、`.claude/settings.json` 和 `.claude/settings.local.json` 中的钩子；Desktop 页面没有说明 Devin Local 是否应用它。如果你也为 Claude Code 安装了 Apothem，两套钩子都可能运行。这里的 `SessionStart` 命令与它在 Claude Code 中的副本在 Apothem 的钩子状态文件夹中共享每个会话一个的标记，因此后运行的那个保持静默，引导内容只到达模型一次；Apothem 通过 Devin 为其钩子设置的 `DEVIN_PROJECT_DIR` 变量识别出 Devin。该标记覆盖十秒，因此同一会话稍后的一次启动仍会传达。上下文大小计数器会在两处都运行，因此其阈值会提前达到，并且 Apothem 不会对计数器去重。要只加载这些钩子，请在你的用户配置（`~/.config/devin/config.json`，Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"claude": false`；这也会阻止 Devin 导入 Claude Code 的规则、技能、命令和 MCP 服务器。安装会将此作为一条说明打印出来。
+**Devin 也会运行 Claude Code 写入的钩子。** 当 `read_config_from.claude` 开启时，Devin 会加载 `~/.claude/settings.json`、`.claude/settings.json` 和 `.claude/settings.local.json` 中的钩子；这是它的默认设置，因为 Devin Local 查找文件的方式与 Devin CLI 相同。如果你也为 Claude Code 安装了 Apothem，两套钩子都可能运行。这里的 `SessionStart` 命令与它在 Claude Code 中的副本在 Apothem 的钩子状态文件夹中共享每个会话一个的标记，因此后运行的那个保持静默，引导内容只到达模型一次；Apothem 通过 Devin 为其钩子设置的 `DEVIN_PROJECT_DIR` 变量识别出 Devin。该标记覆盖十秒，因此同一会话稍后的一次启动仍会传达。上下文大小计数器会在两处都运行，因此其阈值会提前达到，并且 Apothem 不会对计数器去重。要只加载这些钩子，请在你的用户配置（`~/.config/devin/config.json`，Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"claude": false`；这也会阻止 Devin 导入 Claude Code 的规则、技能、命令和 MCP 服务器。安装会将此作为一条说明打印出来。
 
 **你自己的钩子。** 注册按键合并到你的文件中。你写入的钩子和其他键保持原样，你在同一事件下的处理程序会留在 Apothem 的处理程序旁边，而更新只替换其命令运行 Apothem 分发器的处理程序（带有 `--contract devin` 的 `.apothem/support/windsurf/hooks/dispatch.py`，无论它是写在哪个项目路径下的）。你自己的钩子如果只是名称相同，或者运行的是 `python -m apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。带有注释或其他 JSON5 语法的文件无法在不丢失它们的情况下被重写，因此安装会针对该文件报告 `config.unparseable` 错误，保持该文件不变并停止，同时再次移除它已开始写入的其他文件：删除注释，或者自己添加这两个条目。
 
 **关闭钩子。** 在 Devin 的环境中设置 `APOTHEM_HOOKS_DISABLE=1`，即可让 Apothem 钩子静默。
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## 配置档案到原生配置的映射
@@ -143,7 +142,7 @@ section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 Windsurf 当前的规则表面位于 `.devin/rules/` 下，作用范围为项目级（这是首选位置，优先于用于向后兼容的回退位置 `.windsurf/rules/`）。工作流和机器本地的记忆归操作者所有；Apothem 不写入它们，也不写入 Cascade 钩子文件和共享的 Devin 配置。单文件形式的 `.windsurfrules` 被有意不写入。
 
-Devin Desktop（Windsurf）会发现 `~/.agents/skills/`，因此安装写入的技能无需进一步设置即可出现。当它的 Claude Code 配置导入开启时，它还可能从 `~/.claude/skills/` 列出相同的名称；Devin CLI 文档将该导入设为默认开启，而 Desktop 页面没有说明 Local 模式是否应用它。Apothem 尚未确认 Windsurf 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
+Devin Desktop（Windsurf）会发现 `~/.agents/skills/`，因此安装写入的技能无需进一步设置即可出现。它的 Claude Code 导入默认开启，且只从项目的 `.claude/skills/` 文件夹读取技能，因此没有文档表明，Apothem 为 Claude Code 安装时写入 `~/.claude/skills/` 的技能也会出现在那里。Apothem 尚未确认 Windsurf 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
 
 ## 验证
 
