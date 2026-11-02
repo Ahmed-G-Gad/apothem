@@ -75,6 +75,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Dependabot's version updates for `scripts/ci` are limited to the pip lock.
   The single-tool pins (`ruff`, `bandit`, `pip-audit`, `pip-licenses`,
   `pre-commit`) are unchanged.
+- **The weekly vendor URL check names the hosts it cannot check.**
+  CodeBuddy's documentation host answers `0.0.0.1` to name lookups from the
+  United States, where GitHub's hosted runners are, so the check never
+  reached the twelve CodeBuddy pages the pins cite. It waited out three
+  30-second timeouts on each, about 20 of the job's 30 minutes, and counted
+  them as unreachable. A host whose name resolves only to an address no
+  server can hold, anything in `0.0.0.0/8` or `::`, is now reported as
+  `unroutable` and gets no request. Like an unreachable URL, it does not fail
+  the check. Each run carries a warning naming such a host, and the issue the
+  monitor files lists its URLs to check by hand.
 
 ### Fixed
 

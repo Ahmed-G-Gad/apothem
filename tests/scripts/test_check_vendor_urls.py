@@ -22,6 +22,28 @@ if str(_SCRIPTS_DEV) not in sys.path:
 import check_vendor_urls as cvu  # noqa: E402
 
 
+def _answers(*addresses: str) -> list[tuple[object, ...]]:
+    """Return what socket.getaddrinfo() returns for *addresses*."""
+    return [
+        (socket.AF_INET6, socket.SOCK_STREAM, 6, "", (address, 0, 0, 0))
+        if ":" in address
+        else (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, 0))
+        for address in addresses
+    ]
+
+
+@pytest.fixture(autouse=True)
+def _resolve_offline(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resolve every name to a documentation address, so no test looks one up."""
+    monkeypatch.setattr(
+        cvu.socket, "getaddrinfo", lambda *_args, **_kwargs: _answers("192.0.2.1")
+    )
+
+
+def _send_no_request(*_args: object, **_kwargs: object) -> object:
+    raise AssertionError("fetch() sent a request")
+
+
 def _harness(root: Path, name: str, pin: str, template: str | None = None) -> None:
     folder = root / name
     folder.mkdir()
@@ -73,6 +95,13 @@ def test_collects_urls_from_pins_and_templates(tmp_path: Path) -> None:
         ),
         ("https://a.dev/x", cvu.FetchResult(403, "https://a.dev/x"), "blocked"),
         ("https://a.dev/x", cvu.FetchResult(429, "https://a.dev/x"), "blocked"),
+        (
+            "https://a.dev/x",
+            cvu.FetchResult(
+                None, None, "a.dev resolves only to 0.0.0.1", unroutable=("0.0.0.1",)
+            ),
+            "unroutable",
+        ),
         (
             "https://json.schemastore.org/claude-code-settings.json",
             cvu.FetchResult(
@@ -131,6 +160,7 @@ def test_main_fails_on_moved_and_dead_but_not_blocked_or_unreachable(
         "dead": 1,
         "blocked": 1,
         "unreachable": 1,
+        "unroutable": 0,
     }
     moved = next(u for u in payload["urls"] if u["outcome"] == "moved")
     assert moved["final_url"] == "https://a.dev/new"
@@ -157,6 +187,28 @@ def test_an_unreachable_url_alone_does_not_fail(tmp_path: Path) -> None:
     assert rc == 0
     assert payload["passed"] is True
     assert payload["counts"]["unreachable"] == 1
+
+
+def test_an_unroutable_host_is_reported_without_a_request_or_a_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _harness(tmp_path, "alpha", "https://a.dev/one https://a.dev/two\n")
+    monkeypatch.setattr(
+        cvu.socket, "getaddrinfo", lambda *_args, **_kwargs: _answers("0.0.0.1")
+    )
+    monkeypatch.setattr(cvu.urllib.request, "urlopen", _send_no_request)
+    output = tmp_path / "r.json"
+
+    rc = cvu.main(["--harnesses-root", str(tmp_path), "--output", str(output)])
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert rc == 0
+    assert payload["passed"] is True
+    assert payload["counts"]["unroutable"] == 2
+    assert [(u["outcome"], u["error"]) for u in payload["urls"]] == [
+        ("unroutable", "a.dev resolves only to 0.0.0.1"),
+        ("unroutable", "a.dev resolves only to 0.0.0.1"),
+    ]
 
 
 def test_missing_root_returns_error(tmp_path: Path) -> None:
@@ -212,4 +264,65 @@ def test_fetch_retries_the_server_errors_an_outage_produces(
 
     assert len(seen) == calls
     assert result.status == code
+    assert cvu.classify("https://a.dev/x", result) == "unreachable"
+
+
+@pytest.mark.parametrize(
+    "addresses",
+    [
+        pytest.param(("0.0.0.1",), id="this-network"),
+        pytest.param(("0.0.0.0",), id="unspecified-v4"),  # noqa: S104  # a DNS answer
+        pytest.param(("0.255.255.255",), id="top-of-range"),
+        pytest.param(("::",), id="unspecified-v6"),
+        pytest.param(("::", "0.0.0.1"), id="both-families"),
+    ],
+)
+def test_fetch_sends_no_request_when_no_server_can_hold_the_address(
+    monkeypatch: pytest.MonkeyPatch, addresses: tuple[str, ...]
+) -> None:
+    monkeypatch.setattr(
+        cvu.socket, "getaddrinfo", lambda *_args, **_kwargs: _answers(*addresses)
+    )
+    monkeypatch.setattr(cvu.urllib.request, "urlopen", _send_no_request)
+
+    result = cvu.fetch("https://a.dev/x")
+
+    expected = tuple(sorted(addresses))
+    assert result.unroutable == expected
+    assert result.error == f"a.dev resolves only to {', '.join(expected)}"
+    assert cvu.classify("https://a.dev/x", result) == "unroutable"
+
+
+@pytest.mark.parametrize(
+    "answers",
+    [
+        pytest.param(_answers("0.0.0.1", "192.0.2.1"), id="one-usable-address"),
+        pytest.param(_answers("1.0.0.0"), id="next-to-the-range"),
+        pytest.param(_answers("::1"), id="loopback-v6"),
+        pytest.param(socket.gaierror(socket.EAI_NONAME, "not known"), id="no-name"),
+    ],
+)
+def test_fetch_requests_a_host_unless_every_address_is_unroutable(
+    monkeypatch: pytest.MonkeyPatch,
+    answers: list[tuple[object, ...]] | socket.gaierror,
+) -> None:
+    def resolve(*_args: object, **_kwargs: object) -> list[tuple[object, ...]]:
+        if isinstance(answers, socket.gaierror):
+            raise answers
+        return answers
+
+    sent: list[str] = []
+
+    def refuse(request: urllib.request.Request, **_kwargs: object) -> object:
+        sent.append(request.full_url)
+        raise urllib.error.URLError(ConnectionRefusedError("refused"))
+
+    monkeypatch.setattr(cvu.socket, "getaddrinfo", resolve)
+    monkeypatch.setattr(cvu.urllib.request, "urlopen", refuse)
+    monkeypatch.setattr(cvu.time, "sleep", lambda _seconds: None)
+
+    result = cvu.fetch("https://a.dev/x", attempts=1)
+
+    assert sent == ["https://a.dev/x"]
+    assert result.unroutable == ()
     assert cvu.classify("https://a.dev/x", result) == "unreachable"
