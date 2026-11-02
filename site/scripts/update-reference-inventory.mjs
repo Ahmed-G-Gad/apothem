@@ -953,7 +953,10 @@ const commands = commandDefinitions();
 const pipelinePages = pipelineNavPages(commands);
 changed += writeCommandPages(commands);
 changed += writePipelineNav(pipelinePages);
-if (inject(join(PIPELINE_DIR, 'index.mdx'), commandIndexBlock(commands, pipelinePages))) changed += 1;
+changed += injectAcrossLocales(
+	join(PIPELINE_DIR, 'index.mdx'),
+	commandIndexBlock(commands, pipelinePages),
+);
 
 // Inventories: the walked sources, the emitter-backed blocks, the changelog,
 // the roadmap, the command pages, the command nav and the command index.

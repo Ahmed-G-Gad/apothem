@@ -16,8 +16,12 @@ Run any of them from `site/`.
   commands), `conformity-gate/index.mdx` (validator table) and
   `pipeline/index.mdx` (command index), a page under `pipeline/` for every
   shipped command without a hand-written one, and the `pipeline/meta.json` nav in
-  English and every locale. Runs as the `predev` and `prebuild` npm hooks; a
-  dirty `git status` under `content/docs/` after a build signals a missed
+  English and every locale. Each generated-reference block is also written
+  into the copy of its page under every `content/docs/<locale>/` root that
+  carries the same markers, so a translated page never keeps an older block;
+  the translation `sourceHash` leaves those blocks out, so that never marks a
+  translation stale. Runs as the `predev` and `prebuild` npm hooks; a dirty
+  `git status` under `content/docs/` after a build signals a missed
   regeneration (the CI docs-reference-sync drift gate enforces it). Do not
   hand-edit the generated pages or blocks.
 - **`build-llms-txt.mjs`** — walks `content/docs/**` and emits the English-only

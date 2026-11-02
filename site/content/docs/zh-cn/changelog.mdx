@@ -91,6 +91,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   apart from `dependabot.yml`, so it found no workflows and reported
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
+- **The pipeline overview's command index is current in every translation.**
+  The docs generator wrote the index of shipped commands into the English page
+  only, so the eleven translated overviews kept older summaries for every
+  command. It now writes the same index into each translated page, and
+  `tests/unit/docs/test_site_generated_lists.py` fails when a translation's
+  index differs from the English one.
 
 ## [1.5.0] - 2026-10-28
 
