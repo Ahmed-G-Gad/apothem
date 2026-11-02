@@ -28,11 +28,21 @@ lee:
 - `verify` — detectar la deriva entre el perfil y la configuración en disco.
 
 Como el contrato es un `typing.Protocol`, un adaptador lo satisface por su
-forma, no por herencia. La CLI carga los adaptadores dinámicamente a través de
-`importlib.metadata` desde la tabla
-`[project.entry-points."apothem.harnesses"]` en `pyproject.toml`. Añadir un
-entorno significa publicar un subpaquete que exponga el protocolo — sin editar
-el despachador central.
+forma, no por herencia. En tiempo de ejecución la CLI resuelve cada adaptador a
+partir de un registro estático — la tabla `HARNESS_REGISTRY` de
+`src/apothem/lib/harness_registry_data.py`, que `harness_registry.py` declara
+*autoritativa en tiempo de ejecución* — de modo que un checkout simple carga
+todos los adaptadores sin metadatos de puntos de entrada instalados en
+`sys.path`. La tabla `[project.entry-points."apothem.harnesses"]` de
+`pyproject.toml` y el barrido `discover_adapters()` del sistema de archivos son
+una comprobación de paridad de conformidad, no el resolutor en tiempo de
+ejecución: una prueba afirma que el conjunto de adaptadores descubiertos iguala
+al registro estático, de modo que un adaptador correcto por convención pero no
+registrado aflora como una regresión de cobertura en lugar de resolverse en
+silencio. Por tanto, añadir un entorno significa registrarlo en los datos del
+registro (y reflejarlo en la tabla de puntos de entrada para mantener la
+paridad del empaquetado) — la prueba de paridad falla de forma evidente si se
+omite cualquiera de los dos.
 
 ## Un subpaquete por adaptador
 

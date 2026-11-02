@@ -37,7 +37,7 @@ Un rapport persistant et borné dans `<suite>/_outputs/audit-report-<YYYY-MM-DD>
 
 ## Phases du flux de travail
 
-1. **Résoudre la cible** — Résout la suite à partir de l'argument, ou choisit la suite la plus récemment modifiée sous `.apothem/plans/` (`.plans/` est une solution de repli rétrocompatible prise en charge) et énonce la résolution.
+1. **Résoudre la cible** — Résout la suite à partir de l'argument, ou choisit la suite la plus récemment modifiée sous `.apothem/plans/` et énonce la résolution.
 2. **Évaluer l'étape** — Détecte quels artefacts existent (spec prête / générée / revue / exécutée) et nomme le plus petit écart vers un tout revu et exécutable.
 3. **Amener à un tout revisable** — N'exécute que les étapes amont manquantes, en déléguant à la commande canonique de chaque écart ; ne relance jamais une étape satisfaite uniquement pour rafraîchir la prose.
 4. **Audit forensique** — Applique les dimensions d'audit de `/plan-review`, le catalogue des techniques de planification et le portail de pré-émission à quinze barreaux.

@@ -30,11 +30,20 @@ aufruft, und die Metadaten, die die CLI liest:
   Festplatte erkennen.
 
 Da der Vertrag ein `typing.Protocol` ist, erfüllt ein Adapter ihn durch seine
-Form, nicht durch Vererbung. Die CLI lädt Adapter dynamisch über
-`importlib.metadata` aus der Tabelle
-`[project.entry-points."apothem.harnesses"]` in `pyproject.toml`. Einen Harness
-hinzuzufügen bedeutet, ein Unterpaket zu veröffentlichen, das das Protokoll
-freilegt — ohne den zentralen Dispatcher zu bearbeiten.
+Form, nicht durch Vererbung. Zur Laufzeit löst die CLI jeden Adapter aus einer
+statischen Registry auf — der Tabelle `HARNESS_REGISTRY` in
+`src/apothem/lib/harness_registry_data.py`, die `harness_registry.py`
+als *zur Laufzeit maßgeblich* deklariert —, sodass ein schlichter Checkout jeden
+Adapter lädt, ohne irgendwelche installierten Einstiegspunkt-Metadaten auf
+`sys.path`. Die Tabelle `[project.entry-points."apothem.harnesses"]` in
+`pyproject.toml` und der Dateisystem-Durchlauf `discover_adapters()` sind eine
+Konformitäts-Paritätsprüfung, nicht der Laufzeit-Resolver: Ein Test sichert zu,
+dass die erkannte Adaptermenge der statischen Registry entspricht, sodass ein
+konventionskonformer, aber nicht registrierter Adapter als Abdeckungsregression
+zutage tritt, statt still aufgelöst zu werden. Einen Harness hinzuzufügen
+bedeutet daher, ihn in den Registry-Daten zu registrieren (und ihn für die
+Paketierungsparität in der Einstiegspunkt-Tabelle zu spiegeln) — der
+Paritätstest schlägt laut fehl, wenn eines von beiden vergessen wird.
 
 ## Ein Unterpaket pro Adapter
 

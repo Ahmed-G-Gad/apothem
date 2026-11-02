@@ -49,7 +49,7 @@ painel de rastreamento do hook.
 
 ## Bloqueando escritas
 
-Para bloquear uma gravação, imprima o envelope de negação no stdout e, mesmo assim, saia com `0`, como fazem os próprios hooks do Apothem:
+Para bloquear uma gravação, imprima o envelope de negação no stdout e, mesmo assim, saia com 0, como fazem os próprios hooks do Apothem:
 
 ```python
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))

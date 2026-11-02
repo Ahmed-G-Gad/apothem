@@ -40,10 +40,8 @@ sourceHash: "e139310dc56fef79"
 - **共有状態はファイルシステムである。** 委譲ワーカーは、ディスパッチ境界を越えて
   メモリを共有しません。2 つのワーカーが必要とする状態は、公開ツリー下の名前付き
   ファイル（または進行中の作業状態については、*プランの規律* に従いプロジェクトの
-  `.apothem/plans/` ディレクトリ）を通じて流れます。
-{/* [Machine-seeded — pending review] */}
-  （`.apothem/plans/` が正規のプラン保存先です。レガシーの `.plans/`
-  ツリーは `apothem migrate-workspace` で移行します。）
+  `.apothem/plans/` ディレクトリ——レガシーの `.plans/` ツリーは
+  `apothem migrate-workspace` でアップグレードします——）を通じて流れます。
 
 ワーカーのタスクが複数ステップにわたる場合、ワーカーの作業トレースは *プランの規律* に
 従い `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` に記録されます。ディスパッチャーは
@@ -77,13 +75,11 @@ python scripts/inject-header.py --mode fix-in-place <path>
 アーティファクト——マルチワーカー調整プラン、リファクタリング戦略、デバッグジャーナル、
 探索ノート——は、`<project-root>/.apothem/plans/` にのみ存在します
 （正規のプラン保存先。レガシーの `<project-root>/.plans/` ツリーは `apothem migrate-workspace` で移行します）。
-{/* [Machine-seeded — pending review] */}
 
 `<project-root>/.apothem/plans/` ディレクトリ（およびレガシーの
 `<project-root>/.plans/`）は、
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline)
 に文書化された正規の `.gitignore` スニペットに従って **gitignore** されます。プランは、
-{/* [Machine-seeded — pending review] */}
 プロジェクトの git 履歴に **決してコミットしてはなりません（MUST NEVER）**。プランは
 ライフサイクル状態 **draft → in-progress → converged**（ADR に昇格）
 **→ abandoned / superseded** を遷移し、各プランの frontmatter の `status:` フィールドに

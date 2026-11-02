@@ -44,7 +44,7 @@ A pipeline de plan é entregue como oito comandos de primeira classe — um por 
 
 | Comando | Arquivo | Comportamento |
 | ------- | ---- | -------- |
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma livre em um `_spec/spec.md` de grau de especificação; cada pergunta aberta é roteada pelo canal de consulta estruturada em vez de aplicar valores padrão em silêncio; `--quick` escreve um único arquivo de plan leve sob `<project-root>/.apothem/plans/` (`.plans/` continua sendo um fallback de retrocompatibilidade suportado) |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma livre em um `_spec/spec.md` de grau de especificação; cada pergunta aberta é roteada pelo canal de consulta estruturada em vez de aplicar valores padrão em silêncio; `--quick` escreve um único arquivo de plan leve sob `<project-root>/.apothem/plans/` |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Gera uma Suíte de Planejamento Mestra completa a partir de prosa/requisitos redigidos |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoria forense de uma suíte existente — fidelidade da prosa, consistência interna, análise de lacunas — refinada por meio de perguntas e respostas interativas |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Produz um artefato de design arquitetônico no `_inputs/design.md` da suíte, validado pelo portão de pré-emissão de quinze barras antes da promoção |
@@ -61,7 +61,7 @@ Três comandos entram em um procedimento profundo em vez de carregar lógica de 
 | ------- | ---- | ----------- |
 | `/workflow` | `src/apothem/commands/workflow.md` | Ponto de entrada de aproveitamento de fluxo de trabalho de propósito geral (`/goal <<mission>>`): impulsiona fluxos de trabalho dinâmicos multitrabalhador genuinamente independentes sob contratos de retorno nomeados, verificação por refutação-por-padrão antes de qualquer achado sobreviver, remediação além da missão divulgada conforme o livro-razão de mudanças, e saída determinística; o despacho multitrabalhador e a autoexecução são opt-in / com portão de confirmação. Respaldado pela habilidade `workflow` |
 | `/projectify` | `src/apothem/commands/projectify.md` | Elevação de Projetos de aplicativos de chat: redige os entregáveis de Description / Instruction / Files de conhecimento de um Claude Project, Custom GPT ou Gem às convenções SOTA atuais, dentro de um orçamento de contexto mensurável por plataforma; saída determinística, autonomia opt-in. Respaldado pela habilidade `projectify` |
-| `/plan` | `src/apothem/commands/plan.md` | Orquestrador fino que encadeia as etapas de plan de primeira classe (`plan-spec → plan-generate → plan-review → plan-design (condicional) → plan-execute`), retomando cada uma a partir do Manifesto de Transferência da etapa anterior; não carrega lógica de etapa — o encadeamento é opt-in / com portão de confirmação (`--auto` encadeia continuamente) |
+| `/plan` | `src/apothem/commands/plan.md` | Orquestrador fino que encadeia as etapas de plan de primeira classe (`plan-spec → plan-generate → plan-review → plan-design (conditional) → plan-execute`), retomando cada uma a partir do Manifesto de Transferência da etapa anterior; não carrega lógica de etapa — o encadeamento é opt-in / com portão de confirmação (`--auto` encadeia continuamente) |
 
 ## 2. Regras
 

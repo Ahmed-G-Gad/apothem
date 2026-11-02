@@ -48,7 +48,7 @@ sys.exit(0)  # always exit 0; block with the deny envelope below
 
 ## حجب الكتابات
 
-لحجب عملية الكتابة، اطبع غلاف الرفض إلى <bdi>stdout</bdi> وأبقِ رمز الخروج <bdi>`0`</bdi>، كما تفعل خطّافات <bdi>Apothem</bdi> نفسها:
+لحجب عملية الكتابة، اطبع غلاف الرفض إلى <bdi>stdout</bdi> وأبقِ رمز الخروج <bdi>0</bdi>، كما تفعل خطّافات <bdi>Apothem</bdi> نفسها:
 
 ```python
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))

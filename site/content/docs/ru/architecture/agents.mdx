@@ -46,7 +46,6 @@ sourceHash: "e139310dc56fef79"
   работникам, проходит через именованный файл под опубликованным деревом (или
   каталог `.apothem/plans/` проекта для рабочего состояния в процессе выполнения согласно
   *Дисциплине планов*; устаревшее дерево `.plans/` переносится через `apothem migrate-workspace`).
-  {/* [Machine-seeded — pending review] */}
 
 Когда задача работника многошаговая, рабочий след работника записывается в
 `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` согласно *Дисциплине планов*;
@@ -82,10 +81,8 @@ LICENSE, JSON-файлы, lock-файлы, сгенерированные фай
 Артефакты планирования — планы координации многих работников, стратегии
 рефакторинга, журналы отладки, заметки исследования — существуют исключительно в
 `<project-root>/.apothem/plans/` (канонический каталог планов; устаревшее дерево `<project-root>/.plans/` переносится через `apothem migrate-workspace`).
-{/* [Machine-seeded — pending review] */}
 
 Каталог `<project-root>/.apothem/plans/` (и устаревший `<project-root>/.plans/`) **gitignore**-нут согласно каноническому
-{/* [Machine-seeded — pending review] */}
 фрагменту `.gitignore`, задокументированному в
 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
 Планы **НИКОГДА НЕ ДОЛЖНЫ** коммититься в git-историю проекта. Планы проходят

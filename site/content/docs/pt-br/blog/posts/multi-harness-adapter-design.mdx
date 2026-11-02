@@ -27,11 +27,21 @@ Ele declara as operações que a CLI invoca e os metadados que a CLI lê:
 - `verify` — detectar desvio entre o perfil e a configuração em disco.
 
 Como o contrato é um `typing.Protocol`, um adaptador o satisfaz pela forma, não
-por herança. A CLI carrega os adaptadores dinamicamente por meio de
-`importlib.metadata` a partir da tabela
-`[project.entry-points."apothem.harnesses"]` em `pyproject.toml`. Adicionar um
-harness significa publicar um subpacote que exponha o protocolo — sem editar o
-despachante central.
+por herança. Em tempo de execução, a CLI resolve cada adaptador a partir de um
+registro estático — a tabela `HARNESS_REGISTRY` em
+`src/apothem/lib/harness_registry_data.py`, que `harness_registry.py` declara
+*autoritativa em tempo de execução* — de modo que um checkout simples carrega
+todos os adaptadores sem nenhum metadado de ponto de entrada instalado no
+`sys.path`. A tabela `[project.entry-points."apothem.harnesses"]` em
+`pyproject.toml` e a varredura `discover_adapters()` do sistema de arquivos são
+uma verificação de paridade de conformidade, não o resolvedor em tempo de
+execução: um teste assegura que o conjunto de adaptadores descobertos seja igual
+ao registro estático, de modo que um adaptador correto na convenção, mas não
+registrado, apareça como regressão de cobertura em vez de ser resolvido em
+silêncio. Adicionar um harness significa, portanto, registrá-lo nos dados do
+registro (e espelhá-lo na tabela de pontos de entrada, para paridade de
+empacotamento) — o teste de paridade falha de forma explícita se um dos dois for
+esquecido.
 
 ## Um subpacote por adaptador
 

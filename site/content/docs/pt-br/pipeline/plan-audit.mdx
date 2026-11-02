@@ -49,7 +49,7 @@ de planejamento.
 
 ## Fases do fluxo de trabalho
 
-1. **Resolver o alvo** — Resolve a suíte a partir do argumento, ou escolhe a suíte modificada mais recentemente sob `.apothem/plans/` (`.plans/` é um fallback retrocompatível suportado) e declara a resolução.
+1. **Resolver o alvo** — Resolve a suíte a partir do argumento, ou escolhe a suíte modificada mais recentemente sob `.apothem/plans/` e declara a resolução.
 2. **Avaliar a etapa** — Detecta quais artefatos existem (spec pronta / gerada / revisada / executada) e nomeia a menor lacuna até um todo revisado e executável.
 3. **Levar a um todo revisável** — Executa apenas as etapas a montante que faltam, delegando ao comando canônico de cada lacuna; nunca reexecute uma etapa satisfeita apenas para refrescar a prosa.
 4. **Auditoria forense** — Aplica as dimensões de auditoria de `/plan-review`, o catálogo de técnicas de planejamento e a comporta de pré-emissão de quinze barras.

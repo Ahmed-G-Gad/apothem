@@ -1,6 +1,6 @@
 ---
 title: "Planificación reanudable"
-description: "Cómo Apothem externaliza el estado de trabajo a un conjunto .apothem/plans/ local del proyecto (con .plans/ como respaldo de retrocompatibilidad admitido) para que el trabajo de larga duración sobreviva a los límites de sesión, cuenta y máquina."
+description: "Cómo Apothem externaliza el estado de trabajo a un conjunto .apothem/plans/ local del proyecto para que el trabajo de larga duración sobreviva a los límites de sesión, cuenta y máquina."
 machineTranslated: true
 sourceHash: "2ba199d059369377"
 ---
@@ -12,10 +12,10 @@ cuenta, y el hilo de lo que estabas haciendo desaparece: la siguiente sesión
 empieza en frío, sin memoria de las decisiones que ya tomaste.
 
 Apothem invierte eso. Para el trabajo de larga duración y en varios pasos
-externaliza su **estado de trabajo completo** a un conjunto `.apothem/plans/` local del
-proyecto (manteniendo `.plans/` como respaldo de retrocompatibilidad admitido): archivos que residen en tu repositorio, no dentro del historial de
-ningún chat en la nube. El estado es el artefacto duradero; la sesión es
-descartable.
+externaliza su **estado de trabajo completo** a un conjunto `.apothem/plans/`
+local del proyecto: archivos que residen en tu repositorio, no dentro del
+historial de ningún chat en la nube. El estado es el artefacto duradero; la
+sesión es descartable.
 
 ## La idea central
 

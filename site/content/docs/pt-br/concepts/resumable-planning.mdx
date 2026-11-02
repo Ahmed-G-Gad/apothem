@@ -1,6 +1,6 @@
 ---
 title: "Planejamento retomável"
-description: "Como o Apothem externaliza o estado de trabalho para um conjunto .apothem/plans/ local do projeto (com .plans/ como um fallback de retrocompatibilidade suportado), de modo que o trabalho de longa duração sobreviva aos limites de sessão, conta e máquina."
+description: "Como o Apothem externaliza o estado de trabalho para um conjunto .apothem/plans/ local do projeto, de modo que o trabalho de longa duração sobreviva aos limites de sessão, conta e máquina."
 machineTranslated: true
 sourceHash: "2ba199d059369377"
 ---
@@ -13,9 +13,8 @@ memória das decisões que você já tomou.
 
 O Apothem inverte isso. Para o trabalho de longa duração e em várias etapas, ele
 externaliza seu **estado de trabalho completo** para um conjunto `.apothem/plans/`
-local do projeto (com `.plans/` mantido como um fallback de retrocompatibilidade
-suportado): arquivos que ficam no seu repositório, não dentro do histórico de
-nenhum chat na nuvem. O estado é o artefato durável; a sessão é descartável.
+local do projeto — arquivos que ficam no seu repositório, não dentro do histórico
+de nenhum chat na nuvem. O estado é o artefato durável; a sessão é descartável.
 
 ## A ideia central
 
@@ -88,8 +87,8 @@ resistente aos três limites: sessão, conta e máquina.
 A árvore de planos é ignorada pelo controle de versão por meio do trecho canônico
 de `.gitignore` do Apothem, de modo que o estado dos planos permanece local por
 padrão. Para levar o trabalho em andamento entre máquinas ou contas de forma
-deliberada, mova o conjunto `.apothem/plans/` (com `.plans/` mantido como
-fallback) do mesmo jeito que move qualquer outro arquivo do projeto.
+deliberada, mova o conjunto `.apothem/plans/` do mesmo jeito que move qualquer
+outro arquivo do projeto.
 
 ## Relacionado
 
