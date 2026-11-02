@@ -245,6 +245,22 @@ adapter writes to the project-scoped `.cursor/rules/` directory by default;
 Cursor has no documented file-based user-global rules path for this adapter to
 manage.
 
+[Devin Desktop](/docs/harnesses/windsurf) also loads the rules file this install
+writes. Devin Local, in Devin Desktop, imports `.cursor/rules/*.mdc` by default
+and keeps a rule with `alwaysApply: true`, which this file's frontmatter sets,
+active in every session. [One more tool](/docs/harnesses/hermes) loads the file
+only as the last fallback for its project
+instructions, when the project has no instruction file of its own and no
+`AGENTS.md` or `CLAUDE.md`. So installing or uninstalling `cursor` also changes
+what those tools load, and the install prints a note that names both, with that
+condition (the [harness registry](/docs/reference/harness-registry#shared-roots)
+lists them). The Apothem block is written for Cursor, so what it says about
+`.cursor/agents/` and `.cursor/hooks.json` does not apply to them. To keep Devin
+from loading it, set `"cursor": false` under `"read_config_from"` in
+`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` on Windows) or in
+the project's `.devin/config.json`; that key also stops Devin importing Cursor's
+MCP servers.
+
 Cursor loads skills from `~/.agents/skills/`, so the skills the install writes
 appear in Cursor without further setup. Cursor also loads `~/.claude/skills/`,
 so on a machine that also has a Claude Code install it can list the same skill

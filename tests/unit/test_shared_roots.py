@@ -273,3 +273,60 @@ def test_github_copilot_is_not_a_reader_of_the_claude_agents_folder() -> None:
     # The VS Code docs list ~/.claude/agents for the Anthropic Claude harness,
     # not for the Local harness that GitHub Copilot uses.
     assert "github-copilot" not in _DECLARED["~/.claude/agents"].readers
+
+
+@pytest.mark.parametrize(
+    ("path", "owner", "import_section"),
+    [
+        ("<project>/.cursor/rules/apothem-rules.mdc", "cursor", "#cursor"),
+        ("~/.claude/CLAUDE.md", "claude-code", "#claude-code"),
+    ],
+)
+def test_windsurf_reads_the_rule_files_of_the_cursor_and_claude_code_installs(
+    path: str, owner: str, import_section: str
+) -> None:
+    # Devin's configuration import reads .cursor/rules/*.mdc and
+    # ~/.claude/CLAUDE.md by default, and Devin Desktop's Local agent finds its
+    # files the way the Devin CLI does.
+    root = _DECLARED[path]
+    assert root.owner == owner
+    assert "windsurf" in root.readers
+    assert "windsurf" not in root.reader_conditions
+    assert (
+        "https://docs.devin.ai/cli/reference/configuration/read-config-from.md"
+        + import_section
+    ) in root.evidence
+    assert "https://docs.devin.ai/desktop/devin-local/customizations.md" in (
+        root.evidence
+    )
+
+
+def test_hermes_reads_the_cursor_rules_file_only_as_its_last_fallback() -> None:
+    # Hermes loads one kind of project context per session, first match wins,
+    # and the Cursor rules come after .hermes.md, AGENTS.md and CLAUDE.md.
+    root = _DECLARED["<project>/.cursor/rules/apothem-rules.mdc"]
+    assert root.readers == ("hermes", "windsurf")
+    assert root.reader_conditions == {
+        "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+    }
+    assert any("NousResearch/hermes-agent" in url for url in root.evidence)
+
+
+def test_hermes_reads_the_project_agents_md_only_without_its_own_file() -> None:
+    # A .hermes.md or HERMES.md comes first in Hermes's order, and an
+    # AGENTS.override.md beside AGENTS.md is loaded instead of it.
+    root = _DECLARED["<project>/AGENTS.md"]
+    assert root.reader_conditions == {
+        "hermes": "only when the project has no .hermes.md or HERMES.md and no "
+        "AGENTS.override.md beside it"
+    }
+
+
+def test_the_cursor_rules_file_keeps_the_frontmatter_devin_loads_always() -> None:
+    # Devin keeps an imported Cursor rule active in every session only with
+    # alwaysApply: true; with globs alone it applies to matching files.
+    text = (_PACKAGE_ROOT / "harnesses/cursor/templates/apothem-rules.mdc").read_text(
+        encoding="utf-8"
+    )
+    frontmatter = text.split("---", 2)[1]
+    assert re.search(r"(?m)^alwaysApply: true$", frontmatter)

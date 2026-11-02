@@ -182,9 +182,9 @@
   are capitalised, so one file could not serve both readers), nor the user
   folders `~/.config/devin/agents/` and `%APPDATA%\devin\agents\`. A same-named
   file you wrote in `.devin/agents/` is backed up before it is replaced.
-- Shared roots: the registry records no new shared root and does not list Windsurf
-  as a reader of `~/.claude/agents/`, because the `.claude/` subagent import the
-  extensibility overview describes has no named subpath.
+- Shared roots: the agents add no shared root, and the registry does not list
+  Windsurf as a reader of `~/.claude/agents/`, because the `.claude/` subagent
+  import the extensibility overview describes has no named subpath.
 - TODO(clarify): the `allowed-tools` names for Devin's web search and fetch tools.
   The held-back agents install once the docs name them.
 - TODO(clarify): which values `model` accepts. The subagents page shows
@@ -210,15 +210,31 @@
   folder and defers to the CLI page.
 - TODO(clarify): how Devin treats a frontmatter key it does not list; the rules
   `devin doctor` applies are unpublished. The adapter writes only listed keys.
-- Open question (review by 2026-12-31): whether the registry records Windsurf as
-  a reader of the other tools' rule files. The Devin CLI imports them by default
-  (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and `~/.claude/CLAUDE.md`).
-  Until 2026-10-28 the Desktop docs did not say whether Devin Desktop's Local
-  agent applies the same defaults; since 2026-11-02 the Customizations page says
-  it uses the Devin CLI's discovery, so Apothem's Cursor and Claude Code blocks
-  are expected to load there too. The registry records no shared root for it
-  yet; adding one changes the install advisories and is left to a separate
-  change.
+- Resolved 2026-11-02: the registry records Windsurf as a reader of the other
+  tools' rule files that an Apothem install writes. The Devin CLI imports
+  `AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and `~/.claude/CLAUDE.md` by
+  default (the `agents_standard`, `cursor` and `claude` options default to
+  `true`,
+  <https://docs.devin.ai/cli/reference/configuration/read-config-from.md#options>).
+  It keeps a Cursor rule with `alwaysApply: true` active in every session and
+  reads `~/.claude/CLAUDE.md` as a global rule
+  (<https://docs.devin.ai/cli/extensibility/rules.md#rules-from-other-tools>), and
+  the Customizations page says Devin Local uses the CLI's discovery. So Windsurf
+  is a reader of `<project>/AGENTS.md` (recorded before), of `~/.claude/CLAUDE.md`,
+  where the Claude Code install writes its block, and of
+  `<project>/.cursor/rules/apothem-rules.mdc`, the Cursor install's file, whose
+  frontmatter sets `alwaysApply: true`. The Claude Code and Cursor installs now
+  name Windsurf among the tools that load those files, and a Windsurf install
+  names the install whose block it finds there. No Apothem install writes a
+  project `CLAUDE.md`, so that path has no shared root. The rules page's Claude
+  Code entry says only that the CLI reads from the `.claude/` directory, with no
+  subpath, so the `~/.claude/rules/` folder the Claude Code install writes is not
+  recorded either.
+- TODO(clarify): the Cursor rules block addresses Cursor ("Inside Cursor, ...")
+  and Devin Local now loads it beside the adapter's own `.devin/rules/` file
+  (Hermes loads it too, as a fallback).
+  Whether that block becomes harness-neutral is open; the registry comment
+  records the same question.
 - Web-fetch / browser-retrieval (`web_fetch` = **yes**): Devin Local shares the
   Devin CLI's tools, which include `webfetch` (the lifecycle hooks page's tool
   table). Web search on the open Internet is the "Enable Web Search" team
@@ -401,8 +417,8 @@ and the CLI pages they defer to).
 
 Retrieved 2026-10-03 unless marked.
 
-- <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules; re-read 2026-11-02 for `.devin/` over `.windsurf/`)
-- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports; re-read 2026-11-02 for the Claude Code and Windsurf rows)
+- <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules; re-read 2026-11-02 for `.devin/` over `.windsurf/`, the Cursor rule activation and `~/.claude/CLAUDE.md` as a global rule)
+- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports; re-read 2026-11-02 for the Claude Code, Cursor and Windsurf rows and the option defaults)
 
 Retrieved 2026-10-28 (the hooks the adapter writes).
 

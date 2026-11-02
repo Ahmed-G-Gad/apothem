@@ -44,9 +44,24 @@ hook prompts land as support material under `~/.hermes/.apothem/support/`.
 
 Preview adapter. Hermes loads the Apothem skills through
 `skills.external_dirs`, but it does not load the rest of the support tree or the
-profile document on its own: nothing else in `config.yaml` and none of the
-context files Hermes reads point there, so after install Hermes runs without
-Apothem's rules or hooks.
+profile document on its own: nothing else in `config.yaml` points there, so the
+Hermes install adds no Apothem rules or hooks.
+
+Hermes does load the Apothem block that another install writes into a project
+file it reads. It loads one kind of project context per session, the first it
+finds, so each of these files reaches Hermes only under the condition next to
+it:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+The Apothem install for Kimi Code writes the first file, and the install for
+another editor writes the second. An install with `--project` names such a file
+and the install that wrote it.
 
 **Name clashes.** Hermes documents this order of precedence for skills: the
 project's skills (`<project>/.hermes/skills/` and `<project>/.agents/skills/`),

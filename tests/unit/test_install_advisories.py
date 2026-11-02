@@ -99,18 +99,123 @@ def test_claude_code_agents_folder_is_shared_with_cursor(tmp_path: Path) -> None
     )
 
 
-def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
-    # ~/.claude/CLAUDE.md has one reader (OpenCode); the note reads as one tool.
+def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
+    tmp_path: Path,
+) -> None:
+    # ~/.claude/CLAUDE.md has two readers; the note reads as several tools.
     advisories = shared_root_advisories("claude-code", home=tmp_path, project=None)
-    messages = [
-        str(a["message"])
-        for a in advisories
-        if a["role"] == "owner" and str(a["message"]).startswith("~/.claude/CLAUDE.md")
+    entry = _owner_entry(advisories, "~/.claude/CLAUDE.md")
+    assert entry["readers"] == ["opencode", "windsurf"]
+    assert str(entry["message"]) == (
+        "~/.claude/CLAUDE.md is shared: OpenCode, Windsurf also load it. "
+        "Installing or uninstalling Claude Code changes what those tools load."
+    )
+
+
+def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
+    # The project Copilot instructions file has one reader (Zed); the note reads
+    # as one tool.
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories(
+        "github-copilot", home=tmp_path, project=project
+    )
+    entry = _owner_entry(advisories, "<project>/.github/copilot-instructions.md")
+    assert entry["path"] == str(project / ".github" / "copilot-instructions.md")
+    assert entry["readers"] == ["zed"]
+    assert str(entry["message"]) == (
+        "<project>/.github/copilot-instructions.md is shared: Zed also loads it. "
+        "Installing or uninstalling GitHub Copilot changes what that tool loads."
+    )
+
+
+def test_cursor_rules_file_is_shared_with_hermes_and_windsurf(tmp_path: Path) -> None:
+    # Hermes loads the file only as its last project context fallback, so the
+    # note carries that condition; Windsurf loads it unconditionally.
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories("cursor", home=tmp_path, project=project)
+    entry = _owner_entry(advisories, "<project>/.cursor/rules/apothem-rules.mdc")
+    assert entry["path"] == str(project / ".cursor" / "rules" / "apothem-rules.mdc")
+    assert entry["readers"] == ["hermes", "windsurf"]
+    assert str(entry["message"]) == (
+        "<project>/.cursor/rules/apothem-rules.mdc is shared: Hermes (only when the "
+        "project has no .hermes.md, AGENTS.md or CLAUDE.md), Windsurf also load it. "
+        "Installing or uninstalling Cursor changes what those tools load."
+    )
+
+
+def test_project_agents_md_note_gives_the_hermes_condition(tmp_path: Path) -> None:
+    # A .hermes.md or HERMES.md comes first in Hermes's order, and an
+    # AGENTS.override.md beside AGENTS.md is loaded instead of it.
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories("kimi-code", home=tmp_path, project=project)
+    message = str(_owner_entry(advisories, "<project>/AGENTS.md")["message"])
+    assert (
+        "GitHub Copilot, Hermes (only when the project has no .hermes.md or "
+        "HERMES.md and no AGENTS.override.md beside it), Kiro," in message
+    )
+
+
+def test_hermes_install_names_the_install_whose_cursor_rules_block_it_finds(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "proj"
+    rules = project / ".cursor" / "rules" / "apothem-rules.mdc"
+    rules.parent.mkdir(parents=True)
+    rules.write_text(
+        "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nx\n<!-- END APOTHEM MANAGED BLOCK -->\n",
+        encoding="utf-8",
+    )
+    found = shared_root_advisories(
+        "hermes", home=home, project=project, holders=lambda _path: ["cursor"]
+    )
+    assert [str(a["message"]) for a in found if a["role"] == "reader"] == [
+        "Hermes (only when the project has no .hermes.md, AGENTS.md or CLAUDE.md) "
+        "also loads <project>/.cursor/rules/apothem-rules.mdc, which holds Apothem "
+        "content from the Cursor install."
     ]
-    assert messages == [
-        "~/.claude/CLAUDE.md is shared: OpenCode also loads it. Installing or "
-        "uninstalling Claude Code changes what that tool loads."
-    ]
+
+
+@pytest.mark.parametrize(
+    ("base", "relative", "owner", "owner_name"),
+    [
+        ("<project>", ".cursor/rules/apothem-rules.mdc", "cursor", "Cursor"),
+        ("~", ".claude/CLAUDE.md", "claude-code", "Claude Code"),
+    ],
+)
+def test_windsurf_install_names_the_install_whose_rules_block_devin_loads(
+    tmp_path: Path, base: str, relative: str, owner: str, owner_name: str
+) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "proj"
+    target = (project if base == "<project>" else home) / relative
+    target.parent.mkdir(parents=True)
+    project.mkdir(exist_ok=True)
+
+    def reader_notes() -> list[dict[str, object]]:
+        found = shared_root_advisories(
+            "windsurf", home=home, project=project, holders=lambda _path: [owner]
+        )
+        return [a for a in found if a["role"] == "reader"]
+
+    target.write_text("# Team rules\n", encoding="utf-8")
+    assert reader_notes() == []
+
+    target.write_text(
+        "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nx\n<!-- END APOTHEM MANAGED BLOCK -->\n",
+        encoding="utf-8",
+    )
+    notes = reader_notes()
+    assert len(notes) == 1
+    assert notes[0]["path"] == str(target)
+    assert notes[0]["owner_of_record"] == owner
+    assert str(notes[0]["message"]) == (
+        f"Windsurf also loads {base}/{relative}, which holds Apothem content from "
+        f"the {owner_name} install."
+    )
 
 
 def test_reader_install_names_the_owner_when_apothem_content_is_present(
@@ -330,6 +435,46 @@ def test_cli_codex_install_lists_the_readers(cli_env: tuple[Path, Path]) -> None
     assert {w["owner"] for w in shared} == {"codex"}
     assert len(shared) == 2  # ~/.agents/skills/ and ~/.codex/agents/
     assert {w["outcome"] for w in shared} == {"advisory"}
+
+
+def test_cli_reader_installs_name_the_cursor_install_in_its_rules_file(
+    cli_env: tuple[Path, Path], tmp_path: Path
+) -> None:
+    _home, profile = cli_env
+    project = tmp_path / "project"
+    project.mkdir()
+    rules = project / ".cursor" / "rules" / "apothem-rules.mdc"
+    runner = CliRunner()
+
+    def shared_notes(harness: str, role: str) -> list[dict[str, object]]:
+        args = ["install", "--harness", harness, "--project", str(project)]
+        result = runner.invoke(
+            main, [*args, "--profile", str(profile), "--no-color", "--format", "json"]
+        )
+        assert result.exit_code == 0, result.output
+        return [
+            w
+            for w in json.loads(result.output)["warnings"]
+            if w.get("operation") == "shared_root"
+            and w.get("role") == role
+            and Path(str(w["path"])) == rules
+        ]
+
+    # The Cursor install writes the rules file and names Hermes and Windsurf as
+    # its readers.
+    owner = shared_notes("cursor", "owner")
+    assert [w["readers"] for w in owner] == [["hermes", "windsurf"]]
+    # The Windsurf install then says the file holds the Cursor install's block,
+    # and so does a Hermes install given the project, with its condition.
+    for harness, condition in (
+        ("windsurf", ""),
+        ("hermes", "(only when the project has no .hermes.md, AGENTS.md or CLAUDE.md)"),
+    ):
+        reader = shared_notes(harness, "reader")
+        assert [w["owner_of_record"] for w in reader] == ["cursor"]
+        message = str(reader[0]["message"])
+        assert condition in message
+        assert "from the Cursor install" in message
 
 
 # --- Hook review advisories ---------------------------------------------------
