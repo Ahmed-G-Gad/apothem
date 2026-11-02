@@ -8,7 +8,7 @@ Pinned third-party npm command-line tools that CI installs from a committed lock
 
 | Directory | Purpose |
 |-----------|---------|
-| `vsce/` | The `vsce` packager for the VS Code extension. `.github/workflows/release.yml` installs it to build the `.vsix` on a tag, and `.github/workflows/publish-vscode.yml` installs it to package and publish the extension; that workflow takes this lockfile from the commit it runs from, not from the tag it packages. Its `package.json` overrides `@azure/msal-node`; the condition for dropping the override is written in `publish-vscode.yml`. |
+| `vsce/` | The `vsce` packager for the VS Code extension. `.github/workflows/release.yml` installs it to build the `.vsix` on a tag, and `.github/workflows/publish-vscode.yml` installs it to package and publish the extension; that workflow takes this lockfile from the commit it runs from, not from the tag it packages. Its `package.json` overrides `@azure/msal-node` and `minimatch`; the condition for dropping each override is written in `publish-vscode.yml`. |
 | `channel-smoke/` | The harness command-line tools that `.github/workflows/channel-smoke.yml` installs to smoke each install channel. Its `package.json` overrides `sharp`; the condition for dropping the override is written beside the override in the workflow. |
 
 ## Keeping the lockfiles current

@@ -91,6 +91,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
 
+### Security
+
+- **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
+  locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
+  10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
+  through a crafted glob pattern). vsce 4.0.0 and 4.1.0 still require
+  `minimatch` 10.x, which has no fixed release, so `tools/vsce/package.json`
+  overrides it. vsce did not reach the affected code, which runs only at
+  optimization level 2 or higher: it matches its own ignore list and the
+  extension's `.vscodeignore` at the default level. The packaged extension is
+  unchanged.
+
 ## [1.5.0] - 2026-10-28
 
 ### Added

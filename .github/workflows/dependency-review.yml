@@ -149,6 +149,7 @@ jobs:
             pkg:npm/%40anthropic-ai/claude-code-linux-x64-musl,
             pkg:npm/%40anthropic-ai/claude-code-win32-arm64,
             pkg:npm/%40anthropic-ai/claude-code-win32-x64,
+            pkg:npm/%40isaacs/nonrecursive-glob-match,
             pkg:npm/%40vscode/vsce-sign,
             pkg:npm/%40vscode/vsce-sign-alpine-arm64,
             pkg:npm/%40vscode/vsce-sign-alpine-x64,
