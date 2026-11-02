@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Адаптер окружения Apothem для Windsurf (GA)."
 machineTranslated: true
-sourceHash: "5e594da654351298"
+sourceHash: "042b696158e8d072"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,14 +122,14 @@ Cascade, более старом режиме, субагентов нет. Ус
   именами никогда не затрагиваются.
 - Devin также читает общую папку `.agents/agents/`, в которую Apothem никогда не
   записывает, а Devin CLI документирует импорт субагентов из папки `.claude/`,
-  не называя путь. Apothem не подтвердил, применяет ли этот импорт режим Local в
-  Devin Desktop.
+  не называя путь. Devin Local находит свои файлы так же, как Devin CLI, поэтому
+  этот импорт действует и там.
 - Apothem не подтвердил имена `allowed-tools` для веб-инструментов, какие
   значения принимает `model` и как читается пустой список `allowed-tools`.
 
 {/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
-back helpers wait on them), the model values, the .claude/ subagent import path
-and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+back helpers wait on them), the model values, the .claude/ subagent import path,
+and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Хуки
@@ -211,8 +211,8 @@ Code. Сопоставитель не записывается: сопостав
 **Devin также запускает хуки, записанные для Claude Code.** Devin загружает хуки
 из `~/.claude/settings.json`, `.claude/settings.json` и
 `.claude/settings.local.json`, пока включено `read_config_from.claude`, что
-является значением по умолчанию для Devin CLI; страницы Desktop не сообщают,
-применяет ли это Devin Local. Если вы также установили Apothem для Claude Code,
+является значением по умолчанию: Devin Local находит свои файлы так же, как
+Devin CLI. Если вы также установили Apothem для Claude Code,
 могут запускаться оба набора хуков. Команда `SessionStart` здесь и её копия для
 Claude Code разделяют один маркер на сессию в папке состояния хуков Apothem,
 поэтому та, что запускается второй, молчит, и начальная загрузка доходит до
@@ -243,9 +243,8 @@ Apothem. Файл с комментариями или другим синтак
 **Отключение хуков.** Задайте `APOTHEM_HOOKS_DISABLE=1` в окружении Devin, чтобы
 заглушить хуки Apothem.
 
-{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
-Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema; see the Hooks
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, and
+where fail_closed sits in the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Сопоставление профиля с нативной конфигурацией
@@ -271,11 +270,11 @@ section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 записывается.
 
 Devin Desktop (Windsurf) обнаруживает `~/.agents/skills/`, поэтому навыки,
-которые записывает установка, появляются без дополнительной настройки. Он также
-может показывать те же имена из `~/.claude/skills/`, когда включён его импорт
-конфигурации Claude Code; документация Devin CLI делает этот импорт включённым
-по умолчанию, а страницы Desktop не сообщают, применяет ли его режим Local.
-Apothem не подтвердил, как Windsurf обрабатывает ключ заголовка `SKILL.md`,
+которые записывает установка, появляются без дополнительной настройки. Его
+импорт из Claude Code, включённый по умолчанию, читает навыки только из папки
+`.claude/skills/` проекта, поэтому не задокументировано, что навыки, которые
+установка Apothem для Claude Code записывает в `~/.claude/skills/`, появляются
+и там. Apothem не подтвердил, как Windsurf обрабатывает ключ заголовка `SKILL.md`,
 который в документации не указан; навыки содержат `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint` и карту `metadata`.
 
