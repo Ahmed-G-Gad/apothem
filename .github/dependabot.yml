@@ -11,8 +11,9 @@
 # hooks. These stay hand edits for version updates, because a single-pin bump
 # would be wrong (a security update can still open a pull request for one;
 # adapt it by hand or close it):
-#   - pyproject.toml: deliberate floors, and click is pinned exactly for the
-#     completion golden (comment beside it).
+#   - pyproject.toml: deliberate floors; click is pinned exactly for the
+#     completion golden, and ruff and mypy in lockstep with their pre-commit
+#     hooks and the CI locks (comments beside them).
 #   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
 #     regenerated whole with `pip download`; setuptools must equal pyproject's
 #     build-system pin (tests/scripts/test_normalize_sdist.py). The single-
@@ -174,12 +175,13 @@ updates:
     ignore:
       # Each moves in lockstep with a pin outside this file (see the comment
       # beside each hook): ruff with pyproject.toml, the ruff lock and the dev
-      # lock (tests/scripts/test_ci_tool_locks.py fails when one differs), mypy
-      # with pyproject.toml, gitleaks with GL_VERSION in ci.yml. The mypy
-      # hook's additional_dependencies mirror pyproject.toml's runtime pins
-      # and floors, so they move with it too. A security pull request for ruff
+      # lock, mypy with pyproject.toml and the dev lock, gitleaks with
+      # GL_VERSION in ci.yml. The mypy hook's additional_dependencies carry the
+      # dev lock's versions, so they move with a lock refresh.
+      # tests/scripts/test_ci_tool_locks.py fails when a ruff or mypy pin, or one
+      # of those dependencies, differs. A security pull request for ruff or mypy
       # edits only pyproject.toml, so the lockstep test fails on it: adapt it by
-      # hand (hook rev, spec in scripts/dev/ci_lock_table.py, then refresh).
+      # hand (scripts/ci/README.md, Bumping ruff and Bumping mypy).
       - dependency-name: "*ruff-pre-commit"
       - dependency-name: "*mirrors-mypy"
       - dependency-name: "*gitleaks"

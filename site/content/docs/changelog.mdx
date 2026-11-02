@@ -98,13 +98,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   feed. The audits run on one interpreter, so the lines that apply only below
   Python 3.11 are no longer audited by `pip-audit.yml`; Dependabot alerts,
   Dependency review and Scorecard still read them.
-- **ruff has one version.** ruff is pinned to 0.17.1 where `pyproject.toml`
-  named a floor, and the `ruff-pre-commit` hook, the ruff lock and the dev lock
-  carry the same version; `tests/scripts/test_ci_tool_locks.py` fails when they
-  differ, so a Dependabot security pull request for ruff is adapted by hand.
-  The tree needs no source change at 0.17.1. The `ruff-format` pre-commit hook
-  now also formats Markdown files, because ruff 0.17 formats the Python code
-  blocks in them and CI's `ruff format --check .` checks them.
+- **ruff and mypy each have one version.** ruff is pinned to 0.17.1 where
+  `pyproject.toml` named a floor, and the `ruff-pre-commit` hook, the ruff lock
+  and the dev lock carry the same version. mypy is pinned to 2.4.0, the version
+  in the dev lock, and the mypy pre-commit hook moves from 2.1.0 to it. The hook
+  also pins the dev lock's versions of click, rich, PyYAML, jsonschema and their
+  type stubs, and no longer passes `--ignore-missing-imports`, so it runs mypy
+  with the same settings as CI. `tests/scripts/test_ci_tool_locks.py` fails
+  when any of these differ, so a Dependabot security pull request for either
+  tool is adapted by hand. The tree needs no source change at either version.
+  The `ruff-format` pre-commit hook now also formats Markdown files, because
+  ruff 0.17 formats the Python code blocks in them and CI's
+  `ruff format --check .` checks them.
 - **The CI locks wait a week.** All nine locks now wait out a seven-day
   cooldown that matches Dependabot's: `refresh_ci_locks.py` locks the files
   uploaded before the lock date less seven days, `--cooldown-days N` changes

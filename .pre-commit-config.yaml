@@ -57,20 +57,31 @@ repos:
   # Python — mypy (type checking)
   # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    # Lockstep: keep equal to the exact mypy pin in pyproject.toml
+    # [project.optional-dependencies].dev and to scripts/ci/requirements-ci-dev.txt;
+    # tests/scripts/test_ci_tool_locks.py fails when they differ. Dependabot
+    # ignores this hook and its additional_dependencies (dependabot.yml).
+    rev: v2.4.0
     hooks:
       - id: mypy
+        # Empty args drop the mirror's default --ignore-missing-imports, so mypy
+        # runs with only the pyproject.toml settings, as CI's `python -m mypy`
+        # does, and a library missing below fails the hook instead of passing.
+        args: []
         pass_filenames: false
         additional_dependencies:
-          # Floors kept in lockstep with pyproject.toml [project.dependencies]
-          # so the isolated mypy venv type-checks against the same library
-          # versions a `pip install -e .[dev]` resolves.
+          # Exact pins equal to the versions in scripts/ci/requirements-ci-dev.txt,
+          # so the hook type-checks against the dev lock's versions of these
+          # libraries. tests/scripts/test_ci_tool_locks.py fails when one differs
+          # or a runtime dependency or types-* stub of the dev extra is missing:
+          # after a lock refresh, copy the dev lock's new versions here
+          # (scripts/ci/README.md, Bumping mypy).
           - click==8.4.2
-          - rich>=15.0.0
-          - pyyaml>=6.0.3
-          - jsonschema>=4.26.0
-          - types-PyYAML
-          - types-jsonschema>=4.26.0.20260518
+          - rich==15.0.0
+          - pyyaml==6.0.3
+          - jsonschema==4.26.0
+          - types-PyYAML==6.0.12.20260906
+          - types-jsonschema==4.26.0.20261006
 
   # ---------------------------------------------------------------------------
   # Markdown

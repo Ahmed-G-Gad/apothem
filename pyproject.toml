@@ -201,7 +201,13 @@ dev = [
     # (scripts/ci/README.md). 0.15.17 added rule RUF076 and 0.15.20 removed it, so
     # a pin past the removal keeps selector behavior stable.
     "ruff==0.17.1",
-    "mypy>=2.1.0",
+    # Pinned exactly so a contributor install, the pre-commit hook and CI
+    # type-check with one mypy. The mirrors-mypy rev in .pre-commit-config.yaml
+    # and the dev lock carry the same version, the hook's additional_dependencies
+    # carry the dev lock's versions of the libraries it lists, and
+    # tests/scripts/test_ci_tool_locks.py fails when one differs. Move the pin and
+    # the hook rev together, then refresh the locks (scripts/ci/README.md).
+    "mypy==2.4.0",
     "types-PyYAML>=6.0.12.20260518",
     "types-jsonschema>=4.26.0.20260518",
     "pytest>=9.1.1",
