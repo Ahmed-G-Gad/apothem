@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -163,6 +163,15 @@ Apothem が管理するブロックがその後に続きます。ブロックの
 
 Cursor 0.45+ は、`.cursor/rules/` を通じてプロジェクトレベルの命令をサポートします。
 アダプターはデフォルトで、プロジェクトスコープの `.cursor/rules/` ディレクトリに書き込みます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバルなルールパスが文書化されていません。
+
+[Devin Desktop](/docs/harnesses/windsurf) も、このインストールが書き込むルールファイルを読み込みます。
+Devin Desktop 内の Devin Local は、`.cursor/rules/*.mdc` をデフォルトでインポートし、`alwaysApply: true` のルール（このファイルのフロントマターが設定しています）をすべてのセッションで有効に保ちます。
+[もう 1 つのツール](/docs/harnesses/hermes)は、プロジェクトにそのツール独自の命令ファイルがなく、`AGENTS.md` も `CLAUDE.md` もない場合にだけ、プロジェクトの命令の最後のフォールバックとしてこのファイルを読み込みます。
+そのため、`cursor` をインストールまたはアンインストールすると、それらのツールが読み込む内容も変わります。
+また、インストールでは、その条件を添えて両方を挙げるメモが表示されます（[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)がそれらを一覧にしています）。
+Apothem のブロックは、単一のツールを読み手として名指ししませんが、`.cursor/agents/` と `.cursor/hooks.json` についてそこに書かれている内容は、このインストールについて述べたものであり、それらのツールには当てはまりません。
+Devin に読み込ませないようにするには、`~/.config/devin/config.json`（Windows では `%APPDATA%\devin\config.json`）またはプロジェクトの `.devin/config.json` で、`"read_config_from"` の下に `"cursor": false` を設定します。
+このキーは、Devin が Cursor の MCP サーバーをインポートすることも止めます。
 
 Cursor は `~/.agents/skills/` からスキルを読み込むため、インストールが書き込むスキルは追加の設定なしで Cursor に表示されます。
 Cursor は `~/.claude/skills/` も読み込むため、Claude Code のインストールもあるマシンでは同じスキル名を 2 回一覧表示することがあり、そのドキュメントはどちらのコピーが優先されるかを述べていません。

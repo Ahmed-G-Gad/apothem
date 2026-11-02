@@ -2,7 +2,7 @@
 title: "ハーネスレジストリ"
 description: "組み込みの Apothem ハーネスアダプターに関する技術的なレジストリリファレンス。"
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,11 +107,12 @@ sourceHash: "8551abe209fad6c5"
 | `~/.claude/skills/` | Claude Code | なし | Cursor、OpenCode |
 | `~/.claude/agents/` | Claude Code | なし | Cursor |
 | `~/.codex/agents/` | Codex | なし | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | なし | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | なし | OpenCode、Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | なし | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
 | `<project>/GEMINI.md` | Gemini CLI | なし | Antigravity、GitHub Copilot、Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | なし | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | なし | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | なし | Hermes、Windsurf |
 
 `~/.config/apothem/rules/` と `~/.config/apothem/templates/` は、Apothem 自身のスキルと命令ファイルが
 引用するファイルを保持します。他のツールはこれらを読み込まないため、リーダーもベンダーのページも
@@ -120,15 +121,29 @@ sourceHash: "8551abe209fad6c5"
 共有ルートではありません。
 
 リーダーが列挙されるのは、そのベンダーのドキュメントがまさにそのパスのデフォルトでの読み込みを
-示している場合だけです。1 つのリーダーには条件があり、インストールの注記がそれを繰り返します:
-`Open-Claw` は、デフォルトの状態ディレクトリのもとでのみ `~/.agents/skills/` をインデックスします
-（`OPENCLAW_STATE_DIR` が別の場所を指している場合はそのフォルダーをスキップします）。`Cursor` の
+示している場合だけです。レジストリは 3 つの条件を記録しており、インストールの注記はそれぞれの条件を
+繰り返します。`Open-Claw` は、デフォルトの状態ディレクトリのもとでのみ `~/.agents/skills/` を
+インデックスします（`OPENCLAW_STATE_DIR` が別の場所を指している場合はそのフォルダーを
+スキップします）。`Hermes` は、1 セッションにつきプロジェクトコンテキストを 1 種類しか読み込まず、
+最初に一致したものが優先されます。その順序は、`.hermes.md` または `HERMES.md`、`AGENTS.md`、
+`CLAUDE.md`、その後に `Cursor` のルールです。そのため、`<project>/AGENTS.md` は、プロジェクトに
+`.hermes.md` も `HERMES.md` もなく、その隣に `AGENTS.override.md` もない場合にのみ読み込まれ、
+`<project>/.cursor/rules/apothem-rules.mdc` は、プロジェクトに `.hermes.md`、`AGENTS.md`、
+`CLAUDE.md` のいずれもない場合にのみ読み込まれます。`Cursor` の
 ドキュメントは `~/.codex/agents/` を `Codex` 互換フォルダーとして挙げていますが、`Cursor` がそこで
 どのファイル形式を解析するかは述べておらず、`Codex` のインストールは TOML ファイルを書き込むため、
 `Cursor` がそれらのヘルパーを読むかどうかは確認されていません。`Cursor` のインストールは、ヘルパーの
 独自のコピーを `<project>/.cursor/agents/` にも書き込み、ベンダーの優先順位ではそれがインポートする
 フォルダーより上位に置かれるため、インストール済みのプロジェクトでは、ネイティブのコピーが
 `~/.claude/agents/` からのコピーに優先します。
+
+`Windsurf` は、Devin の設定インポートを通じて他のツールのルールファイルを読み込みます。
+この設定インポートはデフォルトでオンであり、Devin Desktop の Local エージェントは
+Devin CLI と同じ方法でファイルを見つけます。そのため、`~/.claude/CLAUDE.md` に `Claude Code` の
+インストールが書き込むブロックと、`Cursor` のインストールが書き込む
+`<project>/.cursor/rules/apothem-rules.mdc` を読み込みます。このファイルは、フロントマターの
+`alwaysApply: true` によってすべてのセッションで有効のままになります。このインポートは
+プロジェクトの `CLAUDE.md` も読み込みますが、どの Apothem インストールもこれを書き込みません。
 
 一部のツールは、意図的に `~/.agents/skills/` のリーダーになっていません。`Antigravity`、`CodeBuddy`、
 `Kiro`、`Trae` のドキュメントは、それをデフォルトで読み込むとは述べていません（`Trae` は、設定を
@@ -139,10 +154,11 @@ sourceHash: "8551abe209fad6c5"
 挙げており、`GitHub Copilot` が実行するエージェント向けではありません。
 
 オーナーが共有の命令ファイルに書き込む Apothem ブロックは、特定の 1 つのツールをリーダーとして
-名指ししません。`tests/unit/test_shared_roots.py` は、レジストリターゲットを書き込むアダプターが
+名指ししません。
+`tests/unit/test_shared_roots.py` は、レジストリターゲットを書き込むアダプターが
 そのオーナーと共同インストーラーにちょうど一致しない場合、およびツール横断の命令ファイル（`AGENTS.md`、`CLAUDE.md`、
 `GEMINI.md`、`copilot-instructions.md`）のような名前を持つレジストリターゲットに宣言された
-オーナーがない場合に失敗します。唯一の例外は `~/.codex/AGENTS.md` で、これを読み込むと
+オーナーがない場合に失敗します。ただし `~/.codex/AGENTS.md` は対象外で、これを読み込むと
 文書化している登録済みのハーネスは他にありません。
 
 ## 検証フック
@@ -152,7 +168,7 @@ sourceHash: "8551abe209fad6c5"
 | チェック | 目的 |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 各アダプターが、経過日数が 90 日以内の規約ピンを持ち、そのピンが少なくとも 1 つのベンダー URL を引用し、期限切れのディスカバリーターゲットを持たないことを確認します。CI は、すべてのプルリクエストで、毎週、そしてリリースの前にこれを実行します。 |
-| `python scripts/dev/check_vendor_urls.py` | ピンとハーネステンプレートが引用するすべてのベンダー URL を取得し、移動したページやリンク切れのページがあれば失敗します。これには、もはや名前解決できないホスト名や、検証に失敗する証明書も含まれます。タイムアウト、拒否またはリセットされた接続、5xx サーバーエラーは到達不能として報告され、失敗にはなりません。週次の規約モニターがこれを実行します。 |
+| `python scripts/dev/check_vendor_urls.py` | ピンとハーネステンプレートが引用するすべてのベンダー URL を取得し、移動したページやリンク切れのページがあれば失敗します。これには、もはや名前解決できないホスト名や、検証に失敗する証明書も含まれます。タイムアウト、拒否またはリセットされた接続、5xx サーバーエラーは到達不能として報告され、失敗にはなりません。どのサーバーも保持できないプレースホルダーアドレスにのみ名前解決されるホスト名には、リクエストは送信されません。ベンダーのネームサーバーは、チェックの実行元の地域に対してこのようなアドレスを返すことがあります。そのホスト名はルーティング不能として報告され、チェックを失敗させず、そのページは手作業での確認が必要です。週次の規約モニターがこれを実行し、実行のたびに、そのようなホストごとに警告を出し、作成する issue にそのページを一覧表示します。 |
 | `python -m apothem.conformity.gate --all .` | ドキュメントと実装のコンフォーミティチェックを実行します。 |
 | `python -m pytest` | レジストリのフィクスチャテストとアダプターの契約テストを実行します。 |
 

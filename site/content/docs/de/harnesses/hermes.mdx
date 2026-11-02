@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,9 +50,25 @@ Templates und Hook-Prompts landen als Unterstützungsmaterial unter
 
 Vorschau-Adapter. Hermes lädt die Apothem-Skills über `skills.external_dirs`,
 lädt aber weder den Rest des Unterstützungs-Teilbaums noch das Profildokument
-von selbst: Nichts sonst in `config.yaml` und keine der Kontextdateien, die
-Hermes liest, verweist dorthin, daher läuft Hermes nach der Installation ohne
-die Regeln oder Hooks von Apothem.
+von selbst: Nichts sonst in `config.yaml` verweist dorthin, daher fügt die
+Installation für Hermes keine Regeln oder Hooks von Apothem hinzu.
+
+Hermes lädt durchaus den Apothem-Block, den eine andere Installation in eine
+Projektdatei schreibt, die es liest. Es lädt pro Sitzung nur eine Art von
+Projektkontext, die erste, die es findet; daher erreicht jede dieser Dateien
+Hermes nur unter der Bedingung, die daneben steht:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+Die Installation von Apothem für Kimi Code schreibt die erste Datei, und die
+Installation für einen anderen Editor schreibt die zweite. Eine Installation
+mit `--project` nennt eine solche Datei und die Installation, die sie
+geschrieben hat.
 
 **Namenskonflikte.** Hermes dokumentiert diese Vorrangreihenfolge für Skills:
 die Skills des Projekts (`<project>/.hermes/skills/` und

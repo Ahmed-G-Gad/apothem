@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adapter harness Apothem untuk Cursor (GA)."
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -259,6 +259,24 @@ Cursor 0.45+ mendukung instruksi tingkat proyek melalui `.cursor/rules/`.
 Adapter menulis ke direktori `.cursor/rules/` berlingkup proyek secara default;
 Cursor tidak memiliki jalur aturan global-pengguna berbasis berkas yang
 terdokumentasi untuk dikelola oleh adapter ini.
+
+[Devin Desktop](/docs/harnesses/windsurf) juga memuat berkas aturan yang ditulis
+instalasi ini. Devin Local, di dalam Devin Desktop, mengimpor
+`.cursor/rules/*.mdc` secara default dan menjaga aturan dengan
+`alwaysApply: true`, yang ditetapkan oleh frontmatter berkas ini, tetap aktif di
+setiap sesi. [Satu alat lain](/docs/harnesses/hermes) memuat berkas ini hanya
+sebagai fallback terakhir untuk instruksi proyeknya, ketika proyek tidak
+memiliki berkas instruksi khusus alat itu dan tidak ada `AGENTS.md` atau
+`CLAUDE.md`. Karena itu, memasang atau mencopot `cursor` juga mengubah apa yang
+dimuat alat-alat tersebut, dan instalasi mencetak catatan yang menyebut keduanya
+beserta syarat itu ([registri harness](/docs/reference/harness-registry#shared-roots)
+mencantumkannya). Blok Apothem tidak menyebut satu alat tunggal pun sebagai
+pembacanya, tetapi apa yang dikatakannya tentang `.cursor/agents/` dan
+`.cursor/hooks.json` menggambarkan instalasi ini dan tidak berlaku bagi
+alat-alat itu. Agar Devin tidak memuatnya, tetapkan `"cursor": false` di
+bawah `"read_config_from"` di `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` di Windows) atau di `.devin/config.json` proyek;
+kunci itu juga menghentikan Devin mengimpor server MCP milik Cursor.
 
 Cursor memuat skill dari `~/.agents/skills/`, sehingga skill yang ditulis
 instalasi muncul di Cursor tanpa penyiapan lebih lanjut. Cursor juga memuat

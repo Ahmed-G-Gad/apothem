@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -259,6 +259,43 @@ Devin Desktop(Windsurf)은 `~/.agents/skills/`를 탐색하므로, 설치가 작
 헤더 키를 어떻게 처리하는지 확인하지 않았습니다. 스킬은 `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint`, 그리고 `metadata`
 맵을 담습니다.
+
+Devin Local은 다른 도구가 사용하는 규칙 파일도 가져오며, 이 가져오기는
+기본적으로 켜져 있습니다. 그중 세 파일에는 Apothem 블록이 들어 있을 수 있습니다.
+하나는 다른 편집기용 Apothem 설치가 작성하는 프로젝트 규칙 파일이고, 다른 하나는
+Claude Code용 Apothem 설치가 작성하는 `~/.claude/CLAUDE.md` 파일이며, 나머지
+하나는 Kimi Code용 Apothem 설치가 작성하는 프로젝트 지침 파일입니다.
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+세 파일 중 하나에라도 Apothem 블록이 들어 있으면 Devin Local은 `.devin/rules/`의
+규칙 파일과 함께 그 파일도 로드하며, `windsurf`를 설치하면 그 파일과 그것을 작성한
+설치를 명시하는 안내가 출력됩니다. 첫 번째 파일의 Apothem 블록은 어느 한
+도구도 독자로 지칭하지 않지만, 그 편집기의 서브에이전트 폴더와 훅 파일에
+대해 그 블록이 말하는 내용은 그 설치를 설명하며 Devin에는 적용되지 않습니다.
+다만 그 파일이 명시하는 스킬 폴더와 `~/.config/apothem/`은 이
+설치도 작성하는 것입니다. 처음 두 파일을 Devin Local에서 제외하려면
+`~/.config/devin/config.json`(Windows에서는 `%APPDATA%\devin\config.json`) 또는
+프로젝트의 `.devin/config.json`에서 해당 가져오기를 끄세요.
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+키를 끄면 그 도구의 나머지 가져오기도 멈춥니다. 첫 번째 키는 그 편집기의 MCP
+서버도 멈추고, `claude`는 Claude Code의 스킬, 커맨드, 훅, MCP 서버를 멈춥니다.
+세 번째 파일은 `agents_standard` 가져오기를 통해 들어오며, 이 가져오기는 다른
+표준 규칙 파일과 여러분 자신의 프로젝트 지침도 읽으므로, Devin이 그중 어느 것도
+읽지 않아야 할 때만 `"agents_standard": false`를 설정하세요.
 
 ## 검증
 

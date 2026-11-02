@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,9 +37,22 @@ apothem install --harness hermes
 
 محوّل في مرحلة المعاينة. يُحمِّل <bdi>Hermes</bdi> مهارات <bdi>Apothem</bdi> عبر
 <bdi>`skills.external_dirs`</bdi>، لكنه لا يُحمِّل بقية شجرة الدعم ولا وثيقة الملف
-التعريفي من تلقاء نفسه: لا شيء آخر في <bdi>`config.yaml`</bdi> ولا أيّ من ملفات السياق
-التي يقرؤها <bdi>Hermes</bdi> يُشير إليهما، لذا يعمل <bdi>Hermes</bdi> بعد التثبيت دون
-قواعد <bdi>Apothem</bdi> أو خطّافاته.
+التعريفي من تلقاء نفسه: لا شيء آخر في <bdi>`config.yaml`</bdi> يُشير إليهما، لذا لا يضيف
+تثبيت <bdi>Hermes</bdi> قواعد <bdi>Apothem</bdi> ولا خطّافاته.
+
+يُحمِّل <bdi>Hermes</bdi> بالفعل كتلة <bdi>Apothem</bdi> التي يكتبها تثبيت آخر في ملف مشروع
+يقرؤه. ويُحمِّل نوعًا واحدًا من سياق المشروع في كل جلسة، هو أول ما يجده، لذا لا يصل
+كل ملف من هذه الملفات إلى <bdi>Hermes</bdi> إلا بالشرط المذكور بجانبه:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+يكتب تثبيت <bdi>Apothem</bdi> لـ <bdi>Kimi Code</bdi> الملف الأول، ويكتب التثبيت لمحرّر آخر الملف
+الثاني. ويُسمّي أيُّ تثبيت مع <bdi>`--project`</bdi> ملفًا من هذا النوع والتثبيت الذي كتبه.
 
 **تعارض الأسماء.** يوثّق <bdi>Hermes</bdi> ترتيب الأسبقية التالي للمهارات: مهارات
 المشروع (<bdi>`<project>/.hermes/skills/`</bdi> و<bdi>`<project>/.agents/skills/`</bdi>)،

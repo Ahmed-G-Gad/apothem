@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptador de harness do Apothem para o Windsurf (GA)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -263,6 +263,48 @@ documentado que as skills que uma instalação do Apothem para o Claude Code gra
 Windsurf trata uma chave de cabeçalho de `SKILL.md` que ele não lista; as skills trazem
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`
 e um mapa `metadata`.
+
+O Devin Local também importa arquivos de regras que outras ferramentas usam, e
+essas importações vêm ativadas por padrão. Três desses arquivos podem conter um
+bloco do Apothem: o arquivo de regras do projeto que a instalação do Apothem
+para outro editor grava, o arquivo `~/.claude/CLAUDE.md` que a instalação do
+Apothem para o Claude Code grava e o arquivo de instruções do projeto que a
+instalação do Apothem para o Kimi Code grava:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+Quando qualquer um desses arquivos contém um bloco do Apothem, o Devin Local
+carrega esse arquivo além do arquivo de regras em `.devin/rules/`, e instalar
+`windsurf` exibe uma nota que nomeia o arquivo e a instalação que o gravou. O
+bloco do Apothem no primeiro arquivo não nomeia nenhuma ferramenta específica
+como sua leitora, mas as linhas dele sobre a pasta de subagentes e o arquivo de
+hooks do editor descrevem essa instalação e não se aplicam ao Devin; a pasta de
+skills e `~/.config/apothem/` que ele nomeia são as mesmas que esta instalação
+também grava. Para manter os dois primeiros arquivos fora do Devin Local,
+desative as importações deles em `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` no Windows) ou no `.devin/config.json` do
+projeto:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Desativar uma chave também interrompe o restante da importação dessa ferramenta:
+a primeira chave interrompe também a importação dos servidores MCP desse editor,
+e `claude` interrompe a importação das skills, dos comandos, dos hooks e dos
+servidores MCP do Claude Code. O terceiro arquivo entra por meio da importação
+`agents_standard`, que também lê os outros arquivos de regras padrão e as suas
+próprias instruções do projeto, então defina `"agents_standard": false` somente
+se o Devin não dever ler nenhum deles.
 
 ## Verificação
 

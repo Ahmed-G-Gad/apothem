@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "适用于 Windsurf（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -143,6 +143,27 @@ section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 Windsurf 当前的规则表面位于 `.devin/rules/` 下，作用范围为项目级（这是首选位置，优先于用于向后兼容的回退位置 `.windsurf/rules/`）。工作流和机器本地的记忆归操作者所有；Apothem 不写入它们，也不写入 Cascade 钩子文件和共享的 Devin 配置。单文件形式的 `.windsurfrules` 被有意不写入。
 
 Devin Desktop（Windsurf）会发现 `~/.agents/skills/`，因此安装写入的技能无需进一步设置即可出现。它的 Claude Code 导入默认开启，且只从项目的 `.claude/skills/` 文件夹读取技能，因此没有文档表明，Apothem 为 Claude Code 安装时写入 `~/.claude/skills/` 的技能也会出现在那里。Apothem 尚未确认 Windsurf 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
+
+Devin Local 还会导入其他工具使用的规则文件，且这些导入默认开启。其中有三个文件可能包含 Apothem 块：Apothem 为另一个编辑器安装时写入的项目规则文件、Apothem 为 Claude Code 安装时写入的 `~/.claude/CLAUDE.md` 文件，以及 Apothem 为 Kimi Code 安装时写入的项目指令文件：
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+当这些文件中的任何一个包含 Apothem 块时，Devin Local 会加载该文件，同时也会加载 `.devin/rules/` 中的规则文件，并且安装 `windsurf` 时会打印一条说明，指出该文件以及写入它的那次安装。第一个文件中的 Apothem 块不会把任何单一工具指定为其读者，但其中关于该编辑器的子代理文件夹和钩子文件的说法描述的是那次安装，不适用于 Devin；该文件所指出的技能文件夹和 `~/.config/apothem/` 同样是这次安装写入的。若要让前两个文件不被 Devin Local 加载，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中关闭它们的导入：
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+关闭某个键还会停止该工具其余部分的导入：第一个键也会停止导入该编辑器的 MCP 服务器，而 `claude` 会停止导入 Claude Code 的技能、命令、钩子和 MCP 服务器。第三个文件是通过 `agents_standard` 导入加载的，该导入还会读取其他标准规则文件以及你自己的项目指令，因此只有当 Devin 不应读取其中任何一个时，才设置 `"agents_standard": false`。
 
 ## 验证
 

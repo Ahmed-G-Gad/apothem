@@ -2,7 +2,7 @@
 title: "하니스 레지스트리"
 description: "내장 Apothem 하니스 어댑터에 대한 기술 레지스트리 레퍼런스입니다."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,11 +107,12 @@ sourceHash: "8551abe209fad6c5"
 | `~/.claude/skills/` | Claude Code | 없음 | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | 없음 | Cursor |
 | `~/.codex/agents/` | Codex | 없음 | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | 없음 | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | 없음 | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | 없음 | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | 없음 | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | 없음 | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | 없음 | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | 없음 | Hermes, Windsurf |
 
 `~/.config/apothem/rules/`와 `~/.config/apothem/templates/`는 Apothem 자체의
 스킬과 지침 파일이 인용하는 파일을 담습니다. 다른 어떤 도구도 이를 로드하지
@@ -119,15 +120,30 @@ sourceHash: "8551abe209fad6c5"
 폴더(`~/.codebuddy/skills/`, `~/.kiro/skills/`, `~/.trae/skills/`)도 씁니다. 그
 도구만 그 폴더를 로드하므로 공유 루트가 아닙니다.
 
-리더는 벤더 문서가 바로 그 경로의 기본 로드를 보여 주는 곳에만 나열됩니다. 리더
-하나에는 조건이 붙으며, 설치 안내가 이를 반복합니다. `Open-Claw`는 기본 상태
-디렉터리에서만 `~/.agents/skills/`를 인덱싱합니다(`OPENCLAW_STATE_DIR`가 다른 곳을
-가리키면 그 폴더를 건너뜁니다). `Cursor` 문서는 `~/.codex/agents/`를 `Codex` 호환
+리더는 벤더 문서가 바로 그 경로의 기본 로드를 보여 주는 곳에만 나열됩니다.
+레지스트리는 세 가지 조건을 기록하며, 설치 안내가 각 조건을 반복합니다.
+`Open-Claw`는 기본 상태 디렉터리에서만 `~/.agents/skills/`를
+인덱싱합니다(`OPENCLAW_STATE_DIR`가 다른 곳을 가리키면 그 폴더를 건너뜁니다).
+`Hermes`는 세션당 한 종류의 프로젝트 컨텍스트만 로드하며, 첫 번째 일치 항목이
+우선합니다. 순서는 `.hermes.md` 또는 `HERMES.md`, `AGENTS.md`, `CLAUDE.md`,
+그다음 `Cursor` 규칙입니다. 따라서 `<project>/AGENTS.md`는 프로젝트에
+`.hermes.md`나 `HERMES.md`가 없고 그 옆에 `AGENTS.override.md`도 없을 때만
+로드하고, `<project>/.cursor/rules/apothem-rules.mdc`는 프로젝트에
+`.hermes.md`, `AGENTS.md`, `CLAUDE.md`가 모두 없을 때만 로드합니다.
+`Cursor` 문서는 `~/.codex/agents/`를 `Codex` 호환
 폴더로 나열하지만 `Cursor`가 그곳에서 어떤 파일 형식을 파싱하는지는 밝히지 않으며,
 `Codex` 설치는 TOML 파일을 쓰므로 `Cursor`가 그 도우미를 읽는지는 확인되지
 않았습니다. `Cursor` 설치는 또한 도우미의 자체 `<project>/.cursor/agents/` 사본을
 쓰며, 벤더의 우선순위는 이를 가져오는 폴더보다 위에 두므로, 설치된 프로젝트에서는
 네이티브 사본이 `~/.claude/agents/`에서 온 사본보다 우선합니다.
+
+`Windsurf`는 Devin의 구성 가져오기를 통해 다른 도구의 규칙 파일을 읽으며, 이
+기능은 기본적으로 켜져 있습니다. Devin Desktop의 Local 에이전트는 Devin CLI와 같은
+방식으로 파일을 찾습니다. 그래서 `~/.claude/CLAUDE.md`에서 `Claude Code` 설치가
+쓰는 블록과, `Cursor` 설치가 쓰는 `<project>/.cursor/rules/apothem-rules.mdc`를
+로드하며, 이 파일은 `alwaysApply: true` 프런트매터 덕분에 모든 세션에서 활성
+상태로 유지됩니다. 이 가져오기는 프로젝트의 `CLAUDE.md`도 읽지만, 어떤 Apothem
+설치도 이 파일을 쓰지 않습니다.
 
 일부 도구는 의도적으로 `~/.agents/skills/`의 리더가 아닙니다.
 `Antigravity`, `CodeBuddy`, `Kiro`, `Trae` 문서는 이 폴더를 기본으로 로드한다고
@@ -139,12 +155,13 @@ sourceHash: "8551abe209fad6c5"
 나열합니다.
 
 소유자가 공유 지침 파일에 쓰는 Apothem 블록은 어느 단일 도구도 자신의
-리더로 지명하지 않습니다. `tests/unit/test_shared_roots.py`는 레지스트리 대상을
+리더로 지명하지 않습니다.
+`tests/unit/test_shared_roots.py`는 레지스트리 대상을
 쓰는 어댑터가 정확히 그 소유자와 공동 설치자가 아닌 경우, 그리고 도구 간 지침
 파일(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `copilot-instructions.md`)처럼 이름이
-붙은 레지스트리 대상에 선언된 소유자가 없는 경우에 실패합니다. 유일한 예외는
-`~/.codex/AGENTS.md`이며, 등록된 다른 하니스는 이 파일을 로드한다고 문서화하지
-않습니다.
+붙은 레지스트리 대상에 선언된 소유자가 없는 경우에 실패합니다. 다만
+`~/.codex/AGENTS.md`는 제외되며, 등록된 다른 하니스는 이 파일을 로드한다고
+문서화하지 않습니다.
 
 ## 검증 훅
 
@@ -153,7 +170,7 @@ sourceHash: "8551abe209fad6c5"
 | 검사 | 목적 |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 각 어댑터에 작성된 지 90일 이내이고, 벤더 URL을 하나 이상 인용하며, 기한이 지난 디스커버리 대상이 없는 규약 핀이 있는지 확인합니다. CI가 모든 풀 리퀘스트마다, 매주, 그리고 릴리스 전에 실행합니다. |
-| `python scripts/dev/check_vendor_urls.py` | 핀과 하니스 템플릿이 인용하는 모든 벤더 URL을 가져와, 이동했거나 사라진 페이지가 있으면 실패합니다. 더 이상 해석되지 않는 호스트 이름이나 검증에 실패하는 인증서도 여기에 포함됩니다. 타임아웃, 거부되거나 재설정된 연결, 5xx 서버 오류는 도달 불가로 보고되며 검사를 실패시키지 않습니다. 주간 규약 모니터가 이를 실행합니다. |
+| `python scripts/dev/check_vendor_urls.py` | 핀과 하니스 템플릿이 인용하는 모든 벤더 URL을 가져와, 이동했거나 사라진 페이지가 있으면 실패합니다. 더 이상 해석되지 않는 호스트 이름이나 검증에 실패하는 인증서도 여기에 포함됩니다. 타임아웃, 거부되거나 재설정된 연결, 5xx 서버 오류는 도달 불가로 보고되며 검사를 실패시키지 않습니다. 어떤 서버도 가질 수 없는 플레이스홀더 주소로만 해석되는 호스트 이름에는 요청을 보내지 않습니다. 벤더의 네임 서버는 검사가 실행되는 지역에 대해 이런 주소를 반환할 수 있습니다. 그런 호스트는 라우팅 불가로 보고되고, 검사를 실패시키지 않으며, 해당 페이지는 직접 확인해야 합니다. 주간 규약 모니터가 이를 실행하고, 실행할 때마다 그런 호스트 각각에 대해 경고하며, 모니터가 생성하는 이슈에 해당 페이지를 나열합니다. |
 | `python -m apothem.conformity.gate --all .` | 문서 및 구현 적합성 검사를 실행합니다. |
 | `python -m pytest` | 레지스트리 픽스처 테스트와 어댑터 계약 테스트를 실행합니다. |
 

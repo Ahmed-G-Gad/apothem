@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptador de entorno de Apothem para Windsurf (GA)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -285,6 +285,48 @@ aparezcan también allí. Apothem no ha confirmado cómo trata Windsurf una clav
 cabecera de `SKILL.md` que no lista; las skills llevan `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint` y un mapa
 `metadata`.
+
+Devin Local también importa archivos de reglas que usan otras herramientas, y
+esas importaciones están activadas por defecto. Tres de esos archivos pueden
+contener un bloque de Apothem: el archivo de reglas del proyecto que escribe la
+instalación de Apothem para otro editor, el archivo `~/.claude/CLAUDE.md` que
+escribe la instalación de Apothem para Claude Code y el archivo de
+instrucciones del proyecto que escribe la instalación de Apothem para Kimi Code:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+Cuando cualquiera de estos archivos contiene un bloque de Apothem, Devin Local
+lo carga además del archivo de reglas de `.devin/rules/`, y la instalación de
+`windsurf` imprime una nota que nombra el archivo y la instalación que lo
+escribió. El bloque de Apothem del primer archivo no nombra ninguna herramienta
+concreta como su lector, pero sus líneas sobre la carpeta de subagentes y el
+archivo de hooks de ese editor describen esa instalación y no se aplican a
+Devin; la carpeta de skills y `~/.config/apothem/` que nombra son también las
+que escribe esta instalación. Para mantener los dos primeros archivos fuera de
+Devin Local, desactiva sus importaciones en `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` en Windows) o en el `.devin/config.json` del
+proyecto:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Desactivar una clave también detiene el resto de la importación de esa
+herramienta: la primera clave detiene además los servidores MCP de ese editor, y
+`claude` detiene las skills, los comandos, los hooks y los servidores MCP de
+Claude Code. El tercer archivo llega por la importación `agents_standard`, que
+también lee los demás archivos de reglas estándar y tus propias instrucciones de
+proyecto, así que establece `"agents_standard": false` solo si Devin no debe
+leer ninguno de ellos.
 
 ## Verificación
 

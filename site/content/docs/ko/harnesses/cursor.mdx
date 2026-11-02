@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -241,6 +241,24 @@ Cursor 0.45+는 `.cursor/rules/`를 통해 프로젝트 수준 지침을 지원�
 어댑터는 기본적으로 프로젝트 범위의 `.cursor/rules/` 디렉터리에 작성합니다.
 Cursor에는 이 어댑터가 관리할 수 있는, 문서화된 파일 기반 사용자 전역 규칙
 경로가 없습니다.
+
+[Devin Desktop](/docs/harnesses/windsurf)도 이 설치가 작성하는 규칙 파일을
+로드합니다. Devin Desktop의 Devin Local은 `.cursor/rules/*.mdc`를 기본적으로
+가져오며, 이 파일의 프런트매터가 설정하는 `alwaysApply: true` 규칙을 모든
+세션에서 활성 상태로 유지합니다. [또 다른 도구 하나](/docs/harnesses/hermes)는
+프로젝트에 해당 도구 자체의 지침 파일이 없고
+`AGENTS.md`나 `CLAUDE.md`도 없을 때에만, 프로젝트 지침의 마지막 대체 수단으로 이
+파일을 로드합니다. 따라서 `cursor`를 설치하거나 제거하면 그 도구들이 로드하는
+내용도 바뀌며, 설치는 그 조건과 함께 둘을 모두 명시하는 안내를
+출력합니다([하니스 레지스트리](/docs/reference/harness-registry#shared-roots)가
+그 도구들을 나열합니다). Apothem 블록은 어느 한 도구도 독자로
+지칭하지 않지만, 그 블록이 `.cursor/agents/`와 `.cursor/hooks.json`에 대해
+말하는 내용은 이 설치를 설명하며 그 도구들에는 적용되지 않습니다. Devin이 이
+파일을 로드하지 않게 하려면
+`~/.config/devin/config.json`(Windows에서는 `%APPDATA%\devin\config.json`) 또는
+프로젝트의 `.devin/config.json`에서 `"read_config_from"` 아래에
+`"cursor": false`를 설정하세요. 이 키는 Devin이 Cursor의 MCP 서버를 가져오는
+것도 멈춥니다.
 
 Cursor는 `~/.agents/skills/`에서 스킬을 로드하므로, 설치가 작성하는 스킬은 추가
 설정 없이 Cursor에 나타납니다. Cursor는 `~/.claude/skills/`도 로드하므로, Claude

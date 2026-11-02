@@ -2,7 +2,7 @@
 title: "Registro de harnesses"
 description: "Referência técnica do registro dos adaptadores de harness integrados do Apothem."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,11 +110,12 @@ coinstalador coloca o conteúdo do Apothem diante de cada leitor.
 | `~/.claude/skills/` | Claude Code | nenhum | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | nenhum | Cursor |
 | `~/.codex/agents/` | Codex | nenhum | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | nenhum | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | nenhum | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | nenhum | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | nenhum | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | nenhum | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | nenhum | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | nenhum | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` e `~/.config/apothem/templates/` contêm os arquivos
 que as skills e os arquivos de instruções do próprio Apothem citam. Nenhuma outra ferramenta os carrega, então
@@ -123,15 +124,31 @@ gravam uma pasta de skills própria (`~/.codebuddy/skills/`, `~/.kiro/skills/`
 e `~/.trae/skills/`); somente essa ferramenta a carrega, então ela não é uma raiz compartilhada.
 
 Um leitor só é listado onde a documentação do seu fornecedor mostra um carregamento padrão desse
-caminho exato. Um leitor traz uma condição, e a nota de instalação a repete:
-`Open-Claw` indexa `~/.agents/skills/` somente sob o seu diretório de estado padrão
-(ele ignora a pasta quando `OPENCLAW_STATE_DIR` aponta para outro lugar). A documentação do `Cursor`
+caminho exato. O registro anota três condições, e a nota de instalação repete
+cada uma. `Open-Claw` indexa `~/.agents/skills/` somente sob o seu diretório de
+estado padrão (ele ignora a pasta quando `OPENCLAW_STATE_DIR` aponta para outro
+lugar). O `Hermes` carrega um tipo de contexto do projeto por sessão: vence a
+primeira correspondência, na ordem `.hermes.md` ou `HERMES.md`, `AGENTS.md`,
+`CLAUDE.md` e depois as regras do `Cursor`. Assim, ele carrega
+`<project>/AGENTS.md` somente quando o projeto não tem `.hermes.md` nem
+`HERMES.md` e não tem `AGENTS.override.md` ao lado desse arquivo, e
+`<project>/.cursor/rules/apothem-rules.mdc` somente quando o projeto não tem
+`.hermes.md`, `AGENTS.md` nem `CLAUDE.md`. A documentação do `Cursor`
 lista `~/.codex/agents/` como uma pasta de compatibilidade com o `Codex`, mas não diz
 quais formatos de arquivo o `Cursor` interpreta ali, e uma instalação do `Codex` grava arquivos
 TOML, então não está confirmado se o `Cursor` lê esses auxiliares. A instalação do `Cursor`
 também grava sua própria cópia `<project>/.cursor/agents/` dos auxiliares,
 que a precedência do fornecedor classifica acima das pastas que ele importa, de modo que, em um
 projeto instalado, a cópia nativa prevalece sobre a de `~/.claude/agents/`.
+
+O `Windsurf` lê os arquivos de regras de outras ferramentas por meio da
+importação de configuração do Devin, que vem ativada por padrão, e o agente
+Local do Devin Desktop encontra seus arquivos do mesmo jeito que a Devin CLI.
+Assim, ele carrega o bloco de `~/.claude/CLAUDE.md` que a instalação do
+`Claude Code` grava e o arquivo da instalação do `Cursor`,
+`<project>/.cursor/rules/apothem-rules.mdc`, cujo frontmatter
+`alwaysApply: true` o mantém ativo em todas as sessões. A importação também lê
+um `CLAUDE.md` do projeto, que nenhuma instalação do Apothem grava.
 
 Algumas ferramentas deliberadamente não são leitoras de `~/.agents/skills/`: a documentação do
 `Antigravity`, do `CodeBuddy`, do `Kiro` e do `Trae` não diz que elas a carregam por
@@ -147,7 +164,7 @@ compartilhado não nomeia nenhuma ferramenta específica como sua leitora.
 `tests/unit/test_shared_roots.py` falha quando os adaptadores que gravam um
 alvo do registro não são exatamente o seu proprietário e os seus coinstaladores, e quando um alvo do registro cujo nome é o de um arquivo de
 instruções entre ferramentas (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`) não tem um proprietário declarado. A única exceção é
+`copilot-instructions.md`) não tem um proprietário declarado, salvo
 `~/.codex/AGENTS.md`, cujo carregamento nenhum outro harness registrado
 documenta.
 
@@ -158,7 +175,7 @@ O registro permanece sincronizado por meio destas verificações:
 | Verificação | Propósito |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tem um pin de convenção que não tem mais de 90 dias de idade, cita pelo menos uma URL do fornecedor e não tem nenhum alvo de descoberta vencido. A CI o executa em cada pull request, semanalmente e antes de um lançamento. |
-| `python scripts/dev/check_vendor_urls.py` | Busca cada URL de fornecedor que os pins e os templates de harness citam e falha diante de uma página movida ou inativa, incluindo um nome de host que não resolve mais ou um certificado que falha na verificação; um tempo limite esgotado, uma conexão recusada ou redefinida, ou um erro de servidor 5xx é relatado como inacessível e não o faz falhar. O monitor semanal de convenções o executa. |
+| `python scripts/dev/check_vendor_urls.py` | Busca cada URL de fornecedor que os pins e os templates de harness citam e falha diante de uma página movida ou inativa, incluindo um nome de host que não resolve mais ou um certificado que falha na verificação; um tempo limite esgotado, uma conexão recusada ou redefinida, ou um erro de servidor 5xx é relatado como inacessível e não o faz falhar. Um nome de host que resolve apenas para um endereço de espaço reservado que nenhum servidor pode ter (os servidores de nomes de um fornecedor podem devolver esse endereço para a região de onde a verificação é executada) não recebe nenhuma requisição: ele é relatado como não roteável, não faz a verificação falhar, e suas páginas precisam de uma verificação manual. O monitor semanal de convenções o executa, emite um aviso para cada host desse tipo a cada execução e lista as páginas desses hosts na issue que ele abre. |
 | `python -m apothem.conformity.gate --all .` | Executa as verificações de conformidade de documentação e de implementação. |
 | `python -m pytest` | Exercita os testes de fixtures do registro e os testes de contrato dos adaptadores. |
 

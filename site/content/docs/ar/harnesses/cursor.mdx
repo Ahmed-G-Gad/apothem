@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "محوّل إطار عمل Apothem لـ Cursor (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -244,6 +244,22 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 <bdi>`.cursor/rules/`</bdi>. يكتب المحوّل افتراضيًا إلى دليل
 <bdi>`.cursor/rules/`</bdi> بنطاق المشروع؛ ولا يملك <bdi>Cursor</bdi> مسارًا موثّقًا
 قائمًا على الملفات للقواعد العامّة على مستوى المستخدم كي يديره هذا المحوّل.
+
+يُحمِّل [<bdi>Devin Desktop</bdi>](/docs/harnesses/windsurf) ملف القواعد الذي يكتبه هذا
+التثبيت أيضًا. ويستورد <bdi>Devin Local</bdi>، داخل <bdi>Devin Desktop</bdi>، ملفات
+<bdi>`.cursor/rules/*.mdc`</bdi> افتراضيًا، ويُبقي أي قاعدة فيها <bdi>`alwaysApply: true`</bdi>
+(وهو ما تضبطه البيانات الأمامية لهذا الملف) مفعّلةً في كل جلسة. ولا تُحمِّل
+[أداة أخرى](/docs/harnesses/hermes) الملف إلا بوصفه الاحتياطي الأخير
+لتعليمات مشروعها، عندما لا يكون في المشروع ملف تعليمات خاص بها ولا <bdi>`AGENTS.md`</bdi>
+ولا <bdi>`CLAUDE.md`</bdi>. لذا فإن تثبيت <bdi>`cursor`</bdi> أو إلغاء تثبيته يغيّر أيضًا ما تُحمِّله
+هاتان الأداتان، ويطبع التثبيت ملاحظة تسمّي كلتيهما وتذكر ذلك الشرط (ويسردهما
+[سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots)). وكتلة
+<bdi>Apothem</bdi> لا تُسمّي أداة واحدة بعينها قارئًا لها، لكن ما تقوله عن <bdi>`.cursor/agents/`</bdi>
+و<bdi>`.cursor/hooks.json`</bdi> يصف هذا التثبيت ولا ينطبق عليهما.
+ولمنع <bdi>Devin</bdi> من تحميل الملف، اضبط
+<bdi>`"cursor": false`</bdi> تحت <bdi>`"read_config_from"`</bdi> في <bdi>`~/.config/devin/config.json`</bdi>
+(<bdi>`%APPDATA%\devin\config.json`</bdi> على <bdi>Windows</bdi>) أو في ملف <bdi>`.devin/config.json`</bdi> الخاص
+بالمشروع؛ وهذا المفتاح يوقف أيضًا استيراد <bdi>Devin</bdi> لخوادم <bdi>MCP</bdi> الخاصة بـ <bdi>Cursor</bdi>.
 
 يُحمِّل <bdi>Cursor</bdi> المهارات من <bdi>`~/.agents/skills/`</bdi>، لذا تظهر المهارات التي يكتبها
 التثبيت في <bdi>Cursor</bdi> دون إعداد إضافي. ويُحمِّل <bdi>Cursor</bdi> أيضًا <bdi>`~/.claude/skills/`</bdi>،

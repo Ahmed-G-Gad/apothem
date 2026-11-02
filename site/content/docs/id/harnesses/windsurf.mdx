@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adapter harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -276,6 +276,46 @@ Apothem belum memastikan bagaimana Windsurf memperlakukan kunci header
 `SKILL.md` yang tidak dicantumkannya; skill membawa `user-invocable`,
 `disable-model-invocation`, `allowed-tools`, `argument-hint`, dan sebuah peta
 `metadata`.
+
+Devin Local juga mengimpor berkas aturan yang dipakai alat lain, dan impor itu
+aktif secara default. Tiga di antara berkas tersebut dapat memuat blok Apothem:
+berkas aturan proyek yang ditulis oleh instalasi Apothem untuk editor lain,
+berkas `~/.claude/CLAUDE.md` yang ditulis oleh instalasi Apothem untuk
+Claude Code, dan berkas instruksi proyek yang ditulis oleh instalasi Apothem
+untuk Kimi Code:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+Ketika salah satu dari ketiga berkas itu memuat blok Apothem, Devin Local
+memuatnya di samping berkas aturan di `.devin/rules/`, dan saat `windsurf`
+dipasang, pemasangan itu mencetak catatan yang menyebutkan berkas tersebut serta
+instalasi yang menulisnya. Blok Apothem di berkas pertama tidak menyebut satu
+alat tunggal pun sebagai pembacanya, tetapi baris-barisnya tentang folder
+subagent dan berkas hook milik editor itu menggambarkan instalasi itu dan tidak
+berlaku bagi Devin; folder skill dan `~/.config/apothem/` yang disebutnya adalah
+folder yang juga ditulis oleh instalasi ini. Agar dua berkas pertama tidak
+dimuat Devin Local, matikan impor keduanya di `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` di Windows) atau di `.devin/config.json` proyek:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Mematikan sebuah kunci juga menghentikan sisa impor alat tersebut: kunci pertama
+turut menghentikan server MCP milik editor itu, dan `claude` menghentikan skill,
+command, hook, dan server MCP milik Claude Code. Berkas ketiga masuk melalui
+impor `agents_standard`, yang juga membaca berkas aturan standar lainnya dan
+instruksi proyek Anda sendiri, jadi tetapkan `"agents_standard": false` hanya
+jika Devin tidak boleh membaca satu pun dari semuanya.
 
 ## Verifikasi
 

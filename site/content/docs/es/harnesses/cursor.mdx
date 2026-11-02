@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adaptador de entorno de Apothem para Cursor (GA)."
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -266,6 +266,25 @@ Cursor 0.45+ admite instrucciones a nivel de proyecto mediante
 alcance de proyecto de forma predeterminada; Cursor no tiene ninguna ruta
 documentada de reglas globales de usuario basada en archivos que este adaptador
 pueda gestionar.
+
+[Devin Desktop](/docs/harnesses/windsurf) también carga el archivo de reglas que
+escribe esta instalación. Devin Local, en Devin Desktop, importa
+`.cursor/rules/*.mdc` por defecto y mantiene activa en todas las sesiones una
+regla con `alwaysApply: true`, lo que establece el frontmatter de este archivo.
+[Una herramienta más](/docs/harnesses/hermes) carga el archivo
+solo como última alternativa para sus instrucciones de proyecto, cuando el
+proyecto no tiene un archivo de instrucciones propio ni `AGENTS.md` ni
+`CLAUDE.md`. Por eso instalar o desinstalar `cursor` también cambia lo que
+cargan esas herramientas, y la instalación imprime una nota que nombra a ambas,
+con esa condición (el
+[registro de entornos](/docs/reference/harness-registry#shared-roots) las
+lista). El bloque de Apothem no nombra ninguna herramienta concreta como su
+lector, pero lo que dice sobre `.cursor/agents/` y `.cursor/hooks.json` describe
+esta instalación y no se aplica a ellas. Para que Devin no
+cargue el archivo, establece `"cursor": false` bajo `"read_config_from"` en
+`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` en Windows) o en el
+`.devin/config.json` del proyecto; esa clave también impide que Devin importe
+los servidores MCP de Cursor.
 
 Cursor carga skills desde `~/.agents/skills/`, así que las skills que escribe la
 instalación aparecen en Cursor sin más configuración. Cursor también carga

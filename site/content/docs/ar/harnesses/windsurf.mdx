@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "محوّل إطار عمل Apothem لـ Windsurf (إصدار عام)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -265,6 +265,44 @@ section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 <bdi>Windsurf</bdi> مع مفتاح ترويسة في <bdi>`SKILL.md`</bdi> لا يسرده؛ وتحمل المهارات
 <bdi>`user-invocable`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>، و<bdi>`argument-hint`</bdi>،
 وخريطة <bdi>`metadata`</bdi>.
+
+يستورد <bdi>Devin Local</bdi> أيضًا ملفات قواعد تستخدمها أدوات أخرى، وهذه الاستيرادات
+مفعّلة افتراضيًا. ويمكن أن يحمل ثلاثة من تلك الملفات كتلة <bdi>Apothem</bdi>: ملف قواعد
+المشروع الذي يكتبه تثبيت <bdi>Apothem</bdi> لمحرّر آخر، وملف <bdi>`~/.claude/CLAUDE.md`</bdi> الذي
+يكتبه تثبيت <bdi>Apothem</bdi> لـ <bdi>Claude Code</bdi>، وملف تعليمات المشروع الذي يكتبه تثبيت
+<bdi>Apothem</bdi> لـ <bdi>Kimi Code</bdi>:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+وحين يحمل أحد هذه الملفات كتلة <bdi>Apothem</bdi>، يُحمِّله <bdi>Devin Local</bdi> إضافةً إلى ملف
+القواعد في <bdi>`.devin/rules/`</bdi>، ويطبع تثبيت <bdi>`windsurf`</bdi> ملاحظة تسمّي الملف والتثبيت
+الذي كتبه. وكتلة <bdi>Apothem</bdi> في الملف الأول لا تُسمّي أداة واحدة بعينها قارئًا لها،
+لكن أسطرها عن مجلّد العوامل الفرعية وملف الخطّافات لدى ذلك المحرّر تصف ذلك
+التثبيت ولا تنطبق على <bdi>Devin</bdi>؛ أمّا مجلّد المهارات و<bdi>`~/.config/apothem/`</bdi> اللذان
+تسمّيهما فهما ممّا يكتبه هذا التثبيت أيضًا. ولإبقاء
+الملفين الأولين خارج <bdi>Devin Local</bdi>، أوقف استيرادهما في
+<bdi>`~/.config/devin/config.json`</bdi> (<bdi>`%APPDATA%\devin\config.json`</bdi> على
+<bdi>Windows</bdi>) أو في ملف <bdi>`.devin/config.json`</bdi> الخاص بالمشروع:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+وإيقاف أي مفتاح يوقف كذلك بقية استيراد تلك الأداة: فالمفتاح الأول يوقف خوادم
+<bdi>MCP</bdi> الخاصة بذلك المحرّر أيضًا، ويوقف <bdi>`claude`</bdi> مهارات <bdi>Claude Code</bdi> وأوامره
+وخطّافاته وخوادم <bdi>MCP</bdi> الخاصة به. ويأتي الملف الثالث عبر استيراد
+<bdi>`agents_standard`</bdi>، الذي يقرأ أيضًا ملفات القواعد القياسية الأخرى وتعليمات مشروعك
+الخاصة، لذا لا تضبط <bdi>`"agents_standard": false`</bdi> إلا إذا كان ينبغي ألا يقرأ <bdi>Devin</bdi>
+أيًّا منها.
 
 ## التحقّق
 
