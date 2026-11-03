@@ -37,6 +37,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://code.claude.com/docs/en/permissions> (rule order; retrieved 2026-10-02)
 - <https://code.claude.com/docs/en/skills> (skills, `references/` files, post-compaction attachment; retrieved 2026-10-24)
 - <https://code.claude.com/docs/en/sub-agents> (agent frontmatter; retrieved 2026-10-02)
+- <https://code.claude.com/docs/en/setup> (install methods, among them the npm package `@anthropic-ai/claude-code`, which an npm install upgrades through its `latest` tag, and the `latest` and `stable` release channels; retrieved 2026-11-03)
 
 ## Discovery Targets
 

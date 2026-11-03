@@ -1,0 +1,220 @@
+{
+  "about": "Release channels the weekly harness-convention monitor watches, one entry per harness folder under src/apothem/harnesses/. scripts/dev/check_vendor_releases.py compares each channel's current version, or an installer address's redirect target, with the one last reviewed, and scripts/README.md describes every field. After you re-check a pin against a new release or target, update that channel's reviewed, reviewed_on and reviewed_from.",
+  "harnesses": {
+    "antigravity": {
+      "not_watched": "Antigravity is a desktop app with the agy CLI, and its pin records that it exposes no version or commit surface; the pin names no package, repository or registry. TODO(clarify): whether Google publishes the agy CLI to a registry that a script can query without credentials."
+    },
+    "claude_code": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "@anthropic-ai/claude-code",
+          "tag": "latest",
+          "reviewed": "2.1.317",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "the npm package `@anthropic-ai/claude-code`",
+          "note": "The setup page names this package and upgrades it through its latest tag, the default release channel. Recorded from the npm registry on 2026-11-03; the pin names no version."
+        }
+      ]
+    },
+    "codebuddy": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "@tencent-ai/codebuddy-code",
+          "tag": "latest",
+          "reviewed": "2.179.3",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "the npm package `@tencent-ai/codebuddy-code`",
+          "note": "CodeBuddy Code, the CLI the pin's CLI pages describe. Recorded from the npm registry on 2026-11-03; the pin names no version. The npm registry answers GitHub's runners, which the CodeBuddy docs host does not."
+        }
+      ]
+    },
+    "codex": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "openai/codex",
+          "reviewed": "0.163.0",
+          "reviewed_on": "2026-10-26",
+          "reviewed_from": "pin",
+          "evidence": "github.com/openai/codex/pull/39299",
+          "note": "Release tags read rust-v followed by the version. The pin read codex plugin marketplace add --help from codex-cli 0.163.0 on 2026-10-26, when rust-v0.164.0 (published 2026-10-23) was already out."
+        }
+      ]
+    },
+    "cursor": {
+      "not_watched": "Cursor is a desktop editor, and its CLI installs with a script from cursor.com; the pin follows the CLI changelog page, which is a web page, not a registry, and names no package or repository. TODO(clarify): whether Cursor publishes a release feed that a script can query without credentials."
+    },
+    "gemini_cli": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "google-gemini/gemini-cli",
+          "reviewed": "0.66.0",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "`github.com/google-gemini/gemini-cli`",
+          "note": "Recorded from the repository's latest release (v0.66.0, published 2026-10-27) on 2026-11-03; the pin reads the docs at a commit and names no release."
+        }
+      ]
+    },
+    "github_copilot": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "github/copilot-cli",
+          "reviewed": "1.0.105",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "raw.githubusercontent.com/github/copilot-cli/main/changelog.md",
+          "note": "The Copilot CLI, whose changelog the pin read whole on 2026-10-27. Recorded from the repository's latest release (v1.0.105, published 2026-10-28) on 2026-11-03."
+        }
+      ]
+    },
+    "glm": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "@z_ai/coding-helper",
+          "tag": "latest",
+          "reviewed": "0.1.1",
+          "reviewed_on": "2026-10-24",
+          "reviewed_from": "pin",
+          "evidence": "`@z_ai/coding-helper` 0.1.1 (npm, published 2026-08-27)",
+          "note": "GLM is a model backend with no client of its own. The pin's Model Mapping Conflict section quotes this helper's defaults, so a new release can change that record."
+        }
+      ]
+    },
+    "hermes": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "NousResearch/hermes-agent",
+          "reviewed": "0.22.6",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "`github.com/NousResearch/hermes-agent`",
+          "note": "Recorded from the repository's latest release (v0.22.6, published 2026-11-02) on 2026-11-03; the pin reads the docs at a commit and names no release."
+        }
+      ]
+    },
+    "kimi_code": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "@moonshot-ai/kimi-code",
+          "tag": "latest",
+          "reviewed": "2.3.3",
+          "reviewed_on": "2026-10-27",
+          "reviewed_from": "pin",
+          "evidence": "latest `@moonshot-ai/kimi-code@2.3.3`, 2026-10-26",
+          "note": "The pin read the changelog through release 2.3.3 on 2026-10-27."
+        }
+      ]
+    },
+    "kiro": {
+      "not_watched": "Kiro IDE is a desktop app, and Kiro CLI installs with a script; the pin follows CLI versions on kiro.dev/changelog, a web page, not a registry, and names no package or repository. TODO(clarify): whether Kiro publishes a release feed that a script can query without credentials."
+    },
+    "open_claw": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "openclaw",
+          "tag": "latest",
+          "versioning": "calendar",
+          "reviewed": "2026.10.10",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "the npm package `openclaw`",
+          "note": "OpenClaw numbers its releases by date (year, month, release), so the first number is a year, not a major, and every newer release is reported as information. Recorded from the npm registry on 2026-11-03; the pin names no version."
+        }
+      ]
+    },
+    "opencode": {
+      "channels": [
+        {
+          "registry": "npm",
+          "name": "opencode-ai",
+          "tag": "latest",
+          "reviewed": "1.19.5",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "pin",
+          "evidence": "the `opencode-ai` npm package still install OpenCode 1",
+          "trigger": {
+            "major_above": 1,
+            "action": "This is the switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Remove or change this trigger once that is done."
+          },
+          "note": "OpenCode 1, the default line. With no version given, opencode.ai/install installs this tag's version when it is a 1.x release, else the newest v1 release on GitHub, and it refuses a requested version of 2 or later. So this tag moving to 2.x does not change what that installer installs; the opencode.ai/install channel below watches where the installer itself redirects."
+        },
+        {
+          "registry": "npm",
+          "name": "@opencode/cli",
+          "tag": "latest",
+          "reviewed": "2.2.5",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "pin",
+          "evidence": "npm `@opencode/cli` has carried 2.x since 2.0.0 on 2026-09-11",
+          "note": "OpenCode 2. The pin read the v2.2.5 source on 2026-11-03."
+        },
+        {
+          "registry": "github",
+          "name": "anomalyco/opencode",
+          "tag_pattern": "v[0-9]+[.][0-9]+[.][0-9]+",
+          "reviewed": "2.2.5",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "pin",
+          "evidence": "<https://github.com/anomalyco/opencode/tree/v2.2.5>",
+          "note": "The repository publishes the releases of both lines, so a new major line shows here whatever npm package it ships as: OpenCode 2 first appeared here as v2.2.0 on 2026-10-27, while its npm package is @opencode/cli, not opencode-ai. Only stable releases tagged v followed by the version count, which skips the repository's process-daemon and pull-request releases. The pin read the v2.2.5 source on 2026-11-03."
+        },
+        {
+          "registry": "redirect",
+          "name": "opencode.ai/install",
+          "reviewed": "raw.githubusercontent.com/anomalyco/opencode/refs/heads/v1/install",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "pin",
+          "evidence": "`opencode.ai/install` redirects to `raw.githubusercontent.com/anomalyco/opencode/refs/heads/v1/install`",
+          "trigger": {
+            "action": "opencode.ai/install no longer redirects to the OpenCode 1 installer script. Read the script it serves now. If it installs OpenCode 2, this is the switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Record the new target in the pin and in this channel's reviewed field, and remove or change this trigger once the switch is done."
+          },
+          "note": "The default installer, which the OpenCode decision names as a switch signal. On 2026-11-03 it answered 307, redirecting to the install script on the v1 branch, which says it installs only OpenCode 1 and points OpenCode 2 users to opencode.ai/v2/install. A change inside the v1 script does not change the redirect, so this channel does not see it."
+        }
+      ]
+    },
+    "qwen_code": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "QwenLM/qwen-code",
+          "tag_pattern": "v[0-9]+[.][0-9]+[.][0-9]+",
+          "reviewed": "0.26.0",
+          "reviewed_on": "2026-10-24",
+          "reviewed_from": "pin",
+          "evidence": "raw.githubusercontent.com/QwenLM/qwen-code/v0.26.0",
+          "note": "The repository also publishes SDK, desktop and nightly releases, so only stable releases tagged v followed by the version count: on 2026-11-03 its latest release was sdk-typescript-v0.1.27 and its newest CLI release v0.26.6. The pin reads the v0.26.0 source."
+        }
+      ]
+    },
+    "trae": {
+      "not_watched": "Trae is a desktop IDE. The pin follows its versions on the changelog pages, and the Trae-AI/TRAE repository it names had no GitHub release on 2026-11-03 (the latest-release endpoint answered 404)."
+    },
+    "windsurf": {
+      "not_watched": "Devin Desktop is a desktop app; the pin follows the Desktop and CLI changelog pages on docs.devin.ai, which are web pages, not a registry, and names no package or repository. TODO(clarify): whether the Devin CLI is published to a registry that a script can query without credentials."
+    },
+    "zed": {
+      "channels": [
+        {
+          "registry": "github",
+          "name": "zed-industries/zed",
+          "reviewed": "1.26.2",
+          "reviewed_on": "2026-11-03",
+          "reviewed_from": "registry",
+          "evidence": "github.com/zed-industries/zed/releases",
+          "note": "The repository the zed.dev home page links to. Recorded from its latest release (v1.26.2, published 2026-10-28) on 2026-11-03; the pin names no version."
+        }
+      ]
+    }
+  }
+}
