@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,8 +36,24 @@ apothem install --harness hermes
 
 미리 보기 어댑터입니다. Hermes는 `skills.external_dirs`를 통해 Apothem 스킬을
 로드하지만, 지원 하위 트리의 나머지나 프로필 문서는 스스로 로드하지 않습니다.
-`config.yaml`의 다른 어떤 항목도, Hermes가 읽는 어떤 컨텍스트 파일도 그곳을
-가리키지 않으므로, 설치 후 Hermes는 Apothem의 규칙이나 훅 없이 실행됩니다.
+`config.yaml`의 다른 어떤 항목도 그곳을 가리키지 않으므로, Hermes 설치는
+Apothem의 규칙이나 훅을 추가하지 않습니다.
+
+Hermes는 다른 설치가 Hermes가 읽는 프로젝트 파일에 작성하는 Apothem 블록을
+실제로 로드합니다. Hermes는 세션당 한 종류의 프로젝트 컨텍스트만 로드하며
+처음 찾은 것을 사용하므로, 다음 각 파일은 그 옆에 적힌 조건을 만족할 때만
+Hermes에 도달합니다.
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+Kimi Code용 Apothem 설치는 첫 번째 파일을 작성하고, 다른 편집기용 설치는
+두 번째 파일을 작성합니다. `--project`를 사용한 설치는 그러한 파일과 그것을
+작성한 설치를 명시합니다.
 
 **이름 충돌.** Hermes는 스킬에 대해 다음 우선순위를 문서화합니다: 프로젝트의
 스킬(`<project>/.hermes/skills/` 및 `<project>/.agents/skills/`), 그다음

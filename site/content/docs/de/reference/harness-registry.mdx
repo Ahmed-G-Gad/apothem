@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -114,11 +114,12 @@ jedem Leser bereit.
 | `~/.claude/skills/` | Claude Code | keine | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | keine | Cursor |
 | `~/.codex/agents/` | Codex | keine | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | keine | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | keine | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | keine | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | keine | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | keine | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | keine | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | keine | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` und `~/.config/apothem/templates/` enthalten die
 Dateien, die Apothems eigene Skills und Anweisungsdateien zitieren. Kein anderes
@@ -128,10 +129,17 @@ Werkzeug lädt sie, daher haben sie keine Leser und keine Vendor-Seiten.
 jeweilige Werkzeug lädt ihn, daher ist er kein gemeinsames Wurzelverzeichnis.
 
 Ein Leser wird nur dort aufgeführt, wo seine Vendor-Dokumentation ein
-standardmäßiges Laden genau dieses Pfads zeigt. Ein Leser ist an eine Bedingung
-geknüpft, und der Installationshinweis wiederholt sie: `Open-Claw` indiziert
-`~/.agents/skills/` nur unter seinem Standard-Zustandsverzeichnis (es überspringt
-den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). Die
+standardmäßiges Laden genau dieses Pfads zeigt. Die Registry erfasst drei
+Bedingungen, und der Installationshinweis wiederholt jede davon. `Open-Claw`
+indiziert `~/.agents/skills/` nur unter seinem Standard-Zustandsverzeichnis (es
+überspringt den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). `Hermes`
+lädt pro Sitzung nur eine Art von Projektkontext, wobei der erste Treffer
+gewinnt, und zwar in der Reihenfolge `.hermes.md` oder `HERMES.md`, `AGENTS.md`,
+`CLAUDE.md`, dann die `Cursor`-Regeln. Daher lädt es `<project>/AGENTS.md` nur,
+wenn das Projekt weder `.hermes.md` noch `HERMES.md` hat und keine
+`AGENTS.override.md` daneben liegt, und
+`<project>/.cursor/rules/apothem-rules.mdc` nur, wenn das Projekt weder
+`.hermes.md` noch `AGENTS.md` noch `CLAUDE.md` hat. Die
 `Cursor`-Dokumentation führt `~/.codex/agents/` als `Codex`-Kompatibilitätsordner
 auf, sagt aber nicht, welche Dateiformate `Cursor` dort parst, und eine
 `Codex`-Installation schreibt TOML-Dateien, daher ist nicht bestätigt, ob
@@ -139,6 +147,16 @@ auf, sagt aber nicht, welche Dateiformate `Cursor` dort parst, und eine
 eigene Kopie der Helfer nach `<project>/.cursor/agents/`, die die Rangfolge des
 Vendors über die importierten Ordner stellt, sodass in einem installierten
 Projekt die native Kopie die aus `~/.claude/agents/` ablöst.
+
+`Windsurf` liest die Regeldateien anderer Werkzeuge über Devins
+Konfigurationsimport, der standardmäßig eingeschaltet ist, und der Local-Agent
+von Devin Desktop findet seine Dateien auf dieselbe Weise wie die Devin CLI.
+Daher lädt er den Block aus `~/.claude/CLAUDE.md`, den die Installation für
+`Claude Code` schreibt, sowie die Datei, die die Installation für `Cursor` nach
+`<project>/.cursor/rules/apothem-rules.mdc` schreibt und die dank des
+Frontmatters `alwaysApply: true` in jeder Sitzung aktiv bleibt. Der Import liest
+außerdem eine `CLAUDE.md` im Projekt, die keine Installation von Apothem
+schreibt.
 
 Manche Werkzeuge sind bewusst keine Leser von `~/.agents/skills/`: Die
 Dokumentation von `Antigravity`, `CodeBuddy`, `Kiro` und `Trae` sagt nicht, dass
@@ -156,8 +174,8 @@ schreibt, nennt kein einzelnes Werkzeug als seinen Leser.
 Registry-Ziel schreiben, nicht genau sein Eigentümer und seine Mitinstallierer
 sind, und wenn ein Registry-Ziel, das wie eine
 werkzeugübergreifende Anweisungsdatei benannt ist (`AGENTS.md`, `CLAUDE.md`,
-`GEMINI.md`, `copilot-instructions.md`), keinen deklarierten Eigentümer hat. Die
-einzige Ausnahme ist `~/.codex/AGENTS.md`; kein anderer registrierter Harness
+`GEMINI.md`, `copilot-instructions.md`), keinen deklarierten Eigentümer hat,
+abgesehen von `~/.codex/AGENTS.md`; kein anderer registrierter Harness
 dokumentiert, dass er diese Datei lädt.
 
 ## Validierungs-Hooks
@@ -167,7 +185,7 @@ Die Registry bleibt durch diese Prüfungen synchron:
 | Prüfung | Zweck |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Bestätigt, dass jeder Adapter einen Konventions-Pin hat, der höchstens 90 Tage alt ist, mindestens eine Vendor-URL zitiert und kein überfälliges Discovery-Ziel hat. Die CI führt die Prüfung bei jedem Pull Request, wöchentlich und vor einem Release aus. |
-| `python scripts/dev/check_vendor_urls.py` | Ruft jede Vendor-URL ab, die die Pins und Harness-Templates zitieren, und schlägt bei einer verschobenen oder toten Seite fehl, einschließlich eines Hostnamens, der nicht mehr auflöst, oder eines Zertifikats, dessen Verifizierung fehlschlägt; ein Timeout, eine abgelehnte oder zurückgesetzte Verbindung oder ein 5xx-Serverfehler wird als nicht erreichbar gemeldet und lässt die Prüfung nicht fehlschlagen. Der wöchentliche Konventionsmonitor führt sie aus. |
+| `python scripts/dev/check_vendor_urls.py` | Ruft jede Vendor-URL ab, die die Pins und Harness-Templates zitieren, und schlägt bei einer verschobenen oder toten Seite fehl, einschließlich eines Hostnamens, der nicht mehr auflöst, oder eines Zertifikats, dessen Verifizierung fehlschlägt; ein Timeout, eine abgelehnte oder zurückgesetzte Verbindung oder ein 5xx-Serverfehler wird als nicht erreichbar gemeldet und lässt die Prüfung nicht fehlschlagen. Ein Hostname, der nur auf eine Platzhalteradresse auflöst, die kein Server haben kann und die die Nameserver eines Vendors für die Region zurückgeben können, aus der die Prüfung läuft, erhält keine Anfrage: Er wird als nicht routbar gemeldet, lässt die Prüfung nicht fehlschlagen, und seine Seiten müssen von Hand geprüft werden. Der wöchentliche Konventionsmonitor führt sie aus, warnt bei jedem Lauf vor jedem solchen Host und listet dessen Seiten in dem Issue auf, das er erstellt. |
 | `python -m apothem.conformity.gate --all .` | Führt die Konformitätsprüfungen für Dokumentation und Implementierung aus. |
 | `python -m pytest` | Führt die Registry-Fixture-Tests und die Adapter-Vertragstests aus. |
 

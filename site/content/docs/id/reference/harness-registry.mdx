@@ -2,7 +2,7 @@
 title: "Registri harness"
 description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -112,11 +112,12 @@ pemilik atau co-installer menempatkan konten Apothem di hadapan setiap pembaca.
 | `~/.claude/skills/` | Claude Code | tidak ada | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | tidak ada | Cursor |
 | `~/.codex/agents/` | Codex | tidak ada | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | tidak ada | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | tidak ada | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | tidak ada | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | tidak ada | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | tidak ada | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | tidak ada | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | tidak ada | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` dan `~/.config/apothem/templates/` memuat berkas yang
 dikutip oleh skill dan berkas instruksi milik Apothem sendiri. Tidak ada tool
@@ -126,10 +127,17 @@ sendiri (`~/.codebuddy/skills/`, `~/.kiro/skills/`, dan `~/.trae/skills/`);
 hanya tool tersebut yang memuatnya, sehingga folder itu bukan root bersama.
 
 Sebuah pembaca dicantumkan hanya jika dokumentasi vendornya memperlihatkan
-pemuatan bawaan atas jalur persis tersebut. Satu pembaca membawa syarat, dan
-catatan pemasangan mengulanginya: `Open-Claw` mengindeks `~/.agents/skills/`
-hanya di bawah direktori status bawaannya (ia melewati folder itu ketika
-`OPENCLAW_STATE_DIR` menunjuk ke tempat lain). Dokumentasi `Cursor` mencantumkan
+pemuatan bawaan atas jalur persis tersebut. Registri mencatat tiga syarat, dan
+catatan pemasangan mengulangi setiap syarat itu. `Open-Claw` mengindeks
+`~/.agents/skills/` hanya di bawah direktori status bawaannya (ia melewati
+folder itu ketika `OPENCLAW_STATE_DIR` menunjuk ke tempat lain). `Hermes` memuat
+satu jenis konteks proyek per sesi, kecocokan pertama yang menang, dengan urutan
+`.hermes.md` atau `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, lalu aturan `Cursor`.
+Karena itu ia memuat `<project>/AGENTS.md` hanya jika proyek tidak memiliki
+`.hermes.md` atau `HERMES.md` dan tidak ada `AGENTS.override.md` di sebelahnya,
+serta `<project>/.cursor/rules/apothem-rules.mdc` hanya jika proyek tidak
+memiliki `.hermes.md`, `AGENTS.md`, atau `CLAUDE.md`.
+Dokumentasi `Cursor` mencantumkan
 `~/.codex/agents/` sebagai folder kompatibilitas `Codex` tetapi tidak menyebut
 format berkas mana yang diurai `Cursor` di sana, dan pemasangan `Codex` menulis
 berkas TOML, sehingga apakah `Cursor` membaca helper tersebut belum
@@ -137,6 +145,15 @@ terkonfirmasi. Pemasangan `Cursor` juga menulis salinan helper miliknya sendiri
 di `<project>/.cursor/agents/`, yang oleh urutan prioritas vendor ditempatkan di
 atas folder yang diimpornya, sehingga di proyek yang terpasang salinan native
 itu menggantikan salinan dari `~/.claude/agents/`.
+
+`Windsurf` membaca berkas aturan tool lain melalui impor konfigurasi Devin, yang
+aktif secara bawaan, dan agen Local milik Devin Desktop menemukan berkasnya
+dengan cara yang sama seperti Devin CLI. Karena itu ia memuat blok
+`~/.claude/CLAUDE.md` yang ditulis oleh pemasangan `Claude Code`, dan berkas
+yang ditulis oleh pemasangan `Cursor`, yaitu
+`<project>/.cursor/rules/apothem-rules.mdc`, yang frontmatter
+`alwaysApply: true`-nya membuatnya tetap aktif di setiap sesi. Impor itu juga
+membaca `CLAUDE.md` proyek, yang tidak ditulis oleh pemasangan Apothem mana pun.
 
 Sebagian tool sengaja tidak menjadi pembaca `~/.agents/skills/`: dokumentasi
 `Antigravity`, `CodeBuddy`, `Kiro`, dan `Trae` tidak menyatakan bahwa mereka
@@ -154,9 +171,9 @@ menyebut satu tool tunggal pun sebagai pembacanya.
 target registri tidak persis sama dengan pemiliknya dan para co-installer-nya,
 dan ketika sebuah target registri yang dinamai seperti
 berkas instruksi lintas tool (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`) tidak memiliki pemilik yang dideklarasikan.
-Satu-satunya pengecualian adalah `~/.codex/AGENTS.md`, yang tidak
-didokumentasikan sebagai dimuat oleh harness terdaftar lain mana pun.
+`copilot-instructions.md`) tidak memiliki pemilik yang dideklarasikan, kecuali
+`~/.codex/AGENTS.md`, yang tidak didokumentasikan sebagai dimuat oleh harness
+terdaftar lain mana pun.
 
 ## Hook validasi
 
@@ -165,7 +182,7 @@ Registri tetap tersinkronisasi melalui pemeriksaan berikut:
 | Pemeriksaan | Tujuan |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adapter memiliki pin konvensi yang berusia paling lama 90 hari, mengutip setidaknya satu URL vendor, dan tidak memiliki target penemuan yang lewat tenggat. CI menjalankannya pada setiap pull request, setiap minggu, dan sebelum rilis. |
-| `python scripts/dev/check_vendor_urls.py` | Mengambil setiap URL vendor yang dikutip pin dan templat harness, dan gagal pada halaman yang dipindahkan atau mati, termasuk nama host yang tidak lagi ter-resolve atau sertifikat yang gagal verifikasi; timeout, koneksi yang ditolak atau di-reset, atau galat server 5xx dilaporkan sebagai tidak terjangkau dan tidak menggagalkannya. Monitor konvensi mingguan menjalankannya. |
+| `python scripts/dev/check_vendor_urls.py` | Mengambil setiap URL vendor yang dikutip pin dan templat harness, dan gagal pada halaman yang dipindahkan atau mati, termasuk nama host yang tidak lagi ter-resolve atau sertifikat yang gagal verifikasi; timeout, koneksi yang ditolak atau di-reset, atau galat server 5xx dilaporkan sebagai tidak terjangkau dan tidak menggagalkannya. Nama host yang hanya ter-resolve ke alamat placeholder yang tidak mungkin dimiliki server mana pun (name server vendor dapat mengembalikan alamat semacam itu untuk wilayah tempat pemeriksaan dijalankan) tidak dikirimi permintaan: nama host itu dilaporkan sebagai tidak dapat dirutekan, tidak menggagalkan pemeriksaan, dan halamannya perlu diperiksa secara manual. Monitor konvensi mingguan menjalankannya, memberi peringatan tentang setiap host semacam itu pada setiap eksekusi, dan mencantumkan halamannya di issue yang dibuatnya. |
 | `python -m apothem.conformity.gate --all .` | Menjalankan pemeriksaan konformitas dokumentasi dan implementasi. |
 | `python -m pytest` | Menjalankan pengujian fixture registri dan pengujian kontrak adapter. |
 

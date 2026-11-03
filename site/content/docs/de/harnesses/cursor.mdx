@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Apothem-Harness-Adapter für Cursor (GA)."
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -270,6 +270,25 @@ Cursor 0.45+ unterstützt Anweisungen auf Projektebene über `.cursor/rules/`.
 Der Adapter schreibt standardmäßig in das projektbezogene Verzeichnis
 `.cursor/rules/`; Cursor hat keinen dokumentierten, dateibasierten Pfad für
 benutzerweite globale Regeln, den dieser Adapter verwalten könnte.
+
+Auch [Devin Desktop](/docs/harnesses/windsurf) lädt die Regeldatei, die diese
+Installation schreibt. Devin Local importiert in Devin Desktop standardmäßig
+`.cursor/rules/*.mdc` und hält eine Regel mit `alwaysApply: true`, was das
+Frontmatter dieser Datei festlegt, in jeder Sitzung aktiv.
+[Ein weiteres Werkzeug](/docs/harnesses/hermes) lädt die Datei nur als letzten
+Fallback für seine Projektanweisungen, wenn das Projekt weder eine eigene
+Anweisungsdatei noch `AGENTS.md` noch `CLAUDE.md` hat. Daher ändert das
+Installieren oder Deinstallieren von `cursor` auch, was diese Werkzeuge laden,
+und die Installation gibt einen Hinweis aus, der beide nennt, mit dieser
+Bedingung (die [Harness-Registry](/docs/reference/harness-registry#shared-roots)
+listet sie auf). Der Apothem-Block nennt kein einzelnes Werkzeug als seinen
+Leser, aber das, was er über `.cursor/agents/` und `.cursor/hooks.json` sagt,
+beschreibt diese Installation und gilt für diese Werkzeuge nicht.
+Damit Devin die Datei nicht lädt, setzen Sie `"cursor": false` unter
+`"read_config_from"` in `~/.config/devin/config.json`
+(`%APPDATA%\devin\config.json` unter Windows) oder in der `.devin/config.json`
+des Projekts; dieser Schlüssel verhindert auch, dass Devin die MCP-Server von
+Cursor importiert.
 
 Cursor lädt Skills aus `~/.agents/skills/`, sodass die Skills, die die
 Installation schreibt, ohne weitere Einrichtung in Cursor erscheinen. Cursor lädt

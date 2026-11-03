@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -178,6 +178,36 @@ Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクト
 Devin Desktop（Windsurf）は `~/.agents/skills/` を検出するため、インストールが書き込むスキルは追加の設定なしで表示されます。
 デフォルトでオンになっている Claude Code のインポートは、プロジェクトの `.claude/skills/` フォルダーからのみスキルを読み込むため、Claude Code 向けの Apothem のインストールが `~/.claude/skills/` に書き込むスキルがそこにも表示されるとは文書化されていません。
 記載のない `SKILL.md` のヘッダーキーを Windsurf がどう扱うかを、Apothem は確認していません。スキルは `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint`、および `metadata` マップを持ちます。
+
+Devin Local は他のツールが使うルールファイルもインポートし、それらのインポートはデフォルトでオンです。
+これらのうち、Apothem のブロックを含む可能性があるファイルは 3 つあります。
+別のエディター向けの Apothem のインストールが書き込むプロジェクトのルールファイル、Claude Code 向けの Apothem のインストールが書き込む `~/.claude/CLAUDE.md` ファイル、そして Kimi Code 向けの Apothem のインストールが書き込むプロジェクトの命令ファイルです。
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+これらのファイルのいずれかに Apothem のブロックがある場合、Devin Local は `.devin/rules/` のルールファイルに加えて、そのファイルも読み込みます。
+また、`windsurf` をインストールすると、そのファイルと、それを書き込んだインストールを挙げるメモが表示されます。
+1 つ目のファイルにある Apothem のブロックは、単一のツールを読み手として名指ししませんが、そのエディターのサブエージェントフォルダーとフックファイルについてそこに書かれている内容は、そのインストールについて述べたものであり、Devin には当てはまりません。
+そこに挙げられているスキルフォルダーと `~/.config/apothem/` は、このインストールも書き込むものです。
+1 つ目と 2 つ目のファイルを Devin Local に読み込ませないようにするには、`~/.config/devin/config.json`（Windows では `%APPDATA%\devin\config.json`）またはプロジェクトの `.devin/config.json` で、それらのインポートをオフにします。
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+キーをオフにすると、そのツールのインポートの残りも止まります。
+1 つ目のキーはそのエディターの MCP サーバーも止め、`claude` は Claude Code のスキル、コマンド、フック、MCP サーバーを止めます。
+3 つ目のファイルは `agents_standard` インポートを通じて読み込まれます。
+このインポートは、他の標準的なルールファイルやあなた自身のプロジェクトの命令も読み込むため、`"agents_standard": false` の設定は、Devin にそれらをどれも読み込ませない場合だけにしてください。
 
 ## 検証
 

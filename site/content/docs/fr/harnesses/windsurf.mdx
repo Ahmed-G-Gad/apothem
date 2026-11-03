@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptateur d'environnement Apothem pour Windsurf (GA)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -287,6 +287,48 @@ apparaissent aussi. Apothem n'a pas confirmé comment Windsurf traite une clé
 d'en-tête de `SKILL.md` qu'il ne liste pas ; les skills portent
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 et une table `metadata`.
+
+Devin Local importe aussi des fichiers de règles qu'utilisent d'autres outils,
+et ces importations sont activées par défaut. Trois d'entre eux peuvent contenir
+un bloc Apothem : le fichier de règles du projet qu'écrit l'installation
+d'Apothem pour un autre éditeur, le fichier `~/.claude/CLAUDE.md` qu'écrit
+l'installation d'Apothem pour Claude Code et le fichier d'instructions du
+projet qu'écrit l'installation d'Apothem pour Kimi Code :
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+Lorsque l'un de ces fichiers contient un bloc Apothem, Devin Local le charge
+en plus du fichier de règles de `.devin/rules/`, et l'installation de `windsurf`
+affiche une note qui nomme le fichier et l'installation qui l'a écrit. Le bloc
+Apothem du premier fichier ne désigne aucun outil unique comme son lecteur, mais
+ses lignes sur le dossier de subagents et le fichier de hooks de cet éditeur
+décrivent cette installation-là et ne s'appliquent pas à Devin ; le dossier de
+skills et `~/.config/apothem/` qu'il nomme sont aussi ceux qu'écrit cette
+installation. Pour que Devin Local ne charge pas les deux
+premiers fichiers, désactivez leurs importations dans
+`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` sous Windows) ou
+dans le fichier `.devin/config.json` du projet :
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Désactiver une clé arrête aussi le reste de l'importation de cet outil : la
+première clé arrête en outre les serveurs MCP de cet éditeur, et `claude` arrête
+les skills, les commandes, les hooks et les serveurs MCP de Claude Code. Le
+troisième fichier arrive par l'importation `agents_standard`, qui lit aussi les
+autres fichiers de règles standard et vos propres instructions de projet ; ne
+définissez donc `"agents_standard": false` que si Devin ne doit lire aucun
+d'entre eux.
 
 ## Vérification
 

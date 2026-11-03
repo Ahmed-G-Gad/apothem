@@ -2,7 +2,7 @@
 title: "Registre des environnements"
 description: "Référence technique du registre des adaptateurs d'environnement intégrés d'Apothem."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -117,11 +117,12 @@ lecteur.
 | `~/.claude/skills/` | Claude Code | aucun | Cursor, OpenCode |
 | `~/.claude/agents/` | Claude Code | aucun | Cursor |
 | `~/.codex/agents/` | Codex | aucun | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | aucun | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | aucun | OpenCode, Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | aucun | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | aucun | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | aucun | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | aucun | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | aucun | Hermes, Windsurf |
 
 `~/.config/apothem/rules/` et `~/.config/apothem/templates/` contiennent les
 fichiers que citent les skills et les fichiers d'instructions propres à
@@ -132,10 +133,17 @@ qui leur est propre (`~/.codebuddy/skills/`, `~/.kiro/skills/` et
 partagée.
 
 Un lecteur n'est listé que là où sa documentation éditeur montre un chargement
-par défaut de ce chemin exact. Un lecteur est soumis à une condition, que la
-note d'installation répète : `Open-Claw` n'indexe `~/.agents/skills/` que sous
-son répertoire d'état par défaut (il ignore le dossier lorsque
-`OPENCLAW_STATE_DIR` pointe ailleurs). La documentation de `Cursor` liste
+par défaut de ce chemin exact. Le registre consigne trois conditions, et la note
+d'installation répète chacune d'elles. `Open-Claw` n'indexe `~/.agents/skills/`
+que sous son répertoire d'état par défaut (il ignore le dossier lorsque
+`OPENCLAW_STATE_DIR` pointe ailleurs). `Hermes` charge un seul type de contexte
+de projet par session ; la première correspondance l'emporte, dans l'ordre
+`.hermes.md` ou `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, puis les règles de
+`Cursor`. Il ne charge donc `<project>/AGENTS.md` que lorsque le projet n'a ni
+`.hermes.md` ni `HERMES.md` et qu'aucun `AGENTS.override.md` ne se trouve à
+côté, et `<project>/.cursor/rules/apothem-rules.mdc` que lorsque le projet n'a
+ni `.hermes.md`, ni `AGENTS.md`, ni `CLAUDE.md`.
+La documentation de `Cursor` liste
 `~/.codex/agents/` comme dossier de compatibilité `Codex` mais ne dit pas
 quels formats de fichier `Cursor` y analyse, et une installation `Codex` écrit
 des fichiers TOML, de sorte qu'il n'est pas confirmé que `Cursor` lise ces
@@ -144,6 +152,15 @@ auxiliaires. L'installation `Cursor` écrit aussi sa propre copie
 l'éditeur place au-dessus des dossiers qu'il importe, de sorte que dans un
 projet installé, la copie native l'emporte sur celle issue de
 `~/.claude/agents/`.
+
+`Windsurf` lit les fichiers de règles d'autres outils via l'importation de
+configuration de Devin, activée par défaut, et l'agent Local de Devin Desktop
+trouve ses fichiers de la même façon que la CLI Devin. Il charge donc le bloc
+de `~/.claude/CLAUDE.md` qu'écrit l'installation `Claude Code`, ainsi que le
+fichier que l'installation `Cursor` écrit dans
+`<project>/.cursor/rules/apothem-rules.mdc`, dont le frontmatter
+`alwaysApply: true` le maintient actif dans chaque session. L'importation lit
+aussi un `CLAUDE.md` de projet, qu'aucune installation d'Apothem n'écrit.
 
 Certains outils ne sont délibérément pas lecteurs de `~/.agents/skills/` : la
 documentation d'`Antigravity`, de `CodeBuddy`, de `Kiro` et de `Trae` ne dit
@@ -161,7 +178,7 @@ ne désigne aucun outil unique comme son lecteur.
 une cible du registre ne sont pas exactement son propriétaire et ses
 co-installateurs, et lorsqu'une cible du registre nommée comme un fichier
 d'instructions inter-outils (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`) n'a aucun propriétaire déclaré. La seule exception est
+`copilot-instructions.md`) n'a aucun propriétaire déclaré, hormis
 `~/.codex/AGENTS.md`, dont aucun autre environnement enregistré ne documente le
 chargement.
 
@@ -172,7 +189,7 @@ Le registre reste synchronisé grâce à ces vérifications :
 | Vérification | Objectif |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirme que chaque adaptateur possède un épinglage de convention qui date d'au plus 90 jours, cite au moins une URL d'éditeur et n'a aucune cible de découverte en retard. La CI l'exécute à chaque pull request, chaque semaine et avant une publication. |
-| `python scripts/dev/check_vendor_urls.py` | Récupère chaque URL d'éditeur citée par les épinglages et les templates d'environnement, et échoue sur une page déplacée ou morte, y compris un nom d'hôte qui ne se résout plus ou un certificat dont la vérification échoue ; un dépassement de délai, une connexion refusée ou réinitialisée, ou une erreur serveur 5xx est signalé comme injoignable et ne le fait pas échouer. Le moniteur hebdomadaire des conventions l'exécute. |
+| `python scripts/dev/check_vendor_urls.py` | Récupère chaque URL d'éditeur citée par les épinglages et les templates d'environnement, et échoue sur une page déplacée ou morte, y compris un nom d'hôte qui ne se résout plus ou un certificat dont la vérification échoue ; un dépassement de délai, une connexion refusée ou réinitialisée, ou une erreur serveur 5xx est signalé comme injoignable et ne le fait pas échouer. Un nom d'hôte qui ne se résout qu'en une adresse fictive qu'aucun serveur ne peut avoir, et que les serveurs de noms d'un éditeur peuvent renvoyer pour la région depuis laquelle la vérification s'exécute, ne reçoit aucune requête : il est signalé comme non routable, ne fait pas échouer la vérification, et ses pages sont à vérifier à la main. Le moniteur hebdomadaire des conventions l'exécute, émet un avertissement pour chaque hôte de ce type à chaque exécution et liste ses pages dans l'issue qu'il ouvre. |
 | `python -m apothem.conformity.gate --all .` | Exécute les vérifications de conformité de la documentation et de l'implémentation. |
 | `python -m pytest` | Exécute les tests de fixtures du registre et les tests de contrat des adaptateurs. |
 
