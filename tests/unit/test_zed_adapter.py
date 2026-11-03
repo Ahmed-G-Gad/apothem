@@ -142,7 +142,37 @@ def test_install_names_the_first_file_zed_read_even_when_it_is_apothem_only(
 
     message = str(warning.message)
     assert "Before this install Zed read .github/copilot-instructions.md;" in message
-    assert "To keep the instructions in AGENTS.md in Zed" in message
+    assert "To have Zed read the instructions in AGENTS.md, copy them" in message
+
+
+def test_install_treats_an_empty_rules_file_as_the_one_zed_read(
+    adapter: ZedAdapter, tmp_path: Path
+) -> None:
+    # Zed takes the first file that exists, so an empty .rules already hid the
+    # operator's AGENTS.md before this install.
+    (tmp_path / ".rules").write_text("\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text("# Team instructions\n", encoding="utf-8")
+
+    [warning] = _shadowing_warnings(adapter.install({}, project=tmp_path))
+
+    message = str(warning.message)
+    assert ", so it reads the Apothem .rules." in message
+    assert "Before this install" not in message
+
+
+def test_install_names_every_hidden_file_with_operator_text(
+    adapter: ZedAdapter, tmp_path: Path
+) -> None:
+    for name in (".cursorrules", "CLAUDE.md", "GEMINI.md"):
+        (tmp_path / name).write_text("# Team instructions\n", encoding="utf-8")
+
+    [warning] = _shadowing_warnings(adapter.install({}, project=tmp_path))
+
+    assert str(warning.message).endswith(
+        "Before this install Zed read .cursorrules; it now reads the Apothem .rules "
+        "instead. To have Zed read the instructions in .cursorrules, CLAUDE.md and "
+        "GEMINI.md, copy them into .rules outside the Apothem managed block."
+    )
 
 
 def test_update_repeats_the_warning_while_apothem_owns_rules(

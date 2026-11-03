@@ -191,6 +191,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   started in a folder above the project can still load the project
   `AGENTS.md`, or a non-empty `AGENTS.override.md` beside it, unless it starts
   in a home folder or one of a few container folders.
+- **The Zed install's shadowing warning holds for an empty `.rules` and for
+  every file it lists.** Zed reads the first project instruction file that
+  exists, so a `.rules` the project already had, even an empty one, is the file
+  Zed read; the warning now says so instead of naming a file lower in the list.
+  Its advice now reads "To have Zed read the instructions in ...", which holds
+  for every listed file, including ones Zed never read. The Zed page also says
+  that the notes the Zed install prints about shared files lower in the list
+  carry a condition its own `.rules` makes false.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

@@ -911,7 +911,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # 2026-10-02, except ~/.agents/skills/ and the two agents roots, which were read
 # on 2026-10-24, and ~/.claude/CLAUDE.md, the Cursor rules file and the Devin
 # Desktop pages, read on 2026-11-02 (the two OpenCode pages for
-# ~/.claude/CLAUDE.md again on 2026-11-03).
+# ~/.claude/CLAUDE.md again on 2026-11-03). The project AGENTS.md, GEMINI.md
+# and .github/copilot-instructions.md roots carry 2026-11-03, when the Zed,
+# Codex and CodeBuddy pages behind their reader conditions were read; their
+# other pages date from 2026-10-02.
 #
 # A reader is listed only where the vendor docs show a default load of that exact
 # path. Windsurf reads the other tools' rule files through Devin's configuration
@@ -1118,7 +1121,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://docs.devin.ai/desktop/devin-local/customizations.md#agents-md",
             "https://zed.dev/docs/ai/instructions",
         ),
-        retrieved="2026-10-02",
+        retrieved="2026-11-03",
         reader_conditions={
             "codebuddy": "only when the project has no CODEBUDDY.md",
             "codex": "only when the project has no AGENTS.override.md beside it",
@@ -1139,7 +1142,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions",
             "https://zed.dev/docs/ai/instructions",
         ),
-        retrieved="2026-10-02",
+        retrieved="2026-11-03",
         reader_conditions={
             "zed": "only when the project has no .rules, .cursorrules, "
             ".windsurfrules, .clinerules, .github/copilot-instructions.md, "
@@ -1164,7 +1167,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions",
             "https://zed.dev/docs/ai/instructions",
         ),
-        retrieved="2026-10-02",
+        retrieved="2026-11-03",
         reader_conditions={
             "zed": "only when the project has no .rules, .cursorrules, "
             ".windsurfrules or .clinerules"
