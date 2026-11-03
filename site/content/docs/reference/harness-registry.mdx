@@ -129,8 +129,8 @@ the order `.hermes.md` or `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, then the
 `.hermes.md` or `HERMES.md` and no `AGENTS.override.md` beside it, and
 `<project>/.cursor/rules/apothem-rules.mdc` only when the project has no
 `.hermes.md`, `AGENTS.md` or `CLAUDE.md`. `OpenCode` 1 loads
-`~/.claude/CLAUDE.md` only when no `~/.config/opencode/AGENTS.md` exists, and
-skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+`~/.claude/CLAUDE.md` only when its configuration folder (`~/.config/opencode/`
+by default) holds no `AGENTS.md`, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
 `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. `OpenCode` 2 reads the same
 `~/.config/opencode/` configuration but has no `CLAUDE.md` fallback, so it does
 not load `~/.claude/CLAUDE.md`. The `Cursor`

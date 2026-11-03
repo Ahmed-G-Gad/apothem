@@ -165,13 +165,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   no longer call the block Cursor's own, and the Cursor native-install example
   matches what the install writes, with a test that keeps it so.
 - **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** OpenCode 1
-  reads that file only as a fallback, when no `~/.config/opencode/AGENTS.md`
-  exists, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+  reads that file only as a fallback, when its configuration folder
+  (`~/.config/opencode` by default) holds no `AGENTS.md`, and skips it when
+  `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
   `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. OpenCode 2 has no `CLAUDE.md`
   fallback, so it does not load that file. The notes named OpenCode
   without that condition; they now say
-  `OpenCode (only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists)`,
-  as they already do for the Open-Claw and Hermes conditions.
+  `OpenCode (only in OpenCode 1, when its configuration folder holds no
+  AGENTS.md)`, as they already do for the Open-Claw and Hermes conditions.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

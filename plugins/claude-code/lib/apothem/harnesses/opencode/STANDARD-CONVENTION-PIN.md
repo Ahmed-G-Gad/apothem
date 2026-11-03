@@ -14,8 +14,8 @@
   documented native surface; plugins are vendor-native and operator-owned; the
   native config is rendered directly (no Jinja template). OpenCode also loads
   `~/.claude/skills/` and `~/.agents/skills/`, so the Claude Code and Codex
-  skill installs reach it, and OpenCode 1 loads `~/.claude/CLAUDE.md` when no
-  `~/.config/opencode/AGENTS.md` exists, so the Claude Code install's block
+  skill installs reach it, and OpenCode 1 loads `~/.claude/CLAUDE.md` when its
+  configuration folder holds no `AGENTS.md`, so the Claude Code install's block
   reaches it too (shared roots in the registry). No vendor-native UI
   claim is made here. Rolling docs carry no version or SHA — no-immutable-source
   exception on every source row.
@@ -89,7 +89,6 @@ OpenCode 2 still translates the helper `permission` map and the bare
 install should write OpenCode 2's own shapes.
 
 - <https://opencode.ai/v2/docs/migrate-v1/> (shared configuration locations; V1 shapes keep working; retrieved 2026-11-03)
-- <https://opencode.ai/v2/docs/instructions/> (`AGENTS.md` only; retrieved 2026-11-03)
 - <https://github.com/anomalyco/opencode/tree/v2.2.5> (the instruction, agent, command and skill loaders, `packages/core/src/v1/config/migrate.ts`, `packages/core/src/config/variable.ts`, `packages/schema/src/agent.ts`; read 2026-11-03)
 - <https://github.com/anomalyco/opencode/tree/v1.19.5> (`packages/opencode/src/agent/agent.ts`, `packages/opencode/src/permission/index.ts`, `packages/core/src/global.ts`; read 2026-11-03)
 

@@ -55,7 +55,7 @@ converting them in memory without rewriting the file. OpenCode 1 also loads the
 block a Claude Code install writes to `~/.claude/CLAUDE.md` when its
 configuration folder holds no `AGENTS.md` and neither
 `OPENCODE_DISABLE_CLAUDE_CODE` nor `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` is
-set; OpenCode 2 loads only `AGENTS.md` files.
+set; OpenCode 2 has no `CLAUDE.md` fallback, so it does not load that file.
 
 Helper definitions carry only `deny` rules, for the tools a helper must not
 use. OpenCode allows every tool by default and asks before it reads a `.env` or

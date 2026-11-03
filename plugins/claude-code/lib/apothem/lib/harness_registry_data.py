@@ -1071,7 +1071,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         # read 2026-11-03).
         reader_conditions={
             "opencode": (
-                "only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists"
+                "only in OpenCode 1, when its configuration folder holds no AGENTS.md"
             )
         },
     ),
