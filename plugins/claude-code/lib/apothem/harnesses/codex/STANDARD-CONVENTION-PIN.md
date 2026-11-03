@@ -8,7 +8,7 @@
 - Snapshot note: the plugin-package facts (manifest location, compatibility fallback, bundled components, marketplace `policy`) are re-checked against the Codex plugin build guide, which lives at `developers.openai.com/plugins/build/plugins` (the older `developers.openai.com/codex/plugins/build` address carries the same text). The rest was last refreshed on 2026-10-03 against the Codex docs, which moved from `developers.openai.com/codex` to `learn.chatgpt.com/docs` (the old addresses redirect): the AGENTS.md chain (`CODEX_HOME`, `AGENTS.override.md`), `[mcp_servers.<name>]` tables in `config.toml`, `~/.codex/agents/*.toml` subagents, `$HOME/.agents/skills`, `hooks.json`, and the web search tool are confirmed. Custom agent files re-checked 2026-10-24: a file's `sandbox_mode`, `approval_policy`, `model_provider`, and `mcp_servers` do not override the parent session. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/codex/`
 - Evidence level: vendor-doc pinned (living docs; no immutable pin). No vendor-native UI claim is made here.
-- Shared roots: Codex owns `~/.agents/skills/`, which Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Qwen Code, Windsurf, and Zed also load (re-checked 2026-10-24; Open-Claw reads it only under its default state directory), and `~/.codex/agents/` (`$CODEX_HOME/agents/`, which is that path by default), which Cursor lists as a Codex compatibility folder (re-checked 2026-10-24). TODO(clarify): the Cursor docs do not say which file formats Cursor parses in `~/.codex/agents/`, and Codex writes TOML there. The registry records those readers and `apothem install` names them.
+- Shared roots: Codex owns `~/.agents/skills/`, which Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Qwen Code, Windsurf, and Zed also load (re-checked 2026-10-24; Open-Claw reads it only under its default state directory), and `~/.codex/agents/` (`$CODEX_HOME/agents/`, which is that path by default), which Cursor lists as a Codex compatibility folder (re-checked 2026-10-24). Codex also loads `<project>/AGENTS.md`, which the Kimi Code install writes; in each directory it takes the first of `AGENTS.override.md` and `AGENTS.md`, so the registry lists Codex as a reader of that file only when the project has no `AGENTS.override.md` beside it (the AGENTS.md page, re-read 2026-11-03). The source settles the empty-file case: `codex-rs/core/src/agents_md.rs` takes the first candidate that exists in each directory and loads nothing from it when it is empty, so an empty `AGENTS.override.md` still hides `AGENTS.md` (read 2026-11-03 at `c60cda34`). TODO(clarify): the Cursor docs do not say which file formats Cursor parses in `~/.codex/agents/`, and Codex writes TOML there. The registry records those readers and `apothem install` names them.
 
 ## MCP Surface Projection
 
@@ -26,7 +26,8 @@
 
 Retrieved 2026-10-03 unless marked.
 
-- <https://learn.chatgpt.com/docs/agent-configuration/agents-md> (AGENTS.md chain)
+- <https://learn.chatgpt.com/docs/agent-configuration/agents-md> (AGENTS.md chain; the per-directory `AGENTS.override.md` rule re-read 2026-11-03)
+- <https://raw.githubusercontent.com/openai/codex/c60cda34a3ba6975f698d63da9e8ca8a1616f0c9/codex-rs/core/src/agents_md.rs> (the per-directory file choice and empty files; retrieved 2026-11-03)
 - <https://learn.chatgpt.com/docs/extend/mcp> (`[mcp_servers.<name>]`)
 - <https://learn.chatgpt.com/docs/build-skills> (skill locations)
 - <https://learn.chatgpt.com/docs/hooks> (`hooks.json`)

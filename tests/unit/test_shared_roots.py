@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 
 import apothem
+from apothem.harnesses.zed.install import LOWER_PRIORITY_INSTRUCTION_FILES
 from apothem.lib.harness_registry import (
     CROSS_TOOL_INSTRUCTION_FILES,
     HARNESS_REGISTRY,
@@ -67,7 +68,11 @@ def test_shared_anchor_title_and_description_name_no_harness(template: str) -> N
     descriptions = [line for line in fields if line.startswith("description:")]
     for line in headings + descriptions:
         for name in _DISPLAY_NAMES:
-            assert name.lower() not in line.lower(), (template, line)
+            # A whole-word match: "Zed" inside "summarized" names no tool.
+            assert not re.search(rf"(?i)(?<!\w){re.escape(name)}(?!\w)", line), (
+                template,
+                line,
+            )
 
 
 @pytest.mark.parametrize("template", _SHARED_ANCHOR_TEMPLATES)
@@ -348,12 +353,14 @@ def test_windsurf_reads_the_rule_files_of_the_cursor_and_claude_code_installs(
 
 
 def test_hermes_reads_the_cursor_rules_file_only_as_its_last_fallback() -> None:
-    # Hermes loads one kind of project context per session, first match wins,
-    # and the Cursor rules come after .hermes.md, AGENTS.md and CLAUDE.md.
+    # Hermes loads one kind of project context per session, the first with a
+    # non-empty file, and the Cursor rules come after .hermes.md or HERMES.md,
+    # the AGENTS.md chain (where AGENTS.override.md counts too) and CLAUDE.md.
     root = _DECLARED["<project>/.cursor/rules/apothem-rules.mdc"]
     assert root.readers == ("hermes", "windsurf")
     assert root.reader_conditions == {
-        "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+        "hermes": "only when the project has no .hermes.md, HERMES.md, "
+        "AGENTS.override.md, AGENTS.md or CLAUDE.md"
     }
     assert any("NousResearch/hermes-agent" in url for url in root.evidence)
 
@@ -362,10 +369,60 @@ def test_hermes_reads_the_project_agents_md_only_without_its_own_file() -> None:
     # A .hermes.md or HERMES.md comes first in Hermes's order, and an
     # AGENTS.override.md beside AGENTS.md is loaded instead of it.
     root = _DECLARED["<project>/AGENTS.md"]
-    assert root.reader_conditions == {
-        "hermes": "only when the project has no .hermes.md or HERMES.md and no "
+    assert set(root.reader_conditions) == {"codebuddy", "codex", "hermes", "zed"}
+    assert root.reader_conditions["hermes"] == (
+        "only when the project has no .hermes.md or HERMES.md and no "
         "AGENTS.override.md beside it"
-    }
+    )
+
+
+def test_codex_reads_the_project_agents_md_only_without_an_override_beside_it() -> None:
+    # In each folder Codex takes the first of AGENTS.override.md and AGENTS.md.
+    root = _DECLARED["<project>/AGENTS.md"]
+    assert root.reader_conditions["codex"] == (
+        "only when the project has no AGENTS.override.md beside it"
+    )
+    assert "https://learn.chatgpt.com/docs/agent-configuration/agents-md" in (
+        root.evidence
+    )
+
+
+def test_codebuddy_reads_the_project_agents_md_only_without_codebuddy_md() -> None:
+    # CodeBuddy Code uses AGENTS.md as project memory when the project has no
+    # CODEBUDDY.md.
+    root = _DECLARED["<project>/AGENTS.md"]
+    assert root.reader_conditions["codebuddy"] == (
+        "only when the project has no CODEBUDDY.md"
+    )
+    assert "https://www.codebuddy.ai/docs/cli/memory" in root.evidence
+
+
+# Zed's project instruction files, in its order; it loads only the first one the
+# project has (https://zed.dev/docs/ai/instructions). The Zed install's own list
+# is the source, so the registry conditions cannot drift from it.
+_ZED_INSTRUCTION_ORDER = (".rules", *LOWER_PRIORITY_INSTRUCTION_FILES)
+
+
+def test_zed_reads_each_shared_project_file_only_without_an_earlier_one() -> None:
+    # Each shared file Zed reads carries the files ahead of it in Zed's list as
+    # its condition.
+    zed_roots = [root for root in SHARED_ROOTS if "zed" in root.readers]
+    assert sorted(root.path for root in zed_roots) == [
+        "<project>/.github/copilot-instructions.md",
+        "<project>/AGENTS.md",
+        "<project>/GEMINI.md",
+    ]
+    for root in zed_roots:
+        name = root.path.removeprefix("<project>/")
+        ahead = _ZED_INSTRUCTION_ORDER[: _ZED_INSTRUCTION_ORDER.index(name)]
+        listed = ", ".join(ahead[:-1]) + " or " + ahead[-1]
+        assert root.reader_conditions["zed"] == (
+            f"only when the project has no {listed}"
+        ), root.path
+        assert "https://zed.dev/docs/ai/instructions" in root.evidence
+    # The Zed install's own file heads the list, so it hides all three.
+    zed = next(entry for entry in HARNESS_REGISTRY if entry.public_id == "zed")
+    assert f"<project>/{_ZED_INSTRUCTION_ORDER[0]}" in zed.target_paths
 
 
 def test_the_cursor_rules_file_keeps_the_frontmatter_devin_loads_always() -> None:
