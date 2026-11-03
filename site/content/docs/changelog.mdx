@@ -135,6 +135,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The quality and CI Matrix test jobs start node before pytest.** On a fresh
+  Windows runner the first launch of `node` can take more than a minute while
+  the test workers keep the machine busy. The VS Code publish workflow's vsce
+  version-guard test, which runs the guard's `node -e` check from
+  `publish-vscode.yml` under a 60-second timeout, was the suite's first node
+  launch, and it timed out on its first case in 11 Windows jobs from
+  29 October to 3 November 2026, two of them on `main`. Those two test jobs
+  now run `node -e 0` once before pytest and log how long it took, so the cold
+  start happens before any timed test runs.
 - **Install notes name Windsurf as a reader of the Cursor and Claude Code rule
   files, and Hermes of the Cursor one.** Devin imports `.cursor/rules/*.mdc`
   and `~/.claude/CLAUDE.md` by default, and Devin Local in Devin Desktop finds

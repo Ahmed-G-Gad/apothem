@@ -318,14 +318,41 @@ def test_the_vsce_version_guard_accepts_only_4_1_or_later(
     result = subprocess.run(
         [node, "-e", match[1], version],
         capture_output=True,
-        # The comparison reads no input. Without this, node inherits the test
-        # worker's stdin, the pipe pytest-xdist reads its commands from, and on
-        # Windows CI it stalled past the timeout.
+        # The comparison reads no input; DEVNULL makes that explicit.
         stdin=subprocess.DEVNULL,
+        # The quality and CI Matrix test jobs start node before pytest (see the
+        # next test), so a fresh runner's first node launch, slow while
+        # pytest's workers keep the machine busy, does not count against this.
         timeout=60,
         check=False,
     )
     assert (result.returncode == 0) is supported
+
+
+def test_the_test_jobs_start_node_before_pytest() -> None:
+    # A fresh Windows runner's first node launch can take more than a minute
+    # while pytest's workers keep the machine busy, and the probe above is the
+    # suite's first node launch: it timed out on its first case in 11 Windows
+    # jobs. The quality and CI Matrix test jobs run `node -e 0`, the start-up
+    # the tests' `node -e` launches need, before pytest on every runner. A
+    # skipped, misspelled or disabled warm-up fails here.
+    guard = "if command -v node >/dev/null; then"
+    launch = re.compile(r"(?:^|;|then)\s*time\s+node\s+-e\s+0\b", re.M)
+    quality = _job("ci.yml", "quality")
+    names = [step.get("name") for step in quality["steps"]]
+    assert names.index("Start node once") < names.index("Pytest")
+    step = _step(quality, "Start node once")
+    assert "if" not in step, step["if"]
+    run = str(step["run"])
+    found = launch.search(run)
+    assert guard in run, run
+    assert found is not None, run
+    assert run.index(guard) < found.start(), run
+    command = str(_job("ci-matrix.yml", "test-matrix")["with"]["run-command"])
+    found = launch.search(command)
+    assert guard in command, command
+    assert found is not None, command
+    assert command.index(guard) < found.start() < command.index("python -m pytest")
 
 
 def test_a_trusted_publishing_dry_run_says_that_it_verified_nothing() -> None:
