@@ -163,11 +163,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   what the Cursor install adds. The harness registry, Cursor and Windsurf pages
   no longer call the block Cursor's own, and the Cursor native-install example
   matches what the install writes, with a test that keeps it so.
-- **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** Only
-  OpenCode 1 reads that file, and only as a fallback, when no
-  `~/.config/opencode/AGENTS.md` exists; it skips the file when
-  `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or `OPENCODE_DISABLE_CLAUDE_CODE=1`
-  is set. OpenCode 2 loads only `AGENTS.md` files. The notes named OpenCode
+- **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** OpenCode 1
+  reads that file only as a fallback, when no `~/.config/opencode/AGENTS.md`
+  exists, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+  `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. OpenCode 2 has no `CLAUDE.md`
+  fallback, so it does not load that file. The notes named OpenCode
   without that condition; they now say
   `OpenCode (only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists)`,
   as they already do for the Open-Claw and Hermes conditions.

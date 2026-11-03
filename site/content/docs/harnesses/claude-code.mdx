@@ -52,9 +52,9 @@ against: `rules/<name>.md` under `~/.claude/rules/`, and `templates/...`,
 `~/.claude/rules/apothem-rule-index.md`. The rest of the Apothem governance
 surface reaches Claude Code through the propagated `rules/` tree and the
 SessionStart hook. OpenCode 1 also loads `~/.claude/CLAUDE.md` when no
-`~/.config/opencode/AGENTS.md` exists (OpenCode 2 loads only `AGENTS.md`
-files), and Devin Desktop imports it by default, so the block names no single
-tool as its reader.
+`~/.config/opencode/AGENTS.md` exists (OpenCode 2 has no `CLAUDE.md`
+fallback), and Devin Desktop imports it by default, so the block names no
+single tool as its reader.
 
 ## Profile-to-native-config mapping
 

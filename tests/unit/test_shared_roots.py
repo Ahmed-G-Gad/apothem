@@ -291,7 +291,8 @@ def test_open_claw_reads_agents_skills_only_under_its_default_state_dir() -> Non
 def test_opencode_loads_claude_md_only_without_its_global_agents_md() -> None:
     # The OpenCode rules page: ~/.config/opencode/AGENTS.md takes precedence
     # over ~/.claude/CLAUDE.md, which OpenCode 1 reads only as a fallback. The
-    # OpenCode 2 Instructions page: version 2 loads AGENTS.md only.
+    # OpenCode 2 Instructions page: version 2 discovers only AGENTS.md files,
+    # with no CLAUDE.md fallback.
     root = _DECLARED["~/.claude/CLAUDE.md"]
     assert "https://opencode.ai/docs/rules/" in root.evidence
     assert "https://opencode.ai/v2/docs/instructions/" in root.evidence

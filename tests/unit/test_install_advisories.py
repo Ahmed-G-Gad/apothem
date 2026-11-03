@@ -103,7 +103,7 @@ def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
     tmp_path: Path,
 ) -> None:
     # ~/.claude/CLAUDE.md has two readers; the note reads as several tools, and
-    # OpenCode loads the file only when it has no global AGENTS.md of its own.
+    # OpenCode 1 loads the file only when it has no global AGENTS.md of its own.
     advisories = shared_root_advisories("claude-code", home=tmp_path, project=None)
     entry = _owner_entry(advisories, "~/.claude/CLAUDE.md")
     assert entry["readers"] == ["opencode", "windsurf"]
