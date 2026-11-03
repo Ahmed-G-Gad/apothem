@@ -2,7 +2,7 @@
 title: "سجلّ أُطُر العمل"
 description: "مرجع تقني لسجلّ محوّلات أُطُر العمل المُضمَّنة في Apothem."
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,11 +107,12 @@ sourceHash: "8551abe209fad6c5"
 | <bdi>`~/.claude/skills/`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>Cursor</bdi>، <bdi>OpenCode</bdi> |
 | <bdi>`~/.claude/agents/`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>Cursor</bdi> |
 | <bdi>`~/.codex/agents/`</bdi> | <bdi>Codex</bdi> | لا أحد | <bdi>Cursor</bdi> |
-| <bdi>`~/.claude/CLAUDE.md`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>OpenCode</bdi> |
+| <bdi>`~/.claude/CLAUDE.md`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi> |
 | <bdi>`<project>/AGENTS.md`</bdi> | <bdi>Kimi Code</bdi> | لا أحد | <bdi>Antigravity</bdi>، <bdi>CodeBuddy</bdi>، <bdi>Codex</bdi>، <bdi>Cursor</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Hermes</bdi>، <bdi>Kiro</bdi>، <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi>، <bdi>Zed</bdi> |
 | <bdi>`<project>/GEMINI.md`</bdi> | <bdi>Gemini CLI</bdi> | لا أحد | <bdi>Antigravity</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Zed</bdi> |
 | <bdi>`~/.gemini/GEMINI.md`</bdi> | <bdi>Antigravity</bdi> | لا أحد | <bdi>Gemini CLI</bdi> |
 | <bdi>`<project>/.github/copilot-instructions.md`</bdi> | <bdi>GitHub Copilot</bdi> | لا أحد | <bdi>Zed</bdi> |
+| <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> | <bdi>Cursor</bdi> | لا أحد | <bdi>Hermes</bdi>، <bdi>Windsurf</bdi> |
 
 يحمل <bdi>`~/.config/apothem/rules/`</bdi> و<bdi>`~/.config/apothem/templates/`</bdi> الملفات
 التي تستشهد بها مهارات <bdi>Apothem</bdi> وملفات تعليماته. ولا تُحمِّلها أي أداة أخرى، لذا
@@ -119,16 +120,30 @@ sourceHash: "8551abe209fad6c5"
 أيضًا مجلّد مهارات خاصًا بكل منها (<bdi>`~/.codebuddy/skills/`</bdi>، و<bdi>`~/.kiro/skills/`</bdi>،
 و<bdi>`~/.trae/skills/`</bdi>)؛ ولا تُحمِّله إلا تلك الأداة، لذا فهو ليس جذرًا مشتركًا.
 
-لا يُدرَج القارئ إلا حيث تُظهر وثائق مورّده تحميلًا افتراضيًا لذلك المسار بعينه. ويحمل
-قارئ واحد شرطًا، وتُكرِّره ملاحظة التثبيت: لا يُفهرِس <bdi>`Open-Claw`</bdi>
-<bdi>`~/.agents/skills/`</bdi> إلا تحت دليل حالته الافتراضي (ويتخطّى المجلّد عندما يُشير
-<bdi>`OPENCLAW_STATE_DIR`</bdi> إلى مكان آخر). وتسرد وثائق <bdi>`Cursor`</bdi>
+لا يُدرَج القارئ إلا حيث تُظهر وثائق مورّده تحميلًا افتراضيًا لذلك المسار بعينه.
+ويُسجِّل السجلّ ثلاثة شروط، وتُكرِّر ملاحظة التثبيت كلًّا منها. لا يُفهرِس
+<bdi>`Open-Claw`</bdi> <bdi>`~/.agents/skills/`</bdi> إلا تحت دليل حالته الافتراضي (ويتخطّى المجلّد
+عندما يُشير <bdi>`OPENCLAW_STATE_DIR`</bdi> إلى مكان آخر). ويُحمِّل <bdi>`Hermes`</bdi> نوعًا واحدًا
+من سياق المشروع في كل جلسة، ويفوز أول تطابق، وفق الترتيب <bdi>`.hermes.md`</bdi> أو
+<bdi>`HERMES.md`</bdi>، ثم <bdi>`AGENTS.md`</bdi>، ثم <bdi>`CLAUDE.md`</bdi>، ثم قواعد <bdi>`Cursor`</bdi>. لذا لا يُحمِّل
+<bdi>`<project>/AGENTS.md`</bdi> إلا عندما لا يحتوي المشروع على أيٍّ من <bdi>`.hermes.md`</bdi> أو
+<bdi>`HERMES.md`</bdi> ولا على <bdi>`AGENTS.override.md`</bdi> بجانب ذلك الملف، ولا يُحمِّل
+<bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> إلا عندما لا يحتوي المشروع على أيٍّ
+من <bdi>`.hermes.md`</bdi> أو <bdi>`AGENTS.md`</bdi> أو <bdi>`CLAUDE.md`</bdi>. وتسرد وثائق <bdi>`Cursor`</bdi>
 <bdi>`~/.codex/agents/`</bdi> بوصفه مجلّد توافق مع <bdi>`Codex`</bdi> لكنها لا تقول أي صيغ
 ملفات يُحلِّلها <bdi>`Cursor`</bdi> هناك، وتثبيت <bdi>`Codex`</bdi> يكتب ملفات <bdi>TOML</bdi>،
 لذا فإن قراءة <bdi>`Cursor`</bdi> لأولئك المساعِدين غير مؤكَّدة. ويكتب تثبيت
 <bdi>`Cursor`</bdi> أيضًا نسخته الخاصة <bdi>`<project>/.cursor/agents/`</bdi> من
 المساعِدين، التي يُرتِّبها سُلَّم الأسبقية لدى المورّد فوق المجلّدات التي يستوردها، لذا تحلّ
 النسخة الأصلية في المشروع المُثبَّت محلّ النسخة الآتية من <bdi>`~/.claude/agents/`</bdi>.
+
+يقرأ <bdi>`Windsurf`</bdi> ملفات القواعد الخاصة بأدوات أخرى عبر استيراد الإعداد في <bdi>Devin</bdi>،
+المفعّل افتراضيًا، ويعثر عامل <bdi>Local</bdi> في <bdi>Devin Desktop</bdi> على ملفاته بالطريقة نفسها
+التي تتبعها <bdi>Devin CLI</bdi>. لذا يُحمِّل كتلة <bdi>Apothem</bdi> في <bdi>`~/.claude/CLAUDE.md`</bdi> التي
+يكتبها تثبيت <bdi>`Claude Code`</bdi>، والملف الذي يكتبه تثبيت <bdi>`Cursor`</bdi> في
+<bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>، الذي تُبقيه بياناته الأمامية
+<bdi>`alwaysApply: true`</bdi> مفعّلًا في كل جلسة. ويقرأ الاستيراد أيضًا ملف <bdi>`CLAUDE.md`</bdi>
+على مستوى المشروع، الذي لا يكتبه أي تثبيت من <bdi>Apothem</bdi>.
 
 بعض الأدوات ليست قارئة لـ <bdi>`~/.agents/skills/`</bdi> عن قصد: لا تقول وثائق
 <bdi>`Antigravity`</bdi> و<bdi>`CodeBuddy`</bdi> و<bdi>`Kiro`</bdi> و<bdi>`Trae`</bdi> إنها
@@ -143,8 +158,8 @@ sourceHash: "8551abe209fad6c5"
 بعينها قارئًا لها. ويُخفِق <bdi>`tests/unit/test_shared_roots.py`</bdi> عندما لا تكون
 المحوّلات التي تكتب هدفًا من أهداف السجلّ هي مالكه ومُثبِّتيه المشاركين بالضبط، وعندما لا يكون لهدف في السجلّ يُسمّى تسمية ملف
 تعليمات عابر للأدوات (<bdi>`AGENTS.md`</bdi>، و<bdi>`CLAUDE.md`</bdi>، و<bdi>`GEMINI.md`</bdi>،
-و<bdi>`copilot-instructions.md`</bdi>) مالكٌ مُعلَن. والاستثناء الوحيد هو
-<bdi>`~/.codex/AGENTS.md`</bdi>، الذي لا يوثّق أي إطار عمل مسجَّل آخر تحميله.
+و<bdi>`copilot-instructions.md`</bdi>) مالكٌ مُعلَن، باستثناء <bdi>`~/.codex/AGENTS.md`</bdi>،
+الذي لا يوثّق أي إطار عمل مسجَّل آخر تحميله.
 
 ## خطّافات التحقّق
 
@@ -153,7 +168,7 @@ sourceHash: "8551abe209fad6c5"
 | الفحص | الغرض |
 | --- | --- |
 | <bdi>`python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD`</bdi> | يؤكّد أن لكل محوّل تثبيتَ اصطلاحٍ لا يتجاوز عمره 90 يومًا، ويستشهد بعنوان <bdi>URL</bdi> واحد على الأقل للمورّد، ولا يحمل هدف اكتشاف متأخّرًا عن موعده. ويُشغِّله <bdi>CI</bdi> على كل طلب سحب، وأسبوعيًا، وقبل الإصدار. |
-| <bdi>`python scripts/dev/check_vendor_urls.py`</bdi> | يجلب كل عنوان <bdi>URL</bdi> للمورّد تستشهد به تثبيتات الاصطلاح وقوالب أُطُر العمل، ويُخفِق عند صفحة منقولة أو ميتة، بما في ذلك اسم مضيف لم يعد يُحَلّ أو شهادة يُخفِق التحقّق منها؛ أمّا انتهاء المهلة، أو الاتصال المرفوض أو المُعاد ضبطه، أو خطأ الخادم <bdi>5xx</bdi>، فيُبلَّغ عنه بوصفه تعذّر وصول ولا يُفشِله. ويُشغِّله مراقب الاصطلاحات الأسبوعي. |
+| <bdi>`python scripts/dev/check_vendor_urls.py`</bdi> | يجلب كل عنوان <bdi>URL</bdi> للمورّد تستشهد به تثبيتات الاصطلاح وقوالب أُطُر العمل، ويُخفِق عند صفحة منقولة أو ميتة، بما في ذلك اسم مضيف لم يعد يُحَلّ أو شهادة يُخفِق التحقّق منها؛ أمّا انتهاء المهلة، أو الاتصال المرفوض أو المُعاد ضبطه، أو خطأ الخادم <bdi>5xx</bdi>، فيُبلَّغ عنه بوصفه تعذّر وصول ولا يُفشِله. واسم المضيف الذي لا يُحَلّ إلا إلى عنوان نائب لا يمكن أن يملكه أي خادم، وهو عنوان قد تُعيده خوادم الأسماء لدى أحد المورّدين للمنطقة التي يُشغَّل منها الفحص، لا يُرسَل إليه أي طلب: يُبلَّغ عنه بوصفه غير قابل للتوجيه، ولا يُفشِل الفحص، وتحتاج صفحاته إلى فحص يدوي. ويُشغِّله مراقب الاصطلاحات الأسبوعي، ويُصدر تحذيرًا بشأن كل مضيف من هذا النوع في كل تشغيل، ويسرد صفحاته في التذكرة (<bdi>issue</bdi>) التي يفتحها. |
 | <bdi>`python -m apothem.conformity.gate --all .`</bdi> | يُشغِّل فحوص المطابقة للوثائق والتنفيذ. |
 | <bdi>`python -m pytest`</bdi> | يُشغِّل اختبارات تجهيزات السجلّ واختبارات عقود المحوّلات. |
 

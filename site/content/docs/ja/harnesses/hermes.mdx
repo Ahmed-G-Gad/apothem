@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,20 @@ Hermes はインストールされたスキルを見つけます。このエン�
 ## 互換性に関する注意
 
 プレビュー版のアダプターです。
-Hermes は `skills.external_dirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自ら読み込みません。`config.yaml` 内の他のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルールとフックなしで動作します。
+Hermes は `skills.external_dirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自ら読み込みません。`config.yaml` 内の他のどの設定もそこを指していないため、Hermes のインストールは Apothem のルールもフックも追加しません。
+
+Hermes は、自身が読み取るプロジェクトファイルに別のインストールが書き込んだ Apothem のブロックを実際に読み込みます。
+Hermes は 1 セッションにつき 1 種類のプロジェクトコンテキストしか読み込まず、最初に見つかったものを使うため、次の各ファイルが Hermes に届くのは、それぞれの横に書かれた条件を満たす場合に限られます。
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+Kimi Code 向けの Apothem のインストールが 1 つ目のファイルを書き込み、別のエディター向けのインストールが 2 つ目のファイルを書き込みます。
+`--project` を付けたインストールは、そのようなファイルと、それを書き込んだインストールを挙げます。
 
 **名前の衝突。** Hermes はスキルについて次の優先順位を文書化しています：プロジェクトのスキル（`<project>/.hermes/skills/` と `<project>/.agents/skills/`）、次に `~/.hermes/skills/`、次に `skills.create_dir`、次に `skills.external_dirs` 配下に列挙されたフォルダーです。
 Apothem のディレクトリは `external_dirs` のエントリーなので、最後になります。

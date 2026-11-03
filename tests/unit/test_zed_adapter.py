@@ -124,13 +124,37 @@ def test_install_is_silent_when_the_hidden_file_is_apothem_only(
     assert _shadowing_warnings(run) == []
 
 
+def test_install_names_the_first_file_zed_read_even_when_it_is_apothem_only(
+    adapter: ZedAdapter, tmp_path: Path
+) -> None:
+    # The GitHub Copilot install's file comes before AGENTS.md in Zed's list, so
+    # before .rules existed Zed read that file, not the operator's AGENTS.md.
+    copilot = tmp_path / ".github" / "copilot-instructions.md"
+    copilot.parent.mkdir()
+    copilot.write_text(
+        "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nApothem text\n"
+        "<!-- END APOTHEM MANAGED BLOCK -->\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "AGENTS.md").write_text("# Team instructions\n", encoding="utf-8")
+
+    [warning] = _shadowing_warnings(adapter.install({}, project=tmp_path))
+
+    message = str(warning.message)
+    assert "Before this install Zed read .github/copilot-instructions.md;" in message
+    assert "To keep the instructions in AGENTS.md in Zed" in message
+
+
 def test_update_repeats_the_warning_while_apothem_owns_rules(
     adapter: ZedAdapter, tmp_path: Path
 ) -> None:
     (tmp_path / "AGENTS.md").write_text("# Team instructions\n", encoding="utf-8")
     adapter.install({}, project=tmp_path)
     run = adapter.update({}, project=tmp_path)
-    assert len(_shadowing_warnings(run)) == 1
+    [warning] = _shadowing_warnings(run)
+    # Zed was already reading the Apothem .rules before the update.
+    assert ", so it reads the Apothem .rules." in str(warning.message)
+    assert "Before this install" not in str(warning.message)
 
 
 def test_cli_install_prints_the_shadowing_warning_without_verbose(

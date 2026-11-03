@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de harness do Apothem para o Hermes (Prévia)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,9 +48,24 @@ as regras, os templates e os prompts de hook chegam como material de suporte em
 
 Adaptador em prévia. O Hermes carrega as skills do Apothem por meio de
 `skills.external_dirs`, mas não carrega por conta própria o restante da árvore de suporte nem o
-documento de perfil: nada mais em `config.yaml` e nenhum dos arquivos de
-contexto que o Hermes lê aponta para lá, então, após a instalação, o Hermes é
-executado sem as regras nem os hooks do Apothem.
+documento de perfil: nada mais em `config.yaml` aponta para lá, então a
+instalação do Hermes não adiciona regras nem hooks do Apothem.
+
+O Hermes carrega, sim, o bloco do Apothem que outra instalação grava em um
+arquivo do projeto que ele lê. Ele carrega um tipo de contexto do projeto por
+sessão, o primeiro que encontra, então cada um destes arquivos chega ao Hermes
+somente sob a condição ao lado dele:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+A instalação do Apothem para o Kimi Code grava o primeiro arquivo, e a
+instalação para outro editor grava o segundo. Uma instalação com `--project`
+nomeia um arquivo desses e a instalação que o gravou.
 
 **Conflitos de nome.** O Hermes documenta esta ordem de precedência para skills: as
 skills do projeto (`<project>/.hermes/skills/` e `<project>/.agents/skills/`),

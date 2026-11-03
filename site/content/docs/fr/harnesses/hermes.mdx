@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,9 +39,24 @@ L'adaptateur lit le profil partagé d'Apothem et rend la configuration YAML nati
 Adaptateur en préversion. Hermes charge les skills d'Apothem via
 `skills.external_dirs`, mais ne charge pas de lui-même le reste de
 l'arborescence de support ni le document de profil : rien d'autre dans
-`config.yaml` et aucun des fichiers de contexte que lit Hermes n'y pointe ;
-après l'installation, Hermes s'exécute donc sans les règles ni les hooks
-d'Apothem.
+`config.yaml` n'y pointe ; l'installation Hermes n'ajoute donc ni règles ni
+hooks d'Apothem.
+
+Hermes charge bien le bloc Apothem qu'une autre installation écrit dans un
+fichier de projet qu'il lit. Il charge un seul type de contexte de projet par
+session, le premier qu'il trouve ; chacun de ces fichiers n'atteint donc Hermes
+que sous la condition indiquée à côté :
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+L'installation d'Apothem pour Kimi Code écrit le premier fichier, et
+l'installation pour un autre éditeur écrit le second. Une installation avec
+`--project` nomme un tel fichier et l'installation qui l'a écrit.
 
 **Conflits de noms.** Hermes documente cet ordre de priorité pour les skills :
 les skills du projet (`<project>/.hermes/skills/` et `<project>/.agents/skills/`),

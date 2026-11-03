@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "8551abe209fad6c5"
+sourceHash: "fafca976f970f790"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,19 +83,22 @@ sourceHash: "8551abe209fad6c5"
 | `~/.claude/skills/` | Claude Code | 无 | Cursor、OpenCode |
 | `~/.claude/agents/` | Claude Code | 无 | Cursor |
 | `~/.codex/agents/` | Codex | 无 | Cursor |
-| `~/.claude/CLAUDE.md` | Claude Code | 无 | OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | 无 | OpenCode、Windsurf |
 | `<project>/AGENTS.md` | Kimi Code | 无 | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
 | `<project>/GEMINI.md` | Gemini CLI | 无 | Antigravity、GitHub Copilot、Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | 无 | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | 无 | Zed |
+| `<project>/.cursor/rules/apothem-rules.mdc` | Cursor | 无 | Hermes、Windsurf |
 
 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/` 存放 Apothem 自身的技能和指令文件所引用的文件。没有其他工具加载它们，因此它们没有读取者，也没有厂商页面。`CodeBuddy`、`Kiro` 和 `Trae` 还会写入各自专属的技能文件夹（`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）；只有对应的工具会加载它，因此它不是共享根目录。
 
-只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。有一个读取者带有条件，安装说明会重复这一点：`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`Cursor` 文档将 `~/.codex/agents/` 列为 `Codex` 兼容文件夹，但没有说明 `Cursor` 在那里解析哪些文件格式，而 `Codex` 安装写入的是 TOML 文件，因此 `Cursor` 是否读取这些辅助智能体尚未得到确认。`Cursor` 安装还会写入自己的 `<project>/.cursor/agents/` 辅助智能体副本，厂商的优先级规则将其排在它所导入的文件夹之上，因此在已安装的项目中，原生副本会取代来自 `~/.claude/agents/` 的那一份。
+只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。注册表记录了三个条件，安装说明会逐一重复它们。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`Hermes` 每个会话只加载一类项目上下文，且第一个匹配项胜出，匹配顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `Cursor` 规则。因此，`<project>/AGENTS.md` 只有在项目没有 `.hermes.md` 或 `HERMES.md`，且它旁边没有 `AGENTS.override.md` 时才会被加载，而 `<project>/.cursor/rules/apothem-rules.mdc` 只有在项目没有 `.hermes.md`、`AGENTS.md` 或 `CLAUDE.md` 时才会被加载。`Cursor` 文档将 `~/.codex/agents/` 列为 `Codex` 兼容文件夹，但没有说明 `Cursor` 在那里解析哪些文件格式，而 `Codex` 安装写入的是 TOML 文件，因此 `Cursor` 是否读取这些辅助智能体尚未得到确认。`Cursor` 安装还会写入自己的 `<project>/.cursor/agents/` 辅助智能体副本，厂商的优先级规则将其排在它所导入的文件夹之上，因此在已安装的项目中，原生副本会取代来自 `~/.claude/agents/` 的那一份。
+
+`Windsurf` 通过 Devin 的配置导入读取其他工具的规则文件，该导入默认开启，而且 Devin Desktop 的 Local 智能体查找其文件的方式与 Devin CLI 相同。因此它会加载 `~/.claude/CLAUDE.md` 中由 `Claude Code` 安装写入的区块，以及由 `Cursor` 安装写入的 `<project>/.cursor/rules/apothem-rules.mdc`，其 `alwaysApply: true` 前置元数据使它在每个会话中都保持启用。该导入还会读取项目的 `CLAUDE.md`，没有任何 Apothem 安装会写入它。
 
 有些工具被有意不列为 `~/.agents/skills/` 的读取者：`Antigravity`、`CodeBuddy`、`Kiro` 和 `Trae` 的文档没有说明它们会默认加载它（`Trae` 只有在打开某项设置之后才会加载项目的 `.agents/skills/` 文件夹），这就是 `CodeBuddy`、`Kiro` 和 `Trae` 各自获得专属技能文件夹的原因。`Hermes` 文档仅将它作为 `skills.external_dirs` 的一个示例值提及。`GitHub Copilot` 不是 `~/.claude/agents/` 的读取者：VS Code 文档为 Anthropic Claude 智能体列出了该文件夹，而不是为 `GitHub Copilot` 运行的智能体。
 
-所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当写入某个注册表目标的适配器并不恰好是其所有者及其共同安装者时，以及当某个注册表目标的名称类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者时，`tests/unit/test_shared_roots.py` 都会失败。唯一的例外是 `~/.codex/AGENTS.md`，没有其他已注册的工具在其文档中说明会加载它。
+所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当写入某个注册表目标的适配器并不恰好是其所有者及其共同安装者时，以及当某个注册表目标的名称类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者（`~/.codex/AGENTS.md` 除外，没有其他已注册的工具在其文档中说明会加载它）时，`tests/unit/test_shared_roots.py` 都会失败。
 
 ## 校验钩子
 
@@ -104,7 +107,7 @@ sourceHash: "8551abe209fad6c5"
 | 检查 | 用途 |
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份约定锁定，该锁定距今不超过 90 天，至少引用一个厂商 URL，并且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
-| `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在遇到已迁移或已失效的页面时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，并且不会导致它失败。每周的约定监视器会运行它。 |
+| `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在遇到已迁移或已失效的页面时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，并且不会导致它失败。如果某个主机名只解析到一个任何服务器都不可能持有的占位地址（厂商的域名服务器可能针对运行该检查的地区返回这样的地址），则不会向它发出请求：它会被报告为不可路由，不会导致检查失败，其页面需要手动检查。每周的约定监视器会运行它，每次运行时都会针对每个这样的主机发出警告，并在它提交的 issue 中列出这些主机的页面。 |
 | `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规检查。 |
 | `python -m pytest` | 执行注册表夹具测试与适配器契约测试。 |
 

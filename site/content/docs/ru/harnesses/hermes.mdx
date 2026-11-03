@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Адаптер окружения Apothem для Hermes (предварительная версия)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,9 +46,24 @@ apothem install --harness hermes
 
 Адаптер в предварительной версии. Hermes загружает навыки Apothem через
 `skills.external_dirs`, но самостоятельно не загружает остальную часть
-вспомогательного дерева и документ профиля: ничто другое в `config.yaml` и ни
-один из файлов контекста, которые читает Hermes, не указывает туда, поэтому
-после установки Hermes работает без правил и хуков Apothem.
+вспомогательного дерева и документ профиля: ничто другое в `config.yaml` не
+указывает туда, поэтому установка Hermes не добавляет правил и хуков Apothem.
+
+Hermes всё же загружает блок Apothem, который другая установка записывает в
+читаемый им файл проекта. Он загружает один вид контекста проекта за сессию,
+первый из найденных, поэтому каждый из этих файлов доходит до Hermes только при
+условии, указанном рядом с ним:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+Установка Apothem для Kimi Code записывает первый файл, а установка для другого
+редактора записывает второй. Установка с `--project` называет такой файл и
+установку, которая его записала.
 
 **Конфликты имён.** Hermes документирует следующий порядок приоритета для
 навыков: навыки проекта (`<project>/.hermes/skills/` и

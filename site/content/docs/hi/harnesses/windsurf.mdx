@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -265,6 +265,45 @@ Devin Desktop (Windsurf) `~/.agents/skills/` खोजता है, इसल�
 Windsurf किसी ऐसी `SKILL.md` हेडर कुंजी के साथ कैसा व्यवहार करता है जिसे वह
 सूचीबद्ध नहीं करता; स्किल `user-invocable`, `disable-model-invocation`,
 `allowed-tools`, `argument-hint`, और एक `metadata` मैप रखती हैं।
+
+Devin Local उन नियम फ़ाइलों को भी आयात करता है जिनका अन्य टूल उपयोग करते हैं, और
+ये आयात डिफ़ॉल्ट रूप से चालू हैं। इनमें से तीन फ़ाइलों में Apothem ब्लॉक हो सकता
+है: वह प्रोजेक्ट नियम फ़ाइल जिसे किसी अन्य संपादक के लिए किया गया Apothem इंस्टॉल
+लिखता है, वह `~/.claude/CLAUDE.md` फ़ाइल जिसे Claude Code के लिए किया गया Apothem
+इंस्टॉल लिखता है, और वह प्रोजेक्ट निर्देश फ़ाइल जिसे Kimi Code के लिए किया गया
+Apothem इंस्टॉल लिखता है:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+जब इन फ़ाइलों में से किसी में Apothem ब्लॉक होता है, तो Devin Local उसे
+`.devin/rules/` की नियम फ़ाइल के साथ-साथ लोड करता है, और `windsurf` इंस्टॉल करने पर
+एक नोट प्रिंट होता है जो उस फ़ाइल और उसे लिखने वाले इंस्टॉल का नाम बताता है। पहली
+फ़ाइल का Apothem ब्लॉक किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता, लेकिन
+उस संपादक के सबएजेंट फ़ोल्डर और हुक फ़ाइल के बारे में उसमें जो लिखा है, वह उस
+इंस्टॉल का वर्णन करता है और Devin पर लागू नहीं होता; उसमें नामित स्किल फ़ोल्डर
+और `~/.config/apothem/` वही हैं जिन्हें यह इंस्टॉल भी लिखता है। पहली दो फ़ाइलों को
+Devin Local से बाहर रखने के लिए, उनके आयात को `~/.config/devin/config.json`
+(Windows पर `%APPDATA%\devin\config.json`) में या प्रोजेक्ट की `.devin/config.json`
+में बंद करें:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+किसी कुंजी को बंद करने से उस टूल का शेष आयात भी रुक जाता है: पहली कुंजी से उस
+संपादक के MCP सर्वर भी रुक जाते हैं, और `claude` से Claude Code के स्किल, कमांड,
+हुक और MCP सर्वर रुक जाते हैं। तीसरी फ़ाइल `agents_standard` आयात के माध्यम से आती
+है, जो अन्य मानक नियम फ़ाइलें और आपके अपने प्रोजेक्ट निर्देश भी पढ़ता है, इसलिए
+`"agents_standard": false` केवल तभी सेट करें जब Devin इनमें से कुछ भी न पढ़े।
 
 ## सत्यापन
 

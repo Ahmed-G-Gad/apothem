@@ -21,6 +21,13 @@
   primary instruction file and supports `.rules` for compatibility. The format
   is free-form plaintext / Markdown with no schema. The global surface is
   `~/.config/zed/AGENTS.md`.
+- Shared roots (recorded 2026-11-03, against the same instructions page): Zed is
+  a registry reader of `<project>/.github/copilot-instructions.md` (the GitHub
+  Copilot install), `<project>/AGENTS.md` (Kimi Code) and `<project>/GEMINI.md`
+  (Gemini CLI), each only when the project has none of the files ahead of it in
+  the list above, and the install notes give those conditions. The adapter's
+  own `<project>/.rules` heads the list, so in a project where the Zed install
+  ran, Zed loads none of the three.
 - DIVERGENCE (flat file, no dedicated apothem file): unlike the cohort's
   rules-directory shape, Zed reads one flat `.rules` file at the project root,
   so the adapter writes `<project>/.rules` directly. Install warns when the new
@@ -54,7 +61,7 @@
 
 Retrieved 2026-10-03 unless marked.
 
-- <https://zed.dev/docs/ai/instructions> (instruction files and priority)
+- <https://zed.dev/docs/ai/instructions> (instruction files and priority; re-read 2026-11-03)
 - <https://zed.dev/docs/ai/mcp> (`context_servers`)
 - <https://zed.dev/docs/ai/skills> (skill locations; retrieved 2026-10-24, the folder the adapter writes)
 

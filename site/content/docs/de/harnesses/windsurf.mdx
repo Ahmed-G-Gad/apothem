@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Apothem-Harness-Adapter für Windsurf (GA)."
 machineTranslated: true
-sourceHash: "042b696158e8d072"
+sourceHash: "26f3db9f3fdef394"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -284,6 +284,48 @@ schreibt, dort ebenfalls erscheinen. Apothem hat nicht bestätigt, wie Windsurf 
 `SKILL.md`-Header-Schlüssel behandelt, den es nicht auflistet; die Skills tragen
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`
 und eine `metadata`-Map.
+
+Devin Local importiert außerdem Regeldateien, die andere Werkzeuge verwenden,
+und diese Importe sind standardmäßig eingeschaltet. Drei dieser Dateien können
+einen Apothem-Block enthalten: die Regeldatei des Projekts, die die Installation
+von Apothem für einen anderen Editor schreibt, die Datei `~/.claude/CLAUDE.md`,
+die die Installation von Apothem für Claude Code schreibt, und die
+Anweisungsdatei des Projekts, die die Installation von Apothem für Kimi Code
+schreibt:
+
+```text
+<project>/.cursor/rules/apothem-rules.mdc
+~/.claude/CLAUDE.md
+<project>/AGENTS.md
+```
+
+Enthält eine dieser Dateien einen Apothem-Block, lädt Devin Local diese
+Datei zusätzlich zur Regeldatei in `.devin/rules/`, und die Installation von
+`windsurf` gibt einen Hinweis aus, der die Datei und die Installation nennt, die
+sie geschrieben hat. Der Apothem-Block in der ersten Datei nennt kein einzelnes
+Werkzeug als seinen Leser, aber seine Zeilen über den Subagenten-Ordner und die
+Hook-Datei dieses Editors beschreiben jene Installation und gelten nicht für
+Devin; der Skill-Ordner und `~/.config/apothem/`, die er nennt, sind dieselben,
+die auch diese Installation schreibt. Damit Devin Local die ersten
+beiden Dateien nicht lädt, schalten Sie deren Importe in
+`~/.config/devin/config.json` (`%APPDATA%\devin\config.json` unter Windows) oder
+in der `.devin/config.json` des Projekts aus:
+
+```json
+{
+  "read_config_from": {
+    "cursor": false,
+    "claude": false
+  }
+}
+```
+
+Das Ausschalten eines Schlüssels stoppt auch den Rest des Imports aus diesem
+Werkzeug: Der erste Schlüssel stoppt zusätzlich die MCP-Server dieses Editors,
+und `claude` stoppt die Skills, Befehle, Hooks und MCP-Server von Claude Code.
+Die dritte Datei wird über den Import `agents_standard` geladen, der auch die
+anderen Standard-Regeldateien und Ihre eigenen Projektanweisungen liest; setzen
+Sie `"agents_standard": false` daher nur, wenn Devin keine davon lesen soll.
 
 ## Verifizierung
 

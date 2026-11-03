@@ -48,7 +48,10 @@ from apothem.harnesses._shared.wrapper_factories import (
     make_project_scope_install,
     make_project_scope_plan,
 )
-from apothem.lib.harness_materializer import remove_managed_block
+from apothem.lib.harness_materializer import (
+    extract_managed_block,
+    remove_managed_block,
+)
 
 # Manifest harness key for this adapter.
 _HARNESS_NAME: str = "zed"
@@ -91,12 +94,27 @@ def _has_operator_text(path: Path) -> bool:
     return bool(remove_managed_block(text).strip())
 
 
-def _shadowing_warning(project: Path) -> MaterializationResult | None:
+def _holds_apothem_block(path: Path) -> bool:
+    """Return True when *path* is a file that holds the Apothem managed block."""
+    if not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return extract_managed_block(text) is not None
+
+
+def _shadowing_warning(
+    project: Path, *, rules_held_block: bool
+) -> MaterializationResult | None:
     """Return the warning for lower-priority instruction files ``.rules`` hides.
 
     Returns ``None`` when no lower-priority file in *project* holds operator
-    text. The message names the file Zed read before the install (the first such
-    file in Zed's list) and every other such file the list contains.
+    text. The message names the file Zed read before the install: ``.rules``
+    when *rules_held_block* says it already held the Apothem block, otherwise
+    the first lower-priority file present, whatever it holds. It then names
+    every lower-priority file whose operator text ``.rules`` hides.
     """
     hidden = [
         name
@@ -105,14 +123,25 @@ def _shadowing_warning(project: Path) -> MaterializationResult | None:
     ]
     if not hidden:
         return None
-    first = hidden[0]
-    others = hidden[1:]
-    also = f" ({', '.join(others)} also present)" if others else ""
+    if rules_held_block:
+        before = ", so it reads the Apothem .rules."
+    else:
+        read_before = next(
+            name
+            for name in LOWER_PRIORITY_INSTRUCTION_FILES
+            if (project / name).is_file()
+        )
+        before = (
+            f". Before this install Zed read {read_before}; it now reads the "
+            "Apothem .rules instead."
+        )
+    names = (
+        f"{', '.join(hidden[:-1])} and {hidden[-1]}" if len(hidden) > 1 else hidden[0]
+    )
     message = (
         "Zed reads only the first project instruction file it finds, and "
-        f".rules comes first. Before this install Zed read {first}{also}; it now "
-        f"reads the Apothem .rules instead. To keep {first} in Zed, copy its "
-        "instructions into .rules outside the Apothem managed block."
+        f".rules comes first{before} To keep the instructions in {names} in Zed, "
+        "copy them into .rules outside the Apothem managed block."
     )
     return MaterializationResult(
         outcome="warning",
@@ -142,10 +171,12 @@ def install(
     ``None``.
     """
     operator_rules = project is not None and _has_operator_text(project / ".rules")
+    # Before an update, Zed was already reading the Apothem .rules.
+    rules_held_block = project is not None and _holds_apothem_block(project / ".rules")
     run = _install_rules(output_path, profile, project=project, dry_run=dry_run)
     if project is None or operator_rules:
         return run
-    warning = _shadowing_warning(project)
+    warning = _shadowing_warning(project, rules_held_block=rules_held_block)
     if warning is None:
         return run
     return replace(run, results=(*run.results, warning))

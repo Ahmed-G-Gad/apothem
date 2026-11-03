@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "b334fd06ee17113f"
+sourceHash: "cadb0684360fb056"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,8 +38,24 @@ Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native, ter
 Adapter pratinjau. Hermes memuat skill Apothem melalui
 `skills.external_dirs`, tetapi tidak memuat bagian lain dari pohon pendukung
 maupun dokumen profil dengan sendirinya: tidak ada hal lain di `config.yaml`
-dan tidak ada satu pun berkas konteks yang dibaca Hermes yang menunjuk ke sana,
-sehingga setelah instalasi Hermes berjalan tanpa aturan atau hook Apothem.
+yang menunjuk ke sana, sehingga instalasi Hermes tidak menambahkan aturan atau
+hook Apothem.
+
+Hermes memang memuat blok Apothem yang ditulis instalasi lain ke dalam berkas
+proyek yang dibacanya. Hermes memuat satu jenis konteks proyek per sesi, yaitu
+yang pertama ditemukannya, sehingga setiap berkas berikut hanya sampai ke Hermes
+jika syarat yang tertera di sebelahnya terpenuhi:
+
+```text
+<project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
+                                            and no AGENTS.override.md beside it
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
+                                            or CLAUDE.md
+```
+
+Instalasi Apothem untuk Kimi Code menulis berkas pertama, dan instalasi untuk
+editor lain menulis berkas kedua. Instalasi dengan `--project` menyebutkan
+berkas semacam itu serta instalasi yang menulisnya.
 
 **Bentrok nama.** Hermes mendokumentasikan urutan prioritas skill berikut:
 skill proyek (`<project>/.hermes/skills/` dan `<project>/.agents/skills/`),

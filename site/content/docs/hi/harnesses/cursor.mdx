@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "89536140f8fab5aa"
+sourceHash: "8ac335bb0406c162"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -250,6 +250,24 @@ Cursor 0.45+ `.cursor/rules/` के माध्यम से प्रोज�
 करता है। अडैप्टर डिफ़ॉल्ट रूप से प्रोजेक्ट-स्कोप वाली `.cursor/rules/` डायरेक्टरी
 में लिखता है; Cursor के पास कोई प्रलेखित फ़ाइल-आधारित उपयोगकर्ता-वैश्विक नियम पथ
 नहीं है जिसे यह अडैप्टर प्रबंधित कर सके।
+
+[Devin Desktop](/docs/harnesses/windsurf) भी इस इंस्टॉल द्वारा लिखी गई नियम फ़ाइल को
+लोड करता है। Devin Desktop में Devin Local `.cursor/rules/*.mdc` को डिफ़ॉल्ट रूप से
+आयात करता है और `alwaysApply: true` वाले नियम को, जिसे इस फ़ाइल का फ़्रंटमैटर सेट
+करता है, हर सत्र में सक्रिय रखता है। [एक और टूल](/docs/harnesses/hermes) इस फ़ाइल को
+केवल अपने प्रोजेक्ट निर्देशों के अंतिम
+फ़ॉलबैक के रूप में लोड करता है, जब प्रोजेक्ट में उस टूल की अपनी कोई निर्देश फ़ाइल न हो
+और `AGENTS.md` या `CLAUDE.md` भी न हो। इसलिए `cursor` को इंस्टॉल या अनइंस्टॉल करने
+से यह भी बदलता है कि वे टूल क्या लोड करते हैं, और इंस्टॉल एक नोट प्रिंट करता है जो
+दोनों का नाम बताता है, उस शर्त के साथ
+([हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) उन्हें सूचीबद्ध
+करती है)। Apothem ब्लॉक किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता, लेकिन
+`.cursor/agents/` और `.cursor/hooks.json` के बारे में उसमें जो लिखा है, वह इस
+इंस्टॉल का वर्णन करता है और उन टूल पर लागू नहीं होता।
+Devin को इसे लोड करने से रोकने के लिए, `~/.config/devin/config.json` (Windows पर
+`%APPDATA%\devin\config.json`) में या प्रोजेक्ट की `.devin/config.json` में
+`"read_config_from"` के अंतर्गत `"cursor": false` सेट करें; इस कुंजी से Devin का
+Cursor के MCP सर्वर आयात करना भी रुक जाता है।
 
 Cursor `~/.agents/skills/` से स्किल लोड करता है, इसलिए इंस्टॉल द्वारा लिखी गई स्किल
 बिना किसी अतिरिक्त सेटअप के Cursor में दिखाई देती हैं। Cursor `~/.claude/skills/`
