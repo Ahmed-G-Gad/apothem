@@ -265,10 +265,13 @@ def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, obje
     """Return, and print under the harness's line, the notes for a hidden block.
 
     A file the harness loads ahead of its instruction file, in the same folder,
-    hides the Apothem block while it has text. The note does not change the
-    verdict: the managed targets are in place either way.
+    hides the Apothem block while it has text. Verify gives the note only while
+    the instruction file holds the Apothem block, under a passing or a failing
+    row alike, and the note never changes the verdict.
     """
-    notes = instruction_override_advisories(harness_id, home=user_home())
+    notes = instruction_override_advisories(
+        harness_id, home=user_home(), require_block=True
+    )
     if sweep.fmt != "json":
         for note in notes:
             sweep.con.print(f"  [yellow]Note:[/] {escape(str(note['message']))}")

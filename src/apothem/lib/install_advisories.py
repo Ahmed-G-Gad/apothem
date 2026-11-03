@@ -30,7 +30,9 @@ together.
 Instruction overrides. Some harnesses load only the first file with text from a
 fixed list in one folder, so a file ahead of the one an install writes hides the
 Apothem block. :func:`instruction_override_advisories` names that file when it
-has text; install, update and verify print the note.
+has text and is not a symbolic link to the instruction file itself. Install and
+update print the note; verify prints it only while the instruction file holds
+the Apothem block.
 
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
@@ -41,7 +43,6 @@ into every harness config file that takes MCP servers.
 from __future__ import annotations
 
 import ipaddress
-import os
 import re
 from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
@@ -49,6 +50,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import apothem
+from apothem.lib.codex_home import codex_home
 from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN
 from apothem.lib.harness_registry import (
     SHARED_ROOTS,
@@ -64,6 +66,25 @@ _AGENT_SUFFIXES = (".md", ".toml")
 
 def _display_name(public_id: str) -> str:
     return get_harness_entry(public_id).display_name
+
+
+def _written_elsewhere(root: SharedRoot, home: Path) -> bool:
+    """Return whether the owner's install writes *root* away from its path.
+
+    A Codex root under ``~/.codex/`` moves with ``CODEX_HOME``: the Codex
+    install then writes the folder under that home, which the registry does not
+    list for the tools that load the registry path. Two spellings of one folder
+    (a case-insensitive volume, a bind mount) count as the same folder.
+    """
+    if root.owner != "codex" or not root.path.startswith(f"{_HOME_PREFIX}.codex/"):
+        return False
+    moved, default = codex_home(home), home / ".codex"
+    try:
+        if moved.exists() and default.exists():
+            return not moved.samefile(default)
+        return moved.resolve() != default.resolve()
+    except OSError:
+        return moved != default
 
 
 def _resolve(path: str, *, home: Path, project: Path | None) -> Path | None:
@@ -171,6 +192,27 @@ def _entry(
     }
 
 
+def _left_behind(
+    public_id: str, root: SharedRoot, resolved: Path, loaders: Sequence[str]
+) -> dict[str, object]:
+    """Return the note for a root an earlier install filled and this one skips.
+
+    ``CODEX_HOME`` points the Codex home elsewhere, so this install writes there,
+    but the registry path still holds Apothem content from an install made
+    before, which its readers load and which this install neither updates nor
+    removes.
+    """
+    readers = ", ".join(_qualified(root, reader) for reader in loaders)
+    message = (
+        f"{root.path} still holds Apothem content from an earlier "
+        f"{_display_name(root.owner)} install, and {readers} "
+        f"{'loads' if len(loaders) == 1 else 'load'} it. CODEX_HOME points the "
+        f"Codex home elsewhere, so this install neither updates nor removes that "
+        f"copy; delete it if you no longer want it."
+    )
+    return _entry(public_id, root, resolved, "owner", message)
+
+
 def shared_root_advisories(
     public_id: str,
     *,
@@ -187,7 +229,12 @@ def shared_root_advisories(
     *public_id* only reads that already holds Apothem content (an Apothem skill
     folder or agent file in a skills or agents root, or the Apothem managed block
     in an instruction file), one ``reader`` advisory names the install that
-    placed it there. Project roots are skipped when *project* is ``None``.
+    placed it there. Project roots are skipped when *project* is ``None``. When
+    ``CODEX_HOME`` points the Codex home elsewhere, the Codex install writes a
+    root under ``~/.codex/`` there instead, so that root gets no ``owner``
+    advisory naming its readers; if an earlier install left Apothem content at
+    the registry path, the advisory says this install neither updates nor
+    removes it.
 
     *holders* maps a resolved root path to the public ids of the installs that
     hold it now, oldest first, read from the install ledger. With it the
@@ -206,6 +253,12 @@ def shared_root_advisories(
             continue
         resolved = _resolve(root.path, home=home, project=project)
         if resolved is None:
+            continue
+        if public_id == root.owner and _written_elsewhere(root, home):
+            # The install writes the folder elsewhere, so the registry path is
+            # news only when an earlier install left Apothem content there.
+            if _holds_apothem_content(resolved):
+                advisories.append(_left_behind(public_id, root, resolved, loaders))
             continue
         held = tuple(holders(resolved)) if holders is not None else ()
         if public_id == root.owner:
@@ -435,12 +488,6 @@ def hook_review_advisories(
 # --- Instruction-file override advisories -------------------------------------
 
 
-def _codex_home(home: Path) -> Path:
-    """Return the Codex home: ``$CODEX_HOME``, else ``<home>/.codex``."""
-    configured = os.environ.get("CODEX_HOME")
-    return Path(configured).expanduser() if configured else home / ".codex"
-
-
 # For each harness whose install writes an instruction file that a file loaded
 # ahead of it in the same folder can hide: the folder (from the user home), the
 # file the install writes, and the files ahead of it in the harness's order. The
@@ -452,47 +499,103 @@ def _codex_home(home: Path) -> Path:
 _INSTRUCTION_OVERRIDES: dict[
     str, tuple[Callable[[Path], Path], str, tuple[str, ...]]
 ] = {
-    "codex": (_codex_home, "AGENTS.md", ("AGENTS.override.md",)),
+    "codex": (codex_home, "AGENTS.md", ("AGENTS.override.md",)),
 }
+
+# The Unicode White_Space characters, which Rust's str::trim strips and Codex
+# trims a candidate file with. Python's str.strip() with no argument also strips
+# U+001C to U+001F, which Codex keeps as text.
+_WHITE_SPACE = (
+    "\t\n\x0b\x0c\r \x85\xa0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006"
+    "\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000"
+)
 
 
 def _has_text(path: Path) -> bool:
     """Return whether *path* is a file whose text is not all whitespace.
 
-    Codex skips a directory, a missing file and one it cannot read, and decodes
-    the bytes leniently before it trims them; this check does the same.
+    Codex skips a directory, a missing file and one it cannot read, decodes the
+    bytes leniently, and trims the Unicode White_Space characters; this check
+    does the same.
     """
     try:
         if not path.is_file():
             return False
-        return bool(path.read_bytes().decode("utf-8", errors="replace").strip())
+        text = path.read_bytes().decode("utf-8", errors="replace")
+        return bool(text.strip(_WHITE_SPACE))
     except OSError:
         return False
 
 
+def _links_to(path: Path, target: Path) -> bool:
+    """Return whether *path* is a symbolic link to *target*.
+
+    Such a link keeps pointing at *target* when an install replaces it. A hard
+    link does not: the replacement splits it into a separate copy, so it counts
+    as a file of its own.
+    """
+    try:
+        return path.is_symlink() and path.resolve() == target.resolve()
+    except OSError:
+        return False
+
+
+def _holds_block(path: Path) -> bool:
+    """Return whether the file at *path* holds the Apothem block.
+
+    A missing, unreadable or undecodable file holds none, so a folder the check
+    cannot read never stops the command that asked.
+    """
+    try:
+        return path.is_file() and APOTHEM_BLOCK_BEGIN in path.read_text(
+            encoding="utf-8"
+        )
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
 def instruction_override_advisories(
-    public_id: str, *, home: Path
+    public_id: str, *, home: Path, require_block: bool = False
 ) -> list[dict[str, object]]:
     """Return a note when a file *public_id* loads first hides its install's file.
 
     The note names the first file the harness loads ahead of the instruction
     file its install writes, in the same folder, that has text: the harness
     loads that file instead, so the Apothem block does not reach it. An empty
-    file falls through, so it gets no note. A harness with no such file gets
-    none. The folder comes from *home* and the harness's own settings, not from
-    an adapter. Reads the folder; writes nothing.
+    file falls through, and a symbolic link to the instruction file itself
+    hides nothing, so neither gets a note. A hard link or a copy that holds the
+    Apothem block is a copy the install does not refresh, so its note says to
+    remove it. A harness with no such file gets none. With *require_block*, as
+    for ``verify``, the note also needs the Apothem block to be in the
+    instruction file; install and update, which write the block, leave it off.
+    The folder comes from *home* and the harness's own settings, not from an
+    adapter. Reads the folder; writes nothing, and never raises for a folder it
+    cannot read.
     """
     entry = _INSTRUCTION_OVERRIDES.get(public_id)
     if entry is None:
         return []
     folder_of, written, ahead = entry
     target = folder_of(home) / written
+    if require_block and not _holds_block(target):
+        return []
     for index, hiding in enumerate(ahead):
         path = target.parent / hiding
-        if not _has_text(path):
+        if not _has_text(path) or _links_to(path, target):
             continue
         name = _display_name(public_id)
         order = " and ".join([*ahead[: index + 1], target.name])
+        if _holds_block(path):
+            remedy = (
+                f"{path} holds its own copy of the Apothem block, which installs "
+                f"and updates do not refresh: remove it, or replace it with a "
+                f"symbolic link to {target.name}."
+            )
+        else:
+            remedy = (
+                f"Empty or remove {path}, or move its text into {target.name} "
+                f"outside the Apothem block."
+            )
         return [
             {
                 "harness": public_id,
@@ -504,8 +607,7 @@ def instruction_override_advisories(
                     f"{name} loads {hiding} instead of {target.name} in "
                     f"{target.parent}: it reads only the first of {order} there "
                     f"that has text, so the Apothem block in {target.name} does "
-                    f"not reach {name}. Empty or remove {path}, or move its text "
-                    f"into {target.name} outside the Apothem block."
+                    f"not reach {name}. {remedy}"
                 ),
             }
         ]
@@ -655,6 +757,7 @@ def mcp_profile_advisories(
 
 __all__ = [
     "hook_review_advisories",
+    "instruction_override_advisories",
     "mcp_profile_advisories",
     "owner_of_record",
     "shared_root_advisories",
