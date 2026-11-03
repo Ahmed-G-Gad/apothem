@@ -177,11 +177,12 @@ def test_zed_reads_only_the_first_matching_instruction_file(tmp_path: Path) -> N
     assert cm.measure_surfaces("zed", home, project) == (_size("first\n"), 1)
 
 
+# Each kind's file has its own size, so the counted bytes show which kind loaded.
 _HERMES_KINDS = {
-    ".hermes.md": "hermes\n",
-    "AGENTS.md": "agents\n",
-    "CLAUDE.md": "claude\n",
-    ".cursorrules": "cursor\n",
+    ".hermes.md": "h\n",
+    "AGENTS.md": "agents.md\n",
+    "CLAUDE.md": "claude.md file\n",
+    ".cursorrules": "cursor rules file\n",
 }
 
 
@@ -201,14 +202,27 @@ def test_hermes_loads_only_the_first_kind_of_project_context(
     )
 
 
+def test_hermes_reads_hermes_md_without_a_dot_hermes_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"HERMES.md": "upper case\n", "AGENTS.md": "agents\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("upper case\n"), 1)
+
+
 def test_hermes_skips_an_empty_file_but_an_empty_hermes_md_hides_hermes_md(
     tmp_path: Path,
 ) -> None:
+    # The first of .hermes.md and HERMES.md that exists is the only candidate of
+    # its kind: an empty .hermes.md skips the kind, and AGENTS.md loads.
     home, project = tmp_path / "home", tmp_path / "project"
     home.mkdir()
-    _write(project, {".hermes.md": " \n", "HERMES.md": "hidden\n", "AGENTS.md": "a\n"})
+    _write(
+        project,
+        {".hermes.md": " \n", "HERMES.md": "hidden file\n", "AGENTS.md": "agents\n"},
+    )
 
-    assert cm.measure_surfaces("hermes", home, project) == (_size("a\n"), 1)
+    assert cm.measure_surfaces("hermes", home, project) == (_size("agents\n"), 1)
 
 
 def test_hermes_takes_agents_override_md_before_agents_md(tmp_path: Path) -> None:
@@ -217,6 +231,47 @@ def test_hermes_takes_agents_override_md_before_agents_md(tmp_path: Path) -> Non
     _write(project, {"AGENTS.override.md": "override\n", "AGENTS.md": "base\n"})
 
     assert cm.measure_surfaces("hermes", home, project) == (_size("override\n"), 1)
+
+
+def test_hermes_skips_an_empty_agents_override_md(tmp_path: Path) -> None:
+    # Unlike Codex, Hermes takes the first non-empty name in a folder.
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"AGENTS.override.md": "", "AGENTS.md": "agents\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("agents\n"), 1)
+
+
+@pytest.mark.parametrize("name", ["agents.md", "claude.md"])
+def test_hermes_reads_the_lowercase_names(tmp_path: Path, name: str) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {name: "lower case\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("lower case\n"), 1)
+
+
+def test_hermes_skips_an_empty_claude_md_for_a_lowercase_claude_md(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"CLAUDE.md": ""})
+    if (project / "claude.md").exists():
+        pytest.skip("this file system does not tell CLAUDE.md and claude.md apart")
+    _write(project, {"claude.md": "lower case\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("lower case\n"), 1)
+
+
+def test_hermes_reads_cursor_rules_only_at_the_top_of_their_folder(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {".cursor/rules/a.mdc": "aa\n", ".cursor/rules/sub/b.mdc": "bbb\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("aa\n"), 1)
 
 
 def test_hermes_loads_every_cursor_rules_file_together(tmp_path: Path) -> None:
@@ -285,19 +340,50 @@ def test_codex_reads_fallback_names_and_the_byte_limit_from_config_toml(
         {
             ".codex/config.toml": (
                 'project_doc_fallback_filenames = ["../x.md", "TEAM_GUIDE.md"]\n'
-                "project_doc_max_bytes = 4\n"
+                "project_doc_max_bytes = 25\n"
             ),
-            ".codex/AGENTS.md": "global, not capped\n",
+            ".codex/AGENTS.md": "global file, longer than the limit\n",
         },
     )
-    # A fallback entry that is not a plain file name is ignored.
+    # A fallback entry that is not a plain file name is ignored, so the 20-byte
+    # file outside the project does not count; TEAM_GUIDE.md is capped at 25 and
+    # the global file is not capped.
     _write(tmp_path, {"x.md": "outside the project\n"})
-    _write(project, {"TEAM_GUIDE.md": "team guide\n"})
+    _write(project, {"TEAM_GUIDE.md": "team guide, longer than the limit\n"})
 
     assert cm.measure_surfaces("codex", home, project) == (
-        _size("global, not capped\n") + 4,
+        _size("global file, longer than the limit\n") + 25,
         2,
     )
+
+
+@_needs_tomllib
+def test_codex_reads_no_project_file_when_the_limit_is_zero(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home,
+        {
+            ".codex/config.toml": "project_doc_max_bytes = 0\n",
+            ".codex/AGENTS.md": "global\n",
+        },
+    )
+    _write(project, {"AGENTS.md": "project\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (_size("global\n"), 1)
+
+
+def test_codex_reports_an_unreadable_config_as_an_error_for_its_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without tomllib (Python 3.10), collect() records a null for Codex, as it
+    # does for any RuntimeError, instead of ending the whole run.
+    monkeypatch.setitem(sys.modules, "tomllib", None)
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".codex/config.toml": "project_doc_max_bytes = 4\n"})
+    project.mkdir()
+
+    with pytest.raises(RuntimeError, match=r"needs Python 3\.11\+"):
+        cm.measure_surfaces("codex", home, project)
 
 
 def test_codex_caps_project_files_at_32_kib_by_default(tmp_path: Path) -> None:

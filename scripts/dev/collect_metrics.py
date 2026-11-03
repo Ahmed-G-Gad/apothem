@@ -308,10 +308,10 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
     ),
     "hermes": (
         "~/.hermes/SOUL.md, plus the first of these kinds in the project with a "
-        "non-empty file (Hermes loads one): .hermes.md or HERMES.md, "
-        "AGENTS.override.md or AGENTS.md, CLAUDE.md, then .cursorrules with every "
-        ".cursor/rules/*.mdc. The Apothem support tree and apothem/rules/ are not "
-        "launch surfaces.",
+        "non-empty file (Hermes loads one): .hermes.md or HERMES.md (the first of "
+        "the two that exists is the only candidate), AGENTS.override.md or "
+        "AGENTS.md, CLAUDE.md, then .cursorrules with every .cursor/rules/*.mdc. "
+        "The Apothem support tree and apothem/rules/ are not launch surfaces.",
         (_home(".hermes/SOUL.md"),),
     ),
     "kimi-code": (
@@ -499,6 +499,10 @@ def _codex_project_doc_settings(home: Path) -> tuple[list[str], int]:
             data = _load_toml(config)
         except ValueError:  # tomllib.TOMLDecodeError
             data = {}
+        except SystemExit as exc:
+            # Python 3.10 has no tomllib. collect() records a RuntimeError as a
+            # null for this harness instead of ending the whole run.
+            raise RuntimeError(str(exc)) from exc
         fallbacks = data.get("project_doc_fallback_filenames")
         if isinstance(fallbacks, list):
             # Codex ignores an entry that is not a plain file name.
