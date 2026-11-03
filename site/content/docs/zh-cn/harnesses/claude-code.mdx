@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ apothem install --harness claude-code
 
 **写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
 
-`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 也会加载 `~/.claude/CLAUDE.md`，而 Devin Desktop 默认会导入它，因此该区块不把任何单一工具指定为其读者。
+`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 1 也会加载 `~/.claude/CLAUDE.md`（OpenCode 2 没有 `CLAUDE.md` 回退），而 Devin Desktop 默认会导入它，因此该区块不把任何单一工具指定为其读者。
 
 ## 配置档案到原生配置的映射
 
@@ -71,7 +71,7 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 
 命令提示词被转换为技能目录，规则按上文所述进行渲染；技能和输出样式按原样复制，智能体也按原样复制，但配置档案的 `agent_mcp_servers` 键所列出的辅助程序会在其 `tools` 行中为每个指定的服务器增加一个 `mcp__<server>__*` 条目（参见 [MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
 
-`~/.claude/agents/` 是一个由 `Claude Code` 拥有的共享根目录，`~/.claude/skills/` 也是：其他受支持的工具会加载这些文件夹，因此 `Claude Code` 安装写入其中的智能体和技能也会出现在这些工具中，安装会打印一条指出这些工具的说明。[工具注册表](/docs/reference/harness-registry)列出了每个根目录的读取者。
+`~/.claude/agents/` 是一个由 `Claude Code` 拥有的共享根目录，`~/.claude/skills/` 和 `~/.claude/CLAUDE.md` 也是：其他受支持的工具会加载它们，因此 `Claude Code` 安装写入其中的智能体、技能和 Apothem 区块也会出现在这些工具中，安装会打印一条指出这些工具的说明。[工具注册表](/docs/reference/harness-registry)列出了每个根目录的读取者。
 
 Claude Code 在每次会话启动时应用 settings.json 中的所有钩子绑定。每个适配器都针对其自身的原生工具进行验证——不存在享有特权的“参考”工具。
 

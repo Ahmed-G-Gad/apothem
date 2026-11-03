@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,9 +42,10 @@ Apothem ब्लॉक, `agents/`, `rules/`, `skills/`, `statuslines/`, `output
 `~/.claude/rules/apothem-rule-index.md`, की ओर भी इशारा करता है। Apothem शासन सतह
 का शेष भाग प्रसारित `rules/` वृक्ष और SessionStart हुक के माध्यम से Claude Code तक
 पहुँचता है। जब कोई
-`~/.config/opencode/AGENTS.md` मौजूद नहीं होती, तब OpenCode भी
-`~/.claude/CLAUDE.md` लोड करता है, और Devin Desktop इसे डिफ़ॉल्ट रूप से आयात करता
-है, इसलिए यह ब्लॉक किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता।
+`~/.config/opencode/AGENTS.md` मौजूद नहीं होती, तब OpenCode 1 भी
+`~/.claude/CLAUDE.md` लोड करता है (OpenCode 2 में `CLAUDE.md` फ़ॉलबैक नहीं है),
+और Devin Desktop इसे डिफ़ॉल्ट रूप से आयात करता है, इसलिए यह ब्लॉक किसी एक टूल को
+अपने पाठक के रूप में नामित नहीं करता।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
@@ -182,9 +183,9 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 `claude mcp add` से पंजीकृत करें ([MCP सर्वर](/docs/reference/mcp) देखें)।
 
 `~/.claude/agents/` एक साझा रूट है जिसका स्वामी `Claude Code` है, जैसे
-`~/.claude/skills/` भी: अन्य समर्थित टूल उन फ़ोल्डरों को लोड करते हैं, इसलिए
-`Claude Code` इंस्टॉल वहाँ जो एजेंट और स्किल लिखता है वे उन टूल्स में भी दिखाई देते
-हैं, और इंस्टॉल एक नोट प्रिंट करता है जो उनके नाम बताता है।
+`~/.claude/skills/` और `~/.claude/CLAUDE.md` भी: अन्य समर्थित टूल उन्हें लोड करते हैं,
+इसलिए `Claude Code` इंस्टॉल वहाँ जो एजेंट, स्किल और Apothem ब्लॉक लिखता है वे उन टूल्स
+में भी दिखाई देते हैं, और इंस्टॉल एक नोट प्रिंट करता है जो उनके नाम बताता है।
 [हार्नेस रजिस्ट्री](/docs/reference/harness-registry) हर रूट के पाठकों को
 सूचीबद्ध करती है।
 

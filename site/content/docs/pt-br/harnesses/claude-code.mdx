@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de harness do Apothem para o Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,10 @@ regras, skills e agentes instalados é resolvida: `rules/<name>.md` sob
 `conformity/...` sob `~/.claude/.apothem/support/`. Ela também aponta para o
 índice de regras, `~/.claude/rules/apothem-rule-index.md`. O restante da
 superfície de governança do Apothem chega ao Claude Code pela árvore `rules/`
-propagada e pelo hook SessionStart. O OpenCode também carrega `~/.claude/CLAUDE.md` quando não
-existe nenhum `~/.config/opencode/AGENTS.md`, e o Devin Desktop importa esse
-arquivo por padrão, então o bloco não nomeia nenhuma ferramenta específica como
-seu leitor.
+propagada e pelo hook SessionStart. O OpenCode 1 também carrega `~/.claude/CLAUDE.md` quando não
+existe nenhum `~/.config/opencode/AGENTS.md` (o OpenCode 2 não usa `CLAUDE.md` como
+alternativa), e o Devin Desktop importa esse arquivo por padrão, então o bloco não
+nomeia nenhuma ferramenta específica como seu leitor.
 
 ## Mapeamento do perfil para a configuração nativa
 
@@ -216,9 +216,9 @@ servidores com `claude mcp add` (consulte
 [Servidores MCP](/docs/reference/mcp)).
 
 `~/.claude/agents/` é uma raiz compartilhada que pertence ao `Claude Code`, assim como
-`~/.claude/skills/`: outras ferramentas suportadas carregam essas pastas, então os agentes e
-as skills que uma instalação do `Claude Code` grava ali também aparecem nessas ferramentas, e
-a instalação exibe uma nota que as nomeia. O
+`~/.claude/skills/` e `~/.claude/CLAUDE.md`: outras ferramentas suportadas carregam esses
+caminhos, então os agentes, as skills e o bloco do Apothem que uma instalação do `Claude Code`
+grava ali também aparecem nessas ferramentas, e a instalação exibe uma nota que as nomeia. O
 [registro de harnesses](/docs/reference/harness-registry) lista os leitores de cada
 raiz.
 

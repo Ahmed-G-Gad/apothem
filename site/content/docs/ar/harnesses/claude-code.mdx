@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,8 +42,9 @@ apothem install --harness claude-code
 <bdi>`~/.claude/.apothem/support/`</bdi>. ويشير أيضًا إلى فهرس القواعد،
 <bdi>`~/.claude/rules/apothem-rule-index.md`</bdi>. ويصل بقية سطح حوكمة <bdi>Apothem</bdi> إلى
 <bdi>Claude Code</bdi> عبر شجرة <bdi>`rules/`</bdi> المُنتشِرة وخطّاف
-<bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> أيضًا
-<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>،
+<bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> 1 أيضًا
+<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>
+(ولا يرجع <bdi>OpenCode</bdi> 2 احتياطيًا إلى <bdi>`CLAUDE.md`</bdi>)،
 ويستورده <bdi>Devin Desktop</bdi> افتراضيًا، لذا لا تُسمّي الكتلة أداة واحدة بعينها
 قارئًا لها.
 
@@ -180,8 +181,9 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 [خوادم <bdi>MCP</bdi>](/docs/reference/mcp)).
 
 <bdi>`~/.claude/agents/`</bdi> جذر مشترك يملكه <bdi>`Claude Code`</bdi>، وكذلك
-<bdi>`~/.claude/skills/`</bdi>: فأدوات مدعومة أخرى تُحمِّل هذين المجلّدين، لذا تظهر العوامل
-والمهارات التي يكتبها تثبيت <bdi>`Claude Code`</bdi> هناك في تلك الأدوات أيضًا، ويطبع
+<bdi>`~/.claude/skills/`</bdi> و<bdi>`~/.claude/CLAUDE.md`</bdi>: فأدوات مدعومة أخرى تُحمِّلها،
+لذا تظهر العوامل والمهارات وكتلة <bdi>Apothem</bdi> التي يكتبها تثبيت <bdi>`Claude Code`</bdi>
+هناك في تلك الأدوات أيضًا، ويطبع
 التثبيت ملاحظة تسمّيها. ويسرد
 [سجلّ أُطُر العمل](/docs/reference/harness-registry) قرّاء كل
 جذر.

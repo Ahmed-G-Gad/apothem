@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,19 +42,35 @@ yang menunjuk ke sana, sehingga instalasi Hermes tidak menambahkan aturan atau
 hook Apothem.
 
 Hermes memang memuat blok Apothem yang ditulis instalasi lain ke dalam berkas
-proyek yang dibacanya. Hermes memuat satu jenis konteks proyek per sesi, yaitu
-yang pertama ditemukannya, sehingga setiap berkas berikut hanya sampai ke Hermes
-jika syarat yang tertera di sebelahnya terpenuhi:
+proyek yang dibacanya. Hermes memuat satu jenis konteks proyek per sesi: jenis
+pertama yang memiliki berkas tidak kosong, dengan urutan `.hermes.md` atau
+`HERMES.md`, berkas `AGENTS.md` (di setiap folder, `AGENTS.override.md` yang
+tidak kosong menggantikan `AGENTS.md` di sebelahnya), `CLAUDE.md`, lalu berkas
+aturan editor lain. Karena itu setiap berkas berikut hanya sampai ke Hermes jika
+syarat yang tertera di sebelahnya terpenuhi:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Instalasi Apothem untuk Kimi Code menulis berkas pertama, dan instalasi untuk
-editor lain menulis berkas kedua. Instalasi dengan `--project` menyebutkan
+Hermes mencari `.hermes.md` dan `HERMES.md` dari folder tempat ia dimulai hingga
+root git, dan membaca berkas `AGENTS.md` dari root git ke bawah, sehingga
+berkas semacam itu di folder di atas proyek juga dihitung. Berkas kosong tidak
+dihitung. `.hermes.md` yang kosong juga menyembunyikan `HERMES.md` di
+sebelahnya, sehingga Hermes berpindah ke berkas `AGENTS.md` meskipun `HERMES.md`
+itu berisi teks. Syarat-syarat ini berlaku untuk sesi yang dimulai di proyek.
+Sesi yang dimulai di folder di atas proyek tetap dapat memuat
+`<project>/AGENTS.md`, atau `AGENTS.override.md` yang tidak kosong di
+sebelahnya, saat sesi itu pertama kali mengerjakan sebuah berkas di proyek, apa
+pun `.hermes.md` atau `HERMES.md` yang dimiliki proyek. Hermes melewati hal ini
+di folder home dan di beberapa folder kontainer.
+
+Instalasi Apothem untuk [Kimi Code](/docs/harnesses/kimi-code) menulis berkas
+pertama, dan [instalasi untuk editor lain](/docs/harnesses/cursor) menulis
+berkas kedua. Instalasi Hermes yang dijalankan dengan `--project` menyebutkan
 berkas semacam itu serta instalasi yang menulisnya.
 
 **Bentrok nama.** Hermes mendokumentasikan urutan prioritas skill berikut:

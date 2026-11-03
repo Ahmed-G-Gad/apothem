@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,8 +41,9 @@ instalados: `rules/<name>.md` bajo `~/.claude/rules/`, y `templates/...`,
 `schemas/...`, `hooks/...` y `conformity/...` bajo `~/.claude/.apothem/support/`.
 También apunta al índice de reglas, `~/.claude/rules/apothem-rule-index.md`.
 El resto de la superficie de gobernanza de Apothem llega a Claude Code a través
-del árbol `rules/` propagado y del hook SessionStart. OpenCode también carga
-`~/.claude/CLAUDE.md` cuando no existe `~/.config/opencode/AGENTS.md`, y
+del árbol `rules/` propagado y del hook SessionStart. OpenCode 1 también carga
+`~/.claude/CLAUDE.md` cuando no existe `~/.config/opencode/AGENTS.md` (OpenCode 2
+no tiene `CLAUDE.md` como alternativa), y
 Devin Desktop lo importa por defecto, así que el bloque no nombra ninguna
 herramienta concreta como su lector.
 
@@ -189,8 +190,9 @@ servidor MCP: registra los servidores con `claude mcp add` (consulta
 [Servidores MCP](/docs/reference/mcp)).
 
 `~/.claude/agents/` es una raíz compartida que posee `Claude Code`, igual que
-`~/.claude/skills/`: otras herramientas compatibles cargan esas carpetas, así que
-los agentes y las skills que una instalación de `Claude Code` escribe allí
+`~/.claude/skills/` y `~/.claude/CLAUDE.md`: otras herramientas compatibles
+cargan esas rutas, así que los agentes, las skills y el bloque de Apothem que una
+instalación de `Claude Code` escribe allí
 aparecen también en esas herramientas, y la instalación imprime una nota que las
 nombra. El [registro de entornos](/docs/reference/harness-registry) lista los
 lectores de cada raíz.

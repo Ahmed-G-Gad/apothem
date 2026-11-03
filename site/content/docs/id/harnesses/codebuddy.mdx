@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adapter harness Apothem untuk Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "ad1685e4b265a2d7"
+sourceHash: "fbf19289d20e8ab7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -234,7 +234,9 @@ Adapter memang menulis subagent dan dua hook ke proyek (lihat
 sebagai skill, ke folder pengguna Anda (lihat
 [Berkas di luar proyek](#berkas-di-luar-proyek)). Ketika sebuah proyek tidak memiliki `CODEBUDDY.md`,
 CodeBuddy Code membaca `AGENTS.md` sebagai memori proyek, sehingga
-`AGENTS.md` yang ditulis adapter lain juga menjangkau CodeBuddy. Konvensi permukaan vendor yang
+`AGENTS.md` yang ditulis adapter lain juga menjangkau CodeBuddy, dan catatan
+pemasangan adapter itu menyebut CodeBuddy beserta syarat ini.
+Konvensi permukaan vendor yang
 menjadi sandaran adapter dipatok di
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, yang di-snapshot
 terhadap dokumentasi CodeBuddy yang berlaku.

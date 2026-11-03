@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,10 +41,11 @@ dan agen yang terpasang di-resolve: `rules/<name>.md` di bawah
 `conformity/...` di bawah `~/.claude/.apothem/support/`. Bagian itu juga
 menunjuk ke indeks aturan, `~/.claude/rules/apothem-rule-index.md`. Bagian lain
 dari permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/`
-yang dipropagasikan dan hook SessionStart. OpenCode juga memuat
-`~/.claude/CLAUDE.md` ketika tidak ada `~/.config/opencode/AGENTS.md`, dan
-Devin Desktop mengimpornya secara default, sehingga blok tersebut tidak menyebut
-satu alat pun sebagai pembacanya.
+yang dipropagasikan dan hook SessionStart. OpenCode 1 juga memuat
+`~/.claude/CLAUDE.md` ketika tidak ada `~/.config/opencode/AGENTS.md`
+(OpenCode 2 tidak memiliki fallback `CLAUDE.md`), dan Devin Desktop
+mengimpornya secara default, sehingga blok tersebut tidak menyebut satu alat
+pun sebagai pembacanya.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -188,10 +189,10 @@ tidak menulis entri server MCP apa pun: daftarkan server dengan
 `claude mcp add` (lihat [Server MCP](/docs/reference/mcp)).
 
 `~/.claude/agents/` adalah direktori akar bersama yang dimiliki `Claude Code`,
-demikian pula `~/.claude/skills/`: alat lain yang didukung memuat folder-folder
-itu, sehingga agen dan skill yang ditulis instalasi `Claude Code` di sana juga
-muncul di alat-alat tersebut, dan instalasi mencetak catatan yang menyebutkan
-alat-alat itu.
+demikian pula `~/.claude/skills/` dan `~/.claude/CLAUDE.md`: alat lain yang
+didukung memuat jalur-jalur itu, sehingga agen, skill, dan blok Apothem yang ditulis
+instalasi `Claude Code` di sana juga muncul di alat-alat tersebut, dan
+instalasi mencetak catatan yang menyebutkan alat-alat itu.
 [Registri harness](/docs/reference/harness-registry) mencantumkan pembaca
 setiap direktori akar.
 

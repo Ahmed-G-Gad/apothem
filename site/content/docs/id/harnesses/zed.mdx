@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "bb9a957eaf1e1a01"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -96,6 +96,13 @@ Ketika `.rules` hanya berisi blok Apothem dan sebuah berkas berprioritas lebih
 rendah berisi teks Anda, install dan update mencetak peringatan yang menyebutkan
 berkas yang tersembunyi; salin instruksi yang Anda perlukan ke dalam `.rules` di
 luar blok Apothem agar instruksi tersebut tetap terbaca di Zed.
+
+Catatan yang dicetak instalasi Apothem lain ketika menulis `AGENTS.md` atau
+berkas lain yang lebih rendah dalam daftar menyebut Zed sebagai pembaca hanya
+dengan satu syarat: Zed memuat berkas itu hanya ketika proyek tidak memiliki
+satu pun berkas di atasnya dalam daftar. Instalasi ini menulis `.rules`, sehingga
+di proyek tempat instalasi ini dijalankan, catatan tersebut berlaku bagi Zed
+hanya setelah `.rules` dihapus.
 
 Berkas instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
 (`.zed/settings.json` `context_servers`) dimiliki operator; Apothem tidak

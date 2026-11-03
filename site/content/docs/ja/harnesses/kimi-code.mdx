@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,6 +21,9 @@ apothem install --harness kimi-code --project /path/to/project
 スキルと、スキルとしてラップされたコマンドを、Kimi Code のネイティブなプロジェクトスキルディレクトリである `<project>/.kimi-code/skills/` にインストールし、Apothem のヘルパーを Kimi Code サブエージェントとして `<project>/.kimi-code/agents/` にインストールします（[サブエージェント](#サブエージェント)を参照）。
 その他のコホートは、`<project>/.kimi-code/.apothem/support/` にある Apothem 所有のサポートツリー配下にとどまります。
 プロジェクトの `AGENTS.md` は Kimi Code 以外にも多くのコーディングツールに読み込まれるため、このブロックは、単一のツールを読み手として名指ししない、プロジェクト全体のガイダンスとして書かれます。
+それらのツールの一部は、一部のプロジェクトでしかこれを読み込みません。
+たとえば、プロジェクトにそのツール独自の命令ファイルがない場合にだけ読み込みます。
+インストールのメモは、そのようなツールそれぞれを、その条件を添えて挙げます（[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)がそれらを一覧にしています）。
 
 Kimi Code は、汎用的な AGENTS.md 規約に従ってプロジェクトルートの `AGENTS.md` 命令ファイルを読み込み、プロジェクト設定は `<project>/.kimi-code/` 配下に置かれます。
 Kimi Code は、作業ディレクトリから上方向に探索して `.git` を含む最も近いディレクトリをプロジェクトルートとみなすため、`--project` にはリポジトリのルートを渡してください。

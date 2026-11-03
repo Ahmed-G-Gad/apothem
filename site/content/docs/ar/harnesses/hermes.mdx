@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,18 +41,33 @@ apothem install --harness hermes
 تثبيت <bdi>Hermes</bdi> قواعد <bdi>Apothem</bdi> ولا خطّافاته.
 
 يُحمِّل <bdi>Hermes</bdi> بالفعل كتلة <bdi>Apothem</bdi> التي يكتبها تثبيت آخر في ملف مشروع
-يقرؤه. ويُحمِّل نوعًا واحدًا من سياق المشروع في كل جلسة، هو أول ما يجده، لذا لا يصل
+يقرؤه. ويُحمِّل نوعًا واحدًا من سياق المشروع في كل جلسة: هو أول نوع يوجد فيه ملف غير فارغ،
+وفق الترتيب <bdi>`.hermes.md`</bdi> أو <bdi>`HERMES.md`</bdi>، ثم ملفات <bdi>`AGENTS.md`</bdi>
+(وفي كل مجلّد يحلّ ملف <bdi>`AGENTS.override.md`</bdi> غير الفارغ محلّ <bdi>`AGENTS.md`</bdi>
+الذي بجانبه)، ثم <bdi>`CLAUDE.md`</bdi>، ثم ملفات قواعد محرّر آخر. لذا لا يصل
 كل ملف من هذه الملفات إلى <bdi>Hermes</bdi> إلا بالشرط المذكور بجانبه:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-يكتب تثبيت <bdi>Apothem</bdi> لـ <bdi>Kimi Code</bdi> الملف الأول، ويكتب التثبيت لمحرّر آخر الملف
-الثاني. ويُسمّي أيُّ تثبيت مع <bdi>`--project`</bdi> ملفًا من هذا النوع والتثبيت الذي كتبه.
+يبحث <bdi>Hermes</bdi> عن <bdi>`.hermes.md`</bdi> و<bdi>`HERMES.md`</bdi> من المجلّد الذي يبدأ
+فيه صعودًا إلى جذر المستودع، ويقرأ ملفات <bdi>`AGENTS.md`</bdi> من جذر المستودع نزولًا،
+لذا يُعتدّ أيضًا بملف من هذا النوع في مجلّد أعلى المشروع. ولا يُعتدّ بالملف الفارغ.
+ويحجب <bdi>`.hermes.md`</bdi> الفارغ أيضًا ملف <bdi>`HERMES.md`</bdi> الذي بجانبه، لذا ينتقل
+<bdi>Hermes</bdi> إلى ملفات <bdi>`AGENTS.md`</bdi> حتى وإن احتوى ذلك <bdi>`HERMES.md`</bdi> على نص.
+وتنطبق هذه الشروط على جلسة تبدأ في المشروع. أمّا الجلسة التي تبدأ في مجلّد أعلى منه
+فيمكنها مع ذلك أن تُحمِّل <bdi>`<project>/AGENTS.md`</bdi>، أو ملف <bdi>`AGENTS.override.md`</bdi>
+غير الفارغ الذي بجانبه، أول مرة تعمل فيها على ملف في المشروع، أيًّا كان ملف
+<bdi>`.hermes.md`</bdi> أو <bdi>`HERMES.md`</bdi> الموجود في المشروع. ويتخطّى <bdi>Hermes</bdi> ذلك في
+الدليل المنزلي وفي بضعة مجلّدات خاصة بالحاويات.
+
+يكتب تثبيت <bdi>Apothem</bdi> لـ [<bdi>Kimi Code</bdi>](/docs/harnesses/kimi-code) الملف الأول، ويكتب
+[التثبيت لمحرّر آخر](/docs/harnesses/cursor) الملف الثاني. ويُسمّي تثبيت <bdi>Hermes</bdi> المُشغَّل مع
+<bdi>`--project`</bdi> ملفًا من هذا النوع والتثبيت الذي كتبه.
 
 **تعارض الأسماء.** يوثّق <bdi>Hermes</bdi> ترتيب الأسبقية التالي للمهارات: مهارات
 المشروع (<bdi>`<project>/.hermes/skills/`</bdi> و<bdi>`<project>/.agents/skills/`</bdi>)،

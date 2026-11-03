@@ -2,7 +2,7 @@
 title: "Registre des environnements"
 description: "Référence technique du registre des adaptateurs d'environnement intégrés d'Apothem."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "8f95b9776a673bbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -133,16 +133,50 @@ qui leur est propre (`~/.codebuddy/skills/`, `~/.kiro/skills/` et
 partagée.
 
 Un lecteur n'est listé que là où sa documentation éditeur montre un chargement
-par défaut de ce chemin exact. Le registre consigne trois conditions, et la note
-d'installation répète chacune d'elles. `Open-Claw` n'indexe `~/.agents/skills/`
+par défaut de ce chemin exact. Lorsqu'un lecteur ne charge un chemin que dans
+certains cas, le registre consigne la condition, et la note d'installation la
+répète. `Open-Claw` n'indexe `~/.agents/skills/`
 que sous son répertoire d'état par défaut (il ignore le dossier lorsque
-`OPENCLAW_STATE_DIR` pointe ailleurs). `Hermes` charge un seul type de contexte
-de projet par session ; la première correspondance l'emporte, dans l'ordre
-`.hermes.md` ou `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, puis les règles de
+`OPENCLAW_STATE_DIR` pointe ailleurs). `OpenCode` 1 ne charge
+`~/.claude/CLAUDE.md` que lorsqu'aucun `~/.config/opencode/AGENTS.md` n'existe,
+et l'ignore lorsque `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` ou
+`OPENCODE_DISABLE_CLAUDE_CODE=1` est défini. `OpenCode` 2 lit la même
+configuration `~/.config/opencode/` mais n'a pas de repli sur `CLAUDE.md` ; il
+ne charge donc pas `~/.claude/CLAUDE.md`. `Codex` prend le premier de
+`AGENTS.override.md` et `AGENTS.md` dans chaque dossier ; il ne charge donc
+`<project>/AGENTS.md` que lorsqu'aucun `AGENTS.override.md` ne se trouve à côté.
+`CodeBuddy` utilise `<project>/AGENTS.md` comme mémoire de projet uniquement
+lorsque le projet n'a pas de `CODEBUDDY.md`. `Zed` ne charge que le premier
+fichier d'instructions de projet de sa liste : `.rules`, `.cursorrules`,
+`.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
+`AGENTS.md`, `CLAUDE.md`, puis `GEMINI.md`. Il ne charge donc
+`<project>/.github/copilot-instructions.md`, `<project>/AGENTS.md` et
+`<project>/GEMINI.md` que lorsque le projet n'a aucun des fichiers qui
+précèdent celui-ci dans la liste. L'installation `Zed` écrit `<project>/.rules`,
+le premier fichier de la liste, de sorte que `Zed` ne charge aucun des trois
+dans un projet où il a été installé.
+
+`Hermes` charge un seul type de contexte de projet par session : le premier type
+qui possède un fichier non vide, dans l'ordre `.hermes.md` ou `HERMES.md`, la
+chaîne des `AGENTS.md` (dans chaque dossier, un `AGENTS.override.md` non vide
+remplace le `AGENTS.md` qui se trouve à côté), `CLAUDE.md`, puis les règles de
 `Cursor`. Il ne charge donc `<project>/AGENTS.md` que lorsque le projet n'a ni
 `.hermes.md` ni `HERMES.md` et qu'aucun `AGENTS.override.md` ne se trouve à
 côté, et `<project>/.cursor/rules/apothem-rules.mdc` que lorsque le projet n'a
-ni `.hermes.md`, ni `AGENTS.md`, ni `CLAUDE.md`.
+ni `.hermes.md`, ni `HERMES.md`, ni `AGENTS.override.md`, ni `AGENTS.md`, ni
+`CLAUDE.md`. `Hermes` cherche `.hermes.md` et `HERMES.md` depuis le dossier où il
+démarre jusqu'à la racine du dépôt, et lit la chaîne des `AGENTS.md` depuis la
+racine du dépôt vers le bas, de sorte qu'un tel fichier situé dans un dossier
+au-dessus du projet compte aussi. Un fichier vide ne compte pas. Un `.hermes.md`
+vide masque aussi un `HERMES.md` qui se trouve à côté, si bien que `Hermes`
+passe à la chaîne des `AGENTS.md` même lorsque ce `HERMES.md` contient du texte.
+Ces conditions s'appliquent à une session démarrée dans le projet. Une session
+démarrée dans un dossier au-dessus du projet peut quand même charger
+`<project>/AGENTS.md`, ou un `AGENTS.override.md` non vide qui se trouve à
+côté, la première fois qu'elle travaille sur un fichier du projet, quel que soit
+le `.hermes.md` ou le `HERMES.md` que contient le projet. `Hermes` ignore cela
+dans un répertoire personnel et dans quelques dossiers de conteneurs.
+
 La documentation de `Cursor` liste
 `~/.codex/agents/` comme dossier de compatibilité `Codex` mais ne dit pas
 quels formats de fichier `Cursor` y analyse, et une installation `Codex` écrit

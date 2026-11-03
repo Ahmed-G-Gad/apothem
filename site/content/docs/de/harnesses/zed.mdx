@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Apothem-Harness-Adapter für Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "bb9a957eaf1e1a01"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -99,6 +99,13 @@ niedrigerer Priorität Ihren Text enthält, geben Installation und Aktualisierun
 eine Warnung aus, die die verdeckte Datei nennt; kopieren Sie die Anweisungen,
 die Sie benötigen, außerhalb des Apothem-Blocks in `.rules`, damit sie in Zed
 erhalten bleiben.
+
+Die Hinweise, die andere Apothem-Installationen ausgeben, wenn sie `AGENTS.md`
+oder eine andere weiter unten in der Liste stehende Datei schreiben, nennen Zed
+nur unter einer Bedingung als Leser: Zed lädt diese Datei nur, wenn das Projekt
+keine der Dateien weiter oben in der Liste hat. Diese Installation schreibt
+`.rules`, daher gelten diese Hinweise in einem Projekt, in dem sie lief, erst
+für Zed, nachdem `.rules` entfernt wurde.
 
 Die globale Anweisungsdatei `~/.config/zed/AGENTS.md` und der
 MCP-Context-Server-Block (`.zed/settings.json` `context_servers`) gehören dem

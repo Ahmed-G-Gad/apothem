@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Адаптер окружения Apothem для Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "3de145606f4598c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,8 +53,9 @@ Apothem, и дословно сохраняет каждую строку за �
 `~/.claude/.apothem/support/`. Он также указывает на индекс правил,
 `~/.claude/rules/apothem-rule-index.md`. Остальная часть поверхности управления
 Apothem достигает Claude Code через распространяемое дерево `rules/` и хук
-SessionStart. OpenCode также загружает `~/.claude/CLAUDE.md`, когда
-`~/.config/opencode/AGENTS.md` не существует, а Devin Desktop импортирует его
+SessionStart. OpenCode 1 также загружает `~/.claude/CLAUDE.md`, когда
+`~/.config/opencode/AGENTS.md` не существует (OpenCode 2 не использует
+`CLAUDE.md` как резервный вариант), а Devin Desktop импортирует его
 по умолчанию, поэтому блок не называет своим читателем ни один конкретный
 инструмент.
 
@@ -200,10 +201,10 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 (см. [Серверы MCP](/docs/reference/mcp)).
 
 `~/.claude/agents/` — общий корень, которым владеет `Claude Code`, как и
-`~/.claude/skills/`: другие поддерживаемые инструменты загружают эти папки,
-поэтому исполнители и навыки, которые установка `Claude Code` записывает туда,
-появляются и в этих инструментах, а установка выводит примечание с их
-названиями. В
+`~/.claude/skills/` и `~/.claude/CLAUDE.md`: другие поддерживаемые инструменты
+загружают их, поэтому исполнители, навыки и блок Apothem, которые установка
+`Claude Code` записывает туда, появляются и в этих инструментах, а установка
+выводит примечание с их названиями. В
 [реестре окружений](/docs/reference/harness-registry) перечислены читатели
 каждого корня.
 

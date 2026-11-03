@@ -2,7 +2,7 @@
 title: "Zed"
 description: "محوّل إطار عمل Apothem لـ Zed (إصدار عام)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "bb9a957eaf1e1a01"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -94,6 +94,11 @@ GEMINI.md
 <bdi>`.rules`</bdi> إلا على كتلة <bdi>Apothem</bdi> ويحتوي ملف أدنى أولوية على نصّك،
 يطبع التثبيت والتحديث تحذيرًا يُسمّي الملف المحجوب؛ انسخ التعليمات التي تحتاجها إلى
 <bdi>`.rules`</bdi> خارج كتلة <bdi>Apothem</bdi> لتُبقيها في <bdi>Zed</bdi>.
+
+الملاحظات التي تطبعها تثبيتات <bdi>Apothem</bdi> الأخرى حين تكتب <bdi>`AGENTS.md`</bdi> أو ملفًا آخر
+أدنى في القائمة لا تُسمّي <bdi>Zed</bdi> قارئًا إلا بشرط: لا يُحمِّل <bdi>Zed</bdi> ذلك الملف إلا حين
+لا يحتوي المشروع على أيٍّ من الملفات الأعلى منه في القائمة. ويكتب هذا التثبيت <bdi>`.rules`</bdi>،
+لذا لا تنطبق تلك الملاحظات على <bdi>Zed</bdi> في مشروع شُغِّل فيه إلا بعد إزالة <bdi>`.rules`</bdi>.
 
 ملف التعليمات العام <bdi>`~/.config/zed/AGENTS.md`</bdi> وكتلة خوادم سياق
 <bdi>MCP</bdi> (<bdi>`.zed/settings.json`</bdi> <bdi>`context_servers`</bdi>) يملكهما

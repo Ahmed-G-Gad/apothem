@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "适用于 Cursor（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "8ac335bb0406c162"
+sourceHash: "817b5e32ce317949"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -133,7 +133,7 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 Cursor 0.45+ 通过 `.cursor/rules/` 支持项目级指令。适配器默认写入项目级的 `.cursor/rules/` 目录；Cursor 没有可供此适配器管理的、有文档记载的基于文件的用户全局规则路径。
 
-[Devin Desktop](/docs/harnesses/windsurf) 也会加载此安装写入的规则文件。Devin Desktop 中的 Devin Local 默认导入 `.cursor/rules/*.mdc`，并让带有 `alwaysApply: true`（该文件的前置元数据就设置了它）的规则在每个会话中保持启用。[另有一个工具](/docs/harnesses/hermes)仅在项目既没有它专属的指令文件，也没有 `AGENTS.md` 或 `CLAUDE.md` 时，才把该文件作为其项目指令的最后回退来加载。因此，安装或卸载 `cursor` 也会改变这些工具所加载的内容，安装会打印一条说明，指出这两个工具并附上该条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。Apothem 区块不会把任何单一工具指定为其读者，但其中关于 `.cursor/agents/` 和 `.cursor/hooks.json` 的说法描述的是此安装，不适用于它们。若要阻止 Devin 加载它，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"cursor": false`；该键也会阻止 Devin 导入 Cursor 的 MCP 服务器。
+[Devin Desktop](/docs/harnesses/windsurf) 也会加载此安装写入的规则文件。Devin Desktop 中的 Devin Local 默认导入 `.cursor/rules/*.mdc`，并让带有 `alwaysApply: true`（该文件的前置元数据就设置了它）的规则在每个会话中保持启用。[另有一个工具](/docs/harnesses/hermes)仅在项目既没有它专属的指令文件，也没有 `AGENTS.override.md`、`AGENTS.md` 或 `CLAUDE.md` 时，才把该文件作为其项目指令的最后回退来加载。因此，安装或卸载 `cursor` 也会改变这些工具所加载的内容，安装会打印一条说明，指出这两个工具并附上该条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。Apothem 区块不会把任何单一工具指定为其读者，但其中关于 `.cursor/agents/` 和 `.cursor/hooks.json` 的说法描述的是此安装，不适用于它们。若要阻止 Devin 加载它，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"cursor": false`；该键也会阻止 Devin 导入 Cursor 的 MCP 服务器。
 
 Cursor 从 `~/.agents/skills/` 加载技能，因此安装写入的技能无需进一步设置即可出现在 Cursor 中。Cursor 也会加载 `~/.claude/skills/`，因此在同时装有 Claude Code 安装的机器上，它可能会将相同的技能名称列出两次，而它的文档没有说明哪一份副本优先。Apothem 尚未确认 Cursor 如何处理一个它未列出的 `SKILL.md` 头部键；这些技能带有 `user-invocable`、`disable-model-invocation`、`allowed-tools`、`argument-hint` 以及一个 `metadata` 映射。
 

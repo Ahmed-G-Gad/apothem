@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,16 +31,18 @@ apothem install --harness hermes
 
 预览版适配器。Hermes 通过 `skills.external_dirs` 加载 Apothem 技能，但不会自行加载支持树的其余部分或配置档案文档：`config.yaml` 中没有其他任何内容指向那里，因此 Hermes 安装不会添加任何 Apothem 的规则或钩子。
 
-Hermes 确实会加载由另一个安装写入它所读取的项目文件中的 Apothem 区块。它每个会话只加载一类项目上下文，即它找到的第一类，因此下列每个文件只有在其旁边所列的条件下才会到达 Hermes：
+Hermes 确实会加载由另一个安装写入它所读取的项目文件中的 Apothem 区块。它每个会话只加载一类项目上下文：第一类含有非空文件的上下文，顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md` 文件（在每个文件夹中，非空的 `AGENTS.override.md` 会取代其旁边的 `AGENTS.md`）、`CLAUDE.md`，然后是另一个编辑器的规则文件。因此，下列每个文件只有在其旁边所列的条件下才会到达 Hermes：
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Apothem 为 Kimi Code 安装时会写入第一个文件，为另一个编辑器安装时会写入第二个文件。带有 `--project` 的安装会指出这样的文件以及写入它的那次安装。
+Hermes 会从它启动所在的文件夹向上查找 `.hermes.md` 和 `HERMES.md`，直到仓库根目录，并从仓库根目录向下读取 `AGENTS.md` 文件，因此项目上层文件夹中的这类文件也会计入。空文件不计入。空的 `.hermes.md` 还会遮蔽其旁边的 `HERMES.md`，因此即使该 `HERMES.md` 有内容，Hermes 也会转而读取 `AGENTS.md` 文件。这些条件适用于在项目中启动的会话。在项目上层文件夹中启动的会话，仍可在首次处理项目中的某个文件时加载 `<project>/AGENTS.md`，或其旁边非空的 `AGENTS.override.md`，无论项目中有怎样的 `.hermes.md` 或 `HERMES.md`。Hermes 在主目录和少数容器文件夹中会跳过这一点。
+
+Apothem 为 [Kimi Code](/docs/harnesses/kimi-code) 安装时会写入第一个文件，[为另一个编辑器安装](/docs/harnesses/cursor)时会写入第二个文件。使用 `--project` 运行的 Hermes 安装会指出这样的文件以及写入它的那次安装。
 
 **名称冲突。** Hermes 为技能记载了以下优先顺序：项目的技能（`<project>/.hermes/skills/` 和 `<project>/.agents/skills/`），然后是 `~/.hermes/skills/`，然后是 `skills.create_dir`，然后是 `skills.external_dirs` 下列出的文件夹。Apothem 目录是一个 `external_dirs` 条目，因此它排在最后。所查阅的 Hermes 文档没有说明当两个位置存放着同名技能时 Hermes 会加载哪一份副本；Apothem 将该顺序理解为更早的位置胜出，因此可以预期你保存在更早位置中的同名技能会优先于 Apothem 副本。Apothem 只写入 `config.yaml` 以及 `~/.hermes/.apothem/support/` 之下，绝不写入那些更早的位置，因此安装、更新和卸载都不会替换你保存在那里的技能。
 

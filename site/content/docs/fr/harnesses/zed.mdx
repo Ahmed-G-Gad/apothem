@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptateur d'environnement Apothem pour Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "bb9a957eaf1e1a01"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -98,6 +98,13 @@ contient que le bloc Apothem et qu'un fichier de priorité inférieure contient
 votre texte, l'installation et la mise à jour affichent un avertissement qui
 nomme le fichier masqué ; copiez les instructions dont vous avez besoin dans
 `.rules`, hors du bloc Apothem, pour les conserver dans Zed.
+
+Les notes qu'affichent les autres installations d'Apothem lorsqu'elles écrivent
+`AGENTS.md` ou un autre fichier situé plus bas dans la liste ne nomment Zed
+comme lecteur que sous une condition : Zed ne charge ce fichier que lorsque le
+projet n'a aucun des fichiers situés au-dessus de lui dans la liste. Cette
+installation écrit `.rules` ; dans un projet où elle a été exécutée, ces notes
+ne s'appliquent donc à Zed qu'une fois `.rules` supprimé.
 
 Le fichier d'instructions global `~/.config/zed/AGENTS.md` et le bloc de
 serveurs de contexte MCP (`context_servers` de `.zed/settings.json`) sont

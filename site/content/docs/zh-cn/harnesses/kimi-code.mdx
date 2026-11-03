@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "适用于 Kimi Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "7baab16542cfcb94"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留）。它将技能以及包装为技能的命令安装到 Kimi Code 的原生项目技能目录 `<project>/.kimi-code/skills/` 中，并将 Apothem 的辅助器作为 Kimi Code 子代理安装到 `<project>/.kimi-code/agents/` 中（参见[子代理](#子代理)）。其他集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读者。
+适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留）。它将技能以及包装为技能的命令安装到 Kimi Code 的原生项目技能目录 `<project>/.kimi-code/skills/` 中，并将 Apothem 的辅助器作为 Kimi Code 子代理安装到 `<project>/.kimi-code/agents/` 中（参见[子代理](#子代理)）。其他集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读者。其中一些工具只在部分项目中加载它，例如只在项目没有它们自己的指令文件时加载，安装说明会指出每个这样的工具并附上其条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。
 
 Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` 指令文件，项目配置位于 `<project>/.kimi-code/` 下。Kimi Code 从工作目录向上搜索，将最近的包含 `.git` 的目录视为项目根目录，因此请将仓库根目录作为 `--project` 传入。`<project>/.kimi-code/mcp.json` 表面归操作者所有；Apothem 会指明它，但不编写任何条目。
 

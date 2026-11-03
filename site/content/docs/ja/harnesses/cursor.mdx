@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "8ac335bb0406c162"
+sourceHash: "817b5e32ce317949"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -166,7 +166,7 @@ Cursor 0.45+ は、`.cursor/rules/` を通じてプロジェクトレベルの�
 
 [Devin Desktop](/docs/harnesses/windsurf) も、このインストールが書き込むルールファイルを読み込みます。
 Devin Desktop 内の Devin Local は、`.cursor/rules/*.mdc` をデフォルトでインポートし、`alwaysApply: true` のルール（このファイルのフロントマターが設定しています）をすべてのセッションで有効に保ちます。
-[もう 1 つのツール](/docs/harnesses/hermes)は、プロジェクトにそのツール独自の命令ファイルがなく、`AGENTS.md` も `CLAUDE.md` もない場合にだけ、プロジェクトの命令の最後のフォールバックとしてこのファイルを読み込みます。
+[もう 1 つのツール](/docs/harnesses/hermes)は、プロジェクトにそのツール独自の命令ファイルがなく、`AGENTS.override.md` も `AGENTS.md` も `CLAUDE.md` もない場合にだけ、プロジェクトの命令の最後のフォールバックとしてこのファイルを読み込みます。
 そのため、`cursor` をインストールまたはアンインストールすると、それらのツールが読み込む内容も変わります。
 また、インストールでは、その条件を添えて両方を挙げるメモが表示されます（[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)がそれらを一覧にしています）。
 Apothem のブロックは、単一のツールを読み手として名指ししませんが、`.cursor/agents/` と `.cursor/hooks.json` についてそこに書かれている内容は、このインストールについて述べたものであり、それらのツールには当てはまりません。
