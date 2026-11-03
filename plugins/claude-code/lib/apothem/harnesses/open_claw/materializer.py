@@ -6,9 +6,9 @@ OpenClaw's user-global config file (``~/.openclaw/openclaw.json``) is JSON with
 a vendor schema that rejects unknown top-level keys. Apothem authors one key
 there: ``skills.load.extraDirs``, the documented list of extra skill
 directories (https://docs.openclaw.ai/tools/skills-config, retrieved
-2026-10-24), pointed at the support skills directory the install fills. It
-authors nothing else — it knows neither the operator's chosen skill names nor a
-file MCP surface — and the rest of the shared cohorts land as individual files
+2026-10-24, re-read 2026-11-03), pointed at the support skills directory the
+install fills. It authors nothing else — it knows neither the operator's chosen
+skill names nor the operator's MCP servers — and the rest of the shared cohorts land as individual files
 under the ``~/.openclaw/.apothem/support/`` support subtree instead (see
 ``materialize_native_config``).
 """
@@ -31,19 +31,22 @@ def materialize_native_config(profile: dict[str, Any]) -> str:
     """Render the open-claw native configuration from *profile*.
 
     Renders ``skills.load.extraDirs`` with one entry, :data:`SKILLS_DIRECTORY`.
-    OpenClaw reads that list at the lowest precedence of its skill sources, so
+    OpenClaw reads that list after the agent's other skill sources, so
     a skill the operator keeps in a workspace, ``~/.agents/skills`` or
     ``~/.openclaw/skills`` wins over an Apothem skill of the same name. The
     entry goes after the operator's own ``extraDirs`` entries and is the only
-    one an uninstall removes. ``agents.defaults.skills`` is a name allowlist the
-    operator owns and MCP is managed through the ``openclaw mcp`` CLI rather
-    than a config-file block, so Apothem authors neither. The shared cohorts
-    land as individual files under ``~/.openclaw/.apothem/support/`` (support
-    subtree). No managed-block profile document is projected: OpenClaw
-    auto-loads no instruction file, so there is nothing for a single document to
-    be wired into — the operator references the other cohorts through the
-    vendor's own mechanisms. Returns a JSON string ready to be written to
-    ``~/.openclaw/openclaw.json``.
+    one an uninstall removes. The ``agents.defaults.skills`` allowlist and the
+    ``agents.entries.<id>.skills`` lists are the operator's, and MCP servers
+    live in the ``mcp.servers`` block the operator manages with the
+    ``openclaw mcp`` CLI, so Apothem authors neither. The shared cohorts land as
+    individual files under ``~/.openclaw/.apothem/support/`` (support subtree),
+    and the profile's managed block goes to
+    ``~/.openclaw/apothem/rules/00-apothem-profile.md``, which OpenClaw does not
+    load. OpenClaw injects ``AGENTS.md`` and five other instruction files from
+    each agent's workspace, but the adapter writes none of them (whether it
+    should is an open operator decision in the pin), so the operator references
+    the other cohorts through the vendor's own mechanisms. Returns a JSON string
+    ready to be written to ``~/.openclaw/openclaw.json``.
     """
     _ = profile
     config: dict[str, Any] = {"skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}}}

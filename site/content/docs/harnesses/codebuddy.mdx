@@ -195,12 +195,14 @@ environment to silence the Apothem hooks, or set CodeBuddy's own
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the project rules
-file on every `apothem install` or `apothem update` run. CodeBuddy reads
-every `*.md` file under `.codebuddy/rules/` as Markdown with optional YAML
-frontmatter (`alwaysApply`, `paths`, `enabled`) per the
-[CodeBuddy Rules documentation](https://www.codebuddy.ai/docs/ide/Rules);
-Apothem's file carries `alwaysApply: true` so the governance surface applies
-on every interaction. The frontmatter is the first content in the file and the
+file on every `apothem install` or `apothem update` run. CodeBuddy Code reads
+every `*.md` file under `.codebuddy/rules/`, subfolders included, as Markdown
+with optional YAML frontmatter (`alwaysApply`, `paths`, `enabled`) per the
+[CodeBuddy memory documentation](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules);
+Apothem's file carries `alwaysApply: true`, so CodeBuddy Code loads it into
+every session it starts in the project's root folder. It reads project rules
+only from the folder it starts in, and it reads a rules file that an install
+adds or changes only after a restart. The frontmatter is the first content in the file and the
 Apothem-managed block follows it; text you add after the block is kept on every
 sync. The shared profile is the source of truth; project-local edits to the
 generated file are backed up before the next sync replaces the Apothem-managed
@@ -210,7 +212,11 @@ content.
 
 CodeBuddy's rules surface is project-scoped under `.codebuddy/rules/`. The
 adapter writes a dedicated `apothem-rules.md` file that co-exists with any
-rules files the operator authors in the same directory. The `CODEBUDDY.md`
+rules files the operator authors in the same directory. The CodeBuddy IDE's
+[Rules page](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+describes one folder per rule, each holding a `RULE.mdc` file, instead of a
+plain `.md` file like Apothem's. The page does not say whether the IDE also
+loads a plain `.md` file, and Apothem has not confirmed that it does. The `CODEBUDDY.md`
 project memory file, the committed `.codebuddy/settings.json`, and the project
 `.mcp.json` (MCP servers) are operator-owned; Apothem does not write them.
 CodeBuddy also documents slash commands; the adapter writes none and references

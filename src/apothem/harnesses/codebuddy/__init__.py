@@ -4,10 +4,11 @@
 
 Materializes the apothem rules surface into the operator-supplied
 project root at ``<project>/.codebuddy/rules/apothem-rules.md`` — the
-canonical CodeBuddy rules surface per
-https://www.codebuddy.ai/docs/ide/Rules. The adapter writes a dedicated
-``apothem-rules.md`` file inside CodeBuddy's documented rules directory so
-the operator's own rules files are never clobbered. The ``CODEBUDDY.md``
+rules folder CodeBuddy Code loads per the CLI memory page
+(https://www.codebuddy.ai/docs/cli/memory, section "Modular Rules with
+.codebuddy/rules/"). The adapter writes a dedicated ``apothem-rules.md`` file
+inside CodeBuddy's documented rules directory so the operator's own rules
+files are never clobbered. The ``CODEBUDDY.md``
 memory file and the committed ``.codebuddy/settings.json`` permissions/MCP surface are
 operator-owned and out of apothem's adapter scope.
 

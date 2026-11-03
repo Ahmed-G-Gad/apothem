@@ -4,14 +4,28 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-11-03
+- Snapshot note (release check): `@moonshot-ai/kimi-code@2.4.1` (2026-10-30)
+  is the latest release, after 2.4.0 (2026-10-28). Their release notes and the
+  source at the 2.4.1 tag were read on 2026-11-03. The `AGENTS.md`, skills and
+  agent loaders are identical to 2.3.3, and neither release changes a file,
+  folder or setting the adapter relies on. 2.4.1 returns at most 100,000
+  characters or about 25,000 estimated tokens from one `Read`, whichever comes
+  first, where it used to allow up to 500,000 characters (`[read] max_chars`).
+  The largest file Apothem installs, `skills/plan-suite/master-template.md`,
+  has about 71,000 characters, about 19,400 estimated tokens as `Read` shows it
+  with line numbers, so every installed file fits in one call. The
+  `moonshotai.github.io` docs build from the main branch: they already describe
+  later changes, such as a `[secondary_model]` without `force`, and still show
+  the `Read` limit from before 2.4.1, which changed only on the release branch.
+  Where they differ, the facts below follow 2.4.1. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Kimi Code
   sub-agents in `<project>/.kimi-code/agents/`. The agents page, the tools
   reference, the configuration-files page and the changelog were read on
   2026-10-27; the other pages keep their 2026-10-24 and 2026-10-03 retrieval
   dates. Previous 2026-10-24.
 - vendor-doc-url: <https://moonshotai.github.io/kimi-code/en/>
-- snapshot-date: 2026-10-27
+- snapshot-date: 2026-11-03
 - Canonical docs host: `moonshotai.github.io/kimi-code/en/` (Kimi Code CLI,
   Moonshot). The earlier `moonshotai.github.io/kimi-cli` host documented the
   predecessor CLI and is no longer the authority for this adapter. The
@@ -24,9 +38,11 @@
 - Adapter source: `src/apothem/harnesses/kimi_code/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source
   exception). The vendor also publishes a changelog with versioned releases
-  (latest `@moonshot-ai/kimi-code@2.3.3`, 2026-10-26) and an MIT-licensed
+  (latest `@moonshot-ai/kimi-code@2.4.1`, 2026-10-30) and an MIT-licensed
   repository, `MoonshotAI/kimi-code`, whose agent loader was read at commit
-  `e2ad1dcf21` (2026-10-27) for the facts marked "source" below. No
+  `e2ad1dcf21` (2026-10-27) and re-read on 2026-11-03 at the
+  `@moonshot-ai/kimi-code@2.4.1` tag (`2c73f3f50af4`, committed 2026-10-30;
+  the loader files are identical) for the facts marked "source" below. No
   vendor-native UI claim is made here.
 
 ## Official Surface Refresh
@@ -147,9 +163,17 @@
   `.kimi-code/AGENTS.md` under the project tree; Kimi-specific global
   instructions live in `~/.kimi-code/AGENTS.md`, and cross-tool global
   instructions in `~/.agents/AGENTS.md`. The docs do not say which of the two
-  project files wins when both exist, so the adapter keeps writing the
-  project-root `AGENTS.md` managed block (operator prose outside the sentinels
-  is preserved).
+  project files wins when both exist. In the source neither replaces the
+  other: at the 2.4.1 tag, `packages/agent-core-v2/src/agent/profile/context.ts`
+  (lines 183-206) joins `$KIMI_CODE_HOME/AGENTS.md`, the first non-empty
+  `~/.agents/AGENTS.md` or `agents.md`, and then, in each folder from the
+  nearest `.git` ancestor down to the working folder, `.kimi-code/AGENTS.md`
+  followed by the first of `AGENTS.md` or `agents.md` that has content; empty
+  files are skipped (line 315). Without a `.git` ancestor only the working
+  folder is read, and a combined size over 32 KiB adds a warning, not a cut
+  (lines 197 and 209-215). The adapter keeps
+  writing the project-root `AGENTS.md` managed block (operator prose outside
+  the sentinels is preserved).
 - Configuration: `~/.kimi-code/config.toml` (runtime settings) and
   `~/.kimi-code/tui.toml` (terminal UI). Operator-owned; the adapter writes
   neither.
@@ -217,6 +241,21 @@
 
 ## Vendor Sources
 
+Retrieved 2026-11-03.
+
+- <https://moonshotai.github.io/kimi-code/en/release-notes/changelog.md>
+  (releases 2.4.0 and 2.4.1; first read 2026-10-27 for release 2.3.3 and the
+  2.3.2 delegation default)
+- <https://registry.npmjs.org/@moonshot-ai%2fkimi-code> (the `latest` tag and
+  the publish dates of 2.3.3, 2.4.0 and 2.4.1)
+- <https://moonshotai.github.io/kimi-code/en/customization/agents.md> (re-read:
+  unchanged since the 2026-10-27 read; still says sub-agents are scheduled
+  automatically)
+- The `MoonshotAI/kimi-code` repository at the `@moonshot-ai/kimi-code@2.4.1`
+  tag (`2c73f3f50af4`): `packages/agent-core-v2/src/agent/profile/context.ts`
+  for the `AGENTS.md` order, and the agent and skill loaders, compared with the
+  2.3.3 tag (`ec495f0cb00f`)
+
 Retrieved 2026-10-27.
 
 - <https://moonshotai.github.io/kimi-code/en/customization/agents.md> (agent
@@ -225,8 +264,6 @@ Retrieved 2026-10-27.
   tool names, including `FetchURL` and `TodoList`)
 - <https://moonshotai.github.io/kimi-code/en/configuration/config-files.md>
   (`extra_agent_dirs`, `[secondary_model]`, the `[watch]` switch)
-- <https://moonshotai.github.io/kimi-code/en/release-notes/changelog.md>
-  (release 2.3.3 and the 2.3.2 delegation default)
 - The agent loader in the `MoonshotAI/kimi-code` repository at commit
   `e2ad1dcf21` (`agentFile.ts`, `agentFileDiscovery.ts`, `agentRoots.ts`), read
   for the name pattern, the empty-body rule, the scan depth and the first-name-
@@ -266,7 +303,12 @@ Retrieved 2026-10-03.
 
 Each item below is a decision the vendor docs read on 2026-10-24 did not settle.
 No Apothem behavior was changed on the strength of a guess; the item names what
-stays as it is.
+stays as it is. The source notes added on 2026-11-03 say what the code at the
+2.4.1 tag does (the same at 2.3.3, where the `Agent` tool description is
+worded differently but states the same rule); paths are under
+`packages/agent-core-v2/src/` unless given in full. The docs still do not
+state these points, except that the agents page says the opposite on
+delegation.
 
 - TODO(clarify): how Kimi Code treats a `SKILL.md` frontmatter key outside the
   list the skills page documents (`name`, `description`, `type`, `whenToUse`,
@@ -279,16 +321,32 @@ stays as it is.
   `argument-hint`, `portability` and `allowed-tools`; until the vendor states a
   rule for them, a key Kimi Code rejects would surface when it loads that skill,
   and a key it ignores changes behavior (a tool restriction that
-  `allowed-tools` declares would not apply).
+  `allowed-tools` declares would not apply). Source: the parser keeps every key
+  as metadata and rejects a file only for a broken frontmatter block, a missing
+  `name` or `description`, or an unsupported `type`
+  (`features/skill/catalog/parser.ts:55-128`), and no code outside the tests
+  reads `allowed-tools`. So no shipped key is rejected, and an `allowed-tools`
+  restriction does not apply.
 - TODO(clarify): whether the main agent delegates to Apothem's agents on its own.
   The agents page says the main agent schedules sub-agents automatically, while
   changelog 2.3.2 (2026-10-25) says tasks are handled directly by default and
   delegation must be requested. The `AGENTS.md` block tells the reader to ask for
-  a helper by name; revisit when the page and the changelog agree.
+  a helper by name; revisit when the page and the changelog agree. Source: the
+  `Agent` tool description still says not to launch a subagent unless the user
+  explicitly asks, and counts `AGENTS.md` or skill instructions as asking
+  (`agent/tools/agent/agent.md:3`); the agents page, re-read 2026-11-03, still
+  says the main agent schedules sub-agents automatically.
 - TODO(clarify): whether the `[watch]` switch also governs the reload of project
   agent files. The reload is source-derived (a 200 ms debounce at commit
   `e2ad1dcf21`); the docs state it only for `config.toml`, `AGENTS.md`, skills
-  and MCP configuration.
+  and MCP configuration. Source: the file watcher is the only automatic
+  trigger of the project agent reload
+  (`workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoaderService.ts:67-74`),
+  and `[watch] enabled = false` or `KIMI_CODE_WATCH=0` turns that watcher off
+  (`human/utils/watch.ts:522-529`). With the switch off, a running session
+  picks up edits to project agent files only through `/reload`
+  (`packages/node-sdk/src/sdk-rpc-client-v2.ts:1725-1733`); the first load at
+  startup still happens.
 - TODO(clarify): hooks. Apothem writes no `[[hooks]]` entry. Three facts decide
   it. (1) The repository has no TOML read-merge-write with a surgical
   uninstall: the shared ownership merge reads and rewrites JSON and YAML, the
@@ -307,6 +365,12 @@ stays as it is.
   project-level copy this adapter writes takes precedence over a user-level copy
   of the same name, such as the `~/.agents/skills/` copy the Codex adapter
   writes. The page does not rank the two project folders against each other.
+  Source: the project roots are scanned `.kimi-code/skills` first, then
+  `.agents/skills` (`features/skill/catalog/skillRoots.ts:36-37`), and the
+  first root to register a name keeps it
+  (`features/skill/catalog/fileSkillDiscovery.ts:185-187`), so the copy this
+  adapter writes wins over a same-named `.agents/skills/` copy in the same
+  project.
 
 ## Discovery Targets
 
