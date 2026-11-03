@@ -30,12 +30,17 @@ Checks, over every page under ``site/content/docs``:
   matches) has the English page's heading structure, because the mapping
   compares the two;
 - no component such as ``<Card href="/docs/...">`` carries an in-site docs
-  href, because only markdown links and ``<a>`` pass through the localization.
+  href, because only markdown links and ``<a>`` pass through the localization;
+- ``/<locale>/docs/<page>`` is written by hand only for a page that language
+  translated, because the route of a page it has not translated is an English
+  duplicate that the sitemap and hreflang leave out;
+- every heading is one the check can place: a setext heading or an empty one
+  would shift the positions the mapping relies on.
 
 An id is a markdown heading's github-slugger id (``github_slugger.py``), a
 heading's ``[#id]`` marker, or an ``id`` attribute in the page's HTML or JSX.
-Only ATX headings (``## Title``) are read. The check reads page sources, not the
-built site, so a heading whose text the flattener below cannot reproduce
+ATX headings (``## Title``, also inside list items and block quotes) are read.
+The check reads page sources, not the built site, so a heading whose text the flattener below cannot reproduce
 exactly should set its id with ``[#id]``.
 
 Reported but not failed: a translated page that records older English text and
@@ -78,8 +83,14 @@ _ROUTED_LOCALES = re.compile(
 _FRONTMATTER = re.compile(r"\A---\n.*?\n---\n", re.DOTALL)
 _SOURCE_HASH = re.compile(r"^sourceHash: \"?(?P<hash>[0-9a-f]+)\"?\s*$", re.MULTILINE)
 _COMMENT = re.compile(r"\{/\*.*?\*/\}", re.DOTALL)
-_FENCE = re.compile(r"^[ \t]*(`{3,}|~{3,})")
-_ATX = re.compile(r"^[ \t]*(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$")
+_FENCE = re.compile(r"^[ \t]*(`{3,}(?=[^`]*$)|~{3,})")
+_ATX = re.compile(
+    r"^[ \t]*(?:(?:>|[-*+]|\d{1,9}[.)])[ \t]+)*(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$"
+)
+_SETEXT_UNDERLINE = re.compile(r"^[ \t]{0,3}(?:=+|-+)[ \t]*$")
+# A line that can only be paragraph text: a setext underline under anything else
+# (a heading, a list item, a table row, markup) is a thematic break.
+_PARAGRAPH_LINE = re.compile(r"^[ \t]*(?![#>|<{*+\-]|\d{1,9}[.)][ \t])\S")
 _CUSTOM_ID = re.compile(r"\s*\[#(?P<id>[\s\S]+?)]\s*$")
 _CODE_SPAN = re.compile(r"(`+)(?!`).+?(?<!`)\1(?!`)", re.DOTALL)
 _TABLE_ROW = re.compile(r"^[ \t]*\|")
@@ -169,6 +180,7 @@ class Scanned(NamedTuple):
     extra_ids: frozenset[str]
     links: tuple[Link, ...]
     component_links: tuple[Link, ...]
+    unsupported: tuple[tuple[int, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -326,11 +338,18 @@ def _destination(raw: str) -> str:
     return html.unescape(_ESCAPE.sub(lambda m: m.group(1), raw))
 
 
-def _prose_and_headings(text: str) -> tuple[list[str], list[Heading]]:
-    """Split a page into its prose lines (fences emptied) and its headings."""
+def _prose_and_headings(
+    text: str,
+) -> tuple[list[str], list[Heading], list[tuple[int, str]]]:
+    """Split a page into its prose lines (fences emptied), headings and oddities.
+
+    The oddities are the heading forms the scanner does not model, which would
+    shift every later heading's position: a setext heading and an empty one.
+    """
     slugger = Slugger()
     prose: list[str] = []
     headings: list[Heading] = []
+    unsupported: list[tuple[int, str]] = []
     fence: str | None = None
     for number, line in enumerate(text.split("\n"), 1):
         opening = _FENCE.match(line)
@@ -348,16 +367,22 @@ def _prose_and_headings(text: str) -> tuple[list[str], list[Heading]]:
             fence = opening.group(1)
             prose.append("")
             continue
+        previous = prose[-1] if prose else ""
         prose.append(line)
         atx = _ATX.match(line)
-        if atx is None or atx.group(2) is None:
+        if atx is None:
+            if _SETEXT_UNDERLINE.match(line) and _PARAGRAPH_LINE.match(previous):
+                unsupported.append((number, "a setext heading (use `## Title`)"))
+            continue
+        if atx.group(2) is None:
+            unsupported.append((number, "an empty heading"))
             continue
         custom = _CUSTOM_ID.search(atx.group(2))
         heading_id = (
             custom.group("id") if custom else slugger.slug(_flatten(atx.group(2)))
         )
         headings.append(Heading(number, len(atx.group(1)), heading_id))
-    return prose, headings
+    return prose, headings, unsupported
 
 
 def _blocks(prose: list[str]) -> Iterator[tuple[int, str]]:
@@ -377,7 +402,7 @@ def scan(text: str) -> Scanned:
     if text.startswith("---\n"):
         text = _blank(text, _FRONTMATTER)
     text = _blank(text, _COMMENT)
-    prose, headings = _prose_and_headings(text)
+    prose, headings, unsupported = _prose_and_headings(text)
 
     extra_ids: set[str] = set()
     links: list[Link] = []
@@ -406,7 +431,11 @@ def scan(text: str) -> Scanned:
             for found in pattern.finditer(block):
                 extra_ids.add(found.group("dq") or found.group("sq"))
     return Scanned(
-        tuple(headings), frozenset(extra_ids), tuple(links), tuple(component_links)
+        tuple(headings),
+        frozenset(extra_ids),
+        tuple(links),
+        tuple(component_links),
+        tuple(unsupported),
     )
 
 
@@ -519,9 +548,19 @@ class _Checker:
     def run(self) -> Report:
         for page in self.pages.values():
             self._check_structure(page)
+            for line, what in page.scanned.unsupported:
+                self._fail(
+                    page,
+                    line,
+                    "",
+                    "unsupported-heading",
+                    f"{what}: the check cannot place it among the page's headings, "
+                    "so it cannot tell which heading a link lands on",
+                )
             for link in page.scanned.component_links:
                 self._check_component_link(page, link)
             for link in page.links:
+                self._check_route(page, link)
                 parts = _split(link.url)
                 if parts is not None and not _is_external(parts[0]):
                     self._check(page, link, *parts)
@@ -536,6 +575,7 @@ class _Checker:
         english = self.pages.get((DEFAULT_LOCALE, page.slug))
         if page.locale == DEFAULT_LOCALE or english is None:
             return
+        self.report.counts["translations"] += 1
         current = page.recorded_hash == english.text_hash
         if current:
             self.report.counts["current-translations"] += 1
@@ -553,6 +593,24 @@ class _Checker:
             )
         else:
             self.report.structure_drift.append(relative(page.path))
+
+    def _check_route(self, page: Page, link: Link) -> None:
+        """A hand-written ``/<locale>/docs/...`` link opens a page that language has."""
+        path = link.url.partition("#")[0].split("?", 1)[0]
+        target = docs_target(path, self.locales)
+        if (
+            target is not None
+            and target[0] != DEFAULT_LOCALE
+            and target not in self.pages
+        ):
+            self._fail(
+                page,
+                link.line,
+                link.url,
+                "fallback-route",
+                f"{target[0]} has not translated this page, so that route is an "
+                "English duplicate; link /docs/... instead",
+            )
 
     def _check_component_link(self, page: Page, link: Link) -> None:
         if link.url == "/docs" or link.url.startswith(("/docs/", "/docs#", "/docs?")):
@@ -684,6 +742,11 @@ def _summary(report: Report) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Returns the process exit code."""
+    # A heading id can be in any script; a console that cannot print it must not crash.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--docs-root", type=Path, default=DOCS_ROOT)
     parser.add_argument("--i18n", type=Path, default=I18N_TS)

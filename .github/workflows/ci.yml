@@ -438,8 +438,9 @@ jobs:
       - name: Check the links in the built docs
         # A body link on a translated page is pointed at the language's own copy of
         # its target while the page renders, so only the built HTML shows it:
-        # every link on a translated page opens a translated page in its language
-        # and every #fragment lands on an element id of the page it opens. The
+        # a link on a translated page opens the language's own page whenever the
+        # site could use it, and every #fragment lands on an element id of the
+        # page it opens. The
         # source-level guard (tests/unit/docs/test_site_anchor_links.py) runs in
         # the required quality job.
         run: python scripts/dev/check_built_docs_links.py site/dist

@@ -209,3 +209,37 @@ def test_main_exit_codes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
         == 2
     )
     assert "no built site" in capsys.readouterr().err
+
+
+def test_a_fragment_link_the_site_cannot_map_stays_on_the_english_page(
+    tmp_path: Path,
+) -> None:
+    """An older translation with other headings keeps its anchored link on the English route."""
+    pages = {
+        **BUILT,
+        "de/docs.html": BUILT["de/docs.html"]
+        + "<a href='/docs/guide#shared-roots'>x</a>",
+    }
+    docs_root, i18n, dist = _site(tmp_path, pages)
+    (docs_root / "de" / "guide.mdx").write_text("## Einrichtung\n", encoding="utf-8")
+    locales = built.routed_locales(i18n)
+    findings, counts = built.check_dist(
+        dist, built.load_pages(docs_root, locales), locales
+    )
+    assert findings == []
+    assert counts["kept-english"] == 1
+
+
+def test_a_fragment_link_the_site_should_map_but_did_not_is_found(
+    tmp_path: Path,
+) -> None:
+    """With the same headings, an English-route link with an English id should be localized."""
+    pages = {
+        **BUILT,
+        "de/docs.html": BUILT["de/docs.html"]
+        + "<a href='/docs/guide#shared-roots'>x</a>",
+    }
+    findings = _check(tmp_path, pages)
+    assert [(f.rule, f.url) for f in findings] == [
+        ("built-unlocalized", "/docs/guide#shared-roots")
+    ]

@@ -15,7 +15,9 @@ Checks, over the body (the first ``div.prose`` inside ``main``) of every built
 page:
 
 - a translated page has no link to ``/docs/<page>`` when its language has its
-  own copy of ``<page>``;
+  own copy of ``<page>`` and the site can point the link at it (always without a
+  fragment; with one, when it is an English id and both pages have the same
+  headings);
 - a link to ``/<locale>/docs/<page>`` opens a page that language translated;
 - a link with a ``#fragment``, and each link to the page itself, lands on an
   element id of the built page it opens, by the browser's rule: the id as
@@ -50,6 +52,7 @@ from check_site_anchor_links import (
     PageKey,
     docs_target,
     load_pages,
+    map_fragment,
     relative,
     routed_locales,
 )
@@ -158,6 +161,21 @@ class _Checker:
             Finding(relative(page.path), 0, unquote(href), rule, message)
         )
 
+    def _site_localizes(self, fragment: str, own: Page) -> bool:
+        """Whether the site points a link to ``own``'s English route at ``own``.
+
+        It always does without a fragment. With one, it does when the fragment is
+        an English id and both pages have the same headings; otherwise the link
+        stays on the English page on purpose, and the fragment is checked there.
+        """
+        if not fragment:
+            return True
+        english = self.pages.get((DEFAULT_LOCALE, own.slug))
+        return (
+            english is not None
+            and map_fragment(fragment, english.headings, own.headings) is not None
+        )
+
     def _check(self, page: Page, built: Body, href: str) -> None:
         path, _, fragment = href.partition("#")
         wanted = unquote(fragment)
@@ -173,15 +191,21 @@ class _Checker:
             return
         locale, slug = target
         self.counts["docs-links"] += 1
-        translated = (page.locale, slug) in self.pages
-        if page.locale != DEFAULT_LOCALE and locale == DEFAULT_LOCALE and translated:
-            self._fail(
-                page,
-                href,
-                "built-unlocalized",
-                f"{page.locale} has its own copy of this page, so the link should open /{page.locale}/docs/...",
-            )
-            return
+        own = self.pages.get((page.locale, slug))
+        if (
+            page.locale != DEFAULT_LOCALE
+            and locale == DEFAULT_LOCALE
+            and own is not None
+        ):
+            if self._site_localizes(fragment, own):
+                self._fail(
+                    page,
+                    href,
+                    "built-unlocalized",
+                    f"{page.locale} has its own copy of this page, so the link should open /{page.locale}/docs/...",
+                )
+                return
+            self.counts["kept-english"] += 1
         if locale != DEFAULT_LOCALE:
             self.counts["localized"] += 1
             if (locale, slug) not in self.pages:
@@ -219,6 +243,11 @@ def check_dist(
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Returns the process exit code."""
+    # A heading id can be in any script; a console that cannot print it must not crash.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("dist", type=Path, nargs="?", default=DEFAULT_DIST)
     parser.add_argument("--docs-root", type=Path, default=DOCS_ROOT)

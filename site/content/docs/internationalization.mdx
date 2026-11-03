@@ -152,13 +152,19 @@ site. It fails when:
 - a translation that records the current English text has other headings than the
   English page, which would break the mapping;
 - a component such as `<Card href="/docs/…">` carries a docs link, because only
-  Markdown links and `<a>` are redirected to the translated page.
+  Markdown links and `<a>` are pointed at the translated page;
+- a link is written by hand as `/<language>/docs/<page>` for a page that language
+  has not translated, which is an English duplicate;
+- a heading is a setext heading (underlined with `===` or `---`) or is empty,
+  because the check cannot place it among the page's headings.
 
 A heading whose text the check cannot turn into an id exactly takes an explicit
-id instead: `## Heading [#custom-id]`.
+id instead: `## Heading [#custom-id]`. Renaming a heading changes its id, so a
+link to it on any page, translations included, then fails the check: update the
+links, or keep the old id on the renamed heading with `[#old-id]`.
 
-The redirect to the translated page happens while the site is built, so the
-`docs-build` job also runs `python scripts/dev/check_built_docs_links.py site/dist`
-on the finished site. It fails when a link on a translated page still opens the
-English page although its language has a copy, and when a section link names an
-id the built page it opens does not have.
+The site chooses a link's target page while it is built, so the `docs-build` job
+also runs `python scripts/dev/check_built_docs_links.py site/dist` on the finished
+site. It fails when a link on a translated page still opens the English page
+although its language has a copy the site could have used, and when a section
+link names an id the built page it opens does not have.

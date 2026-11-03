@@ -46,6 +46,16 @@ export type PageLookup = (slug: readonly string[], lang: string) => DocsPage | u
 // `/docs` itself, or `/docs` followed by a path, a query or a fragment.
 const DOCS_HREF = /^\/docs(?:[/?#]|$)/;
 
+/**
+ * Whether the content file at `pagePath` (the loader's content-relative path, such
+ * as `ja/install/index.mdx`) is `lang`'s own page. For a language that has no copy
+ * the loader serves the English page under the requested language's URL, so the
+ * path, not the URL, tells the two apart.
+ */
+export function isAuthoredPath(pagePath: string, lang: string): boolean {
+  return pagePath.startsWith(`${lang}/`);
+}
+
 function decode(text: string): string {
   try {
     return decodeURIComponent(text);

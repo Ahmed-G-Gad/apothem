@@ -100,14 +100,18 @@ expression for MDX content pages).
   without a build (the `quality` job runs it as
   `tests/unit/docs/test_site_anchor_links.py`): a fragment must name a heading of
   the page the link opens, a translation that records the current English text
-  keeps the English headings, and no component carries a `/docs` href. A heading
+  keeps the English headings, no component carries a `/docs` href, no hand-written
+  `/<language>/docs/<page>` link names a page that language has not translated,
+  and no heading is setext or empty. A heading
   whose text the script cannot slug exactly takes an explicit id,
-  `## Heading [#id]`. The script's slug table comes from the installed
+  `## Heading [#id]`. Renaming a heading changes its id, so fix the links to it
+  on every page, translations included, or keep the old id with `[#old-id]`. The
+  script's slug table comes from the installed
   github-slugger (`scripts/github-slugger-table.mjs`; `npm test` fails when the
-  two differ). The redirect to the translated page happens while the site
-  renders, so `docs-build` also runs
-  `python scripts/dev/check_built_docs_links.py site/dist` on the export: links
-  on a translated page open translated pages, and every fragment lands.
+  two differ). The site chooses a link's target page while it renders, so
+  `docs-build` also runs `python scripts/dev/check_built_docs_links.py site/dist`
+  on the export: a translated page's links open the language's own page when the
+  site could use it, and every fragment lands.
 - Public-facing copy stays natural: it does not name internal planning history,
   superseded release stories, or process tooling, and avoids unsupported
   marketing adjectives.

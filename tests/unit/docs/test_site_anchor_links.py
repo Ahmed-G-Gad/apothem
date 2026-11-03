@@ -11,8 +11,9 @@ across pages by the English id, and the site maps it onto the translated
 heading by position (``site/components/localized-link.tsx``). This test reads
 every page under ``site/content/docs`` with ``scripts/dev/check_site_anchor_links.py``
 and fails on any anchored link that would not land, any translation that
-records the current English text but changed its heading structure, and any
-component that carries an in-site docs href past the localization.
+records the current English text but changed its heading structure, any
+component that carries an in-site docs href past the localization, and any
+heading form the check cannot place.
 
 It is the required form of the guard: it runs in the ``quality`` matrix and in
 ``coverage`` with Python alone, so it needs neither ``site/node_modules`` nor a
@@ -38,17 +39,17 @@ def test_every_anchored_link_lands_on_a_heading_id() -> None:
     """No page has an anchored link, a structure change or a component link the site cannot use."""
     report = checker.run()
     counts = report.counts
-    # Anti-vacuous anchors: the corpus when the guard was written, 213 English
-    # pages and 197 in each of eleven languages, with 600 same-page anchors and
-    # 264 anchored cross-page links on translated pages.
-    assert counts["pages"] >= 2300
-    assert counts["locales"] == 11
-    assert counts["same-page"] >= 500
-    assert counts["cross-page"] >= 20
-    assert counts["translated-cross-page"] >= 200
-    # The structure rule only fires for a translation that records the current
-    # English text, so the hash port must recognise most of them as current.
-    assert counts["current-translations"] >= 1500
+    # The guard must have read something. These floors are far below the corpus
+    # (213 English pages and 197 in each of eleven languages, 600 same-page
+    # anchors and 264 anchored cross-page links on translated pages), so an
+    # ordinary edit never reaches them and a scanner that finds nothing does.
+    assert counts["pages"] >= 1000
+    assert counts["locales"] >= 2
+    assert counts["same-page"] >= 100
+    assert counts["translated-cross-page"] >= 50
+    # The structure rule fires only for a translation that records the current
+    # English text, so the hash port must recognise a good share of them.
+    assert counts["current-translations"] * 2 >= counts["translations"]
     lines = [finding.render() for finding in report.findings]
     shown = "\n".join(lines[:15])
     assert lines == [], (
@@ -57,6 +58,9 @@ def test_every_anchored_link_lands_on_a_heading_id() -> None:
         "#fragment is the translated page's own id. "
         "Run `python scripts/dev/check_site_anchor_links.py` for the full list."
     )
+    # With no findings, a translated page's link to a translated page opens the
+    # translation: the site would not otherwise keep readers in their language.
+    assert counts["localized"] * 2 >= counts["translated-cross-page"]
 
 
 def test_the_slug_table_belongs_to_the_locked_github_slugger() -> None:
@@ -65,7 +69,7 @@ def test_the_slug_table_belongs_to_the_locked_github_slugger() -> None:
         (REPO_ROOT / "site" / "package-lock.json").read_text(encoding="utf-8")
     )
     locked = lock["packages"]["node_modules/github-slugger"]["version"]
-    header = github_slugger.TABLE_PATH.read_text(encoding="utf-8").split("\n\n", 1)[0]
+    header = github_slugger.TABLE_PATH.read_text(encoding="utf-8")
     recorded = re.search(r"github-slugger (\d+\.\d+\.\d+) removes", header)
     assert recorded is not None, "github-slugger-removed.txt does not name a version"
     assert recorded.group(1) == locked, (

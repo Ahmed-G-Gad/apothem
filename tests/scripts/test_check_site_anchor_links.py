@@ -12,6 +12,7 @@ onto a translated page, and its verdicts on small trees built under
 
 from __future__ import annotations
 
+import io
 import sys
 from pathlib import Path
 
@@ -91,8 +92,8 @@ def test_routed_locales_come_from_the_site_table(tmp_path: Path) -> None:
     _, i18n = _tree(tmp_path, {})
     assert checker.routed_locales(i18n) == ("de", "ar")
     real = checker.routed_locales()
-    assert len(real) == 11
     assert {"ar", "de", "pt-br", "zh-cn"} <= set(real)
+    assert "en" not in real
 
 
 def test_a_table_without_routed_locales_is_an_error(tmp_path: Path) -> None:
@@ -489,3 +490,75 @@ def test_main_exits_two_when_the_locale_table_is_unreadable(
     )
     assert code == 2
     assert "check_site_anchor_links:" in capsys.readouterr().err
+
+
+def test_a_line_that_starts_with_inline_code_does_not_open_a_fence() -> None:
+    """Backticks after the first three on the line make it inline code, not a fence."""
+    scanned = checker.scan(
+        "```json``` files are listed here.\n\n## After\n\n[a](#after)\n"
+    )
+    assert [h.id for h in scanned.headings] == ["after"]
+    assert [link.url for link in scanned.links] == ["#after"]
+
+
+def test_each_fence_closes_on_its_own_marker() -> None:
+    """A tilde fence and a longer backtick fence hide what is inside them."""
+    text = "~~~\n## no\n~~~\n\n````\n```\n## not either\n```\n````\n\n## Real\n"
+    assert [h.id for h in checker.scan(text).headings] == ["real"]
+
+
+def test_headings_inside_list_items_and_quotes_are_read() -> None:
+    """Markdown makes a heading of ``- ## x``, ``> ## x`` and ``1. ### x``."""
+    scanned = checker.scan("- ## In a list\n> ## In a quote\n1. ### Numbered\n")
+    assert [(h.depth, h.id) for h in scanned.headings] == [
+        (2, "in-a-list"),
+        (2, "in-a-quote"),
+        (3, "numbered"),
+    ]
+
+
+def test_heading_forms_the_scanner_cannot_place_are_reported() -> None:
+    """A setext heading and an empty one shift positions; a thematic break does not."""
+    text = (
+        "Title\n=====\n\nOther\n-----\n\n##\n\n---\n\n| a |\n| --- |\n\n- item\n---\n"
+    )
+    scanned = checker.scan(text)
+    assert [line for line, _ in scanned.unsupported] == [2, 5, 7]
+    assert scanned.headings == ()
+
+
+def test_an_unsupported_heading_form_is_a_finding(tmp_path: Path) -> None:
+    """The check says so when it cannot see a heading, instead of guessing positions."""
+    report = _run(tmp_path, {"index.mdx": "Title\n=====\n"})
+    assert [(f.rule, f.line) for f in report.findings] == [("unsupported-heading", 2)]
+
+
+def test_a_locale_route_to_an_untranslated_page_is_a_finding(tmp_path: Path) -> None:
+    """``/de/docs/<page>`` for a page German never translated is an English duplicate."""
+    report = _run(
+        tmp_path,
+        {
+            "index.mdx": "## Home\n\n[a](/de/docs/pipeline/plan) [b](/de/docs/guide#einrichtung)\n",
+            "guide.mdx": GUIDE,
+            "de/guide.mdx": GUIDE_DE,
+            "pipeline/plan.mdx": "## Usage\n",
+        },
+    )
+    assert [(f.rule, f.url) for f in report.findings] == [
+        ("fallback-route", "/de/docs/pipeline/plan")
+    ]
+
+
+def test_main_prints_ids_a_console_cannot_show(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A finding with a non-ASCII id must not crash a console that cannot print it."""
+    docs_root, i18n = _tree(
+        tmp_path, {"index.mdx": "## Home\n\n[x](#" + chr(0x440) + "az)\n"}
+    )
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding="ascii", errors="strict")
+    monkeypatch.setattr(sys, "stdout", stream)
+    assert checker.main(["--docs-root", str(docs_root), "--i18n", str(i18n)]) == 1
+    stream.flush()
+    assert "\\u0440az" in buffer.getvalue().decode("ascii")

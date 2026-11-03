@@ -15,7 +15,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { localizeDocsHref } from './locale-links.ts';
+import { isAuthoredPath, localizeDocsHref } from './locale-links.ts';
 
 const toc = (...entries) => entries.map(([id, depth]) => ({ url: `#${id}`, depth }));
 
@@ -50,6 +50,16 @@ const PAGES = {
 
 const lookup = (slug, lang) => PAGES[`${lang}:${slug.join('/')}`];
 const localize = (href) => localizeDocsHref(href, 'de', 'en', lookup);
+
+describe('isAuthoredPath', () => {
+  it('is true for a content file under the language folder only', () => {
+    assert.equal(isAuthoredPath('ja/install/index.mdx', 'ja'), true);
+    assert.equal(isAuthoredPath('pt-br/index.mdx', 'pt-br'), true);
+    assert.equal(isAuthoredPath('install/index.mdx', 'ja'), false);
+    assert.equal(isAuthoredPath('ja/install/index.mdx', 'de'), false);
+    assert.equal(isAuthoredPath('jaa/install/index.mdx', 'ja'), false);
+  });
+});
 
 describe('links that are not docs links', () => {
   it('are returned as written', () => {
