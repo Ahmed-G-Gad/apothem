@@ -154,9 +154,7 @@ the VS Code docs list that folder for the Anthropic Claude agent, not for the
 agent `GitHub Copilot` runs.
 
 The Apothem block an owner writes into a shared instruction file names no
-single tool as its reader, with one exception: the block the `Cursor` install
-writes into `<project>/.cursor/rules/apothem-rules.mdc` is written for
-`Cursor`, and `Hermes` and `Windsurf` load it as well.
+single tool as its reader.
 `tests/unit/test_shared_roots.py` fails when the adapters that
 write a registry target are not exactly its owner and its co-installers, and when a registry target named like a
 cross-tool instruction file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,

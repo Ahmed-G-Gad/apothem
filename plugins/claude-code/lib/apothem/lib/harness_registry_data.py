@@ -926,11 +926,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # (read 2026-11-02) and agent/prompt_builder.py (read 2026-11-03). So it loads the
 # Cursor rules file only when the project has no .hermes.md, AGENTS.md or
 # CLAUDE.md, and <project>/AGENTS.md only when the project has no .hermes.md or
-# HERMES.md and no AGENTS.override.md beside it, which replaces it.
-# TODO(clarify): the Cursor rules block speaks to Cursor ("Inside Cursor, ..."),
-# and Hermes and Devin Local now load it as well. Decide whether it becomes
-# harness-neutral like the shared anchors test_shared_roots.py checks, or keeps
-# its Cursor text.
+# HERMES.md and no AGENTS.override.md beside it, which replaces it. The Apothem
+# block in the Cursor rules file names no single tool as its reader, like the
+# other shared instruction files test_shared_roots.py checks.
 # These gaps are open, so the tools they name are not readers yet:
 # TODO(clarify): ~/.agents/skills/ - the 2026-10-24 vendor check found no default
 # load for Antigravity (its docs name ~/.gemini/config/skills/ and the workspace
