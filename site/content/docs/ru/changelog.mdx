@@ -144,7 +144,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install writes and the block the Claude Code install writes in
   `~/.claude/CLAUDE.md` reach Windsurf too. Hermes loads the Cursor rules file
   as its last project context fallback, only when the project has no
-  `.hermes.md`, `AGENTS.md` or `CLAUDE.md`, and the note gives that condition.
+  `.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`,
+  and the note gives that condition.
   Those installs now name these tools among the ones that load the file, and a
   Windsurf or Hermes install names the install whose Apothem block it finds
   there. Hermes's entry in the project `AGENTS.md` note now gives its condition
@@ -174,6 +175,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   without that condition; they now say
   `OpenCode (only in OpenCode 1, when its configuration folder holds no
   AGENTS.md)`, as they already do for the Open-Claw and Hermes conditions.
+- **Install notes say when Zed, Codex and CodeBuddy skip a shared project
+  file.** Zed loads only the first project instruction file in its list
+  (`.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
+  `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`,
+  `GEMINI.md`), so the notes for the project `.github/copilot-instructions.md`,
+  `AGENTS.md` and `GEMINI.md` now say Zed loads each one only when the project
+  has none of the files ahead of it. The Zed install writes `.rules`, so Zed
+  loads none of them in a project it was installed in. Codex loads an
+  `AGENTS.override.md` beside `AGENTS.md` instead of it, and CodeBuddy uses
+  `AGENTS.md` only when the project has no `CODEBUDDY.md`; the project
+  `AGENTS.md` note now gives both conditions too. The Zed install's warning
+  about the files `.rules` hides now names the file Zed read before, which can
+  be another install's file, and on an update it says Zed already reads
+  `.rules`. The harness registry and Hermes pages also say which files count
+  for Hermes: a `.hermes.md`, `HERMES.md` or `AGENTS.md` in a folder above the
+  project, up to the git root, counts; an empty file does not; and a session
+  started in a folder above the project can still load the project
+  `AGENTS.md`, or a non-empty `AGENTS.override.md` beside it, unless it starts
+  in a home folder or one of a few container folders.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

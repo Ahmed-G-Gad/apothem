@@ -24,7 +24,10 @@ Apothem's helpers as Kimi Code subagents in `<project>/.kimi-code/agents/` (see
 support tree at `<project>/.kimi-code/.apothem/support/`.
 A project `AGENTS.md` is read by many coding tools besides Kimi Code, so the
 block is written as project-wide guidance that names no single tool as its
-reader.
+reader. Some of those tools load it only in some projects, for example only
+when the project has no instruction file of their own, and the install note
+names each such tool with its condition (the
+[harness registry](/docs/reference/harness-registry#shared-roots) lists them).
 
 Kimi Code reads the project-root `AGENTS.md` instruction file following the
 universal AGENTS.md convention, and project configuration lives under

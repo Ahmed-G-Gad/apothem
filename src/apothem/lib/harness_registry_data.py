@@ -921,15 +921,30 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # Local Customizations page, read 2026-11-02). So Windsurf is a reader of
 # <project>/AGENTS.md, ~/.claude/CLAUDE.md and the Cursor rules file. No install
 # writes a project CLAUDE.md, so that path is not a shared root. Hermes loads one
-# kind of project context per session, first match wins, in the order
-# .hermes.md or HERMES.md, the AGENTS.md chain, CLAUDE.md, then the Cursor rules
-# (.cursorrules with every .cursor/rules/*.mdc), per its pinned context-files page
-# (read 2026-11-02) and agent/prompt_builder.py (read 2026-11-03). So it loads the
-# Cursor rules file only when the project has no .hermes.md, AGENTS.md or
-# CLAUDE.md, and <project>/AGENTS.md only when the project has no .hermes.md or
-# HERMES.md and no AGENTS.override.md beside it, which replaces it. The Apothem
-# block in the Cursor rules file names no single tool as its reader, like the
-# other shared instruction files test_shared_roots.py checks.
+# kind of project context per session, the first kind with a non-empty file, in
+# the order .hermes.md or HERMES.md, the AGENTS.md chain (in each folder a
+# non-empty AGENTS.override.md before AGENTS.md), CLAUDE.md, then the Cursor
+# rules (.cursorrules with every .cursor/rules/*.mdc), per its pinned
+# context-files page (read 2026-11-02) and agent/prompt_builder.py (read
+# 2026-11-03). So it loads the Cursor rules file only when the project has no
+# .hermes.md, HERMES.md, AGENTS.override.md, AGENTS.md or CLAUDE.md, and
+# <project>/AGENTS.md only when the project has no .hermes.md or HERMES.md and no
+# AGENTS.override.md beside it, which replaces it. Codex also takes the first of
+# AGENTS.override.md and AGENTS.md in each folder (its AGENTS.md page, read
+# 2026-11-03). CodeBuddy Code uses <project>/AGENTS.md as project memory only
+# when the project has no CODEBUDDY.md (its memory page, read 2026-11-03).
+# TODO(clarify): that page also lists .codebuddy/CODEBUDDY.md as project memory,
+# but its rule for AGENTS.md names only CODEBUDDY.md; whether a
+# .codebuddy/CODEBUDDY.md alone keeps AGENTS.md out is not documented.
+# Zed loads only the first project instruction file in the list
+# .rules, .cursorrules, .windsurfrules, .clinerules,
+# .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md (its
+# instructions page, read 2026-11-03), so it loads each of the three shared
+# files in that list only when the project has none of the files ahead of it.
+# The Zed install writes <project>/.rules, the head of the list, so in a project
+# it was installed in, Zed loads none of the three. The Apothem block in the
+# Cursor rules file names no single tool as its reader, like the other shared
+# instruction files test_shared_roots.py checks.
 # These gaps are open, so the tools they name are not readers yet:
 # TODO(clarify): ~/.agents/skills/ - the 2026-10-24 vendor check found no default
 # load for Antigravity (its docs name ~/.gemini/config/skills/ and the workspace
@@ -1105,8 +1120,13 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-10-02",
         reader_conditions={
+            "codebuddy": "only when the project has no CODEBUDDY.md",
+            "codex": "only when the project has no AGENTS.override.md beside it",
             "hermes": "only when the project has no .hermes.md or HERMES.md and no "
-            "AGENTS.override.md beside it"
+            "AGENTS.override.md beside it",
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules, .clinerules, .github/copilot-instructions.md or "
+            "AGENT.md",
         },
     ),
     SharedRoot(
@@ -1120,6 +1140,11 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
+        reader_conditions={
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules, .clinerules, .github/copilot-instructions.md, "
+            "AGENT.md, AGENTS.md or CLAUDE.md"
+        },
     ),
     SharedRoot(
         path="~/.gemini/GEMINI.md",
@@ -1140,6 +1165,10 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
+        reader_conditions={
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules or .clinerules"
+        },
     ),
     # Devin's Cursor import reads .cursor/rules/*.mdc and keeps a rule with
     # alwaysApply: true active in every session; the file's frontmatter sets it.
@@ -1158,7 +1187,8 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-11-02",
         reader_conditions={
-            "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+            "hermes": "only when the project has no .hermes.md, HERMES.md, "
+            "AGENTS.override.md, AGENTS.md or CLAUDE.md"
         },
     ),
 )

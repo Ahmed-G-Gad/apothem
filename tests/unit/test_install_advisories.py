@@ -115,8 +115,21 @@ def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
 
 
 def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
-    # The project Copilot instructions file has one reader (Zed); the note reads
-    # as one tool.
+    # ~/.gemini/GEMINI.md has one reader (Gemini CLI), which loads it without a
+    # condition; the note reads as one tool.
+    advisories = shared_root_advisories("antigravity", home=tmp_path, project=None)
+    entry = _owner_entry(advisories, "~/.gemini/GEMINI.md")
+    assert entry["path"] == str(tmp_path / ".gemini" / "GEMINI.md")
+    assert entry["readers"] == ["gemini-cli"]
+    assert str(entry["message"]) == (
+        "~/.gemini/GEMINI.md is shared: Gemini CLI also loads it. "
+        "Installing or uninstalling Antigravity changes what that tool loads."
+    )
+
+
+def test_owner_note_gives_a_single_reader_its_condition(tmp_path: Path) -> None:
+    # Zed loads only the first project instruction file in its list, and four
+    # files come before .github/copilot-instructions.md.
     project = tmp_path / "proj"
     project.mkdir()
     advisories = shared_root_advisories(
@@ -126,8 +139,10 @@ def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
     assert entry["path"] == str(project / ".github" / "copilot-instructions.md")
     assert entry["readers"] == ["zed"]
     assert str(entry["message"]) == (
-        "<project>/.github/copilot-instructions.md is shared: Zed also loads it. "
-        "Installing or uninstalling GitHub Copilot changes what that tool loads."
+        "<project>/.github/copilot-instructions.md is shared: Zed (only when the "
+        "project has no .rules, .cursorrules, .windsurfrules or .clinerules) also "
+        "loads it. Installing or uninstalling GitHub Copilot changes what that "
+        "tool loads."
     )
 
 
@@ -142,21 +157,44 @@ def test_cursor_rules_file_is_shared_with_hermes_and_windsurf(tmp_path: Path) ->
     assert entry["readers"] == ["hermes", "windsurf"]
     assert str(entry["message"]) == (
         "<project>/.cursor/rules/apothem-rules.mdc is shared: Hermes (only when the "
-        "project has no .hermes.md, AGENTS.md or CLAUDE.md), Windsurf also load it. "
-        "Installing or uninstalling Cursor changes what those tools load."
+        "project has no .hermes.md, HERMES.md, AGENTS.override.md, AGENTS.md or "
+        "CLAUDE.md), Windsurf also load it. Installing or uninstalling Cursor "
+        "changes what those tools load."
     )
 
 
-def test_project_agents_md_note_gives_the_hermes_condition(tmp_path: Path) -> None:
-    # A .hermes.md or HERMES.md comes first in Hermes's order, and an
-    # AGENTS.override.md beside AGENTS.md is loaded instead of it.
+def test_project_agents_md_note_gives_the_first_match_conditions(
+    tmp_path: Path,
+) -> None:
+    # CodeBuddy uses AGENTS.md only without a CODEBUDDY.md, Codex and Hermes load
+    # an AGENTS.override.md beside AGENTS.md instead of it, a .hermes.md or
+    # HERMES.md comes first in Hermes's order, and Zed loads only the first
+    # project instruction file in its list.
     project = tmp_path / "proj"
     project.mkdir()
     advisories = shared_root_advisories("kimi-code", home=tmp_path, project=project)
-    message = str(_owner_entry(advisories, "<project>/AGENTS.md")["message"])
-    assert (
-        "GitHub Copilot, Hermes (only when the project has no .hermes.md or "
-        "HERMES.md and no AGENTS.override.md beside it), Kiro," in message
+    assert str(_owner_entry(advisories, "<project>/AGENTS.md")["message"]) == (
+        "<project>/AGENTS.md is shared: Antigravity, CodeBuddy (only when the "
+        "project has no CODEBUDDY.md), Codex (only when "
+        "the project has no AGENTS.override.md beside it), Cursor, GitHub Copilot, "
+        "Hermes (only when the project has no .hermes.md or HERMES.md and no "
+        "AGENTS.override.md beside it), Kiro, OpenCode, Windsurf, Zed (only when "
+        "the project has no .rules, .cursorrules, .windsurfrules, .clinerules, "
+        ".github/copilot-instructions.md or AGENT.md) also load it. Installing or "
+        "uninstalling Kimi Code changes what those tools load."
+    )
+
+
+def test_project_gemini_md_note_gives_the_zed_condition(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    project.mkdir()
+    advisories = shared_root_advisories("gemini-cli", home=tmp_path, project=project)
+    assert str(_owner_entry(advisories, "<project>/GEMINI.md")["message"]) == (
+        "<project>/GEMINI.md is shared: Antigravity, GitHub Copilot, Zed (only when "
+        "the project has no .rules, .cursorrules, .windsurfrules, .clinerules, "
+        ".github/copilot-instructions.md, AGENT.md, AGENTS.md or CLAUDE.md) also "
+        "load it. Installing or uninstalling Gemini CLI changes what those tools "
+        "load."
     )
 
 
@@ -175,9 +213,10 @@ def test_hermes_install_names_the_install_whose_cursor_rules_block_it_finds(
         "hermes", home=home, project=project, holders=lambda _path: ["cursor"]
     )
     assert [str(a["message"]) for a in found if a["role"] == "reader"] == [
-        "Hermes (only when the project has no .hermes.md, AGENTS.md or CLAUDE.md) "
-        "also loads <project>/.cursor/rules/apothem-rules.mdc, which holds Apothem "
-        "content from the Cursor install."
+        "Hermes (only when the project has no .hermes.md, HERMES.md, "
+        "AGENTS.override.md, AGENTS.md or CLAUDE.md) also loads "
+        "<project>/.cursor/rules/apothem-rules.mdc, which holds Apothem content "
+        "from the Cursor install."
     ]
 
 
@@ -415,7 +454,10 @@ def test_project_anchor_reader_needs_the_managed_block(tmp_path: Path) -> None:
     )
     advisories = reader_notes()
     assert len(advisories) == 1
-    assert "Kimi Code" in str(advisories[0]["message"])
+    message = str(advisories[0]["message"])
+    assert "Kimi Code" in message
+    # Zed loads AGENTS.md only when no earlier file in its list is there.
+    assert message.startswith("Zed (only when the project has no .rules, ")
 
 
 def test_project_roots_are_skipped_without_a_project(tmp_path: Path) -> None:
@@ -489,14 +531,18 @@ def test_cli_reader_installs_name_the_cursor_install_in_its_rules_file(
     assert [w["readers"] for w in owner] == [["hermes", "windsurf"]]
     # The Windsurf install then says the file holds the Cursor install's block,
     # and so does a Hermes install given the project, with its condition.
-    for harness, condition in (
-        ("windsurf", ""),
-        ("hermes", "(only when the project has no .hermes.md, AGENTS.md or CLAUDE.md)"),
+    for harness, opening in (
+        ("windsurf", "Windsurf also loads "),
+        (
+            "hermes",
+            "Hermes (only when the project has no .hermes.md, HERMES.md, "
+            "AGENTS.override.md, AGENTS.md or CLAUDE.md) also loads ",
+        ),
     ):
         reader = shared_notes(harness, "reader")
         assert [w["owner_of_record"] for w in reader] == ["cursor"]
         message = str(reader[0]["message"])
-        assert condition in message
+        assert message.startswith(opening)
         assert "from the Cursor install" in message
 
 

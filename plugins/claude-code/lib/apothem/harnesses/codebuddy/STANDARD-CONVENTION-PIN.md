@@ -24,8 +24,14 @@
 - Memory: `CODEBUDDY.md` or `.codebuddy/CODEBUDDY.md` (project) and
   `~/.codebuddy/CODEBUDDY.md` (user). When a project has no `CODEBUDDY.md`,
   CodeBuddy Code uses `AGENTS.md` instead, so the registry lists CodeBuddy as a
-  reader of the project `AGENTS.md` that the Kimi Code adapter writes. The
-  adapter authors neither file.
+  reader of the project `AGENTS.md` that the Kimi Code adapter writes, only
+  when the project has no `CODEBUDDY.md`, and the install notes give that
+  condition (the memory page's FAQ, re-read 2026-11-03). The adapter authors
+  neither file.
+- TODO(clarify): the memory page also lists `.codebuddy/CODEBUDDY.md` as a
+  project memory file, but its rule for `AGENTS.md` names only `CODEBUDDY.md`;
+  whether a `.codebuddy/CODEBUDDY.md` alone keeps `AGENTS.md` out is not
+  documented.
 - MCP: `.mcp.json` at the project root (or the deprecated `mcp.json`) and
   `~/.codebuddy/.mcp.json` for user scope; the first existing file in each
   scope wins. Operator-owned; the adapter names the surface and authors no
@@ -204,7 +210,7 @@ CodeBuddy Code v1.16.0 or later.
 Retrieved 2026-10-03 unless marked.
 
 - <https://www.codebuddy.ai/docs/ide/Rules> (project rules)
-- <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02)
+- <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02, the fallback FAQ re-read 2026-11-03)
 - <https://www.codebuddy.ai/docs/cli/skills> (skills; retrieved 2026-10-24)
 - <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
 - <https://www.codebuddy.ai/docs/cli/hooks> (hook files, schema, events, command contract, matcher, Windows shell, `additionalContext` per event; retrieved 2026-10-28; frontmatter-hooks gate read 2026-10-27)
