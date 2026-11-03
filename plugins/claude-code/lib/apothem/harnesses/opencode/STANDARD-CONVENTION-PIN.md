@@ -83,10 +83,19 @@ the OpenCode 2 docs and the v1.19.5 and v2.2.5 source:
 | commands, skills and `$ARGUMENTS` | read | read; a skill with `disable-model-invocation: true` is hidden from the model |
 | `~/.claude/CLAUDE.md` (the Claude Code install) | read when no global `AGENTS.md` exists | not read |
 
-Re-check by 2027-02-01, when this snapshot passes the 90-day limit: whether
-OpenCode 2 still translates the helper `permission` map and the bare
-`mcp.<name>` entries (its live schema marks them deprecated), and whether the
-install should write OpenCode 2's own shapes.
+Decision, 2026-11-03 (the operator's choice): the install writes the OpenCode
+1 shapes for both lines. OpenCode 1 reads them natively, and OpenCode 2
+translates them in memory. Apothem moves to version-aware output, writing
+OpenCode 2's own shapes where OpenCode 2 runs, when either of two signals
+appears: OpenCode 2 announces a removal date for its translation of the
+OpenCode 1 shapes, or `opencode.ai/install` or the `opencode-ai` npm package
+moves to OpenCode 2.
+
+Re-check by 2027-02-01, when this snapshot passes the 90-day limit, for those
+two signals: a removal date for the translation of the helper `permission`
+map and the bare `mcp.<name>` entries (OpenCode 2's live schema already marks
+them deprecated), and the default installer or `opencode-ai` serving
+OpenCode 2.
 
 - <https://opencode.ai/v2/docs/migrate-v1/> (shared configuration locations; V1 shapes keep working; retrieved 2026-11-03)
 - <https://github.com/anomalyco/opencode/tree/v2.2.5> (the instruction, agent, command and skill loaders, `packages/core/src/v1/config/migrate.ts`, `packages/core/src/config/variable.ts`, `packages/schema/src/agent.ts`; read 2026-11-03)
