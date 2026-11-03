@@ -224,7 +224,9 @@ class TestHookMode:
 
     Covers the valid JSON envelope and the empty-additional cases: a missing
     context file, and each guard that passes — the write-plan guard, the
-    project-local plan write, and the bash plan guard.
+    project-local plan write, and the bash plan guard. The header guard fires on
+    a headerless write in a project that follows the convention, whichever of
+    its four sources names that project.
     """
 
     def test_emits_valid_json_envelope(
@@ -326,20 +328,47 @@ class TestHookMode:
         envelope = json.loads(capsys.readouterr().out)
         assert envelope["hookSpecificOutput"]["additionalContext"] == ""
 
+    @pytest.mark.parametrize(
+        "named_by",
+        ["payload-cwd", "CLAUDE_PROJECT_DIR", "LLM_PROJECT_DIR", "working-directory"],
+    )
     def test_missing_header_guard_still_emits_context(
-        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self,
+        named_by: str,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
-        stream = io.StringIO(
-            json.dumps(
-                {
-                    "tool_name": "Write",
-                    "tool_input": {
-                        "file_path": str(_HOOKS_DIR.parent / "example.py"),
-                        "content": "print('missing header')\n",
-                    },
-                }
-            )
-        )
+        # The guard judges only a file inside a git project that carries the
+        # header fixture, and the hook finds that project from the payload's
+        # ``cwd``, else CLAUDE_PROJECT_DIR, else LLM_PROJECT_DIR, else the git
+        # root above the working directory. The project is built here and named
+        # one way at a time, with the other ways cleared, so the outcome does not
+        # depend on where pytest runs (a checkout export has no ``.git``) or on a
+        # variable the developer's shell exports.
+        project = tmp_path / "project"
+        (project / ".git").mkdir(parents=True)
+        schemas = project / "src" / "apothem" / "schemas"
+        schemas.mkdir(parents=True)
+        tag = "SPDX" + "-License-Identifier: MIT"
+        (schemas / "authorship-header.txt").write_text(f"# {tag}\n", encoding="utf-8")
+        elsewhere = tmp_path / "elsewhere"
+        elsewhere.mkdir()
+        monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+        monkeypatch.delenv("LLM_PROJECT_DIR", raising=False)
+        monkeypatch.chdir(project if named_by == "working-directory" else elsewhere)
+        payload: dict[str, object] = {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": str(project / "example.py"),
+                "content": "print('missing header')\n",
+            },
+        }
+        if named_by == "payload-cwd":
+            payload["cwd"] = str(project)
+        elif named_by != "working-directory":
+            monkeypatch.setenv(named_by, str(project))
+        stream = io.StringIO(json.dumps(payload))
         stream.isatty = lambda: False  # type: ignore[method-assign]
         monkeypatch.setattr(sys, "stdin", stream)
 
