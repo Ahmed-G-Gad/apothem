@@ -15,7 +15,7 @@
         "npx",
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "${WORKSPACE}"
+        "/path/to/workspace"
       ],
       "enabled": true
     },
@@ -24,7 +24,7 @@
       "url": "https://api.githubcopilot.com/mcp/",
       "enabled": true,
       "headers": {
-        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}"
+        "Authorization": "Bearer {env:GITHUB_MCP_TOKEN}"
       }
     }
   }

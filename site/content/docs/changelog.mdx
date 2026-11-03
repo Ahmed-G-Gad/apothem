@@ -135,6 +135,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The quality and CI Matrix test jobs start node before pytest.** On a fresh
+  Windows runner the first launch of `node` can take more than a minute while
+  the test workers keep the machine busy. The VS Code publish workflow's vsce
+  version-guard test, which runs the guard's `node -e` check from
+  `publish-vscode.yml` under a 60-second timeout, was the suite's first node
+  launch, and it timed out on its first case in 11 Windows jobs from
+  29 October to 3 November 2026, two of them on `main`. Those two test jobs
+  now run `node -e 0` once before pytest and log how long it took, so the cold
+  start happens before any timed test runs.
 - **Install notes name Windsurf as a reader of the Cursor and Claude Code rule
   files, and Hermes of the Cursor one.** Devin imports `.cursor/rules/*.mdc`
   and `~/.claude/CLAUDE.md` by default, and Devin Local in Devin Desktop finds
@@ -165,13 +174,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   no longer call the block Cursor's own, and the Cursor native-install example
   matches what the install writes, with a test that keeps it so.
 - **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** OpenCode 1
-  reads that file only as a fallback, when no `~/.config/opencode/AGENTS.md`
-  exists, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+  reads that file only as a fallback, when its configuration folder
+  (`~/.config/opencode` by default) holds no `AGENTS.md`, and skips it when
+  `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
   `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. OpenCode 2 has no `CLAUDE.md`
   fallback, so it does not load that file. The notes named OpenCode
   without that condition; they now say
-  `OpenCode (only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists)`,
-  as they already do for the Open-Claw and Hermes conditions.
+  `OpenCode (only in OpenCode 1, when its configuration folder holds no
+  AGENTS.md)`, as they already do for the Open-Claw and Hermes conditions.
 - **Install notes say when Zed, Codex and CodeBuddy skip a shared project
   file.** Zed loads only the first project instruction file in its list
   (`.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
@@ -191,6 +201,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   started in a folder above the project can still load the project
   `AGENTS.md`, or a non-empty `AGENTS.override.md` beside it, unless it starts
   in a home folder or one of a few container folders.
+- **The Zed install's shadowing warning holds for an empty `.rules` and for
+  every file it lists.** Zed reads the first project instruction file that
+  exists, so a `.rules` the project already had, even an empty one, is the file
+  Zed read; the warning now says so instead of naming a file lower in the list.
+  Its advice now reads "To have Zed read the instructions in ...", which holds
+  for every listed file, including ones Zed never read. The Zed page also says
+  that the notes the Zed install prints about shared files lower in the list
+  carry a condition its own `.rules` makes false.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade
@@ -235,6 +253,47 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   runs the suite with an empty home and fails if anything appears there. The
   header-guard hook test now builds its own project instead of relying on the
   checkout it runs in.
+- **The OpenCode install writes MCP variable references OpenCode expands.**
+  OpenCode substitutes `{env:NAME}` in its config, not `${NAME}`, so a
+  `${NAME}` the shared profile used for a secret reached the MCP server as
+  literal text. The install now writes each one as `{env:NAME}` in a server's
+  environment, headers and URL; command arguments are copied as written, for
+  the server or a shell it runs to expand. It warns about a `$NAME` in an
+  environment or header value and about another `${...}` form, which OpenCode
+  does not expand either; the warning names where the reference sits, never the
+  value. OpenCode inserts an `{env:NAME}` value into the config text it reads
+  without escaping it (OpenCode 2 escapes it only when that text would not
+  parse otherwise), so a value holding a backslash (such as a Windows path), a
+  double quote or a control character can stop OpenCode 1 from reading the
+  file, and in both lines a `\t` or `\n` in it reaches the server as a control
+  character. The install warns about such a value and suggests setting it as
+  `{file:path}` under `harnesses.opencode.mcp_servers.<name>`.
+- **The OpenCode install follows `XDG_CONFIG_HOME`.** OpenCode 1 and OpenCode 2
+  read `$XDG_CONFIG_HOME/opencode` when that variable is set, but the install
+  always wrote to `~/.config/opencode`. It now writes to the folder OpenCode
+  reads. It warns when `XDG_CONFIG_HOME` cannot be used, when
+  `OPENCODE_CONFIG_DIR` names another folder (OpenCode 2 reads that folder
+  instead), and when an earlier install is still recorded in
+  `~/.config/opencode`.
+- **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
+  shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
+  `mcp.<name>` entries the install writes in place, without rewriting the file.
+  An operator who converted such an entry to the `mcp.servers` shape got a
+  server that uninstall left behind and that update added a second time. For an
+  install made or last updated by Apothem 1.2.0 or later, which records the
+  entries it wrote, both now recognize the converted server, as a whole: only
+  when its `mcp.<name>` entry is gone and it matches what the install wrote. An
+  operator's own server of the same name, a conversion the operator edited and
+  one the operator disabled stay as they are; beside those, update writes the
+  server under `mcp` again, so OpenCode 1 uses that copy and OpenCode 2 the
+  converted one. An operator's own server under `mcp.servers` that matches one
+  the install wrote, after the operator removed the install's `mcp` entry,
+  cannot be told from a converted copy and is removed with it on uninstall; the
+  file is backed up first. The OpenCode page and convention pin record what
+  OpenCode 1 and OpenCode 2 each read, and that the install writes one
+  configuration in the OpenCode 1 shapes, which OpenCode 2 translates; the pin
+  names what would make it write OpenCode 2's own shapes instead. The page also
+  states that OpenCode 1 loads the Claude Code block in `~/.claude/CLAUDE.md`.
 - **The always-on bytes metric counts only the instruction files Hermes and
   Codex load.** Hermes loads one kind of project context per session, the
   first with a non-empty file: `.hermes.md` or `HERMES.md` (the first of the
@@ -254,6 +313,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
+  allows every tool by default and asks before reading `.env` and `.env.*`
+  files. A helper's rules come after those defaults and after the operator's
+  own `permission` config, and the last matching rule wins, in OpenCode 1
+  (v1.19.5) and OpenCode 2 (v2.2.5). Every helper the OpenCode install wrote
+  carried `read: allow`, which turned that prompt off, and `allow` rules for
+  the other tools it may use, which overrode a stricter rule the operator set,
+  such as a global `bash: ask`. Helpers now carry only `deny` rules, for the
+  tools they must not use, so the `.env` prompt and the operator's rules apply
+  to them.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service

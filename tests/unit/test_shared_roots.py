@@ -303,7 +303,7 @@ def test_opencode_loads_claude_md_only_without_its_global_agents_md() -> None:
     assert "https://opencode.ai/v2/docs/instructions/" in root.evidence
     condition = root.reader_conditions["opencode"]
     assert "OpenCode 1" in condition
-    assert "~/.config/opencode/AGENTS.md" in condition
+    assert "configuration folder holds no AGENTS.md" in condition
 
 
 @pytest.mark.parametrize(

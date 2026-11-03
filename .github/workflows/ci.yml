@@ -162,6 +162,21 @@ jobs:
         run: python -m ruff format --check .
       - name: Mypy (type check)
         run: python -m mypy
+      - name: Start node once
+        # A fresh Windows runner's first node launch can take more than a
+        # minute while pytest's workers keep the machine busy. Inside pytest
+        # it stalled the vsce version-guard test's 60-second node probe in 11
+        # Windows jobs from 2026-10-29 to 2026-11-03, each time on the run's
+        # first node launch. Launching node here, before pytest starts, moves
+        # that cold start ahead of the timed tests. `node -e 0` runs the
+        # engine start-up the tests' `node -e` launches need; `node --version`
+        # returns before most of it.
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          if command -v node >/dev/null; then
+            time node -e 0
+          fi
       - name: Pytest
         run: python -m pytest --color=yes
       - name: Ecosystem validator

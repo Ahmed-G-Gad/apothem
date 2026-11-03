@@ -100,7 +100,7 @@ limit natively, states it in the helper's instructions, or drops the read-only l
 | Codex | none emitted; the helper's instructions state it, and the parent session's sandbox governs writes | not available | inherited (not set) |
 | Gemini CLI | `tools` allowlist of Gemini tool names, plus any `mcp_<server>_*` entries the profile's `agent_mcp_servers` key adds to a listed explicit list; with no `tools`, the allowlist the denials imply plus `mcp_*` | `max_turns` | inherited (not set) |
 | Qwen Code | `tools` / `disallowedTools` in Qwen tool names; with no `tools`, no list is emitted, so MCP tools are inherited and the denials apply | not mapped | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` per tool); MCP tools are not restricted | not mapped | inherited (not set) |
+| OpenCode | `permission` with one `deny` per denied tool and no `allow`, so OpenCode's defaults (including its ask before reading `.env` files) and your own rules apply; MCP tools are not restricted | not mapped | inherited (not set) |
 | Antigravity | none emitted; the description drops "read-only" | not available | inherited (not set) |
 | CodeBuddy | `tools` / `disallowedTools` as comma strings, limited to the tool names CodeBuddy documents; no MCP entry | `maxTurns` | inherited (not set) |
 | Trae | `tools` / `disallowedTools` as comma strings, limited to the tool names Trae documents; no MCP entry | not available | inherited (not set) |

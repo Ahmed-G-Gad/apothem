@@ -251,10 +251,12 @@ class TestRenderMcpOpencode:
         out = render_mcp_opencode({"s": {"transport": "http", "url": "https://s"}})
         assert out["s"] == {"type": "remote", "url": "https://s", "enabled": True}
 
-    def test_remote_headers_pass_through_with_var_reference(self) -> None:
-        # opencode's remote branch must carry auth headers verbatim, and a
-        # ${VAR} token is emitted as-is so no raw secret literal reaches native
-        # config. streamable-http is the preferred remote transport.
+    def test_remote_header_reference_becomes_an_opencode_env_reference(
+        self,
+    ) -> None:
+        # OpenCode substitutes {env:NAME}, never ${NAME}, so the auth header
+        # keeps its reference (no raw secret reaches native config) in the form
+        # OpenCode expands. streamable-http is the preferred remote transport.
         out = render_mcp_opencode(
             {
                 "s": {
@@ -268,7 +270,63 @@ class TestRenderMcpOpencode:
             "type": "remote",
             "url": "https://s",
             "enabled": True,
-            "headers": {"Authorization": "Bearer ${API_TOKEN}"},
+            "headers": {"Authorization": "Bearer {env:API_TOKEN}"},
+        }
+
+    def test_local_env_references_become_env_references_but_arguments_stay(
+        self,
+    ) -> None:
+        # An argument is left for the server, or a shell it runs, to expand.
+        out = render_mcp_opencode(
+            {
+                "s": {
+                    "transport": "stdio",
+                    "command": "run",
+                    "args": ["--token", "${API_KEY}"],
+                    "env": {"GITHUB_TOKEN": "${GITHUB_TOKEN}"},
+                }
+            }
+        )
+        assert out["s"]["command"] == ["run", "--token", "${API_KEY}"]
+        assert out["s"]["environment"] == {"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"}
+
+    def test_every_reference_in_a_value_and_the_url_is_rewritten(self) -> None:
+        out = render_mcp_opencode(
+            {
+                "s": {
+                    "transport": "http",
+                    "url": "https://${HOST}/mcp",
+                    "headers": {"X-Auth": "${USER_NAME}:${USER_PASS} (v1)"},
+                }
+            }
+        )
+        assert out["s"]["url"] == "https://{env:HOST}/mcp"
+        assert out["s"]["headers"] == {"X-Auth": "{env:USER_NAME}:{env:USER_PASS} (v1)"}
+
+    def test_values_without_a_plain_reference_are_kept(self) -> None:
+        # OpenCode has no default syntax and no bare $NAME form, so those are
+        # copied as written; keys are never rewritten.
+        out = render_mcp_opencode(
+            {
+                "s": {
+                    "transport": "stdio",
+                    "command": "run",
+                    "env": {
+                        "PLAIN": "value",
+                        "DEFAULTED": "${NAME:-fallback}",
+                        "BARE": "$NAME",
+                        "DOUBLED": "$${NAME}",
+                        "${KEY}": "x",
+                    },
+                }
+            }
+        )
+        assert out["s"]["environment"] == {
+            "PLAIN": "value",
+            "DEFAULTED": "${NAME:-fallback}",
+            "BARE": "$NAME",
+            "DOUBLED": "$${NAME}",
+            "${KEY}": "x",
         }
 
 

@@ -23,7 +23,12 @@ from .install_driver_jsonmerge import (
     _LossyRewriteError,
     is_apothem_hook,
 )
-from .install_driver_ownership import current_target, remove_owned_text, strip_owned
+from .install_driver_ownership import (
+    RelocatedFn,
+    current_target,
+    remove_owned_text,
+    strip_owned,
+)
 from .install_driver_pathsafety import _validate_target_path
 from .install_driver_types import (
     _REMOVE_KEY,
@@ -480,6 +485,7 @@ def surgically_remove_materialized_config(
     allowed_root: Path | None = None,
     apothem_keys: frozenset[str] = frozenset(),
     retired: tuple[OwnedEntry, ...] = (),
+    relocated: RelocatedFn | None = None,
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's keys from an adapter-rendered native config.
 
@@ -494,10 +500,16 @@ def surgically_remove_materialized_config(
     preserved and an Apothem-only file is deleted. *retired* lists entries an
     earlier release wrote at a location the adapter no longer uses; an install
     recorded before ownership tracking has them removed while they still hold
-    that release's value. Backs the target up before mutation. Returns ``None``
-    when the target is absent. This is the surgical replacement for the retired
-    whole-file ``backup_file_to_sibling`` rename.
+    that release's value. *relocated* names where the harness may have moved
+    the entries the install record says Apothem owns; those are removed too
+    while they hold the recorded value. Backs the target up before mutation.
+    Returns ``None`` when the target is absent. This is the surgical
+    replacement for the retired whole-file ``backup_file_to_sibling`` rename.
     """
+    recorded = current_target(harness_name, install_root, target)
+    if relocated is not None and recorded is not None and recorded.owned:
+        moved = relocated(recorded.owned, _current_text(target))
+        recorded = replace(recorded, owned=(*recorded.owned, *moved))
     return _surgical_remove_from_target(
         target,
         template_text,
@@ -506,9 +518,17 @@ def surgically_remove_materialized_config(
         harness_name=harness_name,
         allowed_root=allowed_root or install_root,
         apothem_keys=apothem_keys,
-        recorded=current_target(harness_name, install_root, target),
+        recorded=recorded,
         retired=retired,
     )
+
+
+def _current_text(target: Path) -> str | None:
+    """Return *target*'s text, or ``None`` when it cannot be read."""
+    try:
+        return target.read_text(encoding="utf-8")
+    except OSError:
+        return None
 
 
 def _remove_unlisted_anchors(

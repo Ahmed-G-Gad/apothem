@@ -40,9 +40,11 @@ from .install_driver_layout import (
 )
 from .install_driver_ownership import (
     MergeOutcome,
+    RelocatedFn,
     _LegacyOwnership,
     _merge_native_content,
     _operator_json_merge,
+    adjust_prior,
     prior_ownership,
 )
 from .install_driver_pathsafety import (
@@ -205,6 +207,7 @@ def apply_operator_owned_content(
     allowed_root: Path | None = None,
     authorize: AuthorizeFn | None = None,
     retired: tuple[OwnedEntry, ...] = (),
+    relocated: RelocatedFn | None = None,
     dry_run: bool = False,
 ) -> MaterializationResult:
     """Write materializer-rendered content to an operator-owned native config.
@@ -218,8 +221,10 @@ def apply_operator_owned_content(
     and no-op detection. *retired* lists entries an earlier release wrote at a
     location the adapter no longer uses; when the target's install record
     predates ownership recording, they are removed while they still hold that
-    release's value. With *dry_run*, nothing is written: the prospective
-    result (with its diff) is returned, or the refusal the write would raise.
+    release's value. *relocated* names where the harness may have moved the
+    entries Apothem owns (see :func:`adjust_prior`). With *dry_run*, nothing is
+    written: the prospective result (with its diff) is returned, or the
+    refusal the write would raise.
     """
     write_allowed = allowed_root or install_root
     target_error = _validate_target_path(
@@ -235,8 +240,11 @@ def apply_operator_owned_content(
             content,
             before=existing_text,
             harness_root=install_root,
-            prior=_with_retired(
-                prior_ownership(harness_name, install_root, target), retired
+            prior=adjust_prior(
+                prior_ownership(harness_name, install_root, target),
+                retired=retired,
+                relocated=relocated,
+                current=existing_text,
             ),
         )
     except _LossyRewriteError as refusal:
@@ -289,16 +297,6 @@ def apply_operator_owned_content(
         allowed_root=allowed_root,
     )
     return replace(_with_detail(result, detail), owned=merge.owned)
-
-
-def _with_retired(
-    prior: tuple[OwnedEntry, ...] | _LegacyOwnership,
-    retired: tuple[OwnedEntry, ...],
-) -> tuple[OwnedEntry, ...] | _LegacyOwnership:
-    """Attach *retired* entries to a legacy (pre-ownership) prior record."""
-    if retired and isinstance(prior, _LegacyOwnership):
-        return _LegacyOwnership(retired)
-    return prior
 
 
 def _unified_diff(before: str, after: str, target: Path) -> str:

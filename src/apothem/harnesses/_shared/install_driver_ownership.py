@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import copy
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -62,6 +63,34 @@ LEGACY_OWNERSHIP: Final[_LegacyOwnership] = _LegacyOwnership()
 
 #: What Apothem owned in a target before this pass.
 PriorOwnership = tuple[OwnedEntry, ...] | _LegacyOwnership
+
+#: Returns, for the owned entries and the target's current text (``None`` when
+#: it has none), the entries to strip where the operator moved Apothem's own
+#: (for example to OpenCode 2's ``mcp.servers``).
+RelocatedFn = Callable[[tuple[OwnedEntry, ...], str | None], tuple[OwnedEntry, ...]]
+
+
+def adjust_prior(
+    prior: PriorOwnership,
+    *,
+    retired: tuple[OwnedEntry, ...] = (),
+    relocated: RelocatedFn | None = None,
+    current: str | None = None,
+) -> PriorOwnership:
+    """Return *prior* with the entries to strip besides the recorded ones.
+
+    *retired* attaches to a legacy (pre-ownership) record: an earlier release
+    wrote those entries at a location the adapter no longer uses. *relocated*
+    adds, to a recorded ownership, what it finds of Apothem's entries moved
+    elsewhere in *current* (the target's text); they are stripped under the
+    same exact-value rule.
+    """
+    if isinstance(prior, _LegacyOwnership):
+        return _LegacyOwnership(retired) if retired else prior
+    if relocated is None or not prior:
+        return prior
+    return (*prior, *relocated(prior, current))
+
 
 _MISSING: Final[object] = object()
 

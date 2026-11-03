@@ -4,8 +4,11 @@
 
 Materializes ``~/.config/opencode/opencode.json`` per the opencode vendor
 canonical schema at https://opencode.ai/docs/config/ and the adapter-local
-``STANDARD-CONVENTION-PIN.md``. The POSIX-canonical path is uniform across
-supported platforms. The install step also propagates commands, skills, and
+``STANDARD-CONVENTION-PIN.md``. The folder is ``$XDG_CONFIG_HOME/opencode``
+when ``XDG_CONFIG_HOME`` names an absolute folder, else
+``~/.config/opencode`` on every platform, as both OpenCode lines resolve it
+(see :func:`~apothem.harnesses.opencode.materializer.config_root`). The
+install step also propagates commands, skills, and
 subagents into OpenCode's native discovery directories and keeps unsupported
 reference material under ``~/.config/opencode/.apothem/support/``.
 Delegates install logic to :mod:`apothem.harnesses.opencode.install`, which
@@ -14,11 +17,9 @@ renders the native config via :mod:`apothem.harnesses.opencode.materializer`.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from apothem.harnesses._shared.wrapper_factories import make_native_config_adapter
 from apothem.harnesses.opencode.install import install as _install
-from apothem.harnesses.opencode.materializer import CONFIG_DIR
+from apothem.harnesses.opencode.materializer import config_root
 from apothem.harnesses.opencode.materializer import (
     materialize_native_config as materialize_native_config,
 )
@@ -28,7 +29,7 @@ from apothem.harnesses.opencode.verify import verify as _verify
 
 OpenCodeAdapter = make_native_config_adapter(
     "opencode",
-    target_factory=lambda: Path.home() / CONFIG_DIR / "opencode.json",
+    target_factory=lambda: config_root() / "opencode.json",
     install_fn=_install,
     uninstall_fn=_uninstall,
     update_fn=_update,
