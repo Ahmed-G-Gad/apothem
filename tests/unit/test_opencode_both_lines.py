@@ -478,16 +478,22 @@ def _link_folder(link: Path, target: Path) -> None:
 
 
 def test_xdg_config_home_naming_the_linked_default_keeps_the_install(
-    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+    adapter: OpenCodeAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # An install made with XDG unset, through a ~/.config that is a link, then
-    # an update with XDG_CONFIG_HOME naming that same folder.
-    real = isolated_home / "real-config"
-    real.mkdir()
-    _link_folder(isolated_home / ".config", real)
+    # An install made with XDG unset under a home folder reached through a link
+    # (a symlink, or a junction on Windows), then an update with
+    # XDG_CONFIG_HOME naming the same ~/.config. The install refuses a link at
+    # ~/.config itself on POSIX, so the link sits above it, as it does when the
+    # home folder lives on a linked volume.
+    real_home = tmp_path / "real-home"
+    real_home.mkdir()
+    home = tmp_path / "home-link"
+    _link_folder(home, real_home)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     adapter.install({})
-    root = isolated_home / ".config" / "opencode"
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(isolated_home / ".config"))
+    root = home / ".config" / "opencode"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
 
     adapter.update({})
 
