@@ -123,12 +123,17 @@ A reader is listed only where its vendor docs show a default load of that
 exact path. When a reader loads a path only in some cases, the registry records
 the condition, and the install note repeats it. `Open-Claw` indexes
 `~/.agents/skills/` only under its default state directory (it skips the folder
-when `OPENCLAW_STATE_DIR` points elsewhere). `Codex` takes the first of
+when `OPENCLAW_STATE_DIR` points elsewhere). `OpenCode` 1 loads
+`~/.claude/CLAUDE.md` only when no `~/.config/opencode/AGENTS.md` exists, and
+skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+`OPENCODE_DISABLE_CLAUDE_CODE=1` is set. `OpenCode` 2 reads the same
+`~/.config/opencode/` configuration but has no `CLAUDE.md` fallback, so it does
+not load `~/.claude/CLAUDE.md`. `Codex` takes the first of
 `AGENTS.override.md` and `AGENTS.md` in each folder, so it loads
 `<project>/AGENTS.md` only when the project has no `AGENTS.override.md` beside
 it. `CodeBuddy` uses `<project>/AGENTS.md` as project memory only when the
-project has no `CODEBUDDY.md`. `Zed` loads only the first project instruction file in its list: `.rules`,
-`.cursorrules`, `.windsurfrules`, `.clinerules`,
+project has no `CODEBUDDY.md`. `Zed` loads only the first project instruction
+file in its list: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, then
 `GEMINI.md`. So it loads `<project>/.github/copilot-instructions.md`,
 `<project>/AGENTS.md` and `<project>/GEMINI.md` only when the project has none
