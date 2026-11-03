@@ -56,7 +56,7 @@ maxTurns: <integer>
 
 要为其中一个辅助器提供已连接的学术索引，请在配置档案的 `agent_mcp_servers` 键中指明该服务器，该键将智能体名称映射到服务器名称。随后，Claude Code 引擎安装（`apothem install`）会为每个指明的服务器向该智能体的 `tools` 行追加一个 `mcp__<server>__*` 条目，且不改动任何其他智能体。Gemini CLI 安装也会这样做：对于由字母、数字和 `-` 组成的服务器名称，它会在该智能体的 `tools` 允许列表中为每个服务器追加一个 `mcp_<server>_*` 条目。在这两者上，智能体自身的 `disallowedTools` 所指明的服务器仍保持被拒绝。该条目会放行该服务器的每一个工具，包括任何会写入的工具，因此只应指明你信任其用于查询的服务器：辅助器的指令将它们限制为搜索、查找、读取、验证和解析调用，但工具只强制执行 `tools` 行所列出的名称。针对不存在的智能体、或没有显式 `tools` 行的智能体所给出的名称，会被报告并跳过。
 
-Claude Code 和 Gemini CLI 以外的工具会忽略该键。Claude Code 插件树是在没有配置档案的情况下组装的，并保留普通列表，因此插件用户应改为在 `~/.claude/agents/` 下定义一个用户级智能体。配置档案语法、服务器名称规则以及该变通做法见[让辅助器访问 MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)。
+Claude Code 和 Gemini CLI 以外的工具会忽略该键。Claude Code 插件树是在没有配置档案的情况下组装的，并保留普通列表，因此插件用户应改为在 `~/.claude/agents/` 下定义一个用户级智能体。配置档案语法、服务器名称规则以及该变通做法见[让辅助器访问 MCP 服务器](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)。
 
 ## 按工具转换
 

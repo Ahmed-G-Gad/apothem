@@ -80,7 +80,7 @@ sourceHash: "1d9aa6524933a4c5"
 يشغّل الأمر المرفق). واسمان، <bdi>`projectify`</bdi> و<bdi>`workflow`</bdi>، هما
 أيضًا مهارتان أصليّتان؛ والمهارة الأصلية هي التي تشحنها الإضافة وتثبيت المحرّك،
 لا مهارةً مشتقّة من الأمر. راجع
-[<bdi>Claude Code</bdi>](/docs/harnesses/claude-code#مهارات-الأوامر-والملفات-المرجعية)
+[<bdi>Claude Code</bdi>](/docs/harnesses/claude-code#command-skills-and-reference-files)
 لمعرفة كيف تُقسَّم الأوامر، و[أوامر الشرطة المائلة](/docs/reference/commands)
 للاطّلاع على الكتالوج الكامل للأوامر.
 
@@ -338,7 +338,7 @@ codex plugin add apothem@apothem
 
 مثل امتدادَي القناتين 5 و6، هذا **مدخل تمهيدي** يستدعي المحرّك عبر الصدفة. تحزم
 الإضافة مهارة دخول واحدة؛ وبيانها ملف <bdi>`plugin.json`</bdi> في الجذر، وتصف
-[صفحة إطار العمل الخاصة بمضيف الإضافات](/docs/harnesses/codex#إضافة-codex) البنيةَ
+[صفحة إطار العمل الخاصة بمضيف الإضافات](/docs/harnesses/codex#codex-plugin) البنيةَ
 وما تتركه الإضافة للمحرّك. جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
 
 ```bash title="Materialize the full harness"
@@ -425,7 +425,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
   ويختبر كلًّا منها في <bdi>CI</bdi>، لكنها لم تعد تتلقّى إصلاحات أمنية من المصدر
   الأصلي، لذا فضِّل <bdi>Python</bdi> 3.11 أو أحدث و<bdi>Node.js</bdi> 22 أو أحدث.
   تشرح
-  [سياسة الحدود الدنيا لبيئة التشغيل](/docs/governance/release-engineering-policy#الحدود-الدنيا-لبيئة-التشغيل)
+  [سياسة الحدود الدنيا لبيئة التشغيل](/docs/governance/release-engineering-policy#runtime-floors)
   كيف يُرفَع حدّ أدنى.
 - **<bdi>Git</bdi>** — لمسار المُثبِّت فقط، وللصيغة الشبكية فقط (يستنسخ السكربت
   المصدر؛ ولا تحتاج النسخة المسحوبة المحلية إلى استنساخ).

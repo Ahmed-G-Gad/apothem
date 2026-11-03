@@ -69,7 +69,7 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 
 ## 兼容性说明
 
-命令提示词被转换为技能目录，规则按上文所述进行渲染；技能和输出样式按原样复制，智能体也按原样复制，但配置档案的 `agent_mcp_servers` 键所列出的辅助程序会在其 `tools` 行中为每个指定的服务器增加一个 `mcp__<server>__*` 条目（参见 [MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
+命令提示词被转换为技能目录，规则按上文所述进行渲染；技能和输出样式按原样复制，智能体也按原样复制，但配置档案的 `agent_mcp_servers` 键所列出的辅助程序会在其 `tools` 行中为每个指定的服务器增加一个 `mcp__<server>__*` 条目（参见 [MCP 服务器](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)）。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
 
 `~/.claude/agents/` 是一个由 `Claude Code` 拥有的共享根目录，`~/.claude/skills/` 和 `~/.claude/CLAUDE.md` 也是：其他受支持的工具会加载它们，因此 `Claude Code` 安装写入其中的智能体、技能和 Apothem 区块也会出现在这些工具中，安装会打印一条指出这些工具的说明。[工具注册表](/docs/reference/harness-registry)列出了每个根目录的读取者。
 

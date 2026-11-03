@@ -84,7 +84,7 @@ remplace le `/code-review` intégré (son alias `/review` exécute toujours la
 revue intégrée). Deux noms, `projectify` et `workflow`, sont aussi des skills
 natives ; la skill native est celle que livrent le plugin et l'installation par
 le moteur, et non une skill dérivée de la commande. Consultez
-[Claude Code](/docs/harnesses/claude-code#skills-de-commande-et-fichiers-de-référence)
+[Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)
 pour la façon dont les commandes sont découpées, et
 [Commandes slash](/docs/reference/commands) pour le catalogue complet des
 commandes.
@@ -376,7 +376,7 @@ sous WSL.
 Comme les extensions des canaux 5 et 6, il s'agit d'un **amorçage** qui délègue
 au moteur via le shell. Le plugin embarque une skill d'entrée ; son manifeste
 est un `plugin.json` à la racine, et la
-[page d'environnement de l'hôte à plugins](/docs/harnesses/codex#plugin-codex)
+[page d'environnement de l'hôte à plugins](/docs/harnesses/codex#codex-plugin)
 décrit cette disposition et ce que le plugin laisse au moteur. Matérialisez
 l'environnement complet en exécutant l'installation par son intermédiaire :
 
@@ -462,7 +462,7 @@ dans Claude Code et confirmez qu'**apothem** figure comme installé.
   déclarés et teste chacun d'eux en CI, mais ils ne reçoivent plus de
   correctifs de sécurité en amont ; privilégiez donc Python 3.11 ou plus récent
   et Node.js 22 ou plus récent. La
-  [politique des planchers d'exécution](/docs/governance/release-engineering-policy#planchers-dexécution)
+  [politique des planchers d'exécution](/docs/governance/release-engineering-policy#runtime-floors)
   explique comment un plancher est relevé.
 - **Git** — voie de l'installateur uniquement, et seulement pour la forme réseau
   (le script clone le code source ; un checkout local ne nécessite aucun

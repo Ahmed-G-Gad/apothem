@@ -50,7 +50,7 @@ apothem install --harness cursor --project /path/to/project
 
 هذه المجلّدات مشتركة، وليست خاصة بالمشروع:
 
-- كل مشروع تثبّت فيه <bdi>`cursor`</bdi>، وكل تثبيت آخر لـ <bdi>Apothem</bdi> يسمّي المجلّد، يستخدم النسخة نفسها ويكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت به. وتقرأ أدوات أخرى عديدة <bdi>`~/.agents/skills/`</bdi> أيضًا؛ ويسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة).
+- كل مشروع تثبّت فيه <bdi>`cursor`</bdi>، وكل تثبيت آخر لـ <bdi>Apothem</bdi> يسمّي المجلّد، يستخدم النسخة نفسها ويكتب الملفات نفسها، لذا لا يهمّ الترتيب الذي تثبّت به. وتقرأ أدوات أخرى عديدة <bdi>`~/.agents/skills/`</bdi> أيضًا؛ ويسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots).
 - يختار <bdi>`--project`</bdi> ملف القواعد الذي يُكتَب والمشروعَ الذي ينتمي إليه
   التثبيت. ولا يغيّر المكان الذي تذهب إليه المهارات.
 - لا يضيف التثبيت أي ملف مهارة أو قاعدة إلى مستودعك. ويحصل المشروع على ملف
@@ -110,7 +110,7 @@ apothem install --harness cursor --project /path/to/project
   أدرِج <bdi>`.cursor/agents/`</bdi> في <bdi>`.gitignore`</bdi>؛ ولا يختار <bdi>Apothem</bdi> نيابةً عنك.
 - يُحمِّل <bdi>Cursor</bdi> أيضًا مجلّدات المساعِدات المكتوبة لأدوات أخرى، ومنها
   <bdi>`.claude/agents/`</bdi> في المشروع و<bdi>`~/.claude/agents/`</bdi> في دليلك المنزلي
-  (ويسرد [سجلّ أُطُر العمل](/docs/reference/harness-registry#الجذور-المشتركة)
+  (ويسرد [سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots)
   البقية). وعند تعارض الأسماء يتقدّم المشروع على المجلّد المنزلي ويتقدّم <bdi>`.cursor/`</bdi>
   على الآخرين، لذا ففي مشروع فيه هذا التثبيت تحلّ الملفات الأصلية محلّ نسخ
   <bdi>Claude Code</bdi> التي كان <bdi>Cursor</bdi> سيستوردها من <bdi>`~/.claude/agents/`</bdi>. ولا تقول

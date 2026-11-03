@@ -43,7 +43,7 @@ apothem install --harness cursor --project /path/to/project
 
 这些文件夹是共享的，并非项目私有：
 
-- 你安装 `cursor` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- 你安装 `cursor` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们。
 - `--project` 决定要写入哪个规则文件以及安装属于哪个项目。它不会改变技能的写入位置。
 - 安装不会向你的仓库添加任何技能或规则文件。项目获得的是规则文件、`.cursor/agents/` 中的子代理文件、`.cursor/hooks.json` 中的钩子条目，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
 - 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
@@ -74,7 +74,7 @@ Cursor 没有列出或拒绝工具的键：子代理会继承其父级的每一�
 需要了解的事项：
 
 - 子代理文件是普通的项目文件。将它们随项目一起提交，或者在 `.gitignore` 中列出 `.cursor/agents/`；Apothem 不替你做选择。
-- Cursor 还会加载为其他工具写入的辅助器文件夹，其中包括项目中的 `.claude/agents/` 和你主目录中的 `~/.claude/agents/`（其余的由[工具注册表](/docs/reference/harness-registry#共享根目录)列出）。名称冲突时，项目优先于主目录文件夹，`.cursor/` 优先于其他文件夹，因此在进行了此安装的项目中，原生文件会取代 Cursor 将从 `~/.claude/agents/` 导入的 Claude Code 副本。Cursor 的文档没有说明它是加载两份副本还是丢弃优先级较低的那一份，也没有说明它是否会应用它所导入的 Claude Code 文件中的 `tools` 和 `disallowedTools` 行。
+- Cursor 还会加载为其他工具写入的辅助器文件夹，其中包括项目中的 `.claude/agents/` 和你主目录中的 `~/.claude/agents/`（其余的由[工具注册表](/docs/reference/harness-registry#shared-roots)列出）。名称冲突时，项目优先于主目录文件夹，`.cursor/` 优先于其他文件夹，因此在进行了此安装的项目中，原生文件会取代 Cursor 将从 `~/.claude/agents/` 导入的 Claude Code 副本。Cursor 的文档没有说明它是加载两份副本还是丢弃优先级较低的那一份，也没有说明它是否会应用它所导入的 Claude Code 文件中的 `tools` 和 `disallowedTools` 行。
 - 你自己的、与某个 Apothem 辅助器同名的文件会先保存到 `~/.apothem/backups/` 下，然后被替换。卸载不会将其放回。其他名称的文件绝不会被触碰。
 - Apothem 尚未确认 Cursor 是否读取另一个工具写入其所导入文件夹中的 TOML 文件，Third-Party Imports 设置是否会关闭这些被导入的文件夹，以及它是否读取 `.cursor/agents/` 中 `.md` 以外的扩展名或嵌套文件夹。
 

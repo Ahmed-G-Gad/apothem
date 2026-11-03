@@ -51,7 +51,7 @@ alterar qualquer coisa no projeto:
 
 Essas pastas são compartilhadas. Elas não são privadas do projeto:
 
-- Todo projeto em que você instala `cursor`, e toda outra instalação do Apothem que nomeia a pasta, usa a mesma cópia e grava os mesmos arquivos, então a ordem em que você instala não importa. Várias outras ferramentas também leem `~/.agents/skills/`; o [registro de harnesses](/docs/reference/harness-registry#raízes-compartilhadas) as lista.
+- Todo projeto em que você instala `cursor`, e toda outra instalação do Apothem que nomeia a pasta, usa a mesma cópia e grava os mesmos arquivos, então a ordem em que você instala não importa. Várias outras ferramentas também leem `~/.agents/skills/`; o [registro de harnesses](/docs/reference/harness-registry#shared-roots) as lista.
 - `--project` escolhe o arquivo de regras a gravar e a qual projeto a
   instalação pertence. Ele não muda para onde vão as skills.
 - A instalação não adiciona nenhum arquivo de skill ou de regra ao seu repositório. O projeto
@@ -113,7 +113,7 @@ Pontos a saber:
   liste `.cursor/agents/` no `.gitignore`; o Apothem não escolhe por você.
 - O Cursor também carrega pastas de auxiliares gravadas para outras ferramentas, entre elas
   `.claude/agents/` no projeto e `~/.claude/agents/` no seu diretório pessoal
-  (o [registro de harnesses](/docs/reference/harness-registry#raízes-compartilhadas) lista as
+  (o [registro de harnesses](/docs/reference/harness-registry#shared-roots) lista as
   demais). Em um conflito de nomes, o projeto prevalece sobre a pasta pessoal e `.cursor/` prevalece
   sobre as outras, então, em um projeto com esta instalação, os arquivos nativos substituem as
   cópias do Claude Code que o Cursor importaria de `~/.claude/agents/`. A

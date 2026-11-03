@@ -51,7 +51,7 @@ Home-Verzeichnis, bevor sie irgendetwas im Projekt ändert:
 
 Diese Ordner werden gemeinsam genutzt. Sie gehören nicht exklusiv zum Projekt:
 
-- Jedes Projekt, in das Sie `cursor` installieren, und jede andere Apothem-Installation, die den Ordner nennt, nutzt dieselbe Kopie und schreibt dieselben Dateien, daher spielt die Reihenfolge Ihrer Installationen keine Rolle. Mehrere andere Werkzeuge lesen `~/.agents/skills/` ebenfalls; die [Harness-Registry](/docs/reference/harness-registry#gemeinsame-wurzelverzeichnisse) listet sie auf.
+- Jedes Projekt, in das Sie `cursor` installieren, und jede andere Apothem-Installation, die den Ordner nennt, nutzt dieselbe Kopie und schreibt dieselben Dateien, daher spielt die Reihenfolge Ihrer Installationen keine Rolle. Mehrere andere Werkzeuge lesen `~/.agents/skills/` ebenfalls; die [Harness-Registry](/docs/reference/harness-registry#shared-roots) listet sie auf.
 - `--project` legt fest, welche Regeldatei geschrieben wird und zu welchem
   Projekt die Installation gehört. Es ändert nicht, wohin die Skills gehen.
 - Die Installation fügt Ihrem Repository keine Skill- oder Regeldatei hinzu. Das
@@ -123,7 +123,7 @@ Gut zu wissen:
 - Cursor lädt auch Helfer-Ordner, die für andere Werkzeuge geschrieben wurden,
   darunter `.claude/agents/` im Projekt und `~/.claude/agents/` in Ihrem
   Home-Verzeichnis (die
-  [Harness-Registry](/docs/reference/harness-registry#gemeinsame-wurzelverzeichnisse)
+  [Harness-Registry](/docs/reference/harness-registry#shared-roots)
   listet die übrigen auf). Bei einer Namenskollision gewinnt das Projekt gegenüber
   dem Home-Ordner und `.cursor/` gegenüber den anderen, sodass in einem Projekt mit
   dieser Installation die nativen Dateien die Kopien für Claude Code ersetzen, die

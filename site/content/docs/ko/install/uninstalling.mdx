@@ -25,7 +25,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 ## 엔진 제거
 
 제거 방법은 사용한 설치 채널에 맞춰 달라집니다. 채널 번호는
-[설치 채널 표](/docs/install#채널-선택)의 번호입니다.
+[설치 채널 표](/docs/install#choose-a-channel)의 번호입니다.
 
 - **Claude Code 플러그인(채널 1)** — Claude Code 안에서 플러그인을 제거하세요: `/plugin uninstall apothem@apothem`(마켓플레이스 항목은 `/plugin marketplace remove ahmed-g-gad/apothem`으로 제거할 수 있습니다).
 - **npx(채널 2)** — 제거할 것이 없습니다. `npx`는 자체 캐시에서 실행됩니다. 캐시된 사본까지 없애려면 `npm cache clean --force`로 캐시를 지우세요.
@@ -68,7 +68,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - 공유 설정 파일에 여러분이 추가한 항목은 보존됩니다. 여러분 자신의 권한 규칙,
   MCP 서버, 훅 핸들러는 그대로 남습니다. 제거는 설치 원장이 Apothem의 것으로
   기록한 키와 목록 항목만 제거합니다
-  ([설정](/docs/reference/settings#여러분의-설정-파일에-병합하기) 참조).
+  ([설정](/docs/reference/settings#merging-into-your-own-settings-file) 참조).
 - 설치 루트의 `.apothem/` 아래에 있는 공유 데이터 저장소(`memory/`, `contexts/`,
   `learning/`)는 같은 루트에 설치된 다른 하니스가 아직 사용하는 동안에는 남습니다.
   그 루트에서 마지막 하니스를 제거하면 각 저장소를 먼저 `~/.apothem/backups/`에

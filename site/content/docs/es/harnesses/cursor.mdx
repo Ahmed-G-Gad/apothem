@@ -51,7 +51,7 @@ antes de cambiar nada en el proyecto:
 
 Estas carpetas son compartidas. No son privadas del proyecto:
 
-- Cada proyecto en el que instalas `cursor`, y cada otra instalación de Apothem que nombra la carpeta, usa la misma copia y escribe los mismos archivos, así que el orden en que instalas no importa. Varias otras herramientas también leen `~/.agents/skills/`; el [registro de entornos](/docs/reference/harness-registry#raíces-compartidas) las lista.
+- Cada proyecto en el que instalas `cursor`, y cada otra instalación de Apothem que nombra la carpeta, usa la misma copia y escribe los mismos archivos, así que el orden en que instalas no importa. Varias otras herramientas también leen `~/.agents/skills/`; el [registro de entornos](/docs/reference/harness-registry#shared-roots) las lista.
 - `--project` elige el archivo de reglas que se escribe y el proyecto al que
   pertenece la instalación. No cambia adónde van las skills.
 - La instalación no añade ningún archivo de skill ni de regla a tu repositorio. El
@@ -120,7 +120,7 @@ Aspectos a tener en cuenta:
 - Cursor también carga carpetas de ayudantes escritas para otras herramientas,
   entre ellas `.claude/agents/` en el proyecto y `~/.claude/agents/` en tu
   directorio personal (el
-  [registro de entornos](/docs/reference/harness-registry#raíces-compartidas)
+  [registro de entornos](/docs/reference/harness-registry#shared-roots)
   lista el resto). En un conflicto de nombres el proyecto gana sobre la carpeta
   personal y `.cursor/` gana sobre las demás, así que en un proyecto con esta
   instalación los archivos nativos prevalecen sobre las copias de Claude Code que
