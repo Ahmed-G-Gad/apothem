@@ -230,11 +230,11 @@
   Code entry says only that the CLI reads from the `.claude/` directory, with no
   subpath, so the `~/.claude/rules/` folder the Claude Code install writes is not
   recorded either.
-- TODO(clarify): the Cursor rules block addresses Cursor ("Inside Cursor, ...")
-  and Devin Local now loads it beside the adapter's own `.devin/rules/` file
-  (Hermes loads it too, as a fallback).
-  Whether that block becomes harness-neutral is open; the registry comment
-  records the same question.
+- Resolved 2026-11-03: Devin Local loads the Cursor rules file beside the
+  adapter's own `.devin/rules/` file (Hermes loads it too, as a fallback), so
+  the Apothem block in it names no single tool as its reader. The subagent
+  folder and hook file it lists are what the Cursor install adds; Devin does
+  not import them.
 - Web-fetch / browser-retrieval (`web_fetch` = **yes**): Devin Local shares the
   Devin CLI's tools, which include `webfetch` (the lifecycle hooks page's tool
   table). Web search on the open Internet is the "Enable Web Search" team

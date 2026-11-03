@@ -6,6 +6,7 @@
 
 - Snapshot date: 2026-11-03
 - Snapshot note (OpenCode 2): the OpenCode 2 docs and the v1.19.5 and v2.2.5 source were read on 2026-11-03 (see OpenCode 2 below). The install now writes only `deny` helper rules, writes each MCP `${NAME}` as `{env:NAME}`, installs into `$XDG_CONFIG_HOME/opencode` when that names an absolute folder, warns when `OPENCODE_CONFIG_DIR` names another folder, and finds an MCP server an operator converted to OpenCode 2's `mcp.servers` shape. Previous 2026-10-14.
+- Snapshot note (CLAUDE.md fallback): the rules page and the OpenCode 2 Instructions page were read on 2026-11-03, with the instruction loaders in the v1.19.5 and v2.2.5 source. OpenCode 1 loads `~/.claude/CLAUDE.md` only when no `<config dir>/AGENTS.md` exists; the config dir is `OPENCODE_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/opencode`, so `~/.config/opencode` by default. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or `OPENCODE_DISABLE_CLAUDE_CODE=1` turns that read off. OpenCode 2, first published as a GitHub Release with v2.2.0 on 2026-10-27 (npm `@opencode/cli` has carried 2.x since 2.0.0 on 2026-09-11), reads the same `~/.config/opencode/` configuration but discovers only `AGENTS.md` files, with no `CLAUDE.md` fallback. The installer at `opencode.ai/install` and the `opencode-ai` npm package still install OpenCode 1. Previous 2026-10-14.
 - Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools), and the `instructions` path semantics re-observed at opencode-ai 1.19.0 (see Vendor Sources). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/opencode/`
 - Evidence level: vendor-doc pinned for `opencode.json` and its
@@ -13,12 +14,15 @@
   documented native surface; plugins are vendor-native and operator-owned; the
   native config is rendered directly (no Jinja template). OpenCode also loads
   `~/.claude/skills/` and `~/.agents/skills/`, so the Claude Code and Codex
-  skill installs reach it (shared roots in the registry). No vendor-native UI
+  skill installs reach it, and OpenCode 1 loads `~/.claude/CLAUDE.md` when no
+  `~/.config/opencode/AGENTS.md` exists, so the Claude Code install's block
+  reaches it too (shared roots in the registry). No vendor-native UI
   claim is made here. Rolling docs carry no version or SHA — no-immutable-source
   exception on every source row.
 - Official references:
   - <https://opencode.ai/docs/config/>
   - <https://opencode.ai/docs/rules/>
+  - <https://opencode.ai/v2/docs/instructions/>
   - <https://opencode.ai/docs/agents/>
   - <https://opencode.ai/docs/commands/>
   - <https://opencode.ai/docs/mcp-servers/>
@@ -42,7 +46,9 @@
 Retrieved 2026-10-03 unless marked.
 
 - <https://opencode.ai/docs/config/> (config sources, plural directories, plugins)
-- <https://opencode.ai/docs/rules/> (`AGENTS.md` and `instructions`)
+- <https://opencode.ai/docs/rules/> (`AGENTS.md` and `instructions`; the `~/.claude/CLAUDE.md` fallback when no `~/.config/opencode/AGENTS.md` exists, and the `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` and `OPENCODE_DISABLE_CLAUDE_CODE` opt-outs, retrieved 2026-11-03)
+- <https://opencode.ai/v2/docs/instructions/> (OpenCode 2 discovers only `AGENTS.md` files, with no `CLAUDE.md` fallback; retrieved 2026-11-03)
+- Source read, 2026-11-03: in v1.19.5, `packages/opencode/src/session/instruction.ts` takes the first of `<config dir>/AGENTS.md` and `~/.claude/CLAUDE.md` that exists, and `packages/core/src/global.ts` sets the config dir to `OPENCODE_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/opencode`. In v2.2.5, `packages/core/src/config/plugin/instruction.ts` discovers only `AGENTS.md` files (<https://github.com/anomalyco/opencode/tree/v1.19.5>, <https://github.com/anomalyco/opencode/tree/v2.2.5>).
 - Runtime observation, 2026-10-14: opencode-ai 1.19.0 (npm), run against a
   local OpenAI-compatible mock provider that recorded the request. The
   `instructions` entries `~/probe/home-note.md`, an absolute
