@@ -541,22 +541,27 @@ _OPENCODE_PERMISSION_MAP: dict[str, str] = {
 
 
 def _opencode_permission_lines(source_path: Path) -> str:
-    """Return OpenCode permission YAML from Apothem agent tool metadata."""
-    permissions: dict[str, str] = {}
-    for key in _agent_tool_names(source_path, "tools", _OPENCODE_PERMISSION_MAP):
-        permissions[key] = "allow"
-    for key in _agent_tool_names(
-        source_path,
-        "disallowedTools",
-        _OPENCODE_PERMISSION_MAP,
-    ):
-        permissions[key] = "deny"
-    if not permissions:
+    """Return OpenCode permission YAML: one ``deny`` per disallowed tool.
+
+    OpenCode allows every tool by default and asks before reading ``.env`` and
+    ``.env.*`` files. A helper's rules come after those defaults and after the
+    operator's own ``permission`` config, and the last matching rule wins
+    (v1.19.5 ``packages/opencode/src/agent/agent.ts:119-135,293`` and
+    ``packages/opencode/src/permission/index.ts:28-32``; v2.2.5
+    ``packages/schema/src/agent.ts:46-51``,
+    ``packages/core/src/config/plugin/agent.ts:121`` and
+    ``packages/core/src/permission.ts:86-90``). So an ``allow`` here could
+    never narrow access: ``read: allow`` would switch the ``.env`` question
+    off, and any other ``allow`` would override a stricter operator rule such
+    as a global ``bash: ask``. The source ``tools`` grant is therefore not
+    carried over; only ``disallowedTools`` is, as ``deny``.
+    """
+    denied = set(
+        _agent_tool_names(source_path, "disallowedTools", _OPENCODE_PERMISSION_MAP)
+    )
+    if not denied:
         return ""
-    lines = ["permission:"]
-    for key in sorted(permissions):
-        lines.append(f"  {key}: {permissions[key]}")
-    return "\n".join(lines) + "\n"
+    return "permission:\n" + "".join(f"  {key}: deny\n" for key in sorted(denied))
 
 
 def _opencode_agent_text(source_path: Path) -> str:

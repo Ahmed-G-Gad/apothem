@@ -35,6 +35,7 @@ from apothem.lib.python_resolver import resolve_python_bin
 
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
+from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
@@ -561,6 +562,7 @@ def make_native_config_uninstall(
     *,
     apothem_keys: frozenset[str] = frozenset(),
     retired_fn: _RetiredFn | None = None,
+    relocated_fn: RelocatedFn | None = None,
 ) -> _NativeUninstallFn:
     """Return a native-config (materializer) ``uninstall`` shim.
 
@@ -579,6 +581,8 @@ def make_native_config_uninstall(
     an install from an earlier release that never updated has them removed
     under the same exact-value rule an update applies (see
     :func:`_retired_at_uninstall` for the profile they are rendered from).
+    *relocated_fn* returns where the harness may have moved the entries the
+    install record says Apothem owns (opencode); they are removed too.
     """
 
     @install_driver.backup_session()
@@ -591,6 +595,7 @@ def make_native_config_uninstall(
             allowed_root=_native_allowed_root(output_path),
             apothem_keys=apothem_keys,
             retired=_retired_at_uninstall(retired_fn),
+            relocated=relocated_fn,
         )
         install_driver.run_uninstall(
             harness_name,
@@ -610,6 +615,7 @@ def make_native_config_install(
     render_tokens: bool = False,
     support_profile: bool = False,
     retired_fn: _RetiredFn | None = None,
+    relocated_fn: RelocatedFn | None = None,
 ) -> _UserScopeInstall:
     """Return a native-config (materializer) ``install`` shim.
 
@@ -626,6 +632,9 @@ def make_native_config_install(
     - *retired_fn*: returns, for a profile, the entries an earlier release of
       this adapter wrote that it no longer writes, so an update over such an
       install removes them (hermes, opencode).
+    - *relocated_fn*: returns where the harness may have moved the entries
+      Apothem owns, so an update strips them there before writing them in
+      place (opencode).
 
     With ``dry_run=True`` the closure writes nothing and returns the
     prospective run: the native config (with its diff), the support tree, the
@@ -660,6 +669,7 @@ def make_native_config_install(
             harness_name=harness_name,
             allowed_root=_native_allowed_root(output_path),
             retired=retired_fn(profile) if retired_fn is not None else (),
+            relocated=relocated_fn,
             dry_run=dry_run,
         )
         if native_result.outcome == "error":

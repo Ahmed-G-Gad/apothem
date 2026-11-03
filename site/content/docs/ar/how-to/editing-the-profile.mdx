@@ -10,35 +10,35 @@ sourceHash: "7cd78310423a8038"
 
 ## المتطلّبات المسبقة
 
-- واجهة `apothem` على `PATH` لديك (أو الصورة القائمة بذاتها: صدّر بـ
-  `PYTHONPATH="$HOME/.apothem/src"` وشغّل `python -m apothem`، أو استخدم
-  `npx @ahmed-g-gad/apothem`).
-- ملف تعريفي في `~/.config/apothem/profile.yaml`. أنشئ واحدًا عبر
-  `apothem profile init` إن كان مفقودًا.
+- واجهة <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك (أو الصورة القائمة بذاتها: صدّر بـ
+  <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> وشغّل <bdi>`python -m apothem`</bdi>، أو استخدم
+  <bdi>`npx @ahmed-g-gad/apothem`</bdi>).
+- ملف تعريفي في <bdi>`~/.config/apothem/profile.yaml`</bdi>. أنشئ واحدًا عبر
+  <bdi>`apothem profile init`</bdi> إن كان مفقودًا.
 
 ## شكل الملف التعريفي
 
-الملف التعريفي مستند YAML واحد. مفاتيحه عالية المستوى:
+الملف التعريفي مستند <bdi>YAML</bdi> واحد. مفاتيحه عالية المستوى:
 
-- `identity` (مطلوب) — `name`، بالإضافة إلى اختيارية `role`، `email`، `website`،
-  `github`.
-- `preferences` — `language`، `style` (`concise` / `verbose` / `balanced`),
-  `formatter`، `test_framework`.
-- `rules` — قائمة بسلاسل قواعد إضافية تُشارَك مع أُطُر العمل القادرة.
-- `seriousness` — واحد من `EXPLORING`، `PERSONAL_USE`، `SHARED`,
-  `PUBLIC_LAUNCH`.
-- `enforcement` — مفاتيح تشغيل اختيارية (`sprints`، `agent_teams`، `multitasking`,
-  `continuous_execution`، `learning_loop`)، وكل راية معطّلة افتراضيًا.
-- `harnesses` — تجاوزات لكل إطار عمل مفهرسة بمُعرّف إطار العمل.
-- `exclude_harnesses` — مُعرّفات أُطُر عمل تتخطّاها الأوامر الدفعية
-  (`--harness all`).
-- `mcp_servers` — تعريفات خوادم MCP مفهرسة باسم الخادم.
-- `agent_mcp_servers` — لكل اسم مساعِد، خوادم MCP التي يجوز لذلك المساعِد استدعاؤها
-  (انظر [منح مساعِد الوصول إلى خوادم MCP](/docs/reference/mcp#منح-مساعِد-الوصول-إلى-خوادم-mcp)).
-  فارغ افتراضيًا، لذا لا يصل أيّ مساعِد إلى أداة MCP.
-- `workspace` — المكان الذي يحفظ فيه Apothem دليل العمل المشترك الخاص به
-  (`directory_name`، `scope`).
-- `schema_version` — إصدار اختياري لمخطط الملف التعريفي؛ والملف التعريفي الذي يخلو منه
+- <bdi>`identity`</bdi> (مطلوب) — <bdi>`name`</bdi>، بالإضافة إلى اختيارية <bdi>`role`</bdi>، <bdi>`email`</bdi>، <bdi>`website`</bdi>،
+  <bdi>`github`</bdi>.
+- <bdi>`preferences`</bdi> — <bdi>`language`</bdi>، <bdi>`style`</bdi> (<bdi>`concise`</bdi> / <bdi>`verbose`</bdi> / <bdi>`balanced`</bdi>),
+  <bdi>`formatter`</bdi>، <bdi>`test_framework`</bdi>.
+- <bdi>`rules`</bdi> — قائمة بسلاسل قواعد إضافية تُشارَك مع أُطُر العمل القادرة.
+- <bdi>`seriousness`</bdi> — واحد من <bdi>`EXPLORING`</bdi>، <bdi>`PERSONAL_USE`</bdi>، <bdi>`SHARED`</bdi>,
+  <bdi>`PUBLIC_LAUNCH`</bdi>.
+- <bdi>`enforcement`</bdi> — مفاتيح تشغيل اختيارية (<bdi>`sprints`</bdi>، <bdi>`agent_teams`</bdi>، <bdi>`multitasking`</bdi>,
+  <bdi>`continuous_execution`</bdi>، <bdi>`learning_loop`</bdi>)، وكل راية معطّلة افتراضيًا.
+- <bdi>`harnesses`</bdi> — تجاوزات لكل إطار عمل مفهرسة بمُعرّف إطار العمل.
+- <bdi>`exclude_harnesses`</bdi> — مُعرّفات أُطُر عمل تتخطّاها الأوامر الدفعية
+  (<bdi>`--harness all`</bdi>).
+- <bdi>`mcp_servers`</bdi> — تعريفات خوادم <bdi>MCP</bdi> مفهرسة باسم الخادم.
+- <bdi>`agent_mcp_servers`</bdi> — لكل اسم مساعِد، خوادم <bdi>MCP</bdi> التي يجوز لذلك المساعِد استدعاؤها
+  (انظر [منح مساعِد الوصول إلى خوادم <bdi>MCP</bdi>](/docs/reference/mcp#منح-مساعِد-الوصول-إلى-خوادم-mcp)).
+  فارغ افتراضيًا، لذا لا يصل أيّ مساعِد إلى أداة <bdi>MCP</bdi>.
+- <bdi>`workspace`</bdi> — المكان الذي يحفظ فيه <bdi>Apothem</bdi> دليل العمل المشترك الخاص به
+  (<bdi>`directory_name`</bdi>، <bdi>`scope`</bdi>).
+- <bdi>`schema_version`</bdi> — إصدار اختياري لمخطط الملف التعريفي؛ والملف التعريفي الذي يخلو منه
   يُقرأ على أنه الإصدار 1.
 
 كل حقل مُدرَج في [حقول الملف التعريفي](/docs/reference/profile-fields).
@@ -58,7 +58,7 @@ sourceHash: "7cd78310423a8038"
    ```
 
    أو عيّن مفتاحًا منقّطًا واحدًا من سطر الأوامر. تُخزَّن القيمة
-   حرفيًا (باستثناء `true`/`false` والإدخال الصريح `[..]`/`{..}`، فهذه تُحلَّل) ويُتحقّق من
+   حرفيًا (باستثناء <bdi>`true`</bdi>/<bdi>`false`</bdi> والإدخال الصريح <bdi>`[..]`</bdi>/<bdi>`{..}`</bdi>، فهذه تُحلَّل) ويُتحقّق من
    الملف التعريفي مقابل المخطط قبل الكتابة — يُرفض التعيين غير الصالح ويبقى
    الملف التعريفي على القرص دون تغيير:
 
@@ -74,7 +74,7 @@ sourceHash: "7cd78310423a8038"
    apothem update --harness claude-code
    ```
 
-   لإطار عمل بنطاق المشروع، مرّر جذر المشروع؛ استخدم `all` لتحديث كل إطار عمل مثبَّت:
+   لإطار عمل بنطاق المشروع، مرّر جذر المشروع؛ استخدم <bdi>`all`</bdi> لتحديث كل إطار عمل مثبَّت:
 
    ```bash
    apothem update --harness cursor --project /path/to/project

@@ -6,43 +6,43 @@ sourceHash: "d00855c21ab3390b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-خطوات التحقّق المسبق قبل نشر منظومة Apothem على جهاز جديد، أو مشاركتها مع
+خطوات التحقّق المسبق قبل نشر منظومة <bdi>Apothem</bdi> على جهاز جديد، أو مشاركتها مع
 الآخرين، أو التعامل معها على أنّها جاهزة للإنتاج.
 
 ---
 
-## 1. صحّة YAML
+## 1. صحّة <bdi>YAML</bdi>
 
-- [ ] جميع ملفّات القواعد تُحلَّل دون أخطاء YAML — كتلة الـ frontmatter تفتح بـ `---` وتُغلق بـ `---` ولا تحتوي على محتوى يتيم خارج الكتلة
-- [ ] جميع ملفّات العاملين المُفوَّضين تُحلَّل دون أخطاء YAML
-- [ ] جميع ملفّات الأوامر تُحلَّل دون أخطاء YAML
-- [ ] جميع ملفّات المهارات `SKILL.md` تُحلَّل دون أخطاء YAML
+- [ ] جميع ملفّات القواعد تُحلَّل دون أخطاء <bdi>YAML</bdi> — كتلة الـ <bdi>frontmatter</bdi> تفتح بـ <bdi>`---`</bdi> وتُغلق بـ <bdi>`---`</bdi> ولا تحتوي على محتوى يتيم خارج الكتلة
+- [ ] جميع ملفّات العاملين المُفوَّضين تُحلَّل دون أخطاء <bdi>YAML</bdi>
+- [ ] جميع ملفّات الأوامر تُحلَّل دون أخطاء <bdi>YAML</bdi>
+- [ ] جميع ملفّات المهارات <bdi>`SKILL.md`</bdi> تُحلَّل دون أخطاء <bdi>YAML</bdi>
 
-**التحقّق:** يحلّ `python scripts/dev/validate_ecosystem.py` الـ frontmatter
-لكل مُنتَج ويشير إلى أخطاء YAML والحقول المطلوبة المفقودة. للكشف الموضعي عن
-عناصر القائمة اليتيمة: `rg -n "^- " src/apothem/rules/*.md`.
+**التحقّق:** يحلّ <bdi>`python scripts/dev/validate_ecosystem.py`</bdi> الـ <bdi>frontmatter</bdi>
+لكل مُنتَج ويشير إلى أخطاء <bdi>YAML</bdi> والحقول المطلوبة المفقودة. للكشف الموضعي عن
+عناصر القائمة اليتيمة: <bdi>`rg -n "^- " src/apothem/rules/*.md`</bdi>.
 
 ---
 
-## 2. اكتمال الـ frontmatter
+## 2. اكتمال الـ <bdi>frontmatter</bdi>
 
 لكل نوع مُنتَج، تحقّق من وجود الحقول المطلوبة:
 
-### القواعد (`src/apothem/rules/*.md`)
+### القواعد (<bdi>`src/apothem/rules/*.md`</bdi>)
 
-- [ ] `name` — مُعرِّف بنمط kebab-case مطابق لاسم الملفّ
-- [ ] `description` — ملخّص من جملة واحدة
-- [ ] `alwaysApply` — `true` للقواعد الدائمة التشغيل، و`false` للقواعد المُرشَّحة بالمسار
-- [ ] `pathFilter` — حاضر في كل قاعدة: `""` للقواعد الدائمة التشغيل (`alwaysApply: true`)، وقائمة glob مفصولة بفواصل للقواعد المُرشَّحة بالمسار (`alwaysApply: false`)
+- [ ] <bdi>`name`</bdi> — مُعرِّف بنمط <bdi>kebab-case</bdi> مطابق لاسم الملفّ
+- [ ] <bdi>`description`</bdi> — ملخّص من جملة واحدة
+- [ ] <bdi>`alwaysApply`</bdi> — <bdi>`true`</bdi> للقواعد الدائمة التشغيل، و<bdi>`false`</bdi> للقواعد المُرشَّحة بالمسار
+- [ ] <bdi>`pathFilter`</bdi> — حاضر في كل قاعدة: <bdi>`""`</bdi> للقواعد الدائمة التشغيل (<bdi>`alwaysApply: true`</bdi>)، وقائمة <bdi>glob</bdi> مفصولة بفواصل للقواعد المُرشَّحة بالمسار (<bdi>`alwaysApply: false`</bdi>)
 
-لا تحمل القواعد أيًّا من المفاتيح `version` أو `updated` أو `scope` أو `portability`.
+لا تحمل القواعد أيًّا من المفاتيح <bdi>`version`</bdi> أو <bdi>`updated`</bdi> أو <bdi>`scope`</bdi> أو <bdi>`portability`</bdi>.
 
-### الأوامر (`src/apothem/commands/*.md`)
+### الأوامر (<bdi>`src/apothem/commands/*.md`</bdi>)
 
-- [ ] `name` — اسم أمر بنمط kebab-case
-- [ ] `version` و`updated` و`description` و`argument-hint` و`portability` و`allowed-tools` حاضرة
-- [ ] `disable-model-invocation` حاضر ومقصود (`false` للأوامر القرائية فقط أو الاستشارية؛ و`true` فقط حين يُغيّر تشغيل الأمر حالةً خارج شجرة العمل أو يعتمد على اختيار المشغِّل للحظة التشغيل)
-- [ ] لا يوجد مفتاح `effort`: إذ يضبط `command.schema.json` القيمة `additionalProperties: false` ولا يقبله
+- [ ] <bdi>`name`</bdi> — اسم أمر بنمط <bdi>kebab-case</bdi>
+- [ ] <bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`description`</bdi> و<bdi>`argument-hint`</bdi> و<bdi>`portability`</bdi> و<bdi>`allowed-tools`</bdi> حاضرة
+- [ ] <bdi>`disable-model-invocation`</bdi> حاضر ومقصود (<bdi>`false`</bdi> للأوامر القرائية فقط أو الاستشارية؛ و<bdi>`true`</bdi> فقط حين يُغيّر تشغيل الأمر حالةً خارج شجرة العمل أو يعتمد على اختيار المشغِّل للحظة التشغيل)
+- [ ] لا يوجد مفتاح <bdi>`effort`</bdi>: إذ يضبط <bdi>`command.schema.json`</bdi> القيمة <bdi>`additionalProperties: false`</bdi> ولا يقبله
 
 ### العاملون المُفوَّضون
 
@@ -52,37 +52,37 @@ sourceHash: "d00855c21ab3390b"
 src/apothem/agents/*.md
 ```
 
-- [ ] `name` و`version` و`updated` و`description` حاضرة
-- [ ] `tools` — قائمة بالأدوات المسموح بها مفصولة بفواصل
-- [ ] `disallowedTools` — يدرج صراحةً الأدوات غير المسموح بها
-- [ ] `maxTurns` — مضبوط (مع تعليق مبرِّر إذا كان > 10)
-- [ ] `permissionMode` — **يجب ألّا يكون `"bypassPermissions"`**؛ اترك المفتاح غير مضبوط، لأن الوضع المحايد لا يضبط مسبقًا أي وضع أذونات
-- [ ] `memory` غير مضبوط ما لم تكن الذاكرة الدائمة مقصودة؛ وإذا ضُبط فيكون أحد القيم `user` أو `project` أو `local` (لا توجد صيغة بوليانية)
+- [ ] <bdi>`name`</bdi> و<bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`description`</bdi> حاضرة
+- [ ] <bdi>`tools`</bdi> — قائمة بالأدوات المسموح بها مفصولة بفواصل
+- [ ] <bdi>`disallowedTools`</bdi> — يدرج صراحةً الأدوات غير المسموح بها
+- [ ] <bdi>`maxTurns`</bdi> — مضبوط (مع تعليق مبرِّر إذا كان > 10)
+- [ ] <bdi>`permissionMode`</bdi> — **يجب ألّا يكون <bdi>`"bypassPermissions"`</bdi>**؛ اترك المفتاح غير مضبوط، لأن الوضع المحايد لا يضبط مسبقًا أي وضع أذونات
+- [ ] <bdi>`memory`</bdi> غير مضبوط ما لم تكن الذاكرة الدائمة مقصودة؛ وإذا ضُبط فيكون أحد القيم <bdi>`user`</bdi> أو <bdi>`project`</bdi> أو <bdi>`local`</bdi> (لا توجد صيغة بوليانية)
 
-### المهارات (`src/apothem/skills/*/SKILL.md`)
+### المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>)
 
-- [ ] `name` و`version` و`updated` و`description` و`archetype` و`disable-model-invocation` و`allowed-tools` حاضرة
-- [ ] `userInvocable` مُعلَن (true/false). تهجئة المصدر هي `userInvocable`؛ والمهارة تحمل واحدًا فقط من `userInvocable` أو `user-invocable` (تهجئة Claude Code).
+- [ ] <bdi>`name`</bdi> و<bdi>`version`</bdi> و<bdi>`updated`</bdi> و<bdi>`description`</bdi> و<bdi>`archetype`</bdi> و<bdi>`disable-model-invocation`</bdi> و<bdi>`allowed-tools`</bdi> حاضرة
+- [ ] <bdi>`userInvocable`</bdi> مُعلَن (<bdi>true/false</bdi>). تهجئة المصدر هي <bdi>`userInvocable`</bdi>؛ والمهارة تحمل واحدًا فقط من <bdi>`userInvocable`</bdi> أو <bdi>`user-invocable`</bdi> (تهجئة <bdi>Claude Code</bdi>).
 
 ---
 
 ## 3. الأمان
 
-- [ ] **لا يستخدم أيّ عامل مُفوَّض `permissionMode: "bypassPermissions"`** — فهذا يتجاوز التأكيد التفاعلي لعمليات Write/Bash
-- [ ] قوائم `tools` للعامل في حدّها الأدنى — فقط الأدوات التي يحتاجها العامل فعلًا
-- [ ] العاملون الذين لديهم وصول إلى `Bash` مبرَّرون ولديهم حدود maxTurns
+- [ ] **لا يستخدم أيّ عامل مُفوَّض <bdi>`permissionMode: "bypassPermissions"`</bdi>** — فهذا يتجاوز التأكيد التفاعلي لعمليات <bdi>Write/Bash</bdi>
+- [ ] قوائم <bdi>`tools`</bdi> للعامل في حدّها الأدنى — فقط الأدوات التي يحتاجها العامل فعلًا
+- [ ] العاملون الذين لديهم وصول إلى <bdi>`Bash`</bdi> مبرَّرون ولديهم حدود <bdi>maxTurns</bdi>
 - [ ] لا توجد مسارات أو رموز أو أسرار مكتوبة بشكل ثابت في أيّ مُنتَج
-- [ ] للخطّافات في `settings.json` مهلات معقولة (≤ 60 ثانية) ولا تنفّذ شيفرة عشوائية من مدخلات المستخدم
+- [ ] للخطّافات في <bdi>`settings.json`</bdi> مهلات معقولة (≤ 60 ثانية) ولا تنفّذ شيفرة عشوائية من مدخلات المستخدم
 
 ---
 
 ## 4. سلامة الإحالات المتبادلة
 
-- [ ] كل قاعدة مدرجة في جدول `src/apothem/rules/` موجودة على القرص في المسار المذكور
-- [ ] كل أمر مدرج في جدول `src/apothem/commands/` موجود على القرص
-- [ ] كل عامل مُفوَّض مدرج في جدول السجلّ `src/apothem/agents/` موجود على القرص
-- [ ] كل مهارة مدرجة في جدول `src/apothem/skills/` موجودة على القرص
-- [ ] كل خطّاف في جدول `src/apothem/hooks/` له مدخل مقابل في `settings.json`
+- [ ] كل قاعدة مدرجة في جدول <bdi>`src/apothem/rules/`</bdi> موجودة على القرص في المسار المذكور
+- [ ] كل أمر مدرج في جدول <bdi>`src/apothem/commands/`</bdi> موجود على القرص
+- [ ] كل عامل مُفوَّض مدرج في جدول السجلّ <bdi>`src/apothem/agents/`</bdi> موجود على القرص
+- [ ] كل مهارة مدرجة في جدول <bdi>`src/apothem/skills/`</bdi> موجودة على القرص
+- [ ] كل خطّاف في جدول <bdi>`src/apothem/hooks/`</bdi> له مدخل مقابل في <bdi>`settings.json`</bdi>
 - [ ] جميع ملفّات <bdi>`src/apothem/rules/*.md`</bdi> موجودة وتحلّ إحالات <bdi>`Bindings`</bdi> المتبادلة الخاصة بها
 
 ---
@@ -91,56 +91,56 @@ src/apothem/agents/*.md
 
 - [ ] لكل تكليف <bdi>CM-N</bdi> موقع إنفاذ (إمّا ملفّ قاعدة أو تعريف مضمّن صريح)
 - [ ] لا يتعارض أيّ ملفّ قاعدة مع آخر (خاصةً فيما يتعلّق بتدرّج الجدّية)
-- [ ] يُحترَم تقسيم الأوجه الثلاثة لـ CM-21 — لا تدّعي أيّ قاعدة ملكية وجه CM-21 لقاعدة أخرى
+- [ ] يُحترَم تقسيم الأوجه الثلاثة لـ <bdi>CM-21</bdi> — لا تدّعي أيّ قاعدة ملكية وجه <bdi>CM-21</bdi> لقاعدة أخرى
 
 ---
 
 ## 6. اختبارات الدخان الوظيفية
 
-شغّل سطح التحقّق بلغة Python أولًا — فهو سريع وغير متّصل ويلتقط
+شغّل سطح التحقّق بلغة <bdi>Python</bdi> أولًا — فهو سريع وغير متّصل ويلتقط
 الانحدارات البنيوية:
 
-- [ ] `pytest tests` — اختبارات الوحدة لزمن تشغيل الخطّافات، جميعها خضراء
-- [ ] `python scripts/dev/validate_hooks.py` — بنية الخطّافات + فحص النظافة الخاص بـ Python فقط ناجح
-- [ ] `python scripts/dev/validate_ecosystem.py` — الشجرة الكاملة + الـ frontmatter + فحوص الخطّافات المُفوَّضة ناجحة
-- [ ] `python scripts/dev/chaos_pass.py` — كل أمر خطّاف مُكوَّن يُعيد مغلَّف JSON صالحًا في ظل مدخلات متدهورة
+- [ ] <bdi>`pytest tests`</bdi> — اختبارات الوحدة لزمن تشغيل الخطّافات، جميعها خضراء
+- [ ] <bdi>`python scripts/dev/validate_hooks.py`</bdi> — بنية الخطّافات + فحص النظافة الخاص بـ <bdi>Python</bdi> فقط ناجح
+- [ ] <bdi>`python scripts/dev/validate_ecosystem.py`</bdi> — الشجرة الكاملة + الـ <bdi>frontmatter</bdi> + فحوص الخطّافات المُفوَّضة ناجحة
+- [ ] <bdi>`python scripts/dev/chaos_pass.py`</bdi> — كل أمر خطّاف مُكوَّن يُعيد مغلَّف <bdi>JSON</bdi> صالحًا في ظل مدخلات متدهورة
 
 ثم السيناريوهات الحيّة:
 
-- [ ] `/plan-spec <sample-file>` — يُكمل الاستيعاب/التوضيح دون أخطاء على مستوى الأمر
-- [ ] `/plan-generate --dry-run` — يُنتج معاينة للبنية دون كتابة ملفات
-- [ ] `/plan-status` على حزمة خطّة مكتملة — يُعيد أعداد مراحل دقيقة
-- [ ] إرسال العامل المُفوَّض: العامل `codebase-explorer` المُستدعى بنطاق صغير يكتمل ضمن maxTurns ويُعيد مخرجات منظَّمة
+- [ ] <bdi>`/plan-spec <sample-file>`</bdi> — يُكمل الاستيعاب/التوضيح دون أخطاء على مستوى الأمر
+- [ ] <bdi>`/plan-generate --dry-run`</bdi> — يُنتج معاينة للبنية دون كتابة ملفات
+- [ ] <bdi>`/plan-status`</bdi> على حزمة خطّة مكتملة — يُعيد أعداد مراحل دقيقة
+- [ ] إرسال العامل المُفوَّض: العامل <bdi>`codebase-explorer`</bdi> المُستدعى بنطاق صغير يكتمل ضمن <bdi>maxTurns</bdi> ويُعيد مخرجات منظَّمة
 
 ---
 
 ## 7. حداثة التوثيق
 
-- [ ] يعكس `CHANGELOG.md` (في جذر المنظومة) كل تغيير في المُنتَجات منذ الإصدار الأخير؛ قسم الإصدار التالي مُعبّأ قبل وصول الوسم، أو أنّ كل تغيير مُدرَج بالفعل في قسم مُصدَر
-- [ ] يصف `site/content/docs/developer-guide.mdx` بدقّة بنية المُنتَجات الحالية
-- [ ] يطابق `site/content/docs/reference/artifact-schema.mdx` حقول الـ frontmatter الموجودة فعلًا في المُنتَجات
-- [ ] يطابق `site/content/docs/reference/settings-reference.mdx` تكوين الخطّافات الفعلي في `settings.json`
-- [ ] `README.md` متّسق مع الشجرة على القرص
+- [ ] يعكس <bdi>`CHANGELOG.md`</bdi> (في جذر المنظومة) كل تغيير في المُنتَجات منذ الإصدار الأخير؛ قسم الإصدار التالي مُعبّأ قبل وصول الوسم، أو أنّ كل تغيير مُدرَج بالفعل في قسم مُصدَر
+- [ ] يصف <bdi>`site/content/docs/developer-guide.mdx`</bdi> بدقّة بنية المُنتَجات الحالية
+- [ ] يطابق <bdi>`site/content/docs/reference/artifact-schema.mdx`</bdi> حقول الـ <bdi>frontmatter</bdi> الموجودة فعلًا في المُنتَجات
+- [ ] يطابق <bdi>`site/content/docs/reference/settings-reference.mdx`</bdi> تكوين الخطّافات الفعلي في <bdi>`settings.json`</bdi>
+- [ ] <bdi>`README.md`</bdi> متّسق مع الشجرة على القرص
 
 ---
 
 ## 8. قابلية النقل (في حال المشاركة مع الآخرين)
 
-- [ ] جميع المسارات في أوامر الخطّافات غير معتمِدة على البيئة أو تستخدم توسعة `~`
-- [ ] أوامر الخطّافات تستخدم نمط exec وتتجنّب سلاسل الأوامر الخاصّة بصدفة معيّنة
-- [ ] لا توجد مسارات `C:\Users\username` أو `/home/username` مكتوبة بشكل ثابت في أيّ مُنتَج
-- [ ] يستخدم `settings.json` جدول تغطية واحد لأحداث الخطّافات والمسار المعياري لوحدة الإرسال
+- [ ] جميع المسارات في أوامر الخطّافات غير معتمِدة على البيئة أو تستخدم توسعة <bdi>`~`</bdi>
+- [ ] أوامر الخطّافات تستخدم نمط <bdi>exec</bdi> وتتجنّب سلاسل الأوامر الخاصّة بصدفة معيّنة
+- [ ] لا توجد مسارات <bdi>`C:\Users\username`</bdi> أو <bdi>`/home/username`</bdi> مكتوبة بشكل ثابت في أيّ مُنتَج
+- [ ] يستخدم <bdi>`settings.json`</bdi> جدول تغطية واحد لأحداث الخطّافات والمسار المعياري لوحدة الإرسال
 
 ---
 
 ## 9. مواءمة الإصدارات
 
-- [ ] `version` في CLAUDE.md هي الأعلى بين أيّ مُنتَج في الشجرة (أو مساوية لإصدار أحدث مُنتَج تمّت زيادته، بحسب العُرف)
-- [ ] `version` كل مُنتَج تطابق الـ semver المذكور (`MAJOR.MINOR.PATCH`)
-- [ ] يحتوي CHANGELOG.md تحديدًا على مدخل الإصدار للإصدار المستهدف قبل الوسم
-- [ ] حقل `updated` لكل مُنتَج عند تاريخ آخر تعديل مُغيِّر للسلوك أو بعده
-- [ ] لا يحمل أيّ مُنتَج `version` أقلّ من الإصدار الذي عُدِّل عنده آخر مرّة (دون انحدارات)
-- [ ] `src/apothem/skills/plan-suite/SKILL.md` و`src/apothem/skills/plan-suite/master-template.md` مثبَّتان على خطّ إصدار القالب نفسه
+- [ ] <bdi>`version`</bdi> في <bdi>CLAUDE.md</bdi> هي الأعلى بين أيّ مُنتَج في الشجرة (أو مساوية لإصدار أحدث مُنتَج تمّت زيادته، بحسب العُرف)
+- [ ] <bdi>`version`</bdi> كل مُنتَج تطابق الـ <bdi>semver</bdi> المذكور (<bdi>`MAJOR.MINOR.PATCH`</bdi>)
+- [ ] يحتوي <bdi>CHANGELOG.md</bdi> تحديدًا على مدخل الإصدار للإصدار المستهدف قبل الوسم
+- [ ] حقل <bdi>`updated`</bdi> لكل مُنتَج عند تاريخ آخر تعديل مُغيِّر للسلوك أو بعده
+- [ ] لا يحمل أيّ مُنتَج <bdi>`version`</bdi> أقلّ من الإصدار الذي عُدِّل عنده آخر مرّة (دون انحدارات)
+- [ ] <bdi>`src/apothem/skills/plan-suite/SKILL.md`</bdi> و<bdi>`src/apothem/skills/plan-suite/master-template.md`</bdi> مثبَّتان على خطّ إصدار القالب نفسه
 
 ---
 
@@ -148,8 +148,8 @@ src/apothem/agents/*.md
 
 | فئة الفحص | الحالة | ملاحظات |
 | -------------- | ------ | ----- |
-| صحّة YAML | | |
-| اكتمال الـ frontmatter | | |
+| صحّة <bdi>YAML</bdi> | | |
+| اكتمال الـ <bdi>frontmatter</bdi> | | |
 | الأمان | | |
 | سلامة الإحالات المتبادلة | | |
 | تغطية التكليفات | | |

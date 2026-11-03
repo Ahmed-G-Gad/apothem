@@ -18,8 +18,9 @@ profile was validated and then discarded.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from apothem.lib.harness_materializer import (
     MarkdownProfileFields,
@@ -202,9 +203,20 @@ def render_mcp_opencode(
     server is accepted for back-compat and maps to the same ``remote`` shape,
     but ``streamable-http`` is the preferred remote transport.
 
-    ``environment`` and ``headers`` (remote auth) pass through verbatim; a
-    ``${VAR}`` reference in a value is emitted as-is and never resolved here, so
-    no raw secret literal is materialized into the native config.
+    ``environment`` and ``headers`` (remote auth) are copied from the profile
+    and never resolved here, so no raw secret literal is materialized into the
+    native config. OpenCode substitutes only ``{env:NAME}`` (and
+    ``{file:path}``) in its config text, in both release lines
+    (https://opencode.ai/docs/config/, Variables; v2.2.5
+    ``packages/core/src/config/variable.ts``), and copies a ``${NAME}`` to the
+    server as literal text. So each ``${NAME}`` in an ``environment`` or
+    ``headers`` value, or in the ``url``, is written as ``{env:NAME}``;
+    OpenCode reads an unset variable as an empty string. ``command``
+    arguments are copied as written: a reference there would resolve from
+    OpenCode's own environment when the config loads, not from the server's
+    when a shell the server runs expands it. Another ``$`` form, such as
+    ``${NAME:-default}``, ``$${NAME}`` or ``$NAME``, is copied unchanged, and
+    OpenCode does not expand it either.
     """
     rendered: dict[str, dict[str, Any]] = {}
     for name, spec in servers.items():
@@ -217,13 +229,33 @@ def render_mcp_opencode(
                 "enabled": True,
             }
             if spec.get("env"):
-                entry["environment"] = spec["env"]
+                entry["environment"] = _env_references(spec["env"])
         else:
-            entry = {"type": "remote", "url": spec.get("url", ""), "enabled": True}
+            url = _ENV_REFERENCE.sub(r"{env:\1}", spec.get("url", ""))
+            entry = {"type": "remote", "url": url, "enabled": True}
             if spec.get("headers"):
-                entry["headers"] = spec["headers"]
+                entry["headers"] = _env_references(spec["headers"])
         rendered[name] = entry
     return rendered
+
+
+#: A ``${NAME}`` reference, the form the profile documents for secret values.
+#: One preceded by another ``$`` (``$${NAME}``) is left alone: rewriting it
+#: would leave a ``$`` before the value OpenCode substitutes.
+_ENV_REFERENCE: Final[re.Pattern[str]] = re.compile(
+    r"(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}"
+)
+
+
+def _env_references(values: dict[str, Any]) -> dict[str, Any]:
+    """Return *values* with each ``${NAME}`` in a string value written ``{env:NAME}``.
+
+    Mapping keys are kept as they are; only string values are rewritten.
+    """
+    return {
+        key: _ENV_REFERENCE.sub(r"{env:\1}", value) if isinstance(value, str) else value
+        for key, value in values.items()
+    }
 
 
 __all__ = [

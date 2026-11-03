@@ -6,10 +6,10 @@ sourceHash: "5d78575328c10397"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يقرأ <bdi>Open-Claw</bdi> ملف `~/.openclaw/openclaw.json`. يثبّت <bdi>Apothem</bdi>
-مجموعات الأوامر والمهارات المشتركة تحت `~/.openclaw/.apothem/support/skills/` ويؤلّف مفتاحًا
-واحدًا هناك، `skills.load.extraDirs`، يسرد ذلك الدليل كي يحمّل <bdi>OpenClaw</bdi> المهارات.
-أما حقله `agents.defaults.skills` فهو قائمة أسماء مسموح بها تملكها أنت، و<bdi>MCP</bdi> سطح
+يقرأ <bdi>Open-Claw</bdi> ملف <bdi>`~/.openclaw/openclaw.json`</bdi>. يثبّت <bdi>Apothem</bdi>
+مجموعات الأوامر والمهارات المشتركة تحت <bdi>`~/.openclaw/.apothem/support/skills/`</bdi> ويؤلّف مفتاحًا
+واحدًا هناك، <bdi>`skills.load.extraDirs`</bdi>، يسرد ذلك الدليل كي يحمّل <bdi>OpenClaw</bdi> المهارات.
+أما حقله <bdi>`agents.defaults.skills`</bdi> فهو قائمة أسماء مسموح بها تملكها أنت، و<bdi>MCP</bdi> سطح
 <bdi>CLI</bdi>، لذا لا يؤلّف <bdi>Apothem</bdi> أيًّا منهما.
 
 ## الحالة
@@ -19,32 +19,32 @@ sourceHash: "5d78575328c10397"
 
 ## مقارنة الجهد
 
-| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| المهمة | تهيئة يدوية خام | مُدارة بـ <bdi>Apothem</bdi> |
 | ---- | --------------- | --------------- |
 | تأليف مهارات قابلة لإعادة الاستخدام | تحرير التهيئة وأدلّة المهارات يدويًا | الكتابة مرّة واحدة في المتن المشترك |
-| إبقاء الحزم متوائمة مع أُطُر العمل الأخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
-| تثبيت / إزالة التهيئة | يدويًا | `apothem install` / `apothem uninstall` |
-| التحقّق من صحّة التهيئة | فحص يدوي | `apothem verify --harness open-claw` |
+| إبقاء الحزم متوائمة مع أُطُر العمل الأخرى | يدويًا، لكل أداة | تلقائيًا عند <bdi>`apothem update`</bdi> |
+| تثبيت / إزالة التهيئة | يدويًا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness open-claw`</bdi> |
 
-## ما يديره Apothem
+## ما يديره <bdi>Apothem</bdi>
 
-يكتب محوِّل <bdi>Open-Claw</bdi> ملف `openclaw.json`، ويلفّ أوامر الشَّرطة المائلة
+يكتب محوِّل <bdi>Open-Claw</bdi> ملف <bdi>`openclaw.json`</bdi>، ويلفّ أوامر الشَّرطة المائلة
 الخاصة بـ <bdi>Apothem</bdi> بوصفها مهارات، وينسخ مهارات <bdi>Apothem</bdi> إلى
 دليل الدعم المُشار إليه، ويحفظ القواعد والقوالب و<bdi>agents</bdi> ومادة الخطّاف تحت شجرة دعم <bdi>Apothem</bdi> الفرعية.
-يقرأ <bdi>OpenClaw</bdi> المفتاح `skills.load.extraDirs` بأدنى أسبقية بين مصادر مهاراته، لذا
-تُستخدَم مهارة بالاسم نفسه في مساحة عملك، أو في `~/.agents/skills`، أو في
-`~/.openclaw/skills` بدلًا من نسخة <bdi>Apothem</bdi>.
+يقرأ <bdi>OpenClaw</bdi> المفتاح <bdi>`skills.load.extraDirs`</bdi> بأدنى أسبقية بين مصادر مهاراته، لذا
+تُستخدَم مهارة بالاسم نفسه في مساحة عملك، أو في <bdi>`~/.agents/skills`</bdi>، أو في
+<bdi>`~/.openclaw/skills`</bdi> بدلًا من نسخة <bdi>Apothem</bdi>.
 
 ## مسار الهجرة
 
-1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
 2. انقل مهارات <bdi>Open-Claw</bdi> أو مُوجِّهات الأوامر القابلة لإعادة الاستخدام
    إلى المتن المشترك.
-3. شغّل `apothem install --harness open-claw` لتصيير التهيئة الأصلية ودليل مهارات
+3. شغّل <bdi>`apothem install --harness open-claw`</bdi> لتصيير التهيئة الأصلية ودليل مهارات
    الدعم.
-4. شغّل `apothem verify --harness open-claw` لتأكيد أن التهيئة قد هبطت.
+4. شغّل <bdi>`apothem verify --harness open-claw`</bdi> لتأكيد أن التهيئة قد هبطت.
 
 ## اقرأ بعد ذلك
 
-- [مرجع محوِّل Open-Claw](/docs/harnesses/open-claw)
+- [مرجع محوِّل <bdi>Open-Claw</bdi>](/docs/harnesses/open-claw)
 - [نظرة عامة على المقارنة](/docs/comparison)

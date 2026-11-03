@@ -54,8 +54,9 @@
     files are `AGENTS.override.md`, `AGENTS.md`, `agents.md`, `CLAUDE.md`,
     `claude.md` and `.cursorrules`, with no `.hermes.md`. Hints are off when the
     session starts in a home folder (`~`, `/home`, `/root` or `/workspace`, a
-    folder directly under one of those, or a path with a `.home`, `host-home` or
-    `host_home` part), and a project below a pruned folder name such as
+    folder directly under `/home`, `/root` or `/workspace`, or a path with a
+    `.home`, `host-home` or `host_home` part), and a project below a pruned
+    folder name such as
     `node_modules` or `vendor` gets none (`agent/subdirectory_hints.py`).
   - Resolved 2026-11-03: the context-files page lists `AGENTS.override.md` in
     its "Priority system" section but leaves it out of its "At startup" scan

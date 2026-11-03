@@ -31,7 +31,7 @@ sourceHash: "2d46a5bcd2d249ba"
 - لا تُغيّر إصلاحات الأخطاء المطبعية، وإصلاحات الروابط، والتنسيق، والتعديلات المقتصرة على التعليقات أو على الوثائق قيمةَ <bdi>`version`</bdi>. ولا يرفعها إلا تغيير سلوكي.
 - <bdi>`updated`</bdi> هو **تاريخ <bdi>ISO 8601</bdi>** (<bdi>`YYYY-MM-DD`</bdi>) لأحدث تعديل. يجب أن يتغيّر مع كل رفع لـ<bdi>`version`</bdi>، ويتغيّر أيضًا عند إصلاح خطأ مطبعي أو رابط لا يرفع الإصدار.
 - تبدأ القِطَع الجديدة عند <bdi>`v0.Y.Z`</bdi>. وتدلّ الترقية إلى <bdi>`vX.Y.Z`</bdi> على أن عقد القِطعة مستقرّ بما يكفي ليكون التزامًا عامًّا.
-- حزم الخطط خارج هذا الاصطلاح. يرفع تصحيح خطأ مطبعي في حزمة خطّة رقمَ PATCH لإصدار الحزمة (من <bdi>`vX.Y.Z`</bdi> إلى <bdi>`vX.Y.(Z+1)`</bdi>)، ويُلحَق صفّ في سجلّ المراجعات. ويصف [دليل المطوّر](/docs/developer-guide) قاعدة حزمة الخطّة في قسم مراجعات حزمة الخطّة.
+- حزم الخطط خارج هذا الاصطلاح. يرفع تصحيح خطأ مطبعي في حزمة خطّة رقمَ <bdi>PATCH</bdi> لإصدار الحزمة (من <bdi>`vX.Y.Z`</bdi> إلى <bdi>`vX.Y.(Z+1)`</bdi>)، ويُلحَق صفّ في سجلّ المراجعات. ويصف [دليل المطوّر](/docs/developer-guide) قاعدة حزمة الخطّة في قسم مراجعات حزمة الخطّة.
 
 ---
 
@@ -104,7 +104,7 @@ allowed-tools: "Read, Glob, Grep"
 | ----- | ---- | ------- | ------- |
 | <bdi>`name`</bdi> | <bdi>string</bdi> | اسم الأمر (بلا <bdi>`/`</bdi> في البداية) | <bdi>`"plan-execute"`</bdi> |
 | <bdi>`version`</bdi> | <bdi>string</bdi> | نسخة دلالية | <bdi>`"X.Y.Z"`</bdi> |
-| <bdi>`updated`</bdi> | <bdi>string (ISO 8601)</bdi> | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`updated`</bdi> | <bdi>string</bdi> (<bdi>ISO 8601</bdi>) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
 | <bdi>`description`</bdi> | <bdi>string</bdi> | وصف قصير | <bdi>`"Executes a phase with quality gates"`</bdi> |
 | <bdi>`argument-hint`</bdi> | <bdi>string</bdi> | نمط الاستخدام، أو <bdi>`"[args...]"`</bdi> إن لم يوجد | <bdi>`"[path/to/plan] [phase-id]"`</bdi> |
 | <bdi>`disable-model-invocation`</bdi> | <bdi>boolean</bdi> | إذا كانت القيمة <bdi>true</bdi>، فلا يبدأ الأمرَ إلا المُشغِّل؛ ولا يستدعيه النموذج من تلقاء نفسه أبدًا | <bdi>`true`</bdi> |
@@ -165,7 +165,7 @@ effort: "high" | "medium" | "low"
 | ----- | ---- | ------- | ------- |
 | <bdi>`name`</bdi> | <bdi>string</bdi> | مُعرِّف المساعِد | <bdi>`"codebase-explorer"`</bdi> |
 | <bdi>`version`</bdi> | <bdi>string</bdi> | نسخة دلالية | <bdi>`"X.Y.Z"`</bdi> |
-| <bdi>`updated`</bdi> | <bdi>string (ISO 8601)</bdi> | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`updated`</bdi> | <bdi>string</bdi> (<bdi>ISO 8601</bdi>) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
 | <bdi>`description`</bdi> | <bdi>string</bdi> | وصف التخصّص | <bdi>`"Deep codebase exploration"`</bdi> |
 | <bdi>`tools`</bdi> | <bdi>string</bdi> (مفصولة بفواصل) | الأدوات المسموح بها | <bdi>`"Read, Glob, Grep, Bash"`</bdi> |
 | <bdi>`disallowedTools`</bdi> | <bdi>string</bdi> (مفصولة بفواصل) | الأدوات المحظورة | <bdi>`"Write, Edit, TodoWrite"`</bdi> |
@@ -228,7 +228,7 @@ allowed-tools: "Read, Glob, Grep"
 | ----- | ---- | ------- | ------- |
 | <bdi>`name`</bdi> | <bdi>string</bdi> | مُعرِّف المهارة | <bdi>`"plan-suite"`</bdi> |
 | <bdi>`version`</bdi> | <bdi>string</bdi> | نسخة دلالية | <bdi>`"X.Y.Z"`</bdi> |
-| <bdi>`updated`</bdi> | <bdi>string (ISO 8601)</bdi> | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`updated`</bdi> | <bdi>string</bdi> (<bdi>ISO 8601</bdi>) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
 | <bdi>`description`</bdi> | <bdi>string</bdi> | ما توفّره المهارة | <bdi>`"Master Plan Suite template"`</bdi> |
 | <bdi>`archetype`</bdi> | <bdi>string</bdi> | صنف الشكل، وهو مُعرِّف <bdi>`<class>-template`</bdi> بصيغة <bdi>kebab-case</bdi> | <bdi>`"workflow-template"`</bdi> |
 | <bdi>`userInvocable`</bdi> | <bdi>boolean</bdi> | إذا كانت القيمة <bdi>true</bdi>، يمكن للمستخدم طلب هذه المهارة صراحةً | <bdi>`false`</bdi> |

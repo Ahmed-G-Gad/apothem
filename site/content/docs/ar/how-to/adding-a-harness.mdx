@@ -6,17 +6,17 @@ sourceHash: "6daae4aec1547438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-الهدف: فعّل إطار عمل إضافيًا لكي يُجسِّد Apothem تهيئته الأصلية من ملفك التعريفي
+الهدف: فعّل إطار عمل إضافيًا لكي يُجسِّد <bdi>Apothem</bdi> تهيئته الأصلية من ملفك التعريفي
 المشترك.
 
 ## المتطلّبات المسبقة
 
-- ملف تعريفي مشترك في `~/.config/apothem/profile.yaml` (أنشئ واحدًا عبر
-  `apothem profile init` إن لم يكن موجودًا بعد).
-- واجهة `apothem` على `PATH` لديك. إذا ثبّتّ شجرة المصدر القائمة بذاتها،
-  فصدّر كل أمر بـ `PYTHONPATH="$HOME/.apothem/src"`
-  وشغّل `python -m apothem` بدلًا من `apothem` — أو استخدم
-  `npx @ahmed-g-gad/apothem`.
+- ملف تعريفي مشترك في <bdi>`~/.config/apothem/profile.yaml`</bdi> (أنشئ واحدًا عبر
+  <bdi>`apothem profile init`</bdi> إن لم يكن موجودًا بعد).
+- واجهة <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك. إذا ثبّتّ شجرة المصدر القائمة بذاتها،
+  فصدّر كل أمر بـ <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi>
+  وشغّل <bdi>`python -m apothem`</bdi> بدلًا من <bdi>`apothem`</bdi> — أو استخدم
+  <bdi>`npx @ahmed-g-gad/apothem`</bdi>.
 
 ## الخطوات
 
@@ -26,7 +26,7 @@ sourceHash: "6daae4aec1547438"
    apothem harnesses list
    ```
 
-   يطبع `apothem harnesses list` كل مُعرّف مدعوم؛ والمجموعة ذاتها موجودة في
+   يطبع <bdi>`apothem harnesses list`</bdi> كل مُعرّف مدعوم؛ والمجموعة ذاتها موجودة في
    [قائمة أُطُر العمل](/docs/harnesses) و[سجلّ أُطُر العمل](/docs/reference/harness-registry)
    المُولّد من المصدر. اختر مُعرّف أداتك بدلًا من تثبيت القائمة هنا — فهي
    تنمو مع إضافة المحوّلات.
@@ -37,8 +37,8 @@ sourceHash: "6daae4aec1547438"
    apothem harnesses show cursor
    ```
 
-   سطر `Scope: project` يعني أن المحوّل يُجسِّد في شجرة مشروع
-   ويتطلّب `--project PATH`؛ بينما `Scope: user` يُجسِّد في دليل تهيئة
+   سطر <bdi>`Scope: project`</bdi> يعني أن المحوّل يُجسِّد في شجرة مشروع
+   ويتطلّب <bdi>`--project PATH`</bdi>؛ بينما <bdi>`Scope: user`</bdi> يُجسِّد في دليل تهيئة
    بنطاق المستخدم ولا يحتاج إلى راية مشروع.
 
 3. عاين التثبيت دون كتابة ملفات:
@@ -59,8 +59,8 @@ sourceHash: "6daae4aec1547438"
    apothem install --harness cursor --project /path/to/project
    ```
 
-   ثبّت كل إطار عمل مدعوم دفعة واحدة عبر `--harness all` (لا تزال أُطُر العمل بنطاق المشروع تحتاج إلى `--project`؛ وتُتخطّى المُعرّفات المدرجة في
-   `exclude_harnesses` في الملف التعريفي).
+   ثبّت كل إطار عمل مدعوم دفعة واحدة عبر <bdi>`--harness all`</bdi> (لا تزال أُطُر العمل بنطاق المشروع تحتاج إلى <bdi>`--project`</bdi>؛ وتُتخطّى المُعرّفات المدرجة في
+   <bdi>`exclude_harnesses`</bdi> في الملف التعريفي).
 
 ## التحقق
 
@@ -68,11 +68,11 @@ sourceHash: "6daae4aec1547438"
 apothem verify --harness cursor --project /path/to/project
 ```
 
-سطر `✓ <harness-id> is verified` يؤكّد أن الأهداف المُدارة موجودة وقابلة للتحليل.
-يقدّم `apothem doctor` رؤية النظام بأكمله عبر كل إطار عمل.
+سطر <bdi>`✓ <harness-id> is verified`</bdi> يؤكّد أن الأهداف المُدارة موجودة وقابلة للتحليل.
+يقدّم <bdi>`apothem doctor`</bdi> رؤية النظام بأكمله عبر كل إطار عمل.
 
 ## ذات صلة
 
 - [حرّر الملف التعريفي](/docs/how-to/editing-the-profile) لتغيير ما
-  يُجسّده المحوّل، ثم أعد تشغيل `apothem update`.
+  يُجسّده المحوّل، ثم أعد تشغيل <bdi>`apothem update`</bdi>.
 - يغطّي [التثبيت](/docs/install) تثبيت أول تشغيل.

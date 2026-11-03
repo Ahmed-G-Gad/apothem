@@ -108,8 +108,8 @@ def test_claude_code_memory_file_is_shared_with_opencode_and_windsurf(
     entry = _owner_entry(advisories, "~/.claude/CLAUDE.md")
     assert entry["readers"] == ["opencode", "windsurf"]
     assert str(entry["message"]) == (
-        "~/.claude/CLAUDE.md is shared: OpenCode (only in OpenCode 1, when no "
-        "~/.config/opencode/AGENTS.md exists), Windsurf also load it. "
+        "~/.claude/CLAUDE.md is shared: OpenCode (only in OpenCode 1, when its "
+        "configuration folder holds no AGENTS.md), Windsurf also load it. "
         "Installing or uninstalling Claude Code changes what those tools load."
     )
 
@@ -342,8 +342,8 @@ def test_opencode_reader_note_carries_its_claude_md_condition(tmp_path: Path) ->
     ]
     assert len(reader) == 1
     assert str(reader[0]["message"]) == (
-        "OpenCode (only in OpenCode 1, when no ~/.config/opencode/AGENTS.md "
-        "exists) also loads ~/.claude/CLAUDE.md, which holds Apothem content "
+        "OpenCode (only in OpenCode 1, when its configuration folder holds no "
+        "AGENTS.md) also loads ~/.claude/CLAUDE.md, which holds Apothem content "
         "from the Claude Code install."
     )
 

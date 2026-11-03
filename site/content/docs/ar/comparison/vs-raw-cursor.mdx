@@ -1,6 +1,6 @@
 ---
 title: "Apothem مقابل تهيئة Cursor اليدوية"
-description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من الملف التعريفي المشترك لـ Apothem."
+description: "صيانة قواعد MDC الخاصة بـ Cursor تحت \u2066.cursor/rules/\u2069 يدويًّا، مقابل تحويلها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
 sourceHash: "3ac88ae9bc4bc63a"
 ---
@@ -14,7 +14,7 @@ sourceHash: "3ac88ae9bc4bc63a"
 
 ## مقارنة الجهد
 
-| المهمة | تهيئة يدوية | يديرها Apothem |
+| المهمة | تهيئة يدوية | يديرها <bdi>Apothem</bdi> |
 | ---- | --------------- | --------------- |
 | كتابة القواعد | كتابة كل ملف <bdi>`.mdc`</bdi> تحت <bdi>`.cursor/rules/`</bdi> يدويًّا | مُحوَّلة من الذخيرة المشتركة |
 | كتابة <bdi>frontmatter</bdi> لـ <bdi>MDC</bdi> | كتابة <bdi>`description`</bdi> / <bdi>`globs`</bdi> / <bdi>`alwaysApply`</bdi> يدويًّا لكل ملف | يولّدها المحوِّل |
@@ -23,7 +23,7 @@ sourceHash: "3ac88ae9bc4bc63a"
 | مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًّا إلى <bdi>`~/.agents/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوِّل في <bdi>`~/.agents/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
 | التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor --project <path>`</bdi> |
 
-## ما الذي يديره Apothem
+## ما الذي يديره <bdi>Apothem</bdi>
 
 يُحوِّل محوِّل <bdi>cursor</bdi> القواعد المشتركة إلى ملف <bdi>`.mdc`</bdi> واحد،
 <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>، ويولّد <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi>
@@ -47,5 +47,5 @@ sourceHash: "3ac88ae9bc4bc63a"
 
 ## اقرأ تاليًا
 
-- [مرجع محوِّل Cursor](/docs/harnesses/cursor)
+- [مرجع محوِّل <bdi>Cursor</bdi>](/docs/harnesses/cursor)
 - [نظرة عامة على المقارنة](/docs/comparison)

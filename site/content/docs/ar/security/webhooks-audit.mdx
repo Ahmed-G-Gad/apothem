@@ -6,35 +6,35 @@ sourceHash: "6289cbcd626ea521"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يتحقّق فحص **Webhooks** في <bdi>OpenSSF Scorecard</bdi> من أن webhooks المستودع تستخدم سرًّا مشتركًا لمصادقة سطح التسليم — فبدونه، يستطيع المهاجم الذي يعرف عنوان <bdi>URL</bdi> الخاص بالـ webhook إعادة تشغيل الأحداث أو تزويرها.
+يتحقّق فحص **<bdi>Webhooks</bdi>** في <bdi>OpenSSF Scorecard</bdi> من أن <bdi>webhooks</bdi> المستودع تستخدم سرًّا مشتركًا لمصادقة سطح التسليم — فبدونه، يستطيع المهاجم الذي يعرف عنوان <bdi>URL</bdi> الخاص بالـ <bdi>webhook</bdi> إعادة تشغيل الأحداث أو تزويرها.
 
-## وضعية الـ webhooks في Apothem
+## وضعية الـ <bdi>webhooks</bdi> في <bdi>Apothem</bdi>
 
-| سطح الـ webhook | الحالة | وتيرة تدوير السرّ |
+| سطح الـ <bdi>webhook</bdi> | الحالة | وتيرة تدوير السرّ |
 |---|---|---|
-| **webhooks المستودع** | لا شيء مُهيَّأ على مستوى المستودع. | غير مُنطبِق |
-| **webhooks المنظمة** | لا شيء مُهيَّأ على مستوى المنظمة. | غير مُنطبِق |
-| **أحداث سير العمل** | يديرها GitHub؛ غير خاضعة لفحص Webhooks. | غير مُنطبِق |
+| **<bdi>webhooks</bdi> المستودع** | لا شيء مُهيَّأ على مستوى المستودع. | غير مُنطبِق |
+| **<bdi>webhooks</bdi> المنظمة** | لا شيء مُهيَّأ على مستوى المنظمة. | غير مُنطبِق |
+| **أحداث سير العمل** | يديرها <bdi>GitHub</bdi>؛ غير خاضعة لفحص <bdi>Webhooks</bdi>. | غير مُنطبِق |
 
-يُشغِّل Apothem حاليًّا **صفرًا من أسطح الـ webhook الخارجية**. يستخدم كل تكامل مدفوع بالأحداث أسطح سير عمل أصلية في <bdi>GitHub</bdi> (<bdi>CI</bdi>، و<bdi>Scorecard</bdi>، و<bdi>CodeQL</bdi>، و<bdi>pip-audit</bdi>) وهي غير خاضعة لفحص Webhooks في <bdi>Scorecard</bdi>.
+يُشغِّل <bdi>Apothem</bdi> حاليًّا **صفرًا من أسطح الـ <bdi>webhook</bdi> الخارجية**. يستخدم كل تكامل مدفوع بالأحداث أسطح سير عمل أصلية في <bdi>GitHub</bdi> (<bdi>CI</bdi>، و<bdi>Scorecard</bdi>، و<bdi>CodeQL</bdi>، و<bdi>pip-audit</bdi>) وهي غير خاضعة لفحص <bdi>Webhooks</bdi> في <bdi>Scorecard</bdi>.
 
-## حوكمة الـ webhooks المستقبلية
+## حوكمة الـ <bdi>webhooks</bdi> المستقبلية
 
-عندما يُنمّي Apothem أسطح webhook (مثلًا، إشعارات الإصدار في <bdi>Discord</bdi> / <bdi>Matrix</bdi>، ومُشغِّلات بناء المستهلكين النهائيين)، يجب على المُشغِّل:
+عندما يُنمّي <bdi>Apothem</bdi> أسطح <bdi>webhook</bdi> (مثلًا، إشعارات الإصدار في <bdi>Discord</bdi> / <bdi>Matrix</bdi>، ومُشغِّلات بناء المستهلكين النهائيين)، يجب على المُشغِّل:
 
 1. **توليد سرّ عالي الإنتروبيا** (≥ 32 بايت، عشوائي تعمويًّا).
 2. **تخزين السرّ في سطح الأسرار المشفَّرة بالمستودع** — لا في الشيفرة المصدرية أبدًا، ولا في <bdi>YAML</bdi> سير العمل أبدًا.
-3. **تهيئة الـ webhook بالسرّ** بحيث يُوقِّع <bdi>GitHub</bdi> ترويسة <bdi>`X-Hub-Signature-256`</bdi> في كل تسليم.
+3. **تهيئة الـ <bdi>webhook</bdi> بالسرّ** بحيث يُوقِّع <bdi>GitHub</bdi> ترويسة <bdi>`X-Hub-Signature-256`</bdi> في كل تسليم.
 4. **التحقّق من التوقيع على نقطة النهاية المستقبِلة** باستخدام مقارنة ذات زمن ثابت.
 5. **تدوير السرّ** كل 12 شهرًا أو خلال 24 ساعة من أي اشتباه باختراق.
-6. **توثيق الـ webhook** في ملف التدقيق هذا مع غرضه ونقطة النهاية المستقبِلة وتاريخ التدوير.
+6. **توثيق الـ <bdi>webhook</bdi>** في ملف التدقيق هذا مع غرضه ونقطة النهاية المستقبِلة وتاريخ التدوير.
 
 ## وتيرة التدقيق
 
-يُراجَع هذا الملف في كل تمريرة لـ <bdi>`/security-audit`</bdi> وعند كل نقطة تفتيش سابقة للتبديل في هندسة الإصدار. ويُعدّ الانحراف (مثلًا، سطح webhook أُدخِل دون مُدخَل هنا) اكتشافًا بخطورة HIGH.
+يُراجَع هذا الملف في كل تمريرة لـ <bdi>`/security-audit`</bdi> وعند كل نقطة تفتيش سابقة للتبديل في هندسة الإصدار. ويُعدّ الانحراف (مثلًا، سطح <bdi>webhook</bdi> أُدخِل دون مُدخَل هنا) اكتشافًا بخطورة <bdi>HIGH</bdi>.
 
 ## المراجع
 
-- [OpenSSF Scorecard — فحص Webhooks](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
-- [GitHub — أمان الـ webhooks](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
-- [سياسة أمان Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+- [<bdi>OpenSSF Scorecard</bdi> — فحص <bdi>Webhooks</bdi>](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [<bdi>GitHub</bdi> — أمان الـ <bdi>webhooks</bdi>](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [سياسة أمان <bdi>Apothem</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

@@ -215,10 +215,12 @@ class McpServer:
 
     Secret VALUES in ``env`` or ``headers`` SHOULD be written as
     environment-variable references (``${VAR}`` — e.g. ``${GITHUB_TOKEN}``).
-    Such a reference passes through to native config verbatim; Apothem never
-    resolves it at render time, so no raw secret literal is materialized into a
-    committable scope. ``sse`` is accepted for back-compat but deprecated;
-    prefer ``streamable-http`` (see ``MCP_TRANSPORTS``).
+    Such a reference passes through to native config verbatim, except in the
+    OpenCode config, which substitutes only ``{env:VAR}``: its renderer writes
+    each ``${VAR}`` in that form. Apothem never resolves a reference at render
+    time, so no raw secret literal is materialized into a committable scope.
+    ``sse`` is accepted for back-compat but deprecated; prefer
+    ``streamable-http`` (see ``MCP_TRANSPORTS``).
     """
 
     transport: str
