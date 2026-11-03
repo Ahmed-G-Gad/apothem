@@ -86,6 +86,20 @@ expression for MDX content pages).
 - Public-facing copy stays natural: it does not name internal planning history,
   superseded release stories, or process tooling, and avoids unsupported
   marketing adjectives.
+- **Arabic pages isolate every left-to-right run.** In `content/docs/ar/`, each
+  Latin run and inline code span in Arabic text sits in `<bdi>`, a code span as
+  ``<bdi>`code`</bdi>``. Characters that belong to a term stay inside it: a
+  command's slash (`<bdi>/plan</bdi>`), a version's plus
+  (`<bdi>Node.js 18+</bdi>`), a section sign (`<bdi>§CM-7</bdi>`). One `<bdi>`
+  holds a range (`<bdi>R1–R10</bdi>`), a chain joined by arrows or ` > `
+  (`<bdi>spec → generate → review</bdi>`), a label with its arrow
+  (`**<bdi>Drives →</bdi>**`), a quoted English label, and a two-word term such
+  as ``<bdi>POSIX `sh`</bdi>``; two separate isolates side by side display in
+  reverse order. An arrow between Arabic phrases is mirrored (`←` for the
+  English `→`), because the bidirectional algorithm does not mirror arrows.
+  Frontmatter renders as plain text, so a title or description isolates a run
+  with the YAML escapes `⁦` … `⁩` inside a double-quoted string, never
+  a `<bdi>` tag. Generated reference regions stay as the generator writes them.
 - **No JS/TS linter runs here by design.** The site ships no ESLint or Biome
   config; Next 16 no longer bundles `next lint`. The TypeScript compiler
   (`tsc`, via `next build`) is the type gate. Do not add `eslint-disable`
