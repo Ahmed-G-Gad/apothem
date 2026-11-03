@@ -98,7 +98,10 @@ The notes other Apothem installs print when they write `AGENTS.md` or another
 file lower in the list name Zed as a reader only under a condition: Zed loads
 that file only when the project has none of the files above it in the list.
 This install writes `.rules`, so in a project where it ran, those notes apply
-to Zed only after `.rules` is removed.
+to Zed only after `.rules` is removed. The same goes for the notes this install
+prints itself: when `AGENTS.md` or another shared file lower in the list holds
+another install's Apothem block, the note that Zed also loads that file carries
+a condition the new `.rules` makes false until `.rules` is removed.
 
 The global `~/.config/zed/AGENTS.md` instruction file and the MCP context-server
 block (`.zed/settings.json` `context_servers`) are operator-owned; Apothem does
