@@ -51,9 +51,10 @@ against: `rules/<name>.md` under `~/.claude/rules/`, and `templates/...`,
 `~/.claude/.apothem/support/`. It also points at the rule index,
 `~/.claude/rules/apothem-rule-index.md`. The rest of the Apothem governance
 surface reaches Claude Code through the propagated `rules/` tree and the
-SessionStart hook. OpenCode also loads `~/.claude/CLAUDE.md` when no
-`~/.config/opencode/AGENTS.md` exists, and Devin Desktop imports it by default,
-so the block names no single tool as its reader.
+SessionStart hook. OpenCode 1 also loads `~/.claude/CLAUDE.md` when no
+`~/.config/opencode/AGENTS.md` exists (OpenCode 2 loads only `AGENTS.md`
+files), and Devin Desktop imports it by default, so the block names no single
+tool as its reader.
 
 ## Profile-to-native-config mapping
 
@@ -209,12 +210,12 @@ well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see
 [MCP servers](/docs/reference/mcp)).
 
-`~/.claude/agents/` is a shared root that `Claude Code` owns, as is
-`~/.claude/skills/`: other supported tools load those folders, so the agents and
-skills a `Claude Code` install writes there appear in those tools as well, and
-the install prints a note that names them. The
-[harness registry](/docs/reference/harness-registry) lists the readers of each
-root.
+`~/.claude/agents/` is a shared root that `Claude Code` owns, as are
+`~/.claude/skills/` and `~/.claude/CLAUDE.md`: other supported tools load them,
+so the agents, skills and Apothem block a `Claude Code` install writes there
+appear in those tools as well, and the install prints a note that names them.
+The [harness registry](/docs/reference/harness-registry) lists the readers of
+each root.
 
 Claude Code applies all hook bindings in settings.json on every session start. Each adapter is verified against its own native harness — there is no privileged "reference" harness.
 

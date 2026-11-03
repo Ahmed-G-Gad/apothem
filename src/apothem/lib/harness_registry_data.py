@@ -1055,17 +1055,24 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         evidence=(
             "https://code.claude.com/docs/en/memory",
             "https://opencode.ai/docs/rules/",
+            "https://opencode.ai/v2/docs/instructions/",
             "https://docs.devin.ai/cli/reference/configuration/read-config-from.md#claude-code",
             "https://docs.devin.ai/cli/extensibility/rules.md#global-rules",
             "https://docs.devin.ai/desktop/devin-local/customizations.md",
         ),
-        retrieved="2026-11-02",
-        # OpenCode falls back to ~/.claude/CLAUDE.md only when no
-        # ~/.config/opencode/AGENTS.md exists, and skips it when
+        retrieved="2026-11-03",
+        # OpenCode 1 falls back to ~/.claude/CLAUDE.md only when no
+        # <config dir>/AGENTS.md exists, and skips it when
         # OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1 or OPENCODE_DISABLE_CLAUDE_CODE=1
-        # is set (the OpenCode rules page, read 2026-11-02).
+        # is set (the OpenCode rules page, read 2026-11-03). The config dir is
+        # OPENCODE_CONFIG_DIR when set, else $XDG_CONFIG_HOME/opencode, so
+        # ~/.config/opencode by default (the v1.19.5 source). OpenCode 2 reads
+        # the same ~/.config/opencode/ configuration but loads AGENTS.md only,
+        # with no CLAUDE.md fallback (its Instructions page, read 2026-11-03).
         reader_conditions={
-            "opencode": "only when no ~/.config/opencode/AGENTS.md exists"
+            "opencode": (
+                "only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists"
+            )
         },
     ),
     SharedRoot(
