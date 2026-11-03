@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ apothem install --harness claude-code
 
 **写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
 
-`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 1 也会加载 `~/.claude/CLAUDE.md`（OpenCode 2 没有 `CLAUDE.md` 回退），而 Devin Desktop 默认会导入它，因此该区块不把任何单一工具指定为其读者。
+`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。OpenCode 1 也会在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时加载 `~/.claude/CLAUDE.md`（OpenCode 2 没有 `CLAUDE.md` 回退），而 Devin Desktop 默认会导入它，因此该区块不把任何单一工具指定为其读者。
 
 ## 配置档案到原生配置的映射
 

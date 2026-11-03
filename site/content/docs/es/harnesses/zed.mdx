@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptador de entorno de Apothem para Zed (GA)."
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -105,7 +105,11 @@ Las notas que imprimen otras instalaciones de Apothem cuando escriben
 lector solo bajo una condición: Zed carga ese archivo solo cuando el proyecto no
 tiene ninguno de los archivos situados por encima de él en la lista. Esta
 instalación escribe `.rules`, así que en un proyecto donde se ejecutó, esas
-notas se aplican a Zed solo después de eliminar `.rules`.
+notas se aplican a Zed solo después de eliminar `.rules`. Lo mismo ocurre con
+las notas que imprime esta misma instalación: cuando `AGENTS.md` u otro archivo
+compartido situado más abajo en la lista contiene el bloque de Apothem de otra
+instalación, la nota que dice que Zed también carga ese archivo lleva una
+condición que el nuevo `.rules` vuelve falsa hasta que se elimine `.rules`.
 
 El archivo de instrucciones global `~/.config/zed/AGENTS.md` y el bloque de
 servidores de contexto MCP (`.zed/settings.json` `context_servers`) son

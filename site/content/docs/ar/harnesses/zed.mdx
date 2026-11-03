@@ -2,7 +2,7 @@
 title: "Zed"
 description: "محوّل إطار عمل Apothem لـ Zed (إصدار عام)."
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -99,6 +99,10 @@ GEMINI.md
 أدنى في القائمة لا تُسمّي <bdi>Zed</bdi> قارئًا إلا بشرط: لا يُحمِّل <bdi>Zed</bdi> ذلك الملف إلا حين
 لا يحتوي المشروع على أيٍّ من الملفات الأعلى منه في القائمة. ويكتب هذا التثبيت <bdi>`.rules`</bdi>،
 لذا لا تنطبق تلك الملاحظات على <bdi>Zed</bdi> في مشروع شُغِّل فيه إلا بعد إزالة <bdi>`.rules`</bdi>.
+والأمر نفسه ينطبق على الملاحظات التي يطبعها هذا التثبيت بنفسه: فحين يحتوي <bdi>`AGENTS.md`</bdi>
+أو ملف مشترك آخر أدنى في القائمة على كتلة <bdi>Apothem</bdi> من تثبيت آخر، تحمل الملاحظة التي تفيد
+بأن <bdi>Zed</bdi> يُحمِّل ذلك الملف أيضًا شرطًا يجعله <bdi>`.rules`</bdi> الجديد غير متحقّق إلى
+أن يُزال <bdi>`.rules`</bdi>.
 
 ملف التعليمات العام <bdi>`~/.config/zed/AGENTS.md`</bdi> وكتلة خوادم سياق
 <bdi>MCP</bdi> (<bdi>`.zed/settings.json` `context_servers`</bdi>) يملكهما

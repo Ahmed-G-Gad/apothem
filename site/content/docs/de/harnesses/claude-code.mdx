@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Apothem-Harness-Adapter für Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,7 +57,8 @@ installierten Regeln, Skills und Agenten aufgelöst wird: `rules/<name>.md` unte
 den Regelindex, `~/.claude/rules/apothem-rule-index.md`. Der Rest der
 Governance-Oberfläche von Apothem erreicht Claude Code über den propagierten
 `rules/`-Baum und den SessionStart-Hook. OpenCode 1 lädt `~/.claude/CLAUDE.md`
-ebenfalls, wenn keine `~/.config/opencode/AGENTS.md` existiert (OpenCode 2 hat
+ebenfalls, wenn sein Konfigurationsverzeichnis (standardmäßig
+`~/.config/opencode/`) keine `AGENTS.md` enthält (OpenCode 2 hat
 keinen `CLAUDE.md`-Fallback), und
 Devin Desktop importiert sie standardmäßig, daher nennt der Block kein einzelnes
 Werkzeug als Leser.

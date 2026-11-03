@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptador de harness do Apothem para o Zed (GA)."
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -102,7 +102,11 @@ outro arquivo mais abaixo na lista nomeiam o Zed como leitor somente sob uma
 condição: o Zed carrega esse arquivo apenas quando o projeto não tem nenhum dos
 arquivos acima dele na lista. Esta instalação grava o `.rules`, então, em um
 projeto em que ela foi executada, essas notas se aplicam ao Zed somente depois
-que o `.rules` é removido.
+que o `.rules` é removido. O mesmo vale para as notas que esta própria
+instalação exibe: quando `AGENTS.md` ou outro arquivo compartilhado mais abaixo
+na lista contém o bloco do Apothem de outra instalação, a nota de que o Zed
+também carrega esse arquivo traz uma condição que o novo `.rules` torna falsa
+até que o `.rules` seja removido.
 
 O arquivo de instruções global `~/.config/zed/AGENTS.md` e o bloco de servidores
 de contexto MCP (`.zed/settings.json` `context_servers`) pertencem ao operador;

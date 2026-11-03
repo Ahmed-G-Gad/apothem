@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +92,7 @@ sourceHash: "8f95b9776a673bbc"
 
 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/` 存放 Apothem 自身的技能和指令文件所引用的文件。没有其他工具加载它们，因此它们没有读取者，也没有厂商页面。`CodeBuddy`、`Kiro` 和 `Trae` 还会写入各自专属的技能文件夹（`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）；只有对应的工具会加载它，因此它不是共享根目录。
 
-只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。当读取者只在某些情况下才加载某个路径时，注册表会记录该条件，安装说明会重复它。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`OpenCode` 1 仅在不存在 `~/.config/opencode/AGENTS.md` 时才加载 `~/.claude/CLAUDE.md`，并在设置了 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 或 `OPENCODE_DISABLE_CLAUDE_CODE=1` 时跳过它。`OpenCode` 2 读取同样的 `~/.config/opencode/` 配置，但没有 `CLAUDE.md` 回退，因此不会加载 `~/.claude/CLAUDE.md`。`Codex` 在每个文件夹中取 `AGENTS.override.md` 和 `AGENTS.md` 中的第一个，因此 `<project>/AGENTS.md` 只有在项目中它旁边没有 `AGENTS.override.md` 时才会被加载。`CodeBuddy` 仅在项目没有 `CODEBUDDY.md` 时，才会把 `<project>/AGENTS.md` 用作项目记忆。`Zed` 只加载其列表中的第一个项目指令文件：`.rules`、`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `GEMINI.md`。因此，`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md` 和 `<project>/GEMINI.md` 中的每一个，只有在项目没有列表中排在它之前的任何文件时才会被加载。`Zed` 安装会写入 `<project>/.rules`（列表中的第一个文件），因此在安装了它的项目中，`Zed` 不会加载这三者中的任何一个。
+只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。当读取者只在某些情况下才加载某个路径时，注册表会记录该条件，安装说明会重复它。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`OpenCode` 1 仅在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时才加载 `~/.claude/CLAUDE.md`，并在设置了 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 或 `OPENCODE_DISABLE_CLAUDE_CODE=1` 时跳过它。`OpenCode` 2 读取同样的 `~/.config/opencode/` 配置，但没有 `CLAUDE.md` 回退，因此不会加载 `~/.claude/CLAUDE.md`。`Codex` 在每个文件夹中取 `AGENTS.override.md` 和 `AGENTS.md` 中的第一个，因此 `<project>/AGENTS.md` 只有在项目中它旁边没有 `AGENTS.override.md` 时才会被加载。`CodeBuddy` 仅在项目没有 `CODEBUDDY.md` 时，才会把 `<project>/AGENTS.md` 用作项目记忆。`Zed` 只加载其列表中的第一个项目指令文件：`.rules`、`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `GEMINI.md`。因此，`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md` 和 `<project>/GEMINI.md` 中的每一个，只有在项目没有列表中排在它之前的任何文件时才会被加载。`Zed` 安装会写入 `<project>/.rules`（列表中的第一个文件），因此在安装了它的项目中，`Zed` 不会加载这三者中的任何一个。
 
 `Hermes` 每个会话只加载一类项目上下文：第一类含有非空文件的上下文，顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md` 链（在每个文件夹中，非空的 `AGENTS.override.md` 会取代其旁边的 `AGENTS.md`）、`CLAUDE.md`，然后是 `Cursor` 规则。因此，`<project>/AGENTS.md` 只有在项目没有 `.hermes.md` 或 `HERMES.md`，且它旁边没有 `AGENTS.override.md` 时才会被加载，而 `<project>/.cursor/rules/apothem-rules.mdc` 只有在项目没有 `.hermes.md`、`HERMES.md`、`AGENTS.override.md`、`AGENTS.md` 或 `CLAUDE.md` 时才会被加载。`Hermes` 会从它启动所在的文件夹向上查找 `.hermes.md` 和 `HERMES.md`，直到仓库根目录，并从仓库根目录向下读取 `AGENTS.md` 链，因此项目上层文件夹中的这类文件也会计入。空文件不计入。空的 `.hermes.md` 还会遮蔽其旁边的 `HERMES.md`，因此即使该 `HERMES.md` 有内容，`Hermes` 也会转而读取 `AGENTS.md` 链。这些条件适用于在项目中启动的会话。在项目上层文件夹中启动的会话，仍可在首次处理项目中的某个文件时加载 `<project>/AGENTS.md`，或其旁边非空的 `AGENTS.override.md`，无论项目中有怎样的 `.hermes.md` 或 `HERMES.md`。`Hermes` 在主目录和少数容器文件夹中会跳过这一点。
 

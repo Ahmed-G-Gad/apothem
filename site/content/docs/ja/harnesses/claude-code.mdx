@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ apothem install --harness claude-code
 サポートファイルのセクションは、インストールされたルール、スキル、エージェント内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` は `~/.claude/rules/` 配下に、`templates/...`、`schemas/...`、`hooks/...`、`conformity/...` は `~/.claude/.apothem/support/` 配下に解決されます。
 また、ルールインデックス `~/.claude/rules/apothem-rule-index.md` も指し示します。
 Apothem のガバナンス面の残りは、伝播された `rules/` ツリーと SessionStart フックを通じて Claude Code に届きます。
-OpenCode 1 も、`~/.config/opencode/AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込み（OpenCode 2 には `CLAUDE.md` のフォールバックがありません）、Devin Desktop はデフォルトでこれをインポートするため、このブロックは単一のツールを読み手として名指ししません。
+OpenCode 1 も、その設定フォルダー（デフォルトでは `~/.config/opencode/`）に `AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込み（OpenCode 2 には `CLAUDE.md` のフォールバックがありません）、Devin Desktop はデフォルトでこれをインポートするため、このブロックは単一のツールを読み手として名指ししません。
 
 ## プロファイルからネイティブ設定へのマッピング
 

@@ -2,7 +2,7 @@
 title: "Regras"
 description: "Regras comportamentais sempre ativas e filtradas por caminho que governam a resolução de problemas, o ofício do código, a arquitetura limpa, o planejamento e a qualidade em todo o conjunto de regras comportamentais."
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,11 +66,14 @@ O OpenCode não tem campo de escopo por regra: ele combina em toda sessão cada
 arquivo que a lista `instructions` do seu `opencode.json` nomeia. Por isso, a
 instalação do OpenCode (`apothem install --harness opencode`) lista o seu
 documento de perfil e somente as regras cujo `alwaysApply` é `true` (as quatro regras
-centrais e o índice de regras), um caminho
-`~/.config/opencode/...` explícito por arquivo, conforme lido nos arquivos de
-regra quando a configuração é gravada. Toda regra, incluindo as filtradas por
-caminho, ainda é instalada sob `~/.config/opencode/.apothem/support/rules/`,
-onde o índice a nomeia e uma regra, skill ou comando que cite uma delas a lê sob demanda.
+centrais e o índice de regras), um caminho explícito por arquivo, conforme lido
+nos arquivos de regra quando a configuração é gravada. Cada caminho começa com
+`~/` (`~/.config/opencode/...` por padrão) ou é absoluto quando a pasta de
+configuração fica fora do seu diretório pessoal. Toda regra, incluindo as
+filtradas por caminho, ainda é instalada sob `.apothem/support/rules/`, dentro
+da pasta de configuração (por padrão,
+`~/.config/opencode/.apothem/support/rules/`), onde o índice a nomeia e uma
+regra, skill ou comando que cite uma delas a lê sob demanda.
 
 ## Disciplina de autoria
 

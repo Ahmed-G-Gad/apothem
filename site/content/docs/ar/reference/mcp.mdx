@@ -2,7 +2,7 @@
 title: "خوادم MCP"
 description: "إعداد خوادم Model Context Protocol — مملوكة للمُشغِّل ومُسجَّلة عبر آلية MCP الأصلية لكل أداة؛ تُسقِط بضعة محوّلات جرد MCP من الملف التعريفي المشترك، ولا يكتب الباقي أي مُدخَلات خوادم."
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,6 +49,23 @@ sourceHash: "d8daaaca1ee297e9"
 المستخدم أو النطاق المحلي) وفي <bdi>`.mcp.json`</bdi> على مستوى المشروع؛ ولا يكتب
 محوّل <bdi>Claude Code</bdi> أيًّا من الملفين، ولا تحمل إعدادات <bdi>Claude Code</bdi>
 التي يديرها <bdi>Apothem</bdi> كتلة <bdi>`mcpServers`</bdi> أبدًا.
+
+يكتب محوّل <bdi>`OpenCode`</bdi> الجرد في كتلة <bdi>`mcp`</bdi> من
+<bdi>`opencode.json`</bdi>. ويستبدل <bdi>`OpenCode`</bdi> الصيغة <bdi>`{env:NAME}`</bdi>
+في إعداده وليس <bdi>`${NAME}`</bdi>، لذا يكتب المحوّل كل مرجع <bdi>`${NAME}`</bdi> في
+متغيّرات البيئة أو الترويسات أو عنوان <bdi>URL</bdi> الخاصة بخادم على هيئة
+<bdi>`{env:NAME}`</bdi>؛ ويصير المتغيّر غير المضبوط سلسلة فارغة. وتُنسَخ وسائط الأمر كما
+كُتبت. أمّا <bdi>`$NAME`</bdi> في قيمة متغيّر بيئة أو ترويسة، أو أي صيغة
+<bdi>`${...}`</bdi> أخرى مثل <bdi>`${NAME:-default}`</bdi>، فتُنسَخ كما كُتبت، ويحذّر
+<bdi>`apothem install`</bdi> من أن <bdi>`OpenCode`</bdi> لا يوسّعها، مُسمّيًا موضع المرجع
+لا القيمة. ويُدرِج <bdi>`OpenCode`</bdi> قيمة <bdi>`{env:NAME}`</bdi> في نص الإعداد الذي
+يقرؤه من دون إضافة أحرف الهروب إليها (ولا يضيف <bdi>`OpenCode`</bdi> 2 أحرف الهروب إلا حين
+يتعذّر تحليل ذلك النص بدونها)، لذا فقد تمنع <bdi>`OpenCode`</bdi> 1 من قراءة الملف قيمةٌ تحوي
+شرطة مائلة عكسية أو علامة اقتباس مزدوجة أو حرف تحكّم، وفي كلا الإصدارين يصل
+<bdi>`\t`</bdi> أو <bdi>`\n`</bdi> الوارد فيها إلى الخادم بوصفه حرف تحكّم. ويحذّر
+<bdi>`apothem install`</bdi> من قيمة كهذه؛ فاضبطها على هيئة <bdi>`{file:path}`</bdi> تحت
+<bdi>`harnesses.opencode.mcp_servers.<name>`</bdi> لتحتفظ الأدوات الأخرى بالمرجع
+<bdi>`${NAME}`</bdi>.
 
 ## منح مساعِد الوصول إلى خوادم <bdi>MCP</bdi>
 

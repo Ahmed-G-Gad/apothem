@@ -2,7 +2,7 @@
 title: "Registro de entornos"
 description: "Referencia técnica del registro de los adaptadores de entorno integrados de Apothem."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -134,7 +134,8 @@ casos, el registro anota la condición, y la nota de instalación la repite.
 `Open-Claw` indexa `~/.agents/skills/` solo bajo su
 directorio de estado predeterminado (omite la carpeta cuando
 `OPENCLAW_STATE_DIR` apunta a otro lugar). `OpenCode` 1 carga
-`~/.claude/CLAUDE.md` solo cuando no existe `~/.config/opencode/AGENTS.md`, y lo
+`~/.claude/CLAUDE.md` solo cuando su directorio de configuración
+(`~/.config/opencode/` por defecto) no contiene ningún `AGENTS.md`, y lo
 omite cuando está definido `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` o
 `OPENCODE_DISABLE_CLAUDE_CODE=1`. `OpenCode` 2 lee la misma configuración de
 `~/.config/opencode/` pero no tiene `CLAUDE.md` como alternativa, así que no

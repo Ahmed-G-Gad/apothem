@@ -2,7 +2,7 @@
 title: "سجلّ أُطُر العمل"
 description: "مرجع تقني لسجلّ محوّلات أُطُر العمل المُضمَّنة في Apothem."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -124,7 +124,8 @@ sourceHash: "8f95b9776a673bbc"
 وحين لا يُحمِّل قارئ مسارًا إلا في بعض الحالات، يُسجِّل السجلّ الشرط، وتُكرِّره ملاحظة التثبيت. لا يُفهرِس
 <bdi>`Open-Claw`</bdi> <bdi>`~/.agents/skills/`</bdi> إلا تحت دليل حالته الافتراضي (ويتخطّى المجلّد
 عندما يُشير <bdi>`OPENCLAW_STATE_DIR`</bdi> إلى مكان آخر). ولا يُحمِّل <bdi>`OpenCode`</bdi> 1 الملف
-<bdi>`~/.claude/CLAUDE.md`</bdi> إلا حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>، ويتخطّاه
+<bdi>`~/.claude/CLAUDE.md`</bdi> إلا حين لا يحتوي دليل إعداده (<bdi>`~/.config/opencode/`</bdi>
+افتراضيًا) على <bdi>`AGENTS.md`</bdi>، ويتخطّاه
 عند ضبط <bdi>`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`</bdi> أو <bdi>`OPENCODE_DISABLE_CLAUDE_CODE=1`</bdi>.
 ويقرأ <bdi>`OpenCode`</bdi> 2 إعداد <bdi>`~/.config/opencode/`</bdi> نفسه لكنه لا يرجع احتياطيًا إلى
 <bdi>`CLAUDE.md`</bdi>، لذا لا يُحمِّل <bdi>`~/.claude/CLAUDE.md`</bdi>. ويأخذ <bdi>`Codex`</bdi> في كل مجلّد

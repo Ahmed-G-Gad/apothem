@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,8 @@ apothem install --harness claude-code
 <bdi>`~/.claude/rules/apothem-rule-index.md`</bdi>. ويصل بقية سطح حوكمة <bdi>Apothem</bdi> إلى
 <bdi>Claude Code</bdi> عبر شجرة <bdi>`rules/`</bdi> المُنتشِرة وخطّاف
 <bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> 1 أيضًا
-<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>
+<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يحتوي دليل إعداده
+(<bdi>`~/.config/opencode/`</bdi> افتراضيًا) على <bdi>`AGENTS.md`</bdi>
 (ولا يرجع <bdi>OpenCode</bdi> 2 احتياطيًا إلى <bdi>`CLAUDE.md`</bdi>)،
 ويستورده <bdi>Devin Desktop</bdi> افتراضيًا، لذا لا تُسمّي الكتلة أداة واحدة بعينها
 قارئًا لها.

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,8 @@ dan agen yang terpasang di-resolve: `rules/<name>.md` di bawah
 menunjuk ke indeks aturan, `~/.claude/rules/apothem-rule-index.md`. Bagian lain
 dari permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/`
 yang dipropagasikan dan hook SessionStart. OpenCode 1 juga memuat
-`~/.claude/CLAUDE.md` ketika tidak ada `~/.config/opencode/AGENTS.md`
+`~/.claude/CLAUDE.md` ketika folder konfigurasinya (secara default
+`~/.config/opencode/`) tidak berisi `AGENTS.md`
 (OpenCode 2 tidak memiliki fallback `CLAUDE.md`), dan Devin Desktop
 mengimpornya secara default, sehingga blok tersebut tidak menyebut satu alat
 pun sebagai pembacanya.

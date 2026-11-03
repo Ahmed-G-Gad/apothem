@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Apothem-Harness-Adapter für Zed (GA)."
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -105,7 +105,12 @@ oder eine andere weiter unten in der Liste stehende Datei schreiben, nennen Zed
 nur unter einer Bedingung als Leser: Zed lädt diese Datei nur, wenn das Projekt
 keine der Dateien weiter oben in der Liste hat. Diese Installation schreibt
 `.rules`, daher gelten diese Hinweise in einem Projekt, in dem sie lief, erst
-für Zed, nachdem `.rules` entfernt wurde.
+für Zed, nachdem `.rules` entfernt wurde. Dasselbe gilt für die Hinweise, die
+diese Installation selbst ausgibt: Enthält `AGENTS.md` oder eine andere
+gemeinsam genutzte Datei weiter unten in der Liste den Apothem-Block einer
+anderen Installation, ist der Hinweis, dass Zed diese Datei ebenfalls lädt, an
+eine Bedingung geknüpft, die wegen der neuen `.rules` nicht zutrifft, bis
+`.rules` entfernt wird.
 
 Die globale Anweisungsdatei `~/.config/zed/AGENTS.md` und der
 MCP-Context-Server-Block (`.zed/settings.json` `context_servers`) gehören dem

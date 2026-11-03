@@ -2,7 +2,7 @@
 title: "Registro de harnesses"
 description: "Referência técnica do registro dos adaptadores de harness integrados do Apothem."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -128,8 +128,9 @@ caminho exato. Quando um leitor carrega um caminho apenas em alguns casos, o
 registro anota a condição, e a nota de instalação a repete. `Open-Claw` indexa
 `~/.agents/skills/` somente sob o seu diretório de
 estado padrão (ele ignora a pasta quando `OPENCLAW_STATE_DIR` aponta para outro
-lugar). O `OpenCode` 1 carrega `~/.claude/CLAUDE.md` somente quando não existe
-nenhum `~/.config/opencode/AGENTS.md`, e ignora esse arquivo quando
+lugar). O `OpenCode` 1 carrega `~/.claude/CLAUDE.md` somente quando a sua pasta
+de configuração (`~/.config/opencode/` por padrão) não contém nenhum
+`AGENTS.md`, e ignora esse arquivo quando
 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` ou `OPENCODE_DISABLE_CLAUDE_CODE=1`
 estiver definido. O `OpenCode` 2 lê a mesma configuração de
 `~/.config/opencode/`, mas não usa `CLAUDE.md` como alternativa, então não

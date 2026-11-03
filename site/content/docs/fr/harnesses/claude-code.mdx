@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptateur d'environnement Apothem pour Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,8 +43,9 @@ chaque citation de style dépôt dans les règles, skills et agents installés :
 `~/.claude/.apothem/support/`. Elle renvoie aussi à l'index des règles,
 `~/.claude/rules/apothem-rule-index.md`. Le reste de la surface de gouvernance
 d'Apothem atteint Claude Code via l'arborescence `rules/` propagée et le hook
-SessionStart. OpenCode 1 charge aussi `~/.claude/CLAUDE.md` lorsqu'aucun
-`~/.config/opencode/AGENTS.md` n'existe (OpenCode 2 n'a pas de repli sur
+SessionStart. OpenCode 1 charge aussi `~/.claude/CLAUDE.md` lorsque son
+répertoire de configuration (`~/.config/opencode/` par défaut) ne contient aucun
+`AGENTS.md` (OpenCode 2 n'a pas de repli sur
 `CLAUDE.md`), et Devin Desktop l'importe par
 défaut ; le bloc ne désigne donc aucun outil unique comme son lecteur.
 

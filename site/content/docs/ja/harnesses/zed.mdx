@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Zed（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,7 +87,10 @@ Zed は最初に一致したものだけを読み込むため、新しい `.rule
 表示するメモは、ある条件のもとでだけ Zed を読み手として挙げます。Zed がそのファイルを読み込むのは、
 プロジェクトにリストでそれより上位のファイルが 1 つもない場合だけです。このインストールは
 `.rules` を書き込むため、これを実行したプロジェクトでは、それらのメモが Zed に当てはまるのは
-`.rules` を削除した後に限られます。
+`.rules` を削除した後に限られます。このインストール自身が表示するメモについても同じことが
+言えます。`AGENTS.md` またはリストのより下位にある別の共有ファイルに別のインストールの
+Apothem ブロックがある場合、Zed もそのファイルを読み込むと述べるメモには条件が付いており、
+新しい `.rules` は、`.rules` を削除するまでその条件を成り立たなくします。
 
 グローバルな `~/.config/zed/AGENTS.md` 命令ファイルと MCP コンテキストサーバーブロック
 （`.zed/settings.json` の `context_servers`）はオペレーターの所有であり、Apothem はそれらを

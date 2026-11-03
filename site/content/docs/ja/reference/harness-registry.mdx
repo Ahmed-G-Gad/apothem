@@ -2,7 +2,7 @@
 title: "ハーネスレジストリ"
 description: "組み込みの Apothem ハーネスアダプターに関する技術的なレジストリリファレンス。"
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -125,7 +125,8 @@ sourceHash: "8f95b9776a673bbc"
 記録し、インストールの注記がそれを繰り返します。
 `Open-Claw` は、デフォルトの状態ディレクトリのもとでのみ `~/.agents/skills/` を
 インデックスします（`OPENCLAW_STATE_DIR` が別の場所を指している場合はそのフォルダーを
-スキップします）。`OpenCode` 1 は、`~/.config/opencode/AGENTS.md` が存在しない場合にのみ
+スキップします）。`OpenCode` 1 は、その設定フォルダー（デフォルトでは `~/.config/opencode/`）に
+`AGENTS.md` が存在しない場合にのみ
 `~/.claude/CLAUDE.md` を読み込み、`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` または
 `OPENCODE_DISABLE_CLAUDE_CODE=1` が設定されている場合は読み込みません。`OpenCode` 2 は同じ
 `~/.config/opencode/` 設定を読み取りますが、`CLAUDE.md` のフォールバックがないため、

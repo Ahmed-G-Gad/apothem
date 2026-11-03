@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -134,8 +134,9 @@ in manchen Fällen lädt, erfasst die Registry die Bedingung, und der
 Installationshinweis wiederholt sie. `Open-Claw`
 indiziert `~/.agents/skills/` nur unter seinem Standard-Zustandsverzeichnis (es
 überspringt den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). `OpenCode` 1
-lädt `~/.claude/CLAUDE.md` nur, wenn keine `~/.config/opencode/AGENTS.md`
-existiert, und überspringt sie, wenn `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
+lädt `~/.claude/CLAUDE.md` nur, wenn sein Konfigurationsverzeichnis
+(standardmäßig `~/.config/opencode/`) keine `AGENTS.md` enthält, und überspringt
+sie, wenn `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
 oder `OPENCODE_DISABLE_CLAUDE_CODE=1` gesetzt ist. `OpenCode` 2 liest dieselbe
 Konfiguration in `~/.config/opencode/`, hat aber keinen `CLAUDE.md`-Fallback und
 lädt daher `~/.claude/CLAUDE.md` nicht. `Codex` nimmt in jedem Ordner die erste

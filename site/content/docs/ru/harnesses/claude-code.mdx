@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Адаптер окружения Apothem для Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,11 +53,11 @@ Apothem, и дословно сохраняет каждую строку за �
 `~/.claude/.apothem/support/`. Он также указывает на индекс правил,
 `~/.claude/rules/apothem-rule-index.md`. Остальная часть поверхности управления
 Apothem достигает Claude Code через распространяемое дерево `rules/` и хук
-SessionStart. OpenCode 1 также загружает `~/.claude/CLAUDE.md`, когда
-`~/.config/opencode/AGENTS.md` не существует (OpenCode 2 не использует
-`CLAUDE.md` как резервный вариант), а Devin Desktop импортирует его
-по умолчанию, поэтому блок не называет своим читателем ни один конкретный
-инструмент.
+SessionStart. OpenCode 1 также загружает `~/.claude/CLAUDE.md`, когда в его
+папке конфигурации (по умолчанию `~/.config/opencode/`) нет `AGENTS.md`
+(OpenCode 2 не использует `CLAUDE.md` как резервный вариант), а Devin Desktop
+импортирует его по умолчанию, поэтому блок не называет своим читателем ни один
+конкретный инструмент.
 
 ## Сопоставление профиля с нативной конфигурацией
 

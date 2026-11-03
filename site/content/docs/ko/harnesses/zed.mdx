@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Zed(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "bb9a957eaf1e1a01"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,7 +95,10 @@ Zed는 `AGENTS.md`를 기본 지침 파일로 지정하고, 프로젝트 `.rules
 때 출력하는 안내는 조건부로만 Zed를 독자로 명시합니다. Zed는 프로젝트에 목록에서
 그 파일보다 위에 있는 파일이 하나도 없을 때에만 그 파일을 로드합니다. 이 설치는
 `.rules`를 작성하므로, 이 설치가 실행된 프로젝트에서는 그 안내가 `.rules`를 제거한
-뒤에야 Zed에 적용됩니다.
+뒤에야 Zed에 적용됩니다. 이 설치가 직접 출력하는 안내도 마찬가지입니다.
+`AGENTS.md` 또는 목록에서 더 아래에 있는 다른 공유 파일에 다른 설치의 Apothem
+블록이 있으면, Zed도 그 파일을 로드한다는 안내에는 조건이 붙으며, 새 `.rules`는
+`.rules`를 제거할 때까지 그 조건을 거짓으로 만듭니다.
 
 전역 `~/.config/zed/AGENTS.md` 지침 파일과 MCP 컨텍스트 서버
 블록(`.zed/settings.json`의 `context_servers`)은 운영자 소유입니다. Apothem은 이를

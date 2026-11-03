@@ -2,7 +2,7 @@
 title: "हार्नेस रजिस्ट्री"
 description: "अंतर्निर्मित Apothem हार्नेस अडैप्टरों के लिए तकनीकी रजिस्ट्री संदर्भ।"
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -131,7 +131,8 @@ sourceHash: "8f95b9776a673bbc"
 `Open-Claw` `~/.agents/skills/` को केवल अपनी डिफ़ॉल्ट स्थिति डायरेक्टरी
 के अंतर्गत अनुक्रमित करता है (जब `OPENCLAW_STATE_DIR` कहीं और इंगित करता है तो यह
 फ़ोल्डर को छोड़ देता है)। `OpenCode` 1 `~/.claude/CLAUDE.md` को केवल तब लोड करता है
-जब `~/.config/opencode/AGENTS.md` मौजूद न हो, और `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
+जब उसके कॉन्फ़िगरेशन फ़ोल्डर (डिफ़ॉल्ट रूप से `~/.config/opencode/`) में कोई `AGENTS.md`
+मौजूद न हो, और `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
 या `OPENCODE_DISABLE_CLAUDE_CODE=1` सेट होने पर उसे छोड़ देता है। `OpenCode` 2 वही
 `~/.config/opencode/` कॉन्फ़िगरेशन पढ़ता है, लेकिन उसमें `CLAUDE.md` फ़ॉलबैक नहीं है,
 इसलिए वह `~/.claude/CLAUDE.md` को लोड नहीं करता। `Codex` हर फ़ोल्डर में

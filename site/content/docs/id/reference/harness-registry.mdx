@@ -2,7 +2,7 @@
 title: "Registri harness"
 description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -132,7 +132,8 @@ jalur hanya dalam kasus tertentu, registri mencatat syaratnya, dan catatan
 pemasangan mengulanginya. `Open-Claw` mengindeks
 `~/.agents/skills/` hanya di bawah direktori status bawaannya (ia melewati
 folder itu ketika `OPENCLAW_STATE_DIR` menunjuk ke tempat lain). `OpenCode` 1
-memuat `~/.claude/CLAUDE.md` hanya jika `~/.config/opencode/AGENTS.md` tidak ada,
+memuat `~/.claude/CLAUDE.md` hanya jika folder konfigurasinya (secara default
+`~/.config/opencode/`) tidak berisi `AGENTS.md`,
 dan melewatinya ketika `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` atau
 `OPENCODE_DISABLE_CLAUDE_CODE=1` ditetapkan. `OpenCode` 2 membaca konfigurasi
 `~/.config/opencode/` yang sama tetapi tidak memiliki fallback `CLAUDE.md`,

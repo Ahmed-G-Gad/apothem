@@ -2,7 +2,7 @@
 title: "Trabajadores delegados"
 description: "Trabajadores delegados persistentes para investigación, auditoría, calidad y orquestación, con contratos de frontmatter y protocolos de aislamiento del despliegue."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -112,7 +112,7 @@ trabajador delegado o elimina la etiqueta de solo lectura:
 | Codex | no se emite ninguno; las instrucciones del trabajador delegado lo indican, y el sandbox de la sesión principal rige las escrituras | no disponible | heredado (no se establece) |
 | Gemini CLI | lista de permitidos `tools` con nombres de herramientas de Gemini, más las entradas `mcp_<server>_*` que la clave `agent_mcp_servers` del perfil añada a una lista explícita enumerada; sin `tools`, la lista de permitidos que implican las denegaciones más `mcp_*` | `max_turns` | heredado (no se establece) |
 | Qwen Code | `tools` / `disallowedTools` con nombres de herramientas de Qwen; sin `tools`, no se emite ninguna lista, así que las herramientas MCP se heredan y se aplican las denegaciones | no se asigna | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` por herramienta); las herramientas MCP no se restringen | no se asigna | heredado (no se establece) |
+| OpenCode | `permission` con un `deny` por cada herramienta denegada y ningún `allow`, de modo que se aplican los valores predeterminados de OpenCode (incluida su pregunta antes de leer archivos `.env`) y tus propias reglas; las herramientas MCP no se restringen | no se asigna | heredado (no se establece) |
 | Antigravity | no se emite ninguno; la descripción omite «read-only» | no disponible | heredado (no se establece) |
 | CodeBuddy | `tools` / `disallowedTools` como cadenas separadas por comas, limitadas a los nombres de herramientas que documenta CodeBuddy; ninguna entrada MCP | `maxTurns` | heredado (no se establece) |
 | Trae | `tools` / `disallowedTools` como cadenas separadas por comas, limitadas a los nombres de herramientas que documenta Trae; ninguna entrada MCP | no disponible | heredado (no se establece) |

@@ -2,7 +2,7 @@
 title: "Pembantu"
 description: "Agen pembantu persisten untuk riset, audit, kualitas, dan orkestrasi dengan kontrak frontmatter dan protokol isolasi penyebaran."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,7 +107,7 @@ menyatakannya di instruksi pembantu, atau menghapus label hanya-baca:
 | Codex | tidak ada yang dipancarkan; instruksi pembantu menyatakannya, dan sandbox sesi induk mengatur penulisan | tidak tersedia | diwarisi (tidak diatur) |
 | Gemini CLI | daftar-izin `tools` berisi nama tool Gemini, ditambah entri `mcp_<server>_*` apa pun yang ditambahkan kunci `agent_mcp_servers` profil ke daftar eksplisit yang dicantumkan; tanpa `tools`, daftar-izin yang tersirat dari penolakan ditambah `mcp_*` | `max_turns` | diwarisi (tidak diatur) |
 | Qwen Code | `tools` / `disallowedTools` dalam nama tool Qwen; tanpa `tools`, tidak ada daftar yang dipancarkan, sehingga tool MCP diwarisi dan penolakan berlaku | tidak dipetakan | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` per tool); tool MCP tidak dibatasi | tidak dipetakan | diwarisi (tidak diatur) |
+| OpenCode | `permission` dengan satu `deny` per tool yang ditolak dan tanpa `allow`, sehingga default OpenCode (termasuk permintaan konfirmasi sebelum membaca berkas `.env`) dan aturan Anda sendiri berlaku; tool MCP tidak dibatasi | tidak dipetakan | diwarisi (tidak diatur) |
 | Antigravity | tidak ada yang dipancarkan; deskripsi menghilangkan kata "read-only" | tidak tersedia | diwarisi (tidak diatur) |
 | CodeBuddy | `tools` / `disallowedTools` sebagai string berkoma, terbatas pada nama tool yang didokumentasikan CodeBuddy; tanpa entri MCP | `maxTurns` | diwarisi (tidak diatur) |
 | Trae | `tools` / `disallowedTools` sebagai string berkoma, terbatas pada nama tool yang didokumentasikan Trae; tanpa entri MCP | tidak tersedia | diwarisi (tidak diatur) |

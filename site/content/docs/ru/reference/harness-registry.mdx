@@ -2,7 +2,7 @@
 title: "Реестр окружений"
 description: "Технический справочник по реестру встроенных адаптеров окружений Apothem."
 machineTranslated: true
-sourceHash: "8f95b9776a673bbc"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -134,8 +134,9 @@ sourceHash: "8f95b9776a673bbc"
 его. `Open-Claw` индексирует
 `~/.agents/skills/` только в своём каталоге состояния по умолчанию (он
 пропускает папку, когда `OPENCLAW_STATE_DIR` указывает в другое место).
-`OpenCode` 1 загружает `~/.claude/CLAUDE.md` только тогда, когда
-`~/.config/opencode/AGENTS.md` не существует, и пропускает его, когда задано
+`OpenCode` 1 загружает `~/.claude/CLAUDE.md` только тогда, когда в его папке
+конфигурации (по умолчанию `~/.config/opencode/`) нет `AGENTS.md`, и пропускает
+его, когда задано
 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` или `OPENCODE_DISABLE_CLAUDE_CODE=1`.
 `OpenCode` 2 читает ту же конфигурацию `~/.config/opencode/`, но не использует
 `CLAUDE.md` как резервный вариант, поэтому не загружает `~/.claude/CLAUDE.md`.

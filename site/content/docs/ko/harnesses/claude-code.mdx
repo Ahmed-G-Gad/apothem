@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "3de145606f4598c9"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,8 +38,9 @@ apothem install --harness claude-code
 `hooks/...`, `conformity/...`는 `~/.claude/.apothem/support/` 아래입니다. 이
 섹션은 규칙 색인 `~/.claude/rules/apothem-rule-index.md`도 가리킵니다. Apothem
 거버넌스 표면의 나머지는 전파된 `rules/` 트리와 SessionStart 훅을 통해 Claude
-Code에 도달합니다. OpenCode 1도 `~/.config/opencode/AGENTS.md`가 없으면
-`~/.claude/CLAUDE.md`를 로드하고(OpenCode 2에는 `CLAUDE.md` 폴백이 없습니다),
+Code에 도달합니다. OpenCode 1도 자체 구성 폴더(기본값은 `~/.config/opencode/`)에
+`AGENTS.md`가 없으면 `~/.claude/CLAUDE.md`를 로드하고(OpenCode 2에는
+`CLAUDE.md` 폴백이 없습니다),
 Devin Desktop은 이를 기본적으로 가져오므로, 이 블록은 어느 한 도구도 독자로
 지칭하지 않습니다.
 

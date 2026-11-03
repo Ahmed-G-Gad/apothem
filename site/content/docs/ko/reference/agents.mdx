@@ -2,7 +2,7 @@
 title: "헬퍼"
 description: "프런트매터 계약과 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 에이전트입니다."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,7 +101,7 @@ Claude Code와 Gemini CLI 외의 하니스는 이 키를 무시합니다. Claude
 | Codex | 방출되는 것 없음. 헬퍼의 지침이 이를 명시하며, 쓰기는 부모 세션의 샌드박스가 통제함 | 사용할 수 없음 | 상속(설정하지 않음) |
 | Gemini CLI | Gemini 도구 이름으로 된 `tools` 허용 목록, 그리고 프로필의 `agent_mcp_servers` 키가 나열된 명시적 목록에 추가하는 `mcp_<server>_*` 항목. `tools`가 없으면 거부 항목이 함축하는 허용 목록에 `mcp_*`를 더함 | `max_turns` | 상속(설정하지 않음) |
 | Qwen Code | Qwen 도구 이름으로 된 `tools` / `disallowedTools`. `tools`가 없으면 목록을 방출하지 않으므로 MCP 도구가 상속되고 거부 항목이 적용됨 | 매핑되지 않음 | `model: inherit` |
-| OpenCode | `permission`(도구별 `allow` / `deny`). MCP 도구는 제한되지 않음 | 매핑되지 않음 | 상속(설정하지 않음) |
+| OpenCode | `permission`에는 거부하는 도구마다 `deny` 하나만 있고 `allow`는 없으므로, OpenCode의 기본값(`.env` 파일을 읽기 전에 묻는 동작 포함)과 여러분 자신의 규칙이 적용됨. MCP 도구는 제한되지 않음 | 매핑되지 않음 | 상속(설정하지 않음) |
 | Antigravity | 방출되는 것 없음. 설명에서 "read-only"가 빠짐 | 사용할 수 없음 | 상속(설정하지 않음) |
 | CodeBuddy | 쉼표로 구분된 문자열로 된 `tools` / `disallowedTools`, CodeBuddy가 문서화한 도구 이름으로 한정. MCP 항목 없음 | `maxTurns` | 상속(설정하지 않음) |
 | Trae | 쉼표로 구분된 문자열로 된 `tools` / `disallowedTools`, Trae가 문서화한 도구 이름으로 한정. MCP 항목 없음 | 사용할 수 없음 | 상속(설정하지 않음) |

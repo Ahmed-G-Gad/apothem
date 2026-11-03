@@ -2,7 +2,7 @@
 title: "المساعِدون"
 description: "عوامل مساعِدة دائمة للبحث والتدقيق والجودة والتنسيق، مع عقود البيانات الأمامية وبروتوكولات لعزل النشر."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -103,7 +103,7 @@ maxTurns: <integer>
 | <bdi>Codex</bdi> | لا يُصدَر شيء؛ تذكره تعليمات المساعِد، ويحكم صندوقُ الحماية للجلسة الأم عملياتِ الكتابة | غير متاح | موروث (غير مضبوط) |
 | <bdi>Gemini CLI</bdi> | قائمة سماح <bdi>`tools`</bdi> بأسماء أدوات <bdi>Gemini</bdi>، إضافة إلى أي مُدخَلات <bdi>`mcp_<server>_*`</bdi> يُضيفها المفتاح <bdi>`agent_mcp_servers`</bdi> في الملف التعريفي إلى قائمة صريحة مُدرَجة؛ ومن دون <bdi>`tools`</bdi>، قائمة السماح التي تقتضيها حالات الحظر إضافة إلى <bdi>`mcp_*`</bdi> | <bdi>`max_turns`</bdi> | موروث (غير مضبوط) |
 | <bdi>Qwen Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بأسماء أدوات <bdi>Qwen</bdi>؛ ومن دون <bdi>`tools`</bdi> لا تُصدَر قائمة، فتُورَث أدوات <bdi>MCP</bdi> وتنطبق حالات الحظر | بلا مقابل | <bdi>`model: inherit`</bdi> |
-| <bdi>OpenCode</bdi> | <bdi>`permission`</bdi> (<bdi>`allow`</bdi> / <bdi>`deny`</bdi> لكل أداة)؛ وأدوات <bdi>MCP</bdi> غير مُقيَّدة | بلا مقابل | موروث (غير مضبوط) |
+| <bdi>OpenCode</bdi> | <bdi>`permission`</bdi> مع <bdi>`deny`</bdi> واحد لكل أداة محظورة ومن دون <bdi>`allow`</bdi>، فتسري الإعدادات الافتراضية في <bdi>OpenCode</bdi> (ومنها سؤاله قبل قراءة ملفات <bdi>`.env`</bdi>) وقواعدك الخاصة؛ وأدوات <bdi>MCP</bdi> غير مُقيَّدة | بلا مقابل | موروث (غير مضبوط) |
 | <bdi>Antigravity</bdi> | لا يُصدَر شيء؛ ويُسقِط الوصف عبارة «للقراءة فقط» | غير متاح | موروث (غير مضبوط) |
 | <bdi>CodeBuddy</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بوصفها سلاسل مفصولة بفواصل، مقصورة على أسماء الأدوات التي يُوثِّقها <bdi>CodeBuddy</bdi>؛ ولا مُدخَل <bdi>MCP</bdi> | <bdi>`maxTurns`</bdi> | موروث (غير مضبوط) |
 | <bdi>Trae</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بوصفها سلاسل مفصولة بفواصل، مقصورة على أسماء الأدوات التي يُوثِّقها <bdi>Trae</bdi>؛ ولا مُدخَل <bdi>MCP</bdi> | غير متاح | موروث (غير مضبوط) |

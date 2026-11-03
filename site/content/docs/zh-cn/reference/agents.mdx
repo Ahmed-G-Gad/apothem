@@ -2,7 +2,7 @@
 title: "辅助器"
 description: "用于研究、审计、质量与编排的持久化辅助智能体，附带 frontmatter 契约和部署隔离协议。"
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ Claude Code 和 Gemini CLI 以外的工具会忽略该键。Claude Code 插件�
 | Codex | 不输出任何限制；辅助器的指令声明该限制，由父会话的沙箱管控写入 | 不可用 | 继承（未设置） |
 | Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表，外加配置档案的 `agent_mcp_servers` 键向已列出的显式列表添加的任何 `mcp_<server>_*` 条目；没有 `tools` 时，使用拒绝项所隐含的允许列表加上 `mcp_*` | `max_turns` | 继承（未设置） |
 | Qwen Code | 使用 Qwen 工具名称的 `tools` / `disallowedTools`；没有 `tools` 时，不输出列表，因此 MCP 工具被继承，拒绝项仍然生效 | 未映射 | `model: inherit` |
-| OpenCode | `permission`（每个工具的 `allow` / `deny`）；MCP 工具不受限制 | 未映射 | 继承（未设置） |
+| OpenCode | `permission`，每个被拒绝的工具对应一个 `deny`，不含 `allow`，因此适用 OpenCode 的默认设置（包括其读取 `.env` 文件之前的询问）和你自己的规则；MCP 工具不受限制 | 未映射 | 继承（未设置） |
 | Antigravity | 不输出任何限制；描述中去掉“只读” | 不可用 | 继承（未设置） |
 | CodeBuddy | 以逗号分隔字符串表示的 `tools` / `disallowedTools`，仅限 CodeBuddy 文档化的工具名称；无 MCP 条目 | `maxTurns` | 继承（未设置） |
 | Trae | 以逗号分隔字符串表示的 `tools` / `disallowedTools`，仅限 Trae 文档化的工具名称；无 MCP 条目 | 不可用 | 继承（未设置） |
