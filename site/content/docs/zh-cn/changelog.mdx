@@ -158,11 +158,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   loads it as its last project context fallback, so the block in
   `.cursor/rules/apothem-rules.mdc` now says which install wrote it and
   addresses any tool that loads it: a title and description that name no tool,
-  disciplines that apply in every tool that reads the block, and a note on how
-  the rule loads in any of them. The subagents and hook it lists stay, as what
-  the Cursor install adds. The harness registry, Cursor and Windsurf pages no
-  longer call the block Cursor's own, and the Cursor native-install example
-  matches what the install writes.
+  disciplines that apply in every tool that reads the block, and a note on when
+  the rule applies, both in a tool that reads its frontmatter and in one that
+  loads it as plain project context. The subagents and hook it lists stay, as
+  what the Cursor install adds. The harness registry, Cursor and Windsurf pages
+  no longer call the block Cursor's own, and the Cursor native-install example
+  matches what the install writes, with a test that keeps it so.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

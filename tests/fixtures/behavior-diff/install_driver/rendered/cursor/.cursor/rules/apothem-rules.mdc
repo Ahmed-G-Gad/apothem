@@ -34,7 +34,7 @@ Apothem's foundational mandates apply in every tool that reads this block:
 
 ## How this rule loads
 
-The frontmatter sets `alwaysApply: true`, so the rule applies in every session of a tool that loads it, whatever files the session touches, and `globs: "**/*"` covers the whole project. The body above is the high-density summary of Apothem's rules, and it is the only Apothem rule text this install places in the project.
+A tool that reads Cursor's rule frontmatter applies this rule in every session, whatever files the session touches, because the frontmatter sets `alwaysApply: true`. A tool that loads Cursor's rules folder as plain project context applies it in each session that loads this file. The body above is the high-density summary of Apothem's rules, and it is the only Apothem rule text this install places in the project.
 
 ## Maintaining this block
 

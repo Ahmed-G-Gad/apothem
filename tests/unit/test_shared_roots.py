@@ -57,13 +57,17 @@ _DISPLAY_NAMES = sorted(
 
 
 @pytest.mark.parametrize("template", _SHARED_ANCHOR_TEMPLATES)
-def test_shared_anchor_title_names_no_harness(template: str) -> None:
+def test_shared_anchor_title_and_description_name_no_harness(template: str) -> None:
     text = (_PACKAGE_ROOT / template).read_text(encoding="utf-8")
     headings = [line for line in text.splitlines() if line.startswith("#")]
     assert headings, template
-    for heading in headings:
+    # A tool that loads the file as plain text shows its frontmatter too.
+    frontmatter = re.match(r"---\n(.*?)\n---\n", text, re.S)
+    fields = frontmatter.group(1).splitlines() if frontmatter else []
+    descriptions = [line for line in fields if line.startswith("description:")]
+    for line in headings + descriptions:
         for name in _DISPLAY_NAMES:
-            assert name.lower() not in heading.lower(), (template, heading)
+            assert name.lower() not in line.lower(), (template, line)
 
 
 @pytest.mark.parametrize("template", _SHARED_ANCHOR_TEMPLATES)
@@ -73,6 +77,32 @@ def test_shared_anchor_claims_no_single_reader(template: str) -> None:
     text = " ".join((_PACKAGE_ROOT / template).read_text(encoding="utf-8").split())
     assert not re.search(r"(?i)this file is the [^.]*surface for", text), template
     assert not re.search(r"(?i)is read by `?[a-z-]+`? at every session", text), template
+    for name in map(re.escape, _DISPLAY_NAMES):
+        for pattern in (
+            rf"(?i)\binside {name}(?!\w)",
+            rf"(?i)\b{name} reads this [^.]* at every session",
+            rf"(?i)\b{name}-facing\b",
+        ):
+            assert not re.search(pattern, text), (template, pattern)
+
+
+def test_every_shared_instruction_file_template_is_checked() -> None:
+    # The template an owner or co-installer writes into an instruction file
+    # another harness loads is one the two tests above read, and they read no
+    # other.
+    entries = {entry.public_id: entry for entry in HARNESS_REGISTRY}
+    shared: set[str] = set()
+    for root in SHARED_ROOTS:
+        if root.kind != "load" or root.path.endswith("/"):
+            continue
+        names = {path.rsplit("/", 1)[-1] for path in _expand(root.path)}
+        for public_id in (root.owner, *root.co_installers):
+            shared.update(
+                template
+                for template in entries[public_id].template_sources
+                if template.rsplit("/", 1)[-1] in names
+            )
+    assert shared == set(_SHARED_ANCHOR_TEMPLATES)
 
 
 def _expand(path: str) -> list[str]:
