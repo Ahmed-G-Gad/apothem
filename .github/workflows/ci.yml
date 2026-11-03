@@ -435,6 +435,14 @@ jobs:
       - name: Build docs
         working-directory: site
         run: npm run build
+      - name: Check the links in the built docs
+        # A body link on a translated page is pointed at the language's own copy of
+        # its target while the page renders, so only the built HTML shows it:
+        # every link on a translated page opens a translated page in its language
+        # and every #fragment lands on an element id of the page it opens. The
+        # source-level guard (tests/unit/docs/test_site_anchor_links.py) runs in
+        # the required quality job.
+        run: python scripts/dev/check_built_docs_links.py site/dist
       - name: Upload docs artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:

@@ -22,11 +22,13 @@ pages, blog posts, and static assets.
   the docs layout and catch-all route under `app/docs/`, the per-locale routes
   under `app/[lang]/` (the localized landing card and per-locale docs), and the
   search endpoint under `app/api/search/`.
-- `components/` holds the landing-page and shared UI components.
+- `components/` holds the landing-page and shared UI components, including
+  `localized-link.tsx`, the MDX link component of the per-locale docs route.
 - `lib/` is the internal source of truth for cross-cutting concerns: the i18n
   cohort/locale table (`i18n.ts`), the hreflang alternate builder
-  (`hreflang.ts`), and the search-index transform core (`search-index-core.ts`,
-  with its `node --test` unit test alongside it). Scripts that hard-code a
+  (`hreflang.ts`), the body-link localizer (`locale-links.ts`), and the
+  search-index transform core (`search-index-core.ts`), each with a
+  `node --test` unit test alongside it. Scripts that hard-code a
   locale set assert parity against `lib/i18n.ts` rather than duplicating it.
   Each module is described in `lib/README.md`.
 - `mdx-components.tsx` is the MDX component map every rendered page resolves
@@ -34,7 +36,8 @@ pages, blog posts, and static assets.
   content tree uses must be reachable from here or the page fails to render.
 - `scripts/` holds the build/guard scripts (each documented in
   `scripts/README.md`): `update-reference-inventory.mjs`, `build-llms-txt.mjs`,
-  `author-ia.mjs`, `check-search-index-sizes.mjs`, and `export-to-dist.mjs`.
+  `author-ia.mjs`, `check-search-index-sizes.mjs`, `export-to-dist.mjs`, and
+  `github-slugger-table.mjs`.
 - `public/` contains static files copied into the published artifact, including
   `CNAME`, `robots.txt`, `security.txt`, `ai.txt`, the `llms.txt` /
   `llms-full.txt` summaries, the logo set, and the social-preview images.
@@ -45,7 +48,7 @@ pages, blog posts, and static assets.
 npm ci
 npm run dev              # local dev server (Next.js)
 npm run build            # production static export: out/ -> dist/ (served tree)
-npm test                 # search-index transform unit test (node --test)
+npm test                 # unit tests of the build helpers (node --test)
 npm run check:search-index   # per-locale search-index size guard (post-build)
 npm run ia:check         # curated-IA drift guard (read-only; no rewrite)
 ```
@@ -83,6 +86,28 @@ expression for MDX content pages).
   the regenerated output in the same change-set. The CI docs-reference-sync drift
   gate enforces this — a dirty `git status` on a reference page after a build
   signals a missed regeneration.
+- **A link on a translated page keeps the reader in their language.** Write a
+  docs link once, as `/docs/<page>` or `/docs/<page>#<id>`, the same in every
+  language. The per-locale docs route (`components/localized-link.tsx`, with
+  `lib/locale-links.ts`) points it at the language's own copy of the page when
+  there is one, and maps the English `#id` to the id of the translated heading at
+  the same position; the link stays on the English page when the language has not
+  translated the page or the two pages have other headings. So a cross-page
+  `#fragment` is always the English id, and a same-page `(#fragment)` is the
+  translated page's own id, because every page slugs its ids from its own heading
+  text. Only Markdown links and `<a>` are localized, not a component's `href`.
+  `python scripts/dev/check_site_anchor_links.py` checks this on every page
+  without a build (the `quality` job runs it as
+  `tests/unit/docs/test_site_anchor_links.py`): a fragment must name a heading of
+  the page the link opens, a translation that records the current English text
+  keeps the English headings, and no component carries a `/docs` href. A heading
+  whose text the script cannot slug exactly takes an explicit id,
+  `## Heading [#id]`. The script's slug table comes from the installed
+  github-slugger (`scripts/github-slugger-table.mjs`; `npm test` fails when the
+  two differ). The redirect to the translated page happens while the site
+  renders, so `docs-build` also runs
+  `python scripts/dev/check_built_docs_links.py site/dist` on the export: links
+  on a translated page open translated pages, and every fragment lands.
 - Public-facing copy stays natural: it does not name internal planning history,
   superseded release stories, or process tooling, and avoids unsupported
   marketing adjectives.
