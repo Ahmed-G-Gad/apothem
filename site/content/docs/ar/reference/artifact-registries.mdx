@@ -67,7 +67,7 @@ sourceHash: "b0cb48ef6011396d"
 
 تعيش قواعد السلوك تحت <bdi>`src/apothem/rules/`</bdi> — نواة صغيرة دائمة (<bdi>always-on</bdi>) إضافة إلى مجموعة أكبر مُرشَّحة-المسار (مُحمَّلة-عند-الطلب عند لمس الأدوات المطابقة). التعداد الكامل لكل-قاعدة — مع عمودَي <bdi>Scope</bdi> (دائم / مُرشَّح-المسار) و<bdi>Implements</bdi> — هو <bdi>`reference/rules.mdx`</bdi> المولَّد-من-المصدر، المُنعَش من <bdi>`src/apothem/rules/*.md`</bdi> بواسطة مولّد <bdi>reference-inventory</bdi>؛ راجِعه للحصول على القائمة الحالية الموثوقة.
 
-> **تحديد جانب <bdi>CM-21</bdi>** (ثلاث قواعد تُنفِّذ <bdi>CM-21</bdi> معًا بجوانب مميّزة غير متداخلة): **الفلاتر الإبداعية والهوية المعرفية** → <bdi>`cognitive-identity.md`</bdi>؛ **منهجية التوليد (بروتوكولات الكتابة وإعادة-الكتابة)** → <bdi>`clean-room-generation.md`</bdi>؛ **تقنيات التخطيط/المراجعة** → <bdi>`planning-techniques.md`</bdi>. كل قاعدة تملك جانبها؛ والأخريات تُحيل إلى الخارج.
+> **تحديد جانب <bdi>CM-21</bdi>** (ثلاث قواعد تُنفِّذ <bdi>CM-21</bdi> معًا بجوانب مميّزة غير متداخلة): **الفلاتر الإبداعية والهوية المعرفية** ← <bdi>`cognitive-identity.md`</bdi>؛ **منهجية التوليد (بروتوكولات الكتابة وإعادة-الكتابة)** ← <bdi>`clean-room-generation.md`</bdi>؛ **تقنيات التخطيط/المراجعة** ← <bdi>`planning-techniques.md`</bdi>. كل قاعدة تملك جانبها؛ والأخريات تُحيل إلى الخارج.
 
 > **مؤشّر مخطّط <bdi>interactive-questions</bdi>.** مخطّط استدعاء الاستفسار-المُهيكل الكنسي — الحقول المطلوبة، جدول ملخّص-الحقول، مثالان عمليّان قابلان للتنفيذ (<bdi>single-select</bdi> في §2.1 و<bdi>multi-select</bdi> في §2.2) — يعيش في <bdi>`src/apothem/rules/interactive-questions.md`</bdi> §2 "<bdi>Structured-Inquiry Shape</bdi>". قد تنسخ الأدوات النهائية §2.1 أو §2.2 كقوالب استدعاء؛ ومخطّط تعليق-الخيار ثلاثي-الأجزاء الذي يحمله جسم <bdi>`description`</bdi> لكل خيار مُحدَّد في §3 من الملف نفسه.
 
@@ -131,8 +131,8 @@ Notification      —                        10s      Accepted by src/apothem/ho
 | <bdi>Decision Matrix</bdi> | <bdi>`src/apothem/skills/decision-matrix/`</bdi> | نعم | نعم | اختيار مُرجَّح مُستشهَد-بالأدلّة بين خيارات مع فحص حساسية |
 | <bdi>Dependency Upgrade</bdi> | <bdi>`src/apothem/skills/dependency-upgrade/`</bdi> | نعم | لا | ترقيات تبعيات مُراجَعة-السجلّ، مُثبَّتة، مُتحقَّقة-بالبوّابة |
 | <bdi>Dev Toolkit</bdi> | <bdi>`src/apothem/skills/dev-toolkit/`</bdi> | نعم | نعم | حلقات هندسية منضبطة — تنقيح مُهيكل، اختبار-أوّلًا <bdi>red-green-refactor</bdi>، تفكيك شريحة-عمودية، تفكيك متطلّب-إلى-قضية |
-| <bdi>Diagram Authoring</bdi> | <bdi>`src/apothem/skills/diagram-authoring/`</bdi> | نعم | نعم | خطّ أنابيب تأليف → تحقُّق → عرض → تصدير للمخطّطات التصريحية وتصوّرات البيانات (<bdi>SVG</bdi> / <bdi>PNG</bdi> / <bdi>PDF</bdi>) |
-| <bdi>Document Authoring</bdi> | <bdi>`src/apothem/skills/document-authoring/`</bdi> | نعم | نعم | تأليف وثائق طويلة-الشكل مُبَوَّب-بالموافقة (مخطّط → مسوّدة → مراجعة) مع استشهادات مُتحقَّقة وتجميع <bdi>typeset</bdi> حتمي |
+| <bdi>Diagram Authoring</bdi> | <bdi>`src/apothem/skills/diagram-authoring/`</bdi> | نعم | نعم | خطّ أنابيب تأليف ← تحقُّق ← عرض ← تصدير للمخطّطات التصريحية وتصوّرات البيانات (<bdi>SVG</bdi> / <bdi>PNG</bdi> / <bdi>PDF</bdi>) |
+| <bdi>Document Authoring</bdi> | <bdi>`src/apothem/skills/document-authoring/`</bdi> | نعم | نعم | تأليف وثائق طويلة-الشكل مُبَوَّب-بالموافقة (مخطّط ← مسوّدة ← مراجعة) مع استشهادات مُتحقَّقة وتجميع <bdi>typeset</bdi> حتمي |
 | <bdi>Ecosystem Audit</bdi> | <bdi>`src/apothem/skills/ecosystem-audit/`</bdi> | نعم | نعم | تدقيق أعمى لشجرة إعداد <bdi>Apothem</bdi> |
 | <bdi>Eval Harness</bdi> | <bdi>`src/apothem/skills/eval-harness/`</bdi> | نعم | نعم | أُطُر تقييم نموذج-لغوي قابلة-للإعادة بمعايير-نجاح صريحة |
 | <bdi>Incident Runbook</bdi> | <bdi>`src/apothem/skills/incident-runbook/`</bdi> | نعم | نعم | تأليف كُتيّب تشغيل بصيغة <bdi>Trigger → Diagnosis → Action → Verification → Rollback</bdi> |
