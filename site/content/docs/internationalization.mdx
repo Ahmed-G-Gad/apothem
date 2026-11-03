@@ -122,4 +122,8 @@ in step 2 above. A page a locale has not translated at all is served from the
 English source, marked as English text.
 
 English remains the source of truth; each locale page mirrors its English
-counterpart's structure, links, and code samples verbatim.
+counterpart's structure, links, and code samples verbatim, with one exception
+for section links. A link to a section of another page copies its fragment
+(`#...`) from the English page; a link to a section of the same page builds its
+fragment from the translated heading, because the site derives each heading's
+id from the heading text.

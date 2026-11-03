@@ -2,7 +2,7 @@
 title: "Internacionalización (i18n)"
 description: "Cómo el sitio de documentación de Apothem declara su cohorte de locales, emite enlaces hreflang de idiomas alternativos y renderiza de derecha a izquierda en doce idiomas."
 machineTranslated: true
-sourceHash: "fbe64d232e98a8e6"
+sourceHash: "cf9e0b89b61893f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,4 +140,8 @@ marcada como texto en inglés.
 
 El inglés sigue siendo la fuente de verdad; cada página de locale refleja
 literalmente la estructura, los enlaces y los ejemplos de código de su
-contraparte en inglés.
+contraparte en inglés, con una excepción para los enlaces a secciones. Un enlace
+a una sección de otra página copia su ancla (`#...`) de la página en inglés; un
+enlace a una sección de la misma página construye su ancla a partir del
+encabezado traducido, porque el sitio deriva el id de cada encabezado a partir
+de su texto.
