@@ -177,6 +177,67 @@ def test_zed_reads_only_the_first_matching_instruction_file(tmp_path: Path) -> N
     assert cm.measure_surfaces("zed", home, project) == (_size("first\n"), 1)
 
 
+_HERMES_KINDS = {
+    ".hermes.md": "hermes\n",
+    "AGENTS.md": "agents\n",
+    "CLAUDE.md": "claude\n",
+    ".cursorrules": "cursor\n",
+}
+
+
+@pytest.mark.parametrize("first", list(_HERMES_KINDS))
+def test_hermes_loads_only_the_first_kind_of_project_context(
+    tmp_path: Path, first: str
+) -> None:
+    # Every kind from `first` on is present; only `first` loads, with SOUL.md.
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".hermes/SOUL.md": "soul\n"})
+    names = list(_HERMES_KINDS)
+    _write(project, {name: _HERMES_KINDS[name] for name in names[names.index(first) :]})
+
+    assert cm.measure_surfaces("hermes", home, project) == (
+        _size("soul\n") + _size(_HERMES_KINDS[first]),
+        2,
+    )
+
+
+def test_hermes_skips_an_empty_file_but_an_empty_hermes_md_hides_hermes_md(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {".hermes.md": " \n", "HERMES.md": "hidden\n", "AGENTS.md": "a\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("a\n"), 1)
+
+
+def test_hermes_takes_agents_override_md_before_agents_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"AGENTS.override.md": "override\n", "AGENTS.md": "base\n"})
+
+    assert cm.measure_surfaces("hermes", home, project) == (_size("override\n"), 1)
+
+
+def test_hermes_loads_every_cursor_rules_file_together(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(
+        project,
+        {
+            ".cursorrules": "r\n",
+            ".cursor/rules/a.mdc": "aa\n",
+            ".cursor/rules/b.mdc": "bbb\n",
+            ".cursor/rules/empty.mdc": "",
+        },
+    )
+
+    assert cm.measure_surfaces("hermes", home, project) == (
+        _size("r\n") + _size("aa\n") + _size("bbb\n"),
+        3,
+    )
+
+
 def test_opencode_resolves_instruction_globs(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "project"
     config = {"instructions": ["~/.config/opencode/support/rules/*.md"]}

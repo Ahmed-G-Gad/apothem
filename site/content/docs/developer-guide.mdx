@@ -697,8 +697,11 @@ codex           ~/.codex/AGENTS.md and the project AGENTS.md.
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, project .hermes.md, AGENTS.md, CLAUDE.md.
-                The support tree and apothem/rules/ are not launch surfaces.
+hermes          ~/.hermes/SOUL.md, plus the first of these in the project with
+                a non-empty file (Hermes loads one kind): .hermes.md or
+                HERMES.md, AGENTS.override.md or AGENTS.md, CLAUDE.md, then
+                .cursorrules with .cursor/rules/*.mdc. The support tree and
+                apothem/rules/ are not launch surfaces.
 kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.

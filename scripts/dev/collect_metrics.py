@@ -48,7 +48,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -303,14 +303,12 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         (_project(".github/copilot-instructions.md"), _project("AGENTS.md")),
     ),
     "hermes": (
-        "~/.hermes/SOUL.md and the project .hermes.md, AGENTS.md and CLAUDE.md. "
-        "The Apothem support tree and apothem/rules/ are not launch surfaces.",
-        (
-            _home(".hermes/SOUL.md"),
-            _project(".hermes.md"),
-            _project("AGENTS.md"),
-            _project("CLAUDE.md"),
-        ),
+        "~/.hermes/SOUL.md, plus the first of these kinds in the project with a "
+        "non-empty file (Hermes loads one): .hermes.md or HERMES.md, "
+        "AGENTS.override.md or AGENTS.md, CLAUDE.md, then .cursorrules with every "
+        ".cursor/rules/*.mdc. The Apothem support tree and apothem/rules/ are not "
+        "launch surfaces.",
+        (_home(".hermes/SOUL.md"),),
     ),
     "kimi-code": (
         "~/.kimi-code/AGENTS.md and the project AGENTS.md and .kimi-code/AGENTS.md.",
@@ -450,6 +448,41 @@ def _zed_files(project: Path) -> list[Path]:
     return []
 
 
+def _non_empty(path: Path) -> bool:
+    try:
+        return path.is_file() and bool(path.read_text(encoding="utf-8").strip())
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
+def _first_non_empty(paths: Iterable[Path]) -> list[Path]:
+    return next(([path] for path in paths if _non_empty(path)), [])
+
+
+def _hermes_files(project: Path) -> list[Path]:
+    # Hermes loads one kind of project context, the first with a non-empty file.
+    # The first of .hermes.md and HERMES.md that exists is the only candidate of
+    # its kind, so an empty .hermes.md hides a HERMES.md beside it. The scratch
+    # project has no git root, so each kind is read from the project folder.
+    hermes_md = next(
+        (project / n for n in (".hermes.md", "HERMES.md") if (project / n).is_file()),
+        None,
+    )
+    cursor_rules = [
+        project / ".cursorrules",
+        *sorted((project / ".cursor" / "rules").glob("*.mdc")),
+    ]
+    kinds = (
+        _first_non_empty([hermes_md] if hermes_md is not None else []),
+        _first_non_empty(
+            project / name for name in ("AGENTS.override.md", "AGENTS.md", "agents.md")
+        ),
+        _first_non_empty(project / name for name in ("CLAUDE.md", "claude.md")),
+        [path for path in cursor_rules if _non_empty(path)],
+    )
+    return next((files for files in kinds if files), [])
+
+
 def measure_surfaces(harness: str, home: Path, project: Path) -> tuple[int, int]:
     """Return ``(bytes, files)`` loaded at launch for ``harness`` in a tree."""
     _rule, surfaces = LAUNCH_SURFACES[harness]
@@ -462,6 +495,8 @@ def measure_surfaces(harness: str, home: Path, project: Path) -> tuple[int, int]
         files.extend(_qwen_context_files(home, project))
     elif harness == "zed":
         files.extend(_zed_files(project))
+    elif harness == "hermes":
+        files.extend(_hermes_files(project))
     unique = sorted({path.resolve() for path in files})
     return sum(path.stat().st_size for path in unique), len(unique)
 

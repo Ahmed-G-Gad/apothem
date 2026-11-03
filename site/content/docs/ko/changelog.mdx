@@ -186,6 +186,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   command. It now writes the same index into each translated page, and
   `tests/unit/docs/test_site_generated_lists.py` fails when a translation's
   index differs from the English one.
+- **The always-on bytes metric counts only the project context Hermes loads.**
+  Hermes loads one kind of project context per session, the first with a
+  non-empty file: `.hermes.md` or `HERMES.md`, `AGENTS.override.md` or
+  `AGENTS.md`, `CLAUDE.md`, then `.cursorrules` with every
+  `.cursor/rules/*.mdc`. The metrics collector added up `.hermes.md`,
+  `AGENTS.md` and `CLAUDE.md` together and left out the other files. It now
+  counts `~/.hermes/SOUL.md` plus that one kind, and the developer guide states
+  the same rule.
 
 ### Security
 
