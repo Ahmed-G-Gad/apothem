@@ -29,6 +29,8 @@ The `apothem` test suite. `pytest` is the sole test framework; the configuration
 | `fixtures/` | Shared cross-suite fixtures — the multi-surface-claims schema, the plans-discipline fixture, and the byte-golden `behavior-diff/` corpus — each with a paired schema/fixture test. |
 | `_shared/` | Cross-subtree test helpers imported as `tests._shared`, not collected as tests. `bash_resolver.py` locates a usable POSIX `bash` (and refuses the Windows WSL launcher, which is not one), so the installer tests skip honestly on a host without it instead of failing. `git_env.py` builds the environment for a test's git subprocesses with the host's global, system and environment-carried git config switched off, so a developer's `gpg.format ssh`, `commit.gpgsign` or global hooks path cannot change a fixture repository. `python_shim.py` writes a `python3` shim that execs the interpreter running the test, so a script or hook command that names `python3` does not run the host's, which can lack the test's dependencies or be the Windows Store alias. `claude_rule_scope.py` restates two Claude Code rule behaviors for the rule tests: a `paths` list that scopes nothing (empty after a trailing `/**` is stripped, or `**` alone) loads the rule at launch, and a rule glob matches a path with `.gitignore` semantics. |
 
+The `unit/` repo-coherence guards also include `test_no_hidden_bidi_controls.py`: it lists the tracked files with `git ls-files`, skips binary ones, and fails on any text file that holds a hidden bidirectional control (U+202A to U+202E, U+2066 to U+2069), naming its file, line, column and code point. The marks LRM, RLM and ALM stay allowed; a file that needs a control goes on the test's allowlist with its reason.
+
 ## Running
 
 ```sh
