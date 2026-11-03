@@ -210,6 +210,20 @@ well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see
 [MCP servers](/docs/reference/mcp)).
 
+Claude Code also reads a project's `AGENTS.md`, from the release its
+[memory page](https://code.claude.com/docs/en/memory#agents-md) names on.
+Under the default **Project instructions** setting it does so only when no
+`CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` is in the working folder
+or a folder above it. `~/.claude/CLAUDE.md` does not count, so the Apothem block there keeps
+loading alongside a project `AGENTS.md`. The Kimi Code install writes an
+Apothem block into the project `AGENTS.md`, so in such a project Claude Code
+loads both blocks; the
+[harness registry](/docs/reference/harness-registry#shared-roots) lists that
+file's readers and their conditions. **Project instructions** is a user-wide
+setting, not a per-project one: setting it to `claude-md` in `/config` keeps
+Claude Code to its `CLAUDE.md` files in every project, and
+`claude-md-and-agents-md` loads both kinds of file wherever they are.
+
 `~/.claude/agents/` is a shared root that `Claude Code` owns, as are
 `~/.claude/skills/` and `~/.claude/CLAUDE.md`: other supported tools load them,
 so the agents, skills and Apothem block a `Claude Code` install writes there
