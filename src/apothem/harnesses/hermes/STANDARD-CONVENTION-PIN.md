@@ -32,17 +32,27 @@
     writes into none of the earlier locations in the precedence order, so
     install, update and uninstall never replace a skill the operator keeps in
     any of them. `apothem verify` requires the entry.
-  - Context files: Hermes loads one project context type per session, first
-    match wins, in the order `.hermes.md`, `AGENTS.override.md`, `AGENTS.md`,
-    `CLAUDE.md`, `.cursorrules` (with `.cursor/rules/*.mdc`, both read from the
-    working directory only). The adapter writes none of them. The Cursor install
-    writes `<project>/.cursor/rules/apothem-rules.mdc`, so the registry lists
-    Hermes as a reader of that file, only when the project has no `.hermes.md`,
-    `AGENTS.md` or `CLAUDE.md` (the pinned context-files page, re-read
-    2026-11-02). The registry also gives Hermes's load of `<project>/AGENTS.md`,
-    where the Kimi Code install writes its block, a condition: only when the
-    project has no `.hermes.md` or `HERMES.md` and no `AGENTS.override.md`
-    beside it.
+  - Context files: Hermes loads one kind of project context per session, the
+    first kind with a non-empty file, in the order `.hermes.md` or `HERMES.md`
+    (the nearest, from the working directory up to the git root), the
+    `AGENTS.md` chain (from the git root down to the working directory, in each
+    directory the first non-empty of `AGENTS.override.md`, `AGENTS.md` and
+    `agents.md`), `CLAUDE.md` or `claude.md`, then `.cursorrules` with every
+    `.cursor/rules/*.mdc` (those two kinds from the working directory only). An
+    empty `.hermes.md` still ends the search for its kind, so it hides a
+    `HERMES.md` beside it. The adapter writes none of these files. The Cursor
+    install writes `<project>/.cursor/rules/apothem-rules.mdc`, so the registry
+    lists Hermes as a reader of that file, only when the project has no
+    `.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`.
+    The registry also gives Hermes's load of `<project>/AGENTS.md`, where the
+    Kimi Code install writes its block, a condition: only when the project has
+    no `.hermes.md` or `HERMES.md` and no `AGENTS.override.md` beside it. Both
+    conditions describe a session started in the project. A session started in
+    a parent folder that is not a home folder loads `<project>/AGENTS.md` as a
+    subdirectory hint the first time a tool call touches the project, whatever
+    `.hermes.md` the project has: the hint files are `AGENTS.override.md`,
+    `AGENTS.md`, `agents.md`, `CLAUDE.md`, `claude.md` and `.cursorrules`, with
+    no `.hermes.md` (`agent/subdirectory_hints.py`).
   - Resolved 2026-11-03: the context-files page lists `AGENTS.override.md` in
     its "Priority system" section but leaves it out of its "At startup" scan
     step. The pinned `agent/prompt_builder.py` settles it: in each directory of
@@ -79,6 +89,7 @@ Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607f
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/hooks.md> (hooks and plugins; retrieved 2026-10-02)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md> (context-file priority; retrieved 2026-11-02)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/agent/prompt_builder.py> (the order of the project context kinds and the `AGENTS.md` chain; retrieved 2026-11-03)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/agent/subdirectory_hints.py> (the files a session loads from folders below its working directory; retrieved 2026-11-03)
 
 ## Discovery Targets
 

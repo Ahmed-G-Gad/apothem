@@ -920,13 +920,23 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # Local Customizations page, read 2026-11-02). So Windsurf is a reader of
 # <project>/AGENTS.md, ~/.claude/CLAUDE.md and the Cursor rules file. No install
 # writes a project CLAUDE.md, so that path is not a shared root. Hermes loads one
-# kind of project context per session, first match wins, in the order
-# .hermes.md or HERMES.md, the AGENTS.md chain, CLAUDE.md, then the Cursor rules
-# (.cursorrules with every .cursor/rules/*.mdc), per its pinned context-files page
-# (read 2026-11-02) and agent/prompt_builder.py (read 2026-11-03). So it loads the
-# Cursor rules file only when the project has no .hermes.md, AGENTS.md or
-# CLAUDE.md, and <project>/AGENTS.md only when the project has no .hermes.md or
-# HERMES.md and no AGENTS.override.md beside it, which replaces it.
+# kind of project context per session, the first kind with a non-empty file, in
+# the order .hermes.md or HERMES.md, the AGENTS.md chain (in each folder a
+# non-empty AGENTS.override.md before AGENTS.md), CLAUDE.md, then the Cursor
+# rules (.cursorrules with every .cursor/rules/*.mdc), per its pinned
+# context-files page (read 2026-11-02) and agent/prompt_builder.py (read
+# 2026-11-03). So it loads the Cursor rules file only when the project has no
+# .hermes.md, HERMES.md, AGENTS.override.md, AGENTS.md or CLAUDE.md, and
+# <project>/AGENTS.md only when the project has no .hermes.md or HERMES.md and no
+# AGENTS.override.md beside it, which replaces it. Codex also takes the first of
+# AGENTS.override.md and AGENTS.md in each folder (its AGENTS.md page, read
+# 2026-11-03). Zed loads only the first project instruction file in the list
+# .rules, .cursorrules, .windsurfrules, .clinerules,
+# .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md (its
+# instructions page, read 2026-11-03), so it loads each of the three shared
+# files in that list only when the project has none of the files ahead of it.
+# The Zed install writes <project>/.rules, the head of the list, so in a project
+# it was installed in, Zed loads none of the three.
 # TODO(clarify): the Cursor rules block speaks to Cursor ("Inside Cursor, ..."),
 # and Hermes and Devin Local now load it as well. Decide whether it becomes
 # harness-neutral like the shared anchors test_shared_roots.py checks, or keeps
@@ -1091,8 +1101,12 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-10-02",
         reader_conditions={
+            "codex": "only when the project has no AGENTS.override.md beside it",
             "hermes": "only when the project has no .hermes.md or HERMES.md and no "
-            "AGENTS.override.md beside it"
+            "AGENTS.override.md beside it",
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules, .clinerules, .github/copilot-instructions.md or "
+            "AGENT.md",
         },
     ),
     SharedRoot(
@@ -1106,6 +1120,11 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
+        reader_conditions={
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules, .clinerules, .github/copilot-instructions.md, "
+            "AGENT.md, AGENTS.md or CLAUDE.md"
+        },
     ),
     SharedRoot(
         path="~/.gemini/GEMINI.md",
@@ -1126,6 +1145,10 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://zed.dev/docs/ai/instructions",
         ),
         retrieved="2026-10-02",
+        reader_conditions={
+            "zed": "only when the project has no .rules, .cursorrules, "
+            ".windsurfrules or .clinerules"
+        },
     ),
     # Devin's Cursor import reads .cursor/rules/*.mdc and keeps a rule with
     # alwaysApply: true active in every session; the file's frontmatter sets it.
@@ -1144,7 +1167,8 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-11-02",
         reader_conditions={
-            "hermes": "only when the project has no .hermes.md, AGENTS.md or CLAUDE.md"
+            "hermes": "only when the project has no .hermes.md, HERMES.md, "
+            "AGENTS.override.md, AGENTS.md or CLAUDE.md"
         },
     ),
 )

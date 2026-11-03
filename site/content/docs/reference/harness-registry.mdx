@@ -120,17 +120,41 @@ write a skills folder of their own (`~/.codebuddy/skills/`, `~/.kiro/skills/`,
 and `~/.trae/skills/`); only that tool loads it, so it is not a shared root.
 
 A reader is listed only where its vendor docs show a default load of that
-exact path. The registry records three conditions, and the install note repeats
-each one. `Open-Claw` indexes `~/.agents/skills/` only under its default state
-directory (it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere).
-`Hermes` loads one kind of project context per session, first match wins, in
-the order `.hermes.md` or `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, then the
-`Cursor` rules. So it loads `<project>/AGENTS.md` only when the project has no
-`.hermes.md` or `HERMES.md` and no `AGENTS.override.md` beside it, and
+exact path. When a reader loads a path only in some cases, the registry records
+the condition, and the install note repeats it. `Open-Claw` indexes
+`~/.agents/skills/` only under its default state directory (it skips the folder
+when `OPENCLAW_STATE_DIR` points elsewhere). `Codex` takes the first of
+`AGENTS.override.md` and `AGENTS.md` in each folder, so it loads
+`<project>/AGENTS.md` only when the project has no `AGENTS.override.md` beside
+it. `Zed` loads only the first project instruction file in its list: `.rules`,
+`.cursorrules`, `.windsurfrules`, `.clinerules`,
+`.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, then
+`GEMINI.md`. So it loads `<project>/.github/copilot-instructions.md`,
+`<project>/AGENTS.md` and `<project>/GEMINI.md` only when the project has none
+of the files ahead of that one in the list. The `Zed` install writes
+`<project>/.rules`, the first file in the list, so `Zed` loads none of the three
+in a project it was installed in.
+
+`Hermes` loads one kind of project context per session: the first kind with a
+non-empty file, in the order `.hermes.md` or `HERMES.md`, the `AGENTS.md` chain
+(in each folder, a non-empty `AGENTS.override.md` replaces the `AGENTS.md`
+beside it), `CLAUDE.md`, then the `Cursor` rules. So it loads
+`<project>/AGENTS.md` only when the project has no `.hermes.md` or `HERMES.md`
+and no `AGENTS.override.md` beside it, and
 `<project>/.cursor/rules/apothem-rules.mdc` only when the project has no
-`.hermes.md`, `AGENTS.md` or `CLAUDE.md`. The `Cursor`
-docs list `~/.codex/agents/` as a `Codex` compatibility folder but do not say
-which file formats `Cursor` parses there, and a `Codex` install writes TOML
+`.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`.
+`Hermes` looks for `.hermes.md` and `HERMES.md` from the folder it starts in up
+to the git root, and reads the `AGENTS.md` chain from the git root down, so such
+a file in a folder above the project counts too. An empty file does not count.
+An empty `.hermes.md` also hides a `HERMES.md` beside it, so `Hermes` moves on
+to the `AGENTS.md` chain even when that `HERMES.md` has text. These conditions
+apply to a session started in the project. A session started in a folder above
+it, other than the home folder, loads `<project>/AGENTS.md` the first time it
+works on a file in the project, whatever `.hermes.md` or `HERMES.md` the
+project has.
+
+The `Cursor` docs list `~/.codex/agents/` as a `Codex` compatibility folder but
+do not say which file formats `Cursor` parses there, and a `Codex` install writes TOML
 files, so whether `Cursor` reads those helpers is not confirmed. The `Cursor`
 install also writes its own `<project>/.cursor/agents/` copy of the helpers,
 which the vendor's precedence ranks above the folders it imports, so in an

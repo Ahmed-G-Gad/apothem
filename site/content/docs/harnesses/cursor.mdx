@@ -251,7 +251,7 @@ and keeps a rule with `alwaysApply: true`, which this file's frontmatter sets,
 active in every session. [One more tool](/docs/harnesses/hermes) loads the file
 only as the last fallback for its project
 instructions, when the project has no instruction file of its own and no
-`AGENTS.md` or `CLAUDE.md`. So installing or uninstalling `cursor` also changes
+`AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`. So installing or uninstalling `cursor` also changes
 what those tools load, and the install prints a note that names both, with that
 condition (the [harness registry](/docs/reference/harness-registry#shared-roots)
 lists them). The Apothem block is written for Cursor, so what it says about

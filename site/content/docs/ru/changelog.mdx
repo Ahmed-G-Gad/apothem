@@ -144,7 +144,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install writes and the block the Claude Code install writes in
   `~/.claude/CLAUDE.md` reach Windsurf too. Hermes loads the Cursor rules file
   as its last project context fallback, only when the project has no
-  `.hermes.md`, `AGENTS.md` or `CLAUDE.md`, and the note gives that condition.
+  `.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`,
+  and the note gives that condition.
   Those installs now name these tools among the ones that load the file, and a
   Windsurf or Hermes install names the install whose Apothem block it finds
   there. Hermes's entry in the project `AGENTS.md` note now gives its condition
@@ -154,6 +155,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Hermes page lists the project files through which another install's block
   reaches Hermes. No Apothem install writes a project `CLAUDE.md`, which Devin
   also imports.
+- **Install notes say when Zed and Codex skip a shared project file.** Zed
+  loads only the first project instruction file in its list (`.rules`,
+  `.cursorrules`, `.windsurfrules`, `.clinerules`,
+  `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`,
+  `GEMINI.md`), so the notes for the project `.github/copilot-instructions.md`,
+  `AGENTS.md` and `GEMINI.md` now say Zed loads each one only when the project
+  has none of the files ahead of it. The Zed install writes `.rules`, so Zed
+  loads none of them in a project it was installed in. Codex loads an
+  `AGENTS.override.md` beside `AGENTS.md` instead of it, and the project
+  `AGENTS.md` note now gives that condition too. The harness registry and
+  Hermes pages also say which files count for Hermes: one in a folder above the
+  project, up to the git root, counts, an empty one does not, and a session
+  started in a folder above the project loads the project `AGENTS.md` whatever
+  `.hermes.md` it has.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

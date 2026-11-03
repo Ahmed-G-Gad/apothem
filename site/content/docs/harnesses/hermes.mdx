@@ -48,20 +48,32 @@ profile document on its own: nothing else in `config.yaml` points there, so the
 Hermes install adds no Apothem rules or hooks.
 
 Hermes does load the Apothem block that another install writes into a project
-file it reads. It loads one kind of project context per session, the first it
-finds, so each of these files reaches Hermes only under the condition next to
-it:
+file it reads. It loads one kind of project context per session: the first kind
+with a non-empty file, in the order `.hermes.md` or `HERMES.md`, the `AGENTS.md`
+files (in each folder, a non-empty `AGENTS.override.md` replaces the `AGENTS.md`
+beside it), `CLAUDE.md`, then another editor's rules files. So each of these
+files reaches Hermes only under the condition next to it:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-The Apothem install for Kimi Code writes the first file, and the install for
-another editor writes the second. An install with `--project` names such a file
-and the install that wrote it.
+Hermes looks for `.hermes.md` and `HERMES.md` from the folder it starts in up to
+the git root, and reads `AGENTS.md` files from the git root down, so such a file
+in a folder above the project counts too. An empty file does not count. An empty
+`.hermes.md` also hides a `HERMES.md` beside it, so Hermes moves on to the
+`AGENTS.md` files even when that `HERMES.md` has text. These conditions apply to
+a session started in the project. A session started in a folder above it, other
+than your home folder, loads `<project>/AGENTS.md` the first time it works on a
+file in the project, whatever `.hermes.md` or `HERMES.md` the project has.
+
+The Apothem install for [Kimi Code](/docs/harnesses/kimi-code) writes the first
+file, and [the install for another editor](/docs/harnesses/cursor) writes the
+second. A Hermes install run with `--project` names such a file and the install
+that wrote it.
 
 **Name clashes.** Hermes documents this order of precedence for skills: the
 project's skills (`<project>/.hermes/skills/` and `<project>/.agents/skills/`),
