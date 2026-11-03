@@ -142,6 +142,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Hermes page lists the project files through which another install's block
   reaches Hermes. No Apothem install writes a project `CLAUDE.md`, which Devin
   also imports.
+- **The Cursor rules block names no single tool as its reader.** Devin
+  Desktop imports the Apothem rules file the Cursor install writes, and Hermes
+  loads it as its last project context fallback, so the block in
+  `.cursor/rules/apothem-rules.mdc` now says which install wrote it and
+  addresses any tool that loads it: a title and description that name no tool,
+  disciplines that apply in every tool that reads the block, and a note on when
+  the rule applies, both in a tool that reads its frontmatter and in one that
+  loads it as plain project context. The subagents and hook it lists stay, as
+  what the Cursor install adds. The harness registry, Cursor and Windsurf pages
+  no longer call the block Cursor's own, and the Cursor native-install example
+  matches what the install writes, with a test that keeps it so.
+- **Install notes say when OpenCode loads `~/.claude/CLAUDE.md`.** OpenCode 1
+  reads that file only as a fallback, when no `~/.config/opencode/AGENTS.md`
+  exists, and skips it when `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or
+  `OPENCODE_DISABLE_CLAUDE_CODE=1` is set. OpenCode 2 has no `CLAUDE.md`
+  fallback, so it does not load that file. The notes named OpenCode
+  without that condition; they now say
+  `OpenCode (only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists)`,
+  as they already do for the Open-Claw and Hermes conditions.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade
@@ -175,6 +194,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   command. It now writes the same index into each translated page, and
   `tests/unit/docs/test_site_generated_lists.py` fails when a translation's
   index differs from the English one.
+- **Test runs no longer write into the developer's home folder.** The install
+  ledger and backup roots are set from the home folder when Apothem's modules
+  load, before any fixture runs, so module-scoped install fixtures wrote empty
+  lock files and ledger lines under `~/.apothem/state`. The session fixture
+  now moves both roots, clears `CODEX_HOME` and the XDG base directories, and
+  redirects the hook state folder, and
+  `tests/unit/test_suite_state_isolation.py` fails when a loaded module still
+  holds a path under the starting home. A `home-isolation` CI job
+  runs the suite with an empty home and fails if anything appears there. The
+  header-guard hook test now builds its own project instead of relying on the
+  checkout it runs in.
 - **The always-on bytes metric counts only the instruction files Hermes and
   Codex load.** Hermes loads one kind of project context per session, the
   first with a non-empty file: `.hermes.md` or `HERMES.md`,
