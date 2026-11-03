@@ -97,6 +97,12 @@ a warning that names it. The install prints a note that names those tools.
 registry names it), and its docs do not say whether it reads the TOML files a
 `Codex` install writes there.
 
+A `CODEX_HOME` below `~/.config` works when `~/.config` is a symbolic link
+into your home directory, as dotfile managers make it. The install stops with
+`target path crosses a symlink`, before it writes anything, when that link
+leads outside your home directory, or when `CODEX_HOME` itself, or anything in
+it, is a link; set `CODEX_HOME` to the folder the link leads to instead.
+
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.

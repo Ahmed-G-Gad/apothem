@@ -19,6 +19,9 @@ harness reads. That single function bounds what it trusts and what it does not.
   after validation: schema failures, unknown harness IDs, unsafe project paths,
   missing manifest sources, target traversal, and symlink crossings all stop
   before any write and return structured diagnostics with `files_written: []`.
+  The exceptions are the links dotfile managers make at `~/.config`, or at or
+  above a shared skill or rule folder, which are followed while they lead
+  somewhere inside your home directory.
 - **What materialized output never carries.** No secrets. Profile diagnostics
   redact secret-like keys and token-shaped values before they reach plain
   output, JSON, logs, docs snippets, or tests, and public examples use fake

@@ -62,16 +62,66 @@ def config_root() -> Path:
     on it: OpenCode 1 reads that folder as well as this one, OpenCode 2
     instead of it (v2.2.5 ``packages/util/src/global.ts:79``).
 
-    An ``XDG_CONFIG_HOME`` that resolves to the same folder as ``~/.config``
-    keeps the default spelling, so an install recorded there before the
-    variable was set, through a link or junction included, stays the same
-    install.
+    When ``XDG_CONFIG_HOME`` is unset, or names the same folder as
+    ``~/.config`` (through a link, a junction or a change of case), an install
+    already recorded for that folder keeps the spelling it is recorded under
+    (see :func:`_default_spellings`), so it stays one install. Otherwise the
+    folder is ``XDG_CONFIG_HOME`` as resolved, or ``~/.config/opencode``.
     """
     default = Path.home() / ".config"
     configured = _xdg_config_home()
-    if configured is None or configured == install_driver._normalized(default):
-        configured = default
-    return configured / "opencode"
+    preferred = (default if configured is None else configured) / "opencode"
+    if configured is not None and not _names_same_folder(configured, default):
+        return preferred
+    return next(
+        (spelling for spelling in _default_spellings() if _recorded(spelling)),
+        preferred,
+    )
+
+
+def _default_spellings() -> list[Path]:
+    """Return the spellings an install in ``~/.config/opencode`` is recorded under.
+
+    ``~/.config/opencode`` as written, then through the folder ``~/.config``
+    leads to when that is a link staying inside the home. A link that leaves
+    the home is not followed, so a record there never takes a write out of the
+    home while ``XDG_CONFIG_HOME`` is unset (the write guard refuses that link
+    instead). Should both spellings hold a record, the first wins.
+    """
+    default = Path.home() / ".config"
+    spellings = [default / "opencode"]
+    resolved = install_driver._normalized(default)
+    if resolved != default and install_driver._within_allowed_root(
+        resolved, Path.home()
+    ):
+        spellings.append(resolved / "opencode")
+    return spellings
+
+
+def _recorded(root: Path) -> bool:
+    """Return True when an OpenCode install is recorded at *root*, spelled as it is."""
+    try:
+        record = install_ledger.current_install_record("opencode", root=root)
+    except (install_ledger.LedgerError, OSError):
+        return False
+    return record is not None
+
+
+def _names_same_folder(first: Path, second: Path) -> bool:
+    """Return True when *first* and *second* name one folder.
+
+    When both exist they are compared by file identity, which also matches a
+    change of case on a case-insensitive volume, a bind mount, a link or a
+    junction. Otherwise, or when the filesystem reports no inode numbers (some
+    network and FUSE mounts do), their resolved paths are compared.
+    """
+    try:
+        stats = [first.stat(), second.stat()]
+    except OSError:
+        stats = []
+    if stats and all(stat.st_ino for stat in stats):
+        return os.path.samestat(stats[0], stats[1])
+    return install_driver._normalized(first) == install_driver._normalized(second)
 
 
 def _xdg_config_home() -> Path | None:
@@ -352,8 +402,8 @@ def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
 
     One note each when ``OPENCODE_CONFIG_DIR`` names another folder (OpenCode
     2 then reads that folder instead of *root*), when ``XDG_CONFIG_HOME`` is
-    set but not used (see :func:`config_root`), when an earlier install is
-    still recorded in ``~/.config/opencode`` while *root* is elsewhere, and
+    set but not used (see :func:`config_root`), when the files of an earlier
+    install are still in ``~/.config/opencode`` while *root* is elsewhere, and
     for each MCP server whose rendered entry keeps a ``$`` reference OpenCode
     does not expand.
     """
@@ -388,25 +438,30 @@ def _same_folder(configured: str, root: Path) -> bool:
     path = Path(configured)
     if not path.is_absolute():
         return False
-    return install_driver._normalized(path) == install_driver._normalized(root)
+    return _names_same_folder(path, root)
 
 
 def _earlier_root_notes(root: Path) -> list[str]:
-    """Return a note when an install is still recorded at the default folder."""
+    """Return a note when an earlier install is still in the default folder.
+
+    Only while its files are there: when they are gone (the folder was moved
+    or deleted) nothing is left to remove, and an uninstall would find nothing
+    installed.
+    """
     default = Path.home() / CONFIG_DIR
-    if install_driver._normalized(default) == install_driver._normalized(root):
+    if _names_same_folder(default, root):
         return []
-    try:
-        record = install_ledger.current_install_record("opencode", root=default)
-    except install_ledger.LedgerError:
-        return []
-    if record is None:
+    if not any(
+        _recorded(spelling)
+        and install_driver.detect_install("opencode", harness_root=spelling)
+        for spelling in _default_spellings()
+    ):
         return []
     return [
-        f"An earlier Apothem install is still recorded in {default}, which "
-        "OpenCode does not read while XDG_CONFIG_HOME names another folder. "
-        "To remove it, run apothem uninstall --harness opencode with "
-        "XDG_CONFIG_HOME unset."
+        f"An earlier Apothem install is still in {default}, which OpenCode "
+        "does not read while XDG_CONFIG_HOME names another folder. To remove "
+        "it, run apothem uninstall --harness opencode with XDG_CONFIG_HOME "
+        "unset."
     ]
 
 
@@ -465,9 +520,10 @@ def _mcp_reference_notes(profile: dict[str, Any]) -> list[str]:
                     f"{{env:{variable}}} into the config text it reads without "
                     "escaping it, so OpenCode 1 may not read the file, and in "
                     "both lines a \\t or \\n in the value can reach the server as "
-                    "a control character. Set that value as {file:path} under "
-                    f"harnesses.opencode.mcp_servers.{name}, so the other tools "
-                    "keep the ${NAME} reference."
+                    "a control character. Restate that server under "
+                    f"harnesses.opencode.mcp_servers.{name} (an override "
+                    "replaces the whole server) with the value as {file:path}, "
+                    "so the other tools keep the ${NAME} reference."
                 )
     return notes
 

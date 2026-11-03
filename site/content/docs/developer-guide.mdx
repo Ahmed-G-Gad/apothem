@@ -57,9 +57,11 @@ delta.
 
 The shared install driver validates every source and target before the first
 write. It rejects missing manifest sources, target traversal, target paths
-outside the selected root, and symlink crossings. Dry-runs execute the same
-validation and return structured `skipped` or `unchanged` results without
-creating files.
+outside the selected root, and symlink crossings. The exceptions are the links
+dotfile managers make at `~/.config`, or at or above a shared skill or rule
+folder, which are followed while they stay inside the home. Dry-runs execute
+the same validation and return structured `skipped` or `unchanged` results
+without creating files.
 
 ## Redaction and Example Data
 

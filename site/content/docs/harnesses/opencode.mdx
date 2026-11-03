@@ -38,6 +38,14 @@ OpenCode 1 reads that folder as well as the default one, but OpenCode 2 reads it
 instead, so when it names another folder the install warns that OpenCode 2 does
 not load the install.
 
+A `~/.config` that is a symbolic link into your home directory, as dotfile
+managers make it, is followed. The install stops with `target path crosses a
+symlink`, before it writes anything, when that link leads outside your home
+directory, or when `~/.config/opencode/` itself, or anything in it, is a link.
+To install through a link that leaves your home directory, set
+`XDG_CONFIG_HOME` to the folder it leads to. When `XDG_CONFIG_HOME` names the
+same folder as `~/.config`, an install already made there stays one install.
+
 ## Profile-to-native-config mapping
 
 The adapter renders `opencode.json` with an `instructions` file list naming
@@ -69,11 +77,12 @@ When the shared profile lists MCP servers, the install writes them to the `mcp`
 block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
 each `${NAME}` in a server's environment, headers or URL is written as
 `{env:NAME}`. Command arguments are copied as written: a reference there is
-left for the server, or a shell it runs, to expand. A `$NAME` in an
-environment or header value, and any `${...}` form left as written, a command
-argument's included, is copied as written, and the install warns that
-OpenCode does not expand it. The warning names where the reference sits, such
-as `environment.TOKEN`, and never prints the value.
+left for the server, or a shell it runs, to expand. The install warns about
+each `$` reference OpenCode does not expand, which the server then receives as
+written: a `$NAME` in an environment or header value, and any other `${...}`
+form, a plain `${NAME}` in a command argument included. The warning names
+where the reference sits, such as `environment.TOKEN`, and never prints the
+value.
 
 OpenCode inserts an `{env:NAME}` value into the config text it reads without
 escaping it; OpenCode 2 escapes it only when that text would not parse
@@ -81,8 +90,9 @@ otherwise. So a value with a backslash (such as a Windows path), a double
 quote or a control character can stop OpenCode 1 from reading the file, and
 in both lines a `\t` or `\n` in it reaches the server as a control character.
 The install checks each such variable when it runs and warns about one that
-holds those characters. Set that value as `{file:path}` under
-`harnesses.opencode.mcp_servers.<name>` instead, so the other tools keep the
+holds those characters. Restate that server under
+`harnesses.opencode.mcp_servers.<name>`, since an override replaces the whole
+server, with the value as `{file:path}`, so the other tools keep the
 `${NAME}` reference.
 
 OpenCode combines every file the `instructions` list names into every session
@@ -173,8 +183,8 @@ removed. The shared profile YAML and Apothem engine are unaffected.
 
 An install made by an earlier release in `~/.config/opencode/` while
 `XDG_CONFIG_HOME` named another folder stays there, and OpenCode never read it.
-The next install says so; to remove it, run the uninstall with
-`XDG_CONFIG_HOME` unset.
+The next install says so while its files are there; to remove it, run the
+uninstall with `XDG_CONFIG_HOME` unset.
 
 ## Conformity gate
 

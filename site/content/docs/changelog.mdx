@@ -259,22 +259,35 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   literal text. The install now writes each one as `{env:NAME}` in a server's
   environment, headers and URL; command arguments are copied as written, for
   the server or a shell it runs to expand. It warns about a `$NAME` in an
-  environment or header value and about another `${...}` form, which OpenCode
-  does not expand either; the warning names where the reference sits, never the
-  value. OpenCode inserts an `{env:NAME}` value into the config text it reads
+  environment or header value and about any other `${...}` form, a plain
+  `${NAME}` in a command argument included, which OpenCode does not expand
+  either; the warning names where the reference sits, never the value. OpenCode inserts an `{env:NAME}` value into the config text it reads
   without escaping it (OpenCode 2 escapes it only when that text would not
   parse otherwise), so a value holding a backslash (such as a Windows path), a
   double quote or a control character can stop OpenCode 1 from reading the
   file, and in both lines a `\t` or `\n` in it reaches the server as a control
-  character. The install warns about such a value and suggests setting it as
-  `{file:path}` under `harnesses.opencode.mcp_servers.<name>`.
+  character. The install warns about such a value and suggests restating that
+  server under `harnesses.opencode.mcp_servers.<name>`, where an override
+  replaces the whole server, with the value as `{file:path}`.
 - **The OpenCode install follows `XDG_CONFIG_HOME`.** OpenCode 1 and OpenCode 2
   read `$XDG_CONFIG_HOME/opencode` when that variable is set, but the install
   always wrote to `~/.config/opencode`. It now writes to the folder OpenCode
   reads. It warns when `XDG_CONFIG_HOME` cannot be used, when
   `OPENCODE_CONFIG_DIR` names another folder (OpenCode 2 reads that folder
-  instead), and when an earlier install is still recorded in
-  `~/.config/opencode`.
+  instead), and when the files of an earlier install are still in
+  `~/.config/opencode`. When `XDG_CONFIG_HOME` names the same folder as
+  `~/.config`, through a link, a junction or a change of case, an install
+  already made there keeps the spelling it is recorded under, so it stays one
+  install.
+- **Installs follow a `~/.config` that is a symbolic link.** Dotfile managers
+  often make `~/.config` a link into a dotfiles folder. The write guard stopped
+  every OpenCode install there, and every Codex install whose `CODEX_HOME` sits
+  below `~/.config`, with `target path crosses a symlink`. It now follows a
+  link at `~/.config` that leads somewhere inside your home directory, as it
+  already did for the shared skill and rule folders. A link that leaves your
+  home directory, or one at or inside the harness folder, still stops the
+  install before anything is written; set `XDG_CONFIG_HOME` (OpenCode) or
+  `CODEX_HOME` (Codex) to the folder the link leads to instead.
 - **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
   shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
   `mcp.<name>` entries the install writes in place, without rewriting the file.

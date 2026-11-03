@@ -93,6 +93,11 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   your home directory. A link that leaves your home directory stops the install
   with `target escapes the allowed materialization root`, and so does a link
   inside a skill folder.
+- A harness folder below `~/.config`, such as OpenCode's `~/.config/opencode/`
+  or a `CODEX_HOME` there, also follows a link at `~/.config` that leads
+  somewhere inside your home directory. A link at `~/.config` that leaves your
+  home directory, or a link at or inside the harness folder, stops the install
+  with `target path crosses a symlink` before anything is written.
 - The install adds no skill or rule file to your repository. The project gets
   the adapter's rules file, plus the `.apothem/` data folder every project
   install creates.
