@@ -61,6 +61,14 @@ from apothem.lib import install_ledger
 # ``Path.home()`` here is still the home this process started with.
 _STARTUP_HOME = Path.home()
 _STARTUP_APOTHEM_TREE = _STARTUP_HOME / ".apothem"
+# The conftest home redirects clear these, so nothing that reads them can write
+# outside the temporary home.
+_XDG_BASE_DIRECTORIES = (
+    "XDG_CONFIG_HOME",
+    "XDG_STATE_HOME",
+    "XDG_DATA_HOME",
+    "XDG_CACHE_HOME",
+)
 
 # Module-level paths built from ``__file__`` sit under the home whenever the
 # checkout does: the package itself, and the repo root that the benchmarks name.
@@ -89,6 +97,8 @@ class _SeenDuringModuleSetup:
     # The two environment variables that place a write whatever ``HOME`` says.
     codex_home: str | None
     hook_state_dir: str | None
+    # XDG base-directory name -> value, for each one still set.
+    xdg_set: dict[str, str]
     # ``module.name`` -> path, for each module-level path still under the startup home.
     module_level_paths: dict[str, str]
 
@@ -190,6 +200,11 @@ def seen_during_module_setup(
         backup_root=install_driver.BACKUP_ROOT,
         codex_home=os.environ.get("CODEX_HOME"),
         hook_state_dir=os.environ.get("APOTHEM_HOOK_STATE_DIR"),
+        xdg_set={
+            name: os.environ[name]
+            for name in _XDG_BASE_DIRECTORIES
+            if name in os.environ
+        },
         module_level_paths=_module_level_paths_under(
             _first_party_modules(),
             homes={_STARTUP_HOME, _STARTUP_HOME.resolve()},
@@ -241,6 +256,23 @@ def test_codex_home_is_cleared_during_module_setup(
         f"CODEX_HOME is {seen_during_module_setup.codex_home} during module setup: "
         "a module-scoped fixture that installs for Codex would write there"
     )
+
+
+def test_the_xdg_base_directories_are_cleared_during_module_setup(
+    seen_during_module_setup: _SeenDuringModuleSetup,
+) -> None:
+    assert seen_during_module_setup.xdg_set == {}, (
+        f"{seen_during_module_setup.xdg_set} still set during module setup: code and "
+        "the tools a fixture launches (pwsh keeps its cache in $XDG_CACHE_HOME) "
+        "would write there instead of the temporary home"
+    )
+
+
+def test_the_xdg_base_directories_are_cleared_in_each_test() -> None:
+    still_set = {
+        name: os.environ[name] for name in _XDG_BASE_DIRECTORIES if name in os.environ
+    }
+    assert still_set == {}, f"{still_set} still set inside a test"
 
 
 def test_the_hook_state_dir_is_redirected_during_module_setup(

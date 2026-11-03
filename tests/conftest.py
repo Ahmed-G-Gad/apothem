@@ -50,7 +50,9 @@ Without it that folder comes from ``CLAUDE_PLUGIN_DATA``, ``XDG_STATE_HOME`` or,
 on Windows, ``LOCALAPPDATA``, none of which follows a redirected ``HOME``, so it
 names a temporary folder. ``_isolate_session_home`` does both for the whole
 session; ``_isolate_user_home`` and ``_isolate_hook_state`` do them again for
-each test.
+each test. Every home redirect also clears the four XDG base directories
+(``XDG_CONFIG_HOME``, ``XDG_STATE_HOME``, ``XDG_DATA_HOME``, ``XDG_CACHE_HOME``),
+so code and child processes that read them fall back to the temporary home.
 
 ``tests/unit/test_suite_state_isolation.py`` pins the session-level redirect and
 fails on any module-level path that still names the real home, so a root added
@@ -77,6 +79,13 @@ import pytest
 from apothem.harnesses._shared import install_driver, install_driver_types
 from apothem.lib import install_ledger
 
+_XDG_BASE_DIRECTORIES = (
+    "XDG_CONFIG_HOME",
+    "XDG_STATE_HOME",
+    "XDG_DATA_HOME",
+    "XDG_CACHE_HOME",
+)
+
 
 def _redirect_home(monkeypatch: pytest.MonkeyPatch, home: Path) -> None:
     """Point every spelling of the user home at *home* and prove it took effect."""
@@ -87,6 +96,12 @@ def _redirect_home(monkeypatch: pytest.MonkeyPatch, home: Path) -> None:
     # HOMEPATH; drop the latter so no fallback can name the real home.
     monkeypatch.delenv("HOMEDRIVE", raising=False)
     monkeypatch.delenv("HOMEPATH", raising=False)
+    # The code under test and the tools a test launches (pwsh, git, node) read
+    # the XDG base directories before they fall back to the home, so a
+    # developer's own setting would send their writes out of *home*. pwsh, for
+    # one, keeps its startup profile and telemetry id in $XDG_CACHE_HOME.
+    for name in _XDG_BASE_DIRECTORIES:
+        monkeypatch.delenv(name, raising=False)
     resolved = Path.home().resolve()
     assert resolved == home.resolve(), (
         f"test HOME isolation failed: Path.home() is {resolved}, expected {home}"

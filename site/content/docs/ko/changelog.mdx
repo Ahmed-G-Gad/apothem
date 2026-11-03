@@ -201,9 +201,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ledger and backup roots are set from the home folder when Apothem's modules
   load, before any fixture runs, so module-scoped install fixtures wrote empty
   lock files and ledger lines under `~/.apothem/state`. The session fixture
-  now moves both roots, clears `CODEX_HOME` and redirects the hook state
-  folder, and `tests/unit/test_suite_state_isolation.py` fails when a loaded
-  module still holds a path under the starting home. A `home-isolation` CI job
+  now moves both roots, clears `CODEX_HOME` and the XDG base directories, and
+  redirects the hook state folder, and
+  `tests/unit/test_suite_state_isolation.py` fails when a loaded module still
+  holds a path under the starting home. A `home-isolation` CI job
   runs the suite with an empty home and fails if anything appears there. The
   header-guard hook test now builds its own project instead of relying on the
   checkout it runs in.
