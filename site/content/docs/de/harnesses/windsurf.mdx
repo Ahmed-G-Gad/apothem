@@ -321,8 +321,9 @@ in der `.devin/config.json` des Projekts aus:
 ```
 
 Das Ausschalten eines Schlüssels stoppt auch den Rest des Imports aus diesem
-Werkzeug: Der erste Schlüssel stoppt zusätzlich die MCP-Server dieses Editors,
-und `claude` stoppt die Skills, Befehle, Hooks und MCP-Server von Claude Code.
+Werkzeug: Der erste Schlüssel stoppt zusätzlich den Import der MCP-Server
+dieses Editors, und `claude` stoppt den Import der Skills, Befehle, Hooks und
+MCP-Server von Claude Code.
 Die dritte Datei wird über den Import `agents_standard` geladen, der auch die
 anderen Standard-Regeldateien und Ihre eigenen Projektanweisungen liest; setzen
 Sie `"agents_standard": false` daher nur, wenn Devin keine davon lesen soll.

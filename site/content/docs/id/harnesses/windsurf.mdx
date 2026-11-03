@@ -292,7 +292,7 @@ untuk Kimi Code:
 
 Ketika salah satu dari ketiga berkas itu memuat blok Apothem, Devin Local
 memuatnya di samping berkas aturan di `.devin/rules/`, dan saat `windsurf`
-dipasang, pemasangan itu mencetak catatan yang menyebutkan berkas tersebut serta
+dipasang, instalasi itu mencetak catatan yang menyebutkan berkas tersebut serta
 instalasi yang menulisnya. Blok Apothem di berkas pertama tidak menyebut satu
 alat tunggal pun sebagai pembacanya, tetapi baris-barisnya tentang folder
 subagent dan berkas hook milik editor itu menggambarkan instalasi itu dan tidak
@@ -311,8 +311,9 @@ dimuat Devin Local, matikan impor keduanya di `~/.config/devin/config.json`
 ```
 
 Mematikan sebuah kunci juga menghentikan sisa impor alat tersebut: kunci pertama
-turut menghentikan server MCP milik editor itu, dan `claude` menghentikan skill,
-command, hook, dan server MCP milik Claude Code. Berkas ketiga masuk melalui
+turut menghentikan impor server MCP milik editor itu, dan `claude`
+menghentikan impor skill, command, hook, dan server MCP milik Claude Code.
+Berkas ketiga masuk melalui
 impor `agents_standard`, yang juga membaca berkas aturan standar lainnya dan
 instruksi proyek Anda sendiri, jadi tetapkan `"agents_standard": false` hanya
 jika Devin tidak boleh membaca satu pun dari semuanya.

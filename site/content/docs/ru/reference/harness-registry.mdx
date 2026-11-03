@@ -157,11 +157,11 @@ sourceHash: "242f7f2bf421b85e"
 файлом, в порядке `.hermes.md` или `HERMES.md`, цепочка `AGENTS.md` (в каждой
 папке непустой `AGENTS.override.md` заменяет `AGENTS.md` рядом с ним),
 `CLAUDE.md`, затем правила `Cursor`. Поэтому он загружает `<project>/AGENTS.md`
-только тогда, когда в проекте нет `.hermes.md` или `HERMES.md` и рядом с этим
+только тогда, когда в проекте нет ни `.hermes.md`, ни `HERMES.md` и рядом с этим
 файлом нет `AGENTS.override.md`, а `<project>/.cursor/rules/apothem-rules.mdc` —
-только тогда, когда в проекте нет `.hermes.md`, `HERMES.md`,
-`AGENTS.override.md`, `AGENTS.md` или `CLAUDE.md`. `Hermes` ищет `.hermes.md` и
-`HERMES.md` от папки, в которой запускается, вверх до корня репозитория, а
+только тогда, когда в проекте нет ни `.hermes.md`, ни `HERMES.md`, ни
+`AGENTS.override.md`, ни `AGENTS.md`, ни `CLAUDE.md`. `Hermes` ищет `.hermes.md`
+и `HERMES.md` от папки, в которой запускается, вверх до корня репозитория, а
 цепочку `AGENTS.md` читает от корня репозитория вниз, поэтому такой файл в папке
 выше проекта тоже учитывается. Пустой файл не учитывается. Пустой `.hermes.md`
 также скрывает `HERMES.md` рядом с ним, поэтому `Hermes` переходит к цепочке

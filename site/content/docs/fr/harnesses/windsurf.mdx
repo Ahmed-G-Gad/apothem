@@ -323,8 +323,9 @@ dans le fichier `.devin/config.json` du projet :
 ```
 
 Désactiver une clé arrête aussi le reste de l'importation de cet outil : la
-première clé arrête en outre les serveurs MCP de cet éditeur, et `claude` arrête
-les skills, les commandes, les hooks et les serveurs MCP de Claude Code. Le
+première clé arrête en outre l'importation des serveurs MCP de cet éditeur, et
+`claude` arrête l'importation des skills, des commandes, des hooks et des
+serveurs MCP de Claude Code. Le
 troisième fichier arrive par l'importation `agents_standard`, qui lit aussi les
 autres fichiers de règles standard et vos propres instructions de projet ; ne
 définissez donc `"agents_standard": false` que si Devin ne doit lire aucun
