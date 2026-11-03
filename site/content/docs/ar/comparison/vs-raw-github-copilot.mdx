@@ -6,37 +6,37 @@ sourceHash: "67bed0c39bcbf059"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يقرأ <bdi>GitHub Copilot</bdi> تعليماته من `.github/copilot-instructions.md`.
+يقرأ <bdi>GitHub Copilot</bdi> تعليماته من <bdi>`.github/copilot-instructions.md`</bdi>.
 يرسم محوِّل <bdi>github-copilot</bdi> في <bdi>Apothem</bdi> ذلك الملف من الملف التعريفي المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
 <bdi>Apothem</bdi>.
 
 ## مقارنة الجهد
 
-| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| المهمة | تهيئة يدوية خام | مُدارة بـ <bdi>Apothem</bdi> |
 | ---- | --------------- | --------------- |
-| تأليف التعليمات | تحرير `.github/copilot-instructions.md` يدويًا | مُصيَّرة: القواعد المشتركة مضمَّنة في الملف |
-| إبقاء التعليمات متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
-| تثبيت / إزالة التهيئة | كتابة الملف وحذفه يدويًا | `apothem install` / `apothem uninstall` |
-| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى `~/.agents/skills/` وإبقاء النسخ محدَّثة | يكتبها المحوِّل في `~/.agents/skills/`، نسخة واحدة لكل المشاريع، ويُحدِّثها عند `apothem update` |
-| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness github-copilot --project <path>` |
+| تأليف التعليمات | تحرير <bdi>`.github/copilot-instructions.md`</bdi> يدويًا | مُصيَّرة: القواعد المشتركة مضمَّنة في الملف |
+| إبقاء التعليمات متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند <bdi>`apothem update`</bdi> |
+| تثبيت / إزالة التهيئة | كتابة الملف وحذفه يدويًا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى <bdi>`~/.agents/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوِّل في <bdi>`~/.agents/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحة التهيئة | فحص يدوي | <bdi>`apothem verify --harness github-copilot --project <path>`</bdi> |
 
-## ما الذي يديره Apothem
+## ما الذي يديره <bdi>Apothem</bdi>
 
 يضمّن محوِّل <bdi>github-copilot</bdi> القواعد المشتركة في
-`.github/copilot-instructions.md`. يوثّق <bdi>Copilot</bdi> الخطّافات في
-`.github/hooks/*.json`، وهي ملفات لا يكتبها المحوِّل، لذا يُحمَل قصد المتراس
+<bdi>`.github/copilot-instructions.md`</bdi>. يوثّق <bdi>Copilot</bdi> الخطّافات في
+<bdi>`.github/hooks/*.json`</bdi>، وهي ملفات لا يكتبها المحوِّل، لذا يُحمَل قصد المتراس
 بالكامل في التعليمات المرسومة. كل تغيير في القواعد المشتركة يعيد رسم الملف عند
-`apothem update` التالي.
+<bdi>`apothem update`</bdi> التالي.
 
 ## مسار الترحيل
 
-1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
-2. انقل محتوى `.github/copilot-instructions.md` الموجود لديك إلى الحزمة المشتركة.
-3. شغّل `apothem install --harness github-copilot --project <path>` لتصيير ملف التعليمات.
-4. شغّل `apothem verify --harness github-copilot --project <path>` للتأكّد من وصول التهيئة.
-5. استخدم `apothem update --harness github-copilot --project <path>` مع كل تغيير لاحق.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل محتوى <bdi>`.github/copilot-instructions.md`</bdi> الموجود لديك إلى الحزمة المشتركة.
+3. شغّل <bdi>`apothem install --harness github-copilot --project <path>`</bdi> لتصيير ملف التعليمات.
+4. شغّل <bdi>`apothem verify --harness github-copilot --project <path>`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness github-copilot --project <path>`</bdi> مع كل تغيير لاحق.
 
 ## اقرأ بعد ذلك
 
-- [مرجع محوِّل GitHub Copilot](/docs/harnesses/github-copilot)
+- [مرجع محوِّل <bdi>GitHub Copilot</bdi>](/docs/harnesses/github-copilot)
 - [نظرة عامة على المقارنة](/docs/comparison)

@@ -6,7 +6,7 @@ sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يتحقّق فحص **Binary-Artifacts** في <bdi>OpenSSF Scorecard</bdi> من أن شجرة المصدر لا تحمل أي ثنائيات مُجمَّعة / مُحزَّمة / مُبهَمة. الثنائيات في المصدر غير قابلة للتدقيق وتوفّر موطئ قدم لهجمات سلسلة التوريد: إذ يُضمِّن الثنائي شيفرةً لا تُظهِرها شجرة المصدر، فلا يستطيع المراجعون فحصها قبل الدمج.
+يتحقّق فحص **<bdi>Binary-Artifacts</bdi>** في <bdi>OpenSSF Scorecard</bdi> من أن شجرة المصدر لا تحمل أي ثنائيات مُجمَّعة / مُحزَّمة / مُبهَمة. الثنائيات في المصدر غير قابلة للتدقيق وتوفّر موطئ قدم لهجمات سلسلة التوريد: إذ يُضمِّن الثنائي شيفرةً لا تُظهِرها شجرة المصدر، فلا يستطيع المراجعون فحصها قبل الدمج.
 
 ## موقف <bdi>Apothem</bdi> من الثنائيات المُولَّدة
 
@@ -18,22 +18,22 @@ sourceHash: "c3d3f348646dcbd2"
 
 | عائلة الامتداد | الوصف | حالة <bdi>Apothem</bdi> |
 |---|---|---|
-| `.exe`، `.dll`، `.so`، `.dylib` | ثنائيات أصيلة مُجمَّعة | ✅ صفر مُتتبَّع |
-| `.bin`، `.o`، `.a`، `.lib` | ملفات كائنية / مكتبات ساكنة | ✅ صفر مُتتبَّع |
-| `.jar`، `.war`، `.ear` | حِزم <bdi>Java</bdi> | ✅ صفر مُتتبَّع |
-| `.whl`، `.egg` | توزيعات <bdi>Python</bdi> | ✅ صفر مُتتبَّع (تُبنى داخل `dist/`؛ مُستثناة عبر gitignore) |
-| `.tar.gz`، `.zip` (توزيعة مبنية) | أرشيفات مضغوطة تحمل أدلة مبنية | ✅ صفر مُتتبَّع |
-| `.class`، `.pyc`، `.pyo` | شيفرة بايت مُجمَّعة | ✅ صفر مُتتبَّع (`__pycache__/` مُستثنى عبر gitignore) |
-| `.crt`، `.pem`، `.key`، `.p12`، `.pfx` | مادة تعمية | ✅ صفر مُتتبَّع (مرفوض في `.gitignore`) |
+| <bdi>`.exe`</bdi>، <bdi>`.dll`</bdi>، <bdi>`.so`</bdi>، <bdi>`.dylib`</bdi> | ثنائيات أصيلة مُجمَّعة | ✅ صفر مُتتبَّع |
+| <bdi>`.bin`</bdi>، <bdi>`.o`</bdi>، <bdi>`.a`</bdi>، <bdi>`.lib`</bdi> | ملفات كائنية / مكتبات ساكنة | ✅ صفر مُتتبَّع |
+| <bdi>`.jar`</bdi>، <bdi>`.war`</bdi>، <bdi>`.ear`</bdi> | حِزم <bdi>Java</bdi> | ✅ صفر مُتتبَّع |
+| <bdi>`.whl`</bdi>، <bdi>`.egg`</bdi> | توزيعات <bdi>Python</bdi> | ✅ صفر مُتتبَّع (تُبنى داخل <bdi>`dist/`</bdi>؛ مُستثناة عبر <bdi>gitignore</bdi>) |
+| <bdi>`.tar.gz`</bdi>، <bdi>`.zip`</bdi> (توزيعة مبنية) | أرشيفات مضغوطة تحمل أدلة مبنية | ✅ صفر مُتتبَّع |
+| <bdi>`.class`</bdi>، <bdi>`.pyc`</bdi>، <bdi>`.pyo`</bdi> | شيفرة بايت مُجمَّعة | ✅ صفر مُتتبَّع (<bdi>`__pycache__/`</bdi> مُستثنى عبر <bdi>gitignore</bdi>) |
+| <bdi>`.crt`</bdi>، <bdi>`.pem`</bdi>، <bdi>`.key`</bdi>، <bdi>`.p12`</bdi>، <bdi>`.pfx`</bdi> | مادة تعمية | ✅ صفر مُتتبَّع (مرفوض في <bdi>`.gitignore`</bdi>) |
 
 ## أصناف الثنائيات المسموح بها
 
 يُسمح في المصدر بصنفين ضيّقين من الثنائيات:
 
-1. **أصول العلامة** — `assets/*.png`، `assets/*.ico`، `assets/favicon.*`. هذه **قابلة لإعادة التوليد بشكل حتمي** من النسخ الأصلية بصيغة SVG في `assets/src/` عبر `scripts/dev/rebuild-assets-resvg.py`. يعامل <bdi>Scorecard</bdi> هذه الملفات بوصفها مشروعة وفق إعفائه `image/png`.
-2. **ملفات الخطوط** — `assets/fonts/*.ttf`، `assets/fonts/*.woff2`. ملفات خطوط مُضمَّنة برخص موثَّقة؛ وفق إعفاء `font/*` في <bdi>Scorecard</bdi>.
+1. **أصول العلامة** — <bdi>`assets/*.png`</bdi>، <bdi>`assets/*.ico`</bdi>، <bdi>`assets/favicon.*`</bdi>. هذه **قابلة لإعادة التوليد بشكل حتمي** من النسخ الأصلية بصيغة <bdi>SVG</bdi> في <bdi>`assets/src/`</bdi> عبر <bdi>`scripts/dev/rebuild-assets-resvg.py`</bdi>. يعامل <bdi>Scorecard</bdi> هذه الملفات بوصفها مشروعة وفق إعفائه <bdi>`image/png`</bdi>.
+2. **ملفات الخطوط** — <bdi>`assets/fonts/*.ttf`</bdi>، <bdi>`assets/fonts/*.woff2`</bdi>. ملفات خطوط مُضمَّنة برخص موثَّقة؛ وفق إعفاء <bdi>`font/*`</bdi> في <bdi>Scorecard</bdi>.
 
-كلا الصنفين موثَّق في [`site/content/docs/brand/index.mdx`](/docs/brand)، ومنشأهما مُسجَّل في وصفة إعادة بناء الأصول.
+كلا الصنفين موثَّق في [<bdi>`site/content/docs/brand/index.mdx`</bdi>](/docs/brand)، ومنشأهما مُسجَّل في وصفة إعادة بناء الأصول.
 
 ## أمر التحقّق
 
@@ -53,5 +53,5 @@ git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|clas
 
 ## مراجع
 
-- [<bdi>OpenSSF Scorecard</bdi> — فحص Binary-Artifacts](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
-- [`.gitignore` الخاص بـ<bdi>Apothem</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — قائمة الرفض التي تمنع إدخال الثنائيات بالخطأ
+- [<bdi>OpenSSF Scorecard</bdi> — فحص <bdi>Binary-Artifacts</bdi>](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [<bdi>`.gitignore`</bdi> الخاص بـ<bdi>Apothem</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — قائمة الرفض التي تمنع إدخال الثنائيات بالخطأ

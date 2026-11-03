@@ -9,17 +9,17 @@ sourceHash: "f83dad93ea1dbe9c"
 > **النطاق.** يصف هذا المستند ملف توصيل الخطّافات
 > (<bdi>`settings.json`</bdi>) الخاصّ بـ **مُحوِّل <bdi>Claude Code</bdi>**.
 > تستخدم بقيّة أُطُر العمل أسطح إعداداتها الأصليّة الخاصّة بها — انظر
-> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) لمعرفة
+> [<bdi>`site/content/docs/harnesses/<harness>.mdx`</bdi>](/docs/harnesses) لمعرفة
 > نقطة دخول الإعداد المكافئة لكل مُحوِّل.
 
 ## نظرة عامة
 
-يضبط <bdi>`settings.json`</bdi> تنفيذ خطّافات <bdi>Claude Code</bdi> لمنظومة Apothem.
+يضبط <bdi>`settings.json`</bdi> تنفيذ خطّافات <bdi>Claude Code</bdi> لمنظومة <bdi>Apothem</bdi>.
 وهو يُصرِّح أيّ الخطّافات تُطلَق على أيّ الأحداث، ومُهَلها، وسطح
-الأذونات على المستوى الأعلى. يشحن Apothem قالبًا كنسيًّا واحدًا لأنّ <bdi>Claude Code</bdi>
+الأذونات على المستوى الأعلى. يشحن <bdi>Apothem</bdi> قالبًا كنسيًّا واحدًا لأنّ <bdi>Claude Code</bdi>
 يُحمِّل <bdi>`~/.claude/settings.json`</bdi> عبر كل المنصّات المدعومة.
 
-## زمن تشغيل بـ Python فقط
+## زمن تشغيل بـ <bdi>Python</bdi> فقط
 
 يستخدم كل خطّاف مُعَدّ شكل أمر <bdi>exec</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويحمل القالب المشحون الرمزين <bdi>`${PYTHON_BIN}`</bdi> و<bdi>`${HARNESS_ROOT}`</bdi>؛ و<bdi>`apothem install`</bdi> يستبدل <bdi>`${PYTHON_BIN}`</bdi> بالمفسِّر المُحلَّل المطلق:
 
@@ -36,7 +36,7 @@ sourceHash: "f83dad93ea1dbe9c"
 يستدعي <bdi>`settings.json`</bdi> المثبَّت المُوزِّع المُجَسَّد عند
 <bdi>`~/.claude/.apothem/support/hooks/dispatch.py`</bdi> مباشرةً. المُوزِّع
 وبوّابة المطابقة (<bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi>، مع فيكسترات
-الـ schema بجانبها عند <bdi>`~/.claude/.apothem/support/schemas/`</bdi>) كلاهما نصّان برمجيّان
+الـ <bdi>schema</bdi> بجانبها عند <bdi>`~/.claude/.apothem/support/schemas/`</bdi>) كلاهما نصّان برمجيّان
 مستقلّان من المكتبة القياسيّة — لا يلزم على المضيف حزمة <bdi>`apothem`</bdi> قابلة للاستيراد،
 وقالب واحد يخدم كل منصّة.
 
@@ -61,27 +61,27 @@ sourceHash: "f83dad93ea1dbe9c"
 
 | الحدث | المُطلِق | المُهلة | الغرض | التفويض |
 | ----- | ------- | ------- | ------- | ------- |
-| **<bdi>SessionStart</bdi>** | جلسة <bdi>Claude Code</bdi> جديدة | 30 ثانية | تهيئة السياق، وقراءة الذاكرة، وفحص حالة الخطّة | CM-14 |
-| **<bdi>PreToolUse</bdi>** | قبل <bdi>Write/Edit/NotebookEdit/Bash</bdi> | 10 ثوانٍ | التحقّق من امتثال <bdi>CM-7</bdi> + البيانات الأمامية | CM-7، CM-22 |
+| **<bdi>SessionStart</bdi>** | جلسة <bdi>Claude Code</bdi> جديدة | 30 ثانية | تهيئة السياق، وقراءة الذاكرة، وفحص حالة الخطّة | <bdi>CM-14</bdi> |
+| **<bdi>PreToolUse</bdi>** | قبل <bdi>Write/Edit/NotebookEdit/Bash</bdi> | 10 ثوانٍ | التحقّق من امتثال <bdi>CM-7</bdi> + البيانات الأمامية | <bdi>CM-7</bdi>، <bdi>CM-22</bdi> |
 | **<bdi>PostToolUse</bdi>** | بعد كل استدعاء أداة (المطابِق <bdi>`*`</bdi>) | 10 ثوانٍ | تنبيه استشاري للضغط الاستباقي | إدارة السياق (الضغط الاستباقي) |
-| **<bdi>Stop</bdi>** | الخروج من الجلسة | 60 ثانية | التخريج عند نهاية الجلسة | CM-14/CM-22/CM-24/CM-26 |
+| **<bdi>Stop</bdi>** | الخروج من الجلسة | 60 ثانية | التخريج عند نهاية الجلسة | <bdi>CM-14/CM-22/CM-24/CM-26</bdi> |
 
 يُسجِّل هذا القالب أربعة أحداث. ولا يُسجِّل <bdi>`PreCompact`</bdi> ولا <bdi>`PostCompact`</bdi>؛ أما قالبا <bdi>Codex</bdi> و<bdi>Qwen Code</bdi> فيسجّلانهما، ويسردهما [مرجع الخطّافات](/docs/reference/hooks) لكل إطار عمل على حدة.
 
 يقبل <bdi>`dispatch.py`</bdi> إضافةً <bdi>`UserPromptSubmit`</bdi> و<bdi>`Notification`</bdi> في قائمته
-البيضاء للأحداث. لم يُوصَّل أيٌّ منهما في القوالب المشحونة؛ أضِف كتلة matcher بنفس
+البيضاء للأحداث. لم يُوصَّل أيٌّ منهما في القوالب المشحونة؛ أضِف كتلة <bdi>matcher</bdi> بنفس
 نمط المُحدِّد + التوزيع لتفعيله.
 
 ### الحقول على المستوى الأعلى
 
 | الحقل | الغرض | مطلوب |
 | ----- | ------- | -------- |
-| `permissions` | كائن بمصفوفة <bdi>`allow`</bdi> تسرد أسماء الأدوات المُوافَق عليها مسبقًا (أدوات القراءة فقط افتراضيًّا) | نعم |
-| `hooks` | خريطة من اسم الحدث ← مصفوفة كتل <bdi>`{matcher, hooks[]}`</bdi>؛ انظر **أحداث الخطّافات** أدناه | نعم |
-| `model` | مُحدِّد نموذج قابل للحلّ من قِبَل المضيف. يُقبَل لقبٌ أو معرِّف كامل عندما يختار المُشغِّل ضبط أحدهما. | اختياري |
-| `defaultShell` | الصَّدَفة الافتراضيّة لاستدعاءات أداة <bdi>`Bash`</bdi>. لا يضبط Apothem هذا في القالب المشترك. | اختياري |
-| `autoUpdatesChannel` | قناة تحديث <bdi>Claude Code</bdi>. لا يضبط Apothem هذا في القالب المشترك. | اختياري |
-| `effortLevel` | جهد الاستدلال الافتراضيّ (<bdi>`low`</bdi>، <bdi>`medium`</bdi>، <bdi>`high`</bdi>، <bdi>`max`</bdi>) | اختياري |
+| <bdi>`permissions`</bdi> | كائن بمصفوفة <bdi>`allow`</bdi> تسرد أسماء الأدوات المُوافَق عليها مسبقًا (أدوات القراءة فقط افتراضيًّا) | نعم |
+| <bdi>`hooks`</bdi> | خريطة من اسم الحدث ← مصفوفة كتل <bdi>`{matcher, hooks[]}`</bdi>؛ انظر **أحداث الخطّافات** أدناه | نعم |
+| <bdi>`model`</bdi> | مُحدِّد نموذج قابل للحلّ من قِبَل المضيف. يُقبَل لقبٌ أو معرِّف كامل عندما يختار المُشغِّل ضبط أحدهما. | اختياري |
+| <bdi>`defaultShell`</bdi> | الصَّدَفة الافتراضيّة لاستدعاءات أداة <bdi>`Bash`</bdi>. لا يضبط <bdi>Apothem</bdi> هذا في القالب المشترك. | اختياري |
+| <bdi>`autoUpdatesChannel`</bdi> | قناة تحديث <bdi>Claude Code</bdi>. لا يضبط <bdi>Apothem</bdi> هذا في القالب المشترك. | اختياري |
+| <bdi>`effortLevel`</bdi> | جهد الاستدلال الافتراضيّ (<bdi>`low`</bdi>، <bdi>`medium`</bdi>، <bdi>`high`</bdi>، <bdi>`max`</bdi>) | اختياري |
 
 ## التحقّق
 
@@ -132,7 +132,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### عدم تحميل <bdi>settings.json</bdi>
 
-يقرأ <bdi>Claude Code</bdi> الملف <bdi>`~/.claude/settings.json`</bdi>. تحقّق من تثبيت Apothem في
+يقرأ <bdi>Claude Code</bdi> الملف <bdi>`~/.claude/settings.json`</bdi>. تحقّق من تثبيت <bdi>Apothem</bdi> في
 جذر إطار العمل المتوقَّع وأعِد تشغيل الجلسة بعد تغيير الملف.
 
 ### الخطّافات لا تفعل شيئًا بصمت
@@ -151,7 +151,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 |------|----------|------------|-----------|
 | 1. **النظام** | افتراضيات إطار العمل المُترجَمة داخل <bdi>Claude Code</bdi> نفسه | لا ينطبق (يتحكّم فيه المُورِّد) | الأرضية؛ يرث كل مُشغِّل الخطَّ الأساسي نفسه. |
 | 2. **المشروع** | <bdi>`<harness-root>/settings.json`</bdi> | ✅ مُودَع | أعراف المشروع المشتركة: الخطّافات، والأذونات، وخوادم <bdi>MCP</bdi>، وتوصيل شريط الحالة. ويقع قالب مصدر <bdi>Apothem</bdi> داخل دليل القوالب الخاص بمحوّل <bdi>Claude Code</bdi>. |
-| 3. **محلّيّ للمستخدِم** | <bdi>`<harness-root>/settings.local.json`</bdi> (gitignored) — مُقَولَب بوصفه <bdi>`settings.local.example.json`</bdi> ضمن <bdi>`examples/harnesses/claude-code/`</bdi> | ❌ Gitignored | تجاوزات خاصّة بالمُشغِّل: رموز <bdi>API</bdi>، ومسارات محلّيّة للجهاز، وميزات اختيارية. |
+| 3. **محلّيّ للمستخدِم** | <bdi>`<harness-root>/settings.local.json`</bdi> (<bdi>gitignored</bdi>) — مُقَولَب بوصفه <bdi>`settings.local.example.json`</bdi> ضمن <bdi>`examples/harnesses/claude-code/`</bdi> | ❌ <bdi>Gitignored</bdi> | تجاوزات خاصّة بالمُشغِّل: رموز <bdi>API</bdi>، ومسارات محلّيّة للجهاز، وميزات اختيارية. |
 
 تتجاوز قيم الطبقة الأعلى قيم الطبقة الأدنى **على مستوى المفتاح-الورقة** — حين
 تُصرِّح طبقتا المشروع والمحلّيّة للمستخدِم كلتاهما بإدخال <bdi>`permissions.allow`</bdi>، يُؤخَذ
