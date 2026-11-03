@@ -61,10 +61,17 @@ def config_root() -> Path:
     ``OPENCODE_CONFIG_DIR`` is not followed, because the two lines disagree
     on it: OpenCode 1 reads that folder as well as this one, OpenCode 2
     instead of it (v2.2.5 ``packages/util/src/global.ts:79``).
+
+    An ``XDG_CONFIG_HOME`` that resolves to the same folder as ``~/.config``
+    keeps the default spelling, so an install recorded there before the
+    variable was set, through a link or junction included, stays the same
+    install.
     """
+    default = Path.home() / ".config"
     configured = _xdg_config_home()
-    base = configured if configured is not None else Path.home() / ".config"
-    return base / "opencode"
+    if configured is None or configured == install_driver._normalized(default):
+        configured = default
+    return configured / "opencode"
 
 
 def _xdg_config_home() -> Path | None:
@@ -335,8 +342,9 @@ _BARE: Final[re.Pattern[str]] = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*")
 #: An ``{env:NAME}`` reference the install wrote.
 _ENV: Final[re.Pattern[str]] = re.compile(r"\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
 
-#: Characters OpenCode 1 puts into ``opencode.json`` without escaping them.
-_UNSAFE: Final[re.Pattern[str]] = re.compile(r'[\\"\x00-\x1f\x7f]')
+#: Characters a JSON string cannot hold as they are. OpenCode inserts an
+#: ``{env:NAME}`` value into the config text unescaped (U+007F is legal).
+_UNSAFE: Final[re.Pattern[str]] = re.compile(r'[\\"\x00-\x1f]')
 
 
 def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
@@ -405,60 +413,76 @@ def _earlier_root_notes(root: Path) -> list[str]:
 def _mcp_reference_notes(profile: dict[str, Any]) -> list[str]:
     """Return what each MCP server's ``$`` references do in OpenCode.
 
-    For each server: a ``${...}`` form OpenCode leaves as written, in any
-    value, a command argument included, and a bare ``$NAME`` in an
-    environment or header value; a ``$${NAME}``, which is copied unchanged;
-    and each ``{env:NAME}`` whose variable now holds a backslash, a double
-    quote or a control character. OpenCode 1 puts that value into
-    ``opencode.json`` without escaping it and then cannot read the file;
-    OpenCode 2 escapes it.
+    For each server: where a ``${...}`` form is left as written (a command
+    argument included) or an environment or header value holds a bare
+    ``$NAME``; where a ``$${...}`` is copied unchanged; and each ``{env:NAME}``
+    whose variable now holds a backslash, a double quote or a control
+    character. A note names the place (``environment.TOKEN``), never the text,
+    so no part of a literal secret reaches install output.
+
+    OpenCode inserts an ``{env:NAME}`` value into the config text it reads
+    without escaping it (v1.19.5 ``packages/opencode/src/config/variable.ts``;
+    v2.2.5 ``packages/core/src/config/variable.ts`` escapes it only when that
+    text would not parse), so such a value can stop OpenCode 1 from reading
+    the file, and in both lines a ``\\t`` or ``\\n`` in it reaches the server as
+    a control character.
     """
     for_harness = coerce_profile(profile).for_harness("opencode")
     notes: list[str] = []
     for name, entry in render_mcp_opencode(mcp_servers_for(for_harness)).items():
-        secrets = {key: entry.get(key) for key in ("environment", "headers", "url")}
-        braced = {m for text in _strings(entry) for m in _BRACED.findall(text)}
-        bare = {
-            m
-            for text in _strings(
-                {key: secrets[key] for key in ("environment", "headers")}
-            )
-            for m in _BARE.findall(text)
-        }
-        unexpanded = sorted(m for m in braced | bare if not m.startswith("$$"))
+        unexpanded: set[str] = set()
+        doubled: set[str] = set()
+        variables: set[str] = set()
+        for where, value in _located_strings(entry):
+            braced = _BRACED.findall(value)
+            secret = where.startswith(("environment.", "headers."))
+            if any(not m.startswith("$$") for m in braced) or (
+                secret and _BARE.search(value)
+            ):
+                unexpanded.add(where)
+            if any(m.startswith("$$") for m in braced):
+                doubled.add(where)
+            if where != "command":
+                variables.update(_ENV.findall(value))
         if unexpanded:
             notes.append(
-                f"MCP server {name}: OpenCode does not expand "
-                f"{', '.join(unexpanded)}, so the server receives that text as "
-                "written. In an environment, header or URL value, a plain "
-                "${NAME} is written as {env:NAME}, which OpenCode substitutes."
+                f"MCP server {name}: OpenCode does not expand the $ reference in "
+                f"{', '.join(sorted(unexpanded))}, so the server receives that "
+                "text as written. In an environment, header or URL value, a "
+                "plain ${NAME} is written as {env:NAME}, which OpenCode "
+                "substitutes."
             )
-        doubled = sorted(m for m in braced if m.startswith("$$"))
         if doubled:
             notes.append(
-                f"MCP server {name}: {', '.join(doubled)} is copied unchanged."
+                f"MCP server {name}: the $${{...}} in "
+                f"{', '.join(sorted(doubled))} is copied unchanged."
             )
-        for variable in sorted(
-            {v for text in _strings(secrets) for v in _ENV.findall(text)}
-        ):
+        for variable in sorted(variables):
             if _UNSAFE.search(os.environ.get(variable, "")):
                 notes.append(
                     f"MCP server {name}: {variable} holds a backslash, a double "
-                    "quote or a control character. OpenCode 1 puts "
-                    f"{{env:{variable}}} into opencode.json unescaped and then "
-                    "cannot read the file; OpenCode 2 escapes it. Keep the value "
-                    "in a file and reference it as {file:path} instead."
+                    "quote or a control character. OpenCode inserts "
+                    f"{{env:{variable}}} into the config text it reads without "
+                    "escaping it, so OpenCode 1 may not read the file, and in "
+                    "both lines a \\t or \\n in the value can reach the server as "
+                    "a control character. Set that value as {file:path} under "
+                    f"harnesses.opencode.mcp_servers.{name}, so the other tools "
+                    "keep the ${NAME} reference."
                 )
     return notes
 
 
-def _strings(value: object) -> Iterator[str]:
-    """Yield every string value inside *value* (mapping keys excluded)."""
-    if isinstance(value, str):
-        yield value
-    elif isinstance(value, list):
-        for item in value:
-            yield from _strings(item)
-    elif isinstance(value, dict):
-        for item in value.values():
-            yield from _strings(item)
+def _located_strings(entry: dict[str, Any]) -> Iterator[tuple[str, str]]:
+    """Yield each string value of a rendered server with the place it sits."""
+    for item in entry.get("command") or []:
+        if isinstance(item, str):
+            yield "command", item
+    url = entry.get("url")
+    if isinstance(url, str):
+        yield "url", url
+    for key in ("environment", "headers"):
+        values = entry.get(key)
+        if isinstance(values, dict):
+            for field, value in values.items():
+                if isinstance(value, str):
+                    yield f"{key}.{field}", value

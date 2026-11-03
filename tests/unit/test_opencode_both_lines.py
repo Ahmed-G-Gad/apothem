@@ -30,6 +30,7 @@ from apothem.harnesses.opencode.materializer import (
     instruction_entries,
     profile_document_instruction,
 )
+from apothem.lib import install_ledger
 from apothem.lib.install_ledger import OwnedEntry
 
 _MCP_PROFILE: dict[str, object] = {
@@ -144,7 +145,8 @@ def test_relocated_entries_take_only_a_moved_server_matching_whole() -> None:
         OwnedEntry(("mcp", "fs", "enabled"), "key", True),
         OwnedEntry(("instructions",), "item", "x"),
     )
-    converted = {"type": "local", "command": ["npx"], "disabled": False}
+    owned_server = {"type": "local", "command": ["npx"]}
+    converted = {**owned_server, "disabled": False}
 
     def relocate(mcp: dict[str, object]) -> list[tuple[object, ...]]:
         current = json.dumps({"mcp": mcp})
@@ -155,6 +157,20 @@ def test_relocated_entries_take_only_a_moved_server_matching_whole() -> None:
         (("mcp", "servers", "fs"), "key", converted),
         (("mcp", "servers"), "container", None),
     ]
+    # Still in place, so a same-name server under servers is not a conversion.
+    as_moved = [
+        (("mcp", "servers", "fs"), "key", None),
+        (("mcp", "servers"), "container", None),
+    ]
+    for shape in (
+        {"type": "local", "command": ["npx"]},
+        {**owned_server, "enabled": True},
+    ):
+        moved = relocate({"servers": {"fs": shape}})
+        assert [(path, kind) for path, kind, _ in moved] == [
+            (path, kind) for path, kind, _ in as_moved
+        ]
+        assert moved[0][2] == shape
     # Still in place, so a same-name server under servers is not a conversion.
     assert relocate({"fs": {"type": "local"}, "servers": {"fs": converted}}) == []
     # Changed after the conversion: left as it is.
@@ -224,21 +240,36 @@ def test_a_converted_server_the_operator_changed_is_left_alone(
         ),
         pytest.param(
             {
-                "type": "remote",
-                "url": "https://mcp.example/github",
-                "headers": {"Authorization": "Bearer {env:GH_TOKEN}"},
+                "type": "local",
+                "command": ["npx", "other-server"],
+                "disabled": False,
             },
             id="different",
         ),
     ],
 )
+@pytest.mark.parametrize("keep_installed", [True, False], ids=["beside", "alone"])
 def test_an_operator_server_of_the_same_name_is_left_alone(
-    adapter: OpenCodeAdapter, isolated_home: Path, own: dict[str, object]
+    adapter: OpenCodeAdapter,
+    isolated_home: Path,
+    own: dict[str, object],
+    keep_installed: bool,
 ) -> None:
+    # The different server shares type, a command item and disabled with the
+    # install's, so stripping it key by key would leave a broken stub.
     target = _installed(adapter, {"theme": "dark"})
     config = _read(target)
     config["mcp"]["servers"] = {"fs": own}
+    if not keep_installed:
+        del config["mcp"]["fs"]
     target.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+    if own.get("environment") and not keep_installed:
+        # The documented limit: with the install's mcp.fs gone, an identical
+        # server cannot be told from a converted copy, so it goes with it.
+        adapter.uninstall()
+        assert _read(target) == {"theme": "dark"}
+        return
 
     adapter.update(_MCP_PROFILE)
     assert _read(target)["mcp"]["servers"] == {"fs": own}
@@ -366,12 +397,39 @@ def test_install_notes_mcp_references_opencode_does_not_expand(
     notes = _notes(adapter.install(profile))
 
     assert notes == [
-        "MCP server fs: OpenCode does not expand $HOME, ${ROOT}, ${TOKEN:-x}, so "
-        "the server receives that text as written. In an environment, header or "
-        "URL value, a plain ${NAME} is written as {env:NAME}, which OpenCode "
-        "substitutes.",
-        "MCP server fs: $${KEEP} is copied unchanged.",
+        "MCP server fs: OpenCode does not expand the $ reference in command, "
+        "environment.A, environment.C, so the server receives that text as "
+        "written. In an environment, header or URL value, a plain ${NAME} is "
+        "written as {env:NAME}, which OpenCode substitutes.",
+        "MCP server fs: the $${...} in environment.D is copied unchanged.",
     ]
+
+
+def test_install_notes_never_print_a_value(
+    adapter: OpenCodeAdapter, isolated_home: Path
+) -> None:
+    profile = {
+        "mcp_servers": {
+            "api": {
+                "transport": "http",
+                "url": "https://api.example/v1",
+                "headers": {"Authorization": "Bearer abc$Xyz1example"},
+            },
+            "fs": {
+                "transport": "stdio",
+                "command": "npx",
+                "env": {"TOKEN": "pa$$word-example"},
+            },
+        }
+    }
+
+    notes = _notes(adapter.install(profile))
+
+    assert len(notes) == 2
+    assert "headers.Authorization" in notes[0]
+    assert "environment.TOKEN" in notes[1]
+    for fragment in ("abc", "Xyz1", "example", "word"):
+        assert not any(fragment in note for note in notes), fragment
 
 
 def test_install_notes_an_env_value_opencode_1_cannot_insert(
@@ -383,8 +441,12 @@ def test_install_notes_an_env_value_opencode_1_cannot_insert(
     assert len(notes) == 1
     assert notes[0].startswith("MCP server fs: FS_TOKEN holds a backslash")
 
-    monkeypatch.setenv("FS_TOKEN", "plain-value")
-    assert _notes(adapter.update(_MCP_PROFILE)) == []
+    assert "harnesses.opencode.mcp_servers.fs" in notes[0]
+
+    # U+007F is legal in a JSON string, so it draws no note.
+    for value in ("plain-value", "del\x7fvalue"):
+        monkeypatch.setenv("FS_TOKEN", value)
+        assert _notes(adapter.update(_MCP_PROFILE)) == []
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="needs case-insensitive paths")
@@ -401,3 +463,70 @@ def test_a_change_of_case_in_xdg_config_home_names_the_same_install(
 
     entries = _read(adapter.output_path)["instructions"]
     assert len(entries) == len(set(entries)) == len(instruction_entries())
+
+
+def _link_folder(link: Path, target: Path) -> None:
+    """Make *link* a symbolic link, or on Windows a junction, to *target*."""
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        import _winapi
+
+        _winapi.CreateJunction(str(target), str(link))
+
+
+def test_xdg_config_home_naming_the_linked_default_keeps_the_install(
+    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An install made with XDG unset, through a ~/.config that is a link, then
+    # an update with XDG_CONFIG_HOME naming that same folder.
+    real = isolated_home / "real-config"
+    real.mkdir()
+    _link_folder(isolated_home / ".config", real)
+    adapter.install({})
+    root = isolated_home / ".config" / "opencode"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(isolated_home / ".config"))
+
+    adapter.update({})
+
+    assert adapter.output_path == root / "opencode.json"
+    entries = _read(root / "opencode.json")["instructions"]
+    assert len(entries) == len(set(entries)) == len(instruction_entries())
+    assert install_ledger.active_install_records("opencode", root=root)
+    resolved = install_driver._normalized(root)
+    if str(resolved) != str(root):
+        assert not install_ledger.active_install_records("opencode", root=resolved)
+
+
+def test_the_example_config_is_what_the_install_writes() -> None:
+    # examples/harnesses/opencode/native-install/opencode.json shows a render
+    # of two servers; it must stay what the materializer writes for them.
+    example_path = (
+        Path(__file__).resolve().parents[2]
+        / "examples/harnesses/opencode/native-install/opencode.json"
+    )
+    example = json.loads(example_path.read_text(encoding="utf-8"))
+    profile = {
+        "mcp_servers": {
+            "filesystem": {
+                "transport": "stdio",
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@modelcontextprotocol/server-filesystem",
+                    "/path/to/workspace",
+                ],
+            },
+            "github": {
+                "transport": "streamable-http",
+                "url": "https://api.githubcopilot.com/mcp/",
+                "headers": {"Authorization": "Bearer ${GITHUB_MCP_TOKEN}"},
+            },
+        }
+    }
+
+    rendered = json.loads(opencode_materializer.materialize_native_config(profile))
+
+    assert example == rendered

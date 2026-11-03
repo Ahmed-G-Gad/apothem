@@ -54,10 +54,14 @@ environment, headers or URL as `{env:NAME}`; an unset variable becomes an empty
 string. Command arguments are copied as written. A `$NAME` in an environment
 or header value, or another `${...}` form, such as `${NAME:-default}`, is
 copied as written, and `apothem install` warns that `OpenCode` does not expand
-it. `OpenCode` 1 puts an `{env:NAME}` value into the file without escaping it,
-so a value with a backslash, a double quote or a control character leaves a
-config it cannot read (`OpenCode` 2 escapes it); `apothem install` warns about
-such a value, and `{file:path}` avoids it.
+it, naming where the reference sits rather than the value. `OpenCode` inserts
+an `{env:NAME}` value into the config text it reads without escaping it
+(`OpenCode` 2 escapes it only when that text would not parse otherwise), so a
+value with a backslash, a double quote or a control character can stop
+`OpenCode` 1 from reading the file, and in both lines a `\t` or `\n` in it
+reaches the server as a control character. `apothem install` warns about such
+a value; set it as `{file:path}` under `harnesses.opencode.mcp_servers.<name>`
+so the other tools keep the `${NAME}` reference.
 
 ## Give a helper access to MCP servers
 

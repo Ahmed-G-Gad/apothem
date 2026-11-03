@@ -21,8 +21,9 @@ _HARNESS_NAME: str = "opencode"
 # survive — and the file is deleted only when Apothem created it and nothing
 # operator-authored remains. An install recorded before ownership tracking also
 # loses the ``instructions`` glob earlier releases wrote, and an MCP server
-# converted to OpenCode 2's ``mcp.servers`` shape goes while it still holds the
-# values Apothem wrote (``relocated_entries``). The pre-mutation file
+# converted to OpenCode 2's ``mcp.servers`` shape goes, as a whole, when its
+# ``mcp.<name>`` is gone and it matches what Apothem wrote
+# (``relocated_entries``). The pre-mutation file
 # is copied into the Apothem backup root; no whole-file ``.bak`` sibling is
 # left beside the operator's file. The manifest support subtree is then cleaned
 # child-by-child by the shared driver.
