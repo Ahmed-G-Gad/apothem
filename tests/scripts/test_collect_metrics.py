@@ -238,6 +238,76 @@ def test_hermes_loads_every_cursor_rules_file_together(tmp_path: Path) -> None:
     )
 
 
+def test_codex_counts_the_global_and_the_project_agents_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".codex/AGENTS.md": "global\n"})
+    _write(project, {"AGENTS.md": "project\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (
+        _size("global\n") + _size("project\n"),
+        2,
+    )
+
+
+def test_codex_takes_an_override_before_agents_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home, {".codex/AGENTS.override.md": "g-over\n", ".codex/AGENTS.md": "global\n"}
+    )
+    _write(project, {"AGENTS.override.md": "p-over\n", "AGENTS.md": "project\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (
+        _size("g-over\n") + _size("p-over\n"),
+        2,
+    )
+
+
+def test_codex_skips_an_empty_global_override_but_not_an_empty_project_one(
+    tmp_path: Path,
+) -> None:
+    # In the home folder an empty override falls through to AGENTS.md. In a
+    # project folder the first file that exists is the only candidate, so an
+    # empty override there loads nothing and hides the AGENTS.md beside it.
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".codex/AGENTS.override.md": " \n", ".codex/AGENTS.md": "global\n"})
+    _write(project, {"AGENTS.override.md": "", "AGENTS.md": "hidden\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (_size("global\n"), 1)
+
+
+@_needs_tomllib
+def test_codex_reads_fallback_names_and_the_byte_limit_from_config_toml(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home,
+        {
+            ".codex/config.toml": (
+                'project_doc_fallback_filenames = ["../x.md", "TEAM_GUIDE.md"]\n'
+                "project_doc_max_bytes = 4\n"
+            ),
+            ".codex/AGENTS.md": "global, not capped\n",
+        },
+    )
+    # A fallback entry that is not a plain file name is ignored.
+    _write(tmp_path, {"x.md": "outside the project\n"})
+    _write(project, {"TEAM_GUIDE.md": "team guide\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (
+        _size("global, not capped\n") + 4,
+        2,
+    )
+
+
+def test_codex_caps_project_files_at_32_kib_by_default(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"AGENTS.md": "x" * 40_000 + "\n"})
+
+    assert cm.measure_surfaces("codex", home, project) == (32 * 1024, 1)
+
+
 def test_opencode_resolves_instruction_globs(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "project"
     config = {"instructions": ["~/.config/opencode/support/rules/*.md"]}

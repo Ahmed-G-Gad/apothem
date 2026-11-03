@@ -79,7 +79,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
         import tomllib  # type: ignore[import-not-found, unused-ignore]
     except ModuleNotFoundError as exc:  # Python 3.10: no stdlib TOML reader
         raise SystemExit(
-            "collect_metrics: reading pyproject.toml needs Python 3.11+ (tomllib)"
+            f"collect_metrics: reading {path.name} needs Python 3.11+ (tomllib)"
         ) from exc
     with path.open("rb") as handle:
         data: dict[str, Any] = tomllib.load(handle)
@@ -283,8 +283,12 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         ),
     ),
     "codex": (
-        "~/.codex/AGENTS.md and the project AGENTS.md.",
-        (_home(".codex/AGENTS.md"), _project("AGENTS.md")),
+        "The first non-empty of ~/.codex/AGENTS.override.md and ~/.codex/AGENTS.md, "
+        "plus the first of AGENTS.override.md, AGENTS.md and the "
+        "project_doc_fallback_filenames names that exists in the project (an "
+        "empty one loads nothing), counted up to project_doc_max_bytes (32 KiB "
+        "by default).",
+        (),
     ),
     "cursor": (
         ".cursor/rules/**/*.mdc with alwaysApply: true, and the project AGENTS.md.",
@@ -483,8 +487,58 @@ def _hermes_files(project: Path) -> list[Path]:
     return next((files for files in kinds if files), [])
 
 
+_CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024
+
+
+def _codex_project_doc_settings(home: Path) -> tuple[list[str], int]:
+    names: list[str] = []
+    max_bytes = _CODEX_PROJECT_DOC_MAX_BYTES
+    config = home / ".codex" / "config.toml"
+    if config.is_file():
+        try:
+            data = _load_toml(config)
+        except ValueError:  # tomllib.TOMLDecodeError
+            data = {}
+        fallbacks = data.get("project_doc_fallback_filenames")
+        if isinstance(fallbacks, list):
+            # Codex ignores an entry that is not a plain file name.
+            names = [
+                name
+                for name in fallbacks
+                if isinstance(name, str)
+                and name not in ("", ".", "..")
+                and Path(name).name == name
+            ]
+        limit = data.get("project_doc_max_bytes")
+        if isinstance(limit, int) and not isinstance(limit, bool) and limit >= 0:
+            max_bytes = limit
+    return names, max_bytes
+
+
+def _codex_bytes(home: Path, project: Path) -> tuple[int, int]:
+    # The global file is the first non-empty of the two. In each project folder
+    # Codex takes the first candidate that exists and loads nothing from an
+    # empty one, and project files share the project_doc_max_bytes budget. The
+    # scratch project has no .git, so its folder is the whole chain.
+    files = _first_non_empty(
+        home / ".codex" / name for name in ("AGENTS.override.md", "AGENTS.md")
+    )
+    size = sum(path.stat().st_size for path in files)
+    fallbacks, budget = _codex_project_doc_settings(home)
+    for name in dict.fromkeys(("AGENTS.override.md", "AGENTS.md", *fallbacks)):
+        path = project / name
+        if path.is_file():
+            if budget > 0 and _non_empty(path):
+                size += min(path.stat().st_size, budget)
+                files.append(path)
+            break
+    return size, len(files)
+
+
 def measure_surfaces(harness: str, home: Path, project: Path) -> tuple[int, int]:
     """Return ``(bytes, files)`` loaded at launch for ``harness`` in a tree."""
+    if harness == "codex":
+        return _codex_bytes(home, project)
     _rule, surfaces = LAUNCH_SURFACES[harness]
     files: list[Path] = []
     for surface in surfaces:
