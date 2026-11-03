@@ -5,6 +5,7 @@
 ## Snapshot
 
 - Snapshot date: 2026-11-03
+- Snapshot note (OpenCode 2): the OpenCode 2 docs and the v1.19.5 and v2.2.5 source were read on 2026-11-03 (see OpenCode 2 below). The install now writes only `deny` helper rules, writes each MCP `${NAME}` as `{env:NAME}`, installs into `$XDG_CONFIG_HOME/opencode` when that names an absolute folder, warns when `OPENCODE_CONFIG_DIR` names another folder, and finds an MCP server an operator converted to OpenCode 2's `mcp.servers` shape. Previous 2026-10-14.
 - Snapshot note (CLAUDE.md fallback): the rules page and the OpenCode 2 Instructions page were read on 2026-11-03, with the instruction loaders in the v1.19.5 and v2.2.5 source. OpenCode 1 loads `~/.claude/CLAUDE.md` only when no `<config dir>/AGENTS.md` exists; the config dir is `OPENCODE_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/opencode`, so `~/.config/opencode` by default. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or `OPENCODE_DISABLE_CLAUDE_CODE=1` turns that read off. OpenCode 2, first published as a GitHub Release with v2.2.0 on 2026-10-27 (npm `@opencode/cli` has carried 2.x since 2.0.0 on 2026-09-11), reads the same `~/.config/opencode/` configuration but discovers only `AGENTS.md` files, with no `CLAUDE.md` fallback. The installer at `opencode.ai/install` and the `opencode-ai` npm package still install OpenCode 1. Previous 2026-10-14.
 - Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools), and the `instructions` path semantics re-observed at opencode-ai 1.19.0 (see Vendor Sources). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/opencode/`
@@ -13,8 +14,8 @@
   documented native surface; plugins are vendor-native and operator-owned; the
   native config is rendered directly (no Jinja template). OpenCode also loads
   `~/.claude/skills/` and `~/.agents/skills/`, so the Claude Code and Codex
-  skill installs reach it, and OpenCode 1 loads `~/.claude/CLAUDE.md` when no
-  `~/.config/opencode/AGENTS.md` exists, so the Claude Code install's block
+  skill installs reach it, and OpenCode 1 loads `~/.claude/CLAUDE.md` when its
+  configuration folder holds no `AGENTS.md`, so the Claude Code install's block
   reaches it too (shared roots in the registry). No vendor-native UI
   claim is made here. Rolling docs carry no version or SHA — no-immutable-source
   exception on every source row.
@@ -63,6 +64,42 @@ Retrieved 2026-10-03 unless marked.
 - <https://opencode.ai/docs/skills/> (skill locations; retrieved 2026-10-02)
 - <https://opencode.ai/docs/agents/> (agents; retrieved 2026-10-02)
 - <https://opencode.ai/docs/commands/> (commands; retrieved 2026-10-02)
+
+## OpenCode 2
+
+OpenCode 2 (`anomalyco/opencode` v2.2.0, 2026-10-27, to v2.2.5, 2026-10-30;
+npm `@opencode/cli`) reads the same configuration folder as OpenCode 1
+(v1.19.5; npm `opencode-ai`, which `opencode.ai/install` still installs). What
+each surface the install writes does under each line, read on 2026-11-03 from
+the OpenCode 2 docs and the v1.19.5 and v2.2.5 source:
+
+| Surface the install writes | OpenCode 1.19.5 | OpenCode 2.2.5 |
+| --- | --- | --- |
+| `opencode.json` in `$XDG_CONFIG_HOME/opencode`, else `~/.config/opencode` | read | read; `OPENCODE_CONFIG_DIR` replaces that folder (OpenCode 1 adds it), so the install warns when it names another folder |
+| `$schema` and `instructions` (`~/`-anchored or absolute paths) | read | read the same way |
+| `mcp.<name>` (`type`, `command`, `environment`, `url`, `headers`, `enabled`) | read | read in place and converted in memory, `enabled` to `disabled` (`packages/core/src/v1/config/migrate.ts`); the file is never rewritten, but an operator may convert it to the `mcp.servers` shape (migrate-v1 page), and update and uninstall remove a converted entry there only when its `mcp.<name>` is gone and it matches what the install wrote as a whole. OpenCode 1.19.5 also lowers `mcp.servers.<name>` to a flat entry; on a name clash the flat entry wins in OpenCode 1 and the `mcp.servers` one in OpenCode 2 |
+| `${NAME}` in an MCP value | not expanded | not expanded; the install writes `{env:NAME}` in environment, headers and URL values, which both lines substitute. Both insert the value into the config text unescaped (OpenCode 2 escapes it only when that text would not parse otherwise), so a backslash, double quote or control character can stop OpenCode 1 from reading the file, and a `\t` or `\n` reaches the server as a control character in both lines; the install warns about such a value |
+| helper `permission` map | read | translated in memory (`bash` becomes `shell`); the install writes only `deny` rules, so the default ask before reading `.env` and `.env.*` files and the operator's stricter rules apply |
+| commands, skills and `$ARGUMENTS` | read | read; a skill with `disable-model-invocation: true` is hidden from the model |
+| `~/.claude/CLAUDE.md` (the Claude Code install) | read when no global `AGENTS.md` exists | not read |
+
+Decision, 2026-11-03 (the operator's choice): the install writes the OpenCode
+1 shapes for both lines. OpenCode 1 reads them natively, and OpenCode 2
+translates them in memory. Apothem moves to version-aware output, writing
+OpenCode 2's own shapes where OpenCode 2 runs, when either of two signals
+appears: OpenCode 2 announces a removal date for its translation of the
+OpenCode 1 shapes, or `opencode.ai/install` or the `opencode-ai` npm package
+moves to OpenCode 2.
+
+Re-check by 2027-02-01, when this snapshot passes the 90-day limit, for those
+two signals: a removal date for the translation of the helper `permission`
+map and the bare `mcp.<name>` entries (OpenCode 2's live schema already marks
+them deprecated), and the default installer or `opencode-ai` serving
+OpenCode 2.
+
+- <https://opencode.ai/v2/docs/migrate-v1/> (shared configuration locations; V1 shapes keep working; retrieved 2026-11-03)
+- <https://github.com/anomalyco/opencode/tree/v2.2.5> (the instruction, agent, command and skill loaders, `packages/core/src/v1/config/migrate.ts`, `packages/core/src/config/variable.ts`, `packages/schema/src/agent.ts`; read 2026-11-03)
+- <https://github.com/anomalyco/opencode/tree/v1.19.5> (`packages/opencode/src/agent/agent.ts`, `packages/opencode/src/permission/index.ts`, `packages/core/src/global.ts`, `packages/opencode/src/config/variable.ts`, `packages/opencode/src/config/parse.ts`, `packages/opencode/src/config/v2-compat.ts`; read 2026-11-03)
 
 ## Discovery Targets
 

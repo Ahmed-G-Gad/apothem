@@ -3,9 +3,6 @@ description: "Read-only memory-file auditor: cross-reference every claim in the 
 mode: subagent
 permission:
   edit: deny
-  glob: allow
-  grep: allow
-  read: allow
   todowrite: deny
 ---
 

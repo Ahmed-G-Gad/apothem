@@ -38,7 +38,10 @@ system_prompt_template_path: "n/a"
 agent_memory_surface: "n/a"
 # What each source frontmatter key becomes in a converted cohort (see
 # tests/unit/test_conversion_losses.py for the value vocabulary). Markdown
-# commands carry description only; agents map their tool grant to permission.
+# commands carry description only. Agents carry their denied tools as
+# permission deny rules; the tool grant is dropped, because OpenCode allows
+# every tool by default and an allow rule would only override the operator's
+# stricter rules and the ask before reading .env files.
 conversion_losses:
   commands:
     name: "filename"
@@ -52,7 +55,7 @@ conversion_losses:
   agents:
     name: "filename"
     description: "native:description"
-    tools: "native:permission"
+    tools: "dropped"
     disallowedTools: "native:permission"
     maxTurns: "dropped"
     version: "dropped"
