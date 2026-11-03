@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-14
+- Snapshot date: 2026-11-03
+- Snapshot note (OpenCode 2): the OpenCode 2 docs and the v1.19.5 and v2.2.5 source were read on 2026-11-03 (see OpenCode 2 below). The install now writes only `deny` helper rules, writes each MCP `${NAME}` as `{env:NAME}`, installs into `$XDG_CONFIG_HOME/opencode` when that names an absolute folder, warns when `OPENCODE_CONFIG_DIR` names another folder, and finds an MCP server an operator converted to OpenCode 2's `mcp.servers` shape. Previous 2026-10-14.
 - Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools), and the `instructions` path semantics re-observed at opencode-ai 1.19.0 (see Vendor Sources). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/opencode/`
 - Evidence level: vendor-doc pinned for `opencode.json` and its
@@ -57,6 +58,34 @@ Retrieved 2026-10-03 unless marked.
 - <https://opencode.ai/docs/skills/> (skill locations; retrieved 2026-10-02)
 - <https://opencode.ai/docs/agents/> (agents; retrieved 2026-10-02)
 - <https://opencode.ai/docs/commands/> (commands; retrieved 2026-10-02)
+
+## OpenCode 2
+
+OpenCode 2 (`anomalyco/opencode` v2.2.0, 2026-10-27, to v2.2.5, 2026-10-30;
+npm `@opencode/cli`) reads the same configuration folder as OpenCode 1
+(v1.19.5; npm `opencode-ai`, which `opencode.ai/install` still installs). What
+each surface the install writes does under each line, read on 2026-11-03 from
+the OpenCode 2 docs and the v1.19.5 and v2.2.5 source:
+
+| Surface the install writes | OpenCode 1.19.5 | OpenCode 2.2.5 |
+| --- | --- | --- |
+| `opencode.json` in `$XDG_CONFIG_HOME/opencode`, else `~/.config/opencode` | read | read; `OPENCODE_CONFIG_DIR` replaces that folder (OpenCode 1 adds it), so the install warns when it names another folder |
+| `$schema` and `instructions` (`~/`-anchored or absolute paths) | read | read the same way |
+| `mcp.<name>` (`type`, `command`, `environment`, `url`, `headers`, `enabled`) | read | read in place and converted in memory, `enabled` to `disabled` (`packages/core/src/v1/config/migrate.ts`); the file is never rewritten, but an operator may convert it to the `mcp.servers` shape (migrate-v1 page), and update and uninstall find a converted entry there too |
+| `${NAME}` in an MCP value | not expanded | not expanded; the install writes `{env:NAME}`, which both lines substitute |
+| helper `permission` map | read | translated in memory (`bash` becomes `shell`); the install writes only `deny` rules, so the default ask before reading `.env` and `.env.*` files and the operator's stricter rules apply |
+| commands, skills and `$ARGUMENTS` | read | read; a skill with `disable-model-invocation: true` is hidden from the model |
+| `~/.claude/CLAUDE.md` (the Claude Code install) | read when no global `AGENTS.md` exists | not read |
+
+Re-check by 2027-02-01, when this snapshot passes the 90-day limit: whether
+OpenCode 2 still translates the helper `permission` map and the bare
+`mcp.<name>` entries (its live schema marks them deprecated), and whether the
+install should write OpenCode 2's own shapes.
+
+- <https://opencode.ai/v2/docs/migrate-v1/> (shared configuration locations; V1 shapes keep working; retrieved 2026-11-03)
+- <https://opencode.ai/v2/docs/instructions/> (`AGENTS.md` only; retrieved 2026-11-03)
+- <https://github.com/anomalyco/opencode/tree/v2.2.5> (the instruction, agent, command and skill loaders, `packages/core/src/v1/config/migrate.ts`, `packages/core/src/config/variable.ts`, `packages/schema/src/agent.ts`; read 2026-11-03)
+- <https://github.com/anomalyco/opencode/tree/v1.19.5> (`packages/opencode/src/agent/agent.ts`, `packages/opencode/src/permission/index.ts`, `packages/core/src/global.ts`; read 2026-11-03)
 
 ## Discovery Targets
 

@@ -185,9 +185,42 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   command. It now writes the same index into each translated page, and
   `tests/unit/docs/test_site_generated_lists.py` fails when a translation's
   index differs from the English one.
+- **The OpenCode install writes MCP variable references OpenCode expands.**
+  OpenCode substitutes `{env:NAME}` in its config, not `${NAME}`, so a
+  `${NAME}` the shared profile used for a secret reached the MCP server as
+  literal text. The install now writes each one as `{env:NAME}`, in a server's
+  command, URL, environment and headers, and warns about a `$NAME` or another
+  `${...}` form, which OpenCode does not expand either.
+- **The OpenCode install follows `XDG_CONFIG_HOME`.** OpenCode 1 and OpenCode 2
+  read `$XDG_CONFIG_HOME/opencode` when that variable is set, but the install
+  always wrote to `~/.config/opencode`. It now writes to the folder OpenCode
+  reads. It warns when `XDG_CONFIG_HOME` cannot be used, when
+  `OPENCODE_CONFIG_DIR` names another folder (OpenCode 2 reads that folder
+  instead), and when an earlier install is still recorded in
+  `~/.config/opencode`.
+- **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
+  shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
+  `mcp.<name>` entries the install writes in place, without rewriting the file.
+  An operator who converted such an entry to the `mcp.servers` shape got a
+  server that uninstall left behind and that update added a second time. For an
+  install made or last updated by Apothem 1.2.0 or later, which records the
+  entries it wrote, both now recognize the converted server while it holds the
+  values the install wrote. The OpenCode page and convention pin record what
+  OpenCode 1 and OpenCode 2 each read, and the page states that OpenCode 1 also
+  loads the Claude Code block in `~/.claude/CLAUDE.md`.
 
 ### Security
 
+- **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
+  allows every tool by default and asks before reading `.env` and `.env.*`
+  files. A helper's rules come after those defaults and after the operator's
+  own `permission` config, and the last matching rule wins, in OpenCode 1
+  (v1.19.5) and OpenCode 2 (v2.2.5). Every helper the OpenCode install wrote
+  carried `read: allow`, which turned that prompt off, and `allow` rules for
+  the other tools it may use, which overrode a stricter rule the operator set,
+  such as a global `bash: ask`. Helpers now carry only `deny` rules, for the
+  tools they must not use, so the `.env` prompt and the operator's rules apply
+  to them.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service

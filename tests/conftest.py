@@ -51,6 +51,12 @@ def _redirect_home(monkeypatch: pytest.MonkeyPatch, home: Path) -> None:
     )
 
 
+def _clear_root_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop the variables that move the OpenCode root away from the test home."""
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    monkeypatch.delenv("OPENCODE_CONFIG_DIR", raising=False)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _isolate_session_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     """Redirect the user home for the whole session.
@@ -62,6 +68,7 @@ def _isolate_session_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[
     """
     with pytest.MonkeyPatch.context() as monkeypatch:
         _redirect_home(monkeypatch, tmp_path_factory.mktemp("session-home"))
+        _clear_root_overrides(monkeypatch)
         yield
 
 
@@ -75,11 +82,13 @@ def _isolate_user_home(
     per-test ``tmp_path`` so a file-set snapshot of ``tmp_path`` never picks it
     up. A test that wants the home reads ``Path.home()`` or requests this
     fixture. ``CODEX_HOME`` is cleared so a developer's own setting cannot move
-    the Codex root.
+    the Codex root, and ``XDG_CONFIG_HOME`` and ``OPENCODE_CONFIG_DIR`` so
+    neither can move the OpenCode root or add an install warning.
     """
     home = tmp_path_factory.mktemp("user-home")
     _redirect_home(monkeypatch, home)
     monkeypatch.delenv("CODEX_HOME", raising=False)
+    _clear_root_overrides(monkeypatch)
     return home
 
 

@@ -3,9 +3,6 @@ description: "Read-only adversarial claim verification — decompose input into 
 mode: subagent
 permission:
   edit: deny
-  glob: allow
-  grep: allow
-  read: allow
   todowrite: deny
 ---
 

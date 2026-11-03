@@ -7,7 +7,7 @@ description: "Apothem harness adapter for OpenCode (Beta)."
 **Vendor:** OpenCode
 **Install name:** `opencode`
 **Status:** Beta
-**Native config:** `~/.config/opencode/`
+**Native config:** `~/.config/opencode/` (or `$XDG_CONFIG_HOME/opencode/`)
 
 ## Installation
 
@@ -30,6 +30,14 @@ files, and normalizes Apothem helper definitions as OpenCode subhelpers.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+These are the default paths. When `XDG_CONFIG_HOME` is set to an absolute
+folder, the adapter writes to `$XDG_CONFIG_HOME/opencode/` instead, the folder
+both OpenCode 1 and OpenCode 2 read. A relative value or a filesystem root is
+not used, and the install says so. `OPENCODE_CONFIG_DIR` is not followed:
+OpenCode 1 reads that folder as well as the default one, but OpenCode 2 reads it
+instead, so when it names another folder the install warns that OpenCode 2 does
+not load the install.
+
 ## Profile-to-native-config mapping
 
 The adapter renders `opencode.json` with an `instructions` file list naming
@@ -39,6 +47,27 @@ Apothem-owned support subtree. Existing matching Apothem-managed children are
 backed up before replacement.
 
 ## Compatibility notes
+
+The install works with OpenCode 1 and OpenCode 2. Both read the same
+configuration folder, and OpenCode 2 reads the OpenCode 1 forms the install
+writes (the helper `permission` lists and the `mcp` server entries) in place,
+converting them in memory without rewriting the file. OpenCode 1 also loads the
+block a Claude Code install writes to `~/.claude/CLAUDE.md` when its
+configuration folder holds no `AGENTS.md` and
+`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` is not set; OpenCode 2 loads only
+`AGENTS.md` files.
+
+Helper definitions carry only `deny` rules, for the tools a helper must not
+use. OpenCode allows every tool by default and asks before it reads a `.env` or
+`.env.*` file. An `allow` rule in a helper would turn that question off and
+would override a stricter rule in your own OpenCode config, so a helper follows
+your `permission` settings.
+
+When the shared profile lists MCP servers, the install writes them to the `mcp`
+block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
+each `${NAME}` in a server's command, URL, environment or headers is written as
+`{env:NAME}`. A `$NAME` or another `${...}` form is copied as written, and the
+install warns that OpenCode does not expand it.
 
 OpenCode combines every file the `instructions` list names into every session
 ([OpenCode rules](https://opencode.ai/docs/rules/)). The list therefore names
@@ -89,7 +118,10 @@ apothem update --harness opencode
 ```
 
 Refreshes `opencode.json`, native commands, skills, helper definitions, and the
-Apothem support tree.
+Apothem support tree. An MCP server the install wrote that you converted to
+OpenCode 2's `mcp.servers` shape is written back under `mcp`, where both
+OpenCode lines read it. This needs an install record that lists the entries the
+install wrote; a record from before Apothem kept that list is not covered.
 
 ## Uninstalling
 
@@ -99,7 +131,11 @@ apothem uninstall --harness opencode
 
 Removes the entries the adapter added to `~/.config/opencode/opencode.json`
 (your own keys, MCP servers, and `instructions` entries stay, and the file is
-deleted only when Apothem created it and nothing of yours is left). Removes the
+deleted only when Apothem created it and nothing of yours is left). An MCP
+server the install wrote that you converted to OpenCode 2's `mcp.servers` shape
+is removed too, while it still holds the values the install wrote; values you
+changed stay. A server of your own under `mcp.servers` with the same name and
+values as one the install wrote is taken for it. Removes the
 Apothem block from the profile document
 `~/.config/opencode/apothem/rules/00-apothem-profile.md` and keeps any other
 text in it; that file is deleted only when nothing else remains in it. Also
@@ -108,6 +144,11 @@ removes the Apothem files in `~/.config/opencode/commands/`,
 `~/.config/opencode/.apothem/support/`; other files in those folders stay.
 Each file is backed up under `~/.apothem/backups/` before it is changed or
 removed. The shared profile YAML and Apothem engine are unaffected.
+
+An install made by an earlier release in `~/.config/opencode/` while
+`XDG_CONFIG_HOME` named another folder stays there, and OpenCode never read it.
+The next install says so; to remove it, run the uninstall with
+`XDG_CONFIG_HOME` unset.
 
 ## Conformity gate
 

@@ -47,6 +47,14 @@ with `claude mcp add` into `~/.claude.json` (user or local scope) and a
 project-level `.mcp.json`; the Claude Code adapter writes neither file, and
 Apothem's managed Claude Code settings never carry an `mcpServers` block.
 
+The `OpenCode` adapter writes the inventory to the `mcp` block of
+`opencode.json`. `OpenCode` substitutes `{env:NAME}` in its config, not
+`${NAME}`, so the adapter writes each `${NAME}` reference in a server's command,
+URL, environment or headers as `{env:NAME}`; an unset variable becomes an empty
+string. A `$NAME` or another `${...}` form, such as `${NAME:-default}`, is
+copied as written, and `apothem install` warns that `OpenCode` does not expand
+it.
+
 ## Give a helper access to MCP servers
 
 The read-only research agents (`research-scout`, `citation-auditor`) ship with

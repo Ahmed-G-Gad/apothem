@@ -14,29 +14,85 @@ rule and when to read it, and a skill or command that needs one cites it.
 An entry starting with ``~/`` is expanded against the home directory, and an
 absolute entry is matched as a glob on its final segment, so an explicit file
 path names exactly that file. A relative entry is resolved against the project
-directory, not the config file, which is why every entry is home-anchored.
-These semantics were observed at opencode-ai 1.19.0 on 2026-10-14. The
-upstream source moved, and the vendor docs do not describe them.
+directory, not the config file, which is why every entry is home-anchored
+(absolute when the config folder is outside the home directory). These
+semantics were observed at opencode-ai 1.19.0 on 2026-10-14, and v2.2.5 keeps
+them (``packages/core/src/config/plugin/instruction.ts:99-112``).
+
+OpenCode 1 and OpenCode 2 read the same folder (see :func:`config_root`). OpenCode
+2 reads the OpenCode 1 shapes this module writes in place, converting them in
+memory; an operator may still convert an MCP server Apothem wrote to OpenCode
+2's own shape, which :func:`relocated_entries` accounts for.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import re
+from collections.abc import Iterator
+from pathlib import Path
 from string import Template
 from typing import Any, Final
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib import install_ledger
 from apothem.lib.frontmatter import field_value
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import mcp_servers_for, render_mcp_opencode
 from apothem.lib.propagation import load_manifest
 
-#: The OpenCode configuration directory, relative to the home directory.
+#: The default OpenCode configuration directory, relative to the home directory.
 CONFIG_DIR: Final[str] = ".config/opencode"
 
-#: The harness root in the home-anchored form OpenCode expands (``~/``).
-_HOME_ANCHORED_ROOT: Final[str] = f"~/{CONFIG_DIR}"
+
+def config_root() -> Path:
+    """Return the folder OpenCode loads its global configuration from.
+
+    Both OpenCode lines read ``$XDG_CONFIG_HOME/opencode`` when
+    ``XDG_CONFIG_HOME`` is set, else ``~/.config/opencode`` (v1.19.5
+    ``packages/core/src/global.ts:13``, through xdg-basedir; v2.2.5
+    ``packages/util/src/global-roots.ts:7``). A value that is not an absolute
+    path, or that names a filesystem root, is not used (see
+    :func:`install_notes`): OpenCode would resolve a relative value against
+    its own working directory, which an install cannot match, and a filesystem
+    root would make the whole drive the allowed write boundary.
+    ``OPENCODE_CONFIG_DIR`` is not followed, because the two lines disagree
+    on it: OpenCode 1 reads that folder as well as this one, OpenCode 2
+    instead of it (v2.2.5 ``packages/util/src/global.ts:79``).
+    """
+    configured = _xdg_config_home()
+    base = configured if configured is not None else Path.home() / ".config"
+    return base / "opencode"
+
+
+def _xdg_config_home() -> Path | None:
+    """Return ``XDG_CONFIG_HOME`` when it names an absolute folder, else ``None``."""
+    value = os.environ.get("XDG_CONFIG_HOME", "")
+    if not value:
+        return None
+    path = Path(os.path.normpath(value))
+    if not path.is_absolute() or path.parent == path:
+        return None
+    return path
+
+
+def _anchored_root() -> str:
+    """Return the config folder the way an ``instructions`` entry names it.
+
+    Under the home directory it is ``~/``-anchored, which OpenCode expands;
+    elsewhere it is the absolute path with forward slashes. Both sides are
+    compared with ``..`` segments folded and, on Windows, case folded, but
+    links are not resolved: a ``~/.config/opencode`` that is a link keeps
+    naming the link, as OpenCode itself does.
+    """
+    root = os.path.normpath(config_root())
+    home = os.path.normpath(Path.home())
+    if not os.path.normcase(root).startswith(os.path.normcase(home) + os.sep):
+        return Path(root).as_posix()
+    return f"~/{Path(root[len(home) + 1 :]).as_posix()}"
+
 
 #: The single ``instructions`` entry earlier releases wrote: a glob that made
 #: OpenCode load every installed rule, path-scoped ones included, at launch.
@@ -85,8 +141,9 @@ def always_on_rule_instructions() -> list[str]:
     Read at materialize time from the opencode ``rules/`` install entry of the
     canonical propagation manifest (not an install plan a caller may have
     trimmed): its source directory supplies the rules (minus the manifest's
-    excluded files), and its target directory, home-anchored, supplies the
-    installed location. A rule is listed when its frontmatter sets
+    excluded files), and its target directory, named the way
+    :func:`_anchored_root` names the config folder, supplies the installed
+    location. A rule is listed when its frontmatter sets
     ``alwaysApply: true``. Entries are sorted by file name.
 
     Raises:
@@ -101,7 +158,7 @@ def always_on_rule_instructions() -> list[str]:
             "propagation manifest has no opencode 'rules/' install entry"
         )
     source_dir = install_driver.resolve_source(entry.source)
-    target_dir = Template(entry.target).substitute(HARNESS_ROOT=_HOME_ANCHORED_ROOT)
+    target_dir = Template(entry.target).substitute(HARNESS_ROOT=_anchored_root())
     names = sorted(
         path.name
         for path in source_dir.glob("*.md")
@@ -119,7 +176,7 @@ def profile_document_instruction() -> str:
     other file Apothem writes for it, so without this entry the operator's
     identity, preferences and the support-file locations never reach it.
     """
-    return f"{_HOME_ANCHORED_ROOT}/{install_driver.PROFILE_DOCUMENT_RELATIVE}"
+    return f"{_anchored_root()}/{install_driver.PROFILE_DOCUMENT_RELATIVE}"
 
 
 def instruction_entries() -> list[str]:
@@ -161,3 +218,139 @@ def retired_entries(profile: dict[str, Any]) -> tuple[OwnedEntry, ...]:
         OwnedEntry(("instructions",), "item", entry)
         for entry in (LEGACY_RULES_GLOB, *RETIRED_ALWAYS_ON_RULES)
     )
+
+
+#: Keys OpenCode 2 reads as members of the ``mcp`` block, not as server names.
+_MCP_BLOCK_MEMBERS: Final[frozenset[str]] = frozenset({"servers", "timeout"})
+
+
+def relocated_entries(owned: tuple[OwnedEntry, ...]) -> tuple[OwnedEntry, ...]:
+    """Return the MCP entries Apothem owns at the path OpenCode 2's shape uses.
+
+    OpenCode 2 keeps a server under ``mcp.servers.<name>``
+    (https://opencode.ai/v2/docs/migrate-v1/) and reads a bare
+    ``mcp.<name>`` in place, converting it in memory: ``enabled`` becomes the
+    inverse ``disabled`` and the other fields carry over (v2.2.5
+    ``packages/core/src/v1/config/migrate.ts:81-108``). It never rewrites the
+    file, but an operator may convert it to that shape, by hand or by asking
+    OpenCode to. Each owned entry under ``mcp.<name>`` is returned at its
+    converted path, an owned ``enabled`` also as the inverse ``disabled``, and
+    the ``mcp.servers`` mapping, which goes only once empty. An update or
+    uninstall then strips a converted server that still holds the values
+    Apothem wrote, as it strips one in place; an update then writes it back
+    under ``mcp``, where both lines read it. An operator's own server of the
+    same name and values under ``mcp.servers`` is taken for Apothem's.
+    """
+    moved: list[OwnedEntry] = []
+    for entry in owned:
+        path = entry.path
+        if len(path) < 2 or path[0] != "mcp" or path[1] in _MCP_BLOCK_MEMBERS:
+            continue
+        moved.append(OwnedEntry(("mcp", "servers", *path[1:]), entry.kind, entry.value))
+        if path[2:] == ("enabled",) and isinstance(entry.value, bool):
+            moved.append(
+                OwnedEntry(
+                    ("mcp", "servers", path[1], "disabled"), "key", not entry.value
+                )
+            )
+    if moved:
+        moved.append(OwnedEntry(("mcp", "servers"), "container"))
+    return tuple(moved)
+
+
+#: A ``$`` reference OpenCode leaves as written: anything but ``{env:NAME}``.
+_UNEXPANDED: Final[re.Pattern[str]] = re.compile(
+    r"\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*"
+)
+
+
+def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
+    """Return what keeps OpenCode from loading the install at *root* as written.
+
+    One note each when ``OPENCODE_CONFIG_DIR`` names another folder (OpenCode
+    2 then reads that folder instead of *root*), when ``XDG_CONFIG_HOME`` is
+    set but not used (see :func:`config_root`), when an earlier install is
+    still recorded in ``~/.config/opencode`` while *root* is elsewhere, and
+    for each MCP server whose rendered entry keeps a ``$`` reference OpenCode
+    does not expand.
+    """
+    notes: list[str] = []
+    override = os.environ.get("OPENCODE_CONFIG_DIR", "")
+    if override and not _same_folder(override, root):
+        notes.append(
+            f"OPENCODE_CONFIG_DIR is set to {override}. OpenCode 1 reads that "
+            f"folder as well as {root}, where Apothem installed, but OpenCode 2 "
+            f"reads it instead, so OpenCode 2 does not load this install. Unset "
+            f"OPENCODE_CONFIG_DIR or set it to {root}."
+        )
+    xdg = os.environ.get("XDG_CONFIG_HOME", "")
+    if xdg and _xdg_config_home() is None:
+        notes.append(
+            f"XDG_CONFIG_HOME is set to {xdg}, which is not an absolute folder "
+            f"below the filesystem root, so Apothem installed into {root}. "
+            "OpenCode reads XDG_CONFIG_HOME as it is and does not load this "
+            "install. Set XDG_CONFIG_HOME to an absolute folder or unset it."
+        )
+    notes.extend(_earlier_root_notes(root))
+    notes.extend(_mcp_reference_notes(profile))
+    return notes
+
+
+def _same_folder(configured: str, root: Path) -> bool:
+    """Return True when *configured* names *root* the way OpenCode reads it.
+
+    OpenCode does not expand ``~`` and resolves a relative path against its
+    own working directory, so only an absolute path can name *root*.
+    """
+    path = Path(configured)
+    if not path.is_absolute():
+        return False
+    return install_driver._normalized(path) == install_driver._normalized(root)
+
+
+def _earlier_root_notes(root: Path) -> list[str]:
+    """Return a note when an install is still recorded at the default folder."""
+    default = Path.home() / CONFIG_DIR
+    if install_driver._normalized(default) == install_driver._normalized(root):
+        return []
+    try:
+        record = install_ledger.current_install_record("opencode", root=default)
+    except install_ledger.LedgerError:
+        return []
+    if record is None:
+        return []
+    return [
+        f"An earlier Apothem install is still recorded in {default}, which "
+        "OpenCode does not read while XDG_CONFIG_HOME names another folder. "
+        "To remove it, run apothem uninstall --harness opencode with "
+        "XDG_CONFIG_HOME unset."
+    ]
+
+
+def _mcp_reference_notes(profile: dict[str, Any]) -> list[str]:
+    """Return one note per MCP server that keeps an unexpanded ``$`` reference."""
+    for_harness = coerce_profile(profile).for_harness("opencode")
+    notes: list[str] = []
+    for name, entry in render_mcp_opencode(mcp_servers_for(for_harness)).items():
+        found = sorted(
+            {m for text in _strings(entry) for m in _UNEXPANDED.findall(text)}
+        )
+        if found:
+            notes.append(
+                f"MCP server {name}: OpenCode does not expand {', '.join(found)}, "
+                "so the server receives that text as written. Use a plain "
+                "${NAME} reference, which the install writes as {env:NAME}."
+            )
+    return notes
+
+
+def _strings(value: object) -> Iterator[str]:
+    """Yield every string value inside *value* (mapping keys excluded)."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from _strings(item)
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _strings(item)

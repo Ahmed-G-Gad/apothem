@@ -18,8 +18,9 @@ profile was validated and then discarded.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from apothem.lib.harness_materializer import (
     MarkdownProfileFields,
@@ -202,9 +203,17 @@ def render_mcp_opencode(
     server is accepted for back-compat and maps to the same ``remote`` shape,
     but ``streamable-http`` is the preferred remote transport.
 
-    ``environment`` and ``headers`` (remote auth) pass through verbatim; a
-    ``${VAR}`` reference in a value is emitted as-is and never resolved here, so
-    no raw secret literal is materialized into the native config.
+    ``environment`` and ``headers`` (remote auth) are copied from the profile
+    and never resolved here, so no raw secret literal is materialized into the
+    native config. OpenCode substitutes only ``{env:NAME}`` (and
+    ``{file:path}``) in its config text, in both release lines
+    (https://opencode.ai/docs/config/, Variables; v2.2.5
+    ``packages/core/src/config/variable.ts``), and copies a ``${NAME}`` to the
+    server as literal text. So each ``${NAME}`` in any string of an entry (a
+    ``command`` argument, the ``url``, an ``environment`` or ``headers`` value)
+    is written as ``{env:NAME}``; OpenCode reads an unset variable as an empty
+    string. Another ``$`` form, such as ``${NAME:-default}`` or ``$NAME``, is
+    copied unchanged, and OpenCode does not expand it either.
     """
     rendered: dict[str, dict[str, Any]] = {}
     for name, spec in servers.items():
@@ -222,8 +231,35 @@ def render_mcp_opencode(
             entry = {"type": "remote", "url": spec.get("url", ""), "enabled": True}
             if spec.get("headers"):
                 entry["headers"] = spec["headers"]
-        rendered[name] = entry
+        rendered[name] = _opencode_env_references(entry)
     return rendered
+
+
+#: A ``${NAME}`` reference, the form the profile documents for secret values.
+#: One preceded by another ``$`` (``$${NAME}``) is left alone: rewriting it
+#: would leave a ``$`` before the value OpenCode substitutes.
+_ENV_REFERENCE: Final[re.Pattern[str]] = re.compile(
+    r"(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}"
+)
+
+
+def _opencode_env_references(entry: dict[str, Any]) -> dict[str, Any]:
+    """Return *entry* with each ``${NAME}`` in its strings written ``{env:NAME}``.
+
+    Mapping keys are kept as they are; only values are rewritten.
+    """
+    return {key: _env_reference_values(value) for key, value in entry.items()}
+
+
+def _env_reference_values(value: object) -> object:
+    """Return *value* with :data:`_ENV_REFERENCE` rewritten in every string."""
+    if isinstance(value, str):
+        return _ENV_REFERENCE.sub(r"{env:\1}", value)
+    if isinstance(value, list):
+        return [_env_reference_values(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _env_reference_values(item) for key, item in value.items()}
+    return value
 
 
 __all__ = [

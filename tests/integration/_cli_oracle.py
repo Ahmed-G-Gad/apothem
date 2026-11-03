@@ -277,6 +277,7 @@ def _isolated_home() -> Iterator[Path]:
             "LINES",
             "TTY_COMPATIBLE",
             "CODEX_HOME",
+            "OPENCODE_CONFIG_DIR",
         )
     }
     saved_home_fn = Path.home
@@ -301,6 +302,8 @@ def _isolated_home() -> Iterator[Path]:
         # so an operator's own Codex setup would otherwise show in
         # `harnesses list`, `doctor` and `status`.
         os.environ.pop("CODEX_HOME", None)
+        # An operator's OPENCODE_CONFIG_DIR would add an OpenCode install note.
+        os.environ.pop("OPENCODE_CONFIG_DIR", None)
         Path.home = classmethod(lambda cls: home)  # type: ignore[assignment]
         install_driver.BACKUP_ROOT = scratch / "backups"
         install_ledger.STATE_ROOT = scratch / "ledger-state"
