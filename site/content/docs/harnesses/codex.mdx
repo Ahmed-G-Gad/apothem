@@ -101,6 +101,15 @@ Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.
 
+Codex loads one instruction file from its home folder (`~/.codex`, or the folder
+`CODEX_HOME` names): `AGENTS.override.md` when that file has text, and
+`AGENTS.md` only otherwise. The Apothem block goes into `AGENTS.md`, so an
+`AGENTS.override.md` with text in that folder keeps Codex from loading it.
+`apothem install`, `apothem update` and `apothem verify` print a note that names
+the file when that happens. An empty `AGENTS.override.md` is skipped, so it gets
+no note. To load the block, empty or remove the override, or move its text into
+`AGENTS.md` outside the Apothem block.
+
 ## Codex plugin
 
 Apothem also ships a Codex plugin, added from the repository's plugin
@@ -140,6 +149,10 @@ The verify command confirms that:
    configs parse. Add `--profile PATH` to also confirm that the installed files
    match that profile.
 3. The adapter-specific verification routine reports success.
+
+When an `AGENTS.override.md` with text sits beside `AGENTS.md` in the Codex
+home, verify also prints a note that names it, because Codex loads that file
+instead of the Apothem block. The note does not fail the check.
 
 ## Updating
 

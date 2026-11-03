@@ -27,6 +27,11 @@ hazard of a hook file a repository commits, and for a harness that also imports
 the hooks Claude Code's settings hold, the switch that stops the two sets running
 together.
 
+Instruction overrides. Some harnesses load only the first file with text from a
+fixed list in one folder, so a file ahead of the one an install writes hides the
+Apothem block. :func:`instruction_override_advisories` names that file when it
+has text; install, update and verify print the note.
+
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
 and literal credentials in ``headers`` or ``env``, which an install would copy
@@ -424,6 +429,70 @@ def hook_review_advisories(
             }
         )
     return advisories
+
+
+# --- Instruction-file override advisories -------------------------------------
+
+# Files a harness loads ahead of the instruction file its install writes, from
+# the same folder, in the harness's order; the harness loads only the first one
+# that has text. Codex reads the first non-empty of AGENTS.override.md and
+# AGENTS.md in its home folder ($CODEX_HOME, default ~/.codex): load_from_codex_home
+# in codex-rs/codex-home/src/instructions/mod.rs at openai/codex c60cda34, and
+# the Codex AGENTS.md page, both read 2026-11-03.
+_INSTRUCTION_OVERRIDES: dict[str, tuple[str, ...]] = {
+    "codex": ("AGENTS.override.md",),
+}
+
+
+def _has_text(path: Path) -> bool:
+    """Return whether *path* is a file whose text is not all whitespace.
+
+    Codex skips a directory, a missing file and one it cannot read, and decodes
+    the bytes leniently before it trims them; this check does the same.
+    """
+    try:
+        if not path.is_file():
+            return False
+        return bool(path.read_bytes().decode("utf-8", errors="replace").strip())
+    except OSError:
+        return False
+
+
+def instruction_override_advisories(
+    public_id: str, target: Path
+) -> list[dict[str, object]]:
+    """Return a note when a file *public_id* loads first hides *target*.
+
+    *target* is the instruction file the install writes. The note names the
+    first file the harness loads ahead of it, in the same folder, that has
+    text: the harness loads that file instead, so the Apothem block in *target*
+    does not reach it. An empty file falls through, so it gets no note. Reads
+    the folder; writes nothing.
+    """
+    ahead = _INSTRUCTION_OVERRIDES.get(public_id, ())
+    for index, hiding in enumerate(ahead):
+        path = target.parent / hiding
+        if not _has_text(path):
+            continue
+        name = _display_name(public_id)
+        order = " and ".join([*ahead[: index + 1], target.name])
+        return [
+            {
+                "harness": public_id,
+                "outcome": "advisory",
+                "operation": "instruction_override",
+                "path": str(path),
+                "target": str(target),
+                "message": (
+                    f"{name} loads {hiding} instead of {target.name} in "
+                    f"{target.parent}: it reads only the first of {order} there "
+                    f"that has text, so the Apothem block in {target.name} does "
+                    f"not reach {name}. Empty or remove {path}, or move its text "
+                    f"into {target.name} outside the Apothem block."
+                ),
+            }
+        ]
+    return []
 
 
 # --- MCP profile advisories ---------------------------------------------------

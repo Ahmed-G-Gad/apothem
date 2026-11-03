@@ -136,6 +136,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Codex installs say when an `AGENTS.override.md` hides the Apothem block.**
+  In its home folder (`~/.codex`, or the folder `CODEX_HOME` names), Codex
+  loads only the first of `AGENTS.override.md` and `AGENTS.md` that has text,
+  so an override with text there keeps Codex from loading the block the install
+  writes into `AGENTS.md`, and nothing said so. `apothem install`,
+  `apothem update` and `apothem verify` now print a note that names the
+  override. An empty override falls through to `AGENTS.md`, so it gets no
+  note, and the note does not fail `verify`.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce

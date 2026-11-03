@@ -21,6 +21,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
 from apothem.lib.install_advisories import (
     hook_review_advisories,
+    instruction_override_advisories,
     mcp_profile_advisories,
     owner_of_record,
     shared_root_advisories,
@@ -930,3 +931,104 @@ def test_cli_install_prints_the_mcp_advisories(cli_env: tuple[Path, Path]) -> No
     assert "mcp_servers.gh.headers.Authorization" in flat
     assert "streamable-http" in flat
     assert _FAKE_GITHUB_TOKEN not in result.output
+
+
+# --- Instruction-file override advisories --------------------------------------
+
+
+def _codex_override(folder: Path, text: str) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    override = folder / "AGENTS.override.md"
+    override.write_text(text, encoding="utf-8")
+    return override
+
+
+def _override_notes(payload: dict[str, object]) -> list[dict[str, object]]:
+    warnings = payload["warnings"]
+    assert isinstance(warnings, list)
+    return [w for w in warnings if w.get("operation") == "instruction_override"]
+
+
+def test_a_codex_override_with_text_hides_the_apothem_block(tmp_path: Path) -> None:
+    # Codex reads only the first non-empty of AGENTS.override.md and AGENTS.md in
+    # its home folder, so an override with text hides the block in AGENTS.md.
+    target = tmp_path / "AGENTS.md"
+    override = _codex_override(tmp_path, "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", target)
+    assert note["harness"] == "codex"
+    assert note["outcome"] == "advisory"
+    assert note["operation"] == "instruction_override"
+    assert note["path"] == str(override)
+    assert note["target"] == str(target)
+    message = " ".join(str(note["message"]).split())
+    assert "Codex loads AGENTS.override.md instead of AGENTS.md" in message
+    assert "first of AGENTS.override.md and AGENTS.md there that has text" in message
+
+
+@pytest.mark.parametrize("text", ["", " \n\t\r\n"])
+def test_an_empty_codex_override_falls_through_without_a_note(
+    tmp_path: Path, text: str
+) -> None:
+    _codex_override(tmp_path, text)
+    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+
+
+def test_no_codex_override_means_no_note(tmp_path: Path) -> None:
+    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+
+
+def test_a_folder_named_like_the_codex_override_is_skipped(tmp_path: Path) -> None:
+    # Codex skips a candidate that is not a file.
+    (tmp_path / "AGENTS.override.md").mkdir()
+    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+
+
+def test_a_harness_without_a_hiding_file_gets_no_override_note(tmp_path: Path) -> None:
+    _codex_override(tmp_path, "# Personal rules\n")
+    assert instruction_override_advisories("claude-code", tmp_path / "CLAUDE.md") == []
+
+
+def test_cli_codex_install_update_and_verify_name_a_hiding_override(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    codex_home = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    override = _codex_override(codex_home, "# Personal rules\n")
+    expected = [(str(override), str(codex_home / "AGENTS.md"))]
+    runner = CliRunner()
+    for args in (
+        ["install", "--harness", "codex", "--profile", str(profile)],
+        ["update", "--harness", "codex", "--profile", str(profile)],
+        ["verify", "--harness", "codex"],
+    ):
+        result = runner.invoke(main, [*args, "--no-color", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        notes = _override_notes(json.loads(result.output))
+        assert [(n["path"], n["target"]) for n in notes] == expected, args[0]
+    assert (codex_home / "AGENTS.md").is_file()
+
+    # The note does not fail verify; plain mode prints it under the row.
+    plain = runner.invoke(main, ["verify", "--harness", "codex", "--no-color"])
+    assert plain.exit_code == 0, plain.output
+    flat = " ".join(plain.output.split())
+    assert "Note: Codex loads AGENTS.override.md instead of AGENTS.md" in flat
+
+
+@pytest.mark.parametrize("text", [None, "", "\n \n"])
+def test_cli_codex_install_says_nothing_without_an_override_that_has_text(
+    cli_env: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    text: str | None,
+) -> None:
+    _home, profile = cli_env
+    codex_home = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    if text is not None:
+        _codex_override(codex_home, text)
+    args = ["install", "--harness", "codex", "--profile", str(profile)]
+    result = CliRunner().invoke(main, [*args, "--no-color", "--format", "json"])
+    assert result.exit_code == 0, result.output
+    assert _override_notes(json.loads(result.output)) == []
+    assert (codex_home / "AGENTS.md").is_file()
