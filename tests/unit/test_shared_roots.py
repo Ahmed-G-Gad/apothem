@@ -67,7 +67,11 @@ def test_shared_anchor_title_and_description_name_no_harness(template: str) -> N
     descriptions = [line for line in fields if line.startswith("description:")]
     for line in headings + descriptions:
         for name in _DISPLAY_NAMES:
-            assert name.lower() not in line.lower(), (template, line)
+            # A whole-word match: "Zed" inside "summarized" names no tool.
+            assert not re.search(rf"(?i)(?<!\w){re.escape(name)}(?!\w)", line), (
+                template,
+                line,
+            )
 
 
 @pytest.mark.parametrize("template", _SHARED_ANCHOR_TEMPLATES)
