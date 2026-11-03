@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -117,38 +119,59 @@ def test_helpers_carry_only_deny_rules() -> None:
     assert "permission" not in rendered["mcp-builder"]
 
 
-def test_relocated_entries_follow_the_mcp_servers_path() -> None:
+def _read(target: Path) -> dict[str, Any]:
+    loaded = json.loads(target.read_text(encoding="utf-8"))
+    assert isinstance(loaded, dict)
+    return loaded
+
+
+def _installed(adapter: OpenCodeAdapter, operator: dict[str, object]) -> Path:
+    """Write the operator's config, install over it, and return its path."""
+    target = adapter.output_path
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(operator), encoding="utf-8")
+    adapter.install(_MCP_PROFILE)
+    return target
+
+
+def test_relocated_entries_take_only_a_moved_server_matching_whole() -> None:
     owned = (
         OwnedEntry(("mcp",), "container"),
         OwnedEntry(("mcp", "fs"), "container"),
+        OwnedEntry(("mcp", "fs", "type"), "key", "local"),
+        OwnedEntry(("mcp", "fs", "command"), "container"),
+        OwnedEntry(("mcp", "fs", "command"), "item", "npx"),
         OwnedEntry(("mcp", "fs", "enabled"), "key", True),
-        OwnedEntry(("mcp", "timeout"), "key", 5),
         OwnedEntry(("instructions",), "item", "x"),
     )
+    converted = {"type": "local", "command": ["npx"], "disabled": False}
 
-    moved = opencode_materializer.relocated_entries(owned)
+    def relocate(mcp: dict[str, object]) -> list[tuple[object, ...]]:
+        current = json.dumps({"mcp": mcp})
+        moved = opencode_materializer.relocated_entries(owned, current)
+        return [(entry.path, entry.kind, entry.value) for entry in moved]
 
-    assert [(entry.path, entry.kind, entry.value) for entry in moved] == [
-        (("mcp", "servers", "fs"), "container", None),
-        (("mcp", "servers", "fs", "enabled"), "key", True),
-        (("mcp", "servers", "fs", "disabled"), "key", False),
+    assert relocate({"servers": {"fs": converted}}) == [
+        (("mcp", "servers", "fs"), "key", converted),
         (("mcp", "servers"), "container", None),
     ]
-    assert opencode_materializer.relocated_entries(owned[4:]) == ()
+    # Still in place, so a same-name server under servers is not a conversion.
+    assert relocate({"fs": {"type": "local"}, "servers": {"fs": converted}}) == []
+    # Changed after the conversion: left as it is.
+    assert relocate({"servers": {"fs": {**converted, "timeout": 30}}}) == []
+    assert relocate({"servers": {"fs": {**converted, "disabled": True}}}) == []
+    assert opencode_materializer.relocated_entries(owned, None) == ()
 
 
-def test_a_server_opencode_2_moved_is_rewritten_once_and_uninstalled(
+def test_a_converted_server_is_written_back_once_and_uninstalled(
     adapter: OpenCodeAdapter, isolated_home: Path
 ) -> None:
-    target = adapter.output_path
-    target.parent.mkdir(parents=True)
-    target.write_text(json.dumps({"theme": "dark"}), encoding="utf-8")
-    adapter.install(_MCP_PROFILE)
+    target = _installed(adapter, {"theme": "dark"})
     _move_server_to_servers(target, "fs")
 
     adapter.update(_MCP_PROFILE)
 
-    config = json.loads(target.read_text(encoding="utf-8"))
+    config = _read(target)
     assert "servers" not in config["mcp"]
     assert config["mcp"]["fs"] == {
         "type": "local",
@@ -160,60 +183,81 @@ def test_a_server_opencode_2_moved_is_rewritten_once_and_uninstalled(
     _move_server_to_servers(target, "fs")
     adapter.uninstall()
 
-    assert json.loads(target.read_text(encoding="utf-8")) == {"theme": "dark"}
+    assert _read(target) == {"theme": "dark"}
 
 
-def test_an_edited_moved_server_keeps_the_operator_values(
-    adapter: OpenCodeAdapter, isolated_home: Path
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param({"timeout": 30}, id="edited"),
+        pytest.param({"disabled": True}, id="disabled"),
+    ],
+)
+def test_a_converted_server_the_operator_changed_is_left_alone(
+    adapter: OpenCodeAdapter, isolated_home: Path, change: dict[str, object]
 ) -> None:
-    target = adapter.output_path
-    target.parent.mkdir(parents=True)
-    target.write_text(json.dumps({"theme": "dark"}), encoding="utf-8")
-    adapter.install(_MCP_PROFILE)
+    target = _installed(adapter, {"theme": "dark"})
     _move_server_to_servers(target, "fs")
-    config = json.loads(target.read_text(encoding="utf-8"))
-    config["mcp"]["servers"]["fs"]["timeout"] = 30
+    config = _read(target)
+    config["mcp"]["servers"]["fs"].update(change)
+    changed = config["mcp"]["servers"]["fs"]
     target.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
+    adapter.update(_MCP_PROFILE)
+    assert _read(target)["mcp"]["servers"]["fs"] == changed
+
     adapter.uninstall()
-
-    remaining = json.loads(target.read_text(encoding="utf-8"))
-    assert remaining["mcp"]["servers"]["fs"] == {"timeout": 30}
+    assert _read(target) == {"theme": "dark", "mcp": {"servers": {"fs": changed}}}
 
 
-def test_an_identical_operator_server_under_servers_is_taken_for_apothems(
-    adapter: OpenCodeAdapter, isolated_home: Path
+@pytest.mark.parametrize(
+    "own",
+    [
+        pytest.param(
+            {
+                "type": "local",
+                "command": ["npx", "srv"],
+                "environment": {"TOKEN": "{env:FS_TOKEN}"},
+                "disabled": False,
+            },
+            id="identical",
+        ),
+        pytest.param(
+            {
+                "type": "remote",
+                "url": "https://mcp.example/github",
+                "headers": {"Authorization": "Bearer {env:GH_TOKEN}"},
+            },
+            id="different",
+        ),
+    ],
+)
+def test_an_operator_server_of_the_same_name_is_left_alone(
+    adapter: OpenCodeAdapter, isolated_home: Path, own: dict[str, object]
 ) -> None:
-    # Documented limit: a server of the operator's own under mcp.servers with
-    # the name and values of one the install wrote cannot be told apart from
-    # a converted copy, so uninstall removes it with the original. The
-    # operator's file is backed up first.
-    target = adapter.output_path
-    target.parent.mkdir(parents=True)
-    target.write_text(json.dumps({"theme": "dark"}), encoding="utf-8")
-    adapter.install(_MCP_PROFILE)
-    config = json.loads(target.read_text(encoding="utf-8"))
-    copy = {**config["mcp"]["fs"], "disabled": False}
-    del copy["enabled"]
-    config["mcp"]["servers"] = {"fs": copy}
+    target = _installed(adapter, {"theme": "dark"})
+    config = _read(target)
+    config["mcp"]["servers"] = {"fs": own}
     target.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
-    adapter.uninstall()
+    adapter.update(_MCP_PROFILE)
+    assert _read(target)["mcp"]["servers"] == {"fs": own}
 
-    assert json.loads(target.read_text(encoding="utf-8")) == {"theme": "dark"}
+    adapter.uninstall()
+    assert _read(target) == {"theme": "dark", "mcp": {"servers": {"fs": own}}}
 
 
 def test_adjust_prior_leaves_a_record_without_ownership_alone() -> None:
     owned = (OwnedEntry(("mcp", "fs"), "container"),)
+    current = json.dumps({"mcp": {"servers": {"fs": {}}}})
+    relocate = opencode_materializer.relocated_entries
 
-    def relocate(entries: tuple[OwnedEntry, ...]) -> tuple[OwnedEntry, ...]:
-        return opencode_materializer.relocated_entries(entries)
-
-    assert adjust_prior(LEGACY_OWNERSHIP, relocated=relocate) is LEGACY_OWNERSHIP
+    legacy = adjust_prior(LEGACY_OWNERSHIP, relocated=relocate, current=current)
+    assert legacy is LEGACY_OWNERSHIP
     assert adjust_prior(owned) is owned
-    assert adjust_prior(owned, relocated=relocate) == (
+    assert adjust_prior(owned, relocated=relocate, current=current) == (
         *owned,
-        *opencode_materializer.relocated_entries(owned),
+        *relocate(owned, current),
     )
 
 
@@ -306,14 +350,54 @@ def test_install_notes_mcp_references_opencode_does_not_expand(
         "mcp_servers": {
             "fs": {
                 "transport": "stdio",
-                "command": "npx",
-                "env": {"A": "${TOKEN:-x}", "B": "${PLAIN}"},
-            }
+                "command": "sh",
+                "args": ["-c", "srv --root ${ROOT}"],
+                "env": {
+                    "A": "${TOKEN:-x}",
+                    "B": "${PLAIN}",
+                    "C": "$HOME",
+                    "D": "$${KEEP}",
+                },
+            },
+            "api": {"transport": "http", "url": "https://api.example/v1?$filter=x"},
         }
     }
 
     notes = _notes(adapter.install(profile))
 
+    assert notes == [
+        "MCP server fs: OpenCode does not expand $HOME, ${ROOT}, ${TOKEN:-x}, so "
+        "the server receives that text as written. In an environment, header or "
+        "URL value, a plain ${NAME} is written as {env:NAME}, which OpenCode "
+        "substitutes.",
+        "MCP server fs: $${KEEP} is copied unchanged.",
+    ]
+
+
+def test_install_notes_an_env_value_opencode_1_cannot_insert(
+    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # OpenCode 1 puts an {env:NAME} value into opencode.json unescaped.
+    monkeypatch.setenv("FS_TOKEN", "C:\\keys\\token")
+    notes = _notes(adapter.install(_MCP_PROFILE))
     assert len(notes) == 1
-    assert "does not expand ${TOKEN:-x}, so" in notes[0]
-    assert "${PLAIN}," not in notes[0]
+    assert notes[0].startswith("MCP server fs: FS_TOKEN holds a backslash")
+
+    monkeypatch.setenv("FS_TOKEN", "plain-value")
+    assert _notes(adapter.update(_MCP_PROFILE)) == []
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="needs case-insensitive paths")
+def test_a_change_of_case_in_xdg_config_home_names_the_same_install(
+    adapter: OpenCodeAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = tmp_path / "Config"
+    folder.mkdir()
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(folder))
+    adapter.install({})
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(folder).lower())
+
+    adapter.update({})
+
+    entries = _read(adapter.output_path)["instructions"]
+    assert len(entries) == len(set(entries)) == len(instruction_entries())

@@ -244,6 +244,7 @@ def apply_operator_owned_content(
                 prior_ownership(harness_name, install_root, target),
                 retired=retired,
                 relocated=relocated,
+                current=existing_text,
             ),
         )
     except _LossyRewriteError as refusal:

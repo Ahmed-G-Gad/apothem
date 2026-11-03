@@ -36,7 +36,7 @@ from string import Template
 from typing import Any, Final
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib import install_ledger
+from apothem.lib import install_ledger, lenient_json
 from apothem.lib.frontmatter import field_value
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.profile import coerce_profile
@@ -75,7 +75,10 @@ def _xdg_config_home() -> Path | None:
     path = Path(os.path.normpath(value))
     if not path.is_absolute() or path.parent == path:
         return None
-    return path
+    # The install record matches a root by its exact spelling, so the folder
+    # is named as it is on disk: a change of case on Windows, or a link to
+    # it, then names the same install.
+    return path.resolve(strict=False)
 
 
 def _anchored_root() -> str:
@@ -224,44 +227,116 @@ def retired_entries(profile: dict[str, Any]) -> tuple[OwnedEntry, ...]:
 _MCP_BLOCK_MEMBERS: Final[frozenset[str]] = frozenset({"servers", "timeout"})
 
 
-def relocated_entries(owned: tuple[OwnedEntry, ...]) -> tuple[OwnedEntry, ...]:
-    """Return the MCP entries Apothem owns at the path OpenCode 2's shape uses.
+def relocated_entries(
+    owned: tuple[OwnedEntry, ...], current: str | None
+) -> tuple[OwnedEntry, ...]:
+    """Return Apothem's MCP servers that an operator converted to OpenCode 2's shape.
 
     OpenCode 2 keeps a server under ``mcp.servers.<name>``
-    (https://opencode.ai/v2/docs/migrate-v1/) and reads a bare
-    ``mcp.<name>`` in place, converting it in memory: ``enabled`` becomes the
-    inverse ``disabled`` and the other fields carry over (v2.2.5
+    (https://opencode.ai/v2/docs/migrate-v1/) and reads a bare ``mcp.<name>``
+    in place, converting it in memory: ``enabled`` becomes the inverse
+    ``disabled`` and the other fields carry over (v2.2.5
     ``packages/core/src/v1/config/migrate.ts:81-108``). It never rewrites the
-    file, but an operator may convert it to that shape, by hand or by asking
-    OpenCode to. Each owned entry under ``mcp.<name>`` is returned at its
-    converted path, an owned ``enabled`` also as the inverse ``disabled``, and
-    the ``mcp.servers`` mapping, which goes only once empty. An update or
-    uninstall then strips a converted server that still holds the values
-    Apothem wrote, as it strips one in place; an update then writes it back
-    under ``mcp``, where both lines read it. An operator's own server of the
-    same name and values under ``mcp.servers`` is taken for Apothem's.
+    file, but an operator may convert it, by hand or by asking OpenCode to.
+
+    A server under ``mcp.servers`` in *current* (the config's text) is taken
+    for one Apothem wrote only when Apothem wrote that whole server, its
+    ``mcp.<name>`` is gone from *current* (the entry moved rather than being
+    copied), and it equals that server as a whole, as written or with
+    ``enabled`` converted. It is returned as one ``key`` entry holding the
+    whole server, plus the ``mcp.servers`` mapping, which goes only once
+    empty, so an update or uninstall removes it whole or not at all. An
+    operator's own server of the same name, a converted server the operator
+    edited, and one the operator disabled are left as they are.
     """
+    mcp = _mcp_block(current)
+    servers = mcp.get("servers") if mcp is not None else None
+    if mcp is None or not isinstance(servers, dict):
+        return ()
     moved: list[OwnedEntry] = []
-    for entry in owned:
-        path = entry.path
-        if len(path) < 2 or path[0] != "mcp" or path[1] in _MCP_BLOCK_MEMBERS:
+    for name, server in _owned_servers(owned).items():
+        if name in mcp:
             continue
-        moved.append(OwnedEntry(("mcp", "servers", *path[1:]), entry.kind, entry.value))
-        if path[2:] == ("enabled",) and isinstance(entry.value, bool):
-            moved.append(
-                OwnedEntry(
-                    ("mcp", "servers", path[1], "disabled"), "key", not entry.value
-                )
-            )
+        found = servers.get(name)
+        if any(found == shape for shape in _converted_shapes(server)):
+            moved.append(OwnedEntry(("mcp", "servers", name), "key", found))
     if moved:
         moved.append(OwnedEntry(("mcp", "servers"), "container"))
     return tuple(moved)
 
 
-#: A ``$`` reference OpenCode leaves as written: anything but ``{env:NAME}``.
-_UNEXPANDED: Final[re.Pattern[str]] = re.compile(
-    r"\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*"
-)
+def _mcp_block(current: str | None) -> dict[str, object] | None:
+    """Return the ``mcp`` mapping of the config text *current*, if it has one."""
+    if not current:
+        return None
+    try:
+        document = json.loads(current)
+    except json.JSONDecodeError:
+        try:
+            document = lenient_json.loads(current)
+        except lenient_json.LenientJSONError:
+            return None
+    mcp = document.get("mcp") if isinstance(document, dict) else None
+    return mcp if isinstance(mcp, dict) else None
+
+
+def _owned_servers(owned: tuple[OwnedEntry, ...]) -> dict[str, dict[str, object]]:
+    """Return each MCP server Apothem wrote whole, rebuilt from *owned*.
+
+    A server counts when its ``mcp.<name>`` mapping is an owned container (the
+    install created it); its keys and list items come back in recorded order.
+    """
+    servers: dict[str, dict[str, object]] = {
+        entry.path[1]: {}
+        for entry in owned
+        if entry.kind == "container"
+        and len(entry.path) == 2
+        and entry.path[0] == "mcp"
+        and entry.path[1] not in _MCP_BLOCK_MEMBERS
+    }
+    for entry in owned:
+        server = servers.get(entry.path[1]) if len(entry.path) > 2 else None
+        if server is None or entry.path[0] != "mcp" or entry.kind == "container":
+            continue
+        node = server
+        for key in entry.path[2:-1]:
+            child = node.setdefault(key, {})
+            if not isinstance(child, dict):
+                break
+            node = child
+        else:
+            if entry.kind == "key":
+                node[entry.path[-1]] = entry.value
+            else:
+                items = node.setdefault(entry.path[-1], [])
+                if isinstance(items, list):
+                    items.append(entry.value)
+    return servers
+
+
+def _converted_shapes(server: dict[str, object]) -> list[dict[str, object]]:
+    """Return *server* as written and as a conversion to OpenCode 2's shape."""
+    enabled = server.get("enabled")
+    rest = {key: value for key, value in server.items() if key != "enabled"}
+    shapes = [server]
+    if isinstance(enabled, bool):
+        shapes.append({**rest, "disabled": not enabled})
+        if enabled:
+            shapes.append(rest)
+    return shapes
+
+
+#: A braced reference OpenCode leaves as written; a doubled ``$${...}`` too.
+_BRACED: Final[re.Pattern[str]] = re.compile(r"\$?\$\{[^}]*\}")
+
+#: A bare ``$NAME`` reference.
+_BARE: Final[re.Pattern[str]] = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*")
+
+#: An ``{env:NAME}`` reference the install wrote.
+_ENV: Final[re.Pattern[str]] = re.compile(r"\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
+
+#: Characters OpenCode 1 puts into ``opencode.json`` without escaping them.
+_UNSAFE: Final[re.Pattern[str]] = re.compile(r'[\\"\x00-\x1f\x7f]')
 
 
 def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
@@ -328,19 +403,52 @@ def _earlier_root_notes(root: Path) -> list[str]:
 
 
 def _mcp_reference_notes(profile: dict[str, Any]) -> list[str]:
-    """Return one note per MCP server that keeps an unexpanded ``$`` reference."""
+    """Return what each MCP server's ``$`` references do in OpenCode.
+
+    For each server: a ``${...}`` form OpenCode leaves as written, in any
+    value, a command argument included, and a bare ``$NAME`` in an
+    environment or header value; a ``$${NAME}``, which is copied unchanged;
+    and each ``{env:NAME}`` whose variable now holds a backslash, a double
+    quote or a control character. OpenCode 1 puts that value into
+    ``opencode.json`` without escaping it and then cannot read the file;
+    OpenCode 2 escapes it.
+    """
     for_harness = coerce_profile(profile).for_harness("opencode")
     notes: list[str] = []
     for name, entry in render_mcp_opencode(mcp_servers_for(for_harness)).items():
-        found = sorted(
-            {m for text in _strings(entry) for m in _UNEXPANDED.findall(text)}
-        )
-        if found:
-            notes.append(
-                f"MCP server {name}: OpenCode does not expand {', '.join(found)}, "
-                "so the server receives that text as written. Use a plain "
-                "${NAME} reference, which the install writes as {env:NAME}."
+        secrets = {key: entry.get(key) for key in ("environment", "headers", "url")}
+        braced = {m for text in _strings(entry) for m in _BRACED.findall(text)}
+        bare = {
+            m
+            for text in _strings(
+                {key: secrets[key] for key in ("environment", "headers")}
             )
+            for m in _BARE.findall(text)
+        }
+        unexpanded = sorted(m for m in braced | bare if not m.startswith("$$"))
+        if unexpanded:
+            notes.append(
+                f"MCP server {name}: OpenCode does not expand "
+                f"{', '.join(unexpanded)}, so the server receives that text as "
+                "written. In an environment, header or URL value, a plain "
+                "${NAME} is written as {env:NAME}, which OpenCode substitutes."
+            )
+        doubled = sorted(m for m in braced if m.startswith("$$"))
+        if doubled:
+            notes.append(
+                f"MCP server {name}: {', '.join(doubled)} is copied unchanged."
+            )
+        for variable in sorted(
+            {v for text in _strings(secrets) for v in _ENV.findall(text)}
+        ):
+            if _UNSAFE.search(os.environ.get(variable, "")):
+                notes.append(
+                    f"MCP server {name}: {variable} holds a backslash, a double "
+                    "quote or a control character. OpenCode 1 puts "
+                    f"{{env:{variable}}} into opencode.json unescaped and then "
+                    "cannot read the file; OpenCode 2 escapes it. Keep the value "
+                    "in a file and reference it as {file:path} instead."
+                )
     return notes
 
 

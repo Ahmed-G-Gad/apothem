@@ -508,9 +508,8 @@ def surgically_remove_materialized_config(
     """
     recorded = current_target(harness_name, install_root, target)
     if relocated is not None and recorded is not None and recorded.owned:
-        recorded = replace(
-            recorded, owned=(*recorded.owned, *relocated(recorded.owned))
-        )
+        moved = relocated(recorded.owned, _current_text(target))
+        recorded = replace(recorded, owned=(*recorded.owned, *moved))
     return _surgical_remove_from_target(
         target,
         template_text,
@@ -522,6 +521,14 @@ def surgically_remove_materialized_config(
         recorded=recorded,
         retired=retired,
     )
+
+
+def _current_text(target: Path) -> str | None:
+    """Return *target*'s text, or ``None`` when it cannot be read."""
+    try:
+        return target.read_text(encoding="utf-8")
+    except OSError:
+        return None
 
 
 def _remove_unlisted_anchors(

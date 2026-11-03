@@ -49,11 +49,15 @@ Apothem's managed Claude Code settings never carry an `mcpServers` block.
 
 The `OpenCode` adapter writes the inventory to the `mcp` block of
 `opencode.json`. `OpenCode` substitutes `{env:NAME}` in its config, not
-`${NAME}`, so the adapter writes each `${NAME}` reference in a server's command,
-URL, environment or headers as `{env:NAME}`; an unset variable becomes an empty
-string. A `$NAME` or another `${...}` form, such as `${NAME:-default}`, is
+`${NAME}`, so the adapter writes each `${NAME}` reference in a server's
+environment, headers or URL as `{env:NAME}`; an unset variable becomes an empty
+string. Command arguments are copied as written. A `$NAME` in an environment
+or header value, or another `${...}` form, such as `${NAME:-default}`, is
 copied as written, and `apothem install` warns that `OpenCode` does not expand
-it.
+it. `OpenCode` 1 puts an `{env:NAME}` value into the file without escaping it,
+so a value with a backslash, a double quote or a control character leaves a
+config it cannot read (`OpenCode` 2 escapes it); `apothem install` warns about
+such a value, and `{file:path}` avoids it.
 
 ## Give a helper access to MCP servers
 

@@ -64,8 +64,9 @@ OpenCode has no per-rule scoping field: it combines every file its
 `opencode.json` `instructions` list names into every session. The OpenCode
 install (`apothem install --harness opencode`) therefore lists your profile
 document and only the rules whose `alwaysApply` is `true` (the four core rules
-and the rule index), one explicit `~/.config/opencode/...` path per file, read
-from the rule files when the config is written. Every rule,
+and the rule index), one explicit path per file, read from the rule files when
+the config is written. Each path is `~/.config/opencode/...`, or an absolute
+path when `$XDG_CONFIG_HOME/opencode` is outside your home folder. Every rule,
 path-filtered ones included, is still installed under
 `~/.config/opencode/.apothem/support/rules/`, where the index names it and a
 rule, skill, or command that cites one reads it on demand.

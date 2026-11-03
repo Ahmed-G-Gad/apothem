@@ -273,9 +273,10 @@ class TestRenderMcpOpencode:
             "headers": {"Authorization": "Bearer {env:API_TOKEN}"},
         }
 
-    def test_local_env_and_argument_references_become_env_references(
+    def test_local_env_references_become_env_references_but_arguments_stay(
         self,
     ) -> None:
+        # An argument is left for the server, or a shell it runs, to expand.
         out = render_mcp_opencode(
             {
                 "s": {
@@ -286,7 +287,7 @@ class TestRenderMcpOpencode:
                 }
             }
         )
-        assert out["s"]["command"] == ["run", "--token", "{env:API_KEY}"]
+        assert out["s"]["command"] == ["run", "--token", "${API_KEY}"]
         assert out["s"]["environment"] == {"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"}
 
     def test_every_reference_in_a_value_and_the_url_is_rewritten(self) -> None:

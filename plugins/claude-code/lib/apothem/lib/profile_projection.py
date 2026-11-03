@@ -209,11 +209,14 @@ def render_mcp_opencode(
     ``{file:path}``) in its config text, in both release lines
     (https://opencode.ai/docs/config/, Variables; v2.2.5
     ``packages/core/src/config/variable.ts``), and copies a ``${NAME}`` to the
-    server as literal text. So each ``${NAME}`` in any string of an entry (a
-    ``command`` argument, the ``url``, an ``environment`` or ``headers`` value)
-    is written as ``{env:NAME}``; OpenCode reads an unset variable as an empty
-    string. Another ``$`` form, such as ``${NAME:-default}`` or ``$NAME``, is
-    copied unchanged, and OpenCode does not expand it either.
+    server as literal text. So each ``${NAME}`` in an ``environment`` or
+    ``headers`` value, or in the ``url``, is written as ``{env:NAME}``;
+    OpenCode reads an unset variable as an empty string. ``command``
+    arguments are copied as written: a reference there would resolve from
+    OpenCode's own environment when the config loads, not from the server's
+    when a shell the server runs expands it. Another ``$`` form, such as
+    ``${NAME:-default}``, ``$${NAME}`` or ``$NAME``, is copied unchanged, and
+    OpenCode does not expand it either.
     """
     rendered: dict[str, dict[str, Any]] = {}
     for name, spec in servers.items():
@@ -226,12 +229,13 @@ def render_mcp_opencode(
                 "enabled": True,
             }
             if spec.get("env"):
-                entry["environment"] = spec["env"]
+                entry["environment"] = _env_references(spec["env"])
         else:
-            entry = {"type": "remote", "url": spec.get("url", ""), "enabled": True}
+            url = _ENV_REFERENCE.sub(r"{env:\1}", spec.get("url", ""))
+            entry = {"type": "remote", "url": url, "enabled": True}
             if spec.get("headers"):
-                entry["headers"] = spec["headers"]
-        rendered[name] = _opencode_env_references(entry)
+                entry["headers"] = _env_references(spec["headers"])
+        rendered[name] = entry
     return rendered
 
 
@@ -243,23 +247,15 @@ _ENV_REFERENCE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def _opencode_env_references(entry: dict[str, Any]) -> dict[str, Any]:
-    """Return *entry* with each ``${NAME}`` in its strings written ``{env:NAME}``.
+def _env_references(values: dict[str, Any]) -> dict[str, Any]:
+    """Return *values* with each ``${NAME}`` in a string value written ``{env:NAME}``.
 
-    Mapping keys are kept as they are; only values are rewritten.
+    Mapping keys are kept as they are; only string values are rewritten.
     """
-    return {key: _env_reference_values(value) for key, value in entry.items()}
-
-
-def _env_reference_values(value: object) -> object:
-    """Return *value* with :data:`_ENV_REFERENCE` rewritten in every string."""
-    if isinstance(value, str):
-        return _ENV_REFERENCE.sub(r"{env:\1}", value)
-    if isinstance(value, list):
-        return [_env_reference_values(item) for item in value]
-    if isinstance(value, dict):
-        return {key: _env_reference_values(item) for key, item in value.items()}
-    return value
+    return {
+        key: _ENV_REFERENCE.sub(r"{env:\1}", value) if isinstance(value, str) else value
+        for key, value in values.items()
+    }
 
 
 __all__ = [

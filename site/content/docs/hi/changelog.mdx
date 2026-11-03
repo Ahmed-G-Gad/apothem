@@ -190,9 +190,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The OpenCode install writes MCP variable references OpenCode expands.**
   OpenCode substitutes `{env:NAME}` in its config, not `${NAME}`, so a
   `${NAME}` the shared profile used for a secret reached the MCP server as
-  literal text. The install now writes each one as `{env:NAME}`, in a server's
-  command, URL, environment and headers, and warns about a `$NAME` or another
-  `${...}` form, which OpenCode does not expand either.
+  literal text. The install now writes each one as `{env:NAME}` in a server's
+  environment, headers and URL; command arguments are copied as written, for
+  the server or a shell it runs to expand. It warns about a `$NAME` in an
+  environment or header value and about another `${...}` form, which OpenCode
+  does not expand either. OpenCode 1 puts an `{env:NAME}` value into the file
+  without escaping it, so a value holding a backslash (such as a Windows path),
+  a double quote or a control character leaves a config OpenCode 1 cannot read;
+  OpenCode 2 escapes it. The install warns about such a value and suggests
+  `{file:path}`.
 - **The OpenCode install follows `XDG_CONFIG_HOME`.** OpenCode 1 and OpenCode 2
   read `$XDG_CONFIG_HOME/opencode` when that variable is set, but the install
   always wrote to `~/.config/opencode`. It now writes to the folder OpenCode
@@ -206,8 +212,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   An operator who converted such an entry to the `mcp.servers` shape got a
   server that uninstall left behind and that update added a second time. For an
   install made or last updated by Apothem 1.2.0 or later, which records the
-  entries it wrote, both now recognize the converted server while it holds the
-  values the install wrote. The OpenCode page and convention pin record what
+  entries it wrote, both now recognize the converted server, as a whole: only
+  when its `mcp.<name>` entry is gone and it matches what the install wrote. An
+  operator's own server of the same name, a conversion the operator edited and
+  one the operator disabled stay as they are. The OpenCode page and convention
+  pin record what
   OpenCode 1 and OpenCode 2 each read, and the page states that OpenCode 1 also
   loads the Claude Code block in `~/.claude/CLAUDE.md`.
 

@@ -53,9 +53,9 @@ configuration folder, and OpenCode 2 reads the OpenCode 1 forms the install
 writes (the helper `permission` lists and the `mcp` server entries) in place,
 converting them in memory without rewriting the file. OpenCode 1 also loads the
 block a Claude Code install writes to `~/.claude/CLAUDE.md` when its
-configuration folder holds no `AGENTS.md` and
-`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` is not set; OpenCode 2 loads only
-`AGENTS.md` files.
+configuration folder holds no `AGENTS.md` and neither
+`OPENCODE_DISABLE_CLAUDE_CODE` nor `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` is
+set; OpenCode 2 loads only `AGENTS.md` files.
 
 Helper definitions carry only `deny` rules, for the tools a helper must not
 use. OpenCode allows every tool by default and asks before it reads a `.env` or
@@ -65,9 +65,18 @@ your `permission` settings.
 
 When the shared profile lists MCP servers, the install writes them to the `mcp`
 block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
-each `${NAME}` in a server's command, URL, environment or headers is written as
-`{env:NAME}`. A `$NAME` or another `${...}` form is copied as written, and the
-install warns that OpenCode does not expand it.
+each `${NAME}` in a server's environment, headers or URL is written as
+`{env:NAME}`. Command arguments are copied as written: a reference there is
+left for the server, or a shell it runs, to expand. A `$NAME` in an
+environment or header value, or another `${...}` form, is copied as written,
+and the install warns that OpenCode does not expand it.
+
+OpenCode 1 puts an `{env:NAME}` value into `opencode.json` without escaping
+it, so a value with a backslash (such as a Windows path), a double quote or a
+control character leaves a file OpenCode 1 cannot read; OpenCode 2 escapes
+the value. The install checks each such variable when it runs and warns about
+one that holds those characters. Keep such a value in a file and name it as
+`{file:path}` instead.
 
 OpenCode combines every file the `instructions` list names into every session
 ([OpenCode rules](https://opencode.ai/docs/rules/)). The list therefore names
@@ -119,9 +128,13 @@ apothem update --harness opencode
 
 Refreshes `opencode.json`, native commands, skills, helper definitions, and the
 Apothem support tree. An MCP server the install wrote that you converted to
-OpenCode 2's `mcp.servers` shape is written back under `mcp`, where both
-OpenCode lines read it. This needs an install record that lists the entries the
-install wrote; a record from before Apothem kept that list is not covered.
+OpenCode 2's `mcp.servers` shape, without changing it, is written back under
+`mcp`, where both OpenCode lines read it. A server under `mcp.servers` counts
+as that conversion only when its `mcp` entry is gone and it matches what the
+install wrote as a whole; your own server of the same name, a conversion you
+edited and one you disabled are left as they are. This needs an install
+record that lists the entries the install wrote; a record from before Apothem
+kept that list is not covered.
 
 ## Uninstalling
 
@@ -133,9 +146,8 @@ Removes the entries the adapter added to `~/.config/opencode/opencode.json`
 (your own keys, MCP servers, and `instructions` entries stay, and the file is
 deleted only when Apothem created it and nothing of yours is left). An MCP
 server the install wrote that you converted to OpenCode 2's `mcp.servers` shape
-is removed too, while it still holds the values the install wrote; values you
-changed stay. A server of your own under `mcp.servers` with the same name and
-values as one the install wrote is taken for it. Removes the
+without changing it is removed too, as a whole; any other server under
+`mcp.servers` stays as it is. Removes the
 Apothem block from the profile document
 `~/.config/opencode/apothem/rules/00-apothem-profile.md` and keeps any other
 text in it; that file is deleted only when nothing else remains in it. Also
