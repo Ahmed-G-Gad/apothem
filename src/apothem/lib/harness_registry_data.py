@@ -930,7 +930,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # <project>/AGENTS.md only when the project has no .hermes.md or HERMES.md and no
 # AGENTS.override.md beside it, which replaces it. Codex also takes the first of
 # AGENTS.override.md and AGENTS.md in each folder (its AGENTS.md page, read
-# 2026-11-03). Zed loads only the first project instruction file in the list
+# 2026-11-03). CodeBuddy Code uses <project>/AGENTS.md as project memory only
+# when the project has no CODEBUDDY.md (its memory page, read 2026-11-03).
+# TODO(clarify): that page also lists .codebuddy/CODEBUDDY.md as project memory,
+# but its rule for AGENTS.md names only CODEBUDDY.md; whether a
+# .codebuddy/CODEBUDDY.md alone keeps AGENTS.md out is not documented.
+# Zed loads only the first project instruction file in the list
 # .rules, .cursorrules, .windsurfrules, .clinerules,
 # .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md (its
 # instructions page, read 2026-11-03), so it loads each of the three shared
@@ -1099,6 +1104,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-10-02",
         reader_conditions={
+            "codebuddy": "only when the project has no CODEBUDDY.md",
             "codex": "only when the project has no AGENTS.override.md beside it",
             "hermes": "only when the project has no .hermes.md or HERMES.md and no "
             "AGENTS.override.md beside it",

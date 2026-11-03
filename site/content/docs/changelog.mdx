@@ -164,20 +164,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   what the Cursor install adds. The harness registry, Cursor and Windsurf pages
   no longer call the block Cursor's own, and the Cursor native-install example
   matches what the install writes, with a test that keeps it so.
-- **Install notes say when Zed and Codex skip a shared project file.** Zed
-  loads only the first project instruction file in its list (`.rules`,
-  `.cursorrules`, `.windsurfrules`, `.clinerules`,
+- **Install notes say when Zed, Codex and CodeBuddy skip a shared project
+  file.** Zed loads only the first project instruction file in its list
+  (`.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
   `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`,
   `GEMINI.md`), so the notes for the project `.github/copilot-instructions.md`,
   `AGENTS.md` and `GEMINI.md` now say Zed loads each one only when the project
   has none of the files ahead of it. The Zed install writes `.rules`, so Zed
   loads none of them in a project it was installed in. Codex loads an
-  `AGENTS.override.md` beside `AGENTS.md` instead of it, and the project
-  `AGENTS.md` note now gives that condition too. The harness registry and
-  Hermes pages also say which files count for Hermes: one in a folder above the
-  project, up to the git root, counts, an empty one does not, and a session
-  started in a folder above the project loads the project `AGENTS.md` whatever
-  `.hermes.md` it has.
+  `AGENTS.override.md` beside `AGENTS.md` instead of it, and CodeBuddy uses
+  `AGENTS.md` only when the project has no `CODEBUDDY.md`; the project
+  `AGENTS.md` note now gives both conditions too. The Zed install's warning
+  about the files `.rules` hides now names the file Zed read before, which can
+  be another install's file, and on an update it says Zed already reads
+  `.rules`. The harness registry and Hermes pages also say which files count
+  for Hermes: a `.hermes.md`, `HERMES.md` or `AGENTS.md` in a folder above the
+  project, up to the git root, counts; an empty file does not; and a session
+  started in a folder above the project can still load the project
+  `AGENTS.md`, or a non-empty `AGENTS.override.md` beside it, unless it starts
+  in a home folder or one of a few container folders.
 - **The Windsurf and Trae convention pins follow the moved vendor pages.**
   Devin folded the Devin Desktop pages the Windsurf pin cites into a Devin
   Local Customizations page, a Devin Local Overview page and one Cascade

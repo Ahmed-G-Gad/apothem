@@ -66,9 +66,11 @@ the git root, and reads `AGENTS.md` files from the git root down, so such a file
 in a folder above the project counts too. An empty file does not count. An empty
 `.hermes.md` also hides a `HERMES.md` beside it, so Hermes moves on to the
 `AGENTS.md` files even when that `HERMES.md` has text. These conditions apply to
-a session started in the project. A session started in a folder above it, other
-than your home folder, loads `<project>/AGENTS.md` the first time it works on a
-file in the project, whatever `.hermes.md` or `HERMES.md` the project has.
+a session started in the project. A session started in a folder above it can
+still load `<project>/AGENTS.md`, or a non-empty `AGENTS.override.md` beside it,
+the first time it works on a file in the project, whatever `.hermes.md` or
+`HERMES.md` the project has. Hermes skips this in a home folder and in a few
+container folders.
 
 The Apothem install for [Kimi Code](/docs/harnesses/kimi-code) writes the first
 file, and [the install for another editor](/docs/harnesses/cursor) writes the

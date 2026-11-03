@@ -164,14 +164,16 @@ def test_cursor_rules_file_is_shared_with_hermes_and_windsurf(tmp_path: Path) ->
 def test_project_agents_md_note_gives_the_first_match_conditions(
     tmp_path: Path,
 ) -> None:
-    # Codex and Hermes load an AGENTS.override.md beside AGENTS.md instead of it,
-    # a .hermes.md or HERMES.md comes first in Hermes's order, and Zed loads only
-    # the first project instruction file in its list.
+    # CodeBuddy uses AGENTS.md only without a CODEBUDDY.md, Codex and Hermes load
+    # an AGENTS.override.md beside AGENTS.md instead of it, a .hermes.md or
+    # HERMES.md comes first in Hermes's order, and Zed loads only the first
+    # project instruction file in its list.
     project = tmp_path / "proj"
     project.mkdir()
     advisories = shared_root_advisories("kimi-code", home=tmp_path, project=project)
     assert str(_owner_entry(advisories, "<project>/AGENTS.md")["message"]) == (
-        "<project>/AGENTS.md is shared: Antigravity, CodeBuddy, Codex (only when "
+        "<project>/AGENTS.md is shared: Antigravity, CodeBuddy (only when the "
+        "project has no CODEBUDDY.md), Codex (only when "
         "the project has no AGENTS.override.md beside it), Cursor, GitHub Copilot, "
         "Hermes (only when the project has no .hermes.md or HERMES.md and no "
         "AGENTS.override.md beside it), Kiro, OpenCode, Windsurf, Zed (only when "

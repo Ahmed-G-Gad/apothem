@@ -48,11 +48,15 @@
     Kimi Code install writes its block, a condition: only when the project has
     no `.hermes.md` or `HERMES.md` and no `AGENTS.override.md` beside it. Both
     conditions describe a session started in the project. A session started in
-    a parent folder that is not a home folder loads `<project>/AGENTS.md` as a
-    subdirectory hint the first time a tool call touches the project, whatever
-    `.hermes.md` the project has: the hint files are `AGENTS.override.md`,
-    `AGENTS.md`, `agents.md`, `CLAUDE.md`, `claude.md` and `.cursorrules`, with
-    no `.hermes.md` (`agent/subdirectory_hints.py`).
+    a parent folder can still load `<project>/AGENTS.md`, or a non-empty
+    `AGENTS.override.md` beside it, as a subdirectory hint the first time a tool
+    call touches the project, whatever `.hermes.md` the project has: the hint
+    files are `AGENTS.override.md`, `AGENTS.md`, `agents.md`, `CLAUDE.md`,
+    `claude.md` and `.cursorrules`, with no `.hermes.md`. Hints are off when the
+    session starts in a home folder (`~`, `/home`, `/root` or `/workspace`, a
+    folder directly under one of those, or a path with a `.home`, `host-home` or
+    `host_home` part), and a project below a pruned folder name such as
+    `node_modules` or `vendor` gets none (`agent/subdirectory_hints.py`).
   - Resolved 2026-11-03: the context-files page lists `AGENTS.override.md` in
     its "Priority system" section but leaves it out of its "At startup" scan
     step. The pinned `agent/prompt_builder.py` settles it: in each directory of

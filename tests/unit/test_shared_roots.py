@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 
 import apothem
+from apothem.harnesses.zed.install import LOWER_PRIORITY_INSTRUCTION_FILES
 from apothem.lib.harness_registry import (
     CROSS_TOOL_INSTRUCTION_FILES,
     HARNESS_REGISTRY,
@@ -355,7 +356,7 @@ def test_hermes_reads_the_project_agents_md_only_without_its_own_file() -> None:
     # A .hermes.md or HERMES.md comes first in Hermes's order, and an
     # AGENTS.override.md beside AGENTS.md is loaded instead of it.
     root = _DECLARED["<project>/AGENTS.md"]
-    assert set(root.reader_conditions) == {"codex", "hermes", "zed"}
+    assert set(root.reader_conditions) == {"codebuddy", "codex", "hermes", "zed"}
     assert root.reader_conditions["hermes"] == (
         "only when the project has no .hermes.md or HERMES.md and no "
         "AGENTS.override.md beside it"
@@ -373,19 +374,20 @@ def test_codex_reads_the_project_agents_md_only_without_an_override_beside_it() 
     )
 
 
+def test_codebuddy_reads_the_project_agents_md_only_without_codebuddy_md() -> None:
+    # CodeBuddy Code uses AGENTS.md as project memory when the project has no
+    # CODEBUDDY.md.
+    root = _DECLARED["<project>/AGENTS.md"]
+    assert root.reader_conditions["codebuddy"] == (
+        "only when the project has no CODEBUDDY.md"
+    )
+    assert "https://www.codebuddy.ai/docs/cli/memory" in root.evidence
+
+
 # Zed's project instruction files, in its order; it loads only the first one the
-# project has (https://zed.dev/docs/ai/instructions, read 2026-11-03).
-_ZED_INSTRUCTION_ORDER = (
-    ".rules",
-    ".cursorrules",
-    ".windsurfrules",
-    ".clinerules",
-    ".github/copilot-instructions.md",
-    "AGENT.md",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "GEMINI.md",
-)
+# project has (https://zed.dev/docs/ai/instructions). The Zed install's own list
+# is the source, so the registry conditions cannot drift from it.
+_ZED_INSTRUCTION_ORDER = (".rules", *LOWER_PRIORITY_INSTRUCTION_FILES)
 
 
 def test_zed_reads_each_shared_project_file_only_without_an_earlier_one() -> None:

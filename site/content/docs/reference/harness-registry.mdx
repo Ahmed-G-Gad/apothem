@@ -126,7 +126,8 @@ the condition, and the install note repeats it. `Open-Claw` indexes
 when `OPENCLAW_STATE_DIR` points elsewhere). `Codex` takes the first of
 `AGENTS.override.md` and `AGENTS.md` in each folder, so it loads
 `<project>/AGENTS.md` only when the project has no `AGENTS.override.md` beside
-it. `Zed` loads only the first project instruction file in its list: `.rules`,
+it. `CodeBuddy` uses `<project>/AGENTS.md` as project memory only when the
+project has no `CODEBUDDY.md`. `Zed` loads only the first project instruction file in its list: `.rules`,
 `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, then
 `GEMINI.md`. So it loads `<project>/.github/copilot-instructions.md`,
@@ -149,9 +150,10 @@ a file in a folder above the project counts too. An empty file does not count.
 An empty `.hermes.md` also hides a `HERMES.md` beside it, so `Hermes` moves on
 to the `AGENTS.md` chain even when that `HERMES.md` has text. These conditions
 apply to a session started in the project. A session started in a folder above
-it, other than the home folder, loads `<project>/AGENTS.md` the first time it
-works on a file in the project, whatever `.hermes.md` or `HERMES.md` the
-project has.
+it can still load `<project>/AGENTS.md`, or a non-empty `AGENTS.override.md`
+beside it, the first time it works on a file in the project, whatever
+`.hermes.md` or `HERMES.md` the project has. `Hermes` skips this in a home
+folder and in a few container folders.
 
 The `Cursor` docs list `~/.codex/agents/` as a `Codex` compatibility folder but
 do not say which file formats `Cursor` parses there, and a `Codex` install writes TOML
