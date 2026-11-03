@@ -86,11 +86,13 @@ jobs:
       runs-on: ${{ matrix.os }}
       requirements-file: scripts/ci/requirements-ci-dev.txt
       cache-key-suffix: ci-matrix
-      # Starting node first keeps a fresh runner's first node launch, which
-      # can take more than a minute on Windows, out of the tests that run node
-      # under a timeout; ci.yml's quality job does the same before Pytest.
+      # A fresh Windows runner's first node launch can take more than a minute
+      # while pytest's workers keep the machine busy, so the command starts
+      # node once (`node -e 0`, the engine start-up the tests need) before
+      # pytest, outside the tests that run node under a timeout. ci.yml's
+      # quality job does the same in its "Start node once" step.
       run-command: >-
-        if command -v node >/dev/null; then time node --version; fi;
+        if command -v node >/dev/null; then time node -e 0; fi;
         python -m pytest -n auto --color=yes
       egress-policy: audit
       timeout-minutes: 90
