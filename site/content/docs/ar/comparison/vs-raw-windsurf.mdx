@@ -6,43 +6,43 @@ sourceHash: "8449f086072b1afe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-أصبح <bdi>Windsurf</bdi> الآن <bdi>Devin Desktop</bdi>، ويقرأ القواعد من مجلد `.devin/rules/`
-(الموقع المفضَّل، الذي يتقدّم على الموقع الاحتياطي `.windsurf/rules/`). يرسم محوِّل
+أصبح <bdi>Windsurf</bdi> الآن <bdi>Devin Desktop</bdi>، ويقرأ القواعد من مجلد <bdi>`.devin/rules/`</bdi>
+(الموقع المفضَّل، الذي يتقدّم على الموقع الاحتياطي <bdi>`.windsurf/rules/`</bdi>). يرسم محوِّل
 <bdi>windsurf</bdi> في <bdi>Apothem</bdi> القواعد المعتمدة على المجلد من الملف التعريفي المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
 <bdi>apothem</bdi>.
 
 ## مقارنة الجهد
 
-| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| المهمة | تهيئة يدوية خام | مُدارة بـ <bdi>Apothem</bdi> |
 | ---- | --------------- | --------------- |
-| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مُصيَّرة من الحزمة المشتركة |
-| الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين `.windsurf/rules/` وملف `.windsurfrules` المفرد | يكتب المحوِّل `.devin/rules/` فقط |
-| إبقاء القواعد متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
-| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى `~/.agents/skills/` وإبقاء النسخ محدَّثة | يكتبها المحوِّل في `~/.agents/skills/`، نسخة واحدة لكل المشاريع، ويُحدِّثها عند `apothem update` |
-| إبقاء المساعِدات القابلة لإعادة الاستخدام متزامنة | كتابة كل ملف وكيل فرعي لـ <bdi>Devin Local</bdi> يدويًا ضمن `.devin/agents/` وتتبّع أسماء أدوات <bdi>Devin</bdi> | أحد عشر مساعِدًا تُكتب في `.devin/agents/` مع ترجمة أدواتها، وتُحدَّث عند `apothem update` |
-| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf --project <path>` |
+| تأليف القواعد | كتابة كل ملف يدويًا ضمن <bdi>`.windsurf/rules/`</bdi> | مُصيَّرة من الحزمة المشتركة |
+| الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين <bdi>`.windsurf/rules/`</bdi> وملف <bdi>`.windsurfrules`</bdi> المفرد | يكتب المحوِّل <bdi>`.devin/rules/`</bdi> فقط |
+| إبقاء القواعد متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند <bdi>`apothem update`</bdi> |
+| مشاركة المهارات والأوامر القابلة لإعادة الاستخدام | نسخ كل مجلد مهارة يدويًا إلى <bdi>`~/.agents/skills/`</bdi> وإبقاء النسخ محدَّثة | يكتبها المحوِّل في <bdi>`~/.agents/skills/`</bdi>، نسخة واحدة لكل المشاريع، ويُحدِّثها عند <bdi>`apothem update`</bdi> |
+| إبقاء المساعِدات القابلة لإعادة الاستخدام متزامنة | كتابة كل ملف وكيل فرعي لـ <bdi>Devin Local</bdi> يدويًا ضمن <bdi>`.devin/agents/`</bdi> وتتبّع أسماء أدوات <bdi>Devin</bdi> | أحد عشر مساعِدًا تُكتب في <bdi>`.devin/agents/`</bdi> مع ترجمة أدواتها، وتُحدَّث عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحة التهيئة | فحص يدوي | <bdi>`apothem verify --harness windsurf --project <path>`</bdi> |
 
-## ما الذي يديره apothem
+## ما الذي يديره <bdi>apothem</bdi>
 
 يرسم محوِّل <bdi>windsurf</bdi> القواعد المشتركة في ملف واحد،
-`<project>/.devin/rules/apothem-rules.md`؛ وهو لا يكتب ملف `.windsurfrules` مفردًا.
+<bdi>`<project>/.devin/rules/apothem-rules.md`</bdi>؛ وهو لا يكتب ملف <bdi>`.windsurfrules`</bdi> مفردًا.
 ويكتب أيضًا أحد عشر من مساعِدات <bdi>Apothem</bdi> بوصفها وكلاء فرعيين لـ <bdi>Devin Local</bdi>
-في `<project>/.devin/agents/`؛ أما الثلاثة التي تحتاج إلى أدوات الويب فتنتظر إلى أن يوثّق
+في <bdi>`<project>/.devin/agents/`</bdi>؛ أما الثلاثة التي تحتاج إلى أدوات الويب فتنتظر إلى أن يوثّق
 <bdi>Devin</bdi> أسماء أدواتها. ويسجّل خطّافين لـ <bdi>Devin Local</bdi>، تمهيدًا للجلسة وتنبيهًا
-استشاريًا لحجم السياق، في `<project>/.devin/config.local.json`؛ أما وضع <bdi>Cascade</bdi>
-الأقدم فيقرأ صيغة خطّافات مختلفة (`hooks.json`) لا يكتبها المحوِّل. ولا يسجّل أيّ حارس
+استشاريًا لحجم السياق، في <bdi>`<project>/.devin/config.local.json`</bdi>؛ أما وضع <bdi>Cascade</bdi>
+الأقدم فيقرأ صيغة خطّافات مختلفة (<bdi>`hooks.json`</bdi>) لا يكتبها المحوِّل. ولا يسجّل أيّ حارس
 لاستدعاءات الأدوات، لذا يعيش قصد المتراس في نثر القاعدة لا في نقطة اعتراض لاستدعاء الأداة.
-كل تغيير في القواعد المشتركة يعيد رسم الملف عند `apothem update` التالي.
+كل تغيير في القواعد المشتركة يعيد رسم الملف عند <bdi>`apothem update`</bdi> التالي.
 
 ## مسار الترحيل
 
-1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
-2. انقل القواعد من `.windsurf/rules/` الموجود لديك (وأي ملف `.windsurfrules` مفرد) إلى الحزمة المشتركة.
-3. شغّل `apothem install --harness windsurf --project <path>` لتصيير مجلد `.devin/rules/`.
-4. شغّل `apothem verify --harness windsurf --project <path>` للتأكّد من وصول التهيئة.
-5. استخدم `apothem update --harness windsurf --project <path>` مع كل تغيير لاحق.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من <bdi>`.windsurf/rules/`</bdi> الموجود لديك (وأي ملف <bdi>`.windsurfrules`</bdi> مفرد) إلى الحزمة المشتركة.
+3. شغّل <bdi>`apothem install --harness windsurf --project <path>`</bdi> لتصيير مجلد <bdi>`.devin/rules/`</bdi>.
+4. شغّل <bdi>`apothem verify --harness windsurf --project <path>`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness windsurf --project <path>`</bdi> مع كل تغيير لاحق.
 
 ## اقرأ بعد ذلك
 
-- [مرجع محوِّل Windsurf](/docs/harnesses/windsurf)
+- [مرجع محوِّل <bdi>Windsurf</bdi>](/docs/harnesses/windsurf)
 - [نظرة عامة على المقارنة](/docs/comparison)

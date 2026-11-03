@@ -32,7 +32,7 @@ sourceHash: "4029b6bf004ea976"
   <bdi>Pages</bdi> (<bdi>Settings > Pages > Source: GitHub Actions</bdi>)،
   ويوجد سير العمل <bdi>`publish-static-site.yml`</bdi> في
   <bdi>`.github/workflows/publish-static-site.yml`</bdi>.
-- **سلطة DNS.** يتحكم المشغِّل في <bdi>DNS</bdi> لـ<bdi>`ahmedgad.com`</bdi>
+- **سلطة <bdi>DNS</bdi>.** يتحكم المشغِّل في <bdi>DNS</bdi> لـ<bdi>`ahmedgad.com`</bdi>
   عند المُسجِّل أو عند مضيف <bdi>DNS</bdi> مُفوَّض (<bdi>Cloudflare</bdi>،
   <bdi>Route53</bdi>، إلخ). يُحدَّد مضيف <bdi>DNS</bdi> عبر
   <bdi>`dig NS ahmedgad.com +short`</bdi>.
@@ -48,7 +48,7 @@ sourceHash: "4029b6bf004ea976"
 
 ## 2. النواة المستقلة عن المزوِّد
 
-### 2.1 أضف النطاق المخصص إلى Pages
+### 2.1 أضف النطاق المخصص إلى <bdi>Pages</bdi>
 
 ```bash
 gh api -X PUT \
@@ -77,7 +77,7 @@ built
 <bdi>CNAME</bdi> — ادفع إيداعًا بلا تغيير إلى <bdi>`main`</bdi> لتشغيل
 البناء.
 
-### 2.2 أكِّد ملف CNAME
+### 2.2 أكِّد ملف <bdi>CNAME</bdi>
 
 يستقبل <bdi>GitHub Pages</bdi> ملف <bdi>`site/public/CNAME`</bdi> عبر
 أداة بناء الموقع الثابت عند كل نشر. يحتوي الملف على النطاق المخصص في سطر
@@ -96,7 +96,7 @@ cat site/public/CNAME
 إذا كان الملف مفقودًا، أعد إنشاءه في <bdi>`site/public/CNAME`</bdi>
 وأودِعه تحت <bdi>`chore: restore Pages CNAME`</bdi>.
 
-### 2.3 أضف سجل DNS
+### 2.3 أضف سجل <bdi>DNS</bdi>
 
 يخدم <bdi>Pages</bdi> النطاق المخصص عندما يعيد مزوِّد <bdi>DNS</bdi>
 للقمة أحد عناوين <bdi>IP</bdi> الأربعة لـ<bdi>GitHub</bdi> (لنطاقات القمة)
@@ -106,15 +106,15 @@ cat site/public/CNAME
 
 | الحقل | القيمة |
 |-------|-------|
-| Type  | `CNAME` |
-| Host  | `apothem` (النطاق الفرعي فقط؛ يُضيف المُسجِّل القمة) |
-| Value | `ahmed-g-gad.github.io.` (نقطة في النهاية عندما يطلبها المُسجِّل) |
-| TTL   | `3600` (ساعة واحدة؛ أقل لانتشار أسرع أثناء التبديل) |
+| <bdi>Type</bdi>  | <bdi>`CNAME`</bdi> |
+| <bdi>Host</bdi>  | <bdi>`apothem`</bdi> (النطاق الفرعي فقط؛ يُضيف المُسجِّل القمة) |
+| <bdi>Value</bdi> | <bdi>`ahmed-g-gad.github.io.`</bdi> (نقطة في النهاية عندما يطلبها المُسجِّل) |
+| <bdi>TTL</bdi>   | <bdi>`3600`</bdi> (ساعة واحدة؛ أقل لانتشار أسرع أثناء التبديل) |
 
 يختلف تدفق الواجهة الدقيق لإضافة السجل بين المزوِّدين؛ انتقل إلى الملحق
 المطابق أدناه، وعُد إلى هنا عند حفظ السجل.
 
-### 2.4 انتظر انتشار DNS
+### 2.4 انتظر انتشار <bdi>DNS</bdi>
 
 يكتمل الانتشار خلال خمس دقائق للسجلات ذات <bdi>TTL</bdi> المنخفض وخلال
 ساعة لـ<bdi>TTL</bdi> الافتراضي البالغ 3600 ثانية — وقد تُمدِّد حواف
@@ -135,7 +135,7 @@ ahmed-g-gad.github.io.
 <bdi>DNS</bdi> وتحقَّق من أن السجل مُودَع عند المزوِّد، لا معلَّقًا في
 حالة مسوَّدة.
 
-### 2.5 تحقَّق من HTTPS
+### 2.5 تحقَّق من <bdi>HTTPS</bdi>
 
 ```bash
 curl -sSI https://apothem.ahmedgad.com/ | head -5
@@ -196,7 +196,7 @@ content-type: text/html; charset=utf-8
 <bdi>Pages</bdi> من <bdi>`gh api`</bdi>. سجل التحقق هو أثر التدقيق —
 فكل تغيير في تهيئة <bdi>Pages</bdi> يترك صفًا.
 
-## 3. ملحق المزوِّد — Namecheap
+## 3. ملحق المزوِّد — <bdi>Namecheap</bdi>
 
 يكشف <bdi>Namecheap</bdi> عن <bdi>DNS</bdi> عبر علامة التبويب
 "<bdi>Advanced DNS</bdi>" لدى المُسجِّل. يملك المشغِّل
@@ -212,10 +212,10 @@ content-type: text/html; charset=utf-8
    <bdi>`ahmedgad.com`</bdi>؛ وانقر <bdi>`Manage`</bdi>.
 3. انقر علامة التبويب <bdi>`Advanced DNS`</bdi>.
 4. انقر <bdi>`Add New Record`</bdi>. واختَر:
-   - <bdi>Type</bdi>: `CNAME Record`
-   - <bdi>Host</bdi>: `apothem` (دون قمة، دون نقطة في النهاية)
-   - <bdi>Value</bdi>: `ahmed-g-gad.github.io.` (مع نقطة في النهاية)
-   - <bdi>TTL</bdi>: `Automatic` (افتراضي <bdi>Namecheap</bdi>؛ يحترم 1800 ثانية)
+   - <bdi>Type</bdi>: <bdi>`CNAME Record`</bdi>
+   - <bdi>Host</bdi>: <bdi>`apothem`</bdi> (دون قمة، دون نقطة في النهاية)
+   - <bdi>Value</bdi>: <bdi>`ahmed-g-gad.github.io.`</bdi> (مع نقطة في النهاية)
+   - <bdi>TTL</bdi>: <bdi>`Automatic`</bdi> (افتراضي <bdi>Namecheap</bdi>؛ يحترم 1800 ثانية)
 5. انقر علامة الاختيار الخضراء للحفظ.
 6. انتظر من 5 إلى 10 دقائق لانتشار حافة <bdi>Namecheap</bdi>؛ ثم عُد إلى
    النواة المستقلة عن المزوِّد §2.4 للتحقق بـ<bdi>`dig`</bdi>.
@@ -225,7 +225,7 @@ content-type: text/html; charset=utf-8
 المتعارض أولًا؛ فـ<bdi>CNAME</bdi> و<bdi>A</bdi> على المضيف نفسه يتنافيان
 بحسب <bdi>RFC 1034</bdi>.
 
-## 4. ملحق المزوِّد — Cloudflare
+## 4. ملحق المزوِّد — <bdi>Cloudflare</bdi>
 
 يستضيف <bdi>Cloudflare DNS</bdi> القمة عندما تشير سجلات <bdi>NS</bdi>
 للمُسجِّل إلى <bdi>`*.ns.cloudflare.com`</bdi> (افتراضي
@@ -236,12 +236,12 @@ content-type: text/html; charset=utf-8
 
 1. سجِّل الدخول إلى <bdi>Cloudflare</bdi>؛ واختَر منطقة
    <bdi>`ahmedgad.com`</bdi>.
-2. انقر <bdi>`DNS`</bdi> -> <bdi>`Records`</bdi> في التنقل الأيسر.
+2. انقر <bdi>`DNS` -> `Records`</bdi> في التنقل الأيسر.
 3. انقر <bdi>`Add record`</bdi>. واختَر:
-   - <bdi>Type</bdi>: `CNAME`
-   - <bdi>Name</bdi>: `apothem` (يُضيف <bdi>Cloudflare</bdi> القمة تلقائيًا)
-   - <bdi>Target</bdi>: `ahmed-g-gad.github.io` (دون نقطة في النهاية في واجهة <bdi>Cloudflare</bdi>)
-   - <bdi>TTL</bdi>: `Auto` (افتراضي <bdi>Cloudflare</bdi>؛ يوجِّه عبر حافته)
+   - <bdi>Type</bdi>: <bdi>`CNAME`</bdi>
+   - <bdi>Name</bdi>: <bdi>`apothem`</bdi> (يُضيف <bdi>Cloudflare</bdi> القمة تلقائيًا)
+   - <bdi>Target</bdi>: <bdi>`ahmed-g-gad.github.io`</bdi> (دون نقطة في النهاية في واجهة <bdi>Cloudflare</bdi>)
+   - <bdi>TTL</bdi>: <bdi>`Auto`</bdi> (افتراضي <bdi>Cloudflare</bdi>؛ يوجِّه عبر حافته)
    - <bdi>Proxy status</bdi>: **<bdi>DNS only</bdi>** (سحابة رمادية، لا برتقالية)
 4. انقر <bdi>`Save`</bdi>.
 
@@ -261,7 +261,7 @@ content-type: text/html; charset=utf-8
 لا تكتب النقطة النهائية في واجهة <bdi>Cloudflare</bdi> — فهي تُنتج سجلًا
 بنقطة مزدوجة يفشل في التحلُّل.
 
-## 5. ملحق المزوِّد — Route53
+## 5. ملحق المزوِّد — <bdi>Route53</bdi>
 
 يستضيف <bdi>Route53</bdi> المنطقة عندما تشير سجلات <bdi>NS</bdi> للمُسجِّل
 إلى أربعة خوادم <bdi>`awsdns-*.com`</bdi> / <bdi>`awsdns-*.org`</bdi> /
@@ -274,12 +274,12 @@ content-type: text/html; charset=utf-8
    <bdi>`Hosted zones`</bdi>؛ واختَر منطقة <bdi>`ahmedgad.com`</bdi>.
 2. انقر <bdi>`Create record`</bdi>.
 3. هيِّئ:
-   - <bdi>Record name</bdi>: `apothem` (يُضيف <bdi>Route53</bdi> القمة تلقائيًا)
-   - <bdi>Record type</bdi>: `CNAME`
-   - <bdi>Value</bdi>: `ahmed-g-gad.github.io` (دون نقطة في النهاية)
-   - <bdi>TTL</bdi>: `300` (5 دقائق؛ افتراضيات <bdi>Route53</bdi> أعلى؛ خفِّض
+   - <bdi>Record name</bdi>: <bdi>`apothem`</bdi> (يُضيف <bdi>Route53</bdi> القمة تلقائيًا)
+   - <bdi>Record type</bdi>: <bdi>`CNAME`</bdi>
+   - <bdi>Value</bdi>: <bdi>`ahmed-g-gad.github.io`</bdi> (دون نقطة في النهاية)
+   - <bdi>TTL</bdi>: <bdi>`300`</bdi> (5 دقائق؛ افتراضيات <bdi>Route53</bdi> أعلى؛ خفِّض
      <bdi>TTL</bdi> لانتشار أسرع أثناء التبديل)
-   - <bdi>Routing policy</bdi>: `Simple routing`
+   - <bdi>Routing policy</bdi>: <bdi>`Simple routing`</bdi>
 4. انقر <bdi>`Create records`</bdi>.
 5. انتظر من 1 إلى 5 دقائق لانتشار <bdi>Route53</bdi>؛ وعُد إلى §2.4.
 
@@ -294,7 +294,7 @@ content-type: text/html; charset=utf-8
 <bdi>CNAME</bdi> بسيط. أكِّد أن <bdi>`Routing policy`</bdi> تُظهر
 <bdi>`Simple routing`</bdi> قبل الحفظ.
 
-## 6. ملحق المزوِّد — DNS العام
+## 6. ملحق المزوِّد — <bdi>DNS</bdi> العام
 
 لمضيفي <bdi>DNS</bdi> غير المشمولين بالملاحق المُسمّاة (لوحات
 <bdi>DNS</bdi> الافتراضية لمعظم المُسجِّلين — <bdi>GoDaddy</bdi>،
@@ -304,17 +304,17 @@ content-type: text/html; charset=utf-8
 
 | الحقل | القيمة |
 |-------|-------|
-| Type  | `CNAME` |
-| Host  | `apothem` (النطاق الفرعي فقط) |
-| Value | `ahmed-g-gad.github.io.` (نقطة في النهاية — تقبلها معظم اللوحات العامة؛ ويطلبها بعضها) |
-| TTL   | `3600` (أو أدنى قيمة متاحة في اللوحة أثناء التبديل) |
+| <bdi>Type</bdi>  | <bdi>`CNAME`</bdi> |
+| <bdi>Host</bdi>  | <bdi>`apothem`</bdi> (النطاق الفرعي فقط) |
+| <bdi>Value</bdi> | <bdi>`ahmed-g-gad.github.io.`</bdi> (نقطة في النهاية — تقبلها معظم اللوحات العامة؛ ويطلبها بعضها) |
+| <bdi>TTL</bdi>   | <bdi>`3600`</bdi> (أو أدنى قيمة متاحة في اللوحة أثناء التبديل) |
 
 صنفا العُطل اللذان يتكرران عبر اللوحات العامة:
 
 - **عدم اتساق النقطة النهائية.** تطلب بعض اللوحات النقطة النهائية؛ ويرفضها
   غيرها؛ ويقبل بعضها أيًّا منهما. عندما يفشل السجل في الانتشار بعد 30
   دقيقة، بدِّل النقطة النهائية وأعِد الحفظ.
-- **سجل A متعارض على المضيف نفسه.** ينتهك <bdi>CNAME</bdi> و<bdi>A</bdi>
+- **سجل <bdi>A</bdi> متعارض على المضيف نفسه.** ينتهك <bdi>CNAME</bdi> و<bdi>A</bdi>
   على المضيف نفسه <bdi>RFC 1034</bdi> (<bdi>Domain Names — Concepts and
   Facilities</bdi>) القسم الثالث حول تفضيلات أسماء النطاقات. احذف سجل
   <bdi>A</bdi> المتعارض قبل إضافة <bdi>CNAME</bdi>.
@@ -327,10 +327,10 @@ content-type: text/html; charset=utf-8
 
 | الفشل | التشخيص | التعافي |
 |---|---|---|
-| `gh api .../pages` يُعيد 404 | <bdi>Pages</bdi> غير مُفعَّل على المستودع | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` ثم أعِد §2.1 |
-| `dig` يُعيد فراغًا بعد 30 دقيقة | سجل <bdi>DNS</bdi> غير مُودَع لدى المزوِّد | عُد إلى ملحق المزوِّد المطابق؛ وتحقَّق من حفظ السجل (لا مسوَّدة ولا معلَّق)؛ وافحص اللوحة بحثًا عن خطوة `Save` فائتة |
-| `https_certificate.state: errored` | لا يستطيع <bdi>Pages</bdi> إصدار شهادة | أوقِف النطاق المخصص ثم أعِد تشغيله في إعدادات <bdi>Pages</bdi>؛ فهذا يعيد تشغيل الإصدار. انتظر حتى 24 ساعة للمحاولة الجديدة |
-| 404 على رابط عميق بعد البناء | لم يتضمن بناء الموقع الثابت الصفحة | `gh workflow run publish-static-site.yml`؛ وعند الاكتمال تحقَّق من أن `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` يُعيد `success` |
+| <bdi>`gh api .../pages`</bdi> يُعيد 404 | <bdi>Pages</bdi> غير مُفعَّل على المستودع | <bdi>`gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow`</bdi> ثم أعِد §2.1 |
+| <bdi>`dig`</bdi> يُعيد فراغًا بعد 30 دقيقة | سجل <bdi>DNS</bdi> غير مُودَع لدى المزوِّد | عُد إلى ملحق المزوِّد المطابق؛ وتحقَّق من حفظ السجل (لا مسوَّدة ولا معلَّق)؛ وافحص اللوحة بحثًا عن خطوة <bdi>`Save`</bdi> فائتة |
+| <bdi>`https_certificate.state: errored`</bdi> | لا يستطيع <bdi>Pages</bdi> إصدار شهادة | أوقِف النطاق المخصص ثم أعِد تشغيله في إعدادات <bdi>Pages</bdi>؛ فهذا يعيد تشغيل الإصدار. انتظر حتى 24 ساعة للمحاولة الجديدة |
+| 404 على رابط عميق بعد البناء | لم يتضمن بناء الموقع الثابت الصفحة | <bdi>`gh workflow run publish-static-site.yml`</bdi>؛ وعند الاكتمال تحقَّق من أن <bdi>`gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'`</bdi> يُعيد <bdi>`success`</bdi> |
 
 إذا فشل التعافي بعد دورة واحدة من التشخيص المطابق، صعِّد إلى دليل تشغيل
 التعافي من الإصدار (قد يكون الدفع القسري لتاريخ جديد قد ترك تهيئة
@@ -340,7 +340,7 @@ content-type: text/html; charset=utf-8
 
 - **مصدر المواصفات.** تُدرج المواصفات §2.5 دليل التشغيل هذا ضمن مُخرجات
   توثيق <bdi>Cluster 4</bdi>.
-- **الموقع القانوني لـ CNAME.** يوجد ملف <bdi>CNAME</bdi> في
+- **الموقع القانوني لـ <bdi>CNAME</bdi>.** يوجد ملف <bdi>CNAME</bdi> في
   <bdi>`site/public/CNAME`</bdi> ومُودَع في المستودع؛ ويقرأه
   <bdi>Pages</bdi> عند كل بناء.
 - **تدفق التعافي.** يعيد دليل تشغيل التعافي من الإصدار تطبيق تهيئة

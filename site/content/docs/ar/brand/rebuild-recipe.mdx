@@ -23,18 +23,18 @@ sourceHash: "5fbb8f47ac02d1c1"
 
 | السكربت | المنصّة | المسار |
 | --- | --- | --- |
-| <bdi>`rebuild-assets-resvg.py`</bdi> | أي مضيف به Python + resvg | <bdi>`scripts/dev/rebuild-assets-resvg.py`</bdi> |
+| <bdi>`rebuild-assets-resvg.py`</bdi> | أي مضيف به <bdi>Python</bdi> + <bdi>resvg</bdi> | <bdi>`scripts/dev/rebuild-assets-resvg.py`</bdi> |
 
 ## المتطلبات
 
-يُنقِّط المولِّد كل ملف <bdi>SVG</bdi> باستخدام [resvg](https://github.com/linebender/resvg)
-ويؤلِّف المجموعات النقطية باستخدام [Pillow](https://python-pillow.org/):
+يُنقِّط المولِّد كل ملف <bdi>SVG</bdi> باستخدام [<bdi>resvg</bdi>](https://github.com/linebender/resvg)
+ويؤلِّف المجموعات النقطية باستخدام [<bdi>Pillow</bdi>](https://python-pillow.org/):
 
-- **Pillow:** `pip install pillow`.
-- **resvg:** نزِّل ثنائي الإصدار الخاص بمنصّتك من
-  [إصدارات resvg](https://github.com/linebender/resvg/releases) —
-  <bdi>`resvg-win64.zip`</bdi> على Windows، أو <bdi>`resvg-linux-x86_64.tar.gz`</bdi> على Linux، أو
-  <bdi>`resvg-macos.zip`</bdi> على macOS — واستخرجه إلى <bdi>`PATH`</bdi>، أو وجِّه السكربت
+- **<bdi>Pillow</bdi>:** <bdi>`pip install pillow`</bdi>.
+- **<bdi>resvg</bdi>:** نزِّل ثنائي الإصدار الخاص بمنصّتك من
+  [إصدارات <bdi>resvg</bdi>](https://github.com/linebender/resvg/releases) —
+  <bdi>`resvg-win64.zip`</bdi> على <bdi>Windows</bdi>، أو <bdi>`resvg-linux-x86_64.tar.gz`</bdi> على <bdi>Linux</bdi>، أو
+  <bdi>`resvg-macos.zip`</bdi> على <bdi>macOS</bdi> — واستخرجه إلى <bdi>`PATH`</bdi>، أو وجِّه السكربت
   إليه عبر <bdi>`--resvg <path>`</bdi>.
 
 ## الاستخدام
@@ -52,7 +52,7 @@ python scripts/dev/rebuild-assets-resvg.py
 python scripts/dev/rebuild-assets-resvg.py --check-only
 ```
 
-إن لم يكن resvg موجودًا على <bdi>`PATH`</bdi>، فوجِّه السكربت إلى الثنائي:
+إن لم يكن <bdi>resvg</bdi> موجودًا على <bdi>`PATH`</bdi>، فوجِّه السكربت إلى الثنائي:
 
 ```bash
 python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
@@ -63,6 +63,6 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 يُعيد التشغيل الناجح توليد العلامات النقطية الفاتحة والداكنة، ومجموعة
 <bdi>favicon</bdi> بصيغتي <bdi>PNG/ICO</bdi> (يضمّ ملف <bdi>ICO</bdi> طبقات بأحجام 16 و32 و48 بكسل)، وأيقونات <bdi>Apple touch</bdi>،
 وأيقونة امتداد <bdi>VS Code</bdi> (<bdi>`vscode-extension/icon.png`</bdi>)، وصور <bdi>OG/Twitter</bdi>، ويعكس المجموعة الفرعية المُقدَّمة على الويب — بما في
-ذلك مصادر شعار البطل (hero) التي يُحيل إليها الموقع — إلى <bdi>`site/public/`</bdi>.
+ذلك مصادر شعار البطل (<bdi>hero</bdi>) التي يُحيل إليها الموقع — إلى <bdi>`site/public/`</bdi>.
 بعد التوليد، شغِّل بناء الموقع وافحص الصفحة الرئيسية، و<bdi>favicon</bdi> تبويب
 المتصفّح، وملفات <bdi>PNG</bdi> للبطاقات الاجتماعية قبل النشر.

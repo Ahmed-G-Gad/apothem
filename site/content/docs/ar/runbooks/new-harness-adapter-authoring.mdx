@@ -20,21 +20,21 @@ sourceHash: "faa7ed1671f73dd4"
 ### 1. نفِّذ المحوّل
 
 اتبع مثال [تأليف محوّل إطار عمل](/docs/examples/authoring-a-harness-adapter)
-لتنفيذ `HarnessAdapter` لإطار العمل المستهدف.
+لتنفيذ <bdi>`HarnessAdapter`</bdi> لإطار العمل المستهدف.
 
-إذا كان المحوّل يكتب قالبًا نصيًا عاديًا (ملفًا ليس JSON ولا YAML)
-باستخدام `mode: write_text` و`ownership_class: operator-owned`، فإن `uninstall`
-لا يحذف الملف إلا ما دام نسخة غير معدَّلة من قالب شحنه Apothem. وحين يغيّر
-إصدار لاحق القالب، أضف بصمة SHA-256 للنص السابق إلى قائمة `earlier_digests`
-في مُدخل البيان ذاك ضمن التغيير نفسه، وإلا ترك `uninstall` في مكانها كل نسخة
+إذا كان المحوّل يكتب قالبًا نصيًا عاديًا (ملفًا ليس <bdi>JSON</bdi> ولا <bdi>YAML</bdi>)
+باستخدام <bdi>`mode: write_text`</bdi> و<bdi>`ownership_class: operator-owned`</bdi>، فإن <bdi>`uninstall`</bdi>
+لا يحذف الملف إلا ما دام نسخة غير معدَّلة من قالب شحنه <bdi>Apothem</bdi>. وحين يغيّر
+إصدار لاحق القالب، أضف بصمة <bdi>SHA-256</bdi> للنص السابق إلى قائمة <bdi>`earlier_digests`</bdi>
+في مُدخل البيان ذاك ضمن التغيير نفسه، وإلا ترك <bdi>`uninstall`</bdi> في مكانها كل نسخة
 غير معدَّلة كتبها الإصدار الأقدم. خذ بصمة النص عند وسم آخر إصدار باستخدام
-`git show <tag>:<template path> | sha256sum`؛ ويجب ألا يحمل القالب أي رمز مسار
-`${...}`. يفشل `tests/unit/test_template_digests.py` حين لا يُؤخذ قالب مشحون
+<bdi>`git show <tag>:<template path> | sha256sum`</bdi>؛ ويجب ألا يحمل القالب أي رمز مسار
+<bdi>`${...}`</bdi>. يفشل <bdi>`tests/unit/test_template_digests.py`</bdi> حين لا يُؤخذ قالب مشحون
 في الحسبان.
 
 ### 2. اكتب صفحة التوثيق
 
-أنشئ `site/content/docs/harnesses/<slug>.mdx` يغطّي:
+أنشئ <bdi>`site/content/docs/harnesses/<slug>.mdx`</bdi> يغطّي:
 
 - تدفّق التثبيت
 - تخطيط الملف التعريفي إلى التهيئة الأصلية
@@ -53,9 +53,9 @@ tests/unit/test_<slug>_adapter.py
 ```
 
 الحد الأدنى لتغطية الاختبارات:
-- `test_install_creates_expected_files`
-- `test_verify_passes_after_install`
-- `test_uninstall_removes_files`
+- <bdi>`test_install_creates_expected_files`</bdi>
+- <bdi>`test_verify_passes_after_install`</bdi>
+- <bdi>`test_uninstall_removes_files`</bdi>
 
 ### 4. تحقّق محليًا
 
@@ -70,7 +70,7 @@ python -m apothem.conformity.gate --all .
 افتح <bdi>PR</bdi> يتضمّن:
 
 - تنفيذ المحوّل
-- صفحة التوثيق في `site/content/docs/harnesses/<slug>.mdx`
+- صفحة التوثيق في <bdi>`site/content/docs/harnesses/<slug>.mdx`</bdi>
 - الاختبارات
-- تسجيل نقطة الدخول في `pyproject.toml`، ومدخل `HARNESS_REGISTRY` في `src/apothem/lib/harness_registry_data.py` (مع رفع `SUPPORTED_HARNESS_COUNT` هناك)، والمعرّف في تعداد `harnessId` الخاص بـ`src/apothem/schemas/profile.schema.json`
+- تسجيل نقطة الدخول في <bdi>`pyproject.toml`</bdi>، ومدخل <bdi>`HARNESS_REGISTRY`</bdi> في <bdi>`src/apothem/lib/harness_registry_data.py`</bdi> (مع رفع <bdi>`SUPPORTED_HARNESS_COUNT`</bdi> هناك)، والمعرّف في تعداد <bdi>`harnessId`</bdi> الخاص بـ<bdi>`src/apothem/schemas/profile.schema.json`</bdi>
 - مدخل في سجلّ التغييرات
