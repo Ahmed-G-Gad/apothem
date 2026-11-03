@@ -481,9 +481,11 @@ def _materialize_harness(
         )
     )
     shared_advisories.extend(hook_review_advisories(harness_id, project=project_root))
-    # A file the harness loads ahead of the one just written, in the same
+    # A file the harness loads ahead of its instruction file, in the same
     # folder, hides the Apothem block while it has text.
-    shared_advisories.extend(instruction_override_advisories(harness_id, output_path))
+    shared_advisories.extend(
+        instruction_override_advisories(harness_id, home=user_home())
+    )
     totals.warnings.extend(shared_advisories)
     if run.fmt != "json":
         _print_harness_outcome(

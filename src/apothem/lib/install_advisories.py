@@ -41,6 +41,7 @@ into every harness config file that takes MCP servers.
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
@@ -433,14 +434,25 @@ def hook_review_advisories(
 
 # --- Instruction-file override advisories -------------------------------------
 
-# Files a harness loads ahead of the instruction file its install writes, from
-# the same folder, in the harness's order; the harness loads only the first one
-# that has text. Codex reads the first non-empty of AGENTS.override.md and
-# AGENTS.md in its home folder ($CODEX_HOME, default ~/.codex): load_from_codex_home
-# in codex-rs/codex-home/src/instructions/mod.rs at openai/codex c60cda34, and
-# the Codex AGENTS.md page, both read 2026-11-03.
-_INSTRUCTION_OVERRIDES: dict[str, tuple[str, ...]] = {
-    "codex": ("AGENTS.override.md",),
+
+def _codex_home(home: Path) -> Path:
+    """Return the Codex home: ``$CODEX_HOME``, else ``<home>/.codex``."""
+    configured = os.environ.get("CODEX_HOME")
+    return Path(configured).expanduser() if configured else home / ".codex"
+
+
+# For each harness whose install writes an instruction file that a file loaded
+# ahead of it in the same folder can hide: the folder (from the user home), the
+# file the install writes, and the files ahead of it in the harness's order. The
+# harness loads only the first one that has text. Codex reads the first
+# non-empty of AGENTS.override.md and AGENTS.md in its home folder
+# ($CODEX_HOME, default ~/.codex): load_from_codex_home in
+# codex-rs/codex-home/src/instructions/mod.rs at openai/codex c60cda34, and the
+# Codex AGENTS.md page, both read 2026-11-03.
+_INSTRUCTION_OVERRIDES: dict[
+    str, tuple[Callable[[Path], Path], str, tuple[str, ...]]
+] = {
+    "codex": (_codex_home, "AGENTS.md", ("AGENTS.override.md",)),
 }
 
 
@@ -459,17 +471,22 @@ def _has_text(path: Path) -> bool:
 
 
 def instruction_override_advisories(
-    public_id: str, target: Path
+    public_id: str, *, home: Path
 ) -> list[dict[str, object]]:
-    """Return a note when a file *public_id* loads first hides *target*.
+    """Return a note when a file *public_id* loads first hides its install's file.
 
-    *target* is the instruction file the install writes. The note names the
-    first file the harness loads ahead of it, in the same folder, that has
-    text: the harness loads that file instead, so the Apothem block in *target*
-    does not reach it. An empty file falls through, so it gets no note. Reads
-    the folder; writes nothing.
+    The note names the first file the harness loads ahead of the instruction
+    file its install writes, in the same folder, that has text: the harness
+    loads that file instead, so the Apothem block does not reach it. An empty
+    file falls through, so it gets no note. A harness with no such file gets
+    none. The folder comes from *home* and the harness's own settings, not from
+    an adapter. Reads the folder; writes nothing.
     """
-    ahead = _INSTRUCTION_OVERRIDES.get(public_id, ())
+    entry = _INSTRUCTION_OVERRIDES.get(public_id)
+    if entry is None:
+        return []
+    folder_of, written, ahead = entry
+    target = folder_of(home) / written
     for index, hiding in enumerate(ahead):
         path = target.parent / hiding
         if not _has_text(path):

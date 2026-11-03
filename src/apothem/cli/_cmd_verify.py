@@ -44,6 +44,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._user_level_report import verify_hint
 from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
+from apothem.lib.propagation import user_home
 
 
 @main.command(epilog=_EP_VERIFY)
@@ -136,7 +137,7 @@ def verify(
         row = _verify_row(sweep, harness_id, adapter, output_path)
         all_verified = all_verified and bool(row["verified"])
         results.append(row)
-        warnings.extend(_override_notes(sweep, harness_id, output_path))
+        warnings.extend(_override_notes(sweep, harness_id))
 
     if fmt == "json":
         payload = _lifecycle_envelope(
@@ -260,16 +261,14 @@ def _verify_row(
     return row
 
 
-def _override_notes(
-    sweep: _VerifySweep, harness_id: str, output_path: Path
-) -> list[dict[str, object]]:
+def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, object]]:
     """Return, and print under the harness's line, the notes for a hidden block.
 
-    A file the harness loads ahead of *output_path* in the same folder hides the
-    Apothem block while it has text. The note does not change the verdict: the
-    managed targets are in place either way.
+    A file the harness loads ahead of its instruction file, in the same folder,
+    hides the Apothem block while it has text. The note does not change the
+    verdict: the managed targets are in place either way.
     """
-    notes = instruction_override_advisories(harness_id, output_path)
+    notes = instruction_override_advisories(harness_id, home=user_home())
     if sweep.fmt != "json":
         for note in notes:
             sweep.con.print(f"  [yellow]Note:[/] {escape(str(note['message']))}")

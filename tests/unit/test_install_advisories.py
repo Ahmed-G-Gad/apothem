@@ -949,43 +949,70 @@ def _override_notes(payload: dict[str, object]) -> list[dict[str, object]]:
     return [w for w in warnings if w.get("operation") == "instruction_override"]
 
 
-def test_a_codex_override_with_text_hides_the_apothem_block(tmp_path: Path) -> None:
+@pytest.fixture
+def default_codex_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Return ``<home>/.codex`` with ``CODEX_HOME`` unset; *tmp_path* is home."""
+    monkeypatch.delenv("CODEX_HOME", raising=False)
+    return tmp_path / ".codex"
+
+
+def test_a_codex_override_with_text_hides_the_apothem_block(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
     # Codex reads only the first non-empty of AGENTS.override.md and AGENTS.md in
     # its home folder, so an override with text hides the block in AGENTS.md.
-    target = tmp_path / "AGENTS.md"
-    override = _codex_override(tmp_path, "# Personal rules\n")
-    [note] = instruction_override_advisories("codex", target)
+    override = _codex_override(default_codex_home, "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", home=tmp_path)
     assert note["harness"] == "codex"
     assert note["outcome"] == "advisory"
     assert note["operation"] == "instruction_override"
     assert note["path"] == str(override)
-    assert note["target"] == str(target)
+    assert note["target"] == str(default_codex_home / "AGENTS.md")
     message = " ".join(str(note["message"]).split())
     assert "Codex loads AGENTS.override.md instead of AGENTS.md" in message
     assert "first of AGENTS.override.md and AGENTS.md there that has text" in message
 
 
+def test_the_codex_override_check_follows_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    codex_home = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _codex_override(tmp_path / ".codex", "# Not the folder Codex reads\n")
+    override = _codex_override(codex_home, "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", home=tmp_path)
+    assert note["path"] == str(override)
+    assert note["target"] == str(codex_home / "AGENTS.md")
+
+
 @pytest.mark.parametrize("text", ["", " \n\t\r\n"])
 def test_an_empty_codex_override_falls_through_without_a_note(
-    tmp_path: Path, text: str
+    tmp_path: Path, default_codex_home: Path, text: str
 ) -> None:
-    _codex_override(tmp_path, text)
-    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+    _codex_override(default_codex_home, text)
+    assert instruction_override_advisories("codex", home=tmp_path) == []
 
 
-def test_no_codex_override_means_no_note(tmp_path: Path) -> None:
-    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+def test_no_codex_override_means_no_note(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    default_codex_home.mkdir()
+    assert instruction_override_advisories("codex", home=tmp_path) == []
 
 
-def test_a_folder_named_like_the_codex_override_is_skipped(tmp_path: Path) -> None:
+def test_a_folder_named_like_the_codex_override_is_skipped(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
     # Codex skips a candidate that is not a file.
-    (tmp_path / "AGENTS.override.md").mkdir()
-    assert instruction_override_advisories("codex", tmp_path / "AGENTS.md") == []
+    (default_codex_home / "AGENTS.override.md").mkdir(parents=True)
+    assert instruction_override_advisories("codex", home=tmp_path) == []
 
 
-def test_a_harness_without_a_hiding_file_gets_no_override_note(tmp_path: Path) -> None:
-    _codex_override(tmp_path, "# Personal rules\n")
-    assert instruction_override_advisories("claude-code", tmp_path / "CLAUDE.md") == []
+def test_a_harness_without_a_hiding_file_gets_no_override_note(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    _codex_override(default_codex_home, "# Personal rules\n")
+    assert instruction_override_advisories("claude-code", home=tmp_path) == []
 
 
 def test_cli_codex_install_update_and_verify_name_a_hiding_override(
