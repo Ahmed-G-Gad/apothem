@@ -910,7 +910,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # every reader, so the install advisories name the readers. Evidence retrieved
 # 2026-10-02, except ~/.agents/skills/ and the two agents roots, which were read
 # on 2026-10-24, and ~/.claude/CLAUDE.md, the Cursor rules file and the Devin
-# Desktop pages, read on 2026-11-02.
+# Desktop pages, read on 2026-11-02 (the two OpenCode pages for
+# ~/.claude/CLAUDE.md again on 2026-11-03).
 #
 # A reader is listed only where the vendor docs show a default load of that exact
 # path. Windsurf reads the other tools' rule files through Devin's configuration
@@ -1053,11 +1054,26 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         evidence=(
             "https://code.claude.com/docs/en/memory",
             "https://opencode.ai/docs/rules/",
+            "https://opencode.ai/v2/docs/instructions/",
             "https://docs.devin.ai/cli/reference/configuration/read-config-from.md#claude-code",
             "https://docs.devin.ai/cli/extensibility/rules.md#global-rules",
             "https://docs.devin.ai/desktop/devin-local/customizations.md",
         ),
-        retrieved="2026-11-02",
+        retrieved="2026-11-03",
+        # OpenCode 1 falls back to ~/.claude/CLAUDE.md only when no
+        # <config dir>/AGENTS.md exists, and skips it when
+        # OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1 or OPENCODE_DISABLE_CLAUDE_CODE=1
+        # is set (the OpenCode rules page, read 2026-11-03). The config dir is
+        # OPENCODE_CONFIG_DIR when set, else $XDG_CONFIG_HOME/opencode, so
+        # ~/.config/opencode by default (the v1.19.5 source). OpenCode 2 reads
+        # the same ~/.config/opencode/ configuration but discovers only
+        # AGENTS.md files, with no CLAUDE.md fallback (its Instructions page,
+        # read 2026-11-03).
+        reader_conditions={
+            "opencode": (
+                "only in OpenCode 1, when no ~/.config/opencode/AGENTS.md exists"
+            )
+        },
     ),
     SharedRoot(
         path="<project>/AGENTS.md",
