@@ -318,14 +318,28 @@ def test_the_vsce_version_guard_accepts_only_4_1_or_later(
     result = subprocess.run(
         [node, "-e", match[1], version],
         capture_output=True,
-        # The comparison reads no input. Without this, node inherits the test
-        # worker's stdin, the pipe pytest-xdist reads its commands from, and on
-        # Windows CI it stalled past the timeout.
+        # The comparison reads no input, so node gets none rather than the
+        # test worker's stdin, the pipe pytest-xdist reads its commands from.
         stdin=subprocess.DEVNULL,
+        # The CI test jobs start node before pytest (see the next test), so a
+        # fresh runner's slow first node launch does not count against this.
         timeout=60,
         check=False,
     )
     assert (result.returncode == 0) is supported
+
+
+def test_the_test_jobs_start_node_before_pytest() -> None:
+    # A fresh Windows runner's first node launch can take more than a minute,
+    # and the probe above is the suite's first node launch: it timed out on its
+    # first case in five Windows jobs. Both workflows that run the suite start
+    # node before pytest, so that cold start stays out of the timed tests.
+    quality = _job("ci.yml", "quality")
+    names = [step.get("name") for step in quality["steps"]]
+    assert names.index("Start node once") < names.index("Pytest")
+    assert "node --version" in _step(quality, "Start node once")["run"]
+    command = _job("ci-matrix.yml", "test-matrix")["with"]["run-command"]
+    assert command.index("node --version") < command.index("python -m pytest")
 
 
 def test_a_trusted_publishing_dry_run_says_that_it_verified_nothing() -> None:
