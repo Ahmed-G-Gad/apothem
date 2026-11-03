@@ -155,6 +155,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Hermes page lists the project files through which another install's block
   reaches Hermes. No Apothem install writes a project `CLAUDE.md`, which Devin
   also imports.
+- **The Cursor rules block names no single tool as its reader.** Devin
+  Desktop imports the Apothem rules file the Cursor install writes, and Hermes
+  loads it as its last project context fallback, so the block in
+  `.cursor/rules/apothem-rules.mdc` now says which install wrote it and
+  addresses any tool that loads it: a title and description that name no tool,
+  disciplines that apply in every tool that reads the block, and a note on when
+  the rule applies, both in a tool that reads its frontmatter and in one that
+  loads it as plain project context. The subagents and hook it lists stay, as
+  what the Cursor install adds. The harness registry, Cursor and Windsurf pages
+  no longer call the block Cursor's own, and the Cursor native-install example
+  matches what the install writes, with a test that keeps it so.
 - **Install notes say when Zed and Codex skip a shared project file.** Zed
   loads only the first project instruction file in its list (`.rules`,
   `.cursorrules`, `.windsurfrules`, `.clinerules`,

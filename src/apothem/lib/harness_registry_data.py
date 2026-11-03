@@ -936,11 +936,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # instructions page, read 2026-11-03), so it loads each of the three shared
 # files in that list only when the project has none of the files ahead of it.
 # The Zed install writes <project>/.rules, the head of the list, so in a project
-# it was installed in, Zed loads none of the three.
-# TODO(clarify): the Cursor rules block speaks to Cursor ("Inside Cursor, ..."),
-# and Hermes and Devin Local now load it as well. Decide whether it becomes
-# harness-neutral like the shared anchors test_shared_roots.py checks, or keeps
-# its Cursor text.
+# it was installed in, Zed loads none of the three. The Apothem block in the
+# Cursor rules file names no single tool as its reader, like the other shared
+# instruction files test_shared_roots.py checks.
 # These gaps are open, so the tools they name are not readers yet:
 # TODO(clarify): ~/.agents/skills/ - the 2026-10-24 vendor check found no default
 # load for Antigravity (its docs name ~/.gemini/config/skills/ and the workspace

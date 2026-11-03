@@ -254,9 +254,10 @@ instructions, when the project has no instruction file of its own and no
 `AGENTS.override.md`, `AGENTS.md` or `CLAUDE.md`. So installing or uninstalling `cursor` also changes
 what those tools load, and the install prints a note that names both, with that
 condition (the [harness registry](/docs/reference/harness-registry#shared-roots)
-lists them). The Apothem block is written for Cursor, so what it says about
-`.cursor/agents/` and `.cursor/hooks.json` does not apply to them. To keep Devin
-from loading it, set `"cursor": false` under `"read_config_from"` in
+lists them). The Apothem block names no single tool as its reader, but what it
+says about `.cursor/agents/` and `.cursor/hooks.json` describes this install and
+does not apply to them. To keep Devin from loading it, set `"cursor": false`
+under `"read_config_from"` in
 `~/.config/devin/config.json` (`%APPDATA%\devin\config.json` on Windows) or in
 the project's `.devin/config.json`; that key also stops Devin importing Cursor's
 MCP servers.
