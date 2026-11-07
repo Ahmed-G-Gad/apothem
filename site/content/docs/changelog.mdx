@@ -21,6 +21,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Every docs link with a `#section` is checked against the page it opens.**
+  `scripts/dev/check_site_anchor_links.py` reads the English pages and the
+  eleven translations, makes each heading's id the way the site does (a Python
+  port of github-slugger, `scripts/dev/github_slugger.py`), and fails when a
+  link names a heading the page it opens does not have. It also fails a
+  translation that records the current English text but has other headings than
+  the English page, and a component that links into `/docs` past the link
+  localization below. `tests/unit/docs/test_site_anchor_links.py` runs it in the
+  `quality` job with Python alone, and `scripts/dev/check_built_docs_links.py`
+  repeats the check on the built site in `docs-build`, where it also fails a
+  translated page whose link still opens the English page. Before, nothing read
+  heading ids until the site was built, and 252 links on translated pages named
+  a heading that exists only on the translated copy.
 - **The Marketplace publish can use Trusted Publishing.** With the
   repository variable `VSCE_AUTH=oidc`, the VS Code publish job runs
   `vsce publish --oidc`, which exchanges the job's GitHub OIDC token for a
@@ -35,6 +48,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **A link in a translated docs page keeps the reader in their language.** A
+  link such as `/docs/install#choose-a-channel` in the body of a translated page
+  now opens the translated copy of the page, at the matching section, when the
+  language has one. Before, every such link on a translated page opened the
+  English page. A page the language has not translated still opens in English,
+  as does a link to a section of a translation whose headings differ from the
+  English page. A cross-page `#section` in a translation is the English id, which the
+  site maps to the translated heading by position; the internationalization page
+  says how.
 - **Dependabot checks the vsce packager weekly.** The `tools/vsce` lockfile
   was checked monthly, so a new vsce release waited up to a month after its
   seven-day cooldown before a pull request proposed it. It is now checked

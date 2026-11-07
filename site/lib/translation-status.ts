@@ -2,6 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isAuthoredPath } from '@/lib/locale-links';
 import { sourceHash } from '@/lib/translation-source.mjs';
 
 /**
@@ -39,7 +40,6 @@ export function translationState(
   locale: string,
   recordedHash: string | undefined,
 ): TranslationState {
-  const prefix = `${locale}/`;
-  if (!pagePath.startsWith(prefix)) return 'fallback';
-  return recordedHash === englishHash(pagePath.slice(prefix.length)) ? 'current' : 'stale';
+  if (!isAuthoredPath(pagePath, locale)) return 'fallback';
+  return recordedHash === englishHash(pagePath.slice(locale.length + 1)) ? 'current' : 'stale';
 }

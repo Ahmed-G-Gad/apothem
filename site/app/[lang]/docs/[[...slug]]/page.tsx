@@ -3,6 +3,7 @@
 import { source } from '@/lib/source';
 import { DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page';
 import { LandmarkDocsPage } from '@/components/docs-landmarks';
+import { createLocalizedLink } from '@/components/localized-link';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { buildAlternates } from '@/lib/hreflang';
@@ -17,7 +18,9 @@ import type { Metadata } from 'next';
 // `fallbackLanguage: 'en'` remains the safety net for any page a locale has not
 // authored. The `machineTranslated` frontmatter flag is internal review-tracking
 // metadata only — it drives no rendered surface. The `sourceHash` flag drives
-// the staleness marker (see lib/translation-status.ts).
+// the staleness marker (see lib/translation-status.ts). A `/docs/...` link in the
+// page body is pointed at this locale's own copy of its target when there is one
+// (see lib/locale-links.ts), so a reader stays in their language.
 export default async function Page(props: {
   params: Promise<{ lang: string; slug?: string[] }>;
 }) {
@@ -40,7 +43,7 @@ export default async function Page(props: {
       ) : null}
       <DocsDescription {...english}>{page.data.description}</DocsDescription>
       <DocsBody {...english}>
-        <MDXContent components={getMDXComponents()} />
+        <MDXContent components={getMDXComponents({ a: createLocalizedLink(lang) })} />
       </DocsBody>
     </LandmarkDocsPage>
   );
