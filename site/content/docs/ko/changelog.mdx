@@ -136,6 +136,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Kimi Code install says that Claude Code also loads the project
+  `AGENTS.md`.** From Claude Code v2.1.277, under its default Project
+  instructions setting, Claude Code loads `AGENTS.md` when no `CLAUDE.md`,
+  `.claude/CLAUDE.md` or
+  `CLAUDE.local.md` is in the working folder or a folder above it, and
+  `~/.claude/CLAUDE.md` keeps loading alongside it. So the Kimi Code install's
+  note now names Claude Code with that condition among the tools that load the
+  file it writes, and the harness registry, Claude Code and Kimi Code pages say
+  so.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce
