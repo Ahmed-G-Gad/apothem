@@ -6,14 +6,15 @@
 ``vendor-release-channels.json``, beside this script, has one entry for every
 harness folder under ``src/apothem/harnesses/``. A watched harness lists its
 release channels: an npm package and one of its dist-tags, a GitHub
-repository's latest release, a PyPI project, or an installer address whose
-redirect is watched. Each channel records what was last reviewed, with the
-date and the phrase of the pin that cites the channel: a version (a full
-version, or a major alone) or, for an installer address, the target it
-redirected to. That is the version or target the pin names or, where the pin
-names none, the one the registry served when the channel was recorded. A
-harness with no channel a script can query, such as a desktop editor, gives
-the reason it is not watched instead.
+repository's latest release (or, for a channel with a ``tag_pattern``, the
+newest stable release among its newest 100 whose tag matches), a PyPI
+project, or an installer address whose redirect is watched. Each channel
+records what was last reviewed, with the date and the phrase of the pin that
+cites the channel: a version (a full version, or a major alone) or, for an
+installer address, the target it redirected to. That is the version or target
+the pin names or, where the pin names none, the one the registry served when
+the channel was recorded. A harness with no channel a script can query, such
+as a desktop editor, gives the reason it is not watched instead.
 
 The script asks each registry for the channel's current version, and each
 installer address where it redirects, and classifies the answer:
@@ -30,23 +31,41 @@ installer address where it redirects, and classifies the answer:
   somewhere else, or answers without redirecting. Fails the check.
 - ``missing``: the registry answers that the package, its dist-tag, the
   repository's releases or the installer address do not exist (404 or 410,
-  or a dist-tag that is gone). Fails the check: the record names a channel
-  that is not there.
+  or a dist-tag that is gone), or no stable release among the repository's
+  newest 100 has a tag that matches the channel's ``tag_pattern``. Fails the
+  check: the record names a channel that is not there.
 - ``unreachable``: no usable answer after retries: a timeout, a refused or
   reset connection, a DNS failure, an answer cut off partway or not in HTTP
   form, 401, 403 or 429 (GitHub answers a rate limit with 403 or 429), a 5xx
-  or another 4xx, an answer that names no version, or a redirect that names
-  no target. Reported; does not fail the check.
+  or another 4xx, an answer larger than 16 MiB or one the check cannot read,
+  an answer that names no version or names it in a form the check does not
+  read, or a redirect that names no target. A channel the run did not ask,
+  because its time budget ran out, is unreachable too. Reported; does not
+  fail the check.
+
+A channel's ``trigger`` names an action, which a failing channel reports. On
+a version channel it comes with a release past the trigger's major, and with
+a channel that is missing, whose signal the check can no longer see; it keeps
+failing the check until the trigger is removed or changed. On an installer
+address it comes with any target other than the reviewed one, an answer
+without a redirect, or an address that is gone; recording the new target as
+reviewed stops it.
 
 The first number of a version is its major, a 0 included, so a move from
 0.26 to 0.27 is a newer minor. GitHub requests carry the ``GITHUB_TOKEN``
 environment variable when it is set, and only to api.github.com.
 
+Each attempt at a request has 30 seconds in all, from the name lookup to the
+last byte of the answer, however many addresses the host resolves to, and a
+request makes up to three attempts. Once 20 minutes have passed, the run asks
+no further channel, so it writes its report inside the monitor's time limit.
+
 Before it asks any registry, the script checks the file against the pins:
 every harness folder has an entry, each channel's ``evidence`` phrase appears
 in its pin and names the channel, and a version or target reviewed from the
 pin appears in it. The report is JSON. The exit code is 2 when a channel
-drifted or is missing, 1 when the file or its evidence is wrong, and 0
+drifted or is missing; 1 when the file or its evidence is wrong, or when the
+check stops on an error, and the report then lists each problem; and 0
 otherwise. The harness-convention monitor runs this weekly.
 """
 
@@ -58,14 +77,17 @@ import json
 import os
 import re
 import sys
+import threading
 import time
+import traceback
 import urllib.error
 import urllib.request
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import asdict, dataclass
 from datetime import date
+from functools import partial
 from pathlib import Path
-from typing import IO, Final, Protocol
+from typing import IO, Final, Protocol, TypeVar
 from urllib.parse import quote, urljoin, urlsplit
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -78,6 +100,16 @@ VERSIONINGS: Final[tuple[str, ...]] = ("semver", "calendar")
 SOURCES: Final[tuple[str, ...]] = ("pin", "registry")
 OUTCOMES: Final[tuple[str, ...]] = ("clean", "info", "drift", "missing", "unreachable")
 FAILING: Final[frozenset[str]] = frozenset({"drift", "missing"})
+
+#: Each attempt at a request, from the name lookup to the last byte of the
+#: answer, however many addresses the host resolves to.
+ATTEMPT_SECONDS: Final[float] = 30.0
+#: Attempts per request. A network error, a broken answer and a 5xx outage are
+#: retried, after 1 and then 2 seconds.
+ATTEMPTS: Final[int] = 3
+#: After this long the run asks no further channel, so it writes its report
+#: before the monitor job's time limit.
+RUN_BUDGET_SECONDS: Final[float] = 20 * 60.0
 
 _CHANNEL_KEYS: Final[frozenset[str]] = frozenset(
     {
@@ -101,6 +133,15 @@ _ADDRESS: Final[re.Pattern[str]] = re.compile(
     r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+"
     r"(?:/[A-Za-z0-9._~%/+=?&-]*)?"
 )
+# A redirect target as the report shows it: an address, with any scheme other
+# than https:// kept in front. A target in another form is reported without
+# being repeated.
+_SHOWN_TARGET: Final[re.Pattern[str]] = re.compile(
+    r"(?:[a-z][a-z0-9+.-]*://)?" + _ADDRESS.pattern
+)
+# A version or release tag as the report shows it. A registry answer in
+# another form is reported without being repeated.
+_SHOWN_VERSION: Final[re.Pattern[str]] = re.compile(r"[0-9A-Za-z._+@/-]{1,100}")
 # Package and repository names as each registry spells them; anything else
 # would change the request path.
 _NAMES: Final[Mapping[str, re.Pattern[str]]] = {
@@ -109,21 +150,34 @@ _NAMES: Final[Mapping[str, re.Pattern[str]]] = {
     "pypi": re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*"),
     "redirect": _ADDRESS,
 }
-_REVIEWED: Final[re.Pattern[str]] = re.compile(r"\d+(?:\.\d+){0,2}")
-_VERSION: Final[re.Pattern[str]] = re.compile(r"(\d+)(?:\.(\d+))?(?:\.(\d+))?")
+# Each number has at most nine digits, so int() never meets one thousands of
+# digits long. A longer run of digits, or a fourth number, holds no version.
+_REVIEWED: Final[re.Pattern[str]] = re.compile(r"\d{1,9}(?:\.\d{1,9}){0,2}")
+_VERSION: Final[re.Pattern[str]] = re.compile(
+    r"(?<![\d.])(\d{1,9})(?:\.(\d{1,9}))?(?:\.(\d{1,9}))?(?!\d|\.\d)"
+)
 _PIN_LINE: Final[re.Pattern[str]] = re.compile(
     r"""^\s*standard_convention_pin\s*:\s*["']?(?P<path>[^"'\s#]+)["']?""",
     re.MULTILINE,
 )
+_CONTENT_LENGTH: Final[re.Pattern[str]] = re.compile(r"[0-9]{1,15}")
 _GITHUB_API: Final[str] = "api.github.com"
 _GONE_STATUSES: Final[frozenset[int]] = frozenset({404, 410})
 # Server errors an outage produces; fetch() retries these.
 _RETRIED_STATUSES: Final[frozenset[int]] = frozenset({500, 502, 503, 504})
 _MAX_BODY: Final[int] = 16 * 1024 * 1024
+# The answer is read a chunk at a time, so the attempt's time limit is checked
+# between chunks.
+_CHUNK: Final[int] = 64 * 1024
+# The longest error text a report keeps; an exception's text can quote the
+# answer.
+_ERROR_LIMIT: Final[int] = 200
 _USER_AGENT: Final[str] = (
     "Mozilla/5.0 (compatible; apothem-vendor-release-check/1.0; "
     "+https://github.com/ahmed-g-gad/apothem)"
 )
+
+_T = TypeVar("_T")
 
 
 class ChannelFileError(ValueError):
@@ -132,11 +186,13 @@ class ChannelFileError(ValueError):
 
 @dataclass(frozen=True)
 class Trigger:
-    """An action the report names when a channel drifts.
+    """An action the report names when a channel fails.
 
-    On a version channel, a release past ``major_above`` is drift whatever
-    was reviewed. An installer address has no versions, so ``major_above`` is
-    None and the action comes with any change of its redirect.
+    On a version channel, a release past ``major_above`` is drift whatever was
+    reviewed, and a missing channel names the action too. An installer address
+    has no versions, so ``major_above`` is None and the action comes with any
+    target other than the reviewed one, an answer without a redirect, or an
+    address that is gone.
     """
 
     major_above: int | None
@@ -215,6 +271,14 @@ class ChannelReport:
     url: str
     status: int | None
     trigger: str | None = None
+
+
+class _Answer(Protocol):
+    """The part of an HTTP answer the check reads its body from."""
+
+    def read(self, amt: int, /) -> bytes:
+        """Return up to *amt* bytes of the body; empty at its end."""
+        ...
 
 
 class Fetcher(Protocol):
@@ -303,13 +367,20 @@ def _channel(harness: str, index: int, entry: object) -> Channel:
         raise ChannelFileError(
             f"{where}: versioning and watch apply to a version channel only"
         )
+    versioning = _choice(entry, "versioning", VERSIONINGS, where, "semver")
+    if versioning == "calendar" and "watch" in entry:
+        # The first number of a calendar version is a year, so every newer
+        # release is information and no level could turn it into drift.
+        raise ChannelFileError(f"{where}: watch applies to a semver channel only")
     reviewed = _text(entry, "reviewed", where)
     if redirect and not _ADDRESS.fullmatch(reviewed):
         raise ChannelFileError(
             f"{where}: reviewed must be the redirect target, written without https://"
         )
     if not redirect and not _REVIEWED.fullmatch(reviewed):
-        raise ChannelFileError(f"{where}: reviewed must be one to three numbers")
+        raise ChannelFileError(
+            f"{where}: reviewed must be one to three numbers of at most nine digits"
+        )
     reviewed_on = _text(entry, "reviewed_on", where)
     try:
         date.fromisoformat(reviewed_on)
@@ -328,7 +399,7 @@ def _channel(harness: str, index: int, entry: object) -> Channel:
         evidence=_text(entry, "evidence", where),
         tag=_text(entry, "tag", where) if "tag" in entry else "latest",
         tag_pattern=_tag_pattern(entry.get("tag_pattern"), where),
-        versioning=_choice(entry, "versioning", VERSIONINGS, where, "semver"),
+        versioning=versioning,
         watch=_choice(entry, "watch", LEVELS, where, "major"),
         trigger=_trigger(entry.get("trigger"), where, redirect=redirect),
         note=note,
@@ -377,7 +448,9 @@ def _reviewed_in(channel: Channel) -> re.Pattern[str]:
     value = re.escape(channel.reviewed)
     if channel.registry == "redirect":
         return re.compile(rf"(?<![\w./-]){value}(?![\w/-]|\.\w)")
-    return re.compile(rf"(?<![\d.]){value}(?![\d])")
+    # Not part of a longer version: no fourth number (2.3.3.1), prerelease
+    # (2.3.3-rc) or build (2.3.3+1) follows it.
+    return re.compile(rf"(?<![\d.]){value}(?!\d|\.\d|[-+][0-9A-Za-z])")
 
 
 def _pin_path(harness_dir: Path) -> Path:
@@ -461,19 +534,126 @@ def request_for(
 
 
 class _KeepRedirect(urllib.request.HTTPRedirectHandler):
-    """Hand a redirect back as an HTTPError instead of following it."""
+    """Hand every redirect back as an HTTPError, without reading its Location.
 
-    def redirect_request(
+    The caller reads the status and the Location header itself, so a Location
+    that does not parse never raises inside urllib.
+    """
+
+    def http_error_302(
         self,
         req: urllib.request.Request,
         fp: IO[bytes],
         code: int,
         msg: str,
         headers: http.client.HTTPMessage,
-        newurl: str,
-    ) -> urllib.request.Request | None:
-        """Follow no redirect, so the caller reads its status and Location."""
-        return None
+    ) -> None:
+        """Follow no redirect; urllib then raises it as an HTTPError."""
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+
+def _clip(text: str, limit: int = _ERROR_LIMIT) -> str:
+    """Return *text* cut to *limit* characters."""
+    return text if len(text) <= limit else f"{text[: limit - 3]}..."
+
+
+def _too_slow(timeout: float) -> str:
+    return f"no complete answer within {timeout:g} seconds"
+
+
+def _within(seconds: float, work: Callable[[], _T]) -> _T | None:
+    """Return what *work* returns, or None when it runs past *seconds*.
+
+    The work runs in a daemon thread, so an attempt stuck in a name lookup, a
+    connection to one address after another, or a slow answer is abandoned at
+    the deadline. The thread ends on its own socket timeout, or with the
+    process.
+    """
+    results: list[_T] = []
+    errors: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            results.append(work())
+        except BaseException as exc:  # handed to the caller below
+            errors.append(exc)
+
+    worker = threading.Thread(target=run, name="vendor-release-request", daemon=True)
+    worker.start()
+    worker.join(seconds)
+    if errors:
+        raise errors[0]
+    return results[0] if results else None
+
+
+def _content_length(answer: object) -> int | None:
+    """Return the answer's Content-Length when it declares a plain one."""
+    headers = getattr(answer, "headers", None)
+    value = headers.get("Content-Length") if headers is not None else None
+    if isinstance(value, str) and _CONTENT_LENGTH.fullmatch(value.strip()):
+        return int(value)
+    return None
+
+
+def _read_answer(
+    answer: _Answer, status: int, deadline: float, timeout: float
+) -> tuple[Response, bool]:
+    """Read an answer's body a chunk at a time, raising TimeoutError at *deadline*.
+
+    Return the response and whether another attempt could get a better one.
+    """
+    # read1 returns after one read from the connection, so a slow answer
+    # reaches the deadline check between chunks.
+    read: Callable[[int], bytes] = getattr(answer, "read1", None) or answer.read
+    chunks: list[bytes] = []
+    size = 0
+    while chunk := read(_CHUNK):
+        size += len(chunk)
+        if size > _MAX_BODY:
+            limit = f"{_MAX_BODY // (1024 * 1024)} MiB"
+            return Response(status, error=f"the answer is larger than {limit}"), False
+        if time.monotonic() > deadline:
+            raise TimeoutError(_too_slow(timeout))
+        chunks.append(chunk)
+    expected = _content_length(answer)
+    if expected is not None and size < expected:
+        # http.client returns a body cut short without an error when the
+        # answer gave its length.
+        error = f"the answer broke off after {size} of {expected} bytes"
+        return Response(None, error=error), True
+    return Response(status, b"".join(chunks)), False
+
+
+def _attempt(
+    request: urllib.request.Request,
+    opener: urllib.request.OpenerDirector | None,
+    timeout: float,
+) -> tuple[Response, bool]:
+    """Send one request; return the response and whether a retry could help."""
+    deadline = time.monotonic() + timeout
+    try:
+        if opener is None:
+            answer = urllib.request.urlopen(request, timeout=timeout)  # noqa: S310  # nosec B310
+        else:
+            answer = opener.open(request, timeout=timeout)
+        with answer as response:
+            return _read_answer(response, response.status, deadline, timeout)
+    except urllib.error.HTTPError as exc:
+        location = exc.headers.get("Location") if exc.headers is not None else None
+        response = Response(exc.code, error=f"HTTP {exc.code}", location=location)
+        return response, exc.code in _RETRIED_STATUSES
+    except http.client.HTTPException as exc:
+        # The answer broke off partway (IncompleteRead) or was not HTTP
+        # (BadStatusLine). Retried, then reported as unreachable.
+        return Response(None, error=_clip(repr(exc))), True
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return Response(None, error=_clip(str(getattr(exc, "reason", exc)))), True
+    except ValueError as exc:
+        # urllib could not use the answer, such as a redirect whose Location
+        # does not parse. Another attempt gets the same answer.
+        error = f"the answer could not be used ({type(exc).__name__})"
+        return Response(None, error=error), False
 
 
 def fetch(
@@ -481,20 +661,22 @@ def fetch(
     headers: Mapping[str, str],
     *,
     follow_redirects: bool = True,
-    attempts: int = 3,
-    timeout: float = 30.0,
+    attempts: int = ATTEMPTS,
+    timeout: float = ATTEMPT_SECONDS,
 ) -> Response:
     """GET *url*, retrying a network error, a broken answer, and a 5xx outage.
 
-    The retried statuses are 500, 502, 503 and 504. With *follow_redirects*
-    False, a redirect comes back as it was answered, with its status and its
-    Location header.
+    Each attempt has *timeout* seconds in all: the name lookup, a connection to
+    every address the host resolves to, and the whole answer. An attempt still
+    running then is abandoned and counts as a timeout. The retried statuses
+    are 500, 502, 503 and 504. With *follow_redirects* False, a redirect comes
+    back as it was answered, with its status and its Location header.
     """
     parts = urlsplit(url)
     if parts.scheme != "https":
         return Response(None, error="not an https URL")
     opener = None if follow_redirects else urllib.request.build_opener(_KeepRedirect)
-    error = "no attempt made"
+    response = Response(None, error="no attempt made")
     for attempt in range(attempts):
         # The scheme is checked above, so only https URLs are opened.
         request = urllib.request.Request(url)  # noqa: S310
@@ -505,27 +687,16 @@ def fetch(
                 # Never copied onto a redirect, so the token reaches
                 # api.github.com and no other host.
                 request.add_unredirected_header(key, value)
-        try:
-            if opener is None:
-                answer = urllib.request.urlopen(request, timeout=timeout)  # noqa: S310  # nosec B310
-            else:
-                answer = opener.open(request, timeout=timeout)
-            with answer as response:
-                return Response(response.status, response.read(_MAX_BODY))
-        except urllib.error.HTTPError as exc:
-            location = exc.headers.get("Location") if exc.headers is not None else None
-            if exc.code not in _RETRIED_STATUSES or attempt == attempts - 1:
-                return Response(exc.code, error=f"HTTP {exc.code}", location=location)
-            error = f"HTTP {exc.code}"
-        except http.client.HTTPException as exc:
-            # The answer broke off partway (IncompleteRead) or was not HTTP
-            # (BadStatusLine). Retried, then reported as unreachable.
-            error = repr(exc)
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            error = str(getattr(exc, "reason", exc))
+        result = _within(timeout, partial(_attempt, request, opener, timeout))
+        if result is None:
+            response, retry = Response(None, error=_too_slow(timeout)), True
+        else:
+            response, retry = result
+        if not retry:
+            return response
         if attempt < attempts - 1:
             time.sleep(2**attempt)
-    return Response(None, error=error)
+    return response
 
 
 def version_numbers(text: str) -> tuple[int, ...] | None:
@@ -534,6 +705,18 @@ def version_numbers(text: str) -> tuple[int, ...] | None:
     if match is None:
         return None
     return tuple(int(part) for part in match.groups() if part is not None)
+
+
+def _version(value: object, absent: str) -> Reading:
+    """Return a reading of *value*, a version or tag a registry answered with."""
+    if not isinstance(value, str) or not value:
+        return Reading(outcome="unreachable", detail=absent)
+    if not _SHOWN_VERSION.fullmatch(value):
+        return Reading(
+            outcome="unreachable",
+            detail="the answer names a version in a form the check does not read",
+        )
+    return Reading(version=value)
 
 
 def _npm_version(channel: Channel, payload: object) -> Reading:
@@ -546,31 +729,19 @@ def _npm_version(channel: Channel, payload: object) -> Reading:
         return Reading(
             outcome="missing", detail=f"the package has no {channel.tag} dist-tag"
         )
-    if not isinstance(version, str) or not version:
-        return Reading(
-            outcome="unreachable", detail=f"the {channel.tag} dist-tag names no version"
-        )
-    return Reading(version=version)
+    return _version(version, f"the {channel.tag} dist-tag names no version")
 
 
 def _pypi_version(payload: object) -> Reading:
     info = payload.get("info") if isinstance(payload, dict) else None
     version = info.get("version") if isinstance(info, dict) else None
-    if not isinstance(version, str) or not version:
-        return Reading(
-            outcome="unreachable", detail="the project answer names no version"
-        )
-    return Reading(version=version)
+    return _version(version, "the project answer names no version")
 
 
 def _github_version(channel: Channel, payload: object) -> Reading:
     if channel.tag_pattern is None:
         tag = payload.get("tag_name") if isinstance(payload, dict) else None
-        if not isinstance(tag, str) or not tag:
-            return Reading(
-                outcome="unreachable", detail="the latest release names no tag"
-            )
-        return Reading(version=tag)
+        return _version(tag, "the latest release names no tag")
     if not isinstance(payload, list):
         return Reading(outcome="unreachable", detail="the release list is not a list")
     pattern = re.compile(channel.tag_pattern)
@@ -583,19 +754,25 @@ def _github_version(channel: Channel, payload: object) -> Reading:
         ):
             continue
         tag = release.get("tag_name")
-        if not isinstance(tag, str) or not pattern.fullmatch(tag):
+        if (
+            not isinstance(tag, str)
+            or not pattern.fullmatch(tag)
+            or not _SHOWN_VERSION.fullmatch(tag)
+        ):
             continue
         numbers = version_numbers(tag)
         if numbers is not None and (best is None or numbers > best[0]):
             best = (numbers, tag)
     if best is None:
-        return Reading(
-            outcome="unreachable",
-            detail=(
-                f"no stable release among the newest {len(payload)} has a tag "
-                f"that matches {channel.tag_pattern}"
-            ),
+        # The channel's releases are not where the record says: renamed tags,
+        # or other products' releases have pushed them out of the newest 100.
+        detail = (
+            f"no stable release among the newest {len(payload)} has a tag that "
+            f"matches {channel.tag_pattern}"
+            if payload
+            else "the repository lists no releases"
         )
+        return Reading(outcome="missing", detail=detail)
     return Reading(version=best[1])
 
 
@@ -606,12 +783,21 @@ def read(channel: Channel, response: Response) -> Reading:
             outcome="missing",
             detail=f"the registry answers {response.status}: no such package or release",
         )
-    if response.status is None or not 200 <= response.status < 300:
+    if (
+        response.error is not None
+        or response.status is None
+        or not 200 <= response.status < 300
+    ):
         return Reading(
             outcome="unreachable", detail=response.error or f"HTTP {response.status}"
         )
     try:
         payload = json.loads(response.body)
+    except RecursionError:
+        return Reading(
+            outcome="unreachable",
+            detail="the answer nests deeper than the check reads",
+        )
     except ValueError:
         return Reading(outcome="unreachable", detail="the answer is not JSON")
     if channel.registry == "npm":
@@ -688,12 +874,19 @@ def classify(channel: Channel, current: str) -> tuple[str, str, str | None]:
     )
 
 
-def _target(url: str, location: str) -> str:
-    """Return the address a Location header points at, as the file writes it."""
-    target = urljoin(url, location.strip())
+def _target(url: str, location: str) -> str | None:
+    """Return the address a Location header points at, as the file writes it.
+
+    Return None when the header is not an address the check reads.
+    """
+    try:
+        target = urljoin(url, location.strip())
+    except ValueError:
+        return None
     https = "https://"
     # Any other scheme stays in place, so it never equals a reviewed target.
-    return target[len(https) :] if target.startswith(https) else target
+    shown = target[len(https) :] if target.startswith(https) else target
+    return shown if _SHOWN_TARGET.fullmatch(shown) else None
 
 
 def classify_redirect(
@@ -703,11 +896,17 @@ def classify_redirect(
     action = channel.trigger.action if channel.trigger is not None else None
     status = response.status
     if status in _GONE_STATUSES:
-        return "missing", None, f"the address answers {status}: no such page", None
+        return "missing", None, f"the address answers {status}: no such page", action
     if status is not None and 300 <= status < 400:
         if not response.location:
             return "unreachable", None, f"answers {status} with no target", None
         current = _target(url, response.location)
+        if current is None:
+            detail = (
+                f"redirects to an address the check does not read, not the "
+                f"reviewed {channel.reviewed}"
+            )
+            return "drift", None, detail, action
         if current == channel.reviewed:
             return (
                 "clean",
@@ -726,40 +925,93 @@ def classify_redirect(
     return "unreachable", None, response.error or f"HTTP {status}", None
 
 
+def _classify_reading(
+    channel: Channel, reading: Reading
+) -> tuple[str, str | None, str, str | None]:
+    """Return the outcome, version, detail and any trigger action of a reading."""
+    if reading.version is None:
+        outcome = reading.outcome or "unreachable"
+        detail = reading.detail or "the registry names no version"
+        # A channel that is gone can no longer show its trigger's signal.
+        action = (
+            channel.trigger.action
+            if outcome == "missing" and channel.trigger is not None
+            else None
+        )
+        return outcome, None, detail, action
+    outcome, detail, action = classify(channel, reading.version)
+    return outcome, reading.version, detail, action
+
+
+def _check_channel(
+    channel: Channel, url: str, headers: Mapping[str, str], fetcher: Fetcher
+) -> ChannelReport:
+    """Ask one channel's registry or address and classify the answer."""
+    redirect = channel.registry == "redirect"
+    if redirect:
+        response = fetcher(url, headers, follow_redirects=False)
+    else:
+        response = fetcher(url, headers)
+    try:
+        if redirect:
+            outcome, current, detail, action = classify_redirect(channel, url, response)
+        else:
+            outcome, current, detail, action = _classify_reading(
+                channel, read(channel, response)
+            )
+    except Exception as exc:  # one answer the check cannot read stops no other
+        outcome, current, action = "unreachable", None, None
+        detail = f"the answer could not be read ({type(exc).__name__})"
+    return ChannelReport(
+        harness=channel.harness,
+        channel=channel.label,
+        outcome=outcome,
+        reviewed=channel.reviewed,
+        reviewed_on=channel.reviewed_on,
+        current=current,
+        detail=detail,
+        url=url,
+        status=response.status,
+        trigger=action,
+    )
+
+
 def check(
-    channels: Iterable[Channel], fetcher: Fetcher, *, token: str | None = None
+    channels: Iterable[Channel],
+    fetcher: Fetcher,
+    *,
+    token: str | None = None,
+    budget: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> list[ChannelReport]:
-    """Ask each channel's registry or address and classify the answer."""
+    """Ask each channel's registry or address and classify the answer.
+
+    Once *budget* seconds have passed, each channel left is reported as
+    unreachable without a request.
+    """
+    started = clock()
     reports: list[ChannelReport] = []
     for channel in channels:
         url, headers = request_for(channel, token)
-        action: str | None = None
-        if channel.registry == "redirect":
-            response = fetcher(url, headers, follow_redirects=False)
-            outcome, current, detail, action = classify_redirect(channel, url, response)
-        else:
-            response = fetcher(url, headers)
-            reading = read(channel, response)
-            current = reading.version
-            if reading.version is None:
-                outcome = reading.outcome or "unreachable"
-                detail = reading.detail or "the registry names no version"
-            else:
-                outcome, detail, action = classify(channel, reading.version)
-        reports.append(
-            ChannelReport(
-                harness=channel.harness,
-                channel=channel.label,
-                outcome=outcome,
-                reviewed=channel.reviewed,
-                reviewed_on=channel.reviewed_on,
-                current=current,
-                detail=detail,
-                url=url,
-                status=response.status,
-                trigger=action,
+        if budget is not None and clock() - started >= budget:
+            reports.append(
+                ChannelReport(
+                    harness=channel.harness,
+                    channel=channel.label,
+                    outcome="unreachable",
+                    reviewed=channel.reviewed,
+                    reviewed_on=channel.reviewed_on,
+                    current=None,
+                    detail=(
+                        f"not asked: the run's time budget of {budget / 60:g} "
+                        "minutes ran out"
+                    ),
+                    url=url,
+                    status=None,
+                )
             )
-        )
+            continue
+        reports.append(_check_channel(channel, url, headers, fetcher))
     return reports
 
 
@@ -798,30 +1050,14 @@ def _print_list(channels: list[Channel], unwatched: list[NotWatched]) -> None:
         sys.stdout.write(f"{item.harness}\tnot watched\t{item.reason}\n")
 
 
-def main(argv: list[str] | None = None, *, fetcher: Fetcher = fetch) -> int:
-    """CLI entry point."""
-    args = _parse_args(argv)
-    root: Path = args.harnesses_root
-    if not root.is_dir():
-        sys.stderr.write(f"harnesses root not found: {root}\n")
-        return 1
-    try:
-        channels, unwatched = load_channels(args.channels)
-    except ChannelFileError as exc:
-        sys.stderr.write(f"{args.channels}: {exc}\n")
-        return 1
-    problems = evidence_problems(channels, unwatched, root)
-    if problems:
-        sys.stderr.write("".join(f"{args.channels}: {p}\n" for p in problems))
-        return 1
-    if args.list:
-        _print_list(channels, unwatched)
-        return 0
-    reports = check(channels, fetcher, token=os.environ.get("GITHUB_TOKEN") or None)
+def _payload(
+    reports: list[ChannelReport], unwatched: list[NotWatched], problems: list[str]
+) -> dict[str, object]:
     failing = [r for r in reports if r.outcome in FAILING]
-    payload = {
+    return {
         "validator": "check_vendor_releases",
-        "passed": not failing,
+        "passed": not failing and not problems,
+        "problems": problems,
         "channel_count": len(reports),
         "counts": {
             outcome: sum(1 for r in reports if r.outcome == outcome)
@@ -830,13 +1066,71 @@ def main(argv: list[str] | None = None, *, fetcher: Fetcher = fetch) -> int:
         "channels": [asdict(report) for report in reports],
         "not_watched": [asdict(item) for item in unwatched],
     }
+
+
+def _write_report(payload: Mapping[str, object], output: Path | None) -> None:
     rendered = json.dumps(payload, indent=2, sort_keys=True) + "\n"
-    if args.output is None:
+    if output is None:
         sys.stdout.write(rendered)
     else:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered, encoding="utf-8")
-    return 2 if failing else 0
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered, encoding="utf-8")
+
+
+def _problems(
+    args: argparse.Namespace,
+) -> tuple[list[str], list[Channel], list[NotWatched]]:
+    """Return what is wrong with the channel file or its evidence, and the file."""
+    root: Path = args.harnesses_root
+    if not root.is_dir():
+        return [f"harnesses root not found: {root}"], [], []
+    name = args.channels.name
+    try:
+        channels, unwatched = load_channels(args.channels)
+    except ChannelFileError as exc:
+        return [f"{name}: {exc}"], [], []
+    problems = evidence_problems(channels, unwatched, root)
+    return [f"{name}: {problem}" for problem in problems], channels, unwatched
+
+
+def _run(args: argparse.Namespace, fetcher: Fetcher, clock: Callable[[], float]) -> int:
+    problems, channels, unwatched = _problems(args)
+    if problems:
+        sys.stderr.write("".join(f"{problem}\n" for problem in problems))
+        if not args.list:
+            _write_report(_payload([], unwatched, problems), args.output)
+        return 1
+    if args.list:
+        _print_list(channels, unwatched)
+        return 0
+    reports = check(
+        channels,
+        fetcher,
+        token=os.environ.get("GITHUB_TOKEN") or None,
+        budget=RUN_BUDGET_SECONDS,
+        clock=clock,
+    )
+    payload = _payload(reports, unwatched, [])
+    _write_report(payload, args.output)
+    return 0 if payload["passed"] else 2
+
+
+def main(
+    argv: list[str] | None = None,
+    *,
+    fetcher: Fetcher = fetch,
+    clock: Callable[[], float] = time.monotonic,
+) -> int:
+    """CLI entry point."""
+    args = _parse_args(argv)
+    try:
+        return _run(args, fetcher, clock)
+    except Exception as exc:  # the report still says why the run stopped
+        traceback.print_exc()
+        problem = _clip(f"the check stopped: {type(exc).__name__}: {exc}", 300)
+        if not args.list:
+            _write_report(_payload([], [], [problem]), args.output)
+        return 1
 
 
 if __name__ == "__main__":

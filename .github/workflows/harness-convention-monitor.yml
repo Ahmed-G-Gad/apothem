@@ -15,10 +15,10 @@
 # installer address where it redirects. It reports a new major line, a
 # release past a trigger the file names, an installer that redirects
 # somewhere new, or a channel that no longer exists. It sends the workflow's
-# GITHUB_TOKEN to the GitHub API
-# from a job that can only read; a separate job holds issues: write and files
-# the issue. Each check keeps one open issue: a later finding is added to it
-# as a comment rather than filed as a new issue.
+# GITHUB_TOKEN to the GitHub API from a job that can only read; a separate
+# job holds issues: write and files the issue. Each check keeps one open
+# issue: a later finding is added to it as a comment rather than filed as a
+# new issue.
 #
 # Schedule: weekly, 06:17 UTC on Mondays, so a pin is caught within a week
 # of crossing the 90-day line, a moved vendor page within a week of the
@@ -300,9 +300,12 @@ jobs:
   vendor-release-check:
     name: Vendor release check
     runs-on: ubuntu-latest
-    # When no registry answers, each channel takes 93 seconds (three 30-second
-    # attempts and 3 seconds of backoff), so the 15 channels take 23 minutes.
-    # tests/scripts/test_check_vendor_releases.py fails when that worst case
+    # Each attempt at a request has 30 seconds in all, however many addresses
+    # the host resolves to and however slowly it answers, so a channel that
+    # gets no answer takes at most 93 seconds (three attempts and 3 seconds of
+    # backoff). The check asks no further channel after 20 minutes, so it
+    # writes its report within 22 minutes, however many channels the file
+    # lists. tests/scripts/test_check_vendor_releases.py fails when that bound
     # and five minutes for the other steps no longer fit.
     timeout-minutes: 30
     # Read only: the check sends this job's GITHUB_TOKEN to the GitHub API, so
@@ -363,22 +366,42 @@ jobs:
             } catch (e) {
               return;  // The upload step already warns when the report is missing.
             }
+            // Report values come from registries, installer addresses and the
+            // channel file. Each is shown on one line, cut to 200 characters,
+            // and in the summary as HTML-escaped code, so it adds no markup.
+            const text = value => {
+              const line = String(value ?? 'n/a').replace(/\s+/g, ' ');
+              return line.length > 200 ? `${line.slice(0, 197)}...` : line;
+            };
+            const code = value => `<code>${text(value)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')}</code>`;
+            const problems = report.problems || [];
+            for (const p of problems) {
+              core.warning(`The check could not run: ${text(p)}`);
+            }
             const channels = report.channels || [];
             for (const c of channels.filter(c => c.outcome === 'unreachable')) {
-              core.warning(`Not checked: ${c.harness} ${c.channel}: ${c.detail}.`);
+              core.warning(`Not checked: ${text(c.harness)} ${text(c.channel)}: ${text(c.detail)}.`);
             }
             const header = ['Harness', 'Channel', 'Reviewed', 'Current', 'Outcome']
               .map(data => ({data, header: true}));
             const rows = channels.map(c => [
-              c.harness,
-              c.channel,
-              `${c.reviewed} (${c.reviewed_on})`,
-              c.current || 'n/a',
-              c.outcome,
+              code(c.harness),
+              code(c.channel),
+              `${code(c.reviewed)} (${code(c.reviewed_on)})`,
+              code(c.current),
+              code(c.outcome),
             ]);
-            const unwatched = (report.not_watched || []).map(n => n.harness).join(', ');
-            await core.summary
-              .addHeading('Vendor release channels', 2)
+            const unwatched = (report.not_watched || []).map(n => code(n.harness)).join(', ');
+            const summary = core.summary.addHeading('Vendor release channels', 2);
+            if (problems.length) {
+              summary.addRaw('<p>The check could not run:</p>').addList(problems.map(code));
+            }
+            await summary
               .addTable([header, ...rows])
               .addRaw(`Not watched: ${unwatched || 'none'}.`)
               .write();
@@ -389,8 +412,9 @@ jobs:
     if: needs.vendor-release-check.outputs.outcome == 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # No checkout, and downloading this run's own artifact needs no token
+    # scope, so the job holds issues: write alone.
     permissions:
-      contents: read
       issues: write
 
     steps:
@@ -412,32 +436,68 @@ jobs:
           script: |
             const fs = require('fs');
             const today = new Date().toISOString().slice(0, 10);
+            // Report values come from registries, installer addresses and the
+            // channel file. Each is put on one line, cut to 200 characters,
+            // and shown as a code span whose backtick fence is longer than any
+            // run of backticks inside it, so Markdown, HTML and @mentions in
+            // it do nothing.
+            const code = value => {
+              let line = String(value ?? 'n/a').replace(/\s+/g, ' ').trim() || 'n/a';
+              if (line.length > 200) line = `${line.slice(0, 197)}...`;
+              const longest = Math.max(0, ...(line.match(/`+/g) || []).map(run => run.length));
+              const fence = '`'.repeat(longest + 1);
+              const pad = line.startsWith('`') || line.endsWith('`') ? ' ' : '';
+              return `${fence}${pad}${line}${pad}${fence}`;
+            };
+            const stepLog = 'Exit 1 means the channel file or a pin\'s evidence phrase is wrong, or the check stopped on an error; the Check vendor release channels step log in the run below has the details.';
+            const run = `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             let body;
             try {
               const report = JSON.parse(fs.readFileSync('vendor-release-report.json', 'utf8'));
+              const problems = report.problems || [];
               const channels = report.channels || [];
-              const line = c => `- ${c.outcome}: \`${c.harness}\` ${c.channel} ${c.detail} (reviewed ${c.reviewed} on ${c.reviewed_on})`;
+              const line = c => `- ${code(c.outcome)}: ${code(c.harness)} ${code(c.channel)}: ${code(c.detail)} (reviewed ${code(c.reviewed)} on ${code(c.reviewed_on)})`;
               const failing = channels.filter(c => c.outcome === 'drift' || c.outcome === 'missing');
+              // A trigger's action is prose from the channel file in this
+              // repository, so it is shown as written.
               const triggers = failing
                 .filter(c => c.trigger)
-                .map(c => `- \`${c.harness}\` ${c.channel}: ${c.trigger}`);
+                .map(c => `- ${code(c.harness)} ${code(c.channel)}: ${String(c.trigger).replace(/\s+/g, ' ')}`);
               const differing = channels.filter(c => c.outcome === 'info').map(line);
               const unreachable = (report.counts && report.counts.unreachable) || 0;
-              body = [
-                `Vendor release drift found on ${today}.`,
-                '',
-                failing.map(line).join('\n') || '_(report parsed but no drift or missing rows; inspect artifact)_',
-                ...(triggers.length ? ['', 'Triggers to act on:', ...triggers] : []),
-                ...(differing.length ? ['', 'Other releases that differ from the reviewed version, reported without failing:', ...differing] : []),
-                '',
-                `Unreachable this run, not counted as drift: ${unreachable}.`,
-                '',
-                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-                '',
-                'Re-check each named pin against the new release or redirect target, then update the channel\'s `reviewed`, `reviewed_on` and `reviewed_from` in `scripts/dev/vendor-release-channels.json`. A trigger fails the check until its action is done and the trigger is removed or changed.',
-              ].join('\n');
+              if (problems.length) {
+                body = [
+                  `The vendor release check could not run on ${today}:`,
+                  '',
+                  ...problems.map(p => `- ${code(p)}`),
+                  '',
+                  stepLog,
+                  '',
+                  run,
+                ].join('\n');
+              } else {
+                body = [
+                  `Vendor release drift found on ${today}.`,
+                  '',
+                  failing.map(line).join('\n') || '_(report parsed but no drift or missing rows; inspect artifact)_',
+                  ...(triggers.length ? ['', 'Triggers to act on:', ...triggers] : []),
+                  ...(differing.length ? ['', 'Other releases that differ from the reviewed version, reported without failing:', ...differing] : []),
+                  '',
+                  `Unreachable this run, not counted as drift: ${unreachable}.`,
+                  '',
+                  run,
+                  '',
+                  'Re-check each named pin against the new release or redirect target, then update the channel\'s `reviewed`, `reviewed_on` and `reviewed_from` in `scripts/dev/vendor-release-channels.json`. A trigger on a version channel fails the check every week until you remove or change it. A trigger on an installer address stops once `reviewed` records the new target, so record that target only after the trigger\'s action is done.',
+                ].join('\n');
+              }
             } catch (e) {
-              body = `The vendor release check exited non-zero on ${today}, but \`vendor-release-report.json\` could not be parsed: ${e.message}. Inspect the workflow artifact.`;
+              body = [
+                `The vendor release check exited non-zero on ${today}, but \`vendor-release-report.json\` could not be read: ${code(e.message)}.`,
+                '',
+                stepLog,
+                '',
+                run,
+              ].join('\n');
             }
             // One open issue per check: comment on it when it exists.
             const title = '[harness-convention-monitor] vendor release drift';

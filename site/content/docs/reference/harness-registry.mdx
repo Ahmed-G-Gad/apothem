@@ -201,7 +201,7 @@ The registry stays synchronized through these checks:
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirms each adapter has a convention pin that is at most 90 days old, cites at least one vendor URL, and has no overdue discovery target. CI runs it on every pull request, weekly, and before a release. |
 | `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. A host name that resolves only to a placeholder address no server can hold, which a vendor's name servers can return for the region the check runs from, gets no request: it is reported as unroutable, does not fail the check, and its pages need a check by hand. The weekly convention monitor runs it, warns about each such host on every run, and lists its pages in the issue it files. |
-| `python scripts/dev/check_vendor_releases.py` | Asks each release channel in `scripts/dev/vendor-release-channels.json` for its current version: an npm package's dist-tag, a GitHub repository's latest release, or a PyPI project. For an installer address, it asks where the address redirects. It compares the answer with what was last reviewed. A new major version, a release past a trigger the file names, an installer address that redirects somewhere else, or a package, dist-tag, release or address that no longer exists fails it. A newer minor or patch version is reported and does not fail it, unless the channel's `watch` level names that level. A registry that does not answer, or whose answer breaks off partway, is reported as unreachable and does not fail it either. Before any request it checks that every harness folder has an entry and that each channel's evidence phrase is in its pin, and it exits 1 when one is not. The weekly convention monitor runs it with a read-only token, lists every channel in the run summary, and files an issue when it fails. `--list` prints the channels without asking any registry. |
+| `python scripts/dev/check_vendor_releases.py` | Asks each release channel in `scripts/dev/vendor-release-channels.json` for its current version: an npm package's dist-tag, a GitHub repository's latest release (or, for a channel with a tag pattern, its newest stable release with a matching tag among the newest 100), or a PyPI project. For an installer address, it asks where the address redirects. It compares the answer with what was last reviewed. A new major version, a release past a trigger the file names, an installer address that redirects somewhere else, or a package, dist-tag, release or address that no longer exists fails it, and so does a tag pattern that no stable release among the newest 100 matches. A newer minor or patch version is reported and does not fail it, unless the channel's `watch` level names that level. A registry that does not answer, or whose answer breaks off partway, is reported as unreachable and does not fail it either. Each try at a request has 30 seconds in all, and after 20 minutes the check asks no further channel, so it always writes its report. Before any request it checks that every harness folder has an entry and that each channel's evidence phrase is in its pin, and it exits 1 when one is not; the report and the issue then say what is wrong. The weekly convention monitor runs it with a read-only token, lists every channel in the run summary, and files an issue when it fails. `--list` prints the channels without asking any registry. |
 | `python -m apothem.conformity.gate --all .` | Runs the documentation and implementation conformity checks. |
 | `python -m pytest` | Exercises registry fixture tests and adapter contract tests. |
 
@@ -216,7 +216,10 @@ the phrase of the pin that names it. The first number of a version is its
 major version, 0 included, so a 0.x line that moves from 0.26 to 0.27 reports
 a newer minor version and does not fail. A channel with calendar versions,
 such as OpenClaw's year.month.release numbers, reports every newer release
-without failing.
+without failing, and takes no `watch` level. Codex, Gemini CLI, Hermes, Qwen
+Code and GLM are on 0.x lines, so a new version of one of them is listed in
+the run summary and files no issue until it reaches 1.0, unless its channel
+sets a `watch` level.
 
 OpenCode has four channels. `opencode-ai` carries OpenCode 1, and
 `@opencode/cli` carries OpenCode 2. The GitHub releases of `anomalyco/opencode`
@@ -225,12 +228,16 @@ asks `opencode.ai/install` where it redirects. On 2026-11-03 it redirected to
 the OpenCode 1 installer script. That script installs the version that
 `opencode-ai`'s `latest` dist-tag names when that is an OpenCode 1 version,
 and it never installs OpenCode 2. The OpenCode decision of 2026-11-03 moves to
-writing OpenCode 2's own formats where OpenCode 2 runs when `opencode.ai/install`
-or `opencode-ai` moves to OpenCode 2. So the `opencode-ai` channel and the
-installer channel each carry a trigger: the check fails when `opencode-ai`'s
-`latest` version moves past major version 1, or when `opencode.ai/install`
-stops redirecting to the OpenCode 1 script. A change inside that script does
-not change the redirect, so the check does not see it.
+writing OpenCode 2's own formats where OpenCode 2 runs when either of two
+signals appears: OpenCode 2 announces a date to remove its translation of
+OpenCode 1's formats, or `opencode.ai/install` or `opencode-ai` moves to
+OpenCode 2. The check watches the second signal. The `opencode-ai` channel and
+the installer channel each carry a trigger: the check fails when
+`opencode-ai`'s `latest` version moves past major version 1, or when
+`opencode.ai/install` stops redirecting to the OpenCode 1 script. A change
+inside that script does not change the redirect, so the check does not see
+it. No registry answers the first signal, so it stays a check by hand, due by
+2027-02-01 with the OpenCode pin's next review.
 
 Antigravity, Cursor, Kiro, Trae and Windsurf are not watched. Each is a
 desktop app, or a command-line tool that installs with a script, and its pin
@@ -239,8 +246,9 @@ file gives the reason for each.
 
 After you re-check a pin against a new release or redirect target, update
 that channel's `reviewed`, `reviewed_on` and `reviewed_from` fields. A trigger
-fails the check until its action is done and the trigger is removed or
-changed.
+on a version channel fails the check every week until you remove or change it.
+A trigger on an installer address stops once `reviewed` records the new
+target, so record that target only after the trigger's action is done.
 
 ## Generated Harness Adapter Reference
 

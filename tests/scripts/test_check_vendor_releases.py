@@ -8,6 +8,8 @@ import http.client
 import io
 import json
 import sys
+import threading
+import time
 import urllib.error
 import urllib.request
 import urllib.response
@@ -163,6 +165,17 @@ def _one(payload: Mapping[str, object]) -> dict[str, object]:
     return reports[0]
 
 
+def _refused(payload: Mapping[str, object]) -> list[str]:
+    """Return the problems of a report written by a run that exited 1."""
+    problems = payload["problems"]
+    assert payload["passed"] is False
+    assert payload["channels"] == []
+    assert payload["channel_count"] == 0
+    assert isinstance(problems, list)
+    assert problems
+    return problems
+
+
 def test_a_new_major_is_drift(tmp_path: Path) -> None:
     rc, payload = _run(
         tmp_path,
@@ -237,6 +250,26 @@ def test_a_newer_minor_or_patch_is_information(
         pytest.param(
             _json(["1.4.2"]), "the dist-tags answer is not an object", id="wrong-shape"
         ),
+        pytest.param(
+            cvr.Response(200, error="the answer is larger than 16 MiB"),
+            "the answer is larger than 16 MiB",
+            id="too-large",
+        ),
+        pytest.param(
+            cvr.Response(200, b"[" * 100_000 + b"]" * 100_000),
+            "the answer nests deeper than the check reads",
+            id="nested-too-deep",
+        ),
+        pytest.param(
+            _npm(latest="1" + "0" * 5000),
+            "the answer names a version in a form the check does not read",
+            id="version-thousands-of-digits-long",
+        ),
+        pytest.param(
+            _npm(latest="v9.0.0-@octocat<img/src=//evil.example/x.png>`x`"),
+            "the answer names a version in a form the check does not read",
+            id="version-with-markup",
+        ),
     ],
 )
 def test_an_unreachable_channel_is_unreachable_not_drift(
@@ -254,6 +287,8 @@ def test_an_unreachable_channel_is_unreachable_not_drift(
     assert report["outcome"] == "unreachable"
     assert report["current"] is None
     assert report["detail"] == detail
+    # Nothing the registry sent beyond the version form reaches the report.
+    assert "octocat" not in json.dumps(payload)
 
 
 @pytest.mark.parametrize(
@@ -275,6 +310,22 @@ def test_a_package_or_tag_that_is_gone_is_missing(
 
     assert rc == 2
     assert _one(payload)["outcome"] == "missing"
+    assert _one(payload)["trigger"] is None
+
+
+def test_a_missing_channel_names_its_trigger_action(tmp_path: Path) -> None:
+    # The trigger's signal can no longer be seen, so its action is reported.
+    entry = _channel(trigger={"major_above": 1, "action": "Read the package."})
+    rc, payload = _run(
+        tmp_path,
+        {"alpha": {"channels": [entry]}},
+        _answering({_NPM_URL: cvr.Response(404, error="HTTP 404")}),
+    )
+
+    report = _one(payload)
+    assert rc == 2
+    assert report["outcome"] == "missing"
+    assert report["trigger"] == "Read the package."
 
 
 @pytest.mark.parametrize(
@@ -315,6 +366,26 @@ def test_a_package_or_tag_that_is_gone_is_missing(
             f"answers 200 without redirecting; it redirected to {_TARGET} when reviewed",
             id="no-redirect",
         ),
+        pytest.param(
+            cvr.Response(307, location="https://[bad/install"),
+            "drift",
+            None,
+            f"redirects to an address the check does not read, not the reviewed {_TARGET}",
+            id="target-that-does-not-parse",
+        ),
+        pytest.param(
+            cvr.Response(
+                302,
+                location=(
+                    "https://evil.example/install [Fix now](https://phish.example/)"
+                    " @octocat <b>bold</b>"
+                ),
+            ),
+            "drift",
+            None,
+            f"redirects to an address the check does not read, not the reviewed {_TARGET}",
+            id="target-with-markup",
+        ),
     ],
 )
 def test_an_installer_address_is_judged_by_its_redirect_target(
@@ -339,6 +410,7 @@ def test_an_installer_address_is_judged_by_its_redirect_target(
         None if outcome == "clean" else "Read the new installer."
     )
     assert rc == (0 if outcome == "clean" else 2)
+    assert "octocat" not in json.dumps(payload)
 
 
 @pytest.mark.parametrize(
@@ -389,7 +461,11 @@ def test_an_installer_address_that_is_gone_or_silent_names_no_target(
     assert report["outcome"] == outcome
     assert report["current"] is None
     assert report["detail"] == detail
-    assert report["trigger"] is None
+    # An address that is gone no longer redirects to the reviewed target, so
+    # it names the trigger's action; one that does not answer names none.
+    assert report["trigger"] == (
+        "Read the new installer." if outcome == "missing" else None
+    )
     assert rc == (2 if outcome == "missing" else 0)
 
 
@@ -582,6 +658,18 @@ def test_the_opencode_record_watches_both_lines_and_both_switch_signals() -> Non
             "STANDARD-CONVENTION-PIN.md",
             id="reviewed-target-only-a-prefix",
         ),
+        pytest.param(
+            "- the `tool-cli` npm package, release 1.4.2.1.\n",
+            _channel(),
+            "reviewed 1.4.2 is not in STANDARD-CONVENTION-PIN.md",
+            id="reviewed-only-inside-a-longer-version",
+        ),
+        pytest.param(
+            "- the `tool-cli` npm package, release 1.4.2-rc.1.\n",
+            _channel(),
+            "reviewed 1.4.2 is not in STANDARD-CONVENTION-PIN.md",
+            id="reviewed-only-as-a-prerelease",
+        ),
     ],
 )
 def test_evidence_that_the_pin_does_not_hold_is_refused(
@@ -594,11 +682,12 @@ def test_evidence_that_the_pin_does_not_hold_is_refused(
 
     assert len(problems) == 1
     assert problem in problems[0]
-    rc = cvr.main(
-        ["--channels", str(channels), "--harnesses-root", str(root)],
-        fetcher=_send_no_request,
+    # The run stops before any request, and its report says why.
+    rc, payload = _run(
+        tmp_path / "run", {"alpha": {"channels": [entry]}}, _send_no_request, pin_text
     )
     assert rc == 1
+    assert _refused(payload) == [f"channels.json: {problems[0]}"]
 
 
 def test_a_harness_folder_without_an_entry_is_refused(tmp_path: Path) -> None:
@@ -687,12 +776,30 @@ def test_a_github_channel_reads_the_latest_release_tag(tmp_path: Path) -> None:
     )
 
 
+def test_a_latest_release_tag_that_holds_no_version_is_unreachable(
+    tmp_path: Path,
+) -> None:
+    rc, payload = _run(
+        tmp_path,
+        {"alpha": {"channels": [_github()]}},
+        _answering({_LATEST_URL: _json(_release("nightly"))}),
+    )
+
+    report = _one(payload)
+    assert rc == 0
+    assert report["outcome"] == "unreachable"
+    assert report["current"] == "nightly"
+    assert report["detail"] == "the registry names nightly, which holds no version"
+
+
 def test_a_tag_pattern_picks_the_newest_stable_matching_release(
     tmp_path: Path,
 ) -> None:
     releases = [
         _release("sdk-typescript-v1.1.27"),
         _release("v0.27.0-nightly.20261102", prerelease=True),
+        # Matches the pattern and is newer, but is a prerelease.
+        _release("v0.26.9", prerelease=True),
         _release("desktop-v0.26.9"),
         _release("v0.26.5"),
         _release("v0.26.6"),
@@ -711,18 +818,46 @@ def test_a_tag_pattern_picks_the_newest_stable_matching_release(
     assert report["outcome"] == "info"
 
 
-def test_a_tag_pattern_with_no_match_is_unreachable(tmp_path: Path) -> None:
-    entry = _github(tag_pattern="v[0-9]+[.][0-9]+[.][0-9]+")
+@pytest.mark.parametrize(
+    ("releases", "detail"),
+    [
+        pytest.param(
+            [_release("sdk-typescript-v0.1.27")],
+            "no stable release among the newest 1 has a tag that matches "
+            "v[0-9]+[.][0-9]+[.][0-9]+",
+            id="no-tag-matches",
+        ),
+        pytest.param(
+            [
+                _release("v0.27.0", prerelease=True),
+                {"tag_name": "v0.28.0", "draft": True, "prerelease": False},
+            ],
+            "no stable release among the newest 2 has a tag that matches "
+            "v[0-9]+[.][0-9]+[.][0-9]+",
+            id="only-prereleases-and-drafts-match",
+        ),
+        pytest.param([], "the repository lists no releases", id="no-releases"),
+    ],
+)
+def test_a_tag_pattern_with_no_stable_match_is_missing(
+    tmp_path: Path, releases: list[dict[str, object]], detail: str
+) -> None:
+    entry = _github(
+        tag_pattern="v[0-9]+[.][0-9]+[.][0-9]+",
+        trigger={"major_above": 0, "action": "Find the CLI releases."},
+    )
     rc, payload = _run(
         tmp_path,
         {"alpha": {"channels": [entry]}},
-        _answering({_LIST_URL: _json([_release("sdk-typescript-v0.1.27")])}),
+        _answering({_LIST_URL: _json(releases)}),
     )
 
     report = _one(payload)
-    assert rc == 0
-    assert report["outcome"] == "unreachable"
-    assert "no stable release among the newest 1" in report["detail"]
+    assert rc == 2
+    assert report["outcome"] == "missing"
+    assert report["current"] is None
+    assert report["detail"] == detail
+    assert report["trigger"] == "Find the CLI releases."
 
 
 def test_a_pypi_project_reads_its_version(tmp_path: Path) -> None:
@@ -764,7 +899,12 @@ def test_the_token_goes_to_the_github_api_only(
 
 
 class _Answer:
+    """A 200 answer whose body comes in *chunks*, one per read."""
+
     status = 200
+
+    def __init__(self, *chunks: bytes) -> None:
+        self._chunks = list(chunks or (b"{}",))
 
     def __enter__(self) -> _Answer:
         return self
@@ -773,7 +913,7 @@ class _Answer:
         return None
 
     def read(self, _size: int) -> bytes:
-        return b"{}"
+        return self._chunks.pop(0) if self._chunks else b""
 
 
 def test_fetch_keeps_the_token_off_other_hosts_and_off_redirects(
@@ -842,6 +982,145 @@ def test_fetch_hands_back_a_redirect_it_was_told_not_to_follow(
     assert served.seen == [_INSTALLER_URL]
     assert response.status == 307
     assert response.location == location
+
+
+def test_fetch_hands_back_a_kept_redirect_whose_target_does_not_parse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    served = _ServeOneRedirect(307, "https://[bad/install")
+    build_opener = urllib.request.build_opener
+    monkeypatch.setattr(
+        cvr.urllib.request, "build_opener", lambda *given: build_opener(*given, served)
+    )
+
+    response = cvr.fetch(_INSTALLER_URL, {}, follow_redirects=False)
+
+    assert response.status == 307
+    assert response.location == "https://[bad/install"
+
+
+def test_fetch_reports_a_followed_redirect_that_does_not_parse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    served = _ServeOneRedirect(307, "https://[bad/install")
+    opener = urllib.request.build_opener(served)
+    calls: list[str] = []
+
+    def urlopen(request: urllib.request.Request, timeout: float) -> object:
+        calls.append(request.full_url)
+        return opener.open(request, timeout=timeout)
+
+    monkeypatch.setattr(cvr.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(cvr.time, "sleep", lambda _seconds: None)
+
+    response = cvr.fetch(_NPM_URL, {}, attempts=3)
+
+    # urllib raises ValueError on the Location; another attempt gets the same.
+    assert calls == [_NPM_URL]
+    assert response.status is None
+    assert response.error == "the answer could not be used (ValueError)"
+
+
+def test_fetch_abandons_an_attempt_that_outlasts_its_time_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A name lookup, or a connection to one silent address after another,
+    # that never ends.
+    release = threading.Event()
+    calls: list[int] = []
+
+    def stall(*_args: object, **_kwargs: object) -> object:
+        calls.append(1)
+        release.wait(30)
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(cvr.urllib.request, "urlopen", stall)
+    monkeypatch.setattr(cvr.time, "sleep", lambda _seconds: None)
+    started = time.monotonic()
+    try:
+        response = cvr.fetch(_NPM_URL, {}, attempts=2, timeout=0.2)
+    finally:
+        release.set()
+
+    assert time.monotonic() - started < 10
+    assert len(calls) == 2
+    assert response.status is None
+    assert response.error == "no complete answer within 0.2 seconds"
+
+
+class _Drip(_Answer):
+    """An answer that sends one byte at a time, each well inside a read timeout."""
+
+    def read1(self, _size: int) -> bytes:
+        time.sleep(0.02)
+        return b" "
+
+
+def test_fetch_stops_reading_an_answer_that_arrives_too_slowly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cvr.urllib.request, "urlopen", lambda *_a, **_k: _Drip())
+    started = time.monotonic()
+
+    response = cvr.fetch(_NPM_URL, {}, attempts=1, timeout=0.3)
+
+    assert time.monotonic() - started < 10
+    assert response.status is None
+    assert response.error == "no complete answer within 0.3 seconds"
+
+
+def test_fetch_refuses_an_answer_larger_than_its_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    chunk = b"x" * (64 * 1024)
+    calls: list[int] = []
+
+    def urlopen(*_args: object, **_kwargs: object) -> _Answer:
+        calls.append(1)
+        return _Answer(*[chunk] * 40)
+
+    monkeypatch.setattr(cvr, "_MAX_BODY", 2 * 1024 * 1024)
+    monkeypatch.setattr(cvr.urllib.request, "urlopen", urlopen)
+
+    response = cvr.fetch(_NPM_URL, {}, attempts=3)
+
+    # Not cut short and parsed as broken JSON, and not asked for again.
+    assert calls == [1]
+    assert response.status == 200
+    assert response.body == b""
+    assert response.error == "the answer is larger than 2 MiB"
+
+
+def _short_answer() -> http.client.HTTPResponse:
+    """A 200 answer that gives its length, then closes after part of the body."""
+    body = b'{"tag_name": "v0.26.0", "draft": false}'
+    raw = (
+        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+        + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+        + body[:14]
+    )
+    answer = http.client.HTTPResponse(_Socket(raw))  # type: ignore[arg-type]
+    answer.begin()
+    return answer
+
+
+def test_fetch_retries_an_answer_shorter_than_its_stated_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def urlopen(*_args: object, **_kwargs: object) -> http.client.HTTPResponse:
+        calls.append(1)
+        return _short_answer()
+
+    monkeypatch.setattr(cvr.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(cvr.time, "sleep", lambda _seconds: None)
+
+    response = cvr.fetch(_LATEST_URL, {}, attempts=3)
+
+    assert len(calls) == 3
+    assert response.status is None
+    assert response.error == "the answer broke off after 14 of 39 bytes"
 
 
 @pytest.mark.parametrize(("code", "calls"), [(503, 3), (502, 3), (404, 1), (403, 1)])
@@ -960,6 +1239,8 @@ def test_fetch_reports_an_answer_that_is_not_http(
 def test_the_check_job_outlasts_a_run_where_every_request_times_out(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Each attempt takes its whole time limit, the most fetch() lets it take
+    # however many addresses a host resolves to and however slowly it answers.
     clock = [0.0]
 
     def time_out(_request: object, timeout: float = 0.0) -> object:
@@ -979,16 +1260,89 @@ def test_the_check_job_outlasts_a_run_where_every_request_times_out(
     monkeypatch.setattr(cvr.time, "sleep", sleep)
     output = tmp_path / "report.json"
 
-    rc = cvr.main(["--output", str(output)])
+    rc = cvr.main(["--output", str(output)], clock=lambda: clock[0])
 
     report = json.loads(output.read_text(encoding="utf-8"))
     assert rc == 0
     assert report["counts"]["unreachable"] == report["channel_count"]
+    backoff = sum(2**attempt for attempt in range(cvr.ATTEMPTS - 1))
+    per_channel = cvr.ATTEMPTS * cvr.ATTEMPT_SECONDS + backoff
+    # The run asks no channel once its budget has passed, so it ends within
+    # the budget and one more channel's worst case.
+    bound = cvr.RUN_BUDGET_SECONDS + per_channel
+    assert clock[0] <= bound, (clock[0], bound)
     workflow = yaml.safe_load(_MONITOR.read_text(encoding="utf-8"))
     minutes = workflow["jobs"]["vendor-release-check"]["timeout-minutes"]
-    # Leave five minutes for the job's other steps; raise timeout-minutes when
-    # new channels push the worst case past it.
-    assert clock[0] + 5 * 60 <= minutes * 60, (clock[0], minutes)
+    # Leave five minutes for the job's other steps.
+    assert bound + 5 * 60 <= minutes * 60, (bound, minutes)
+
+
+def test_the_run_asks_no_channel_once_its_time_budget_runs_out(
+    tmp_path: Path,
+) -> None:
+    clock = [0.0]
+    asked: list[str] = []
+
+    def slow(url: str, _headers: Mapping[str, str], **_kwargs: object) -> cvr.Response:
+        asked.append(url)
+        clock[0] += 500.0
+        return _npm(latest="1.4.2")
+
+    _root, channels_file = _setup(
+        tmp_path, {name: {"channels": [_channel()]} for name in "abcde"}
+    )
+    channels, _unwatched = cvr.load_channels(channels_file)
+
+    reports = cvr.check(channels, slow, budget=1200.0, clock=lambda: clock[0])
+
+    # Asked at 0, 500 and 1000 seconds; at 1500 the budget has run out.
+    assert len(asked) == 3
+    assert [r.outcome for r in reports] == ["clean"] * 3 + ["unreachable"] * 2
+    assert {r.detail for r in reports[3:]} == {
+        "not asked: the run's time budget of 20 minutes ran out"
+    }
+    assert all(r.status is None and r.current is None for r in reports[3:])
+
+
+def test_one_answer_the_check_cannot_read_stops_no_other_channel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def boom(_channel: cvr.Channel, _payload: object) -> cvr.Reading:
+        raise KeyError("an answer shape no branch expects")
+
+    monkeypatch.setattr(cvr, "_npm_version", boom)
+    rc, payload = _run(
+        tmp_path,
+        {"alpha": {"channels": [_channel()]}, "beta": {"channels": [_github()]}},
+        _answering(
+            {
+                _NPM_URL: _npm(latest="2.0.0"),
+                _LATEST_URL: _json(_release("v0.26.0")),
+            }
+        ),
+    )
+
+    reports = {r["harness"]: r for r in payload["channels"]}
+    assert rc == 0
+    assert reports["alpha"]["outcome"] == "unreachable"
+    assert reports["alpha"]["detail"] == "the answer could not be read (KeyError)"
+    assert reports["alpha"]["current"] is None
+    assert reports["beta"]["outcome"] == "clean"
+
+
+def test_a_run_that_stops_on_an_error_still_writes_its_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def crash(*_args: object, **_kwargs: object) -> list[cvr.ChannelReport]:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cvr, "check", crash)
+    rc, payload = _run(
+        tmp_path, {"alpha": {"channels": [_channel()]}}, _send_no_request
+    )
+
+    assert rc == 1
+    assert _refused(payload) == ["the check stopped: RuntimeError: boom"]
 
 
 def test_fetch_refuses_a_url_that_is_not_https() -> None:
@@ -1034,6 +1388,25 @@ def test_fetch_refuses_a_url_that_is_not_https() -> None:
         pytest.param(
             {"alpha": {"channels": [_channel(watch="build")]}}, id="watch-level"
         ),
+        pytest.param(
+            {
+                "alpha": {
+                    "channels": [
+                        _channel(
+                            reviewed="2026.10.10",
+                            reviewed_from="registry",
+                            versioning="calendar",
+                            watch="minor",
+                        )
+                    ]
+                }
+            },
+            id="watch-on-calendar",
+        ),
+        pytest.param(
+            {"alpha": {"channels": [_channel(reviewed="1.4.1234567890")]}},
+            id="reviewed-number-too-long",
+        ),
         pytest.param({"alpha": {"not_watched": " "}}, id="empty-reason"),
         pytest.param(
             {"alpha": {"channels": [_redirect(name=_INSTALLER_URL)]}},
@@ -1069,7 +1442,8 @@ def test_the_channel_file_format_is_enforced(
     rc, payload = _run(tmp_path, harnesses, _send_no_request)
 
     assert rc == 1
-    assert payload == {}
+    [problem] = _refused(payload)
+    assert problem.startswith("channels.json: ")
 
 
 def test_list_prints_the_channels_without_fetching(

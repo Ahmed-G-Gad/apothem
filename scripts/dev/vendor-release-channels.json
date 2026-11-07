@@ -1,5 +1,5 @@
 {
-  "about": "Release channels the weekly harness-convention monitor watches, one entry per harness folder under src/apothem/harnesses/. scripts/dev/check_vendor_releases.py compares each channel's current version, or an installer address's redirect target, with the one last reviewed, and scripts/README.md describes every field. After you re-check a pin against a new release or target, update that channel's reviewed, reviewed_on and reviewed_from.",
+  "about": "Release channels the weekly harness-convention monitor watches, one entry per harness folder under src/apothem/harnesses/. scripts/dev/check_vendor_releases.py compares each channel's current version, or an installer address's redirect target, with the one last reviewed, and scripts/README.md describes every field. After you re-check a pin against a new release or target, update that channel's reviewed, reviewed_on and reviewed_from. A trigger on a version channel keeps failing the check until you remove or change it. A trigger on an installer address stops once reviewed records the new target, so record that target only after the trigger's action is done.",
   "harnesses": {
     "antigravity": {
       "not_watched": "Antigravity is a desktop app with the agy CLI, and its pin records that it exposes no version or commit surface; the pin names no package, repository or registry. TODO(clarify): whether Google publishes the agy CLI to a registry that a script can query without credentials."
@@ -40,7 +40,7 @@
           "reviewed": "0.163.0",
           "reviewed_on": "2026-10-26",
           "reviewed_from": "pin",
-          "evidence": "github.com/openai/codex/pull/39299",
+          "evidence": "github.com/openai/codex/releases",
           "note": "Release tags read rust-v followed by the version. The pin read codex plugin marketplace add --help from codex-cli 0.163.0 on 2026-10-26, when rust-v0.164.0 (published 2026-10-23) was already out."
         }
       ]
@@ -56,7 +56,7 @@
           "reviewed": "0.66.0",
           "reviewed_on": "2026-11-03",
           "reviewed_from": "registry",
-          "evidence": "`github.com/google-gemini/gemini-cli`",
+          "evidence": "github.com/google-gemini/gemini-cli/releases",
           "note": "Recorded from the repository's latest release (v0.66.0, published 2026-10-27) on 2026-11-03; the pin reads the docs at a commit and names no release."
         }
       ]
@@ -96,7 +96,7 @@
           "reviewed": "0.22.6",
           "reviewed_on": "2026-11-03",
           "reviewed_from": "registry",
-          "evidence": "`github.com/NousResearch/hermes-agent`",
+          "evidence": "github.com/NousResearch/hermes-agent/releases",
           "note": "Recorded from the repository's latest release (v0.22.6, published 2026-11-02) on 2026-11-03; the pin reads the docs at a commit and names no release."
         }
       ]
@@ -145,7 +145,7 @@
           "evidence": "the `opencode-ai` npm package still install OpenCode 1",
           "trigger": {
             "major_above": 1,
-            "action": "This is the switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Remove or change this trigger once that is done."
+            "action": "Read what opencode-ai's latest tag names now: this trigger fires on a release past major 1, and when the package or that tag is gone. If it names an OpenCode 2 release, this is the second switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Remove or change this trigger once that is done; until then it fails the check every week."
           },
           "note": "OpenCode 1, the default line. With no version given, opencode.ai/install installs this tag's version when it is a 1.x release, else the newest v1 release on GitHub, and it refuses a requested version of 2 or later. So this tag moving to 2.x does not change what that installer installs; the opencode.ai/install channel below watches where the installer itself redirects."
         },
@@ -177,7 +177,7 @@
           "reviewed_from": "pin",
           "evidence": "`opencode.ai/install` redirects to `raw.githubusercontent.com/anomalyco/opencode/refs/heads/v1/install`",
           "trigger": {
-            "action": "opencode.ai/install no longer redirects to the OpenCode 1 installer script. Read the script it serves now. If it installs OpenCode 2, this is the switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Record the new target in the pin and in this channel's reviewed field, and remove or change this trigger once the switch is done."
+            "action": "opencode.ai/install no longer redirects to the OpenCode 1 installer script. Read the script it serves now. If it still installs OpenCode 1, record the new target in the pin and in this channel's reviewed field. If it installs OpenCode 2, this is the second switch signal in the OpenCode decision of 2026-11-03: move the OpenCode install to version-aware output, writing OpenCode 2's own formats where OpenCode 2 runs. Recording the new target in reviewed stops this trigger, so record it only once the switch is done, then remove or change this trigger."
           },
           "note": "The default installer, which the OpenCode decision names as a switch signal. On 2026-11-03 it answered 307, redirecting to the install script on the v1 branch, which says it installs only OpenCode 1 and points OpenCode 2 users to opencode.ai/v2/install. A change inside the v1 script does not change the redirect, so this channel does not see it."
         }
