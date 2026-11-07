@@ -95,7 +95,11 @@ did not write and that has the same name as an Apothem skill is left alone, with
 a warning that names it. The install prints a note that names those tools.
 `~/.codex/agents/` is a second shared root: another supported tool lists that folder as a compatibility location (the
 registry names it), and its docs do not say whether it reads the TOML files a
-`Codex` install writes there.
+`Codex` install writes there. With `CODEX_HOME` set to another folder, the
+install writes its agents under that folder instead, which that tool's docs do
+not list (they name only `~/.codex/agents/`), so the install note leaves the
+folder out. If an earlier install left Apothem agents in `~/.codex/agents/`, the
+note says so, since this install neither updates nor removes them.
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
@@ -109,6 +113,17 @@ earlier release's retention may already have deleted older sets. Copy
 `.rules` files back into `~/.codex/rules/` by hand, then run `apothem update`.
 `apothem rollback --install-id` reverses the whole earlier install, so it is not
 the way to recover these files.
+
+Codex loads one instruction file from its home folder (`~/.codex`, or the folder
+`CODEX_HOME` names): `AGENTS.override.md` when that file has text, and
+`AGENTS.md` only otherwise. The Apothem block goes into `AGENTS.md`, so an
+`AGENTS.override.md` with text in that folder keeps Codex from loading it,
+unless the override is a symbolic link to `AGENTS.md`. A hard link or a copy is
+a separate file once an install rewrites `AGENTS.md`, so it gets the note.
+`apothem install`, `apothem update` and `apothem verify` print a note that names
+the file when that happens. An empty `AGENTS.override.md` is skipped, so it gets
+no note. To load the block, empty or remove the override, or move its text into
+`AGENTS.md` outside the Apothem block.
 
 ## Codex plugin
 
@@ -149,6 +164,11 @@ The verify command confirms that:
    configs parse. Add `--profile PATH` to also confirm that the installed files
    match that profile.
 3. The adapter-specific verification routine reports success.
+
+When the Apothem block is in `AGENTS.md` and an `AGENTS.override.md` with text
+sits beside it in the Codex home, verify also prints a note that names the
+override, because Codex loads that file instead of the block. The note does not
+fail the check, and verify gives none when the block is not installed.
 
 ## Updating
 

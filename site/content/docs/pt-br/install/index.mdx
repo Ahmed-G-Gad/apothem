@@ -83,7 +83,7 @@ uma skill pessoal `code-review` substitui o `/code-review` integrado (seu alias
 `/review` ainda executa o integrado). Dois nomes, `projectify` e `workflow`,
 também são skills nativas; a skill nativa é a que o plugin e a instalação do
 motor distribuem, e não uma skill derivada do comando. Consulte
-[Claude Code](/docs/harnesses/claude-code#skills-de-comando-e-arquivos-de-referência)
+[Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)
 para ver como os comandos são divididos, e [Comandos de barra](/docs/reference/commands)
 para o catálogo completo de comandos.
 
@@ -349,7 +349,7 @@ de 30 segundos do host em um disco lento, como uma unidade do Windows sob o WSL.
 Como as extensões dos canais 5 e 6, este é um **bootstrap** que invoca o motor
 pelo shell. O plugin inclui uma skill de entrada; seu manifesto é um
 `plugin.json` na raiz, e a
-[página de harness do host do plugin](/docs/harnesses/codex#plugin-do-codex) descreve o
+[página de harness do host do plugin](/docs/harnesses/codex#codex-plugin) descreve o
 layout e o que o plugin deixa para o motor. Materialize o harness completo
 executando a instalação por meio dele:
 
@@ -435,7 +435,7 @@ instalado.
   ainda os suporta como seus pisos declarados e testa cada um deles no CI, mas
   eles não recebem mais correções de segurança upstream, então prefira o
   Python 3.11 ou mais recente e o Node.js 22 ou mais recente. A
-  [política de pisos de runtime](/docs/governance/release-engineering-policy#pisos-de-runtime)
+  [política de pisos de runtime](/docs/governance/release-engineering-policy#runtime-floors)
   explica como um piso é elevado.
 - **Git** — apenas a via do instalador, e somente para a forma pela rede (o
   script clona o código-fonte; um checkout local não precisa de clone).

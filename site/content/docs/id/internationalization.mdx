@@ -2,7 +2,7 @@
 title: "Internasionalisasi (i18n)"
 description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa alternatif hreflang, dan merender kanan-ke-kiri, di seluruh dua belas bahasa."
 machineTranslated: true
-sourceHash: "fbe64d232e98a8e6"
+sourceHash: "cf9e0b89b61893f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,4 +140,7 @@ Inggris.
 
 Bahasa Inggris tetap menjadi sumber kebenaran; setiap halaman lokal
 mencerminkan struktur, tautan, dan contoh kode padanannya dalam bahasa Inggris
-secara verbatim.
+secara verbatim, dengan satu pengecualian untuk tautan ke bagian. Tautan ke
+bagian di halaman lain menyalin anchor-nya (`#...`) dari halaman bahasa Inggris;
+tautan ke bagian di halaman yang sama membentuk anchor-nya dari judul yang
+diterjemahkan, karena situs membuat ID setiap judul dari teks judul tersebut.

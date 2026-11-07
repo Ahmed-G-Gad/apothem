@@ -177,6 +177,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Codex installs say when an `AGENTS.override.md` hides the Apothem block.**
+  In its home folder (`~/.codex`, or the folder `CODEX_HOME` names), Codex
+  loads only the first of `AGENTS.override.md` and `AGENTS.md` that has text,
+  so an override with text there keeps Codex from loading the block the install
+  writes into `AGENTS.md`, and nothing said so. `apothem install` and
+  `apothem update` now print a note that names the override, dry runs
+  included, and `apothem verify` prints it while the block is in place,
+  without failing the check. An empty override falls through to `AGENTS.md`,
+  and a symbolic link to `AGENTS.md` hides nothing, so neither gets a note; a
+  hard link or a copy that holds the Apothem block gets a note saying to
+  remove it, since installs and updates do not refresh it.
+- **The Codex install no longer calls `~/.codex/agents/` shared when
+  `CODEX_HOME` points the Codex home elsewhere.** The install then writes its
+  agents under that folder, which the Cursor docs do not list (they name only
+  `~/.codex/agents/`), but its note still named Cursor as a tool that loads
+  them. The note now leaves the folder out, unless an earlier install left
+  Apothem agents in `~/.codex/agents/`; then it says that this install neither
+  updates nor removes them. The Codex adapter and the install notes find the
+  Codex home through one shared lookup.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce

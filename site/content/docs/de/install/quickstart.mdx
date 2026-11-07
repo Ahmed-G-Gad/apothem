@@ -53,7 +53,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Der Installer setzt ein System-Python 3.10+ voraus, dazu `git` und `gpg` für die Netzwerkform. Er prüft die Voraussetzungen und legt die Engine unter `~/.apothem` ab. Fehlt `click` oder `rich`, installiert er das Paket nach Ihrer Bestätigung, bei Angabe von `--yes` (`-Yes` unter PowerShell) oder bei gesetztem `APOTHEM_AUTO_INSTALL_DEPS=1`; andernfalls bricht er mit dem auszuführenden pip-Befehl ab (siehe [Voraussetzungen auf einen Blick](/docs/install#voraussetzungen-auf-einen-blick)). Nach Abschluss gibt er ein Banner mit den nächsten Schritten aus; unter POSIX sieht das Banner, wenn das Verzeichnis des Shims bereits im `PATH` liegt, so aus:
+Der Installer setzt ein System-Python 3.10+ voraus, dazu `git` und `gpg` für die Netzwerkform. Er prüft die Voraussetzungen und legt die Engine unter `~/.apothem` ab. Fehlt `click` oder `rich`, installiert er das Paket nach Ihrer Bestätigung, bei Angabe von `--yes` (`-Yes` unter PowerShell) oder bei gesetztem `APOTHEM_AUTO_INSTALL_DEPS=1`; andernfalls bricht er mit dem auszuführenden pip-Befehl ab (siehe [Voraussetzungen auf einen Blick](/docs/install#prerequisites-at-a-glance)). Nach Abschluss gibt er ein Banner mit den nächsten Schritten aus; unter POSIX sieht das Banner, wenn das Verzeichnis des Shims bereits im `PATH` liegt, so aus:
 
 ```text
 Installation complete.

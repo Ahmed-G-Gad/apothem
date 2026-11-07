@@ -2,7 +2,7 @@
 title: "Registro de harnesses"
 description: "Referência técnica do registro dos adaptadores de harness integrados do Apothem."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -98,7 +98,7 @@ nomeia a pasta a grava, e o livro-razão de instalação conta as instalações 
 usam. O proprietário de referência é o proprietário registrado enquanto ele usa a pasta e,
 caso contrário, a instalação mais antiga que a usa; nada muda quando o proprietário registrado
 é desinstalado. Uma desinstalação remove a pasta somente quando nenhuma outra instalação ainda
-a usa (veja [`uninstall`](/docs/cli-reference/uninstall#pastas-compartilhadas-no-seu-diretório-pessoal)).
+a usa (veja [`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory)).
 Instalar um leitor não coloca nenhum arquivo na pasta; instalar o proprietário ou um
 coinstalador coloca o conteúdo do Apothem diante de cada leitor.
 
@@ -124,16 +124,51 @@ gravam uma pasta de skills própria (`~/.codebuddy/skills/`, `~/.kiro/skills/`
 e `~/.trae/skills/`); somente essa ferramenta a carrega, então ela não é uma raiz compartilhada.
 
 Um leitor só é listado onde a documentação do seu fornecedor mostra um carregamento padrão desse
-caminho exato. O registro anota três condições, e a nota de instalação repete
-cada uma. `Open-Claw` indexa `~/.agents/skills/` somente sob o seu diretório de
+caminho exato. Quando um leitor carrega um caminho apenas em alguns casos, o
+registro anota a condição, e a nota de instalação a repete. `Open-Claw` indexa
+`~/.agents/skills/` somente sob o seu diretório de
 estado padrão (ele ignora a pasta quando `OPENCLAW_STATE_DIR` aponta para outro
-lugar). O `Hermes` carrega um tipo de contexto do projeto por sessão: vence a
-primeira correspondência, na ordem `.hermes.md` ou `HERMES.md`, `AGENTS.md`,
-`CLAUDE.md` e depois as regras do `Cursor`. Assim, ele carrega
-`<project>/AGENTS.md` somente quando o projeto não tem `.hermes.md` nem
+lugar). O `OpenCode` 1 carrega `~/.claude/CLAUDE.md` somente quando a sua pasta
+de configuração (`~/.config/opencode/` por padrão) não contém nenhum
+`AGENTS.md`, e ignora esse arquivo quando
+`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` ou `OPENCODE_DISABLE_CLAUDE_CODE=1`
+estiver definido. O `OpenCode` 2 lê a mesma configuração de
+`~/.config/opencode/`, mas não usa `CLAUDE.md` como alternativa, então não
+carrega `~/.claude/CLAUDE.md`. O `Codex` usa o primeiro entre
+`AGENTS.override.md` e `AGENTS.md` em cada pasta, então carrega
+`<project>/AGENTS.md` somente quando o projeto não tem `AGENTS.override.md` ao
+lado desse arquivo. O `CodeBuddy` usa `<project>/AGENTS.md` como memória de
+projeto somente quando o projeto não tem `CODEBUDDY.md`. O `Zed` carrega apenas
+o primeiro arquivo de instruções do projeto da sua lista: `.rules`,
+`.cursorrules`, `.windsurfrules`, `.clinerules`,
+`.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md` e depois
+`GEMINI.md`. Assim, ele carrega `<project>/.github/copilot-instructions.md`,
+`<project>/AGENTS.md` e `<project>/GEMINI.md` somente quando o projeto não tem
+nenhum dos arquivos que vêm antes desse arquivo na lista. A instalação do `Zed`
+grava `<project>/.rules`, o primeiro arquivo da lista, então o `Zed` não carrega
+nenhum dos três em um projeto em que foi instalado.
+
+O `Hermes` carrega um tipo de contexto do projeto por sessão: o primeiro tipo com
+um arquivo não vazio, na ordem `.hermes.md` ou `HERMES.md`, a cadeia de
+`AGENTS.md` (em cada pasta, um `AGENTS.override.md` não vazio substitui o
+`AGENTS.md` ao lado dele), `CLAUDE.md` e depois as regras do `Cursor`. Assim, ele
+carrega `<project>/AGENTS.md` somente quando o projeto não tem `.hermes.md` nem
 `HERMES.md` e não tem `AGENTS.override.md` ao lado desse arquivo, e
 `<project>/.cursor/rules/apothem-rules.mdc` somente quando o projeto não tem
-`.hermes.md`, `AGENTS.md` nem `CLAUDE.md`. A documentação do `Cursor`
+`.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md` nem `CLAUDE.md`. O
+`Hermes` procura `.hermes.md` e `HERMES.md` a partir da pasta em que inicia,
+subindo até a raiz do repositório, e lê a cadeia de `AGENTS.md` da raiz do
+repositório para baixo, então um arquivo desses em uma pasta acima do projeto
+também conta. Um arquivo vazio não conta. Um `.hermes.md` vazio também oculta um
+`HERMES.md` ao lado dele, então o `Hermes` passa para a cadeia de `AGENTS.md`
+mesmo quando esse `HERMES.md` tem texto. Essas condições valem para uma sessão
+iniciada no projeto. Uma sessão iniciada em uma pasta acima dele ainda pode
+carregar `<project>/AGENTS.md`, ou um `AGENTS.override.md` não vazio ao lado
+dele, na primeira vez em que ela trabalha em um arquivo do projeto,
+independentemente do `.hermes.md` ou `HERMES.md` que o projeto tenha. O `Hermes`
+ignora isso em um diretório pessoal e em algumas pastas contêiner.
+
+A documentação do `Cursor`
 lista `~/.codex/agents/` como uma pasta de compatibilidade com o `Codex`, mas não diz
 quais formatos de arquivo o `Cursor` interpreta ali, e uma instalação do `Codex` grava arquivos
 TOML, então não está confirmado se o `Cursor` lê esses auxiliares. A instalação do `Cursor`

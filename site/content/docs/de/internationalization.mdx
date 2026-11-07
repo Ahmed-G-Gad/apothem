@@ -2,7 +2,7 @@
 title: "Internationalisierung (i18n)"
 description: "Wie die Apothem-Dokumentationsseite ihre Sprachkohorte deklariert, hreflang-Links für alternative Sprachen ausgibt und in zwölf Sprachen von rechts nach links rendert."
 machineTranslated: true
-sourceHash: "fbe64d232e98a8e6"
+sourceHash: "cf9e0b89b61893f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -138,4 +138,8 @@ englischen Quelle ausgeliefert und als englischer Text gekennzeichnet.
 
 Englisch bleibt die Quelle der Wahrheit; jede übersetzte Seite spiegelt die
 Struktur, die Links und die Codebeispiele ihres englischen Gegenstücks
-wortgetreu.
+wortgetreu, mit einer Ausnahme bei Links auf Abschnitte. Ein Link auf einen
+Abschnitt einer anderen Seite übernimmt seinen Anker (`#...`) von der englischen
+Seite; ein Link auf einen Abschnitt derselben Seite bildet seinen Anker aus der
+übersetzten Überschrift, weil die Website die ID jeder Überschrift aus dem
+Überschriftentext ableitet.

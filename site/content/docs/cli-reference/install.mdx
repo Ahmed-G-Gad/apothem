@@ -150,6 +150,19 @@ file, so the install (and `--dry-run`) stops with an error that names the path a
 writes nothing; move or rename the project and run it again. A space or an
 apostrophe in a path is fine.
 
+Some tools load only the first file with text from a fixed list in a folder, so
+a file of yours ahead of the one Apothem writes keeps the tool from loading the
+Apothem block. For example,
+[one supported tool](/docs/harnesses/codex#compatibility-notes) reads an
+`AGENTS.override.md` that has text instead of the `AGENTS.md` Apothem writes
+beside it in that tool's home folder. Install and update then print a note that
+names that file, dry runs included. An empty override is skipped, and so is
+a symbolic link to `AGENTS.md`; a hard link or a copy gets the note, because an
+install that rewrites `AGENTS.md` leaves it a separate file. The note is a
+`warnings` entry with `"outcome": "advisory"` and `"operation": "instruction_override"`,
+the `harness`, the `path` of the file that hides the block, the `target` the
+install writes, and a `message`.
+
 The profile's MCP servers get three advisories, each naming the profile field:
 
 | Operation | Condition | Fix |

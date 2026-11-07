@@ -31,9 +31,9 @@ sourceHash: "7cd78310423a8038"
 - `harnesses` — 하니스 id로 키가 지정된 하니스별 재정의.
 - `exclude_harnesses` — 일괄(`--harness all`) 커맨드가 건너뛰는 하니스 id.
 - `mcp_servers` — 서버 이름으로 키가 지정된 MCP 서버 정의.
-- `agent_mcp_servers` — 헬퍼 이름별로, 그 헬퍼가 호출할 수 있는 MCP 서버
-  ([헬퍼에 MCP 서버 접근 권한 부여하기](/docs/reference/mcp#헬퍼에-mcp-서버-접근-권한-부여하기) 참조).
-  기본값은 비어 있으므로 어떤 헬퍼도 MCP 도구에 도달하지 않습니다.
+- `agent_mcp_servers` — 도우미 이름별로, 그 도우미가 호출할 수 있는 MCP 서버
+  ([도우미에 MCP 서버 접근 권한 부여하기](/docs/reference/mcp#give-a-helper-access-to-mcp-servers) 참조).
+  기본값은 비어 있으므로 어떤 도우미도 MCP 도구에 도달하지 않습니다.
 - `workspace` — Apothem이 공유 작업 디렉터리를 두는 위치
   (`directory_name`, `scope`).
 - `schema_version` — 선택적 프로필 스키마 버전. 이 키가 없는 프로필은

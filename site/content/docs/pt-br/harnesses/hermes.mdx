@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de harness do Apothem para o Hermes (Prévia)."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,19 +53,35 @@ instalação do Hermes não adiciona regras nem hooks do Apothem.
 
 O Hermes carrega, sim, o bloco do Apothem que outra instalação grava em um
 arquivo do projeto que ele lê. Ele carrega um tipo de contexto do projeto por
-sessão, o primeiro que encontra, então cada um destes arquivos chega ao Hermes
-somente sob a condição ao lado dele:
+sessão: o primeiro tipo com um arquivo não vazio, na ordem `.hermes.md` ou
+`HERMES.md`, os arquivos `AGENTS.md` (em cada pasta, um `AGENTS.override.md` não
+vazio substitui o `AGENTS.md` ao lado dele), `CLAUDE.md` e depois os arquivos de
+regras de outro editor. Assim, cada um destes arquivos chega ao Hermes somente
+sob a condição ao lado dele:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-A instalação do Apothem para o Kimi Code grava o primeiro arquivo, e a
-instalação para outro editor grava o segundo. Uma instalação com `--project`
-nomeia um arquivo desses e a instalação que o gravou.
+O Hermes procura `.hermes.md` e `HERMES.md` a partir da pasta em que inicia,
+subindo até a raiz do repositório, e lê os arquivos `AGENTS.md` da raiz do
+repositório para baixo, então um arquivo desses em uma pasta acima do projeto
+também conta. Um arquivo vazio não conta. Um `.hermes.md` vazio também oculta um
+`HERMES.md` ao lado dele, então o Hermes passa para os arquivos `AGENTS.md`
+mesmo quando esse `HERMES.md` tem texto. Essas condições valem para uma sessão
+iniciada no projeto. Uma sessão iniciada em uma pasta acima dele ainda pode
+carregar `<project>/AGENTS.md`, ou um `AGENTS.override.md` não vazio ao lado
+dele, na primeira vez em que ela trabalha em um arquivo do projeto,
+independentemente do `.hermes.md` ou `HERMES.md` que o projeto tenha. O Hermes
+ignora isso em um diretório pessoal e em algumas pastas contêiner.
+
+A instalação do Apothem para o [Kimi Code](/docs/harnesses/kimi-code) grava o
+primeiro arquivo, e [a instalação para outro editor](/docs/harnesses/cursor)
+grava o segundo. Uma instalação do Hermes executada com `--project` nomeia um
+arquivo desses e a instalação que o gravou.
 
 **Conflitos de nome.** O Hermes documenta esta ordem de precedência para skills: as
 skills do projeto (`<project>/.hermes/skills/` e `<project>/.agents/skills/`),

@@ -2,7 +2,7 @@
 title: "MCP-Server"
 description: "Konfiguration der Model-Context-Protocol-Server — im Besitz des Operators und über den nativen MCP-Mechanismus jedes Tools registriert; einige Adapter projizieren das MCP-Inventar des gemeinsamen Profils, die übrigen legen keine Server-Einträge an."
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,6 +51,25 @@ Code registrieren sich Server mit `claude mcp add` in `~/.claude.json`
 `.mcp.json`; der Claude Code-Adapter schreibt keine der beiden Dateien, und die
 von Apothem verwalteten Claude Code-Einstellungen tragen niemals einen
 `mcpServers`-Block.
+
+Der `OpenCode`-Adapter schreibt das Inventar in den `mcp`-Block der
+`opencode.json`. `OpenCode` ersetzt in seiner Konfiguration `{env:NAME}`, nicht
+`${NAME}`; der Adapter schreibt daher jede `${NAME}`-Referenz in den
+Umgebungsvariablen, den Headern oder der URL eines Servers als `{env:NAME}`, und
+eine nicht gesetzte Variable wird zu einer leeren Zeichenkette. Befehlsargumente
+werden wie geschrieben kopiert. Ein `$NAME` im Wert einer Umgebungsvariablen oder
+eines Headers oder eine andere `${...}`-Form, etwa `${NAME:-default}`, wird wie
+geschrieben kopiert, und `apothem install` warnt, dass `OpenCode` sie nicht
+auflöst; dabei
+wird genannt, wo die Referenz steht, nicht der Wert. `OpenCode` setzt den Wert
+von `{env:NAME}` ohne Maskierung in den Konfigurationstext ein, den es liest
+(`OpenCode` 2 maskiert ihn nur, wenn dieser Text sonst nicht geparst werden
+könnte); ein Wert mit einem Backslash, einem doppelten Anführungszeichen oder
+einem Steuerzeichen kann daher `OpenCode` 1 daran hindern, die Datei zu lesen,
+und in beiden Versionen gelangt ein `\t` oder `\n` darin als Steuerzeichen zum
+Server. `apothem install` warnt vor einem solchen Wert; setzen Sie ihn als
+`{file:path}` unter `harnesses.opencode.mcp_servers.<name>`, damit die anderen
+Tools die Referenz `${NAME}` behalten.
 
 ## Einem Helfer Zugriff auf MCP-Server geben
 
