@@ -152,7 +152,7 @@ Devin Local 还会导入其他工具使用的规则文件，且这些导入默�
 <project>/AGENTS.md
 ```
 
-当这些文件中的任何一个包含 Apothem 块时，Devin Local 会加载该文件，同时也会加载 `.devin/rules/` 中的规则文件，并且安装 `windsurf` 时会打印一条说明，指出该文件以及写入它的那次安装。第一个文件中的 Apothem 块不会把任何单一工具指定为其读者，但其中关于该编辑器的子代理文件夹和钩子文件的说法描述的是那次安装，不适用于 Devin；该文件所指出的技能文件夹和 `~/.config/apothem/` 同样是这次安装写入的。若要让前两个文件不被 Devin Local 加载，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中关闭它们的导入：
+当这些文件中的任何一个包含 Apothem 块时，Devin Local 会加载该文件，同时也会加载 `.devin/rules/` 中的规则文件，并且安装 `windsurf` 时会打印一条说明，指出该文件以及写入它的那次安装。第一个文件中的 Apothem 块不会把任何单一工具指定为其读取者，但其中关于该编辑器的子代理文件夹和钩子文件的说法描述的是那次安装，不适用于 Devin；该文件所指出的技能文件夹和 `~/.config/apothem/` 同样是这次安装写入的。若要让前两个文件不被 Devin Local 加载，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中关闭它们的导入：
 
 ```json
 {

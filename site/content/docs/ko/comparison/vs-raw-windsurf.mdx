@@ -19,14 +19,14 @@ Windsurf는 이제 Devin Desktop이며 `.devin/rules/` 디렉터리(`.windsurf/r
 | 규칙 형식 하나 유지 | `.windsurf/rules/`와 단일 `.windsurfrules` 파일 중에서 직접 선택 | 어댑터는 `.devin/rules/`만 작성 |
 | 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
 | 재사용 가능한 스킬과 커맨드 공유 | 각 스킬 폴더를 `~/.agents/skills/`에 직접 복사하고 사본을 최신 상태로 유지 | 어댑터가 `~/.agents/skills/`에 모든 프로젝트용 사본 하나로 작성하고, `apothem update` 시 갱신 |
-| 재사용 가능한 헬퍼를 동기화 상태로 유지 | 각 Devin Local 서브에이전트 파일을 `.devin/agents/` 아래에 직접 작성하고 Devin의 도구 이름을 추적 | 헬퍼 11개를 도구를 변환하여 `.devin/agents/`에 작성하고, `apothem update` 시 갱신 |
+| 재사용 가능한 도우미를 동기화 상태로 유지 | 각 Devin Local 서브에이전트 파일을 `.devin/agents/` 아래에 직접 작성하고 Devin의 도구 이름을 추적 | 도우미 11개를 도구를 변환하여 `.devin/agents/`에 작성하고, `apothem update` 시 갱신 |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness windsurf --project <path>` |
 
 ## apothem이 관리하는 것
 
 windsurf 어댑터는 공유 규칙을 파일 하나,
 `<project>/.devin/rules/apothem-rules.md`로 렌더링하며, 단일 파일
-`.windsurfrules`는 작성하지 않습니다. 또한 Apothem 헬퍼 중 11개를
+`.windsurfrules`는 작성하지 않습니다. 또한 Apothem 도우미 중 11개를
 `<project>/.devin/agents/`에 Devin Local 서브에이전트로 작성합니다. 웹 도구가
 필요한 나머지 3개는 Devin이 그 도구 이름을 문서화할 때까지 대기합니다. Devin Local
 훅 두 개, 즉 세션 부트스트랩과 컨텍스트 크기 권고를

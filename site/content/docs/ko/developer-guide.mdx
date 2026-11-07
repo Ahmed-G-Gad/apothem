@@ -1,6 +1,6 @@
 ---
 title: "Apothem에 기여하기 — 개발자 가이드"
-description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
+description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 도우미, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
 sourceHash: "82cbd13f4a28f8cb"
 ---
@@ -12,7 +12,7 @@ sourceHash: "82cbd13f4a28f8cb"
 ## 빠른 참조: 아티팩트 유형
 
 이 가이드는 각각 고유한 목적을 지닌 다섯 가지 아티팩트 유형을 다룹니다. 규칙,
-명령, 헬퍼, 스킬은 YAML 프런트매터를 지니고, 훅은 `hooks.json`과
+명령, 도우미, 스킬은 YAML 프런트매터를 지니고, 훅은 `hooks.json`과
 `settings.json`에 등록되며 프런트매터를 지니지 않습니다. 출력 스타일은 필수
 프런트매터 키가 `name`과 `description` 두 개인 또 하나의 아티팩트 클래스입니다.
 [프런트매터 스키마](/docs/reference/frontmatter-schema)를 참조하세요.
@@ -21,7 +21,7 @@ sourceHash: "82cbd13f4a28f8cb"
 | -------- | ---- | ------- | -------------- |
 | **규칙** | `src/apothem/rules/*.md` | 행동 의무 또는 운영 지침 | 새 원칙, 정책 또는 거버넌스 의무가 확립될 때 |
 | **명령** | `src/apothem/commands/*.md` | 복잡한 워크플로를 위한 슬래시 명령(`/command-name`) | 새 다단계 사용자 워크플로 |
-| **헬퍼** | `src/apothem/agents/*.md` | 병렬 작업을 위한 영속적인 위임 작업자 정의 | 새로운 반복적 전문 작업(감사, 탐색, 품질 검사) |
+| **도우미** | `src/apothem/agents/*.md` | 병렬 작업을 위한 영속적인 위임 작업자 정의 | 새로운 반복적 전문 작업(감사, 탐색, 품질 검사) |
 | **스킬** | `src/apothem/skills/{name}/SKILL.md` | 탐지 신호가 있는 재사용 가능한 기법 | 탐지 가능하고 재사용 가능한 새 기법 패턴 |
 | **훅** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | 이벤트로 트리거되는 검증 또는 상태 관리 | 새 라이프사이클 이벤트 또는 검증 필요 |
 
@@ -107,7 +107,7 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 
 - **규칙:** `operational-mandates`, `clean-room-generation`, `context-management`
 - **명령:** `plan-execute`, `plan-spec`, `plan-generate`
-- **헬퍼:** `codebase-explorer`, `convention-auditor`, `quality-gate`
+- **도우미:** `codebase-explorer`, `convention-auditor`, `quality-gate`
 - **스킬:** `plan-suite`, `ecosystem-audit`
 
 패턴: 소문자, 단어 사이에 하이픈, 공백이나 밑줄 없음.
@@ -116,7 +116,7 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 
 - **규칙:** `{name}.md`
 - **명령:** `{name}.md`
-- **헬퍼:** `{name}.md`
+- **도우미:** `{name}.md`
 - **스킬:** 폴더 `src/apothem/skills/{name}/SKILL.md` 안 (정확한 대소문자: `SKILL.md`)
 - **훅:** 폴더 `src/apothem/hooks/` 안. 모든 이벤트 핸들러는 Python입니다. Claude Code
   `settings.json` 템플릿의 모든 훅 명령은 exec 형식을 사용합니다. `command`는 설치
@@ -143,7 +143,7 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 
 - 규칙: `"operational-mandates"` (name 필드 값)
 - 명령: `/plan-execute` (사람이 읽는 문서에서는 슬래시 포함, 코드에서는 슬래시 없음)
-- 헬퍼: `codebase-explorer` (name 필드 값)
+- 도우미: `codebase-explorer` (name 필드 값)
 - 스킬: `plan-suite` (name 필드 값)
 
 본문에서는 파일 경로나 축약된 이름을 절대 사용하지 마세요.
@@ -151,7 +151,7 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 ## 이식성: Windows 대 Unix
 
 모든 명령은 `portability` 필드에 자신의 이식성 상태를 명시적으로 선언해야
-합니다(MUST). 헬퍼는 선언할 수 있습니다(MAY). 스킬, 규칙, 출력 스타일에는
+합니다(MUST). 도우미는 선언할 수 있습니다(MAY). 스킬, 규칙, 출력 스타일에는
 `portability` 필드가 없습니다.
 
 ### 범용
@@ -220,7 +220,7 @@ alwaysApply: false
 ## 버전 의미 체계
 
 버전이 매겨지는 각 아티팩트는 자체 시맨틱 버전(`MAJOR.MINOR.PATCH`)을
-지닙니다. 명령과 스킬에는 필수이고, 헬퍼와 출력 스타일은 지닐 수 있으며(MAY),
+지닙니다. 명령과 스킬에는 필수이고, 도우미와 출력 스타일은 지닐 수 있으며(MAY),
 규칙에는 없습니다.
 
 - **PATCH** — 계약을 깨지 않으면서 기존 지침을 바로잡는 동작 변경.
@@ -265,11 +265,11 @@ alwaysApply: false
 - 워크플로 단계와 반환 계약을 간결하고 최신 상태로 유지하세요.
 - 명확하지 않은 단계 순서는 인라인으로 문서화하세요.
 
-### 헬퍼
+### 도우미
 
 - `disallowedTools`는 최소한이면서도 충분하게 유지하고, 변경할 때는 근거를
   문서화하세요.
-- 헬퍼의 역할이 성숙해짐에 따라 Operating Principles와 Return Contract를
+- 도우미의 역할이 성숙해짐에 따라 Operating Principles와 Return Contract를
   다듬으세요(MINOR 올림).
 - 호출자가 기대치를 다시 조정할 수 있도록 역량 변화를 인라인으로 추적하세요.
 
@@ -436,13 +436,13 @@ allowed-tools: "Read, Glob, Grep"
 Invoke the ecosystem-audit skill with --focus commands --fix
 ```
 
-## 단계별: 새 헬퍼 추가하기
+## 단계별: 새 도우미 추가하기
 
-헬퍼는 병렬 작업을 위한 영속적인 위임 작업자 정의입니다.
+도우미는 병렬 작업을 위한 영속적인 위임 작업자 정의입니다.
 
 ### 1. 패턴 식별
 
-이 헬퍼가 아래에 나열된 팀 패턴 중 하나에 해당하나요?
+이 도우미가 아래에 나열된 팀 패턴 중 하나에 해당하나요?
 
 - 리서치 팀: 읽기 전용, 정보 수집
 - 감사 팀: 검증, 일관성 검사
@@ -474,8 +474,8 @@ portability: "universal"
 ---
 ```
 
-헬퍼가 세션의 선택을 상속하도록 `model`, `effort`, `permissionMode`는
-생략하세요(중립 태세). 또한 헬퍼에 영속 메모리 범위(`user`, `project` 또는
+도우미가 세션의 선택을 상속하도록 `model`, `effort`, `permissionMode`는
+생략하세요(중립 태세). 또한 도우미에 영속 메모리 범위(`user`, `project` 또는
 `local`)가 필요한 경우가 아니면 `memory`도 생략하세요.
 
 ### 3. 내용 작성
@@ -493,7 +493,7 @@ portability: "universal"
 
 ### 5. 테스트
 
-실제 시나리오에서 헬퍼를 배포하고 문서화된 대로 작동하는지 확인하세요.
+실제 시나리오에서 도우미를 배포하고 문서화된 대로 작동하는지 확인하세요.
 
 ## 단계별: 새 스킬 추가하기
 
@@ -574,7 +574,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] `name` 필드가 kebab-case를 사용함
 - [ ] `version`(버전이 매겨지는 클래스에만 해당, 규칙에는 없음)이 시맨틱(`MAJOR.MINOR.PATCH`)이며, 동작이 바뀌었다면 올렸음
 - [ ] 수정한 아티팩트 중 해당 필드를 지닌 모든 아티팩트에서 `updated`가 오늘 날짜와 일치함
-- [ ] `portability` 필드가 설정되어 있고 유효함 (명령에는 필수, 헬퍼에는 선택)
+- [ ] `portability` 필드가 설정되어 있고 유효함 (명령에는 필수, 도우미에는 선택)
 - [ ] CHANGELOG.md에 다음 릴리스 섹션 아래 적절한 범주로 변경 사항이 기록됨
 - [ ] 계획 내부 참조 없음 (CM-7 준수)
 - [ ] 상호 참조가 다른 아티팩트와 일관됨
@@ -601,7 +601,7 @@ See `/plan-execute` command. Or: Run `/plan-execute`.
 In prose: The `/plan-execute` command handles phase execution.
 ```
 
-### 헬퍼 참조
+### 도우미 참조
 
 ```markdown
 Deploy the `codebase-explorer` delegated worker.
