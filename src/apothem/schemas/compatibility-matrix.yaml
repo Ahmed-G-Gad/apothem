@@ -154,10 +154,10 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       User instructions via ~/.gemini/GEMINI.md plus the Apothem Antigravity
-      CLI plugin under ~/.gemini/antigravity-cli/plugins/apothem/. The shared
+      CLI plugin under ~/.gemini/config/plugins/apothem/. The shared
       GEMINI.md anchor with gemini-cli is intentional; prior
-      ~/.gemini/antigravity/ and ~/.antigravity/profile.yaml targets are
-      retired.
+      ~/.gemini/antigravity-cli/plugins/apothem/, ~/.gemini/antigravity/ and
+      ~/.antigravity/profile.yaml targets are retired.
 
   - name: open-claw
     display: Open-Claw
@@ -380,7 +380,7 @@ asset_classes:
       - windsurf
     materialisation_strategy:
       claude-code: "copy to ~/.claude/agents/"
-      antigravity: "convert to ~/.gemini/antigravity-cli/plugins/apothem/agents/*.md"
+      antigravity: "convert to ~/.gemini/config/plugins/apothem/agents/*.md"
       codebuddy: "convert to <project>/.codebuddy/agents/*.md"
       codex: "convert to ~/.codex/agents/*.toml"
       cursor: "convert to <project>/.cursor/agents/*.md"
@@ -415,7 +415,7 @@ asset_classes:
     materialisation_strategy:
       claude-code: "register in settings.json; support material under ~/.claude/.apothem/support/hooks/"
       codex: "copy to ~/.codex/hooks/ + register in ~/.codex/hooks.json"
-      antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/; no active hook wiring until schema adapter exists"
+      antigravity: "support cohort under ~/.gemini/config/plugins/apothem/.apothem/support/hooks/; no active hook wiring until schema adapter exists"
       codebuddy: "register SessionStart and PostToolUse in <project>/.codebuddy/settings.local.json; support material under <project>/.apothem/support/hooks/"
       cursor: "register sessionStart in <project>/.cursor/hooks.json; support material under <project>/.apothem/support/cursor/hooks/"
       gemini-cli: "support cohort under <project>/.gemini/.apothem/support/hooks/"
@@ -448,7 +448,7 @@ asset_classes:
       - zed
     materialisation_strategy:
       claude-code: "copy to ~/.claude/skills/"
-      antigravity: "copy to ~/.gemini/antigravity-cli/plugins/apothem/skills/"
+      antigravity: "copy to ~/.gemini/config/plugins/apothem/skills/"
       codex: "copy to ~/.agents/skills/"
       cursor: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
       github-copilot: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
@@ -484,7 +484,7 @@ asset_classes:
       - zed
     materialisation_strategy:
       claude-code: "wrap as ~/.claude/skills/<command>/SKILL.md"
-      antigravity: "wrap as ~/.gemini/antigravity-cli/plugins/apothem/skills/<command>/SKILL.md"
+      antigravity: "wrap as ~/.gemini/config/plugins/apothem/skills/<command>/SKILL.md"
       codex: "wrap as ~/.agents/skills/<command>/SKILL.md"
       cursor: "wrap as ~/.agents/skills/<command>/SKILL.md"
       github-copilot: "wrap as ~/.agents/skills/<command>/SKILL.md"
@@ -544,7 +544,7 @@ asset_classes:
       codebuddy: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
       kiro: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
       trae: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
-      antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/"
+      antigravity: "support cohort under ~/.gemini/config/plugins/apothem/.apothem/support/templates/"
       default: "support cohort under apothem/templates/"
 
   schemas:

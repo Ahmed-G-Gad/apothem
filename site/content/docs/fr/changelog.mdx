@@ -137,6 +137,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Antigravity install writes its plugin where the CLI loads it.**
+  Current Antigravity CLI releases load plugins from
+  `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put
+  a plugin there and a clean session loaded its rule (issue 1067 in
+  `google-antigravity/antigravity-cli`), and the `/mcp` panel header on CLI
+  1.2.13 reads `Plugins (~/.gemini/config/plugins)` (issue 1127). The CLI's
+  1.0.2 release note records only the install target: the `plugin` subcommand
+  installs downloaded plugins into the shared `~/.gemini/config/` folder, not
+  the private application data folder. The install wrote its plugin to
+  `~/.gemini/antigravity-cli/plugins/apothem/`, in the CLI's own data folder,
+  where an October 2026 issue report (issue 1165) found a plugin neither
+  listed nor loaded, so the skills, agents and rules the install wrote there
+  may not have reached Antigravity. The install now writes the plugin to
+  `~/.gemini/config/plugins/apothem/`. An install or update over an earlier
+  install backs up the old folder and removes it whole; an uninstall removes
+  the old folder whole and Apothem's files from the new one. The new folder
+  is shared by the CLI, the Antigravity App and the IDE, so the Apothem
+  plugin, with its always-on rules, skills and helper definitions, now also
+  applies in the App and the IDE, and Antigravity documents no per-surface
+  switch for a plugin. No test or CI job runs the CLI. The Antigravity
+  convention pin also records that global hooks live in
+  `~/.gemini/config/hooks.json`; the install registers no hooks and writes
+  no `hooks.json` where Antigravity reads one.
+- **Antigravity installs no longer remove `~/.gemini/antigravity/`.** That
+  folder is the Antigravity App's data folder (the CLI's is
+  `~/.gemini/antigravity-cli/`, the IDE's `~/.gemini/antigravity-ide/`). It
+  holds the App's MCP sign-in tokens (`mcp_oauth_tokens.json`), its session
+  transcripts (`brain/`), the legacy global skills folder (`skills/`) and
+  `sidecar_data/`. Every Antigravity install and update backed it up under
+  `~/.apothem/backups/` and removed it, as a layout Apothem used before its
+  first release, so each one removed the App's MCP sign-ins, its session
+  transcripts and any skills kept there. The CLI's own settings and session
+  history, in `~/.gemini/antigravity-cli/`, were not affected. The install,
+  update and uninstall now leave `~/.gemini/antigravity/` alone. The copies
+  an earlier install or update took are in
+  `~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/`, one set
+  for each install or update that found the folder, each holding the folder
+  as it stood then. Apothem keeps only the newest 10 Antigravity backup sets,
+  so copies from older installs may already be gone, and the next install,
+  update, uninstall or rollback prunes again: copy the sets you need out of
+  `~/.apothem/backups/` first.
+- **Rollback no longer restores a folder Apothem has stopped removing.** An
+  install record from an earlier release can name a folder that release
+  removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
+  record's copy would replace what is in the folder now with the older copy,
+  so `apothem rollback` leaves such a folder in place, reports it as skipped
+  with the path of its copy, and prints a note in plain output. An install,
+  update, uninstall or `--dry-run` also leaves a leftover path in place when
+  it is a link (on Windows, a junction) to a folder the install writes now,
+  and an install that exists only in an earlier layout's folder still counts
+  as installed, so `apothem uninstall` reaches it.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce

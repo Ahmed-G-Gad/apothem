@@ -4,13 +4,14 @@
 # agent-capability-discipline-matrix companion §1 / §3 / §7. The
 # antigravity adapter keeps ~/.gemini/GEMINI.md as the global context
 # anchor and installs an Apothem plugin under
-# ~/.gemini/antigravity-cli/plugins/apothem/. Commands are converted to
-# skills because Antigravity CLI treats command migration as skill-based.
-# MCP is natively supported via the mcpServers object in the operator-owned
-# mcp_config.json; Apothem names the surface but does not author MCP server
-# entries. Antigravity ships an unfetchable JavaScript docs site, so these
-# claims carry partial confidence; see STANDARD-CONVENTION-PIN.md for the
-# snapshot date and the authority-domain sources.
+# ~/.gemini/config/plugins/apothem/, the folder current Antigravity CLI
+# releases load plugins from and the Antigravity App and IDE load too.
+# Commands are converted to skills because Antigravity CLI treats command
+# migration as skill-based. MCP is natively supported via the mcpServers
+# object in the operator-owned mcp_config.json; Apothem names the surface but
+# does not author MCP server entries. The Antigravity docs pages return their
+# full text to a plain fetch; see STANDARD-CONVENTION-PIN.md for the snapshot
+# date and the sources.
 
 mcp_servers:
   - mcp_config.json-mcpServers-stdio-and-http-operator-owned
@@ -21,7 +22,7 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "~/.gemini/GEMINI.md plus ~/.gemini/antigravity-cli/plugins/apothem/"
+layered_context_surface: "~/.gemini/GEMINI.md plus ~/.gemini/config/plugins/apothem/"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"

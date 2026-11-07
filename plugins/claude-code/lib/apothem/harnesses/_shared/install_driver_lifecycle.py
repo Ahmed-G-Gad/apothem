@@ -42,8 +42,11 @@ from .install_driver_hookfile import (
 )
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
+    _APOTHEM_SUBTREE,
     _allowed_write_root,
+    _holds_content,
     _root_for,
+    _stale_path_proves_install,
     _validate_target_path,
 )
 from .install_driver_planvalidation import (
@@ -151,14 +154,6 @@ def verify_install(
     return True
 
 
-#: Path segment naming Apothem's own working subtree beneath a harness or
-#: project root (mirrors ``_APOTHEM_SUBTREE`` in :mod:`apothem.lib.data_home`,
-#: and the ``.apothem/`` segment the manifest's target templates hardcode). No
-#: vendor creates this directory, so a target inside it exists only because an
-#: Apothem install put it there.
-_APOTHEM_SUBTREE: str = ".apothem"
-
-
 def _carries_managed_block(target: Path) -> bool:
     """Return True when *target* holds an Apothem sentinel-delimited block.
 
@@ -173,22 +168,6 @@ def _carries_managed_block(target: Path) -> bool:
     except OSError:
         return False
     return extract_managed_block(text) is not None
-
-
-def _holds_content(target: Path) -> bool:
-    """Return True when *target* is a file, or a directory holding some file.
-
-    An empty directory is NOT content. Uninstall reverses tree targets
-    child-by-child (so operator-authored siblings survive) and leaves the
-    directory itself in place, so every Apothem tree target outlives an
-    uninstall as an empty shell. Testing mere existence would report a fully
-    uninstalled harness as still installed.
-    """
-    if target.is_file():
-        return True
-    if not target.is_dir():
-        return False
-    return any(child.is_file() for child in target.rglob("*"))
 
 
 def _entry_proves_install(
@@ -241,15 +220,18 @@ def detect_install(
     means installed. That keeps a genuinely half-removed tree reporting
     ``installed=True`` + ``verified=False`` — real drift — while an untouched
     harness home reports absent. See :func:`_entry_proves_install` for what
-    counts as evidence and why the weaker signals are excluded.
+    counts as evidence and why the weaker signals are excluded. A stale-sweep
+    path of an earlier layout that still holds Apothem's files counts too (see
+    :func:`_stale_path_proves_install`).
     """
     rules = install_driver.load_rules(harness_name)
+    root = _root_for(harness_root, project_root)
     return any(
         _entry_proves_install(
             entry, harness_root=harness_root, project_root=project_root
         )
         for entry in rules.install
-    )
+    ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep)
 
 
 @dataclass(frozen=True)

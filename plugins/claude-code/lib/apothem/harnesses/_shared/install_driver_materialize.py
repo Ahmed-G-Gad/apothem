@@ -45,7 +45,7 @@ from .install_driver_planvalidation import (
     _validate_install_plan,
     make_ignore,
 )
-from .install_driver_shared import entry_scope
+from .install_driver_shared import _protected_targets, entry_scope
 from .install_driver_treeops import (
     sweep_stale,
 )
@@ -367,6 +367,9 @@ def run_install(
                     harness_name=harness_name,
                     allowed_root=write_root,
                     preserve=_preserved_paths(root),
+                    protect=_protected_targets(
+                        rules, harness_root=harness_root, project_root=project_root
+                    ),
                 )
             )
             for entry in rules.install:

@@ -10,8 +10,12 @@ a rule without one is silently discarded. ``model_decision`` needs a
 ``description`` and ``glob`` needs ``globs``. The Antigravity CLI activates the
 rules packaged in an installed plugin's ``rules/`` directory.
 
-Per https://antigravity.google/docs/plugins (same date), ``plugin.json`` admits
-only ``name`` and ``description`` (``additionalProperties: false``).
+Per https://antigravity.google/docs/build-plugins/ (retrieved 2026-11-03), the
+``plugin.json`` schema requires ``name`` in lowercase kebab-case and admits only
+the keys it lists (``additionalProperties: false``); Apothem's manifest sets
+``name`` and ``description``. Antigravity CLI loads a global plugin from
+``~/.gemini/config/plugins/<name>/`` (https://antigravity.google/docs/plugins/,
+same date), so the install writes the plugin there.
 """
 
 from __future__ import annotations
@@ -44,16 +48,55 @@ _INDEX_RULE = "apothem-rule-index"
 _SHARED_BUDGET_TOKENS = 20_000
 _BYTES_PER_TOKEN = 3.5
 
-#: The "Full JSON schema" published on https://antigravity.google/docs/plugins
-#: (retrieved 2026-10-02).
+#: The "Full JSON schema" published on https://antigravity.google/docs/build-plugins/
+#: and hosted at https://antigravity.google/schemas/v1/plugin.json (retrieved
+#: 2026-11-03).
 _PLUGIN_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://antigravity.google/schemas/v1/plugin.json",
+    "title": "Antigravity plugin manifest",
     "type": "object",
-    "properties": {
-        "name": {"type": "string", "pattern": "^[a-zA-Z0-9-_]+$"},
-        "description": {"type": "string"},
-    },
     "required": ["name"],
     "additionalProperties": False,
+    "properties": {
+        "$schema": {"type": "string"},
+        "name": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+        "displayName": {"type": "string"},
+        "description": {"type": "string"},
+        "version": {"type": "string"},
+        "disabled": {"type": "boolean", "default": False},
+        "logo": {"type": "string"},
+        "suggestedPrompts": {
+            "type": "array",
+            "items": {"type": "string", "pattern": r"\S"},
+            "maxItems": 3,
+        },
+        "skills": {
+            "oneOf": [
+                {"type": "string", "pattern": r"\S"},
+                {"type": "array", "items": {"type": "string", "pattern": r"\S"}},
+            ]
+        },
+        "author": {
+            "anyOf": [
+                {"type": "string"},
+                {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "name": {"type": "string"},
+                        "email": {"type": "string"},
+                        "url": {"type": "string"},
+                    },
+                },
+            ]
+        },
+        "homepage": {"type": "string"},
+        "repository": {"type": "string"},
+        "license": {"type": "string"},
+        "keywords": {"type": "array", "items": {"type": "string"}},
+        "extensions": {"type": "object", "additionalProperties": {"type": "object"}},
+    },
 }
 
 
@@ -72,7 +115,7 @@ def _source_fields(name: str) -> dict[str, object]:
 def plugin_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("gemini-home")
     install_driver.run_install("antigravity", harness_root=root)
-    return root / "antigravity-cli" / "plugins" / "apothem"
+    return root / "config" / "plugins" / "apothem"
 
 
 def test_every_plugin_rule_declares_a_valid_trigger(plugin_root: Path) -> None:
