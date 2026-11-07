@@ -94,6 +94,7 @@ Retrieved 2026-10-03 unless marked, at commit `fb972b2f87fe7d5b06d37eac711490162
 - <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/hooks/index.md> (hook events; retrieved 2026-10-02)
 - <https://geminicli.com/docs/core/subagents/> (subagent `tools` wildcards `*`, `mcp_*`, `mcp_<server>_*`; live page, not commit-pinned; retrieved 2026-10-25)
 - <https://geminicli.com/docs/tools/mcp-server/> (`mcp_{serverName}_{toolName}` names, no underscores in server names; live page, not commit-pinned; retrieved 2026-10-25)
+- <https://github.com/google-gemini/gemini-cli/releases> (Gemini CLI releases, tagged `v` and the version, with nightly and preview builds marked as prereleases; live page, not commit-pinned; retrieved 2026-11-03)
 
 ## Discovery Targets
 

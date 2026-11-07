@@ -57,6 +57,10 @@ Retrieved 2026-10-03.
 - <https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap> (agent workspace and bootstrap files)
 - <https://docs.openclaw.ai/cli/mcp> (`mcp.servers` and the `openclaw mcp` CLI)
 
+Retrieved 2026-11-03.
+
+- <https://docs.openclaw.ai/install> (install methods, among them the npm package `openclaw`, installed as `openclaw@latest`)
+
 ## Discovery Targets
 
 - None. No capability cell for this harness is discovery-pending.
