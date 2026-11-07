@@ -2,14 +2,14 @@
 title: "OpenCode"
 description: "محوّل إطار عمل Apothem لـ OpenCode (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "f4ee42d9d05adcf7"
+sourceHash: "d7cbf6354ea54e5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>OpenCode</bdi>
 **اسم التثبيت:** <bdi>`opencode`</bdi>
 **الحالة:** إصدار تجريبي
-**الإعداد الأصلي:** <bdi>`~/.config/opencode/`</bdi>
+**الإعداد الأصلي:** <bdi>`~/.config/opencode/`</bdi> (أو <bdi>`$XDG_CONFIG_HOME/opencode/`</bdi>)
 
 ## التثبيت
 
@@ -33,6 +33,15 @@ apothem install --harness opencode
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+هذه هي المسارات الافتراضية. وحين يُضبط <bdi>`XDG_CONFIG_HOME`</bdi> على المسار المطلق
+لدليل، يكتب المحوّل بدلًا من ذلك في <bdi>`$XDG_CONFIG_HOME/opencode/`</bdi>، وهو الدليل
+الذي يقرؤه كلٌّ من <bdi>OpenCode</bdi> 1 و<bdi>OpenCode</bdi> 2. ولا تُستخدَم قيمة نسبية
+ولا جذر نظام الملفات، ويذكر التثبيت ذلك. ولا يُتَّبَع المتغيّر
+<bdi>`OPENCODE_CONFIG_DIR`</bdi>: يقرأ <bdi>OpenCode</bdi> 1 الدليل الذي يُسمّيه إضافةً
+إلى الدليل الافتراضي، أمّا <bdi>OpenCode</bdi> 2 فيقرؤه بدلًا من الدليل الافتراضي؛ لذا
+حين يُسمّي هذا المتغيّر دليلًا آخر يحذّر التثبيت من أن <bdi>OpenCode</bdi> 2 لا يُحمِّل
+هذا التثبيت.
+
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
 يُجسِّد المحوّل <bdi>`opencode.json`</bdi> مع قائمة ملفات <bdi>`instructions`</bdi>
@@ -43,12 +52,50 @@ apothem install --harness opencode
 
 ## ملاحظات التوافق
 
+يعمل التثبيت مع <bdi>OpenCode</bdi> 1 و<bdi>OpenCode</bdi> 2. فهو يكتب إعدادًا واحدًا
+يقرؤه <bdi>OpenCode</bdi> 1 كما هو ويترجمه <bdi>OpenCode</bdi> 2: كلاهما يقرأ دليل
+الإعداد نفسه، ويحوّل <bdi>OpenCode</bdi> 2 في الذاكرة أشكال <bdi>OpenCode</bdi> 1 التي
+يكتبها التثبيت، من دون إعادة كتابة الملف. وتُحمَّل قوائم <bdi>`permission`</bdi> الخاصة
+بالمساعِدات، وكذلك مُدخَلات الخوادم ضمن <bdi>`mcp`</bdi>، في <bdi>OpenCode</bdi> 2 عبر
+تلك الترجمة. ويُحمِّل <bdi>OpenCode</bdi> 1 أيضًا الكتلة التي يكتبها تثبيت
+<bdi>Claude Code</bdi> في <bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يحتوي دليل إعداده على
+<bdi>`AGENTS.md`</bdi> ولا يكون أيٌّ من <bdi>`OPENCODE_DISABLE_CLAUDE_CODE`</bdi>
+و<bdi>`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT`</bdi> مضبوطًا؛ أمّا <bdi>OpenCode</bdi> 2
+فلا يرجع احتياطيًا إلى <bdi>`CLAUDE.md`</bdi>، لذا لا يُحمِّل ذلك الملف.
+
+تحمل تعريفات المساعِدات قواعد <bdi>`deny`</bdi> فقط، للأدوات التي يجب ألّا يستخدمها
+المساعِد. ويسمح <bdi>OpenCode</bdi> بكل أداة افتراضيًا ويسأل قبل أن يقرأ ملف
+<bdi>`.env`</bdi> أو <bdi>`.env.*`</bdi>. وقاعدة <bdi>`allow`</bdi> في مساعِد ستُلغي ذلك
+السؤال وستتغلّب على قاعدة أشدّ صرامة في إعداد <bdi>OpenCode</bdi> الخاص بك، لذا يتّبع
+المساعِد إعدادات <bdi>`permission`</bdi> لديك.
+
+حين يسرد الملف التعريفي المشترك خوادم <bdi>MCP</bdi>، يكتبها التثبيت في كتلة
+<bdi>`mcp`</bdi> من <bdi>`opencode.json`</bdi>. ويستبدل <bdi>OpenCode</bdi> الصيغة
+<bdi>`{env:NAME}`</bdi> وليس <bdi>`${NAME}`</bdi>، لذا يُكتب كل <bdi>`${NAME}`</bdi> في
+متغيّرات البيئة أو الترويسات أو عنوان <bdi>URL</bdi> الخاصة بخادم على هيئة
+<bdi>`{env:NAME}`</bdi>. وتُنسَخ وسائط الأمر كما كُتبت: يُترك أي مرجع فيها ليوسّعه
+الخادم، أو صدفة يشغّلها هذا الخادم. أمّا <bdi>`$NAME`</bdi> في قيمة متغيّر بيئة أو
+ترويسة، وأي صيغة <bdi>`${...}`</bdi> تبقى كما كُتبت، بما فيها الواردة في وسيط أمر،
+فتُنسَخ كما كُتبت، ويحذّر التثبيت من أن <bdi>OpenCode</bdi> لا يوسّعها. ويُسمّي التحذير
+موضع المرجع، مثل <bdi>`environment.TOKEN`</bdi>، ولا يطبع القيمة أبدًا.
+
+يُدرِج <bdi>OpenCode</bdi> قيمة <bdi>`{env:NAME}`</bdi> في نص الإعداد الذي يقرؤه من دون
+إضافة أحرف الهروب إليها؛ ولا يضيف <bdi>OpenCode</bdi> 2 أحرف الهروب إلا حين يتعذّر تحليل
+ذلك النص بدونها. لذا فقد تمنع <bdi>OpenCode</bdi> 1 من قراءة الملف قيمةٌ تحوي شرطة مائلة
+عكسية (مثل مسار <bdi>Windows</bdi>) أو علامة اقتباس مزدوجة أو حرف تحكّم، وفي كلا
+الإصدارين يصل <bdi>`\t`</bdi> أو <bdi>`\n`</bdi> الوارد فيها إلى الخادم بوصفه حرف تحكّم.
+ويفحص التثبيت كل متغيّر من هذا النوع عند تشغيله ويحذّر من أي متغيّر يحوي تلك الأحرف.
+اضبط تلك القيمة بدلًا من ذلك على هيئة <bdi>`{file:path}`</bdi> تحت
+<bdi>`harnesses.opencode.mcp_servers.<name>`</bdi>، لتحتفظ الأدوات الأخرى بالمرجع
+<bdi>`${NAME}`</bdi>.
+
 يدمج <bdi>OpenCode</bdi> كل ملف تُسمّيه قائمة <bdi>`instructions`</bdi> في كل جلسة
 ([قواعد <bdi>OpenCode</bdi>](https://opencode.ai/docs/rules/)). لذلك تُسمّي القائمة
 وثيقة ملفك التعريفي أولًا، ثم القواعد التي تكون قيمة <bdi>`alwaysApply`</bdi> فيها
-<bdi>`true`</bdi> فقط، بمسار صريح واحد
-<bdi>`~/.config/opencode/.apothem/support/rules/<name>.md`</bdi> لكلٍّ منها؛ ويوسّع
-<bdi>OpenCode</bdi> البادئة <bdi>`~/`</bdi> نسبةً إلى دليلك المنزلي. وتلك القواعد هي
+<bdi>`true`</bdi> فقط، بمسار صريح واحد لكلٍّ منها، هو
+<bdi>`~/.config/opencode/.apothem/support/rules/<name>.md`</bdi> افتراضيًا. ويوسّع
+<bdi>OpenCode</bdi> بادئة <bdi>`~/`</bdi> نسبةً إلى دليلك المنزلي؛ ويكون المسار مطلقًا
+حين يقع دليل الإعداد خارجه، وتقع شجرة الدعم دائمًا تحت دليل الإعداد. وتلك القواعد هي
 <bdi>`agnostic-posture`</bdi>، و<bdi>`authority-inquiry`</bdi>، و<bdi>`context-management`</bdi>،
 و<bdi>`session-closure`</bdi>، وفهرس القواعد <bdi>`apothem-rule-index`</bdi>. ولا يقصر
 <bdi>OpenCode</bdi> أي قاعدة على مسارات، لذا تُقرَأ كل قاعدة أخرى عند الطلب. وتبقى
@@ -91,7 +138,16 @@ apothem update --harness opencode
 ```
 
 يُحدِّث <bdi>`opencode.json`</bdi>، والأوامر الأصلية، والمهارات، وتعريفات المساعِدات،
-وشجرة دعم <bdi>Apothem</bdi>.
+وشجرة دعم <bdi>Apothem</bdi>. أمّا خادم <bdi>MCP</bdi> الذي كتبه التثبيت وحوّلتَه إلى
+شكل <bdi>`mcp.servers`</bdi> الخاص بـ <bdi>OpenCode</bdi> 2 من دون تغييره فيُكتب مجدّدًا
+تحت <bdi>`mcp`</bdi>، حيث يقرؤه كلا إصداري <bdi>OpenCode</bdi>. ولا يُعدّ خادم تحت
+<bdi>`mcp.servers`</bdi> تحويلًا كهذا إلا حين يختفي مُدخَله في <bdi>`mcp`</bdi> ويطابق
+ما كتبه التثبيت بكامله؛ أمّا خادمك الخاص الذي يحمل الاسم نفسه، وتحويل عدّلتَه، وتحويل
+عطّلتَه، فتُترك كما هي. وإلى جانب تحويل كهذا يكتب التحديث الخادم تحت <bdi>`mcp`</bdi>
+مرة أخرى، فيستخدم <bdi>OpenCode</bdi> 1 تلك النسخة ويستخدم <bdi>OpenCode</bdi> 2 النسخة
+المحوَّلة؛ ولإبقاء الخادم معطّلًا في الإصدارين كليهما، أزِله من الملف التعريفي. ويتطلّب
+هذا سجلّ تثبيت يسرد المُدخَلات التي كتبها التثبيت؛ ولا يشمل ذلك سجلًّا يسبق احتفاظ
+<bdi>Apothem</bdi> بتلك القائمة.
 
 ## إلغاء التثبيت
 
@@ -102,7 +158,12 @@ apothem uninstall --harness opencode
 يُزيل المُدخَلات التي أضافها المحوّل إلى <bdi>`~/.config/opencode/opencode.json`</bdi>
 (تبقى مفاتيحك الخاصة وخوادم <bdi>MCP</bdi> ومُدخَلات <bdi>`instructions`</bdi> الخاصة
 بك، ولا يُحذَف الملف إلا إذا كان <bdi>Apothem</bdi> هو من أنشأه ولم يتبقَّ فيه شيء
-يخصّك). ويُزيل كتلة <bdi>Apothem</bdi> من وثيقة الملف التعريفي
+يخصّك). ويُزال أيضًا خادم <bdi>MCP</bdi> الذي كتبه التثبيت وحوّلتَه إلى شكل
+<bdi>`mcp.servers`</bdi> الخاص بـ <bdi>OpenCode</bdi> 2 من دون تغييره، كاملًا؛ وتبقى
+الخوادم الأخرى تحت <bdi>`mcp.servers`</bdi>. وإذا أزلتَ مُدخَل <bdi>`mcp`</bdi> الخاص
+بالتثبيت، فإن خادمك الخاص تحت <bdi>`mcp.servers`</bdi> الذي يطابق خادمًا كتبه التثبيت لا
+يمكن تمييزه من نسخة محوَّلة، ويُزال معها؛ ويُنسَخ الملف احتياطيًا أولًا. ويُزيل كتلة
+<bdi>Apothem</bdi> من وثيقة الملف التعريفي
 <bdi>`~/.config/opencode/apothem/rules/00-apothem-profile.md`</bdi> ويُبقي أي نص آخر
 فيها؛ ولا يُحذَف ذلك الملف إلا حين لا يتبقى فيه شيء آخر. ويُزيل كذلك ملفات
 <bdi>Apothem</bdi> في <bdi>`~/.config/opencode/commands/`</bdi>
@@ -111,6 +172,11 @@ apothem uninstall --harness opencode
 المجلّدات. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو
 إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
 <bdi>Apothem</bdi>.
+
+أمّا التثبيت الذي أجراه إصدار سابق في <bdi>`~/.config/opencode/`</bdi> بينما كان
+<bdi>`XDG_CONFIG_HOME`</bdi> يُسمّي دليلًا آخر فيبقى هناك، ولم يقرأه <bdi>OpenCode</bdi>
+قطّ. ويذكر التثبيت التالي ذلك؛ ولإزالته، شغّل إلغاء التثبيت مع ترك
+<bdi>`XDG_CONFIG_HOME`</bdi> غير مضبوط.
 
 ## بوابة المطابقة
 

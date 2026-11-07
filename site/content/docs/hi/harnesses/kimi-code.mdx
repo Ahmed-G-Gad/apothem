@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,11 @@ apothem install --harness kimi-code --project /path/to/project
 `<project>/.kimi-code/.apothem/support/` पर Apothem-स्वामित्व वाले समर्थन वृक्ष के
 अंतर्गत रहते हैं। किसी प्रोजेक्ट की `AGENTS.md` फ़ाइल को Kimi Code के अलावा कई
 कोडिंग टूल पढ़ते हैं, इसलिए ब्लॉक प्रोजेक्ट-व्यापी मार्गदर्शन के रूप में लिखा
-जाता है, जो किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता।
+जाता है, जो किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता। उन टूल में से कुछ इसे
+केवल कुछ प्रोजेक्ट में लोड करते हैं, उदाहरण के लिए केवल तब जब प्रोजेक्ट में उनकी
+अपनी कोई निर्देश फ़ाइल न हो, और इंस्टॉल नोट ऐसे हर टूल का नाम उसकी शर्त के साथ बताता
+है ([हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) उन्हें
+सूचीबद्ध करती है)।
 
 Kimi Code सार्वभौमिक AGENTS.md परिपाटी का पालन करते हुए प्रोजेक्ट-रूट `AGENTS.md`
 निर्देश फ़ाइल पढ़ता है, और प्रोजेक्ट कॉन्फ़िगरेशन `<project>/.kimi-code/` के

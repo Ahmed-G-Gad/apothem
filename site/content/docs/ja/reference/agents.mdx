@@ -2,7 +2,7 @@
 title: "ヘルパー"
 description: "リサーチ、監査、品質、オーケストレーション向けの永続的なヘルパーエージェント。frontmatter 契約とデプロイ隔離プロトコルを備えます。"
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -82,7 +82,7 @@ Claude Code と Gemini CLI 以外のハーネスは、このキーを無視し�
 プロファイルなしで組み立てられ、素の一覧を保持するため、プラグインのユーザーは代わりに
 `~/.claude/agents/` 配下にユーザーレベルのエージェントを定義します。プロファイルの構文、サーバー名の規則、
 その回避策は
-[ヘルパーに MCP サーバーへのアクセスを与える](/docs/reference/mcp#ヘルパーに-mcp-サーバーへのアクセスを与える)
+[ヘルパーに MCP サーバーへのアクセスを与える](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)
 にあります。
 
 ## ハーネスごとの変換
@@ -99,7 +99,7 @@ Claude Code と Gemini CLI 以外のハーネスは、このキーを無視し�
 | Codex | 出力しない。ヘルパーの指示がそれを述べ、書き込みは親セッションのサンドボックスが管理する | 利用不可 | 継承（設定しない） |
 | Gemini CLI | Gemini のツール名による `tools` 許可リストに加えて、プロファイルの `agent_mcp_servers` キーが列挙済みの明示的な一覧に追加する `mcp_<server>_*` エントリ。`tools` がない場合は、拒否から導かれる許可リストに `mcp_*` を加えたもの | `max_turns` | 継承（設定しない） |
 | Qwen Code | Qwen のツール名による `tools` / `disallowedTools`。`tools` がない場合は一覧が出力されないため、MCP ツールは継承され、拒否が適用される | マッピングなし | `model: inherit` |
-| OpenCode | `permission`（ツールごとに `allow` / `deny`）。MCP ツールは制限されない | マッピングなし | 継承（設定しない） |
+| OpenCode | `permission`。拒否するツールごとに `deny` を 1 つ置き、`allow` は置かないため、OpenCode のデフォルト（`.env` ファイルを読む前に確認を求める動作を含む）とあなた自身のルールが適用される。MCP ツールは制限されない | マッピングなし | 継承（設定しない） |
 | Antigravity | 出力しない。説明から「読み取り専用」が除かれる | 利用不可 | 継承（設定しない） |
 | CodeBuddy | カンマ区切りの文字列としての `tools` / `disallowedTools`。CodeBuddy が文書化しているツール名に限定される。MCP エントリはなし | `maxTurns` | 継承（設定しない） |
 | Trae | カンマ区切りの文字列としての `tools` / `disallowedTools`。Trae が文書化しているツール名に限定される。MCP エントリはなし | 利用不可 | 継承（設定しない） |

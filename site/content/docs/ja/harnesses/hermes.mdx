@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,17 +44,26 @@ Hermes はインストールされたスキルを見つけます。このエン�
 Hermes は `skills.external_dirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自ら読み込みません。`config.yaml` 内の他のどの設定もそこを指していないため、Hermes のインストールは Apothem のルールもフックも追加しません。
 
 Hermes は、自身が読み取るプロジェクトファイルに別のインストールが書き込んだ Apothem のブロックを実際に読み込みます。
-Hermes は 1 セッションにつき 1 種類のプロジェクトコンテキストしか読み込まず、最初に見つかったものを使うため、次の各ファイルが Hermes に届くのは、それぞれの横に書かれた条件を満たす場合に限られます。
+Hermes は 1 セッションにつき 1 種類のプロジェクトコンテキストしか読み込みません。
+読み込まれるのは、空でないファイルがある最初の種類で、その順序は、`.hermes.md` または `HERMES.md`、`AGENTS.md` ファイル（各フォルダーでは、空でない `AGENTS.override.md` が、その隣の `AGENTS.md` の代わりに読み込まれます）、`CLAUDE.md`、その後に別のエディターのルールファイルです。
+そのため、次の各ファイルが Hermes に届くのは、それぞれの横に書かれた条件を満たす場合に限られます。
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Kimi Code 向けの Apothem のインストールが 1 つ目のファイルを書き込み、別のエディター向けのインストールが 2 つ目のファイルを書き込みます。
-`--project` を付けたインストールは、そのようなファイルと、それを書き込んだインストールを挙げます。
+Hermes は、`.hermes.md` と `HERMES.md` を、開始したフォルダーから git ルートまで上方向に探し、`AGENTS.md` ファイルを git ルートから下方向に読み取るため、プロジェクトより上位のフォルダーにあるそのようなファイルも対象に含まれます。
+空のファイルは対象になりません。
+空の `.hermes.md` は、その隣の `HERMES.md` も隠すため、その `HERMES.md` にテキストがあっても、Hermes は `AGENTS.md` ファイルに進みます。
+これらの条件は、プロジェクト内で開始したセッションに適用されます。
+プロジェクトより上位のフォルダーで開始したセッションでも、プロジェクトにどのような `.hermes.md` や `HERMES.md` があっても、そのセッションがプロジェクト内のファイルを初めて操作するときに、`<project>/AGENTS.md`、またはその隣にある空でない `AGENTS.override.md` を読み込むことがあります。
+Hermes は、ホームフォルダーと一部のコンテナーフォルダーでは、これをスキップします。
+
+[Kimi Code](/docs/harnesses/kimi-code) 向けの Apothem のインストールが 1 つ目のファイルを書き込み、[別のエディター向けのインストール](/docs/harnesses/cursor)が 2 つ目のファイルを書き込みます。
+`--project` を付けて実行した Hermes のインストールは、そのようなファイルと、それを書き込んだインストールを挙げます。
 
 **名前の衝突。** Hermes はスキルについて次の優先順位を文書化しています：プロジェクトのスキル（`<project>/.hermes/skills/` と `<project>/.agents/skills/`）、次に `~/.hermes/skills/`、次に `skills.create_dir`、次に `skills.external_dirs` 配下に列挙されたフォルダーです。
 Apothem のディレクトリは `external_dirs` のエントリーなので、最後になります。

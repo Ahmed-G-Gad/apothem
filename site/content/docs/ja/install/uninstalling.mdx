@@ -23,7 +23,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## エンジンを削除する
 
-削除方法は、使用したインストールチャネルに対応します。チャネル番号は、[インストールチャネルの表](/docs/install#チャネルを選ぶ)のものです。
+削除方法は、使用したインストールチャネルに対応します。チャネル番号は、[インストールチャネルの表](/docs/install#choose-a-channel)のものです。
 
 - **Claude Code プラグイン（チャネル 1）** — Claude Code 内からプラグインを削除します：`/plugin uninstall apothem@apothem`（マーケットプレイスのエントリーは `/plugin marketplace remove ahmed-g-gad/apothem` で削除できます）。
 - **npx（チャネル 2）** — 削除するものはありません。`npx` はそのキャッシュから実行されます。キャッシュされたコピーを消去したい場合は、`npm cache clean --force` を実行してください。
@@ -55,7 +55,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - `~/.config/apothem/profile.yaml` または `--profile PATH` にある共有プロファイル YAML は、`apothem uninstall` によって削除されることは決してありません。
 - ハーネスディレクトリ内の、無関係なオペレーター作成のファイルは保持されます。
 - 共有の設定ファイルにあなたが追加したエントリは保持されます。あなた自身の権限ルール、MCP サーバー、フックハンドラーはそのまま残ります。
-  アンインストールが削除するのは、インストール台帳が Apothem のものとして記録しているキーとリストエントリだけです（[設定](/docs/reference/settings#自分の設定ファイルへのマージ)を参照）。
+  アンインストールが削除するのは、インストール台帳が Apothem のものとして記録しているキーとリストエントリだけです（[設定](/docs/reference/settings#merging-into-your-own-settings-file)を参照）。
 - インストールルートの `.apothem/` 配下にある共有データストア（`memory/`、`contexts/`、`learning/`）は、同じルートにある別のインストール済みハーネスがまだそれらを使用している間は残ります。
   そのルートで最後のハーネスをアンインストールすると、各ストアをまず `~/.apothem/backups/` にコピーしてから、中身ごと削除します。
 - `<project>/.apothem/plans/`（およびレガシーの `<project>/.plans/`）配下のプランスイートは影響を受けません。

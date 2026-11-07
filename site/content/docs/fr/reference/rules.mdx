@@ -2,7 +2,7 @@
 title: "Règles"
 description: "Règles comportementales toujours actives et filtrées par chemin régissant la résolution de problèmes, l'artisanat du code, l'architecture propre, la planification et la qualité à travers l'ensemble des règles comportementales."
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,10 +73,13 @@ session tous les fichiers que nomme la liste `instructions` de son
 `opencode.json`. L'installation OpenCode (`apothem install --harness opencode`)
 liste donc votre document de profil et uniquement les règles dont `alwaysApply`
 vaut `true` (les quatre règles de base et l'index des règles), à raison d'un
-chemin `~/.config/opencode/...` explicite par fichier, lu depuis les fichiers
-de règles au moment où la configuration est écrite. Chaque règle, y compris les
-règles filtrées par chemin, est tout de même installée sous
-`~/.config/opencode/.apothem/support/rules/`, où l'index la nomme et où une
+chemin explicite par fichier, lu depuis les fichiers de règles au moment où la
+configuration est écrite. Chaque chemin commence par `~/`
+(`~/.config/opencode/...` par défaut), ou est absolu lorsque le répertoire de
+configuration se trouve en dehors de votre répertoire personnel. Chaque règle, y
+compris les règles filtrées par chemin, est tout de même installée sous le
+`.apothem/support/rules/` du répertoire de configuration (par défaut
+`~/.config/opencode/.apothem/support/rules/`), où l'index la nomme et où une
 règle, une skill ou une commande qui en cite une la lit à la demande.
 
 ## Discipline de rédaction

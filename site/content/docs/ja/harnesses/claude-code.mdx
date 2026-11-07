@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ apothem install --harness claude-code
 サポートファイルのセクションは、インストールされたルール、スキル、エージェント内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` は `~/.claude/rules/` 配下に、`templates/...`、`schemas/...`、`hooks/...`、`conformity/...` は `~/.claude/.apothem/support/` 配下に解決されます。
 また、ルールインデックス `~/.claude/rules/apothem-rule-index.md` も指し示します。
 Apothem のガバナンス面の残りは、伝播された `rules/` ツリーと SessionStart フックを通じて Claude Code に届きます。
-OpenCode も、`~/.config/opencode/AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込み、Devin Desktop はデフォルトでこれをインポートするため、このブロックは単一のツールを読み手として名指ししません。
+OpenCode 1 も、その設定フォルダー（デフォルトでは `~/.config/opencode/`）に `AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込み（OpenCode 2 には `CLAUDE.md` のフォールバックがありません）、Devin Desktop はデフォルトでこれをインポートするため、このブロックは単一のツールを読み手として名指ししません。
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -121,11 +121,11 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 
 ## 互換性に関する注意
 
-コマンドプロンプトはスキルディレクトリに変換され、ルールは上記のとおりにレンダリングされます。スキルと出力スタイルはそのままコピーされ、エージェントは書かれたとおりにコピーされます。ただし、プロファイルの `agent_mcp_servers` キーが挙げるヘルパーは、その `tools` 行に、指定された各サーバーにつき `mcp__<server>__*` エントリを 1 つ得ます（[MCP サーバー](/docs/reference/mcp#ヘルパーに-mcp-サーバーへのアクセスを与える)を参照）。
+コマンドプロンプトはスキルディレクトリに変換され、ルールは上記のとおりにレンダリングされます。スキルと出力スタイルはそのままコピーされ、エージェントは書かれたとおりにコピーされます。ただし、プロファイルの `agent_mcp_servers` キーが挙げるヘルパーは、その `tools` 行に、指定された各サーバーにつき `mcp__<server>__*` エントリを 1 つ得ます（[MCP サーバー](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)を参照）。
 インストールでは、プロファイルが整形式であること、および settings.json 内のすべてのフックバインディングが解決可能であることを検証します。
 アダプターは MCP サーバーのエントリを一切作成しません。サーバーは `claude mcp add` で登録してください（[MCP サーバー](/docs/reference/mcp)を参照）。
 
-`~/.claude/agents/` は `Claude Code` が所有する共有ルートであり、`~/.claude/skills/` も同様です。他のサポート対象ツールがこれらのフォルダーを読み込むため、`Claude Code` のインストールがそこに書き込むエージェントとスキルはそれらのツールにも現れ、インストールはそれらのツールを挙げるメモを表示します。
+`~/.claude/agents/` は `Claude Code` が所有する共有ルートであり、`~/.claude/skills/` と `~/.claude/CLAUDE.md` も同様です。他のサポート対象ツールがこれらを読み込むため、`Claude Code` のインストールがそこに書き込むエージェント、スキル、Apothem ブロックはそれらのツールにも現れ、インストールはそれらのツールを挙げるメモを表示します。
 [ハーネスレジストリ](/docs/reference/harness-registry)は、各ルートの読み手を一覧表示します。
 
 Claude Code は、すべてのセッション開始時に settings.json 内のすべてのフックバインディングを適用します。各アダプターは、それぞれのネイティブなハーネスに対して検証されます。特権的な「参照」ハーネスは存在しません。

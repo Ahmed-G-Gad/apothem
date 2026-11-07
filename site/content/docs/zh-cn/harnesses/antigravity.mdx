@@ -30,7 +30,7 @@ apothem install --harness antigravity
 
 **插件辅助程序。** 插件 `agents/` 目录中的辅助程序定义携带 `name` 和 `description`。Antigravity 的 `tools` 列表使用它自己的工具名称，而其文档警告未知名称可能导致子智能体挂起，因此不会生成任何工具列表，辅助程序继承父级的工具。由于 Antigravity 上没有任何机制强制执行只读限制，这些辅助程序的描述会去掉“只读”标签。
 
-**共享的用户锚点。** `~/.gemini/GEMINI.md` 同时也是 Gemini 系列工具的用户级锚点。Antigravity 适配器将其额外的 Apothem 材料保留在 `~/.gemini/antigravity-cli/plugins/` 下的 `apothem` 插件内，因此不会占用通用的 Gemini CLI 项目目录。由于不止一个工具会加载 `~/.gemini/GEMINI.md`，那里的 Apothem 区块被写成全局指引，不把任何单一工具指定为其读者。
+**共享的用户锚点。** `~/.gemini/GEMINI.md` 同时也是 Gemini 系列工具的用户级锚点。Antigravity 适配器将其额外的 Apothem 材料保留在 `~/.gemini/antigravity-cli/plugins/` 下的 `apothem` 插件内，因此不会占用通用的 Gemini CLI 项目目录。由于不止一个工具会加载 `~/.gemini/GEMINI.md`，那里的 Apothem 区块被写成全局指引，不把任何单一工具指定为其读取者。
 
 ## 配置档案到原生配置的映射
 

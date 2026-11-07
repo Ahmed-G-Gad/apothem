@@ -19,7 +19,7 @@ Kimi Code는 프로젝트 루트의 `AGENTS.md`를 지침 파일로 읽고, 운�
 | 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
 | `AGENTS.md` 지침 표면 작성 | 프로젝트마다 직접 작성하고 다시 동기화 | 공유 프로필에서 렌더링된 관리 블록 하나 |
-| 규칙, 커맨드, 스킬, 에이전트를 동기화 상태로 유지 | 프로젝트마다 수동 복사 | 설치할 때마다 스킬과 커맨드(스킬로)는 `<project>/.kimi-code/skills/` 아래에, 헬퍼는 서브에이전트로 `<project>/.kimi-code/agents/` 아래에, 규칙, 훅, 템플릿은 `<project>/.kimi-code/.apothem/support/` 아래에 |
+| 규칙, 커맨드, 스킬, 에이전트를 동기화 상태로 유지 | 프로젝트마다 수동 복사 | 설치할 때마다 스킬과 커맨드(스킬로)는 `<project>/.kimi-code/skills/` 아래에, 도우미는 서브에이전트로 `<project>/.kimi-code/agents/` 아래에, 규칙, 훅, 템플릿은 `<project>/.kimi-code/.apothem/support/` 아래에 |
 | 갱신 시 운영자 산문 보존 | 수동 병합 | 센티넬로 구분된 블록. 그 바깥의 운영자 산문은 보존됨 |
 | 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness kimi-code --project <path>` |
@@ -28,7 +28,7 @@ Kimi Code는 프로젝트 루트의 `AGENTS.md`를 지침 파일로 읽고, 운�
 
 kimi-code 어댑터는 공유 규칙과 거버넌스 표면을 프로젝트 루트 `AGENTS.md`의 관리
 블록으로 렌더링하고, 스킬과 스킬로 감싼 커맨드를 Kimi Code가 로드하는 프로젝트
-스킬 디렉터리인 `.kimi-code/skills/`에 설치합니다. 헬퍼는 `.kimi-code/agents/`의
+스킬 디렉터리인 `.kimi-code/skills/`에 설치합니다. 도우미는 `.kimi-code/agents/`의
 Kimi Code 서브에이전트가 되며, 그 도구 이름은 Kimi Code가 매칭하는 이름으로
 변환됩니다. 훅, 규칙, 템플릿 코호트는 `.kimi-code/.apothem/support/` 아래에
 둡니다. Kimi Code는 사용자 범위의 `~/.kimi-code/config.toml`에서 훅을 읽으며,
