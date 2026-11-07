@@ -212,6 +212,7 @@ from .install_driver_retention import list_backup_timestamps as list_backup_time
 from .install_driver_retention import prune_history as prune_history
 from .install_driver_reversal import capture_missing_dirs as capture_missing_dirs
 from .install_driver_reversal import rollback_install as rollback_install
+from .install_driver_shared import _protected_targets as _protected_targets
 from .install_driver_treeops import (
     _directory_contents_equal as _directory_contents_equal,
 )
