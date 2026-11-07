@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,7 +58,7 @@ mengubah apa pun di dalam proyek:
 
 Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
 
-- Setiap proyek tempat Anda memasang `zed`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#root-bersama) mencantumkannya.
+- Setiap proyek tempat Anda memasang `zed`, dan setiap instalasi Apothem lain yang menyebut folder tersebut, memakai salinan yang sama dan menulis berkas yang sama, sehingga urutan pemasangan Anda tidak berpengaruh. Beberapa alat lain juga membaca `~/.agents/skills/`; [registri harness](/docs/reference/harness-registry#shared-roots) mencantumkannya.
 - `--project` memilih berkas instruksi yang ditulis dan proyek tempat instalasi
   itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
 - Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
@@ -96,6 +96,17 @@ Ketika `.rules` hanya berisi blok Apothem dan sebuah berkas berprioritas lebih
 rendah berisi teks Anda, install dan update mencetak peringatan yang menyebutkan
 berkas yang tersembunyi; salin instruksi yang Anda perlukan ke dalam `.rules` di
 luar blok Apothem agar instruksi tersebut tetap terbaca di Zed.
+
+Catatan yang dicetak instalasi Apothem lain ketika menulis `AGENTS.md` atau
+berkas lain yang lebih rendah dalam daftar menyebut Zed sebagai pembaca hanya
+dengan satu syarat: Zed memuat berkas itu hanya ketika proyek tidak memiliki
+satu pun berkas di atasnya dalam daftar. Instalasi ini menulis `.rules`, sehingga
+di proyek tempat instalasi ini dijalankan, catatan tersebut berlaku bagi Zed
+hanya setelah `.rules` dihapus. Hal yang sama berlaku untuk catatan yang dicetak
+instalasi ini sendiri: ketika `AGENTS.md` atau berkas bersama lain yang lebih
+rendah dalam daftar berisi blok Apothem milik instalasi lain, catatan bahwa Zed
+juga memuat berkas itu membawa syarat yang, karena `.rules` yang baru, tidak
+terpenuhi sampai `.rules` dihapus.
 
 Berkas instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
 (`.zed/settings.json` `context_servers`) dimiliki operator; Apothem tidak

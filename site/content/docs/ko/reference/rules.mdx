@@ -2,7 +2,7 @@
 title: "규칙"
 description: "행동 규칙 세트 전반에서 문제 해결, 코드 작성 기술, 클린 아키텍처, 계획 수립, 품질을 관장하는 상시 적용 및 경로 필터링 행동 규칙입니다."
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -64,9 +64,12 @@ OpenCode에는 규칙별 범위 지정 필드가 없습니다. OpenCode는
 `opencode.json`의 `instructions` 목록이 지명하는 모든 파일을 모든 세션에
 결합합니다. 따라서 OpenCode 설치(`apothem install --harness opencode`)는
 여러분의 프로필 문서와 `alwaysApply`가 `true`인 규칙(네 가지 핵심 규칙과 규칙
-인덱스)만을 파일당 명시적 `~/.config/opencode/...` 경로 하나씩으로 나열하며, 이
-목록은 구성을 쓸 때 규칙 파일에서 읽어 들인 것입니다. 경로 필터링 규칙을 포함한
-모든 규칙은 여전히 `~/.config/opencode/.apothem/support/rules/` 아래에 설치되며,
+인덱스)만을 파일당 명시적 경로 하나씩으로 나열하며, 이
+목록은 구성을 쓸 때 규칙 파일에서 읽어 들인 것입니다. 각 경로는 `~/`로 시작하거나
+(기본값은 `~/.config/opencode/...`), 구성 폴더가 여러분의 홈 폴더 밖에 있으면
+절대 경로입니다. 경로 필터링 규칙을 포함한
+모든 규칙은 여전히 구성 폴더의 `.apothem/support/rules/` 아래
+(기본값은 `~/.config/opencode/.apothem/support/rules/`)에 설치되며,
 그곳에서 인덱스가 규칙을 지명하고, 규칙을 인용하는 규칙, 스킬, 명령은 필요할 때
 해당 규칙을 읽습니다.
 

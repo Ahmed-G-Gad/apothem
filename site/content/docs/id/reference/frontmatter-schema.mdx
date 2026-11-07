@@ -18,7 +18,7 @@ Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kec
 
 ## 2. Field Wajib per Kelas
 
-Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `src/apothem/schemas/`. Kelas pembantu, skill, command, output-style, dan plan masing-masing memiliki satu berkas skema, yang tercantum di bawah; kelas `CLAUDE.md` dan aturan tidak memilikinya, dan `validate_ecosystem.py` memeriksa kunci kedua kelas itu. Berkas plan tidak ada dalam tabel di bawah; kuncinya tercantum di [Disiplin plan](/docs/reference/plans-discipline).
+Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `src/apothem/schemas/`. Kelas helper, skill, command, output-style, dan plan masing-masing memiliki satu berkas skema, yang tercantum di bawah; kelas `CLAUDE.md` dan aturan tidak memilikinya, dan `validate_ecosystem.py` memeriksa kunci kedua kelas itu. Berkas plan tidak ada dalam tabel di bawah; kuncinya tercantum di [Disiplin plan](/docs/reference/plans-discipline).
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -33,7 +33,7 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (konfigurasi root) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Aturan (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Command (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Pembantu, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (opsional: pembantu yang menghilangkannya mewarisi setiap tool; untuk memberikan server MCP kepada pembantu yang mencantumkan `tools`, sebutkan server tersebut di kunci `agent_mcp_servers` pada profil), `disallowedTools`, `maxTurns`, `effort` |
+| Helper, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (opsional: helper yang menghilangkannya mewarisi setiap tool; untuk memberikan server MCP kepada helper yang mencantumkan `tools`, sebutkan server tersebut di kunci `agent_mcp_servers` pada profil), `disallowedTools`, `maxTurns`, `effort` |
 | Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin, serta folder skill tingkat pengguna bersama, mengganti nama `userInvocable` menjadi `user-invocable`, dan skema mewajibkan setiap skill membawa tepat salah satu dari kedua ejaan tersebut, tidak pernah keduanya; instalasi `Qwen Code` menulis `allowed-tools` sebagai daftar `allowedTools`, yaitu kunci dan bentuk yang dibaca `Qwen Code` |
 | Output-style (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Адаптер окружения Apothem для Hermes (предварительная версия)."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,19 +50,33 @@ apothem install --harness hermes
 указывает туда, поэтому установка Hermes не добавляет правил и хуков Apothem.
 
 Hermes всё же загружает блок Apothem, который другая установка записывает в
-читаемый им файл проекта. Он загружает один вид контекста проекта за сессию,
-первый из найденных, поэтому каждый из этих файлов доходит до Hermes только при
-условии, указанном рядом с ним:
+читаемый им файл проекта. Он загружает один вид контекста проекта за сессию:
+первый вид с непустым файлом, в порядке `.hermes.md` или `HERMES.md`, файлы
+`AGENTS.md` (в каждой папке непустой `AGENTS.override.md` заменяет `AGENTS.md`
+рядом с ним), `CLAUDE.md`, затем файлы правил другого редактора. Поэтому каждый
+из этих файлов доходит до Hermes только при условии, указанном рядом с ним:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Установка Apothem для Kimi Code записывает первый файл, а установка для другого
-редактора записывает второй. Установка с `--project` называет такой файл и
+Hermes ищет `.hermes.md` и `HERMES.md` от папки, в которой запускается, вверх до
+корня репозитория, а файлы `AGENTS.md` читает от корня репозитория вниз, поэтому
+такой файл в папке выше проекта тоже учитывается. Пустой файл не учитывается.
+Пустой `.hermes.md` также скрывает `HERMES.md` рядом с ним, поэтому Hermes
+переходит к файлам `AGENTS.md`, даже если в этом `HERMES.md` есть текст. Эти
+условия относятся к сессии, начатой в проекте. Сессия, начатая в папке выше
+проекта, всё же может загрузить `<project>/AGENTS.md` или непустой
+`AGENTS.override.md` рядом с ним, когда впервые работает с файлом в проекте,
+независимо от того, какой из файлов `.hermes.md` или `HERMES.md` есть в проекте.
+Hermes пропускает это в домашнем каталоге и в нескольких папках-контейнерах.
+
+Установка Apothem для [Kimi Code](/docs/harnesses/kimi-code) записывает первый
+файл, а [установка для другого редактора](/docs/harnesses/cursor) записывает
+второй. Установка Hermes, запущенная с `--project`, называет такой файл и
 установку, которая его записала.
 
 **Конфликты имён.** Hermes документирует следующий порядок приоритета для
