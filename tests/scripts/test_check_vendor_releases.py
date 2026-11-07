@@ -1479,3 +1479,26 @@ def test_missing_root_returns_error(tmp_path: Path) -> None:
     )
 
     assert rc == 1
+
+
+@pytest.mark.parametrize(
+    ("body", "deeper"),
+    [
+        pytest.param(b"[" * 64 + b"]" * 64, False, id="at-the-limit"),
+        pytest.param(b"[" * 65 + b"]" * 65, True, id="one-past-the-limit"),
+        pytest.param(
+            b'{"a": "' + b"[" * 200 + b'"}', False, id="brackets-inside-a-string"
+        ),
+        pytest.param(
+            b'["\\"' + b"[" * 200 + b'"]',
+            False,
+            id="escaped-quote-keeps-the-string-open",
+        ),
+        pytest.param(
+            b'["\\\\"' + b"[" * 65, True, id="escaped-backslash-closes-the-string"
+        ),
+    ],
+)
+def test_nesting_depth_counts_only_structure(body: bytes, deeper: bool) -> None:
+    """The explicit depth check reads strings and escapes the way JSON does."""
+    assert cvr._nests_deeper_than(body, 64) is deeper
