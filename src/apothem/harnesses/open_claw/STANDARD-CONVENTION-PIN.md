@@ -143,7 +143,7 @@ guarantees.
   - The Agent Guidance plugin, which ships in OpenClaw's source tree
     (`extensions/agent-guidance`, off by default): Apothem-owned files
     outside agent-writable workspaces and one config entry. Prompt injection
-    is allowed unless a plugin's `hooks.allowPromptInjection` is `false`, and
+    is allowed unless a plugin's `hooks.allowPromptModification` is `false`, and
     a bundled plugin gets conversation access by default (source
     `src/plugins/hook-policy-decisions.ts:6-17`; the docs' example sets both
     explicitly). It reads 1 to 8 files of at most 16 KiB each (64 KiB in
