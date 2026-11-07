@@ -1166,12 +1166,12 @@ def test_antigravity_command_skill_note_points_to_plugin_support_tree(
     )
     monkeypatch.setattr(install_driver, "APOTHEM_SRC", fake_package_root)
     root = tmp_path / ".gemini"
-    plugin_root = root / "antigravity-cli" / "plugins" / "apothem"
+    plugin_root = root / "config" / "plugins" / "apothem"
 
     install_driver.apply_command_skills(
         InstallEntry(
             source="commands/",
-            target="${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/",
+            target="${HARNESS_ROOT}/config/plugins/apothem/skills/",
             mode="command_skills",
         ),
         harness_root=root,

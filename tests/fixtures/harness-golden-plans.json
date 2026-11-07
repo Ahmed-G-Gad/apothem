@@ -8,37 +8,37 @@
     {
       "mode": "write_text",
       "source": "harnesses/antigravity/templates/plugin.json",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/plugin.json"
+      "target": "<ROOT>/config/plugins/apothem/plugin.json"
     },
     {
       "mode": "command_skills",
       "source": "commands",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
+      "target": "<ROOT>/config/plugins/apothem/skills"
     },
     {
       "mode": "antigravity_rules",
       "source": "rules",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/rules"
+      "target": "<ROOT>/config/plugins/apothem/rules"
     },
     {
       "mode": "merge_tree_entries",
       "source": "skills",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
+      "target": "<ROOT>/config/plugins/apothem/skills"
     },
     {
       "mode": "antigravity_agents",
       "source": "agents",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/agents"
+      "target": "<ROOT>/config/plugins/apothem/agents"
     },
     {
       "mode": "merge_tree_entries",
       "source": "templates",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates"
+      "target": "<ROOT>/config/plugins/apothem/.apothem/support/templates"
     },
     {
       "mode": "merge_tree_entries",
       "source": "hooks",
-      "target": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks"
+      "target": "<ROOT>/config/plugins/apothem/.apothem/support/hooks"
     }
   ],
   "claude-code": [

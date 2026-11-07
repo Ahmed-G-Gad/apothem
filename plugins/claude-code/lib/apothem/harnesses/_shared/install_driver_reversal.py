@@ -40,6 +40,7 @@ from .install_driver_datahome import _data_home_for
 from .install_driver_lifecycle import _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
+    _is_lexically_within,
     _normalized,
     _root_for,
     _validate_target_path,
@@ -214,6 +215,21 @@ def _remove_created(
     )
 
 
+def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
+    """Return True when a stale-sweep entry of *harness_name* still covers the path.
+
+    An install record lists the stale paths its pass swept. A release can drop
+    an entry because the path stopped being Apothem's: Antigravity keeps its own
+    data in ``~/.gemini/antigravity/``, which an early release listed. Restoring
+    such a record's backup would replace the live folder with a stale copy.
+    """
+    rules = install_driver.load_rules(harness_name)
+    return any(
+        _is_lexically_within(Path(recorded_path), root / legacy)
+        for legacy in rules.stale_sweep
+    )
+
+
 @locked_for_harness
 @backup_session()
 def rollback_install(
@@ -249,6 +265,25 @@ def rollback_install(
     results: list[MaterializationResult] = []
     for recorded in reversed(record.targets):
         result: MaterializationResult | None = None
+        if recorded.mode == "sweep_stale" and not _still_swept(
+            recorded.path, harness_name, root=root
+        ):
+            # The path left the stale-sweep list, so it is not Apothem's; the
+            # folder on disk now may hold newer data than the swept copy.
+            kept = {"backup": str(recorded.backup_ref)} if recorded.backup_ref else {}
+            results.append(
+                _result(
+                    "skipped",
+                    "restore_backup",
+                    Path(recorded.path),
+                    "left in place: Apothem no longer sweeps this path, so its "
+                    "pre-install copy"
+                    + (f" ({recorded.backup_ref})" if recorded.backup_ref else "")
+                    + " is not restored over what is there now",
+                    detail=kept,
+                )
+            )
+            continue
         shared = gate.covers(recorded.path)
         target_root = gate.boundary if shared else allowed_root
         if shared:
