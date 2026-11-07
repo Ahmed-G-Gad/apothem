@@ -4,8 +4,9 @@
 
 Several harnesses load the same instruction file. A project ``AGENTS.md`` is
 read by Codex, Cursor, GitHub Copilot, Kiro, Devin Desktop, OpenCode, Hermes,
-Antigravity, CodeBuddy and Zed as well as Kimi Code; a project ``GEMINI.md`` is
-read by Antigravity, the Copilot CLI and Zed as well as Gemini CLI;
+Antigravity, CodeBuddy, Zed and Claude Code as well as Kimi Code; a project
+``GEMINI.md`` is read by Antigravity, the Copilot CLI and Zed as well as Gemini
+CLI;
 ``~/.gemini/GEMINI.md`` is the global context file of both Gemini CLI and
 Antigravity; and Devin Desktop imports the Cursor rules file
 ``.cursor/rules/apothem-rules.mdc``, which Hermes also loads as its last
@@ -369,7 +370,13 @@ def test_hermes_reads_the_project_agents_md_only_without_its_own_file() -> None:
     # A .hermes.md or HERMES.md comes first in Hermes's order, and an
     # AGENTS.override.md beside AGENTS.md is loaded instead of it.
     root = _DECLARED["<project>/AGENTS.md"]
-    assert set(root.reader_conditions) == {"codebuddy", "codex", "hermes", "zed"}
+    assert set(root.reader_conditions) == {
+        "claude-code",
+        "codebuddy",
+        "codex",
+        "hermes",
+        "zed",
+    }
     assert root.reader_conditions["hermes"] == (
         "only when the project has no .hermes.md or HERMES.md and no "
         "AGENTS.override.md beside it"
@@ -385,6 +392,18 @@ def test_codex_reads_the_project_agents_md_only_without_an_override_beside_it() 
     assert "https://learn.chatgpt.com/docs/agent-configuration/agents-md" in (
         root.evidence
     )
+
+
+def test_claude_code_reads_the_project_agents_md_only_without_a_claude_md() -> None:
+    # From v2.1.277, under its default Project instructions setting, Claude Code
+    # reads AGENTS.md only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md
+    # is in the working folder or above it; ~/.claude/CLAUDE.md does not count.
+    root = _DECLARED["<project>/AGENTS.md"]
+    assert "claude-code" in root.readers
+    assert root.reader_conditions["claude-code"] == (
+        "only in v2.1.277 or later, not under the claude-md or managed-only Project instructions setting, and under the default setting only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md is in the working folder or a folder above it, not counting ~/.claude/CLAUDE.md"
+    )
+    assert "https://code.claude.com/docs/en/memory#agents-md" in root.evidence
 
 
 def test_codebuddy_reads_the_project_agents_md_only_without_codebuddy_md() -> None:

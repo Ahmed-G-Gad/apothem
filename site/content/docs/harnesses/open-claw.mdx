@@ -53,24 +53,28 @@ first, and when the same skill name appears in more than one place the highest
 source wins: the workspace `skills/` folder, the workspace `.agents/skills/`
 folder, `~/.agents/skills` (default state directory only), the state
 directory's `skills/` folder (`~/.openclaw/skills` by default), workshop
-skills, bundled and custodian skills, and last the folders listed under
-`skills.load.extraDirs` together with plugin skills. The Apothem directory is an
+skills, bundled and custodian skills, and then the folders listed under
+`skills.load.extraDirs` together with plugin skills. A session that runs in a
+separate execution workspace, a folder other than its own workspace, also reads
+that folder's `skills/` and `.agents/skills/` folders after all of these, so an
+Apothem skill wins over a skill of the same name kept there. The Apothem directory is an
 `extraDirs` entry, so a skill of the same name that you keep in any of the
 earlier sources is the one OpenClaw uses, and the Apothem copy of that skill
 stays unused on disk. Apothem writes only to `openclaw.json` and under
 `~/.openclaw/.apothem/support/`, never into those earlier folders, so install,
 update, and uninstall do not replace a skill you keep there.
 
-`agents.defaults.skills` is the allowlist of skill names; Apothem does not edit
-it, so if you keep one, check that it names the Apothem skills you want.
+`agents.defaults.skills` is the allowlist of skill names, and an
+`agents.entries.<id>.skills` list replaces it for the entry it belongs to.
+Apothem edits neither list, so if you keep one, check that it names the Apothem
+skills you want.
 `apothem update` keeps keys you add to `openclaw.json`. MCP servers live in
 the `mcp.servers` block of the OpenClaw config, which you manage with
 `openclaw mcp add` and the related subcommands; the adapter writes no entries
 there. (OpenClaw behavior per its [skills](https://docs.openclaw.ai/tools/skills),
-[skills config](https://docs.openclaw.ai/tools/skills-config), and
-[config extensions](https://docs.openclaw.ai/gateway/config-extensions) docs,
-read 2026-10-24, and its [MCP CLI](https://docs.openclaw.ai/cli/mcp) docs, read
-2026-10-02.)
+[skills config](https://docs.openclaw.ai/tools/skills-config),
+[config extensions](https://docs.openclaw.ai/gateway/config-extensions), and
+[MCP CLI](https://docs.openclaw.ai/cli/mcp) docs, read 2026-11-03.)
 
 **Comments in `openclaw.json`.** OpenClaw reads its config as JSON5, and Apothem
 rewrites the file as plain JSON. When the file carries comments or other JSON5
@@ -145,7 +149,7 @@ python -m apothem.conformity.gate --all .
 | Verification failed | Run `apothem update --harness open-claw`, then verify again |
 | Unexpected config content | Apothem authors only the `skills.load.extraDirs` entry in `openclaw.json` and keeps the keys already in it, so profile content does not land there. Profile content lands in `~/.openclaw/apothem/rules/00-apothem-profile.md`: check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run the command under [Updating](#updating) |
 | Install stops with a message about comments or JSON5 syntax in `openclaw.json` | Apothem does not rewrite a file it would have to strip comments from. Add the `skills.load.extraDirs` entry shown under [Compatibility notes](#compatibility-notes) yourself, or convert the file to plain JSON, then run the install again |
-| An Apothem skill does not appear in OpenClaw | A skill of the same name in the workspace, `~/.agents/skills`, or `~/.openclaw/skills` takes precedence over the Apothem copy (see [Compatibility notes](#compatibility-notes)). Also run `apothem verify --harness open-claw`, and check that any `agents.defaults.skills` allowlist you keep names the skill |
+| An Apothem skill does not appear in OpenClaw | A skill of the same name in the workspace, `~/.agents/skills`, `~/.openclaw/skills`, or among OpenClaw's workshop or bundled skills takes precedence over the Apothem copy (see [Compatibility notes](#compatibility-notes)). Also run `apothem verify --harness open-claw`, and check that any `agents.defaults.skills` or `agents.entries.<id>.skills` allowlist you keep names the skill |
 
 ## Configuration knobs
 
