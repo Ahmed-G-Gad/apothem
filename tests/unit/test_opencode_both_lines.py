@@ -157,7 +157,7 @@ def test_relocated_entries_take_only_a_moved_server_matching_whole() -> None:
         (("mcp", "servers", "fs"), "key", converted),
         (("mcp", "servers"), "container", None),
     ]
-    # Still in place, so a same-name server under servers is not a conversion.
+    # The other two shapes a conversion may take: as written, and with enabled dropped.
     as_moved = [
         (("mcp", "servers", "fs"), "key", None),
         (("mcp", "servers"), "container", None),
@@ -370,8 +370,25 @@ def test_install_notes_an_earlier_install_in_the_default_folder(
     notes = _notes(adapter.install({}))
 
     assert len(notes) == 1
-    assert "earlier Apothem install is still recorded" in notes[0]
+    assert "earlier Apothem install is still in" in notes[0]
     assert (tmp_path / "xdg" / "opencode" / "opencode.json").is_file()
+
+
+def test_install_notes_nothing_when_the_earlier_files_are_gone(
+    adapter: OpenCodeAdapter,
+    isolated_home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The operator moved the folder away: the record stays, the files do not,
+    # and an uninstall there would find nothing to remove.
+    adapter.install({})
+    default = isolated_home / ".config" / "opencode"
+    default.rename(tmp_path / "moved")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+
+    assert _notes(adapter.install({})) == []
+    assert install_ledger.active_install_records("opencode", root=default)
 
 
 def test_install_notes_mcp_references_opencode_does_not_expand(
@@ -435,13 +452,16 @@ def test_install_notes_never_print_a_value(
 def test_install_notes_an_env_value_opencode_1_cannot_insert(
     adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # OpenCode 1 puts an {env:NAME} value into opencode.json unescaped.
+    # OpenCode inserts an {env:NAME} value into the config text unescaped.
     monkeypatch.setenv("FS_TOKEN", "C:\\keys\\token")
     notes = _notes(adapter.install(_MCP_PROFILE))
     assert len(notes) == 1
     assert notes[0].startswith("MCP server fs: FS_TOKEN holds a backslash")
 
-    assert "harnesses.opencode.mcp_servers.fs" in notes[0]
+    assert (
+        "Restate that server under harnesses.opencode.mcp_servers.fs (an "
+        "override replaces the whole server) with the value as {file:path}"
+    ) in notes[0]
 
     # U+007F is legal in a JSON string, so it draws no note.
     for value in ("plain-value", "del\x7fvalue"):
@@ -481,10 +501,10 @@ def test_xdg_config_home_naming_the_linked_default_keeps_the_install(
     adapter: OpenCodeAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # An install made with XDG unset under a home folder reached through a link
-    # (a symlink, or a junction on Windows), then an update with
-    # XDG_CONFIG_HOME naming the same ~/.config. The install refuses a link at
-    # ~/.config itself on POSIX, so the link sits above it, as it does when the
-    # home folder lives on a linked volume.
+    # (a symlink, or a junction on Windows), as when the home folder lives on a
+    # linked volume, then an update with XDG_CONFIG_HOME naming the same
+    # ~/.config. A link at ~/.config itself is covered in
+    # test_linked_config_folder.py.
     real_home = tmp_path / "real-home"
     real_home.mkdir()
     home = tmp_path / "home-link"

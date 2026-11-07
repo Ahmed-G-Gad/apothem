@@ -97,29 +97,42 @@ def _is_lexically_within(path: Path, parent: Path) -> bool:
 
 
 def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
-    """Return the user-level folders *path* sits in, when *floor* is the user home.
+    """Return the folders a link at or above which *path* may cross.
 
     Dotfile managers link ``~/.config`` or ``~/.agents`` into a dotfiles
-    folder, so a link at or above one of the manifest's closed user-level
-    folders (``~/.agents/skills``, ``~/.config/apothem/rules``, ...) is
-    allowed. The write guard has already confirmed the resolved path stays in
-    the home, and a link below the folder (a skill folder or a file in it) is
-    still refused.
+    folder. When *floor* is the user home, a link at or above one of the
+    manifest's closed user-level folders (``~/.agents/skills``,
+    ``~/.config/apothem/rules``, ...) is allowed: the write guard has already
+    confirmed the resolved path stays in the home. When the install root is
+    below ``~/.config`` (OpenCode's folder, or a ``CODEX_HOME`` there), *floor*
+    is at or below the folder ``~/.config`` leads to, and a link at
+    ``~/.config`` is allowed when that folder is inside the home. A link below
+    either folder (a skill folder, the install root, a file in it) is still
+    refused. The walk stops at *floor*, so a link above it is not examined.
     """
-    if _normalized(floor) != _normalized(user_home()):
-        return []
-    return [
-        base
-        for base in (user_home() / prefix for prefix in USER_LEVEL_PREFIXES)
-        if _is_lexically_within(path, base)
-    ]
+    home = user_home()
+    bases: list[Path] = []
+    if _normalized(floor) == _normalized(home):
+        bases = [
+            base
+            for base in (home / prefix for prefix in USER_LEVEL_PREFIXES)
+            if _is_lexically_within(path, base)
+        ]
+    config = home / ".config"
+    if (
+        _is_lexically_within(path, config)
+        and _is_relative_to(_normalized(floor), _normalized(config))
+        and _within_allowed_root(config, home)
+    ):
+        bases.append(config)
+    return bases
 
 
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
     """Return the first symlink in the write path, if any.
 
-    A link at or above a user-level folder (see :func:`_linkable_ancestors`)
-    does not count.
+    A link at or above a user-level folder, or at ``~/.config`` for an install
+    root below it (see :func:`_linkable_ancestors`), does not count.
     """
     bases = _linkable_ancestors(path, floor)
     for candidate in _existing_chain(path, floor):

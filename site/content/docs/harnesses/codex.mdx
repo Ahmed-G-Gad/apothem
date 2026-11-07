@@ -101,6 +101,12 @@ not list (they name only `~/.codex/agents/`), so the install note leaves the
 folder out. If an earlier install left Apothem agents in `~/.codex/agents/`, the
 note says so, since this install neither updates nor removes them.
 
+A `CODEX_HOME` below `~/.config` works when `~/.config` is a symbolic link
+into your home directory, as dotfile managers make it. The install stops with
+`target path crosses a symlink`, before it writes anything, when that link
+leads outside your home directory, or when `CODEX_HOME` itself, or anything in
+it, is a link; set `CODEX_HOME` to the folder the link leads to instead.
+
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.
