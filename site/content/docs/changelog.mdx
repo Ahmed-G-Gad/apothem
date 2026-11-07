@@ -44,17 +44,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `.kimi-code/.apothem/support/{skills,agents}/`).
 
   **To recover:** each removed folder was copied first to
-  `~/.apothem/backups/<timestamp>/<harness>/`, under its path in your home (for
-  example `claude_code/.claude/commands/`). Releases 1.0.1 to 1.5.0 keep only
-  the newest 10 backup sets per harness and add one on every install, update,
-  uninstall and rollback; the update to this release still runs the old code.
-  So **copy `~/.apothem/backups/` somewhere else before you run Apothem
-  again**. This release never deletes a backup set that holds one of these
-  paths, automatically or through `apothem backups prune`. To put the files
-  back, copy them by hand, or run `apothem rollback --harness <harness>
-  --install-id ID` for the install that removed them: rollback now restores
-  each file of such a path that is missing and keeps every file that is there,
-  and its output names the backup it used.
+  `~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
+  home, or to the project for a project install (for example
+  `claude_code/.claude/commands/`). Releases 1.2.0 to 1.5.0 keep only the newest
+  10 backup sets per harness and add one on every install, update, uninstall
+  and rollback, so older sets may already be gone; 1.0.x and 1.1.0 kept every
+  set. This release never deletes a backup set that holds one of these paths,
+  automatically or through `apothem backups prune`.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy the files you need from that copy back to their place by hand.
+  3. Run `apothem update` afterwards.
+
+  `apothem rollback --install-id ID` is not a recovery step for this: it
+  reverses the whole old install, including the files that install wrote or
+  changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
+  rollback now puts back each missing file and keeps every file that is there.
 
 ### Added
 

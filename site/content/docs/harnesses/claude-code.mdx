@@ -79,13 +79,14 @@ removed](#recovering-files-an-earlier-release-removed).
 Each removed folder was copied first to
 `~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. The current
 release never deletes a backup set that holds such a folder, but an earlier
-release's retention may already have deleted older sets, and an update runs
-the earlier release's code until it finishes. Before you run Apothem again,
-copy `~/.apothem/backups/` somewhere else. Then either copy the files back by
-hand, or run `apothem rollback --harness claude-code --install-id ID` for the
-install that removed the folder: rollback puts back each file of such a folder
-that is missing now and keeps every file that is there, so it never replaces
-your newer copy.
+release's retention may already have deleted older sets. To recover:
+
+1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+2. Copy the files you need from that copy back into `~/.claude/` by hand.
+3. Run `apothem update` afterwards.
+
+`apothem rollback --install-id` reverses the whole earlier install, including
+`settings.json` and `CLAUDE.md`, so it is not the way to recover these files.
 
 Installed skills, and the skills bundled in the Claude Code plugin, carry
 `user-invocable` instead of the source corpus's `userInvocable`, because Claude

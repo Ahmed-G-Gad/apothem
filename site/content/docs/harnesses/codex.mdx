@@ -105,9 +105,10 @@ and references them from `AGENTS.md` and installed skills. Earlier releases
 update, after copying it to `~/.apothem/backups/<timestamp>/codex/.codex/rules/`.
 The current release never deletes a backup set that holds that copy, but an
 earlier release's retention may already have deleted older sets. Copy
-`~/.apothem/backups/` somewhere else before you run Apothem again, then copy
-the files back by hand, or roll back the install that removed them: rollback
-puts back each missing file and keeps every file that is there.
+`~/.apothem/backups/` somewhere else before you run Apothem again, copy the
+`.rules` files back into `~/.codex/rules/` by hand, then run `apothem update`.
+`apothem rollback --install-id` reverses the whole earlier install, so it is not
+the way to recover these files.
 
 ## Codex plugin
 
