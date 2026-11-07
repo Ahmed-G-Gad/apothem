@@ -26,7 +26,7 @@ Berikan `--yes` untuk melewati prompt konfirmasi per harness.
 ## Hapus mesin
 
 Cara penghapusan mengikuti kanal instalasi yang Anda gunakan. Nomor kanal
-mengikuti [tabel kanal instalasi](/docs/install#pilih-kanal):
+mengikuti [tabel kanal instalasi](/docs/install#choose-a-channel):
 
 - **Plugin Claude Code (kanal 1)** — hapus plugin dari dalam Claude Code: `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
 - **npx (kanal 2)** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya. Bersihkan cache dengan `npm cache clean --force` jika Anda ingin salinan yang ter-cache dihapus.
@@ -74,7 +74,7 @@ mengikuti [tabel kanal instalasi](/docs/install#pilih-kanal):
   izin, server MCP, dan handler hook milik Anda sendiri tetap ada. Pencopotan
   hanya menghapus kunci dan entri daftar yang dicatat oleh ledger instalasi
   sebagai milik Apothem (lihat
-  [Pengaturan](/docs/reference/settings#menggabungkan-ke-dalam-berkas-pengaturan-anda-sendiri)).
+  [Pengaturan](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Penyimpanan data bersama di bawah `.apothem/` pada akar instalasi (`memory/`,
   `contexts/`, `learning/`) tetap ada selama harness lain yang terpasang pada
   akar yang sama masih menggunakannya. Mencopot harness terakhir pada akar itu

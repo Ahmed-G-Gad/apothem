@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptador de entorno de Apothem para Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,11 @@ de Apothem como subagentes de Kimi Code en `<project>/.kimi-code/agents/`
 de soporte propiedad de Apothem en `<project>/.kimi-code/.apothem/support/`.
 Muchas herramientas de programación además de Kimi Code leen un `AGENTS.md` de
 proyecto, así que el bloque se escribe como orientación para todo el proyecto
-que no nombra a ninguna herramienta concreta como su lector.
+que no nombra a ninguna herramienta concreta como su lector. Algunas de esas
+herramientas lo cargan solo en algunos proyectos, por ejemplo solo cuando el
+proyecto no tiene un archivo de instrucciones propio, y la nota de instalación
+nombra cada una de esas herramientas con su condición (el
+[registro de entornos](/docs/reference/harness-registry#shared-roots) las lista).
 
 Kimi Code lee el archivo de instrucciones `AGENTS.md` de la raíz del proyecto
 según la convención universal AGENTS.md, y la configuración del proyecto reside

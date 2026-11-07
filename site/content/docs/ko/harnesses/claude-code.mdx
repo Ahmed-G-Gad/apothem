@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,9 +38,11 @@ apothem install --harness claude-code
 `hooks/...`, `conformity/...`는 `~/.claude/.apothem/support/` 아래입니다. 이
 섹션은 규칙 색인 `~/.claude/rules/apothem-rule-index.md`도 가리킵니다. Apothem
 거버넌스 표면의 나머지는 전파된 `rules/` 트리와 SessionStart 훅을 통해 Claude
-Code에 도달합니다. OpenCode도 `~/.config/opencode/AGENTS.md`가 없으면
-`~/.claude/CLAUDE.md`를 로드하고, Devin Desktop은 이를 기본적으로 가져오므로, 이
-블록은 어느 한 도구도 독자로 지칭하지 않습니다.
+Code에 도달합니다. OpenCode 1도 자체 구성 폴더(기본값은 `~/.config/opencode/`)에
+`AGENTS.md`가 없으면 `~/.claude/CLAUDE.md`를 로드하고(OpenCode 2에는
+`CLAUDE.md` 폴백이 없습니다),
+Devin Desktop은 이를 기본적으로 가져오므로, 이 블록은 어느 한 도구도 독자로
+지칭하지 않습니다.
 
 ## 프로필-네이티브 구성 매핑
 
@@ -162,16 +164,16 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 렌더링됩니다. 스킬과 출력 스타일은 있는 그대로 복사되며, 에이전트는 작성된
 그대로 복사되지만 프로필의 `agent_mcp_servers` 키가 나열하는 도우미는 지정된
 서버마다 `tools` 줄에 `mcp__<server>__*` 항목이 추가됩니다
-([MCP 서버](/docs/reference/mcp#헬퍼에-mcp-서버-접근-권한-부여하기) 참조).
+([MCP 서버](/docs/reference/mcp#give-a-helper-access-to-mcp-servers) 참조).
 설치는 프로필이 올바른 형식인지, 그리고 settings.json의
 모든 훅 바인딩이 해석 가능한지 검증합니다. 어댑터는 MCP 서버 항목을 작성하지
 않습니다. 서버는 `claude mcp add`로 등록하세요([MCP 서버](/docs/reference/mcp)
 참조).
 
-`~/.claude/agents/`는 `~/.claude/skills/`와 마찬가지로 `Claude Code`가 소유하는
-공유 루트입니다. 지원되는 다른 도구들이 이 폴더를 로드하므로, `Claude Code`
-설치가 그곳에 작성하는 에이전트와 스킬은 그 도구들에서도 나타나며, 설치는 그
-도구들을 명시하는 메모를 출력합니다.
+`~/.claude/agents/`는 `~/.claude/skills/` 및 `~/.claude/CLAUDE.md`와 마찬가지로
+`Claude Code`가 소유하는 공유 루트입니다. 지원되는 다른 도구들이 이들을
+로드하므로, `Claude Code` 설치가 그곳에 작성하는 에이전트, 스킬, Apothem 블록은
+그 도구들에서도 나타나며, 설치는 그 도구들을 명시하는 메모를 출력합니다.
 [하니스 레지스트리](/docs/reference/harness-registry)는 각 루트를 읽는 도구를
 나열합니다.
 

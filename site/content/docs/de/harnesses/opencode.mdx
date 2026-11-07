@@ -2,14 +2,14 @@
 title: "OpenCode"
 description: "Apothem-Harness-Adapter für OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "f4ee42d9d05adcf7"
+sourceHash: "d7cbf6354ea54e5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Anbieter:** OpenCode
 **Installationsname:** `opencode`
 **Status:** Beta
-**Native Konfiguration:** `~/.config/opencode/`
+**Native Konfiguration:** `~/.config/opencode/` (oder `$XDG_CONFIG_HOME/opencode/`)
 
 ## Installation
 
@@ -33,6 +33,17 @@ Helferdefinitionen als OpenCode-Subhelfer.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+Dies sind die Standardpfade. Ist `XDG_CONFIG_HOME` auf den absoluten Pfad eines
+Verzeichnisses gesetzt, schreibt der Adapter stattdessen in
+`$XDG_CONFIG_HOME/opencode/`, das Verzeichnis, das sowohl OpenCode 1 als auch
+OpenCode 2 lesen. Ein relativer Wert oder das Wurzelverzeichnis des Dateisystems
+wird nicht verwendet, und die Installation weist darauf hin. Die Variable
+`OPENCODE_CONFIG_DIR` wird nicht berücksichtigt: OpenCode 1 liest das
+Verzeichnis, das sie nennt, zusätzlich zum Standardverzeichnis, OpenCode 2 liest
+es dagegen anstelle des Standardverzeichnisses. Nennt sie ein anderes
+Verzeichnis, warnt die Installation daher, dass OpenCode 2 diese Installation
+nicht lädt.
+
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter rendert `opencode.json` mit einer `instructions`-Dateiliste, die Ihr
@@ -43,12 +54,57 @@ Apothem verwaltete Kindeinträge werden vor dem Ersetzen gesichert.
 
 ## Kompatibilitätshinweise
 
+Die Installation funktioniert mit OpenCode 1 und OpenCode 2. Sie schreibt eine
+Konfiguration, die OpenCode 1 unverändert liest und OpenCode 2 übersetzt: Beide
+lesen dasselbe Konfigurationsverzeichnis, und OpenCode 2 wandelt die Formen von
+OpenCode 1, die die Installation schreibt, im Speicher um, ohne die Datei
+umzuschreiben. Die `permission`-Listen der Helfer und die `mcp`-Servereinträge
+werden in OpenCode 2 durch diese Übersetzung geladen. OpenCode 1 lädt außerdem
+den Block, den eine Installation für Claude Code in `~/.claude/CLAUDE.md`
+schreibt, wenn sein Konfigurationsverzeichnis keine `AGENTS.md` enthält und
+weder `OPENCODE_DISABLE_CLAUDE_CODE` noch `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT`
+gesetzt ist; OpenCode 2 hat keinen `CLAUDE.md`-Fallback und lädt diese Datei
+daher nicht.
+
+Helferdefinitionen enthalten nur `deny`-Regeln für die Werkzeuge, die ein Helfer
+nicht verwenden darf. OpenCode erlaubt standardmäßig jedes Werkzeug und fragt
+nach, bevor es eine `.env`- oder `.env.*`-Datei liest. Eine `allow`-Regel in
+einem Helfer würde diese Rückfrage abschalten und eine strengere Regel in Ihrer
+eigenen OpenCode-Konfiguration überschreiben, daher folgt ein Helfer Ihren
+`permission`-Einstellungen.
+
+Wenn das gemeinsame Profil MCP-Server auflistet, schreibt die Installation sie
+in den `mcp`-Block der `opencode.json`. OpenCode ersetzt `{env:NAME}`, nicht
+`${NAME}`; deshalb wird jedes `${NAME}` in den Umgebungsvariablen, den Headern
+oder der URL eines Servers als `{env:NAME}` geschrieben. Befehlsargumente werden
+wie geschrieben kopiert: Eine Referenz darin wird dem Server oder einer Shell,
+die er ausführt, zum Auflösen überlassen. Ein `$NAME` im Wert einer
+Umgebungsvariablen oder eines Headers und jede `${...}`-Form, die unverändert
+bleibt, auch in einem Befehlsargument, werden wie geschrieben kopiert, und die
+Installation warnt,
+dass OpenCode sie nicht auflöst. Die Warnung nennt, wo die Referenz steht, etwa
+`environment.TOKEN`, und gibt den Wert niemals aus.
+
+OpenCode setzt den Wert von `{env:NAME}` ohne Maskierung in den
+Konfigurationstext ein, den es liest; OpenCode 2 maskiert ihn nur, wenn dieser
+Text sonst nicht geparst werden könnte. Ein Wert mit einem Backslash (etwa einem
+Windows-Pfad), einem doppelten Anführungszeichen oder einem Steuerzeichen kann
+daher OpenCode 1 daran hindern, die Datei zu lesen, und in beiden Versionen
+gelangt ein `\t` oder `\n` darin als Steuerzeichen zum Server. Die Installation
+prüft jede solche Variable, wenn sie läuft, und warnt vor einer, die diese
+Zeichen enthält. Setzen Sie diesen Wert stattdessen als `{file:path}` unter
+`harnesses.opencode.mcp_servers.<name>`, damit die anderen Tools die Referenz
+`${NAME}` behalten.
+
 OpenCode führt jede Datei, die die `instructions`-Liste nennt, in jeder Sitzung
 zusammen ([OpenCode-Regeln](https://opencode.ai/docs/rules/)). Die Liste nennt
 daher zuerst Ihr Profildokument und danach nur die Regeln, deren `alwaysApply`
-den Wert `true` hat, jeweils mit einem expliziten Pfad
-`~/.config/opencode/.apothem/support/rules/<name>.md`; OpenCode löst das
-führende `~/` gegen Ihr Home-Verzeichnis auf. Diese Regeln sind
+den Wert `true` hat, jeweils mit einem expliziten Pfad, standardmäßig
+`~/.config/opencode/.apothem/support/rules/<name>.md`. OpenCode löst ein
+führendes `~/` gegen Ihr Home-Verzeichnis auf; der Pfad ist absolut, wenn das
+Konfigurationsverzeichnis außerhalb des Home-Verzeichnisses liegt, und der
+Unterstützungs-Teilbaum liegt immer unter dem Konfigurationsverzeichnis. Diese
+Regeln sind
 `agnostic-posture`, `authority-inquiry`, `context-management`,
 `session-closure` und der Regelindex, `apothem-rule-index`. OpenCode beschränkt
 keine Regel auf Pfade, daher wird jede andere Regel bei Bedarf gelesen. Sie
@@ -96,7 +152,20 @@ apothem update --harness opencode
 ```
 
 Aktualisiert `opencode.json`, native Commands, Skills, Helferdefinitionen und
-den Apothem-Unterstützungs-Teilbaum.
+den Apothem-Unterstützungs-Teilbaum. Ein MCP-Server, den die Installation
+geschrieben hat und den Sie in die `mcp.servers`-Form von OpenCode 2 umgewandelt
+haben, ohne ihn zu ändern, wird wieder unter `mcp` geschrieben, wo beide
+OpenCode-Versionen ihn lesen. Ein Server unter `mcp.servers` gilt nur dann als
+diese Umwandlung, wenn sein `mcp`-Eintrag fehlt und er als Ganzes dem
+entspricht, was die Installation geschrieben hat; Ihr eigener Server mit
+demselben Namen, eine von Ihnen bearbeitete Umwandlung und eine von Ihnen
+deaktivierte bleiben, wie sie sind. Neben einer solchen Umwandlung schreibt die
+Aktualisierung den Server erneut unter `mcp`, sodass OpenCode 1 diese Kopie
+verwendet und OpenCode 2 die umgewandelte; um den Server in beiden Versionen
+ausgeschaltet zu lassen, entfernen Sie ihn aus dem Profil. Das setzt einen
+Installationsdatensatz voraus, der die von der Installation geschriebenen
+Einträge auflistet; ein Datensatz aus der Zeit, bevor Apothem diese Liste
+führte, wird nicht erfasst.
 
 ## Deinstallation
 
@@ -107,7 +176,14 @@ apothem uninstall --harness opencode
 Entfernt die Einträge, die der Adapter zu `~/.config/opencode/opencode.json`
 hinzugefügt hat (Ihre eigenen Schlüssel, MCP-Server und `instructions`-Einträge
 bleiben erhalten, und die Datei wird nur gelöscht, wenn Apothem sie angelegt hat
-und nichts von Ihnen übrig ist). Entfernt den Apothem-Block aus dem
+und nichts von Ihnen übrig ist). Ein MCP-Server, den die Installation
+geschrieben hat und den Sie ohne Änderung in die `mcp.servers`-Form von
+OpenCode 2 umgewandelt haben, wird ebenfalls entfernt, und zwar als Ganzes;
+andere Server unter `mcp.servers` bleiben erhalten. Haben Sie den `mcp`-Eintrag
+der Installation entfernt, lässt sich Ihr eigener Server unter
+`mcp.servers`, der einem von der Installation geschriebenen entspricht, nicht
+von einer umgewandelten Kopie unterscheiden und wird zusammen mit ihr entfernt;
+die Datei wird zuvor gesichert. Entfernt den Apothem-Block aus dem
 Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md` und
 behält jeden anderen Text darin; diese Datei wird nur gelöscht, wenn darin
 nichts anderes mehr übrig ist. Entfernt außerdem die Apothem-Dateien in
@@ -116,6 +192,12 @@ nichts anderes mehr übrig ist. Entfernt außerdem die Apothem-Dateien in
 Dateien in diesen Ordnern bleiben bestehen. Jede Datei wird unter
 `~/.apothem/backups/` gesichert, bevor sie geändert oder entfernt wird. Die
 YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+
+Eine Installation, die ein früheres Release in `~/.config/opencode/` vorgenommen
+hat, während `XDG_CONFIG_HOME` ein anderes Verzeichnis nannte, bleibt dort
+bestehen, und OpenCode hat sie nie gelesen. Die nächste Installation weist
+darauf hin; um sie zu entfernen, führen Sie die Deinstallation bei nicht
+gesetztem `XDG_CONFIG_HOME` aus.
 
 ## Konformitäts-Gate
 

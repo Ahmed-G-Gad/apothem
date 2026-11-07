@@ -82,7 +82,7 @@ integrado (su alias `/review` sigue ejecutando el integrado). Dos nombres,
 `projectify` y `workflow`, son también skills nativas; la skill nativa es la
 que distribuyen el plugin y la instalación del motor, no una skill derivada del
 comando. Consulta
-[Claude Code](/docs/harnesses/claude-code#skills-de-comando-y-archivos-de-referencia)
+[Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)
 para ver cómo se dividen los comandos, y [Comandos de barra](/docs/reference/commands)
 para ver el catálogo completo de comandos.
 
@@ -351,7 +351,7 @@ de 30 segundos del host en un disco lento, como una unidad de Windows bajo WSL.
 Como las extensiones de los canales 5 y 6, este es un **arranque** que delega en
 el motor. El plugin incluye una skill de entrada; su manifiesto es un
 `plugin.json` en la raíz, y la
-[página de entorno del host de plugin](/docs/harnesses/codex#plugin-de-codex) describe la
+[página de entorno del host de plugin](/docs/harnesses/codex#codex-plugin) describe la
 estructura y lo que el plugin deja al motor. Materializa el entorno completo
 ejecutando la instalación a través de él:
 
@@ -437,7 +437,7 @@ instalado.
   prueba cada uno en CI, pero ya no reciben correcciones de seguridad de su
   proyecto de origen, así que prefiere Python 3.11 o posterior y Node.js 22 o
   posterior. La
-  [política de versiones mínimas de tiempo de ejecución](/docs/governance/release-engineering-policy#versiones-mínimas-de-tiempo-de-ejecución)
+  [política de versiones mínimas de tiempo de ejecución](/docs/governance/release-engineering-policy#runtime-floors)
   explica cómo se eleva una versión mínima.
 - **Git** — solo la vía del instalador, y solo para la forma por red (el script
   clona el código fuente; un checkout local no necesita clonar).

@@ -2,7 +2,7 @@
 title: "规则"
 description: "常驻与按路径筛选的行为规则，在整个行为规则集中治理问题求解、代码工艺、整洁架构、规划与质量。"
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ alwaysApply: <true | false>
 
 规则索引 `apothem-rule-index` 是唯一一个指明其他每条规则及其适用情形的常驻文件。按路径限定规则作用域的工具，会在触及匹配文件时加载限定作用域的规则。不这样做的工具则一条也不加载，因此该索引、指令文件中指向它的那句话，以及按路径引用某条规则的规则和技能，就是会话触达该规则的途径。上下文压缩之后，限定作用域的规则不再位于上下文中，索引会告诉助手重新读取它当时正在应用的任何规则。Claude Code 只针对工作目录内的文件匹配路径过滤器，因此文件位于 `~/.claude/projects/` 下的自动记忆规则是通过索引、而不是通过路径匹配触达会话的。
 
-OpenCode 没有按规则划分的作用域字段：它会将其 `opencode.json` 的 `instructions` 列表所指明的每个文件合并到每个会话中。因此，OpenCode 安装（`apothem install --harness opencode`）会列出你的配置档案文档，并且只列出 `alwaysApply` 为 `true` 的规则（四条核心规则和规则索引），每个文件一个明确的 `~/.config/opencode/...` 路径，在写入配置时从规则文件中读取。每条规则（包括按路径筛选的规则）仍会安装在 `~/.config/opencode/.apothem/support/rules/` 下，索引会指明它，而引用其中某一条的规则、技能或命令会按需读取它。
+OpenCode 没有按规则划分的作用域字段：它会将其 `opencode.json` 的 `instructions` 列表所指明的每个文件合并到每个会话中。因此，OpenCode 安装（`apothem install --harness opencode`）会列出你的配置档案文档，并且只列出 `alwaysApply` 为 `true` 的规则（四条核心规则和规则索引），每个文件一个明确的路径，在写入配置时从规则文件中读取。每个路径都以 `~/` 开头（默认为 `~/.config/opencode/...`），当配置文件夹位于你的主目录之外时则为绝对路径。每条规则（包括按路径筛选的规则）仍会安装在配置文件夹的 `.apothem/support/rules/` 下（默认为 `~/.config/opencode/.apothem/support/rules/`），索引会指明它，而引用其中某一条的规则、技能或命令会按需读取它。
 
 ## 编写纪律
 

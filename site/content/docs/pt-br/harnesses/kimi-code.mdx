@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptador de harness do Apothem para o Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,11 @@ como subagentes do Kimi Code em `<project>/.kimi-code/agents/` (consulte
 de propriedade do Apothem em `<project>/.kimi-code/.apothem/support/`.
 Um `AGENTS.md` de projeto é lido por muitas ferramentas de programação além do
 Kimi Code, então o bloco é escrito como orientação para todo o projeto que não
-nomeia nenhuma ferramenta específica como sua leitora.
+nomeia nenhuma ferramenta específica como sua leitora. Algumas dessas ferramentas
+o carregam apenas em alguns projetos, por exemplo somente quando o projeto não
+tem um arquivo de instruções delas, e a nota de instalação nomeia cada uma
+dessas ferramentas com a sua condição (o
+[registro de harnesses](/docs/reference/harness-registry#shared-roots) as lista).
 
 O Kimi Code lê o arquivo de instruções `AGENTS.md` da raiz do projeto seguindo a
 convenção universal do AGENTS.md, e a configuração do projeto fica sob

@@ -2,7 +2,7 @@
 title: "Internationalisation (i18n)"
 description: "Comment le site de documentation d'Apothem déclare sa cohorte de locales, émet des liens hreflang vers les langues alternatives et assure le rendu de droite à gauche dans douze langues."
 machineTranslated: true
-sourceHash: "fbe64d232e98a8e6"
+sourceHash: "cf9e0b89b61893f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -142,4 +142,8 @@ comme texte anglais.
 
 L'anglais reste la source de vérité ; chaque page de locale reproduit à
 l'identique la structure, les liens et les exemples de code de son homologue
-anglaise.
+anglaise, à une exception près, qui concerne les liens vers des sections. Un
+lien vers une section d'une autre page reprend son ancre (`#...`) de la page
+anglaise ; un lien vers une section de la même page construit son ancre d'après
+le titre traduit, car le site dérive l'identifiant de chaque titre à partir de
+son texte.

@@ -95,7 +95,13 @@ expression for MDX content pages).
   space-separated `>` (`<bdi>spec → generate → review</bdi>`), a label with its
   arrow (`**<bdi>Drives →</bdi>**`), a quoted English label, and a two-word term
   such as ``<bdi>POSIX `sh`</bdi>``; two separate isolates side by side display
-  in reverse order. In a block with no Arabic, each code span and each
+  in reverse order. An ISO date gets its own isolate (`<bdi>2026-11-03</bdi>`):
+  after an Arabic letter its digits count as Arabic numbers and the hyphens
+  between them stay neutral, so a bare date displays as `03-11-2026`. Bold text
+  that follows an attached letter such as `و` goes inside the isolate
+  (`و<bdi>**GNU Stow**</bdi>`), because `**` between a letter and `<` cannot
+  open bold and would show as two asterisks. In a block with no Arabic, each
+  code span and each
   bracketed part gets its own isolate; link text that spells out its URL or
   email is one isolate. An arrow between Arabic phrases is mirrored (`←` for
   the English `→`), because the bidirectional algorithm does not mirror arrows.
@@ -103,7 +109,11 @@ expression for MDX content pages).
   and the meta tags (site search renders it as Markdown), so a title or
   description isolates each run that would otherwise display out of order, such
   as a leading slash command, with the YAML escapes `\u2066` … `\u2069` inside a
-  double-quoted string, never a `<bdi>` tag. Generated reference regions stay
+  double-quoted string, never a `<bdi>` tag. A title that opens with a Latin
+  word and goes on in Arabic, such as one that starts with `Apothem`, starts
+  with the escape `\u200F` (a right-to-left mark), so a header or tab that
+  takes its direction from the first strong character still runs right to
+  left. Generated reference regions stay
   as the generator writes them. A page that
   `node scripts/translation-sources.mjs` reports as stale can still depart from
   these rules; it is brought into line when its translation is updated.
