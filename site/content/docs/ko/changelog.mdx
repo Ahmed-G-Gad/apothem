@@ -199,6 +199,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   so copies from older installs may already be gone, and the next install,
   update, uninstall or rollback prunes again: copy the sets you need out of
   `~/.apothem/backups/` first.
+- **A leftover path that is a link is left in place.** When a folder from an
+  earlier layout, such as `~/.gemini/antigravity-cli/plugins/apothem/`, is a
+  link or, on Windows, a junction to another folder, an install, update,
+  uninstall or `--dry-run` now reports it as unchanged and takes no backup.
+  Before, a Windows junction was backed up and reported as removed although
+  nothing was removed, and rolling that install back then failed with a
+  "file already exists" error. Nothing in the folder the link points to was
+  changed.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
