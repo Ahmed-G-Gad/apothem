@@ -50,8 +50,9 @@ else:
   importable under the chosen interpreter, names any that is missing, and
   offers to install the missing prerequisites for you — with your
   confirmation, or automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **`git`** is needed only for the network install (the script clones the
-  source tree). A local install from a checkout does not require `git`.
+- **`git`** is needed only for the network install (the script finds the
+  latest release with it and, without cosign, clones the source tree). A
+  local install from a checkout does not require `git`.
 
 If the interpreter, the libraries, or `git` are absent, the installer exits
 with a diagnostic naming exactly what to provide, rather than guessing or

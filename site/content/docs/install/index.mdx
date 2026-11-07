@@ -130,21 +130,22 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ## 3. One-shot installers
 
 **Prerequisites:** system Python 3.10+ on `PATH` (the installer offers to add
-the `click` / `rich` prerequisites for you); `git` and `gpg` for a network
-install, which clones the source and verifies its signed release tag (Git for
-Windows ships both).
+the `click` / `rich` prerequisites for you). For a network install: `git`, to
+find the latest release, plus either [cosign](https://docs.sigstore.dev/cosign/system_config/installation/), which checks the signed release
+archive, or `gpg`, which checks the signed release tag (Git for Windows ships
+`git` and `gpg`).
 
-The installer scripts resolve the latest signed release tag, verify its
-signature, place the Apothem source tree at `~/.apothem` at that tag, create a
-starter profile when none exists, materialize your first harness, and verify
-the result, all in one run. The starter profile carries placeholder identity
-fields: edit it, then run `apothem update --harness <name>` to apply yours.
-Re-running is idempotent: an existing tree is re-checked-out to the resolved
-tag and the harness is re-materialized. The tag-pinned verified install is the
-default and recommended path.
+The installer scripts resolve the latest release, check it (see
+[Trust model](#trust-model)), place the Apothem source tree at `~/.apothem`,
+create a starter profile when none exists, materialize your first harness, and
+verify the result, all in one run. The starter profile carries placeholder
+identity fields: edit it, then run `apothem update --harness <name>` to apply
+yours. Re-running is idempotent: a git clone is checked out to the resolved
+tag, a release-archive install is updated in place, and the harness is
+re-materialized. The verified install is the default and recommended path.
 
-Import the maintainer signing key once first. The installer stops when the key
-is not in your keyring. Check that the fingerprint reads
+Without cosign, import the maintainer signing key once first. The installer
+stops when the key is not in your keyring. Check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, the value
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
 publishes. On Windows, `git verify-tag` reads the keyring of the `gpg` that
@@ -179,16 +180,32 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 ### Trust model
 
 With no `APOTHEM_REF` set, the installer resolves the highest
-`vMAJOR.MINOR.PATCH` release tag and checks *that* out — never the moving
-`main` branch. Before any configuration is materialized, the fetched tag's
-signature is verified with `git verify-tag`; an unsigned, tampered, or
-unverifiable tag aborts the install before anything is written. A signed tag
-whose maintainer public key is not yet in the local keyring aborts with
-key-import guidance instead: import the key as shown above, check its
-fingerprint against the value published in
-[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
-and re-run. Pin a specific
-release with `APOTHEM_REF`:
+`vMAJOR.MINOR.PATCH` release and installs *that* — never the moving `main`
+branch. It checks the release before any configuration is materialized, and
+the check depends on whether `cosign` is on your `PATH`:
+
+- **With cosign**, the installer downloads the release's platform archive, its
+  `SHA256SUMS` file and `SHA256SUMS.cosign.bundle`. cosign must confirm that
+  Apothem's release workflow signed `SHA256SUMS` for that exact tag, and the
+  archive's SHA-256 must match the listed digest. This is the stronger check:
+  it uses no SHA-1, and it needs no key import.
+- **Without cosign**, or when `APOTHEM_HOME` already holds a git clone, the
+  installer clones or updates the repository and checks the tag with
+  `git verify-tag`. The signature must be valid *and* made by the
+  maintainer key published in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). A tag signed by any other key is refused,
+  even when your keyring trusts that key. A signed git tag names its commit by
+  a SHA-1 ID, which is why the installer prefers cosign when it can run.
+
+A failed check aborts the install before any configuration is written. A
+signed tag whose maintainer public key is not yet in the local keyring aborts
+with key-import guidance instead: import the key as shown above, check its
+fingerprint against the value published in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md), and re-run.
+
+A re-run with cosign updates an earlier release-archive install in place. It
+replaces only the files the new archive ships, so the engine's rollback
+backups (`backups/`) and install ledgers (`state/`) in `~/.apothem` are kept.
+A git clone, or a folder that holds no Apothem install, is never replaced
+without `--yes`. Pin a specific release with `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -203,7 +220,8 @@ is annotated and signed. The
 release-signing section lists each tag and how to verify it.
 
 Explicit overrides relax the default. `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
-verification failure to a warning and proceeds, for air-gapped or local use, or
+failed tag check to a warning and proceeds (cosign and digest failures stay
+fatal, so set `APOTHEM_VERIFY=signature` with it on a host that has cosign), for air-gapped or local use, or
 to install a release that predates tag signing. `APOTHEM_REF=main` checks out the moving branch without
 verification only together with `APOTHEM_ALLOW_UNVERIFIED=1`. With
 `APOTHEM_REF=main` alone, the installer fetches `main` into `APOTHEM_HOME`, then
@@ -211,11 +229,18 @@ aborts before any configuration is materialized, because a branch is not a
 signed release tag. A local checkout via `APOTHEM_SOURCE` fetches nothing and
 skips verification.
 
-`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
-the maintainer's public key: instead of cloning, the installer downloads the
-release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
-before extracting anything, and warns that a matching digest proves the
-archive is the one the release lists, not who published it.
+Set `APOTHEM_VERIFY` to pick the check yourself. The default is `auto`:
+
+| Value | What the installer checks |
+| --- | --- |
+| `auto` (default) | `release` when `cosign` is on `PATH` and `APOTHEM_HOME` is not a git clone, otherwise `signature` |
+| `release` | The cosign signature on `SHA256SUMS`, then the archive's SHA-256. Stops if cosign is missing |
+| `signature` | The release tag's GPG signature, which must come from the maintainer key |
+| `checksum` | The archive's SHA-256 against `SHA256SUMS` alone. This shows the archive is the one the release lists, not who published it, so use it only on a host with neither cosign nor the maintainer key |
+
+Every archive mode aborts on a digest mismatch before extracting anything.
+Early releases name the bundle `SHA256SUMS.sig`, and the installer reads that
+name when `SHA256SUMS.cosign.bundle` is absent.
 
 The engine then runs directly from the placed tree. Every third-party
 dependency except `click` and `rich` is vendored inside the source tree, and
@@ -443,7 +468,8 @@ in place of `verify --harness NAME`, in whichever form you used above:
   [runtime-floor policy](/docs/governance/release-engineering-policy#runtime-floors)
   explains how a floor is raised.
 - **Git** — installer path only, and only for the network form (the script
-  clones the source; a local checkout needs no clone).
+  finds the latest release with it and, without cosign, clones the source; a
+  local checkout needs no clone).
 - **Claude Code** — plugin path only. **VS Code** and each command-line
   bootstrap's own host tool are needed only for their own channel (4–7).
 

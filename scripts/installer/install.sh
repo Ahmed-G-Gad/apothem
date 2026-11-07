@@ -11,10 +11,20 @@
 #
 # Trust model (tag-pinned, verified-by-default):
 #   With no APOTHEM_REF set, the installer resolves the latest released
-#   vMAJOR.MINOR.PATCH tag and checks THAT out — the moving `main` branch is
-#   no longer the default. Before materializing, the fetched tag is verified
-#   with `git verify-tag` (a GPG-signed tag); an unsigned, tampered, or
-#   missing-signature tag ABORTS the install before any config is written.
+#   vMAJOR.MINOR.PATCH tag and installs THAT release — the moving `main`
+#   branch is no longer the default. How the release is checked depends on
+#   APOTHEM_VERIFY, whose default `auto` picks one of two paths:
+#     - cosign on PATH: download the release's platform archive, its
+#       SHA256SUMS and SHA256SUMS.cosign.bundle; check with cosign that the
+#       release workflow at that tag signed SHA256SUMS, then check the
+#       archive's SHA-256 against it. Nothing here rests on SHA-1.
+#     - no cosign: clone the repository and check the tag with
+#       `git verify-tag`. The signature must be valid AND made by the
+#       maintainer key published in SECURITY.md (fingerprint
+#       5C8998F9F241720445D3F28B70396FED9C634163); a key the local keyring
+#       merely trusts is not enough. A signed git tag names its commit by
+#       SHA-1, which is why the cosign path is preferred when it can run.
+#   A failed check ABORTS the install before any config is written.
 #   Two explicit opt-outs exist:
 #     - APOTHEM_REF=main           checks out the moving branch on request.
 #     - APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a loud
@@ -57,13 +67,18 @@
 #                              to "main" for the moving branch.
 #     APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure
 #                              from a fatal abort to a loud warning and proceed.
-#     APOTHEM_VERIFY           "signature" (default) verifies the release tag's
-#                              GPG signature. "checksum" instead downloads the
-#                              release's platform archive and installs it only
-#                              if its SHA-256 matches the release's SHA256SUMS:
+#     APOTHEM_VERIFY           "auto" (default) uses "release" when cosign is
+#                              on PATH and "signature" otherwise.
+#                              "release" installs the platform archive after
+#                              cosign checks that the release workflow signed
+#                              SHA256SUMS and the archive's SHA-256 matches it
+#                              (needs cosign). "signature" clones and checks
+#                              the tag's GPG signature against the pinned
+#                              maintainer key. "checksum" installs the
+#                              archive after the SHA-256 check alone:
 #                              integrity without proof of the publisher, for
-#                              hosts without the maintainer's public key.
-#     APOTHEM_RELEASE_BASE     Release download base for checksum mode
+#                              hosts with neither cosign nor the key.
+#     APOTHEM_RELEASE_BASE     Release download base for the archive modes
 #                              (default: <APOTHEM_REPO>/releases/download).
 #     APOTHEM_SOURCE           Explicit local source tree to use instead of
 #                              cloning (a checkout containing src/apothem).
@@ -84,10 +99,20 @@ APOTHEM_REPO="${APOTHEM_REPO:-https://github.com/ahmed-g-gad/apothem}"
 # the value is logged once resolved.
 APOTHEM_REF="${APOTHEM_REF:-}"
 APOTHEM_ALLOW_UNVERIFIED="${APOTHEM_ALLOW_UNVERIFIED:-0}"
-APOTHEM_VERIFY="${APOTHEM_VERIFY:-signature}"
+APOTHEM_VERIFY="${APOTHEM_VERIFY:-auto}"
 APOTHEM_RELEASE_BASE="${APOTHEM_RELEASE_BASE:-${APOTHEM_REPO}/releases/download}"
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 PROFILE="${APOTHEM_PROFILE:-$HOME/.config/apothem/profile.yaml}"
+
+# The trust roots, fixed here rather than read from the environment so that
+# nothing outside this script can widen them. MAINTAINER_FINGERPRINT is the
+# primary-key fingerprint SECURITY.md publishes; a release tag must be signed
+# by it. The cosign identity is the release workflow at the tag being
+# installed, in the owner casing GitHub writes into the certificate.
+MAINTAINER_FINGERPRINT="5C8998F9F241720445D3F28B70396FED9C634163"
+COSIGN_IDENTITY_REPO="Ahmed-G-Gad/apothem"
+COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
+COSIGN_INSTALL_DOC="https://docs.sigstore.dev/cosign/system_config/installation/"
 
 # Colour only an interactive terminal. NO_COLOR (https://no-color.org/) or a
 # redirected stream (a pipe, a file, a CI log) gets plain text; stdout and
@@ -133,10 +158,12 @@ Usage: install.sh [--clean|--fresh] [--dry-run] [--yes] [-h|--help]
                     directory at APOTHEM_HOME.
   -h, --help        Show this help and exit.
 
-Trust model (default): resolves and checks out the latest signed
-vMAJOR.MINOR.PATCH release tag, verifies its signature with `git verify-tag`,
-and aborts before materializing if the tag is unsigned or tampered. The
-recommended path is the tag-pinned VERIFIED install.
+Trust model (default): resolves the latest vMAJOR.MINOR.PATCH release and
+verifies it before materializing anything. With cosign on PATH it installs
+the release archive once cosign shows the release workflow signed SHA256SUMS
+and the archive's SHA-256 matches; without cosign it clones the release tag
+and requires a valid signature from the maintainer key in SECURITY.md.
+Either check failing aborts the install.
 
   # default — latest signed tag, verified:
   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
@@ -151,10 +178,14 @@ Overrides:
                                predates tag signing).
   APOTHEM_SOURCE=<path>        run a local checkout (fetches nothing; no
                                verification).
-  APOTHEM_VERIFY=checksum      without the maintainer's public key: install
-                               the release archive after checking its SHA-256
-                               against the release's SHA256SUMS (integrity,
-                               not proof of who published it).
+  APOTHEM_VERIFY=release       require the cosign + SHA-256 archive check
+                               (fails when cosign is missing).
+  APOTHEM_VERIFY=signature     always clone and check the tag signature
+                               against the maintainer key.
+  APOTHEM_VERIFY=checksum      with neither cosign nor the maintainer key:
+                               install the release archive after checking its
+                               SHA-256 against the release's SHA256SUMS
+                               (integrity, not proof of who published it).
 USAGE
             exit 0
             ;;
@@ -225,6 +256,37 @@ resolve_latest_tag() {
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
     VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag --raw "$2" 2>&1)"
+}
+
+# verify_tag_by_maintainer — return 0 when the captured status lines carry at
+# least one VALIDSIG line and every VALIDSIG line names MAINTAINER_FINGERPRINT
+# as its primary key, non-zero otherwise. `git verify-tag` alone accepts a
+# valid signature from any key the local keyring holds, so a key an attacker
+# got into that keyring would pass it; this check pins the one key that signs
+# Apothem releases. VALIDSIG's tenth argument (field 12 here) is the primary
+# key's fingerprint; GnuPG leaves it out only for keys too old to have one, so
+# the signing key's fingerprint (field 3) stands in then. Only lines that start
+# with the status prefix count; GnuPG escapes newlines inside user IDs, so a
+# key's name cannot forge one.
+verify_tag_by_maintainer() {
+    printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            seen++
+            fpr = (NF >= 12) ? $12 : $3
+            if (toupper(fpr) != want) other++
+        }
+        END { exit (seen > 0 && other == 0) ? 0 : 1 }'
+}
+
+# verify_tag_valid_other_key — return 0 when GnuPG reported a valid signature
+# (a VALIDSIG line) that verify_tag_by_maintainer rejects: the signature is
+# sound, but another key made it.
+verify_tag_valid_other_key() {
+    case "$VERIFY_TAG_OUTPUT" in
+        "[GNUPG:] VALIDSIG "* | *"
+[GNUPG:] VALIDSIG "*) ! verify_tag_by_maintainer ;;
+        *) return 1 ;;
+    esac
 }
 
 # verify_tag_missing_key — return 0 when the captured status lines show the
@@ -436,23 +498,56 @@ sha256_of() {
 }
 
 case "$APOTHEM_VERIFY" in
-    signature|checksum) ;;
-    *) die "APOTHEM_VERIFY must be 'signature' or 'checksum' (got '${APOTHEM_VERIFY}')." ;;
+    auto|release|signature|checksum) ;;
+    *) die "APOTHEM_VERIFY must be 'auto', 'release', 'signature' or 'checksum' (got '${APOTHEM_VERIFY}')." ;;
 esac
 
-# Checksum mode: install the release's platform archive after checking its
-# SHA-256 against the release's SHA256SUMS. It replaces the git clone and the
-# tag-signature gate below for hosts that do not hold the maintainer's public
-# key, and says plainly that a matching digest proves integrity, not origin.
-if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
-    command -v curl >/dev/null 2>&1 || die "curl not found in PATH — needed for APOTHEM_VERIFY=checksum"
+# Pick the verification path for a fetched source. `auto` takes the cosign +
+# SHA-256 archive path when cosign is on PATH, since a signed git tag names
+# its commit by SHA-1, and falls back to the key-pinned tag check otherwise.
+# A ref that is not a release tag (main, a SHA) has no release archive, so it
+# goes to the clone path, whose gate refuses it unless
+# APOTHEM_ALLOW_UNVERIFIED=1. An existing git clone at APOTHEM_HOME stays a
+# clone: replacing it with an archive would drop its history and any local
+# work, so it is updated through the clone path's key-pinned tag check.
+VERIFY_MODE="$APOTHEM_VERIFY"
+if [ -z "$SOURCE" ] && [ "$VERIFY_MODE" = "auto" ]; then
+    if [ -n "$APOTHEM_REF" ] && ! is_release_tag "$APOTHEM_REF"; then
+        VERIFY_MODE=signature
+    elif [ -d "$APOTHEM_HOME/.git" ]; then
+        VERIFY_MODE=signature
+        info "$APOTHEM_HOME is a git clone — updating it and checking the release tag's signature. To use the cosign-checked release archive instead, move the clone aside first."
+    elif command -v cosign >/dev/null 2>&1; then
+        VERIFY_MODE=release
+        info "cosign found — installing the release archive after checking its signed SHA-256 digest"
+    else
+        VERIFY_MODE=signature
+        info "cosign not found — checking the release tag's signature instead. Install cosign (${COSIGN_INSTALL_DOC}) to check the release archive's signed SHA-256 digest."
+    fi
+fi
+if [ -z "$SOURCE" ] && [ "$VERIFY_MODE" = "release" ]; then
+    command -v cosign >/dev/null 2>&1 \
+        || die "APOTHEM_VERIFY=release needs cosign on PATH (${COSIGN_INSTALL_DOC}). Install it, or set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+fi
+
+# Archive modes: install the release's platform archive after checking its
+# SHA-256 against the release's SHA256SUMS. They replace the git clone and the
+# tag-signature gate below. `release` first has cosign check that the release
+# workflow at this tag signed SHA256SUMS, which proves who published the
+# digest; `checksum` skips that step for hosts without cosign or the
+# maintainer key, and says plainly that a matching digest proves integrity,
+# not origin.
+if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "release" ]; }; then
+    command -v curl >/dev/null 2>&1 || die "curl not found in PATH — needed to download the release archive"
     if [ -z "$APOTHEM_REF" ]; then
         command -v git >/dev/null 2>&1 || die "git not found in PATH — needed to resolve the latest release tag"
         info "Resolving latest release tag from ${APOTHEM_REPO}"
         APOTHEM_REF="$(resolve_latest_tag "$APOTHEM_REPO")"
+        [ -n "$APOTHEM_REF" ] \
+            || die "No vMAJOR.MINOR.PATCH release tag found at ${APOTHEM_REPO}. Pin one with APOTHEM_REF, or set APOTHEM_SOURCE to a local checkout."
     fi
     is_release_tag "$APOTHEM_REF" \
-        || die "APOTHEM_VERIFY=checksum needs a vMAJOR.MINOR.PATCH release tag; got '${APOTHEM_REF}'. Pin one with APOTHEM_REF."
+        || die "APOTHEM_VERIFY=${VERIFY_MODE} needs a vMAJOR.MINOR.PATCH release tag; got '${APOTHEM_REF}'. Pin one with APOTHEM_REF."
     case "$(uname -s 2>/dev/null)" in
         Darwin) _ck_platform=darwin ;;
         *)      _ck_platform=linux ;;
@@ -471,6 +566,28 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
         || die "Could not download ${_ck_name} from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}"
     curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/SHA256SUMS" -o "${_ck_tmp}/SHA256SUMS" \
         || die "Could not download SHA256SUMS from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}"
+    if [ "$VERIFY_MODE" = "release" ]; then
+        # The certificate identity is exact, never a pattern: a regular
+        # expression would also match a forged subject that merely contains
+        # the repository path. It names the tag being installed, so a bundle
+        # signed for another release does not verify here.
+        _ck_identity="https://github.com/${COSIGN_IDENTITY_REPO}/.github/workflows/release.yml@refs/tags/${APOTHEM_REF}"
+        # Early releases published the same Sigstore bundle as SHA256SUMS.sig
+        # (scripts/release/verify-provenance.sh accepts both names).
+        curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/SHA256SUMS.cosign.bundle" -o "${_ck_tmp}/SHA256SUMS.cosign.bundle" 2>/dev/null \
+            || curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/SHA256SUMS.sig" -o "${_ck_tmp}/SHA256SUMS.cosign.bundle" \
+            || die "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}. Set APOTHEM_VERIFY=signature to check the release tag instead."
+        if cosign verify-blob \
+            --bundle "${_ck_tmp}/SHA256SUMS.cosign.bundle" \
+            --certificate-identity "$_ck_identity" \
+            --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
+            "${_ck_tmp}/SHA256SUMS" >"${_ck_tmp}/cosign.log" 2>&1; then
+            ok "cosign: SHA256SUMS is signed by the ${APOTHEM_REF} release workflow"
+        else
+            _ck_said="$(tail -n 3 "${_ck_tmp}/cosign.log" | tr '\n' ' ')"
+            die "cosign could not confirm that the ${APOTHEM_REF} release workflow (${_ck_identity}) signed SHA256SUMS (possible tampering). Aborting before anything is extracted. cosign said: ${_ck_said} If cosign could not reach Sigstore (offline or behind a proxy), set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+        fi
+    fi
     _ck_expected="$(awk -v n="$_ck_name" '$2 == n || $2 == "*" n { print $1; exit }' "${_ck_tmp}/SHA256SUMS")"
     [ -n "$_ck_expected" ] || die "SHA256SUMS for ${APOTHEM_REF} lists no ${_ck_name}"
     _ck_actual="$(sha256_of "${_ck_tmp}/${_ck_name}")" \
@@ -479,30 +596,68 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
         die "${_ck_name} does not match the release's SHA256SUMS (expected ${_ck_expected}, got ${_ck_actual}). Aborting before anything is extracted."
     fi
     ok "${_ck_name} matches the release's SHA256SUMS"
-    warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
+    if [ "$VERIFY_MODE" = "checksum" ]; then
+        warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For proof of the publisher, install cosign and run without APOTHEM_VERIFY=checksum."
+    fi
+    # Who owns what is already at APOTHEM_HOME decides whether --yes is
+    # needed. An earlier archive install is Apothem's own and is updated
+    # without asking. A git clone (history, branches, local work) or anything
+    # else needs --yes. In every case only the entries the new archive ships
+    # are replaced: the engine keeps its rollback backups (backups/) and
+    # install ledgers (state/) in the same directory, and they, like any other
+    # file the archive does not ship, are kept.
+    _ck_drop_git=0
     if [ -e "$APOTHEM_HOME" ] && [ -n "$(ls -A "$APOTHEM_HOME" 2>/dev/null)" ]; then
-        if [ "$ASSUME_YES" = "1" ]; then
-            warn "Replacing existing $APOTHEM_HOME with the ${APOTHEM_REF} archive (--yes)"
-            rm -rf "$APOTHEM_HOME" || die "Could not remove the existing $APOTHEM_HOME"
+        if [ -d "$APOTHEM_HOME/.git" ]; then
+            if [ "$ASSUME_YES" = "1" ]; then
+                warn "Replacing the git clone's source at $APOTHEM_HOME with the ${APOTHEM_REF} archive; its git history is removed (--yes)"
+                _ck_drop_git=1
+            else
+                die "Destination $APOTHEM_HOME is a git clone; refusing to replace it with the ${APOTHEM_REF} archive, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with --yes."
+            fi
+        elif is_apothem_source "$APOTHEM_HOME"; then
+            info "Updating the earlier install at $APOTHEM_HOME to the ${APOTHEM_REF} archive"
+        elif [ "$ASSUME_YES" = "1" ]; then
+            warn "Writing the ${APOTHEM_REF} archive into the existing $APOTHEM_HOME (--yes)"
         else
-            die "Destination $APOTHEM_HOME is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes."
+            die "Destination $APOTHEM_HOME is not empty and holds no Apothem install; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes."
         fi
     fi
     # The release archive roots every file under apothem-<tag>/ (see
-    # scripts/build_release_tarball.py). Extract into the temp directory,
-    # require that root, then move it into place.
-    mkdir -p "${_ck_tmp}/extract"
-    tar -xzf "${_ck_tmp}/${_ck_name}" -C "${_ck_tmp}/extract" \
-        || die "Could not extract ${_ck_name}"
-    _ck_root="${_ck_tmp}/extract/apothem-${APOTHEM_REF}"
-    is_apothem_source "$_ck_root" \
-        || die "${_ck_name} does not hold an apothem source under apothem-${APOTHEM_REF}/"
+    # scripts/build_release_tarball.py). It is extracted into a staging
+    # directory beside APOTHEM_HOME, so each move below is a rename on one
+    # filesystem, and the root is required before anything moves.
     mkdir -p "$(dirname "$APOTHEM_HOME")" \
         || die "Could not create the parent directory of $APOTHEM_HOME"
-    rm -rf "$APOTHEM_HOME" || die "Could not remove the existing $APOTHEM_HOME"
-    mv "$_ck_root" "$APOTHEM_HOME" \
-        || die "Could not move the extracted source to $APOTHEM_HOME"
-    rm -rf "$_ck_tmp"
+    _ck_stage="$(dirname "$APOTHEM_HOME")/.apothem-extract-$$"
+    rm -rf "$_ck_stage"
+    trap 'rm -rf "$_ck_tmp" "$_ck_stage"' EXIT
+    mkdir -p "$_ck_stage" || die "Could not create the parent directory of $APOTHEM_HOME"
+    tar -xzf "${_ck_tmp}/${_ck_name}" -C "$_ck_stage" \
+        || die "Could not extract ${_ck_name}"
+    _ck_root="${_ck_stage}/apothem-${APOTHEM_REF}"
+    is_apothem_source "$_ck_root" \
+        || die "${_ck_name} does not hold an apothem source under apothem-${APOTHEM_REF}/"
+    if [ -d "$APOTHEM_HOME" ]; then
+        for _ck_entry in "$_ck_root"/* "$_ck_root"/.[!.]* "$_ck_root"/..?*; do
+            [ -e "$_ck_entry" ] || [ -L "$_ck_entry" ] || continue
+            _ck_base="${_ck_entry##*/}"
+            rm -rf "${APOTHEM_HOME:?}/${_ck_base}" \
+                || die "Could not remove the existing $APOTHEM_HOME/${_ck_base}"
+            mv "$_ck_entry" "${APOTHEM_HOME}/${_ck_base}" \
+                || die "Could not move the extracted source to $APOTHEM_HOME"
+        done
+        if [ "$_ck_drop_git" = "1" ]; then
+            rm -rf "${APOTHEM_HOME:?}/.git" || die "Could not remove the existing $APOTHEM_HOME/.git"
+        fi
+    else
+        if [ -e "$APOTHEM_HOME" ] || [ -L "$APOTHEM_HOME" ]; then
+            rm -f "$APOTHEM_HOME" || die "Could not remove the existing $APOTHEM_HOME"
+        fi
+        mv "$_ck_root" "$APOTHEM_HOME" \
+            || die "Could not move the extracted source to $APOTHEM_HOME"
+    fi
+    rm -rf "$_ck_tmp" "$_ck_stage"
     trap - EXIT HUP INT TERM
     SOURCE="$APOTHEM_HOME"
     ok "Source ready at $SOURCE (release archive ${APOTHEM_REF})"
@@ -548,7 +703,7 @@ if [ -z "$SOURCE" ]; then
             elif [ -d "$APOTHEM_HOME" ] && [ -z "$(ls -A "$APOTHEM_HOME" 2>/dev/null)" ]; then
                 rmdir "$APOTHEM_HOME"
             else
-                die "Destination $APOTHEM_HOME exists but is not a git clone; refusing to delete it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes to replace it."
+                die "Destination $APOTHEM_HOME exists but is not a git clone; refusing to delete it. If it is an earlier archive install, re-run with cosign on PATH (or APOTHEM_VERIFY=checksum) to update it in place. Otherwise move it aside, point APOTHEM_HOME at another directory, or re-run with --yes to replace it."
             fi
         fi
         # Full clone (no --single-branch) so both tags and branches are
@@ -569,10 +724,12 @@ if [ -z "$SOURCE" ]; then
     # unless APOTHEM_ALLOW_UNVERIFIED=1 downgrades the abort to a warning.
     bold "Verifying source signature"
     if is_release_tag "$APOTHEM_REF"; then
-        if verify_tag "$SOURCE" "$APOTHEM_REF"; then
-            ok "Tag ${APOTHEM_REF} carries a valid signature"
+        if verify_tag "$SOURCE" "$APOTHEM_REF" && verify_tag_by_maintainer; then
+            ok "Tag ${APOTHEM_REF} carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
-            warn "Tag ${APOTHEM_REF} is unsigned or its signature did not verify — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            warn "Tag ${APOTHEM_REF} is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        elif verify_tag_valid_other_key; then
+            die "Tag ${APOTHEM_REF} carries a valid signature, but not from the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes (possible tampering). Aborting before any configuration is materialized."
         elif verify_tag_missing_key; then
             die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this installer."
         else

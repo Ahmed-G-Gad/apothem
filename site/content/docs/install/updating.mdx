@@ -28,8 +28,9 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Update an installer-based setup
 
-Re-run the installer — it is idempotent and checks out the release tag in an existing tree —
-or run the dedicated update script:
+Re-run the installer — it is idempotent: it checks out the release tag in an
+existing git clone and updates a release-archive install in place — or run the
+dedicated update script, which works on a git clone:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -45,8 +46,10 @@ The update script re-checks-out the source tree at `APOTHEM_HOME` (default
 moving branch only when `APOTHEM_ALLOW_UNVERIFIED=1` is also set. Without that
 override, the update checks out the ref and then aborts before re-materializing,
 because a branch is not a signed release tag. It verifies the tag's signature with `git verify-tag` before
-re-materializing; an unsigned or tampered tag aborts unless
-`APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort to a warning. A signed tag
+re-materializing, and the signature must be made by the maintainer key
+published in SECURITY.md; an unsigned or tampered tag, or one signed by any
+other key, aborts unless `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort to
+a warning. A signed tag
 whose maintainer public key is missing from the local keyring aborts with
 key-import guidance pointing at the fingerprint published in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
@@ -57,6 +60,14 @@ re-materializes the harness named by `APOTHEM_HARNESS` by running
 table). It requires a prior install: when
 no tree exists at `APOTHEM_HOME` and `APOTHEM_SOURCE` is unset, it exits with
 a message directing you to the installer first.
+
+The update script works only on a git clone. An install made with cosign, or
+with `APOTHEM_VERIFY=checksum`, places the release archive instead, so the
+update script stops and tells you to re-run the installer with cosign on
+`PATH`. That re-run replaces only the files the new archive ships and keeps
+the engine's backups and install ledgers. Without cosign, re-run it with
+`APOTHEM_VERIFY=checksum`, or with `--yes` (`-Yes` on Windows) to replace the
+archive install with a git clone.
 
 ## Re-materialize harness output
 

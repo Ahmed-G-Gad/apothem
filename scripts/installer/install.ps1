@@ -9,10 +9,16 @@
 #
 # Trust model (tag-pinned, verified-by-default; PowerShell parity to
 # install.sh): with no APOTHEM_REF set, the installer resolves the latest
-# vMAJOR.MINOR.PATCH release tag and checks THAT out - the moving `main` branch
-# is no longer the default. Before materializing, the fetched tag is verified
-# with `git verify-tag`; an unsigned / tampered / missing-signature tag ABORTS
-# before any config is written. APOTHEM_REF=main checks out the branch on
+# vMAJOR.MINOR.PATCH release tag and installs THAT release - the moving `main`
+# branch is no longer the default. APOTHEM_VERIFY's default, `auto`, picks the
+# check: with cosign on PATH it downloads the release's Windows archive, has
+# cosign confirm that the release workflow at that tag signed SHA256SUMS, and
+# checks the archive's SHA-256 against it (nothing here rests on SHA-1);
+# without cosign it clones and checks the tag with `git verify-tag`, requiring
+# a valid signature made by the maintainer key SECURITY.md publishes
+# (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163), not merely one the
+# local keyring trusts. A failed check ABORTS before any config is written.
+# APOTHEM_REF=main checks out the branch on
 # request; APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a loud
 # warning. The APOTHEM_SOURCE local-checkout path fetches nothing and skips
 # verification (it prints what it is running).
@@ -50,13 +56,18 @@
 #                            the moving branch.
 #   APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure to a
 #                            warning and proceed.
-#   APOTHEM_VERIFY           "signature" (default) verifies the release tag's
-#                            GPG signature. "checksum" instead downloads the
-#                            release's Windows archive and installs it only if
-#                            its SHA-256 matches the release's SHA256SUMS:
-#                            integrity without proof of the publisher, for
-#                            hosts without the maintainer's public key.
-#   APOTHEM_RELEASE_BASE     Release download base for checksum mode
+#   APOTHEM_VERIFY           "auto" (default) uses "release" when cosign is on
+#                            PATH and "signature" otherwise. "release"
+#                            installs the Windows archive after cosign checks
+#                            that the release workflow signed SHA256SUMS and
+#                            the archive's SHA-256 matches it (needs cosign).
+#                            "signature" clones and checks the tag's GPG
+#                            signature against the pinned maintainer key.
+#                            "checksum" installs the archive after the SHA-256
+#                            check alone: integrity without proof of the
+#                            publisher, for hosts with neither cosign nor the
+#                            key.
+#   APOTHEM_RELEASE_BASE     Release download base for the archive modes
 #                            (default: <APOTHEM_REPO>/releases/download).
 #   APOTHEM_SOURCE           Explicit local source tree (a checkout containing
 #                            src/apothem) to use instead of cloning. Skips tag
@@ -86,9 +97,20 @@ $ApothemRepo = if ($env:APOTHEM_REPO) { $env:APOTHEM_REPO } else { 'https://gith
 # if/else subexpression supplies the empty-string default.
 $ApothemRef  = if ($env:APOTHEM_REF) { $env:APOTHEM_REF } else { '' }
 $ApothemAllowUnverified = if ($env:APOTHEM_ALLOW_UNVERIFIED) { $env:APOTHEM_ALLOW_UNVERIFIED } else { '0' }
-$ApothemVerify = if ($env:APOTHEM_VERIFY) { $env:APOTHEM_VERIFY } else { 'signature' }
+$ApothemVerify = if ($env:APOTHEM_VERIFY) { $env:APOTHEM_VERIFY } else { 'auto' }
 $Harness     = if ($env:APOTHEM_HARNESS) { $env:APOTHEM_HARNESS } else { 'claude-code' }
 $ApothemProfile = if ($env:APOTHEM_PROFILE) { $env:APOTHEM_PROFILE } else { [System.IO.Path]::Combine($HOME, '.config', 'apothem', 'profile.yaml') }
+
+# The trust roots, fixed here rather than read from the environment so that
+# nothing outside this script can widen them (mirrors install.sh).
+# MaintainerFingerprint is the primary-key fingerprint SECURITY.md publishes; a
+# release tag must be signed by it. The cosign identity is the release
+# workflow at the tag being installed, in the owner casing GitHub writes into
+# the certificate.
+$MaintainerFingerprint = '5C8998F9F241720445D3F28B70396FED9C634163'
+$CosignIdentityRepo = 'Ahmed-G-Gad/apothem'
+$CosignOidcIssuer = 'https://token.actions.githubusercontent.com'
+$CosignInstallDoc = 'https://docs.sigstore.dev/cosign/system_config/installation/'
 
 # CLI prerequisites the engine imports from the host interpreter. The
 # self-contained runtime ships `yaml` + `jsonschema` vendored inside the
@@ -232,6 +254,37 @@ function Test-TagSignature {
     return ($code -eq 0)
 }
 
+# Test-TagSignedByMaintainer - $true when the captured status lines carry at
+# least one VALIDSIG line and every VALIDSIG line names $MaintainerFingerprint
+# as its primary key, $false otherwise. `git verify-tag` alone accepts a valid
+# signature from any key the local keyring holds; this pins the one key that
+# signs Apothem releases. VALIDSIG's tenth argument (index 11 here) is the
+# primary key's fingerprint; GnuPG leaves it out only for keys too old to have
+# one, so the signing key's fingerprint (index 2) stands in then. Only lines
+# that start with the status prefix count; GnuPG escapes newlines inside user
+# IDs, so a key's name cannot forge one. Mirrors install.sh's
+# verify_tag_by_maintainer.
+function Test-TagSignedByMaintainer {
+    $Seen = $false
+    foreach ($Line in ($script:VerifyTagOutput -split "`n")) {
+        $Fields = @($Line.Trim() -split '\s+')
+        if ($Fields.Count -ge 3 -and $Fields[0] -ceq '[GNUPG:]' -and $Fields[1] -ceq 'VALIDSIG') {
+            $Seen = $true
+            $Fpr = if ($Fields.Count -ge 12) { $Fields[11] } else { $Fields[2] }
+            if ($Fpr.ToUpperInvariant() -ne $MaintainerFingerprint) { return $false }
+        }
+    }
+    return $Seen
+}
+
+# Test-TagSignedByOtherKey - $true when GnuPG reported a valid signature (a
+# VALIDSIG line) that Test-TagSignedByMaintainer rejects: the signature is
+# sound, but another key made it.
+function Test-TagSignedByOtherKey {
+    if ($script:VerifyTagOutput -notmatch '(?m)^\s*\[GNUPG:\] VALIDSIG ') { return $false }
+    return (-not (Test-TagSignedByMaintainer))
+}
+
 # Test-VerifyTagMissingKey - $true when the captured status lines show the
 # signature could not be checked because the signing public key is absent
 # from the local keyring (GnuPG's NO_PUBKEY status), $false for any other
@@ -356,25 +409,60 @@ if ($env:APOTHEM_SOURCE) {
     }
 }
 
-if ($ApothemVerify -ne 'signature' -and $ApothemVerify -ne 'checksum') {
-    Write-Fail "APOTHEM_VERIFY must be 'signature' or 'checksum' (got '$ApothemVerify')."
+if (@('auto', 'release', 'signature', 'checksum') -cnotcontains $ApothemVerify) {
+    Write-Fail "APOTHEM_VERIFY must be 'auto', 'release', 'signature' or 'checksum' (got '$ApothemVerify')."
 }
 $ApothemReleaseBase = if ($env:APOTHEM_RELEASE_BASE) { $env:APOTHEM_RELEASE_BASE } else { "$ApothemRepo/releases/download" }
 
-# Checksum mode: install the release's Windows archive after checking its
-# SHA-256 against the release's SHA256SUMS. It replaces the git clone and the
-# tag-signature gate below for hosts that do not hold the maintainer's public
-# key, and says plainly that a matching digest proves integrity, not origin.
-if (-not $Source -and $ApothemVerify -eq 'checksum') {
+# Pick the verification path for a fetched source (mirrors install.sh). `auto`
+# takes the cosign + SHA-256 archive path when cosign is on PATH, since a
+# signed git tag names its commit by SHA-1, and falls back to the key-pinned
+# tag check otherwise. A ref that is not a release tag (main, a SHA) has no
+# release archive, so it goes to the clone path, whose gate refuses it unless
+# APOTHEM_ALLOW_UNVERIFIED=1. An existing git clone at APOTHEM_HOME stays a
+# clone: replacing it with an archive would drop its history and any local
+# work, so it is updated through the clone path's key-pinned tag check.
+$VerifyMode = $ApothemVerify
+$HasCosign = [bool](Get-Command 'cosign' -ErrorAction SilentlyContinue)
+$HomeIsClone = Test-Path -LiteralPath (Join-Path $ApothemHome '.git')
+if (-not $Source -and $VerifyMode -eq 'auto') {
+    if ($ApothemRef -and -not (Test-ReleaseTag $ApothemRef)) {
+        $VerifyMode = 'signature'
+    } elseif ($HomeIsClone) {
+        $VerifyMode = 'signature'
+        Write-Info "$ApothemHome is a git clone - updating it and checking the release tag's signature. To use the cosign-checked release archive instead, move the clone aside first."
+    } elseif ($HasCosign) {
+        $VerifyMode = 'release'
+        Write-Info "cosign found - installing the release archive after checking its signed SHA-256 digest"
+    } else {
+        $VerifyMode = 'signature'
+        Write-Info "cosign not found - checking the release tag's signature instead. Install cosign ($CosignInstallDoc) to check the release archive's signed SHA-256 digest."
+    }
+}
+if (-not $Source -and $VerifyMode -eq 'release' -and -not $HasCosign) {
+    Write-Fail "APOTHEM_VERIFY=release needs cosign on PATH ($CosignInstallDoc). Install it, or set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+}
+
+# Archive modes: install the release's Windows archive after checking its
+# SHA-256 against the release's SHA256SUMS. They replace the git clone and the
+# tag-signature gate below. `release` first has cosign check that the release
+# workflow at this tag signed SHA256SUMS, which proves who published the
+# digest; `checksum` skips that step for hosts without cosign or the
+# maintainer key, and says plainly that a matching digest proves integrity,
+# not origin.
+if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')) {
     if (-not $ApothemRef) {
         if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
             Write-Fail "git not found in PATH - needed to resolve the latest release tag"
         }
         Write-Info "Resolving latest release tag from $ApothemRepo"
         $ApothemRef = Resolve-LatestTag $ApothemRepo
+        if (-not $ApothemRef) {
+            Write-Fail "No vMAJOR.MINOR.PATCH release tag found at $ApothemRepo. Pin one with APOTHEM_REF, or set APOTHEM_SOURCE to a local checkout."
+        }
     }
     if (-not (Test-ReleaseTag $ApothemRef)) {
-        Write-Fail "APOTHEM_VERIFY=checksum needs a vMAJOR.MINOR.PATCH release tag; got '$ApothemRef'. Pin one with APOTHEM_REF."
+        Write-Fail "APOTHEM_VERIFY=$VerifyMode needs a vMAJOR.MINOR.PATCH release tag; got '$ApothemRef'. Pin one with APOTHEM_REF."
     }
     $CkName = "apothem-$ApothemRef-windows.zip"
     $CkTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-" + [System.Guid]::NewGuid().ToString('N'))
@@ -391,10 +479,43 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
         catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef" }
         try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" -OutFile $CkSums }
         catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef" }
+        if ($VerifyMode -eq 'release') {
+            # The certificate identity is exact, never a pattern: a regular
+            # expression would also match a forged subject that merely
+            # contains the repository path. It names the tag being installed,
+            # so a bundle signed for another release does not verify here.
+            $CkIdentity = "https://github.com/$CosignIdentityRepo/.github/workflows/release.yml@refs/tags/$ApothemRef"
+            $CkBundle = Join-Path $CkTmp 'SHA256SUMS.cosign.bundle'
+            # Early releases published the same Sigstore bundle as
+            # SHA256SUMS.sig (scripts/release/verify-provenance.sh accepts both).
+            try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.cosign.bundle" -OutFile $CkBundle }
+            catch {
+                try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.sig" -OutFile $CkBundle }
+                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef. Set APOTHEM_VERIFY=signature to check the release tag instead." }
+            }
+            # cosign reports on stderr, which PowerShell before 7.2 turns into
+            # a terminating error under 'Stop' once redirected, so the
+            # preference is localized as in Test-TagSignature.
+            $prior = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            # A wrapper that never sets $LASTEXITCODE must not pass as success.
+            $global:LASTEXITCODE = 1
+            try {
+                $CkCosignOut = & cosign verify-blob --bundle $CkBundle --certificate-identity $CkIdentity --certificate-oidc-issuer $CosignOidcIssuer $CkSums 2>&1
+                $CkCosignCode = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+            if ($CkCosignCode -ne 0) {
+                $CkSaid = (@($CkCosignOut | Where-Object { $null -ne $_ } | ForEach-Object { $_.ToString() }) | Select-Object -Last 3) -join ' '
+                Write-Fail "cosign could not confirm that the $ApothemRef release workflow ($CkIdentity) signed SHA256SUMS (possible tampering). Aborting before anything is extracted. cosign said: $CkSaid If cosign could not reach Sigstore (offline or behind a proxy), set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+            }
+            Write-Ok "cosign: SHA256SUMS is signed by the $ApothemRef release workflow"
+        }
         $CkExpected = $null
         foreach ($Line in Get-Content -LiteralPath $CkSums) {
             $Fields = $Line -split '\s+', 2
-            if ($Fields.Count -eq 2 -and ($Fields[1] -eq $CkName -or $Fields[1] -eq "*$CkName")) {
+            if ($Fields.Count -eq 2 -and ($Fields[1] -ceq $CkName -or $Fields[1] -ceq "*$CkName")) {
                 $CkExpected = $Fields[0]
                 break
             }
@@ -405,14 +526,32 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
             Write-Fail "$CkName does not match the release's SHA256SUMS (expected $CkExpected, got $CkActual). Aborting before anything is extracted."
         }
         Write-Ok "$CkName matches the release's SHA256SUMS"
-        Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
+        if ($VerifyMode -eq 'checksum') {
+            Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For proof of the publisher, install cosign and run without APOTHEM_VERIFY=checksum."
+        }
+        # Who owns what is already at APOTHEM_HOME decides whether -Yes is
+        # needed (mirrors install.sh). An earlier archive install is
+        # Apothem's own and is updated without asking. A git clone (history,
+        # branches, local work) or anything else needs -Yes. In every case
+        # only the entries the new archive ships are replaced: the engine
+        # keeps its rollback backups (backups\) and install ledgers (state\)
+        # in the same directory, and they, like any other file the archive
+        # does not ship, are kept.
+        $CkDropGit = $false
         if ((Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
-            if ($Yes) {
-                Write-Warn "Replacing existing $ApothemHome with the $ApothemRef archive (-Yes)"
-                try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
-                catch { Write-Fail "Could not remove the existing $ApothemHome" }
+            if ($HomeIsClone) {
+                if ($Yes) {
+                    Write-Warn "Replacing the git clone's source at $ApothemHome with the $ApothemRef archive; its git history is removed (-Yes)"
+                    $CkDropGit = $true
+                } else {
+                    Write-Fail "Destination $ApothemHome is a git clone; refusing to replace it with the $ApothemRef archive, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with -Yes."
+                }
+            } elseif (Test-ApothemSource $ApothemHome) {
+                Write-Info "Updating the earlier install at $ApothemHome to the $ApothemRef archive"
+            } elseif ($Yes) {
+                Write-Warn "Writing the $ApothemRef archive into the existing $ApothemHome (-Yes)"
             } else {
-                Write-Fail "Destination $ApothemHome is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
+                Write-Fail "Destination $ApothemHome is not empty and holds no Apothem install; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
             }
         }
         # The release archive roots every file under apothem-<tag>\ (see
@@ -432,12 +571,28 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
         catch { Write-Fail "Could not extract $CkName" }
         $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
         if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
-        if (Test-Path -LiteralPath $ApothemHome) {
-            try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
-            catch { Write-Fail "Could not remove the existing $ApothemHome" }
+        if (Test-Path -LiteralPath $ApothemHome -PathType Container) {
+            foreach ($CkEntry in @(Get-ChildItem -LiteralPath $CkRoot -Force)) {
+                $CkTarget = Join-Path $ApothemHome $CkEntry.Name
+                if (Test-Path -LiteralPath $CkTarget) {
+                    try { Remove-Item -LiteralPath $CkTarget -Recurse -Force }
+                    catch { Write-Fail "Could not remove the existing $CkTarget" }
+                }
+                try { Move-Item -LiteralPath $CkEntry.FullName -Destination $CkTarget }
+                catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
+            }
+            if ($CkDropGit) {
+                try { Remove-Item -LiteralPath (Join-Path $ApothemHome '.git') -Recurse -Force }
+                catch { Write-Fail "Could not remove the existing $ApothemHome\.git" }
+            }
+        } else {
+            if (Test-Path -LiteralPath $ApothemHome) {
+                try { Remove-Item -LiteralPath $ApothemHome -Force }
+                catch { Write-Fail "Could not remove the existing $ApothemHome" }
+            }
+            try { Move-Item -LiteralPath $CkRoot -Destination $ApothemHome }
+            catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
         }
-        try { Move-Item -LiteralPath $CkRoot -Destination $ApothemHome }
-        catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
     } finally {
         if ($CkExtract -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
         if (Test-Path -LiteralPath $CkTmp) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
@@ -483,7 +638,7 @@ if (-not $Source) {
             } elseif ((Test-Path -LiteralPath $ApothemHome -PathType Container) -and -not (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
                 Remove-Item -LiteralPath $ApothemHome
             } else {
-                Write-Fail "Destination $ApothemHome exists but is not a git clone; refusing to delete it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes to replace it."
+                Write-Fail "Destination $ApothemHome exists but is not a git clone; refusing to delete it. If it is an earlier archive install, re-run with cosign on PATH (or APOTHEM_VERIFY=checksum) to update it in place. Otherwise move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes to replace it."
             }
         }
         # Full clone (no --single-branch) so both tags and branches are
@@ -501,10 +656,12 @@ if (-not $Source) {
     # Fail-closed signature verification - runs BEFORE any materialization.
     Write-Bold "Verifying source signature"
     if (Test-ReleaseTag $ApothemRef) {
-        if (Test-TagSignature $Source $ApothemRef) {
-            Write-Ok "Tag $ApothemRef carries a valid signature"
+        if ((Test-TagSignature $Source $ApothemRef) -and (Test-TagSignedByMaintainer)) {
+            Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
         } elseif ($ApothemAllowUnverified -eq '1') {
-            Write-Warn "Tag $ApothemRef is unsigned or its signature did not verify - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        } elseif (Test-TagSignedByOtherKey) {
+            Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before any configuration is materialized."
         } elseif (Test-VerifyTagMissingKey) {
             Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this installer."
         } else {

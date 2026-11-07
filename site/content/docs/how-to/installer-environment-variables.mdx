@@ -19,12 +19,12 @@ environment variables before you run it.
 
 | Variable | Controls | Default |
 | --- | --- | --- |
-| `APOTHEM_HOME` | Install destination for the cloned source tree | `$HOME/.apothem` |
+| `APOTHEM_HOME` | Install destination for the source tree | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Git remote to clone | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch. A non-tag ref such as `main` aborts unless `APOTHEM_ALLOW_UNVERIFIED=1`. | unset (latest signed tag) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a tag-signature-verification failure from a fatal abort to a warning when set to `1` | `0` (verify, fail-closed) |
-| `APOTHEM_VERIFY` | `signature` verifies the release tag's GPG signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) | `signature` |
-| `APOTHEM_RELEASE_BASE` | Download base for checksum mode | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_VERIFY` | `auto` uses `release` when `cosign` is on `PATH` and `APOTHEM_HOME` is not a git clone, and `signature` otherwise; `release` installs the platform archive after cosign confirms the release workflow signed `SHA256SUMS` and the archive's SHA-256 matches it; `signature` checks the release tag's GPG signature against the pinned maintainer key; `checksum` installs the archive after the SHA-256 check alone (integrity, not proof of who published it) | `auto` |
+| `APOTHEM_RELEASE_BASE` | Download base for the `release` and `checksum` modes | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Explicit local source tree to use instead of cloning | unset (clone) |
 | `APOTHEM_HARNESS` | User-scope harness to install (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). The installer does not pass `--project`, so a project-scope harness fails with `project.required`; install those afterward with `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Path to the shared profile YAML | `$HOME/.config/apothem/profile.yaml` |
@@ -38,17 +38,24 @@ contains `src/apothem`, the installer uses it directly, never touches
 `APOTHEM_REPO` / `APOTHEM_REF`, and skips tag resolution and signature
 verification (nothing is fetched to verify).
 
-When `APOTHEM_HOME` points at an existing directory that is not a git
-clone, the installer refuses to delete it: move it aside, point
-`APOTHEM_HOME` elsewhere, or pass `--yes` (`-Yes` on Windows) to
-authorize the replacement. A stale empty directory is replaced
+When `APOTHEM_HOME` points at an existing directory, what happens depends on
+what it holds. A git clone is checked out to the new tag. An earlier
+release-archive install is updated in place by a re-run with cosign (or
+`APOTHEM_VERIFY=checksum`), which replaces only the files the archive ships
+and keeps the engine's backups and install ledgers. Anything else is refused:
+move it aside, point `APOTHEM_HOME` elsewhere, or pass `--yes` (`-Yes` on
+Windows) to authorize the replacement. A stale empty directory is replaced
 without the flag.
 
 ## Trust model
 
-With no `APOTHEM_REF` set, the installer resolves the latest signed release
-tag and verifies its signature with `git verify-tag` before materializing any
-configuration; an unsigned or tampered tag aborts the install. A signed tag
+With no `APOTHEM_REF` set, the installer resolves the latest release and
+checks it before materializing any configuration. With `cosign` on `PATH`, it
+installs the release archive once cosign confirms the release workflow signed
+`SHA256SUMS` and the archive's SHA-256 matches it. Without cosign, it verifies
+the release tag with `git verify-tag` and requires the signature to come from
+the maintainer key published in SECURITY.md; an unsigned or tampered tag, or
+one signed by any other key, aborts the install. A signed tag
 whose maintainer public key is missing from the local keyring aborts with
 key-import guidance instead - import the key and check its fingerprint
 against the value published in
@@ -58,20 +65,25 @@ release with `APOTHEM_REF=<tag>`, taking the tag from the
 [releases page](https://github.com/ahmed-g-gad/apothem/releases); a pinned tag
 is verified the same way. Select the moving branch with `APOTHEM_REF=main` plus
 `APOTHEM_ALLOW_UNVERIFIED=1`; that install is unverified, and `main` alone
-aborts because a branch is not a signed tag. Set `APOTHEM_ALLOW_UNVERIFIED=1` on
-its own to proceed past a verification failure with a warning (air-gapped,
-local, or pre-signed-release use).
+aborts because a branch is not a signed tag. Set `APOTHEM_ALLOW_UNVERIFIED=1` to proceed past a failed tag check with a
+warning (air-gapped, local, or pre-signed-release use). It does not apply to
+cosign or digest failures, so on a host with cosign set
+`APOTHEM_VERIFY=signature` with it.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
+```bash title="Require the cosign check"
+APOTHEM_VERIFY=release bash install.sh
+```
+
+```bash title="Check the archive digest alone (no cosign, no signing key)"
 APOTHEM_VERIFY=checksum bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## Steps (POSIX bash)

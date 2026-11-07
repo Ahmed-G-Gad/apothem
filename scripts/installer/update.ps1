@@ -9,11 +9,14 @@
 # update.sh): with no APOTHEM_REF set, the updater resolves the latest
 # vMAJOR.MINOR.PATCH release tag and checks THAT out - the moving `main` branch
 # is no longer the default. Before re-materializing, the fetched tag is verified
-# with `git verify-tag`; an unsigned / tampered / missing-signature tag ABORTS
-# before any config is written. APOTHEM_REF=main checks out the branch on
-# request; APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a loud
-# warning. The APOTHEM_SOURCE local-checkout path fetches nothing and skips
-# verification.
+# with `git verify-tag`, and the signature must be made by the maintainer key
+# SECURITY.md publishes (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163);
+# an unsigned / tampered / missing-signature tag, or one signed by another key,
+# ABORTS before any config is written. APOTHEM_REF=main checks out the branch
+# on request; APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a
+# loud warning. The APOTHEM_SOURCE local-checkout path fetches nothing and
+# skips verification. An install made from a release archive (install.ps1's
+# cosign or checksum path) has no git clone to update; re-run install.ps1.
 #
 # Environment overrides:
 #   APOTHEM_HOME      Cloned source location (default: $HOME/.apothem)
@@ -43,6 +46,8 @@ $ApothemRef  = if ($env:APOTHEM_REF) { $env:APOTHEM_REF } else { '' }
 $ApothemAllowUnverified = if ($env:APOTHEM_ALLOW_UNVERIFIED) { $env:APOTHEM_ALLOW_UNVERIFIED } else { '0' }
 $Harness     = if ($env:APOTHEM_HARNESS) { $env:APOTHEM_HARNESS } else { 'claude-code' }
 $ApothemProfile = if ($env:APOTHEM_PROFILE) { $env:APOTHEM_PROFILE } else { [System.IO.Path]::Combine($HOME, '.config', 'apothem', 'profile.yaml') }
+# The primary-key fingerprint SECURITY.md publishes; mirrors install.ps1.
+$MaintainerFingerprint = '5C8998F9F241720445D3F28B70396FED9C634163'
 
 # CLI prerequisites; `yaml` + `jsonschema` ship vendored inside the bundled
 # tree (src/apothem/_vendor), so only click + rich come from the host.
@@ -168,6 +173,26 @@ function Test-TagSignature {
     return ($code -eq 0)
 }
 
+# Test-TagSignedByMaintainer / Test-TagSignedByOtherKey mirror install.ps1,
+# which documents why a valid signature alone is not enough.
+function Test-TagSignedByMaintainer {
+    $Seen = $false
+    foreach ($Line in ($script:VerifyTagOutput -split "`n")) {
+        $Fields = @($Line.Trim() -split '\s+')
+        if ($Fields.Count -ge 3 -and $Fields[0] -ceq '[GNUPG:]' -and $Fields[1] -ceq 'VALIDSIG') {
+            $Seen = $true
+            $Fpr = if ($Fields.Count -ge 12) { $Fields[11] } else { $Fields[2] }
+            if ($Fpr.ToUpperInvariant() -ne $MaintainerFingerprint) { return $false }
+        }
+    }
+    return $Seen
+}
+
+function Test-TagSignedByOtherKey {
+    if ($script:VerifyTagOutput -notmatch '(?m)^\s*\[GNUPG:\] VALIDSIG ') { return $false }
+    return (-not (Test-TagSignedByMaintainer))
+}
+
 # Test-VerifyTagMissingKey - $true when the captured status lines show the
 # signing public key is absent from the local keyring, so the signature was
 # not checked (GnuPG's NO_PUBKEY status), $false for any other failure
@@ -257,10 +282,12 @@ if ($env:APOTHEM_SOURCE) {
     # Fail-closed signature verification - runs BEFORE any re-materialization.
     Write-Bold "Verifying source signature"
     if (Test-ReleaseTag $ApothemRef) {
-        if (Test-TagSignature $Source $ApothemRef) {
-            Write-Ok "Tag $ApothemRef carries a valid signature"
+        if ((Test-TagSignature $Source $ApothemRef) -and (Test-TagSignedByMaintainer)) {
+            Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
         } elseif ($ApothemAllowUnverified -eq '1') {
-            Write-Warn "Tag $ApothemRef is unsigned or its signature did not verify - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        } elseif (Test-TagSignedByOtherKey) {
+            Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before re-materialization."
         } elseif (Test-VerifyTagMissingKey) {
             Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this updater."
         } else {
@@ -273,6 +300,8 @@ if ($env:APOTHEM_SOURCE) {
             Write-Fail "Ref $ApothemRef is not a signed release tag and cannot be verified. Pin a vMAJOR.MINOR.PATCH tag, or set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
         }
     }
+} elseif (Test-ApothemSource $ApothemHome) {
+    Write-Fail "$ApothemHome was installed from a release archive, which has no git clone to update. Re-run install.ps1 with cosign on PATH to update it to the latest verified release."
 } else {
     Write-Fail "No source found at $ApothemHome - run install.ps1 first or set APOTHEM_SOURCE"
 }

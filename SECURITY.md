@@ -40,7 +40,12 @@ PGP-encrypted reporting may be supported in the future. Reporters who require en
 
 ## Release signing
 
-Release tags (`vMAJOR.MINOR.PATCH`) are GPG-signed, and the artifacts attached to each GitHub Release (sdist, wheel, SBOM) carry Sigstore cosign signatures plus SLSA provenance. The one-shot installers verify the tag signature with `git verify-tag` before materializing any configuration and abort, fail-closed, when verification does not succeed. Third-party `git verify-tag` needs the maintainer public key in the local keyring; import it once as shown under [Maintainer signing key](#maintainer-signing-key).
+Release tags (`vMAJOR.MINOR.PATCH`) are GPG-signed, and the artifacts attached to each GitHub Release (sdist, wheel, SBOM, the platform archives and their `SHA256SUMS` manifest) carry Sigstore cosign signatures plus SLSA provenance. The one-shot installers check a release before materializing any configuration and abort, fail-closed, when the check does not succeed:
+
+- **With cosign installed** (the default whenever `cosign` is on PATH), the installer downloads the release's platform archive, `SHA256SUMS` and `SHA256SUMS.cosign.bundle`. cosign must confirm that the release workflow at that tag (`https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/<tag>`, issuer `https://token.actions.githubusercontent.com`) signed `SHA256SUMS`, and the archive's SHA-256 must match it. This path uses no SHA-1.
+- **Without cosign**, the installer clones the repository and runs `git verify-tag`. The signature must be valid and made by the maintainer key below: the installer compares GnuPG's primary-key fingerprint with the one published here and refuses a tag signed by any other key, even one the local keyring trusts. A git tag names its commit by a SHA-1 object ID, which is why the cosign path is preferred. This check needs the maintainer public key in the local keyring; import it once as shown under [Maintainer signing key](#maintainer-signing-key).
+
+`APOTHEM_VERIFY` picks a path explicitly: `release` (require cosign), `signature` (require the tag check), or `checksum` (the archive's SHA-256 alone, which shows integrity but not who published it). The [install guide](https://apothem.ahmedgad.com/docs/install#trust-model) lists every mode.
 
 To verify a release tag locally: import the maintainer signing key, confirm the imported key's fingerprint, then run `git verify-tag <tag>` inside the clone.
 
@@ -58,11 +63,11 @@ To verify a release tag locally: import the maintainer signing key, confirm the 
 | `v1.0.2` | annotated, GPG-signed | `git verify-tag v1.0.2` |
 | `v1.0.1` | lightweight (no tag object) | `git verify-commit v1.0.1` — the commit it names is GPG-signed |
 
-`v1.0.1` was pushed as a lightweight tag. A lightweight tag has no object to sign, so `git verify-tag v1.0.1` fails ("cannot verify a non-tag object") and the one-shot installer, which checks the tag, aborts with its "unsigned or its signature did not verify" message when `APOTHEM_REF=v1.0.1`. The release commit itself is signed, so `git verify-commit v1.0.1` verifies it. Published tags are kept as they are rather than rewritten, so this limit is permanent for `v1.0.1`: pin `v1.0.2` or later for a verified install. Every release from `v1.0.2` on is an annotated, signed tag (`git tag -a -s`).
+`v1.0.1` was pushed as a lightweight tag. A lightweight tag has no object to sign, so `git verify-tag v1.0.1` fails ("cannot verify a non-tag object") and the one-shot installer, when it checks the tag (without cosign, or with `APOTHEM_VERIFY=signature`), aborts with its "unsigned or its signature did not verify" message when `APOTHEM_REF=v1.0.1`. The release commit itself is signed, so `git verify-commit v1.0.1` verifies it. Published tags are kept as they are rather than rewritten, so this limit is permanent for `v1.0.1`: pin `v1.0.2` or later for a verified install. Every release from `v1.0.2` on is an annotated, signed tag (`git tag -a -s`).
 
 ### Maintainer signing key
 
-Release tags are signed with this key:
+Release tags are signed with this key. The installers pin its fingerprint, so a tag signed by any other key is refused:
 
 | Field | Value |
 | --- | --- |

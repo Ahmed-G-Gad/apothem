@@ -416,6 +416,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **The installers accept only the maintainer key, and prefer a check that
+  uses no SHA-1.** `install.sh`, `install.ps1`, `update.sh` and `update.ps1`
+  checked a release tag with `git verify-tag`, which accepts a valid signature
+  from any key the local GnuPG keyring holds. They now read GnuPG's `VALIDSIG`
+  status and refuse the tag unless its primary-key fingerprint is
+  `5C8998F9F241720445D3F28B70396FED9C634163`, the key SECURITY.md publishes.
+  The installers also gain a check that does not rest on the git tag, which
+  names its commit by SHA-1: `APOTHEM_VERIFY=release` downloads the platform
+  archive, `SHA256SUMS` and `SHA256SUMS.cosign.bundle`, has cosign confirm
+  that the release workflow at that exact tag signed `SHA256SUMS`, then
+  checks the archive's SHA-256. The new default, `APOTHEM_VERIFY=auto`, takes
+  that path whenever `cosign` is on `PATH` and the key-pinned tag check
+  otherwise, and keeps an existing git clone at `APOTHEM_HOME` on the tag
+  check; `signature` and `checksum` stay available. A re-run in an archive
+  mode updates an earlier archive install in place without `--yes` and
+  replaces only the files the archive ships, so the engine's backups and
+  install ledgers are kept (before, `APOTHEM_VERIFY=checksum --yes` deleted
+  them); the update scripts tell an archive install to re-run the installer.
+  The
+  [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
+  explains each mode.
 - **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
   allows every tool by default and asks before reading `.env` and `.env.*`
   files. A helper's rules come after those defaults and after the operator's

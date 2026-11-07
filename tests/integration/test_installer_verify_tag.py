@@ -12,6 +12,14 @@ repository — no network. The gate distinguishes two abort classes:
 - **bad / absent signature** — an unsigned or tampered tag; the abort is hard
   and deliberately does not advertise the ``APOTHEM_ALLOW_UNVERIFIED``
   override on a possible-tampering signal.
+- **another key** — a valid signature from a key other than the maintainer
+  key SECURITY.md publishes. ``git verify-tag`` accepts any key the local
+  keyring holds, so each script pins the maintainer fingerprint and aborts on
+  any other signer.
+
+The installers' default verification mode, ``auto``, takes a cosign-checked
+release archive when cosign is on PATH; these tests set
+``APOTHEM_VERIFY=signature`` so they exercise the clone path on every host.
 
 Each abort-class test runs every script against the same fixture, so the
 four keep the same classes and messages. Every test asserts the abort happens
@@ -73,6 +81,36 @@ BAD_SIGNATURE_MARKER = "did not verify (possible tampering)"
 MISSING_KEY_MARKER = "public key is not in the local keyring"
 KEY_IMPORT_MARKER = "gpg --import"
 OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
+OTHER_KEY_MARKER = "carries a valid signature, but not from the maintainer key"
+MAINTAINER_OK_MARKER = "carries a valid signature from the maintainer key"
+
+# The primary-key fingerprint SECURITY.md publishes; every script pins it.
+MAINTAINER_FINGERPRINT = "5C8998F9F241720445D3F28B70396FED9C634163"
+# The fixture signer's fingerprint in the canned GnuPG results below.
+OTHER_FINGERPRINT = "C2CD460ED9DCEF33C51123AE984AE72EA84995CA"
+
+
+def _good_signature_status(primary: str, signing: str | None = None) -> str:
+    """GnuPG's status lines for a good signature whose primary key is PRIMARY.
+
+    The layout copies ``git verify-tag --raw`` on a real Apothem release tag:
+    VALIDSIG carries the signing key's fingerprint first and the primary
+    key's last. git accepts the signature only when a GOODSIG line follows a
+    newline, so NEWSIG comes first.
+    """
+    if signing == "two-signatures":
+        return _good_signature_status(primary) + _good_signature_status(
+            OTHER_FINGERPRINT
+        )
+    signing = signing or primary
+    return (
+        "[GNUPG:] NEWSIG\n"
+        f"[GNUPG:] KEY_CONSIDERED {primary} 0\n"
+        f"[GNUPG:] GOODSIG {primary[-16:]} Release Signer <signer@example.invalid>\n"
+        f"[GNUPG:] VALIDSIG {signing} 2026-10-28 1793213927 0 4 0 22 10 00 {primary}\n"
+        "[GNUPG:] TRUST_ULTIMATE 0 pgp\n"
+    )
+
 
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.
 INSTALL_TIMEOUT_SECONDS = 120
@@ -230,6 +268,8 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
     env["APOTHEM_REPO"] = str(fixture)
     env["APOTHEM_REF"] = ref
     env["APOTHEM_HOME"] = str(tmp_path / "apothem-home")
+    # The clone path, whatever cosign the host has; the updaters ignore it.
+    env["APOTHEM_VERIFY"] = "signature"
     _use_test_python(env, tmp_path / "python-shim")
     return env
 
@@ -432,13 +472,15 @@ def _make_stub_signed_tag(fixture: Path, tag: str) -> None:
     _git(["update-ref", f"refs/tags/{tag}", tag_sha.strip()], cwd=fixture)
 
 
-def _use_stub_gpg(env: dict[str, str], status: str, human: str) -> None:
+def _use_stub_gpg(
+    env: dict[str, str], status: str, human: str, exit_code: int = 1
+) -> None:
     """Make the installer's git verify signatures with a stub gpg program.
 
     The stub drains the payload git writes to its stdin, prints STATUS on
-    stdout (git's --status-fd=1) and HUMAN on stderr, and exits 1, as gpg
-    does when a signature does not verify. It is set as gpg.program in the
-    isolated HOME's global git config.
+    stdout (git's --status-fd=1) and HUMAN on stderr, and exits EXIT_CODE:
+    1 by default, as gpg does when a signature does not verify, 0 for a good
+    one. It is set as gpg.program in the isolated HOME's global git config.
     """
     stub_dir = Path(env["HOME"]).parent / "stub-gpg"
     stub_dir.mkdir()
@@ -450,7 +492,7 @@ def _use_stub_gpg(env: dict[str, str], status: str, human: str) -> None:
         "cat >/dev/null\n"
         f"cat {shlex.quote(str(stub_dir / 'status.txt'))}\n"
         f"cat {shlex.quote(str(stub_dir / 'human.txt'))} >&2\n"
-        "exit 1\n",
+        f"exit {exit_code}\n",
         encoding="utf-8",
     )
     stub.chmod(EXECUTABLE_MODE)
@@ -625,6 +667,174 @@ def test_abort_class_does_not_depend_on_gpg_language(
     _assert_aborted_before_materialization(env)
 
 
+def _make_signed_tag_with_ephemeral_key(
+    tmp_path: Path, fixture: Path, tag: str
+) -> Path:
+    """Sign TAG in FIXTURE with a fresh ed25519 key; return its GNUPGHOME.
+
+    Skips when gpg is missing or cannot generate a key. The returned keyring
+    holds the signer's key, so ``git verify-tag`` run against it reports a
+    good signature from a key that is not the maintainer's.
+    """
+    if shutil.which("gpg") is None:
+        pytest.skip("gpg unavailable; cannot create a signed fixture tag")
+    signer_gnupghome = tmp_path / "gnupg-signer"
+    signer_gnupghome.mkdir(mode=0o700)
+    gpg_env = dict(os.environ)
+    gpg_env["GNUPGHOME"] = str(signer_gnupghome)
+    keygen = subprocess.run(
+        [
+            "gpg",
+            "--batch",
+            "--pinentry-mode",
+            "loopback",
+            "--passphrase",
+            "",
+            "--quick-generate-key",
+            "Fixture Signer <signer@example.invalid>",
+            "ed25519",
+            "sign",
+            "never",
+        ],
+        env=gpg_env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if keygen.returncode != 0:
+        pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
+    _git(
+        [
+            "-c",
+            "gpg.format=openpgp",
+            "-c",
+            "gpg.program=gpg",
+            "-c",
+            "user.signingkey=signer@example.invalid",
+            "-c",
+            "tag.gpgSign=true",
+            "tag",
+            "-s",
+            tag,
+            "-m",
+            "signed release",
+        ],
+        cwd=fixture,
+        env=gpg_env,
+    )
+    return signer_gnupghome
+
+
+def test_valid_signature_from_another_key_aborts(
+    tmp_path: Path, run_gate: GateRunner
+) -> None:
+    """A tag that verifies against the local keyring, but was signed by a key
+    other than the maintainer's, aborts before anything materializes.
+
+    This is the case key pinning exists for: ``git verify-tag`` succeeds, so
+    a script that trusted its exit code alone would install the tag.
+    """
+    fixture = _make_fixture_repo(tmp_path)
+    signer_gnupghome = _make_signed_tag_with_ephemeral_key(tmp_path, fixture, "v9.9.6")
+    env = _installer_env(tmp_path, fixture, "v9.9.6")
+    env["GNUPGHOME"] = str(signer_gnupghome)
+
+    result = run_gate(env)
+
+    combined = result.stdout + result.stderr
+    plain = _plain(combined)
+    assert result.returncode != 0, f"script should abort\n{combined}"
+    assert OTHER_KEY_MARKER in plain, combined
+    assert MAINTAINER_FINGERPRINT in plain, combined
+    assert MAINTAINER_OK_MARKER not in plain, combined
+    assert OVERRIDE_SUGGESTION not in plain, combined
+    _assert_aborted_before_materialization(env)
+
+
+@pytest.mark.parametrize(
+    ("primary", "signing", "accepted"),
+    [
+        pytest.param(OTHER_FINGERPRINT, None, False, id="other-key"),
+        pytest.param(MAINTAINER_FINGERPRINT, None, True, id="maintainer-key"),
+        pytest.param(
+            MAINTAINER_FINGERPRINT,
+            "0123456789ABCDEF0123456789ABCDEF01234567",
+            True,
+            id="maintainer-subkey",
+        ),
+        pytest.param(
+            MAINTAINER_FINGERPRINT.lower(), None, True, id="lowercase-fingerprint"
+        ),
+        pytest.param(
+            MAINTAINER_FINGERPRINT,
+            "two-signatures",
+            False,
+            id="second-signature-from-another-key",
+        ),
+        pytest.param(
+            OTHER_FINGERPRINT,
+            MAINTAINER_FINGERPRINT,
+            False,
+            id="maintainer-fingerprint-only-as-signing-key",
+        ),
+    ],
+)
+def test_key_pin_reads_the_validsig_primary_fingerprint(
+    tmp_path: Path,
+    run_gate: GateRunner,
+    primary: str,
+    signing: str | None,
+    accepted: bool,
+) -> None:
+    """The pin compares VALIDSIG's primary-key fingerprint, not the signing
+    key's: a maintainer subkey passes, and a signature whose primary key is
+    another key fails even when its signing fingerprint reads like the
+    maintainer's. A stub gpg replays each good-signature result, so no key
+    material is needed.
+
+    An accepted tag passes the gate and stops later, at the fixture's missing
+    profile example or profile, so the run still exits non-zero.
+    """
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.5")
+    env = _installer_env(tmp_path, fixture, "v9.9.5")
+    _use_stub_gpg(env, _good_signature_status(primary, signing), "", exit_code=0)
+
+    result = run_gate(env)
+
+    combined = result.stdout + result.stderr
+    plain = _plain(combined)
+    if accepted:
+        assert MAINTAINER_OK_MARKER in plain, combined
+        assert OTHER_KEY_MARKER not in plain, combined
+    else:
+        assert result.returncode != 0, f"script should abort\n{combined}"
+        assert OTHER_KEY_MARKER in plain, combined
+        assert MAINTAINER_OK_MARKER not in plain, combined
+    assert BAD_SIGNATURE_MARKER not in plain, combined
+    _assert_aborted_before_materialization(env)
+
+
+def test_allow_unverified_downgrades_another_key_to_a_warning(
+    tmp_path: Path, run_gate: GateRunner
+) -> None:
+    """APOTHEM_ALLOW_UNVERIFIED=1 is the documented opt-out for every failed
+    tag check, the other-key case included; it warns instead of aborting."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.4")
+    env = _installer_env(tmp_path, fixture, "v9.9.4")
+    env["APOTHEM_ALLOW_UNVERIFIED"] = "1"
+    _use_stub_gpg(env, _good_signature_status(OTHER_FINGERPRINT), "", exit_code=0)
+
+    result = run_gate(env)
+
+    plain = _plain(result.stdout + result.stderr)
+    assert "or the maintainer key did not make it" in plain, plain
+    assert "proceeding because APOTHEM_ALLOW_UNVERIFIED=1" in plain, plain
+    assert OTHER_KEY_MARKER not in plain, plain
+
+
 @requires_bash
 def test_existing_nonclone_home_is_refused_without_yes(tmp_path: Path) -> None:
     """A pre-existing non-clone APOTHEM_HOME with content survives.
@@ -675,3 +885,48 @@ def test_yes_authorizes_replacing_nonclone_home(tmp_path: Path) -> None:
     assert result.returncode != 0, combined  # unsigned tag aborts at the gate
     assert not (apothem_home / "keep.txt").exists(), combined
     assert (apothem_home / ".git").is_dir(), combined
+
+
+@pytest.mark.parametrize(
+    ("runner", "installer"),
+    [
+        pytest.param(_run_updater_sh, "install.sh", id="update.sh"),
+        pytest.param(
+            _run_updater_ps1, "install.ps1", id="update.ps1", marks=requires_pwsh
+        ),
+    ],
+)
+def test_updater_sends_an_archive_install_back_to_the_installer(
+    tmp_path: Path, runner: GateRunner, installer: str
+) -> None:
+    """An archive install has no clone to update; the updater says to re-run
+    the installer instead of claiming no source was found."""
+    fixture = _make_fixture_repo(tmp_path)
+    env = _installer_env(tmp_path, fixture, "v9.9.9")
+    home = Path(env["APOTHEM_HOME"])
+    (home / "src" / "apothem").mkdir(parents=True)
+    (home / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    plain_runner = {
+        _run_updater_sh: UPDATER_SH,
+        _run_updater_ps1: UPDATER_PS1,
+    }[runner]
+    if plain_runner is UPDATER_SH:
+        args = ["sh", str(UPDATER_SH)]
+    else:
+        assert _PWSH is not None
+        args = [_PWSH, "-NoProfile", "-NonInteractive", "-File", str(UPDATER_PS1)]
+    result = subprocess.run(
+        args,
+        cwd=env["HOME"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+        check=False,
+    )
+
+    plain = _plain(result.stdout + result.stderr)
+    assert result.returncode != 0, plain
+    assert "was installed from a release archive" in plain, plain
+    assert f"Re-run {installer} with cosign on PATH" in plain, plain

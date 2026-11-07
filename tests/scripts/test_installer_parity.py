@@ -592,3 +592,79 @@ def test_checksum_mode_messages_agree() -> None:
     ):
         assert phrase in SH, f"install.sh lacks {phrase!r}"
         assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
+
+
+#: The primary-key fingerprint SECURITY.md publishes for release tags.
+MAINTAINER_FINGERPRINT = "5C8998F9F241720445D3F28B70396FED9C634163"
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_every_script_pins_the_maintainer_key(name: str) -> None:
+    """All four scripts require the tag signature to come from one key.
+
+    ``git verify-tag`` accepts a valid signature from any key the local
+    keyring holds. Each script compares GnuPG's VALIDSIG primary-key
+    fingerprint with the one SECURITY.md publishes; a script that dropped the
+    constant, or carried another value, would accept a tag signed by any key.
+    """
+    content = SCRIPTS[name]
+    assert MAINTAINER_FINGERPRINT in content, (
+        f"{name} does not pin {MAINTAINER_FINGERPRINT}"
+    )
+    assert "VALIDSIG" in content, f"{name} does not read GnuPG's VALIDSIG status"
+    assert "carries a valid signature, but not from the maintainer key" in content, (
+        f"{name} lacks the other-key abort"
+    )
+
+
+def test_security_md_publishes_the_pinned_fingerprint() -> None:
+    """The pinned value is the one SECURITY.md shows readers, spaces aside."""
+    security = (REPO_ROOT / "SECURITY.md").read_text(encoding="utf-8")
+    assert MAINTAINER_FINGERPRINT in re.sub(r"\s+", "", security)
+
+
+def test_release_mode_trust_roots_and_messages_agree() -> None:
+    """Both installers check the same cosign identity and say the same things.
+
+    The release mode trusts SHA256SUMS only when cosign shows the release
+    workflow at the installed tag signed it. A different repository casing,
+    workflow path or OIDC issuer in one script would make that platform accept
+    a bundle the other refuses, or refuse every real one.
+    """
+    for phrase in (
+        "Ahmed-G-Gad/apothem",
+        "https://token.actions.githubusercontent.com",
+        "/.github/workflows/release.yml@refs/tags/",
+        "SHA256SUMS.cosign.bundle",
+        "verify-blob",
+        "--certificate-identity",
+        "--certificate-oidc-issuer",
+        "'auto', 'release', 'signature' or 'checksum'",
+        "needs cosign on PATH",
+        "cosign could not confirm that the",
+        "signed SHA256SUMS (possible tampering). Aborting before anything is extracted.",
+        "cosign: SHA256SUMS is signed by the",
+        "holds no Apothem install; refusing to replace it.",
+        "or SHA256SUMS.sig as early releases name it",
+        "Set APOTHEM_VERIFY=signature to check the release tag instead.",
+    ):
+        assert phrase in SH, f"install.sh lacks {phrase!r}"
+        assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
+
+
+def test_both_installers_default_to_auto() -> None:
+    """``auto`` is the default in both: an unset APOTHEM_VERIFY means the
+    cosign path when cosign is present and the key-pinned tag check otherwise."""
+    assert 'APOTHEM_VERIFY="${APOTHEM_VERIFY:-auto}"' in SH
+    assert "else { 'auto' }" in PS1
+
+
+@pytest.mark.parametrize(
+    ("name", "installer"), [("update.sh", "install.sh"), ("update.ps1", "install.ps1")]
+)
+def test_updaters_point_archive_installs_at_the_installer(
+    name: str, installer: str
+) -> None:
+    """An archive install has no clone, so each updater sends it back to the
+    installer instead of claiming no source was found."""
+    assert f"Re-run {installer} with cosign on PATH to update it" in SCRIPTS[name]

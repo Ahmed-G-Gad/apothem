@@ -294,17 +294,19 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ### 3 — One-shot installers
 
 **Prerequisites:** system Python 3.10+ on `PATH` (the installer offers to add
-the `click` / `rich` prerequisites for you); `git` and `gpg` for a network
-install, which clones the source and verifies its signed release tag (Git for
-Windows ships both).
+the `click` / `rich` prerequisites for you). For a network install: `git`, to
+find the latest release, plus either [cosign](https://docs.sigstore.dev/cosign/system_config/installation/), which checks the signed release
+archive, or `gpg`, which checks the signed release tag (Git for Windows ships
+`git` and `gpg`).
 
-The one-shot installer resolves the latest signed release tag, verifies its
-signature, fetches the Apothem source tree at that tag, runs the engine
-directly from it, and materializes your harness configuration. The
-tag-pinned verified install is the default and recommended path.
+The one-shot installer resolves the latest release, checks it, places the
+Apothem source tree, runs the engine directly from it, and materializes your
+harness configuration. The verified install is the default and recommended
+path.
 
-**Import the maintainer signing key once.** The installer verifies the
-release tag's signature and stops if the signing key is not in your keyring.
+**Without cosign, import the maintainer signing key once.** The installer then
+verifies the release tag's signature and stops if the signing key is not in
+your keyring.
 Import it, then check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, as
 [SECURITY.md](SECURITY.md#maintainer-signing-key) publishes it:
@@ -339,12 +341,17 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
-**Trust model (tag-pinned, verified by default).** With no `APOTHEM_REF` set,
-the installer resolves the highest `vMAJOR.MINOR.PATCH` release tag and checks
-*that* out — never the moving `main` branch. Before any configuration is
-materialized, the fetched tag's signature is verified with `git verify-tag`;
-an unsigned, tampered, or unverifiable tag aborts the install before anything
-is written. To pin a specific release explicitly:
+**Trust model (verified by default).** With no `APOTHEM_REF` set, the
+installer resolves the highest `vMAJOR.MINOR.PATCH` release — never the moving
+`main` branch — and checks it before any configuration is materialized. With
+`cosign` on `PATH`, it downloads the release archive and installs it only after
+cosign confirms that Apothem's release workflow signed the release's
+`SHA256SUMS` for that tag and the archive's SHA-256 matches. Without cosign, or
+when `APOTHEM_HOME` already holds a git clone, it checks the tag with
+`git verify-tag`, and the signature must come from the maintainer key in
+SECURITY.md; a tag signed by any other key is refused. A failed check aborts
+the install before any configuration is written. To pin a specific release
+explicitly:
 
 ```bash title="Pinned, verified install (POSIX)"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -367,11 +374,10 @@ tag. The `APOTHEM_SOURCE`
 local-checkout path fetches nothing, so it skips tag resolution and
 verification and runs the checkout you point it at.
 
-`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
-the maintainer's public key: instead of cloning, the installer downloads the
-release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
-before extracting anything, and warns that a matching digest proves the
-archive is the one the release lists, not who published it.
+Set `APOTHEM_VERIFY` to choose the check yourself: `release` requires the
+cosign check, `signature` requires the tag check, and `checksum` installs the
+release archive after its SHA-256 check alone, which shows the archive is the
+one the release lists but not who published it.
 
 **Requirements.** A system Python 3.10 or newer must be on PATH, and the
 `click` and `rich` packages must be importable under that interpreter; the
@@ -404,12 +410,12 @@ form — it never advertises a bare `apothem` command the run did not resolve.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `APOTHEM_HOME` | `$HOME/.apothem` | Install destination for the cloned source |
+| `APOTHEM_HOME` | `$HOME/.apothem` | Install destination for the source tree |
 | `APOTHEM_REPO` | `https://github.com/ahmed-g-gad/apothem` | Git remote to clone |
 | `APOTHEM_REF` | *(latest signed tag)* | Git ref to check out; unset resolves the latest release tag, or set a tag to pin / `main` for the moving branch |
-| `APOTHEM_ALLOW_UNVERIFIED` | *(unset)* | Set to `1` to downgrade a tag-verification failure to a warning and proceed |
-| `APOTHEM_VERIFY` | `signature` | `signature` verifies the release tag's signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) |
-| `APOTHEM_RELEASE_BASE` | `${APOTHEM_REPO}/releases/download` | Download base for checksum mode |
+| `APOTHEM_ALLOW_UNVERIFIED` | *(unset)* | Set to `1` to downgrade a tag-verification failure to a warning and proceed; cosign and digest failures stay fatal |
+| `APOTHEM_VERIFY` | `auto` | `auto` uses `release` when `cosign` is on `PATH` and `APOTHEM_HOME` is not a git clone, `signature` otherwise; `release` installs the platform archive after cosign confirms the release workflow signed `SHA256SUMS` and the archive's SHA-256 matches; `signature` checks the release tag against the pinned maintainer key; `checksum` installs the archive after the SHA-256 check alone (integrity, not proof of who published it) |
+| `APOTHEM_RELEASE_BASE` | `${APOTHEM_REPO}/releases/download` | Download base for the `release` and `checksum` modes |
 | `APOTHEM_SOURCE` | *(unset)* | Explicit local source tree to use instead of cloning (skips tag resolution and verification) |
 | `APOTHEM_HARNESS` | `claude-code` | Harness to materialize |
 | `APOTHEM_PROFILE` | `$HOME/.config/apothem/profile.yaml` | Shared profile path |
@@ -699,8 +705,10 @@ npx @ahmed-g-gad/apothem update --harness all --project .
 PYTHONPATH="$HOME/.apothem/src" python -m apothem update --harness cursor --project .
 ```
 
-The update script checks out the latest signed release tag in the source tree
-at `APOTHEM_HOME`, verifies its signature, and re-runs materialization.
+The update script checks out the latest signed release tag in the git clone
+at `APOTHEM_HOME`, verifies its signature against the maintainer key, and
+re-runs materialization. An install made from a release archive has no clone,
+so update it by re-running the installer with cosign on `PATH`.
 `apothem update` re-materializes harness configuration from
 the current shared profile; it is not a CLI self-updater, and the current
 command surface does not include `update --self`, `update --check`, or

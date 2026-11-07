@@ -9,9 +9,13 @@
 # Trust model (tag-pinned, verified-by-default): mirrors install.sh. With no
 # APOTHEM_REF set, the latest signed vMAJOR.MINOR.PATCH release tag is
 # resolved, checked out, and verified with `git verify-tag` before
-# re-materializing; an unsigned / tampered tag ABORTS unless
+# re-materializing. The signature must be valid and made by the maintainer key
+# SECURITY.md publishes (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163);
+# an unsigned / tampered tag, or one signed by another key, ABORTS unless
 # APOTHEM_ALLOW_UNVERIFIED=1 downgrades the abort to a warning. The
 # APOTHEM_SOURCE local-checkout path fetches nothing and skips verification.
+# An install made from a release archive (install.sh's cosign or checksum
+# path) has no git clone to update; re-run install.sh to update it.
 #
 # Usage:
 #     sh scripts/installer/update.sh
@@ -38,6 +42,8 @@ APOTHEM_REF="${APOTHEM_REF:-}"
 APOTHEM_ALLOW_UNVERIFIED="${APOTHEM_ALLOW_UNVERIFIED:-0}"
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 PROFILE="${APOTHEM_PROFILE:-$HOME/.config/apothem/profile.yaml}"
+# The primary-key fingerprint SECURITY.md publishes; mirrors install.sh.
+MAINTAINER_FINGERPRINT="5C8998F9F241720445D3F28B70396FED9C634163"
 
 # CLI prerequisites; `yaml` + `jsonschema` ship vendored inside the bundled
 # tree (src/apothem/_vendor), so only click + rich come from the host.
@@ -83,6 +89,26 @@ resolve_latest_tag() {
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
     VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag --raw "$2" 2>&1)"
+}
+
+# verify_tag_by_maintainer / verify_tag_valid_other_key mirror install.sh,
+# which documents why a valid signature alone is not enough.
+verify_tag_by_maintainer() {
+    printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            seen++
+            fpr = (NF >= 12) ? $12 : $3
+            if (toupper(fpr) != want) other++
+        }
+        END { exit (seen > 0 && other == 0) ? 0 : 1 }'
+}
+
+verify_tag_valid_other_key() {
+    case "$VERIFY_TAG_OUTPUT" in
+        "[GNUPG:] VALIDSIG "* | *"
+[GNUPG:] VALIDSIG "*) ! verify_tag_by_maintainer ;;
+        *) return 1 ;;
+    esac
 }
 
 verify_tag_missing_key() {
@@ -227,10 +253,12 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
     # Fail-closed signature verification before re-materializing.
     bold "Verifying source signature"
     if is_release_tag "$APOTHEM_REF"; then
-        if verify_tag "$SOURCE" "$APOTHEM_REF"; then
-            ok "Tag ${APOTHEM_REF} carries a valid signature"
+        if verify_tag "$SOURCE" "$APOTHEM_REF" && verify_tag_by_maintainer; then
+            ok "Tag ${APOTHEM_REF} carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
-            warn "Tag ${APOTHEM_REF} is unsigned or its signature did not verify — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            warn "Tag ${APOTHEM_REF} is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        elif verify_tag_valid_other_key; then
+            die "Tag ${APOTHEM_REF} carries a valid signature, but not from the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes (possible tampering). Aborting before re-materialization."
         elif verify_tag_missing_key; then
             die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this updater."
         else
@@ -244,6 +272,8 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
         fi
     fi
     echo
+elif is_apothem_source "$APOTHEM_HOME"; then
+    die "$APOTHEM_HOME was installed from a release archive, which has no git clone to update. Re-run install.sh with cosign on PATH to update it to the latest verified release."
 else
     die "No source found at $APOTHEM_HOME — run install.sh first or set APOTHEM_SOURCE"
 fi
