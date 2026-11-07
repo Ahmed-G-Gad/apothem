@@ -147,6 +147,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The launch-size metric follows six more tools' loading rules.** The
+  metrics collector, which reports how many bytes of instructions each tool
+  loads at launch, now counts:
+  - OpenClaw's bootstrap files by name and in order, with its per-file and
+    total character limits;
+  - Hermes's `SOUL.md` only when it holds text;
+  - CodeBuddy's user `CODEBUDDY.md` and `CODEBUDDY.local.md`, one project
+    memory file, `AGENTS.md` only without one, and no rule marked
+    `enabled: false`;
+  - Kimi Code's `~/.agents/AGENTS.md`, skipping blank files;
+  - Claude Code's `CLAUDE.local.md`, and `AGENTS.md` only when the project has
+    no CLAUDE file;
+  - Antigravity's project `.agents/` folder, with each file cut at 24,000
+    bytes.
+
+  No published number changes: Apothem's installs write none of these files.
 - **The Antigravity install writes its plugin where the CLI loads it.**
   Current Antigravity CLI releases load plugins from
   `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put
