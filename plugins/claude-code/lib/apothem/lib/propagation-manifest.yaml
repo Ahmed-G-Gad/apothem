@@ -283,45 +283,47 @@ harnesses:
     per-directory-filters: {}
 
   antigravity:
-    # Antigravity CLI reads ~/.gemini/GEMINI.md for global context while
-    # CLI customization lives under ~/.gemini/antigravity-cli/. Apothem
-    # installs a named plugin at ~/.gemini/antigravity-cli/plugins/apothem/
-    # and keeps non-native support cohorts beneath that plugin instead of
-    # reviving the retired ~/.gemini/antigravity/ tree.
+    # Antigravity reads ~/.gemini/GEMINI.md for global context and loads
+    # plugins from ~/.gemini/config/plugins/<name>/ (current CLI releases do,
+    # and the Antigravity App and IDE load the same folder). Apothem installs
+    # a named plugin at ~/.gemini/config/plugins/apothem/ and keeps non-native
+    # support cohorts beneath that plugin instead of reviving the tree Apothem
+    # kept in ~/.gemini/antigravity/ before its first release. That folder is
+    # the Antigravity App's data folder, so nothing writes or removes there.
     install:
       - source: "harnesses/antigravity/templates/GEMINI.md"
         target: "${HARNESS_ROOT}/GEMINI.md"
         mode: sentinel_merge
         ownership_class: operator-owned
       - source: "harnesses/antigravity/templates/plugin.json"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/plugin.json"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/plugin.json"
         mode: write_text
         ownership_class: apothem-owned
       - source: "commands/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/skills/"
         mode: command_skills
         ownership_class: apothem-owned
       # Antigravity discards a rules/*.md file whose frontmatter lacks a valid
       # trigger, so each rule is converted: alwaysApply -> always_on,
       # pathFilter -> glob + globs, otherwise model_decision (description).
       - source: "rules/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/rules/"
         mode: antigravity_rules
         ownership_class: apothem-owned
       - source: "skills/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/skills/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
       - source: "agents/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/agents/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/agents/"
         mode: antigravity_agents
         ownership_class: apothem-owned
       - source: "templates/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/templates/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/templates/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
       - source: "hooks/"
-        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/hooks/"
+        target: "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/hooks/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
 
@@ -334,11 +336,17 @@ harnesses:
       - "AGENTS.md"
 
     stale-sweep:
-      - "antigravity"
+      # ~/.gemini/antigravity/ is not swept: it is the Antigravity App's data
+      # folder and holds the App's MCP OAuth tokens (mcp_oauth_tokens.json),
+      # session transcripts (brain/), legacy global skills (skills/) and
+      # sidecar_data/.
       - "../.antigravity/profile.yaml"
-      # Old machinery dir (pre-fold, doubled-segment bug) swept on migration.
-      - "antigravity-cli/plugins/apothem/apothem/templates"
-      - "antigravity-cli/plugins/apothem/apothem/hooks"
+      # The plugin folder before the move to ~/.gemini/config/plugins/. An
+      # October 2026 CLI issue report found a plugin staged there neither
+      # listed nor loaded, so an install, update or uninstall backs it up and
+      # removes it whole, with the older doubled-segment machinery folders
+      # (apothem/templates, apothem/hooks) that sat inside it.
+      - "antigravity-cli/plugins/apothem"
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.

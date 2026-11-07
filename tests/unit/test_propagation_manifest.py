@@ -224,7 +224,12 @@ def test_codex_manifest_uses_native_hooks_surface() -> None:
 
 
 def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
-    """Antigravity cohorts must land in the Antigravity CLI plugin tree."""
+    """Antigravity cohorts must land in the plugin folder Antigravity CLI loads.
+
+    Antigravity CLI 1.0.2 and later load a global plugin from
+    ``~/.gemini/config/plugins/<name>/``; ``~/.gemini/antigravity-cli/`` holds
+    only the CLI's own app data, so no install target may sit there.
+    """
     rules = propagation.load_manifest()
     antigravity = rules["antigravity"]
     targets = {
@@ -236,20 +241,55 @@ def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
         "${HARNESS_ROOT}/GEMINI.md"
     )
     assert targets["harnesses/antigravity/templates/plugin.json"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/plugin.json"
+        "${HARNESS_ROOT}/config/plugins/apothem/plugin.json"
     )
-    assert targets["commands"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
-    )
-    assert targets["rules"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
+    assert targets["commands"] == "${HARNESS_ROOT}/config/plugins/apothem/skills/"
+    assert targets["skills"] == "${HARNESS_ROOT}/config/plugins/apothem/skills/"
+    assert targets["rules"] == "${HARNESS_ROOT}/config/plugins/apothem/rules/"
+    assert targets["agents"] == "${HARNESS_ROOT}/config/plugins/apothem/agents/"
+    assert targets["templates"] == (
+        "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/templates/"
     )
     assert targets["hooks"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/hooks/"
+        "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/hooks/"
     )
-    assert "antigravity" in antigravity.stale_sweep
+    assert all(
+        not target.startswith("${HARNESS_ROOT}/antigravity-cli/")
+        for target in targets.values()
+    )
+    # ~/.gemini/antigravity/ is Antigravity's own app-data folder (MCP OAuth
+    # tokens, session transcripts), so it is not swept.
+    assert "antigravity" not in antigravity.stale_sweep
     assert "../.antigravity/profile.yaml" in antigravity.stale_sweep
     assert all("/antigravity/" not in target for target in targets.values())
+
+
+def test_antigravity_manifest_sweeps_the_old_plugin_folder() -> None:
+    """An install, update or uninstall removes the plugin folder of earlier releases.
+
+    Apothem releases before the move wrote the plugin to
+    ``~/.gemini/antigravity-cli/plugins/apothem/``; the Antigravity CLI docs
+    name only ``~/.gemini/config/plugins/`` for global plugins. The stale-sweep
+    list names the old folder whole, so it is backed up and removed together
+    with the doubled-segment ``apothem/templates`` and ``apothem/hooks`` folders
+    an older release left inside it.
+    """
+    antigravity = propagation.load_manifest()["antigravity"]
+
+    assert "antigravity-cli/plugins/apothem" in antigravity.stale_sweep
+    # ~/.gemini/antigravity/ holds Antigravity's MCP OAuth tokens and session
+    # transcripts, so no sweep entry may name it or a folder that holds it.
+    for legacy in antigravity.stale_sweep:
+        assert legacy.rstrip("/") not in {"antigravity", ".", ""}, legacy
+    # The sweep never names a live install target or a folder that holds one.
+    live = [
+        entry.target.removeprefix("${HARNESS_ROOT}/").rstrip("/")
+        for entry in antigravity.install
+    ]
+    for legacy in antigravity.stale_sweep:
+        for target in live:
+            assert target != legacy, legacy
+            assert not target.startswith(f"{legacy}/"), (legacy, target)
 
 
 def test_manifest_never_sweeps_config_files_no_release_wrote() -> None:

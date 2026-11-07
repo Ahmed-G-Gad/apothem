@@ -72,6 +72,8 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
     "gemini_cli": ("skills/AGENTS.md",),
     "hermes": (".hermes/cli-config.yaml", ".hermes/profile.yaml"),
     "open_claw": (".open-claw/config.yaml",),
+    # The Antigravity App's own data folder (MCP tokens, transcripts).
+    "antigravity": (".gemini/antigravity",),
 }
 
 
