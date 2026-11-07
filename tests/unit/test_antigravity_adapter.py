@@ -352,15 +352,18 @@ _SKILL_TEXT = "---\nname: my-own\n---\n"
 
 
 def _link_folder(link: Path, target: Path) -> None:
-    """Make *link* a symbolic link, or on Windows a junction, to *target*."""
-    try:
-        link.symlink_to(target, target_is_directory=True)
-    except OSError:
-        if sys.platform != "win32":
-            raise
+    """Make *link* a junction to *target* on Windows, else a symbolic link.
+
+    Always a junction on Windows, even where the process may create symbolic
+    links (CI runners can): the symlink guard refuses a symbolic link before
+    the sweep runs, and the Windows tests are about the junction it misses.
+    """
+    if sys.platform == "win32":
         import _winapi
 
         _winapi.CreateJunction(str(target), str(link))
+    else:
+        link.symlink_to(target, target_is_directory=True)
 
 
 def _link_old_plugins_folder_to_the_new_one(gemini: Path) -> Path:
