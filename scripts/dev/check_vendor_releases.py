@@ -776,6 +776,36 @@ def _github_version(channel: Channel, payload: object) -> Reading:
     return Reading(version=best[1])
 
 
+# No registry answer the check reads nests more than a few levels. Python 3.14
+# parses JSON nested far deeper than earlier versions, which raise
+# RecursionError, so the limit is checked here and holds on every version.
+_MAX_NESTING = 64
+
+
+def _nests_deeper_than(body: bytes, limit: int) -> bool:
+    """Return True when *body* opens more than *limit* nested arrays or objects."""
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in body:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:  # backslash
+                escaped = True
+            elif byte == 0x22:  # double quote
+                in_string = False
+        elif byte == 0x22:
+            in_string = True
+        elif byte in (0x5B, 0x7B):  # [ {
+            depth += 1
+            if depth > limit:
+                return True
+        elif byte in (0x5D, 0x7D):  # ] }
+            depth -= 1
+    return False
+
+
 def read(channel: Channel, response: Response) -> Reading:
     """Return the version a registry *response* names for *channel*."""
     if response.status in _GONE_STATUSES:
@@ -790,6 +820,11 @@ def read(channel: Channel, response: Response) -> Reading:
     ):
         return Reading(
             outcome="unreachable", detail=response.error or f"HTTP {response.status}"
+        )
+    if _nests_deeper_than(response.body, _MAX_NESTING):
+        return Reading(
+            outcome="unreachable",
+            detail="the answer nests deeper than the check reads",
         )
     try:
         payload = json.loads(response.body)
