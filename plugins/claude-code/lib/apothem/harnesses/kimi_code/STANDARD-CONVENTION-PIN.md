@@ -4,8 +4,20 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-11-03
-- Snapshot note (release check): `@moonshot-ai/kimi-code@2.4.1` (2026-10-30)
+- Snapshot date: 2026-11-07
+- Snapshot note (2.5.x check): `@moonshot-ai/kimi-code@2.5.2` (2026-11-06,
+  tag commit `1c142a007c10`) is the latest release, after 2.5.0 (2026-11-04)
+  and 2.5.1 (2026-11-05). Their release notes and the source at the 2.5.2 tag
+  were read on 2026-11-07. Nothing the adapter relies on changed: the
+  `SKILL.md` parser, the first-name-wins skill discovery, the agent-file
+  loaders and the `Agent` tool description are identical to 2.4.1, and the
+  `AGENTS.md` and skill root orders are unchanged apart from moved lines.
+  2.5.0 merges project skills from a primary directory and remembered
+  additional directories, with the primary winning name conflicts (see the
+  skills item under Open Questions). 2.5.0 also drops the implicit `primary`
+  model choice and ignores `[secondary_model] force` with a warning; the
+  adapter's agent files set no model. Previous 2026-11-03.
+- Snapshot note (release check, 2026-11-03): `@moonshot-ai/kimi-code@2.4.1` (2026-10-30)
   is the latest release, after 2.4.0 (2026-10-28). Their release notes and the
   source at the 2.4.1 tag were read on 2026-11-03. The `AGENTS.md`, skills and
   agent loaders are identical to 2.3.3, and neither release changes a file,
@@ -25,7 +37,7 @@
   2026-10-27; the other pages keep their 2026-10-24 and 2026-10-03 retrieval
   dates. Previous 2026-10-24.
 - vendor-doc-url: <https://moonshotai.github.io/kimi-code/en/>
-- snapshot-date: 2026-11-03
+- snapshot-date: 2026-11-07
 - Canonical docs host: `moonshotai.github.io/kimi-code/en/` (Kimi Code CLI,
   Moonshot). The earlier `moonshotai.github.io/kimi-cli` host documented the
   predecessor CLI and is no longer the authority for this adapter. The
@@ -38,11 +50,13 @@
 - Adapter source: `src/apothem/harnesses/kimi_code/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source
   exception). The vendor also publishes a changelog with versioned releases
-  (latest `@moonshot-ai/kimi-code@2.4.1`, 2026-10-30) and an MIT-licensed
+  (latest `@moonshot-ai/kimi-code@2.5.2`, 2026-11-06) and an MIT-licensed
   repository, `MoonshotAI/kimi-code`, whose agent loader was read at commit
-  `e2ad1dcf21` (2026-10-27) and re-read on 2026-11-03 at the
+  `e2ad1dcf21` (2026-10-27), re-read on 2026-11-03 at the
   `@moonshot-ai/kimi-code@2.4.1` tag (`2c73f3f50af4`, committed 2026-10-30;
-  the loader files are identical) for the facts marked "source" below. No
+  the loader files are identical) and checked again on 2026-11-07 at the 2.5.2
+  tag (`1c142a007c10`) for the facts marked "source" below. Line numbers cite
+  the 2.4.1 tag unless marked. No
   vendor-native UI claim is made here.
 
 ## Official Surface Refresh
@@ -241,6 +255,17 @@
 
 ## Vendor Sources
 
+Retrieved 2026-11-07.
+
+- <https://moonshotai.github.io/kimi-code/en/release-notes/changelog.md>
+  (releases 2.5.0, 2.5.1 and 2.5.2)
+- <https://registry.npmjs.org/@moonshot-ai%2fkimi-code> (`latest` is 2.5.2;
+  the publish dates of 2.5.0, 2.5.1 and 2.5.2)
+- The `MoonshotAI/kimi-code` repository at the `@moonshot-ai/kimi-code@2.5.2`
+  tag (`1c142a007c10`): the skill roots, `rootFileSkillSource.ts`, the
+  `AGENTS.md` loader, the agent loaders and the `Agent` tool description,
+  compared with the 2.4.1 tag
+
 Retrieved 2026-11-03.
 
 - <https://moonshotai.github.io/kimi-code/en/release-notes/changelog.md>
@@ -346,7 +371,10 @@ delegation.
   (`human/utils/watch.ts:522-529`). With the switch off, a running session
   picks up edits to project agent files only through `/reload`
   (`packages/node-sdk/src/sdk-rpc-client-v2.ts:1725-1733`); the first load at
-  startup still happens.
+  startup still happens. At the 2.5.2 tag the watcher call sits at
+  `workspaceAgentProfileLoaderService.ts:63-82`, and `/reload` now calls one
+  `program.reload()` (`sdk-rpc-client-v2.ts:1929-1934`); whether that reloads
+  the project agent files is not confirmed.
 - TODO(clarify): hooks. Apothem writes no `[[hooks]]` entry. Three facts decide
   it. (1) The repository has no TOML read-merge-write with a surgical
   uninstall: the shared ownership merge reads and rewrites JSON and YAML, the
@@ -370,7 +398,12 @@ delegation.
   first root to register a name keeps it
   (`features/skill/catalog/fileSkillDiscovery.ts:185-187`), so the copy this
   adapter writes wins over a same-named `.agents/skills/` copy in the same
-  project.
+  project. At the 2.5.2 tag the order is the same (`skillRoots.ts:12-13,49-50`).
+  Since 2.5.0 a project with remembered additional directories scans the
+  primary directory's two folders first, then each additional directory's
+  (`workspace/rootFileSkillSource.ts:79-82`, `skillRoots.ts:54-66`), so the
+  Apothem copy wins only in the primary directory. This is read from the root
+  order; the merge was not run.
 
 ## Discovery Targets
 

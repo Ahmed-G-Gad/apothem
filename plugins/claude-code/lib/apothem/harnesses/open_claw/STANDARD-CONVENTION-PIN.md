@@ -133,18 +133,25 @@ guarantees.
     into an `AGENTS.md` that already exists avoids the last point.
   - The bundled `bootstrap-extra-files` hook
     (`hooks.internal.entries.bootstrap-extra-files`, with `paths` inside the
-    workspace): an Apothem-owned file under the workspace, named like one of
-    the six bootstrap files, with no prompt-injection permission and the same
-    limits and session filters (bundled hooks page,
-    `#bootstrap-extra-files-config`).
-  - The bundled Agent Guidance plugin: Apothem-owned files outside
-    agent-writable workspaces and one config entry. It is off by default and
-    needs its prompt-injection hook permissions turned on; it reads 1 to 8
-    files of at most 16 KiB each (64 KiB in total), targets explicit agent
-    ids, which the install would have to read from `agents.entries` and keep
-    current, and reads its files once at registration, so `apothem update`
-    would have to run `openclaw plugins reload agent-guidance`
-    (`/plugins/agent-guidance`).
+    workspace): an Apothem-owned file under the workspace whose name must be
+    one of the six bootstrap file names (source, `src/agents/workspace.ts`,
+    `invalid-bootstrap-filename`). The entry alone turns the hook on unless
+    `hooks.internal.enabled` is `false` (hooks configuration page; source
+    `src/hooks/configured.ts:42-47`). Extra files take the normal limits and
+    session filters, so a file named `AGENTS.md` also reaches sub-agent and
+    cron sessions (bundled hooks page, `#bootstrap-extra-files-config`).
+  - The Agent Guidance plugin, which ships in OpenClaw's source tree
+    (`extensions/agent-guidance`, off by default): Apothem-owned files
+    outside agent-writable workspaces and one config entry. Prompt injection
+    is allowed unless a plugin's `hooks.allowPromptInjection` is `false`, and
+    a bundled plugin gets conversation access by default (source
+    `src/plugins/hook-policy-decisions.ts:6-17`; the docs' example sets both
+    explicitly). It reads 1 to 8 files of at most 16 KiB each (64 KiB in
+    total), targets explicit agent ids, which the install would have to read
+    from `agents.entries` and keep current, and reads its files once at
+    registration, so `apothem update` would have to run
+    `openclaw plugins reload agent-guidance` (`/plugins/agent-guidance`).
+    Whether it reaches sub-agent and cron sessions is not confirmed.
   - No instruction file, as now.
   This is the operator's decision; until it is made, the install writes no
   workspace file.
