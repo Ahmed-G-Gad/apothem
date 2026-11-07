@@ -152,7 +152,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "~/.gemini/GEMINI.md",
-            "~/.gemini/antigravity-cli/plugins/apothem/",
+            "~/.gemini/config/plugins/apothem/",
         ),
         docs_path="site/content/docs/harnesses/antigravity.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-antigravity.mdx",

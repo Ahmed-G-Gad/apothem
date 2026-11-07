@@ -216,3 +216,41 @@ def _validate_target_path(
             detail={"symlink": _path_text(symlink)},
         )
     return None
+
+
+#: Path segment naming Apothem's own working subtree beneath a harness or
+#: project root (mirrors ``_APOTHEM_SUBTREE`` in :mod:`apothem.lib.data_home`,
+#: and the ``.apothem/`` segment the manifest's target templates hardcode). No
+#: vendor creates this directory, so a target inside it exists only because an
+#: Apothem install put it there.
+_APOTHEM_SUBTREE: str = ".apothem"
+
+
+def _holds_content(target: Path) -> bool:
+    """Return True when *target* is a file, or a directory holding some file.
+
+    An empty directory is NOT content. Uninstall reverses tree targets
+    child-by-child (so operator-authored siblings survive) and leaves the
+    directory itself in place, so every Apothem tree target outlives an
+    uninstall as an empty shell. Testing mere existence would report a fully
+    uninstalled harness as still installed.
+    """
+    if target.is_file():
+        return True
+    if not target.is_dir():
+        return False
+    return any(child.is_file() for child in target.rglob("*"))
+
+
+def _stale_path_proves_install(stale: Path) -> bool:
+    """Return True when an earlier layout's folder still holds Apothem's files.
+
+    The manifest's ``stale-sweep`` list names paths earlier releases wrote. One
+    that holds content under the Apothem-owned ``.apothem/`` subtree (or sits
+    inside it) is the same kind of evidence as a current target there: an
+    install exists in the earlier layout, and an uninstall or update has work
+    to do on it, even when the current layout's targets are gone.
+    """
+    if _APOTHEM_SUBTREE in stale.parts:
+        return _holds_content(stale)
+    return _holds_content(stale / _APOTHEM_SUBTREE)

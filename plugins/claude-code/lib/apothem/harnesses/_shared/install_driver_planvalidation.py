@@ -54,6 +54,7 @@ from .install_driver_preview import (
 )
 from .install_driver_shared import (
     SKILL_MODES,
+    _protected_targets,
     check_resolved_target,
     emission_name,
     entry_write_root,
@@ -600,11 +601,16 @@ def _dry_run_results(
     ignore = make_ignore(rules.exclude, rules.per_directory_filters)
     results: list[MaterializationResult] = []
     preserve = _preserved_paths(root)
+    protect = _protected_targets(
+        rules, harness_root=harness_root, project_root=project_root
+    )
     for legacy in rules.stale_sweep:
         stale = root / legacy
         results.append(
             _result(
-                "skipped" if stale_needs_sweep(stale, preserve) else "unchanged",
+                "skipped"
+                if stale_needs_sweep(stale, preserve, protect)
+                else "unchanged",
                 "sweep_stale",
                 stale,
                 _DRY_RUN_MESSAGE,

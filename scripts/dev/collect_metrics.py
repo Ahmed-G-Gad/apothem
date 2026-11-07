@@ -282,8 +282,7 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         "~/.gemini/config/rules/*.md with trigger: always_on, and in the project "
         "{GEMINI,AGENTS}.md, .agents/{GEMINI,AGENTS}.md and .agents/rules/*.md "
         "with trigger: always_on; each file counted up to 24,000 bytes. Plugin "
-        "rules are not counted: Apothem installs its plugin outside "
-        "~/.gemini/config/plugins/, where Antigravity loads plugins.",
+        "rules (~/.gemini/config/plugins/<name>/rules/) are not counted yet.",
         (
             _home(".gemini/GEMINI.md"),
             _home(".gemini/AGENTS.md"),

@@ -558,7 +558,7 @@ def test_antigravity_reads_the_agents_folder_and_caps_each_file(
     )
 
 
-def test_antigravity_does_not_count_the_plugin_folder_apothem_writes(
+def test_antigravity_does_not_count_the_old_plugin_folder(
     tmp_path: Path,
 ) -> None:
     home, project = tmp_path / "home", tmp_path / "project"
