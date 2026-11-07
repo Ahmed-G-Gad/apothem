@@ -1,0 +1,1 @@
+5{"version": 1, "hooks": {"sessionStart": [{"command": "\"/usr/bin/python3\" \"/old/root/.apothem/support/cursor/hooks/dispatch.py\" --contract cursor sessionStart"}, {"command": "./mine.sh"}]}}

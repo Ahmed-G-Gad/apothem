@@ -7,8 +7,8 @@
 # Version updates cover GitHub Actions (SHA pins; Dependabot moves the SHA and
 # rewrites the same-line "# vX.Y.Z" comment), the docs site, the vsce packager
 # lockfile (tools/vsce), the harness-CLI lockfile the channel smoke installs
-# (tools/channel-smoke), the hash-locked CI pip (scripts/ci), and the pre-commit
-# hooks. These stay hand edits for version updates, because a single-pin bump
+# (tools/channel-smoke), the hash-locked CI pip (scripts/ci), the pre-commit
+# hooks, and the digest-pinned ClusterFuzzLite base image (.clusterfuzzlite). These stay hand edits for version updates, because a single-pin bump
 # would be wrong (a security update can still open a pull request for one;
 # adapt it by hand or close it):
 #   - pyproject.toml: deliberate floors; click is pinned exactly for the
@@ -155,6 +155,23 @@ updates:
     groups:
       harness-clis:
         patterns: ["*"]
+
+  # The ClusterFuzzLite build image (.clusterfuzzlite/Dockerfile) pins the
+  # OSS-Fuzz Python base by tag and digest; Dependabot moves the digest when the
+  # tag is rebuilt, which also brings that image's Atheris and PyInstaller.
+  - package-ecosystem: docker
+    directory: /.clusterfuzzlite
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [Ahmed-G-Gad]
 
   - package-ecosystem: pre-commit
     directory: /

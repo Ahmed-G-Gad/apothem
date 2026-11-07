@@ -1,0 +1,7 @@
+---
+applyTo: '**'
+paths:
+  - src/**
+alwaysApply: false
+---
+body

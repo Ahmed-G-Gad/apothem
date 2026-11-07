@@ -11,6 +11,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
+  `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
+  removal (Kiro, GitHub Copilot, Cursor), the shared-profile loader, the install
+  ledger and the frontmatter probe. Each checks invariants, not just crashes:
+  the config reader parses whatever `json.loads` accepts to the same value, a
+  second install leaves a hook file byte for byte the same and keeps the
+  operator's hooks in order, a loaded profile normalizes to itself, and a ledger
+  record reads back unchanged. ClusterFuzzLite (`.clusterfuzzlite/`,
+  `.github/workflows/fuzzing.yml`) fuzzes each pull request that touches
+  `src/apothem/` for five minutes and runs a twenty-minute batch every day, and
+  `tests/fuzz/test_fuzz_seed_replay.py` replays every target's seeds in the
+  ordinary test run. The OpenSSF Scorecard Fuzzing check credits the setup.
 - **Every docs link with a `#section` is checked against the page it opens.**
   `scripts/dev/check_site_anchor_links.py` reads the English pages and the
   eleven translations, makes each heading's id the way the site does (a Python
@@ -146,6 +158,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   monitor files lists its URLs to check by hand.
 
 ### Fixed
+
+- **The JSONC / JSON5 config reader accepts LINE SEPARATOR and PARAGRAPH
+  SEPARATOR inside strings.** JSON and JSON5 allow U+2028 and U+2029 unescaped
+  in a string, but the reader rejected them, so an OpenCode or OpenClaw config
+  holding one read as unparseable and the install refused to merge into a valid
+  file. Found by the new fuzzer.
+- **Deeply nested input is a parse error, not a crash.** The config reader now
+  stops at 200 levels of objects and arrays with a `LenientJSONError`, and the
+  install-ledger reader reports a line nested too deeply to parse as invalid
+  JSON (or drops it as a torn final line), where both raised `RecursionError`.
+- **A damaged install ledger is reported, not a traceback.** A ledger holding
+  bytes that are not UTF-8 raised `UnicodeDecodeError`, which `apothem doctor`
+  and `apothem update` do not catch; the reader now raises `LedgerError`, which
+  they report. Found by the new fuzzer.
 
 - **Codex installs say when an `AGENTS.override.md` hides the Apothem block.**
   In its home folder (`~/.codex`, or the folder `CODEX_HOME` names), Codex

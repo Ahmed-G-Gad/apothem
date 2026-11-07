@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT
+
+# ClusterFuzzLite project settings: the fuzz targets are Python, run by Atheris.
+language: python

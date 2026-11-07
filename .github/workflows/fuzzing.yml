@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: MIT
+
+# Fuzzing with ClusterFuzzLite. The targets are the Atheris fuzzers under
+# tests/fuzz/ (the operator-file parsers: the JSONC / JSON5 reader, the hook-file
+# merge, the profile loader, the install ledger and the frontmatter probe);
+# .clusterfuzzlite/ builds them in the OSS-Fuzz Python image.
+#
+# Two runs:
+#   - pull-request: code-change mode. It fuzzes the pull request for five
+#     minutes, starting from the corpus the scheduled runs saved, and fails the
+#     check on a new crash. The crash input is kept as a run artifact.
+#   - batch: every day, and on demand. It fuzzes for twenty minutes and saves
+#     the grown corpus (and any crash) as run artifacts, which the next
+#     pull-request run downloads, so the corpus keeps growing between runs.
+#
+# ClusterFuzzLite stores the corpus as Actions artifacts (no storage repository),
+# so the jobs need only `contents: read` and `actions: read` (to download the
+# previous run's artifacts). The actions are pinned by commit; they run the
+# ClusterFuzzLite build and run images, which their action.yml names by the tag
+# `v1`, so those two images are not digest-pinned. The build's own base image
+# is pinned by digest in .clusterfuzzlite/Dockerfile.
+
+name: Fuzzing
+
+on:
+  pull_request:
+    paths:
+      - "src/apothem/**"
+      - "tests/fuzz/**"
+      - ".clusterfuzzlite/**"
+      - ".github/workflows/fuzzing.yml"
+  schedule:
+    - cron: "17 4 * * *"   # every day 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzzing-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true  # scan-class cadence: cancel stale runs on rebase
+
+jobs:
+  pull-request:
+    name: Fuzz the pull request
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
+        with:
+          egress-policy: audit
+      - name: Build fuzzers
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1  # v1
+        with:
+          language: python
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1  # v1
+        with:
+          language: python
+          sanitizer: address
+          mode: code-change
+          fuzz-seconds: 300
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  batch:
+    name: Batch fuzzing
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
+        with:
+          egress-policy: audit
+      - name: Build fuzzers
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1  # v1
+        with:
+          language: python
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1  # v1
+        with:
+          language: python
+          sanitizer: address
+          mode: batch
+          fuzz-seconds: 1200
+          github-token: ${{ secrets.GITHUB_TOKEN }}

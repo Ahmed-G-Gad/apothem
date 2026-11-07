@@ -1,0 +1,6 @@
+// OpenCode config
+{
+  /* block */
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["a", "b",],
+}
