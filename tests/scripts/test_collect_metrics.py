@@ -434,6 +434,186 @@ def test_unloaded_support_trees_count_zero(tmp_path: Path) -> None:
     assert cm.measure_surfaces("hermes", home, project) == (0, 0)
 
 
+def test_hermes_skips_a_blank_soul_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".hermes/SOUL.md": " \n\n"})
+    project.mkdir()
+
+    assert cm.measure_surfaces("hermes", home, project) == (0, 0)
+
+
+def test_claude_code_reads_claude_local_md(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {"CLAUDE.local.md": "local\n", "AGENTS.md": "agents\n"})
+
+    # CLAUDE.local.md is a CLAUDE file, so AGENTS.md is not read.
+    assert cm.measure_surfaces("claude-code", home, project) == (_size("local\n"), 1)
+
+
+def test_claude_code_reads_agents_md_only_without_a_project_claude_file(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    # A user-level CLAUDE.md does not block the fallback.
+    _write(home, {".claude/CLAUDE.md": "user\n"})
+    _write(project, {"AGENTS.md": "agents\n", ".claude/AGENTS.md": "nested\n"})
+
+    assert cm.measure_surfaces("claude-code", home, project) == (
+        _size("user\n") + _size("agents\n") + _size("nested\n"),
+        3,
+    )
+
+    _write(project, {".claude/CLAUDE.md": "claude\n"})
+
+    assert cm.measure_surfaces("claude-code", home, project) == (
+        _size("user\n") + _size("claude\n"),
+        2,
+    )
+
+
+def test_codebuddy_skips_disabled_and_conditional_rules(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    on = "---\ndescription: on\n---\nrule\n"
+    always = "---\nalwaysApply: true\n---\nalways\n"
+    _write(
+        home,
+        {
+            ".codebuddy/CODEBUDDY.md": "user memory\n",
+            ".codebuddy/rules/nested/on.md": on,
+        },
+    )
+    _write(
+        project,
+        {
+            ".codebuddy/rules/off.md": "---\nenabled: false\n---\noff\n",
+            ".codebuddy/rules/paths.md": "---\nalwaysApply: false\n---\npaths\n",
+            ".codebuddy/rules/always.md": always,
+            "CODEBUDDY.local.md": "local\n",
+        },
+    )
+
+    assert cm.measure_surfaces("codebuddy", home, project) == (
+        _size("user memory\n") + _size(on) + _size(always) + _size("local\n"),
+        4,
+    )
+
+
+@pytest.mark.parametrize(
+    ("present", "loaded"),
+    [
+        (("CODEBUDDY.md", ".codebuddy/CODEBUDDY.md", "AGENTS.md"), "CODEBUDDY.md"),
+        ((".codebuddy/CODEBUDDY.md", "AGENTS.md"), ".codebuddy/CODEBUDDY.md"),
+        (("AGENTS.md",), "AGENTS.md"),
+    ],
+)
+def test_codebuddy_reads_one_project_memory_file(
+    tmp_path: Path, present: tuple[str, ...], loaded: str
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    home.mkdir()
+    _write(project, {name: f"{name}\n" for name in present})
+
+    assert cm.measure_surfaces("codebuddy", home, project) == (_size(f"{loaded}\n"), 1)
+
+
+def test_kimi_code_reads_the_cross_tool_file_and_skips_blank_files(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home,
+        {
+            ".kimi-code/AGENTS.md": "global\n",
+            ".agents/AGENTS.md": "\n",
+            ".agents/agents.md": "cross tool\n",
+        },
+    )
+    _write(project, {"AGENTS.md": "project\n", ".kimi-code/AGENTS.md": "  \n"})
+
+    assert cm.measure_surfaces("kimi-code", home, project) == (
+        _size("global\n") + _size("cross tool\n") + _size("project\n"),
+        3,
+    )
+
+
+def test_antigravity_reads_the_agents_folder_and_caps_each_file(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(home, {".gemini/GEMINI.md": "x" * 30_000})
+    always = "---\ntrigger: always_on\n---\nrule\n"
+    _write(
+        project,
+        {
+            ".agents/AGENTS.md": "agents\n",
+            ".agents/rules/always.md": always,
+            ".agents/rules/manual.md": "---\ntrigger: manual\n---\nmanual\n",
+        },
+    )
+
+    assert cm.measure_surfaces("antigravity", home, project) == (
+        24_000 + _size("agents\n") + _size(always),
+        3,
+    )
+
+
+def test_antigravity_does_not_count_the_plugin_folder_apothem_writes(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home,
+        {
+            ".gemini/antigravity-cli/plugins/apothem/rules/r.md": (
+                "---\ntrigger: always_on\n---\nrule\n"
+            )
+        },
+    )
+    project.mkdir()
+
+    assert cm.measure_surfaces("antigravity", home, project) == (0, 0)
+
+
+def test_open_claw_reads_the_bootstrap_files_in_order_with_caps(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    project.mkdir()
+    workspace = ".openclaw/workspace/"
+    _write(
+        home,
+        {
+            workspace + "AGENTS.md": "a" * 25_000,
+            workspace + "SOUL.md": " \n",
+            workspace + "USER.md": "é" * 5_000,
+            workspace + "notes.md": "not a bootstrap file\n",
+        },
+    )
+
+    # AGENTS.md is cut at 20,000 characters, SOUL.md is blank, and USER.md is
+    # cut at 4,000 characters of two bytes each.
+    assert cm.measure_surfaces("open-claw", home, project) == (20_000 + 8_000, 2)
+
+
+def test_open_claw_stops_at_the_total_budget(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    project.mkdir()
+    workspace = ".openclaw/workspace/"
+    _write(
+        home,
+        {
+            workspace + "AGENTS.md": "a" * 20_000,
+            workspace + "SOUL.md": "s" * 20_000,
+            workspace + "IDENTITY.md": "i" * 19_950,
+            # 50 characters are left, fewer than the 64 OpenClaw needs to go on.
+            workspace + "MEMORY.md": "memory\n",
+        },
+    )
+
+    assert cm.measure_surfaces("open-claw", home, project) == (59_950, 3)
+
+
 # --------------------------------------------------------------------------
 # Hook latency mapping
 # --------------------------------------------------------------------------
