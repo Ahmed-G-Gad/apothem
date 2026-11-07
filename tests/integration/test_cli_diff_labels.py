@@ -20,6 +20,8 @@ from typing import Any
 from . import _cli_oracle as oracle
 
 _HARNESS = "claude-code"
+# Claude Code sweeps nothing; OpenCode still sweeps its own apothem/rules folder.
+_SWEEPING = "opencode"
 _RAW_KINDS = ("sweep_stale", "write_text", "merge_tree_entries", "command_skills")
 
 
@@ -61,10 +63,13 @@ def test_verbose_restores_full_plan_and_raw_kinds(tmp_path: Path) -> None:
     out = _capture(tmp_path, "verbose", ["diff", "--harness", _HARNESS, "--verbose"])[
         "stdout"
     ]
-    assert "Prune stale files" in out
-    assert "(no change)" in out
-    assert "[sweep_stale/unchanged]" in out
     assert "[write_text/created]" in out
+    swept = _capture(
+        tmp_path, "verbose-sweep", ["diff", "--harness", _SWEEPING, "--verbose"]
+    )["stdout"]
+    assert "Prune stale files" in swept
+    assert "(no change)" in swept
+    assert "[sweep_stale/unchanged]" in swept
 
 
 def test_json_channel_keeps_raw_operation_and_outcome(tmp_path: Path) -> None:
@@ -73,7 +78,8 @@ def test_json_channel_keeps_raw_operation_and_outcome(tmp_path: Path) -> None:
     operations = {row["operation"] for row in results}
     outcomes = {row["outcome"] for row in results}
     assert "write_text" in operations
-    assert "sweep_stale" in operations
+    swept = _capture(tmp_path, "json-sweep", ["diff", "--harness", _SWEEPING, "--json"])
+    assert "sweep_stale" in {row["operation"] for row in swept["json"]["results"]}
     # An isolated home prospects every install entry as "created" (raw outcome
     # preserved in the contract); the renderer maps it to "would create".
     assert "created" in outcomes

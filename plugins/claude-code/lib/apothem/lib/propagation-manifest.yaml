@@ -69,11 +69,11 @@
 #       exclude:      Glob patterns excluded from every directory copy.
 #                      Matched against entry basenames within each
 #                      directory the adapter walks.
-#       stale-sweep:   Harness-root-relative paths swept on every install.
-#                      Unmanaged flat-copy layouts or out-of-contract
-#                      support paths found at these locations are removed
-#                      so the manifest-declared surface is the only
-#                      resident artifact set.
+#       stale-sweep:   Harness-root-relative paths swept on every install:
+#                      each is backed up, then removed whole. List only a
+#                      path in Apothem's own namespace that a release
+#                      installed into, never a folder a user or the tool
+#                      also writes (~/.claude/commands, ~/.codex/rules).
 #       per-directory-filters:
 #                      Per-directory filename exclusions. When the
 #                      adapter copies one of the listed directories, the
@@ -194,34 +194,10 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
-    # Stale subdirectories swept on every install. Unmanaged flat-copy
-    # layouts at these locations are removed so the convention-surface
-    # install is the only resident artifact set.
-    stale-sweep:
-      - "src"
-      - "conformity"
-      - "schemas"
-      - "hooks"
-      - "config"
-      - "scripts"
-      - "tools"
-      - "lib"
-      - "templates"
-      - "docs"
-      - "tests"
-      - "packaging"
-      - "mcp"
-      - "examples"
-      - "assets"
-      - "site"
-      - "public"
-      - "commands"
-      - "statuslines/__init__.py"
-      - "rules/AGENTS.md"
-      - "skills/AGENTS.md"
-      - "agents/AGENTS.md"
-      - "statuslines/AGENTS.md"
-      - "output-styles/AGENTS.md"
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
+    stale-sweep: []
 
     # Per-directory filename exclusions. The package __init__ is import
     # machinery with no on-disk role at the harness root; the renderer
@@ -297,17 +273,10 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
-    stale-sweep:
-      - "../.config/apothem/hooks"
-      - "../.agents/skills/AGENTS.md"
-      - "rules"
-      - "commands"
-      # Do not sweep ~/.codex/skills. Official docs (re-fetched 2026-05-31)
-      # state system skills are OpenAI-bundled with NO documented on-disk
-      # path; the ~/.codex/skills/.system location is an observed-runtime
-      # convenience, not an official path, so it is never a sweep target.
-      # Apothem-managed skills land under the official user-scope skills
-      # root ~/.agents/skills/ (confirmed against official docs 2026-05-31).
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
+    stale-sweep: []
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.
@@ -433,12 +402,10 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
-    stale-sweep:
-      - "skills/AGENTS.md"
-      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
-      - ".gemini/apothem/templates"
-      - ".gemini/apothem/hooks"
-      - ".gemini/apothem/rules"
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
+    stale-sweep: []
 
     per-directory-filters: {}
 
@@ -813,10 +780,10 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
-    # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
     stale-sweep:
-      - "apothem/templates"
-      - "apothem/hooks"
       - "apothem/rules"
 
     per-directory-filters: {}
@@ -868,11 +835,10 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
     stale-sweep:
-      - "skills/AGENTS.md"
-      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
-      - "apothem/templates"
-      - "apothem/hooks"
       - "apothem/rules"
 
     per-directory-filters: {}
@@ -919,15 +885,11 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
     stale-sweep:
-      - "cli-config.yaml"
-      - "profile.yaml"
-      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
-      - "apothem/templates"
-      - "apothem/hooks"
       - "apothem/rules"
-      - "apothem/skills"
-      - "apothem/agents"
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.
@@ -974,14 +936,11 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
     stale-sweep:
-      - "../.open-claw/config.yaml"
-      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
-      - "apothem/templates"
-      - "apothem/hooks"
       - "apothem/rules"
-      - "apothem/skills"
-      - "apothem/agents"
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.
@@ -1060,28 +1019,14 @@ harnesses:
       - "README.md"
       - "AGENTS.md"
 
-    # Legacy cleanup on migration. The live install targets now sit under the
-    # dotted <project>/.kimi-code/.apothem/support/ tree, so the old non-dotted
-    # <project>/.kimi-code/apothem/ machinery (templates, hooks) AND cohort
-    # (rules, skills, agents) dirs are stale and swept. Skills and command
-    # skills moved from <project>/.kimi-code/.apothem/support/skills/ to the
-    # native <project>/.kimi-code/skills/, so the support-tree skills dir is
-    # swept too: an update or an uninstall over the earlier layout leaves one
-    # copy of each skill, the native one. Agents moved the same way, from
-    # <project>/.kimi-code/.apothem/support/agents/ (shipped by every release
-    # from v1.0.1 to v1.4.0) to the native <project>/.kimi-code/agents/, so the
-    # support-tree agents dir is swept too. Sweeping these paths is safe: none is
-    # a live install target any longer, so no remove + recreate churn on a
-    # fresh install.
+    # Only folders in Apothem's own namespace that a release installed into.
+    # A folder a user or the tool also writes (~/.claude/commands, ~/.claude/hooks,
+    # ~/.codex/rules) is never listed: the sweep removes a listed path whole.
     stale-sweep:
-      - ".kimi-code/apothem/skills/AGENTS.md"
-      - ".kimi-code/apothem/templates"
-      - ".kimi-code/apothem/hooks"
-      - ".kimi-code/apothem/rules"
-      - ".kimi-code/apothem/skills"
-      - ".kimi-code/apothem/agents"
       - ".kimi-code/.apothem/support/skills"
       - ".kimi-code/.apothem/support/agents"
+    # Releases v1.0.1-v1.2.2 wrote skills, and v1.0.1-v1.4.0 agents, under the
+    # support tree; both now live in the native <project>/.kimi-code/{skills,agents}/.
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.
