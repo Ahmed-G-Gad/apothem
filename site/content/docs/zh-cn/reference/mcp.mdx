@@ -2,7 +2,7 @@
 title: "MCP 服务器"
 description: "Model Context Protocol 服务器配置——归操作者所有，并通过每个工具的原生 MCP 机制注册；少数适配器会投射共享配置档案的 MCP 清单，其余适配器不编写任何服务器条目。"
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,8 @@ Model Context Protocol（MCP）服务器**归操作者所有**。Apothem 在共�
 ## MCP 服务器在何处注册
 
 每个工具都通过其自身的原生机制注册 MCP 服务器，Apothem 遵从该表面而不是覆盖它。在 Claude Code 上，服务器通过 `claude mcp add` 注册到 `~/.claude.json`（用户或本地作用域）以及项目级的 `.mcp.json` 中；Claude Code 适配器不会写入这两个文件中的任何一个，并且 Apothem 受管的 Claude Code 设置绝不携带 `mcpServers` 区块。
+
+`OpenCode` 适配器会将清单写入 `opencode.json` 的 `mcp` 区块。`OpenCode` 会替换其配置中的 `{env:NAME}`，而不会替换 `${NAME}`，因此适配器会将服务器的环境变量、请求头或 URL 中的每个 `${NAME}` 引用写成 `{env:NAME}`；未设置的变量会变成空字符串。命令参数按原样复制。环境变量或请求头值中的 `$NAME`，或另一种 `${...}` 形式（例如 `${NAME:-default}`），会按原样复制，并且 `apothem install` 会警告 `OpenCode` 不会展开它，警告中指出的是引用所在的位置，而不是值。`OpenCode` 会将 `{env:NAME}` 的值不经转义地插入它所读取的配置文本（`OpenCode` 2 仅在该文本否则无法解析时才对其转义），因此包含反斜杠、双引号或控制字符的值可能导致 `OpenCode` 1 无法读取该文件，并且在两个版本中，值中的 `\t` 或 `\n` 都会作为控制字符到达服务器。`apothem install` 会对这样的值发出警告；请在 `harnesses.opencode.mcp_servers.<name>` 下将其设置为 `{file:path}`，这样其他工具就能保留 `${NAME}` 引用。
 
 ## 让辅助器访问 MCP 服务器
 

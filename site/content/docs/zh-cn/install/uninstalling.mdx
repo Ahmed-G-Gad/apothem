@@ -22,7 +22,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## 移除引擎
 
-移除方式与你所使用的安装渠道相对应。渠道编号取自[安装渠道表](/docs/install#选择一条渠道)：
+移除方式与你所使用的安装渠道相对应。渠道编号取自[安装渠道表](/docs/install#choose-a-channel)：
 
 - **Claude Code 插件（渠道 1）**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（插件市场条目可以通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
 - **npx（渠道 2）**——无需移除任何内容；`npx` 从其缓存中运行。若要删除缓存副本，请使用 `npm cache clean --force` 清除缓存。
@@ -49,7 +49,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 - 位于 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 的共享配置档案 YAML 绝不会被 `apothem uninstall` 移除。
 - 工具目录中无关的、由操作者编写的文件会被保留。
-- 你添加到共享设置文件中的条目会被保留：你自己的权限规则、MCP 服务器和钩子处理程序都会保留。卸载只移除安装台账记录为属于 Apothem 的键和列表条目（参见[设置](/docs/reference/settings#合并到你自己的设置文件)）。
+- 你添加到共享设置文件中的条目会被保留：你自己的权限规则、MCP 服务器和钩子处理程序都会保留。卸载只移除安装台账记录为属于 Apothem 的键和列表条目（参见[设置](/docs/reference/settings#merging-into-your-own-settings-file)）。
 - 安装根目录下 `.apothem/` 中的共享数据存储（`memory/`、`contexts/`、`learning/`）会保留，只要同一根目录下仍有另一个已安装的工具在使用它们。卸载该根目录下的最后一个工具时，会先将每个存储复制到 `~/.apothem/backups/` 中，然后将其连同其中的全部内容一并移除。
 - `<project>/.apothem/plans/`（以及旧版 `<project>/.plans/`）下的计划套件不受影响。
 

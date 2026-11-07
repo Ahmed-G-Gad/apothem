@@ -81,7 +81,7 @@ bawaan (aliasnya, `/review`, tetap menjalankan yang bawaan). Dua nama,
 `projectify` dan `workflow`, juga merupakan skill native; skill native itulah
 yang dikirim oleh plugin dan instalasi mesin, bukan skill yang diturunkan dari
 perintah. Lihat
-[Claude Code](/docs/harnesses/claude-code#skill-command-dan-berkas-referensi)
+[Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)
 untuk cara perintah dipecah, dan [Perintah slash](/docs/reference/commands)
 untuk katalog perintah lengkap.
 
@@ -363,7 +363,7 @@ pada disk yang lambat, seperti drive Windows di bawah WSL.
 Seperti ekstensi kanal 5 dan kanal 6, ini adalah **bootstrap** yang memanggil
 mesin melalui shell. Plugin ini membundel satu skill entri; manifesnya adalah
 `plugin.json` di root, dan
-[halaman harness host plugin](/docs/harnesses/codex#plugin-codex) menjelaskan
+[halaman harness host plugin](/docs/harnesses/codex#codex-plugin) menjelaskan
 tata letaknya serta apa yang diserahkan plugin kepada mesin. Materialisasikan
 harness lengkap dengan menjalankan instalasi melaluinya:
 
@@ -448,7 +448,7 @@ sebagai terpasang.
   dideklarasikannya dan menguji masing-masing di CI, tetapi ketiganya tidak
   lagi menerima perbaikan keamanan dari upstream, jadi utamakan Python 3.11
   atau lebih baru dan Node.js 22 atau lebih baru.
-  [Kebijakan batas bawah runtime](/docs/governance/release-engineering-policy#batas-bawah-runtime)
+  [Kebijakan batas bawah runtime](/docs/governance/release-engineering-policy#runtime-floors)
   menjelaskan cara batas bawah dinaikkan.
 - **Git** — hanya jalur pemasang, dan hanya untuk bentuk jaringan (skrip
   mengkloning sumber; checkout lokal tidak memerlukan kloning).

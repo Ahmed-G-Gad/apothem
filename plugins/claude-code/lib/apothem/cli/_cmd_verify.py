@@ -42,7 +42,9 @@ from apothem.cli._helpers import (
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._user_level_report import verify_hint
+from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
+from apothem.lib.propagation import user_home
 
 
 @main.command(epilog=_EP_VERIFY)
@@ -124,6 +126,9 @@ def verify(
         shared_profile=shared_profile,
     )
     results: list[dict[str, object]] = []
+    warnings: list[dict[str, object]] = (
+        [exclusions_warning] if exclusions_warning is not None else []
+    )
     last_output_path: Path | None = None
     all_verified = True
     for harness_id, adapter in adapters:
@@ -132,6 +137,7 @@ def verify(
         row = _verify_row(sweep, harness_id, adapter, output_path)
         all_verified = all_verified and bool(row["verified"])
         results.append(row)
+        warnings.extend(_override_notes(sweep, harness_id))
 
     if fmt == "json":
         payload = _lifecycle_envelope(
@@ -143,7 +149,7 @@ def verify(
             project_root=project_root,
             files_written=[],
             results=results,
-            warnings=([exclusions_warning] if exclusions_warning is not None else []),
+            warnings=warnings,
             output_path=last_output_path if len(adapters) == 1 else None,
         )
         if len(results) == 1:
@@ -253,6 +259,23 @@ def _verify_row(
         if hint is not None:
             sweep.con.print(f"  [yellow]Note:[/] {escape(str(hint['message']))}")
     return row
+
+
+def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, object]]:
+    """Return, and print under the harness's line, the notes for a hidden block.
+
+    A file the harness loads ahead of its instruction file, in the same folder,
+    hides the Apothem block while it has text. Verify gives the note only while
+    the instruction file holds the Apothem block, under a passing or a failing
+    row alike, and the note never changes the verdict.
+    """
+    notes = instruction_override_advisories(
+        harness_id, home=user_home(), require_block=True
+    )
+    if sweep.fmt != "json":
+        for note in notes:
+            sweep.con.print(f"  [yellow]Note:[/] {escape(str(note['message']))}")
+    return notes
 
 
 def _user_level_hint(harness_id: str) -> dict[str, object] | None:

@@ -14,7 +14,6 @@ the sentinels.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from apothem.harnesses._shared.wrapper_factories import make_user_scope_adapter
@@ -23,14 +22,12 @@ from apothem.harnesses.codex.install import plan as _plan
 from apothem.harnesses.codex.uninstall import uninstall as _uninstall
 from apothem.harnesses.codex.update import update as _update
 from apothem.harnesses.codex.verify import verify as _verify
+from apothem.lib.codex_home import codex_home
 
 
 def _codex_home() -> Path:
     """Return the Codex user configuration root."""
-    configured = os.environ.get("CODEX_HOME")
-    if configured:
-        return Path(configured).expanduser()
-    return Path.home() / ".codex"
+    return codex_home(Path.home())
 
 
 CodexAdapter = make_user_scope_adapter(

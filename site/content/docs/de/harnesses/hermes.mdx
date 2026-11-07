@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,20 +55,37 @@ Installation für Hermes keine Regeln oder Hooks von Apothem hinzu.
 
 Hermes lädt durchaus den Apothem-Block, den eine andere Installation in eine
 Projektdatei schreibt, die es liest. Es lädt pro Sitzung nur eine Art von
-Projektkontext, die erste, die es findet; daher erreicht jede dieser Dateien
-Hermes nur unter der Bedingung, die daneben steht:
+Projektkontext: die erste Art mit einer nicht leeren Datei, und zwar in der
+Reihenfolge `.hermes.md` oder `HERMES.md`, die `AGENTS.md`-Dateien (in jedem
+Ordner ersetzt eine nicht leere `AGENTS.override.md` die danebenliegende
+`AGENTS.md`), `CLAUDE.md`, dann die Regeldateien eines anderen Editors. Daher
+erreicht jede dieser Dateien Hermes nur unter der Bedingung, die daneben steht:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Die Installation von Apothem für Kimi Code schreibt die erste Datei, und die
-Installation für einen anderen Editor schreibt die zweite. Eine Installation
-mit `--project` nennt eine solche Datei und die Installation, die sie
-geschrieben hat.
+Hermes sucht `.hermes.md` und `HERMES.md` ab dem Ordner, in dem es startet, bis
+zum Repository-Stammverzeichnis und liest `AGENTS.md`-Dateien vom
+Repository-Stammverzeichnis abwärts, daher zählt auch eine solche Datei in einem
+Ordner über dem Projekt. Eine leere Datei zählt nicht. Eine leere `.hermes.md`
+verdeckt außerdem eine danebenliegende `HERMES.md`, daher geht Hermes zu den
+`AGENTS.md`-Dateien über, auch wenn diese `HERMES.md` Text enthält. Diese
+Bedingungen gelten für eine Sitzung, die im Projekt gestartet wird. Eine
+Sitzung, die in einem Ordner über dem Projekt gestartet wird, kann
+`<project>/AGENTS.md` oder eine nicht leere `AGENTS.override.md` daneben
+trotzdem laden, wenn sie zum ersten Mal an einer Datei im Projekt arbeitet,
+gleich welche `.hermes.md` oder `HERMES.md` das Projekt hat. Hermes überspringt
+dies in einem Home-Ordner und in einigen Containerordnern.
+
+Die Installation von Apothem für [Kimi Code](/docs/harnesses/kimi-code)
+schreibt die erste Datei, und
+[die Installation für einen anderen Editor](/docs/harnesses/cursor) schreibt die
+zweite. Eine mit `--project` ausgeführte Hermes-Installation nennt eine solche
+Datei und die Installation, die sie geschrieben hat.
 
 **Namenskonflikte.** Hermes dokumentiert diese Vorrangreihenfolge für Skills:
 die Skills des Projekts (`<project>/.hermes/skills/` und

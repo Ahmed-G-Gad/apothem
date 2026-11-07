@@ -2,7 +2,7 @@
 title: "Regeln"
 description: "Always-on- und pfadgefilterte Verhaltensregeln, die Problemlösung, Code-Handwerk, saubere Architektur, Planung und Qualität über das gesamte Verhaltensregelwerk steuern."
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,10 +70,13 @@ OpenCode hat kein Eingrenzungsfeld pro Regel: Es fügt jede Datei, die die
 `instructions`-Liste seiner `opencode.json` nennt, in jede Sitzung ein. Die
 OpenCode-Installation (`apothem install --harness opencode`) listet daher Ihr
 Profildokument und nur die Regeln, deren `alwaysApply` `true` ist (die vier
-Kernregeln und den Regelindex), mit einem expliziten
-`~/.config/opencode/...`-Pfad pro Datei, ausgelesen aus den Regeldateien, wenn
-die Konfiguration geschrieben wird. Jede Regel, pfadgefilterte eingeschlossen,
-wird dennoch unter `~/.config/opencode/.apothem/support/rules/` installiert, wo
+Kernregeln und den Regelindex), mit einem expliziten Pfad pro Datei, ausgelesen
+aus den Regeldateien, wenn die Konfiguration geschrieben wird. Jeder Pfad
+beginnt mit `~/` (standardmäßig `~/.config/opencode/...`) oder ist absolut, wenn
+das Konfigurationsverzeichnis außerhalb Ihres Home-Verzeichnisses liegt. Jede
+Regel, pfadgefilterte eingeschlossen, wird dennoch unter
+`.apothem/support/rules/` im Konfigurationsverzeichnis installiert
+(standardmäßig `~/.config/opencode/.apothem/support/rules/`), wo
 der Index sie nennt und eine Regel, ein Skill oder ein Befehl, der sie zitiert,
 sie bei Bedarf liest.
 

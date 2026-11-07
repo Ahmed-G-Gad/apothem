@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,7 +73,7 @@ sourceHash: "fafca976f970f790"
 
 有些安装目标会被写入它们的那个工具以外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个注册所有者（厂商为其文档化该路径的适配器）、向该路径写入相同文件的共同安装者，以及若干读取者（其厂商文档默认会加载该路径），还有显示这一点的厂商页面和这些页面的获取日期。
 
-带有共同安装者的路径是主目录中的一个用户级文件夹，多个安装会以相同的字节写入它。一台只安装了 `Cursor` 的机器上没有 `Codex` 来写入 `~/.agents/skills/`，因此每个指定该文件夹的安装都会写入它，而安装台账会统计使用它的安装。当注册所有者使用该文件夹时，记录在案的所有者就是注册所有者，否则是使用它的最早的安装；卸载注册所有者时，什么都不会转移。只有当没有其他安装仍在使用该文件夹时，卸载才会移除它（见 [`uninstall`](/docs/cli-reference/uninstall#主目录中的共享文件夹)）。安装读取者不会在该文件夹中放入任何文件；安装所有者或共同安装者会把 Apothem 内容呈现在每个读取者面前。
+带有共同安装者的路径是主目录中的一个用户级文件夹，多个安装会以相同的字节写入它。一台只安装了 `Cursor` 的机器上没有 `Codex` 来写入 `~/.agents/skills/`，因此每个指定该文件夹的安装都会写入它，而安装台账会统计使用它的安装。当注册所有者使用该文件夹时，记录在案的所有者就是注册所有者，否则是使用它的最早的安装；卸载注册所有者时，什么都不会转移。只有当没有其他安装仍在使用该文件夹时，卸载才会移除它（见 [`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory)）。安装读取者不会在该文件夹中放入任何文件；安装所有者或共同安装者会把 Apothem 内容呈现在每个读取者面前。
 
 | 路径 | 所有者 | 共同安装者 | 读取者 |
 | --- | --- | --- | --- |
@@ -92,7 +92,11 @@ sourceHash: "fafca976f970f790"
 
 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/` 存放 Apothem 自身的技能和指令文件所引用的文件。没有其他工具加载它们，因此它们没有读取者，也没有厂商页面。`CodeBuddy`、`Kiro` 和 `Trae` 还会写入各自专属的技能文件夹（`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）；只有对应的工具会加载它，因此它不是共享根目录。
 
-只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。注册表记录了三个条件，安装说明会逐一重复它们。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`Hermes` 每个会话只加载一类项目上下文，且第一个匹配项胜出，匹配顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `Cursor` 规则。因此，`<project>/AGENTS.md` 只有在项目没有 `.hermes.md` 或 `HERMES.md`，且它旁边没有 `AGENTS.override.md` 时才会被加载，而 `<project>/.cursor/rules/apothem-rules.mdc` 只有在项目没有 `.hermes.md`、`AGENTS.md` 或 `CLAUDE.md` 时才会被加载。`Cursor` 文档将 `~/.codex/agents/` 列为 `Codex` 兼容文件夹，但没有说明 `Cursor` 在那里解析哪些文件格式，而 `Codex` 安装写入的是 TOML 文件，因此 `Cursor` 是否读取这些辅助智能体尚未得到确认。`Cursor` 安装还会写入自己的 `<project>/.cursor/agents/` 辅助智能体副本，厂商的优先级规则将其排在它所导入的文件夹之上，因此在已安装的项目中，原生副本会取代来自 `~/.claude/agents/` 的那一份。
+只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。当读取者只在某些情况下才加载某个路径时，注册表会记录该条件，安装说明会重复它。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`OpenCode` 1 仅在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时才加载 `~/.claude/CLAUDE.md`，并在设置了 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 或 `OPENCODE_DISABLE_CLAUDE_CODE=1` 时跳过它。`OpenCode` 2 读取同样的 `~/.config/opencode/` 配置，但没有 `CLAUDE.md` 回退，因此不会加载 `~/.claude/CLAUDE.md`。`Codex` 在每个文件夹中取 `AGENTS.override.md` 和 `AGENTS.md` 中的第一个，因此 `<project>/AGENTS.md` 只有在项目中它旁边没有 `AGENTS.override.md` 时才会被加载。`CodeBuddy` 仅在项目没有 `CODEBUDDY.md` 时，才会把 `<project>/AGENTS.md` 用作项目记忆。`Zed` 只加载其列表中的第一个项目指令文件：`.rules`、`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `GEMINI.md`。因此，`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md` 和 `<project>/GEMINI.md` 中的每一个，只有在项目没有列表中排在它之前的任何文件时才会被加载。`Zed` 安装会写入 `<project>/.rules`（列表中的第一个文件），因此在安装了它的项目中，`Zed` 不会加载这三者中的任何一个。
+
+`Hermes` 每个会话只加载一类项目上下文：第一类含有非空文件的上下文，顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md` 链（在每个文件夹中，非空的 `AGENTS.override.md` 会取代其旁边的 `AGENTS.md`）、`CLAUDE.md`，然后是 `Cursor` 规则。因此，`<project>/AGENTS.md` 只有在项目没有 `.hermes.md` 或 `HERMES.md`，且它旁边没有 `AGENTS.override.md` 时才会被加载，而 `<project>/.cursor/rules/apothem-rules.mdc` 只有在项目没有 `.hermes.md`、`HERMES.md`、`AGENTS.override.md`、`AGENTS.md` 或 `CLAUDE.md` 时才会被加载。`Hermes` 会从它启动所在的文件夹向上查找 `.hermes.md` 和 `HERMES.md`，直到仓库根目录，并从仓库根目录向下读取 `AGENTS.md` 链，因此项目上层文件夹中的这类文件也会计入。空文件不计入。空的 `.hermes.md` 还会遮蔽其旁边的 `HERMES.md`，因此即使该 `HERMES.md` 有内容，`Hermes` 也会转而读取 `AGENTS.md` 链。这些条件适用于在项目中启动的会话。在项目上层文件夹中启动的会话，仍可在首次处理项目中的某个文件时加载 `<project>/AGENTS.md`，或其旁边非空的 `AGENTS.override.md`，无论项目中有怎样的 `.hermes.md` 或 `HERMES.md`。`Hermes` 在主目录和少数容器文件夹中会跳过这一点。
+
+`Cursor` 文档将 `~/.codex/agents/` 列为 `Codex` 兼容文件夹，但没有说明 `Cursor` 在那里解析哪些文件格式，而 `Codex` 安装写入的是 TOML 文件，因此 `Cursor` 是否读取这些辅助智能体尚未得到确认。`Cursor` 安装还会写入自己的 `<project>/.cursor/agents/` 辅助智能体副本，厂商的优先级规则将其排在它所导入的文件夹之上，因此在已安装的项目中，原生副本会取代来自 `~/.claude/agents/` 的那一份。
 
 `Windsurf` 通过 Devin 的配置导入读取其他工具的规则文件，该导入默认开启，而且 Devin Desktop 的 Local 智能体查找其文件的方式与 Devin CLI 相同。因此它会加载 `~/.claude/CLAUDE.md` 中由 `Claude Code` 安装写入的区块，以及由 `Cursor` 安装写入的 `<project>/.cursor/rules/apothem-rules.mdc`，其 `alwaysApply: true` 前置元数据使它在每个会话中都保持启用。该导入还会读取项目的 `CLAUDE.md`，没有任何 Apothem 安装会写入它。
 

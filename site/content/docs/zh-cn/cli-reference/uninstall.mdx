@@ -26,7 +26,7 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 ## 主目录中的共享文件夹
 
-多个安装可以使用你主目录中的同一个文件夹：技能文件夹（`~/.agents/skills/`，或 `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/`）以及 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`。[install](/docs/cli-reference/install#主目录中的文件夹) 页面列出了哪个适配器写入哪个文件夹。Apothem 会记录哪些安装使用每个文件夹，而卸载遵循一条规则：只有当没有其他 Apothem 安装仍在使用某个文件夹时，才会移除它。
+多个安装可以使用你主目录中的同一个文件夹：技能文件夹（`~/.agents/skills/`，或 `~/.codebuddy/skills/`、`~/.kiro/skills/`、`~/.trae/skills/`）以及 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/`。[install](/docs/cli-reference/install#folders-in-your-home-directory) 页面列出了哪个适配器写入哪个文件夹。Apothem 会记录哪些安装使用每个文件夹，而卸载遵循一条规则：只有当没有其他 Apothem 安装仍在使用某个文件夹时，才会移除它。
 
 - 卸载一个工具时，只要另一个安装仍在使用这些技能，就会保留它们，并会说明这一点。同一个工具安装在两个项目中算作两个安装，因此从项目 A 卸载它时，只要项目 B 仍在使用这些文件夹，就会保留它们。最后一次卸载会移除它们（见下文的第二个示例）。
 - 只会移除该安装自身记录所列出的内容。在这些文件夹开始受管理之前进行的安装没有这样的记录，因此卸载它不会移除你主目录中的任何内容。你添加到这些文件夹中的文件会保留，与某个 Apothem 技能同名、但并非由 Apothem 写入的文件夹也会保留。
