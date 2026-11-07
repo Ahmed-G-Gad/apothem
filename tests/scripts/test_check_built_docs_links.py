@@ -243,3 +243,16 @@ def test_a_fragment_link_the_site_should_map_but_did_not_is_found(
     assert [(f.rule, f.url) for f in findings] == [
         ("built-unlocalized", "/docs/guide#shared-roots")
     ]
+
+
+def test_a_page_without_a_body_wrapper_is_a_finding(tmp_path: Path) -> None:
+    """A layout change that drops div.prose must not turn the check into a no-op."""
+    pages = {**BUILT, "docs.html": BUILT["docs.html"]}
+    docs_root, i18n, dist = _site(tmp_path, pages)
+    (dist / "docs.html").write_text(
+        "<html><body><main><article><a href='/docs/guide#gone'>x</a></article></main></body></html>",
+        encoding="utf-8",
+    )
+    locales = built.routed_locales(i18n)
+    findings, _ = built.check_dist(dist, built.load_pages(docs_root, locales), locales)
+    assert [f.rule for f in findings] == ["built-no-body"]

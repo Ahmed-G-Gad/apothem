@@ -116,11 +116,13 @@ def test_scan_reads_headings_ids_and_links() -> None:
         "#setup-steps",
         "/docs/other#part-two",
         "https://example.com/a.md#frag",
-        "/docs/by-href#frag",
         "/docs/by-definition#frag",
     ]
     assert scanned.extra_ids == {"named-anchor", "boxed"}
-    assert [link.url for link in scanned.component_links] == ["/docs/by-card#frag"]
+    assert [link.url for link in scanned.component_links] == [
+        "/docs/by-href#frag",
+        "/docs/by-card#frag",
+    ]
 
 
 def test_scan_numbers_links_by_the_line_they_start_on() -> None:
@@ -365,22 +367,24 @@ def test_an_older_translation_with_other_structure_is_only_reported(
 
 
 def test_a_component_href_to_the_docs_is_found(tmp_path: Path) -> None:
-    """Only markdown links and ``<a>`` are localized, so a component's docs href is a defect."""
+    """MDX localizes only markdown links, so an explicit ``<a>`` or ``<Card>`` docs href is a defect."""
     report = _run(
         tmp_path,
         {
             "index.mdx": (
                 '## Home\n\n<Card title="Guide" href="/docs/guide" />\n\n'
                 '<Card title="Out" href="https://example.com/x" />\n\n'
-                '<a href="/docs/guide#setup-steps">plain anchor</a>\n'
+                '<a href="/docs/guide#setup-steps">plain anchor</a>\n\n'
+                "<Card href={'/docs/guide'} /> <div data-href=\"/docs/guide\" />\n"
             ),
             "guide.mdx": GUIDE,
         },
     )
     assert [(f.rule, f.url) for f in report.findings] == [
-        ("component-link", "/docs/guide")
+        ("component-link", "/docs/guide"),
+        ("component-link", "/docs/guide#setup-steps"),
+        ("component-link", "/docs/guide"),
     ]
-    assert report.counts["cross-page"] == 1
 
 
 def test_a_finding_renders_on_one_line() -> None:
@@ -562,3 +566,38 @@ def test_main_prints_ids_a_console_cannot_show(
     assert checker.main(["--docs-root", str(docs_root), "--i18n", str(i18n)]) == 1
     stream.flush()
     assert "\\u0440az" in buffer.getvalue().decode("ascii")
+
+
+def test_comment_markers_written_as_code_hide_nothing() -> None:
+    """A ``{/*`` in a code span or a fence is text, not the start of a comment."""
+    text = (
+        "## Comments\n\nA comment opens with `{/*`.\n\n```mdx\n{/* in a fence\n```\n\n"
+        "## Closing\n\nIt closes with `*/}` [a](#closing).\n\n{/* a real\n## hidden\n*/}\n"
+    )
+    scanned = checker.scan(text)
+    assert [h.id for h in scanned.headings] == ["comments", "closing"]
+    assert [link.url for link in scanned.links] == ["#closing"]
+
+
+def test_a_heading_with_only_a_closing_sequence_is_empty() -> None:
+    """``## #`` and ``## `` have no text, so the site leaves them out of the table of contents."""
+    scanned = checker.scan("## #\n\n## \n\n## C#\n")
+    assert [line for line, _ in scanned.unsupported] == [1, 3]
+    assert [h.id for h in scanned.headings] == ["c"]
+
+
+def test_a_top_level_page_named_like_a_locale_is_english(tmp_path: Path) -> None:
+    """``content/docs/de.mdx`` is the English page ``/docs/de``, not a German index."""
+    report = _run(tmp_path, {"de.mdx": "## Deutsch\n\n[a](#deutsch)\n"})
+    assert report.findings == []
+    assert report.counts["same-page"] == 1
+
+
+def test_translatable_hash_matches_translation_source_mjs() -> None:
+    """A fixture hashed by site/lib/translation-source.mjs: CRLF, NBSP, a BOM, a generated region."""
+    text = (
+        '---\r\ntitle: "T"\r\n---\r\n\r\nText' + chr(0xA0) + " \r\n"
+        "{/* apothem:generated-reference:start */}\nrows\n"
+        "{/* apothem:generated-reference:end */}\n\n" + chr(0xFEFF) + "End\t\n\n"
+    )
+    assert checker.translatable_hash(text) == "ca16560920d51385"

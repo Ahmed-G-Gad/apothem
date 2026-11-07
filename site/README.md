@@ -95,7 +95,7 @@ expression for MDX content pages).
   translated the page or the two pages have other headings. So a cross-page
   `#fragment` is always the English id, and a same-page `(#fragment)` is the
   translated page's own id, because every page slugs its ids from its own heading
-  text. Only Markdown links and `<a>` are localized, not a component's `href`.
+  text. Only Markdown links are localized, not the `href` of explicit JSX, `<a>` included.
   `python scripts/dev/check_site_anchor_links.py` checks this on every page
   without a build (the `quality` job runs it as
   `tests/unit/docs/test_site_anchor_links.py`): a fragment must name a heading of

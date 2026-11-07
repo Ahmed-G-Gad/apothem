@@ -152,6 +152,14 @@ class _Checker:
             if built is None:
                 self._fail(page, "", "built-missing", "the build wrote no page for it")
                 continue
+            if not built.seen:
+                self._fail(
+                    page,
+                    "",
+                    "built-no-body",
+                    "the built page has no div.prose inside main, so its links cannot be checked",
+                )
+                continue
             self.counts["pages"] += 1
             for href in built.links:
                 self._check(page, built, href)
@@ -248,7 +256,9 @@ def main(argv: list[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
             reconfigure(errors="backslashreplace")
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=((__doc__ or "").splitlines() or [""])[0]
+    )
     parser.add_argument("dist", type=Path, nargs="?", default=DEFAULT_DIST)
     parser.add_argument("--docs-root", type=Path, default=DOCS_ROOT)
     parser.add_argument("--i18n", type=Path, default=I18N_TS)

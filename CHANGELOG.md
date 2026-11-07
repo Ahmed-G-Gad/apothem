@@ -43,8 +43,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   now opens the translated copy of the page, at the matching section, when the
   language has one. Before, every such link on a translated page opened the
   English page. A page the language has not translated still opens in English,
-  as does a link into a translation whose headings differ from the English
-  page. A cross-page `#section` in a translation is the English id, which the
+  as does a link to a section of a translation whose headings differ from the
+  English page. A cross-page `#section` in a translation is the English id, which the
   site maps to the translated heading by position; the internationalization page
   says how.
 - **Dependabot checks the vsce packager weekly.** The `tools/vsce` lockfile

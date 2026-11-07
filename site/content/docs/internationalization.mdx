@@ -151,8 +151,9 @@ site. It fails when:
 - a link with a `#section` names a heading the page it opens does not have;
 - a translation that records the current English text has other headings than the
   English page, which would break the mapping;
-- a component such as `<Card href="/docs/…">` carries a docs link, because only
-  Markdown links and `<a>` are pointed at the translated page;
+- an explicit element such as `<a href="/docs/…">` or `<Card href="/docs/…">`
+  carries a docs link, because only Markdown links are pointed at the translated
+  page;
 - a link is written by hand as `/<language>/docs/<page>` for a page that language
   has not translated, which is an English duplicate;
 - a heading is a setext heading (underlined with `===` or `---`) or is empty,

@@ -23,14 +23,15 @@ Checks, over every page under ``site/content/docs``:
 - ``#id`` on its own: an id on the page itself;
 - ``/docs/<page>#id`` on an English page: an id on the English ``<page>``;
 - ``/docs/<page>#id`` on a translated page: an id on the English ``<page>``
-  and, where the language has its own copy of ``<page>``, the fragment the site
-  maps it to is an id on that copy;
+  (the site maps it to the heading at the same position on the language's own
+  copy when both pages have the same headings);
 - ``/<locale>/docs/<page>#id``: an id on the page that route serves;
 - a translated page that records the current English text (its ``sourceHash``
   matches) has the English page's heading structure, because the mapping
   compares the two;
-- no component such as ``<Card href="/docs/...">`` carries an in-site docs
-  href, because only markdown links and ``<a>`` pass through the localization;
+- no explicit JSX or HTML element, ``<a>`` or ``<Card>`` alike, carries an
+  in-site docs href, because MDX passes only markdown links to the
+  localization;
 - ``/<locale>/docs/<page>`` is written by hand only for a page that language
   translated, because the route of a page it has not translated is an English
   duplicate that the sitemap and hreflang leave out;
@@ -103,8 +104,10 @@ _INLINE_LINK = re.compile(
 _DEFINITION = re.compile(
     r"^[ \t]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(?P<dest><[^<>\n]*>|\S+)", re.MULTILINE
 )
+# An href attribute of explicit JSX or HTML, as a string or a string expression.
 _HREF = re.compile(
-    r"""<(?P<tag>[A-Za-z][\w.]*)\b[^<>]*?\bhref\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)')"""
+    r"""<(?P<tag>[A-Za-z][\w.]*)\b[^<>]*?(?<![\w:-])href\s*=\s*"""
+    r"""(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)'|\{\s*(?:"(?P<edq>[^"]*)"|'(?P<esq>[^']*)'|`(?P<ebt>[^`$]*)`)\s*\})"""
 )
 _TAG_ID = re.compile(
     r"""<[A-Za-z][^<>]*?\sid\s*=\s*(?:"(?P<dq>[^"]+)"|'(?P<sq>[^']+)')"""
@@ -338,6 +341,61 @@ def _destination(raw: str) -> str:
     return html.unescape(_ESCAPE.sub(lambda m: m.group(1), raw))
 
 
+def _closes_fence(fence: str, line: str) -> bool:
+    """True when *line* closes a fence opened with *fence*."""
+    closing = _FENCE.match(line)
+    return (
+        closing is not None
+        and closing.group(1)[0] == fence[0]
+        and len(closing.group(1)) >= len(fence)
+        and not line.strip()[len(closing.group(1)) :].strip()
+    )
+
+
+def _blank_comments(text: str) -> str:
+    """Blank ``{/* ... */}`` comments, but not inside fenced code or a code span.
+
+    A ``{/*`` written as code (the site documents the comment syntax) is text,
+    so it must not pair with a ``*/}`` further down the page.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    in_comment = False
+    for line in text.split("\n"):
+        if not in_comment:
+            if fence is not None:
+                fence = None if _closes_fence(fence, line) else fence
+                out.append(line)
+                continue
+            opening = _FENCE.match(line)
+            if opening is not None:
+                fence = opening.group(1)
+                out.append(line)
+                continue
+        chars = list(line)
+        code = [(m.start(), m.end()) for m in _CODE_SPAN.finditer(line)]
+        position = 0
+        while position <= len(line):
+            if in_comment:
+                end = line.find("*/}", position)
+                stop = len(line) if end == -1 else end + 3
+                chars[position:stop] = [" "] * (stop - position)
+                if end == -1:
+                    break
+                in_comment = False
+                position = stop
+                continue
+            start = line.find("{/*", position)
+            while start != -1 and any(a <= start < b for a, b in code):
+                start = line.find("{/*", start + 1)
+            if start == -1:
+                break
+            in_comment = True
+            position = start
+        out.append("".join(chars))
+    return "\n".join(out)
+
+
 def _prose_and_headings(
     text: str,
 ) -> tuple[list[str], list[Heading], list[tuple[int, str]]]:
@@ -354,12 +412,7 @@ def _prose_and_headings(
     for number, line in enumerate(text.split("\n"), 1):
         opening = _FENCE.match(line)
         if fence is not None:
-            if (
-                opening is not None
-                and opening.group(1)[0] == fence[0]
-                and len(opening.group(1)) >= len(fence)
-                and not line.strip()[len(opening.group(1)) :].strip()
-            ):
+            if _closes_fence(fence, line):
                 fence = None
             prose.append("")
             continue
@@ -374,7 +427,7 @@ def _prose_and_headings(
             if _SETEXT_UNDERLINE.match(line) and _PARAGRAPH_LINE.match(previous):
                 unsupported.append((number, "a setext heading (use `## Title`)"))
             continue
-        if atx.group(2) is None:
+        if atx.group(2) is None or not atx.group(2).strip(" \t#"):
             unsupported.append((number, "an empty heading"))
             continue
         custom = _CUSTOM_ID.search(atx.group(2))
@@ -401,7 +454,7 @@ def scan(text: str) -> Scanned:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     if text.startswith("---\n"):
         text = _blank(text, _FRONTMATTER)
-    text = _blank(text, _COMMENT)
+    text = _blank_comments(text)
     prose, headings, unsupported = _prose_and_headings(text)
 
     extra_ids: set[str] = set()
@@ -424,9 +477,12 @@ def scan(text: str) -> Scanned:
                 Link(line_of(found.start()), _destination(found.group("dest")))
             )
         for found in _HREF.finditer(block):
-            url = html.unescape(found.group("dq") or found.group("sq") or "")
-            link = Link(line_of(found.start()), url)
-            (links if found.group("tag") == "a" else component_links).append(link)
+            value = next(
+                (v for v in found.group("dq", "sq", "edq", "esq", "ebt") if v), ""
+            )
+            # MDX passes only markdown links to the `a` override: explicit JSX,
+            # `<a>` included, keeps its href as written.
+            component_links.append(Link(line_of(found.start()), html.unescape(value)))
         for pattern in (_TAG_ID, _ANCHOR_NAME):
             for found in pattern.finditer(block):
                 extra_ids.add(found.group("dq") or found.group("sq"))
@@ -446,7 +502,9 @@ def load_pages(docs_root: Path, locales: Sequence[str]) -> dict[PageKey, Page]:
         if path.suffix not in (".md", ".mdx") or not path.is_file():
             continue
         parts = list(path.relative_to(docs_root).with_suffix("").parts)
-        locale = parts.pop(0) if parts[0] in locales else DEFAULT_LOCALE
+        locale = (
+            parts.pop(0) if len(parts) > 1 and parts[0] in locales else DEFAULT_LOCALE
+        )
         if parts[-1] == "index":
             parts.pop()
         text = path.read_text(encoding="utf-8")
@@ -696,18 +754,7 @@ class _Checker:
             if own is None
             else map_fragment(fragment, english.headings, own.headings)
         )
-        if mapped is None:
-            counts["stays-english"] += 1
-        elif own is not None and mapped in own.ids:
-            counts["localized"] += 1
-        else:
-            self._fail(
-                page,
-                link.line,
-                link.url,
-                "mapping",
-                f"the site maps it to #{mapped}, which no heading has",
-            )
+        counts["stays-english" if mapped is None else "localized"] += 1
 
 
 def check_pages(pages: dict[PageKey, Page], locales: Sequence[str]) -> Report:
@@ -747,7 +794,9 @@ def main(argv: list[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
             reconfigure(errors="backslashreplace")
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=((__doc__ or "").splitlines() or [""])[0]
+    )
     parser.add_argument("--docs-root", type=Path, default=DOCS_ROOT)
     parser.add_argument("--i18n", type=Path, default=I18N_TS)
     parser.add_argument(
