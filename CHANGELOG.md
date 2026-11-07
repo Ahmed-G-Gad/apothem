@@ -325,6 +325,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   configuration in the OpenCode 1 shapes, which OpenCode 2 translates; the pin
   names what would make it write OpenCode 2's own shapes instead. The page also
   states that OpenCode 1 loads the Claude Code block in `~/.claude/CLAUDE.md`.
+- **The always-on bytes metric counts only the instruction files Hermes and
+  Codex load.** Hermes loads one kind of project context per session, the
+  first with a non-empty file: `.hermes.md` or `HERMES.md` (the first of the
+  two that exists is the only candidate of its kind), `AGENTS.override.md` or
+  `AGENTS.md`, `CLAUDE.md`, then `.cursorrules` with every
+  `.cursor/rules/*.mdc`. The metrics collector added up `.hermes.md`,
+  `AGENTS.md` and `CLAUDE.md` together and left out the other files. It now
+  counts `~/.hermes/SOUL.md` plus that one kind. Codex loads the first
+  non-empty of `AGENTS.override.md` and `AGENTS.md` in its home folder, and in
+  the project the first of `AGENTS.override.md`, `AGENTS.md` and its
+  `project_doc_fallback_filenames` names that exists, where an empty one loads
+  nothing. The collector counted the two `AGENTS.md` files only; it now
+  follows that order and counts project files up to `project_doc_max_bytes`
+  (32 KiB by default). The developer guide states both rules. On Python 3.10,
+  which has no TOML reader, a `~/.codex/config.toml` gives a null for Codex
+  instead of ending the run.
 
 ### Security
 
