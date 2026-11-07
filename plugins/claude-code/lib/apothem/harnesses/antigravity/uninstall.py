@@ -18,8 +18,8 @@ def uninstall(output_path: Path) -> None:
     The ``GEMINI.md`` anchor is a ``sentinel_merge`` manifest target, so the
     shared driver strips only Apothem's managed block (operator prose survives)
     and backs the file up under the Apothem backup root; no whole-file ``.bak``
-    sibling is left beside the operator's file. The Apothem plugin under
-    ``~/.gemini/config/plugins/apothem/`` is removed.
+    sibling is left beside the operator's file. Apothem's files in the plugin
+    under ``~/.gemini/config/plugins/apothem/`` are removed.
 
     The shared uninstall reverses only the layout the current manifest declares.
     An install from before the plugin moved to ``~/.gemini/config/plugins/``
@@ -30,6 +30,10 @@ def uninstall(output_path: Path) -> None:
     keeps it. The same sweep removes a retired ``~/.antigravity/profile.yaml``,
     also after a backup. ``~/.gemini/antigravity/`` is never swept: Antigravity
     keeps its MCP OAuth tokens and session transcripts there.
+
+    A stale path that resolves onto the plugin under ``config/plugins/`` (a
+    link between the two folders, a junction on Windows) is the live folder
+    under another name, so the sweep leaves it in place.
     """
     harness_root = output_path.parent
     legacy = install_driver.sweep_stale(
@@ -37,6 +41,11 @@ def uninstall(output_path: Path) -> None:
         harness_root,
         harness_name=_HARNESS_NAME,
         allowed_root=install_driver._allowed_write_root(harness_root, None),
+        protect=install_driver._protected_targets(
+            install_driver.load_rules(_HARNESS_NAME),
+            harness_root=harness_root,
+            project_root=None,
+        ),
     )
     install_driver.run_uninstall(
         _HARNESS_NAME, harness_root=harness_root, prior_results=tuple(legacy)

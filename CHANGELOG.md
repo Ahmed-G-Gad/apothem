@@ -166,6 +166,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   so copies from older installs may already be gone, and the next install,
   update, uninstall or rollback prunes again: copy the sets you need out of
   `~/.apothem/backups/` first.
+- **Rollback no longer restores a folder Apothem has stopped removing.** An
+  install record from an earlier release can name a folder that release
+  removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
+  record's copy would replace what is in the folder now with the older copy,
+  so `apothem rollback` leaves such a folder in place, reports it as skipped
+  with the path of its copy, and prints a note in plain output. An install,
+  update, uninstall or `--dry-run` also leaves a leftover path in place when
+  it is a link (on Windows, a junction) to a folder the install writes now,
+  and an install that exists only in an earlier layout's folder still counts
+  as installed, so `apothem uninstall` reaches it.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce

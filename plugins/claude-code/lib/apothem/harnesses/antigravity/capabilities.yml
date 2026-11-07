@@ -4,13 +4,14 @@
 # agent-capability-discipline-matrix companion §1 / §3 / §7. The
 # antigravity adapter keeps ~/.gemini/GEMINI.md as the global context
 # anchor and installs an Apothem plugin under
-# ~/.gemini/config/plugins/apothem/, the folder Antigravity CLI 1.0.2 and
-# later load plugins from. Commands are converted to skills because
-# Antigravity CLI treats command migration as skill-based. MCP is natively
-# supported via the mcpServers object in the operator-owned mcp_config.json;
-# Apothem names the surface but does not author MCP server entries. The
-# Antigravity docs pages return their full text to a plain fetch; see
-# STANDARD-CONVENTION-PIN.md for the snapshot date and the sources.
+# ~/.gemini/config/plugins/apothem/, the folder current Antigravity CLI
+# releases load plugins from and the Antigravity App and IDE load too.
+# Commands are converted to skills because Antigravity CLI treats command
+# migration as skill-based. MCP is natively supported via the mcpServers
+# object in the operator-owned mcp_config.json; Apothem names the surface but
+# does not author MCP server entries. The Antigravity docs pages return their
+# full text to a plain fetch; see STANDARD-CONVENTION-PIN.md for the snapshot
+# date and the sources.
 
 mcp_servers:
   - mcp_config.json-mcpServers-stdio-and-http-operator-owned
