@@ -18,6 +18,7 @@ from .install_driver_backup import _replace_path, backup_existing, write_bytes_s
 from .install_driver_converters import _native_skill_emission
 from .install_driver_pathsafety import (
     _is_lexically_within,
+    _is_link,
     _is_relative_to,
     _normalized,
     _validate_target_path,
@@ -141,11 +142,12 @@ def stale_needs_sweep(
 ) -> bool:
     """Return True when *stale* exists and holds more than *preserve* paths.
 
-    A stale path that is a *protect* path under another name is never swept.
+    A stale path that is a *protect* path under another name, or is itself a
+    link, is never swept.
     """
     if not stale.exists() and not stale.is_symlink():
         return False
-    if protected_by(stale, protect) is not None:
+    if protected_by(stale, protect) is not None or _is_link(stale):
         return False
     keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
     if not keep:
@@ -229,7 +231,8 @@ def sweep_stale(
     document) keeps it: only the other files are removed, and a directory
     holding nothing else is left alone. A stale path that resolves onto, or
     above, one of the *protect* paths (the current install targets) is left in
-    place, with no backup: it is the live folder under another name.
+    place, with no backup: it is the live folder under another name. A stale
+    path that is itself a link or a Windows junction is also left in place.
     """
     results: list[MaterializationResult] = []
     for legacy in stale_sweep:
@@ -251,6 +254,19 @@ def sweep_stale(
                     stale,
                     "stale path resolves onto a live install target; left in place",
                     detail={"live_target": _path_text(live)},
+                )
+            )
+            continue
+        if _is_link(stale):
+            # Apothem writes no links, so a link (a junction on Windows) at a
+            # stale path is the operator's. rmtree would not follow it, and a
+            # backup taken through it would claim a removal that never happened.
+            results.append(
+                _result(
+                    "unchanged",
+                    "sweep_stale",
+                    stale,
+                    "stale path is a link; left in place",
                 )
             )
             continue

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -113,6 +114,25 @@ def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
         for base in (user_home() / prefix for prefix in USER_LEVEL_PREFIXES)
         if _is_lexically_within(path, base)
     ]
+
+
+def _is_link(path: Path) -> bool:
+    """Return True when *path* itself is a symbolic link or a Windows junction.
+
+    A junction is a directory reparse point: ``is_symlink()`` is False for it
+    and ``is_dir()`` is True, and ``shutil.rmtree`` refuses to recurse into it.
+    ``Path.is_junction`` exists from Python 3.12; earlier versions read the
+    reparse tag from ``lstat``.
+    """
+    if path.is_symlink():
+        return True
+    if sys.platform != "win32":
+        return False
+    try:
+        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
+    except OSError:
+        return False
+    return bool(tag == stat.IO_REPARSE_TAG_MOUNT_POINT)
 
 
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
