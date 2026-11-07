@@ -11,6 +11,7 @@ Apothem content says where that content comes from.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -18,9 +19,14 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
+from apothem.lib.codex_home import codex_home
+from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
 from apothem.lib.install_advisories import (
+    _WHITE_SPACE,
+    _apothem_agent_names,
     hook_review_advisories,
+    instruction_override_advisories,
     mcp_profile_advisories,
     owner_of_record,
     shared_root_advisories,
@@ -932,3 +938,372 @@ def test_cli_install_prints_the_mcp_advisories(cli_env: tuple[Path, Path]) -> No
     assert "mcp_servers.gh.headers.Authorization" in flat
     assert "streamable-http" in flat
     assert _FAKE_GITHUB_TOKEN not in result.output
+
+
+# --- Instruction-file override advisories --------------------------------------
+
+
+def _codex_override(folder: Path, text: str) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    override = folder / "AGENTS.override.md"
+    override.write_text(text, encoding="utf-8")
+    return override
+
+
+def _override_notes(payload: dict[str, object]) -> list[dict[str, object]]:
+    warnings = payload["warnings"]
+    assert isinstance(warnings, list)
+    return [w for w in warnings if w.get("operation") == "instruction_override"]
+
+
+@pytest.fixture
+def default_codex_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Return ``<home>/.codex`` with ``CODEX_HOME`` unset; *tmp_path* is home."""
+    monkeypatch.delenv("CODEX_HOME", raising=False)
+    return tmp_path / ".codex"
+
+
+def test_a_codex_override_with_text_hides_the_apothem_block(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    # Codex reads only the first non-empty of AGENTS.override.md and AGENTS.md in
+    # its home folder, so an override with text hides the block in AGENTS.md.
+    override = _codex_override(default_codex_home, "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", home=tmp_path)
+    assert note["harness"] == "codex"
+    assert note["outcome"] == "advisory"
+    assert note["operation"] == "instruction_override"
+    assert note["path"] == str(override)
+    assert note["target"] == str(default_codex_home / "AGENTS.md")
+    message = " ".join(str(note["message"]).split())
+    assert "Codex loads AGENTS.override.md instead of AGENTS.md" in message
+    assert "first of AGENTS.override.md and AGENTS.md there that has text" in message
+
+
+def test_the_codex_override_check_follows_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    _codex_override(tmp_path / ".codex", "# Not the folder Codex reads\n")
+    override = _codex_override(folder, "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", home=tmp_path)
+    assert note["path"] == str(override)
+    assert note["target"] == str(folder / "AGENTS.md")
+
+
+@pytest.mark.parametrize("text", ["", " \n\t\r\n", "\u00a0\u3000\u2028\u205f"])
+def test_an_empty_codex_override_falls_through_without_a_note(
+    tmp_path: Path, default_codex_home: Path, text: str
+) -> None:
+    _codex_override(default_codex_home, text)
+    assert instruction_override_advisories("codex", home=tmp_path) == []
+
+
+def test_no_codex_override_means_no_note(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    default_codex_home.mkdir()
+    assert instruction_override_advisories("codex", home=tmp_path) == []
+
+
+def test_a_folder_named_like_the_codex_override_is_skipped(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    # Codex skips a candidate that is not a file.
+    (default_codex_home / "AGENTS.override.md").mkdir(parents=True)
+    assert instruction_override_advisories("codex", home=tmp_path) == []
+
+
+def test_a_harness_without_a_hiding_file_gets_no_override_note(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    _codex_override(default_codex_home, "# Personal rules\n")
+    assert instruction_override_advisories("claude-code", home=tmp_path) == []
+
+
+def test_cli_codex_install_update_and_verify_name_a_hiding_override(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    override = _codex_override(folder, "# Personal rules\n")
+    expected = [(str(override), str(folder / "AGENTS.md"))]
+    runner = CliRunner()
+    for args in (
+        ["install", "--harness", "codex", "--profile", str(profile)],
+        ["update", "--harness", "codex", "--profile", str(profile)],
+        ["verify", "--harness", "codex"],
+    ):
+        result = runner.invoke(main, [*args, "--no-color", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        notes = _override_notes(json.loads(result.output))
+        assert [(n["path"], n["target"]) for n in notes] == expected, args[0]
+    assert (folder / "AGENTS.md").is_file()
+
+    # The note does not fail verify; plain mode prints it under the row.
+    plain = runner.invoke(main, ["verify", "--harness", "codex", "--no-color"])
+    assert plain.exit_code == 0, plain.output
+    flat = " ".join(plain.output.split())
+    assert "Note: Codex loads AGENTS.override.md instead of AGENTS.md" in flat
+
+
+@pytest.mark.parametrize("text", [None, "", "\n \n"])
+def test_cli_codex_install_says_nothing_without_an_override_that_has_text(
+    cli_env: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    text: str | None,
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    if text is not None:
+        _codex_override(folder, text)
+    args = ["install", "--harness", "codex", "--profile", str(profile)]
+    result = CliRunner().invoke(main, [*args, "--no-color", "--format", "json"])
+    assert result.exit_code == 0, result.output
+    assert _override_notes(json.loads(result.output)) == []
+    assert (folder / "AGENTS.md").is_file()
+
+
+def test_codex_counts_the_separator_controls_python_strips_as_text(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    # Rust's str::trim keeps U+001C to U+001F, so Codex loads such a file.
+    _codex_override(default_codex_home, "\x1c\x1d\x1e\x1f")
+    assert len(instruction_override_advisories("codex", home=tmp_path)) == 1
+
+
+def test_a_hard_link_to_agents_md_counts_as_a_copy(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    # An install replaces AGENTS.md, which splits a hard link into a copy that
+    # holds the old block, so the note says to remove it.
+    default_codex_home.mkdir(parents=True)
+    target = default_codex_home / "AGENTS.md"
+    target.write_text(f"{APOTHEM_BLOCK_BEGIN}\n# Rules\n", encoding="utf-8")
+    try:
+        os.link(target, default_codex_home / "AGENTS.override.md")
+    except OSError as exc:
+        pytest.skip(f"hard links are not available here: {exc}")
+    [note] = instruction_override_advisories("codex", home=tmp_path)
+    assert "holds its own copy of the Apothem block" in str(note["message"])
+
+
+def test_the_verify_note_needs_the_apothem_block_in_agents_md(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    _codex_override(default_codex_home, "# Personal rules\n")
+    assert (
+        instruction_override_advisories("codex", home=tmp_path, require_block=True)
+        == []
+    )
+    (default_codex_home / "AGENTS.md").write_text(
+        f"{APOTHEM_BLOCK_BEGIN}\n# Rules\n", encoding="utf-8"
+    )
+    notes = instruction_override_advisories("codex", home=tmp_path, require_block=True)
+    assert len(notes) == 1
+
+
+@pytest.mark.parametrize("configured", [False, True])
+def test_the_advisory_and_the_adapter_use_the_same_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, configured: bool
+) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    if configured:
+        monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
+    else:
+        monkeypatch.delenv("CODEX_HOME", raising=False)
+    _codex_override(codex_home(Path.home()), "# Personal rules\n")
+    [note] = instruction_override_advisories("codex", home=Path.home())
+    assert note["target"] == str(CodexAdapter().output_path)
+
+
+def test_the_codex_agents_note_follows_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Cursor reads ~/.codex/agents/, so the note names it only while the Codex
+    # install writes its agents there.
+    agents = str(tmp_path / ".codex" / "agents")
+    skills = str(tmp_path / ".agents" / "skills")
+    monkeypatch.delenv("CODEX_HOME", raising=False)
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    assert {agents, skills} <= {a["path"] for a in advisories}
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    paths = {a["path"] for a in advisories}
+    assert agents not in paths
+    assert skills in paths
+
+
+def test_cli_codex_dry_runs_and_the_plain_line_name_a_hiding_override(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    override = _codex_override(folder, "# Personal rules\n")
+    runner = CliRunner()
+    for verb in ("install", "update"):
+        args = [verb, "--harness", "codex", "--profile", str(profile), "--dry-run"]
+        result = runner.invoke(main, [*args, "--no-color", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        notes = _override_notes(json.loads(result.output))
+        assert [n["path"] for n in notes] == [str(override)], verb
+    assert not (folder / "AGENTS.md").exists()
+
+    args = ["install", "--harness", "codex", "--profile", str(profile), "--no-color"]
+    plain = runner.invoke(main, args)
+    assert plain.exit_code == 0, plain.output
+    flat = " ".join(plain.output.split())
+    assert "Note: codex - Codex loads AGENTS.override.md instead of AGENTS.md" in flat
+
+
+def test_cli_codex_verify_gives_no_note_without_the_apothem_block(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    _codex_override(folder, "# Personal rules\n")
+    runner = CliRunner()
+    verify = ["verify", "--harness", "codex", "--no-color", "--format", "json"]
+    # Before an install there is no block to hide; verify fails without a note.
+    before = runner.invoke(main, verify)
+    assert _override_notes(json.loads(before.output)) == []
+
+    install = ["install", "--harness", "codex", "--profile", str(profile)]
+    assert runner.invoke(main, [*install, "--no-color"]).exit_code == 0
+    uninstall = ["uninstall", "--harness", "codex", "--yes", "--no-color"]
+    removed = runner.invoke(main, uninstall)
+    assert removed.exit_code == 0, removed.output
+    after = runner.invoke(main, verify)
+    assert _override_notes(json.loads(after.output)) == []
+
+
+def test_a_symbolic_link_to_agents_md_hides_nothing(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    default_codex_home.mkdir(parents=True)
+    target = default_codex_home / "AGENTS.md"
+    target.write_text(f"{APOTHEM_BLOCK_BEGIN}\n# Rules\n", encoding="utf-8")
+    try:
+        (default_codex_home / "AGENTS.override.md").symlink_to(target)
+    except OSError as exc:
+        pytest.skip(f"symlinks are not available here: {exc}")
+    assert instruction_override_advisories("codex", home=tmp_path) == []
+
+
+def test_the_verify_note_needs_the_block_not_just_agents_md(
+    tmp_path: Path, default_codex_home: Path
+) -> None:
+    _codex_override(default_codex_home, "# Personal rules\n")
+    (default_codex_home / "AGENTS.md").write_text("# My own rules\n", encoding="utf-8")
+    assert (
+        instruction_override_advisories("codex", home=tmp_path, require_block=True)
+        == []
+    )
+
+
+def test_the_white_space_set_is_unicode_white_space() -> None:
+    # Python's isspace() adds U+001C to U+001F, which Rust's str::trim keeps.
+    separators = {chr(code) for code in range(0x1C, 0x20)}
+    spaces = {chr(code) for code in range(0x110000) if chr(code).isspace()}
+    assert set(_WHITE_SPACE) == spaces - separators
+    assert len(_WHITE_SPACE) == len(set(_WHITE_SPACE)) == 25
+
+
+def _deny_agents_md(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_is_file = Path.is_file
+
+    def is_file(self: Path, *args: object, **kwargs: object) -> bool:
+        if self.name == "AGENTS.md":
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_is_file(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "is_file", is_file)
+
+
+def test_an_unreadable_agents_md_gives_no_note_instead_of_an_error(
+    tmp_path: Path, default_codex_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _codex_override(default_codex_home, "# Personal rules\n")
+    _deny_agents_md(monkeypatch)
+    assert (
+        instruction_override_advisories("codex", home=tmp_path, require_block=True)
+        == []
+    )
+
+
+def test_cli_verify_finishes_when_agents_md_cannot_be_read(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    _codex_override(folder, "# Personal rules\n")
+    runner = CliRunner()
+    install = ["install", "--harness", "codex", "--profile", str(profile)]
+    assert runner.invoke(main, [*install, "--no-color"]).exit_code == 0
+    _deny_agents_md(monkeypatch)
+    verify = ["verify", "--harness", "codex", "--no-color", "--format", "json"]
+    result = runner.invoke(main, verify)
+    payload = json.loads(result.output)
+    assert len(payload["results"]) == 1
+    assert _override_notes(payload) == []
+
+
+def test_cli_verify_after_uninstall_keeps_operator_text_and_gives_no_note(
+    cli_env: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, profile = cli_env
+    folder = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(folder))
+    _codex_override(folder, "# Personal rules\n")
+    agents_md = folder / "AGENTS.md"
+    agents_md.write_text("# My own rules\n", encoding="utf-8")
+    runner = CliRunner()
+    install = ["install", "--harness", "codex", "--profile", str(profile)]
+    assert runner.invoke(main, [*install, "--no-color"]).exit_code == 0
+    uninstall = ["uninstall", "--harness", "codex", "--yes", "--no-color"]
+    assert runner.invoke(main, uninstall).exit_code == 0
+    assert "# My own rules" in agents_md.read_text(encoding="utf-8")
+    verify = ["verify", "--harness", "codex", "--no-color", "--format", "json"]
+    assert _override_notes(json.loads(runner.invoke(main, verify).output)) == []
+
+
+def test_agents_left_in_the_default_codex_home_get_a_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # CODEX_HOME moved, but an earlier install left Apothem agents where Cursor
+    # reads them; this install neither updates nor removes them.
+    agents = tmp_path / ".codex" / "agents"
+    agents.mkdir(parents=True)
+    name = sorted(_apothem_agent_names())[0]
+    (agents / f"{name}.toml").write_text('name = "x"\n', encoding="utf-8")
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    [note] = [a for a in advisories if a["path"] == str(agents)]
+    message = " ".join(str(note["message"]).split())
+    assert "still holds Apothem content from an earlier Codex install" in message
+    assert "neither updates nor removes" in message
+
+
+def test_an_unreadable_default_agents_folder_gives_no_note_instead_of_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agents = tmp_path / ".codex" / "agents"
+    real_is_dir = Path.is_dir
+
+    def is_dir(self: Path, *args: object, **kwargs: object) -> bool:
+        if self == agents:
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_is_dir(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
+    monkeypatch.setattr(Path, "is_dir", is_dir)
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    assert str(agents) not in {a["path"] for a in advisories}
