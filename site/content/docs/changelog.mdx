@@ -323,6 +323,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `~/.claude/skills/` copy too. Devin Desktop no longer starts Cascade
   conversations. The Windsurf rules file links the Customizations page; no
   file the install writes moves.
+- **The Open-Claw, CodeBuddy and Kimi Code convention pins match the vendors'
+  current docs.** OpenClaw keeps per-agent settings in `agents.entries`, keyed
+  by agent id. Its config check rejects the `agents.list` array the pin named,
+  so the pin now names `agents.entries.<id>.skills` and
+  `agents.entries.<id>.subagents.allowAgents`, and the Open-Claw page names the
+  `agents.entries.<id>.skills` list. OpenClaw also loads `AGENTS.md` and five
+  other files from each agent's workspace. The pin now records them. The
+  install still writes none of them, and whether it should is an open question
+  for the maintainer. CodeBuddy moved its IDE Rules page, and that page
+  describes one folder per rule holding a `RULE.mdc` file. The CodeBuddy rules
+  file and docs now link the CodeBuddy Code memory page, which documents the
+  plain `.md` rule files the install writes. The docs say Apothem has not
+  confirmed that the IDE loads them. Kimi Code 2.4.0 through 2.5.2, the latest
+  release on 2026-11-07, change nothing the install relies on. No file the
+  install writes moves.
 - **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
   from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
   `tools/channel-smoke`. Dependabot cannot open pull requests for npm

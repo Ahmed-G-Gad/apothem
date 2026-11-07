@@ -3,11 +3,11 @@
 """Install logic for the codebuddy harness adapter.
 
 Materializes the apothem CodeBuddy rules surface into the operator-supplied
-project root. CodeBuddy's canonical rules surface is the project-scope
-multi-file format at ``<project>/.codebuddy/rules/*.md`` (per
-https://www.codebuddy.ai/docs/ide/Rules). The adapter writes a dedicated
-``apothem-rules.md`` file so the operator's own rules files are never
-clobbered. The ``CODEBUDDY.md`` memory file and ``.codebuddy/settings.json``
+project root. CodeBuddy Code's rules surface is the project-scope
+multi-file format at ``<project>/.codebuddy/rules/*.md``, per the CLI memory
+page (https://www.codebuddy.ai/docs/cli/memory, section "Modular Rules with
+.codebuddy/rules/"). The adapter writes a dedicated ``apothem-rules.md`` file
+so the operator's own rules files are never clobbered. The ``CODEBUDDY.md`` memory file and ``.codebuddy/settings.json``
 permissions/MCP surface are operator-owned and out of apothem's adapter
 scope.
 

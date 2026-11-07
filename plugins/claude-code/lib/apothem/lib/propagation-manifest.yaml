@@ -1088,11 +1088,12 @@ harnesses:
     per-directory-filters: {}
 
   codebuddy:
-    # CodeBuddy's canonical rules surface is the project-scope Markdown
-    # format at <project>/.codebuddy/rules/*.md (per
-    # https://www.codebuddy.ai/docs/ide/Rules). The adapter writes a
-    # dedicated apothem-rules.md file so operator-authored rules are never
-    # clobbered. CodeBuddy's CODEBUDDY.md memory file and the committed
+    # CodeBuddy Code's rules surface is the project-scope Markdown
+    # format at <project>/.codebuddy/rules/*.md, per the CLI memory page
+    # (https://www.codebuddy.ai/docs/cli/memory, section "Modular Rules with
+    # .codebuddy/rules/"); the IDE Rules page describes a folder per rule
+    # holding a RULE.mdc instead, see the pin. The adapter writes a dedicated
+    # apothem-rules.md file so operator-authored rules are never clobbered. CodeBuddy's CODEBUDDY.md memory file and the committed
     # .codebuddy/settings.json (permissions/MCP) are operator-owned and out
     # of apothem's adapter scope; the hooks go in the uncommitted
     # .codebuddy/settings.local.json (see the hooks entries below). The
