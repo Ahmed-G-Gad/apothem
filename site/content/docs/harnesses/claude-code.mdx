@@ -67,21 +67,25 @@ preserved. `settings.json` is merged so operator-authored keys remain
 recoverable.
 
 Install and update leave your own files under `~/.claude/` alone, including
-the slash commands in `commands/` and the hook scripts in `hooks/`. Releases
-1.0.1 to 1.5.0 instead removed whole folders there on every install and
-update (`commands/`, `hooks/`, `scripts/`, `templates/` and others), with the
-files you placed in them; see [Recovering files an earlier
-release removed](#recovering-files-an-earlier-release-removed).
+the slash commands in `commands/` and the hook scripts in `hooks/`. Earlier
+releases instead removed whole folders there on every install and update
+(`commands/`, `hooks/`, `scripts/`, `templates/` and others), with the files
+you placed in them; the [changelog](/docs/changelog) names the releases. See
+[Recovering files an earlier release
+removed](#recovering-files-an-earlier-release-removed).
 
 ### Recovering files an earlier release removed
 
-Each removed folder was copied to
-`~/.apothem/backups/<timestamp>/claude_code/` first. Apothem keeps only the
-newest 10 backup sets per harness, and every later install, update,
-uninstall or rollback adds one, so copy the folders you need out of
-`~/.apothem/backups/` before you run Apothem again. Copy the files back by
-hand. `apothem rollback` of an old install no longer restores such a folder,
-because it would replace what is there now with the old copy.
+Each removed folder was copied first to
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. The current
+release never deletes a backup set that holds such a folder, but an earlier
+release's retention may already have deleted older sets, and an update runs
+the earlier release's code until it finishes. Before you run Apothem again,
+copy `~/.apothem/backups/` somewhere else. Then either copy the files back by
+hand, or run `apothem rollback --harness claude-code --install-id ID` for the
+install that removed the folder: rollback puts back each file of such a folder
+that is missing now and keeps every file that is there, so it never replaces
+your newer copy.
 
 Installed skills, and the skills bundled in the Claude Code plugin, carry
 `user-invocable` instead of the source corpus's `userInvocable`, because Claude

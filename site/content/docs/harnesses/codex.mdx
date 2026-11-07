@@ -99,12 +99,15 @@ registry names it), and its docs do not say whether it reads the TOML files a
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
-and references them from `AGENTS.md` and installed skills. Releases 1.0.1 to
-1.5.0 removed the whole `~/.codex/rules/` folder, with your `.rules` files, on
-every install and update, after copying it to
-`~/.apothem/backups/<timestamp>/codex/`. Apothem keeps only the newest 10
-backup sets per harness, so copy any `.rules` files you need out of
-`~/.apothem/backups/` before you run Apothem again, and put them back by hand.
+and references them from `AGENTS.md` and installed skills. Earlier releases
+(the [changelog](/docs/changelog) names them) removed the whole
+`~/.codex/rules/` folder, with your `.rules` files, on every install and
+update, after copying it to `~/.apothem/backups/<timestamp>/codex/.codex/rules/`.
+The current release never deletes a backup set that holds that copy, but an
+earlier release's retention may already have deleted older sets. Copy
+`~/.apothem/backups/` somewhere else before you run Apothem again, then copy
+the files back by hand, or roll back the install that removed them: rollback
+puts back each missing file and keeps every file that is there.
 
 ## Codex plugin
 
