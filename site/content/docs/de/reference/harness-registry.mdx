@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,7 +101,7 @@ nutzen. Eigentümer laut Eintrag ist der registrierte Eigentümer, solange er de
 Ordner nutzt, und andernfalls die älteste Installation, die ihn nutzt; nichts
 wird verschoben, wenn der registrierte Eigentümer deinstalliert wird. Eine
 Deinstallation entfernt den Ordner nur, wenn keine andere Installation ihn noch
-nutzt (siehe [`uninstall`](/docs/cli-reference/uninstall#gemeinsame-ordner-in-ihrem-home-verzeichnis)).
+nutzt (siehe [`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory)).
 Die Installation eines Lesers legt keine Dateien in dem Ordner ab; die
 Installation des Eigentümers oder eines Mitinstallierers stellt Apothem-Inhalte
 jedem Leser bereit.
@@ -129,18 +129,51 @@ Werkzeug lädt sie, daher haben sie keine Leser und keine Vendor-Seiten.
 jeweilige Werkzeug lädt ihn, daher ist er kein gemeinsames Wurzelverzeichnis.
 
 Ein Leser wird nur dort aufgeführt, wo seine Vendor-Dokumentation ein
-standardmäßiges Laden genau dieses Pfads zeigt. Die Registry erfasst drei
-Bedingungen, und der Installationshinweis wiederholt jede davon. `Open-Claw`
+standardmäßiges Laden genau dieses Pfads zeigt. Wenn ein Leser einen Pfad nur
+in manchen Fällen lädt, erfasst die Registry die Bedingung, und der
+Installationshinweis wiederholt sie. `Open-Claw`
 indiziert `~/.agents/skills/` nur unter seinem Standard-Zustandsverzeichnis (es
-überspringt den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). `Hermes`
-lädt pro Sitzung nur eine Art von Projektkontext, wobei der erste Treffer
-gewinnt, und zwar in der Reihenfolge `.hermes.md` oder `HERMES.md`, `AGENTS.md`,
-`CLAUDE.md`, dann die `Cursor`-Regeln. Daher lädt es `<project>/AGENTS.md` nur,
-wenn das Projekt weder `.hermes.md` noch `HERMES.md` hat und keine
-`AGENTS.override.md` daneben liegt, und
-`<project>/.cursor/rules/apothem-rules.mdc` nur, wenn das Projekt weder
-`.hermes.md` noch `AGENTS.md` noch `CLAUDE.md` hat. Die
-`Cursor`-Dokumentation führt `~/.codex/agents/` als `Codex`-Kompatibilitätsordner
+überspringt den Ordner, wenn `OPENCLAW_STATE_DIR` woandershin zeigt). `OpenCode` 1
+lädt `~/.claude/CLAUDE.md` nur, wenn sein Konfigurationsverzeichnis
+(standardmäßig `~/.config/opencode/`) keine `AGENTS.md` enthält, und überspringt
+sie, wenn `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
+oder `OPENCODE_DISABLE_CLAUDE_CODE=1` gesetzt ist. `OpenCode` 2 liest dieselbe
+Konfiguration in `~/.config/opencode/`, hat aber keinen `CLAUDE.md`-Fallback und
+lädt daher `~/.claude/CLAUDE.md` nicht. `Codex` nimmt in jedem Ordner die erste
+von `AGENTS.override.md` und `AGENTS.md`, daher lädt es `<project>/AGENTS.md`
+nur, wenn das Projekt keine `AGENTS.override.md` daneben hat. `CodeBuddy` nutzt
+`<project>/AGENTS.md` nur dann als Projektgedächtnis, wenn das Projekt keine
+`CODEBUDDY.md` hat. `Zed` lädt nur die erste Projekt-Anweisungsdatei in seiner
+Liste: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
+`.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, dann
+`GEMINI.md`. Daher lädt es `<project>/.github/copilot-instructions.md`,
+`<project>/AGENTS.md` und `<project>/GEMINI.md` nur, wenn das Projekt keine der
+Dateien hat, die in der Liste vor der jeweiligen Datei stehen. Die
+`Zed`-Installation schreibt `<project>/.rules`, die erste Datei der Liste, daher
+lädt `Zed` in einem Projekt, in dem es installiert wurde, keine der drei.
+
+`Hermes` lädt pro Sitzung nur eine Art von Projektkontext: die erste Art mit
+einer nicht leeren Datei, und zwar in der Reihenfolge `.hermes.md` oder
+`HERMES.md`, die `AGENTS.md`-Kette (in jedem Ordner ersetzt eine nicht leere
+`AGENTS.override.md` die danebenliegende `AGENTS.md`), `CLAUDE.md`, dann die
+`Cursor`-Regeln. Daher lädt es `<project>/AGENTS.md` nur, wenn das Projekt weder
+`.hermes.md` noch `HERMES.md` hat und keine `AGENTS.override.md` daneben liegt,
+und `<project>/.cursor/rules/apothem-rules.mdc` nur, wenn das Projekt weder
+`.hermes.md` noch `HERMES.md` noch `AGENTS.override.md` noch `AGENTS.md` noch
+`CLAUDE.md` hat. `Hermes` sucht `.hermes.md` und `HERMES.md` ab dem Ordner, in
+dem es startet, bis zum Repository-Stammverzeichnis und liest die
+`AGENTS.md`-Kette vom Repository-Stammverzeichnis abwärts, daher zählt auch eine
+solche Datei in einem Ordner über dem Projekt. Eine leere Datei zählt nicht.
+Eine leere `.hermes.md` verdeckt außerdem eine danebenliegende `HERMES.md`,
+daher geht `Hermes` zur `AGENTS.md`-Kette über, auch wenn diese `HERMES.md` Text
+enthält. Diese Bedingungen gelten für eine Sitzung, die im Projekt gestartet
+wird. Eine Sitzung, die in einem Ordner über dem Projekt gestartet wird, kann
+`<project>/AGENTS.md` oder eine nicht leere `AGENTS.override.md` daneben
+trotzdem laden, wenn sie zum ersten Mal an einer Datei im Projekt arbeitet,
+gleich welche `.hermes.md` oder `HERMES.md` das Projekt hat. `Hermes`
+überspringt dies in einem Home-Ordner und in einigen Containerordnern.
+
+Die `Cursor`-Dokumentation führt `~/.codex/agents/` als `Codex`-Kompatibilitätsordner
 auf, sagt aber nicht, welche Dateiformate `Cursor` dort parst, und eine
 `Codex`-Installation schreibt TOML-Dateien, daher ist nicht bestätigt, ob
 `Cursor` diese Helfer liest. Die `Cursor`-Installation schreibt außerdem eine

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,19 +43,34 @@ Apothem के कोई नियम या हुक नहीं जोड़
 
 Hermes उस Apothem ब्लॉक को वास्तव में लोड करता है जिसे कोई अन्य इंस्टॉल Hermes द्वारा
 पढ़ी जाने वाली किसी प्रोजेक्ट फ़ाइल में लिखता है। वह प्रति सत्र एक प्रकार का
-प्रोजेक्ट संदर्भ लोड करता है, जो उसे सबसे पहले मिलता है, इसलिए इनमें से हर फ़ाइल
-Hermes तक केवल तभी पहुँचती है जब उसके बगल में दी गई शर्त पूरी हो:
+प्रोजेक्ट संदर्भ लोड करता है: वह पहला प्रकार जिसकी कोई फ़ाइल खाली न हो, इस क्रम में
+`.hermes.md` या `HERMES.md`, `AGENTS.md` फ़ाइलें (हर फ़ोल्डर में, खाली न होने वाली
+`AGENTS.override.md` उसके बगल की `AGENTS.md` का स्थान ले लेती है), `CLAUDE.md`, फिर
+किसी अन्य संपादक की नियम फ़ाइलें। इसलिए इनमें से हर फ़ाइल Hermes तक केवल तभी
+पहुँचती है जब उसके बगल में दी गई शर्त पूरी हो:
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Kimi Code के लिए किया गया Apothem इंस्टॉल पहली फ़ाइल लिखता है, और किसी अन्य संपादक
-के लिए किया गया इंस्टॉल दूसरी फ़ाइल लिखता है। `--project` के साथ किया गया इंस्टॉल
-ऐसी फ़ाइल और उसे लिखने वाले इंस्टॉल का नाम बताता है।
+Hermes `.hermes.md` और `HERMES.md` को उस फ़ोल्डर से, जिसमें वह शुरू होता है, git रूट
+तक खोजता है, और `AGENTS.md` फ़ाइलें git रूट से नीचे की ओर पढ़ता है, इसलिए प्रोजेक्ट
+के ऊपर के किसी फ़ोल्डर में ऐसी फ़ाइल भी गिनी जाती है। खाली फ़ाइल नहीं गिनी जाती।
+खाली `.hermes.md` अपने बगल की `HERMES.md` को भी छिपा देती है, इसलिए भले ही उस
+`HERMES.md` में पाठ हो, Hermes `AGENTS.md` फ़ाइलों पर आगे बढ़ जाता है। ये शर्तें
+प्रोजेक्ट में शुरू किए गए सत्र पर लागू होती हैं। प्रोजेक्ट के ऊपर के किसी फ़ोल्डर में
+शुरू किया गया सत्र फिर भी `<project>/AGENTS.md` को, या उसके बगल की खाली न होने वाली
+`AGENTS.override.md` को, तब लोड कर सकता है जब वह पहली बार प्रोजेक्ट की किसी फ़ाइल पर
+काम करता है, चाहे प्रोजेक्ट में `.hermes.md` या `HERMES.md` कुछ भी हो। Hermes होम
+फ़ोल्डर में और कुछ कंटेनर फ़ोल्डरों में इसे छोड़ देता है।
+
+[Kimi Code](/docs/harnesses/kimi-code) के लिए किया गया Apothem इंस्टॉल पहली फ़ाइल
+लिखता है, और [किसी अन्य संपादक के लिए किया गया इंस्टॉल](/docs/harnesses/cursor)
+दूसरी फ़ाइल लिखता है। `--project` के साथ चलाया गया Hermes इंस्टॉल ऐसी फ़ाइल और उसे
+लिखने वाले इंस्टॉल का नाम बताता है।
 
 **नाम टकराव।** Hermes स्किल के लिए प्राथमिकता का यह क्रम प्रलेखित करता है:
 प्रोजेक्ट के स्किल (`<project>/.hermes/skills/` और `<project>/.agents/skills/`),

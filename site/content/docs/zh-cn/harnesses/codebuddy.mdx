@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "适用于 Tencent CodeBuddy（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "ad1685e4b265a2d7"
+sourceHash: "fbf19289d20e8ab7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -124,7 +124,7 @@ Apothem 不在 CodeBuddy 上注册 `PreToolUse` 守卫。CodeBuddy 的文档为 
 
 ## 兼容性说明
 
-CodeBuddy 的规则表面是项目级的，位于 `.codebuddy/rules/` 下。适配器写入一个专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件共存。`CODEBUDDY.md` 项目记忆文件、提交的 `.codebuddy/settings.json` 以及项目的 `.mcp.json`（MCP 服务器）归操作者所有；Apothem 不写入它们。CodeBuddy 的文档还介绍了斜杠命令；适配器不写入任何斜杠命令，而是在规则文件内引用相应的规范。它确实会向项目写入子代理和两个钩子（参见[子代理](#子代理)和[钩子](#钩子)），并向你的用户文件夹写入技能，以及作为技能的 Apothem 命令（参见[项目之外的文件](#项目之外的文件)）。当项目没有 `CODEBUDDY.md` 时，CodeBuddy Code 会将 `AGENTS.md` 读取为项目记忆，因此由其他适配器写入的 `AGENTS.md` 也会触达 CodeBuddy。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 CodeBuddy 文档进行快照。
+CodeBuddy 的规则表面是项目级的，位于 `.codebuddy/rules/` 下。适配器写入一个专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件共存。`CODEBUDDY.md` 项目记忆文件、提交的 `.codebuddy/settings.json` 以及项目的 `.mcp.json`（MCP 服务器）归操作者所有；Apothem 不写入它们。CodeBuddy 的文档还介绍了斜杠命令；适配器不写入任何斜杠命令，而是在规则文件内引用相应的规范。它确实会向项目写入子代理和两个钩子（参见[子代理](#子代理)和[钩子](#钩子)），并向你的用户文件夹写入技能，以及作为技能的 Apothem 命令（参见[项目之外的文件](#项目之外的文件)）。当项目没有 `CODEBUDDY.md` 时，CodeBuddy Code 会将 `AGENTS.md` 读取为项目记忆，因此由其他适配器写入的 `AGENTS.md` 也会触达 CodeBuddy，且该适配器的安装说明会指出 CodeBuddy 并附上该条件。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 CodeBuddy 文档进行快照。
 
 CodeBuddy 将 `~/.codebuddy/skills/` 记载为用户技能的位置，且没有提到 `~/.agents/skills/`，因此安装写入 CodeBuddy 的文件夹，而不是跨工具共享的那个文件夹。该文件夹只由 CodeBuddy 读取。它的技能页面列出了 `disable-model-invocation`、`user-invocable` 和 `allowed-tools`，没有列出 `metadata` 或 `argument-hint` 键；Apothem 尚未确认 CodeBuddy 是否接受它们。
 

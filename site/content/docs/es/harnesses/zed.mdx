@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptador de entorno de Apothem para Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,7 +59,7 @@ antes de cambiar nada en el proyecto:
 
 Estas carpetas son compartidas. No son privadas del proyecto:
 
-- Cada proyecto en el que instalas `zed`, y cada otra instalación de Apothem que nombra la carpeta, usa la misma copia y escribe los mismos archivos, así que el orden en que instalas no importa. Varias otras herramientas también leen `~/.agents/skills/`; el [registro de entornos](/docs/reference/harness-registry#raíces-compartidas) las lista.
+- Cada proyecto en el que instalas `zed`, y cada otra instalación de Apothem que nombra la carpeta, usa la misma copia y escribe los mismos archivos, así que el orden en que instalas no importa. Varias otras herramientas también leen `~/.agents/skills/`; el [registro de entornos](/docs/reference/harness-registry#shared-roots) las lista.
 - `--project` elige el archivo de instrucciones que se escribe y el proyecto al que
   pertenece la instalación. No cambia adónde van las skills.
 - La instalación no añade ningún archivo de skill ni de regla a tu repositorio. El
@@ -99,6 +99,17 @@ contiene solo el bloque de Apothem y un archivo de menor prioridad contiene tu
 texto, install y update imprimen una advertencia que nombra el archivo oculto;
 copia las instrucciones que necesites en `.rules`, fuera del bloque de Apothem,
 para conservarlas en Zed.
+
+Las notas que imprimen otras instalaciones de Apothem cuando escriben
+`AGENTS.md` u otro archivo situado más abajo en la lista nombran a Zed como
+lector solo bajo una condición: Zed carga ese archivo solo cuando el proyecto no
+tiene ninguno de los archivos situados por encima de él en la lista. Esta
+instalación escribe `.rules`, así que en un proyecto donde se ejecutó, esas
+notas se aplican a Zed solo después de eliminar `.rules`. Lo mismo ocurre con
+las notas que imprime esta misma instalación: cuando `AGENTS.md` u otro archivo
+compartido situado más abajo en la lista contiene el bloque de Apothem de otra
+instalación, la nota que dice que Zed también carga ese archivo lleva una
+condición que el nuevo `.rules` vuelve falsa hasta que se elimine `.rules`.
 
 El archivo de instrucciones global `~/.config/zed/AGENTS.md` y el bloque de
 servidores de contexto MCP (`.zed/settings.json` `context_servers`) son

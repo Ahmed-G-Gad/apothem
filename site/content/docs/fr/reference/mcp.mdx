@@ -2,7 +2,7 @@
 title: "Serveurs MCP"
 description: "Configuration des serveurs Model Context Protocol — propriété de l'opérateur et enregistrés via le mécanisme MCP natif de chaque outil ; quelques adaptateurs projettent l'inventaire MCP du profil partagé, les autres n'écrivent aucune entrée de serveur."
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,26 @@ serveurs s'enregistrent avec `claude mcp add` dans `~/.claude.json` (portée
 utilisateur ou locale) et dans un `.mcp.json` au niveau du projet ; l'adaptateur
 Claude Code n'écrit aucun de ces deux fichiers, et les paramètres Claude Code
 gérés par Apothem ne portent jamais de bloc `mcpServers`.
+
+L'adaptateur `OpenCode` écrit l'inventaire dans le bloc `mcp` de
+`opencode.json`. `OpenCode` remplace `{env:NAME}` dans sa configuration, et non
+`${NAME}` ; l'adaptateur écrit donc chaque référence `${NAME}` présente dans les
+variables d'environnement, les en-têtes ou l'URL d'un serveur sous la forme
+`{env:NAME}`, et une variable non définie devient une chaîne vide. Les arguments
+de la commande sont copiés tels qu'écrits. Un `$NAME` dans la valeur d'une
+variable d'environnement ou d'un en-tête, ou une autre forme `${...}`, comme
+`${NAME:-default}`, est copié tel qu'écrit, et `apothem install` avertit
+qu'`OpenCode` ne le développe pas, en nommant l'endroit où se trouve la
+référence plutôt que la valeur. `OpenCode` insère la valeur de `{env:NAME}` dans
+le texte de configuration qu'il lit sans l'échapper (`OpenCode` 2 ne l'échappe
+que lorsque ce texte ne pourrait pas être analysé autrement) ; une valeur
+contenant une barre oblique inverse, un guillemet double ou un caractère de
+contrôle peut donc empêcher `OpenCode` 1 de lire le fichier, et, dans les deux
+versions, un `\t` ou un `\n` qu'elle contient parvient au serveur comme un
+caractère de contrôle. `apothem install` avertit en présence d'une telle
+valeur ; définissez-la en tant que `{file:path}` sous
+`harnesses.opencode.mcp_servers.<name>` afin que les autres outils conservent la
+référence `${NAME}`.
 
 ## Donner à un auxiliaire l'accès aux serveurs MCP
 

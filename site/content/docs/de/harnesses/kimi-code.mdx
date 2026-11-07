@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Apothem-Harness-Adapter für Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,12 @@ Kohorten bleiben im Apothem-eigenen Unterstützungs-Teilbaum unter
 `<project>/.kimi-code/.apothem/support/`.
 Eine Projekt-`AGENTS.md` wird außer von Kimi Code von vielen weiteren
 Coding-Werkzeugen gelesen, daher wird der Block als projektweite Anleitung
-geschrieben, die kein einzelnes Werkzeug als ihren Leser nennt.
+geschrieben, die kein einzelnes Werkzeug als ihren Leser nennt. Einige dieser
+Werkzeuge laden sie nur in manchen Projekten, etwa nur dann, wenn das Projekt
+keine eigene Anweisungsdatei hat, und der Installationshinweis nennt jedes
+solche Werkzeug mit seiner Bedingung (die
+[Harness-Registry](/docs/reference/harness-registry#shared-roots) listet sie
+auf).
 
 Kimi Code liest die Anweisungsdatei `AGENTS.md` im Projektstammverzeichnis gemäß
 der universellen AGENTS.md-Konvention, und die Projektkonfiguration liegt unter

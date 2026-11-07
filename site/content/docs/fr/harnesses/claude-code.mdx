@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptateur d'environnement Apothem pour Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,8 +43,10 @@ chaque citation de style dépôt dans les règles, skills et agents installés :
 `~/.claude/.apothem/support/`. Elle renvoie aussi à l'index des règles,
 `~/.claude/rules/apothem-rule-index.md`. Le reste de la surface de gouvernance
 d'Apothem atteint Claude Code via l'arborescence `rules/` propagée et le hook
-SessionStart. OpenCode charge aussi `~/.claude/CLAUDE.md` lorsqu'aucun
-`~/.config/opencode/AGENTS.md` n'existe, et Devin Desktop l'importe par
+SessionStart. OpenCode 1 charge aussi `~/.claude/CLAUDE.md` lorsque son
+répertoire de configuration (`~/.config/opencode/` par défaut) ne contient aucun
+`AGENTS.md` (OpenCode 2 n'a pas de repli sur
+`CLAUDE.md`), et Devin Desktop l'importe par
 défaut ; le bloc ne désigne donc aucun outil unique comme son lecteur.
 
 ## Correspondance entre le profil et la configuration native
@@ -57,7 +59,7 @@ correspondants déjà gérés par Apothem sont sauvegardés avant remplacement ;
 entrées sans rapport rédigées par l'opérateur sont préservées. `settings.json`
 est fusionné afin que les clés rédigées par l'opérateur restent récupérables.
 
-Les fichiers rédigés par l'opérateur ne sont conservés qu'en dehors des dossiers ci-dessous. Chaque installation et chaque mise à jour supprime chacun de ces dossiers situés sous `~/.claude/` qui existe, qu'Apothem l'ait écrit ou non : `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` et `commands/`. Elles suppriment aussi `statuslines/__init__.py` ainsi que les fichiers `AGENTS.md` présents dans `agents/`, `rules/`, `skills/`, `statuslines/` et `output-styles/`. Un dossier supprimé l'est entièrement, y compris les fichiers que vous y avez placés. Les commandes slash que vous conservez dans `commands/` sont aussi supprimées, et Apothem installe ses propres invites de commande comme skills sous `skills/`. Un script de hook que vous conservez dans `hooks/` est supprimé, ce qui laisse toute entrée de `settings.json` qui l'appelle pointer vers rien. Le balayage s'exécute avant que l'installation n'écrive ses propres fichiers. Chaque chemin supprimé est d'abord copié dans `~/.apothem/backups/`, et l'enregistrement d'installation nomme cette copie. La désinstallation ne la restaure pas. Pour restaurer un chemin supprimé, exécutez `apothem rollback --harness claude-code --install-id ID` pour l'installation qui l'a supprimé, comme décrit dans la [référence rollback](/docs/cli-reference/rollback). Un simple `apothem rollback` n'annule que la dernière installation. Les enregistrements d'installation et leurs copies sont conservés pour les 10 installations les plus récentes ; un chemin supprimé ne peut donc être restauré que tant que son installation figure parmi elles. `apothem diff --harness claude-code` liste ces suppressions sous `Prune stale files` avant que vous n'installiez.
+Les fichiers rédigés par l'opérateur ne sont conservés qu'en dehors des dossiers ci-dessous. Chaque installation et chaque mise à jour supprime chacun de ces dossiers situés sous `~/.claude/` qui existe, qu'Apothem l'ait écrit ou non : `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` et `commands/`. L'installation et la mise à jour suppriment aussi `statuslines/__init__.py` ainsi que les fichiers `AGENTS.md` présents dans `agents/`, `rules/`, `skills/`, `statuslines/` et `output-styles/`. Un dossier supprimé l'est entièrement, y compris les fichiers que vous y avez placés. Les commandes slash que vous conservez dans `commands/` sont aussi supprimées, et Apothem installe ses propres invites de commande comme skills sous `skills/`. Un script de hook que vous conservez dans `hooks/` est supprimé, ce qui laisse toute entrée de `settings.json` qui l'appelle pointer vers rien. Le balayage s'exécute avant que l'installation n'écrive ses propres fichiers. Chaque chemin supprimé est d'abord copié dans `~/.apothem/backups/`, et l'enregistrement d'installation nomme cette copie. La désinstallation ne la restaure pas. Pour restaurer un chemin supprimé, exécutez `apothem rollback --harness claude-code --install-id ID` pour l'installation qui l'a supprimé, comme décrit dans la [référence rollback](/docs/cli-reference/rollback). Un simple `apothem rollback` n'annule que la dernière installation. Les enregistrements d'installation et leurs copies sont conservés pour les 10 installations les plus récentes ; un chemin supprimé ne peut donc être restauré que tant que son installation figure parmi elles. `apothem diff --harness claude-code` liste ces suppressions sous `Prune stale files` avant que vous n'installiez.
 
 Les skills installés, ainsi que les skills fournis dans le plugin Claude Code,
 portent `user-invocable` au lieu du `userInvocable` du corpus source, car Claude
@@ -187,16 +189,17 @@ sont rendues comme décrit ci-dessus ; les skills et les output-styles sont
 copiés tels quels, et les agents sont copiés tels qu'écrits, à ceci près qu'un
 auxiliaire listé par la clé `agent_mcp_servers` du profil reçoit, dans sa ligne
 `tools`, une entrée `mcp__<server>__*` par serveur nommé (voir
-[Serveurs MCP](/docs/reference/mcp#donner-à-un-auxiliaire-laccès-aux-serveurs-mcp)).
+[Serveurs MCP](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)).
 L'installation valide que le profil est bien formé et que toutes les liaisons
 de hook de settings.json peuvent être résolues. L'adaptateur ne rédige aucune
 entrée de serveur MCP : enregistrez les serveurs avec `claude mcp add` (voir
 [Serveurs MCP](/docs/reference/mcp)).
 
 `~/.claude/agents/` est une racine partagée dont `Claude Code` est
-propriétaire, tout comme `~/.claude/skills/` : d'autres outils pris en charge
-chargent ces dossiers, de sorte que les agents et skills qu'une installation
-`Claude Code` y écrit apparaissent aussi dans ces outils, et l'installation
+propriétaire, tout comme `~/.claude/skills/` et `~/.claude/CLAUDE.md` : d'autres
+outils pris en charge les chargent, de sorte que les agents, les skills et le
+bloc Apothem qu'une installation `Claude Code` y écrit apparaissent aussi dans
+ces outils, et l'installation
 affiche une note qui les nomme. Le
 [registre des environnements](/docs/reference/harness-registry) liste les
 lecteurs de chaque racine.

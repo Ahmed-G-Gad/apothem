@@ -17,7 +17,7 @@ sourceHash: "231513ffdb2dcb22"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-该适配器是项目级的。它安装项目的 `GEMINI.md`，将 Apothem 命令转换为 Gemini TOML 斜杠命令，规范化本地辅助程序定义，并将非原生的支持集合放置在 `.gemini/.apothem/support/` 下。其他编码工具也会读取项目的 `GEMINI.md`，因此其中的 Apothem 区块被写成项目范围的指引，不把任何单一工具指定为其读者。
+该适配器是项目级的。它安装项目的 `GEMINI.md`，将 Apothem 命令转换为 Gemini TOML 斜杠命令，规范化本地辅助程序定义，并将非原生的支持集合放置在 `.gemini/.apothem/support/` 下。其他编码工具也会读取项目的 `GEMINI.md`，因此其中的 Apothem 区块被写成项目范围的指引，不把任何单一工具指定为其读取者。
 
 **写入的文件：**
 
@@ -38,7 +38,7 @@ GEMINI.md
 
 `.gemini/agents/` 中的辅助程序定义保留其工具限制和轮次限制：源文件中的 `tools` 授权减去 `disallowedTools` 后，成为一个由 Gemini 工具名称组成的 Gemini `tools` 允许列表，`maxTurns` 则变为 `max_turns`。因此，只读的辅助程序不会获得 `write_file` 或 `replace` 工具。不设置任何模型，因此每个辅助程序都继承会话模型。
 
-配置档案的 `agent_mcp_servers` 键所列出的辅助程序还会在其 `tools` 允许列表中为每个指定的服务器获得一个 `mcp_<server>_*` 条目，因此它可以调用该服务器的工具，而不能调用其他任何服务器的工具；没有该键时，每个辅助程序都保留普通的允许列表（参见 [MCP 服务器](/docs/reference/mcp#让辅助器访问-mcp-服务器)）。Apothem 只为由字母、数字和 `-` 组成的服务器名称在此写入授权，因为 `Gemini CLI` 无法寻址带有下划线的名称；任何其他名称都会被跳过并报告，为已经能够访问每个 MCP 服务器的辅助程序所做的授权也是如此。
+配置档案的 `agent_mcp_servers` 键所列出的辅助程序还会在其 `tools` 允许列表中为每个指定的服务器获得一个 `mcp_<server>_*` 条目，因此它可以调用该服务器的工具，而不能调用其他任何服务器的工具；没有该键时，每个辅助程序都保留普通的允许列表（参见 [MCP 服务器](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)）。Apothem 只为由字母、数字和 `-` 组成的服务器名称在此写入授权，因为 `Gemini CLI` 无法寻址带有下划线的名称；任何其他名称都会被跳过并报告，为已经能够访问每个 MCP 服务器的辅助程序所做的授权也是如此。
 
 ## 兼容性说明
 

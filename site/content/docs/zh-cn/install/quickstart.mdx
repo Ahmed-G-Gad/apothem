@@ -39,7 +39,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-安装器要求系统中有 Python 3.10+，网络形式还需要 `git` 与 `gpg`。它会检查前置条件，并将引擎放置在 `~/.apothem` 下。当缺少 `click` 或 `rich` 时，它会在你确认后安装该软件包，或者在传入 `--yes`（PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 时直接安装；否则会停止，并给出需要运行的 pip 命令（参见[前置条件一览](/docs/install#前置条件一览)）。完成时它会打印一份后续步骤横幅；在 POSIX 上，当垫片所在的目录已在 `PATH` 中时，横幅如下所示：
+安装器要求系统中有 Python 3.10+，网络形式还需要 `git` 与 `gpg`。它会检查前置条件，并将引擎放置在 `~/.apothem` 下。当缺少 `click` 或 `rich` 时，它会在你确认后安装该软件包，或者在传入 `--yes`（PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 时直接安装；否则会停止，并给出需要运行的 pip 命令（参见[前置条件一览](/docs/install#prerequisites-at-a-glance)）。完成时它会打印一份后续步骤横幅；在 POSIX 上，当垫片所在的目录已在 `PATH` 中时，横幅如下所示：
 
 ```text
 Installation complete.

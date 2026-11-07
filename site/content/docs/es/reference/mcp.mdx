@@ -2,7 +2,7 @@
 title: "Servidores MCP"
 description: "Configuración de servidores Model Context Protocol — propiedad del operador y registrados mediante el mecanismo MCP nativo de cada herramienta; unos pocos adaptadores proyectan el inventario MCP del perfil compartido y el resto no crea ninguna entrada de servidor."
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,7 +51,25 @@ En Claude Code, los servidores se registran con `claude mcp add` en `~/.claude.j
 adaptador de Claude Code no escribe ninguno de los dos archivos, y los ajustes
 de Claude Code gestionados por Apothem nunca llevan un bloque `mcpServers`.
 
-## Dar a un trabajador delegado acceso a servidores MCP
+El adaptador de `OpenCode` escribe el inventario en el bloque `mcp` de
+`opencode.json`. `OpenCode` sustituye `{env:NAME}` en su configuración, no
+`${NAME}`, así que el adaptador escribe cada referencia `${NAME}` en las
+variables de entorno, las cabeceras o la URL de un servidor como `{env:NAME}`;
+una variable no definida se convierte en una cadena vacía. Los argumentos del
+comando se copian tal como están escritos. Un `$NAME` en el valor de una
+variable de entorno o de una cabecera, u otra forma `${...}`, como
+`${NAME:-default}`, se copia tal como está escrita, y `apothem install` advierte
+de que `OpenCode` no la expande, nombrando dónde está la referencia en lugar del
+valor. `OpenCode` inserta el valor de `{env:NAME}` en el texto de configuración
+que lee sin escaparlo (`OpenCode` 2 solo lo escapa cuando ese texto no podría
+analizarse de otro modo), así que un valor con una barra invertida, una comilla
+doble o un carácter de control puede impedir que `OpenCode` 1 lea el archivo, y
+en ambas versiones un `\t` o un `\n` en ese valor llega al servidor como
+carácter de control. `apothem install` advierte de un valor así; establécelo como
+`{file:path}` bajo `harnesses.opencode.mcp_servers.<name>` para que las otras
+herramientas conserven la referencia `${NAME}`.
+
+## Dar a un ayudante acceso a servidores MCP
 
 Los agentes de investigación de solo lectura (`research-scout`, `citation-auditor`)
 se entregan con una lista `tools` explícita de `Read, Glob, Grep, WebSearch, WebFetch`.

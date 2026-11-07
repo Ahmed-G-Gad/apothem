@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Apothem-Harness-Adapter für Claude Code (GA)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,8 +56,10 @@ installierten Regeln, Skills und Agenten aufgelöst wird: `rules/<name>.md` unte
 `conformity/...` unter `~/.claude/.apothem/support/`. Außerdem verweist er auf
 den Regelindex, `~/.claude/rules/apothem-rule-index.md`. Der Rest der
 Governance-Oberfläche von Apothem erreicht Claude Code über den propagierten
-`rules/`-Baum und den SessionStart-Hook. OpenCode lädt `~/.claude/CLAUDE.md`
-ebenfalls, wenn keine `~/.config/opencode/AGENTS.md` existiert, und
+`rules/`-Baum und den SessionStart-Hook. OpenCode 1 lädt `~/.claude/CLAUDE.md`
+ebenfalls, wenn sein Konfigurationsverzeichnis (standardmäßig
+`~/.config/opencode/`) keine `AGENTS.md` enthält (OpenCode 2 hat
+keinen `CLAUDE.md`-Fallback), und
 Devin Desktop importiert sie standardmäßig, daher nennt der Block kein einzelnes
 Werkzeug als Leser.
 
@@ -199,7 +201,7 @@ oben beschrieben gerendert; Skills und Output-Styles werden unverändert kopiert
 und Agenten werden wie geschrieben kopiert, außer dass ein Helfer, den der
 Profilschlüssel `agent_mcp_servers` aufführt, in seiner `tools`-Zeile pro
 benanntem Server einen Eintrag `mcp__<server>__*` erhält (siehe
-[MCP-Server](/docs/reference/mcp#einem-helfer-zugriff-auf-mcp-server-geben)).
+[MCP-Server](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)).
 Die Installation
 validiert, dass das Profil wohlgeformt ist und alle Hook-Bindungen in
 settings.json auflösbar sind. Der Adapter verfasst keine MCP-Server-Einträge:
@@ -207,9 +209,10 @@ Registrieren Sie Server mit `claude mcp add` (siehe
 [MCP-Server](/docs/reference/mcp)).
 
 `~/.claude/agents/` ist ein gemeinsames Wurzelverzeichnis, das `Claude Code`
-gehört, ebenso `~/.claude/skills/`: Andere unterstützte Werkzeuge laden diese
-Ordner, daher erscheinen die Agenten und Skills, die eine `Claude Code`-Installation
-dort schreibt, auch in diesen Werkzeugen, und die Installation gibt einen
+gehört, ebenso `~/.claude/skills/` und `~/.claude/CLAUDE.md`: Andere
+unterstützte Werkzeuge laden sie, daher erscheinen die Agenten, Skills und der
+Apothem-Block, die eine `Claude Code`-Installation dort schreibt, auch in diesen
+Werkzeugen, und die Installation gibt einen
 Hinweis aus, der sie nennt. Die
 [Harness-Registry](/docs/reference/harness-registry) listet die Leser jedes
 Wurzelverzeichnisses auf.
