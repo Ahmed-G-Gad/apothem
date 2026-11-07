@@ -1288,3 +1288,20 @@ def test_agents_left_in_the_default_codex_home_get_a_note(
     message = " ".join(str(note["message"]).split())
     assert "still holds Apothem content from an earlier Codex install" in message
     assert "neither updates nor removes" in message
+
+
+def test_an_unreadable_default_agents_folder_gives_no_note_instead_of_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agents = tmp_path / ".codex" / "agents"
+    real_is_dir = Path.is_dir
+
+    def is_dir(self: Path, *args: object, **kwargs: object) -> bool:
+        if self == agents:
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_is_dir(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
+    monkeypatch.setattr(Path, "is_dir", is_dir)
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    assert str(agents) not in {a["path"] for a in advisories}

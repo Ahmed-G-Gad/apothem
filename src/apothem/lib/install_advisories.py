@@ -83,7 +83,7 @@ def _written_elsewhere(root: SharedRoot, home: Path) -> bool:
         if moved.exists() and default.exists():
             return not moved.samefile(default)
         return moved.resolve() != default.resolve()
-    except OSError:
+    except (OSError, RuntimeError):
         return moved != default
 
 
@@ -122,22 +122,27 @@ def _apothem_agent_names() -> frozenset[str]:
 
 
 def _holds_apothem_content(resolved: Path) -> bool:
-    """Return True when *resolved* carries content an Apothem install wrote."""
-    if resolved.is_dir():
-        if any(
-            (resolved / name / "SKILL.md").is_file() for name in _apothem_skill_names()
-        ):
-            return True
-        return any(
-            (resolved / f"{name}{suffix}").is_file()
-            for name in _apothem_agent_names()
-            for suffix in _AGENT_SUFFIXES
-        )
-    if resolved.is_file():
-        try:
+    """Return True when *resolved* carries content an Apothem install wrote.
+
+    A path the check cannot read holds none, so an unreadable folder never stops
+    the install that asked.
+    """
+    try:
+        if resolved.is_dir():
+            if any(
+                (resolved / name / "SKILL.md").is_file()
+                for name in _apothem_skill_names()
+            ):
+                return True
+            return any(
+                (resolved / f"{name}{suffix}").is_file()
+                for name in _apothem_agent_names()
+                for suffix in _AGENT_SUFFIXES
+            )
+        if resolved.is_file():
             return APOTHEM_BLOCK_BEGIN in resolved.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            return False
+    except (OSError, UnicodeDecodeError):
+        return False
     return False
 
 
@@ -536,7 +541,7 @@ def _links_to(path: Path, target: Path) -> bool:
     """
     try:
         return path.is_symlink() and path.resolve() == target.resolve()
-    except OSError:
+    except (OSError, RuntimeError):
         return False
 
 
