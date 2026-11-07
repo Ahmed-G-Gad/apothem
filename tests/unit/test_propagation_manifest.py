@@ -127,15 +127,14 @@ def test_unknown_ownership_class_is_rejected() -> None:
     )
 
 
-def test_manifest_stale_sweep_covers_legacy_directories() -> None:
-    """The manifest's stale-sweep includes the canonical legacy directories."""
+def test_manifest_never_sweeps_claude_code_folders() -> None:
+    """Claude Code sweeps nothing under ~/.claude.
+
+    Releases 1.0.1 to 1.5.0 removed commands/, hooks/ and other folders there
+    whole, with the user's files, though no release installed into them.
+    """
     rules = propagation.load_manifest()
-    claude_code = rules["claude_code"]
-    stale = set(claude_code.stale_sweep)
-    # Earlier install layouts flat-copied these apothem subtrees at the
-    # harness root; the sweep must remove them on every install.
-    for legacy in ("src", "conformity", "schemas", "hooks", "tools", "templates"):
-        assert legacy in stale, f"stale-sweep missing canonical entry '{legacy}'"
+    assert rules["claude_code"].stale_sweep == []
 
 
 def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
@@ -145,8 +144,7 @@ def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
     snippet (``conformity.json``, whose command points at the installed
     renderer via the ``${HARNESS_ROOT}`` token) propagate to the harness
     root so the snippet's command path resolves; only the package
-    ``__init__.py`` — import machinery with no on-disk role — is filtered
-    and swept.
+    ``__init__.py`` — import machinery with no on-disk role — is filtered.
     """
     rules = propagation.load_manifest()
     claude_code = rules["claude_code"]
@@ -154,7 +152,6 @@ def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
     assert "render.py" not in statuslines_filter
     assert "conformity.json" not in statuslines_filter
     assert "__init__.py" in statuslines_filter
-    assert "statuslines/__init__.py" in claude_code.stale_sweep
     for shipped in ("statuslines/render.py", "statuslines/conformity.json"):
         assert shipped not in claude_code.stale_sweep
 
@@ -180,17 +177,6 @@ def test_manifest_excludes_documentation_companions_everywhere() -> None:
         excludes = set(harness_rules.exclude)
         assert "README.md" in excludes, name
         assert "AGENTS.md" in excludes, name
-    claude_sweep = set(rules["claude_code"].stale_sweep)
-    for stray in (
-        "rules/AGENTS.md",
-        "skills/AGENTS.md",
-        "agents/AGENTS.md",
-        "statuslines/AGENTS.md",
-        "output-styles/AGENTS.md",
-    ):
-        assert stray in claude_sweep
-    assert "../.agents/skills/AGENTS.md" in set(rules["codex"].stale_sweep)
-    assert "skills/AGENTS.md" in set(rules["qwen_code"].stale_sweep)
     assert ".mypy_cache" in excludes
     assert ".pytest_cache" in excludes
 
@@ -232,9 +218,9 @@ def test_codex_manifest_uses_native_hooks_surface() -> None:
     assert targets["hooks"] == "${HARNESS_ROOT}/hooks/"
     old_support_target = "../.config/apothem/" + "hooks"
     assert all(old_support_target not in target for target in targets.values())
-    assert old_support_target in codex.stale_sweep
-    assert "hooks" not in codex.stale_sweep
-    assert "skills" not in codex.stale_sweep
+    # No release wrote the old support folder, and Codex keeps its own .rules
+    # in ~/.codex/rules, so Codex sweeps nothing.
+    assert codex.stale_sweep == []
 
 
 def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
@@ -266,13 +252,13 @@ def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
     assert all("/antigravity/" not in target for target in targets.values())
 
 
-def test_manifest_sweeps_retired_materializer_targets() -> None:
-    """Materializer harnesses retire prior misnamed config files explicitly."""
+def test_manifest_never_sweeps_config_files_no_release_wrote() -> None:
+    """No release wrote these files, so a file of that name is the user's."""
     rules = propagation.load_manifest()
 
-    assert "cli-config.yaml" in rules["hermes"].stale_sweep
-    assert "profile.yaml" in rules["hermes"].stale_sweep
-    assert "../.open-claw/config.yaml" in rules["open_claw"].stale_sweep
+    assert "cli-config.yaml" not in rules["hermes"].stale_sweep
+    assert "profile.yaml" not in rules["hermes"].stale_sweep
+    assert "../.open-claw/config.yaml" not in rules["open_claw"].stale_sweep
 
 
 def test_claude_code_settings_declares_context_ignore_equivalent() -> None:

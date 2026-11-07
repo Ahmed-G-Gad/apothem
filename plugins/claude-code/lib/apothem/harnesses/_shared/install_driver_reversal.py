@@ -40,6 +40,7 @@ from .install_driver_datahome import _data_home_for
 from .install_driver_lifecycle import _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
+    _is_lexically_within,
     _normalized,
     _root_for,
     _validate_target_path,
@@ -214,6 +215,76 @@ def _remove_created(
     )
 
 
+def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
+    """Return True when a stale-sweep entry of *harness_name* still covers the path.
+
+    An install record lists the stale paths its pass swept. A release can drop
+    an entry because the path stopped being Apothem's: Antigravity keeps its own
+    data in ``~/.gemini/antigravity/``, which an early release listed. Restoring
+    such a record's backup would replace the live folder with a stale copy.
+    """
+    rules = install_driver.load_rules(harness_name)
+    return any(
+        _is_lexically_within(Path(recorded_path), root / legacy)
+        for legacy in rules.stale_sweep
+    )
+
+
+def _restore_missing(
+    recorded: LedgerTarget, *, allowed_root: Path
+) -> MaterializationResult:
+    """Copy back each file of a swept path's backup that is missing now.
+
+    Releases 1.0.1 to 1.5.0 swept folders that held a user's own files
+    (``~/.claude/commands``, ``~/.codex/rules``). Rolling such an install back
+    restores every file the sweep took that is not there now, and keeps every
+    file that is, so nothing on disk is replaced. The result names the backup,
+    so the rollback record keeps it referenced and retention keeps the set.
+    """
+    target = Path(recorded.path)
+    backup = Path(str(recorded.backup_ref)) if recorded.backup_ref else None
+    if backup is None or not backup.exists():
+        return _result(
+            "skipped",
+            "restore_backup",
+            target,
+            "left in place: Apothem no longer sweeps this path and its backup is gone",
+        )
+    files = (
+        [backup]
+        if backup.is_file()
+        else sorted(path for path in backup.rglob("*") if path.is_file())
+    )
+    restored = 0
+    for source in files:
+        destination = (
+            target if source == backup else target / source.relative_to(backup)
+        )
+        if destination.exists() or destination.is_symlink():
+            continue
+        error = _validate_target_path(
+            destination, allowed_root=allowed_root, operation="restore_backup"
+        )
+        if error is not None:
+            return error
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        restored += 1
+    message = (
+        f"restored {restored} missing file(s) from {backup}; kept what is there now"
+        if restored
+        else f"left in place: everything in {backup} is still there"
+    )
+    return _result(
+        "updated" if restored else "unchanged",
+        "restore_backup",
+        target,
+        message,
+        source=backup,
+        backup_path=backup,
+    )
+
+
 @locked_for_harness
 @backup_session()
 def rollback_install(
@@ -249,6 +320,13 @@ def rollback_install(
     results: list[MaterializationResult] = []
     for recorded in reversed(record.targets):
         result: MaterializationResult | None = None
+        if recorded.mode == "sweep_stale" and not _still_swept(
+            recorded.path, harness_name, root=root
+        ):
+            # The path left the stale-sweep list, so it was the user's: put back
+            # what is missing, never over what is there now.
+            results.append(_restore_missing(recorded, allowed_root=allowed_root))
+            continue
         shared = gate.covers(recorded.path)
         target_root = gate.boundary if shared else allowed_root
         if shared:

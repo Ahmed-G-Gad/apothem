@@ -24,7 +24,10 @@ first, it:
   install captured, at its recorded path (a directory the install replaced is
   restored exactly, without the files the install added to it);
 - removes every file and directory the install created, and puts back any
-  legacy-layout path the install swept away;
+  legacy-layout path the install swept away. A path the current release no
+  longer sweeps (a folder that may hold your own files) is restored only where
+  files are missing: every file there now is kept, and the output names the
+  backup used;
 - removes the shared data stores (`memory`, `contexts`, `learning`) the
   install created, unless another installed harness still uses them;
 - removes the directories the install created, once they are empty.

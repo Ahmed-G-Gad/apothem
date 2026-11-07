@@ -9,6 +9,43 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Data loss in earlier releases: recover your files
+
+- **Releases 1.0.1 to 1.5.0 deleted folders that hold your own files.** Every
+  `apothem install` and `apothem update` of these adapters removed the whole
+  folder, with everything you had placed in it:
+  - Claude Code: `~/.claude/commands/` (your slash commands), `~/.claude/hooks/`
+    (your hook scripts; a `settings.json` entry that runs one now points at
+    nothing), and `scripts/`, `templates/`, `tools/`, `lib/`, `docs/`,
+    `config/`, `src/`, `tests/`, `schemas/`, `conformity/`, `packaging/`,
+    `mcp/`, `examples/`, `assets/`, `site/` and `public/` under `~/.claude/`,
+    plus the `AGENTS.md` files in `~/.claude/{agents,rules,skills,statuslines,output-styles}/`.
+  - Codex: `~/.codex/rules/` (Codex's own `.rules` execution policies) and
+    `~/.codex/commands/`, plus `~/.config/apothem/hooks/` and
+    `~/.agents/skills/AGENTS.md`.
+  - Gemini CLI: a project's own `skills/AGENTS.md`.
+  - Hermes: `~/.hermes/cli-config.yaml` and `~/.hermes/profile.yaml`. Open-Claw:
+    `~/.open-claw/config.yaml`.
+
+  No release ever installed a file into any of these places, so this release
+  stops removing them. It keeps sweeping only folders in Apothem's own
+  namespace that a release wrote into (`apothem/rules/` under the OpenCode,
+  Qwen Code, Hermes and Open-Claw folders, and Kimi Code's
+  `.kimi-code/.apothem/support/{skills,agents}/`).
+
+  **To recover:** each removed folder was copied first to
+  `~/.apothem/backups/<timestamp>/<harness>/`, under its path in your home (for
+  example `claude_code/.claude/commands/`). Releases 1.0.1 to 1.5.0 keep only
+  the newest 10 backup sets per harness and add one on every install, update,
+  uninstall and rollback; the update to this release still runs the old code.
+  So **copy `~/.apothem/backups/` somewhere else before you run Apothem
+  again**. This release never deletes a backup set that holds one of these
+  paths, automatically or through `apothem backups prune`. To put the files
+  back, copy them by hand, or run `apothem rollback --harness <harness>
+  --install-id ID` for the install that removed them: rollback now restores
+  each file of such a path that is missing and keeps every file that is there,
+  and its output names the backup it used.
+
 ### Added
 
 - **The Marketplace publish can use Trusted Publishing.** With the
