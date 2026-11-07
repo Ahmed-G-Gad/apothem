@@ -475,6 +475,14 @@ def _record_rollback_results(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
+        # A swept path left in place (see ``rollback_install``) is not a failure,
+        # but the operator should learn the folder was not restored.
+        for kept in target_results:
+            if kept.outcome == "skipped" and kept.operation == "restore_backup":
+                run.con.print(
+                    f"[yellow]Note:[/] {harness_id} - {escape(str(kept.path))} "
+                    f"{escape(str(kept.message))}"
+                )
 
 
 @main.command(epilog=_EP_ROLLBACK)

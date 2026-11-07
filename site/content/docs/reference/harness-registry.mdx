@@ -14,7 +14,7 @@ registry, the per-adapter `capabilities.yml`, and each adapter's
 
 | Harness | Install name | Scope | Format | Targets | MCP | Convention pin |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -210,7 +210,7 @@ The registry stays synchronized through these checks:
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |

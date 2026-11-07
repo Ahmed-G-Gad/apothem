@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -87,6 +88,36 @@ def test_rollback_restores_a_replaced_directory_exactly(home: Path) -> None:
     _rollback("claude-code", "--last")
 
     assert _snapshot(home) == before
+
+
+def test_rollback_of_the_plugin_move_restores_the_old_plugin_folder(
+    home: Path,
+) -> None:
+    # Apothem releases before the move wrote the Antigravity plugin to
+    # ~/.gemini/antigravity-cli/plugins/apothem/ and nothing under
+    # ~/.gemini/config/. The update that moves it to
+    # ~/.gemini/config/plugins/apothem/ backs the old folder up and removes it
+    # whole; rolling that update back must bring the old folder back exactly
+    # and remove the new one with the folders the update created for it.
+    gemini = home / ".gemini"
+    old = gemini / "antigravity-cli" / "plugins" / "apothem"
+    new = gemini / "config" / "plugins" / "apothem"
+    adapter = load_adapter_class(get_harness_entry("antigravity"))()
+    adapter.install(_PROFILE)
+    old.parent.mkdir(parents=True)
+    shutil.move(str(new), str(old))
+    (gemini / "config" / "plugins").rmdir()
+    (gemini / "config").rmdir()
+    before = _snapshot(home)
+    adapter.update(_PROFILE)
+    assert not old.exists()
+    assert (new / "plugin.json").is_file()
+
+    _rollback("antigravity", "--last")
+
+    assert _snapshot(home) == before
+    assert (old / "plugin.json").is_file()
+    assert not (gemini / "config").exists()
 
 
 def test_same_second_backups_restore_to_their_own_paths(

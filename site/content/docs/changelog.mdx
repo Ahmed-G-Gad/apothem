@@ -135,6 +135,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Antigravity install writes its plugin where the CLI loads it.**
+  Antigravity CLI 1.0.2 and later load plugins from
+  `~/.gemini/config/plugins/<name>/`, but the install wrote its plugin to
+  `~/.gemini/antigravity-cli/plugins/apothem/`, a folder the CLI no longer
+  loads, so the skills, agents and rules the install wrote there did not reach
+  Antigravity. The install now writes the plugin to
+  `~/.gemini/config/plugins/apothem/`. An install or update over an earlier
+  install backs up the old folder and removes it whole, and an uninstall
+  removes both folders. The CLI's 1.0.2 release note records the new install
+  folder, and an October 2026 issue report found a plugin staged in the old
+  folder neither listed nor loaded; no test or CI job runs the CLI. The
+  Antigravity convention pin also records that global hooks live in
+  `~/.gemini/config/hooks.json`; the install writes no hooks file.
+- **Antigravity installs no longer remove `~/.gemini/antigravity/`.** Every
+  Antigravity install and update backed up that folder under
+  `~/.apothem/backups/` and removed it, as a layout an early Apothem release
+  had used. Antigravity now keeps its sign-in tokens for MCP servers
+  (`mcp_oauth_tokens.json`) and its session transcripts (`brain/`) there, so
+  each install signed those servers out and cleared the session history. The
+  install, update and uninstall now leave the folder alone; a copy an earlier
+  install removed is in its backup.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce

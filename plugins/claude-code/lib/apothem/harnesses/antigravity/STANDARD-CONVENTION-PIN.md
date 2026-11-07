@@ -4,19 +4,74 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Antigravity docs at `antigravity.google/docs`. The pages now return their full text to a plain fetch, so the earlier empty-body limitation and its partial-confidence caveat no longer apply. The refresh settles the MCP config path, confirms plugin-provided skills, and records the hooks file locations. Previous 2026-06-25.
+- Snapshot date: 2026-11-03
+- Snapshot note: refreshed against the Antigravity docs at `antigravity.google/docs` (plugins, build plugins, customization discovery, rules, skills, hooks, MCP, CLI migration, CLI settings, CLI troubleshooting, changelog), the docs index, and the `google-antigravity/antigravity-cli` issue tracker. The plugin folder is now `~/.gemini/config/plugins/apothem/`, no longer `~/.gemini/antigravity-cli/plugins/apothem/` (see Plugin Location). The refresh also corrects the global hooks locations, the skills locations, the role of `~/.gemini/antigravity-cli/` (the CLI's app-data folder, not its customization root), and the `plugin.json` field list. The global rule files, the rule frontmatter and size limits, and the MCP paths read the same as on 2026-10-03. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/antigravity/`.
-- Evidence level: vendor-doc pinned (living docs; Antigravity exposes no version or commit surface, so the no-immutable-source exception stands). No vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; the pages carry no version or commit, so the no-immutable-source exception stands; the CLI changelog and the issue tracker supply the version evidence for the plugin folder). No vendor-native UI claim is made here.
 
-## Plugin rules and manifest (verified 2026-10-02)
+## Plugin Location
+
+- Plugin root: `~/.gemini/config/plugins/apothem/`. Antigravity CLI (binary
+  `agy`) 1.0.2 and later install plugins into, and load them from,
+  `~/.gemini/config/plugins/<name>/`. The Antigravity App and IDE load the same
+  folder, so the plugin loads in all three. A plugin placed in that folder needs
+  no registration: the plugins page documents manual placement there, CLI 1.2.11
+  handles such plugins (one whose MCP server needs configuration variables
+  starts disabled, as a plugin installed through `/plugin` does), and a
+  `plugins.json` discovery manifest is optional and adds to the standard
+  folders.
+- Earlier folder: `~/.gemini/antigravity-cli/plugins/apothem/`, inside the CLI's
+  private app-data folder. Before 1.0.2 the CLI kept plugins there. The docs
+  named that folder after the move (issue 1067, 2026-09-20, reports the
+  mismatch against CLI 1.2.7); the pages retrieved 2026-11-03 name
+  `~/.gemini/config/plugins/` and none of them names the earlier plugin folder.
+- Evidence for the move (issue numbers are in
+  `google-antigravity/antigravity-cli`):
+  - CLI changelog, v1.0.2: the `agy plugin` subcommand installs downloaded
+    plugins to the shared configuration folder `~/.gemini/config/` instead of
+    the private app-data folder. The changelog page shows the placeholder date
+    January 1, 2026 for v1.0.0 to v1.0.2; issue 123 reports 1.0.1 on
+    2026-05-22 and announces the change for the next release.
+  - Issue 123 (2026-05-23): a collaborator wrote that the CLI would default
+    installation to `~/.gemini/config/plugins/` in the next release. On
+    2026-09-05 a collaborator wrote on the same issue that the CLI's plugin
+    installation paths had been unified there.
+  - Issue 1067 (2026-09-20): on CLI 1.2.7, `agy plugin install` placed a plugin
+    in `~/.gemini/config/plugins/<name>/`, and a clean session discovered it
+    there and loaded its rule.
+  - Issue 1165 (2026-10-05): a valid plugin staged in
+    `~/.gemini/antigravity-cli/plugins/` passes `agy plugin validate` but is not
+    listed by `agy plugin list` and not loaded, while a plugin under
+    `~/.gemini/config/plugins/` is discovered.
+  - The `/mcp` panel header reads `Plugins (~/.gemini/config/plugins)` on CLI
+    1.2.13 (issue 1127, 2026-09-29); it read
+    `Plugins (~/.gemini/antigravity-cli/plugins)` on 2026-05-29 (issue 233).
+- Supported minimum: CLI 1.0.2. The CLI updates itself in the background (a
+  check at most every 15 minutes; `AGY_CLI_DISABLE_AUTO_UPDATE=true` turns the
+  updater off). Among the tracker's issues 1007 to 1407 (filed 2026-09-12 to
+  2026-11-03), the oldest CLI version named in a version field is 1.1.8
+  (issue 1155).
+- Earlier installs: an install or update over an install that holds the earlier
+  folder backs `~/.gemini/antigravity-cli/plugins/apothem/` up under the Apothem
+  backup root and removes it whole, then writes the new folder; an uninstall
+  removes both. Other files under `~/.gemini/antigravity-cli/` are not touched.
+- Shared folder: because the App and IDE load the same folder, a plugin there
+  reaches every surface. `plugin.json` has no field that limits a plugin to one
+  surface; issue 1165 asks for one.
+- TODO(clarify): whether the current CLI (1.4.12 on 2026-11-03) still loads a
+  plugin from `~/.gemini/antigravity-cli/plugins/`. `agy` does not run in the
+  repository's checks and no CI job installs it, so a run of a current `agy`
+  against a plugin staged there settles it. Issue 1165 reports that such a
+  plugin is not loaded; the adapter writes only the new folder either way.
+
+## Plugin rules and manifest (verified 2026-11-03)
 
 - Rules: every `.md` file inside a `rules/` directory must start with YAML
   frontmatter declaring a valid `trigger` (`always_on`, `model_decision`,
   `glob`, or `manual`); a file without one, or with an unrecognised value, is
   silently discarded. `model_decision` requires `description`; `glob` requires
   `globs` (comma-separated patterns). The Antigravity CLI activates the rules
-  packaged under `~/.gemini/antigravity-cli/plugins/<plugin_name>/rules/`.
+  packaged under `~/.gemini/config/plugins/<plugin-folder>/rules/`.
   The adapter therefore converts each Apothem rule (`antigravity_rules` install
   mode): `alwaysApply: true` becomes `trigger: always_on`, a non-empty
   `pathFilter` becomes `trigger: glob` with `globs`, any other rule becomes
@@ -32,9 +87,15 @@
   (`interactive-questions-canonical-shapes` and
   `canonical-layout-reporting-tiers`, measured 2026-10-24), so only their start
   loads on a match.
-- Manifest: `plugin.json` admits only `name` (required for the CLI) and
-  `description`; the published schema sets `additionalProperties: false`. The
-  template carries exactly those two keys.
+- Manifest: `plugin.json` at the plugin root (or `.antigravity-plugin/plugin.json`,
+  which takes precedence) is checked by `agy plugin validate` against the
+  published schema, which sets `additionalProperties: false`. `name` is the only
+  required key (lowercase kebab-case). The schema also admits `$schema`,
+  `displayName`, `description`, `version`, `disabled`, `logo`,
+  `suggestedPrompts`, `skills`, `author`, `homepage`, `repository`, `license`,
+  `keywords`, and `extensions`; `displayName`, `description`, `version`, `logo`,
+  and `author` are required only for a Marketplace submission. The template
+  carries `name` and `description` only.
 
 ## Antigravity CLI Surface Projection
 
@@ -49,42 +110,78 @@
   `<project>/GEMINI.md`.
 - Migration: the earlier reading records Google folding the standalone Gemini
   CLI for individual tiers into Antigravity CLI (binary `agy`), dated
-  2026-06-18 on the launch blog; `GEMINI.md` and `AGENTS.md` keep working. Not
-  re-read on 2026-10-03.
-- CLI customization root: `~/.gemini/antigravity-cli/`.
-- Apothem plugin root: `~/.gemini/antigravity-cli/plugins/apothem/`.
+  2026-06-18 on the launch blog; `GEMINI.md` and `AGENTS.md` keep working. The
+  launch blog was not re-read on 2026-11-03; the CLI migration page, re-read
+  that day, confirms that `~/.gemini/GEMINI.md`, workspace `GEMINI.md`, and
+  `AGENTS.md` keep working.
+- Customization root: `~/.gemini/config/`, shared by the CLI, the App, and the
+  IDE. It holds `rules/`, `skills/`, `agents/`, `plugins/`, `hooks.json`, and
+  `mcp_config.json`, plus the optional discovery manifests `skills.json`,
+  `rules.json`, `agents.json`, and `plugins.json`.
+- App-data folders: `~/.gemini/antigravity-cli/` is the CLI's own folder
+  (`settings.json`, `keybindings.json`, `cache/`, `updater/`, `brain/`),
+  `~/.gemini/antigravity/` is the App's, and `~/.gemini/antigravity-ide/` is the
+  IDE's; the hooks page names all three as `<app_data_dir>`. Apothem writes no
+  file into them. Releases before 2026-11-03 also listed `antigravity` (the
+  retired pre-v1.0.1 Apothem tree at `~/.gemini/antigravity/`) in the manifest's
+  stale-sweep list, so every install and update backed up and removed the App's
+  folder, MCP OAuth tokens (`mcp_oauth_tokens.json`) and session transcripts
+  (`brain/`) included. The entry is gone: install, update and uninstall no longer
+  touch `~/.gemini/antigravity/`.
+- Apothem plugin root: `~/.gemini/config/plugins/apothem/` (see Plugin
+  Location).
 - MCP: `mcpServers` in `mcp_config.json`, globally at
   `~/.gemini/config/mcp_config.json` and per workspace at
   `.agents/mcp_config.json` (stdio and remote servers; OAuth tokens in
   `~/.gemini/antigravity/mcp_oauth_tokens.json`). Apothem names this surface and
   authors no entries. This settles the earlier ambiguity between
-  `~/.gemini/config/`, `~/.gemini/antigravity-cli/`, and `~/.gemini/antigravity/`.
-- Skills: workspace `.agents/skills/`, global `~/.gemini/config/skills/`, CLI
-  global `~/.gemini/antigravity-cli/skills/`, and plugin-provided
-  `~/.gemini/antigravity-cli/plugins/<name>/skills/`. Apothem installs its skills
-  into its own plugin's `skills/` directory, a documented location, so the
-  registry skills cell is `native`.
+  `~/.gemini/config/`, `~/.gemini/antigravity-cli/`, and `~/.gemini/antigravity/`:
+  the first holds the configuration and the other two are app-data folders.
+- Skills: workspace `.agents/skills/`, global `~/.gemini/config/skills/` (shared
+  by the CLI and the App), and plugin-provided
+  `~/.gemini/config/plugins/<plugin-folder>/skills/`. The CLI also loads
+  `~/.gemini/antigravity-cli/skills/` and `~/.gemini/skills/`, which the App does
+  not read and which take priority over a same-name skill elsewhere. Apothem
+  installs its skills into its own plugin's `skills/` directory, a documented
+  location, so the registry skills cell is `native`.
 - Commands: converted into Antigravity skills under the Apothem plugin because
   the CLI routes command-like prompts through skills.
-- Hooks: `hooks.json` at `.agents/hooks.json` (workspace),
-  `~/.gemini/config/hooks.json` or `~/.gemini/antigravity-cli/settings.json`
-  (global), and inside an installed plugin. Apothem keeps its hook prose as
-  support material under the plugin and registers no hook events; building the
-  hook translation is adapter work, not a documentation gap.
-- Memory: the docs index (`antigravity.google/llms.txt`) lists no durable-memory
-  page and `antigravity.google/docs/memory` answers 404, so the registry memory
-  cell stays `discovery-pending`.
+- Hooks: `hooks.json` at `.agents/hooks.json` (workspace), at
+  `~/.gemini/config/hooks.json` (global), and at the root of an installed
+  plugin. The hooks page now states that hooks in
+  `~/.gemini/antigravity-cli/settings.json` are not loaded; an archived copy of
+  the page from 2026-10-16 still listed that file as a global location.
+  Apothem writes no hooks file for Antigravity: its hook scripts ship as support
+  files under the plugin's `.apothem/support/hooks/` and it registers no hook
+  events. Building the hook translation is adapter work, not a documentation
+  gap.
+- Memory: the docs index (`antigravity.google/llms.txt`, re-read 2026-11-03)
+  lists no durable-memory page, and `antigravity.google/docs/memory` answered
+  404 on 2026-10-03, so the registry memory cell stays `discovery-pending`.
 
 ## Vendor Sources
 
-Retrieved 2026-10-03 unless marked.
+Retrieved 2026-11-03 unless marked.
 
 - <https://antigravity.google/docs/rules> (rules and context files)
 - <https://antigravity.google/docs/skills> (skill locations)
 - <https://antigravity.google/docs/mcp> (`mcp_config.json`)
-- <https://antigravity.google/docs/plugins> (plugins)
-- <https://antigravity.google/docs/hooks> (`hooks.json`; retrieved 2026-10-02)
-- <https://antigravity.google/llms.txt> (docs index; retrieved 2026-10-02)
+- <https://antigravity.google/docs/plugins> (plugins and their folders)
+- <https://antigravity.google/docs/build-plugins> (`plugin.json` and its schema, plugin layout)
+- <https://antigravity.google/docs/customization-discovery> (customization folders, discovery manifests)
+- <https://antigravity.google/docs/hooks> (`hooks.json`)
+- <https://antigravity.google/docs/cli/gcli-migration> (CLI migration)
+- <https://antigravity.google/docs/cli/troubleshooting> (the CLI self-updater)
+- <https://antigravity.google/docs/cli/using> (the CLI's `settings.json` and `keybindings.json`)
+- <https://antigravity.google/docs/cli/commands/changelog> (the CLI's `cache/` folder)
+- <https://antigravity.google/docs/changelog> (CLI changelog, v1.0.2 and v1.2.11)
+- <https://antigravity.google/llms.txt> (docs index)
+- <https://github.com/google-antigravity/antigravity-cli/issues/123> (plugin installation default)
+- <https://github.com/google-antigravity/antigravity-cli/issues/1067> (CLI 1.2.7 installs to `~/.gemini/config/plugins/`)
+- <https://github.com/google-antigravity/antigravity-cli/issues/1165> (plugin staged in the earlier folder is not loaded)
+- <https://github.com/google-antigravity/antigravity-cli/issues/1127> (`/mcp` header on CLI 1.2.13)
+- <https://github.com/google-antigravity/antigravity-cli/issues/233> (`/mcp` header on 2026-05-29)
+- <https://github.com/google-antigravity/antigravity-cli/issues/1155> (oldest CLI version in the sampled issues)
 
 ## Discovery Targets
 
@@ -114,7 +211,7 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 Antigravity has a plugin directory convention
-(`~/.gemini/antigravity-cli/plugins/apothem/`), but that tree is
+(`~/.gemini/config/plugins/apothem/`), but that tree is
 **engine-materialized**, not a standalone-installable bundle: the `plugin.json`
 and every cohort beneath it are written by `apothem install`, not shipped as a
 pre-built plugin an operator installs by itself. There is no Apothem-distributed
@@ -129,7 +226,8 @@ plugin-alone install path for this harness; everything requires the full
 | MCP / Settings | No — operator-owned | `mcpServers` lives in operator-owned `mcp_config.json`; the adapter authors no entries. |
 
 Platform note: a plugin directory exists, but as an engine-write target, not a
-distributable plugin-alone bundle. Antigravity documents installable plugins
+distributable plugin-alone bundle. Antigravity documents installable plugins and
+manual placement in `~/.gemini/config/plugins/<name>/`
 (`antigravity.google/docs/plugins`); building a standalone Apothem plugin
 package is a separate packaging decision. The engine install is the sole
 persistence path today.

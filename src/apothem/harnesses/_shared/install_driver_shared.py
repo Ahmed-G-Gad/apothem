@@ -129,6 +129,27 @@ def entry_write_root(
     return _allowed_write_root(harness_root, project_root)
 
 
+def _protected_targets(
+    rules: HarnessRules,
+    *,
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> frozenset[Path]:
+    """Return the resolved current install targets a stale-sweep entry must not remove.
+
+    A stale path that resolves onto one of these, or above it, is the live
+    folder under another name (see ``install_driver_treeops.protected_by``).
+    """
+    return frozenset(
+        _normalized(
+            resolve_target(
+                entry.target, harness_root=harness_root, project_root=project_root
+            )
+        )
+        for entry in rules.install
+    )
+
+
 def emission_name(entry: InstallEntry, harness_name: str) -> str:
     """Return the emission identity *entry*'s skills are rendered with."""
     if entry.user_level and entry.mode in SKILL_MODES:

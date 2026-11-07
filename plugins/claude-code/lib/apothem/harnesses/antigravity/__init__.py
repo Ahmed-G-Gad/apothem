@@ -4,10 +4,13 @@
 
 Materializes the apothem convention surface into the Antigravity CLI
 harness target. Antigravity reads ``~/.gemini/GEMINI.md`` as global
-context and stores CLI customization under ``~/.gemini/antigravity-cli/``;
-Apothem installs a named plugin at
-``~/.gemini/antigravity-cli/plugins/apothem/`` for cohorts that should not
-collide with Gemini CLI project-local files.
+context and, from CLI 1.0.2, loads plugins from
+``~/.gemini/config/plugins/<name>/``; the CLI keeps its own settings and
+cache under ``~/.gemini/antigravity-cli/``. Apothem installs a named plugin
+at ``~/.gemini/config/plugins/apothem/`` for cohorts that should not collide
+with Gemini CLI project-local files. An install or update over an earlier
+install backs up and removes the plugin's earlier folder,
+``~/.gemini/antigravity-cli/plugins/apothem/``; an uninstall removes both.
 
 Delegates installation to
 :mod:`apothem.harnesses.antigravity.install`, which consumes the

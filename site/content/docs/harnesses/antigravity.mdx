@@ -8,7 +8,7 @@ description: "Apothem harness adapter for Antigravity (Preview)."
 **Install name:** `antigravity`
 **Status:** Preview
 **Native config:** `~/.gemini/GEMINI.md` plus
-`~/.gemini/antigravity-cli/plugins/apothem/`
+`~/.gemini/config/plugins/apothem/`
 
 ## Installation
 
@@ -17,20 +17,35 @@ apothem install --harness antigravity
 ```
 
 The adapter renders the shared profile to `~/.gemini/GEMINI.md` and installs
-Apothem support cohorts as an Antigravity CLI plugin.
+Apothem support cohorts as an Antigravity plugin. The plugin folder is shared by
+the Antigravity CLI, App, and IDE, so all three load the plugin.
 
 **Files written:** `~/.gemini/GEMINI.md`,
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+`~/.gemini/config/plugins/apothem/plugin.json`,
+`~/.gemini/config/plugins/apothem/skills/`,
+`~/.gemini/config/plugins/apothem/rules/`,
 converted local helper definitions inside the plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, and
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+`~/.gemini/config/plugins/apothem/.apothem/support/templates/`, and
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`.
 
 The Apothem block in `~/.gemini/GEMINI.md` ends with an Apothem support files
 section that names the absolute directory each repository-style citation
 resolves against: `rules/<name>.md` under the plugin's `rules/`, and
 `templates/...` and `hooks/...` under the plugin's `.apothem/support/`.
+
+**Plugin folder.** Antigravity loads a plugin from
+`~/.gemini/config/plugins/<name>/` without a registration step
+([Antigravity plugins documentation](https://antigravity.google/docs/plugins)),
+and the adapter writes the Apothem plugin there. Current CLI releases load
+plugins from this folder; the CLI updates itself, so if you turned updates off
+with `AGY_CLI_DISABLE_AUTO_UPDATE=true`, update it before relying on the
+plugin. The Antigravity App and IDE load the same folder, so the Apothem
+plugin, with its always-on rules, skills, and helper definitions, applies in
+all three. Antigravity documents no per-tool switch for a plugin: `plugin.json`
+has no field that limits a plugin to one of them. An earlier Apothem release
+wrote the plugin to `~/.gemini/antigravity-cli/plugins/apothem/`, in the CLI's
+own data folder; an install or update over such an install backs that folder up
+and removes it whole (see [Uninstalling](#uninstalling)).
 
 **Plugin rules.** Antigravity discards any file in a plugin's `rules/`
 directory that does not open with a valid `trigger`
@@ -45,8 +60,10 @@ rules carry `trigger: glob`. Antigravity shares a 20,000-token budget across
 always-on rules and turns the largest into on-demand pointers past it; the five
 rules come to about 11,000 tokens, so none is turned into a pointer.
 
-**Plugin manifest.** `plugin.json` carries only `name` and `description`, the
-two keys Antigravity's plugin schema admits.
+**Plugin manifest.** `plugin.json` carries only `name` and `description`.
+Antigravity's plugin schema requires `name` and also allows keys such as
+`displayName`, `version`, and `author`, and it rejects any key it does not
+list.
 
 **Plugin helpers.** Helper definitions in the plugin's `agents/` directory
 carry `name` and `description`. Antigravity's `tools` list uses its own tool
@@ -57,8 +74,8 @@ Antigravity enforces a read-only limit, those helpers' descriptions drop the
 
 **Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
 Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material
-inside the `apothem` plugin under `~/.gemini/antigravity-cli/plugins/` so it
-does not claim generic Gemini CLI project directories. Because more than one
+inside the `apothem` plugin under `~/.gemini/config/plugins/` so it does not
+claim generic Gemini CLI project directories. Because more than one
 tool loads `~/.gemini/GEMINI.md`, the Apothem block there is written as global
 guidance that names no single tool as its reader.
 
@@ -108,11 +125,37 @@ apothem uninstall --harness antigravity
 Removes the Apothem block from `~/.gemini/GEMINI.md` and keeps any other text
 in it. The file is deleted only when nothing else remains in it. Also removes
 Apothem's keys from `plugin.json` in the plugin folder
-`~/.gemini/antigravity-cli/plugins/apothem/` and keeps yours, and removes the
-Apothem files in that folder's `skills/`, `rules/`, `agents/`, and
-`.apothem/support/` subfolders; other files there stay. Each file is backed up
-under `~/.apothem/backups/` before it is changed or removed. The shared profile
-YAML and Apothem engine are unaffected.
+`~/.gemini/config/plugins/apothem/` and keeps yours, and removes the Apothem
+files in that folder's `skills/`, `rules/`, `agents/`, and `.apothem/support/`
+subfolders; other files there stay. Each file is backed up under
+`~/.apothem/backups/` before it is changed or removed. The shared profile YAML
+and Apothem engine are unaffected.
+
+An install made by an earlier release holds the plugin in
+`~/.gemini/antigravity-cli/plugins/apothem/`, in the CLI's own data folder. An
+install, an update, or an uninstall over such an install backs that folder up
+under `~/.apothem/backups/` and removes it whole, files of yours in it
+included. An uninstall therefore removes the earlier folder whole and, from the
+current one, only the Apothem files described above.
+
+Install, update and uninstall never touch `~/.gemini/antigravity/`, the data
+folder of the Antigravity App. (The CLI's is `~/.gemini/antigravity-cli/` and
+the IDE's is `~/.gemini/antigravity-ide/`.) The App's folder holds its sign-in
+tokens for MCP servers (`mcp_oauth_tokens.json`), its session transcripts
+(`brain/`), the legacy global skills folder (`skills/`), and `sidecar_data/`.
+Earlier releases treated that folder as a layout Apothem used before its first
+release: they backed it up under `~/.apothem/backups/` and removed it on every
+install and update. The CLI's own settings and session history, in
+`~/.gemini/antigravity-cli/`, were not affected.
+
+If an App sign-in, a session transcript, or a skill of yours went missing, the
+copies are in
+`~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/`: one set for
+each earlier install or update that found the folder, each holding the folder as
+it stood then. Apothem keeps only the newest 10 Antigravity backup sets, so
+copies from older installs may already be gone, and the next install, update,
+uninstall, or rollback prunes again. Copy the sets you need out of
+`~/.apothem/backups/` first.
 
 ## Conformity gate
 

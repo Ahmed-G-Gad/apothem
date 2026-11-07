@@ -27,7 +27,7 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 | Harness | Native config target | Shape |
 |---------|----------------------|-------|
 | `claude_code` | `~/.claude/settings.json`, `~/.claude/CLAUDE.md` (one managed block), `~/.claude/{agents,rules,skills,statuslines,output-styles}/`, plus `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` | Native Claude Code adapter; command prompts are wrapped as skills. |
-| `antigravity` | `~/.gemini/GEMINI.md` plus `~/.gemini/antigravity-cli/plugins/apothem/` | Antigravity CLI plugin adapter (no materializer). |
+| `antigravity` | `~/.gemini/GEMINI.md` plus `~/.gemini/config/plugins/apothem/` | Antigravity CLI plugin adapter (no materializer). |
 | `codex` | `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Native Codex adapter; does not write `config.toml`. |
 | `cursor` | `<project>/.cursor/rules/apothem-rules.mdc`, `<project>/.cursor/agents/`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; agents as Cursor subagents in the project; skills (commands wrapped as skills) in the shared user-level folder. |
 | `gemini_cli` | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` and `<project>/.gemini/.apothem/support/` | Project-scope manifest adapter with TOML command conversion. |
