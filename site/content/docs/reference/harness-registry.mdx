@@ -136,13 +136,17 @@ it. `CodeBuddy` uses `<project>/AGENTS.md` as project memory only when the
 project has no `CODEBUDDY.md`. `Claude Code` reads `AGENTS.md` in the releases
 its [memory page](https://code.claude.com/docs/en/memory#agents-md) names, and
 the install note gives the first one. Under its default **Project
-instructions** setting it loads every `AGENTS.md`
-and `.claude/AGENTS.md` in the working folder and the folders above it, but only
+instructions** setting it loads every `AGENTS.md` and `.claude/AGENTS.md` in
+the working folder and the folders above it when a session starts, but only
 when none of those folders holds a `CLAUDE.md`, `.claude/CLAUDE.md` or
-`CLAUDE.local.md`. `~/.claude/CLAUDE.md` does not count, so the Apothem block
-there keeps loading alongside `<project>/AGENTS.md`. The `claude-md-and-agents-md`
-setting loads both kinds of file, and `claude-md` and `managed-only` load no
-`AGENTS.md`. `Zed` loads only the first project instruction
+`CLAUDE.local.md`. It loads the `AGENTS.md` of a folder below the working
+folder, such as a project opened from a parent folder, when its Read tool
+opens a file there and that folder has none of those three files either.
+`~/.claude/CLAUDE.md` does not count, so the Apothem block there keeps loading
+alongside `<project>/AGENTS.md`. The `claude-md-and-agents-md` setting loads
+both kinds of file, and `claude-md` and `managed-only` load no `AGENTS.md`.
+Some sessions read no `AGENTS.md` under any setting; the memory page lists
+them. `Zed` loads only the first project instruction
 file in its list: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, then
 `GEMINI.md`. So it loads `<project>/.github/copilot-instructions.md`,

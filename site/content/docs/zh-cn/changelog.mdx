@@ -218,6 +218,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     bytes.
 
   No published number changes: Apothem's installs write none of these files.
+- **A `CODEX_HOME` that starts with `~` now names the folder Codex uses.**
+  Codex takes `CODEX_HOME` as written, without expanding `~`, and resolves a
+  relative value against the current folder, but Apothem expanded `~` to your
+  home folder. With a value such as `"~/codex"`, Codex installs, updates and
+  verify then worked on a folder Codex never reads, and the conformity gate
+  watched the wrong folder. Apothem now takes the value the same way Codex
+  does. If your `CODEX_HOME` starts with a literal `~`, run
+  `apothem install --harness codex` again so the files land where Codex reads
+  them; the files an earlier release wrote under your home folder stay until
+  you delete them.
+- **The install note for a project `AGENTS.md` now counts the project folder
+  for Claude Code.** Claude Code also loads a project's `AGENTS.md` when a
+  session starts in a folder above the project and its Read tool opens a file
+  in it, as long as the project folder, like the working folder and the folders
+  above it, has no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. The Kimi Code install note's condition for Claude Code now
+  names the project folder, and the Claude Code and harness registry pages
+  describe that load and the sessions that read no `AGENTS.md`. The Claude Code
+  pin records the plugin ID that releases v2.1.277 to v2.1.284 use for the
+  **Project instructions** setting.
+
 - **The Antigravity install writes its plugin where the CLI loads it.**
   Current Antigravity CLI releases load plugins from
   `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put
