@@ -34,7 +34,6 @@ from apothem.cli._helpers import (
     _lifecycle_envelope,
     _project_option,
     _resolve_project_root,
-    _warning_dicts,
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._user_level_report import (
@@ -42,7 +41,10 @@ from apothem.cli._user_level_report import (
     preview_uninstall,
     uninstall_advisories,
 )
-from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver import (
+    MaterializationResult,
+    MaterializationRun,
+)
 
 
 def _retention_advisories(
@@ -67,27 +69,75 @@ def _retention_advisories(
         return []
 
 
-def _warning_lines(run: MaterializationRun) -> list[str]:
-    """Return the warnings to print, one line per link or per message.
+#: The grouped line for paths an uninstall kept, by ``kept_reason``.
+_KEPT_GROUP_LINES = {
+    "unrecorded": "{count} paths were kept: the install record does not list them",
+    "no-digests": (
+        "{count} paths were kept: the install record does not show which files "
+        "Apothem wrote (it was made by an earlier release); run apothem update, "
+        "then uninstall again"
+    ),
+    "changed": "{count} paths were kept: they are not what Apothem wrote (changed or yours)",
+}
 
-    Paths kept for the same link (all the files under a linked folder) print
-    as one line with their count.
+
+def _warning_groups(run: MaterializationRun) -> list[dict[str, object]]:
+    """Group a run's warnings the way they are reported.
+
+    Paths kept for the same link (all the files under a linked folder), and
+    paths kept for the same reason, form one group with their count; any
+    other warning is a group of one. Each group is the first warning's
+    dictionary with the grouped ``message``, ``count`` and ``paths``.
     """
-    groups: dict[str, list[str]] = {}
+    groups: dict[tuple[str, str], list[MaterializationResult]] = {}
     for warning in run.warnings:
-        if not warning.detail.get("blocked"):
-            key = warning.detail.get("symlink") or warning.message
-            groups.setdefault(key, []).append(warning.message)
-    lines = []
-    for key, messages in groups.items():
-        if len(messages) == 1:
-            lines.append(messages[0])
+        link = warning.detail.get("symlink")
+        reason = warning.detail.get("kept_reason", "")
+        if link:
+            key = ("blocked" if warning.detail.get("blocked") else "link", link)
+        elif reason in _KEPT_GROUP_LINES:
+            key = ("kept", reason)
         else:
-            lines.append(
-                f"{len(messages)} paths reached through the link {key} were left in "
-                "place: Apothem does not remove anything through a link"
-            )
-    return lines
+            key = ("message", warning.message)
+        groups.setdefault(key, []).append(warning)
+    return [_group(key, members) for key, members in groups.items()]
+
+
+def _group(
+    key: tuple[str, str], members: list[MaterializationResult]
+) -> dict[str, object]:
+    """Return one reported warning for the *members* grouped under *key*."""
+    group = members[0].to_dict()
+    count = len(members)
+    kind, value = key
+    if count > 1 and kind in {"link", "blocked"}:
+        group["message"] = (
+            f"{count} paths reached through the link {value} were left in "
+            "place: Apothem does not remove anything through a link"
+        )
+    elif count > 1 and kind == "kept":
+        group["message"] = _KEPT_GROUP_LINES[value].format(count=count)
+    group["count"] = count
+    group["paths"] = [member.path for member in members]
+    return group
+
+
+def _warning_lines(run: MaterializationRun) -> list[str]:
+    """Return the warnings to print, one line per group (see :func:`_warning_groups`).
+
+    A link that keeps Apothem's own files is reported as a failure instead.
+    """
+    return [
+        str(group["message"])
+        for group in _warning_groups(run)
+        if not _is_blocked(group)
+    ]
+
+
+def _is_blocked(group: dict[str, object]) -> bool:
+    """Return True for a group of Apothem's files left behind a link."""
+    detail = group.get("detail")
+    return isinstance(detail, dict) and bool(detail.get("blocked"))
 
 
 def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
@@ -115,13 +165,14 @@ def _report_run(
     a leftover folder), is reported rather than hidden behind the success line.
     Each warning is added to *warnings*; the printed lines are grouped. A
     failure returns one ``uninstall`` error row for the harness, then one row
-    per failed step. Installed files left in place because they are reached
-    through a link make the uninstall partial: the tool still loads them.
+    per failed step. The uninstall is partial when it removed files before the
+    failure, or when installed files stay because they are reached through a
+    link: the tool still loads them.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
         return [], False
-    warnings.extend(_warning_dicts(harness_id, run))
+    warnings.extend({"harness": harness_id, **group} for group in _warning_groups(run))
     counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
     problems = [
@@ -150,7 +201,8 @@ def _report_run(
         "message": "; ".join(problems),
     }
     steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
-    return [summary, *steps], bool(blocked) and not run.errors
+    removed = any(result.outcome == "updated" for result in run.results)
+    return [summary, *steps], bool(blocked) or removed
 
 
 def _print_removed(

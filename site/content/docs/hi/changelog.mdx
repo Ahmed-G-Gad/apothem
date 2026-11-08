@@ -350,6 +350,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refused like a symbolic link, with a message that names the link and says
   to replace it with a real folder, and a leftover link no longer makes an
   uninstalled tool read as installed.
+- **Uninstall removes only the files Apothem wrote.** Each install now
+  records the SHA-256 of every skill, agent, command and rule file it writes,
+  and an uninstall removes a file only while it still has that content. A file
+  you added to an Apothem folder, an Apothem file you edited, and a file of
+  your own with an Apothem name stay, with a warning, and so does the folder
+  that holds them. Before, an uninstall removed the whole folder, and after a
+  partial uninstall followed by cleaning up by hand it could remove files you
+  had put there since. An install recorded by an earlier release does not say
+  which files Apothem wrote, so its folders stay too; run `apothem update`
+  before `apothem uninstall` to remove them. An uninstall that does not finish
+  (a failed step, an error, or Apothem's own files reached through a link)
+  appends an `uninstall-incomplete` record to the install ledger, so running
+  it again finishes the job; an install, update, rollback or finished
+  uninstall replaces that state, and so does removing the files by hand. A
+  linked folder that holds only your own files no longer stops an uninstall:
+  it is left in place with a warning and the uninstall finishes. An uninstall
+  that removed files before a step failed now exits `2` with the status
+  `partial`, and the `--format json` warnings are grouped like the printed
+  ones, with `count` and `paths`.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that

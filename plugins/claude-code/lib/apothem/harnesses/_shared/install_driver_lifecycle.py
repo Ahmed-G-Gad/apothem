@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
-import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -25,7 +26,6 @@ from apothem.lib.propagation import (
 )
 
 from .install_driver_backup import (
-    _replace_path,
     backup_ledger_targets,
 )
 from .install_driver_datahome import (
@@ -63,6 +63,11 @@ from .install_driver_types import (
     _path_text,
     backup_session,
     resolve_source,
+)
+from .install_driver_written import (
+    kept_file_warnings,
+    links_on_the_way,
+    remove_written,
 )
 
 
@@ -218,7 +223,7 @@ def detect_install(
     counts as evidence and why the weaker signals are excluded. A stale-sweep
     path of an earlier layout that still holds Apothem's files counts too (see
     :func:`_stale_path_proves_install`). So does an uninstall that did not
-    finish (see :func:`_incomplete_marker`), so a second run can complete it.
+    finish (see :func:`_unfinished_here`), so a second run can complete it.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -229,19 +234,26 @@ def detect_install(
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):
         return True
-    return _incomplete_marker(harness_name, root).is_file()
+    return _unfinished_here(harness_name, root)
 
 
-def _incomplete_marker(harness_name: str, root: Path) -> Path:
-    """Return the file that records an unfinished uninstall of *harness_name* at *root*.
+def _unfinished_here(harness_name: str, root: Path) -> bool:
+    """Return True when an unfinished uninstall left recorded paths at *root*.
 
-    An uninstall that errors, or that leaves installed files in place because
-    they are reached through a link, keeps the install record and writes this
-    file; the uninstall that finishes removes it. Only a real uninstall writes
-    it, so files of the operator's never make a harness read as installed.
+    The ledger's latest record for *root* is ``uninstall-incomplete`` (an
+    install, update, rollback or finished uninstall since then supersedes it)
+    and a path the still-active install lists exists. A root cleaned by hand
+    reads as not installed; an unreadable ledger reads as no evidence.
     """
-    digest = hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:16]
-    return install_ledger.STATE_ROOT / harness_name / f"{digest}.uninstall-incomplete"
+    try:
+        if install_ledger.unfinished_uninstall(harness_name, root=root) is None:
+            return False
+        active = install_ledger.active_install_records(harness_name, root=root)
+    except install_ledger.LedgerError:
+        return False
+    return any(
+        os.path.lexists(target.path) for install in active for target in install.targets
+    )
 
 
 @dataclass(frozen=True)
@@ -396,43 +408,132 @@ def run_uninstall(
     file reduced to Apothem-only content is deleted rather than left as a stub.
     The pre-mutation file is copied into the Apothem backup root first — no
     whole-file ``.bak`` sibling is left in the operator's directory. Directory
-    discovery surfaces are cleaned child-by-child so unrelated operator-authored
-    commands, skills, agents, and rules remain in place; existing generated
-    entries are backed up before removal.
+    discovery surfaces are cleaned child-by-child, and each child only as far
+    as the install record shows Apothem wrote it (see :func:`remove_written`):
+    a file goes only while it still has the recorded SHA-256, so a file the
+    operator added or changed stays, with a warning. Removed entries are
+    backed up first.
 
     The pass is ledger-driven: the latest install record for this harness+root
     is the source of truth for which single-file targets were actually written,
     so manifest drift after install cannot strand or over-remove them (a target
     added to the manifest later is untouched; a recorded target removed from the
-    manifest is still cleaned). Tree/discovery surfaces stay manifest+source
-    driven. The shared data home (memory / contexts / learning) is backed up and
-    removed only when last-referenced, at the home the latest install recorded
-    (see :func:`_data_home_for`). The directories the installs since the last
-    uninstall created are removed once empty, and an uninstall marker is
-    appended to the ledger. With no ledger record (a pre-ledger install), the
-    pass falls back to the full manifest and the default data home.
+    manifest is still cleaned). Tree/discovery surfaces are enumerated from the
+    manifest and source, and a child the record does not list stays. A record
+    written before file digests existed, or no record at all (a pre-ledger
+    install), proves nothing about the files, so those children stay too. The
+    shared data home (memory / contexts / learning) is backed up and removed
+    only when last-referenced, at the home the latest install recorded (see
+    :func:`_data_home_for`). The directories the installs since the last
+    uninstall created are removed once empty.
 
     Returns every removal's :class:`MaterializationResult` so callers can
     surface path-escape, backup, and write failures instead of reporting an
-    unconditional success. The ``kind="uninstall"`` ledger marker is appended
-    only when no removal errored — a failed uninstall leaves the install
-    record as the latest ledger entry, matching the on-disk reality that
-    targets remain. The marker references every backup the uninstall took,
+    unconditional success. A ``kind="uninstall"`` record is appended only when
+    no removal errored and nothing Apothem wrote stays behind a link;
+    otherwise, and when the pass raises, an ``uninstall-incomplete`` record is
+    appended instead (see :func:`_record_uninstall`): the install stays
+    active, so verify, status, rollback and a second uninstall keep operating
+    against it. Either record references every backup the uninstall took,
     including those in *prior_results*: removals the caller made just before
     this pass, such as a native config stripped of Apothem's keys. An error in
-    *prior_results* also withholds the marker.
+    *prior_results* also makes the uninstall unfinished.
+    """
+    root = _root_for(harness_root, project_root)
+    active = install_ledger.active_install_records(harness_name, root=root)
+    record = active[-1] if active else None
+    results: list[MaterializationResult] = []
+    finished = False
+    try:
+        _remove_installed(
+            harness_name,
+            record,
+            active,
+            results,
+            harness_root=harness_root,
+            project_root=project_root,
+        )
+        finished = not _left_unfinished([*prior_results, *results])
+    finally:
+        _record_uninstall(
+            harness_name,
+            root,
+            record,
+            [*prior_results, *results],
+            finished=finished,
+        )
+    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
+    created = {Path(path) for install in active for path in install.created_dirs}
+    kept += links_left_in(created, known=kept)
+    recorded = (target.path for install in active for target in install.targets)
+    floor = _allowed_write_root(harness_root, project_root)
+    return [
+        *results,
+        *kept,
+        *links_on_the_way(recorded, floor, known=[*results, *kept]),
+    ]
+
+
+def _left_unfinished(results: list[MaterializationResult]) -> bool:
+    """Return True when a removal failed or left Apothem's files behind a link."""
+    return any(
+        result.outcome == "error" or result.detail.get("blocked") for result in results
+    )
+
+
+def _record_uninstall(
+    harness_name: str,
+    root: Path,
+    record: LedgerRecord | None,
+    results: list[MaterializationResult],
+    *,
+    finished: bool,
+) -> None:
+    """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
+
+    Either record references every backup the pass took. A finished uninstall
+    ends the install and runs retention. An unfinished one keeps the install
+    active, so a second run is driven by the same record; it is written even
+    when the pass raised, and a failure to write it then does not hide the
+    pass's own error.
+    """
+    entry = LedgerRecord.create(
+        harness=harness_name,
+        root=root,
+        kind="uninstall" if finished else "uninstall-incomplete",
+        targets=backup_ledger_targets(results),
+        install_id=record.install_id if record is not None else None,
+    )
+    if not finished:
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            install_ledger.append_record(entry)
+        return
+    install_ledger.append_record(entry)
+    apply_retention(harness_name)
+
+
+def _remove_installed(
+    harness_name: str,
+    record: LedgerRecord | None,
+    active: list[LedgerRecord],
+    results: list[MaterializationResult],
+    *,
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> None:
+    """Remove what *record* shows this install wrote, appending to *results*.
+
+    *results* is the caller's list, so the removals made before an exception
+    are still recorded.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
-
     # Ledger-driven: the latest install record is the source of truth for what
     # this harness+root actually wrote. ``recorded_paths`` is None when no record
     # exists (legacy / pre-ledger install) — fall back to removing every manifest
     # target. With a record, a single-file manifest target is removed only if it
     # was recorded, so an entry added to the manifest after install is not touched.
-    active = install_ledger.active_install_records(harness_name, root=root)
-    record = active[-1] if active else None
     recorded_targets = (
         {target.path: target for target in record.targets} if record is not None else {}
     )
@@ -440,7 +541,12 @@ def run_uninstall(
         set(recorded_targets) if record is not None else None
     )
     handled: set[str] = set()
-    results: list[MaterializationResult] = []
+    remove = functools.partial(
+        remove_written,
+        recorded=recorded_targets if record is not None else None,
+        install_root=root,
+        harness_name=harness_name,
+    )
     gate = UserLevelGate.build(
         rules,
         harness_name=harness_name,
@@ -451,7 +557,8 @@ def run_uninstall(
     if record is not None:
         blocked = gate.ledger_blocked(target.path for target in record.targets)
         if blocked is not None:
-            return [blocked]
+            results.append(blocked)
+            return
 
     for entry in rules.install:
         if entry.user_level:
@@ -461,12 +568,7 @@ def run_uninstall(
                 gate.release(
                     entry,
                     record,
-                    functools.partial(
-                        _replace_path,
-                        install_root=root,
-                        harness_name=harness_name,
-                        removing=True,
-                    ),
+                    remove,
                 )
             )
             continue
@@ -516,13 +618,7 @@ def run_uninstall(
             project_root=project_root,
             exclude=rules.exclude,
         ):
-            removal = _replace_path(
-                target,
-                install_root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root,
-                removing=True,
-            )
+            removal = remove(target, allowed_root=allowed_root)
             if removal is not None:
                 results.append(removal)
             handled.add(_path_text(target))
@@ -557,31 +653,6 @@ def run_uninstall(
     created = {Path(path) for install in active for path in install.created_dirs}
     results.extend(remove_created_dirs(created, allowed_root=allowed_root))
     results.extend(gate.tidy(created))
-
-    # Append an uninstall marker referencing the install pass it reversed —
-    # only when every removal succeeded. On any error the install record
-    # stays latest, matching the on-disk state (targets remain) so verify,
-    # status, and rollback keep operating against the truth.
-    marker = _incomplete_marker(harness_name, root)
-    if any(result.outcome == "error" for result in (*prior_results, *results)) or any(
-        result.detail.get("blocked") for result in results
-    ):
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text("uninstall did not finish\n", encoding="utf-8")
-    else:
-        marker.unlink(missing_ok=True)
-        install_ledger.append_record(
-            LedgerRecord.create(
-                harness=harness_name,
-                root=root,
-                kind="uninstall",
-                targets=backup_ledger_targets([*prior_results, *results]),
-                install_id=record.install_id if record is not None else None,
-            )
-        )
-        apply_retention(harness_name)
-    kept = kept_link_warnings(results)
-    return [*results, *kept, *links_left_in(created, known=kept)]
 
 
 def build_plan(

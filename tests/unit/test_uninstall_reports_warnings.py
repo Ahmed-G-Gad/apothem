@@ -75,17 +75,19 @@ def test_a_warning_prints_and_the_uninstall_succeeds(
     assert [w["message"] for w in envelope["warnings"]] == ["the link /old/x"]
 
 
-def test_an_error_fails_the_uninstall(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_error_after_removals_makes_the_uninstall_partial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _select(monkeypatch, _Adapter("error"))
 
     plain = _run()
     as_json = _run("--format", "json")
 
-    assert plain.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
+    assert plain.exit_code == cli._EXIT_PARTIAL  # type: ignore[attr-defined]
     assert "Uninstalled" not in plain.output  # type: ignore[attr-defined]
     assert "the link /old/x" in plain.output  # type: ignore[attr-defined]
     envelope = json.loads(as_json.output)  # type: ignore[attr-defined]
-    assert envelope["status"] == "error"
+    assert envelope["status"] == "partial"
     assert [(r["outcome"], r["operation"]) for r in envelope["results"]] == [
         ("error", "uninstall"),
         ("error", "sweep_stale"),

@@ -491,7 +491,7 @@ def test_a_failed_uninstall_can_be_run_again(
     adapter: AntigravityAdapter, gemini: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     adapter.install({})
-    real = install_driver_lifecycle._replace_path
+    real = install_driver_lifecycle.remove_written
     failed: list[Path] = []
 
     def fail_once(target: Path, **kwargs: object) -> object:
@@ -500,13 +500,14 @@ def test_a_failed_uninstall_can_be_run_again(
             return _result("error", "remove_existing", target, "injected failure")
         return real(target, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(install_driver_lifecycle, "_replace_path", fail_once)
+    monkeypatch.setattr(install_driver_lifecycle, "remove_written", fail_once)
     first_code, first = _uninstall_json()
     left = [path.exists() for path in failed]
-    monkeypatch.setattr(install_driver_lifecycle, "_replace_path", real)
+    monkeypatch.setattr(install_driver_lifecycle, "remove_written", real)
     second_code, second = _uninstall_json()
 
-    assert first_code == cli._EXIT_EXPECTED
+    assert first_code == cli._EXIT_PARTIAL
+    assert first["status"] == "partial"
     assert first["results"][0]["operation"] == "uninstall"
     assert first["results"][0]["outcome"] == "error"
     assert "injected failure" in first["results"][0]["message"]

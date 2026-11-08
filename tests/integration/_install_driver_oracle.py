@@ -176,6 +176,29 @@ def _sort_ledger_targets(record: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
+#: Stands in for each file digest an install record carries (see
+#: ``LedgerTarget.digest`` / ``.files``): a digest follows the bytes of the
+#: source tree, so a golden holding real ones would change with every edit to a
+#: skill or rule. Which targets and files carry one is still compared.
+DIGEST_PLACEHOLDER = "<SHA256>"
+
+
+def _mask_ledger_digests(record: dict[str, Any]) -> dict[str, Any]:
+    """Return *record* with every target's file digests replaced by a token."""
+    targets = record.get("targets")
+    if not isinstance(targets, list):
+        return record
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        if "digest" in target:
+            target["digest"] = DIGEST_PLACEHOLDER
+        files = target.get("files")
+        if isinstance(files, dict):
+            target["files"] = dict.fromkeys(files, DIGEST_PLACEHOLDER)
+    return record
+
+
 def _dump_json(obj: Any, dest: Path) -> None:  # noqa: ANN401  # Any: serializes arbitrary JSON-like structures
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
@@ -300,7 +323,7 @@ def _capture_real_install(name: str, out_root: Path) -> None:
                             json.loads(line), root=install_root, home=home
                         )
                         norm = _sort_ledger_targets(
-                            _normalize_obj(norm, root=backup_root)
+                            _mask_ledger_digests(_normalize_obj(norm, root=backup_root))
                         )
                         ledger_lines.append(
                             json.dumps(norm, sort_keys=True, ensure_ascii=False)

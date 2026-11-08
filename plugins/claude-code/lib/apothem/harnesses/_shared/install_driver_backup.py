@@ -12,9 +12,13 @@ from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
-from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
 
+from .install_driver_digests import _LEDGER_OUTCOMES as _LEDGER_OUTCOMES
+from .install_driver_digests import _NON_LEDGER_OPERATIONS as _NON_LEDGER_OPERATIONS
+from .install_driver_digests import _ledger_targets as _ledger_targets
+from .install_driver_digests import backup_ledger_targets as backup_ledger_targets
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_link,
@@ -422,102 +426,6 @@ def _compensating_rollback(
                 _remove_tree_keeping_links(target)
             elif target.exists():
                 target.unlink()
-
-
-# Result outcomes that represent a materialized on-disk file worth recording in
-# the install ledger (a created/updated/unchanged target). A clean install yields
-# only created/updated, so this set equals the run's ``files_written`` there while
-# also capturing the full managed set on an idempotent re-install.
-_LEDGER_OUTCOMES: frozenset[str] = frozenset({"created", "updated", "unchanged"})
-
-# Result operations that are NOT standalone installed ledger targets: the
-# per-surface data-home files (reversed wholesale by the data-home cleanup on
-# uninstall, not file-by-file) and the advisory capability-projection note. A
-# stale-sweep result is recorded only when it removed something (an ``updated``
-# result carrying its backup), so rollback can put the swept path back; the
-# ``unchanged`` result every absent legacy path emits is not a target.
-_NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
-    {"data_surface", "capability_projection"}
-)
-
-
-def _ledger_targets(
-    run: MaterializationRun, *, prior: LedgerRecord | None = None
-) -> tuple[LedgerTarget, ...]:
-    """Project a materialization run's written files to typed ledger targets.
-
-    One :class:`LedgerTarget` per created/updated/unchanged file result, carrying
-    the path, the install mode (the result ``operation`` — ``sentinel_merge`` /
-    ``write_text`` / a tree mode), the ownership class, the backup reference
-    captured during the write, the pass outcome, the entries Apothem owns in a
-    structured config, and whether Apothem created the file in this install
-    cycle (carried forward from *prior*, the record that was current before this
-    pass). Data-surface and advisory results are excluded; duplicate paths
-    collapse to the first occurrence.
-    """
-    earlier = {target.path: target for target in prior.targets} if prior else {}
-    targets: list[LedgerTarget] = []
-    seen: set[str] = set()
-    for result in run.results:
-        if result.outcome not in _LEDGER_OUTCOMES:
-            continue
-        if result.operation in _NON_LEDGER_OPERATIONS:
-            continue
-        if result.operation == "sweep_stale" and result.outcome != "updated":
-            continue
-        if result.path in seen:
-            continue
-        seen.add(result.path)
-        before = earlier.get(result.path)
-        created: bool | None
-        if result.outcome == "created":
-            created = True
-        elif before is not None:
-            created = before.created
-        else:
-            created = False
-        targets.append(
-            LedgerTarget(
-                path=result.path,
-                mode=result.operation,
-                ownership_class=result.detail.get("ownership_class", "operator-owned"),
-                backup_ref=result.backup_path,
-                outcome=result.outcome,
-                created=created,
-                owned=result.owned,
-            )
-        )
-    return tuple(targets)
-
-
-def backup_ledger_targets(
-    results: list[MaterializationResult],
-) -> tuple[LedgerTarget, ...]:
-    """Project the backups an uninstall or rollback relied on to ledger targets.
-
-    One :class:`LedgerTarget` per result that carries a backup, with the same
-    path, mode (the result ``operation``), ownership class and outcome
-    projection :func:`_ledger_targets` uses for install records. Recording them
-    keeps those backup sets referenced, so retention never deletes them while
-    the record itself is kept. Duplicate paths keep the first backup, the
-    state before the operation.
-    """
-    targets: list[LedgerTarget] = []
-    seen: set[str] = set()
-    for result in results:
-        if result.backup_path is None or result.path in seen:
-            continue
-        seen.add(result.path)
-        targets.append(
-            LedgerTarget(
-                path=result.path,
-                mode=result.operation,
-                ownership_class=result.detail.get("ownership_class", "operator-owned"),
-                backup_ref=result.backup_path,
-                outcome=result.outcome,
-            )
-        )
-    return tuple(targets)
 
 
 def _written_data_home(run: MaterializationRun) -> str | None:
