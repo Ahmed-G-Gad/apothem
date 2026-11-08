@@ -888,8 +888,6 @@ swap_in() {
     _sw_trap="swap_abort \"Interrupted while replacing \$APOTHEM_HOME\""
     if [ "$_SW_MODE" = "aside" ]; then
         _SW_ASIDE="$(aside_name)" || exit 1
-        # _sw_trap is a fixed command string, so expanding it now is intended.
-        # shellcheck disable=SC2064
         trap "$_sw_trap" HUP INT TERM QUIT PIPE
         _SW_PHASE="aside"
         if ! mv "$APOTHEM_HOME" "$_SW_ASIDE"; then
@@ -928,8 +926,6 @@ ${_sw_new_names}"
     fi
     _SW_OLD="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-old.XXXXXX")" \
         || die "Could not make room beside $APOTHEM_HOME; nothing was changed"
-    # _sw_trap is a fixed command string, so expanding it now is intended.
-    # shellcheck disable=SC2064
     trap "$_sw_trap" HUP INT TERM QUIT PIPE
     for _sw_name in $_SW_KEEP; do
         _SW_PHASE="carry"

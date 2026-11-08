@@ -1651,20 +1651,6 @@ def _whoami() -> str:
     ).stdout.strip()
 
 
-def _rename_into_is_denied(tmp_path: Path, home: Path) -> bool:
-    """Whether renaming a folder into HOME fails, as the installer's
-    rollback does when it moves the data back (a rename, as Move-Entry's
-    Directory.Move is)."""
-    probe = tmp_path / "rename-probe"
-    probe.mkdir()
-    try:
-        probe.rename(home / "rename-probe")
-    except OSError:
-        return True
-    (home / "rename-probe").rename(probe)
-    return False
-
-
 @requires_windows
 def test_a_failed_rollback_keeps_the_staging_folder_and_names_it(
     tmp_path: Path, release: tuple[Path, str]
@@ -1688,12 +1674,6 @@ def test_a_failed_rollback_keeps_the_staging_folder_and_names_it(
         timeout=60,
     )
     try:
-        if not _rename_into_is_denied(tmp_path, home):
-            pytest.skip(
-                "the access rule does not stop this account renaming a folder "
-                "into APOTHEM_HOME (an elevated account with the restore "
-                "privilege passes it, as on the hosted Windows runners)"
-            )
         with (home / "pyproject.toml").open("rb"):
             result = _run(
                 tmp_path, base_url, cosign_dir=_stub_cosign(tmp_path), yes=False
