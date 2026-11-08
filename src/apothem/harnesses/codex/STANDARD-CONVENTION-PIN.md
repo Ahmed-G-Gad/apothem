@@ -44,6 +44,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://agent-plugins.org/schemas/1.0.0/plugin.schema.json> (portable `plugin.json` schema; retrieved 2026-10-24)
 - <https://github.com/openai/codex/issues/18988> (open request: plugins that bundle custom agents; retrieved 2026-10-24)
 - <https://github.com/openai/codex/issues/18308> (open request: agents in the plugin system; retrieved 2026-10-24)
+- <https://github.com/openai/codex/releases> (Codex CLI releases, tagged `rust-v` and the version, with alpha builds marked as prereleases; retrieved 2026-11-03)
 
 ## Discovery Targets
 

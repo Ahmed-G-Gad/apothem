@@ -178,6 +178,10 @@ Retrieved 2026-11-03.
 - <https://docs.openclaw.ai/gateway/config-extensions> (re-read: `load.extraDirs` example and precedence; first read 2026-10-24)
 - Source: `openclaw/openclaw` commit `716621b9f55b` (`src/config/zod-schema.agents.ts`, `src/config/zod-schema.agent-entry-base.ts`, `src/config/zod-schema.agent-defaults-base.ts`, `src/config/legacy.roster.ts`, `src/config/paths.ts`, `src/agents/workspace-bootstrap-policy.ts`, `src/agents/embedded-agent-helpers/bootstrap.ts`, `src/agents/workspace-file-read.ts`, `src/agents/workspace.ts`, `src/agents/agent-scope-config.ts`)
 
+Retrieved 2026-11-03.
+
+- <https://docs.openclaw.ai/install> (install methods, among them the npm package `openclaw`, installed as `openclaw@latest`)
+
 ## Discovery Targets
 
 - None. No capability cell for this harness is discovery-pending.
