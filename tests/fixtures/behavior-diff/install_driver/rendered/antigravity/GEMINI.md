@@ -8,16 +8,16 @@ Apothem wrote this block with `apothem install --harness antigravity`.
 coding tool loads it, so this block carries guidance that holds in every
 project and names no single tool as its reader. Apothem's Antigravity cohort
 is installed as the `apothem` plugin under
-`~/.gemini/antigravity-cli/plugins/apothem/`.
+`~/.gemini/config/plugins/apothem/`.
 
 ## Apothem reference material
 
 The install placed Apothem's files here:
 
-- `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.
-- `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques
+- `~/.gemini/config/plugins/apothem/plugin.json` — plugin metadata.
+- `~/.gemini/config/plugins/apothem/skills/` — reusable techniques
   plus slash-command prompts converted into skills.
-- `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent
+- `~/.gemini/config/plugins/apothem/agents/` — local agent
   definitions normalized from Apothem agents.
 
 Apothem's behavioral rules, the plan and audit templates its prompts cite, and
@@ -44,13 +44,13 @@ Antigravity plugin.
 
 ## Apothem support files
 
-Apothem's support root is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
+Apothem's support root is `<ROOT>/config/plugins/apothem/.apothem/support`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
 
-- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
-- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
-- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`
+- `rules/<path>` is `<ROOT>/config/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/config/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/config/plugins/apothem/.apothem/support/hooks/<path>`
 
-Start with the rule index at `<ROOT>/antigravity-cli/plugins/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
+Start with the rule index at `<ROOT>/config/plugins/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
 
 A cited path whose first segment is not listed here is not installed.
 

@@ -49,7 +49,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-설치 프로그램에는 시스템 Python 3.10+가 필요하며, 네트워크 형식에는 `git`과 `gpg`도 필요합니다. 설치 프로그램은 사전 요건을 확인하고 엔진을 `~/.apothem` 아래에 배치합니다. `click` 또는 `rich`가 없으면 사용자가 확인하거나 `--yes`(PowerShell에서는 `-Yes`) 또는 `APOTHEM_AUTO_INSTALL_DEPS=1`을 주었을 때 해당 패키지를 설치하며, 그렇지 않으면 실행할 pip 명령을 안내하며 중단합니다([사전 요건 한눈에](/docs/install#사전-요건-한눈에) 참조). 설치가 끝나면 다음 단계 안내 배너를 출력합니다. POSIX에서 심(shim)의 디렉터리가 이미 `PATH`에 있으면 배너는 다음과 같습니다:
+설치 프로그램에는 시스템 Python 3.10+가 필요하며, 네트워크 형식에는 `git`과 `gpg`도 필요합니다. 설치 프로그램은 사전 요건을 확인하고 엔진을 `~/.apothem` 아래에 배치합니다. `click` 또는 `rich`가 없으면 사용자가 확인하거나 `--yes`(PowerShell에서는 `-Yes`) 또는 `APOTHEM_AUTO_INSTALL_DEPS=1`을 주었을 때 해당 패키지를 설치하며, 그렇지 않으면 실행할 pip 명령을 안내하며 중단합니다([사전 요건 한눈에](/docs/install#prerequisites-at-a-glance) 참조). 설치가 끝나면 다음 단계 안내 배너를 출력합니다. POSIX에서 심(shim)의 디렉터리가 이미 `PATH`에 있으면 배너는 다음과 같습니다:
 
 ```text
 Installation complete.

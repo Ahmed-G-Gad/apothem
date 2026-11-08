@@ -3,11 +3,14 @@
 """Install logic for the antigravity harness adapter.
 
 Installs the apothem convention surface into the Antigravity CLI harness
-target. Antigravity reads ``~/.gemini/GEMINI.md`` as global context and
-stores CLI customization under ``~/.gemini/antigravity-cli/``; Apothem
-installs a named plugin at
-``~/.gemini/antigravity-cli/plugins/apothem/`` for cohorts that should not
-collide with Gemini CLI project-local files.
+target. Antigravity reads ``~/.gemini/GEMINI.md`` as global context and, from
+CLI 1.0.2, loads plugins from ``~/.gemini/config/plugins/<name>/``; the CLI
+keeps its own settings and cache under ``~/.gemini/antigravity-cli/``.
+Apothem installs a named plugin at ``~/.gemini/config/plugins/apothem/`` for
+cohorts that should not collide with Gemini CLI project-local files. The
+manifest's ``stale-sweep`` list names the plugin's earlier folder,
+``~/.gemini/antigravity-cli/plugins/apothem/``, so the shared driver backs it
+up and removes it whole before it writes the new folder.
 
 The adapter is user-scope: it propagates under the harness root resolved
 as ``output_path.parent`` (``~/.gemini/``). Its propagation contract is

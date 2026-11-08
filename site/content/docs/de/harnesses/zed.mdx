@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Apothem-Harness-Adapter für Zed (GA)."
 machineTranslated: true
-sourceHash: "43036c087a25d729"
+sourceHash: "2536a5b3796fa036"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,7 +58,7 @@ Home-Verzeichnis, bevor sie irgendetwas im Projekt ändert:
 
 Diese Ordner werden gemeinsam genutzt. Sie gehören nicht exklusiv zum Projekt:
 
-- Jedes Projekt, in das Sie `zed` installieren, und jede andere Apothem-Installation, die den Ordner nennt, nutzt dieselbe Kopie und schreibt dieselben Dateien, daher spielt die Reihenfolge Ihrer Installationen keine Rolle. Mehrere andere Werkzeuge lesen `~/.agents/skills/` ebenfalls; die [Harness-Registry](/docs/reference/harness-registry#gemeinsame-wurzelverzeichnisse) listet sie auf.
+- Jedes Projekt, in das Sie `zed` installieren, und jede andere Apothem-Installation, die den Ordner nennt, nutzt dieselbe Kopie und schreibt dieselben Dateien, daher spielt die Reihenfolge Ihrer Installationen keine Rolle. Mehrere andere Werkzeuge lesen `~/.agents/skills/` ebenfalls; die [Harness-Registry](/docs/reference/harness-registry#shared-roots) listet sie auf.
 - `--project` legt fest, welche Anweisungsdatei geschrieben wird und zu welchem
   Projekt die Installation gehört. Es ändert nicht, wohin die Skills gehen.
 - Die Installation fügt Ihrem Repository keine Skill- oder Regeldatei hinzu. Das
@@ -99,6 +99,18 @@ niedrigerer Priorität Ihren Text enthält, geben Installation und Aktualisierun
 eine Warnung aus, die die verdeckte Datei nennt; kopieren Sie die Anweisungen,
 die Sie benötigen, außerhalb des Apothem-Blocks in `.rules`, damit sie in Zed
 erhalten bleiben.
+
+Die Hinweise, die andere Apothem-Installationen ausgeben, wenn sie `AGENTS.md`
+oder eine andere weiter unten in der Liste stehende Datei schreiben, nennen Zed
+nur unter einer Bedingung als Leser: Zed lädt diese Datei nur, wenn das Projekt
+keine der Dateien weiter oben in der Liste hat. Diese Installation schreibt
+`.rules`, daher gelten diese Hinweise in einem Projekt, in dem sie lief, erst
+für Zed, nachdem `.rules` entfernt wurde. Dasselbe gilt für die Hinweise, die
+diese Installation selbst ausgibt: Enthält `AGENTS.md` oder eine andere
+gemeinsam genutzte Datei weiter unten in der Liste den Apothem-Block einer
+anderen Installation, ist der Hinweis, dass Zed diese Datei ebenfalls lädt, an
+eine Bedingung geknüpft, die wegen der neuen `.rules` nicht zutrifft, bis
+`.rules` entfernt wird.
 
 Die globale Anweisungsdatei `~/.config/zed/AGENTS.md` und der
 MCP-Context-Server-Block (`.zed/settings.json` `context_servers`) gehören dem

@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "8ac335bb0406c162"
+sourceHash: "817b5e32ce317949"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,7 +49,7 @@ apothem install --harness cursor --project /path/to/project
 
 이 폴더들은 공유됩니다. 프로젝트 전용이 아닙니다.
 
-- `cursor`를 설치하는 모든 프로젝트와, 그 폴더를 지정하는 다른 모든 Apothem 설치는 같은 사본을 사용하고 같은 파일을 작성하므로, 설치 순서는 중요하지 않습니다. 다른 여러 도구도 `~/.agents/skills/`를 읽습니다. [하니스 레지스트리](/docs/reference/harness-registry#공유-루트)가 그 도구들을 나열합니다.
+- `cursor`를 설치하는 모든 프로젝트와, 그 폴더를 지정하는 다른 모든 Apothem 설치는 같은 사본을 사용하고 같은 파일을 작성하므로, 설치 순서는 중요하지 않습니다. 다른 여러 도구도 `~/.agents/skills/`를 읽습니다. [하니스 레지스트리](/docs/reference/harness-registry#shared-roots)가 그 도구들을 나열합니다.
 - `--project`는 작성할 규칙 파일과 설치가 속하는 프로젝트를 선택합니다. 스킬이
   가는 위치는 바꾸지 않습니다.
 - 설치는 저장소에 스킬 파일이나 규칙 파일을 추가하지 않습니다. 프로젝트에는 규칙
@@ -109,7 +109,7 @@ Cursor에는 도구를 나열하거나 거부하는 키가 없습니다. 서브�
   `.cursor/agents/`를 `.gitignore`에 나열하세요. Apothem은 대신 선택하지 않습니다.
 - Cursor는 다른 도구용으로 작성된 도우미 폴더도 로드하며, 그중에는 프로젝트의
   `.claude/agents/`와 홈 디렉터리의 `~/.claude/agents/`가 있습니다
-  (나머지는 [하니스 레지스트리](/docs/reference/harness-registry#공유-루트)에
+  (나머지는 [하니스 레지스트리](/docs/reference/harness-registry#shared-roots)에
   나열됨). 이름이 충돌하면 프로젝트가 홈 폴더보다 우선하고 `.cursor/`가 다른
   폴더보다 우선하므로, 이 설치가 있는 프로젝트에서는 네이티브 파일이 Cursor가
   `~/.claude/agents/`에서 가져올 Claude Code 사본을 대체합니다. Cursor의 문서는
@@ -247,7 +247,8 @@ Cursor에는 이 어댑터가 관리할 수 있는, 문서화된 파일 기반 �
 가져오며, 이 파일의 프런트매터가 설정하는 `alwaysApply: true` 규칙을 모든
 세션에서 활성 상태로 유지합니다. [또 다른 도구 하나](/docs/harnesses/hermes)는
 프로젝트에 해당 도구 자체의 지침 파일이 없고
-`AGENTS.md`나 `CLAUDE.md`도 없을 때에만, 프로젝트 지침의 마지막 대체 수단으로 이
+`AGENTS.override.md`, `AGENTS.md`나 `CLAUDE.md`도 없을 때에만,
+프로젝트 지침의 마지막 대체 수단으로 이
 파일을 로드합니다. 따라서 `cursor`를 설치하거나 제거하면 그 도구들이 로드하는
 내용도 바뀌며, 설치는 그 조건과 함께 둘을 모두 명시하는 안내를
 출력합니다([하니스 레지스트리](/docs/reference/harness-registry#shared-roots)가

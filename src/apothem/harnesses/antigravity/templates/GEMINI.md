@@ -7,16 +7,16 @@ Apothem wrote this block with `apothem install --harness antigravity`.
 coding tool loads it, so this block carries guidance that holds in every
 project and names no single tool as its reader. Apothem's Antigravity cohort
 is installed as the `apothem` plugin under
-`~/.gemini/antigravity-cli/plugins/apothem/`.
+`~/.gemini/config/plugins/apothem/`.
 
 ## Apothem reference material
 
 The install placed Apothem's files here:
 
-- `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.
-- `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques
+- `~/.gemini/config/plugins/apothem/plugin.json` — plugin metadata.
+- `~/.gemini/config/plugins/apothem/skills/` — reusable techniques
   plus slash-command prompts converted into skills.
-- `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent
+- `~/.gemini/config/plugins/apothem/agents/` — local agent
   definitions normalized from Apothem agents.
 
 Apothem's behavioral rules, the plan and audit templates its prompts cite, and

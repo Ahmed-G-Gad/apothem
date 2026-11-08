@@ -43,7 +43,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-インストーラーには、システムの Python 3.10+ が必要で、ネットワーク形式の場合はさらに `git` と `gpg` が必要です。インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#前提条件の一覧)を参照）。完了時には次のステップのバナーを表示します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります:
+インストーラーには、システムの Python 3.10+ が必要で、ネットワーク形式の場合はさらに `git` と `gpg` が必要です。インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#prerequisites-at-a-glance)を参照）。完了時には次のステップのバナーを表示します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります:
 
 ```text
 Installation complete.

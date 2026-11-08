@@ -126,7 +126,7 @@ def test_antigravity_agents_make_no_unenforced_read_only_claim(
     tmp_path: Path,
 ) -> None:
     install_driver.run_install("antigravity", harness_root=tmp_path)
-    agents_dir = tmp_path / "antigravity-cli" / "plugins" / "apothem" / "agents"
+    agents_dir = tmp_path / "config" / "plugins" / "apothem" / "agents"
     for source in _AGENTS:
         fields = _fm((agents_dir / source.name).read_text("utf-8"))
         assert set(fields) == {"name", "description"}, source.stem

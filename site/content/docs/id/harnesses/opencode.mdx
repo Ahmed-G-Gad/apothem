@@ -2,14 +2,14 @@
 title: "OpenCode"
 description: "Adapter harness Apothem untuk OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "f4ee42d9d05adcf7"
+sourceHash: "d7cbf6354ea54e5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** OpenCode
 **Nama instalasi:** `opencode`
 **Status:** Beta
-**Konfigurasi native:** `~/.config/opencode/`
+**Konfigurasi native:** `~/.config/opencode/` (atau `$XDG_CONFIG_HOME/opencode/`)
 
 ## Instalasi
 
@@ -32,6 +32,15 @@ OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+Ini adalah jalur default. Ketika `XDG_CONFIG_HOME` disetel ke folder absolut,
+adapter menulis ke `$XDG_CONFIG_HOME/opencode/` sebagai gantinya, folder yang
+dibaca baik oleh OpenCode 1 maupun OpenCode 2. Nilai relatif atau root sistem
+berkas tidak digunakan, dan instalasi menyatakannya. `OPENCODE_CONFIG_DIR` tidak
+diikuti: OpenCode 1 membaca folder itu serta folder default, tetapi OpenCode 2
+membacanya sebagai pengganti folder default, sehingga ketika variabel itu menunjuk
+ke folder lain, instalasi memperingatkan bahwa OpenCode 2 tidak memuat instalasi
+tersebut.
+
 ## Pemetaan profil ke konfigurasi native
 
 Adapter merender `opencode.json` dengan daftar berkas `instructions` yang
@@ -42,12 +51,53 @@ dicadangkan sebelum penggantian.
 
 ## Catatan kompatibilitas
 
+Instalasi ini bekerja dengan OpenCode 1 dan OpenCode 2. Instalasi menulis satu
+konfigurasi, yang dibaca OpenCode 1 apa adanya dan diterjemahkan oleh OpenCode 2:
+keduanya membaca folder konfigurasi yang sama, dan OpenCode 2 mengonversi di dalam
+memori bentuk OpenCode 1 yang ditulis instalasi, tanpa menulis ulang berkas.
+Daftar `permission` helper dan entri server `mcp` dimuat di OpenCode 2 melalui
+terjemahan itu. OpenCode 1 juga memuat blok yang ditulis instalasi Claude Code ke
+`~/.claude/CLAUDE.md` ketika folder konfigurasinya tidak berisi `AGENTS.md` dan
+baik `OPENCODE_DISABLE_CLAUDE_CODE` maupun `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT`
+tidak disetel; OpenCode 2 tidak memiliki fallback `CLAUDE.md`, sehingga ia tidak
+memuat berkas itu.
+
+Definisi helper hanya membawa aturan `deny`, untuk alat yang tidak boleh
+digunakan sebuah helper. OpenCode mengizinkan setiap alat secara default dan
+bertanya sebelum membaca berkas `.env` atau `.env.*`. Aturan `allow` di sebuah
+helper akan mematikan pertanyaan itu dan menimpa aturan yang lebih ketat di
+konfigurasi OpenCode Anda sendiri, sehingga sebuah helper mengikuti pengaturan
+`permission` Anda.
+
+Ketika profil bersama mencantumkan server MCP, instalasi menulisnya ke blok `mcp`
+di `opencode.json`. OpenCode melakukan substitusi `{env:NAME}`, bukan `${NAME}`,
+sehingga setiap `${NAME}` di lingkungan, header, atau URL sebuah server ditulis
+sebagai `{env:NAME}`. Argumen command disalin apa adanya: referensi di sana
+dibiarkan agar diekspansi oleh server, atau shell yang dijalankannya. `$NAME` di
+dalam nilai lingkungan atau header, dan setiap bentuk `${...}` yang dibiarkan apa
+adanya, termasuk yang ada di argumen command, disalin apa adanya, dan instalasi
+memperingatkan bahwa OpenCode tidak mengekspansinya. Peringatan itu menyebutkan
+letak referensi, seperti `environment.TOKEN`, dan tidak pernah mencetak nilainya.
+
+OpenCode menyisipkan nilai `{env:NAME}` ke dalam teks konfigurasi yang dibacanya
+tanpa meng-escape-nya; OpenCode 2 meng-escape-nya hanya ketika teks itu tidak
+dapat diurai tanpa itu. Karena itu, nilai dengan backslash (seperti jalur
+Windows), tanda kutip ganda, atau karakter kontrol dapat membuat OpenCode 1 gagal
+membaca berkas, dan di kedua versi `\t` atau `\n` di dalamnya sampai ke server
+sebagai karakter kontrol. Instalasi memeriksa setiap variabel semacam itu saat
+dijalankan dan memperingatkan tentang variabel yang berisi karakter tersebut.
+Sebagai gantinya, setel nilai itu sebagai `{file:path}` di bawah
+`harnesses.opencode.mcp_servers.<name>`, agar alat lain tetap memegang
+referensi `${NAME}`.
+
 OpenCode menggabungkan setiap berkas yang disebut daftar `instructions` ke dalam
 setiap sesi ([aturan OpenCode](https://opencode.ai/docs/rules/)). Karena itu,
 daftar tersebut menyebut dokumen profil Anda terlebih dahulu, lalu hanya aturan
-yang `alwaysApply`-nya bernilai `true`, masing-masing dengan satu jalur
-`~/.config/opencode/.apothem/support/rules/<name>.md` eksplisit; OpenCode
-mengekspansi `~/` di awal terhadap direktori home Anda. Aturan-aturan itu adalah
+yang `alwaysApply`-nya bernilai `true`, masing-masing dengan satu jalur eksplisit,
+secara default `~/.config/opencode/.apothem/support/rules/<name>.md`. OpenCode
+mengekspansi `~/` di awal terhadap direktori home Anda; jalur itu absolut ketika
+folder konfigurasi berada di luar direktori home, dan pohon pendukung selalu
+berada di bawah folder konfigurasi. Aturan-aturan itu adalah
 `agnostic-posture`, `authority-inquiry`, `context-management`,
 `session-closure`, dan indeks aturan, `apothem-rule-index`. OpenCode tidak
 membatasi aturan apa pun berdasarkan jalur, sehingga setiap aturan lain dibaca
@@ -95,7 +145,18 @@ apothem update --harness opencode
 ```
 
 Menyegarkan `opencode.json`, command native, skill, definisi helper, dan pohon
-pendukung Apothem.
+pendukung Apothem. Server MCP yang ditulis instalasi lalu Anda konversi ke
+bentuk `mcp.servers` OpenCode 2, tanpa mengubahnya, ditulis kembali di bawah `mcp`,
+tempat kedua versi OpenCode membacanya. Sebuah server di bawah `mcp.servers`
+dihitung sebagai konversi itu hanya ketika entri `mcp`-nya sudah tidak ada dan
+server itu cocok seluruhnya dengan yang ditulis instalasi; server Anda sendiri
+dengan nama yang sama, konversi yang Anda sunting, dan konversi yang Anda
+nonaktifkan dibiarkan apa adanya. Di samping konversi semacam itu, pembaruan
+menulis server tersebut kembali di bawah `mcp`, sehingga OpenCode 1 memakai
+salinan itu dan OpenCode 2 memakai yang dikonversi; agar server tetap nonaktif di
+kedua versi, hapus server itu dari profil. Ini memerlukan catatan instalasi yang
+mencantumkan entri yang ditulis instalasi; catatan dari sebelum Apothem menyimpan
+daftar itu tidak tercakup.
 
 ## Pencopotan
 
@@ -106,7 +167,13 @@ apothem uninstall --harness opencode
 Menghapus entri yang ditambahkan adapter ke `~/.config/opencode/opencode.json`
 (kunci Anda sendiri, server MCP, dan entri `instructions` tetap ada, dan berkas
 itu dihapus hanya ketika Apothem yang membuatnya dan tidak ada lagi yang
-tersisa milik Anda). Menghapus blok Apothem dari dokumen profil
+tersisa milik Anda). Server MCP yang ditulis instalasi lalu Anda konversi ke
+bentuk `mcp.servers` OpenCode 2 tanpa mengubahnya ikut dihapus, secara utuh;
+server lain di bawah `mcp.servers` tetap ada. Server Anda sendiri di bawah
+`mcp.servers` yang cocok dengan salah satu yang ditulis instalasi, setelah Anda
+menghapus entri `mcp` milik instalasi, tidak dapat dibedakan dari salinan hasil
+konversi dan ikut dihapus bersamanya; berkas dicadangkan lebih dulu. Menghapus
+blok Apothem dari dokumen profil
 `~/.config/opencode/apothem/rules/00-apothem-profile.md` dan mempertahankan teks
 lain di dalamnya; berkas itu dihapus hanya ketika tidak ada lagi yang tersisa di
 dalamnya. Juga menghapus berkas Apothem di `~/.config/opencode/commands/`,
@@ -114,6 +181,11 @@ dalamnya. Juga menghapus berkas Apothem di `~/.config/opencode/commands/`,
 `~/.config/opencode/.apothem/support/`; berkas lain di folder-folder tersebut
 tetap ada. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum
 diubah atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+Instalasi yang dibuat oleh rilis sebelumnya di `~/.config/opencode/` ketika
+`XDG_CONFIG_HOME` menunjuk ke folder lain tetap berada di sana, dan OpenCode tidak
+pernah membacanya. Instalasi berikutnya menyatakannya; untuk menghapusnya,
+jalankan pencopotan dengan `XDG_CONFIG_HOME` tidak disetel.
 
 ## Gerbang konformitas
 

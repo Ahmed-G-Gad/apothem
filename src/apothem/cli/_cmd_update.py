@@ -475,6 +475,17 @@ def _record_rollback_results(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
+        # A swept path is restored only where files are missing (see
+        # ``rollback_install``); say what was kept and where the backup is.
+        for kept in target_results:
+            if kept.operation == "restore_backup" and (
+                "missing file" in kept.message
+                or kept.message.startswith("left in place")
+            ):
+                run.con.print(
+                    f"[yellow]Note:[/] {harness_id} - {escape(str(kept.path))} "
+                    f"{escape(str(kept.message))}"
+                )
 
 
 @main.command(epilog=_EP_ROLLBACK)

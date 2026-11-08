@@ -2,7 +2,7 @@
 title: "Registri harness"
 description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -100,7 +100,7 @@ pemasangan menghitung pemasangan yang menggunakannya. Pemilik tercatat adalah
 pemilik terdaftar selama ia menggunakan folder itu, dan jika tidak, pemasangan
 tertua yang menggunakannya; tidak ada yang berpindah ketika pemilik terdaftar
 dicopot. Pencopotan menghapus folder itu hanya ketika tidak ada pemasangan lain
-yang masih menggunakannya (lihat [`uninstall`](/docs/cli-reference/uninstall#folder-bersama-di-direktori-home-anda)).
+yang masih menggunakannya (lihat [`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory)).
 Memasang pembaca tidak menempatkan berkas apa pun di folder itu; memasang
 pemilik atau co-installer menempatkan konten Apothem di hadapan setiap pembaca.
 
@@ -127,16 +127,50 @@ sendiri (`~/.codebuddy/skills/`, `~/.kiro/skills/`, dan `~/.trae/skills/`);
 hanya tool tersebut yang memuatnya, sehingga folder itu bukan root bersama.
 
 Sebuah pembaca dicantumkan hanya jika dokumentasi vendornya memperlihatkan
-pemuatan bawaan atas jalur persis tersebut. Registri mencatat tiga syarat, dan
-catatan pemasangan mengulangi setiap syarat itu. `Open-Claw` mengindeks
+pemuatan bawaan atas jalur persis tersebut. Ketika sebuah pembaca memuat suatu
+jalur hanya dalam kasus tertentu, registri mencatat syaratnya, dan catatan
+pemasangan mengulanginya. `Open-Claw` mengindeks
 `~/.agents/skills/` hanya di bawah direktori status bawaannya (ia melewati
-folder itu ketika `OPENCLAW_STATE_DIR` menunjuk ke tempat lain). `Hermes` memuat
-satu jenis konteks proyek per sesi, kecocokan pertama yang menang, dengan urutan
-`.hermes.md` atau `HERMES.md`, `AGENTS.md`, `CLAUDE.md`, lalu aturan `Cursor`.
+folder itu ketika `OPENCLAW_STATE_DIR` menunjuk ke tempat lain). `OpenCode` 1
+memuat `~/.claude/CLAUDE.md` hanya jika folder konfigurasinya (secara default
+`~/.config/opencode/`) tidak berisi `AGENTS.md`,
+dan melewatinya ketika `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` atau
+`OPENCODE_DISABLE_CLAUDE_CODE=1` ditetapkan. `OpenCode` 2 membaca konfigurasi
+`~/.config/opencode/` yang sama tetapi tidak memiliki fallback `CLAUDE.md`,
+sehingga ia tidak memuat `~/.claude/CLAUDE.md`. `Codex` mengambil yang pertama
+dari `AGENTS.override.md` dan `AGENTS.md` di setiap folder, sehingga ia memuat
+`<project>/AGENTS.md` hanya jika proyek tidak memiliki `AGENTS.override.md` di
+sebelahnya. `CodeBuddy` memakai `<project>/AGENTS.md` sebagai memori proyek
+hanya jika proyek tidak memiliki `CODEBUDDY.md`. `Zed` hanya memuat berkas
+instruksi proyek pertama dalam daftarnya: `.rules`, `.cursorrules`,
+`.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
+`AGENTS.md`, `CLAUDE.md`, lalu `GEMINI.md`. Karena itu ia memuat
+`<project>/.github/copilot-instructions.md`, `<project>/AGENTS.md`, dan
+`<project>/GEMINI.md` hanya jika proyek tidak memiliki satu pun berkas yang
+berada di depan berkas itu dalam daftar. Pemasangan `Zed` menulis
+`<project>/.rules`, berkas pertama dalam daftar, sehingga `Zed` tidak memuat satu
+pun dari ketiganya di proyek tempat ia dipasang.
+
+`Hermes` memuat satu jenis konteks proyek per sesi: jenis pertama yang memiliki
+berkas tidak kosong, dengan urutan `.hermes.md` atau `HERMES.md`, rantai
+`AGENTS.md` (di setiap folder, `AGENTS.override.md` yang tidak kosong
+menggantikan `AGENTS.md` di sebelahnya), `CLAUDE.md`, lalu aturan `Cursor`.
 Karena itu ia memuat `<project>/AGENTS.md` hanya jika proyek tidak memiliki
 `.hermes.md` atau `HERMES.md` dan tidak ada `AGENTS.override.md` di sebelahnya,
 serta `<project>/.cursor/rules/apothem-rules.mdc` hanya jika proyek tidak
-memiliki `.hermes.md`, `AGENTS.md`, atau `CLAUDE.md`.
+memiliki `.hermes.md`, `HERMES.md`, `AGENTS.override.md`, `AGENTS.md`, atau
+`CLAUDE.md`. `Hermes` mencari `.hermes.md` dan `HERMES.md` dari folder tempat ia
+dimulai hingga root git, dan membaca rantai `AGENTS.md` dari root git ke bawah,
+sehingga berkas semacam itu di folder di atas proyek juga dihitung. Berkas
+kosong tidak dihitung. `.hermes.md` yang kosong juga menyembunyikan `HERMES.md`
+di sebelahnya, sehingga `Hermes` berpindah ke rantai `AGENTS.md` meskipun
+`HERMES.md` itu berisi teks. Syarat-syarat ini berlaku untuk sesi yang dimulai
+di proyek. Sesi yang dimulai di folder di atas proyek tetap dapat memuat
+`<project>/AGENTS.md`, atau `AGENTS.override.md` yang tidak kosong di
+sebelahnya, saat sesi itu pertama kali mengerjakan sebuah berkas di proyek, apa
+pun `.hermes.md` atau `HERMES.md` yang dimiliki proyek. `Hermes` melewati hal ini
+di folder home dan di beberapa folder kontainer.
+
 Dokumentasi `Cursor` mencantumkan
 `~/.codex/agents/` sebagai folder kompatibilitas `Codex` tetapi tidak menyebut
 format berkas mana yang diurai `Cursor` di sana, dan pemasangan `Codex` menulis
@@ -192,7 +226,7 @@ Registri tetap tersinkronisasi melalui pemeriksaan berikut:
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |

@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,11 @@ apothem install --harness kimi-code --project /path/to/project
 `<project>/.kimi-code/.apothem/support/`에 있는 Apothem 소유 지원 하위 트리
 아래에 남습니다. 프로젝트 `AGENTS.md`는 Kimi Code
 외에도 많은 코딩 도구가 읽으므로, 이 블록은 어느 한 도구도 독자로 지칭하지 않는
-프로젝트 전체 지침으로 작성됩니다.
+프로젝트 전체 지침으로 작성됩니다. 그 도구 중 일부는 일부 프로젝트에서만 이 파일을
+로드하는데, 예를 들어 프로젝트에 해당 도구 자체의 지침 파일이 없을 때에만 로드하며,
+설치 안내는 그러한 도구 각각을 그 조건과 함께
+명시합니다([하니스 레지스트리](/docs/reference/harness-registry#shared-roots)가
+그 도구들을 나열합니다).
 
 Kimi Code는 범용 AGENTS.md 규약에 따라 프로젝트 루트의 `AGENTS.md` 지침 파일을
 읽으며, 프로젝트 구성은 `<project>/.kimi-code/` 아래에 있습니다. Kimi Code는

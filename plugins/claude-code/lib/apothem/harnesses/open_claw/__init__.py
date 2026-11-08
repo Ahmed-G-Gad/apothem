@@ -7,13 +7,17 @@ OpenClaw's user-global configuration file. Delegates install logic to
 :mod:`apothem.harnesses.open_claw.install`, which renders the native config
 via :mod:`apothem.harnesses.open_claw.materializer`. The one config key Apothem
 authors is ``skills.load.extraDirs``, which lists the support skills directory
-so OpenClaw loads the installed skills at the lowest precedence. OpenClaw's
-``agents.defaults.skills`` is a name allowlist the operator owns and MCP is a
-CLI surface, so Apothem authors neither; the shared cohorts (rules, agents,
-skills, hooks, templates) land as individual files under
-``~/.openclaw/.apothem/support/``. No single profile document is projected —
-OpenClaw auto-loads no instruction file, so the operator wires the other
-cohorts in through the vendor's own mechanisms.
+so OpenClaw loads the installed skills after the agent's other skill sources.
+OpenClaw's ``agents.defaults.skills`` allowlist and ``agents.entries.<id>.skills``
+lists are the operator's, and MCP servers live in the ``mcp.servers`` block the
+operator manages with the ``openclaw mcp`` CLI, so Apothem authors neither; the
+shared cohorts (rules, agents, skills, hooks, templates) land as individual
+files under ``~/.openclaw/.apothem/support/``. The profile's managed block goes
+to ``~/.openclaw/apothem/rules/00-apothem-profile.md``, which OpenClaw does not
+load. OpenClaw injects ``AGENTS.md`` and five other instruction files from each
+agent's workspace (``~/.openclaw/workspace`` by default), but the adapter
+writes none of them and none points at the support tree, so the operator wires
+the other cohorts in through the vendor's own mechanisms.
 """
 
 from __future__ import annotations

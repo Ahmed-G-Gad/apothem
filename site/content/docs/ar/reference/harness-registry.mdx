@@ -2,7 +2,7 @@
 title: "سجلّ أُطُر العمل"
 description: "مرجع تقني لسجلّ محوّلات أُطُر العمل المُضمَّنة في Apothem."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,7 +95,7 @@ sourceHash: "fafca976f970f790"
 ويعدّ سجلّ التثبيت التثبيتات التي تستخدمه. والمالك المُعتمَد هو المالك المُسجَّل ما دام
 يستخدم المجلّد، وإلا فأقدم تثبيت يستخدمه؛ ولا ينتقل شيء عند إلغاء تثبيت المالك المُسجَّل.
 ولا يُزيل إلغاء التثبيت المجلّد إلا عندما لا يعود أي تثبيت آخر يستخدمه (انظر
-[`uninstall`](/docs/cli-reference/uninstall#المجلّدات-المشتركة-في-دليلك-المنزلي)).
+[<bdi>`uninstall`</bdi>](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory)).
 وتثبيت قارئ لا يضع أي ملفات في المجلّد؛ أمّا تثبيت المالك أو مُثبِّت مشارك فيضع محتوى
 <bdi>Apothem</bdi> أمام كل قارئ.
 
@@ -121,15 +121,46 @@ sourceHash: "fafca976f970f790"
 و<bdi>`~/.trae/skills/`</bdi>)؛ ولا تُحمِّله إلا تلك الأداة، لذا فهو ليس جذرًا مشتركًا.
 
 لا يُدرَج القارئ إلا حيث تُظهر وثائق مورّده تحميلًا افتراضيًا لذلك المسار بعينه.
-ويُسجِّل السجلّ ثلاثة شروط، وتُكرِّر ملاحظة التثبيت كلًّا منها. لا يُفهرِس
+وحين لا يُحمِّل قارئ مسارًا إلا في بعض الحالات، يُسجِّل السجلّ الشرط، وتُكرِّره ملاحظة التثبيت. لا يُفهرِس
 <bdi>`Open-Claw`</bdi> <bdi>`~/.agents/skills/`</bdi> إلا تحت دليل حالته الافتراضي (ويتخطّى المجلّد
-عندما يُشير <bdi>`OPENCLAW_STATE_DIR`</bdi> إلى مكان آخر). ويُحمِّل <bdi>`Hermes`</bdi> نوعًا واحدًا
-من سياق المشروع في كل جلسة، ويفوز أول تطابق، وفق الترتيب <bdi>`.hermes.md`</bdi> أو
-<bdi>`HERMES.md`</bdi>، ثم <bdi>`AGENTS.md`</bdi>، ثم <bdi>`CLAUDE.md`</bdi>، ثم قواعد <bdi>`Cursor`</bdi>. لذا لا يُحمِّل
+عندما يُشير <bdi>`OPENCLAW_STATE_DIR`</bdi> إلى مكان آخر). ولا يُحمِّل <bdi>`OpenCode`</bdi> 1 الملف
+<bdi>`~/.claude/CLAUDE.md`</bdi> إلا حين لا يحتوي دليل إعداده (<bdi>`~/.config/opencode/`</bdi>
+افتراضيًا) على <bdi>`AGENTS.md`</bdi>، ويتخطّاه
+عند ضبط <bdi>`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`</bdi> أو <bdi>`OPENCODE_DISABLE_CLAUDE_CODE=1`</bdi>.
+ويقرأ <bdi>`OpenCode`</bdi> 2 إعداد <bdi>`~/.config/opencode/`</bdi> نفسه لكنه لا يرجع احتياطيًا إلى
+<bdi>`CLAUDE.md`</bdi>، لذا لا يُحمِّل <bdi>`~/.claude/CLAUDE.md`</bdi>. ويأخذ <bdi>`Codex`</bdi> في كل مجلّد
+أول ملف موجود من <bdi>`AGENTS.override.md`</bdi> ثم <bdi>`AGENTS.md`</bdi>، لذا لا يُحمِّل
+<bdi>`<project>/AGENTS.md`</bdi> إلا عندما لا يحتوي المشروع على <bdi>`AGENTS.override.md`</bdi> بجانب ذلك
+الملف. ولا يستخدم <bdi>`CodeBuddy`</bdi> الملف <bdi>`<project>/AGENTS.md`</bdi> بوصفه ذاكرة المشروع إلا
+عندما لا يحتوي المشروع على <bdi>`CODEBUDDY.md`</bdi>. ولا يُحمِّل <bdi>`Zed`</bdi> إلا أول ملف تعليمات
+للمشروع في قائمته: <bdi>`.rules`</bdi>، و<bdi>`.cursorrules`</bdi>، و<bdi>`.windsurfrules`</bdi>،
+و<bdi>`.clinerules`</bdi>، و<bdi>`.github/copilot-instructions.md`</bdi>، و<bdi>`AGENT.md`</bdi>،
+و<bdi>`AGENTS.md`</bdi>، و<bdi>`CLAUDE.md`</bdi>، ثم <bdi>`GEMINI.md`</bdi>. لذا لا يُحمِّل
+<bdi>`<project>/.github/copilot-instructions.md`</bdi> و<bdi>`<project>/AGENTS.md`</bdi>
+و<bdi>`<project>/GEMINI.md`</bdi> إلا عندما لا يحتوي المشروع على أي ملف من الملفات التي تسبق
+ذلك الملف في القائمة. ويكتب تثبيت <bdi>`Zed`</bdi> الملف <bdi>`<project>/.rules`</bdi>، وهو أول ملف
+في القائمة، لذا لا يُحمِّل <bdi>`Zed`</bdi> أيًّا من الملفات الثلاثة في مشروع ثُبِّت فيه.
+
+يُحمِّل <bdi>`Hermes`</bdi> نوعًا واحدًا من سياق المشروع في كل جلسة: هو أول نوع يوجد فيه ملف
+غير فارغ، وفق الترتيب <bdi>`.hermes.md`</bdi> أو <bdi>`HERMES.md`</bdi>، ثم سلسلة ملفات
+<bdi>`AGENTS.md`</bdi> (وفي كل مجلّد يحلّ ملف <bdi>`AGENTS.override.md`</bdi> غير الفارغ محلّ
+<bdi>`AGENTS.md`</bdi> الذي بجانبه)، ثم <bdi>`CLAUDE.md`</bdi>، ثم قواعد <bdi>`Cursor`</bdi>. لذا لا يُحمِّل
 <bdi>`<project>/AGENTS.md`</bdi> إلا عندما لا يحتوي المشروع على أيٍّ من <bdi>`.hermes.md`</bdi> أو
 <bdi>`HERMES.md`</bdi> ولا على <bdi>`AGENTS.override.md`</bdi> بجانب ذلك الملف، ولا يُحمِّل
 <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> إلا عندما لا يحتوي المشروع على أيٍّ
-من <bdi>`.hermes.md`</bdi> أو <bdi>`AGENTS.md`</bdi> أو <bdi>`CLAUDE.md`</bdi>. وتسرد وثائق <bdi>`Cursor`</bdi>
+من <bdi>`.hermes.md`</bdi> أو <bdi>`HERMES.md`</bdi> أو <bdi>`AGENTS.override.md`</bdi> أو <bdi>`AGENTS.md`</bdi> أو
+<bdi>`CLAUDE.md`</bdi>. يبحث <bdi>`Hermes`</bdi> عن <bdi>`.hermes.md`</bdi> و<bdi>`HERMES.md`</bdi> من
+المجلّد الذي يبدأ فيه صعودًا إلى جذر المستودع، ويقرأ سلسلة ملفات <bdi>`AGENTS.md`</bdi> من جذر
+المستودع نزولًا، لذا يُعتدّ أيضًا بملف من هذا النوع في مجلّد أعلى المشروع. ولا يُعتدّ بالملف
+الفارغ. ويحجب <bdi>`.hermes.md`</bdi> الفارغ أيضًا ملف <bdi>`HERMES.md`</bdi> الذي بجانبه، لذا ينتقل
+<bdi>`Hermes`</bdi> إلى سلسلة ملفات <bdi>`AGENTS.md`</bdi> حتى وإن احتوى ذلك <bdi>`HERMES.md`</bdi> على
+نص. وتنطبق هذه الشروط على جلسة تبدأ في المشروع. أمّا الجلسة التي تبدأ في مجلّد أعلى منه
+فيمكنها مع ذلك أن تُحمِّل <bdi>`<project>/AGENTS.md`</bdi>، أو ملف <bdi>`AGENTS.override.md`</bdi> غير
+الفارغ الذي بجانبه، أول مرة تعمل فيها على ملف في المشروع، أيًّا كان ملف <bdi>`.hermes.md`</bdi> أو
+<bdi>`HERMES.md`</bdi> الموجود في المشروع. ويتخطّى <bdi>`Hermes`</bdi> ذلك في الدليل المنزلي وفي بضعة
+مجلّدات خاصة بالحاويات.
+
+تسرد وثائق <bdi>`Cursor`</bdi>
 <bdi>`~/.codex/agents/`</bdi> بوصفه مجلّد توافق مع <bdi>`Codex`</bdi> لكنها لا تقول أي صيغ
 ملفات يُحلِّلها <bdi>`Cursor`</bdi> هناك، وتثبيت <bdi>`Codex`</bdi> يكتب ملفات <bdi>TOML</bdi>،
 لذا فإن قراءة <bdi>`Cursor`</bdi> لأولئك المساعِدين غير مؤكَّدة. ويكتب تثبيت
@@ -178,7 +209,7 @@ sourceHash: "fafca976f970f790"
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |

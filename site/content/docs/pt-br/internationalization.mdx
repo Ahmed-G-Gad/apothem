@@ -2,7 +2,7 @@
 title: "Internacionalização (i18n)"
 description: "Como o site de documentação do Apothem declara sua coorte de localidades, emite links de idioma alternativo hreflang e renderiza da direita para a esquerda em doze idiomas."
 machineTranslated: true
-sourceHash: "fbe64d232e98a8e6"
+sourceHash: "cf9e0b89b61893f8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -138,4 +138,7 @@ texto em inglês.
 
 O inglês continua sendo a fonte da verdade; cada página de localidade espelha
 literalmente a estrutura, os links e os exemplos de código de sua contraparte em
-inglês.
+inglês, com uma exceção para os links de seção. Um link para uma seção de outra
+página copia sua âncora (`#...`) da página em inglês; um link para uma seção da
+mesma página constrói sua âncora com base no título traduzido, porque o site
+deriva o id de cada título a partir do texto do título.

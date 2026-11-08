@@ -2,7 +2,7 @@
 title: "Aturan"
 description: "Aturan perilaku yang selalu aktif dan yang tersaring jalur, yang mengatur pemecahan masalah, keterampilan kode, arsitektur bersih, perencanaan, dan kualitas di seluruh kumpulan aturan perilaku."
 machineTranslated: true
-sourceHash: "7a9aadd37c0f6b6f"
+sourceHash: "a1a49629bf723df3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,10 +72,12 @@ berkas yang disebut daftar `instructions` di `opencode.json` miliknya ke dalam
 setiap sesi. Karena itu, pemasangan OpenCode
 (`apothem install --harness opencode`) mencantumkan dokumen profil Anda dan
 hanya aturan yang `alwaysApply`-nya bernilai `true` (keempat aturan inti dan
-indeks aturan), satu jalur `~/.config/opencode/...` eksplisit per berkas, yang
-dibaca dari berkas aturan saat konfigurasi ditulis. Setiap aturan, termasuk yang
-tersaring jalur, tetap dipasang di bawah
-`~/.config/opencode/.apothem/support/rules/`, tempat indeks menyebutnya dan
+indeks aturan), satu jalur eksplisit per berkas, yang dibaca dari berkas aturan
+saat konfigurasi ditulis. Setiap jalur berakar di `~/` (secara default
+`~/.config/opencode/...`), atau absolut ketika folder konfigurasi berada di luar
+folder home Anda. Setiap aturan, termasuk yang tersaring jalur, tetap dipasang di
+bawah `.apothem/support/rules/` milik folder konfigurasi (secara default
+`~/.config/opencode/.apothem/support/rules/`), tempat indeks menyebutnya dan
 aturan, skill, atau perintah yang mengutip sebuah aturan membacanya sesuai
 kebutuhan.
 

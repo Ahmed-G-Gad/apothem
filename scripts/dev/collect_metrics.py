@@ -206,6 +206,23 @@ def _no_key(key: str) -> Predicate:
     return lambda text: key not in _frontmatter(text)
 
 
+def _has_text(text: str) -> bool:
+    """Predicate: the file holds more than whitespace (blank files load nothing)."""
+    return bool(text.strip())
+
+
+def _codebuddy_rule(text: str) -> bool:
+    """Predicate: a CodeBuddy rule that loads at launch.
+
+    ``enabled: false`` turns a rule off, and ``alwaysApply`` defaults to true;
+    a rule with ``alwaysApply: false`` loads only for matching paths.
+    """
+    fields = _frontmatter(text)
+    if fields.get("enabled", "").lower() == "false":
+        return False
+    return fields.get("alwaysApply", "true").lower() == "true"
+
+
 @dataclass(frozen=True)
 class Surface:
     """A launch-time instruction surface: glob under ``home`` or ``project``."""
@@ -222,6 +239,24 @@ def _home(pattern: str, predicate: Predicate | None = None) -> Surface:
 def _project(pattern: str, predicate: Predicate | None = None) -> Surface:
     return Surface("project", pattern, predicate)
 
+
+#: OpenClaw's bootstrap files in prompt order (workspace-bootstrap-policy.ts).
+_OPEN_CLAW_ORDER = (
+    "AGENTS.md",
+    "SOUL.md",
+    "IDENTITY.md",
+    "USER.md",
+    "BOOTSTRAP.md",
+    "MEMORY.md",
+)
+_OPEN_CLAW_FILE_CHARS = 20_000
+_OPEN_CLAW_USER_CHARS = 4_000
+_OPEN_CLAW_TOTAL_CHARS = 60_000
+#: OpenClaw stops adding files once fewer characters than this remain.
+_OPEN_CLAW_MIN_REMAINING = 64
+
+#: Antigravity truncates each instruction file at this many bytes.
+_ANTIGRAVITY_FILE_MAX_BYTES = 24_000
 
 _ZED_ORDER = (
     ".rules",
@@ -244,8 +279,10 @@ _ZED_ORDER = (
 LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
     "antigravity": (
         "~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md, "
-        "~/.gemini/config/rules/*.md with trigger: always_on, project "
-        "{GEMINI,AGENTS}.md. Plugin rules/ is not a documented launch surface.",
+        "~/.gemini/config/rules/*.md with trigger: always_on, and in the project "
+        "{GEMINI,AGENTS}.md, .agents/{GEMINI,AGENTS}.md and .agents/rules/*.md "
+        "with trigger: always_on; each file counted up to 24,000 bytes. Plugin "
+        "rules (~/.gemini/config/plugins/<name>/rules/) are not counted yet.",
         (
             _home(".gemini/GEMINI.md"),
             _home(".gemini/AGENTS.md"),
@@ -254,32 +291,36 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
             _home(".gemini/config/rules/*.md", _key_is("trigger", "always_on")),
             _project("GEMINI.md"),
             _project("AGENTS.md"),
+            _project(".agents/GEMINI.md"),
+            _project(".agents/AGENTS.md"),
+            _project(".agents/rules/*.md", _key_is("trigger", "always_on")),
         ),
     ),
     "claude-code": (
         "~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths: "
-        "frontmatter, plus the project CLAUDE.md, .claude/CLAUDE.md and "
-        ".claude/rules/**/*.md without paths:.",
+        "frontmatter, plus the project CLAUDE.md, .claude/CLAUDE.md, "
+        "CLAUDE.local.md and .claude/rules/**/*.md without paths:, and the "
+        "project AGENTS.md and .claude/AGENTS.md only when none of the three "
+        "project CLAUDE files exists.",
         (
             _home(".claude/CLAUDE.md"),
             _home(".claude/rules/**/*.md", _no_key("paths")),
             _project("CLAUDE.md"),
             _project(".claude/CLAUDE.md"),
+            _project("CLAUDE.local.md"),
             _project(".claude/rules/**/*.md", _no_key("paths")),
         ),
     ),
     "codebuddy": (
-        ".codebuddy/rules/**/*.md (project and ~) unless alwaysApply: false "
-        "(the default is always), plus CODEBUDDY.md and .codebuddy/CODEBUDDY.md.",
+        ".codebuddy/rules/**/*.md (project and ~) unless enabled: false or "
+        "alwaysApply: false (the default is always), ~/.codebuddy/CODEBUDDY.md, "
+        "the project CODEBUDDY.local.md, and the first of the project "
+        "CODEBUDDY.md and .codebuddy/CODEBUDDY.md, else the project AGENTS.md.",
         (
-            _project(
-                ".codebuddy/rules/**/*.md", _key_is("alwaysApply", "true", missing=True)
-            ),
-            _home(
-                ".codebuddy/rules/**/*.md", _key_is("alwaysApply", "true", missing=True)
-            ),
-            _project("CODEBUDDY.md"),
-            _project(".codebuddy/CODEBUDDY.md"),
+            _project(".codebuddy/rules/**/*.md", _codebuddy_rule),
+            _home(".codebuddy/rules/**/*.md", _codebuddy_rule),
+            _home(".codebuddy/CODEBUDDY.md"),
+            _project("CODEBUDDY.local.md"),
         ),
     ),
     "codex": (
@@ -307,19 +348,21 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         (_project(".github/copilot-instructions.md"), _project("AGENTS.md")),
     ),
     "hermes": (
-        "~/.hermes/SOUL.md, plus the first of these kinds in the project with a "
+        "~/.hermes/SOUL.md when it holds text, plus the first of these kinds in the project with a "
         "non-empty file (Hermes loads one): .hermes.md or HERMES.md (the first of "
         "the two that exists is the only candidate), AGENTS.override.md or "
         "AGENTS.md, CLAUDE.md, then .cursorrules with every .cursor/rules/*.mdc. "
         "The Apothem support tree and apothem/rules/ are not launch surfaces.",
-        (_home(".hermes/SOUL.md"),),
+        (_home(".hermes/SOUL.md", _has_text),),
     ),
     "kimi-code": (
-        "~/.kimi-code/AGENTS.md and the project AGENTS.md and .kimi-code/AGENTS.md.",
+        "~/.kimi-code/AGENTS.md, the first non-empty of ~/.agents/AGENTS.md and "
+        "~/.agents/agents.md, and the project .kimi-code/AGENTS.md and "
+        "AGENTS.md; blank files load nothing.",
         (
-            _home(".kimi-code/AGENTS.md"),
-            _project("AGENTS.md"),
-            _project(".kimi-code/AGENTS.md"),
+            _home(".kimi-code/AGENTS.md", _has_text),
+            _project(".kimi-code/AGENTS.md", _has_text),
+            _project("AGENTS.md", _has_text),
         ),
     ),
     "kiro": (
@@ -336,9 +379,11 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         ),
     ),
     "open-claw": (
-        "Workspace bootstrap files ~/.openclaw/workspace/*.md (AGENTS.md, "
-        "SOUL.md and siblings). apothem/rules/ is not a launch surface.",
-        (_home(".openclaw/workspace/*.md"),),
+        "The non-blank workspace bootstrap files in ~/.openclaw/workspace/, in "
+        "prompt order: " + ", ".join(_OPEN_CLAW_ORDER) + "; each up to 20,000 "
+        "characters (USER.md 4,000), 60,000 in all. apothem/rules/ is not a "
+        "launch surface.",
+        (),
     ),
     "opencode": (
         "~/.config/opencode/AGENTS.md, the project AGENTS.md, and every file the "
@@ -487,6 +532,62 @@ def _hermes_files(project: Path) -> list[Path]:
     return next((files for files in kinds if files), [])
 
 
+def _claude_code_agents_files(project: Path) -> list[Path]:
+    # Claude Code reads AGENTS.md only when no CLAUDE file is in the working
+    # folder or above it. ~/.claude/CLAUDE.md and the rules do not count.
+    # TODO(clarify): whether an empty CLAUDE.md blocks the fallback; it is
+    # treated as present.
+    if any(
+        (project / name).is_file()
+        for name in ("CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md")
+    ):
+        return []
+    return [
+        project / name
+        for name in ("AGENTS.md", ".claude/AGENTS.md")
+        if (project / name).is_file()
+    ]
+
+
+def _codebuddy_memory_files(project: Path) -> list[Path]:
+    # The docs call ./CODEBUDDY.md and ./.codebuddy/CODEBUDDY.md equivalent and
+    # read AGENTS.md only without a CODEBUDDY.md.
+    # TODO(clarify): CodeBuddy documents neither which of the two loads when
+    # both exist nor whether a lone .codebuddy/CODEBUDDY.md blocks AGENTS.md;
+    # the first that exists is counted, and either one blocks AGENTS.md.
+    for name in ("CODEBUDDY.md", ".codebuddy/CODEBUDDY.md", "AGENTS.md"):
+        if (project / name).is_file():
+            return [project / name]
+    return []
+
+
+def _kimi_cross_tool_files(home: Path) -> list[Path]:
+    return _first_non_empty(home / ".agents" / n for n in ("AGENTS.md", "agents.md"))
+
+
+def _open_claw_bytes(home: Path) -> tuple[int, int]:
+    # OpenClaw caps characters, not bytes: count the bytes of the characters it
+    # keeps. Each file gets at most its cap or what is left of the total, and
+    # the walk stops when fewer than 64 characters are left. A missing file
+    # becomes a one-line marker, which is not a file and is not counted.
+    workspace = home / ".openclaw" / "workspace"
+    remaining = _OPEN_CLAW_TOTAL_CHARS
+    size = files = 0
+    for name in _OPEN_CLAW_ORDER:
+        if remaining < _OPEN_CLAW_MIN_REMAINING:
+            break
+        path = workspace / name
+        if not _non_empty(path):
+            continue
+        text = path.read_text(encoding="utf-8")
+        cap = _OPEN_CLAW_USER_CHARS if name == "USER.md" else _OPEN_CLAW_FILE_CHARS
+        kept = text[: min(cap, remaining)]
+        size += len(kept.encode("utf-8"))
+        remaining -= len(kept)
+        files += 1
+    return size, files
+
+
 _CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024
 
 
@@ -543,6 +644,8 @@ def measure_surfaces(harness: str, home: Path, project: Path) -> tuple[int, int]
     """Return ``(bytes, files)`` loaded at launch for ``harness`` in a tree."""
     if harness == "codex":
         return _codex_bytes(home, project)
+    if harness == "open-claw":
+        return _open_claw_bytes(home)
     _rule, surfaces = LAUNCH_SURFACES[harness]
     files: list[Path] = []
     for surface in surfaces:
@@ -555,8 +658,17 @@ def measure_surfaces(harness: str, home: Path, project: Path) -> tuple[int, int]
         files.extend(_zed_files(project))
     elif harness == "hermes":
         files.extend(_hermes_files(project))
+    elif harness == "claude-code":
+        files.extend(_claude_code_agents_files(project))
+    elif harness == "codebuddy":
+        files.extend(_codebuddy_memory_files(project))
+    elif harness == "kimi-code":
+        files.extend(_kimi_cross_tool_files(home))
     unique = sorted({path.resolve() for path in files})
-    return sum(path.stat().st_size for path in unique), len(unique)
+    sizes = [path.stat().st_size for path in unique]
+    if harness == "antigravity":
+        sizes = [min(size, _ANTIGRAVITY_FILE_MAX_BYTES) for size in sizes]
+    return sum(sizes), len(unique)
 
 
 def _isolated_env(root: Path) -> dict[str, str]:
