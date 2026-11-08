@@ -1,0 +1,224 @@
+---
+title: "OpenSSF Best Practices badge"
+description: "Apothem's answers to the OpenSSF Best Practices passing criteria, with the evidence for each one and the gaps that remain."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The [OpenSSF Best Practices badge](https://www.bestpractices.dev/) (formerly the CII Best Practices badge) is a self-assessment: a project answers a fixed list of criteria on bestpractices.dev, and the site awards the passing badge when every answer meets the rule for its level. OpenSSF Scorecard's CII-Best-Practices check reads the result, so this page also backs that row on the [Scorecard posture](/docs/security/openssf-scorecard-target) page.
+
+This page is the answer sheet. It lists every passing-level criterion, the answer Apothem gives, a one-line justification, and the file or page that shows it. The criteria were taken from the [live passing criteria](https://www.bestpractices.dev/en/criteria/0) and the [criteria source](https://github.com/coreinfrastructure/best-practices-badge/blob/main/criteria/criteria.yml) on 2026-11-07: 67 criteria, of which 43 are MUST, 10 are SHOULD and 14 are SUGGESTED.
+
+## Status
+
+Apothem is not yet registered on bestpractices.dev, so it has no badge yet. The answers below cover every passing criterion:
+
+| Level | Met | N/A | Unmet |
+|---|---|---|---|
+| MUST (43) | 39 | 4 | 0 |
+| SHOULD (10) | 8 | 1 | 1 |
+| SUGGESTED (14) | 13 | 1 | 0 |
+
+The passing badge needs every MUST criterion Met, every SHOULD criterion Met or Unmet with a reason, and every SUGGESTED criterion answered Met or Unmet. An N/A answer counts as Met, and only criteria that allow it take one; the one N/A among the SUGGESTED criteria, `dynamic_analysis_unsafe`, is one of them. With these answers the project qualifies.
+
+Three MUST answers depend on facts only the maintainer can confirm, and they are marked "maintainer confirms" in the tables: `vulnerability_report_response` (no report arrived by email) and `know_secure_design` and `know_common_errors` (the developers' own knowledge). They count in the table above as the answer shown. The one Unmet SHOULD criterion, `crypto_weaknesses`, carries its reason in the table and in [Remaining gaps](#remaining-gaps).
+
+## Register the project
+
+Registration is done by the maintainer in one sitting:
+
+1. Sign in at [bestpractices.dev](https://www.bestpractices.dev/en/login) with the GitHub account that owns the repository.
+2. Choose **Get Your Badge Now!** and enter the repository URL, `https://github.com/ahmed-g-gad/apothem`. The site fills in some answers on its own; check each one against the tables below.
+3. Work through the six sections (Basics, Change Control, Reporting, Quality, Security, Analysis). For each criterion, choose the answer in the **Answer** column, paste the **Justification**, and add the **Evidence** link. Eight Met answers must carry a URL in the justification text: `contribution`, `contribution_requirements`, `license_location`, `release_notes`, `report_process`, `report_archive`, `vulnerability_report_process` and `vulnerability_report_private`. Their justifications below already include it.
+4. Before answering `vulnerability_report_response`, confirm that no vulnerability report reached the email address in SECURITY.md in the last 6 months. If one did, answer Met and give the time to the first response, which must be 14 days or less.
+5. Answer `know_secure_design` and `know_common_errors` only after confirming they describe the maintainer's own knowledge; the site asks about the people who develop the project, and the linked files are the supporting evidence.
+6. Save each section. When the site shows 100% for the passing level, copy the badge Markdown it offers and add the badge to the README header next to the Scorecard badge, with its row in the [Badge policy](/docs/governance/badge-policy) table.
+
+Scorecard reads the badge level through the bestpractices.dev API on its next run. Its CII-Best-Practices check scores a registered project that is still in progress at 2, a passing badge at 5, silver at 7 and gold at 10; gold needs more than one developer.
+
+## Answers
+
+### Basics: Basic project website content
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `description_good` | MUST | Met | The README opening paragraph and the docs home page say in plain terms that Apothem takes one shared profile of coding-assistant settings and writes it into the native configuration of each supported coding assistant, so users stop keeping hand-made copies in sync. | [README.md](https://github.com/ahmed-g-gad/apothem/blob/main/README.md) |
+| `interact` | MUST | Met | The README and the website explain how to install Apothem (the Install section and /docs/install), where to report bugs or request features (GitHub Issues, with GitHub Discussions open for questions), and how to contribute (CONTRIBUTING.md and the developer guide). | [/docs/community/discussions](/docs/community/discussions) |
+| `contribution` | MUST | Met | CONTRIBUTING.md describes the fork-and-pull-request workflow against main and the issue templates for bug reports and feature requests: https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#pull-request-submission | [CONTRIBUTING.md#pull-request-submission](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#pull-request-submission) |
+| `contribution_requirements` | SHOULD | Met | CONTRIBUTING.md lists what an acceptable contribution needs: Ruff lint and format, mypy, pytest, the conformity gate, tests for new functionality, Conventional Commits, DCO sign-off, and a PR description with what, why and verification: https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#routine-verification | [CONTRIBUTING.md#routine-verification](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#routine-verification) |
+
+### Basics: FLOSS license
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `floss_license` | MUST | Met | Apothem is released under the MIT License, with vendored typing code under PSF-2.0, and both are OSI-approved free licenses. | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) |
+| `floss_license_osi` | SUGGESTED | Met | Both licenses that apply to the distribution, MIT and PSF-2.0, are on the OSI approved list. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `license_location` | MUST | Met | The license text is in the top-level LICENSE file (https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE), and REUSE-style copies are in the LICENSES/ directory (MIT.txt, PSF-2.0.txt). | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) |
+
+### Basics: Documentation
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `documentation_basics` | MUST | Met | The docs site covers installing (/docs/install), a first run (quickstart and getting-started tutorial), day-to-day use (/docs/usage), and safe use (the installer trust model and signature checks on /docs/install, plus the trust boundaries on /docs/security). | [/docs/install](/docs/install) |
+| `documentation_interface` | MUST | Met | The CLI reference has one page per command, giving its synopsis, options, and output formats, and the profile-fields and settings reference pages document the input profile format. | [/docs/cli-reference](/docs/cli-reference) |
+
+### Basics: Other
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `sites_https` | MUST | Met | The home page https://apothem.ahmedgad.com/ is served over HTTPS and its plain-HTTP address redirects to HTTPS (301); the repository is on github.com and the downloads come from GitHub Releases, npmjs.com, and https://apothem.ahmedgad.com/install.sh, all over HTTPS. | [/](https://apothem.ahmedgad.com/) |
+| `discussion` | MUST | Met | GitHub Issues, Pull Requests and GitHub Discussions are open to anyone with a free GitHub account; they are searchable, every topic has its own URL, and a browser is all that is needed. | [discussions](https://github.com/ahmed-g-gad/apothem/discussions) |
+| `english` | SHOULD | Met | The main documentation (README, CONTRIBUTING, SECURITY, the docs site) is written in English, with translations as extras, and issues and pull requests are taken and handled in English. | [/docs](/docs) |
+| `maintained` | MUST | Met | The project is active: releases ship every few days to weeks, pull requests are merged each week, issues get closed, and SECURITY.md commits to acknowledging vulnerability reports within 48 hours. | [releases](https://github.com/ahmed-g-gad/apothem/releases) |
+
+### Change Control: Public version-controlled source repository
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `repo_public` | MUST | Met | The source is in a public Git repository on GitHub. | [repository](https://github.com/ahmed-g-gad/apothem) |
+| `repo_track` | MUST | Met | Git history on GitHub records each commit's change, author and timestamp, for example bf371159 by Ahmed G. Gad on 2026-11-07. | [commits/main](https://github.com/ahmed-g-gad/apothem/commits/main) |
+| `repo_interim` | MUST | Met | The repository holds every interim commit and pull-request merge between releases, not only the release commits. | [commits/main](https://github.com/ahmed-g-gad/apothem/commits/main) |
+| `repo_distributed` | SUGGESTED | Met | The project uses Git, hosted on GitHub. | [repository](https://github.com/ahmed-g-gad/apothem) |
+
+### Change Control: Unique version numbering
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `version_unique` | MUST | Met | Each release has its own version number, set in pyproject.toml and matched by a git tag and a GitHub Release. | [releases](https://github.com/ahmed-g-gad/apothem/releases) |
+| `version_semver` | SUGGESTED | Met | Releases use Semantic Versioning in the form vMAJOR.MINOR.PATCH, as the CHANGELOG states in its header and the release tags show. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
+| `version_tags` | SUGGESTED | Met | Every release is marked with a git tag of the form vMAJOR.MINOR.PATCH that points at its release commit. | [tags](https://github.com/ahmed-g-gad/apothem/tags) |
+
+### Change Control: Release notes
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `release_notes` | MUST | Met | CHANGELOG.md (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) and each GitHub Release have hand-written notes for every version, not raw git log output, grouped under headings such as Added and Security. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
+| `release_notes_vulns` | MUST | N/A | No release so far has fixed a publicly known vulnerability with a CVE or a published advisory. Release notes will name the CVE or advisory ID of any that a future release fixes. | [security/advisories](https://github.com/ahmed-g-gad/apothem/security/advisories) |
+
+### Reporting: Bug-reporting process
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `report_process` | MUST | Met | Users report bugs through GitHub Issues with a bug-report form, and SUPPORT.md and CONTRIBUTING.md send bug reports there: https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md | [SUPPORT.md](https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md) |
+| `report_tracker` | SHOULD | Met | The project tracks individual issues in its public GitHub issue tracker, with issue forms for bugs, feature requests, documentation, and questions. | [issues](https://github.com/ahmed-g-gad/apothem/issues) |
+| `report_responses` | MUST | Met | No user outside the project has filed a bug report yet; every issue on the tracker has been handled and closed, and SUPPORT.md commits to triage within 7 days. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
+| `enhancement_responses` | SHOULD | Met | No enhancement request from outside the project has been filed yet, so none is unanswered; the feature-request form and the 7-day triage commitment are in place. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
+| `report_archive` | MUST | Met | The public GitHub issue tracker (https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) and GitHub Discussions keep every report and reply, including closed ones, and anyone can search them. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
+
+### Reporting: Vulnerability report process
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `vulnerability_report_process` | MUST | Met | The security page on the project site (https://apothem.ahmedgad.com/docs/security) and SECURITY.md both tell reporters to use GitHub Private Vulnerability Reporting on the Security tab, with email to me@ahmedgad.com as a second channel. | [/docs/security](/docs/security) |
+| `vulnerability_report_private` | MUST | Met | SECURITY.md (https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#reporting-a-vulnerability) tells reporters to send private reports through GitHub Private Vulnerability Reporting, a web form over HTTPS that opens a workspace only the reporter and the maintainer can see; the feature is turned on. | [SECURITY.md#reporting-a-vulnerability](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#reporting-a-vulnerability) |
+| `vulnerability_report_response` | MUST | N/A, maintainer confirms | No vulnerability report from outside the project reached GitHub Private Vulnerability Reporting in the last 6 months; the maintainer confirms at registration that none arrived by email either. SECURITY.md commits to acknowledging a report within 48 hours. | [SECURITY.md#response-timeline](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#response-timeline) |
+
+### Quality: Working build system
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `build` | MUST | Met | The project builds its sdist and wheel from source with the setuptools backend declared in pyproject.toml, run as `python -m build` in the release workflow, and the Makefile wraps install, test and release steps. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `build_common_tools` | SUGGESTED | Met | The build uses common Python tools (setuptools, pip, the PyPA build front end) and a GNU Make Makefile. | [Makefile](https://github.com/ahmed-g-gad/apothem/blob/main/Makefile) |
+| `build_floss_tools` | SHOULD | Met | Every build tool used (CPython, setuptools, pip, PyPA build, GNU Make, and Node/npm for the docs site and shim) is FLOSS, and no proprietary tool is needed to build from source. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+
+### Quality: Automated test suite
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `test` | MUST | Met | The MIT-licensed repository includes a pytest suite under tests/ (444 test_*.py files), and CONTRIBUTING.md and the CI workflow show how to run it (`make test` / `python -m pytest`). | [CONTRIBUTING.md#routine-verification](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#routine-verification) |
+| `test_invocation` | SHOULD | Met | The suite runs with the standard Python invocation `pytest` / `python -m pytest`, configured in pyproject.toml, and with `make test`. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `test_most` | SUGGESTED | Met | CI measures line plus branch coverage and fails below set floors: 80% for the engine, 81% for the conformity package and 70% for the audit package, so most code and branches are exercised. | [/docs/developer-guide](/docs/developer-guide) |
+| `test_continuous_integration` | SUGGESTED | Met | GitHub Actions CI runs the pytest suite across an OS by Python 3.10-3.14 matrix plus a coverage job on pushes and pull requests to main that touch the source, tests, scripts, site or workflow paths, and its runs are public. | [.github/workflows/ci.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) |
+
+### Quality: New functionality testing
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `test_policy` | MUST | Met | CONTRIBUTING.md requires every pull request that adds functionality to add tests for it in the same pull request, and every bug fix to add a regression test; the pull request template asks for the tests in its Test plan. | [CONTRIBUTING.md#tests-for-new-functionality](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#tests-for-new-functionality) |
+| `tests_are_added` | MUST | Met | Recent feature changes added tests with the code, for example the native hooks change (#156) and the native subagents change (#154). | [commit/e9b3b3db](https://github.com/ahmed-g-gad/apothem/commit/e9b3b3db) |
+| `tests_documented_added` | SUGGESTED | Met | The contribution guide states the test requirement, and the pull request template has a Test plan section that asks which tests were added. | [CONTRIBUTING.md#tests-for-new-functionality](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#tests-for-new-functionality) |
+
+### Quality: Warning flags
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `warnings` | MUST | Met | The project runs the ruff linter with 17 rule families (including bugbear, bandit-style S checks and complexity) and mypy in strict mode on every CI run, plus shellcheck and PSScriptAnalyzer on the installer scripts and bandit and CodeQL for security analysis. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `warnings_fixed` | MUST | Met | `ruff check .` and `mypy` run clean, and CI fails on any ruff or mypy finding; the remaining suppressions are per-file ignores in pyproject.toml, each with a written reason, and inline `noqa` or `type: ignore` markers that flag false positives in the source. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `warnings_strict` | SUGGESTED | Met | The project runs mypy in strict mode, a wide ruff rule selection (annotations, security, bugbear, pathlib, return checks), a complexity limit that is only allowed to go down and that CI tightens to 15 for the CLI and install driver, and bandit plus CodeQL, which shows it turns on warnings wherever practical. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+
+### Security: Secure development knowledge
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `know_secure_design` | MUST | Met, maintainer confirms | The maintainer confirms this at registration. The shipped design shows the principles: a threat model, a deny floor no allow-list widens, validation before any write, writes limited to harness directories, fail-closed signature checks, and read-only default workflow permissions. | [/docs/security#threat-model](/docs/security#threat-model) |
+| `know_common_errors` | MUST | Met, maintainer confirms | The maintainer confirms this at registration. The code guards against the error classes that apply to a CLI that writes files: write targets are checked for path traversal and symlink crossings (with property tests), YAML is read with a safe loader, and diagnostics redact secret-like values; CI runs bandit, the ruff S rules and CodeQL security-extended. | [src/apothem/harnesses/_shared/install_driver_pathsafety.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/harnesses/_shared/install_driver_pathsafety.py) |
+
+### Security: Use basic good cryptographic practices
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `crypto_published` | MUST | Met | The only cryptography the software relies on is published, expert-reviewed algorithms and protocols: SHA-256 through Python's hashlib, OpenPGP Ed25519 tag signatures checked by git verify-tag in the installers, SHA-256 release checksums, and TLS through curl or the OS. | [scripts/installer/install.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/installer/install.sh) |
+| `crypto_call` | SHOULD | Met | Apothem implements no cryptographic primitive itself; it calls Python's hashlib, git with GnuPG, sha256sum/shasum or Get-FileHash, and curl or Invoke-WebRequest for TLS. | [scripts/installer/install.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/installer/install.sh) |
+| `crypto_floss` | MUST | Met | All crypto-dependent functions use FLOSS components: CPython hashlib with OpenSSL, git with GnuPG, coreutils sha256sum, curl, and Sigstore cosign for release signing. | [scripts/release/sign-assets.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/release/sign-assets.sh) |
+| `crypto_keylength` | MUST | Met | The software generates no keys, its only hash is SHA-256 (256 bits, above the 224-bit minimum), and the release tags it verifies are signed with an Ed25519 key (above the 224-bit elliptic-curve minimum). | [src/apothem/lib/propagation.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/lib/propagation.py) |
+| `crypto_working` | MUST | Met | No default mechanism uses a broken algorithm such as MD4, MD5, single DES or RC4; hashing is SHA-256 and the code uses no cipher modes. | [src/apothem/audit/build_inventory.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/audit/build_inventory.py) |
+| `crypto_weaknesses` | SHOULD | Unmet | Apothem's own hashing is SHA-256, but the default installer trusts a GPG-signed git tag, and git names the tagged commit by a SHA-1 object ID (GitHub hosts only SHA-1 repositories). Git uses SHA-1 collision detection, which lowers the risk without removing the SHA-1 dependency. | [scripts/installer/install.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/installer/install.sh) |
+| `crypto_pfs` | SHOULD | N/A | Apothem implements no key agreement protocol; every TLS connection is set up by curl, Invoke-WebRequest or Python's urllib using the system TLS stack. | [src/apothem/audit/check_links.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/audit/check_links.py) |
+| `crypto_password_storage` | MUST | N/A | Apothem is a local configuration CLI that does not authenticate external users and does not store passwords. | [README.md](https://github.com/ahmed-g-gad/apothem/blob/main/README.md) |
+| `crypto_random` | MUST | N/A | The software generates no cryptographic keys or nonces; it does not import random or secrets, and release signing uses short-lived Sigstore keys created by cosign in CI. | [scripts/release/sign-assets.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/release/sign-assets.sh) |
+
+### Security: Secured delivery against man-in-the-middle (MITM) attacks
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `delivery_mitm` | MUST | Met | Every delivery channel uses HTTPS (the GitHub repo and Releases, npm, the Marketplace, and apothem.ahmedgad.com, which redirects http to https with a 301), and release tags are GPG-signed and checked by the installers with git verify-tag, with cosign signatures and SLSA provenance on release artifacts. | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) |
+| `delivery_unsigned` | MUST | Met | The only hash the installers fetch, the release SHA256SUMS used by the opt-in checksum mode, is retrieved over HTTPS from GitHub Releases by default, and the default install path checks the GPG tag signature instead. | [scripts/installer/install.sh](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/installer/install.sh) |
+
+### Security: Publicly known vulnerabilities fixed
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `vulnerabilities_fixed_60_days` | MUST | Met | No vulnerability of medium or higher severity has been publicly known and unpatched for more than 60 days: on 2026-11-08, Dependabot and code scanning showed 0 open alerts. | [security](https://github.com/ahmed-g-gad/apothem/security) |
+| `vulnerabilities_critical_fixed` | SHOULD | Met | Critical dependency alerts have been fixed quickly; the two critical Next.js alerts of 2026-10-23 in the docs-site build were closed within two days. | [SECURITY.md#response-timeline](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#response-timeline) |
+
+### Security: Other security issues
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `no_leaked_credentials` | MUST | Met | Gitleaks runs in pre-commit and in CI, and GitHub secret scanning has no open alerts. Its only past alert was a placeholder Google-key-shaped test fixture (AIzaEXAMPLEFIXTURE plus zeros), which was resolved as used_in_tests. | [.pre-commit-config.yaml](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) |
+
+### Analysis: Static code analysis
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `static_analysis` | MUST | Met | CodeQL (security-extended suite, Python and Actions), bandit, ruff with the flake8-bandit S rules, mypy and zizmor run in CI on pushes and pull requests to main that touch the listed source and workflow paths, so the code of every release commit is analyzed before the tag is pushed. | [.github/workflows/codeql.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) |
+| `static_analysis_common_vulnerabilities` | SUGGESTED | Met | CodeQL runs the security-extended query suite, and bandit plus ruff's S (flake8-bandit) rules check for common Python security flaws such as injection, unsafe subprocess calls and unsafe deserialization. | [.github/codeql/codeql-config.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/codeql/codeql-config.yml) |
+| `static_analysis_fixed` | MUST | Met | No code-scanning alert is open on 2026-11-08; recent high and medium findings were fixed within two days, and each dismissed alert carries a written reason (a design choice recorded on the Scorecard posture page, or a Scorecard check that cannot pass yet), none an exploitable flaw. | [/docs/security/openssf-scorecard-target#score-interpretation](/docs/security/openssf-scorecard-target#score-interpretation) |
+| `static_analysis_often` | SUGGESTED | Met | Bandit, ruff and mypy run in CI on pushes and pull requests to main that touch the listed paths, and CodeQL runs on pushes and pull requests that touch src/ or the workflows, plus a weekly scheduled re-analysis. | [.github/workflows/ci.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) |
+
+### Analysis: Dynamic code analysis
+
+| Criterion | Level | Answer | Justification | Evidence |
+|---|---|---|---|---|
+| `dynamic_analysis` | SUGGESTED | Met | CI runs the Hypothesis property-based tests in tests/property/, which execute the engine's parsers, merge, path-safety and profile loader with varied generated inputs, before any release tag is pushed. | [tree/main/tests/property](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) |
+| `dynamic_analysis_unsafe` | SUGGESTED | N/A | Apothem is written in Python, with JavaScript for the npm shim and VS Code extension, and ships no C, C++ or other memory-unsafe code, including in its vendored pure-Python dependencies. | [tree/main/src/apothem](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem) |
+| `dynamic_analysis_enable_assertions` | SUGGESTED | Met | The pytest and Hypothesis suites run in CI on a normal Python interpreter without -O, with pytest assertion rewriting, so all assert-based checks in the tests and property tests are active, while production code carries no assert statements. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
+| `dynamic_analysis_fixed` | MUST | Met | No vulnerability of medium or higher severity found by the property tests or any other test run is left unfixed. | [tree/main/tests/property](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) |
+
+## Remaining gaps
+
+These items are not blockers for the passing badge, and they need more than a statement in a repository file:
+
+- **`crypto_weaknesses` (SHOULD, Unmet).** The default install path checks a GPG signature on a git tag, and the tag names its commit by a SHA-1 object ID. A fix that removes the SHA-1 dependency is to have the installers also verify the Sigstore bundle published for `SHA256SUMS` and then the SHA-256 of the downloaded archive. GitHub hosts only SHA-1 repositories, so the git side cannot change.
+- **Signing-key pinning in the installers.** `git verify-tag` accepts a valid signature from any key the user's GnuPG keyring trusts. The installers tell the user to import the maintainer key and check its fingerprint, but they do not compare the signing key's fingerprint against the one in SECURITY.md themselves. Pinning the fingerprint in the installers would close this.
+- **README badge.** The badge itself can be added to the README only after registration gives the project its bestpractices.dev ID. It is a third-party registry badge, so the change also adds its row to the per-badge table on the [Badge policy](/docs/governance/badge-policy) page.
+
+## Keep the answers current
+
+Re-check this page when a change touches one of the linked files, and when bestpractices.dev changes its passing criteria. The live criteria page and the `criteria.yml` file in the badge repository are the sources to compare against.
+
+## References
+
+- [OpenSSF Best Practices badge](https://www.bestpractices.dev/) — the site where projects register and answer the criteria
+- [Passing criteria](https://www.bestpractices.dev/en/criteria/0) — the live list for the passing level
+- [Criteria source](https://github.com/coreinfrastructure/best-practices-badge/blob/main/criteria/criteria.yml) — the machine-readable list and its rules
+- [Scorecard CII-Best-Practices check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#cii-best-practices) — how Scorecard scores the badge level
