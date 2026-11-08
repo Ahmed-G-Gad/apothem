@@ -120,10 +120,11 @@ _DEFAULT_CLAUDE_SCOPE: Final[Path] = Path.home() / ".claude"
 
 def _default_scopes() -> tuple[Path, ...]:
     """Return the default user-scope hook-capable harness roots."""
+    # Taken as Codex takes it: no ``~`` expansion, relative to the current
+    # folder (the same lookup as apothem.lib.codex_home, which this module
+    # cannot import from an installed support folder).
     codex_home = os.environ.get("CODEX_HOME")
-    codex_scope = (
-        Path(codex_home).expanduser() if codex_home else Path.home() / ".codex"
-    )
+    codex_scope = Path(codex_home).absolute() if codex_home else Path.home() / ".codex"
     return (_DEFAULT_CLAUDE_SCOPE, codex_scope)
 
 

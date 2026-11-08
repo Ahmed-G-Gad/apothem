@@ -214,15 +214,22 @@ Claude Code also reads a project's `AGENTS.md`, from the release its
 [memory page](https://code.claude.com/docs/en/memory#agents-md) names on.
 Under the default **Project instructions** setting it does so only when no
 `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` is in the working folder
-or a folder above it. `~/.claude/CLAUDE.md` does not count, so the Apothem block there keeps
-loading alongside a project `AGENTS.md`. The Kimi Code install writes an
-Apothem block into the project `AGENTS.md`, so in such a project Claude Code
-loads both blocks; the
-[harness registry](/docs/reference/harness-registry#shared-roots) lists that
-file's readers and their conditions. **Project instructions** is a user-wide
-setting, not a per-project one: setting it to `claude-md` in `/config` keeps
-Claude Code to its `CLAUDE.md` files in every project, and
-`claude-md-and-agents-md` loads both kinds of file wherever they are.
+or a folder above it. It reads the `AGENTS.md` files there when a session
+starts, and the `AGENTS.md` of a folder below the working folder when its Read
+tool opens a file in that folder and the folder has none of those three files.
+`~/.claude/CLAUDE.md` does not count, so the Apothem block there keeps loading
+alongside a project `AGENTS.md`. The Kimi Code install writes an Apothem block
+into the project `AGENTS.md`, so in such a project Claude Code loads both
+blocks; the [harness registry](/docs/reference/harness-registry#shared-roots)
+lists that file's readers and their conditions.
+
+**Project instructions** is a user-wide setting, not a per-project one: setting
+it to `claude-md` in `/config` keeps Claude Code to its `CLAUDE.md` files in
+every project, and `claude-md-and-agents-md` loads both kinds of file wherever
+they are. Some sessions read no `AGENTS.md` whatever the setting: those with
+the built-in plugin that reads it turned off, some first sessions after an
+upgrade from a release that could not read it, and, in early releases, some sessions on Amazon Bedrock or with
+telemetry turned off. The memory page lists them and names the releases.
 
 `~/.claude/agents/` is a shared root that `Claude Code` owns, as are
 `~/.claude/skills/` and `~/.claude/CLAUDE.md`: other supported tools load them,

@@ -239,6 +239,7 @@ Each entry gives its retrieval date.
 - <https://www.codebuddy.ai/docs/cli/codebuddy-dir> (project and user `agents/` folders and the project-over-user rule; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/plugins-reference> (fields a plugin agent accepts and the `.claude-plugin/` compatibility note; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/ide/Features/Subagents> (IDE Subagents page, same two folders; retrieved 2026-10-27)
+- <https://www.codebuddy.ai/docs/cli/installation> (install methods: the npm package `@tencent-ai/codebuddy-code`, a Homebrew tap, and a native binary in beta; retrieved 2026-11-03)
 
 ## Discovery Targets
 
