@@ -584,13 +584,20 @@ def run_uninstall(
             continue
         # Tree/discovery surfaces are reversed child-by-child against the apothem
         # source enumeration so operator-authored siblings survive — a path list
-        # cannot express that, so these stay manifest+source-driven.
+        # cannot express that, so these stay manifest+source-driven. A name the
+        # install filters out of this folder (statuslines/__init__.py) was never
+        # Apothem's to write, so a file of that name is the user's and stays.
+        filtered = set(
+            rules.per_directory_filters.get(Path(entry.source.rstrip("/")).name, [])
+        )
         for target in _generated_targets_for_entry(
             entry,
             harness_root=harness_root,
             project_root=project_root,
             exclude=rules.exclude,
         ):
+            if target.name in filtered:
+                continue
             removal = _replace_path(
                 target,
                 install_root=root,

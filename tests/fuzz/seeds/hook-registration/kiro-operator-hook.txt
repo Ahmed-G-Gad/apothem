@@ -1,0 +1,1 @@
+0{"version": "v1", "hooks": [{"name": "mine", "action": {"type": "command", "command": "echo hi"}}]}

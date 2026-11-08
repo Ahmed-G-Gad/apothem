@@ -1,0 +1,19 @@
+schema_version: 1
+identity:
+  name: Ada Lovelace
+  email: ada@example.com
+preferences:
+  language: en
+rules:
+  - agnostic-posture
+mcp_servers:
+  docs:
+    command: npx
+    args: ["-y", "docs-server"]
+    env:
+      TOKEN: ${DOCS_TOKEN}
+harnesses:
+  cursor:
+    preferences:
+      style: concise
+exclude_harnesses: [zed]

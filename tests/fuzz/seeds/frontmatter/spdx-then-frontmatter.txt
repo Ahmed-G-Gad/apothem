@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: MIT -->
+---
+name: example-rule
+description: "A quoted value"
+globs: ["**/*.py"]
+---
+
+# Body

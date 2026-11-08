@@ -1,0 +1,3 @@
+identity: {name: x}
+harnesses: {claude-code: {rules: [a, b]}}
+workspace: {directory_name: .apothem, scope: project}

@@ -282,58 +282,128 @@ def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
 
 
 def _restore_missing(
-    recorded: LedgerTarget, *, allowed_root: Path
-) -> MaterializationResult:
+    recorded: LedgerTarget, *, root: Path, harness_name: str, allowed_root: Path
+) -> list[MaterializationResult]:
     """Copy back each file of a swept path's backup that is missing now.
 
     Releases 1.0.1 to 1.5.0 swept folders that held a user's own files
     (``~/.claude/commands``, ``~/.codex/rules``). Rolling such an install back
-    restores every file the sweep took that is not there now, and keeps every
-    file that is, so nothing on disk is replaced. The result names the backup,
-    so the rollback record keeps it referenced and retention keeps the set.
+    writes every file the sweep took that is not there now, atomically, and
+    keeps every file that is, so nothing on disk is replaced. Each file written
+    is its own ``created`` row, so a partly failed restore counts as a partial
+    rollback and names what it wrote. A file that cannot be written (the path
+    is unsafe, a file stands where a folder was, no permission) is listed in a
+    closing ``error`` row; the others are still restored. Every row names the
+    backup, so the rollback record keeps it referenced.
     """
     target = Path(recorded.path)
     backup = Path(str(recorded.backup_ref)) if recorded.backup_ref else None
     if backup is None or not backup.exists():
-        return _result(
-            "skipped",
-            "restore_backup",
-            target,
-            "left in place: Apothem no longer sweeps this path and its backup is gone",
-        )
+        return [
+            _result(
+                "skipped",
+                "restore_backup",
+                target,
+                "left in place: Apothem no longer sweeps this path and its "
+                "backup is gone",
+            )
+        ]
+    in_the_way = _in_the_way(target, backup)
+    if in_the_way is not None:
+        return [
+            _result(
+                "skipped",
+                "restore_backup",
+                target,
+                f"left in place: {target} is now {in_the_way}; its backup is {backup}",
+                backup_path=backup,
+            )
+        ]
     files = (
         [backup]
         if backup.is_file()
         else sorted(path for path in backup.rglob("*") if path.is_file())
     )
-    restored = 0
+    rows: list[MaterializationResult] = []
+    failed: list[str] = []
     for source in files:
         destination = (
             target if source == backup else target / source.relative_to(backup)
         )
-        if destination.exists() or destination.is_symlink():
+        if destination.exists() or _is_link(destination):
             continue
-        error = _validate_target_path(
-            destination, allowed_root=allowed_root, operation="restore_backup"
+        try:
+            written = write_bytes_safely(
+                destination,
+                source.read_bytes(),
+                install_root=root,
+                harness_name=harness_name,
+                operation="restore_backup",
+                source=source,
+                allowed_root=allowed_root,
+            )
+        except OSError:
+            failed.append(str(destination))
+            continue
+        if written.outcome == "error":
+            failed.append(str(destination))
+        else:
+            rows.append(
+                _result(
+                    "created",
+                    "restore_backup",
+                    destination,
+                    f"restored from {source}",
+                    source=source,
+                    backup_path=backup,
+                )
+            )
+    restored = len(rows)
+    if failed:
+        rows.append(
+            _result(
+                "error",
+                "restore_backup",
+                target,
+                f"restored {restored} missing file(s) from {backup}; could not "
+                f"write {', '.join(failed)}; copy them from the backup by hand",
+                source=backup,
+                backup_path=backup,
+                detail={"failed": ", ".join(failed)},
+            )
         )
-        if error is not None:
-            return error
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
-        restored += 1
+        return rows
     message = (
         f"restored {restored} missing file(s) from {backup}; kept what is there now"
         if restored
         else f"left in place: everything in {backup} is still there"
     )
-    return _result(
-        "updated" if restored else "unchanged",
-        "restore_backup",
-        target,
-        message,
-        source=backup,
-        backup_path=backup,
+    rows.append(
+        _result(
+            "unchanged",
+            "restore_backup",
+            target,
+            message,
+            source=backup,
+            backup_path=backup,
+        )
     )
+    return rows
+
+
+def _in_the_way(target: Path, backup: Path) -> str | None:
+    """Name what now stands at *target* that a restore of *backup* must not touch.
+
+    A link (symlink or junction) is never written through. A folder backup
+    cannot land on a file, nor a file backup on a folder.
+    """
+    if _is_link(target):
+        return "a link"
+    if backup.is_dir() and target.is_file():
+        return "a file"
+    if backup.is_file() and target.is_dir():
+        return "a folder"
+    return None
 
 
 @locked_for_harness
@@ -376,7 +446,14 @@ def rollback_install(
         ):
             # The path left the stale-sweep list, so it was the user's: put back
             # what is missing, never over what is there now.
-            results.append(_restore_missing(recorded, allowed_root=allowed_root))
+            results.extend(
+                _restore_missing(
+                    recorded,
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=allowed_root,
+                )
+            )
             continue
         shared = gate.covers(recorded.path)
         target_root = gate.boundary if shared else allowed_root

@@ -21,6 +21,7 @@ import pytest
 from apothem.harnesses._shared.install_driver_hookfile import (
     HOOK_FILE_MODE,
     _UnmergeableError,
+    _unreadable_with_dispatcher,
     merge_registration,
     strip_registration,
 )
@@ -449,3 +450,18 @@ def test_a_template_without_the_flag_and_a_file_without_it_stay_byte_identical()
 ):
     rendered = _text({"version": "v1", "hooks": [_ours()]})
     assert merge_registration(rendered, rendered) == rendered
+
+
+# --- a file nested too deeply to parse ------------------------------------------
+
+#: Deeper than Python's recursion limit, so ``json.loads`` raises RecursionError.
+_TOO_DEEP = "[" * 100_000
+
+
+def test_a_file_nested_too_deeply_is_treated_as_unreadable() -> None:
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    assert merge_registration(_TOO_DEEP, rendered) == rendered
+    assert strip_registration(_TOO_DEEP) == _TOO_DEEP
+    with pytest.raises(_UnmergeableError):
+        _merge_owned(_TOO_DEEP)
+    assert _unreadable_with_dispatcher(_TOO_DEEP + _CURSOR_DISPATCHER)
