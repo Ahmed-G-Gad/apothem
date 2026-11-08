@@ -60,8 +60,14 @@ The installer performs these steps:
    cannot prompt.
 2. **Source placement.** The bundled tree is placed in `~/.apothem` (override
    with the `APOTHEM_HOME` environment variable): the verified release archive
-   when cosign is installed, otherwise a git clone. A re-run updates the
-   existing tree instead of duplicating it.
+   when cosign is installed, otherwise a git clone. The new source is checked
+   before it replaces anything, and a failed check leaves your existing
+   install as it was. A re-run updates the existing tree instead of
+   duplicating it, and keeps the data the engine stores there, such as its
+   backups. A git clone with changes to tracked files stops the update until
+   you commit or stash them. A symbolic link at `~/.apothem` is refused unless
+   it leads to an existing clone, and a folder that holds something other than
+   an Apothem install is left alone unless you pass `--yes`.
 3. **Profile bootstrap.** If you have no profile yet, the installer copies the
    example profile to `~/.config/apothem/profile.yaml`, installs and verifies
    Claude Code from it in the same run, and warns that the identity fields are
@@ -92,7 +98,9 @@ clone and which git ref to check out — unset resolves and verifies the latest
 release; set a tag to pin it, or `main` for the moving branch (a branch is not a signed
 tag, so it also needs `APOTHEM_ALLOW_UNVERIFIED=1`)),
 `APOTHEM_ALLOW_UNVERIFIED=1` (downgrade a tag-signature-verification failure to
-a warning, and allow a non-tag ref such as `main`), `APOTHEM_SOURCE` (use an existing local checkout instead of
+a warning, allow a non-tag ref such as `main`, and allow
+`APOTHEM_VERIFY=checksum`, which does not verify the release),
+`APOTHEM_SOURCE` (use an existing local checkout instead of
 cloning), and `APOTHEM_SKIP_VERIFY=1` (skip the post-install verify, which we
 want to run, so leave it unset).
 

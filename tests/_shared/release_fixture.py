@@ -1,25 +1,22 @@
 # SPDX-License-Identifier: MIT
 
 # REUSE-IgnoreStart
-"""Fixtures for the installers' release mode: a tagged repository, a stub gpg
-and a Sigstore-style bundle whose certificate names a source commit.
+"""Fixtures for the installers' release mode: a tagged repository and a stub
+gpg.
 
 Release mode checks two things before it trusts a release's SHA256SUMS: the
-release tag carries the maintainer key's signature, and the certificate that
-signed SHA256SUMS names the tag's commit in its source-repository-digest
-extension (OID 1.3.6.1.4.1.57264.1.19). These helpers build both sides
-without a key, a network or a real Sigstore certificate. The certificate is
-structurally X.509 but unsigned; the installers read it only after cosign
-(a stub in these tests) has accepted the bundle.
+release tag carries the maintainer key's signature and names itself as that
+release, and cosign, given ``--certificate-github-workflow-sha``, confirms the
+certificate that signed SHA256SUMS was issued to a run on the tag's commit.
+The installers read nothing from the bundle themselves, so the release-mode
+tests pair these helpers with a stub cosign that records its arguments.
 
-``V150_BUNDLE`` and ``V150_SUMS`` are the v1.5.0 release's own files, so a
-test can read a real Fulcio certificate.
+``V150_BUNDLE`` and ``V150_SUMS`` are the v1.5.0 release's own files, which
+``test_release_bundle_real_cosign.py`` checks with a real cosign.
 """
 
 from __future__ import annotations
 
-import base64
-import json
 import subprocess
 from pathlib import Path
 
@@ -35,13 +32,6 @@ V150_COMMIT = "ee6a157ca5e9c5642a12e41da2d73c577d045dd6"
 
 # Permission bits for stub programs (owner rwx, others rx).
 EXECUTABLE_MODE = 0o755
-
-_SOURCE_DIGEST_OID = bytes.fromhex("2b0601040183bf300113")  # 1.3.6.1.4.1.57264.1.19
-_ISSUER_OID = bytes.fromhex("2b0601040183bf300101")  # 1.3.6.1.4.1.57264.1.1
-_CN_OID = bytes.fromhex("550403")
-_ECDSA_SHA256_OID = bytes.fromhex("2a8648ce3d040302")
-_EC_PUBLIC_KEY_OID = bytes.fromhex("2a8648ce3d0201")
-_P256_OID = bytes.fromhex("2a8648ce3d030107")
 
 
 def git(args: list[str], cwd: Path) -> str:
@@ -141,78 +131,28 @@ def write_stub_gpg(stub_dir: Path, status: str, exit_code: int = 0) -> Path:
     return gitconfig
 
 
-def _der(tag: int, body: bytes) -> bytes:
-    size = len(body)
-    if size < 0x80:
-        return bytes([tag, size]) + body
-    length = size.to_bytes((size.bit_length() + 7) // 8, "big")
-    return bytes([tag, 0x80 | len(length)]) + length + body
-
-
-def _seq(*items: bytes) -> bytes:
-    return _der(0x30, b"".join(items))
-
-
-def _name(common_name: str) -> bytes:
-    return _seq(_der(0x31, _seq(_der(0x06, _CN_OID), _der(0x0C, common_name.encode()))))
-
-
-def fake_certificate(source_commit: str | None) -> bytes:
-    """An unsigned X.509 certificate (DER) laid out like a Fulcio one, whose
-    source-repository-digest extension names SOURCE_COMMIT; with None, the
-    certificate carries other Fulcio extensions but not that one."""
-    extensions = [
-        _seq(
-            _der(0x06, _ISSUER_OID),
-            _der(0x04, b"https://token.actions.githubusercontent.com"),
-        )
-    ]
-    if source_commit is not None:
-        extensions.append(
-            _seq(
-                _der(0x06, _SOURCE_DIGEST_OID),
-                _der(0x04, _der(0x0C, source_commit.encode("ascii"))),
-            )
-        )
-    algorithm = _seq(_der(0x06, _ECDSA_SHA256_OID))
-    tbs = _seq(
-        _der(0xA0, _der(0x02, b"\x02")),
-        _der(0x02, b"\x01\x23"),
-        algorithm,
-        _name("sigstore-intermediate"),
-        _seq(_der(0x17, b"261028000000Z"), _der(0x17, b"261028001000Z")),
-        _seq(),
-        _seq(
-            _seq(_der(0x06, _EC_PUBLIC_KEY_OID), _der(0x06, _P256_OID)),
-            _der(0x03, b"\x00\x04" + b"\x11" * 64),
-        ),
-        _der(0xA3, _seq(*extensions)),
+def repoint_tag(repo: Path, signed_as: str, ref: str) -> None:
+    """Make refs/tags/REF point at a signed-looking tag object that names
+    itself SIGNED_AS: the shape of a signed tag for an older release moved
+    onto a newer tag name."""
+    commit = git(["rev-parse", "HEAD"], repo).strip()
+    tag_file = repo.parent / f"{signed_as}-as-{ref}.tag"
+    tag_file.write_text(
+        f"object {commit}\n"
+        "type commit\n"
+        f"tag {signed_as}\n"
+        "tagger Fixture <fixture@example.invalid> 1600000000 +0000\n"
+        "\n"
+        "older signed release\n"
+        "-----BEGIN PGP SIGNATURE-----\n"
+        "\n"
+        "c3R1Yg==\n"
+        "-----END PGP SIGNATURE-----\n",
+        encoding="utf-8",
+        newline="\n",
     )
-    return _seq(tbs, algorithm, _der(0x03, b"\x00" + b"\x22" * 70))
-
-
-def fake_bundle(source_commit: str | None, *, sigstore_format: bool = False) -> str:
-    """A bundle around ``fake_certificate(SOURCE_COMMIT)``: cosign's own
-    layout (``cert``, a base64 PEM) by default, or the Sigstore bundle
-    layout (``verificationMaterial``) with SIGSTORE_FORMAT."""
-    der = fake_certificate(source_commit)
-    if sigstore_format:
-        return json.dumps(
-            {
-                "mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json",
-                "verificationMaterial": {
-                    "certificate": {"rawBytes": base64.b64encode(der).decode("ascii")}
-                },
-            }
-        )
-    body = base64.encodebytes(der).decode("ascii")
-    pem = f"-----BEGIN CERTIFICATE-----\n{body}-----END CERTIFICATE-----\n"
-    return json.dumps(
-        {
-            "base64Signature": "c3R1Yg==",
-            "cert": base64.b64encode(pem.encode("ascii")).decode("ascii"),
-        }
-    )
+    tag_sha = git(["hash-object", "-t", "tag", "-w", str(tag_file)], repo).strip()
+    git(["update-ref", f"refs/tags/{ref}", tag_sha], repo)
 
 
 # REUSE-IgnoreEnd

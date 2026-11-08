@@ -32,7 +32,9 @@ source tree with vendored dependencies. One command fetches the source, places
 the engine, and materializes your first harness. It verifies the signed
 release first: it checks the signed release tag against the maintainer key,
 and with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/)
-installed it also checks the signed release archive. Import the maintainer
+installed it also checks the signed release archive. A failed check stops the
+install before `~/.apothem` changes, and a git clone there with changes to
+tracked files stops the update until you commit or stash them. Import the maintainer
 signing key once before the first install and check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
 

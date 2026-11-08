@@ -28,9 +28,10 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Update an installer-based setup
 
-Re-run the installer — it is idempotent: it checks out the release tag in an
-existing git clone and updates a release-archive install in place — or run the
-dedicated update script, which works on a git clone:
+Re-run the installer — it is idempotent: it fetches an existing git clone,
+checks the new release tag, and only then checks the clone out, and it updates
+a release-archive install — or run the dedicated update script, which works on
+a git clone:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -40,16 +41,30 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-The update script re-checks-out the source tree at `APOTHEM_HOME` (default
+The update script moves the source tree at `APOTHEM_HOME` (default
 `~/.apothem`) to `APOTHEM_REF` — unset resolves the latest signed
 `vMAJOR.MINOR.PATCH` release tag, a tag value pins it, and `main` selects the
 moving branch only when `APOTHEM_ALLOW_UNVERIFIED=1` is also set. Without that
-override, the update checks out the ref and then aborts before re-materializing,
-because a branch is not a signed release tag. It verifies the tag's signature with `git verify-tag` before
-re-materializing, and the signature must be made by the maintainer key
-published in SECURITY.md; an unsigned or tampered tag, or one signed by any
-other key, aborts unless `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort to
-a warning. A signed tag
+override, the update aborts before it checks anything out or re-materializes,
+because a branch is not a signed release tag. It fetches the ref first and
+verifies the tag's signature with `git verify-tag` before the checkout, so a
+failed check leaves the clone at the version it was on. The signature must be
+made by the maintainer key published in SECURITY.md, and the signed tag must
+be the one named for the release; an unsigned or tampered tag, or one signed by
+any other key, aborts unless `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort
+to a warning (that variable does not bypass the check that the signed tag is
+the release tag). Because that variable lets an unsigned tag, or one signed by
+another key, through, the check protects only tags that carry the maintainer
+key's signature. With a non-release ref such as `main`, the clone follows
+origin's copy of that branch. The checkout never discards local changes: a clone with
+changes to tracked files stops the update, and you commit or stash them and
+re-run. Before it fetches, the update also stops when files are marked
+assume-unchanged or skip-worktree (git would not see their changes), when the
+clone's work tree is not `APOTHEM_HOME`, or when the clone's own git config
+sets `gpg.program`, `gpg.openpgp.program`, `core.fsmonitor`,
+`core.hooksPath`, `include.*` or `includeIf.*`; the message names what to
+remove. The clone's git hooks never run during the update, and a clone of a
+project other than Apothem is not updated at all. A signed tag
 whose maintainer public key is missing from the local keyring aborts with
 key-import guidance pointing at the fingerprint published in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
@@ -68,10 +83,12 @@ update script stops and tells you to re-run the installer with cosign and
 does not ship, including the engine's backups and install ledgers. Without
 cosign, re-run the installer with `--yes` (`-Yes` on Windows): it switches the
 archive install to a git clone checked against the maintainer key, and keeps
-the backups and ledgers. `APOTHEM_VERIFY=checksum` also updates the archive in
-place, but it checks only that the archive matches the release's
-`SHA256SUMS`, which anyone who can change the release files can change too, so
-it does not prove who published the release.
+everything that is not part of the source tree, including the backups,
+ledgers, plans and memory. `APOTHEM_VERIFY=checksum` also updates the archive
+in place and needs `APOTHEM_ALLOW_UNVERIFIED=1`. Checksum mode does not verify
+the release. SHA256SUMS comes from the same release as the archive, so a match
+only shows the download isn't damaged; anyone who can change the release's
+files can change both.
 
 ## Re-materialize harness output
 

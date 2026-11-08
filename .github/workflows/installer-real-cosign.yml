@@ -1,0 +1,145 @@
+# SPDX-License-Identifier: MIT
+
+# Installer real cosign: the installers' cosign call, run against real cosign
+# binaries.
+#
+# install.sh and install.ps1 verify a release's SHA256SUMS by calling
+# `cosign verify-blob` with an exact certificate identity and, through
+# --certificate-github-workflow-sha, the commit the signed tag points at. The
+# installers' own release-mode tests put a stub cosign on PATH, so they prove
+# what the installers pass to cosign, not what a real cosign makes of it.
+# tests/integration/test_release_bundle_real_cosign.py is the test that runs
+# the real verifier: it checks the published v1.5.0 release bundle with the
+# identity and the commit check (--certificate-github-workflow-sha) that
+# install.sh passes, and checks that another tag's identity, another commit,
+# and crafted bundles are refused. It skips itself when no cosign is on PATH,
+# so this job fails if any test is skipped, fails, or errors, instead of
+# passing with nothing checked.
+#
+# Releases are signed with cosign v2 (release.yml pins v2.6.3), but a user's
+# installer runs whatever cosign that user has installed. The matrix therefore
+# covers the pinned v2 line and the newest v3 line, so a change to cosign's
+# bundle handling in either major shows up here, in a pull request, and not
+# in an install on a user's machine.
+#
+# Network. cosign fetches Sigstore's trust root (TUF) while it verifies, so
+# the job needs the internet and runs with harden-runner in audit mode: the
+# endpoint set (the Sigstore TUF mirror and its CDN) is not a short fixed
+# list worth allowlisting, and a block policy that lagged behind a change
+# there would fail the check for a reason unrelated to the pull request.
+#
+# Trigger. The job runs on pull requests to main that touch the installers,
+# the test, the release bundle fixture it reads, the Python dependencies it
+# installs (pyproject.toml and the dev lock), or this workflow, and on manual
+# dispatch. It is not a required check, so the paths filter cannot
+# leave a required context pending (see installer-lint.yml's note).
+#
+# Dependencies. The Python test dependencies install the way ci.yml installs
+# them: the hash-locked pip, then the hash-locked dev lock with
+# --require-hashes, then the package with --no-deps. Nothing installs from an
+# unpinned requirement.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
+# SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical
+# policy documented in ci.yml.
+
+name: Installer Real Cosign
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/installer/**'
+      - 'tests/integration/test_release_bundle_real_cosign.py'
+      - 'tests/_shared/release_fixture.py'
+      - 'tests/fixtures/release-v1.5.0/**'
+      - 'pyproject.toml'
+      - 'scripts/ci/requirements-ci-dev.txt'
+      - '.github/workflows/installer-real-cosign.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-real-cosign-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  real-cosign:
+    name: real-cosign / cosign ${{ matrix.cosign-release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # v2.6.3 is the line release.yml signs with; v3.1.4 is the newest v3.
+        cosign-release: ['v2.6.3', 'v3.1.4']
+    env:
+      COSIGN_RELEASE: ${{ matrix.cosign-release }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+        with:
+          # Pin the binary from the matrix, as release.yml pins it, so an
+          # installer bump never moves it implicitly.
+          cosign-release: ${{ matrix.cosign-release }}
+
+      - name: Check the installed cosign version
+        # The installer action can fall back to its own default; the test
+        # must run the version this cell names.
+        run: |
+          cosign version
+          cosign version 2>&1 | grep -E "GitVersion:[[:space:]]+${COSIGN_RELEASE}$"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/ci/requirements-ci-dev.txt
+
+      - name: Install dependencies
+        run: |
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
+          # Hash-locked dependencies (runtime + dev extra); the package itself
+          # installs editable without resolving.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-dev.txt
+          python -m pip install --no-deps -e .
+
+      - name: Run the real-cosign test
+        # -n 0 turns off the xdist workers pyproject.toml's addopts asks for:
+        # the file's tests are few and short. bash runs the step with
+        # pipefail, so a pytest failure fails it through the tee.
+        shell: bash
+        run: >-
+          python -m pytest tests/integration/test_release_bundle_real_cosign.py
+          -n 0 -p no:cacheprovider --color=no -rs
+          | tee "${RUNNER_TEMP}/real-cosign.log"
+
+      - name: Fail if no test ran, or any was skipped, failed or errored
+        # The test skips itself when it finds no cosign. A skip would leave
+        # the job green with nothing verified, so require passes and no
+        # skips, failures or errors in pytest's summary line.
+        run: |
+          grep -Eq '[0-9]+ passed' "${RUNNER_TEMP}/real-cosign.log"
+          if grep -Eq '[0-9]+ skipped' "${RUNNER_TEMP}/real-cosign.log"; then
+            echo "the real-cosign test was skipped"
+            exit 1
+          fi
+          if grep -Eq '[0-9]+ (failed|errors?)' "${RUNNER_TEMP}/real-cosign.log"; then
+            echo "the real-cosign test failed or errored"
+            exit 1
+          fi

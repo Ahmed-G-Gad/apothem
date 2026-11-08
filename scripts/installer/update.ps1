@@ -8,23 +8,43 @@
 # Trust model (tag-pinned, verified-by-default; PowerShell parity to
 # update.sh): with no APOTHEM_REF set, the updater resolves the latest
 # vMAJOR.MINOR.PATCH release tag and checks THAT out - the moving `main` branch
-# is no longer the default. Before re-materializing, the fetched tag is verified
-# with `git verify-tag`, and the signature must be made by the maintainer key
-# SECURITY.md publishes (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163);
-# an unsigned / tampered / missing-signature tag, or one signed by another key,
-# ABORTS before any config is written. APOTHEM_REF=main checks out the branch
-# on request; APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a
-# loud warning. The APOTHEM_SOURCE local-checkout path fetches nothing and
-# skips verification. An install made from a release archive (install.ps1's
-# cosign or checksum path) has no git clone to update; re-run install.ps1.
+# is no longer the default. The clone is fetched and the tag is checked before
+# anything is checked out, so a failed check leaves the clone where it was:
+# `git verify-tag` must pass, the signature must be made by the maintainer key
+# SECURITY.md publishes (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163),
+# and the signed tag object must name itself as that release. Only then is
+# the tag's commit checked out, without --force: a change to a tracked file
+# stops the update before the checkout, and other local changes the
+# checkout would overwrite stop it too, instead of being lost. An unsigned /
+# tampered / missing-signature tag, or one signed by another key, ABORTS
+# before any config is written unless APOTHEM_ALLOW_UNVERIFIED=1 downgrades
+# the abort to a loud warning; a tag the maintainer signed for another
+# release and re-pointed here aborts either way. Because
+# APOTHEM_ALLOW_UNVERIFIED=1 lets an unsigned tag, or one signed by another
+# key, through, the re-pointed-tag check protects only tags that carry the
+# maintainer key's signature. Before the clone is fetched it is checked: no
+# tracked file may be marked assume-unchanged or skip-worktree, its work tree
+# must be APOTHEM_HOME itself, and its own git config may not set a gpg
+# program, fsmonitor, hooks path or include; its hooks do not run during the
+# update, and a clone of something other than Apothem is not updated.
+# APOTHEM_REF=main checks out the branch on request (it needs
+# APOTHEM_ALLOW_UNVERIFIED=1). The APOTHEM_SOURCE local-checkout path fetches
+# nothing and skips verification. An install made from a release archive
+# (install.ps1's cosign or checksum path) has no git clone to update; re-run
+# install.ps1.
 #
 # Environment overrides:
 #   APOTHEM_HOME      Cloned source location (default: $HOME/.apothem)
-#   APOTHEM_REPO      Git remote (default: https://github.com/ahmed-g-gad/apothem)
+#   APOTHEM_REPO      Git remote (default: https://github.com/ahmed-g-gad/apothem).
+#                     A value that starts with - is refused.
 #   APOTHEM_REF       Git ref to update to. Unset = resolve the latest release
 #                     tag; set to a tag to pin, or "main" for the moving branch.
-#   APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure to a
-#                     warning and proceed.
+#   APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a failed tag-signature check to a
+#                     warning and proceed, and allow a ref that is not a
+#                     release tag. A re-pointed tag still aborts, but since
+#                     an unsigned tag, or one signed by another key, gets
+#                     through, that check protects only tags that carry the
+#                     maintainer key's signature.
 #   APOTHEM_SOURCE    Explicit local source tree to re-materialize from (skips
 #                     tag resolution and verification)
 #   APOTHEM_HARNESS   Harness to update (default: claude-code)
@@ -52,7 +72,7 @@ $MaintainerFingerprint = '5C8998F9F241720445D3F28B70396FED9C634163'
 # CLI prerequisites; `yaml` + `jsonschema` ship vendored inside the bundled
 # tree (src/apothem/_vendor), so only click + rich come from the host.
 $RuntimeDeps = @('click', 'rich')
-$VendoringDoc = 'https://apothem.ahmedgad.com/architecture/vendoring-strategy/'
+$PrereqDoc = 'https://apothem.ahmedgad.com/docs/architecture/vendoring-strategy/'
 
 # Colour only an interactive console. NO_COLOR (https://no-color.org/) or
 # redirected output (a pipe, a file, a CI log) gets plain text.
@@ -67,6 +87,26 @@ function Write-Info { param([string]$Msg) $c = Get-ColorParameter Cyan;   Write-
 function Write-Ok   { param([string]$Msg) $c = Get-ColorParameter Green;  Write-Host "  + $Msg" @c }
 function Write-Warn { param([string]$Msg) $c = Get-ColorParameter Yellow; Write-Host "  ! $Msg" @c }
 function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
+
+# A git variable set in the calling shell would point every git command
+# below at another repository, work tree, index or object store, add
+# settings or another git program, or swap objects through replace refs,
+# so they are cleared first; GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM stay
+# (mirrors
+# update.sh). An APOTHEM_REPO that starts with - would reach git as an
+# option.
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR')) {
+    if (Test-Path -LiteralPath "Env:$GitVar") { Remove-Item -LiteralPath "Env:$GitVar" }
+}
+$env:GIT_NO_REPLACE_OBJECTS = '1'
+if ($ApothemRepo.StartsWith('-')) {
+    Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
+}
+
+# The git calls that run in an existing clone (fetch, verify-tag, cat-file,
+# checkout) take these arguments, which point core.hooksPath at an empty
+# folder made for the run, so none of the clone's hooks runs.
+$GitSafe = @()
 
 # Test-PythonImport INTERPRETER MODULE - return $true when MODULE imports under
 # INTERPRETER, $false otherwise. Localizes $ErrorActionPreference to 'Continue'
@@ -136,8 +176,12 @@ function Resolve-LatestTag {
         # is: -match ignores case and would also take a V9.9.9 tag, which
         # Test-ReleaseTag rejects. $ is safe here: each line arrives without
         # its newline.
-        if ($line -cmatch 'refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(\^\{\})?$') {
-            $tags += $matches[1]
+        # The anchor on the object name and tab keeps a tag whose own name
+        # holds refs/tags/v... from passing for a release tag. A tag whose
+        # numbers do not fit [version] is skipped, not fatal.
+        if ($line -cmatch '^[0-9a-f]+\trefs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(\^\{\})?$') {
+            $TagVersion = $null
+            if ([version]::TryParse($matches[1].Substring(1), [ref]$TagVersion)) { $tags += $matches[1] }
         }
     }
     if ($tags.Count -eq 0) { return $null }
@@ -164,7 +208,7 @@ function Test-TagSignature {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $Lines = & git -C $Dir verify-tag --raw $Ref 2>&1
+        $Lines = & git @GitSafe -C $Dir verify-tag --raw $Ref 2>&1
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
@@ -212,6 +256,51 @@ function Test-ReleaseTag {
     return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z')
 }
 
+# Assert-CleanClone DIR - refuse, before anything is fetched, an existing
+# clone at DIR whose check the update could not trust (mirrors update.sh's
+# require_clean_clone). Its own git config may not set a program or file the
+# update's git calls would run or read (gpg.program, gpg.openpgp.program,
+# core.fsmonitor, core.hooksPath, include. and includeIf. entries); this is
+# read first, as the other checks run git in the clone. Its work tree must
+# be DIR itself, not one core.worktree or a .git file names: git must place
+# DIR inside the work tree, at its top. And no tracked file may be marked
+# assume-unchanged or skip-worktree (git ls-files -v prints a lower-case
+# letter or S for one), since git then hides a change to it.
+function Assert-CleanClone {
+    param([string]$Dir)
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $CcConfig = @(& git -C $Dir config --local --name-only --get-regexp . 2>$null | ForEach-Object { [string]$_ })
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    foreach ($CcKey in $CcConfig) {
+        $CcLower = $CcKey.ToLowerInvariant()
+        if ((@('gpg.program', 'gpg.openpgp.program', 'core.fsmonitor', 'core.hookspath') -ccontains $CcLower) -or $CcLower.StartsWith('include.', [System.StringComparison]::Ordinal) -or $CcLower.StartsWith('includeif.', [System.StringComparison]::Ordinal)) {
+            Write-Fail "$Dir's own git config sets $CcKey, which the update would trust. Remove it from $Dir/.git/config, then re-run."
+        }
+    }
+    $ErrorActionPreference = 'Continue'
+    try {
+        $CcInside = [string](& git -C $Dir rev-parse --is-inside-work-tree 2>$null)
+        $CcInsideCode = $LASTEXITCODE
+        $CcPrefix = [string](& git -C $Dir rev-parse --show-prefix 2>$null)
+        $CcPrefixCode = $LASTEXITCODE
+        $CcFlags = @(& git -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    if ($CcInsideCode -ne 0 -or $CcInside.Trim() -cne 'true' -or $CcPrefixCode -ne 0 -or $CcPrefix.Trim() -ne '') {
+        Write-Fail "$Dir is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+    }
+    foreach ($CcLine in $CcFlags) {
+        if ($CcLine.Length -gt 0 -and ([char]::IsLower($CcLine[0]) -or $CcLine[0] -ceq 'S')) {
+            Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
+        }
+    }
+}
+
 Write-Bold "Apothem updater"
 
 function Test-ApothemSource {
@@ -243,7 +332,7 @@ if ($MissingDeps.Count -gt 0) {
     }
 }
 if ($MissingDeps.Count -gt 0) {
-    Write-Fail "Missing prerequisites under ${PY}: $($MissingDeps -join ', '). Install them with: '${PY}' -m pip install $($MissingDeps -join ' ') - or set APOTHEM_AUTO_INSTALL_DEPS=1 to install automatically. See $VendoringDoc for the vendoring strategy."
+    Write-Fail "Missing prerequisites under ${PY}: $($MissingDeps -join ', '). Install them with: '${PY}' -m pip install $($MissingDeps -join ' ') - or set APOTHEM_AUTO_INSTALL_DEPS=1 to install automatically. See $PrereqDoc for help."
 }
 
 # Locate or fetch the source.
@@ -256,88 +345,184 @@ if ($env:APOTHEM_SOURCE) {
     $Source = (Resolve-Path -LiteralPath $env:APOTHEM_SOURCE).Path
     Write-Ok "Using explicit source: $Source"
     Write-Info "Local source - skipping tag resolution and signature verification"
-} elseif (Test-Path -LiteralPath (Join-Path $ApothemHome '.git')) {
-    if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) { Write-Fail "git not found in PATH" }
+} elseif ((Test-Path -LiteralPath (Join-Path $ApothemHome '.git')) -and (Test-ApothemSource $ApothemHome)) {
+    $NoHooksDir = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-nohooks-" + [System.Guid]::NewGuid().ToString('N'))
+    try {
+        New-Item -ItemType Directory -Path $NoHooksDir | Out-Null
+        $GitSafe = @('-c', "core.hooksPath=$NoHooksDir")
+        if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) { Write-Fail "git not found in PATH" }
 
-    # Resolve the ref to update to. An unset APOTHEM_REF defaults to the latest
-    # release tag (verified-by-default) rather than the moving `main` branch.
-    if (-not $ApothemRef) {
-        Write-Info "Resolving latest release tag from $ApothemRepo"
-        $ApothemRef = Resolve-LatestTag $ApothemRepo
+        # Resolve the ref to update to. An unset APOTHEM_REF defaults to the latest
+        # release tag (verified-by-default) rather than the moving `main` branch.
         if (-not $ApothemRef) {
-            Write-Fail "No vMAJOR.MINOR.PATCH release tag found at $ApothemRepo. Pin a ref explicitly with `$env:APOTHEM_REF = '<tag|main>'`."
+            Write-Info "Resolving latest release tag from $ApothemRepo"
+            $ApothemRef = Resolve-LatestTag $ApothemRepo
+            if (-not $ApothemRef) {
+                Write-Fail "No vMAJOR.MINOR.PATCH release tag found at $ApothemRepo. Pin a ref explicitly with `$env:APOTHEM_REF = '<tag|main>'`."
+            }
+            Write-Ok "Latest release tag: $ApothemRef"
         }
-        Write-Ok "Latest release tag: $ApothemRef"
-    }
 
-    if ((Test-ReleaseTag $ApothemRef) -and $ApothemAllowUnverified -ne '1') {
+        if ((Test-ReleaseTag $ApothemRef) -and $ApothemAllowUnverified -ne '1') {
+            # Release tags carry OpenPGP signatures whatever gpg.format says, so
+            # the program git verify-tag runs for one must be present:
+            # gpg.openpgp.program, else gpg.program, else gpg.
+            $prior = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $GpgProg = & git config --get gpg.openpgp.program 2>$null
+                if (-not $GpgProg) { $GpgProg = & git config --get gpg.program 2>$null }
+                $GitExecPath = & git --exec-path 2>$null
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+            if ($GpgProg) {
+                $GpgFound = (Test-Path -LiteralPath $GpgProg -PathType Leaf) -or [bool](Get-Command $GpgProg -ErrorAction SilentlyContinue)
+            } else {
+                # Git for Windows runs the gpg it ships (usr\bin\gpg.exe under its
+                # install root), which is not on PATH.
+                $GpgFound = [bool](Get-Command 'gpg' -ErrorAction SilentlyContinue)
+                if (-not $GpgFound -and $GitExecPath) {
+                    $GitRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $GitExecPath))
+                    $GpgFound = [bool]($GitRoot -and (Test-Path -LiteralPath (Join-Path $GitRoot 'usr\bin\gpg.exe')))
+                }
+            }
+            if (-not $GpgFound) {
+                Write-Fail "gpg not found - needed to check the $ApothemRef release tag's signature against the maintainer key. Install Git for Windows (it ships gpg) or GnuPG (https://gnupg.org/download/), then re-run."
+            }
+        }
+
+        Assert-CleanClone $ApothemHome
+
+        # Fetch, check the tag, and only then check it out, so a failed check
+        # leaves the clone where it was (mirrors update.sh). git reports a failed
+        # fetch or checkout on stderr, which PowerShell before 7.2 turns into a
+        # terminating error under 'Stop', so the preference is localized around
+        # each call.
+        Write-Info "Updating clone at $ApothemHome (ref: $ApothemRef)"
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            $GpgFormat = & git config --get gpg.format 2>$null
-            $GpgProg = & git config --get gpg.program 2>$null
-            $GitExecPath = & git --exec-path 2>$null
+            & git @GitSafe -C $ApothemHome fetch --quiet --tags origin
+            $FetchCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior
         }
-        $GpgFound = ($GpgFormat -eq 'ssh')
-        if (-not $GpgFound -and $GpgProg) {
-            $GpgFound = (Test-Path -LiteralPath $GpgProg -PathType Leaf) -or [bool](Get-Command $GpgProg -ErrorAction SilentlyContinue)
-        } elseif (-not $GpgFound) {
-            # Git for Windows runs the gpg it ships (usr\bin\gpg.exe under its
-            # install root), which is not on PATH.
-            $GpgFound = [bool](Get-Command 'gpg' -ErrorAction SilentlyContinue)
-            if (-not $GpgFound -and $GitExecPath) {
-                $GitRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $GitExecPath))
-                $GpgFound = [bool]($GitRoot -and (Test-Path -LiteralPath (Join-Path $GitRoot 'usr\bin\gpg.exe')))
+        if ($FetchCode -ne 0) {
+            Write-Fail "Could not fetch from the origin of $ApothemHome. If a local tag differs from origin's, delete it with 'git -C $ApothemHome tag -d <tag>', then re-run."
+        }
+
+        Write-Bold "Verifying source signature"
+        if (Test-ReleaseTag $ApothemRef) {
+            if ((Test-TagSignature $ApothemHome "refs/tags/$ApothemRef") -and (Test-TagSignedByMaintainer)) {
+                # The signed tag object must name itself APOTHEM_REF: a signed tag
+                # for another release, re-pointed here, would roll the update
+                # back. Its header runs to the first empty line, and the last
+                # `type` and `tag` lines in it must read exactly `type commit` and
+                # `tag APOTHEM_REF`, as update.sh's awk check requires.
+                $prior = $ErrorActionPreference
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $TagLines = @(& git @GitSafe -C $ApothemHome cat-file tag "refs/tags/$ApothemRef" 2>$null)
+                } finally {
+                    $ErrorActionPreference = $prior
+                }
+                $TagType = ''
+                $TagName = ''
+                foreach ($TagLine in $TagLines) {
+                    $TagText = [string]$TagLine
+                    if ($TagText -eq '') { break }
+                    $TagField = @($TagText.Trim() -split '\s+')[0]
+                    if ($TagField -ceq 'type') { $TagType = $TagText }
+                    elseif ($TagField -ceq 'tag') { $TagName = $TagText }
+                }
+                if (-not ($TagType -ceq 'type commit' -and $TagName -ceq "tag $ApothemRef")) {
+                    Write-Fail "Tag $ApothemRef carries the maintainer key's signature, but the signed tag object is not the $ApothemRef release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or re-materialized."
+                }
+                Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
+            } elseif ($ApothemAllowUnverified -eq '1') {
+                Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            } elseif (Test-TagSignedByOtherKey) {
+                Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or re-materialized."
+            } elseif (Test-VerifyTagMissingKey) {
+                Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this updater."
+            } else {
+                Write-Fail "Tag $ApothemRef is unsigned or its signature did not verify (possible tampering). Aborting before anything is checked out or re-materialized."
             }
-        }
-        if (-not $GpgFound) {
-            Write-Fail "gpg not found - needed to check the $ApothemRef release tag's signature against the maintainer key. Install Git for Windows (it ships gpg) or GnuPG (https://gnupg.org/download/), then re-run."
-        }
-    }
-
-    Write-Info "Updating clone at $ApothemHome (ref: $ApothemRef)"
-    & git -C $ApothemHome fetch --quiet --tags origin
-    if (Test-ReleaseTag $ApothemRef) {
-        # The full refs/tags/ name keeps a branch that shares the tag's name
-        # from standing in for it; HEAD must then be the tag's commit.
-        & git -C $ApothemHome checkout --quiet --force "refs/tags/$ApothemRef"
-        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome" }
-        $CoHead = & git -C $ApothemHome rev-parse --verify --quiet HEAD
-        $CoTag = & git -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
-        if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
-            Write-Fail "The checkout in $ApothemHome is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before re-materialization."
-        }
-    } else {
-        & git -C $ApothemHome checkout --quiet --force $ApothemRef
-        if ($LASTEXITCODE -ne 0) { & git -C $ApothemHome checkout --quiet --force "origin/$ApothemRef" }
-        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $ApothemHome" }
-    }
-    $Source = $ApothemHome
-    if (-not (Test-ApothemSource $Source)) { Write-Fail "Updated tree is not an apothem source: $Source" }
-    Write-Ok "Source updated at $Source (ref: $ApothemRef)"
-
-    # Fail-closed signature verification - runs BEFORE any re-materialization.
-    Write-Bold "Verifying source signature"
-    if (Test-ReleaseTag $ApothemRef) {
-        if ((Test-TagSignature $Source "refs/tags/$ApothemRef") -and (Test-TagSignedByMaintainer)) {
-            Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
         } elseif ($ApothemAllowUnverified -eq '1') {
-            Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
-        } elseif (Test-TagSignedByOtherKey) {
-            Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before re-materialization."
-        } elseif (Test-VerifyTagMissingKey) {
-            Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this updater."
-        } else {
-            Write-Fail "Tag $ApothemRef is unsigned or its signature did not verify (possible tampering). Aborting before re-materialization."
-        }
-    } else {
-        if ($ApothemAllowUnverified -eq '1') {
             Write-Warn "Ref $ApothemRef is not a signed release tag - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
         } else {
             Write-Fail "Ref $ApothemRef is not a signed release tag and cannot be verified. Pin a vMAJOR.MINOR.PATCH tag, or set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
         }
+
+        # A change to a tracked file stops the update before anything is checked
+        # out (mirrors update.sh).
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & git @GitSafe -C $ApothemHome diff --quiet HEAD
+            $DiffCode = $LASTEXITCODE
+            & git @GitSafe -C $ApothemHome diff --cached --quiet
+            $CachedCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if ($DiffCode -ne 0 -or $CachedCode -ne 0) {
+            Write-Fail "$ApothemHome has changes to tracked files. Commit or stash them, then re-run."
+        }
+
+        # A release tag is checked out detached, as the commit
+        # refs/tags/<tag>^{commit} names, so neither a branch that shares the
+        # tag's name nor one named refs/tags/<tag> can stand in for it; HEAD must
+        # then be the tag's commit. Any other ref follows origin's branch of that
+        # name when there is one (a local branch may be stale), and otherwise
+        # resolves directly, after --end-of-options so a ref cannot pass for an
+        # option. No --force, so local changes stop the update instead of being
+        # lost, and afterwards the tracked files must match the ref.
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            if (Test-ReleaseTag $ApothemRef) {
+                & git @GitSafe -C $ApothemHome checkout --quiet --detach "refs/tags/$ApothemRef^{commit}"
+                $CoCode = $LASTEXITCODE
+            } else {
+                & git @GitSafe -C $ApothemHome show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
+                if ($LASTEXITCODE -eq 0) {
+                    & git @GitSafe -C $ApothemHome checkout --quiet --detach "refs/remotes/origin/$ApothemRef"
+                } else {
+                    & git @GitSafe -C $ApothemHome checkout --quiet --end-of-options $ApothemRef
+                }
+                $CoCode = $LASTEXITCODE
+            }
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if (Test-ReleaseTag $ApothemRef) {
+            if ($CoCode -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome. If it has local changes, commit or stash them, then re-run." }
+            $CoHead = & git @GitSafe -C $ApothemHome rev-parse --verify --quiet HEAD
+            $CoTag = & git @GitSafe -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
+            if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
+                Write-Fail "The checkout in $ApothemHome is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before re-materialization."
+            }
+        } elseif ($CoCode -ne 0) {
+            Write-Fail "Could not check out $ApothemRef in $ApothemHome. If it has local changes, commit or stash them, then re-run."
+        }
+        $ErrorActionPreference = 'Continue'
+        try {
+            $CoDirty = @(& git @GitSafe -C $ApothemHome status --porcelain --untracked-files=no 2>$null)
+            $CoStatusCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if ($CoStatusCode -ne 0 -or $CoDirty.Count -gt 0) {
+            Write-Fail "The checkout in $ApothemHome does not match $ApothemRef after the update. Aborting before re-materialization."
+        }
+        $Source = $ApothemHome
+        if (-not (Test-ApothemSource $Source)) { Write-Fail "Updated tree is not an apothem source: $Source" }
+        Write-Ok "Source updated at $Source (ref: $ApothemRef)"
+    } finally {
+        $GitSafe = @()
+        if (Test-Path -LiteralPath $NoHooksDir) { Remove-Item -LiteralPath $NoHooksDir -Recurse -Force }
     }
 } elseif (Test-ApothemSource $ApothemHome) {
     Write-Fail "$ApothemHome was installed from a release archive, which has no git clone to update. Re-run install.ps1 with cosign and gpg on PATH to update it to the latest verified release."
