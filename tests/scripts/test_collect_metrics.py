@@ -575,22 +575,98 @@ def test_antigravity_does_not_count_the_old_plugin_folder(
     assert cm.measure_surfaces("antigravity", home, project) == (0, 0)
 
 
+_AG_PLUGINS = ".gemini/config/plugins/"
+_AG_ALWAYS = "---\ntrigger: always_on\n---\n<!-- SPDX-License-Identifier: MIT -->\nr\n"
+
+
 def test_antigravity_counts_always_on_plugin_rules(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "project"
-    always = "<!-- SPDX-License-Identifier: MIT -->\n---\ntrigger: always_on\n---\nr\n"
-    rules = ".gemini/config/plugins/apothem/rules/"
+    rules = _AG_PLUGINS + "apothem/rules/"
     _write(
         home,
         {
-            rules + "always.md": always,
-            rules + "scoped.md": "---\ntrigger: glob\nglobs: '*.py'\n---\nscoped\n",
-            rules + "nested/deep.md": always,
-            ".gemini/config/plugins/apothem/plugin.json": "{}\n",
+            _AG_PLUGINS + "apothem/plugin.json": "{}\n",
+            rules + "always.md": _AG_ALWAYS,
+            rules + "scoped.md": (
+                "---\ntrigger: glob\ndescription: Python\nglobs: '*.py'\n---\nscoped\n"
+            ),
+            rules + "decide.md": (
+                "---\ntrigger: model_decision\ndescription: When asked\n---\nd\n"
+            ),
+            rules + "manual.md": "---\ntrigger: manual\n---\nmanual\n",
+            rules + "late.md": (
+                "<!-- SPDX-License-Identifier: MIT -->\n---\ntrigger: always_on\n---\n"
+            ),
+            rules + "nested/deep.md": _AG_ALWAYS,
         },
     )
     project.mkdir()
 
-    assert cm.measure_surfaces("antigravity", home, project) == (_size(always), 1)
+    assert cm.measure_surfaces("antigravity", home, project) == (_size(_AG_ALWAYS), 1)
+
+
+def test_antigravity_counts_each_plugin_and_its_rules_anchor(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    anchor = "Plugin-wide guidance without frontmatter.\n"
+    _write(
+        home,
+        {
+            _AG_PLUGINS + "one/plugin.json": '{"name": "one"}\n',
+            _AG_PLUGINS + "one/rules/AGENTS.md": anchor,
+            _AG_PLUGINS + "one/rules/GEMINI.md": "not loaded beside AGENTS.md\n",
+            _AG_PLUGINS + "two/plugin.json": '{"name": "two"}\n',
+            _AG_PLUGINS + "two/rules/GEMINI.md": anchor,
+            _AG_PLUGINS + "two/rules/always.md": _AG_ALWAYS,
+        },
+    )
+    project.mkdir()
+
+    assert cm.measure_surfaces("antigravity", home, project) == (
+        2 * _size(anchor) + _size(_AG_ALWAYS),
+        3,
+    )
+
+
+def test_antigravity_skips_a_folder_without_a_manifest_or_marked_disabled(
+    tmp_path: Path,
+) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    _write(
+        home,
+        {
+            _AG_PLUGINS + "loose/rules/AGENTS.md": "no plugin.json\n",
+            _AG_PLUGINS + "loose/rules/always.md": _AG_ALWAYS,
+            _AG_PLUGINS + "off/plugin.json": '{"name": "off", "disabled": true}\n',
+            _AG_PLUGINS + "off/rules/always.md": _AG_ALWAYS,
+        },
+    )
+    project.mkdir()
+
+    assert cm.measure_surfaces("antigravity", home, project) == (0, 0)
+
+
+def test_an_unreadable_launch_file_records_a_null(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail(harness: str) -> tuple[int, int]:
+        raise PermissionError(f"cannot read a {harness} rule")
+
+    monkeypatch.setattr(cm, "install_and_measure", fail)
+    out = tmp_path / "metrics.json"
+    cm.main(
+        [
+            "--harness",
+            "antigravity",
+            "--skip-coldstart",
+            "--skip-hooks",
+            "--out",
+            str(out),
+        ]
+    )
+    data = json.loads(out.read_text(encoding="utf-8"))
+
+    assert data["always_on_bytes"]["antigravity"] is None
+    assert "cannot read" in data["nulls"]["always_on_bytes.antigravity"]
 
 
 def test_open_claw_reads_the_bootstrap_files_in_order_with_caps(

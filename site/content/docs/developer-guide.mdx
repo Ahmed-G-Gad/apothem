@@ -688,11 +688,15 @@ also written into the artifact under `rules.always_on_bytes`:
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
                 ~/.gemini/config/rules/*.md with trigger: always_on, and in the
                 project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
-                .agents/rules/*.md with trigger: always_on, plus
-                ~/.gemini/config/plugins/<name>/rules/*.md with trigger:
-                always_on; each file counted up to 24,000 bytes. @ includes
-                are not expanded, and the 20,000-token budget across always-on
-                rules is not modeled.
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
                 frontmatter, plus the project equivalents and CLAUDE.local.md;
                 the project AGENTS.md and .claude/AGENTS.md only when the
