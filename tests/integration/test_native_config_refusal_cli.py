@@ -17,7 +17,11 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.harnesses.open_claw.materializer import SKILLS_DIRECTORY
+from apothem.harnesses.open_claw.materializer import (
+    HOOK_NAME,
+    RULES_FILE_RELATIVE,
+    SKILLS_DIRECTORY,
+)
 from apothem.schemas import profile_minimal_path
 
 _JSONC_OPENCODE = '{\n  // operator note\n  "model": "anthropic/operator-model",\n}\n'
@@ -26,7 +30,9 @@ _JSON5_OPENCLAW = "// gateway\n{\n  gateway: { port: 18789, },\n}\n"
 # The same file once the operator has listed the skills directory themselves.
 _JSON5_OPENCLAW_LISTED = (
     "// gateway\n{\n  gateway: { port: 18789, },\n"
-    f'  skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}",], }}, }},\n}}\n'
+    f'  skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}",], }}, }},\n'
+    f'  hooks: {{ internal: {{ entries: {{ "{HOOK_NAME}": '
+    f'{{ enabled: true, paths: ["{RULES_FILE_RELATIVE}",], }}, }}, }}, }},\n}}\n'
 )
 
 

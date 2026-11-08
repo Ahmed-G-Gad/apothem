@@ -9,7 +9,9 @@
 # allowlist and the per-agent agents.entries.<id>.skills lists are operator-owned
 # and the adapter edits neither. Subagents are documented via
 # agents.entries.<id>.subagents.allowAgents. OpenClaw injects AGENTS.md and five
-# other files from each agent's workspace; the adapter writes none of them. MCP
+# other files from each agent's workspace; the adapter writes none of them, and
+# per the 2026-11-08 pin brings its rules in as <workspace>/apothem/AGENTS.md,
+# registered with the bundled bootstrap-extra-files hook. MCP
 # servers live in the mcp.servers config block, managed via the `openclaw mcp`
 # CLI; the adapter authors no MCP entries.
 # Tool-surface universal-deny floor binds regardless.
@@ -22,7 +24,7 @@ custom_command_support: "skills-extraDirs"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "openclaw.json skills.load.extraDirs plus support skills"
+layered_context_surface: "openclaw.json skills.load.extraDirs plus support skills; <workspace>/apothem/AGENTS.md via the bootstrap-extra-files hook"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"

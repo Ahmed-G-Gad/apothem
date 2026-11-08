@@ -897,8 +897,10 @@ harnesses:
 
   open_claw:
     # OpenClaw receives ~/.openclaw/openclaw.json from materializer.py.
-    # The one key it authors is skills.load.extraDirs, the documented list of
-    # extra skill directories, which carries the support skills directory.
+    # It authors skills.load.extraDirs, the documented list of extra skill
+    # directories, which carries the support skills directory, and Apothem's
+    # path in the bootstrap-extra-files hook entry. The workspace rules files
+    # (<workspace>/apothem/AGENTS.md) are written by rules_file.py, not here.
     # Commands and skills land under the Apothem support subtree; OpenClaw's
     # agents.defaults.skills is a name allowlist the operator owns, so no key is
     # authored there.

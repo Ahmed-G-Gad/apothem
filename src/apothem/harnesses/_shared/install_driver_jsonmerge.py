@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Final
+from typing import Final, TypeGuard
 
 from .install_driver_types import MaterializationResult, _result, _with_detail
 
@@ -50,6 +50,19 @@ _NATIVE_DISPATCHER: Final[re.Pattern[str]] = re.compile(
 _CONTRACT_ARGUMENT: Final[re.Pattern[str]] = re.compile(
     r"(?:^|\s)--contract(?:\s+|=)\S"
 )
+
+
+def is_handler_map(value: object) -> TypeGuard[dict[str, object]]:
+    """Return True when *value* is a hook-handler map: event name to entry list.
+
+    That is the ``hooks`` shape Claude Code and its kin use, which the
+    handler-aware merge and strip own by handler. A ``hooks`` mapping of
+    another shape (OpenClaw's ``hooks.internal`` settings block) is plain
+    configuration and merges key by key like any other mapping.
+    """
+    return isinstance(value, dict) and all(
+        isinstance(entries, list) for entries in value.values()
+    )
 
 
 def _handler_text(handler: dict[object, object]) -> str:

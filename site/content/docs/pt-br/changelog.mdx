@@ -67,6 +67,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
+  `apothem/AGENTS.md` into each OpenClaw workspace and lists that path in the
+  bundled `bootstrap-extra-files` hook's entry in `openclaw.json`
+  (`hooks.internal.entries.bootstrap-extra-files`). The file holds the profile's
+  managed block and the pointer to the installed rule index. Because it is named
+  `AGENTS.md`, OpenClaw also loads it in cron and sub-agent sessions. The
+  workspace's own `AGENTS.md` is never edited. The install covers the default
+  workspace and each `agents.entries` workspace that exists in the home
+  directory; it reports the others as skipped, and warns about a workspace
+  outside the home directory. It leaves the hook settings
+  alone, with a warning, when internal hooks are off, the hook's entry is off, or
+  `hooks.internal.enabled: true` names no hook (naming one would switch the
+  others off). A rules file over OpenClaw's 20,000-character limit per file is
+  not written, and a workspace whose own files leave too little of the
+  60,000-character total gets a warning. Uninstall removes the managed block,
+  the file and folder it leaves empty, and only the hook entries Apothem added;
+  `apothem verify` reports a missing file or registration.
+
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
   removal (Kiro, GitHub Copilot, Cursor), the shared-profile loader, the install

@@ -22,6 +22,7 @@ from .install_driver_jsonmerge import (
     _leading_comment_block,
     _LossyRewriteError,
     is_apothem_hook,
+    is_handler_map,
 )
 from .install_driver_ownership import (
     RelocatedFn,
@@ -164,7 +165,7 @@ def _remove_apothem_values(
             result[key] = value
             continue
         template_value = template[key]
-        if key == "hooks" and isinstance(value, dict):
+        if key == "hooks" and is_handler_map(value):
             stripped_hooks = _remove_apothem_hooks(
                 value,
                 template_value,

@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-11-03
+- Snapshot date: 2026-11-08
+- Snapshot note (rules file, 2026-11-08): the adapter now delivers Apothem's rules through the `bootstrap-extra-files` hook, the route the operator chose on 2026-11-07; see Rules File. Read against `docs.openclaw.ai` and the source at commit `89ba6b0f12ff`. Previous 2026-11-03.
 - Snapshot note (agents and workspace files): re-read on 2026-11-03 against `docs.openclaw.ai` and the source at `openclaw/openclaw` commit `716621b9f55b` (the files cited below are identical at `bfa67fd1`). Correction: per-agent settings live in the `agents.entries` map, keyed by agent id. The `agents.list[]` array the earlier pin named fails config validation, and `openclaw doctor --fix` converts it. Correction: OpenClaw does load instruction files. It injects `AGENTS.md` and five other files from each agent's workspace into the system prompt (see Workspace Instruction Files); the adapter writes none of them. The skill-loading facts from 2026-10-24 hold, the skills page answers the two allowlist and state-directory questions (the 2026-10-24 check missed those passages), and the pin now lists every `openclaw mcp` subcommand. Previous 2026-10-24.
 - Snapshot note (2026-10-24): skill loading re-checked against `docs.openclaw.ai` (skills, skills config, config extensions) on 2026-10-24. Correction: `skills.load.extraDirs` is a documented `string[]` of extra skill directories read at the lowest precedence of the skill sources, so the adapter lists its support skills directory there. The agent workspace, allowlist, MCP and plugin facts carry over from 2026-10-03: skills also filter through the agent skill allowlists (`agents.defaults.skills`); MCP servers live in the `mcp.servers` config block, managed with `openclaw mcp list|show|set|unset`; OpenClaw also documents plugins and the ClawHub registry. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/open_claw/`
@@ -117,44 +118,88 @@ guarantees.
   page). `agents.defaults.skipBootstrap` stops the creation, not the
   injection. The seeded `AGENTS.md` tells the agent to record lessons in
   `AGENTS.md` or the relevant skill (`/reference/templates/AGENTS`).
-- Adapter: writes none of these files, and none of them points at
-  `~/.openclaw/.apothem/support/`. OpenClaw therefore loads the Apothem skills
-  through `skills.load.extraDirs`, but not Apothem's rules or the profile
-  document the install writes to
-  `~/.openclaw/apothem/rules/00-apothem-profile.md`.
-- TODO(clarify): how, if at all, Apothem should bring its rules into OpenClaw.
-  The four routes:
-  - A managed block in each workspace `AGENTS.md`. It needs no permission or
-    plugin, and it reaches cron sessions and sub-agent sessions, which get
-    `AGENTS.md` only. But there is one file per agent, the seeded template invites the
-    agent to edit it, OpenClaw trims it past 20,000 characters, and creating
-    it before onboarding replaces the seeded template and makes the workspace
-    not brand-new (no automatic `git init`, no `BOOTSTRAP.md`). Writing only
-    into an `AGENTS.md` that already exists avoids the last point.
-  - The bundled `bootstrap-extra-files` hook
-    (`hooks.internal.entries.bootstrap-extra-files`, with `paths` inside the
-    workspace): an Apothem-owned file under the workspace whose name must be
-    one of the six bootstrap file names (source, `src/agents/workspace.ts`,
-    `invalid-bootstrap-filename`). The entry alone turns the hook on unless
-    `hooks.internal.enabled` is `false` (hooks configuration page; source
-    `src/hooks/configured.ts:42-47`). Extra files take the normal limits and
-    session filters, so a file named `AGENTS.md` also reaches sub-agent and
-    cron sessions (bundled hooks page, `#bootstrap-extra-files-config`).
-  - The Agent Guidance plugin, which ships in OpenClaw's source tree
-    (`extensions/agent-guidance`, off by default): Apothem-owned files
-    outside agent-writable workspaces and one config entry. Prompt injection
-    is allowed unless a plugin's `hooks.allowPromptModification` is `false`, and
-    a bundled plugin gets conversation access by default (source
-    `src/plugins/hook-policy-decisions.ts:6-17`; the docs' example sets both
-    explicitly). It reads 1 to 8 files of at most 16 KiB each (64 KiB in
-    total), targets explicit agent ids, which the install would have to read
-    from `agents.entries` and keep current, and reads its files once at
-    registration, so `apothem update` would have to run
-    `openclaw plugins reload agent-guidance` (`/plugins/agent-guidance`).
-    Whether it reaches sub-agent and cron sessions is not confirmed.
-  - No instruction file, as now.
-  This is the operator's decision; until it is made, the install writes no
-  workspace file.
+- Adapter: writes none of these six files. It brings Apothem's rules in through
+  an extra file, `<workspace>/apothem/AGENTS.md` (see Rules File). The profile
+  document at `~/.openclaw/apothem/rules/00-apothem-profile.md` carries the
+  same content and is still not loaded by OpenClaw.
+- Decision (operator, 2026-11-07): an Apothem-owned file named `AGENTS.md`
+  in each workspace, registered with the bundled `bootstrap-extra-files` hook.
+  The operator turned down a managed block in the workspace `AGENTS.md` (OpenClaw,
+  Doctor and the agent rewrite that file), the Agent Guidance plugin (reach to
+  sub-agent and cron sessions unconfirmed, and a plugin reload after every
+  update) and no instruction file.
+
+## Rules File (`bootstrap-extra-files`)
+
+Read 2026-11-08 in the docs (hooks configuration and bundled hooks pages) and
+in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
+
+- Adapter: writes `<workspace>/apothem/AGENTS.md` into every workspace it finds
+  (see below) as a managed-block file, and adds `apothem/AGENTS.md` to the
+  hook's entry `hooks.internal.entries.bootstrap-extra-files` in
+  `~/.openclaw/openclaw.json`. It never writes the workspace's own `AGENTS.md`
+  or `hooks.internal.enabled`. The file holds the profile's managed block and
+  the support announcement, which names the rule index under
+  `~/.openclaw/.apothem/support/rules/`.
+- Hook config: `paths` (aliases `patterns`, `files`) lists glob or literal paths
+  "resolve[d] relative to the event's workspace" that "must remain inside it,
+  including after symlink resolution"; only the six bootstrap basenames load
+  (bundled hooks page, `#bootstrap-extra-files-config`). The handler reads the
+  first non-empty list of `paths`, `patterns`, `files`, so they are alternatives,
+  not merged (source `src/agents/workspace-bootstrap-policy.ts:90-102`); the
+  adapter joins the list the operator already uses. An entry set to
+  `enabled: false` yields no paths. A missing file is skipped with a "missing"
+  diagnostic (source `src/agents/workspace.ts:1012-1085`).
+- Enabling: the entry alone turns the hook on unless `hooks.internal.enabled`
+  is `false`. Named entries form an allowlist; `hooks.internal.enabled: true`
+  with no named entry, no `load.extraDirs` and no tracked install means
+  open-ended discovery, and "Adding the first named entry can narrow a
+  previously broad selection" (hooks configuration page; source
+  `src/hooks/configured.ts:14-57`). The adapter therefore registers nothing,
+  and warns, when `hooks.internal.enabled` is `false`, when the entry is
+  `enabled: false`, and when `hooks.internal.enabled` is `true` with no named
+  hook and no `load.extraDirs`. `openclaw doctor --fix` removes a legacy-only
+  `hooks.internal.enabled: true` "to avoid broad discovery" (same page).
+- Session reach: an extra file keeps its basename as its bootstrap name, so
+  `apothem/AGENTS.md` passes the sub-agent allowlist (`AGENTS.md` only) and the
+  cron allowlist (`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`); session
+  filtering runs after the hook (source `src/agents/workspace.ts:859-916`,
+  `src/hooks/bundled/bootstrap-extra-files/handler.ts`). The bundled hooks page
+  says extra files "go through normal bootstrap filtering".
+- Brand-new workspaces: OpenClaw treats a workspace as brand-new when
+  `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md` and `memory/` are absent and
+  there is no `MEMORY.md` or workspace skill; an `apothem/` folder is none of
+  these (source `src/agents/workspace.ts:173-213, 676-690`). The adapter writes
+  only into workspace folders that already exist.
+- Workspaces: `agents.entries.<id>.workspace` when set; otherwise the entry
+  OpenClaw treats as owning the default workspace uses
+  `agents.defaults.workspace` (else the default workspace), and any other
+  entry uses `<agents.defaults.workspace>/<id>`, else
+  `<state-dir>/workspace-<id>` (source `src/agents/agent-scope-config.ts:511-535`).
+  The default workspace is `OPENCLAW_WORKSPACE_DIR`, else
+  `<state-dir>/workspace` (source `src/agents/workspace-default-path.ts:8-25`).
+  The adapter writes into `agents.defaults.workspace` (else
+  `OPENCLAW_WORKSPACE_DIR`, else `~/.openclaw/workspace`) and each entry's
+  workspace by those rules, when the folder exists inside the home directory;
+  the others are skipped with a warning.
+- Limits: 20,000 characters per file and 60,000 in total by default
+  (`agents.defaults.bootstrapMaxChars`, `bootstrapTotalMaxChars`), `USER.md`
+  4,000; extra files come after the six workspace files, and a file is skipped
+  once less than 64 characters of the total remain (source
+  `src/agents/embedded-agent-helpers/bootstrap.ts:87-91, 377-425`). The adapter
+  refuses to write a rules file over the per-file limit (OpenClaw would keep its
+  head and tail and drop the middle) and warns when the workspace's six files
+  leave too little of the total. With the default profile the file is a few
+  thousand characters.
+- TODO(clarify): per-entry overrides of `bootstrapMaxChars` and
+  `bootstrapTotalMaxChars` exist (source `bootstrap.ts:128-153`); the adapter
+  checks only the `agents.defaults` values.
+- TODO(clarify): whether sandboxed sessions (`workspaceAccess` `none` or `ro`,
+  which copy the canonical files into the sandbox) see the extra file; not
+  checked.
+- TODO(clarify): which entry OpenClaw treats as owning the default workspace
+  (`tryResolveLegacyDataOwnerAgentId`) is not replicated; the adapter always
+  writes into the default workspace, which covers it.
 
 ## Vendor Sources
 
@@ -177,6 +222,12 @@ Retrieved 2026-11-03.
 - <https://docs.openclaw.ai/tools/skills-config> (re-read: `skills.load.extraDirs` as a `string[]` at the lowest precedence; first read 2026-10-24)
 - <https://docs.openclaw.ai/gateway/config-extensions> (re-read: `load.extraDirs` example and precedence; first read 2026-10-24)
 - Source: `openclaw/openclaw` commit `716621b9f55b` (`src/config/zod-schema.agents.ts`, `src/config/zod-schema.agent-entry-base.ts`, `src/config/zod-schema.agent-defaults-base.ts`, `src/config/legacy.roster.ts`, `src/config/paths.ts`, `src/agents/workspace-bootstrap-policy.ts`, `src/agents/embedded-agent-helpers/bootstrap.ts`, `src/agents/workspace-file-read.ts`, `src/agents/workspace.ts`, `src/agents/agent-scope-config.ts`)
+
+Retrieved 2026-11-08.
+
+- <https://docs.openclaw.ai/automation/hooks/configuration> (selection rules for `hooks.internal`; a first named entry narrows open-ended discovery)
+- <https://docs.openclaw.ai/automation/hooks/bundled-hooks> (`#bootstrap-extra-files-config`: `paths` / `patterns` / `files`, workspace-relative paths, bootstrap basenames, limits and filtering)
+- Source: `openclaw/openclaw` commit `89ba6b0f12ff` (`src/hooks/configured.ts`, `src/hooks/config.ts`, `src/hooks/policy.ts`, `src/hooks/bundled/bootstrap-extra-files/`, `src/agents/workspace-bootstrap-policy.ts`, `src/agents/workspace.ts`, `src/agents/agent-scope-config.ts`, `src/agents/workspace-default-path.ts`, `src/agents/embedded-agent-helpers/bootstrap.ts`)
 
 Retrieved 2026-11-03.
 
@@ -217,7 +268,7 @@ standalone-installable bundle; every artifact requires the full
 |---|---|---|
 | Config / agents | No — requires `apothem install` | `~/.openclaw/openclaw.json` is materializer-rendered by the engine; nothing persists before that run. |
 | Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.openclaw/.apothem/support/` (support subtree) via the engine; the support skills directory is listed under `skills.load.extraDirs`, and OpenClaw `agents.defaults.skills` is a name-allowlist the adapter does not author. |
-| Hooks / Settings | No — adapter scope | No Apothem-authored hook or settings surface beyond the config materializer. |
+| Hooks / Settings | No — requires `apothem install` | The only hook setting is Apothem's path in the bundled `bootstrap-extra-files` entry, written by the engine with the workspace rules files. |
 | MCP | No — operator-owned | OpenClaw MCP servers live in the `mcp.servers` config block (managed via the `openclaw mcp` CLI subcommands; `mcp.*` hot-applies); the adapter authors no entries. |
 
 OpenClaw documents plugins and the ClawHub registry, but Apothem ships no

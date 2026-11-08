@@ -41,6 +41,7 @@ from .install_driver_jsonmerge import (
     _LossyRewriteError,
     _yaml_has_operator_comments,
     is_apothem_hook,
+    is_handler_map,
 )
 
 
@@ -273,7 +274,7 @@ def ownership_merge(
     merged: dict[str, object] = dict(base)
     for key, value in incoming.items():
         current = base.get(key, _MISSING)
-        if key == "hooks" and isinstance(current, dict) and isinstance(value, dict):
+        if key == "hooks" and isinstance(current, dict) and is_handler_map(value):
             merged[key] = _merge_hooks_into_operator(current, value)
         elif isinstance(current, dict) and isinstance(value, dict):
             merged[key] = ownership_merge(current, value, harness_root=harness_root)
@@ -289,8 +290,8 @@ def owned_additions(
 ) -> list[OwnedEntry]:
     """Return the entries *incoming* adds to the operator's *base*.
 
-    ``hooks`` handlers are owned by path, not recorded here; only a ``hooks``
-    mapping Apothem creates is recorded (as a container). A key the operator
+    A ``hooks`` handler map's handlers are owned by path, not recorded here;
+    only such a mapping Apothem creates is recorded (as a container). A key the operator
     left null (``skills:`` with nothing under it) holds nothing of theirs, so
     Apothem's value there is recorded as its own, like an absent key.
     """
@@ -300,7 +301,7 @@ def owned_additions(
         current = base.get(key, _MISSING) if isinstance(base, dict) else _MISSING
         if current is None:
             current = _MISSING
-        if key == "hooks" and isinstance(value, dict):
+        if key == "hooks" and is_handler_map(value):
             if current is _MISSING:
                 owned.append(OwnedEntry(at, "container"))
             continue
