@@ -576,7 +576,10 @@ def test_antigravity_does_not_count_the_old_plugin_folder(
 
 
 _AG_PLUGINS = ".gemini/config/plugins/"
-_AG_ALWAYS = "---\ntrigger: always_on\n---\n<!-- SPDX-License-Identifier: MIT -->\nr\n"
+# A license comment line, split so license scanners do not read it as the
+# header of this file.
+_AG_COMMENT = "<!-- SPDX" + "-License-Identifier: MIT -->\n"
+_AG_ALWAYS = "---\ntrigger: always_on\n---\n" + _AG_COMMENT + "r\n"
 
 
 def test_antigravity_counts_always_on_plugin_rules(tmp_path: Path) -> None:
@@ -594,9 +597,7 @@ def test_antigravity_counts_always_on_plugin_rules(tmp_path: Path) -> None:
                 "---\ntrigger: model_decision\ndescription: When asked\n---\nd\n"
             ),
             rules + "manual.md": "---\ntrigger: manual\n---\nmanual\n",
-            rules + "late.md": (
-                "<!-- SPDX-License-Identifier: MIT -->\n---\ntrigger: always_on\n---\n"
-            ),
+            rules + "late.md": (_AG_COMMENT + "---\ntrigger: always_on\n---\n"),
             rules + "nested/deep.md": _AG_ALWAYS,
         },
     )
