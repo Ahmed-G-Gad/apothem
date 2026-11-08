@@ -100,7 +100,10 @@ names each rule and the situation that calls for it. A rule, skill, or command
 that cites a rule, template, or hook prompt reads it from there. Commands,
 skills, and helper definitions use native discovery locations.
 
-The install manages `~/.config/opencode/apothem/rules/` whole: on every install and update it backs up and removes any other file there, so keep your own files elsewhere.
+On every install and update the install deletes every file in `~/.config/opencode/apothem/rules/` that
+Apothem did not put there, after saving it in a backup set under
+`~/.apothem/backups/`. That backup is deleted once 10 newer backup sets of
+the harness exist, so keep your own files elsewhere.
 
 The profile document `~/.config/opencode/apothem/rules/00-apothem-profile.md`
 carries your identity and preferences from the shared profile, and ends with

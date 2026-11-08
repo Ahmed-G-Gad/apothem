@@ -34,7 +34,11 @@ definitions as Qwen subagents.
 
 The file `~/.qwen/apothem/rules/00-apothem-profile.md` is the profile document.
 It carries your identity and preferences from the shared profile.
-The install manages `~/.qwen/apothem/rules/` whole: on every install and update it backs up and removes any other file there, so keep your own files elsewhere.
+
+On every install and update the install deletes every file in `~/.qwen/apothem/rules/` that
+Apothem did not put there, after saving it in a backup set under
+`~/.apothem/backups/`. That backup is deleted once 10 newer backup sets of
+the harness exist, so keep your own files elsewhere.
 
 ## Profile-to-native-config mapping
 

@@ -231,15 +231,18 @@ def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
 
 
 def _restore_missing(
-    recorded: LedgerTarget, *, allowed_root: Path
+    recorded: LedgerTarget, *, root: Path, harness_name: str, allowed_root: Path
 ) -> MaterializationResult:
     """Copy back each file of a swept path's backup that is missing now.
 
     Releases 1.0.1 to 1.5.0 swept folders that held a user's own files
     (``~/.claude/commands``, ``~/.codex/rules``). Rolling such an install back
-    restores every file the sweep took that is not there now, and keeps every
-    file that is, so nothing on disk is replaced. The result names the backup,
-    so the rollback record keeps it referenced and retention keeps the set.
+    writes every file the sweep took that is not there now, atomically, and
+    keeps every file that is, so nothing on disk is replaced. A file that
+    cannot be written (the path is unsafe, a file stands where a folder was,
+    no permission) is listed and makes the result an error, so the rollback
+    reports a failure; the others are still restored. The result names the
+    backup, so the rollback record keeps it referenced.
     """
     target = Path(recorded.path)
     backup = Path(str(recorded.backup_ref)) if recorded.backup_ref else None
@@ -250,12 +253,13 @@ def _restore_missing(
             target,
             "left in place: Apothem no longer sweeps this path and its backup is gone",
         )
-    if backup.is_dir() and (target.is_file() or target.is_symlink()):
+    if backup.is_dir() and (target.is_symlink() or target.is_file()):
+        kind = "a link" if target.is_symlink() else "a file"
         return _result(
             "skipped",
             "restore_backup",
             target,
-            f"left in place: {target} is now a file; its backup is {backup}",
+            f"left in place: {target} is now {kind}; its backup is {backup}",
             backup_path=backup,
         )
     files = (
@@ -264,32 +268,46 @@ def _restore_missing(
         else sorted(path for path in backup.rglob("*") if path.is_file())
     )
     restored = 0
-    failed = 0
+    failed: list[str] = []
     for source in files:
         destination = (
             target if source == backup else target / source.relative_to(backup)
         )
         if destination.exists() or destination.is_symlink():
             continue
-        error = _validate_target_path(
-            destination, allowed_root=allowed_root, operation="restore_backup"
-        )
-        if error is not None:
-            return error
         try:
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+            written = write_bytes_safely(
+                destination,
+                source.read_bytes(),
+                install_root=root,
+                harness_name=harness_name,
+                operation="restore_backup",
+                source=source,
+                allowed_root=allowed_root,
+            )
         except OSError:
-            failed += 1  # a file stands where a folder was, or no permission
+            failed.append(str(destination))
             continue
-        restored += 1
+        if written.outcome == "error":
+            failed.append(str(destination))
+        else:
+            restored += 1
+    if failed:
+        return _result(
+            "error",
+            "restore_backup",
+            target,
+            f"restored {restored} missing file(s) from {backup}; could not write "
+            f"{', '.join(failed)}; copy them from the backup by hand",
+            source=backup,
+            backup_path=backup,
+            detail={"failed": ", ".join(failed)},
+        )
     message = (
         f"restored {restored} missing file(s) from {backup}; kept what is there now"
         if restored
         else f"left in place: everything in {backup} is still there"
     )
-    if failed:
-        message += f"; {failed} file(s) could not be written, copy them by hand"
     return _result(
         "updated" if restored else "unchanged",
         "restore_backup",
@@ -340,7 +358,14 @@ def rollback_install(
         ):
             # The path left the stale-sweep list, so it was the user's: put back
             # what is missing, never over what is there now.
-            results.append(_restore_missing(recorded, allowed_root=allowed_root))
+            results.append(
+                _restore_missing(
+                    recorded,
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=allowed_root,
+                )
+            )
             continue
         shared = gate.covers(recorded.path)
         target_root = gate.boundary if shared else allowed_root

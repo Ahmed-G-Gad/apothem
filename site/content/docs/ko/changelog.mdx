@@ -202,16 +202,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- **Recovering folders an earlier release swept is safer.** Rolling back such
-  an install no longer stops with an error when the swept folder is now a
-  file: it leaves the file and names the backup, and a file it cannot write
-  is reported for you to copy by hand. `apothem backups prune` says why it
-  keeps a backup set that holds such a folder, and no longer keeps every
-  uninstall set that holds `~/.claude/statuslines/__init__.py`. The docs now
-  say rollback reaches an install only while its record is among the newest
-  10 kept, and that the install removes any file of your own placed in the
-  `apothem/rules/` folders OpenCode, Qwen Code, Hermes and Open-Claw use, or
-  in Kimi Code's old support folders.
+- **Recovering folders an earlier release swept is safer.**
+  - Rolling such an install back writes each missing file atomically. A file
+    it cannot write (a file now stands where a folder was, or no permission)
+    fails the rollback and is listed for you to copy by hand. A swept folder
+    that is now a file or a link is left in place and its backup is named.
+  - Retention, and `apothem backups prune`, now keep every backup set that
+    holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter,
+    including the old `apothem/hooks`, `apothem/templates`, `apothem/skills`
+    and `apothem/agents` folders of OpenCode, Qwen Code, Hermes and Open-Claw,
+    Gemini CLI's `.gemini/apothem/` and Kimi Code's old `.kimi-code/apothem/`.
+    `prune` names why it keeps such a set.
+  - Uninstall no longer deletes a `~/.claude/statuslines/__init__.py` of your
+    own: install never writes that name, and uninstall now skips it too.
+  - The docs say rollback reaches an install only while its record is among
+    the newest 10 kept, and that the install deletes any file it did not put
+    in the `apothem/rules/` folders OpenCode, Qwen Code, Hermes and Open-Claw
+    use, or in Kimi Code's old support folders.
 - **The launch-size metric follows six more tools' loading rules.** The
   metrics collector, which reports how many bytes of instructions each tool
   loads at launch, now counts:

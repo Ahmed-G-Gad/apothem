@@ -57,7 +57,7 @@ project it was installed into.
 | `--harness NAME` | Harness adapter to prune, or `all` for every registered harness (default: `all`). |
 | `--dry-run` | Report what would be pruned; delete nothing. |
 | `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
-| `--verbose`, `-v` | Also list each backup set removed, and each one kept because a record references it. |
+| `--verbose`, `-v` | Also list each backup set removed, and each one kept, with why: `kept (still referenced)` for a set a record references, `kept (holds a path an earlier release removed)` for a set holding a copy of a path an earlier release removed whole. |
 | `--format plain\|json` | Output format (default: `plain`). |
 | `--json` | Shorthand for `--format json`. |
 | `--no-color` | Disable ANSI color codes in output. |
@@ -101,8 +101,11 @@ Every row has `"operation": "prune"`:
 - `"outcome": "updated"` — a backup set removed, or ledger records dropped
   (under `--dry-run`, the same rows describe what would be removed, and the
   message starts with `would remove` or `would drop`);
-- `"outcome": "skipped"` — a backup set older than the newest `N` that is kept
-  because a ledger record still references it;
+- `"outcome": "skipped"` — a backup set older than the newest `N` that is
+  kept, either because a ledger record still references it (the message ends
+  `a ledger record still references it`) or because it holds a copy of a path
+  an earlier release removed whole (the message ends `it holds a path an
+  earlier release removed, which may be your only copy`);
 - `"outcome": "unchanged"` — a harness with nothing to prune;
 - `"outcome": "error"` — a harness whose ledger could not be read (nothing is
   pruned for it), or a backup set that could not be fully removed.

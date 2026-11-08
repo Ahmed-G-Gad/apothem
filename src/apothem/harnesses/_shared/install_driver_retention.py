@@ -29,10 +29,13 @@ from .install_driver_types import _handle_rm_error
 BACKUP_KEEP: Final[int] = 10
 
 #: Paths, relative to a harness's backup set, that releases 1.0.1 to 1.5.0
-#: removed whole on every install and update, though they hold a user's own
-#: files (``~/.claude/commands``, ``~/.codex/rules``). A backup set holding one
-#: is the user's only copy, so retention never deletes it; ``apothem backups
-#: prune`` neither. Later releases never back these paths up again.
+#: removed whole on every install and update and the current release no longer
+#: sweeps: a backup set holding one may be the user's only copy of their files
+#: (``~/.claude/commands``, ``~/.codex/rules``), so retention never deletes it,
+#: and ``apothem backups prune`` neither. Each path is where those releases put
+#: the backup, measured by running each release's install: relative to the
+#: home, to ``~/.config`` for OpenCode, or to the project for Gemini CLI and
+#: Kimi Code. Current releases never back these paths up.
 RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
     "claude_code": tuple(
         f".claude/{name}"
@@ -55,6 +58,7 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
             "site",
             "public",
             "commands",
+            "statuslines/__init__.py",
             "rules/AGENTS.md",
             "skills/AGENTS.md",
             "agents/AGENTS.md",
@@ -68,9 +72,35 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
         ".codex/rules",
         ".codex/commands",
     ),
-    "gemini_cli": ("skills/AGENTS.md",),
-    "hermes": (".hermes/cli-config.yaml", ".hermes/profile.yaml"),
-    "open_claw": (".open-claw/config.yaml",),
+    "gemini_cli": (
+        "skills/AGENTS.md",
+        ".gemini/apothem/templates",
+        ".gemini/apothem/hooks",
+        ".gemini/apothem/rules",
+    ),
+    "opencode": ("opencode/apothem/templates", "opencode/apothem/hooks"),
+    "qwen_code": (
+        ".qwen/skills/AGENTS.md",
+        ".qwen/apothem/templates",
+        ".qwen/apothem/hooks",
+    ),
+    "hermes": (
+        ".hermes/cli-config.yaml",
+        ".hermes/profile.yaml",
+        ".hermes/apothem/templates",
+        ".hermes/apothem/hooks",
+        ".hermes/apothem/skills",
+        ".hermes/apothem/agents",
+    ),
+    "open_claw": (
+        ".open-claw/config.yaml",
+        ".openclaw/apothem/templates",
+        ".openclaw/apothem/hooks",
+        ".openclaw/apothem/skills",
+        ".openclaw/apothem/agents",
+    ),
+    # The old non-dotted folder whole: those releases also wrote "skills.1".
+    "kimi_code": (".kimi-code/apothem",),
     # The Antigravity App's own data folder (MCP tokens, transcripts).
     "antigravity": (".gemini/antigravity",),
 }

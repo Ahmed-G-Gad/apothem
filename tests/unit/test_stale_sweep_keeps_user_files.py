@@ -11,14 +11,19 @@ uninstall, and checks every file is still there, byte for byte.
 
 from __future__ import annotations
 
+import json
+import posixpath
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver_retention import (
     BACKUP_KEEP,
+    RETIRED_SWEEPS,
     _holds_retired_sweep,
     prune_history,
 )
@@ -117,11 +122,6 @@ _FORMER: dict[str, tuple[str, tuple[str, ...]]] = {
 
 _FILE_SUFFIXES = (".py", ".md", ".yaml")
 
-#: Paths in a folder Apothem owns whose name its source tree also carries:
-#: uninstall removes such a name from ~/.claude/statuslines/, as it removes
-#: render.py there. It is not the sweep, and install and update keep the file.
-_UNINSTALL_OWNS = frozenset({Path("statuslines/__init__.py")})
-
 
 @pytest.fixture
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -175,8 +175,6 @@ def test_a_users_files_in_formerly_swept_paths_survive(
     for action in ("install", "update", "uninstall"):
         run(action)
         for path, body in planted.items():
-            if action == "uninstall" and path.relative_to(root) in _UNINSTALL_OWNS:
-                continue
             assert path.read_bytes() == body, f"{action} changed {path}"
 
 
@@ -285,24 +283,54 @@ def test_retention_keeps_a_backup_set_holding_a_swept_folder(
     assert report.pruned  # other old sets still go
 
 
-@pytest.mark.parametrize("public_id", ["claude-code", "codex"])
+#: Where a harness's backup set keys a path under its install root: relative
+#: to the write boundary, the root's parent (the project for project scope).
+_BACKUP_PREFIX = {
+    "claude-code": ".claude",
+    "codex": ".codex",
+    "gemini-cli": "",
+    "opencode": "opencode",
+    "qwen-code": ".qwen",
+    "hermes": ".hermes",
+    "open-claw": ".openclaw",
+    "kimi-code": "",
+}
+
+
+@pytest.mark.parametrize("public_id", sorted(_FORMER))
+def test_every_formerly_swept_path_keeps_its_backup(public_id: str) -> None:
+    # A backup set that holds one of these may be the user's only copy.
+    package = public_id.replace("-", "_")
+    still_swept = set(install_driver.load_rules(package).stale_sweep)
+    retired = RETIRED_SWEEPS[package]
+    for entry in _FORMER[public_id][1]:
+        if entry in still_swept:
+            continue
+        key = posixpath.normpath(posixpath.join(_BACKUP_PREFIX[public_id], entry))
+        assert any(key == r or key.startswith(f"{r}/") for r in retired), key
+
+
+@pytest.mark.parametrize("public_id", sorted(_FORMER))
 def test_current_installs_never_back_up_a_retired_sweep_path(
     public_id: str, home: Path, backups: Path, tmp_path: Path
 ) -> None:
     # Otherwise RETIRED_SWEEPS would keep every set, and retention would stop.
     project = tmp_path / "project"
     project.mkdir()
-    root = home / _FORMER[public_id][0].removeprefix("~/")
+    base = _FORMER[public_id][0]
+    root = project if base == "project" else home / base.removeprefix("~/")
     _plant(root, _FORMER[public_id][1])
-    # A user's own instruction file makes every pass take a backup set.
-    anchor = root / ("CLAUDE.md" if public_id == "claude-code" else "AGENTS.md")
-    anchor.write_text("my own instructions\n", "utf-8")
+    if public_id in ("claude-code", "codex"):
+        # A user's own instruction file makes every pass take a backup set.
+        anchor = root / ("CLAUDE.md" if public_id == "claude-code" else "AGENTS.md")
+        anchor.write_text("my own instructions\n", "utf-8")
     run, _scoped = _runner(public_id, project)
-    for action in ("install", "update", "update"):
+    for action in ("install", "update", "update", "uninstall"):
         run(action)
     package = public_id.replace("-", "_")
     stamps = [p.name for p in backups.iterdir()] if backups.exists() else []
-    assert stamps
+    if public_id in ("claude-code", "codex"):
+        assert stamps
     assert not [s for s in stamps if _holds_retired_sweep(s, package)]
 
 
@@ -322,22 +350,60 @@ def test_rollback_leaves_a_swept_folder_that_is_now_a_file(
     [row] = [r for r in results if r.operation == "restore_backup"]
     assert row.outcome == "skipped"
     assert row.backup_path is not None
+    assert "is now a file" in row.message
 
 
-def test_retention_prunes_an_uninstall_set_of_the_statusline_init(
+def test_rollback_fails_and_lists_a_file_it_cannot_write(
     home: Path, backups: Path
 ) -> None:
-    # Uninstall backs up ~/.claude/statuslines/__init__.py on every run, so it
-    # must not count as a swept folder, or no uninstall set would ever go.
-    old = backups / "20261001T000000Z" / "claude_code" / ".claude" / "statuslines"
-    old.mkdir(parents=True)
-    (old / "__init__.py").write_text("", "utf-8")
+    # A file stands where the backup has a folder: that file cannot be written,
+    # the rest is still restored, and the rollback reports a failure.
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    nested = Path(str(record.targets[0].backup_ref)) / "sub" / "deep.md"
+    nested.parent.mkdir()
+    nested.write_text("nested\n", "utf-8")
+    commands = home / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "sub").write_text("a file now\n", "utf-8")
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=home / ".claude"
+    )
+
+    [row] = [r for r in results if r.operation == "restore_backup"]
+    assert row.outcome == "error"
+    assert str(commands / "sub" / "deep.md") in row.message
+    assert row.backup_path is not None
+    assert (commands / "deploy.md").read_text("utf-8") == "my deploy command\n"
+    assert (commands / "sub").read_text("utf-8") == "a file now\n"
+
+
+def _retired_and_newer(home: Path, backups: Path) -> None:
+    _old_sweep_record(home, backups, "20261001T000000Z")
     for day in range(2, 2 + BACKUP_KEEP + 1):
         newer = backups / f"202610{day:02d}T000000Z" / "claude_code" / ".claude" / "x"
         newer.mkdir(parents=True)
         (newer / "f").write_text("x", "utf-8")
 
-    report = prune_history("claude_code")
 
-    assert "20261001T000000Z" in report.pruned
-    assert not report.retired
+def test_prune_names_why_it_keeps_a_set_holding_a_swept_path(
+    home: Path, backups: Path
+) -> None:
+    _retired_and_newer(home, backups)
+    runner = CliRunner()
+
+    payload = json.loads(
+        runner.invoke(
+            main, ["backups", "prune", "--harness", "claude-code", "--json"]
+        ).output
+    )
+    verbose = runner.invoke(
+        main, ["backups", "prune", "--harness", "claude-code", "--verbose"]
+    ).output
+
+    [kept] = [r for r in payload["results"] if "20261001T000000Z" in r["path"]]
+    assert kept["outcome"] == "skipped"
+    assert kept["message"].endswith(
+        "it holds a path an earlier release removed, which may be your only copy"
+    )
+    assert "kept (holds a path an earlier release removed) 20261001T000000Z" in verbose
