@@ -514,3 +514,23 @@ def test_a_failed_uninstall_can_be_run_again(
     assert second_code == 0, second
     assert [r["outcome"] for r in second["results"]] == ["updated"]
     assert not failed[0].exists()
+
+
+def test_a_link_directly_inside_the_plugin_folder_is_named_at_uninstall(
+    adapter: AntigravityAdapter, gemini: Path, tmp_path: Path
+) -> None:
+    adapter.install({})
+    plugin = gemini / _PLUGIN
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    _link_folder(plugin / "linked", mine)
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    _link_folder(plugin / "dangling", gone)
+    gone.rmdir()
+
+    run = adapter.uninstall()
+
+    warned = {w.path for w in run.warnings}
+    assert {str(plugin / "linked"), str(plugin / "dangling")} <= warned
+    assert _is_link(plugin / "linked")

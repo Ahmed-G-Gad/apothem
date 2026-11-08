@@ -269,7 +269,7 @@ def test_replacing_a_tree_keeps_a_link_in_it(
     result = replace_tree(src, dst, None, install_root=home, allowed_root=home)  # type: ignore[arg-type]
 
     assert result.outcome == "updated"
-    assert "link" in result.message
+    assert "did not copy over them" in result.message
     _untouched(mine, link)
     assert not (mine / "new.md").exists()
     assert (dst / "sub" / "new.md").is_file()
@@ -482,6 +482,28 @@ def test_a_folder_that_cannot_be_read_counts_as_content(
     _deny(monkeypatch, locked)
 
     assert _holds_content(home / "tree")
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_a_file_that_cannot_be_removed_is_reported(
+    home: Path, kind: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tree = home / "tree"
+    mine, link = _tree_with_a_link(home, kind, tree)
+    stuck = tree / "sub" / "old.md"
+    real_unlink = Path.unlink
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if self == stuck:
+            raise PermissionError("in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", unlink)
+
+    kept = _remove_tree_keeping_links(tree)
+
+    assert kept == [link, stuck]
+    _untouched(mine, link)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlink run")

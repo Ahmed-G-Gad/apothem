@@ -78,22 +78,31 @@ install listed).
 
 An uninstall also prints a `Warning:` line for each thing it left in place on
 purpose. Apothem does not remove anything through a symbolic link or a Windows
-junction, so a link in a folder it removes stays, and so does a file or
-leftover folder that is reached through a link; each warning names the link.
-In the `--format json` envelope each one is a `warnings` entry with
-`"outcome": "warning"`. The uninstall still counts as done, so running it again
-reports the harness as not installed.
+junction, so a link in a folder it removes stays, and so does a leftover folder
+from an earlier release that is reached through a link. Paths kept for the same
+link print as one line with their count; a file it could not remove is named
+too. In the `--format json` envelope each one is a `warnings` entry with
+`"outcome": "warning"`. These warnings do not stop the uninstall.
 
-When a step of the removal fails (a file that could not be backed up, say), the
-command prints `✗ <harness> uninstall failed: <reason>` instead of
-`Uninstalled`, once per reason with the number of paths it applies to. The
-install stays recorded, so running the command again removes what the first
-run left. The retention notes are not printed, because the folders they
-describe were not released. In JSON output the harness gets a
+Installed files reached through a link are different: the tool still loads
+them, so the uninstall is not finished. Say `~/.claude/rules` is a junction to
+a dotfiles folder: the command prints `✗ <harness> uninstall did not finish:`
+with the link and the number of paths it left, keeps the install recorded, and
+exits `2`. Replace the link with a real folder that holds the same files, then
+run the command again.
+
+When a removal step reports an error (an installed file whose path leads out
+of your home folder, say), the command prints `✗ <harness> uninstall did not
+finish: <reason>` instead of `Uninstalled`, once per reason with the number of
+paths it applies to. The install stays recorded, so running the command again
+removes what the first run left. The retention notes are not printed, because
+the folders they describe were not released. In JSON output the harness gets a
 `results` row with `"outcome": "error"` and `"operation": "uninstall"`,
 followed by one row for each failed step. The envelope's `status` is `"error"`
-(or `"partial"` when another harness was removed) and its top-level `error`
-stays `null`: the reasons are in `results`.
+(or `"partial"` when some files or another harness were removed) and its
+top-level `error` stays `null`: the reasons are in `results`. An adapter that
+stops with an exception (a backup that cannot be written, say) gets a single
+`results` row with its message.
 
 If a folder stays because of an install you cannot find, the note names it.
 When the project folder was deleted, the install is ignored and the folder goes
@@ -184,7 +193,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
 | 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or no selected harness was removed because each installed one failed |
-| 2 | Partial removal — at least one harness was removed and at least one failed |
+| 2 | Partial removal — at least one harness was removed and at least one failed, or an uninstall left installed files in place because a link leads to them |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

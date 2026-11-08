@@ -221,21 +221,23 @@ KEPT_LINKS = "kept_links"
 
 
 def kept_links_detail(links: list[Path]) -> dict[str, str]:
-    """Return the ``detail`` entry that records *links* a removal kept."""
+    """Return the ``detail`` entry that records the paths a removal left in place."""
     return {KEPT_LINKS: "\n".join(_path_text(link) for link in links)} if links else {}
 
 
 def _remove_tree_keeping_links(top: Path) -> list[Path]:
-    """Remove the folder *top* and what it holds, except links; return those links.
+    """Remove the folder *top* and what it holds, except links; return what stayed.
 
     ``shutil.rmtree`` does not delete through a Windows junction, but it does
     remove the junction itself, and a link below *top* is the operator's. Each
-    link stays, with the folders that hold it; everything else is removed.
+    link stays, with the folders that hold it; everything else is removed. The
+    result lists each link, each file that could not be removed and each
+    folder that could not be read, so the caller can report them.
     """
     walk = _walk_without_links(top)
     if not walk.links and not walk.unreadable:
         shutil.rmtree(top, onerror=_handle_rm_error)
-        return []
+        return [path for path in walk.files if path.exists()]
     for path in walk.files:
         # Checked again just before the removal: the walk ran earlier.
         if not _is_link(path):
@@ -248,7 +250,8 @@ def _remove_tree_keeping_links(top: Path) -> list[Path]:
         if not _is_link(folder):
             with contextlib.suppress(OSError):
                 folder.rmdir()
-    return walk.links
+    left = [path for path in walk.files if not _is_link(path) and path.exists()]
+    return [*walk.links, *left, *walk.unreadable]
 
 
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:

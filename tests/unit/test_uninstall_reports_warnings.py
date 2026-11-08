@@ -90,3 +90,30 @@ def test_an_error_fails_the_uninstall(monkeypatch: pytest.MonkeyPatch) -> None:
         ("error", "uninstall"),
         ("error", "sweep_stale"),
     ]
+
+
+class _ManyLinked(_Adapter):
+    def uninstall(self) -> MaterializationRun:
+        kept = tuple(
+            _result(
+                "warning",
+                "sweep_stale",
+                Path(f"/old/{name}"),
+                f"/old/{name} is reached through the link /old",
+                detail={"symlink": "/old"},
+            )
+            for name in ("a", "b", "c")
+        )
+        return MaterializationRun(harness="alpha", dry_run=False, results=kept)
+
+
+def test_warnings_for_one_link_print_as_one_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _select(monkeypatch, _ManyLinked("warning"))
+
+    plain = _run()
+
+    assert plain.exit_code == 0  # type: ignore[attr-defined]
+    assert plain.output.count("Warning:") == 1  # type: ignore[attr-defined]
+    assert "3 paths reached through the link /old" in plain.output  # type: ignore[attr-defined]

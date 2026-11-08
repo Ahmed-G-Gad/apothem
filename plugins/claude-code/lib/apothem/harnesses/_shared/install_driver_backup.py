@@ -134,7 +134,8 @@ def _replace_path(
             target,
             f"{target} is reached through the link {link}, so it was left in "
             "place: Apothem does not remove anything through a link",
-            detail={"symlink": _path_text(link)},
+            # "blocked": an installed file stays, so the uninstall is unfinished.
+            detail={"symlink": _path_text(link), "blocked": "1"},
         )
     if target_error is not None:
         return target_error

@@ -152,13 +152,55 @@ def stale_blocker(
 def kept_link_warnings(
     results: list[MaterializationResult],
 ) -> list[MaterializationResult]:
-    """Return one warning per link a removal in *results* left in place."""
+    """Return one warning per path a removal in *results* left in place.
+
+    A path is a link the removal kept, a folder it could not read, or a file it
+    could not remove.
+    """
     return [
-        _link_kept(Path(link))
+        _kept_note(Path(kept))
         for result in results
-        for link in result.detail.get(KEPT_LINKS, "").splitlines()
-        if link
+        for kept in result.detail.get(KEPT_LINKS, "").splitlines()
+        if kept
     ]
+
+
+def links_left_in(
+    folders: set[Path], *, known: list[MaterializationResult]
+) -> list[MaterializationResult]:
+    """Return a warning per link directly inside a folder an install created.
+
+    The folder stays after an uninstall because the link is in it, and the
+    link may point at a folder that is gone. Links *known* already carry a
+    warning and are skipped.
+    """
+    seen = {result.path for result in known}
+    notes = []
+    for folder in sorted(folders):
+        if not folder.is_dir() or _is_link(folder):
+            continue
+        try:
+            children = sorted(folder.iterdir())
+        except OSError:
+            continue
+        for child in children:
+            if _is_link(child) and _path_text(child) not in seen:
+                seen.add(_path_text(child))
+                notes.append(_link_kept(child))
+    return notes
+
+
+def _kept_note(path: Path) -> MaterializationResult:
+    if _is_link(path):
+        return _link_kept(path)
+    if path.is_dir():
+        return _unreadable_kept(path)
+    return _result(
+        "warning",
+        "sweep_stale",
+        path,
+        f"could not remove {path}, so it was left in place",
+    )
 
 
 def _doomed_and_kept(

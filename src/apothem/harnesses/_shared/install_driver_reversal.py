@@ -36,8 +36,7 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
 from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_datahome import _data_home_for
-from .install_driver_lifecycle import _remove_data_home
+from .install_driver_datahome import _data_home_for, _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
@@ -268,7 +267,7 @@ def _remove_created(
         "remove_created",
         target,
         "removed what the install created"
-        + (f"; left {len(kept)} link(s) in it in place" if kept else ""),
+        + (f"; left {len(kept)} path(s) in it in place" if kept else ""),
         backup_path=backup,
         detail=kept_links_detail(kept),
     )

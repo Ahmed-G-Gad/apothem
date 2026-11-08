@@ -126,7 +126,11 @@ def replace_tree(
         "replace_tree",
         dst,
         "copied directory tree"
-        + (f"; left {len(kept)} link(s) in it in place" if kept else ""),
+        + (
+            f"; left {len(kept)} path(s) in it in place and did not copy over them"
+            if kept
+            else ""
+        ),
         detail=kept_links_detail(kept),
         source=src,
         backup_path=backup,

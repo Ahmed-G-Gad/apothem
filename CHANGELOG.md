@@ -320,9 +320,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   through a link above it. That includes a link from the
   earlier Antigravity plugin folder to the current one: the warning says the
   link stays after an uninstall, so you remove it when nothing uses the old
-  path. An uninstall also leaves an installed file or folder that is reached
-  through a link in place with a warning, rather than failing in a way that a
-  second run could not finish. `apothem uninstall` now prints these warnings
+  path. An uninstall that finds installed files reached through a link (a
+  dotfiles folder linked in, say) leaves them, says the tool still loads them,
+  keeps the install recorded and exits 2, so it can be run again once the link
+  is replaced. `apothem uninstall` now prints these warnings, grouped by link
   (and lists them in `--format json`), and it reports a failure, not
   "Uninstalled", when a step such as backing up a file fails, once per reason;
   running it again removes what the failed run left.

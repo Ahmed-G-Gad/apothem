@@ -12,10 +12,18 @@ import os
 from pathlib import Path
 
 from apothem.lib import install_ledger
-from apothem.lib.data_home import DataHomeError, resolve_shared_data_home
+from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS
 
-from .install_driver_pathsafety import _normalized, _within_allowed_root
+from .install_driver_backup import backup_existing
+from .install_driver_pathsafety import (
+    _normalized,
+    _remove_tree_keeping_links,
+    _validate_target_path,
+    _within_allowed_root,
+    kept_links_detail,
+)
+from .install_driver_types import MaterializationResult, _result
 
 
 def _same_path(left: Path, right: Path) -> bool:
@@ -104,3 +112,93 @@ def _other_harness_shares_home(*, current_harness: str, shared_home: Path) -> bo
             if _same_path(_data_home_for(record, root=root), shared_home):
                 return True
     return False
+
+
+def _remove_data_home(
+    harness_name: str,
+    *,
+    root: Path,
+    allowed_root: Path,
+    home: Path | None = None,
+) -> MaterializationResult | None:
+    """Back up and remove the shared data home only when it is last-referenced.
+
+    *home* is the shared Apothem working directory the install under *root*
+    wrote its data stores into, as :func:`_data_home_for` resolves it from the
+    install record. When omitted it is the default ``<root>/.apothem/``. The
+    directory is shared across every harness that resolves to the same home,
+    holding the operator's memory records, context fragments, and learning
+    signals (see :func:`apothem.lib.data_home.resolve_shared_data_home`).
+    Because it is SHARED, removing it on the first harness uninstall would
+    destroy data the other still-installed harnesses depend on. The removal is
+    therefore conditional:
+
+    * If another installed harness still shares this home, the home is RETAINED
+      and an informational ``unchanged`` result is returned.
+    * If this is the last harness referencing the home, only the data stores
+      (``memory/``, ``contexts/``, ``learning/``) are backed up and removed.
+      ``plans/`` is NEVER auto-removed — it is operator planning state, not
+      Apothem-materialized config — and the working directory itself is left
+      in place so any operator ``plans/`` survives. Each removed child is copied
+      into the Apothem backup root first, so the data stays recoverable.
+
+    Returns ``None`` when no data store exists (nothing to remove) or the home
+    path falls outside the write boundary (see :func:`_store_boundary`).
+    """
+    if home is None:
+        home = _data_home_for(None, root=root)
+    if not home.exists():
+        return None
+    boundary = _store_boundary(home, allowed_root=allowed_root)
+    if (
+        _validate_target_path(home, allowed_root=boundary, operation="remove_data_home")
+        is not None
+    ):
+        return None
+
+    # Last-harness guard: retain the shared home while another harness still
+    # references it. An uncertain ledger read raises and is caught here, falling
+    # back to RETAIN — the safe default that never risks shared-data loss.
+    try:
+        retain = _other_harness_shares_home(
+            current_harness=harness_name, shared_home=home
+        )
+    except Exception:  # pragma: no cover - defensive: ledger read is robust
+        retain = True
+    if retain:
+        return _result(
+            "unchanged",
+            "remove_data_home",
+            home,
+            "shared data home retained — another harness is still installed",
+        )
+
+    spec = DataHome.from_root(home)
+    backups: list[Path] = []
+    kept: list[Path] = []
+    removed_any = False
+    # plans/ is intentionally excluded — operator planning state is never
+    # auto-removed by uninstall.
+    for child in (spec.memory, spec.contexts, spec.learning):
+        if not child.exists():
+            continue
+        backup = backup_existing(
+            child,
+            install_root=root,
+            harness_name=harness_name,
+            allowed_root=boundary,
+        )
+        if backup is not None:
+            backups.append(backup)
+        kept.extend(_remove_tree_keeping_links(child))
+        removed_any = True
+    if not removed_any:
+        return None
+    return _result(
+        "updated",
+        "remove_data_home",
+        home,
+        "removed shared data stores (memory, contexts, learning); plans retained",
+        backup_path=backups[0] if backups else None,
+        detail=kept_links_detail(kept),
+    )

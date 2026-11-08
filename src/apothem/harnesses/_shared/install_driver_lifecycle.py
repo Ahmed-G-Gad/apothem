@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -13,7 +14,6 @@ import yaml
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
-from apothem.lib.data_home import DataHome
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
     extract_managed_block,
@@ -26,13 +26,11 @@ from apothem.lib.propagation import (
 
 from .install_driver_backup import (
     _replace_path,
-    backup_existing,
     backup_ledger_targets,
 )
 from .install_driver_datahome import (
     _data_home_for,
-    _other_harness_shares_home,
-    _store_boundary,
+    _remove_data_home,
 )
 from .install_driver_hookfile import (
     HOOK_FILE_MODE,
@@ -44,11 +42,8 @@ from .install_driver_pathsafety import (
     _APOTHEM_SUBTREE,
     _allowed_write_root,
     _holds_content,
-    _remove_tree_keeping_links,
     _root_for,
     _stale_path_proves_install,
-    _validate_target_path,
-    kept_links_detail,
 )
 from .install_driver_planvalidation import (
     _generated_targets_for_entry,
@@ -61,12 +56,11 @@ from .install_driver_removal import (
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
-from .install_driver_sweep import kept_link_warnings
+from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
     _path_text,
-    _result,
     backup_session,
     resolve_source,
 )
@@ -223,9 +217,8 @@ def detect_install(
     harness home reports absent. See :func:`_entry_proves_install` for what
     counts as evidence and why the weaker signals are excluded. A stale-sweep
     path of an earlier layout that still holds Apothem's files counts too (see
-    :func:`_stale_path_proves_install`). So does a folder or file of Apothem's
-    the latest install record lists, while no uninstall marker follows it: a
-    failed uninstall keeps the record, and a second run must find what it left.
+    :func:`_stale_path_proves_install`). So does an uninstall that did not
+    finish (see :func:`_incomplete_marker`), so a second run can complete it.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -236,15 +229,19 @@ def detect_install(
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):
         return True
-    active = install_ledger.active_install_records(harness_name, root=root)
-    return bool(active) and any(
-        target.mode not in _SHARED_FILE_MODES and _holds_content(Path(target.path))
-        for target in active[-1].targets
-    )
+    return _incomplete_marker(harness_name, root).is_file()
 
 
-#: Modes of a file shared with the operator or tool; it exists without an install.
-_SHARED_FILE_MODES = frozenset({"write_text", "sentinel_merge", HOOK_FILE_MODE})
+def _incomplete_marker(harness_name: str, root: Path) -> Path:
+    """Return the file that records an unfinished uninstall of *harness_name* at *root*.
+
+    An uninstall that errors, or that leaves installed files in place because
+    they are reached through a link, keeps the install record and writes this
+    file; the uninstall that finishes removes it. Only a real uninstall writes
+    it, so files of the operator's never make a harness read as installed.
+    """
+    digest = hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:16]
+    return install_ledger.STATE_ROOT / harness_name / f"{digest}.uninstall-incomplete"
 
 
 @dataclass(frozen=True)
@@ -378,96 +375,6 @@ def _rendered_template_text(
         return ""
     return render_content_tokens(
         raw, harness_root=harness_root, project_root=project_root
-    )
-
-
-def _remove_data_home(
-    harness_name: str,
-    *,
-    root: Path,
-    allowed_root: Path,
-    home: Path | None = None,
-) -> MaterializationResult | None:
-    """Back up and remove the shared data home only when it is last-referenced.
-
-    *home* is the shared Apothem working directory the install under *root*
-    wrote its data stores into, as :func:`_data_home_for` resolves it from the
-    install record. When omitted it is the default ``<root>/.apothem/``. The
-    directory is shared across every harness that resolves to the same home,
-    holding the operator's memory records, context fragments, and learning
-    signals (see :func:`apothem.lib.data_home.resolve_shared_data_home`).
-    Because it is SHARED, removing it on the first harness uninstall would
-    destroy data the other still-installed harnesses depend on. The removal is
-    therefore conditional:
-
-    * If another installed harness still shares this home, the home is RETAINED
-      and an informational ``unchanged`` result is returned.
-    * If this is the last harness referencing the home, only the data stores
-      (``memory/``, ``contexts/``, ``learning/``) are backed up and removed.
-      ``plans/`` is NEVER auto-removed — it is operator planning state, not
-      Apothem-materialized config — and the working directory itself is left
-      in place so any operator ``plans/`` survives. Each removed child is copied
-      into the Apothem backup root first, so the data stays recoverable.
-
-    Returns ``None`` when no data store exists (nothing to remove) or the home
-    path falls outside the write boundary (see :func:`_store_boundary`).
-    """
-    if home is None:
-        home = _data_home_for(None, root=root)
-    if not home.exists():
-        return None
-    boundary = _store_boundary(home, allowed_root=allowed_root)
-    if (
-        _validate_target_path(home, allowed_root=boundary, operation="remove_data_home")
-        is not None
-    ):
-        return None
-
-    # Last-harness guard: retain the shared home while another harness still
-    # references it. An uncertain ledger read raises and is caught here, falling
-    # back to RETAIN — the safe default that never risks shared-data loss.
-    try:
-        retain = _other_harness_shares_home(
-            current_harness=harness_name, shared_home=home
-        )
-    except Exception:  # pragma: no cover - defensive: ledger read is robust
-        retain = True
-    if retain:
-        return _result(
-            "unchanged",
-            "remove_data_home",
-            home,
-            "shared data home retained — another harness is still installed",
-        )
-
-    spec = DataHome.from_root(home)
-    backups: list[Path] = []
-    kept: list[Path] = []
-    removed_any = False
-    # plans/ is intentionally excluded — operator planning state is never
-    # auto-removed by uninstall.
-    for child in (spec.memory, spec.contexts, spec.learning):
-        if not child.exists():
-            continue
-        backup = backup_existing(
-            child,
-            install_root=root,
-            harness_name=harness_name,
-            allowed_root=boundary,
-        )
-        if backup is not None:
-            backups.append(backup)
-        kept.extend(_remove_tree_keeping_links(child))
-        removed_any = True
-    if not removed_any:
-        return None
-    return _result(
-        "updated",
-        "remove_data_home",
-        home,
-        "removed shared data stores (memory, contexts, learning); plans retained",
-        backup_path=backups[0] if backups else None,
-        detail=kept_links_detail(kept),
     )
 
 
@@ -655,7 +562,14 @@ def run_uninstall(
     # only when every removal succeeded. On any error the install record
     # stays latest, matching the on-disk state (targets remain) so verify,
     # status, and rollback keep operating against the truth.
-    if not any(result.outcome == "error" for result in (*prior_results, *results)):
+    marker = _incomplete_marker(harness_name, root)
+    if any(result.outcome == "error" for result in (*prior_results, *results)) or any(
+        result.detail.get("blocked") for result in results
+    ):
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("uninstall did not finish\n", encoding="utf-8")
+    else:
+        marker.unlink(missing_ok=True)
         install_ledger.append_record(
             LedgerRecord.create(
                 harness=harness_name,
@@ -666,7 +580,8 @@ def run_uninstall(
             )
         )
         apply_retention(harness_name)
-    return [*results, *kept_link_warnings(results)]
+    kept = kept_link_warnings(results)
+    return [*results, *kept, *links_left_in(created, known=kept)]
 
 
 def build_plan(

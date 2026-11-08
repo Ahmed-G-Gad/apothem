@@ -67,6 +67,38 @@ def _retention_advisories(
         return []
 
 
+def _warning_lines(run: MaterializationRun) -> list[str]:
+    """Return the warnings to print, one line per link or per message.
+
+    Paths kept for the same link (all the files under a linked folder) print
+    as one line with their count.
+    """
+    groups: dict[str, list[str]] = {}
+    for warning in run.warnings:
+        if not warning.detail.get("blocked"):
+            key = warning.detail.get("symlink") or warning.message
+            groups.setdefault(key, []).append(warning.message)
+    lines = []
+    for key, messages in groups.items():
+        if len(messages) == 1:
+            lines.append(messages[0])
+        else:
+            lines.append(
+                f"{len(messages)} paths reached through the link {key} were left in "
+                "place: Apothem does not remove anything through a link"
+            )
+    return lines
+
+
+def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
+    """Count the installed paths an uninstall left because a link leads to them."""
+    return Counter(
+        warning.detail.get("symlink", "")
+        for warning in run.warnings
+        if warning.detail.get("blocked")
+    )
+
+
 def _report_run(
     harness_id: str,
     outcome: object,
@@ -76,39 +108,49 @@ def _report_run(
     fmt: str,
     con: Console,
     no_color: bool,
-) -> list[dict[str, object]]:
-    """Report an adapter's uninstall results; return the failure rows, if any.
+) -> tuple[list[dict[str, object]], bool]:
+    """Report an adapter's uninstall results; return the failure rows and partial flag.
 
     A link the uninstall left in place, or a step that failed (such as removing
     a leftover folder), is reported rather than hidden behind the success line.
-    Each warning is printed and added to *warnings*. A failure returns one
-    ``uninstall`` error row for the harness, then one row per failed step; the
-    same message for several paths prints once, with the count.
+    Each warning is added to *warnings*; the printed lines are grouped. A
+    failure returns one ``uninstall`` error row for the harness, then one row
+    per failed step. Installed files left in place because they are reached
+    through a link make the uninstall partial: the tool still loads them.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
-        return []
+        return [], False
     warnings.extend(_warning_dicts(harness_id, run))
     counts = Counter(error.message for error in run.errors)
+    blocked = _blocked_by_link(run)
+    problems = [
+        f"{count} installed path(s) stay because they are reached through the "
+        f"link {link}, and {harness_id} still loads them; replace the link with a "
+        "real folder that holds the same files, then run the command again"
+        for link, count in blocked.items()
+    ] + [
+        f"{message} ({count} paths)" if count > 1 else message
+        for message, count in counts.items()
+    ]
     if fmt != "json":
-        for warning in run.warnings:
-            con.print(f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}")
-        for message, count in counts.items():
-            paths = f" ({count} paths)" if count > 1 else ""
+        for line in _warning_lines(run):
+            con.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+        for line in problems:
             get_error_console(no_color=no_color).print(
-                f"[red]✗[/] {harness_id} uninstall failed{paths}: {escape(message)}"
+                f"[red]✗[/] {harness_id} uninstall did not finish: {escape(line)}"
             )
-    if not run.errors:
-        return []
+    if not problems:
+        return [], False
     summary: dict[str, object] = {
         "harness": harness_id,
         "outcome": "error",
         "operation": "uninstall",
         "path": str(output_path),
-        "message": f"{len(run.errors)} removal step(s) failed: " + "; ".join(counts),
+        "message": "; ".join(problems),
     }
     steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
-    return [summary, *steps]
+    return [summary, *steps], bool(blocked) and not run.errors
 
 
 def _print_removed(
@@ -217,7 +259,7 @@ def _uninstall_impl(
                     f"[red]✗[/] {harness_id} uninstall failed: {escape(str(exc))}"
                 )
             continue
-        failures = _report_run(
+        failures, partial = _report_run(
             harness_id,
             outcome,
             output_path,
@@ -226,6 +268,8 @@ def _uninstall_impl(
             con=con,
             no_color=no_color,
         )
+        # A partial uninstall removed files, so a batch of one exits as partial.
+        removed_any |= partial
         if failures:
             errored = True
             results.extend(failures)
