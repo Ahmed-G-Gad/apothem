@@ -8,7 +8,8 @@
 #
 # This is the single canonical gitleaks config for the repository. Both the
 # pre-commit `gitleaks` hook (auto-discovers `.gitleaks.toml` at the repo
-# root) and the CI supply-chain-scan job (`gitleaks detect --source .`)
+# root) and the CI supply-chain-scan job (`gitleaks detect --source .`,
+# limited to the history of the commit under test)
 # resolve this file — there is no second, divergent config under `config/`.
 
 title = "apothem gitleaks configuration"

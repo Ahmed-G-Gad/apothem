@@ -314,7 +314,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          fetch-depth: 0   # gitleaks needs full history
+          fetch-depth: 0   # gitleaks scans the full history of HEAD
           persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
@@ -395,7 +395,14 @@ jobs:
           # Config auto-discovered: the canonical `.gitleaks.toml` lives at
           # the repo root, resolved identically by this job and the
           # pre-commit `gitleaks` hook.
-          gitleaks detect --source . --no-banner --redact
+          # Scan the history of the commit under test only. gitleaks reads
+          # `git log --all` by default, and the full-depth checkout fetches
+          # every branch, so without this one open pull request's commit
+          # fails every other pull request's run, checked against a
+          # `.gitleaks.toml` that is not that commit's own. Each branch's
+          # commits are still scanned in that branch's own run, and every
+          # push to main scans all of main.
+          gitleaks detect --source . --no-banner --redact --log-opts="--full-history HEAD"
 
   # 8 — docs-build
   docs-build:
