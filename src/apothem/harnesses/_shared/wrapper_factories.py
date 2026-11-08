@@ -41,10 +41,10 @@ from .install_driver_shared import shared_scope
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
 _ProjectPlanFn = Callable[..., list[dict[str, str]]]
-_ProjectUninstallFn = Callable[..., None]
+_ProjectUninstallFn = Callable[..., MaterializationRun]
 _ProjectVerifyFn = Callable[..., bool]
 _NativeInstallFn = Callable[..., MaterializationRun]
-_NativeUninstallFn = Callable[[Path], None]
+_NativeUninstallFn = Callable[[Path], MaterializationRun]
 _NativeVerifyFn = Callable[[Path], bool]
 
 # Type aliases for the wrapper closure signatures.
@@ -275,8 +275,16 @@ def make_uninstall(harness_name: str) -> _NativeUninstallFn:
     block / keys and backs each target up under the Apothem backup root.
     """
 
-    def uninstall(output_path: Path) -> None:
-        install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
+    def uninstall(output_path: Path) -> MaterializationRun:
+        return MaterializationRun(
+            harness=harness_name,
+            dry_run=False,
+            results=tuple(
+                install_driver.run_uninstall(
+                    harness_name, harness_root=output_path.parent
+                )
+            ),
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC
     return uninstall
@@ -349,9 +357,9 @@ def make_user_scope_adapter(
             """Return the manifest-driven propagation plan without writing."""
             return plan_fn(output_path or self.output_path)
 
-        def uninstall(self) -> None:
+        def uninstall(self) -> MaterializationRun:
             """Remove the harness configuration file if present."""
-            uninstall_fn(self.output_path)
+            return uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
             """Return True if this harness root carries an Apothem install."""
@@ -515,9 +523,17 @@ def make_project_scope_uninstall(
     """
     _depth = len(relative_target.parts) - 1
 
-    def uninstall(output_path: Path, *, project: Path | None = None) -> None:
+    def uninstall(
+        output_path: Path, *, project: Path | None = None
+    ) -> MaterializationRun:
         project_root = project if project is not None else output_path.parents[_depth]
-        install_driver.run_uninstall(harness_name, project_root=project_root)
+        return MaterializationRun(
+            harness=harness_name,
+            dry_run=False,
+            results=tuple(
+                install_driver.run_uninstall(harness_name, project_root=project_root)
+            ),
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC_PROJECT
     return uninstall
@@ -586,7 +602,7 @@ def make_native_config_uninstall(
     """
 
     @install_driver.backup_session()
-    def uninstall(output_path: Path) -> None:
+    def uninstall(output_path: Path) -> MaterializationRun:
         native = install_driver.surgically_remove_materialized_config(
             output_path,
             materialize_fn({}),
@@ -597,10 +613,12 @@ def make_native_config_uninstall(
             retired=_retired_at_uninstall(retired_fn),
             relocated=relocated_fn,
         )
-        install_driver.run_uninstall(
-            harness_name,
-            harness_root=output_path.parent,
-            prior_results=(native,) if native is not None else (),
+        prior = (native,) if native is not None else ()
+        removed = install_driver.run_uninstall(
+            harness_name, harness_root=output_path.parent, prior_results=prior
+        )
+        return MaterializationRun(
+            harness=harness_name, dry_run=False, results=(*prior, *removed)
         )
 
     uninstall.__doc__ = _UNINSTALL_DOC_NATIVE
@@ -821,10 +839,10 @@ def make_project_scope_adapter(
             )
             return plan_fn(resolved, project=project)
 
-        def uninstall(self, *, project: Path | None = None) -> None:
+        def uninstall(self, *, project: Path | None = None) -> MaterializationRun:
             """Remove the harness configuration file if present."""
             output_path = self.resolve_output_path(project)
-            uninstall_fn(output_path, project=project)
+            return uninstall_fn(output_path, project=project)
 
         def is_installed(self, *, project: Path | None = None) -> bool:
             """Return True if this project root carries an Apothem install."""
@@ -907,9 +925,9 @@ def make_native_config_adapter(
             """Return what ``install`` would do, without writing anything."""
             return install_fn(self.output_path, profile, dry_run=True)
 
-        def uninstall(self) -> None:
+        def uninstall(self) -> MaterializationRun:
             """Remove the harness configuration file if present."""
-            uninstall_fn(self.output_path)
+            return uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
             """Return True if this harness root carries an Apothem install."""

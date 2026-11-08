@@ -21,7 +21,9 @@ _PROJECT_DEPTH: int = len(RELATIVE_TARGET.parts) - 1
 
 
 @install_driver.backup_session()
-def uninstall(output_path: Path, *, project: Path | None = None) -> None:
+def uninstall(
+    output_path: Path, *, project: Path | None = None
+) -> install_driver.MaterializationRun:
     """Remove the Apothem install from the project root.
 
     The ``AGENTS.md`` ``sentinel_merge`` anchor is cleaned by the shared driver,
@@ -51,6 +53,9 @@ def uninstall(output_path: Path, *, project: Path | None = None) -> None:
         harness_name=_HARNESS_NAME,
         allowed_root=install_driver._allowed_write_root(None, project_root),
     )
-    install_driver.run_uninstall(
+    removed = install_driver.run_uninstall(
         _HARNESS_NAME, project_root=project_root, prior_results=tuple(legacy)
+    )
+    return install_driver.MaterializationRun(
+        harness=_HARNESS_NAME, dry_run=False, results=(*legacy, *removed)
     )

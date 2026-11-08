@@ -10,7 +10,8 @@ Apothem installs a named plugin at ``~/.gemini/config/plugins/apothem/`` for
 cohorts that should not collide with Gemini CLI project-local files. The
 manifest's ``stale-sweep`` list names the plugin's earlier folder,
 ``~/.gemini/antigravity-cli/plugins/apothem/``, so the shared driver backs it
-up and removes it whole before it writes the new folder.
+up and removes it before it writes the new folder. A link in it (a symbolic
+link or a junction) is left in place with a warning.
 
 The adapter is user-scope: it propagates under the harness root resolved
 as ``output_path.parent`` (``~/.gemini/``). Its propagation contract is

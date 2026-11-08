@@ -4,14 +4,23 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
+import shutil
 import stat
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import NamedTuple
 
 from apothem.lib.propagation import USER_LEVEL_PREFIXES, user_home
 
-from .install_driver_types import MaterializationResult, _path_text, _result
+from .install_driver_types import (
+    MaterializationResult,
+    _handle_rm_error,
+    _path_text,
+    _result,
+)
 
 
 def _is_relative_to(path: Path, root: Path) -> bool:
@@ -71,11 +80,13 @@ def _within_allowed_root(target: Path, root: Path) -> bool:
 def _existing_chain(path: Path, floor: Path) -> list[Path]:
     """Return existing path components from *path* upward to *floor*."""
     expanded = path.expanduser()
-    probe = expanded if expanded.exists() or expanded.is_symlink() else expanded.parent
+    # ``_is_link`` also sees a junction whose target folder is gone, for which
+    # ``exists()`` and ``is_symlink()`` are both False.
+    probe = expanded if expanded.exists() or _is_link(expanded) else expanded.parent
     floor_expanded = floor.expanduser()
     chain: list[Path] = []
     while True:
-        if probe.exists() or probe.is_symlink():
+        if probe.exists() or _is_link(probe):
             chain.append(probe)
         if _normalized(probe) == _normalized(floor_expanded):
             break
@@ -141,20 +152,35 @@ def _is_link(path: Path) -> bool:
     return bool(tag & _NAME_SURROGATE_BIT) or tag == stat.IO_REPARSE_TAG_MOUNT_POINT
 
 
-def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
+class _Walk(NamedTuple):
+    """What :func:`_walk_without_links` found below a folder."""
+
+    files: list[Path]
+    folders: list[Path]
+    links: list[Path]
+    unreadable: list[Path]
+
+
+def _walk_without_links(top: Path) -> _Walk:
     """Return the files, folders and links below *top*, never entering a link.
 
     ``Path.rglob`` enters a Windows junction (``is_symlink()`` is False for
-    one), so a walk that deletes what it finds would delete through it.
+    one), so a walk that deletes what it finds would delete through it. A
+    folder the walk cannot list (*top* included) is returned in
+    ``unreadable`` so the caller can report it.
     """
     files: list[Path] = []
     folders: list[Path] = []
     links: list[Path] = []
+    unreadable: list[Path] = []
     pending = [top]
     while pending:
+        folder = pending.pop()
         try:
-            entries = sorted(os.scandir(pending.pop()), key=lambda e: e.name)
+            with os.scandir(folder) as scan:
+                entries = sorted(scan, key=lambda e: e.name)
         except OSError:
+            unreadable.append(folder)
             continue
         for entry in entries:
             path = Path(entry.path)
@@ -165,7 +191,55 @@ def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
                 pending.append(path)
             else:
                 files.append(path)
-    return files, folders, links
+    return _Walk(files, folders, links, unreadable)
+
+
+def _lexical_set(paths: list[Path]) -> set[str]:
+    return {_lexical_key(path) for path in paths}
+
+
+def _skip_links_into(
+    source: Path, dest: Path, links: list[Path]
+) -> Callable[[str, list[str]], set[str]]:
+    """Return a ``copytree`` ignore hook that skips each of *links* in *dest*.
+
+    Copying a tree over a folder that still holds a link would write through
+    the link. Paths are compared by name, never resolved, so a link is matched
+    as the entry it is rather than the folder it points to.
+    """
+    kept = _lexical_set(links)
+
+    def skip(folder: str, names: list[str]) -> set[str]:
+        here = dest / Path(folder).relative_to(source)
+        return {name for name in names if _lexical_key(here / name) in kept}
+
+    return skip
+
+
+def _remove_tree_keeping_links(top: Path) -> list[Path]:
+    """Remove the folder *top* and what it holds, except links; return those links.
+
+    ``shutil.rmtree`` does not delete through a Windows junction, but it does
+    remove the junction itself, and a link below *top* is the operator's. Each
+    link stays, with the folders that hold it; everything else is removed.
+    """
+    walk = _walk_without_links(top)
+    if not walk.links and not walk.unreadable:
+        shutil.rmtree(top, onerror=_handle_rm_error)
+        return []
+    for path in walk.files:
+        # Checked again just before the removal: the walk ran earlier.
+        if not _is_link(path):
+            with contextlib.suppress(OSError):
+                path.unlink()
+    for folder in sorted(
+        [*walk.folders, top], key=lambda path: len(path.parts), reverse=True
+    ):
+        # rmdir removes only an empty folder, so one that holds a link stays.
+        if not _is_link(folder):
+            with contextlib.suppress(OSError):
+                folder.rmdir()
+    return walk.links
 
 
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
@@ -261,11 +335,14 @@ def _validate_target_path(
         )
     symlink = _unsafe_symlink(target, normalized_root)
     if symlink is not None:
+        kind = "a symlink" if symlink.is_symlink() else "a Windows junction"
         return _result(
             "error",
             operation,
             target,
-            "target path crosses a symlink",
+            f"target path crosses a link ({kind}) at {symlink}; Apothem does not write "
+            "through a link. To fix it, replace the link with a real folder that "
+            "holds the same files, then run the command again",
             detail={"symlink": _path_text(symlink)},
         )
     return None
@@ -294,7 +371,9 @@ def _holds_content(target: Path) -> bool:
         return True
     if not target.is_dir():
         return False
-    return bool(_walk_without_links(target)[0])
+    walk = _walk_without_links(target)
+    # A folder the walk cannot read may hold files, so it counts as content.
+    return bool(walk.files or walk.unreadable)
 
 
 def _stale_path_proves_install(stale: Path) -> bool:

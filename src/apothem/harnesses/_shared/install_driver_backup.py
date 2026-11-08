@@ -18,7 +18,9 @@ from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_link,
     _normalized,
+    _remove_tree_keeping_links,
     _root_for,
+    _skip_links_into,
     _validate_target_path,
     _within_allowed_root,
 )
@@ -346,20 +348,28 @@ def _compensating_rollback(
         if result.outcome not in {"created", "updated"}:
             continue
         target = Path(result.path)
-        if not _within_allowed_root(_normalized(target), _normalized(allowed_root)):
+        if _is_link(target) or not _within_allowed_root(
+            _normalized(target), _normalized(allowed_root)
+        ):
             continue
+        # A link inside a folder being put back is the operator's: it stays,
+        # and the copy goes around it rather than through it.
         with contextlib.suppress(OSError):
             if result.backup_path:
                 backup = Path(result.backup_path)
                 if backup.is_dir():
-                    if target.exists():
-                        shutil.rmtree(target, onerror=_handle_rm_error)
-                    shutil.copytree(backup, target, dirs_exist_ok=True)
+                    kept = _remove_tree_keeping_links(target) if target.is_dir() else []
+                    shutil.copytree(
+                        backup,
+                        target,
+                        dirs_exist_ok=True,
+                        ignore=_skip_links_into(backup, target, kept),
+                    )
                 elif backup.is_file():
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(backup, target)
             elif target.is_dir():
-                shutil.rmtree(target, onerror=_handle_rm_error)
+                _remove_tree_keeping_links(target)
             elif target.exists():
                 target.unlink()
 

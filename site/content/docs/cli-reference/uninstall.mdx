@@ -76,6 +76,14 @@ carries `path`, `holders` (the installs that keep the folder), `stale` (ignored
 installs), and `kept` and `total` (the recorded entries kept and the entries the
 install listed).
 
+An uninstall also prints a `Warning:` line for each thing it left in place on
+purpose, such as a symbolic link or a Windows junction in a leftover folder it
+removes. In the `--format json` envelope each one is a `warnings` entry with
+`"outcome": "warning"`. When a step of the removal fails (a leftover folder
+that could not be backed up, say), the command prints the failure instead of
+`Uninstalled`, lists it in `results` with `"outcome": "error"`, and exits as
+the table below describes.
+
 If a folder stays because of an install you cannot find, the note names it.
 When the project folder was deleted, the install is ignored and the folder goes
 with the next uninstall. When the project exists but you removed the Apothem

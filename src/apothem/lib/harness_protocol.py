@@ -46,8 +46,13 @@ class HarnessAdapter(Protocol):
         """Re-materialize the harness configuration from the updated profile."""
         ...
 
-    def uninstall(self) -> None:
-        """Remove the harness configuration file if present."""
+    def uninstall(self) -> object:
+        """Remove the harness configuration file if present.
+
+        Shipped adapters return a ``MaterializationRun`` whose warnings and
+        errors the CLI reports; ``None`` is accepted from an adapter that
+        reports nothing.
+        """
         ...
 
     def is_installed(self) -> bool:

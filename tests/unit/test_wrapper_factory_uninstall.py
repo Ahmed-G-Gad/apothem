@@ -27,8 +27,9 @@ def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
         *,
         harness_root: Path | None = None,
         project_root: Path | None = None,
-    ) -> None:
+    ) -> list[object]:
         seen.append(project_root)
+        return []
 
     monkeypatch.setattr(install_driver, "run_uninstall", fake_run_uninstall)
     return seen

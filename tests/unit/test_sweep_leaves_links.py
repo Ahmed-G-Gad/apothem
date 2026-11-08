@@ -16,18 +16,27 @@ from pathlib import Path
 
 import pytest
 
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_pathsafety
+from apothem.harnesses._shared.install_driver_backup import _compensating_rollback
 from apothem.harnesses._shared.install_driver_pathsafety import (
     _is_link,
+    _remove_tree_keeping_links,
     _stale_path_proves_install,
     _unsafe_symlink,
+    _validate_target_path,
+    _walk_without_links,
 )
-from apothem.harnesses._shared.install_driver_reversal import _restore_directory
+from apothem.harnesses._shared.install_driver_reversal import (
+    _remove_created,
+    _restore_directory,
+)
 from apothem.harnesses._shared.install_driver_sweep import (
     preview_stale_sweep,
     stale_needs_sweep,
     sweep_stale,
 )
+from apothem.harnesses._shared.install_driver_treeops import replace_tree
+from apothem.harnesses._shared.install_driver_types import _result
 
 KINDS = ["symlink", *(["junction"] if sys.platform == "win32" else [])]
 
@@ -55,7 +64,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _mine(home: Path) -> Path:
     mine = home / "my-rules"
-    mine.mkdir()
+    mine.mkdir(parents=True)
     (mine / "precious.md").write_text("mine\n", encoding="utf-8")
     return mine
 
@@ -188,6 +197,153 @@ def test_rollback_restores_a_folder_around_a_link_inside_it(
     assert (target / "old-rule.md").read_text(encoding="utf-8") == "old\n"
     assert _is_link(target / "linked")
     assert (mine / "precious.md").read_text(encoding="utf-8") == "mine\n"
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_the_refusal_names_the_link_and_how_to_fix_it(home: Path, kind: str) -> None:
+    real = home / "dotfiles" / "tool"
+    real.mkdir(parents=True)
+    _link(kind, real, home / ".tool")
+
+    result = _validate_target_path(
+        home / ".tool" / "rules" / "a.md", allowed_root=home, operation="write"
+    )
+
+    assert result is not None
+    assert result.outcome == "error"
+    assert str(home / ".tool") in result.message
+    assert "replace the link with a real folder" in result.message
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_a_link_whose_folder_is_gone_is_still_refused(home: Path, kind: str) -> None:
+    gone = home / "gone"
+    gone.mkdir()
+    _link(kind, gone, home / ".tool")
+    gone.rmdir()
+
+    assert _unsafe_symlink(home / ".tool" / "rules" / "a.md", home) == home / ".tool"
+
+
+def _tree_with_a_link(home: Path, kind: str, tree: Path) -> tuple[Path, Path]:
+    (tree / "sub").mkdir(parents=True)
+    (tree / "sub" / "old.md").write_text("old\n", encoding="utf-8")
+    mine = _mine(home)
+    link = tree / "sub" / "linked"
+    _link(kind, mine, link)
+    return mine, link
+
+
+def _untouched(mine: Path, link: Path) -> None:
+    assert _is_link(link)
+    assert (mine / "precious.md").read_text(encoding="utf-8") == "mine\n"
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_removing_a_tree_keeps_each_link_in_it(home: Path, kind: str) -> None:
+    tree = home / "tree"
+    mine, link = _tree_with_a_link(home, kind, tree)
+
+    assert _remove_tree_keeping_links(tree) == [link]
+
+    _untouched(mine, link)
+    assert not (tree / "sub" / "old.md").exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_replacing_a_tree_keeps_a_link_in_it(
+    home: Path, tmp_path: Path, kind: str
+) -> None:
+    src = tmp_path / "src"
+    (src / "sub" / "linked").mkdir(parents=True)
+    (src / "sub" / "linked" / "new.md").write_text("new\n", encoding="utf-8")
+    (src / "sub" / "new.md").write_text("new\n", encoding="utf-8")
+    dst = home / "tree"
+    mine, link = _tree_with_a_link(home, kind, dst)
+
+    result = replace_tree(src, dst, None, install_root=home, allowed_root=home)  # type: ignore[arg-type]
+
+    assert result.outcome == "updated"
+    assert "link" in result.message
+    _untouched(mine, link)
+    assert not (mine / "new.md").exists()
+    assert (dst / "sub" / "new.md").is_file()
+    assert not (dst / "sub" / "old.md").exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_undoing_a_failed_install_keeps_a_link_in_what_it_removes(
+    home: Path, tmp_path: Path, kind: str
+) -> None:
+    created = home / "created"
+    mine, link = _tree_with_a_link(home, kind, created)
+    backup = tmp_path / "copy"
+    (backup / "sub").mkdir(parents=True)
+    (backup / "sub" / "before.md").write_text("before\n", encoding="utf-8")
+    restored = home / "restored"
+    mine_too, link_too = _tree_with_a_link(home / "b", kind, restored)
+
+    _compensating_rollback(
+        [
+            _result("created", "replace_tree", created, "made"),
+            _result("updated", "replace_tree", restored, "x", backup_path=backup),
+        ],
+        allowed_root=home,
+    )
+
+    _untouched(mine, link)
+    _untouched(mine_too, link_too)
+    assert (restored / "sub" / "before.md").is_file()
+    assert not (restored / "sub" / "old.md").exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_removing_what_an_install_created_keeps_a_link_in_it(
+    home: Path, kind: str
+) -> None:
+    created = home / ".tool" / "skills"
+    mine, link = _tree_with_a_link(home, kind, created)
+
+    result = _remove_created(
+        created, root=home / ".tool", harness_name="t", allowed_root=home
+    )
+
+    assert result is not None
+    assert result.outcome == "updated"
+    _untouched(mine, link)
+
+
+def test_a_folder_the_walk_cannot_read_is_reported(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stale = home / ".config" / "opencode" / "apothem" / "rules"
+    locked = stale / "locked"
+    locked.mkdir(parents=True)
+    (locked / "x.md").write_text("x\n", encoding="utf-8")
+    (stale / "old.md").write_text("old\n", encoding="utf-8")
+    real_scandir = os.scandir
+
+    def scandir(path: object) -> object:
+        if Path(str(path)) == locked:
+            raise PermissionError("denied")
+        return real_scandir(path)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(install_driver_pathsafety.os, "scandir", scandir)
+
+    assert _walk_without_links(stale).unreadable == [locked]
+    preview = preview_stale_sweep(
+        stale,
+        preserve=frozenset(),
+        protect=frozenset(),
+        allowed_root=home,
+        message="dry",
+    )
+    assert [r.path for r in _warn(preview)] == [str(locked)]
+    assert "could not read" in _warn(preview)[0].message
+
+
+def _warn(results: list) -> list:  # type: ignore[type-arg]
+    return [r for r in results if r.outcome == "warning"]
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlink run")

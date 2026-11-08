@@ -12,7 +12,7 @@ _HARNESS_NAME: str = "antigravity"
 
 
 @install_driver.backup_session()
-def uninstall(output_path: Path) -> None:
+def uninstall(output_path: Path) -> install_driver.MaterializationRun:
     """Remove the Apothem install from the Antigravity harness root.
 
     The ``GEMINI.md`` anchor is a ``sentinel_merge`` manifest target, so the
@@ -49,6 +49,9 @@ def uninstall(output_path: Path) -> None:
             project_root=None,
         ),
     )
-    install_driver.run_uninstall(
+    removed = install_driver.run_uninstall(
         _HARNESS_NAME, harness_root=harness_root, prior_results=tuple(legacy)
+    )
+    return install_driver.MaterializationRun(
+        harness=_HARNESS_NAME, dry_run=False, results=(*legacy, *removed)
     )

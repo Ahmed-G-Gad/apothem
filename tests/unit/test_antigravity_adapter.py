@@ -388,18 +388,26 @@ def test_a_link_between_the_plugin_folders_keeps_the_live_plugin(
     own.parent.mkdir(parents=True)
     own.write_text(_SKILL_TEXT, encoding="utf-8")
 
-    adapter.update({})
+    updated = adapter.update({})
 
     assert own.is_file()
     assert (plugin / "plugin.json").is_file()
     assert _old_plugin_backups() == []
     assert adapter.verify() is True
+    link = gemini / "antigravity-cli" / "plugins"
+    assert [w.message for w in updated.warnings if str(link) in w.message]
 
-    adapter.uninstall()
+    removed = adapter.uninstall()
 
-    # Uninstall removes Apothem's files from the plugin, not the operator's.
+    # Uninstall removes Apothem's files from the plugin, not the operator's,
+    # and says the link it kept stays behind.
     assert own.is_file()
     assert not (plugin / "plugin.json").exists()
+    assert not removed.errors
+    assert any(
+        str(link) in w.message and "after an uninstall" in w.message
+        for w in removed.warnings
+    )
 
 
 def test_a_dry_run_leaves_a_linked_old_folder_alone(
@@ -414,4 +422,5 @@ def test_a_dry_run_leaves_a_linked_old_folder_alone(
     old = [
         r for r in swept if r.path.endswith("apothem") and "antigravity-cli" in r.path
     ]
-    assert [r.outcome for r in old] == ["unchanged"]
+    assert [r.outcome for r in old] == ["warning"]
+    assert str(gemini / "antigravity-cli" / "plugins") in old[0].message

@@ -32,6 +32,7 @@ from apothem.cli._helpers import (
     _lifecycle_envelope,
     _project_option,
     _resolve_project_root,
+    _warning_dicts,
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._user_level_report import (
@@ -39,6 +40,7 @@ from apothem.cli._user_level_report import (
     preview_uninstall,
     uninstall_advisories,
 )
+from apothem.harnesses._shared.install_driver import MaterializationRun
 
 
 def _retention_advisories(
@@ -141,7 +143,7 @@ def _uninstall_impl(
             retention = _retention_advisories(
                 harness_id, adapter, project_root, output_path
             )
-            _invoke_with_project(adapter.uninstall, project=project_root)
+            outcome = _invoke_with_project(adapter.uninstall, project=project_root)
         except click.Abort:
             raise
         except Exception as exc:
@@ -153,6 +155,28 @@ def _uninstall_impl(
                 get_error_console(no_color=no_color).print(
                     f"[red]✗[/] {harness_id} uninstall failed: {escape(str(exc))}"
                 )
+            continue
+        run = outcome if isinstance(outcome, MaterializationRun) else None
+        # A link the uninstall left in place, or a step that failed (such as
+        # removing a leftover folder), is reported rather than hidden behind
+        # the success line.
+        warnings.extend(_warning_dicts(harness_id, run))
+        if fmt != "json" and run is not None:
+            for warning in run.warnings:
+                con.print(
+                    f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}"
+                )
+        if run is not None and run.errors:
+            errored = True
+            results.extend(
+                {"harness": harness_id, **error.to_dict()} for error in run.errors
+            )
+            if fmt != "json":
+                for error in run.errors:
+                    get_error_console(no_color=no_color).print(
+                        f"[red]✗[/] {harness_id} uninstall failed: "
+                        f"{escape(error.message)}"
+                    )
             continue
         removed_any = True
         results.append(

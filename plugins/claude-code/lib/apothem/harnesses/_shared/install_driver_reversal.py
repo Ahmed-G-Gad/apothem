@@ -43,7 +43,9 @@ from .install_driver_pathsafety import (
     _is_lexically_within,
     _is_link,
     _normalized,
+    _remove_tree_keeping_links,
     _root_for,
+    _skip_links_into,
     _validate_target_path,
     _walk_without_links,
     _within_allowed_root,
@@ -135,7 +137,7 @@ def _restore_directory(
     )
     if target_error is not None:
         return target_error
-    links = _walk_without_links(target)[2] if target.is_dir() else []
+    links = _walk_without_links(target).links if target.is_dir() else []
     if links:
         return _restore_around_links(
             target, backup, links, root, harness_name, allowed_root
@@ -175,23 +177,25 @@ def _restore_around_links(
     harness_name: str,
     allowed_root: Path,
 ) -> MaterializationResult:
-    """Copy *backup* into *target* without removing, entering or replacing a link."""
+    """Copy *backup* into *target* without removing, entering or replacing a link.
+
+    The copy merges: files in *target* that the backup does not hold stay.
+    """
     current = backup_existing(
         target, install_root=root, harness_name=harness_name, allowed_root=allowed_root
     )
-    kept = {_normalized(link) for link in links}
-
-    def skip(folder: str, names: list[str]) -> set[str]:
-        here = target / Path(folder).relative_to(backup)
-        return {name for name in names if _normalized(here / name) in kept}
-
-    shutil.copytree(backup, target, dirs_exist_ok=True, ignore=skip)
+    shutil.copytree(
+        backup,
+        target,
+        dirs_exist_ok=True,
+        ignore=_skip_links_into(backup, target, links),
+    )
     return _result(
         "updated",
         "restore_backup",
         target,
-        f"restored the directory the install replaced; left {len(links)} "
-        "link(s) in it in place",
+        f"copied the backup into the directory, around {len(links)} link(s) "
+        "left in place; files the backup does not hold were kept",
         source=backup,
         backup_path=current,
     )
@@ -253,15 +257,17 @@ def _remove_created(
     backup = backup_existing(
         target, install_root=root, harness_name=harness_name, allowed_root=allowed_root
     )
-    if target.is_dir() and not target.is_symlink():
-        shutil.rmtree(target, onerror=_handle_rm_error)
+    kept: list[Path] = []
+    if target.is_dir() and not _is_link(target):
+        kept = _remove_tree_keeping_links(target)
     else:
         target.unlink()
     return _result(
         "updated",
         "remove_created",
         target,
-        "removed what the install created",
+        "removed what the install created"
+        + (f"; left {len(kept)} link(s) in it in place" if kept else ""),
         backup_path=backup,
     )
 
