@@ -7,11 +7,31 @@
 #           POSIX sh only (no bashisms): runs under dash/ash as well as bash.
 #
 # Trust model (tag-pinned, verified-by-default): mirrors install.sh. With no
-# APOTHEM_REF set, the latest signed vMAJOR.MINOR.PATCH release tag is
-# resolved, checked out, and verified with `git verify-tag` before
-# re-materializing; an unsigned / tampered tag ABORTS unless
-# APOTHEM_ALLOW_UNVERIFIED=1 downgrades the abort to a warning. The
+# APOTHEM_REF set, the latest vMAJOR.MINOR.PATCH release tag is resolved. The
+# clone is fetched, the tag is checked, and only then is it checked out, so a
+# failed check leaves the clone where it was: `git verify-tag` must pass, the
+# signature must be made by the maintainer key SECURITY.md publishes
+# (fingerprint 5C8998F9F241720445D3F28B70396FED9C634163), and the signed tag
+# object must name itself as that release. An unsigned / tampered tag, or one
+# signed by another key, ABORTS before any config is written unless
+# APOTHEM_ALLOW_UNVERIFIED=1 downgrades the abort to a loud warning; a tag the
+# maintainer signed for another release and re-pointed here aborts either
+# way. Because APOTHEM_ALLOW_UNVERIFIED=1 lets an unsigned tag, or one signed
+# by another key, through, that re-pointed-tag check protects only tags that
+# carry the maintainer key's signature. Changes to tracked files stop the
+# update before the checkout, and the checkout runs without --force, so other
+# local changes it would overwrite stop it too instead of being lost.
+# Before anything is fetched, the update also stops when the clone hides
+# changes from git (files marked assume-unchanged or skip-worktree), when its
+# work tree is not APOTHEM_HOME, or when its own git config names a program
+# for git to run or pulls in other config (gpg.program, gpg.openpgp.program,
+# core.fsmonitor, core.hooksPath, include.*, includeIf.*). Every git command
+# on the clone runs with its hooks turned off. Only a clone of an Apothem
+# source tree is updated; any other folder is left alone. APOTHEM_REF=main
+# checks out the branch on request (it needs APOTHEM_ALLOW_UNVERIFIED=1). The
 # APOTHEM_SOURCE local-checkout path fetches nothing and skips verification.
+# An install made from a release archive (install.sh's cosign or checksum
+# path) has no git clone to update; re-run install.sh to update it.
 #
 # Usage:
 #     sh scripts/installer/update.sh
@@ -21,8 +41,13 @@
 #     APOTHEM_REPO             Git remote (default: https://github.com/ahmed-g-gad/apothem)
 #     APOTHEM_REF              Git ref to update to. Unset = latest release tag;
 #                             set to a tag to pin, or to "main" for the branch.
-#     APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure to a
-#                             warning and proceed.
+#     APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a failed tag-signature check to a
+#                             warning and proceed, and allow a ref that is not
+#                             a release tag. A re-pointed tag still aborts,
+#                             but since an unsigned tag, or one signed by
+#                             another key, gets through, that check protects
+#                             only tags that carry the maintainer key's
+#                             signature.
 #     APOTHEM_SOURCE          Explicit local source tree to re-materialize from
 #                             (skips tag resolution and verification)
 #     APOTHEM_HARNESS         Harness to update (default: claude-code)
@@ -32,17 +57,30 @@
 
 set -eu
 
+# git reads these from the environment and would then work on another
+# repository, index or object store than the one each command names, swap
+# objects through replace refs, take extra configuration, or run its helper
+# programs and templates from elsewhere (mirrors install.sh).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+    GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
+    GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
+    GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR
+GIT_NO_REPLACE_OBJECTS=1
+export GIT_NO_REPLACE_OBJECTS
+
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
 APOTHEM_REPO="${APOTHEM_REPO:-https://github.com/ahmed-g-gad/apothem}"
 APOTHEM_REF="${APOTHEM_REF:-}"
 APOTHEM_ALLOW_UNVERIFIED="${APOTHEM_ALLOW_UNVERIFIED:-0}"
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 PROFILE="${APOTHEM_PROFILE:-$HOME/.config/apothem/profile.yaml}"
+# The primary-key fingerprint SECURITY.md publishes; mirrors install.sh.
+MAINTAINER_FINGERPRINT="5C8998F9F241720445D3F28B70396FED9C634163"
 
 # CLI prerequisites; `yaml` + `jsonschema` ship vendored inside the bundled
 # tree (src/apothem/_vendor), so only click + rich come from the host.
 RUNTIME_DEPS="click rich"
-VENDORING_DOC="https://apothem.ahmedgad.com/architecture/vendoring-strategy/"
+VENDORING_DOC="https://apothem.ahmedgad.com/docs/architecture/vendoring-strategy/"
 
 # Colour only an interactive terminal. NO_COLOR (https://no-color.org/) or a
 # redirected stream (a pipe, a file, a CI log) gets plain text; stdout and
@@ -70,19 +108,81 @@ ok()    { printf '  %s %s\n' "$(paint "$COLOR_OUT" 32 '✓')" "$*"; }
 warn()  { printf '  %s %s\n' "$(paint "$COLOR_OUT" 33 '!')" "$*"; }
 die()   { printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$*" >&2; exit 1; }
 
+# git clone and ls-remote would read a value that starts with "-" as an option.
+case "$APOTHEM_REPO" in
+    -*) die "APOTHEM_REPO must be a repository URL or path, not an option: ${APOTHEM_REPO}" ;;
+esac
+
 # resolve_latest_tag / verify_tag / is_release_tag mirror install.sh; see that
 # script's helper comments for the per-function contract. Kept POSIX-clean.
 resolve_latest_tag() {
+    _rlt_tab="$(printf '\t')"
     git ls-remote --tags "$1" 2>/dev/null \
-        | sed -n 's#.*refs/tags/\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\(\^{}\)\{0,1\}$#\1#p' \
+        | sed -n "s#^[0-9a-f][0-9a-f]*${_rlt_tab}refs/tags/\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\(\^{}\)\{0,1\}\$#\1#p" \
         | sort -u \
         | sort -t. -k1.2,1n -k2,2n -k3,3n \
         | tail -n 1
 }
 
+# cgit ARGS — run git with ARGS and, once HOOKS_OFF names an empty folder,
+# with core.hooksPath pointing at it, so none of the clone's hooks run
+# (mirrors install.sh).
+HOOKS_OFF=""
+cgit() {
+    if [ -n "$HOOKS_OFF" ]; then
+        git -c core.hooksPath="$HOOKS_OFF" "$@"
+    else
+        git "$@"
+    fi
+}
+
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
-    VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag --raw "$2" 2>&1)"
+    VERIFY_TAG_OUTPUT="$(cgit -C "$1" verify-tag --raw "$2" 2>&1)"
+}
+
+# check_clone_setup DIR — the checks install.sh runs on an existing clone
+# before the fetch; see that script's comment.
+check_clone_setup() {
+    _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
+        || die "$1 has changes to tracked files. Commit or stash them, then re-run."
+    if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
+        die "$1 has changes to tracked files. Commit or stash them, then re-run."
+    fi
+    _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+    _cs_here="$(cd "$1" && pwd -P)"
+    if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
+        die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+    fi
+    _cs_keys="$(cgit -C "$1" config --local --name-only --get-regexp . 2>/dev/null || true)"
+    _cs_key="$(printf '%s\n' "$_cs_keys" | awk '
+        {
+            k = tolower($0)
+            if (k == "gpg.program" || k == "gpg.openpgp.program" || k == "core.fsmonitor" || k == "core.hookspath" || index(k, "include.") == 1 || index(k, "includeif.") == 1) { print; exit }
+        }')"
+    if [ -n "$_cs_key" ]; then
+        die "$1's own git config sets ${_cs_key}, which the update would trust. Remove it from $1/.git/config, then re-run."
+    fi
+}
+
+# verify_tag_by_maintainer / verify_tag_valid_other_key mirror install.sh,
+# which documents why a valid signature alone is not enough.
+verify_tag_by_maintainer() {
+    printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            seen++
+            fpr = (NF >= 12) ? $12 : $3
+            if (toupper(fpr) != want) other++
+        }
+        END { exit (seen > 0 && other == 0) ? 0 : 1 }'
+}
+
+verify_tag_valid_other_key() {
+    case "$VERIFY_TAG_OUTPUT" in
+        "[GNUPG:] VALIDSIG "* | *"
+[GNUPG:] VALIDSIG "*) ! verify_tag_by_maintainer ;;
+        *) return 1 ;;
+    esac
 }
 
 verify_tag_missing_key() {
@@ -201,7 +301,9 @@ if [ -n "${APOTHEM_SOURCE:-}" ]; then
         || die "APOTHEM_SOURCE is not an apothem source tree: ${APOTHEM_SOURCE}"
     ok "Using explicit source: $SOURCE"
     info "Local source — skipping tag resolution and signature verification"
-elif [ -d "$APOTHEM_HOME/.git" ]; then
+elif { [ -e "$APOTHEM_HOME/.git" ] || [ -L "$APOTHEM_HOME/.git" ]; } && is_apothem_source "$APOTHEM_HOME"; then
+    # A .git file (a worktree, or a clone made with --separate-git-dir) is a
+    # clone too. A clone of anything but an Apothem source is not updated.
     command -v git >/dev/null 2>&1 || die "git not found in PATH"
 
     # Resolve the ref to update to. An unset APOTHEM_REF defaults to the latest
@@ -214,27 +316,65 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
         fi
         ok "Latest release tag: ${APOTHEM_REF}"
     fi
+    if is_release_tag "$APOTHEM_REF" && [ "$APOTHEM_ALLOW_UNVERIFIED" != "1" ]; then
+        # Release tags carry OpenPGP signatures whatever gpg.format says; git
+        # runs gpg.openpgp.program for them, else gpg.program, else gpg.
+        _gpg_prog="$(git config --get gpg.openpgp.program 2>/dev/null || true)"
+        [ -n "$_gpg_prog" ] || _gpg_prog="$(git config --get gpg.program 2>/dev/null || true)"
+        command -v "${_gpg_prog:-gpg}" >/dev/null 2>&1 \
+            || die "gpg not found in PATH — needed to check the ${APOTHEM_REF} release tag's signature against the maintainer key. Install GnuPG (https://gnupg.org/download/), then re-run."
+    fi
 
+    # Fetch, check the tag, and only then check it out, so a failed check
+    # leaves the clone where it was (mirrors install.sh).
     info "Updating clone at $APOTHEM_HOME (ref: ${APOTHEM_REF})"
-    git -C "$APOTHEM_HOME" fetch --quiet --tags origin
-    git -C "$APOTHEM_HOME" checkout --quiet --force "$APOTHEM_REF" \
-        || git -C "$APOTHEM_HOME" checkout --quiet --force "origin/${APOTHEM_REF}" \
-        || die "Could not check out ${APOTHEM_REF} in $APOTHEM_HOME"
-    SOURCE="$APOTHEM_HOME"
-    is_apothem_source "$SOURCE" || die "Updated tree is not an apothem source: $SOURCE"
-    ok "Source updated at $SOURCE (ref: ${APOTHEM_REF})"
+    # Every git call on the clone from here runs with its hooks off; the
+    # empty hooks folder goes on every way out.
+    trap 'if [ -n "$HOOKS_OFF" ]; then rm -rf "$HOOKS_OFF"; fi' EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 131' QUIT
+    trap 'exit 141' PIPE
+    trap 'exit 143' TERM
+    HOOKS_OFF="$(mktemp -d)" || die "Could not create a scratch directory for the update"
+    check_clone_setup "$APOTHEM_HOME"
+    cgit -C "$APOTHEM_HOME" fetch --quiet --tags origin \
+        || die "Could not fetch from the origin of $APOTHEM_HOME. If a local tag differs from origin's, delete it with 'git -C $APOTHEM_HOME tag -d <tag>', then re-run."
 
-    # Fail-closed signature verification before re-materializing.
     bold "Verifying source signature"
     if is_release_tag "$APOTHEM_REF"; then
-        if verify_tag "$SOURCE" "$APOTHEM_REF"; then
-            ok "Tag ${APOTHEM_REF} carries a valid signature"
+        if verify_tag "$APOTHEM_HOME" "refs/tags/${APOTHEM_REF}" && verify_tag_by_maintainer; then
+            # The signed tag object must name itself APOTHEM_REF: a signed tag
+            # for another release, re-pointed here, would roll the update back.
+            cgit -C "$APOTHEM_HOME" cat-file tag "refs/tags/${APOTHEM_REF}" 2>/dev/null | awk -v want="$APOTHEM_REF" '
+                /^$/ { exit }
+                $1 == "type" { type = $0 }
+                $1 == "tag" { name = $0 }
+                END { exit (type == "type commit" && name == "tag " want) ? 0 : 1 }' \
+                || die "Tag ${APOTHEM_REF} carries the maintainer key's signature, but the signed tag object is not the ${APOTHEM_REF} release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or re-materialized."
+            ok "Tag ${APOTHEM_REF} carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
-            warn "Tag ${APOTHEM_REF} is unsigned or its signature did not verify — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            warn "Tag ${APOTHEM_REF} is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        elif verify_tag_valid_other_key; then
+            die "Tag ${APOTHEM_REF} carries a valid signature, but not from the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or re-materialized."
         elif verify_tag_missing_key; then
             die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this updater."
         else
-            die "Tag ${APOTHEM_REF} is unsigned or its signature did not verify (possible tampering). Aborting before re-materialization."
+            die "Tag ${APOTHEM_REF} is unsigned or its signature did not verify (possible tampering). Aborting before anything is checked out or re-materialized."
+        fi
+        # refs/tags/<tag>^{commit} can only mean the tag, never a branch that
+        # shares its name or is literally named refs/tags/<tag>; HEAD must
+        # then be the tag's commit. Changes to tracked files stop the update
+        # first, and there is no --force, so other local changes the checkout
+        # would overwrite stop it instead of being lost.
+        { cgit -C "$APOTHEM_HOME" diff --quiet HEAD && cgit -C "$APOTHEM_HOME" diff --cached --quiet; } \
+            || die "$APOTHEM_HOME has changes to tracked files. Commit or stash them, then re-run."
+        cgit -C "$APOTHEM_HOME" checkout --quiet --detach "refs/tags/${APOTHEM_REF}^{commit}" \
+            || die "Could not check out the ${APOTHEM_REF} tag in $APOTHEM_HOME. If it has local changes, commit or stash them, then re-run."
+        _co_head="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet HEAD || true)"
+        _co_tag="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "refs/tags/${APOTHEM_REF}^{commit}" || true)"
+        if [ -z "$_co_tag" ] || [ "$_co_head" != "$_co_tag" ]; then
+            die "The checkout in $APOTHEM_HOME is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${_co_tag}'. Aborting before re-materialization."
         fi
     else
         if [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
@@ -242,8 +382,28 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
         else
             die "Ref ${APOTHEM_REF} is not a signed release tag and cannot be verified. Pin a vMAJOR.MINOR.PATCH tag, or set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
         fi
+        { cgit -C "$APOTHEM_HOME" diff --quiet HEAD && cgit -C "$APOTHEM_HOME" diff --cached --quiet; } \
+            || die "$APOTHEM_HOME has changes to tracked files. Commit or stash them, then re-run."
+        # What origin has for the ref comes first, so a stale local branch
+        # of the same name cannot stand in for it; otherwise the ref is taken
+        # as given (a commit, or a branch only the clone has).
+        if cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "refs/remotes/origin/${APOTHEM_REF}" >/dev/null 2>&1; then
+            cgit -C "$APOTHEM_HOME" checkout --quiet --detach "refs/remotes/origin/${APOTHEM_REF}" \
+                || die "Could not check out ${APOTHEM_REF} in $APOTHEM_HOME. If it has local changes, commit or stash them, then re-run."
+        else
+            cgit -C "$APOTHEM_HOME" checkout --quiet --end-of-options "$APOTHEM_REF" \
+                || die "Could not check out ${APOTHEM_REF} in $APOTHEM_HOME. If it has local changes, commit or stash them, then re-run."
+        fi
     fi
+    _co_status="$(cgit -C "$APOTHEM_HOME" status --porcelain --untracked-files=no 2>/dev/null)" || _co_status="unreadable"
+    [ -z "$_co_status" ] \
+        || die "The checkout in $APOTHEM_HOME does not match ${APOTHEM_REF} after the update. Aborting before re-materialization."
+    SOURCE="$APOTHEM_HOME"
+    is_apothem_source "$SOURCE" || die "Updated tree is not an apothem source: $SOURCE"
+    ok "Source updated at $SOURCE (ref: ${APOTHEM_REF})"
     echo
+elif is_apothem_source "$APOTHEM_HOME"; then
+    die "$APOTHEM_HOME was installed from a release archive, which has no git clone to update. Re-run install.sh with cosign and gpg on PATH to update it to the latest verified release."
 else
     die "No source found at $APOTHEM_HOME — run install.sh first or set APOTHEM_SOURCE"
 fi

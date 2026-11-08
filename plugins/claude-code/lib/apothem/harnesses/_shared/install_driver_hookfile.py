@@ -221,7 +221,7 @@ def _merge_operator_file(
     """
     try:
         parsed = json.loads(existing)
-    except ValueError:
+    except (ValueError, RecursionError):
         raise _UnmergeableError(
             "does not parse as JSON (comments and trailing commas are not JSON)"
         ) from None
@@ -265,7 +265,7 @@ def merge_registration(
     try:
         parsed = json.loads(existing)
         incoming = json.loads(rendered)
-    except ValueError:
+    except (ValueError, RecursionError):
         return rendered
     kept = _without_ours(parsed)
     if kept is None or not isinstance(incoming, dict):
@@ -289,7 +289,7 @@ def strip_registration(existing: str) -> str | None:
     """
     try:
         before = json.loads(existing)
-    except ValueError:
+    except (ValueError, RecursionError):
         return existing
     stripped = _without_ours(before)
     if stripped is None:
@@ -308,7 +308,7 @@ def _unreadable_with_dispatcher(text: str) -> bool:
         return False
     try:
         return _without_ours(json.loads(text)) is None
-    except ValueError:
+    except (ValueError, RecursionError):
         return True
 
 

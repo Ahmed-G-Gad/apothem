@@ -91,3 +91,32 @@ def test_nan_literal() -> None:
 def test_invalid_documents_raise(text: str) -> None:
     with pytest.raises(lenient_json.LenientJSONError):
         lenient_json.loads(text)
+
+
+@pytest.mark.parametrize("separator", [chr(0x2028), chr(0x2029)])
+def test_line_and_paragraph_separators_stay_inside_strings(separator: str) -> None:
+    # JSON and JSON5 (5.2) both allow these two code points unescaped in a
+    # string; json.loads accepts them, so the superset reader must too.
+    text = json.dumps({"a": f"x{separator}y"}, ensure_ascii=False)
+    assert lenient_json.loads(text) == json.loads(text) == {"a": f"x{separator}y"}
+    assert (
+        lenient_json.loads(f"'single{separator}quoted'") == f"single{separator}quoted"
+    )
+
+
+def test_nesting_at_the_limit_parses() -> None:
+    depth = lenient_json.MAX_DEPTH
+    assert lenient_json.loads("[" * depth + "]" * depth) is not None
+
+
+@pytest.mark.parametrize("opener", ["[", '{"a":'])
+def test_nesting_past_the_limit_is_a_parse_error(opener: str) -> None:
+    closer = "]" if opener == "[" else "}"
+    depth = lenient_json.MAX_DEPTH + 1
+    with pytest.raises(lenient_json.LenientJSONError, match="nest too deeply"):
+        lenient_json.loads(opener * depth + "0" + closer * depth)
+
+
+def test_very_deep_nesting_is_a_parse_error_not_a_recursion_error() -> None:
+    with pytest.raises(lenient_json.LenientJSONError, match="nest too deeply"):
+        lenient_json.loads("[" * 100_000)

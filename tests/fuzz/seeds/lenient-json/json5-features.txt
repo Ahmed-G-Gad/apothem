@@ -1,0 +1,1 @@
+{unquoted: 'single', hex: 0xFF, inf: -Infinity, nan: NaN, lead: .5, trail: 5., plus: +1,}

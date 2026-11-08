@@ -91,8 +91,8 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### The installer stops: the maintainer public key is not in the local keyring
 
-The installer verifies the signed release tag and stops when the signing key
-is not in your keyring. Import it once, check that the fingerprint reads
+Every network install verifies the signed release tag, with or without cosign,
+and stops when the signing key is not in your keyring. Import it once, check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, then run the installer
 again:
 
@@ -106,9 +106,133 @@ gpg --fingerprint 70396FED9C634163
 ```
 
 On Windows, import through Git's `bash` as shown: `git verify-tag` reads the
-keyring of the `gpg` that ships with Git for Windows. A host without `gpg` can
-install with `APOTHEM_VERIFY=checksum`, which checks the release archive's
-digest instead of the tag signature.
+keyring of the `gpg` that ships with Git for Windows. Installing
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) does
+not replace the key import: with cosign on `PATH`, the installer checks the
+signed release archive as well as the tag. A host without `gpg` can install
+with `APOTHEM_VERIFY=checksum` and `APOTHEM_ALLOW_UNVERIFIED=1`, but that mode
+does not verify the release (see
+[The installer stops: checksum mode needs a second variable](#the-installer-stops-checksum-mode-needs-a-second-variable)).
+
+### The installer stops: gpg not found
+
+Install GnuPG, or on Windows Git for Windows, which ships the `gpg` that
+`git verify-tag` runs. Then import the maintainer key as shown above and run
+the installer again.
+
+### The installer stops: the tag is not signed by the maintainer key
+
+The message reads "carries a valid signature, but not from the maintainer
+key". The tag's signature is valid, but the key that made it is not the one
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
+publishes. Apothem release tags are signed only with that key, so treat this
+as possible tampering: do not install, and report it through the channels in
+SECURITY.md. A fork signed with its own key is expected to stop here.
+
+### The installer stops: cosign could not confirm the release signature
+
+Read the `cosign said:` text at the end of the message first.
+
+- A network, proxy or trusted-root error means cosign could not reach
+  Sigstore. Retry when you are online, upgrade cosign, or install with
+  `APOTHEM_VERIFY=signature`, which checks the release tag against the
+  maintainer key alone.
+- A fork set through `APOTHEM_REPO` is expected to stop here: the installer
+  accepts only Apothem's own release workflow.
+- "expected GitHub Workflow SHA not found in certificate" means the
+  certificate cosign verified was issued to a run on a different commit than
+  the one the signed tag points at, so it does not tie `SHA256SUMS` to that
+  commit. Do not install; report it through the channels in
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+- An identity or signature mismatch on Apothem's own releases means
+  `SHA256SUMS` was not signed by Apothem's release workflow for this tag. Do
+  not install; report it through the channels in
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+When the installer instead says it could not download the bundle, check your
+connection; if the release publishes no bundle, install it with
+`APOTHEM_VERIFY=signature`.
+
+### The installer stops: the signed tag is not the release tag
+
+The message reads "the signed tag object is not the vX.Y.Z release tag". The
+tag carries the maintainer key's signature, but the object that was signed
+names another tag, so a signed tag for a different release was re-pointed at
+this name. Treat this as possible tampering: do not install, and report it
+through the channels in
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+`APOTHEM_ALLOW_UNVERIFIED=1` does not bypass this check, but that variable
+lets an unsigned tag, or one signed by another key, through, so the check
+protects only tags that carry the maintainer key's signature.
+
+### The installer stops: checksum mode needs a second variable
+
+Checksum mode does not verify the release. SHA256SUMS comes from the same
+release as the archive, so a match only shows the download isn't damaged;
+anyone who can change the release's files can change both. For that reason
+`APOTHEM_VERIFY=checksum` runs only when `APOTHEM_ALLOW_UNVERIFIED=1` is set
+too. Set both if you accept that, or install `gpg` (and cosign) and run
+without `APOTHEM_VERIFY=checksum`.
+
+### The installer stops: the folder at APOTHEM_HOME is not an Apothem install
+
+The installer does not replace a folder that holds something other than an
+Apothem install. Move it aside, point `APOTHEM_HOME` at another folder, or
+re-run with `--yes` (`-Yes` on PowerShell). With `--yes`, the installer moves
+the whole folder, unchanged, to `<APOTHEM_HOME>.before-apothem-<time>` beside
+it, says where, and installs fresh. A git clone of another project counts as
+such a folder. If both `<APOTHEM_HOME>.before-apothem-<time>` and the same
+name with the installer's process ID added already exist, the installer stops
+with "Could not move the existing ... aside; nothing was changed" before
+anything moves; rename or remove one of them and re-run.
+
+### The installer stops: APOTHEM_HOME is a symbolic link
+
+The message reads "is a symbolic link" (on Windows, a symbolic link or a
+junction). Replacing the folder would replace the link and not the folder it
+leads to, so the installer refuses. Set `APOTHEM_HOME` to the folder the link
+leads to, then re-run. An existing git clone behind a link is still updated
+in place.
+
+### The installer stops: the git clone holds local work
+
+Replacing a git clone with a release archive needs `--yes`, and the installer
+refuses even then while the clone holds local work it would lose: changes to
+tracked files, stashes, commits that are not on a remote, or untracked files
+in the clone's source tree. Commit and push that work, or move it elsewhere,
+then re-run. The check also runs with `--dry-run`. When the clone has no
+such work, `--yes` replaces it and keeps the clone's own tree at
+`<APOTHEM_HOME>.before-apothem-<time>`; the installer prints that path, and
+you delete the folder once you no longer need it.
+
+### The installer stops: the existing clone is set up in a way the update would trust
+
+Before it fetches into an existing clone, the installer (and the update
+script) checks how the clone is set up. "has changes to tracked files" also
+appears when files are marked assume-unchanged or skip-worktree, which hides
+their changes from git: run `git update-index --no-assume-unchanged <file>`
+or `git update-index --no-skip-worktree <file>`, then commit or stash the
+change. "is not the work tree of its git clone" means `core.worktree` is set,
+or the `.git` file points at another clone: remove that setting so the clone
+checks out into `APOTHEM_HOME`. "own git config sets <key>, which the update
+would trust" names a setting in the clone's `.git/config` (`gpg.program`,
+`gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
+`includeIf.*`) that makes git run a program or read other config: remove it
+with `git -C ~/.apothem config --unset <key>`, then re-run. The clone's git
+hooks never run during an update.
+
+### The installer stops: the existing clone could not be updated
+
+The installer fetches into an existing clone and checks the new tag before it
+checks the clone out, so a failed check leaves the clone as it was. Two other
+messages stop the update before the checkout. "Could not fetch" usually means a
+local tag differs from the one on origin: delete it with
+`git -C ~/.apothem tag -d <tag>` and re-run. "has changes to tracked files.
+Commit or stash them, then re-run." means the clone has uncommitted changes to
+files git tracks: commit or stash them, then re-run. "Could not check out"
+means the checkout would still overwrite local changes. The installer never
+discards local changes. For a non-release ref such as `main`, an existing
+clone follows origin's copy of that branch.
 
 ### irm / iex blocked on Windows
 
