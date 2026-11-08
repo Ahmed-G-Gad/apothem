@@ -19,8 +19,9 @@ created once they are empty (a directory holding anything of yours stays).
 
 ## What an uninstall removes
 
-An install records the SHA-256 of every skill, agent, command and rule file it
-writes, in the install ledger (`~/.apothem/state/<harness>/ledger.jsonl`). An
+An install records the SHA-256 of every file it copies into place (skills,
+commands, rules and the like)
+in the install ledger (`~/.apothem/state/<harness>/ledger.jsonl`). An
 uninstall removes such a file only while it still has that content, then each
 folder left empty. Everything else stays and gets a `Warning:` line: a file you
 added to an Apothem folder, an Apothem file you edited, a file of your own that

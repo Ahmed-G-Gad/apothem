@@ -51,19 +51,20 @@ def folder_digests(folder: Path) -> dict[str, str]:
     return digests
 
 
-def _written_digests(result: MaterializationResult) -> dict[str, object]:
-    """Return the ``digest`` or ``files`` field for one written target."""
+def _written_digests(
+    result: MaterializationResult,
+) -> tuple[str | None, dict[str, str] | None]:
+    """Return the ``digest`` and ``files`` fields for one written target."""
     if result.owned is not None or result.operation in _EDITED_MODES:
-        return {}
+        return None, None
     path = Path(result.path)
     if _is_link(path):
-        return {}
+        return None, None
     if path.is_file():
-        digest = file_digest(path)
-        return {} if digest is None else {"digest": digest}
+        return file_digest(path), None
     if path.is_dir():
-        return {"files": folder_digests(path)}
-    return {}
+        return None, folder_digests(path)
+    return None, None
 
 
 # Result outcomes that represent a materialized on-disk file worth recording in
@@ -118,6 +119,7 @@ def _ledger_targets(
             created = before.created
         else:
             created = False
+        digest, files = _written_digests(result)
         targets.append(
             LedgerTarget(
                 path=result.path,
@@ -127,7 +129,8 @@ def _ledger_targets(
                 outcome=result.outcome,
                 created=created,
                 owned=result.owned,
-                **_written_digests(result),
+                digest=digest,
+                files=files,
             )
         )
     return tuple(targets)
