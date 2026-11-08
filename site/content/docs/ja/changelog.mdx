@@ -203,6 +203,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Recovering folders an earlier release swept is safer.** Rolling back such
+  an install no longer stops with an error when the swept folder is now a
+  file: it leaves the file and names the backup, and a file it cannot write
+  is reported for you to copy by hand. `apothem backups prune` says why it
+  keeps a backup set that holds such a folder, and no longer keeps every
+  uninstall set that holds `~/.claude/statuslines/__init__.py`. The docs now
+  say rollback reaches an install only while its record is among the newest
+  10 kept, and that the install removes any file of your own placed in the
+  `apothem/rules/` folders OpenCode, Qwen Code, Hermes and Open-Claw use, or
+  in Kimi Code's old support folders.
 - **The launch-size metric follows six more tools' loading rules.** The
   metrics collector, which reports how many bytes of instructions each tool
   loads at launch, now counts:

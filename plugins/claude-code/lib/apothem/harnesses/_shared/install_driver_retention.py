@@ -55,7 +55,6 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
             "site",
             "public",
             "commands",
-            "statuslines/__init__.py",
             "rules/AGENTS.md",
             "skills/AGENTS.md",
             "agents/AGENTS.md",
@@ -100,6 +99,8 @@ class RetentionReport:
     kept: tuple[str, ...]
     pruned: tuple[str, ...]
     protected: tuple[str, ...]
+    #: The *protected* sets kept because they hold a path in RETIRED_SWEEPS.
+    retired: tuple[str, ...]
     failed: tuple[str, ...]
     records_before: int
     records_after: int
@@ -184,7 +185,8 @@ def prune_history(
         _latest_installs(before)
     )
     stamps = list_backup_timestamps(harness_name)
-    referenced |= {s for s in stamps if _holds_retired_sweep(s, harness_name)}
+    retired = {s for s in stamps if _holds_retired_sweep(s, harness_name)}
+    referenced |= retired
     older = stamps[: max(0, len(stamps) - keep)]
     pruned = tuple(stamp for stamp in older if stamp not in referenced)
     failed: list[str] = []
@@ -203,6 +205,7 @@ def prune_history(
         kept=tuple(stamp for stamp in stamps if stamp not in pruned),
         pruned=pruned,
         protected=tuple(stamp for stamp in older if stamp in referenced),
+        retired=tuple(stamp for stamp in older if stamp in retired),
         failed=tuple(failed),
         records_before=len(before),
         records_after=len(kept_records),

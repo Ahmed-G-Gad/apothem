@@ -207,7 +207,12 @@ def _record_report(
                 harness_id,
                 "skipped",
                 backup_root / stamp / report.harness,
-                f"kept backup set {stamp}: a ledger record still references it",
+                (
+                    f"kept backup set {stamp}: it holds a folder an earlier "
+                    "release removed, which may be your only copy"
+                    if stamp in report.retired
+                    else f"kept backup set {stamp}: a ledger record still references it"
+                ),
             )
         )
     if report.records_dropped:
@@ -270,4 +275,9 @@ def _print_report(
                 f"  [dim]{'would remove' if report.dry_run else 'removed'}[/] {stamp}"
             )
     for stamp in report.protected:
-        con.print(f"  [dim]kept (still referenced)[/] {stamp}")
+        reason = (
+            "holds a folder an earlier release removed"
+            if stamp in report.retired
+            else "still referenced"
+        )
+        con.print(f"  [dim]kept ({reason})[/] {stamp}")

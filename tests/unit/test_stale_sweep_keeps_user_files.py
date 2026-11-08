@@ -281,6 +281,7 @@ def test_retention_keeps_a_backup_set_holding_a_swept_folder(
         backups / "20261001T000000Z" / "claude_code" / ".claude" / "commands"
     ).is_dir()
     assert "20261001T000000Z" not in report.pruned
+    assert "20261001T000000Z" in report.retired
     assert report.pruned  # other old sets still go
 
 
@@ -303,3 +304,40 @@ def test_current_installs_never_back_up_a_retired_sweep_path(
     stamps = [p.name for p in backups.iterdir()] if backups.exists() else []
     assert stamps
     assert not [s for s in stamps if _holds_retired_sweep(s, package)]
+
+
+def test_rollback_leaves_a_swept_folder_that_is_now_a_file(
+    home: Path, backups: Path
+) -> None:
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    commands = home / ".claude" / "commands"
+    commands.parent.mkdir(parents=True, exist_ok=True)
+    commands.write_text("now a file\n", "utf-8")
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=home / ".claude"
+    )
+
+    assert commands.read_text("utf-8") == "now a file\n"
+    [row] = [r for r in results if r.operation == "restore_backup"]
+    assert row.outcome == "skipped"
+    assert row.backup_path is not None
+
+
+def test_retention_prunes_an_uninstall_set_of_the_statusline_init(
+    home: Path, backups: Path
+) -> None:
+    # Uninstall backs up ~/.claude/statuslines/__init__.py on every run, so it
+    # must not count as a swept folder, or no uninstall set would ever go.
+    old = backups / "20261001T000000Z" / "claude_code" / ".claude" / "statuslines"
+    old.mkdir(parents=True)
+    (old / "__init__.py").write_text("", "utf-8")
+    for day in range(2, 2 + BACKUP_KEEP + 1):
+        newer = backups / f"202610{day:02d}T000000Z" / "claude_code" / ".claude" / "x"
+        newer.mkdir(parents=True)
+        (newer / "f").write_text("x", "utf-8")
+
+    report = prune_history("claude_code")
+
+    assert "20261001T000000Z" in report.pruned
+    assert not report.retired

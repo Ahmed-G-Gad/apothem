@@ -250,12 +250,21 @@ def _restore_missing(
             target,
             "left in place: Apothem no longer sweeps this path and its backup is gone",
         )
+    if backup.is_dir() and (target.is_file() or target.is_symlink()):
+        return _result(
+            "skipped",
+            "restore_backup",
+            target,
+            f"left in place: {target} is now a file; its backup is {backup}",
+            backup_path=backup,
+        )
     files = (
         [backup]
         if backup.is_file()
         else sorted(path for path in backup.rglob("*") if path.is_file())
     )
     restored = 0
+    failed = 0
     for source in files:
         destination = (
             target if source == backup else target / source.relative_to(backup)
@@ -267,14 +276,20 @@ def _restore_missing(
         )
         if error is not None:
             return error
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        except OSError:
+            failed += 1  # a file stands where a folder was, or no permission
+            continue
         restored += 1
     message = (
         f"restored {restored} missing file(s) from {backup}; kept what is there now"
         if restored
         else f"left in place: everything in {backup} is still there"
     )
+    if failed:
+        message += f"; {failed} file(s) could not be written, copy them by hand"
     return _result(
         "updated" if restored else "unchanged",
         "restore_backup",
