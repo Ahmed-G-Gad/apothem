@@ -267,6 +267,9 @@ def _clone_into(tmp_path: Path, home: Path, *args: str) -> None:
     )
 
 
+# maintenance.auto and gc.auto off: newer git (macOS runners) starts
+# background maintenance after a commit, and its maintenance.lock comes and
+# goes while a test snapshots the clone.
 _COMMIT_AS = [
     "-c",
     "user.name=Fixture",
@@ -274,6 +277,10 @@ _COMMIT_AS = [
     "user.email=fixture@example.invalid",
     "-c",
     "commit.gpgsign=false",
+    "-c",
+    "maintenance.auto=false",
+    "-c",
+    "gc.auto=0",
 ]
 
 
