@@ -53,3 +53,6 @@ tests/   export-ignore
 # GitHub archive of the default branch and finds the dependency-update tool by
 # its config file, so this one file stays in source archives.
 .github/dependabot.yml -export-ignore
+
+# The v1.5.0 release files are signed: keep them byte for byte.
+tests/fixtures/release-v1.5.0/** -text
