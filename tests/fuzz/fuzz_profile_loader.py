@@ -19,6 +19,8 @@ with Hypothesis; this target adds coverage-guided search.
 
 from __future__ import annotations
 
+import atexit
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -31,7 +33,9 @@ from apothem.lib.profile import (
     load_profile_file,
 )
 
-_PROFILE = Path(tempfile.mkdtemp(prefix="apothem-fuzz-profile-")) / "profile.yaml"
+_SCRATCH = Path(tempfile.mkdtemp(prefix="apothem-fuzz-profile-"))
+atexit.register(shutil.rmtree, _SCRATCH, ignore_errors=True)
+_PROFILE = _SCRATCH / "profile.yaml"
 
 
 def fuzz_one_input(data: bytes) -> None:

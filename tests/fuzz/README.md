@@ -2,7 +2,7 @@
 
 # Fuzz targets
 
-Coverage-guided fuzz targets for the parsers that read files an operator writes, or that a crash can leave damaged. [Atheris](https://github.com/google/atheris) runs them, and [ClusterFuzzLite](https://google.github.io/clusterfuzzlite/) runs Atheris in CI: `.clusterfuzzlite/` builds the targets and `.github/workflows/fuzzing.yml` fuzzes each pull request that touches `src/apothem/` for five minutes and runs a twenty-minute batch every day.
+Coverage-guided fuzz targets for the parsers that read files an operator writes, or that a crash can leave damaged. [Atheris](https://github.com/google/atheris) runs them, and [ClusterFuzzLite](https://google.github.io/clusterfuzzlite/) runs Atheris in CI: `.clusterfuzzlite/` builds the targets and `.github/workflows/fuzzing.yml` fuzzes each pull request that touches `src/apothem/` for five minutes, split across the targets, and runs a fifteen-minute batch every day. A pull-request run fails on any crash it finds, an old one too. The profile-loader target is the slow one (about 50 inputs a second), so the daily batch carries most of its coverage.
 
 ## Files
 

@@ -14,7 +14,7 @@ value. Two invariants:
   allowed difference is the reader's nesting limit.
 
 Run it with Atheris (see ``tests/fuzz/README.md``); ``fuzz_one_input`` also runs
-without Atheris, which is how ``test_fuzz_corpus_replay.py`` replays the seeds.
+without Atheris, which is how ``test_fuzz_seed_replay.py`` replays the seeds.
 """
 
 from __future__ import annotations

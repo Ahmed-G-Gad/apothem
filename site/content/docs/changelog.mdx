@@ -222,6 +222,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   stops at 200 levels of objects and arrays with a `LenientJSONError`, and the
   install-ledger reader reports a line nested too deeply to parse as invalid
   JSON (or drops it as a torn final line), where both raised `RecursionError`.
+  `apothem install` and `apothem uninstall` also crashed on a Kiro, GitHub
+  Copilot or Cursor hook file nested that deeply; they now treat it like any
+  other file that does not parse.
 - **A damaged install ledger is reported, not a traceback.** A ledger holding
   bytes that are not UTF-8 raised `UnicodeDecodeError`, which `apothem doctor`
   and `apothem update` do not catch; the reader now raises `LedgerError`, which

@@ -15,7 +15,9 @@ ledger. Invariants:
 
 from __future__ import annotations
 
+import atexit
 import json
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -24,6 +26,7 @@ from apothem.lib import install_ledger
 
 _HARNESS = "fuzz"
 _STATE_ROOT = Path(tempfile.mkdtemp(prefix="apothem-fuzz-ledger-"))
+atexit.register(shutil.rmtree, _STATE_ROOT, ignore_errors=True)
 _LEDGER = install_ledger.ledger_path(_HARNESS, state_root=_STATE_ROOT)
 _LEDGER.parent.mkdir(parents=True, exist_ok=True)
 

@@ -8,7 +8,8 @@
 # rewrites the same-line "# vX.Y.Z" comment), the docs site, the vsce packager
 # lockfile (tools/vsce), the harness-CLI lockfile the channel smoke installs
 # (tools/channel-smoke), the hash-locked CI pip (scripts/ci), the pre-commit
-# hooks, and the digest-pinned ClusterFuzzLite base image (.clusterfuzzlite). These stay hand edits for version updates, because a single-pin bump
+# hooks, and the digest-pinned ClusterFuzzLite base image (.clusterfuzzlite).
+# These stay hand edits for version updates, because a single-pin bump
 # would be wrong (a security update can still open a pull request for one;
 # adapt it by hand or close it):
 #   - pyproject.toml: deliberate floors; click is pinned exactly for the

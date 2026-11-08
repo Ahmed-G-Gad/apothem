@@ -7,11 +7,20 @@
 #
 # Two runs:
 #   - pull-request: code-change mode. It fuzzes the pull request for five
-#     minutes, starting from the corpus the scheduled runs saved, and fails the
-#     check on a new crash. The crash input is kept as a run artifact.
-#   - batch: every day, and on demand. It fuzzes for twenty minutes and saves
-#     the grown corpus (and any crash) as run artifacts, which the next
-#     pull-request run downloads, so the corpus keeps growing between runs.
+#     minutes, split across the targets, starting from the corpus the
+#     scheduled runs saved, and fails the check on any crash it finds, an old
+#     one too: ClusterFuzzLite tells new crashes from old ones only against a
+#     build uploaded from main, and this workflow uploads none. The crash input
+#     is kept as a run artifact.
+#   - batch: every day, and on demand. It fuzzes for fifteen minutes, which
+#     leaves room in the 30-minute job limit for the image pull and the six-minute
+#     build, and saves the grown corpus (and any crash) as run artifacts, which
+#     the next pull-request run downloads, so the corpus keeps growing.
+#
+# The profile-loader target is the slow one (about 50 inputs a second, as each
+# input goes through a temporary file and the full profile validation), so a
+# pull-request run covers it lightly; the daily batch runs carry most of its
+# coverage.
 #
 # ClusterFuzzLite stores the corpus as Actions artifacts (no storage repository),
 # so the jobs need only `contents: read` and `actions: read` (to download the
@@ -37,7 +46,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: fuzzing-${{ github.workflow }}-${{ github.ref }}
+  # The event is in the key so a manual run on main never cancels the daily one.
+  group: fuzzing-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true  # scan-class cadence: cancel stale runs on rebase
 
 jobs:
@@ -94,5 +104,5 @@ jobs:
           language: python
           sanitizer: address
           mode: batch
-          fuzz-seconds: 1200
+          fuzz-seconds: 900
           github-token: ${{ secrets.GITHUB_TOKEN }}
