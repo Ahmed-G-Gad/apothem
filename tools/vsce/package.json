@@ -4,7 +4,7 @@
   "description": "The vsce packager the release and VS Code publish workflows install with npm ci --ignore-scripts, so the toolchain is pinned by version and integrity hash.",
   "license": "MIT",
   "dependencies": {
-    "@vscode/vsce": "4.0.0"
+    "@vscode/vsce": "4.1.0"
   },
   "overrides": {
     "@azure/msal-node": "7.1.1",
