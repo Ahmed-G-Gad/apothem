@@ -243,6 +243,10 @@ The PR description must include:
 
 The canonical PR shape is captured in [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md); GitHub will populate it automatically when you open the PR.
 
+### Tests for new functionality
+
+A pull request that adds functionality MUST add tests for it in the same pull request, and a bug fix MUST add a regression test that fails without the fix. Put the tests under [`tests/`](./tests/) beside the existing tests for the same area, and describe the cases they cover under **Test plan** in the pull request description. A change that cannot be tested automatically says so in the Test plan and lists the manual steps used instead. The coverage floors in `pyproject.toml` are never lowered to make a change pass.
+
 ## Branching Strategy
 
 - Branch off the latest `main`.

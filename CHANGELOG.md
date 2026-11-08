@@ -55,6 +55,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **An answer sheet for the OpenSSF Best Practices badge.** The new
+  [OpenSSF Best Practices badge](https://apothem.ahmedgad.com/docs/security/openssf-best-practices)
+  page answers all 67 passing criteria from bestpractices.dev (Met, N/A or
+  Unmet), each with a one-line justification and a link to the file or page
+  that shows it, and lists the steps to register the project. The answers
+  meet every MUST criterion; the one Unmet SHOULD criterion,
+  `crypto_weaknesses`, is explained there, along with the other remaining
+  gaps. The CII-Best-Practices row on the Scorecard page links to it.
+  CONTRIBUTING.md now states that a pull request adding functionality adds
+  tests for it, and that a bug fix adds a regression test.
 - **Every docs link with a `#section` is checked against the page it opens.**
   `scripts/dev/check_site_anchor_links.py` reads the English pages and the
   eleven translations, makes each heading's id the way the site does (a Python
