@@ -19,12 +19,12 @@ environment variables before you run it.
 
 | Variable | Controls | Default |
 | --- | --- | --- |
-| `APOTHEM_HOME` | Install destination for the cloned source tree | `$HOME/.apothem` |
-| `APOTHEM_REPO` | Git remote to clone | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_HOME` | Install destination for the source tree | `$HOME/.apothem` |
+| `APOTHEM_REPO` | Git remote to clone; a value that starts with `-` is refused | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch. A non-tag ref such as `main` aborts unless `APOTHEM_ALLOW_UNVERIFIED=1`. | unset (latest signed tag) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a tag-signature-verification failure from a fatal abort to a warning when set to `1` | `0` (verify, fail-closed) |
-| `APOTHEM_VERIFY` | `signature` verifies the release tag's GPG signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) | `signature` |
-| `APOTHEM_RELEASE_BASE` | Download base for checksum mode | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a failed tag check on the clone path from a fatal abort to a warning when set to `1`, and allow `APOTHEM_VERIFY=checksum`; the `release` path never downgrades, and no setting skips the check that the signed tag is the one named for the release, but since it lets an unsigned tag, or one signed by another key, through, that check protects only tags that carry the maintainer key's signature | `0` (verify, fail-closed) |
+| `APOTHEM_VERIFY` | `auto` uses `release` when `cosign` is on `PATH` and `APOTHEM_HOME` is not a git clone, and `signature` otherwise; `release` installs the platform archive after the tag carries the maintainer key's signature, cosign confirms the release workflow signed `SHA256SUMS` in a run on the tag's commit, and the archive's SHA-256 matches it; `signature` checks the release tag's GPG signature against the pinned maintainer key; `checksum` installs the archive after the SHA-256 check alone and needs `APOTHEM_ALLOW_UNVERIFIED=1`. Checksum mode does not verify the release. SHA256SUMS comes from the same release as the archive, so a match only shows the download isn't damaged; anyone who can change the release's files can change both. | `auto` |
+| `APOTHEM_RELEASE_BASE` | Download base for the `release` and `checksum` modes | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Explicit local source tree to use instead of cloning | unset (clone) |
 | `APOTHEM_HARNESS` | User-scope harness to install (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). The installer does not pass `--project`, so a project-scope harness fails with `project.required`; install those afterward with `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Path to the shared profile YAML | `$HOME/.config/apothem/profile.yaml` |
@@ -38,17 +38,71 @@ contains `src/apothem`, the installer uses it directly, never touches
 `APOTHEM_REPO` / `APOTHEM_REF`, and skips tag resolution and signature
 verification (nothing is fetched to verify).
 
-When `APOTHEM_HOME` points at an existing directory that is not a git
-clone, the installer refuses to delete it: move it aside, point
-`APOTHEM_HOME` elsewhere, or pass `--yes` (`-Yes` on Windows) to
-authorize the replacement. A stale empty directory is replaced
-without the flag.
+The installers ignore the git environment variables that redirect git
+(`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` and similar), and they stop
+when `APOTHEM_REPO` starts with `-`, so a value cannot be read as a git
+option.
+
+When `APOTHEM_HOME` points at an existing directory, what happens depends on
+what it holds.
+
+- A git clone is fetched in `auto` or `signature` mode; the new tag is checked
+  first, and only then is the clone checked out. A failed check leaves the
+  clone unchanged, and changes to tracked files stop the update, with a
+  message to commit or stash them, instead of being lost. With a non-release
+  ref such as `main`, the clone follows origin's copy of that branch. A `.git`
+  file (a linked worktree) counts as a clone. `release` and `checksum` refuse
+  a clone without `--yes`, and with `--yes` they still refuse while the clone
+  holds local work (changes, stashes, unpushed commits, or untracked files in
+  its source tree), also in a dry run. When `--yes` does replace a clone, the
+  clone's own tree moves to `<APOTHEM_HOME>.before-apothem-<time>` rather than
+  being deleted. Before the fetch, an update in place stops when files are
+  marked assume-unchanged or skip-worktree, when the clone's work tree is not
+  `APOTHEM_HOME`, or when the clone's `.git/config` sets `gpg.program`,
+  `gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
+  `includeIf.*`; the clone's git hooks never run during the update. Only a
+  clone of an Apothem source counts: a clone of anything else is handled as a
+  folder that holds no Apothem install.
+- An earlier release-archive install is updated by a re-run in `auto` mode
+  with cosign (or `release`, or `checksum`).
+- A folder that holds no Apothem install is refused: move it aside, point
+  `APOTHEM_HOME` elsewhere, or pass `--yes` (`-Yes` on Windows). With `--yes`,
+  the installer moves the whole folder, unchanged, to
+  `<APOTHEM_HOME>.before-apothem-<time>` and installs fresh.
+- A stale empty directory, or one that holds only the engine's own data
+  (`backups`, `state`, `plans`, `memory`, `contexts`, `learning`,
+  `providers`), is updated without the flag, and that data is kept.
+- A symbolic link (on Windows, a symbolic link or a junction) is refused
+  whenever the install would replace it: point `APOTHEM_HOME` at the folder
+  the link leads to. An existing git clone behind a link is updated in place.
+- On Linux and macOS, a file or folder to carry over whose name has a space or
+  another special character stops the install: move it out of `APOTHEM_HOME`
+  first.
+
+For an Apothem install that is replaced, the new source is checked in a
+staging folder beside `APOTHEM_HOME` and swapped in only after every check
+passes. Everything in the old install that is not part of its source tree,
+including the engine's backups, install ledgers, plans and memory, is kept.
+If a step fails or the run is interrupted, the earlier install is put back
+unchanged. `--dry-run` (`-DryRun` on Windows) does its checks in a temporary
+folder, applies the same refusals as a real run, and leaves `APOTHEM_HOME`
+unchanged.
 
 ## Trust model
 
-With no `APOTHEM_REF` set, the installer resolves the latest signed release
-tag and verifies its signature with `git verify-tag` before materializing any
-configuration; an unsigned or tampered tag aborts the install. A signed tag
+With no `APOTHEM_REF` set, the installer resolves the latest release and
+checks it before materializing any configuration. It always verifies the
+release tag with `git verify-tag` and requires the signature to come from the
+maintainer key published in SECURITY.md; an unsigned or tampered tag, or one
+signed by any other key, aborts the install, and so does a signed tag object
+that is not the one named for the release (a signed tag for another release,
+re-pointed at this name). With `cosign` on `PATH`, it then
+installs the release archive once cosign confirms the release workflow signed
+`SHA256SUMS` and, through its `--certificate-github-workflow-sha` check, that
+the certificate it verified was issued to a run on the tag's commit, and the
+archive's SHA-256 matches it. That path needs `gpg` and cosign. For an
+existing git clone, the installer fetches and checks the tag before it checks
+the clone out, so a failed check leaves the clone as it was. A signed tag
 whose maintainer public key is missing from the local keyring aborts with
 key-import guidance instead - import the key and check its fingerprint
 against the value published in
@@ -58,20 +112,30 @@ release with `APOTHEM_REF=<tag>`, taking the tag from the
 [releases page](https://github.com/ahmed-g-gad/apothem/releases); a pinned tag
 is verified the same way. Select the moving branch with `APOTHEM_REF=main` plus
 `APOTHEM_ALLOW_UNVERIFIED=1`; that install is unverified, and `main` alone
-aborts because a branch is not a signed tag. Set `APOTHEM_ALLOW_UNVERIFIED=1` on
-its own to proceed past a verification failure with a warning (air-gapped,
-local, or pre-signed-release use).
+aborts because a branch is not a signed tag. Set `APOTHEM_ALLOW_UNVERIFIED=1` to proceed past a failed tag check with a
+warning (air-gapped, local, or pre-signed-release use). It applies to the
+clone path only, never to the cosign path, so on a host with cosign set
+`APOTHEM_VERIFY=signature` with it.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
-APOTHEM_VERIFY=checksum bash install.sh
+```bash title="Require the tag check and the cosign check"
+APOTHEM_VERIFY=release bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+Checksum mode does not verify the release. SHA256SUMS comes from the same
+release as the archive, so a match only shows the download isn't damaged;
+anyone who can change the release's files can change both. The installer runs
+it only with `APOTHEM_ALLOW_UNVERIFIED=1` set as well.
+
+```bash title="Check the archive digest alone (no cosign, no gpg; does not verify the release)"
+APOTHEM_VERIFY=checksum APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## Steps (POSIX bash)
