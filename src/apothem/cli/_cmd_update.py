@@ -42,6 +42,9 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
+from apothem.harnesses._shared.install_driver_pathsafety import (
+    link_leaving_home_refusal,
+)
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -346,7 +349,13 @@ def _rollback_harness(
             )
         return True
 
-    if not run.yes:
+    # A rollback that a link leaving the home refuses changes nothing, so it
+    # is not confirmed first; rollback_install reports the refusal.
+    harness_root = root_kwargs.get("harness_root")
+    if not run.yes and (
+        harness_root is None
+        or link_leaving_home_refusal(harness_root, operation="rollback_refused") is None
+    ):
         click.confirm(
             f"Roll back {harness_id} to the state before install {record.install_id}?",
             abort=True,
@@ -359,10 +368,12 @@ def _rollback_harness(
         record, harness_name=entry.package_key, **root_kwargs
     )
     # A rollback stopped because the ledger of the shared user-level folders
-    # could not be read changed nothing, so the install stays recorded and the
-    # command can be run again once the ledger is repaired.
+    # could not be read, or because a link leads the install root out of the
+    # home, changed nothing, so the install stays recorded and the command can
+    # be run again once the ledger is repaired or the link fixed.
     if not any(
-        item.outcome == "error" and item.operation == "shared_retained"
+        item.outcome == "error"
+        and item.operation in {"shared_retained", "rollback_refused"}
         for item in target_results
     ):
         install_ledger.append_record(

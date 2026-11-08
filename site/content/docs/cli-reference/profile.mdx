@@ -86,6 +86,26 @@ before writing; an invalid set is refused and the profile on disk is unchanged.
 
 Open the shared profile in the system editor.
 
+### Profiles behind a link
+
+A profile path spelled inside your home directory, such as the default
+`~/.config/apothem/profile.yaml`, is not written through a link that leads out
+of your home directory. That link can be a folder above the profile, such as
+`~/.config` (on Windows a junction counts as a link), or the profile file
+itself, such as a dotfiles file on another drive. `profile init`, `profile set`
+and `profile edit` then stop before they write or open anything. With no
+profile yet the message is `Apothem could not create the starter profile`.
+Over an existing profile, `profile set`, `profile edit` and `profile init
+--force` stop with `Apothem could not write the profile`; `profile init`
+without `--force` stops first with `profile file already exists`, as it does
+anywhere. `profile show` and the commands that only read the profile still
+read it. A link that stays inside your home directory, as dotfile managers
+make it, is followed. To keep the profile outside your home directory, pass
+`--profile PATH` with the profile's own path there, the path a profile file
+link leads to included: a path you spell outside your home directory is
+written wherever its links lead. With no profile there yet, create it first
+with `apothem profile init --profile PATH`.
+
 ## Validation errors
 
 Every command that reads the profile validates it against the packaged schema
