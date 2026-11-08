@@ -89,12 +89,30 @@ def _operator_items(entry: dict[str, Any], key: str) -> list[object]:
     return [item for item in items if item != RULES_FILE_RELATIVE]
 
 
-def plan_registration(existing: object, *, apothem_entry: bool) -> Registration:
+#: The entry an operator adds by hand to a config Apothem cannot rewrite.
+MANUAL_ENTRY: Final[str] = (
+    '"hooks": { "internal": { "entries": { "bootstrap-extra-files": '
+    f'{{ "enabled": true, "paths": ["{RULES_FILE_RELATIVE}"] }} }} }} }}'
+)
+
+
+def plan_registration(
+    existing: object,
+    *,
+    apothem_entry: bool,
+    fits: bool = True,
+    editable: bool = True,
+) -> Registration:
     """Return how to register the rules file in the operator's *existing* config.
 
     *existing* is the parsed ``openclaw.json`` (anything else reads as an empty
     config). *apothem_entry* is True when the install record says Apothem
-    created the hook entry, so it counts as absent here. The rules, from
+    created the hook entry, so it counts as absent here. *fits* is False when
+    the rules file is over the per-file limit of every workspace, so no file
+    is written and nothing is registered. *editable* is False when the file
+    holds comments or other JSON5 syntax Apothem cannot keep on a rewrite: an
+    entry already listing the path is kept as it is, and a missing one is left
+    to the operator, with the entry to add in the warning. The rules, from
     OpenClaw's hooks configuration page and ``src/hooks/configured.ts``:
 
     - ``hooks.internal.enabled: false`` turns every internal hook off. That is
@@ -113,6 +131,15 @@ def plan_registration(existing: object, *, apothem_entry: bool) -> Registration:
     - ``enabled: true`` is written only in an entry Apothem creates: an entry
       without ``enabled: false`` is already on.
     """
+    if not fits:
+        return Registration(
+            None,
+            "the Apothem rules file fits no workspace within OpenClaw's limits "
+            "(bootstrapMaxChars per file, bootstrapTotalMaxChars in total), so it "
+            "is not written or registered; the warning for each workspace says "
+            "which limit. Shorten the profile's custom rules or those files, or "
+            "raise the limit, then run `apothem update --harness open-claw`.",
+        )
     internal = _mapping(_mapping(existing, "hooks"), "internal")
     if internal.get("enabled") is False:
         return Registration(
@@ -149,18 +176,68 @@ def plan_registration(existing: object, *, apothem_entry: bool) -> Registration:
         return Registration(
             None,
             "openclaw.json sets hooks.internal.enabled to true and names no hook, so "
-            "OpenClaw loads every eligible hook. Registering the Apothem rules file "
-            "would name the first hook and switch the others off, so the file is "
+            "OpenClaw loads every eligible hook (unless hook packs installed with "
+            "OpenClaw name theirs; that list is in OpenClaw's state database, which "
+            "Apothem does not read). Registering the Apothem rules file would name "
+            "the first hook and could switch the others off, so the file is "
             "written but not loaded. Name your hooks under hooks.internal.entries, "
             "then run `apothem update --harness open-claw`.",
         )
     if operator_entry is None:
-        return FRESH_REGISTRATION
-    key = next(
-        (name for name in PATTERN_KEYS if _operator_items(operator_entry, name)),
-        "paths",
+        registration = FRESH_REGISTRATION
+        key = "paths"
+    else:
+        key = next(
+            (name for name in PATTERN_KEYS if _operator_items(operator_entry, name)),
+            "paths",
+        )
+        registration = Registration({key: [RULES_FILE_RELATIVE]})
+    if editable:
+        return registration
+    # A file Apothem cannot rewrite: render exactly what it already lists, so
+    # the shared write sees no change, and otherwise ask for the entry.
+    current_key = _listing_key(current)
+    if current_key is not None:
+        if apothem_entry and isinstance(current, dict):
+            # The entry is Apothem's, operator edits included: render it as
+            # the file holds it so the merge changes nothing.
+            return Registration(dict(current))
+        return Registration({current_key: [RULES_FILE_RELATIVE]})
+    if operator_entry is not None and _operator_items(operator_entry, key):
+        how = (
+            f'add "{RULES_FILE_RELATIVE}" to the `{key}` list of '
+            f"hooks.internal.entries.{HOOK_NAME}"
+        )
+    elif operator_entry is not None:
+        how = (
+            f'add `paths: ["{RULES_FILE_RELATIVE}"]` to '
+            f"hooks.internal.entries.{HOOK_NAME}"
+        )
+    else:
+        how = (
+            f"add this entry, merging it into the hooks block if the file has one "
+            f"(a second hooks key would replace the first): {MANUAL_ENTRY}"
+        )
+    return Registration(
+        None,
+        "openclaw.json holds comments or other JSON5 syntax, which Apothem cannot "
+        "keep when it rewrites the file, so the Apothem rules file is written but "
+        f"not registered. In openclaw.json, {how}.",
     )
-    return Registration({key: [RULES_FILE_RELATIVE]})
+
+
+def _listing_key(entry: object) -> str | None:
+    """Return the list key under which *entry* already names the rules file.
+
+    Only the list the hook reads counts (the first non-empty one).
+    """
+    if not isinstance(entry, dict):
+        return None
+    for key in PATTERN_KEYS:
+        items = entry.get(key)
+        if isinstance(items, list) and items:
+            return key if RULES_FILE_RELATIVE in items else None
+    return None
 
 
 def materialize_native_config(

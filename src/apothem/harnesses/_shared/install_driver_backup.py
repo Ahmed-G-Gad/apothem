@@ -375,9 +375,12 @@ _LEDGER_OUTCOMES: frozenset[str] = frozenset({"created", "updated", "unchanged"}
 # uninstall, not file-by-file) and the advisory capability-projection note. A
 # stale-sweep result is recorded only when it removed something (an ``updated``
 # result carrying its backup), so rollback can put the swept path back; the
-# ``unchanged`` result every absent legacy path emits is not a target.
+# ``unchanged`` result every absent legacy path emits is not a target. A
+# ``retire_anchor`` result reports a managed block an update took out of a file
+# an earlier install wrote (see ``strip_managed_anchor``): that file is no
+# longer installed, so the new record must not list it.
 _NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
-    {"data_surface", "capability_projection"}
+    {"data_surface", "capability_projection", "retire_anchor"}
 )
 
 

@@ -12,20 +12,36 @@ in the hook's entry; uninstall takes out only what it wrote.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
+from apothem.harnesses._shared.install_driver import (
+    MaterializationResult,
+    check_fidelity,
+)
 from apothem.harnesses._shared.install_driver_jsonmerge import is_handler_map
-from apothem.harnesses.open_claw import OpenClawAdapter
+from apothem.harnesses.open_claw import OpenClawAdapter, rules_file
 from apothem.harnesses.open_claw.install import install
 from apothem.harnesses.open_claw.materializer import (
     HOOK_NAME,
+    MANUAL_ENTRY,
     RULES_FILE_RELATIVE,
     plan_registration,
 )
-from apothem.harnesses.open_claw.rules_file import candidate_workspaces
+from apothem.harnesses.open_claw.rules_file import (
+    Limits,
+    candidate_workspaces,
+    chars,
+    limits_for,
+    operator_extras,
+    used_chars,
+)
+from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import extract_managed_block
+from apothem.lib.profile import load_profile_file
+from apothem.schemas import profile_minimal_path
 
 _AGENT_OWN = "# My agent\n\nNotes the agent keeps.\n"
 
@@ -361,7 +377,7 @@ def test_only_an_event_to_list_map_is_a_hook_handler_map() -> None:
 # --- OpenClaw's size limits --------------------------------------------------------
 
 
-def test_a_file_over_the_per_file_limit_is_refused(
+def test_a_file_over_the_per_file_limit_is_neither_written_nor_registered(
     adapter: OpenClawAdapter, home: Path
 ) -> None:
     workspace = _workspace(home / ".openclaw" / "workspace")
@@ -370,11 +386,50 @@ def test_a_file_over_the_per_file_limit_is_refused(
     run = adapter.install({})
 
     assert not (workspace / RULES_FILE_RELATIVE).exists()
-    skipped = [
-        r for r in run.results if r.outcome == "skipped" and "limit" in r.message
-    ]
-    assert skipped
-    assert "bootstrapMaxChars" in skipped[0].message
+    assert _entry(home) is None
+    assert any("bootstrapMaxChars" in message for message in _messages(run))
+
+
+def test_a_file_that_no_longer_fits_loses_its_copy_and_its_registration(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # A stale copy would stay loaded, and OpenClaw would cut its middle out.
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": 200}}
+    _write_config(home, config)
+
+    run = adapter.update({})
+
+    assert not (workspace / "apothem").exists()
+    assert _entry(home) is None
+    assert any("bootstrapMaxChars" in message for message in _messages(run))
+    assert (workspace / "AGENTS.md").read_text(encoding="utf-8") == _AGENT_OWN
+
+
+def test_an_entrys_own_limit_applies_to_its_workspace(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    small = _workspace(home / ".openclaw" / "workspace-small")
+    large = _workspace(home / ".openclaw" / "workspace-large")
+    _write_config(
+        home,
+        {
+            "agents": {
+                "entries": {"small": {"bootstrapMaxChars": 200}, "large": {}},
+            }
+        },
+    )
+
+    run = adapter.install({})
+
+    assert not (small / RULES_FILE_RELATIVE).exists()
+    assert (large / RULES_FILE_RELATIVE).is_file()
+    assert _entry(home) == {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
+    assert any(
+        "workspace-small" in r.path for r in run.results if r.outcome == "warning"
+    )
 
 
 def test_the_default_profile_fits_the_per_file_limit(
@@ -384,18 +439,44 @@ def test_the_default_profile_fits_the_per_file_limit(
 
     adapter.install({})
 
-    assert len((workspace / RULES_FILE_RELATIVE).read_text(encoding="utf-8")) < 20_000
+    assert chars((workspace / RULES_FILE_RELATIVE).read_text(encoding="utf-8")) < 20_000
 
 
-def test_a_spent_total_budget_is_reported(adapter: OpenClawAdapter, home: Path) -> None:
+def test_a_spent_total_budget_refuses_the_file(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
     workspace = _workspace(home / ".openclaw" / "workspace")
     for name in ("AGENTS.md", "SOUL.md", "IDENTITY.md"):
         (workspace / name).write_text("x" * 20_000, encoding="utf-8")
 
     run = adapter.install({})
 
-    assert (workspace / RULES_FILE_RELATIVE).is_file()
-    assert any("skips the Apothem rules file" in m for m in _messages(run))
+    assert not (workspace / RULES_FILE_RELATIVE).exists()
+    assert any("OpenClaw would skip it" in m for m in _messages(run))
+
+
+def test_the_operators_extra_files_count_against_the_total(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # The operator's own extra files load before Apothem's path.
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    (workspace / "AGENTS.md").write_text("x" * 20_000, encoding="utf-8")
+    (workspace / "SOUL.md").write_text("x" * 20_000, encoding="utf-8")
+    (workspace / "docs").mkdir()
+    (workspace / "docs" / "AGENTS.md").write_text("y" * 19_000, encoding="utf-8")
+    operator = {
+        "hooks": {"internal": {"entries": {HOOK_NAME: {"paths": ["docs/*.md"]}}}}
+    }
+    _write_config(home, operator)
+
+    run = adapter.install({})
+
+    assert not (workspace / RULES_FILE_RELATIVE).exists()
+    assert any("other extra files" in m for m in _messages(run))
+
+
+def test_size_is_counted_in_utf16_units_as_openclaw_counts() -> None:
+    assert chars("a\U0001f600") == 3
 
 
 # --- verify ---------------------------------------------------------------------
@@ -448,18 +529,32 @@ def test_workspaces_follow_openclaws_resolution(home: Path) -> None:
         }
     }
 
-    paths, notes = candidate_workspaces(config, home, env={})
+    workspaces, notes = candidate_workspaces(config, home, env={})
 
-    assert paths == [home / "agents", home / "agents" / "a", home / "b-space"]
+    assert [(w.path, w.agent_ids) for w in workspaces] == [
+        (home / "agents", ()),
+        (home / "agents" / "a", ("a",)),
+        (home / "b-space", ("b",)),
+    ]
     assert notes == []
 
 
+def test_a_sole_entry_uses_the_default_workspace_directly(home: Path) -> None:
+    workspaces, _ = candidate_workspaces(
+        {"agents": {"entries": {"main": {}}}}, home, env={}
+    )
+
+    assert [(w.path, w.agent_ids) for w in workspaces] == [
+        (home / ".openclaw" / "workspace", ("main",))
+    ]
+
+
 def test_the_workspace_variable_moves_the_default_workspace(home: Path) -> None:
-    paths, _ = candidate_workspaces(
+    workspaces, _ = candidate_workspaces(
         {}, home, env={"OPENCLAW_WORKSPACE_DIR": str(home / "ws")}
     )
 
-    assert paths == [home / "ws"]
+    assert [w.path for w in workspaces] == [home / "ws"]
 
 
 def test_update_keeps_an_entry_the_operator_turned_off_after_install(
@@ -499,10 +594,494 @@ def test_a_workspace_path_that_is_a_file_is_skipped(
 def test_an_entry_id_that_is_not_a_folder_name_names_no_workspace(home: Path) -> None:
     config = {"agents": {"entries": {"../../.ssh": {}, "ops": {}}}}
 
-    paths, notes = candidate_workspaces(config, home, env={})
+    workspaces, notes = candidate_workspaces(config, home, env={})
 
-    assert paths == [
+    assert [w.path for w in workspaces] == [
         home / ".openclaw" / "workspace",
         home / ".openclaw" / "workspace-ops",
     ]
     assert any("not a plain folder name" in note for note in notes)
+
+
+# --- workspaces that move, links, drift, commented configs ------------------------
+
+
+def _move_default_workspace(home: Path, to: str) -> None:
+    config = _config(home)
+    config["agents"] = {"defaults": {"workspace": to}}
+    _write_config(home, config)
+
+
+def test_update_cleans_a_workspace_the_config_moved_away_from(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    new = _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    assert (old / RULES_FILE_RELATIVE).is_file()
+
+    _move_default_workspace(home, "~/ws-b")
+    adapter.update({})
+
+    assert not (old / "apothem").exists()
+    assert (new / RULES_FILE_RELATIVE).is_file()
+    assert (old / "AGENTS.md").read_text(encoding="utf-8") == _AGENT_OWN
+
+    adapter.uninstall()
+
+    assert not (new / "apothem").exists()
+    assert _config(home) == {"agents": {"defaults": {"workspace": "~/ws-b"}}}
+
+
+def test_uninstall_cleans_a_workspace_the_config_moved_away_from(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+
+    _move_default_workspace(home, "~/ws-b")
+    adapter.uninstall()
+
+    assert not (old / "apothem").exists()
+
+
+def test_cleaning_a_moved_workspace_keeps_the_operators_text(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    target.write_text(
+        target.read_text(encoding="utf-8") + "\nMy own note.\n", encoding="utf-8"
+    )
+
+    _move_default_workspace(home, "~/ws-b")
+    adapter.update({})
+
+    assert target.read_text(encoding="utf-8").strip() == "My own note."
+
+
+def test_a_dry_run_reports_a_cleanup_and_writes_nothing(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    _move_default_workspace(home, "~/ws-b")
+    before = _snapshot(old)
+
+    run = install(adapter.output_path, {}, dry_run=True)
+
+    assert _snapshot(old) == before
+    assert any(r.operation == "retire_anchor" and "ws-a" in r.path for r in run.results)
+
+
+def _link_folder(link: Path, target: Path) -> None:
+    """Create a folder link, a junction on Windows; skip where none can be made."""
+    try:
+        if sys.platform == "win32":
+            import _winapi
+
+            _winapi.CreateJunction(str(target), str(link))
+        else:
+            link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError, AttributeError) as exc:
+        pytest.skip(f"cannot create a folder link here: {exc}")
+
+
+def test_a_linked_workspace_is_reported_once_and_left_alone(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    real = _workspace(home / "real-workspace")
+    (home / ".openclaw").mkdir()
+    _link_folder(home / ".openclaw" / "workspace", real)
+
+    run = adapter.install({})
+
+    assert not (real / "apothem").exists()
+    linked = [m for m in _messages(run) if "through a link" in m]
+    assert len(linked) == 1
+    assert not any(r.outcome == "error" for r in run.results)
+    assert adapter.verify()
+
+
+def test_status_reports_an_edited_rules_file_as_drift(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    profile = load_profile_file(profile_minimal_path()).to_dict()
+    adapter.install(profile)
+    root = home / ".openclaw"
+
+    def state() -> str:
+        return next(
+            r.status
+            for r in check_fidelity("open_claw", harness_root=root, profile=profile)
+            if r.target.endswith(str(Path(RULES_FILE_RELATIVE)))
+        )
+
+    assert state() == "faithful"
+    target = workspace / RULES_FILE_RELATIVE
+    target.write_text(
+        target.read_text(encoding="utf-8").replace("Apothem", "Edited", 2),
+        encoding="utf-8",
+    )
+
+    assert state() == "drifted"
+
+
+_COMMENTED = '// mine\n{ skills: { load: { extraDirs: ["~/.openclaw/.apothem/support/skills"] } } }\n'
+
+
+def test_update_on_a_commented_config_names_the_entry_to_add(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # The skills entry was added by hand, as the earlier docs said; the hook
+    # entry cannot be written without dropping the comments.
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    _config_path(home).write_text(_COMMENTED, encoding="utf-8")
+
+    run = adapter.update({})
+
+    assert _config_path(home).read_text(encoding="utf-8") == _COMMENTED
+    assert any(MANUAL_ENTRY in m for m in _messages(run))
+    assert (workspace / RULES_FILE_RELATIVE).is_file()
+    assert not adapter.verify()
+
+
+def test_a_commented_config_with_the_entry_added_by_hand_verifies(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    text = _COMMENTED.replace(
+        " } } }\n", " } }, " + MANUAL_ENTRY.replace('"hooks":', "hooks:") + " }\n"
+    )
+    _config_path(home).write_text(text, encoding="utf-8")
+
+    run = adapter.update({})
+
+    assert _config_path(home).read_text(encoding="utf-8") == text
+    assert not any("JSON5" in m for m in _messages(run))
+    assert adapter.verify()
+
+
+# --- findings from the adversarial verification ----------------------------------
+
+
+def test_a_failed_cleanup_is_reported_and_retried_at_uninstall(
+    adapter: OpenClawAdapter, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    _move_default_workspace(home, "~/ws-b")
+
+    def stuck(path: Path, **_: object) -> MaterializationResult:
+        return MaterializationResult("updated", "retire_anchor", str(path), "removed")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(rules_file.install_driver, "strip_managed_anchor", stuck)
+        run = adapter.update({})
+
+    assert (old / RULES_FILE_RELATIVE).is_file()
+    assert any("could not take the Apothem block out" in m for m in _messages(run))
+
+    adapter.uninstall()
+
+    assert not (old / "apothem").exists()
+
+
+def test_a_file_the_total_refuses_everywhere_is_not_registered(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    _write_config(home, {"agents": {"defaults": {"bootstrapTotalMaxChars": 1000}}})
+
+    adapter.install({})
+
+    assert not (workspace / RULES_FILE_RELATIVE).exists()
+    assert _entry(home) is None
+
+
+def test_operator_text_beside_the_block_counts_against_the_limit(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    note = "n" * 19_000
+    target.write_text(target.read_text(encoding="utf-8") + note, encoding="utf-8")
+
+    run = adapter.update({})
+
+    assert any("bootstrapMaxChars" in m for m in _messages(run))
+    assert target.read_text(encoding="utf-8").strip() == note
+
+
+def test_a_glob_that_matches_the_rules_file_does_not_count_it_twice(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    (workspace / "AGENTS.md").write_text("x" * 20_000, encoding="utf-8")
+    (workspace / "SOUL.md").write_text("x" * 20_000, encoding="utf-8")
+    operator = {
+        "hooks": {"internal": {"entries": {HOOK_NAME: {"patterns": ["*/AGENTS.md"]}}}}
+    }
+    _write_config(home, operator)
+
+    adapter.install({})
+    adapter.update({})
+    adapter.update({})
+
+    assert (workspace / RULES_FILE_RELATIVE).is_file()
+
+
+def test_line_endings_and_bad_bytes_count_as_openclaw_counts(home: Path) -> None:
+    workspace = _workspace(home / "ws")
+    (workspace / "AGENTS.md").write_bytes(b"a\r\nb\r\n")
+    (workspace / "SOUL.md").write_bytes(b"\xff\xfe\xfd")
+    (workspace / "IDENTITY.md").write_text("\U0001f600", encoding="utf-8")
+
+    used = used_chars({}, workspace, Limits())
+
+    assert used == 6 + 3 + 2
+
+
+def test_a_missing_workspace_file_counts_its_placeholder(home: Path) -> None:
+    workspace = home / "ws"
+    workspace.mkdir()
+
+    used = used_chars({}, workspace, Limits())
+
+    assert used == sum(
+        chars(f"[MISSING] Expected at: {workspace / name}")
+        for name in ("AGENTS.md", "SOUL.md", "IDENTITY.md")
+    )
+
+
+def test_brace_patterns_count_and_brackets_stay_literal(home: Path) -> None:
+    workspace = _workspace(home / "ws")
+    for folder in ("docs", "notes", "[x]"):
+        (workspace / folder).mkdir()
+        (workspace / folder / "AGENTS.md").write_text("abc", encoding="utf-8")
+    paths = ["{docs,notes}/AGENTS.md", "[x]/AGENTS.md"]
+    config = {"hooks": {"internal": {"entries": {HOOK_NAME: {"paths": paths}}}}}
+
+    extras = operator_extras(config, workspace)
+
+    assert sorted(path.parent.name for path in extras) == ["[x]", "docs", "notes"]
+
+
+def test_an_invalid_entry_limit_falls_back_as_openclaw_does() -> None:
+    config = {
+        "agents": {
+            "defaults": {"bootstrapMaxChars": 500},
+            "entries": {"a": {"bootstrapMaxChars": 0}, "b": {}},
+        }
+    }
+
+    assert limits_for(config, ["a"]).file_max == 20_000
+    assert limits_for(config, ["b"]).file_max == 500
+
+
+def test_a_rules_file_that_is_not_utf8_does_not_break_update_or_uninstall(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    (old / RULES_FILE_RELATIVE).write_bytes(b"\xff\xfe not text")
+    _move_default_workspace(home, "~/ws-b")
+
+    adapter.update({})
+    adapter.uninstall()
+
+    assert (old / RULES_FILE_RELATIVE).read_bytes() == b"\xff\xfe not text"
+
+
+def test_a_comment_added_after_install_does_not_break_update(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    text = "// mine\n" + _config_path(home).read_text(encoding="utf-8")
+    _config_path(home).write_text(text, encoding="utf-8")
+
+    run = adapter.update({})
+
+    assert _config_path(home).read_text(encoding="utf-8") == text
+    assert not any("JSON5" in m for m in _messages(run))
+    assert adapter.verify()
+
+
+def test_the_commented_config_warning_names_the_list_the_operator_uses(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    hooks = (
+        f'hooks: {{ internal: {{ entries: {{ "{HOOK_NAME}": '
+        '{ patterns: ["docs/AGENTS.md"] } } } }'
+    )
+    text = (
+        "// mine\n"
+        '{ skills: { load: { extraDirs: ["~/.openclaw/.apothem/support/skills"] } }, '
+        f"{hooks} }}\n"
+    )
+    _config_path(home).write_text(text, encoding="utf-8")
+
+    run = adapter.update({})
+
+    assert any("to the `patterns` list" in m for m in _messages(run))
+    assert _config_path(home).read_text(encoding="utf-8") == text
+
+
+def test_a_workspace_that_became_a_link_is_left_alone_without_errors(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    moved = workspace / "apothem-real"
+    (workspace / "apothem").rename(moved)
+    _link_folder(workspace / "apothem", moved)
+
+    run = adapter.update({})
+
+    assert not any(r.outcome == "error" for r in run.results)
+    assert (moved / "AGENTS.md").is_file()
+
+
+def test_a_workspace_inside_another_never_gets_its_own_agents_file_changed(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / "agents")
+    inner = _workspace(home / "agents" / "apothem")
+    entries = {"apothem": {}, "x": {}}
+    _write_config(
+        home, {"agents": {"defaults": {"workspace": "~/agents"}, "entries": entries}}
+    )
+
+    run = adapter.install({})
+
+    assert (inner / "AGENTS.md").read_text(encoding="utf-8") == _AGENT_OWN
+    assert any("holds another workspace" in m for m in _messages(run))
+    assert (inner / RULES_FILE_RELATIVE).is_file()
+
+
+# --- second verification round ------------------------------------------------------
+
+
+def test_an_absolute_or_drive_pattern_does_not_crash_the_install(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    patterns = ["/etc/*/AGENTS.md", "C:/x/*/AGENTS.md", "C:*.md"]
+    operator = {"hooks": {"internal": {"entries": {HOOK_NAME: {"paths": patterns}}}}}
+    _write_config(home, operator)
+
+    adapter.install({})
+
+    assert (workspace / RULES_FILE_RELATIVE).is_file()
+
+
+def test_nested_brace_groups_are_expanded(home: Path) -> None:
+    workspace = _workspace(home / "ws")
+    for folder in ("docs", "a", "b"):
+        (workspace / folder).mkdir()
+        (workspace / folder / "SOUL.md").write_text("abc", encoding="utf-8")
+    paths = ["{docs,{a,b}}/SOUL.md"]
+    config = {"hooks": {"internal": {"entries": {HOOK_NAME: {"paths": paths}}}}}
+
+    extras = operator_extras(config, workspace)
+
+    assert sorted(path.parent.name for path in extras) == ["a", "b", "docs"]
+
+
+def test_an_uninstall_that_cannot_clean_a_file_keeps_the_install_record(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    moved = old / "apothem-real"
+    (old / "apothem").rename(moved)
+    _link_folder(old / "apothem", moved)
+    _move_default_workspace(home, "~/ws-b")
+
+    adapter.uninstall()
+
+    assert (moved / "AGENTS.md").is_file()
+    assert install_ledger.active_install_records("open_claw", root=home / ".openclaw")
+
+
+def test_an_apothem_entry_edited_in_a_commented_config_does_not_break_update(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    config = _config(home)
+    config["hooks"]["internal"]["entries"][HOOK_NAME]["note"] = "mine"  # type: ignore[index]
+    text = "// mine\n" + json.dumps(config, indent=2) + "\n"
+    _config_path(home).write_text(text, encoding="utf-8")
+
+    adapter.update({})
+
+    assert _config_path(home).read_text(encoding="utf-8") == text
+
+
+def test_with_no_usable_workspace_the_warning_does_not_blame_the_limits(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    real = _workspace(home / "real")
+    (home / ".openclaw").mkdir()
+    _link_folder(home / ".openclaw" / "workspace", real)
+
+    run = adapter.install({})
+
+    assert not any("fits no workspace" in m for m in _messages(run))
+    assert adapter.verify()
+
+
+def test_a_missing_workspace_too_small_in_total_is_not_registered(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _write_config(home, {"agents": {"defaults": {"bootstrapTotalMaxChars": 500}}})
+
+    adapter.install({})
+
+    assert _entry(home) is None
+
+
+def test_a_folder_where_the_rules_file_goes_is_skipped_with_a_note(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    (workspace / RULES_FILE_RELATIVE).mkdir(parents=True)
+
+    run = adapter.install({})
+
+    assert not any(r.outcome == "error" for r in run.results)
+    assert any("is not a file" in m for m in _messages(run))
+
+
+def test_the_limit_message_names_the_operators_own_text(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    target.write_text(
+        target.read_text(encoding="utf-8") + "n" * 19_000, encoding="utf-8"
+    )
+
+    run = adapter.update({})
+
+    assert any("text you keep beside the Apothem block" in m for m in _messages(run))

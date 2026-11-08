@@ -40,19 +40,25 @@ def _lists_skills_directory(config: object) -> bool:
     return isinstance(dirs, list) and SKILLS_DIRECTORY in dirs
 
 
-def registers_rules_file(config: object) -> bool:
+def registers_rules_file(config: object, home: Path | None = None) -> bool:
     """Return True when OpenClaw would load the rules file *config* names.
 
     The hook entry is on and the first non-empty of its ``paths``,
     ``patterns`` and ``files`` lists (the one the hook reads) names the file.
     A config whose own settings keep the install from registering (internal
     hooks off, the entry turned off, or open hook discovery) also passes: the
-    install reported that at the time, and an update cannot change it.
+    install reported that at the time, and an update cannot change it. So
+    does one with no workspace the install could ever write into (each is
+    behind a link, outside *home*, or not a folder): there is nothing to load.
     """
-    return (
-        _names_file(config)
-        or plan_registration(config, apothem_entry=False).entry is None
-    )
+    if _names_file(config):
+        return True
+    if plan_registration(config, apothem_entry=False).entry is None:
+        return True
+    if home is None:
+        return False
+    found = rules_file.find_workspaces(config, home)
+    return not found.found and not found.missing
 
 
 def _names_file(config: object) -> bool:
@@ -70,11 +76,15 @@ def _names_file(config: object) -> bool:
 
 
 def workspaces_hold_rules_file(config_path: Path, config: object) -> bool:
-    """Return True when every workspace found holds the Apothem rules file."""
+    """Return True when every workspace found holds the Apothem rules file.
+
+    A workspace reached through a link, outside the home directory, or not
+    yet created is not one the install writes, so it is not checked.
+    """
     found = rules_file.find_workspaces(config, config_path.parent.parent)
     for workspace in found.found:
         try:
-            text = (workspace / RULES_FILE_RELATIVE).read_text(encoding="utf-8")
+            text = workspace.rules_file.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             return False
         if extract_managed_block(text) is None:
@@ -89,14 +99,23 @@ def verify(output_path: Path) -> bool:
     exist and parse), then requires ``skills.load.extraDirs`` to list the
     Apothem skills directory, the ``bootstrap-extra-files`` hook to name the
     rules file, and every workspace found to hold it. A missing entry or file
-    is drift ``apothem update`` repairs; ``apothem status`` reports an edited
-    rules file.
+    fails the check:
+
+    - after a workspace appears or an entry is removed, ``apothem update``
+      writes it back;
+    - when the install reported the file over OpenClaw's size limits, it stays
+      missing until the profile's custom rules are shortened or the limit is
+      raised, and then an update writes it;
+    - when ``openclaw.json`` holds JSON5 syntax, the operator adds the hook
+      entry by hand (the install warning gives it).
+
+    ``apothem status`` reports an edited rules file.
     """
     if not _verify_native_config(output_path):
         return False
     config = rules_file.read_config(output_path)
     return (
         _lists_skills_directory(config)
-        and registers_rules_file(config)
+        and registers_rules_file(config, output_path.parent.parent)
         and workspaces_hold_rules_file(output_path, config)
     )

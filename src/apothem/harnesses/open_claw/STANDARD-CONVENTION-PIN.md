@@ -160,6 +160,16 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
   `enabled: false`, and when `hooks.internal.enabled` is `true` with no named
   hook and no `load.extraDirs`. `openclaw doctor --fix` removes a legacy-only
   `hooks.internal.enabled: true` "to avoid broad discovery" (same page).
+- Tracked hook installs: hook packs installed with OpenClaw also widen or name
+  the selection, but their list lives in OpenClaw's state database under
+  `hooks.internal.installs`, not in `openclaw.json` (source
+  `src/hooks/installs.ts:17-38`). The adapter does not read that database, so
+  with `hooks.internal.enabled: true` and no named entry it refuses to register
+  even when an installed pack would keep the selection open; the warning says
+  so. This errs toward leaving the operator's hooks alone.
+- Comments: a config that parses only as JSON5 cannot be rewritten without
+  dropping its comments. The adapter then registers nothing it would have to
+  add, writes the workspace files, and warns with the entry to add by hand.
 - Session reach: an extra file keeps its basename as its bootstrap name, so
   `apothem/AGENTS.md` passes the sub-agent allowlist (`AGENTS.md` only) and the
   cron allowlist (`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`); session
@@ -176,30 +186,61 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
   `agents.defaults.workspace` (else the default workspace), and any other
   entry uses `<agents.defaults.workspace>/<id>`, else
   `<state-dir>/workspace-<id>` (source `src/agents/agent-scope-config.ts:511-535`).
-  The default workspace is `OPENCLAW_WORKSPACE_DIR`, else
-  `<state-dir>/workspace` (source `src/agents/workspace-default-path.ts:8-25`).
-  The adapter writes into `agents.defaults.workspace` (else
-  `OPENCLAW_WORKSPACE_DIR`, else `~/.openclaw/workspace`) and each entry's
-  workspace by those rules, when the folder exists inside the home directory;
-  the others are skipped with a warning.
+  "A sole agent uses this path directly. In a multi-agent fleet, agents without
+  their own `workspace` use an agent-id subdirectory" (workspace and bootstrap
+  page, read 2026-11-09). The default workspace is `OPENCLAW_WORKSPACE_DIR`,
+  else `<state-dir>/workspace` (source
+  `src/agents/workspace-default-path.ts:8-25`). The adapter writes into
+  `agents.defaults.workspace` (else `OPENCLAW_WORKSPACE_DIR`, else
+  `~/.openclaw/workspace`), which a sole entry without its own `workspace`
+  also uses, and into each other entry's workspace by those rules, when the
+  folder exists inside the home directory and is reached without a link. A
+  missing workspace is skipped silently; one outside home, behind a link, or
+  that is a file is skipped with a warning, and so is a workspace whose
+  `apothem` folder is another configured workspace (the rules file would be
+  that workspace's own `AGENTS.md`). A rules file an earlier install wrote in a
+  workspace the install no longer writes loses its managed block on the next
+  install, update or uninstall (found through every install record still in
+  effect); one reached through a link is left in place with a warning.
+- TODO(clarify): OpenClaw normalizes entry ids before it builds
+  `<agents.defaults.workspace>/<id>` and `workspace-<id>` paths; the
+  normalizing function was not read, so the adapter uses the id as written and
+  skips one that is not a plain folder name.
 - Limits: 20,000 characters per file and 60,000 in total by default
   (`agents.defaults.bootstrapMaxChars`, `bootstrapTotalMaxChars`), `USER.md`
   4,000; extra files come after the six workspace files, and a file is skipped
   once less than 64 characters of the total remain (source
-  `src/agents/embedded-agent-helpers/bootstrap.ts:87-91, 377-425`). The adapter
-  refuses to write a rules file over the per-file limit (OpenClaw would keep its
-  head and tail and drop the middle) and warns when the workspace's six files
-  leave too little of the total. With the default profile the file is a few
-  thousand characters.
-- TODO(clarify): per-entry overrides of `bootstrapMaxChars` and
-  `bootstrapTotalMaxChars` exist (source `bootstrap.ts:128-153`); the adapter
-  checks only the `agents.defaults` values.
+  `src/agents/embedded-agent-helpers/bootstrap.ts:87-91, 377-425`). An entry's
+  own `bootstrapMaxChars` / `bootstrapTotalMaxChars` wins over the defaults
+  (source `bootstrap.ts:125-156`; "Per-agent override:
+  `agents.entries.*.bootstrapMaxChars`", workspace and bootstrap page, read
+  2026-11-09); a set value that is not a positive number gives the built-in
+  default, not the `agents.defaults` value (`??` then the positive check). Lengths
+  are JavaScript string lengths, UTF-16 code units, of the file as read (line
+  endings kept, bytes that are not UTF-8 decoded to U+FFFD). An absent
+  `AGENTS.md`, `SOUL.md` or `IDENTITY.md` is replaced by a `[MISSING] Expected
+  at: <path>` marker that uses budget (`bootstrap.ts:406-412`). Hook paths are
+  globs only when they contain `?`, `*`, `{` or `}`; square brackets stay
+  literal (`workspace-bootstrap-policy.ts:59-62`). The operator's own paths in
+  the same hook entry load before Apothem's, which is appended last. The adapter does not write the rules file in a workspace where
+  it would pass the per-file limit (OpenClaw keeps head and tail and drops the
+  middle) or the room the six files and the operator's extra files leave in the
+  total, applying each entry's limits (the smallest when entries share a
+  workspace) and counting UTF-16 units; it warns and takes out an earlier copy.
+  When the file fits no workspace it registers nothing. With the default
+  profile the file is a few thousand characters. The size counted is the file
+  as the install leaves it, operator text beside the block included. Operator
+  glob patterns are brace-expanded (nested groups too, `{a..b}` ranges not),
+  absolute or drive-relative ones are ignored (OpenClaw refuses paths outside
+  the workspace), and the rest are matched with Python's glob, close to but
+  not the same as OpenClaw's minimatch.
 - TODO(clarify): whether sandboxed sessions (`workspaceAccess` `none` or `ro`,
   which copy the canonical files into the sandbox) see the extra file; not
   checked.
-- TODO(clarify): which entry OpenClaw treats as owning the default workspace
-  (`tryResolveLegacyDataOwnerAgentId`) is not replicated; the adapter always
-  writes into the default workspace, which covers it.
+- TODO(clarify): in a roster of several entries, which one OpenClaw treats as
+  owning the default workspace (`tryResolveLegacyDataOwnerAgentId`) is not
+  replicated; the adapter always writes into the default workspace, which
+  covers it, but applies only the `agents.defaults` limits there.
 
 ## Vendor Sources
 
@@ -225,9 +266,10 @@ Retrieved 2026-11-03.
 
 Retrieved 2026-11-08.
 
+- <https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap> (re-read 2026-11-09: a sole agent uses `agents.defaults.workspace` directly; per-agent `bootstrapMaxChars` / `bootstrapTotalMaxChars` overrides)
 - <https://docs.openclaw.ai/automation/hooks/configuration> (selection rules for `hooks.internal`; a first named entry narrows open-ended discovery)
 - <https://docs.openclaw.ai/automation/hooks/bundled-hooks> (`#bootstrap-extra-files-config`: `paths` / `patterns` / `files`, workspace-relative paths, bootstrap basenames, limits and filtering)
-- Source: `openclaw/openclaw` commit `89ba6b0f12ff` (`src/hooks/configured.ts`, `src/hooks/config.ts`, `src/hooks/policy.ts`, `src/hooks/bundled/bootstrap-extra-files/`, `src/agents/workspace-bootstrap-policy.ts`, `src/agents/workspace.ts`, `src/agents/agent-scope-config.ts`, `src/agents/workspace-default-path.ts`, `src/agents/embedded-agent-helpers/bootstrap.ts`)
+- Source: `openclaw/openclaw` commit `89ba6b0f12ff` (`src/hooks/configured.ts`, `src/hooks/config.ts`, `src/hooks/policy.ts`, `src/hooks/bundled/bootstrap-extra-files/`, `src/agents/workspace-bootstrap-policy.ts`, `src/agents/workspace.ts`, `src/agents/agent-scope-config.ts`, `src/agents/workspace-default-path.ts`, `src/agents/embedded-agent-helpers/bootstrap.ts`, `src/hooks/installs.ts`)
 
 Retrieved 2026-11-03.
 

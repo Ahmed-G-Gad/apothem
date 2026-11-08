@@ -393,6 +393,16 @@ def _surgical_remove_from_target(
         existing = target.read_text(encoding="utf-8")
     except OSError:  # pragma: no cover - defensive
         return None
+    except UnicodeDecodeError:
+        # An error, not a skip: the uninstall then keeps the install record,
+        # so the file stays listed for status, rollback and the next attempt.
+        return _result(
+            "error",
+            "surgical_uninstall",
+            target,
+            "not UTF-8 text, so Apothem cannot tell its own content apart; left "
+            "in place",
+        )
     backup = backup_existing(
         target,
         install_root=install_root,
@@ -522,6 +532,29 @@ def surgically_remove_materialized_config(
         recorded=recorded,
         retired=retired,
     )
+
+
+def strip_managed_anchor(
+    target: Path, *, install_root: Path, harness_name: str, allowed_root: Path
+) -> MaterializationResult | None:
+    """Take Apothem's managed block out of *target*, an anchor it wrote earlier.
+
+    The update-time counterpart of the uninstall strip: for a managed-block
+    file an earlier install wrote that the current install no longer writes.
+    Only the block goes; operator text outside it stays, and the file is
+    deleted only when nothing else is left. The file is backed up first. The
+    result's operation is ``retire_anchor``, which the install record leaves
+    out. Returns ``None`` when *target* does not exist.
+    """
+    result = _surgical_remove_from_target(
+        target,
+        "",
+        mode="sentinel_merge",
+        install_root=install_root,
+        harness_name=harness_name,
+        allowed_root=allowed_root,
+    )
+    return None if result is None else replace(result, operation="retire_anchor")
 
 
 def _current_text(target: Path) -> str | None:

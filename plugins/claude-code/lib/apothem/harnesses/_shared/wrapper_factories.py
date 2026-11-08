@@ -586,6 +586,7 @@ def make_native_config_uninstall(
     apothem_keys: frozenset[str] = frozenset(),
     retired_fn: _RetiredFn | None = None,
     relocated_fn: RelocatedFn | None = None,
+    before_fn: Callable[[Path], tuple[MaterializationResult, ...]] | None = None,
 ) -> _NativeUninstallFn:
     """Return a native-config (materializer) ``uninstall`` shim.
 
@@ -606,10 +607,14 @@ def make_native_config_uninstall(
     :func:`_retired_at_uninstall` for the profile they are rendered from).
     *relocated_fn* returns where the harness may have moved the entries the
     install record says Apothem owns (opencode); they are removed too.
+    *before_fn* removes files written beside the native config (open_claw's
+    workspace rules files) first; its results join the uninstall's, so an
+    ``error`` among them keeps the install record, as any failed removal does.
     """
 
     @install_driver.backup_session()
     def uninstall(output_path: Path) -> None:
+        before = before_fn(output_path) if before_fn is not None else ()
         native = install_driver.surgically_remove_materialized_config(
             output_path,
             materialize_fn({}),
@@ -623,7 +628,7 @@ def make_native_config_uninstall(
         install_driver.run_uninstall(
             harness_name,
             harness_root=output_path.parent,
-            prior_results=(native,) if native is not None else (),
+            prior_results=(*before, *((native,) if native is not None else ())),
         )
 
     uninstall.__doc__ = _UNINSTALL_DOC_NATIVE

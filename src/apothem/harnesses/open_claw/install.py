@@ -13,6 +13,8 @@ the hook alone is reported as a warning.
 
 from __future__ import annotations
 
+import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,7 @@ from apothem.harnesses._shared.wrapper_factories import (
 from apothem.harnesses.open_claw import rules_file
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
+    Registration,
     materialize_native_config,
     plan_registration,
 )
@@ -48,37 +51,69 @@ def apothem_created_entry(config_path: Path) -> bool:
     )
 
 
+@dataclass(frozen=True)
+class _Plan:
+    """What one install pass decided before it wrote anything."""
+
+    registration: Registration
+    fits: bool
+
+
+#: The plan :func:`render_config` made, by config path, for the
+#: :func:`_apply_extras` call of the same install pass. Both run inside one
+#: locked install, render first; deciding once means the rules files follow
+#: the decision the config was written with.
+_PLANS: dict[str, _Plan] = {}
+
+
+def _editable(config_path: Path) -> bool:
+    """Return False when ``openclaw.json`` parses only as JSON5.
+
+    Apothem rewrites the file as plain JSON, which would drop comments, so the
+    shared write path refuses any change to such a file.
+    """
+    try:
+        json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return rules_file.read_config(config_path) is None
+    return True
+
+
+def _plan(config_path: Path, profile: dict[str, Any]) -> _Plan:
+    """Decide how this pass registers the rules file, from the files on disk."""
+    config = rules_file.read_config(config_path)
+    body, _ = rules_file.rules_text(config_path.parent, profile)
+    fits = rules_file.fits_somewhere(body, config, config_path.parent.parent)
+    registration = plan_registration(
+        config,
+        apothem_entry=apothem_created_entry(config_path),
+        fits=fits,
+        editable=_editable(config_path),
+    )
+    return _Plan(registration, fits)
+
+
 def render_config(config_path: Path, profile: dict[str, Any]) -> str:
     """Render ``openclaw.json`` for *profile* against the operator's file."""
-    registration = plan_registration(
-        rules_file.read_config(config_path),
-        apothem_entry=apothem_created_entry(config_path),
-    )
-    return materialize_native_config(profile, registration=registration)
+    _PLANS.pop(str(config_path), None)
+    plan = _plan(config_path, profile)
+    _PLANS[str(config_path)] = plan
+    return materialize_native_config(profile, registration=plan.registration)
 
 
 def _apply_extras(
     config_path: Path, profile: dict[str, Any], dry_run: bool
 ) -> tuple[MaterializationResult, ...]:
-    """Write the workspace rules files and report a hook left alone.
-
-    This runs after the config is written, before the install record is
-    updated. A registration the install just wrote reads back as an enabled
-    entry naming the file, so it raises no warning; a reason that kept the
-    install from registering (the operator's own settings) still holds.
-    """
-    registration = plan_registration(
-        rules_file.read_config(config_path),
-        apothem_entry=apothem_created_entry(config_path),
-    )
-    results = rules_file.apply(config_path, profile, dry_run)
-    if registration.reason is None:
+    """Write the workspace rules files and report a hook left alone."""
+    plan = _PLANS.pop(str(config_path), None) or _plan(config_path, profile)
+    results = rules_file.apply(config_path, profile, dry_run, register=plan.fits)
+    if plan.registration.reason is None:
         return results
     note = MaterializationResult(
         outcome="warning",
         operation="open_claw_hook_registration",
         path=str(config_path),
-        message=registration.reason,
+        message=plan.registration.reason,
     )
     return (note, *results)
 

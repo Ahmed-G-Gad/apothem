@@ -96,17 +96,32 @@ gets its first-run files.
 
 Apothem writes the file into every workspace that exists in your home
 directory: `agents.defaults.workspace` (else `OPENCLAW_WORKSPACE_DIR`, else
-`~/.openclaw/workspace`), the `workspace` of each `agents.entries` entry, and
-for an entry without one, `<agents.defaults.workspace>/<id>` or
-`~/.openclaw/workspace-<id>`. A workspace that does not exist yet is skipped:
-once OpenClaw creates it, `apothem verify --harness open-claw` fails until you
-run `apothem update --harness open-claw`. A workspace outside your home directory is skipped.
+`~/.openclaw/workspace`), and the `workspace` of each `agents.entries` entry.
+A sole entry without its own `workspace` uses that default workspace directly;
+in a list of several entries, one without its own `workspace` uses
+`<agents.defaults.workspace>/<id>`, else `~/.openclaw/workspace-<id>`.
+
+- A workspace that does not exist yet is skipped without a message: once
+  OpenClaw creates it, `apothem verify --harness open-claw` fails until you run
+  `apothem update --harness open-claw`.
+- These are skipped, each with one warning: a workspace outside your home
+  directory, one reached through a link (a symbolic link or a Windows
+  junction), a path that is a file, a workspace where `apothem/AGENTS.md` is a
+  folder, and a workspace whose `apothem` folder is itself another workspace
+  (its `AGENTS.md` would be that workspace's own). Apothem never
+  writes or deletes through a link: a rules file in a workspace that has since
+  become a link is left in place, with a warning to delete its Apothem block by
+  hand.
+- When a workspace leaves the config, or a file no longer fits (see the size
+  limits below), the next install or update takes the Apothem block out of the
+  file it wrote there. The file and its `apothem` folder go when nothing else is
+  left in them; text you added outside the block stays.
 
 If your config already has a `bootstrap-extra-files` entry, Apothem adds its
 path to the list the hook reads: the first non-empty one of `paths`,
 `patterns`, and `files`. It never starts a second list that would hide yours.
 
-**When Apothem leaves the hook alone.** In three cases the install writes the
+**When Apothem leaves the hook alone.** In these cases the install writes the
 rules file but does not change the hook settings, and prints a warning:
 
 - `hooks.internal.enabled` is `false`: you turned internal hooks off.
@@ -114,18 +129,35 @@ rules file but does not change the hook settings, and prints a warning:
 - `hooks.internal.enabled` is `true` and no hook is named under
   `hooks.internal.entries` (and `hooks.internal.load.extraDirs` is empty).
   OpenClaw then loads every eligible hook, and naming a first hook would switch
-  the others off. Name the hooks you use, then run the update.
+  the others off. Name the hooks you use, then run the update. Hook packs you
+  installed with OpenClaw are listed in OpenClaw's own state database, which
+  Apothem does not read, so Apothem treats this case the same way even when
+  such a pack is installed.
+- `openclaw.json` holds comments or other JSON5 syntax (see
+  [Comments in `openclaw.json`](#compatibility-notes)).
+
+When the rules file fits no workspace within both size limits, the install
+writes no file and adds no path to the hook entry.
 
 **Size limits.** OpenClaw injects at most 20,000 characters per file and 60,000
-in total (`agents.defaults.bootstrapMaxChars` and `bootstrapTotalMaxChars`).
-With the default profile the rules file is a few thousand characters. A rules
-file over the per-file limit is not written, because OpenClaw would cut its
-middle out; the install says so. Extra files come after the six workspace
-files, so when those already use most of the total, the install warns that
-OpenClaw shortens or skips the rules file. (OpenClaw behavior per its
-[hooks configuration](https://docs.openclaw.ai/automation/hooks/configuration)
-and [bundled hooks](https://docs.openclaw.ai/automation/hooks/bundled-hooks)
-docs, read 2026-11-08.)
+in total (`agents.defaults.bootstrapMaxChars` and `bootstrapTotalMaxChars`; an
+`agents.entries` entry can set its own values, which win for its workspace).
+OpenClaw counts characters in UTF-16 units, so an emoji counts as two, and
+Apothem counts the same way, line endings included (a Windows line break counts
+as two). With the default profile the rules file is a few
+thousand characters.
+
+The rules file loads after the six workspace files and after the other files
+of the `bootstrap-extra-files` entry. In a workspace where it would go over the
+per-file limit, or past the room the total leaves, OpenClaw would cut it or
+skip it, so the rules would arrive broken: Apothem does not write it there,
+says why in a warning, and takes out a copy an earlier install left. When
+several entries share a workspace, the smallest limit counts. (OpenClaw
+behavior per its
+[hooks configuration](https://docs.openclaw.ai/automation/hooks/configuration),
+[bundled hooks](https://docs.openclaw.ai/automation/hooks/bundled-hooks) and
+[workspace and bootstrap](https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap)
+docs, read 2026-11-09.)
 
 ### Skills
 
@@ -159,9 +191,19 @@ there. (OpenClaw behavior per its [skills](https://docs.openclaw.ai/tools/skills
 
 **Comments in `openclaw.json`.** OpenClaw reads its config as JSON5, and Apothem
 rewrites the file as plain JSON. When the file carries comments or other JSON5
-syntax and an entry is missing, Apothem leaves the file untouched and install
-stops with a message that names the key. Merge these entries into your file
-yourself, or convert the file to plain JSON, then run the install again:
+syntax, Apothem never rewrites it:
+
+- If the `skills.load.extraDirs` entry is missing, install stops with a message
+  that the file carries comments or JSON5 syntax.
+- If only the hook entry is missing, install and update go on, write the
+  workspace rules files, and print a warning that says what to add (the path
+  goes into the list your `bootstrap-extra-files` entry already uses, if it has
+  one). Until you add it, `apothem verify` fails.
+- Entries Apothem wrote before you added comments stay as they are, and update
+  goes on.
+
+Merge these entries into your file yourself, or convert the file to plain JSON,
+then run the install again:
 
 ```json
 {
@@ -205,8 +247,11 @@ The verify command confirms that:
    [Rules in each workspace](#rules-in-each-workspace)).
 5. Every workspace Apothem finds holds `apothem/AGENTS.md` with its managed
    block. A workspace created after the install fails this check until
-   `apothem update` writes the file. `apothem status` reports a rules file whose
-   block was edited.
+   `apothem update` writes the file. A workspace where the install reported the
+   file over a size limit fails it until you shorten the profile's custom rules
+   or raise the limit and then run the update; a link, a path outside your home
+   directory and a missing workspace are not checked. `apothem status` reports
+   a rules file whose block was edited.
 
 ## Updating
 
@@ -233,7 +278,10 @@ block in each workspace's `apothem/AGENTS.md` (the file and folder go when
 nothing else is left in them), the profile document, and the support tree. Your
 own keys in `openclaw.json` stay, including your own `extraDirs` entries and
 hook settings, the workspace's own files stay as they are, and `openclaw.json`
-is deleted only when Apothem created it and nothing of yours is left. The shared profile YAML and
+is deleted only when Apothem created it and nothing of yours is left. A rules
+file Apothem cannot clean (reached through a link, or not UTF-8 text) is left
+in place and reported as an error, and Apothem keeps its install record, so
+`apothem status` still lists it and the next uninstall tries again. The shared profile YAML and
 Apothem engine are unaffected.
 
 ## Conformity gate
@@ -248,8 +296,8 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness open-claw` |
 | Verification failed | Run `apothem update --harness open-claw`, then verify again |
-| Unexpected config content | Apothem authors only the `skills.load.extraDirs` entry and the `bootstrap-extra-files` hook entry in `openclaw.json` and keeps the keys already in it, so profile content does not land there. Profile content lands in `~/.openclaw/apothem/rules/00-apothem-profile.md`: check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run the command under [Updating](#updating) |
-| Install stops with a message about comments or JSON5 syntax in `openclaw.json` | Apothem does not rewrite a file it would have to strip comments from. Add the `skills.load.extraDirs` entry shown under [Compatibility notes](#compatibility-notes) yourself, or convert the file to plain JSON, then run the install again |
+| Unexpected config content | Apothem authors only its entry in `skills.load.extraDirs` and its path in the `bootstrap-extra-files` hook entry in `openclaw.json` (plus `enabled: true` when it creates that entry), and keeps the keys already in it, so profile content does not land there. Profile content lands in `~/.openclaw/apothem/rules/00-apothem-profile.md` and in each workspace's `apothem/AGENTS.md`: check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run the command under [Updating](#updating) |
+| Install stops with a message about comments or JSON5 syntax in `openclaw.json`, or warns that it holds JSON5 syntax | Apothem does not rewrite a file it would have to strip comments from. Add both entries shown under [Compatibility notes](#compatibility-notes) yourself (the `skills.load.extraDirs` entry and the `bootstrap-extra-files` hook entry), or convert the file to plain JSON, then run the install again |
 | OpenClaw does not follow the Apothem rules | Run `apothem verify --harness open-claw` and check the install warnings: a workspace that did not exist at install time, internal hooks turned off, or open hook discovery leave the rules unloaded (see [Rules in each workspace](#rules-in-each-workspace)). Then run `apothem update --harness open-claw` |
 | An Apothem skill does not appear in OpenClaw | A skill of the same name in the workspace, `~/.agents/skills`, `~/.openclaw/skills`, or among OpenClaw's workshop or bundled skills takes precedence over the Apothem copy (see [Compatibility notes](#compatibility-notes)). Also run `apothem verify --harness open-claw`, and check that any `agents.defaults.skills` or `agents.entries.<id>.skills` allowlist you keep names the skill |
 
