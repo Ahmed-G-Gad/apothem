@@ -253,6 +253,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     bytes.
 
   No published number changes: Apothem's installs write none of these files.
+- **The launch-size metric counts Antigravity's plugin rules.** The five
+  always-on rules in `~/.gemini/config/plugins/apothem/rules/` now count, so
+  Antigravity's figure rises by 38,395 bytes and 5 files. The rest of its
+  figure is `~/.gemini/GEMINI.md`, whose size depends on the install path it
+  names. The count reads only plugins with a `plugin.json`, includes a
+  plugin's `rules/AGENTS.md` or `rules/GEMINI.md`, and skips a rule file that
+  does not open with frontmatter. The Kimi Code, OpenClaw, Claude Code and
+  CodeBuddy rule notes now say what the count leaves out.
 - **A `CODEX_HOME` that starts with `~` now names the folder Codex uses.**
   Codex takes `CODEX_HOME` as written, without expanding `~`, and resolves a
   relative value against the current folder, but Apothem expanded `~` to your

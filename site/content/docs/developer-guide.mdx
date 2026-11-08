@@ -688,8 +688,15 @@ also written into the artifact under `rules.always_on_bytes`:
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
                 ~/.gemini/config/rules/*.md with trigger: always_on, and in the
                 project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
-                .agents/rules/*.md with trigger: always_on; each file counted
-                up to 24,000 bytes. Plugin rules are not counted.
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
                 frontmatter, plus the project equivalents and CLAUDE.local.md;
                 the project AGENTS.md and .claude/AGENTS.md only when the
@@ -706,21 +713,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of ~/.agents/AGENTS.md
-                and ~/.agents/agents.md, and the project .kimi-code/AGENTS.md
-                and AGENTS.md; blank files load nothing.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
 open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
                 order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
                 MEMORY.md; each up to 20,000 characters (USER.md 4,000),
-                60,000 in all.
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in
