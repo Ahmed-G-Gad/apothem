@@ -23,24 +23,6 @@
     "message": "dry run: no filesystem changes made",
     "operation": "sweep_stale",
     "outcome": "unchanged",
-    "path": "<ROOT>/skills/AGENTS.md"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/apothem/templates"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/apothem/hooks"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
     "path": "<ROOT>/apothem/rules"
   },
   {
