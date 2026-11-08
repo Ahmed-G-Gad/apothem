@@ -86,4 +86,7 @@ def test_an_error_fails_the_uninstall(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "the link /old/x" in plain.output  # type: ignore[attr-defined]
     envelope = json.loads(as_json.output)  # type: ignore[attr-defined]
     assert envelope["status"] == "error"
-    assert [r["outcome"] for r in envelope["results"]] == ["error"]
+    assert [(r["outcome"], r["operation"]) for r in envelope["results"]] == [
+        ("error", "uninstall"),
+        ("error", "sweep_stale"),
+    ]

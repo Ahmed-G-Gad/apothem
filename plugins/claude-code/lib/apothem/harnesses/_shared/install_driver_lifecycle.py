@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import functools
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -45,9 +44,11 @@ from .install_driver_pathsafety import (
     _APOTHEM_SUBTREE,
     _allowed_write_root,
     _holds_content,
+    _remove_tree_keeping_links,
     _root_for,
     _stale_path_proves_install,
     _validate_target_path,
+    kept_links_detail,
 )
 from .install_driver_planvalidation import (
     _generated_targets_for_entry,
@@ -60,10 +61,10 @@ from .install_driver_removal import (
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
+from .install_driver_sweep import kept_link_warnings
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
-    _handle_rm_error,
     _path_text,
     _result,
     backup_session,
@@ -222,16 +223,28 @@ def detect_install(
     harness home reports absent. See :func:`_entry_proves_install` for what
     counts as evidence and why the weaker signals are excluded. A stale-sweep
     path of an earlier layout that still holds Apothem's files counts too (see
-    :func:`_stale_path_proves_install`).
+    :func:`_stale_path_proves_install`). So does a folder or file of Apothem's
+    the latest install record lists, while no uninstall marker follows it: a
+    failed uninstall keeps the record, and a second run must find what it left.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
-    return any(
+    if any(
         _entry_proves_install(
             entry, harness_root=harness_root, project_root=project_root
         )
         for entry in rules.install
-    ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep)
+    ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):
+        return True
+    active = install_ledger.active_install_records(harness_name, root=root)
+    return bool(active) and any(
+        target.mode not in _SHARED_FILE_MODES and _holds_content(Path(target.path))
+        for target in active[-1].targets
+    )
+
+
+#: Modes of a file shared with the operator or tool; it exists without an install.
+_SHARED_FILE_MODES = frozenset({"write_text", "sentinel_merge", HOOK_FILE_MODE})
 
 
 @dataclass(frozen=True)
@@ -429,6 +442,7 @@ def _remove_data_home(
 
     spec = DataHome.from_root(home)
     backups: list[Path] = []
+    kept: list[Path] = []
     removed_any = False
     # plans/ is intentionally excluded — operator planning state is never
     # auto-removed by uninstall.
@@ -443,7 +457,7 @@ def _remove_data_home(
         )
         if backup is not None:
             backups.append(backup)
-        shutil.rmtree(child, onerror=_handle_rm_error)
+        kept.extend(_remove_tree_keeping_links(child))
         removed_any = True
     if not removed_any:
         return None
@@ -453,6 +467,7 @@ def _remove_data_home(
         home,
         "removed shared data stores (memory, contexts, learning); plans retained",
         backup_path=backups[0] if backups else None,
+        detail=kept_links_detail(kept),
     )
 
 
@@ -540,7 +555,10 @@ def run_uninstall(
                     entry,
                     record,
                     functools.partial(
-                        _replace_path, install_root=root, harness_name=harness_name
+                        _replace_path,
+                        install_root=root,
+                        harness_name=harness_name,
+                        removing=True,
                     ),
                 )
             )
@@ -596,6 +614,7 @@ def run_uninstall(
                 install_root=root,
                 harness_name=harness_name,
                 allowed_root=allowed_root,
+                removing=True,
             )
             if removal is not None:
                 results.append(removal)
@@ -647,7 +666,7 @@ def run_uninstall(
             )
         )
         apply_retention(harness_name)
-    return results
+    return [*results, *kept_link_warnings(results)]
 
 
 def build_plan(

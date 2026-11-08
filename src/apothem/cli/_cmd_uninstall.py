@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from pathlib import Path
 
 import click
@@ -69,30 +70,45 @@ def _retention_advisories(
 def _report_run(
     harness_id: str,
     outcome: object,
+    output_path: Path,
     warnings: list[dict[str, object]],
     *,
     fmt: str,
     con: Console,
     no_color: bool,
 ) -> list[dict[str, object]]:
-    """Report an adapter's uninstall results; return its error results.
+    """Report an adapter's uninstall results; return the failure rows, if any.
 
     A link the uninstall left in place, or a step that failed (such as removing
     a leftover folder), is reported rather than hidden behind the success line.
-    Each warning is printed and added to *warnings*.
+    Each warning is printed and added to *warnings*. A failure returns one
+    ``uninstall`` error row for the harness, then one row per failed step; the
+    same message for several paths prints once, with the count.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
         return []
     warnings.extend(_warning_dicts(harness_id, run))
+    counts = Counter(error.message for error in run.errors)
     if fmt != "json":
         for warning in run.warnings:
             con.print(f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}")
-        for error in run.errors:
+        for message, count in counts.items():
+            paths = f" ({count} paths)" if count > 1 else ""
             get_error_console(no_color=no_color).print(
-                f"[red]✗[/] {harness_id} uninstall failed: {escape(error.message)}"
+                f"[red]✗[/] {harness_id} uninstall failed{paths}: {escape(message)}"
             )
-    return [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+    if not run.errors:
+        return []
+    summary: dict[str, object] = {
+        "harness": harness_id,
+        "outcome": "error",
+        "operation": "uninstall",
+        "path": str(output_path),
+        "message": f"{len(run.errors)} removal step(s) failed: " + "; ".join(counts),
+    }
+    steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+    return [summary, *steps]
 
 
 def _print_removed(
@@ -202,7 +218,13 @@ def _uninstall_impl(
                 )
             continue
         failures = _report_run(
-            harness_id, outcome, warnings, fmt=fmt, con=con, no_color=no_color
+            harness_id,
+            outcome,
+            output_path,
+            warnings,
+            fmt=fmt,
+            con=con,
+            no_color=no_color,
         )
         if failures:
             errored = True

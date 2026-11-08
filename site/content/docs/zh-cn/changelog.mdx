@@ -327,21 +327,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   backup leaves links out. A folder it cannot read is left in place with a
   warning too. A link directly at the leftover path is left in place and
   warned about too, where before a junction there was backed up and reported
-  as removed although nothing was removed. That includes a link from the
+  as removed although nothing was removed, and so is a leftover path reached
+  through a link above it. That includes a link from the
   earlier Antigravity plugin folder to the current one: the warning says the
   link stays after an uninstall, so you remove it when nothing uses the old
-  path. `apothem uninstall` now prints these warnings (and lists them in
-  `--format json`), and it reports a failure, not "Uninstalled", when a step
-  such as removing a leftover folder fails. Replacing an installed folder and
-  undoing a failed install also leave a link inside the folder in place. A
+  path. An uninstall also leaves an installed file or folder that is reached
+  through a link in place with a warning, rather than failing in a way that a
+  second run could not finish. `apothem uninstall` now prints these warnings
+  (and lists them in `--format json`), and it reports a failure, not
+  "Uninstalled", when a step such as backing up a file fails, once per reason;
+  running it again removes what the failed run left.
+  Replacing or removing an installed folder, removing the shared data stores
+  and undoing a failed install also leave a link inside the folder in place,
+  with a warning. A
   rollback leaves a link at a restored folder in place, with a reason, and
   copies the backup into the folder around any link in it, keeping the files
   the backup does not hold; before, rolling back such an install failed with
   a "file already exists" error, and records written by earlier releases
-  still roll back this way. A junction above a write path is now refused like
-  a symbolic link, with a message that names the link and says to replace it
-  with a real folder, and a leftover link no longer makes an uninstalled tool
-  read as installed.
+  still roll back this way. A junction above a path an install writes is now
+  refused like a symbolic link, with a message that names the link and says
+  to replace it with a real folder, and a leftover link no longer makes an
+  uninstalled tool read as installed.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import os
 import shutil
 from pathlib import Path
 
@@ -21,15 +22,17 @@ from .install_driver_pathsafety import (
     _remove_tree_keeping_links,
     _root_for,
     _skip_links_into,
+    _unsafe_symlink,
     _validate_target_path,
     _within_allowed_root,
+    kept_links_detail,
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
-    _handle_rm_error,
+    _path_text,
     _result,
 )
 
@@ -101,13 +104,38 @@ def _replace_path(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
+    removing: bool = False,
 ) -> MaterializationResult | None:
-    """Backup and remove one existing target before writing its replacement."""
+    """Backup and remove one existing target before writing its replacement.
+
+    A link inside a folder target stays (see
+    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it. With
+    *removing* (an uninstall), a target reached through a link, or that is a
+    link, is left in place with a warning: removing through the link is what
+    the write guard refuses, and an error would keep the install recorded
+    while the files a retry looks for are already gone.
+    """
     target_error = _validate_target_path(
         target,
         allowed_root=allowed_root or install_root,
         operation="remove_existing",
     )
+    # The link is looked up directly: one pointing out of the allowed root
+    # fails the escape check before the link check names it.
+    link = (
+        _unsafe_symlink(target, _normalized(allowed_root or install_root))
+        if removing and target_error is not None
+        else None
+    )
+    if link is not None:
+        return _result(
+            "warning",
+            "remove_existing",
+            target,
+            f"{target} is reached through the link {link}, so it was left in "
+            "place: Apothem does not remove anything through a link",
+            detail={"symlink": _path_text(link)},
+        )
     if target_error is not None:
         return target_error
     if not target.exists():
@@ -118,8 +146,9 @@ def _replace_path(
         harness_name=harness_name,
         allowed_root=allowed_root or install_root,
     )
+    kept: list[Path] = []
     if target.is_dir():
-        shutil.rmtree(target, onerror=_handle_rm_error)
+        kept = _remove_tree_keeping_links(target)
     else:
         with contextlib.suppress(OSError):  # pragma: no cover
             target.unlink()
@@ -129,6 +158,7 @@ def _replace_path(
         target,
         "removed existing target before replacement",
         backup_path=backup,
+        detail=kept_links_detail(kept),
     )
 
 
@@ -174,7 +204,26 @@ def _skip_links(folder: str, names: list[str]) -> set[str]:
     Copying through a link (a junction on Windows) would copy files that are
     not the target's, and a rollback would bring them back as a real folder.
     """
-    return {name for name in names if _is_link(Path(folder) / name)}
+    return {
+        name
+        for name in names
+        if _is_link(Path(folder) / name) or _unreadable(Path(folder) / name)
+    }
+
+
+def _unreadable(path: Path) -> bool:
+    """Return True when *path* is a folder that cannot be listed.
+
+    The backup leaves it out rather than failing; the sweep keeps such a
+    folder in place with a warning, so nothing in it is lost.
+    """
+    if not path.is_dir():
+        return False
+    try:
+        with os.scandir(path):
+            return False
+    except OSError:
+        return True
 
 
 def backup_existing(

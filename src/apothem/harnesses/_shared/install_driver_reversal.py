@@ -49,6 +49,7 @@ from .install_driver_pathsafety import (
     _validate_target_path,
     _walk_without_links,
     _within_allowed_root,
+    kept_links_detail,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -269,6 +270,7 @@ def _remove_created(
         "removed what the install created"
         + (f"; left {len(kept)} link(s) in it in place" if kept else ""),
         backup_path=backup,
+        detail=kept_links_detail(kept),
     )
 
 

@@ -19,6 +19,7 @@ from .install_driver_pathsafety import (
     _remove_tree_keeping_links,
     _skip_links_into,
     _validate_target_path,
+    kept_links_detail,
 )
 from .install_driver_types import (
     STAGING_SUFFIX,
@@ -126,6 +127,7 @@ def replace_tree(
         dst,
         "copied directory tree"
         + (f"; left {len(kept)} link(s) in it in place" if kept else ""),
+        detail=kept_links_detail(kept),
         source=src,
         backup_path=backup,
     )

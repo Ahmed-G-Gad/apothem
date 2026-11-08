@@ -16,11 +16,13 @@ from pathlib import Path
 
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
+    KEPT_LINKS,
     _existing_chain,
     _is_lexically_within,
     _is_link,
     _is_relative_to,
     _normalized,
+    _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
 )
@@ -107,7 +109,8 @@ def stale_blocker(
             "warning",
             "sweep_stale",
             stale,
-            f"{stale} reaches the current folder {live} through the link {link}, "
+            f"{stale} reaches the current folder {_normalized(stale)} through "
+            f"the link {link}, "
             "so it was left in place; the link stays after an uninstall, so "
             "remove it yourself once nothing uses the old path",
             detail={"live_target": _path_text(live), "link": _path_text(link)},
@@ -122,9 +125,40 @@ def stale_blocker(
         )
     if _is_link(stale):
         return _link_kept(stale)
-    return _validate_target_path(
+    refused = _validate_target_path(
         stale, allowed_root=allowed_root, operation="sweep_stale"
     )
+    through = (
+        _unsafe_symlink(stale, _normalized(allowed_root))
+        if refused is not None
+        else None
+    )
+    if through is not None:
+        # A link above the leftover path (a dotfiles folder linked in, say):
+        # removing through it is what the write guard refuses, so the path is
+        # kept with a warning, the same way at install, update and uninstall.
+        return _result(
+            "warning",
+            "sweep_stale",
+            stale,
+            f"{stale} is reached through the link {through}, so it was left in "
+            "place: Apothem does not remove anything through a link. Delete it "
+            "yourself if nothing uses it",
+            detail={"symlink": _path_text(through)},
+        )
+    return refused
+
+
+def kept_link_warnings(
+    results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Return one warning per link a removal in *results* left in place."""
+    return [
+        _link_kept(Path(link))
+        for result in results
+        for link in result.detail.get(KEPT_LINKS, "").splitlines()
+        if link
+    ]
 
 
 def _doomed_and_kept(

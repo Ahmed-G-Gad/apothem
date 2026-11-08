@@ -216,6 +216,15 @@ def _skip_links_into(
     return skip
 
 
+#: ``detail`` key naming the links a removal left in place, one per line.
+KEPT_LINKS = "kept_links"
+
+
+def kept_links_detail(links: list[Path]) -> dict[str, str]:
+    """Return the ``detail`` entry that records *links* a removal kept."""
+    return {KEPT_LINKS: "\n".join(_path_text(link) for link in links)} if links else {}
+
+
 def _remove_tree_keeping_links(top: Path) -> list[Path]:
     """Remove the folder *top* and what it holds, except links; return those links.
 
@@ -335,7 +344,9 @@ def _validate_target_path(
         )
     symlink = _unsafe_symlink(target, normalized_root)
     if symlink is not None:
-        kind = "a symlink" if symlink.is_symlink() else "a Windows junction"
+        kind = (
+            "a symlink" if symlink.is_symlink() else "a junction or other reparse point"
+        )
         return _result(
             "error",
             operation,

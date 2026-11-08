@@ -12,8 +12,9 @@ cohorts that should not collide with Gemini CLI project-local files. An
 install or update over an earlier install backs up and removes the plugin's
 earlier folder, ``~/.gemini/antigravity-cli/plugins/apothem/``; an uninstall
 removes that earlier folder and Apothem's files from the current one. A link
-in the earlier folder, or at its path, is left in place with a warning. ``~/.gemini/antigravity/`` is the Antigravity App's data
-folder, so no install, update or uninstall touches it.
+in the earlier folder, or at its path, is left in place with a warning.
+``~/.gemini/antigravity/`` is the Antigravity App's data folder, so no
+install, update or uninstall touches it.
 
 Delegates installation to
 :mod:`apothem.harnesses.antigravity.install`, which consumes the

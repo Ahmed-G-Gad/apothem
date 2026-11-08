@@ -160,8 +160,11 @@ class _Adapter(Protocol):
         """Re-materialize *profile* over an existing installation."""
         ...
 
-    def uninstall(self) -> None:
-        """Remove every artifact this adapter installed, leaving no orphans."""
+    def uninstall(self) -> MaterializationRun | None:
+        """Remove every artifact this adapter installed, leaving no orphans.
+
+        The run's warnings and errors are reported by ``apothem uninstall``.
+        """
         ...
 
     def is_installed(self) -> bool:

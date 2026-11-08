@@ -13,7 +13,10 @@ satisfy it are declared in :mod:`apothem.lib.harness_registry`.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from apothem.harnesses._shared.install_driver_types import MaterializationRun
 
 
 @runtime_checkable
@@ -46,7 +49,7 @@ class HarnessAdapter(Protocol):
         """Re-materialize the harness configuration from the updated profile."""
         ...
 
-    def uninstall(self) -> object:
+    def uninstall(self) -> MaterializationRun | None:
         """Remove the harness configuration file if present.
 
         Shipped adapters return a ``MaterializationRun`` whose warnings and

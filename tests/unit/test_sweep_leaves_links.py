@@ -11,14 +11,19 @@ not see.
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
 import pytest
 
 from apothem.harnesses._shared import install_driver, install_driver_pathsafety
-from apothem.harnesses._shared.install_driver_backup import _compensating_rollback
+from apothem.harnesses._shared.install_driver_backup import (
+    _compensating_rollback,
+    _replace_path,
+)
 from apothem.harnesses._shared.install_driver_pathsafety import (
+    _holds_content,
     _is_link,
     _remove_tree_keeping_links,
     _stale_path_proves_install,
@@ -344,6 +349,139 @@ def test_a_folder_the_walk_cannot_read_is_reported(
 
 def _warn(results: list) -> list:  # type: ignore[type-arg]
     return [r for r in results if r.outcome == "warning"]
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_a_leftover_path_behind_a_link_is_kept_with_a_warning(
+    home: Path, tmp_path: Path, kind: str
+) -> None:
+    dotfiles = tmp_path / "dotfiles"
+    (dotfiles / "apothem").mkdir(parents=True)
+    (dotfiles / "apothem" / "keep.md").write_text("mine\n", encoding="utf-8")
+    root = home / ".tool"
+    _link(kind, dotfiles, root / "plugins")
+
+    preview = preview_stale_sweep(
+        root / "plugins" / "apothem",
+        preserve=frozenset(),
+        protect=frozenset(),
+        allowed_root=home,
+        message="dry",
+    )
+    results = sweep_stale(["plugins/apothem"], root, allowed_root=home)
+
+    assert [r.outcome for r in preview] == [r.outcome for r in results] == ["warning"]
+    assert str(root / "plugins") in results[0].message
+    assert (dotfiles / "apothem" / "keep.md").exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_an_uninstall_leaves_a_target_behind_a_link_with_a_warning(
+    home: Path, tmp_path: Path, kind: str
+) -> None:
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "hook.py").write_text("mine\n", encoding="utf-8")
+    hooks = home / ".tool" / ".apothem" / "support" / "hooks"
+    _link(kind, elsewhere, hooks)
+
+    removed = _replace_path(
+        hooks,
+        install_root=home / ".tool",
+        harness_name="t",
+        allowed_root=home,
+        removing=True,
+    )
+    written = _replace_path(
+        hooks / "a.py", install_root=home / ".tool", harness_name="t", allowed_root=home
+    )
+
+    assert removed is not None
+    assert removed.outcome == "warning"
+    assert "does not remove anything through a link" in removed.message
+    assert written is not None
+    assert written.outcome == "error"
+    assert (elsewhere / "hook.py").exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_removing_an_installed_folder_keeps_a_link_in_it(home: Path, kind: str) -> None:
+    skill = home / ".tool" / "skills" / "apothem-x"
+    mine, link = _tree_with_a_link(home, kind, skill)
+
+    removed = _replace_path(
+        skill,
+        install_root=home / ".tool",
+        harness_name="t",
+        allowed_root=home,
+        removing=True,
+    )
+
+    assert removed is not None
+    assert removed.outcome == "updated"
+    assert removed.detail["kept_links"] == str(link)
+    _untouched(mine, link)
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_replacing_a_tree_with_an_ignore_hook_keeps_a_link(
+    home: Path, tmp_path: Path, kind: str
+) -> None:
+    src = tmp_path / "src"
+    (src / "sub").mkdir(parents=True)
+    (src / "sub" / "new.md").write_text("new\n", encoding="utf-8")
+    (src / "sub" / "scratch.tmp").write_text("t\n", encoding="utf-8")
+    dst = home / "tree"
+    mine, link = _tree_with_a_link(home, kind, dst)
+
+    result = replace_tree(
+        src, dst, shutil.ignore_patterns("*.tmp"), install_root=home, allowed_root=home
+    )
+
+    assert result.outcome == "updated"
+    _untouched(mine, link)
+    assert (dst / "sub" / "new.md").is_file()
+    assert not (dst / "sub" / "scratch.tmp").exists()
+
+
+def _deny(monkeypatch: pytest.MonkeyPatch, locked: Path) -> None:
+    real_scandir = os.scandir
+
+    def scandir(path: object) -> object:
+        if Path(str(path)) == locked:
+            raise PermissionError("denied")
+        return real_scandir(path)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(os, "scandir", scandir)
+
+
+def test_a_real_sweep_keeps_a_folder_it_cannot_read(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = home / ".config" / "opencode"
+    stale = root / "apothem" / "rules"
+    locked = stale / "locked"
+    locked.mkdir(parents=True)
+    (locked / "x.md").write_text("x\n", encoding="utf-8")
+    (stale / "old.md").write_text("old\n", encoding="utf-8")
+    _deny(monkeypatch, locked)
+
+    results = sweep_stale(["apothem/rules"], root, allowed_root=home)
+
+    assert not (stale / "old.md").exists()
+    assert (locked / "x.md").exists()
+    assert [r.path for r in _warn(results)] == [str(locked)]
+    assert results[0].outcome == "updated"
+
+
+def test_a_folder_that_cannot_be_read_counts_as_content(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    locked = home / "tree" / "locked"
+    locked.mkdir(parents=True)
+    _deny(monkeypatch, locked)
+
+    assert _holds_content(home / "tree")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlink run")
