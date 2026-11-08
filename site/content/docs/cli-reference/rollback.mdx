@@ -29,8 +29,12 @@ first, it:
   files are missing: every file there now is kept, and the output names the
   backup used. A file it cannot write is listed for you to copy by hand, and
   the rollback then exits 2 (partial) when it wrote any other file. A path
-  that is now a link (a symlink or a Windows junction) is never written
-  through. Rollback reaches that install only while its record is among the
+  that is now a link (a symlink or a Windows junction), or a file where the
+  backup has a folder or the other way round, is never written through.
+  Nothing is restored there, and nothing is restored either when the path's
+  backup is gone. The rollback still exits 0 and prints a `Warning:` line (a
+  `warnings` entry under `--json`) that names the backup to copy from by
+  hand. Rollback reaches that install only while its record is among the
   newest 10 kept (below). `apothem backups prune --keep N` prunes to `N` once;
   the next install, update, uninstall or rollback prunes to 10 again. The
   backup set itself stays even after the record goes, so copying the files
@@ -126,7 +130,22 @@ Each restored or removed target appears in `results` with
 `files_written`); the `message` says whether the path was restored or removed.
 A failed restore (for example, a backup that was deleted) is
 `"outcome": "error"`. An install that recorded no changes is reported with
-`"outcome": "skipped"`. When no matching install record exists for a single
+`"outcome": "skipped"`. A swept path where nothing was restored (it is now a
+link, a file stands where the backup has a folder or the other way round, or
+its backup is gone) is a `skipped` row in `results` and also an entry in
+`warnings`, and the rollback still exits 0:
+
+```json
+{
+  "harness": "claude-code",
+  "outcome": "advisory",
+  "operation": "rollback",
+  "path": "C:\Users\Example\.claude\commands",
+  "message": "left in place: C:\Users\Example\.claude\commands is now a link, so nothing was restored there; copy what you need from C:\Users\Example\.apothem\backups\20261001T000000Z\claude_code\.claude\commands"
+}
+```
+
+When no matching install record exists for a single
 named harness, the command reports a `rollback.no_record` error with
 `"status": "error"`. Under `--harness all`, a harness with no matching record
 is an `"outcome": "error"` row in `results` instead.
@@ -143,7 +162,7 @@ apothem rollback --harness cursor --project . --last --json
 
 | Code | Meaning |
 |---|---|
-| 0 | Rolled back successfully, or nothing to roll back (the install recorded no changes) |
+| 0 | Rolled back successfully, or nothing to roll back (the install recorded no changes); also when a swept path was left in place with a `Warning:` line (a `warnings` entry under `--json`) |
 | 1 | Expected error — no install record, conflicting selectors, unknown harness, missing project root, or confirmation declined or unavailable (non-interactive or JSON mode without `--yes`) |
 | 2 | Partial result — at least one target was rolled back and a failure was also recorded (a failed restore or, under `--harness all`, a harness with no install record) |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
