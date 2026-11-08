@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Fixtures for the installers' release mode: a tagged repository, a stub gpg
 and a Sigstore-style bundle whose certificate names a source commit.
 
@@ -212,3 +213,6 @@ def fake_bundle(source_commit: str | None, *, sigstore_format: bool = False) -> 
             "cert": base64.b64encode(pem.encode("ascii")).decode("ascii"),
         }
     )
+
+
+# REUSE-IgnoreEnd
