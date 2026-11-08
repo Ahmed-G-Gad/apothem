@@ -138,7 +138,7 @@ def _protected_targets(
     """Return the resolved current install targets a stale-sweep entry must not remove.
 
     A stale path that resolves onto one of these, or above it, is the live
-    folder under another name (see ``install_driver_treeops.protected_by``).
+    folder under another name (see ``install_driver_sweep.protected_by``).
     """
     return frozenset(
         _normalized(

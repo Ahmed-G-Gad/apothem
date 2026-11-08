@@ -43,6 +43,7 @@ EXPECTED_MODULES = {
     "install_driver_sharedlock",
     "install_driver_skillguard",
     "install_driver_treeops",
+    "install_driver_sweep",
     "install_driver_apply",
     "install_driver_agent_emitters",
     "install_driver_agent_comma_tools",

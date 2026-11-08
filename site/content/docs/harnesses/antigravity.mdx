@@ -45,7 +45,7 @@ all three. Antigravity documents no per-tool switch for a plugin: `plugin.json`
 has no field that limits a plugin to one of them. An earlier Apothem release
 wrote the plugin to `~/.gemini/antigravity-cli/plugins/apothem/`, in the CLI's
 own data folder; an install or update over such an install backs that folder up
-and removes it whole (see [Uninstalling](#uninstalling)).
+and removes it (see [Uninstalling](#uninstalling)).
 
 **Plugin rules.** Antigravity discards any file in a plugin's `rules/`
 directory that does not open with a valid `trigger`
@@ -135,8 +135,10 @@ and Apothem engine are unaffected.
 An install made by an earlier release holds the plugin in
 `~/.gemini/antigravity-cli/plugins/apothem/`, in the CLI's own data folder. An
 install, an update, or an uninstall over such an install backs that folder up
-under `~/.apothem/backups/` and removes it whole, files of yours in it
-included. An uninstall therefore removes the earlier folder whole and, from the
+under `~/.apothem/backups/` and removes it, files of yours in it included. A
+symbolic link or a Windows junction at that path or inside the folder is left
+in place, with a warning that names it, and nothing it points to is changed or
+backed up. An uninstall therefore removes the earlier folder and, from the
 current one, only the Apothem files described above.
 
 Install, update and uninstall never touch `~/.gemini/antigravity/`, the data

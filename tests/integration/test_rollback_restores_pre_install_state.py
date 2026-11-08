@@ -177,7 +177,8 @@ def test_a_junction_at_the_old_plugin_path_is_left_alone_and_rolls_back(
 ) -> None:
     # The old plugin path is a junction to a folder of the operator's that is
     # not the new plugin folder. The update must neither back it up nor report
-    # it removed, and rolling the update back must succeed and leave it as is.
+    # it removed (it warns, naming the link), and rolling the update back must
+    # succeed and leave it as is.
     import _winapi
 
     gemini = home / ".gemini"
@@ -198,7 +199,8 @@ def test_a_junction_at_the_old_plugin_path_is_left_alone_and_rolls_back(
         for r in preview.results
         if r.operation == "sweep_stale" and Path(r.path) == link
     ]
-    assert planned.outcome == "unchanged"
+    assert planned.outcome == "warning"
+    assert str(link) in planned.message
 
     adapter.update(_PROFILE)
 

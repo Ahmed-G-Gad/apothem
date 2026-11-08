@@ -8,7 +8,6 @@ mode and its dry-run preview share.
 
 from __future__ import annotations
 
-import contextlib
 import os
 import shutil
 from collections.abc import Callable, Iterable
@@ -17,10 +16,6 @@ from pathlib import Path
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
 from .install_driver_converters import _native_skill_emission
 from .install_driver_pathsafety import (
-    _is_lexically_within,
-    _is_link,
-    _is_relative_to,
-    _normalized,
     _validate_target_path,
 )
 from .install_driver_types import (
@@ -30,7 +25,6 @@ from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
     _is_excluded_path,
-    _path_text,
     _result,
 )
 
@@ -127,201 +121,6 @@ def replace_tree(
         source=src,
         backup_path=backup,
     )
-
-
-def _preserved_inside(stale: Path, preserve: frozenset[Path]) -> set[Path]:
-    """Return the *preserve* paths that live inside the *stale* directory."""
-    base = _normalized(stale)
-    return {path for path in preserve if path != base and _is_relative_to(path, base)}
-
-
-def stale_needs_sweep(
-    stale: Path,
-    preserve: frozenset[Path] = frozenset(),
-    protect: frozenset[Path] = frozenset(),
-) -> bool:
-    """Return True when *stale* exists and holds more than *preserve* paths.
-
-    A stale path that is a *protect* path under another name, or is itself a
-    link, is never swept.
-    """
-    if not stale.exists() and not stale.is_symlink():
-        return False
-    if protected_by(stale, protect) is not None or _is_link(stale):
-        return False
-    keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
-    if not keep:
-        return True
-    return any(
-        _normalized(path) not in keep
-        for path in stale.rglob("*")
-        if not path.is_dir() or path.is_symlink()
-    )
-
-
-def _sweep_around(
-    stale: Path, keep: set[Path], *, root: Path, harness_name: str, allowed_root: Path
-) -> MaterializationResult:
-    """Sweep a stale directory except the current files it holds (*keep*)."""
-    doomed = [
-        path
-        for path in stale.rglob("*")
-        if (not path.is_dir() or path.is_symlink()) and _normalized(path) not in keep
-    ]
-    if not doomed:
-        return _result(
-            "unchanged", "sweep_stale", stale, "stale path holds only current files"
-        )
-    backup = backup_existing(
-        stale, install_root=root, harness_name=harness_name, allowed_root=allowed_root
-    )
-    for path in doomed:
-        with contextlib.suppress(OSError):
-            path.unlink()
-    directories = sorted(
-        (path for path in stale.rglob("*") if path.is_dir()),
-        key=lambda path: len(path.parts),
-        reverse=True,
-    )
-    for directory in directories:
-        if not any(_is_relative_to(kept, _normalized(directory)) for kept in keep):
-            with contextlib.suppress(OSError):
-                directory.rmdir()
-    return _result(
-        "updated",
-        "sweep_stale",
-        stale,
-        "removed stale files; kept current ones",
-        backup_path=backup,
-    )
-
-
-def protected_by(stale: Path, protect: frozenset[Path]) -> Path | None:
-    """Return the live install target *stale* is another name for, if any.
-
-    A stale path whose resolved location is a current install target, or holds
-    one, must not be swept: a link between the earlier folder and the current
-    one (a junction on Windows, which the symlink guard does not see) makes the
-    stale path a second name for the live folder, and removing it removes the
-    live folder with it. A stale path *inside* a current target folder is a
-    different case, a stale file in a current folder, and is swept as usual.
-    """
-    resolved = _normalized(stale)
-    for target in sorted(protect):
-        if _is_lexically_within(target, resolved):
-            return target
-    return None
-
-
-def sweep_stale(
-    stale_sweep: list[str],
-    root: Path,
-    *,
-    harness_name: str = "manual",
-    allowed_root: Path | None = None,
-    preserve: frozenset[Path] = frozenset(),
-    protect: frozenset[Path] = frozenset(),
-) -> list[MaterializationResult]:
-    """Remove each stale top-level path under *root* from earlier layouts.
-
-    Directories are removed recursively via ``shutil.rmtree``; files are
-    removed via ``Path.unlink``. Missing paths are silently skipped so a
-    re-install is idempotent. A stale directory that holds a *preserve* path
-    (a file the current layout still writes there, such as the profile
-    document) keeps it: only the other files are removed, and a directory
-    holding nothing else is left alone. A stale path that resolves onto, or
-    above, one of the *protect* paths (the current install targets) is left in
-    place, with no backup: it is the live folder under another name. A stale
-    path that is itself a link or a Windows junction is also left in place.
-    """
-    results: list[MaterializationResult] = []
-    for legacy in stale_sweep:
-        stale = root / legacy
-        target_error = _validate_target_path(
-            stale,
-            allowed_root=allowed_root or root,
-            operation="sweep_stale",
-        )
-        if target_error is not None:
-            results.append(target_error)
-            continue
-        live = protected_by(stale, protect)
-        if live is not None:
-            results.append(
-                _result(
-                    "unchanged",
-                    "sweep_stale",
-                    stale,
-                    "stale path resolves onto a live install target; left in place",
-                    detail={"live_target": _path_text(live)},
-                )
-            )
-            continue
-        if _is_link(stale):
-            # Apothem writes no links, so a link (a junction on Windows) at a
-            # stale path is the operator's. rmtree would not follow it, and a
-            # backup taken through it would claim a removal that never happened.
-            results.append(
-                _result(
-                    "unchanged",
-                    "sweep_stale",
-                    stale,
-                    "stale path is a link; left in place",
-                )
-            )
-            continue
-        keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
-        if keep:
-            results.append(
-                _sweep_around(
-                    stale,
-                    keep,
-                    root=root,
-                    harness_name=harness_name,
-                    allowed_root=allowed_root or root,
-                )
-            )
-            continue
-        if stale.is_dir():
-            backup = backup_existing(
-                stale,
-                install_root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root or root,
-            )
-            shutil.rmtree(stale, onerror=_handle_rm_error)
-            results.append(
-                _result(
-                    "updated",
-                    "sweep_stale",
-                    stale,
-                    "removed stale directory",
-                    backup_path=backup,
-                )
-            )
-        elif stale.is_file():
-            backup = backup_existing(
-                stale,
-                install_root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root or root,
-            )
-            with contextlib.suppress(OSError):  # pragma: no cover
-                stale.unlink()
-            results.append(
-                _result(
-                    "updated",
-                    "sweep_stale",
-                    stale,
-                    "removed stale file",
-                    backup_path=backup,
-                )
-            )
-        else:
-            results.append(
-                _result("unchanged", "sweep_stale", stale, "stale path absent")
-            )
-    return results
 
 
 def _single_file_directory_matches(
