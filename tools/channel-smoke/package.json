@@ -4,10 +4,10 @@
   "description": "Harness CLIs the channel-smoke workflow installs with npm ci, so each install is pinned by version and integrity hash.",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/claude-code": "2.1.310",
-    "@google/gemini-cli": "0.65.0",
-    "@openai/codex": "0.164.0",
-    "@qwen-code/qwen-code": "0.26.1"
+    "@anthropic-ai/claude-code": "2.1.316",
+    "@google/gemini-cli": "0.66.0",
+    "@openai/codex": "0.166.0",
+    "@qwen-code/qwen-code": "0.26.5"
   },
   "overrides": {
     "sharp": "0.35.5"
