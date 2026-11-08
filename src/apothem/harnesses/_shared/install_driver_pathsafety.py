@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -115,6 +116,58 @@ def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
     ]
 
 
+#: Bit set in the reparse tag of a Windows reparse point that names another
+#: location: junctions, symbolic links and other name surrogates.
+_NAME_SURROGATE_BIT = 0x20000000
+
+
+def _is_link(path: Path) -> bool:
+    """Return True when *path* itself is a symbolic link or a Windows junction.
+
+    A junction is a directory reparse point: ``is_symlink()`` is False for it
+    and ``is_dir()`` is True. Any reparse point whose tag carries the
+    name-surrogate bit names another location and counts too.
+    ``Path.is_junction`` exists from Python 3.12; this reads the tag from
+    ``lstat`` so it also works on 3.10 and 3.11.
+    """
+    if path.is_symlink():
+        return True
+    if sys.platform != "win32":
+        return False
+    try:
+        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
+    except OSError:
+        return False
+    return bool(tag & _NAME_SURROGATE_BIT) or tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+
+
+def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
+    """Return the files, folders and links below *top*, never entering a link.
+
+    ``Path.rglob`` enters a Windows junction (``is_symlink()`` is False for
+    one), so a walk that deletes what it finds would delete through it.
+    """
+    files: list[Path] = []
+    folders: list[Path] = []
+    links: list[Path] = []
+    pending = [top]
+    while pending:
+        try:
+            entries = sorted(os.scandir(pending.pop()), key=lambda e: e.name)
+        except OSError:
+            continue
+        for entry in entries:
+            path = Path(entry.path)
+            if _is_link(path):
+                links.append(path)
+            elif entry.is_dir(follow_symlinks=False):
+                folders.append(path)
+                pending.append(path)
+            else:
+                files.append(path)
+    return files, folders, links
+
+
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
     """Return the first symlink in the write path, if any.
 
@@ -123,7 +176,7 @@ def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
     """
     bases = _linkable_ancestors(path, floor)
     for candidate in _existing_chain(path, floor):
-        if candidate.is_symlink() and not any(
+        if _is_link(candidate) and not any(
             _is_lexically_within(base, candidate) for base in bases
         ):
             return candidate
@@ -235,11 +288,13 @@ def _holds_content(target: Path) -> bool:
     uninstall as an empty shell. Testing mere existence would report a fully
     uninstalled harness as still installed.
     """
+    if _is_link(target):
+        return False
     if target.is_file():
         return True
     if not target.is_dir():
         return False
-    return any(child.is_file() for child in target.rglob("*"))
+    return bool(_walk_without_links(target)[0])
 
 
 def _stale_path_proves_install(stale: Path) -> bool:
@@ -249,8 +304,12 @@ def _stale_path_proves_install(stale: Path) -> bool:
     that holds content under the Apothem-owned ``.apothem/`` subtree (or sits
     inside it) is the same kind of evidence as a current target there: an
     install exists in the earlier layout, and an uninstall or update has work
-    to do on it, even when the current layout's targets are gone.
+    to do on it, even when the current layout's targets are gone. A stale
+    path that is a link (a junction on Windows) is the operator's, not
+    Apothem's, and is not followed.
     """
+    if _is_link(stale):
+        return False
     if _APOTHEM_SUBTREE in stale.parts:
         return _holds_content(stale)
     return _holds_content(stale / _APOTHEM_SUBTREE)

@@ -16,6 +16,7 @@ from apothem.lib.propagation import user_home
 
 from .install_driver_pathsafety import (
     _allowed_write_root,
+    _is_link,
     _normalized,
     _root_for,
     _validate_target_path,
@@ -165,6 +166,15 @@ def _backup_relative_path(target: Path, boundary_root: Path) -> Path:
         return Path(target.name)
 
 
+def _skip_links(folder: str, names: list[str]) -> set[str]:
+    """``copytree`` ignore hook: leave out links, which point outside the backup.
+
+    Copying through a link (a junction on Windows) would copy files that are
+    not the target's, and a rollback would bring them back as a real folder.
+    """
+    return {name for name in names if _is_link(Path(folder) / name)}
+
+
 def backup_existing(
     target: Path,
     *,
@@ -190,7 +200,7 @@ def backup_existing(
     )
     if target.is_dir():
         backup = _reserve_unique_backup(base, is_dir=True)
-        shutil.copytree(target, backup, dirs_exist_ok=True)
+        shutil.copytree(target, backup, dirs_exist_ok=True, ignore=_skip_links)
     else:
         backup = _reserve_unique_backup(base, is_dir=False)
         shutil.copy2(target, backup)
