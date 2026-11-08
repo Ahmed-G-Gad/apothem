@@ -107,11 +107,11 @@
           "registry": "npm",
           "name": "@moonshot-ai/kimi-code",
           "tag": "latest",
-          "reviewed": "2.3.3",
-          "reviewed_on": "2026-10-27",
+          "reviewed": "2.5.2",
+          "reviewed_on": "2026-11-07",
           "reviewed_from": "pin",
-          "evidence": "latest `@moonshot-ai/kimi-code@2.3.3`, 2026-10-26",
-          "note": "The pin read the changelog through release 2.3.3 on 2026-10-27."
+          "evidence": "latest `@moonshot-ai/kimi-code@2.5.2`, 2026-11-06",
+          "note": "The pin read the changelog through release 2.5.2 on 2026-11-07."
         }
       ]
     },
