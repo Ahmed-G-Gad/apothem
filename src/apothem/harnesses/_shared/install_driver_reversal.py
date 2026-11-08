@@ -281,6 +281,11 @@ def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
     )
 
 
+#: Detail key on a ``restore_backup`` row that restored nothing because the
+#: path is in the way or its backup is gone; the CLI reports it as a warning.
+LEFT_IN_PLACE = "left_in_place"
+
+
 def _restore_missing(
     recorded: LedgerTarget, *, root: Path, harness_name: str, allowed_root: Path
 ) -> list[MaterializationResult]:
@@ -305,7 +310,8 @@ def _restore_missing(
                 "restore_backup",
                 target,
                 "left in place: Apothem no longer sweeps this path and its "
-                "backup is gone",
+                "backup is gone, so nothing was restored there",
+                detail={LEFT_IN_PLACE: "backup-gone"},
             )
         ]
     in_the_way = _in_the_way(target, backup)
@@ -318,6 +324,7 @@ def _restore_missing(
                 f"left in place: {target} is now {in_the_way}, so nothing was "
                 f"restored there; copy what you need from {backup}",
                 backup_path=backup,
+                detail={LEFT_IN_PLACE: in_the_way},
             )
         ]
     files = (

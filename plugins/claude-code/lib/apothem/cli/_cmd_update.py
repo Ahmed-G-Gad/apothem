@@ -42,6 +42,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
+from apothem.harnesses._shared.install_driver_reversal import LEFT_IN_PLACE
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -449,7 +450,7 @@ def _record_rollback_results(
     for result in target_results:
         if result.outcome in {"created", "updated"}:
             tally.restored_any = True
-        elif "nothing was restored there" in result.message:
+        elif LEFT_IN_PLACE in result.detail:
             tally.warnings.append(
                 {
                     "harness": harness_id,
@@ -495,11 +496,7 @@ def _record_rollback_results(
                 "missing file" in kept.message
                 or kept.message.startswith("left in place")
             ):
-                label = (
-                    "Warning"
-                    if "nothing was restored there" in kept.message
-                    else "Note"
-                )
+                label = "Warning" if LEFT_IN_PLACE in kept.detail else "Note"
                 run.con.print(
                     f"[yellow]{label}:[/] {harness_id} - {escape(str(kept.path))} "
                     f"{escape(str(kept.message))}"

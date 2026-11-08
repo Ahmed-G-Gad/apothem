@@ -242,8 +242,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     it cannot write (a file now stands where a folder was, or no permission)
     is listed for you to copy by hand, and the rollback exits 2 (partial)
     and names the files it did write. A swept path that is now a link (a
-    symlink or a Windows junction), or a file where a folder was or the
-    other way round, is left in place and its backup is named.
+    symlink or a Windows junction), a file where a folder was or the other
+    way round, or a path whose backup is gone, is left in place. The
+    rollback still exits 0 and prints a `Warning:` line (a `warnings` entry
+    under `--json`) naming the backup to copy from by hand.
   - Retention, and `apothem backups prune`, now keep every backup set that
     holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter
     and for Codex under a custom `CODEX_HOME` too. They include the old

@@ -46,9 +46,9 @@ demand, with your own bound:
   commands, hooks or rules (the [changelog](/docs/changelog) lists examples),
   including such a path under a custom `CODEX_HOME`. Those sets stay until
   you delete them yourself. To list them, run
-  `apothem backups prune --keep 1 --dry-run --verbose`: each one but the
-  newest set shows as `kept (holds a path an earlier release removed)`, and
-  nothing is deleted.
+  `apothem backups prune --keep 1 --dry-run --verbose`: each such set shows
+  as `kept (holds a path an earlier release removed)`, and nothing is
+  deleted.
 
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so
