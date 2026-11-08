@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.wrapper_factories import raise_on_uninstall_error
 
 _HARNESS_NAME: str = "claude_code"
 
@@ -20,4 +21,7 @@ def uninstall(output_path: Path) -> None:
     when nothing operator-authored remains. The pre-mutation file is copied into
     the Apothem backup root — no whole-file ``.bak`` sibling is left beside it.
     """
-    install_driver.run_uninstall(_HARNESS_NAME, harness_root=output_path.parent)
+    raise_on_uninstall_error(
+        _HARNESS_NAME,
+        install_driver.run_uninstall(_HARNESS_NAME, harness_root=output_path.parent),
+    )

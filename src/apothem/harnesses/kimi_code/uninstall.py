@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.wrapper_factories import raise_on_uninstall_error
 
 _HARNESS_NAME: str = "kimi_code"
 
@@ -51,6 +52,7 @@ def uninstall(output_path: Path, *, project: Path | None = None) -> None:
         harness_name=_HARNESS_NAME,
         allowed_root=install_driver._allowed_write_root(None, project_root),
     )
-    install_driver.run_uninstall(
+    results = install_driver.run_uninstall(
         _HARNESS_NAME, project_root=project_root, prior_results=tuple(legacy)
     )
+    raise_on_uninstall_error(_HARNESS_NAME, (*legacy, *results))

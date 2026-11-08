@@ -39,6 +39,7 @@ from apothem.cli._helpers import (
     _placeholder_identity_fields,
     _profile_error,
     _profile_scaffold_text,
+    _refuse_profile_outside_home,
     _render_blast_radius,
     _resolve_profile_path,
     _resolve_project_root,
@@ -612,10 +613,14 @@ def _first_run_profile(
     and loads it back. A dry run validates the same scaffold in memory and
     writes nothing. Either way the returned advisory rides the envelope's
     ``warnings`` array so a JSON caller learns the profile was (or would be)
-    created; the placeholder-identity advisory follows separately.
+    created; the placeholder-identity advisory follows separately. A default
+    path a link leads out of the home folder (``~/.config`` linked outside
+    it) stops the run before anything is written, the dry run included (see
+    :func:`~apothem.cli._helpers._refuse_profile_outside_home`).
     """
     import yaml
 
+    _refuse_profile_outside_home(profile_path)
     text = _profile_scaffold_text()
     if dry_run:
         loaded = validate_profile(yaml.safe_load(text), profile_path=profile_path)

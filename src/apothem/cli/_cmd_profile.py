@@ -32,6 +32,7 @@ from apothem.cli._helpers import (
     _profile_error,
     _profile_option,
     _profile_scaffold_text,
+    _refuse_profile_outside_home,
     _resolve_profile_path,
     _set_nested,
     _write_profile_text_safely,
@@ -247,7 +248,6 @@ def profile_set(
     fmt = resolve_format(output_format, json_flag)
     con = get_console(no_color=no_color, quiet=quiet)
     profile_path = _resolve_profile_path(profile)
-    profile_path.parent.mkdir(parents=True, exist_ok=True)
 
     if profile_path.exists():
         # A malformed existing profile must surface as a clean diagnostic, not
@@ -333,22 +333,24 @@ def profile_edit(
 ) -> None:
     """Open the shared profile in the system editor."""
     profile_path = _resolve_profile_path(profile)
-    profile_path.parent.mkdir(parents=True, exist_ok=True)
-    if not profile_path.exists():
-        try:
+    try:
+        # The editor writes the file itself, so a default path a link leads
+        # out of the home is refused before it opens, as every other write is.
+        _refuse_profile_outside_home(profile_path)
+        if not profile_path.exists():
             _write_profile_text_safely(
                 profile_path,
                 _profile_scaffold_text(),
                 operation="profile_edit_init",
             )
-        except _CliUserError as exc:
-            _emit_expected_error(
-                command="profile edit",
-                fmt=resolve_format(output_format, json_flag),
-                profile_path=profile_path,
-                error=exc.to_dict(),
-            )
-            return
+    except _CliUserError as exc:
+        _emit_expected_error(
+            command="profile edit",
+            fmt=resolve_format(output_format, json_flag),
+            profile_path=profile_path,
+            error=exc.to_dict(),
+        )
+        return
     click.edit(filename=str(profile_path))
     # The editor session is interactive, but --json still owes the caller one
     # parseable document instead of silence.

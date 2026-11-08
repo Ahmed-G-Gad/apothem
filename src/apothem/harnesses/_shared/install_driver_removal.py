@@ -347,6 +347,7 @@ def _surgical_remove_from_target(
     retired: tuple[OwnedEntry, ...] = (),
     earlier_digests: tuple[str, ...] = (),
     project_scope: bool = False,
+    unrecorded: tuple[OwnedEntry, ...] = (),
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -375,6 +376,7 @@ def _surgical_remove_from_target(
     no longer uses. When *recorded* predates ownership recording, they are
     removed while they still hold that release's value, under the same rule an
     update over such an install applies (see :func:`strip_owned`).
+    *unrecorded* takes their place when there is no install record at all.
 
     Returns ``None`` when *target* does not exist (nothing to remove). The
     *template_text* is the rendered Apothem template (path tokens already
@@ -429,7 +431,7 @@ def _surgical_remove_from_target(
             template_text,
             apothem_keys=apothem_keys,
             harness_root=install_root,
-            retired=retired if recorded is not None else (),
+            retired=retired if recorded is not None else unrecorded,
             project_scope=project_scope,
         )
     elif suffix in {".yaml", ".yml"}:
@@ -438,7 +440,7 @@ def _surgical_remove_from_target(
             template_text,
             apothem_keys=apothem_keys,
             harness_root=install_root,
-            retired=retired if recorded is not None else (),
+            retired=retired if recorded is not None else unrecorded,
             project_scope=project_scope,
         )
     else:
@@ -502,14 +504,23 @@ def surgically_remove_materialized_config(
     recorded before ownership tracking has them removed while they still hold
     that release's value. *relocated* names where the harness may have moved
     the entries the install record says Apothem owns; those are removed too
-    while they hold the recorded value. Backs the target up before mutation.
-    Returns ``None`` when the target is absent. This is the surgical
-    replacement for the retired whole-file ``backup_file_to_sibling`` rename.
+    while they hold the recorded value. With no install record at this root,
+    *relocated* is asked with no owned entries, as an install over the same
+    target would be (see :func:`adjust_prior`), and what it returns is
+    removed the same way. Backs the target up before mutation. Returns
+    ``None`` when the target is absent. This is the surgical replacement for
+    the retired whole-file ``backup_file_to_sibling`` rename.
     """
     recorded = current_target(harness_name, install_root, target)
-    if relocated is not None and recorded is not None and recorded.owned:
+    # An install that recorded owning nothing here (``owned == ()``) is asked
+    # too, as :func:`adjust_prior` asks for it; only a record from before
+    # ownership tracking (``owned is None``) is not.
+    if relocated is not None and recorded is not None and recorded.owned is not None:
         moved = relocated(recorded.owned, _current_text(target))
         recorded = replace(recorded, owned=(*recorded.owned, *moved))
+    unrecorded: tuple[OwnedEntry, ...] = ()
+    if relocated is not None and recorded is None:
+        unrecorded = relocated((), _current_text(target))
     return _surgical_remove_from_target(
         target,
         template_text,
@@ -520,6 +531,7 @@ def surgically_remove_materialized_config(
         apothem_keys=apothem_keys,
         recorded=recorded,
         retired=retired,
+        unrecorded=unrecorded,
     )
 
 
