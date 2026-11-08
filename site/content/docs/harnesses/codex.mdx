@@ -101,9 +101,24 @@ not list (they name only `~/.codex/agents/`), so the install note leaves the
 folder out. If an earlier install left Apothem agents in `~/.codex/agents/`, the
 note says so, since this install neither updates nor removes them.
 
+Apothem reads `CODEX_HOME` the way Codex does. It uses the value as written:
+a leading `~` is not expanded, and a relative value names a folder under the
+folder you run the command in. An empty `CODEX_HOME` counts as unset. Codex
+stops with an error when `CODEX_HOME` names a folder that does not exist; an
+install creates the folder, so Codex starts once the install has run.
+
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
-and references them from `AGENTS.md` and installed skills.
+and references them from `AGENTS.md` and installed skills. Earlier releases
+(the [changelog](/docs/changelog) names them) removed the whole
+`~/.codex/rules/` folder, with your `.rules` files, on every install and
+update, after copying it to `~/.apothem/backups/<timestamp>/codex/.codex/rules/`.
+The current release never deletes a backup set that holds that copy, but an
+earlier release's retention may already have deleted older sets. Copy
+`~/.apothem/backups/` somewhere else before you run Apothem again, copy the
+`.rules` files back into `~/.codex/rules/` by hand, then run `apothem update`.
+`apothem rollback --install-id` reverses the whole earlier install, so it is not
+the way to recover these files.
 
 Codex loads one instruction file from its home folder (`~/.codex`, or the folder
 `CODEX_HOME` names): `AGENTS.override.md` when that file has text, and

@@ -4,23 +4,40 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-28
+- Snapshot date: 2026-11-03
+- Snapshot note (rules page): the IDE Rules page moved to `/docs/ide/User-guide/Rules` and was re-read there on 2026-11-03, together with the rules section of the CLI memory page. The old address still answers 200 with the same empty page that every unknown address under `/docs/` gets, and only a browser script sends it on to the new one. Where the vendor URL check can reach `www.codebuddy.ai` (not from GitHub's runners, which it reports as unroutable) it therefore counts any `/docs/` address as fine, so the move was found by hand. The IDE page describes one folder per rule holding a `RULE.mdc` file; the flat `.codebuddy/rules/*.md` layout the adapter writes is the one the CLI memory page documents (see Official Surface Refresh). Previous 2026-10-28.
 - Snapshot note (hooks): the adapter now registers hooks. The CLI hooks and hooks-guide pages were re-read on 2026-10-28 (the hooks page through its official Chinese mirror, as raw Markdown, and through the vendor site) to settle which events deliver `additionalContext`. Previous 2026-10-27.
 - Snapshot note (review): the Settings page was read on 2026-10-28 for the complete tool list. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as CodeBuddy subagents in `<project>/.codebuddy/agents/`. The CLI sub-agents, directory-structure, hooks and plugins-reference pages were read on 2026-10-27, and the IDE Subagents page the same day. The other sections below keep their earlier read dates. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at CodeBuddy's own `~/.codebuddy/skills/` and the rules and templates corpus at `~/.config/apothem/`. The CodeBuddy skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codebuddy/`
-- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The CLI sub-agents, directory-structure, hooks and plugins-reference pages and the IDE Subagents page were read on 2026-10-27; the IDE Rules page was re-read on 2026-10-03; the CLI memory and MCP pages were read on 2026-10-02. The CLI hooks and hooks-guide pages were read on 2026-10-28. No CodeBuddy source code was read, so runtime behavior the docs do not state is unverified. No vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The CLI sub-agents, directory-structure, hooks and plugins-reference pages and the IDE Subagents page were read on 2026-10-27; the IDE Rules page (now `/docs/ide/User-guide/Rules`) and the rules section and FAQ of the CLI memory page were re-read on 2026-11-03; the rest of the CLI memory page and the MCP page were read on 2026-10-02. The CLI hooks and hooks-guide pages were read on 2026-10-28. No CodeBuddy source code was read, so runtime behavior the docs do not state is unverified. No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
-- Canonical filename: `.codebuddy/rules/apothem-rules.md`. CodeBuddy reads
-  project rules from `.codebuddy/rules/*.md` (Markdown with optional
-  frontmatter: `enabled` and `alwaysApply`, both default `true`, and `paths`),
-  auto-loaded as project memory with the same priority as
-  `.codebuddy/CODEBUDDY.md`. The adapter writes only this dedicated file and
-  never clobbers operator rules.
+- Canonical filename: `.codebuddy/rules/apothem-rules.md`. CodeBuddy Code
+  loads every `.md` file under `.codebuddy/rules/`, subfolders included, from
+  the working folder only (not its parents), as project memory with the same
+  priority as `.codebuddy/CODEBUDDY.md` (Markdown with optional frontmatter:
+  `enabled` and `alwaysApply`, both default `true`, and `paths`). An edit made
+  through `/memory` reloads at once, but a rule file added or changed outside
+  it, as the install writes it, is read only after a restart. Source: the CLI
+  memory page,
+  `#basic-structure`, `#subdirectories`, `#rule-control-fields` and
+  `#cache-and-reload`, re-read 2026-11-03. The adapter writes only this
+  dedicated file and never clobbers operator rules.
+- IDE rules layout: the IDE Rules page (`#project-rules`, re-read 2026-11-03)
+  says "Each rule corresponds to a folder containing a `RULE.mdc` file", and
+  its rule types table (`#rule-types`) says Always rules apply to every chat
+  session. The page does not say whether the IDE also loads a plain `.md` file
+  in `.codebuddy/rules/`.
+- TODO(clarify): whether the CodeBuddy IDE loads the flat
+  `.codebuddy/rules/apothem-rules.md` the install writes, or only
+  `.codebuddy/rules/<name>/RULE.mdc` folders. The docs do not settle it and no
+  IDE run has checked it; the CLI memory page's IDE compatibility section
+  (`#compatibility-with-codebuddy-ide`) says both products support rules and
+  names no file layout. The install keeps the layout CodeBuddy Code documents.
 - Memory: `CODEBUDDY.md` or `.codebuddy/CODEBUDDY.md` (project) and
   `~/.codebuddy/CODEBUDDY.md` (user). When a project has no `CODEBUDDY.md`,
   CodeBuddy Code uses `AGENTS.md` instead, so the registry lists CodeBuddy as a
@@ -207,10 +224,10 @@ CodeBuddy Code v1.16.0 or later.
 
 ## Vendor Sources
 
-Retrieved 2026-10-03 unless marked.
+Each entry gives its retrieval date.
 
-- <https://www.codebuddy.ai/docs/ide/Rules> (project rules)
-- <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02, the fallback FAQ re-read 2026-11-03)
+- <https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules> (IDE project rules: one folder per rule holding a `RULE.mdc` file, the rule types, user rules; retrieved 2026-11-03. It moved from `/docs/ide/Rules`, which now serves an empty page that only a browser script redirects)
+- <https://www.codebuddy.ai/docs/cli/memory> (memory files, the `.codebuddy/rules/*.md` layout and rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02, the rules section and the fallback FAQ re-read 2026-11-03)
 - <https://www.codebuddy.ai/docs/cli/skills> (skills; retrieved 2026-10-24)
 - <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
 - <https://www.codebuddy.ai/docs/cli/hooks> (hook files, schema, events, command contract, matcher, Windows shell, `additionalContext` per event; retrieved 2026-10-28; frontmatter-hooks gate read 2026-10-27)
@@ -222,6 +239,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://www.codebuddy.ai/docs/cli/codebuddy-dir> (project and user `agents/` folders and the project-over-user rule; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/plugins-reference> (fields a plugin agent accepts and the `.claude-plugin/` compatibility note; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/ide/Features/Subagents> (IDE Subagents page, same two folders; retrieved 2026-10-27)
+- <https://www.codebuddy.ai/docs/cli/installation> (install methods: the npm package `@tencent-ai/codebuddy-code`, a Homebrew tap, and a native binary in beta; retrieved 2026-11-03)
 
 ## Discovery Targets
 

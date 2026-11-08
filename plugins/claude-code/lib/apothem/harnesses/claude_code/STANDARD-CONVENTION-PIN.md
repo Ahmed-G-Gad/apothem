@@ -16,6 +16,7 @@
 - Permissions: `settings.json` `permissions` holds `allow`, `ask`, and `deny` rules, evaluated deny, then ask, then allow; the first match in that order decides. The Apothem template uses `allow` and `deny`.
 - Hook events: Apothem wires a current subset of the vendor events: `SessionStart`, `PreToolUse` (matchers `Write`, `Edit`, `NotebookEdit`, `Bash|PowerShell`, and `AskUserQuestion`), `PostToolUse`, and `Stop`. The template registers no `PreCompact` or `PostCompact` event.
 - Shared roots: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode, and `~/.claude/agents/`, where it installs agents, is also loaded by Cursor (re-checked 2026-10-24 against the Cursor docs). `~/.claude/CLAUDE.md`, where it writes the Apothem block, is also loaded by Windsurf through Devin's configuration import (read 2026-11-02) and by OpenCode 1 when its configuration folder holds no `AGENTS.md`; OpenCode 2 discovers only `AGENTS.md` files, with no `CLAUDE.md` fallback (read 2026-11-03). The VS Code docs list `~/.claude/agents/` for their Anthropic Claude agent, not for the one GitHub Copilot runs, so Copilot is not a reader. The registry records Claude Code as the owner of the three roots and `apothem install` names the other readers.
+- Project `AGENTS.md` (read 2026-11-03, re-read 2026-11-07, <https://code.claude.com/docs/en/memory#agents-md>): reading `AGENTS.md` directly requires Claude Code v2.1.277 or later. Under the default **Project instructions** setting, `claude-md-or-agents-md`, Claude Code loads every `AGENTS.md` and `.claude/AGENTS.md` in the working folder and the folders above it at session start, and a subfolder's `AGENTS.md` when it reads a file there, but only when none of those folders holds a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. `~/.claude/CLAUDE.md`, the organization's managed `CLAUDE.md` and `.claude/rules/` files do not count and keep loading alongside it. `claude-md-and-agents-md` loads both kinds, and `claude-md` and `managed-only` load no `AGENTS.md`. The setting can also be written in `~/.claude/settings.json`, a `--settings` file or managed settings, under `pluginConfigs` for the built-in plugin that reads `AGENTS.md`; project and local settings files are ignored, so the setting is user-wide. The plugin's ID is `cc-plugin-agents-md@builtin` from v2.1.285 and `agents-md@builtin` from v2.1.277 to v2.1.284; v2.1.285 and later read an entry under either ID, and earlier releases ignore one under the new ID. A session reads no `AGENTS.md` when that plugin is disabled, in some first sessions after an upgrade from v2.1.276 or earlier, and, before v2.1.281, in some sessions such as those on Amazon Bedrock or with telemetry disabled. These per-session exceptions are recorded here, not in the registry condition. The subfolder rule means a session started in a folder above a project still loads the project's `AGENTS.md` once its Read tool opens a file there, so the registry condition counts the project folder as well as the working folder and the folders above it. So Claude Code is a reader of `<project>/AGENTS.md`, which the Kimi Code install writes, under that condition; Apothem writes no project `CLAUDE.md`, and no install writes `.claude/AGENTS.md`.
 
 ## Rule loading
 
@@ -31,12 +32,13 @@
 Retrieved 2026-10-03 unless marked.
 
 - <https://code.claude.com/docs/en/settings> (settings, `$schema`)
-- <https://code.claude.com/docs/en/memory> (CLAUDE.md files; `.claude/rules/` `paths`, `@path` import resolution, and what survives `/compact`; retrieved 2026-10-24)
+- <https://code.claude.com/docs/en/memory> (CLAUDE.md files; `.claude/rules/` `paths`, `@path` import resolution, and what survives `/compact`; retrieved 2026-10-24; its AGENTS.md section, the versions, the Project instructions setting and which files count, re-read 2026-11-03)
 - <https://code.claude.com/docs/en/hooks> (hook events)
 - <https://code.claude.com/docs/en/mcp> (MCP scopes and storage)
 - <https://code.claude.com/docs/en/permissions> (rule order; retrieved 2026-10-02)
 - <https://code.claude.com/docs/en/skills> (skills, `references/` files, post-compaction attachment; retrieved 2026-10-24)
 - <https://code.claude.com/docs/en/sub-agents> (agent frontmatter; retrieved 2026-10-02)
+- <https://code.claude.com/docs/en/setup> (install methods, among them the npm package `@anthropic-ai/claude-code`, which an npm install upgrades through its `latest` tag, and the `latest` and `stable` release channels; retrieved 2026-11-03)
 
 ## Discovery Targets
 

@@ -64,6 +64,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://zed.dev/docs/ai/instructions> (instruction files and priority; re-read 2026-11-03)
 - <https://zed.dev/docs/ai/mcp> (`context_servers`)
 - <https://zed.dev/docs/ai/skills> (skill locations; retrieved 2026-10-24, the folder the adapter writes)
+- <https://github.com/zed-industries/zed/releases> (Zed's releases, in the repository the zed.dev home page links to; retrieved 2026-11-03)
 
 ## Discovery Targets
 

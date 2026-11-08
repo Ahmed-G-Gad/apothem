@@ -913,8 +913,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # Desktop pages, read on 2026-11-02 (the two OpenCode pages for
 # ~/.claude/CLAUDE.md again on 2026-11-03). The project AGENTS.md, GEMINI.md
 # and .github/copilot-instructions.md roots carry 2026-11-03, when the Zed,
-# Codex and CodeBuddy pages behind their reader conditions were read; their
-# other pages date from 2026-10-02.
+# Codex, CodeBuddy and Claude Code pages behind their reader conditions were
+# read; their other pages date from 2026-10-02.
 #
 # A reader is listed only where the vendor docs show a default load of that exact
 # path. Windsurf reads the other tools' rule files through Devin's configuration
@@ -939,6 +939,22 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # TODO(clarify): that page also lists .codebuddy/CODEBUDDY.md as project memory,
 # but its rule for AGENTS.md names only CODEBUDDY.md; whether a
 # .codebuddy/CODEBUDDY.md alone keeps AGENTS.md out is not documented.
+# Claude Code reads AGENTS.md from v2.1.277 on. Under its default Project
+# instructions setting (claude-md-or-agents-md) it loads every AGENTS.md and
+# .claude/AGENTS.md in the working folder and the folders above it at session
+# start, but only when none of those folders holds a CLAUDE.md,
+# .claude/CLAUDE.md or CLAUDE.local.md. It loads the AGENTS.md of a folder below
+# the working folder, such as a project opened from a parent folder, when its
+# Read tool opens a file there and that folder holds none of the three either; the
+# condition names the project folder for that case. ~/.claude/CLAUDE.md, a
+# managed CLAUDE.md and .claude/rules/ files do not count and load alongside
+# it. claude-md-and-agents-md loads both kinds, while claude-md and
+# managed-only load no AGENTS.md (its memory page, read 2026-11-03 and
+# 2026-11-07). The sessions that read no AGENTS.md under any setting are in the
+# Claude Code pin, not in the condition. No install writes .claude/AGENTS.md,
+# and Claude Code reaches ~/.codex/AGENTS.md only from a session in ~/.codex or
+# in a folder above it that reads a file in ~/.codex, so <project>/AGENTS.md is
+# the one shared root the registry lists Claude Code as reading under this rule.
 # Zed loads only the first project instruction file in the list
 # .rules, .cursorrules, .windsurfrules, .clinerules,
 # .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md (its
@@ -1098,6 +1114,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         owner="kimi-code",
         readers=(
             "antigravity",
+            "claude-code",
             "codebuddy",
             "codex",
             "cursor",
@@ -1111,6 +1128,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         evidence=(
             "https://moonshotai.github.io/kimi-code/en/customization/agents",
             "https://antigravity.google/docs/rules",
+            "https://code.claude.com/docs/en/memory#agents-md",
             "https://www.codebuddy.ai/docs/cli/memory",
             "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
             "https://cursor.com/docs/rules",
@@ -1123,6 +1141,11 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-11-03",
         reader_conditions={
+            "claude-code": "only in v2.1.277 or later, not under the claude-md or "
+            "managed-only Project instructions setting, and under the default "
+            "setting only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md "
+            "is in the project folder, the working folder or a folder above it, "
+            "not counting ~/.claude/CLAUDE.md",
             "codebuddy": "only when the project has no CODEBUDDY.md",
             "codex": "only when the project has no AGENTS.override.md beside it",
             "hermes": "only when the project has no .hermes.md or HERMES.md and no "

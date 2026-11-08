@@ -9,6 +9,50 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Data loss in earlier releases: recover your files
+
+- **Releases 1.0.1 to 1.5.0 deleted folders that hold your own files.** Every
+  `apothem install` and `apothem update` of these adapters removed the whole
+  folder, with everything you had placed in it:
+  - Claude Code: `~/.claude/commands/` (your slash commands), `~/.claude/hooks/`
+    (your hook scripts; a `settings.json` entry that runs one now points at
+    nothing), and `scripts/`, `templates/`, `tools/`, `lib/`, `docs/`,
+    `config/`, `src/`, `tests/`, `schemas/`, `conformity/`, `packaging/`,
+    `mcp/`, `examples/`, `assets/`, `site/` and `public/` under `~/.claude/`,
+    plus the `AGENTS.md` files in `~/.claude/{agents,rules,skills,statuslines,output-styles}/`.
+  - Codex: `~/.codex/rules/` (Codex's own `.rules` execution policies) and
+    `~/.codex/commands/`, plus `~/.config/apothem/hooks/` and
+    `~/.agents/skills/AGENTS.md`.
+  - Gemini CLI: a project's own `skills/AGENTS.md`.
+  - Hermes: `~/.hermes/cli-config.yaml` and `~/.hermes/profile.yaml`. Open-Claw:
+    `~/.open-claw/config.yaml`.
+  - Antigravity: `~/.gemini/antigravity/`, the Antigravity App's own data folder
+    (MCP sign-in tokens, session transcripts, skills).
+
+  No release ever installed a file into any of these places, so this release
+  stops removing them. It keeps sweeping only folders in Apothem's own
+  namespace that a release wrote into (`apothem/rules/` under the OpenCode,
+  Qwen Code, Hermes and Open-Claw folders, and Kimi Code's
+  `.kimi-code/.apothem/support/{skills,agents}/`).
+
+  **To recover:** each removed folder was copied first to
+  `~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
+  home, or to the project for a project install (for example
+  `claude_code/.claude/commands/`). Releases 1.2.0 to 1.5.0 keep only the newest
+  10 backup sets per harness and add one on every install, update, uninstall
+  and rollback, so older sets may already be gone; 1.0.x and 1.1.0 kept every
+  set. This release never deletes a backup set that holds one of these paths,
+  automatically or through `apothem backups prune`.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy the files you need from that copy back to their place by hand.
+  3. Run `apothem update` afterwards.
+
+  `apothem rollback --install-id ID` is not a recovery step for this: it
+  reverses the whole old install, including the files that install wrote or
+  changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
+  rollback now puts back each missing file and keeps every file that is there.
+
 ### Added
 
 - **An answer sheet for the OpenSSF Best Practices badge.** The new
@@ -45,6 +89,42 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and the `VSCE_PAT` token stay as alternatives. An unrecognised
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
   release-cycle runbook gains the setup procedure.
+- **The weekly convention monitor watches each tool's release channels.**
+  OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
+  GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
+  week. `scripts/dev/vendor-release-channels.json` now has an entry for every
+  harness: its release channels (an npm package and its dist-tag, a GitHub
+  repository's latest release or, for a channel with a tag pattern, its
+  newest stable release with a matching tag among the newest 100, a PyPI
+  project, or an installer address whose redirect is watched), or the reason
+  it has none. Each channel records the version last reviewed (the one its
+  pin names or, where the pin names none, the one the registry served when
+  the channel was recorded), the date, and the phrase of the pin that cites
+  it. Each week `scripts/dev/check_vendor_releases.py` asks every registry
+  for the current version, and each installer address where it redirects. A
+  new major version, a release past a trigger the file names, an installer
+  address that redirects somewhere else, or a package, dist-tag, release or
+  address that no longer exists files an issue, and so does a check that
+  cannot run, with the reason. A newer minor or patch version is listed in
+  the run summary and does not fail the check, and a registry that does not
+  answer, or whose answer breaks off partway, is reported as unreachable.
+  OpenCode has four channels: `opencode-ai` for OpenCode 1, `@opencode/cli`
+  for OpenCode 2, the GitHub releases of `anomalyco/opencode`, where a new
+  major line shows whatever npm package it ships as, and
+  `opencode.ai/install`. Two of them watch the OpenCode decision's second
+  signal, OpenCode 1's installer or npm package moving to OpenCode 2: the
+  check fails when `opencode-ai`'s `latest` version moves past major version
+  1, or when `opencode.ai/install` stops redirecting to the OpenCode 1
+  installer script. The decision's first signal, a date to remove OpenCode
+  2's translation of OpenCode 1's formats, stays a check by hand.
+  Antigravity, Cursor, Kiro, Trae and Windsurf have no release channel a
+  script can query, and the file gives the reason for each. The check job
+  sends the workflow's `GITHUB_TOKEN` to the GitHub API with read access
+  only, and a separate job files the issue. The Claude Code, CodeBuddy,
+  Codex, Gemini CLI, Hermes, OpenClaw and Zed pins now cite the vendor page
+  that names their package or release repository, and the OpenCode pin
+  records where `opencode.ai/install` redirects and how that script picks the
+  version it installs.
 
 ### Changed
 
@@ -157,6 +237,42 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The launch-size metric follows six more tools' loading rules.** The
+  metrics collector, which reports how many bytes of instructions each tool
+  loads at launch, now counts:
+  - OpenClaw's bootstrap files by name and in order, with its per-file and
+    total character limits;
+  - Hermes's `SOUL.md` only when it holds text;
+  - CodeBuddy's user `CODEBUDDY.md` and `CODEBUDDY.local.md`, one project
+    memory file, `AGENTS.md` only without one, and no rule marked
+    `enabled: false`;
+  - Kimi Code's `~/.agents/AGENTS.md`, skipping blank files;
+  - Claude Code's `CLAUDE.local.md`, and `AGENTS.md` only when the project has
+    no CLAUDE file;
+  - Antigravity's project `.agents/` folder, with each file cut at 24,000
+    bytes.
+
+  No published number changes: Apothem's installs write none of these files.
+- **A `CODEX_HOME` that starts with `~` now names the folder Codex uses.**
+  Codex takes `CODEX_HOME` as written, without expanding `~`, and resolves a
+  relative value against the current folder, but Apothem expanded `~` to your
+  home folder. With a value such as `"~/codex"`, Codex installs, updates and
+  verify then worked on a folder Codex never reads, and the conformity gate
+  watched the wrong folder. Apothem now takes the value the same way Codex
+  does. If your `CODEX_HOME` starts with a literal `~`, run
+  `apothem install --harness codex` again so the files land where Codex reads
+  them; the files an earlier release wrote under your home folder stay until
+  you delete them.
+- **The install note for a project `AGENTS.md` now counts the project folder
+  for Claude Code.** Claude Code also loads a project's `AGENTS.md` when a
+  session starts in a folder above the project and its Read tool opens a file
+  in it, as long as the project folder, like the working folder and the folders
+  above it, has no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. The Kimi Code install note's condition for Claude Code now
+  names the project folder, and the Claude Code and harness registry pages
+  describe that load and the sessions that read no `AGENTS.md`. The Claude Code
+  pin records the plugin ID that releases v2.1.277 to v2.1.284 use for the
+  **Project instructions** setting.
+
 - **The Antigravity install writes its plugin where the CLI loads it.**
   Current Antigravity CLI releases load plugins from
   `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put
@@ -227,6 +343,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Apothem agents in `~/.codex/agents/`; then it says that this install neither
   updates nor removes them. The Codex adapter and the install notes find the
   Codex home through one shared lookup.
+- **The Kimi Code install says that Claude Code also loads the project
+  `AGENTS.md`.** From Claude Code v2.1.277, under its default Project
+  instructions setting, Claude Code loads `AGENTS.md` when no `CLAUDE.md`,
+  `.claude/CLAUDE.md` or
+  `CLAUDE.local.md` is in the working folder or a folder above it, and
+  `~/.claude/CLAUDE.md` keeps loading alongside it. So the Kimi Code install's
+  note now names Claude Code with that condition among the tools that load the
+  file it writes, and the harness registry, Claude Code and Kimi Code pages say
+  so.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce
@@ -314,6 +439,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `~/.claude/skills/` copy too. Devin Desktop no longer starts Cascade
   conversations. The Windsurf rules file links the Customizations page; no
   file the install writes moves.
+- **The Open-Claw, CodeBuddy and Kimi Code convention pins match the vendors'
+  current docs.** OpenClaw keeps per-agent settings in `agents.entries`, keyed
+  by agent id. Its config check rejects the `agents.list` array the pin named,
+  so the pin now names `agents.entries.<id>.skills` and
+  `agents.entries.<id>.subagents.allowAgents`, and the Open-Claw page names the
+  `agents.entries.<id>.skills` list. OpenClaw also loads `AGENTS.md` and five
+  other files from each agent's workspace. The pin now records them. The
+  install still writes none of them, and whether it should is an open question
+  for the maintainer. CodeBuddy moved its IDE Rules page, and that page
+  describes one folder per rule holding a `RULE.mdc` file. The CodeBuddy rules
+  file and docs now link the CodeBuddy Code memory page, which documents the
+  plain `.md` rule files the install writes. The docs say Apothem has not
+  confirmed that the IDE loads them. Kimi Code 2.4.0 through 2.5.2, the latest
+  release on 2026-11-07, change nothing the install relies on. No file the
+  install writes moves.
 - **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
   from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
   `tools/channel-smoke`. Dependabot cannot open pull requests for npm

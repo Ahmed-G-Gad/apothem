@@ -95,6 +95,7 @@ Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607f
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md> (context-file priority; retrieved 2026-11-02)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/agent/prompt_builder.py> (the order of the project context kinds and the `AGENTS.md` chain; retrieved 2026-11-03)
 - <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/agent/subdirectory_hints.py> (the files a session loads from folders below its working directory; retrieved 2026-11-03)
+- <https://github.com/NousResearch/hermes-agent/releases> (Hermes Agent releases, tagged `v` and the version; live page, not commit-pinned; retrieved 2026-11-03)
 
 ## Discovery Targets
 
