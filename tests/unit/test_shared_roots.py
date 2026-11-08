@@ -397,11 +397,16 @@ def test_codex_reads_the_project_agents_md_only_without_an_override_beside_it() 
 def test_claude_code_reads_the_project_agents_md_only_without_a_claude_md() -> None:
     # From v2.1.277, under its default Project instructions setting, Claude Code
     # reads AGENTS.md only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md
-    # is in the working folder or above it; ~/.claude/CLAUDE.md does not count.
+    # is in the working folder or above it, or, for a project below the working
+    # folder, in the project folder; ~/.claude/CLAUDE.md does not count.
     root = _DECLARED["<project>/AGENTS.md"]
     assert "claude-code" in root.readers
     assert root.reader_conditions["claude-code"] == (
-        "only in v2.1.277 or later, not under the claude-md or managed-only Project instructions setting, and under the default setting only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md is in the working folder or a folder above it, not counting ~/.claude/CLAUDE.md"
+        "only in v2.1.277 or later, not under the claude-md or managed-only "
+        "Project instructions setting, and under the default setting only when "
+        "no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md is in the project "
+        "folder, the working folder or a folder above it, not counting "
+        "~/.claude/CLAUDE.md"
     )
     assert "https://code.claude.com/docs/en/memory#agents-md" in root.evidence
 
