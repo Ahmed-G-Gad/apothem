@@ -41,10 +41,13 @@ demand, with your own bound:
   while the record is kept. A root with nothing installed keeps its last
   record, so the backups of its last uninstall or rollback stay until that
   root sees another install, uninstall or rollback.
-- It never deletes a backup set holding a folder that earlier releases
+- It never deletes a backup set holding a path that earlier releases
   removed whole though it held your own files, such as a folder of your own
-  commands, hooks or rules (the [changelog](/docs/changelog) lists them).
-  Those sets stay until you delete them yourself.
+  commands, hooks or rules (the [changelog](/docs/changelog) lists examples),
+  including such a path under a custom `CODEX_HOME`. Those sets stay until
+  you delete them yourself. To list them, run
+  `apothem backups prune --dry-run --verbose`: each one shows as
+  `kept (holds a path an earlier release removed)`.
 
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so

@@ -35,7 +35,11 @@ BACKUP_KEEP: Final[int] = 10
 #: and ``apothem backups prune`` neither. Each path is where those releases put
 #: the backup, measured by running each release's install: relative to the
 #: home, to ``~/.config`` for OpenCode, or to the project for Gemini CLI and
-#: Kimi Code. Current releases never back these paths up.
+#: Kimi Code. Codex keyed its paths relative to the parent of ``CODEX_HOME``,
+#: so a custom ``CODEX_HOME`` put them under its own folder name: the ``*``
+#: entries match those (one folder deep, like ``.codex``). An entry is a
+#: :meth:`pathlib.Path.glob` pattern. Current releases never back these paths
+#: up.
 RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
     "claude_code": tuple(
         f".claude/{name}"
@@ -71,6 +75,8 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
         ".agents/skills/AGENTS.md",
         ".codex/rules",
         ".codex/commands",
+        "*/rules",
+        "*/commands",
     ),
     "gemini_cli": (
         "skills/AGENTS.md",
@@ -109,7 +115,12 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
 def _holds_retired_sweep(stamp: str, harness_name: str) -> bool:
     """Return True when the backup set *stamp* holds a path in RETIRED_SWEEPS."""
     base = install_driver.BACKUP_ROOT / stamp / harness_name
-    return any((base / rel).exists() for rel in RETIRED_SWEEPS.get(harness_name, ()))
+    if not base.is_dir():
+        return False
+    return any(
+        next(base.glob(rel), None) is not None
+        for rel in RETIRED_SWEEPS.get(harness_name, ())
+    )
 
 
 @dataclass(frozen=True)

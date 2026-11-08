@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import posixpath
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -107,6 +108,7 @@ _FORMER: dict[str, tuple[str, tuple[str, ...]]] = {
             "apothem/agents",
         ),
     ),
+    "antigravity": ("~/.gemini", ("antigravity",)),
     "kimi-code": (
         "project",
         (
@@ -294,6 +296,7 @@ _BACKUP_PREFIX = {
     "hermes": ".hermes",
     "open-claw": ".openclaw",
     "kimi-code": "",
+    "antigravity": ".gemini",
 }
 
 
@@ -353,6 +356,39 @@ def test_rollback_leaves_a_swept_folder_that_is_now_a_file(
     assert "is now a file" in row.message
 
 
+@pytest.mark.parametrize(
+    "kind", ["symlink", *(["junction"] if sys.platform == "win32" else [])]
+)
+def test_rollback_leaves_a_swept_folder_that_is_now_a_link(
+    kind: str, home: Path, backups: Path
+) -> None:
+    # A junction is not is_symlink(), but it is a link all the same.
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    elsewhere = home / "my-commands"
+    elsewhere.mkdir()
+    commands = home / ".claude" / "commands"
+    commands.parent.mkdir(parents=True, exist_ok=True)
+    if kind == "junction":
+        import _winapi
+
+        _winapi.CreateJunction(str(elsewhere), str(commands))
+    else:
+        try:
+            commands.symlink_to(elsewhere, target_is_directory=True)
+        except OSError as exc:  # pragma: no cover - Windows without symlink rights
+            pytest.skip(f"symlinks unavailable: {exc}")
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=home / ".claude"
+    )
+
+    assert not list(elsewhere.iterdir())
+    [row] = [r for r in results if r.operation == "restore_backup"]
+    assert row.outcome == "skipped"
+    assert row.backup_path is not None
+    assert "is now a link" in row.message
+
+
 def test_rollback_fails_and_lists_a_file_it_cannot_write(
     home: Path, backups: Path
 ) -> None:
@@ -370,12 +406,130 @@ def test_rollback_fails_and_lists_a_file_it_cannot_write(
         record, harness_name="claude_code", harness_root=home / ".claude"
     )
 
-    [row] = [r for r in results if r.operation == "restore_backup"]
-    assert row.outcome == "error"
+    rows = [r for r in results if r.operation == "restore_backup"]
+    [row] = [r for r in rows if r.outcome == "error"]
     assert str(commands / "sub" / "deep.md") in row.message
     assert row.backup_path is not None
+    assert {Path(r.path).name for r in rows if r.outcome == "created"} == {
+        "deploy.md",
+        "review.md",
+    }
     assert (commands / "deploy.md").read_text("utf-8") == "my deploy command\n"
     assert (commands / "sub").read_text("utf-8") == "a file now\n"
+
+
+def test_a_partly_failed_restore_is_a_partial_rollback(
+    home: Path, backups: Path
+) -> None:
+    # Exit 2 (partial), not 1 ("nothing was rolled back"), naming what it wrote.
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    nested = Path(str(record.targets[0].backup_ref)) / "sub" / "deep.md"
+    nested.parent.mkdir()
+    nested.write_text("nested\n", "utf-8")
+    commands = home / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "sub").write_text("a file now\n", "utf-8")
+
+    outcome = CliRunner().invoke(
+        main, ["rollback", "--harness", "claude-code", "--yes", "--json"]
+    )
+
+    assert outcome.exit_code == 2, outcome.output
+    payload = json.loads(outcome.output)
+    written = {Path(path).name for path in payload["files_written"]}
+    assert {"deploy.md", "review.md"} <= written
+    assert "deep.md" not in written
+
+
+def test_a_file_that_cannot_be_read_is_listed(
+    home: Path, backups: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    unreadable = Path(str(record.targets[0].backup_ref)) / "review.md"
+    real_read = Path.read_bytes
+
+    def read_bytes(self: Path) -> bytes:
+        if self == unreadable:
+            raise PermissionError(13, "denied", str(self))
+        return real_read(self)
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=home / ".claude"
+    )
+
+    commands = home / ".claude" / "commands"
+    [row] = [r for r in results if r.outcome == "error"]
+    assert str(commands / "review.md") in row.message
+    assert (commands / "deploy.md").read_text("utf-8") == "my deploy command\n"
+    assert not (commands / "review.md").exists()
+
+
+def test_a_file_backup_never_lands_on_a_folder(home: Path, backups: Path) -> None:
+    copy = backups / "20261001T000000Z" / "hermes" / ".hermes" / "profile.yaml"
+    copy.parent.mkdir(parents=True)
+    copy.write_text("my profile\n", "utf-8")
+    target = home / ".hermes" / "profile.yaml"
+    target.mkdir(parents=True)
+    record = LedgerRecord.create(
+        harness="hermes",
+        root=home / ".hermes",
+        kind="install",
+        targets=(
+            LedgerTarget(
+                str(target),
+                "sweep_stale",
+                "operator-owned",
+                backup_ref=str(copy),
+                outcome="updated",
+            ),
+        ),
+    )
+    install_ledger.append_record(record)
+
+    results = install_driver.rollback_install(
+        record, harness_name="hermes", harness_root=home / ".hermes"
+    )
+
+    [row] = [r for r in results if r.operation == "restore_backup"]
+    assert row.outcome == "skipped"
+    assert "is now a folder" in row.message
+    assert target.is_dir()
+
+
+@pytest.mark.parametrize("folder", ["rules", "commands"])
+def test_retention_keeps_a_custom_codex_home_set(
+    home: Path, backups: Path, folder: str
+) -> None:
+    # Releases 1.0.1 to 1.5.0 keyed Codex backups relative to CODEX_HOME's
+    # parent, so CODEX_HOME=~/work/codex-home put them under codex-home/.
+    kept = backups / "20261001T000000Z" / "codex" / "codex-home" / folder
+    kept.mkdir(parents=True)
+    (kept / "mine.rules").write_text("mine\n", "utf-8")
+    # Codex's own ~/.config/apothem/<folder>, three folders deep, is no match.
+    other = backups / "20261002T000000Z" / "codex" / ".config" / "apothem" / folder
+    other.mkdir(parents=True)
+    (other / "f").write_text("x", "utf-8")
+
+    assert _holds_retired_sweep("20261001T000000Z", "codex")
+    assert not _holds_retired_sweep("20261002T000000Z", "codex")
+
+
+def test_a_custom_codex_home_install_never_backs_up_a_retired_path(
+    home: Path, backups: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    codex_home = home / "work" / "codex-home"
+    codex_home.mkdir(parents=True)
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _plant(codex_home, _FORMER["codex"][1])
+    (codex_home / "AGENTS.md").write_text("my own instructions\n", "utf-8")
+    run, _scoped = _runner("codex", tmp_path)
+    for action in ("install", "update", "update", "uninstall"):
+        run(action)
+    stamps = [p.name for p in backups.iterdir()] if backups.exists() else []
+    assert stamps
+    assert not [s for s in stamps if _holds_retired_sweep(s, "codex")]
 
 
 def _retired_and_newer(home: Path, backups: Path) -> None:

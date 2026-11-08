@@ -242,11 +242,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Recovering folders an earlier release swept is safer.**
   - Rolling such an install back writes each missing file atomically. A file
     it cannot write (a file now stands where a folder was, or no permission)
-    fails the rollback and is listed for you to copy by hand. A swept folder
-    that is now a file or a link is left in place and its backup is named.
+    is listed for you to copy by hand, and the rollback exits 2 (partial)
+    and names the files it did write. A swept path that is now a link (a
+    symlink or a Windows junction), or a file where a folder was or the
+    other way round, is left in place and its backup is named.
   - Retention, and `apothem backups prune`, now keep every backup set that
-    holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter,
-    including the old `apothem/hooks`, `apothem/templates`, `apothem/skills`
+    holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter
+    and for Codex under a custom `CODEX_HOME` too, including the old `apothem/hooks`, `apothem/templates`, `apothem/skills`
     and `apothem/agents` folders of OpenCode, Qwen Code, Hermes and Open-Claw,
     Gemini CLI's `.gemini/apothem/` and Kimi Code's old `.kimi-code/apothem/`.
     `prune` names why it keeps such a set.
