@@ -1673,6 +1673,23 @@ def test_a_failed_rollback_keeps_the_staging_folder_and_names_it(
         capture_output=True,
         timeout=60,
     )
+    # The rule must stop this account adding a folder; on some hosts (the
+    # CI runner's account among them) it does not, and the rollback then
+    # succeeds, which another test covers.
+    probe = home / "acl-probe"
+    try:
+        probe.mkdir()
+    except PermissionError:
+        pass
+    else:
+        probe.rmdir()
+        subprocess.run(
+            ["icacls", str(home), "/remove:d", user],
+            check=True,
+            capture_output=True,
+            timeout=60,
+        )
+        pytest.skip("a deny rule on adding folders is not enforced for this account")
     try:
         with (home / "pyproject.toml").open("rb"):
             result = _run(
