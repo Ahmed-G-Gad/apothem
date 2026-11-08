@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "cadb0684360fb056"
+sourceHash: "2031f90de3f936a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,20 +40,35 @@ apothem install --harness hermes
 Apothem의 규칙이나 훅을 추가하지 않습니다.
 
 Hermes는 다른 설치가 Hermes가 읽는 프로젝트 파일에 작성하는 Apothem 블록을
-실제로 로드합니다. Hermes는 세션당 한 종류의 프로젝트 컨텍스트만 로드하며
-처음 찾은 것을 사용하므로, 다음 각 파일은 그 옆에 적힌 조건을 만족할 때만
-Hermes에 도달합니다.
+실제로 로드합니다. Hermes는 세션당 한 종류의 프로젝트 컨텍스트만 로드합니다.
+비어 있지 않은 파일이 있는 첫 번째 종류가 로드되며, 순서는 `.hermes.md` 또는
+`HERMES.md`, `AGENTS.md` 파일(각 폴더에서 비어 있지 않은 `AGENTS.override.md`가
+그 옆의 `AGENTS.md`를 대체합니다), `CLAUDE.md`, 그다음 다른 편집기의 규칙
+파일입니다. 따라서 다음 각 파일은 그 옆에 적힌 조건을 만족할 때만 Hermes에
+도달합니다.
 
 ```text
 <project>/AGENTS.md                         when the project has no .hermes.md or HERMES.md
                                             and no AGENTS.override.md beside it
-<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, AGENTS.md
-                                            or CLAUDE.md
+<project>/.cursor/rules/apothem-rules.mdc   when the project has no .hermes.md, HERMES.md,
+                                            AGENTS.override.md, AGENTS.md or CLAUDE.md
 ```
 
-Kimi Code용 Apothem 설치는 첫 번째 파일을 작성하고, 다른 편집기용 설치는
-두 번째 파일을 작성합니다. `--project`를 사용한 설치는 그러한 파일과 그것을
-작성한 설치를 명시합니다.
+Hermes는 `.hermes.md`와 `HERMES.md`를 시작한 폴더에서 git 루트까지 올라가며
+찾고, `AGENTS.md` 파일은 git 루트에서 아래로 내려오며 읽으므로, 프로젝트 위쪽
+폴더에 있는 그러한 파일도 대상에 포함됩니다. 비어 있는 파일은 대상에 포함되지
+않습니다. 비어 있는 `.hermes.md`는 그 옆의 `HERMES.md`도 가리므로, 그
+`HERMES.md`에 텍스트가 있어도 Hermes는 `AGENTS.md` 파일로 넘어갑니다. 이
+조건들은 프로젝트에서 시작한 세션에 적용됩니다. 프로젝트 위쪽 폴더에서 시작한
+세션도, 프로젝트에 어떤 `.hermes.md`나 `HERMES.md`가 있든, 프로젝트의 파일을 처음
+다룰 때 `<project>/AGENTS.md` 또는 그 옆의 비어 있지 않은
+`AGENTS.override.md`를 로드할 수 있습니다. Hermes는 홈 폴더와 일부 컨테이너
+폴더에서는 이를 건너뜁니다.
+
+[Kimi Code](/docs/harnesses/kimi-code)용 Apothem 설치는 첫 번째 파일을 작성하고,
+[다른 편집기용 설치](/docs/harnesses/cursor)는 두 번째 파일을 작성합니다.
+`--project`를 사용해 실행한 Hermes 설치는 그러한 파일과 그것을 작성한 설치를
+명시합니다.
 
 **이름 충돌.** Hermes는 스킬에 대해 다음 우선순위를 문서화합니다: 프로젝트의
 스킬(`<project>/.hermes/skills/` 및 `<project>/.agents/skills/`), 그다음

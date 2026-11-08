@@ -18,7 +18,7 @@ sourceHash: "6b7ec2a30917de07"
 
 ## 2. 클래스별 필수 필드
 
-필수 키 집합은 아티팩트 클래스에 따라 다릅니다. 권위 있는 형태는 `scripts/dev/validate_ecosystem.py`와 `src/apothem/schemas/` 디렉터리 아래의 클래스별 JSON 스키마가 강제합니다. 헬퍼, 스킬, 명령, 출력 스타일, 플랜 클래스에는 각각 스키마 파일이 하나씩 있으며 아래에 나열되어 있습니다. `CLAUDE.md`와 규칙 클래스에는 스키마 파일이 없으며, `validate_ecosystem.py`가 이들의 키를 검사합니다. 플랜 파일은 아래 표에 없으며, 플랜 파일의 키는 [계획 디시플린](/docs/reference/plans-discipline)에 나열되어 있습니다.
+필수 키 집합은 아티팩트 클래스에 따라 다릅니다. 권위 있는 형태는 `scripts/dev/validate_ecosystem.py`와 `src/apothem/schemas/` 디렉터리 아래의 클래스별 JSON 스키마가 강제합니다. 도우미, 스킬, 명령, 출력 스타일, 플랜 클래스에는 각각 스키마 파일이 하나씩 있으며 아래에 나열되어 있습니다. `CLAUDE.md`와 규칙 클래스에는 스키마 파일이 없으며, `validate_ecosystem.py`가 이들의 키를 검사합니다. 플랜 파일은 아래 표에 없으며, 플랜 파일의 키는 [계획 디시플린](/docs/reference/plans-discipline)에 나열되어 있습니다.
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -33,7 +33,7 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md`(루트 구성) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | 규칙(`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | 명령(`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| 헬퍼, 위임 작업자라고도 함(`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`(선택 사항: 이를 생략한 헬퍼는 모든 도구를 상속합니다. `tools`를 나열하는 헬퍼에 MCP 서버를 부여하려면 프로필의 `agent_mcp_servers` 키에 해당 서버를 지정하세요), `disallowedTools`, `maxTurns`, `effort` |
+| 도우미, 위임 작업자라고도 함(`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`(선택 사항: 이를 생략한 도우미는 모든 도구를 상속합니다. `tools`를 나열하는 도우미에 MCP 서버를 부여하려면 프로필의 `agent_mcp_servers` 키에 해당 서버를 지정하세요), `disallowedTools`, `maxTurns`, `effort` |
 | 스킬(`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`. Claude Code 설치와 플러그인, 그리고 공유 사용자 수준 스킬 폴더는 `userInvocable`을 `user-invocable`로 이름을 바꾸며, 스키마는 각 스킬이 두 표기 중 정확히 하나만 갖도록 요구하고 둘 다 갖는 것은 허용하지 않습니다. `Qwen Code` 설치는 `allowed-tools`를 `allowedTools` 목록으로 쓰는데, 이는 `Qwen Code`가 읽는 키와 형태입니다 |
 | 출력 스타일(`src/apothem/output-styles/*.md`) | `name`, `description`. 배포되는 모든 스타일은 Claude Code가 소프트웨어 엔지니어링 지침을 유지하도록 `keep-coding-instructions: true`도 설정합니다 |
 

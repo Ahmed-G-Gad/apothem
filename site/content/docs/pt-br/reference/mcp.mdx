@@ -2,7 +2,7 @@
 title: "Servidores MCP"
 description: "Configuração de servidores Model Context Protocol — de propriedade do operador e registrados por meio do mecanismo MCP nativo de cada ferramenta; alguns adaptadores projetam o inventário MCP do perfil compartilhado, e os demais não criam entradas de servidor."
 machineTranslated: true
-sourceHash: "d8daaaca1ee297e9"
+sourceHash: "1fbc48cd12ad0388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,23 @@ Code, os servidores se registram com `claude mcp add` em `~/.claude.json`
 (escopo de usuário ou local) e em um `.mcp.json` no nível do projeto; o
 adaptador do Claude Code não grava nenhum desses arquivos, e as configurações do
 Claude Code gerenciadas pelo Apothem nunca carregam um bloco `mcpServers`.
+
+O adaptador do `OpenCode` grava o inventário no bloco `mcp` de `opencode.json`.
+O `OpenCode` faz a substituição de `{env:NAME}` na sua configuração, e não de
+`${NAME}`; por isso, o adaptador grava cada referência `${NAME}` nas variáveis
+de ambiente, nos cabeçalhos ou na URL de um servidor como `{env:NAME}`; uma
+variável não definida se torna uma string vazia. Os argumentos de comando são
+copiados como estão. Um `$NAME` em um valor de ambiente ou de cabeçalho, ou
+outra forma `${...}`, como `${NAME:-default}`, é copiado como está, e
+`apothem install` avisa que o `OpenCode` não expande essa referência, nomeando
+onde ela está, e não o valor. O `OpenCode` insere um valor `{env:NAME}` no texto
+de configuração que lê, sem escapá-lo (o `OpenCode` 2 o escapa somente quando
+esse texto não seria analisado de outra forma); por isso, um valor com uma barra
+invertida, aspas duplas ou um caractere de controle pode impedir o `OpenCode` 1
+de ler o arquivo, e, nas duas versões, um `\t` ou `\n` nele chega ao servidor
+como um caractere de controle. `apothem install` avisa sobre um valor desse
+tipo; defina-o como `{file:path}` sob `harnesses.opencode.mcp_servers.<name>`,
+para que as outras ferramentas mantenham a referência `${NAME}`.
 
 ## Dar a um auxiliar acesso a servidores MCP
 

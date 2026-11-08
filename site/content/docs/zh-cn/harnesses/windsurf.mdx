@@ -43,7 +43,7 @@ apothem install --harness windsurf --project /path/to/project
 
 这些文件夹是共享的，并非项目私有：
 
-- 你安装 `windsurf` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#共享根目录)列出了它们。
+- 你安装 `windsurf` 的每个项目，以及每个指定该文件夹的其他 Apothem 安装，都使用同一份副本并写入相同的文件，因此安装的顺序无关紧要。其他几个工具也会读取 `~/.agents/skills/`；[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们。
 - `--project` 决定要写入哪个规则文件以及安装属于哪个项目。它不会改变技能的写入位置。
 - 安装不会向你的仓库添加任何技能或规则文件。项目获得的是规则文件、`.devin/agents/` 中的子代理文件、`.devin/config.local.json` 中的钩子注册，以及每次项目安装都会创建的 `.apothem/` 文件夹，该文件夹也存放钩子脚本。
 - 主目录中的文件夹会最先写入。如果写入失败，例如因为路径中的某个文件夹是一个指向你主目录之外的链接（停留在主目录之内的链接会被跟随），或者无法写入，安装会带着该错误停止，而项目中的任何内容都不会改变。
@@ -152,7 +152,7 @@ Devin Local 还会导入其他工具使用的规则文件，且这些导入默�
 <project>/AGENTS.md
 ```
 
-当这些文件中的任何一个包含 Apothem 块时，Devin Local 会加载该文件，同时也会加载 `.devin/rules/` 中的规则文件，并且安装 `windsurf` 时会打印一条说明，指出该文件以及写入它的那次安装。第一个文件中的 Apothem 块不会把任何单一工具指定为其读者，但其中关于该编辑器的子代理文件夹和钩子文件的说法描述的是那次安装，不适用于 Devin；该文件所指出的技能文件夹和 `~/.config/apothem/` 同样是这次安装写入的。若要让前两个文件不被 Devin Local 加载，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中关闭它们的导入：
+当这些文件中的任何一个包含 Apothem 块时，Devin Local 会加载该文件，同时也会加载 `.devin/rules/` 中的规则文件，并且安装 `windsurf` 时会打印一条说明，指出该文件以及写入它的那次安装。第一个文件中的 Apothem 块不会把任何单一工具指定为其读取者，但其中关于该编辑器的子代理文件夹和钩子文件的说法描述的是那次安装，不适用于 Devin；该文件所指出的技能文件夹和 `~/.config/apothem/` 同样是这次安装写入的。若要让前两个文件不被 Devin Local 加载，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中关闭它们的导入：
 
 ```json
 {

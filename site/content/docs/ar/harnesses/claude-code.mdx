@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "1b56dfd99986fa0e"
+sourceHash: "42277b35237235a2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "1b56dfd99986fa0e"
 apothem install --harness claude-code
 ```
 
-يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد، والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر إلى مهارات، لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في <bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى <bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. ولتفعيله، أضف إلى <bdi>`settings.json`</bdi> مدخلَ <bdi>`statusLine`</bdi> من النوع <bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>. تعمل القيمة <bdi>`commandWindows`</bdi> في المقتطف على Windows، وتذكر المُفسِّر دون علامات اقتباس. وحين يحتوي مسار المُفسِّر على مسافة، يكتب التثبيت في تلك القيمة صيغة Windows 8.3 القصيرة له إن توفّرت على وحدة التخزين. وتحتفظ مدخلات الخطّافات في <bdi>`settings.json`</bdi> بالمسار الكامل.
+يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد، والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر إلى مهارات، لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في <bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى <bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. ولتفعيله، أضف إلى <bdi>`settings.json`</bdi> مدخلَ <bdi>`statusLine`</bdi> من النوع <bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>. تعمل القيمة <bdi>`commandWindows`</bdi> في المقتطف على <bdi>Windows</bdi>، وتذكر المُفسِّر دون علامات اقتباس. وحين يحتوي مسار المُفسِّر على مسافة، يكتب التثبيت في تلك القيمة صيغة <bdi>Windows 8.3</bdi> القصيرة له إن توفّرت على وحدة التخزين. وتحتفظ مدخلات الخطّافات في <bdi>`settings.json`</bdi> بالمسار الكامل.
 
 **الملفات المكتوبة:** <bdi>`settings.json`</bdi>، وكتلة <bdi>Apothem</bdi> في
 <bdi>`CLAUDE.md`</bdi>، و<bdi>`agents/`</bdi>، و<bdi>`rules/`</bdi>،
@@ -42,8 +42,10 @@ apothem install --harness claude-code
 <bdi>`~/.claude/.apothem/support/`</bdi>. ويشير أيضًا إلى فهرس القواعد،
 <bdi>`~/.claude/rules/apothem-rule-index.md`</bdi>. ويصل بقية سطح حوكمة <bdi>Apothem</bdi> إلى
 <bdi>Claude Code</bdi> عبر شجرة <bdi>`rules/`</bdi> المُنتشِرة وخطّاف
-<bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> أيضًا
-<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>،
+<bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> 1 أيضًا
+<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يحتوي دليل إعداده
+(<bdi>`~/.config/opencode/`</bdi> افتراضيًا) على <bdi>`AGENTS.md`</bdi>
+(ولا يرجع <bdi>OpenCode</bdi> 2 احتياطيًا إلى <bdi>`CLAUDE.md`</bdi>)،
 ويستورده <bdi>Devin Desktop</bdi> افتراضيًا، لذا لا تُسمّي الكتلة أداة واحدة بعينها
 قارئًا لها.
 
@@ -124,7 +126,7 @@ apothem install --harness claude-code
 
 بعد ضغط السياق لا يُعيد <bdi>Claude Code</bdi> إرفاق سوى أول 5,000 رمز
 من كل مهارة مُستدعاة، ويوصي بملف <bdi>`SKILL.md`</bdi> من نحو 500 سطر أو
-أقل مع وضع التفاصيل في ملفات مجاورة. وتبلغ مطالبات الأوامر حتى 67 KB، لذا
+أقل مع وضع التفاصيل في ملفات مجاورة. وتبلغ مطالبات الأوامر حتى <bdi>67 KB</bdi>، لذا
 يقسم إصدار <bdi>Claude Code</bdi> كل واحدة منها إلى <bdi>`SKILL.md`</bdi> نحيف إضافةً إلى ملفات تحت
 <bdi>`references/`</bdi>:
 
@@ -173,15 +175,16 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 موضّح أعلاه؛ وتُنسَخ المهارات وأنماط الإخراج كما هي، وتُنسَخ العوامل
 كما كُتبت باستثناء أن المساعِد الذي يسرده المفتاح <bdi>`agent_mcp_servers`</bdi> في الملف التعريفي
 يكتسب مُدخَل <bdi>`mcp__<server>__*`</bdi> لكل خادم مُسمّى في سطر <bdi>`tools`</bdi> الخاص به (راجع
-[خوادم <bdi>MCP</bdi>](/docs/reference/mcp#منح-مساعِد-الوصول-إلى-خوادم-mcp)).
+[خوادم <bdi>MCP</bdi>](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)).
 يتحقّق التثبيت من أن الملف التعريفي سليم البنية وأن جميع ربطات
 الخطّافات في <bdi>settings.json</bdi> قابلة للحلّ. لا يؤلّف المحوّل أي مدخلات لخوادم
 <bdi>MCP</bdi>: سجّل الخوادم باستخدام <bdi>`claude mcp add`</bdi> (راجع
 [خوادم <bdi>MCP</bdi>](/docs/reference/mcp)).
 
 <bdi>`~/.claude/agents/`</bdi> جذر مشترك يملكه <bdi>`Claude Code`</bdi>، وكذلك
-<bdi>`~/.claude/skills/`</bdi>: فأدوات مدعومة أخرى تُحمِّل هذين المجلّدين، لذا تظهر العوامل
-والمهارات التي يكتبها تثبيت <bdi>`Claude Code`</bdi> هناك في تلك الأدوات أيضًا، ويطبع
+<bdi>`~/.claude/skills/`</bdi> و<bdi>`~/.claude/CLAUDE.md`</bdi>: فأدوات مدعومة أخرى تُحمِّلها،
+لذا تظهر العوامل والمهارات وكتلة <bdi>Apothem</bdi> التي يكتبها تثبيت <bdi>`Claude Code`</bdi>
+هناك في تلك الأدوات أيضًا، ويطبع
 التثبيت ملاحظة تسمّيها. ويسرد
 [سجلّ أُطُر العمل](/docs/reference/harness-registry) قرّاء كل
 جذر.

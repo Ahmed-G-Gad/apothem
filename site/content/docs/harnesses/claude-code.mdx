@@ -66,27 +66,27 @@ backed up before replacement; unrelated operator-authored entries are
 preserved. `settings.json` is merged so operator-authored keys remain
 recoverable.
 
-Operator-authored files are kept only outside the folders below. Every install
-and update removes each of these folders under `~/.claude/` that exists,
-whether or not Apothem wrote it: `src/`, `conformity/`, `schemas/`, `hooks/`,
-`config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`,
-`packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/`, and
-`commands/`. It also removes `statuslines/__init__.py` and the `AGENTS.md`
-files in `agents/`, `rules/`, `skills/`, `statuslines/`, and `output-styles/`.
-A removed folder goes whole, including the files you placed in it. Slash
-commands you keep in `commands/` are removed too, and Apothem installs its own
-command prompts as skills under `skills/`. A hook script you keep in `hooks/`
-is removed, which leaves any `settings.json` entry that calls it pointing at
-nothing. The sweep runs before the install writes its own files. Each removed
-path is copied to `~/.apothem/backups/` first, and the install record names
-that copy. Uninstall does not restore it. To restore a removed path, run
-`apothem rollback --harness claude-code --install-id ID` for the install that
-removed it, as described in the
-[rollback reference](/docs/cli-reference/rollback). A plain
-`apothem rollback` reverses only the latest install. Install records and their
-copies are kept for the newest 10 installs, so a removed path can be restored
-only while its install is among them. `apothem diff --harness claude-code`
-lists these removals as `Prune stale files` before you install.
+Install and update leave your own files under `~/.claude/` alone, including
+the slash commands in `commands/` and the hook scripts in `hooks/`. Earlier
+releases instead removed whole folders there on every install and update
+(`commands/`, `hooks/`, `scripts/`, `templates/` and others), with the files
+you placed in them; the [changelog](/docs/changelog) names the releases. See
+[Recovering files an earlier release
+removed](#recovering-files-an-earlier-release-removed).
+
+### Recovering files an earlier release removed
+
+Each removed folder was copied first to
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. The current
+release never deletes a backup set that holds such a folder, but an earlier
+release's retention may already have deleted older sets. To recover:
+
+1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+2. Copy the files you need from that copy back into `~/.claude/` by hand.
+3. Run `apothem update` afterwards.
+
+`apothem rollback --install-id` reverses the whole earlier install, including
+`settings.json` and `CLAUDE.md`, so it is not the way to recover these files.
 
 Installed skills, and the skills bundled in the Claude Code plugin, carry
 `user-invocable` instead of the source corpus's `userInvocable`, because Claude
@@ -209,6 +209,20 @@ Install validates that the profile is
 well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see
 [MCP servers](/docs/reference/mcp)).
+
+Claude Code also reads a project's `AGENTS.md`, from the release its
+[memory page](https://code.claude.com/docs/en/memory#agents-md) names on.
+Under the default **Project instructions** setting it does so only when no
+`CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` is in the working folder
+or a folder above it. `~/.claude/CLAUDE.md` does not count, so the Apothem block there keeps
+loading alongside a project `AGENTS.md`. The Kimi Code install writes an
+Apothem block into the project `AGENTS.md`, so in such a project Claude Code
+loads both blocks; the
+[harness registry](/docs/reference/harness-registry#shared-roots) lists that
+file's readers and their conditions. **Project instructions** is a user-wide
+setting, not a per-project one: setting it to `claude-md` in `/config` keeps
+Claude Code to its `CLAUDE.md` files in every project, and
+`claude-md-and-agents-md` loads both kinds of file wherever they are.
 
 `~/.claude/agents/` is a shared root that `Claude Code` owns, as are
 `~/.claude/skills/` and `~/.claude/CLAUDE.md`: other supported tools load them,

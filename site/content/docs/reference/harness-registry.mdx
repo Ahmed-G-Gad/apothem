@@ -14,7 +14,7 @@ registry, the per-adapter `capabilities.yml`, and each adapter's
 
 | Harness | Install name | Scope | Format | Targets | MCP | Convention pin |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -107,7 +107,7 @@ co-installer puts Apothem content in front of every reader.
 | `~/.claude/agents/` | Claude Code | none | Cursor |
 | `~/.codex/agents/` | Codex | none | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | none | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | none | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | none | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | none | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | none | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | none | Zed |
@@ -133,7 +133,16 @@ not load `~/.claude/CLAUDE.md`. `Codex` takes the first of
 `AGENTS.override.md` and `AGENTS.md` in each folder, so it loads
 `<project>/AGENTS.md` only when the project has no `AGENTS.override.md` beside
 it. `CodeBuddy` uses `<project>/AGENTS.md` as project memory only when the
-project has no `CODEBUDDY.md`. `Zed` loads only the first project instruction
+project has no `CODEBUDDY.md`. `Claude Code` reads `AGENTS.md` in the releases
+its [memory page](https://code.claude.com/docs/en/memory#agents-md) names, and
+the install note gives the first one. Under its default **Project
+instructions** setting it loads every `AGENTS.md`
+and `.claude/AGENTS.md` in the working folder and the folders above it, but only
+when none of those folders holds a `CLAUDE.md`, `.claude/CLAUDE.md` or
+`CLAUDE.local.md`. `~/.claude/CLAUDE.md` does not count, so the Apothem block
+there keeps loading alongside `<project>/AGENTS.md`. The `claude-md-and-agents-md`
+setting loads both kinds of file, and `claude-md` and `managed-only` load no
+`AGENTS.md`. `Zed` loads only the first project instruction
 file in its list: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, then
 `GEMINI.md`. So it loads `<project>/.github/copilot-instructions.md`,
@@ -256,7 +265,7 @@ target, so record that target only after the trigger's action is done.
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |

@@ -2,7 +2,7 @@
 title: "ハーネスレジストリ"
 description: "組み込みの Apothem ハーネスアダプターに関する技術的なレジストリリファレンス。"
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,7 +95,7 @@ sourceHash: "fafca976f970f790"
 そのフォルダーを使うインストールの数を数えます。記録上のオーナーは、登録済みオーナーがそのフォルダーを
 使っている間はそのオーナーであり、そうでなければフォルダーを使うインストールのうち最も古いものです。
 登録済みオーナーがアンインストールされても、何も移動しません。アンインストールがフォルダーを削除するのは、
-それをまだ使っている他のインストールがない場合だけです（[`uninstall`](/docs/cli-reference/uninstall#ホームディレクトリ内の共有フォルダー) を参照）。
+それをまだ使っている他のインストールがない場合だけです（[`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory) を参照）。
 リーダーをインストールしてもフォルダーにファイルは置かれません。オーナーまたは共同インストーラーを
 インストールすると、Apothem のコンテンツがすべてのリーダーの前に置かれます。
 
@@ -121,15 +121,45 @@ sourceHash: "fafca976f970f790"
 共有ルートではありません。
 
 リーダーが列挙されるのは、そのベンダーのドキュメントがまさにそのパスのデフォルトでの読み込みを
-示している場合だけです。レジストリは 3 つの条件を記録しており、インストールの注記はそれぞれの条件を
-繰り返します。`Open-Claw` は、デフォルトの状態ディレクトリのもとでのみ `~/.agents/skills/` を
+示している場合だけです。リーダーがあるパスを一部の場合にだけ読み込むときは、レジストリがその条件を
+記録し、インストールの注記がそれを繰り返します。
+`Open-Claw` は、デフォルトの状態ディレクトリのもとでのみ `~/.agents/skills/` を
 インデックスします（`OPENCLAW_STATE_DIR` が別の場所を指している場合はそのフォルダーを
-スキップします）。`Hermes` は、1 セッションにつきプロジェクトコンテキストを 1 種類しか読み込まず、
-最初に一致したものが優先されます。その順序は、`.hermes.md` または `HERMES.md`、`AGENTS.md`、
-`CLAUDE.md`、その後に `Cursor` のルールです。そのため、`<project>/AGENTS.md` は、プロジェクトに
-`.hermes.md` も `HERMES.md` もなく、その隣に `AGENTS.override.md` もない場合にのみ読み込まれ、
-`<project>/.cursor/rules/apothem-rules.mdc` は、プロジェクトに `.hermes.md`、`AGENTS.md`、
-`CLAUDE.md` のいずれもない場合にのみ読み込まれます。`Cursor` の
+スキップします）。`OpenCode` 1 は、その設定フォルダー（デフォルトでは `~/.config/opencode/`）に
+`AGENTS.md` が存在しない場合にのみ
+`~/.claude/CLAUDE.md` を読み込み、`OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` または
+`OPENCODE_DISABLE_CLAUDE_CODE=1` が設定されている場合は読み込みません。`OpenCode` 2 は同じ
+`~/.config/opencode/` 設定を読み取りますが、`CLAUDE.md` のフォールバックがないため、
+`~/.claude/CLAUDE.md` を読み込みません。`Codex` は各フォルダーで `AGENTS.override.md` と
+`AGENTS.md` のうち最初のものを採用するため、`<project>/AGENTS.md` を読み込むのは、
+その隣に `AGENTS.override.md` がない場合だけです。`CodeBuddy` は、プロジェクトに `CODEBUDDY.md`
+がない場合にのみ、`<project>/AGENTS.md` をプロジェクトメモリとして使います。`Zed` は、リストにある
+プロジェクト命令ファイルのうち最初の 1 つだけを読み込みます。そのリストは、`.rules`、
+`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、
+`AGENTS.md`、`CLAUDE.md`、その後に `GEMINI.md` です。そのため、
+`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md`、`<project>/GEMINI.md` は、
+プロジェクトにリストでそのファイルより前のファイルが 1 つもない場合にのみ読み込まれます。`Zed` の
+インストールは、リストの最初のファイルである `<project>/.rules` を書き込むため、`Zed` は、
+インストール先のプロジェクトでは、この 3 つのいずれも読み込みません。
+
+`Hermes` は、1 セッションにつきプロジェクトコンテキストを 1 種類しか読み込みません。読み込まれるのは、
+空でないファイルがある最初の種類で、その順序は、`.hermes.md` または `HERMES.md`、`AGENTS.md`
+チェーン（各フォルダーでは、空でない `AGENTS.override.md` が、その隣の `AGENTS.md` の代わりに
+読み込まれます）、`CLAUDE.md`、その後に `Cursor` のルールです。そのため、`<project>/AGENTS.md` は、
+プロジェクトに `.hermes.md` も `HERMES.md` もなく、その隣に `AGENTS.override.md` もない場合にのみ
+読み込まれ、`<project>/.cursor/rules/apothem-rules.mdc` は、プロジェクトに `.hermes.md`、
+`HERMES.md`、`AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` のいずれもない場合にのみ読み込まれます。
+`Hermes` は、`.hermes.md` と `HERMES.md` を、開始したフォルダーから git ルートまで上方向に探し、
+`AGENTS.md` チェーンを git ルートから下方向に読み取るため、プロジェクトより上位のフォルダーに
+あるそのようなファイルも対象に含まれます。空のファイルは対象になりません。空の `.hermes.md` は、
+その隣の `HERMES.md` も隠すため、その `HERMES.md` にテキストがあっても、`Hermes` は `AGENTS.md`
+チェーンに進みます。これらの条件は、プロジェクト内で開始したセッションに適用されます。
+プロジェクトより上位のフォルダーで開始したセッションでも、プロジェクトにどのような `.hermes.md` や
+`HERMES.md` があっても、そのセッションがプロジェクト内のファイルを初めて操作するときに、
+`<project>/AGENTS.md`、またはその隣にある空でない `AGENTS.override.md` を読み込むことがあります。
+`Hermes` は、ホームフォルダーと一部のコンテナーフォルダーでは、これをスキップします。
+
+`Cursor` の
 ドキュメントは `~/.codex/agents/` を `Codex` 互換フォルダーとして挙げていますが、`Cursor` がそこで
 どのファイル形式を解析するかは述べておらず、`Codex` のインストールは TOML ファイルを書き込むため、
 `Cursor` がそれらのヘルパーを読むかどうかは確認されていません。`Cursor` のインストールは、ヘルパーの
@@ -178,7 +208,7 @@ Devin CLI と同じ方法でファイルを見つけます。そのため、`~/.
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |

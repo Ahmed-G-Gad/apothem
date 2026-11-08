@@ -612,7 +612,7 @@ graph LR
     P["shared profile<br/>rules · skills · subagents · slash-commands · hooks<br/>output-styles · statuslines · templates · conformity validators<br/>schemas · per-harness instruction templates · Claude Code settings template"]
     A["apothem<br/>core CLI"]
     P --> A
-    A --> AG["~/.gemini/GEMINI.md + antigravity-cli plugin<br/>Antigravity"]
+    A --> AG["~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem<br/>Antigravity"]
     A --> CC["~/.claude/<br/>Claude Code"]
     A --> CB["project .codebuddy/rules + .codebuddy/agents + ~/.codebuddy/skills + ~/.config/apothem<br/>CodeBuddy"]
     A --> CO["~/.codex + ~/.agents/skills + ~/.config/apothem<br/>Codex"]
@@ -664,7 +664,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 
 | Harness | Scope | Materialization root |
 |---|---|---|
-| Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/config/plugins/apothem/` |
 | Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` |
 | CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Codex | User | `~/.codex/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |

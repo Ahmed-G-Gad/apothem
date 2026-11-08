@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "642b586866c9d377"
+sourceHash: "82cbd13f4a28f8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -709,12 +709,20 @@ claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
                 frontmatter, plus the project equivalents.
 codebuddy       .codebuddy/rules/**/*.md (project and home) unless
                 alwaysApply: false, plus CODEBUDDY.md.
-codex           ~/.codex/AGENTS.md and the project AGENTS.md.
+codex           The first non-empty of ~/.codex/AGENTS.override.md and
+                ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
+                AGENTS.md and the project_doc_fallback_filenames names that
+                exists in the project (an empty one loads nothing), counted up
+                to project_doc_max_bytes (32 KiB by default).
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, project .hermes.md, AGENTS.md, CLAUDE.md.
-                The support tree and apothem/rules/ are not launch surfaces.
+hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
+                with a non-empty file (Hermes loads one): .hermes.md or
+                HERMES.md (the first of the two that exists is the only
+                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
+                .cursorrules with .cursor/rules/*.mdc. The support tree and
+                apothem/rules/ are not launch surfaces.
 kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.

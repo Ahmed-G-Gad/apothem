@@ -2,7 +2,7 @@
 title: "Auxiliaires"
 description: "Auxiliaires persistants pour la recherche, l'audit, la qualité et l'orchestration, avec contrats de frontmatter et protocoles d'isolation de déploiement."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,7 +93,7 @@ L'arborescence du plugin Claude Code est assemblée sans profil et conserve la
 liste simple, de sorte qu'un utilisateur du plugin définit plutôt un agent de
 niveau utilisateur sous `~/.claude/agents/`. La syntaxe du profil, les règles
 sur les noms de serveurs et ce contournement se trouvent sur
-[Donner à un auxiliaire l'accès aux serveurs MCP](/docs/reference/mcp#donner-à-un-auxiliaire-laccès-aux-serveurs-mcp).
+[Donner à un auxiliaire l'accès aux serveurs MCP](/docs/reference/mcp#give-a-helper-access-to-mcp-servers).
 
 ## Conversion par environnement
 
@@ -111,7 +111,7 @@ de lecture seule :
 | Codex | aucune émise ; les instructions de l'auxiliaire l'énoncent, et le bac à sable de la session parente régit les écritures | non disponible | hérité (non défini) |
 | Gemini CLI | liste d'autorisation `tools` de noms d'outils Gemini, plus les éventuelles entrées `mcp_<server>_*` que la clé `agent_mcp_servers` du profil ajoute à une liste explicite listée ; sans `tools`, la liste d'autorisation qu'impliquent les refus plus `mcp_*` | `max_turns` | hérité (non défini) |
 | Qwen Code | `tools` / `disallowedTools` en noms d'outils Qwen ; sans `tools`, aucune liste n'est émise, de sorte que les outils MCP sont hérités et que les refus s'appliquent | non mappé | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` par outil) ; les outils MCP ne sont pas restreints | non mappé | hérité (non défini) |
+| OpenCode | `permission` avec un `deny` par outil refusé et aucun `allow`, de sorte que les valeurs par défaut d'OpenCode (y compris sa demande de confirmation avant de lire les fichiers `.env`) et vos propres règles s'appliquent ; les outils MCP ne sont pas restreints | non mappé | hérité (non défini) |
 | Antigravity | aucune émise ; la description retire « read-only » | non disponible | hérité (non défini) |
 | CodeBuddy | `tools` / `disallowedTools` sous forme de chaînes séparées par des virgules, limitées aux noms d'outils que documente CodeBuddy ; aucune entrée MCP | `maxTurns` | hérité (non défini) |
 | Trae | `tools` / `disallowedTools` sous forme de chaînes séparées par des virgules, limitées aux noms d'outils que documente Trae ; aucune entrée MCP | non disponible | hérité (non défini) |

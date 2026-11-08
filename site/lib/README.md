@@ -53,6 +53,15 @@ derive from it rather than re-declaring it.
   each locale's storage with the English fallback, so asking it would report the
   whole fallback tree as translated; reading the filesystem keeps static params
   tied to the real translated surface.
+- **`locale-links.ts`** — keeps a reader in their language on a body link. On a
+  page served in a non-default language, `localizeDocsHref` turns a `/docs/<page>`
+  link into the language's own copy of the target when it has one, and leaves the
+  link on the English page when it does not. A `#fragment` is the English id; the
+  function maps it to the translated page's id by heading position, which needs
+  both pages to have the same headings at the same levels, and keeps the English
+  link otherwise. It is pure so `node --test` can load it, with its unit test
+  alongside (`locale-links.test.mjs`, run by `npm test`); the loader lookup and
+  the React wrapper are in `components/localized-link.tsx`.
 - **`translation-source.mjs`** — the `sourceHash` a locale page records: the
   hash of the English page it was translated from, over the English
   frontmatter and prose but not the generated reference and changelog blocks.

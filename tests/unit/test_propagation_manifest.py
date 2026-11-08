@@ -127,15 +127,14 @@ def test_unknown_ownership_class_is_rejected() -> None:
     )
 
 
-def test_manifest_stale_sweep_covers_legacy_directories() -> None:
-    """The manifest's stale-sweep includes the canonical legacy directories."""
+def test_manifest_never_sweeps_claude_code_folders() -> None:
+    """Claude Code sweeps nothing under ~/.claude.
+
+    Releases 1.0.1 to 1.5.0 removed commands/, hooks/ and other folders there
+    whole, with the user's files, though no release installed into them.
+    """
     rules = propagation.load_manifest()
-    claude_code = rules["claude_code"]
-    stale = set(claude_code.stale_sweep)
-    # Earlier install layouts flat-copied these apothem subtrees at the
-    # harness root; the sweep must remove them on every install.
-    for legacy in ("src", "conformity", "schemas", "hooks", "tools", "templates"):
-        assert legacy in stale, f"stale-sweep missing canonical entry '{legacy}'"
+    assert rules["claude_code"].stale_sweep == []
 
 
 def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
@@ -145,8 +144,7 @@ def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
     snippet (``conformity.json``, whose command points at the installed
     renderer via the ``${HARNESS_ROOT}`` token) propagate to the harness
     root so the snippet's command path resolves; only the package
-    ``__init__.py`` — import machinery with no on-disk role — is filtered
-    and swept.
+    ``__init__.py`` — import machinery with no on-disk role — is filtered.
     """
     rules = propagation.load_manifest()
     claude_code = rules["claude_code"]
@@ -154,7 +152,6 @@ def test_manifest_statuslines_filter_ships_renderer_strips_init() -> None:
     assert "render.py" not in statuslines_filter
     assert "conformity.json" not in statuslines_filter
     assert "__init__.py" in statuslines_filter
-    assert "statuslines/__init__.py" in claude_code.stale_sweep
     for shipped in ("statuslines/render.py", "statuslines/conformity.json"):
         assert shipped not in claude_code.stale_sweep
 
@@ -180,17 +177,6 @@ def test_manifest_excludes_documentation_companions_everywhere() -> None:
         excludes = set(harness_rules.exclude)
         assert "README.md" in excludes, name
         assert "AGENTS.md" in excludes, name
-    claude_sweep = set(rules["claude_code"].stale_sweep)
-    for stray in (
-        "rules/AGENTS.md",
-        "skills/AGENTS.md",
-        "agents/AGENTS.md",
-        "statuslines/AGENTS.md",
-        "output-styles/AGENTS.md",
-    ):
-        assert stray in claude_sweep
-    assert "../.agents/skills/AGENTS.md" in set(rules["codex"].stale_sweep)
-    assert "skills/AGENTS.md" in set(rules["qwen_code"].stale_sweep)
     assert ".mypy_cache" in excludes
     assert ".pytest_cache" in excludes
 
@@ -232,13 +218,18 @@ def test_codex_manifest_uses_native_hooks_surface() -> None:
     assert targets["hooks"] == "${HARNESS_ROOT}/hooks/"
     old_support_target = "../.config/apothem/" + "hooks"
     assert all(old_support_target not in target for target in targets.values())
-    assert old_support_target in codex.stale_sweep
-    assert "hooks" not in codex.stale_sweep
-    assert "skills" not in codex.stale_sweep
+    # No release wrote the old support folder, and Codex keeps its own .rules
+    # in ~/.codex/rules, so Codex sweeps nothing.
+    assert codex.stale_sweep == []
 
 
 def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
-    """Antigravity cohorts must land in the Antigravity CLI plugin tree."""
+    """Antigravity cohorts must land in the plugin folder Antigravity CLI loads.
+
+    Antigravity CLI 1.0.2 and later load a global plugin from
+    ``~/.gemini/config/plugins/<name>/``; ``~/.gemini/antigravity-cli/`` holds
+    only the CLI's own app data, so no install target may sit there.
+    """
     rules = propagation.load_manifest()
     antigravity = rules["antigravity"]
     targets = {
@@ -250,29 +241,64 @@ def test_antigravity_manifest_uses_cli_plugin_surface() -> None:
         "${HARNESS_ROOT}/GEMINI.md"
     )
     assert targets["harnesses/antigravity/templates/plugin.json"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/plugin.json"
+        "${HARNESS_ROOT}/config/plugins/apothem/plugin.json"
     )
-    assert targets["commands"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
-    )
-    assert targets["rules"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
+    assert targets["commands"] == "${HARNESS_ROOT}/config/plugins/apothem/skills/"
+    assert targets["skills"] == "${HARNESS_ROOT}/config/plugins/apothem/skills/"
+    assert targets["rules"] == "${HARNESS_ROOT}/config/plugins/apothem/rules/"
+    assert targets["agents"] == "${HARNESS_ROOT}/config/plugins/apothem/agents/"
+    assert targets["templates"] == (
+        "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/templates/"
     )
     assert targets["hooks"] == (
-        "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/hooks/"
+        "${HARNESS_ROOT}/config/plugins/apothem/.apothem/support/hooks/"
     )
-    assert "antigravity" in antigravity.stale_sweep
+    assert all(
+        not target.startswith("${HARNESS_ROOT}/antigravity-cli/")
+        for target in targets.values()
+    )
+    # ~/.gemini/antigravity/ is Antigravity's own app-data folder (MCP OAuth
+    # tokens, session transcripts), so it is not swept.
+    assert "antigravity" not in antigravity.stale_sweep
     assert "../.antigravity/profile.yaml" in antigravity.stale_sweep
     assert all("/antigravity/" not in target for target in targets.values())
 
 
-def test_manifest_sweeps_retired_materializer_targets() -> None:
-    """Materializer harnesses retire prior misnamed config files explicitly."""
+def test_antigravity_manifest_sweeps_the_old_plugin_folder() -> None:
+    """An install, update or uninstall removes the plugin folder of earlier releases.
+
+    Apothem releases before the move wrote the plugin to
+    ``~/.gemini/antigravity-cli/plugins/apothem/``; the Antigravity CLI docs
+    name only ``~/.gemini/config/plugins/`` for global plugins. The stale-sweep
+    list names the old folder whole, so it is backed up and removed together
+    with the doubled-segment ``apothem/templates`` and ``apothem/hooks`` folders
+    an older release left inside it.
+    """
+    antigravity = propagation.load_manifest()["antigravity"]
+
+    assert "antigravity-cli/plugins/apothem" in antigravity.stale_sweep
+    # ~/.gemini/antigravity/ holds Antigravity's MCP OAuth tokens and session
+    # transcripts, so no sweep entry may name it or a folder that holds it.
+    for legacy in antigravity.stale_sweep:
+        assert legacy.rstrip("/") not in {"antigravity", ".", ""}, legacy
+    # The sweep never names a live install target or a folder that holds one.
+    live = [
+        entry.target.removeprefix("${HARNESS_ROOT}/").rstrip("/")
+        for entry in antigravity.install
+    ]
+    for legacy in antigravity.stale_sweep:
+        for target in live:
+            assert target != legacy, legacy
+            assert not target.startswith(f"{legacy}/"), (legacy, target)
+
+
+def test_manifest_never_sweeps_config_files_no_release_wrote() -> None:
+    """No release wrote these files, so a file of that name is the user's."""
     rules = propagation.load_manifest()
 
-    assert "cli-config.yaml" in rules["hermes"].stale_sweep
-    assert "profile.yaml" in rules["hermes"].stale_sweep
-    assert "../.open-claw/config.yaml" in rules["open_claw"].stale_sweep
+    assert "cli-config.yaml" not in rules["hermes"].stale_sweep
+    assert "profile.yaml" not in rules["hermes"].stale_sweep
+    assert "../.open-claw/config.yaml" not in rules["open_claw"].stale_sweep
 
 
 def test_claude_code_settings_declares_context_ignore_equivalent() -> None:

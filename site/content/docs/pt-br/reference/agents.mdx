@@ -2,7 +2,7 @@
 title: "Auxiliares"
 description: "Agentes auxiliares persistentes para pesquisa, auditoria, qualidade e orquestração, com contratos de frontmatter e protocolos de isolamento de implantação."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,7 +87,7 @@ Harnesses que não sejam o Claude Code e o Gemini CLI ignoram a chave. A árvore
 um perfil e mantém a lista simples, então um usuário do plugin define um agente de nível de usuário
 em `~/.claude/agents/` em vez disso. A sintaxe do perfil, as regras de nomes de servidores e
 essa solução alternativa estão em
-[Dar a um auxiliar acesso a servidores MCP](/docs/reference/mcp#dar-a-um-auxiliar-acesso-a-servidores-mcp).
+[Dar a um auxiliar acesso a servidores MCP](/docs/reference/mcp#give-a-helper-access-to-mcp-servers).
 
 ## Conversão por harness
 
@@ -104,7 +104,7 @@ esse limite nativamente, o declara nas instruções do auxiliar ou remove o rót
 | Codex | nenhum emitido; as instruções do auxiliar o declaram, e o sandbox da sessão pai governa as gravações | não disponível | herdado (não definido) |
 | Gemini CLI | lista de permissões `tools` com nomes de ferramentas do Gemini, mais as entradas `mcp_<server>_*` que a chave `agent_mcp_servers` do perfil acrescenta a uma lista explícita listada; sem `tools`, a lista de permissões que as negações implicam mais `mcp_*` | `max_turns` | herdado (não definido) |
 | Qwen Code | `tools` / `disallowedTools` com nomes de ferramentas do Qwen; sem `tools`, nenhuma lista é emitida, de modo que as ferramentas MCP são herdadas e as negações se aplicam | não mapeado | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` por ferramenta); as ferramentas MCP não são restringidas | não mapeado | herdado (não definido) |
+| OpenCode | `permission` com um `deny` por ferramenta negada e nenhum `allow`, de modo que os padrões do OpenCode (incluindo a pergunta antes de ler arquivos `.env`) e as suas próprias regras se aplicam; as ferramentas MCP não são restringidas | não mapeado | herdado (não definido) |
 | Antigravity | nenhum emitido; a descrição remove "somente leitura" | não disponível | herdado (não definido) |
 | CodeBuddy | `tools` / `disallowedTools` como strings separadas por vírgulas, limitadas aos nomes de ferramentas que o CodeBuddy documenta; nenhuma entrada MCP | `maxTurns` | herdado (não definido) |
 | Trae | `tools` / `disallowedTools` como strings separadas por vírgulas, limitadas aos nomes de ferramentas que o Trae documenta; nenhuma entrada MCP | não disponível | herdado (não definido) |

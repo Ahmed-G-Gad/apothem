@@ -2,7 +2,7 @@
 title: "Helfer"
 description: "Persistente Helfer-Agenten für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
 machineTranslated: true
-sourceHash: "69d30b01ea2c1815"
+sourceHash: "f193bb49c155d8cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,7 +93,7 @@ Plugin-Baum von Claude Code wird ohne Profil zusammengestellt und behält die
 schlichte Liste, daher definiert ein Plugin-Nutzer stattdessen einen Agenten auf
 Benutzerebene unter `~/.claude/agents/`. Die Profilsyntax, die Regeln für
 Servernamen und dieser Workaround stehen unter
-[Einem Helfer Zugriff auf MCP-Server geben](/docs/reference/mcp#einem-helfer-zugriff-auf-mcp-server-geben).
+[Einem Helfer Zugriff auf MCP-Server geben](/docs/reference/mcp#give-a-helper-access-to-mcp-servers).
 
 ## Konvertierung je Harness
 
@@ -111,7 +111,7 @@ Kennzeichnung als schreibgeschützt weg:
 | Codex | keines ausgegeben; die Anweisungen des Helfers nennen es, und die Sandbox der übergeordneten Sitzung regelt Schreibvorgänge | nicht verfügbar | geerbt (nicht gesetzt) |
 | Gemini CLI | `tools`-Erlaubnisliste mit Gemini-Werkzeugnamen, plus alle `mcp_<server>_*`-Einträge, die der Profilschlüssel `agent_mcp_servers` einer aufgeführten expliziten Liste hinzufügt; ohne `tools` die Erlaubnisliste, die sich aus den Verweigerungen ergibt, plus `mcp_*` | `max_turns` | geerbt (nicht gesetzt) |
 | Qwen Code | `tools` / `disallowedTools` in Qwen-Werkzeugnamen; ohne `tools` wird keine Liste ausgegeben, sodass MCP-Werkzeuge geerbt werden und die Verweigerungen gelten | nicht abgebildet | `model: inherit` |
-| OpenCode | `permission` (`allow` / `deny` je Werkzeug); MCP-Werkzeuge werden nicht eingeschränkt | nicht abgebildet | geerbt (nicht gesetzt) |
+| OpenCode | `permission` mit einem `deny` je verweigertem Werkzeug und ohne `allow`, sodass die Standardwerte von OpenCode (einschließlich seiner Rückfrage vor dem Lesen von `.env`-Dateien) und Ihre eigenen Regeln gelten; MCP-Werkzeuge werden nicht eingeschränkt | nicht abgebildet | geerbt (nicht gesetzt) |
 | Antigravity | keines ausgegeben; die Beschreibung lässt „read-only“ weg | nicht verfügbar | geerbt (nicht gesetzt) |
 | CodeBuddy | `tools` / `disallowedTools` als kommagetrennte Zeichenketten, beschränkt auf die Werkzeugnamen, die CodeBuddy dokumentiert; kein MCP-Eintrag | `maxTurns` | geerbt (nicht gesetzt) |
 | Trae | `tools` / `disallowedTools` als kommagetrennte Zeichenketten, beschränkt auf die Werkzeugnamen, die Trae dokumentiert; kein MCP-Eintrag | nicht verfügbar | geerbt (nicht gesetzt) |

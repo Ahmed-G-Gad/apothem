@@ -43,6 +43,13 @@ Run any of them from `site/`.
   export to `dist/`, the served tree the Pages publish pipeline deploys, baking
   the correct per-locale `lang`/`dir` into each locale's HTML, then writes the
   trailing-slash redirect stubs.
+- **`github-slugger-table.mjs`** — writes `../scripts/dev/github-slugger-removed.txt`,
+  the code points github-slugger removes from a heading, read from the installed
+  package. Every heading id on the site comes from github-slugger, and the Python
+  anchor guard (`scripts/dev/check_site_anchor_links.py`) makes the same ids; it
+  runs in a CI job with no `node_modules`, so it reads this table instead of the
+  package. `--check` exits 1 when the committed table differs from the installed
+  package. `github-slugger-table.test.mjs` runs that check under `npm test`.
 - **`translation-sources.mjs`** — reports, per locale, which translated pages
   are current, stale (the English page changed since the translation) or
   unrecorded, and exits 1 only when a locale page records no `sourceHash` or has

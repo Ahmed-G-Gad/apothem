@@ -2,13 +2,16 @@
 
 # Per rules/agent-capability-discipline.md §1 / §3 / §7. The open_claw
 # harness (a multi-channel messaging gateway) pins ~/.openclaw/openclaw.json
-# (JSON5). Per the 2026-10-24 pin: skills load from the workspace, ~/.agents/skills,
-# ~/.openclaw/skills and, at the lowest precedence, each directory listed under
-# skills.load.extraDirs; the adapter lists its support skills directory there and
-# authors nothing else for skills. The agents.defaults.skills allowlist is
-# operator-owned and the adapter does not edit it. Subagents are documented via
-# agents.list[].subagents.allowAgents. MCP servers live in the mcp.servers config
-# block, managed via the `openclaw mcp` CLI; the adapter authors no MCP entries.
+# (JSON5). Per the 2026-11-03 pin: skills load from the workspace, ~/.agents/skills,
+# ~/.openclaw/skills and, after the agent's other skill sources, each directory
+# listed under skills.load.extraDirs; the adapter lists its support skills
+# directory there and authors nothing else for skills. The agents.defaults.skills
+# allowlist and the per-agent agents.entries.<id>.skills lists are operator-owned
+# and the adapter edits neither. Subagents are documented via
+# agents.entries.<id>.subagents.allowAgents. OpenClaw injects AGENTS.md and five
+# other files from each agent's workspace; the adapter writes none of them. MCP
+# servers live in the mcp.servers config block, managed via the `openclaw mcp`
+# CLI; the adapter authors no MCP entries.
 # Tool-surface universal-deny floor binds regardless.
 
 mcp_servers: []
@@ -35,14 +38,14 @@ tool_surface_restrictions:
   - destructive-shell-ops
   - network-write-unsigned
 system_prompt_template_path: "n/a"
-agent_memory_surface: "n/a"
+agent_memory_surface: "<agent workspace>/MEMORY.md and USER.md (vendor-managed; ~/.openclaw/workspace by default, one workspace per agent)"
 # What each source frontmatter key becomes in a converted cohort (see
 # tests/unit/test_conversion_losses.py for the value vocabulary). Commands land
 # as SKILL.md under .apothem/support/skills/, which skills.load.extraDirs lists.
-# TODO(clarify): the 2026-10-24 vendor check shows OpenClaw follows the Agent
-# Skills spec but does not quote which SKILL.md frontmatter keys it reads, so
-# every key stays "ignored" (kept as text, not shown to be read) until a vendor
-# source names them.
+# TODO(clarify): the skills page lists OpenClaw's optional SKILL.md frontmatter
+# keys (#optional-frontmatter-keys, read 2026-11-03), but every key stays
+# "ignored" (kept as text, not shown to be read) until a change maps each
+# Apothem key to what OpenClaw does with it.
 conversion_losses:
   commands:
     name: "ignored"

@@ -42,7 +42,7 @@ Apothem 的安装用时不到两分钟，并可与你现有的工具配置并存
 /plugin install apothem@apothem
 ```
 
-安装之后，Apothem 命令集、随附的委派工作者、技能以及四种[输出样式](/docs/reference/output-styles)（用 `/output-style` 或从 `/config` 中选择一种）在每个 Claude Code 会话中都可用。插件将每条命令作为一个技能发布：一个 `SKILL.md`，其按需加载的详细内容放在旁边的 `references/` 文件夹中，因此 Claude Code 以插件的前缀调用它：`/apothem:plan-spec`、`/apothem:security-audit` 等。有两个名称已被 Claude Code 自身占用：`/plan` 进入计划模式，`/code-review` 运行内置的评审，因此要使用 Apothem 的命令，请输入 `/apothem:plan` 和 `/apothem:code-review`。当由 Apothem 引擎而非插件安装到 Claude Code 中时，同样的技能会被写入 `~/.claude/skills/`，不带前缀，并且一个个人 `code-review` 技能会取代内置的 `/code-review`（其 `/review` 别名仍运行内置的那个）。有两个名称——`projectify` 和 `workflow`——也是原生技能；插件和引擎安装所发布的是原生技能，而不是由命令派生出的技能。命令如何拆分见 [Claude Code](/docs/harnesses/claude-code#命令技能与参考文件)，完整的命令目录见[斜杠命令](/docs/reference/commands)。
+安装之后，Apothem 命令集、随附的委派工作者、技能以及四种[输出样式](/docs/reference/output-styles)（用 `/output-style` 或从 `/config` 中选择一种）在每个 Claude Code 会话中都可用。插件将每条命令作为一个技能发布：一个 `SKILL.md`，其按需加载的详细内容放在旁边的 `references/` 文件夹中，因此 Claude Code 以插件的前缀调用它：`/apothem:plan-spec`、`/apothem:security-audit` 等。有两个名称已被 Claude Code 自身占用：`/plan` 进入计划模式，`/code-review` 运行内置的评审，因此要使用 Apothem 的命令，请输入 `/apothem:plan` 和 `/apothem:code-review`。当由 Apothem 引擎而非插件安装到 Claude Code 中时，同样的技能会被写入 `~/.claude/skills/`，不带前缀，并且一个个人 `code-review` 技能会取代内置的 `/code-review`（其 `/review` 别名仍运行内置的那个）。有两个名称——`projectify` 和 `workflow`——也是原生技能；插件和引擎安装所发布的是原生技能，而不是由命令派生出的技能。命令如何拆分见 [Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)，完整的命令目录见[斜杠命令](/docs/reference/commands)。
 
 **验证：** 在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装，或从终端检查漂移报告：
 
@@ -209,7 +209,7 @@ codex plugin add apothem@apothem
 
 这两个 `--sparse` 路径只获取插件市场清单和插件本身，而不是整个仓库；在较慢的磁盘上（例如 WSL 下的 Windows 驱动器），完整克隆可能超出宿主 30 秒的克隆时限。
 
-与渠道 5 和渠道 6 的扩展一样，这是一个通过 shell 调用引擎的**引导入口**。该插件随附一个入口技能；其清单是根目录下的 `plugin.json`，[插件宿主的工具页面](/docs/harnesses/codex#codex-插件)介绍了其布局以及插件留给引擎处理的部分。通过它运行安装来物化完整工具配置：
+与渠道 5 和渠道 6 的扩展一样，这是一个通过 shell 调用引擎的**引导入口**。该插件随附一个入口技能；其清单是根目录下的 `plugin.json`，[插件宿主的工具页面](/docs/harnesses/codex#codex-plugin)介绍了其布局以及插件留给引擎处理的部分。通过它运行安装来物化完整工具配置：
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex
@@ -260,7 +260,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 - **Python 3.10 或更高版本**——负责查找它的各条路径都是按名称查找的，而且名称因路径而异。npm 垫片依次尝试 `python3`、`python`，然后是 `py -3`。安装器会尝试 `python3`、`python`，以及带版本号的名称，从 `python3.14` 一直到 `python3.10`。
 - **`click` 和 `rich` 可导入**（在该解释器下）——这是引擎没有 vendor 的两个面向终端的依赖。安装器会检查这两者，指出任何缺失项，并提出为你安装——经你确认后安装，或通过 `--yes`（在 PowerShell 上为 `-Yes`）或 `APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。在其他每条渠道上，缺失的包会使引擎以一个错误停止（退出码 1），该错误会针对它找到的解释器给出确切的命令，并附带 Apothem 经过测试的版本约束（`<interpreter> -m pip install "click==…" "rich>=…"`）；使用 `--json` 时，同一错误会以代码为 `runtime.dependency_missing` 的 JSON 信封形式返回。
 - **Node.js 18 或更高版本**——仅限运行 `npx` 的路径：npm 垫片（2）、VS Code 系扩展（4）以及命令行引导（5–7）。
-- **生命周期已终止的运行时。** Python 3.10 于 2026-10-01 到达上游生命周期终止，Node.js 18 和 20 分别于 2025-04-30 和 2026-04-30 到达。Apothem 仍将它们作为其声明的下限予以支持，并在 CI 中逐一测试，但它们不再获得上游安全修复，因此请优先选用 Python 3.11 或更新版本以及 Node.js 22 或更新版本。[运行时下限策略](/docs/governance/release-engineering-policy#运行时下限)说明了下限如何提高。
+- **生命周期已终止的运行时。** Python 3.10 于 2026-10-01 到达上游生命周期终止，Node.js 18 和 20 分别于 2025-04-30 和 2026-04-30 到达。Apothem 仍将它们作为其声明的下限予以支持，并在 CI 中逐一测试，但它们不再获得上游安全修复，因此请优先选用 Python 3.11 或更新版本以及 Node.js 22 或更新版本。[运行时下限策略](/docs/governance/release-engineering-policy#runtime-floors)说明了下限如何提高。
 - **Git**——仅安装器路径需要，且仅用于网络形式（脚本会克隆源码；本地检出无需克隆）。
 - **Claude Code**——仅插件路径需要。**VS Code** 以及每个命令行引导各自的宿主工具，仅在其各自的渠道（4–7）中需要。
 

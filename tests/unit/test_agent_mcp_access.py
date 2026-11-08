@@ -507,7 +507,7 @@ def _tree(root: Path) -> dict[str, bytes]:
         ("qwen_code", "harness_root", "agents"),
         ("opencode", "harness_root", "agents"),
         ("codex", "harness_root", "agents"),
-        ("antigravity", "harness_root", "antigravity-cli/plugins/apothem/agents"),
+        ("antigravity", "harness_root", "config/plugins/apothem/agents"),
     ],
 )
 def test_other_harnesses_emit_the_same_agents_with_or_without_the_key(

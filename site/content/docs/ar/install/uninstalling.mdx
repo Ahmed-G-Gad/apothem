@@ -25,7 +25,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 ## أزِل المحرّك
 
 تتبع الإزالة قناة التثبيت التي استخدمتها. أرقام القنوات هي أرقامها في
-[جدول قنوات التثبيت](/docs/install#اختر-قناة):
+[جدول قنوات التثبيت](/docs/install#choose-a-channel):
 
 - **إضافة <bdi>Claude Code</bdi> (القناة 1)** — أزِل الإضافة من داخل <bdi>Claude Code</bdi>: <bdi>`/plugin uninstall apothem@apothem`</bdi> (ويمكن إزالة مُدخَل سوق الإضافات عبر <bdi>`/plugin marketplace remove ahmed-g-gad/apothem`</bdi>).
 - **<bdi>npx</bdi> (القناة 2)** — لا شيء لإزالته؛ يعمل <bdi>`npx`</bdi> من ذاكرته المؤقتة. امسحها عبر <bdi>`npm cache clean --force`</bdi> إن أردت التخلّص من النسخة المخزّنة مؤقتًا.
@@ -70,7 +70,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - تُحفَظ المُدخَلات التي أضفتها إلى ملف إعدادات مشترك: تبقى قواعد الأذونات الخاصة
   بك، وخوادم <bdi>MCP</bdi>، ومعالِجات الخطّافات. لا يُزيل إلغاء التثبيت إلا المفاتيح
   ومُدخَلات القوائم التي يُسجّلها سجلّ التثبيت بوصفها تابعة لـ <bdi>Apothem</bdi>
-  (راجع [الإعدادات](/docs/reference/settings#الدمج-في-ملف-إعداداتك-الخاص)).
+  (راجع [الإعدادات](/docs/reference/settings#merging-into-your-own-settings-file)).
 - تبقى مخازن البيانات المشتركة الواقعة تحت <bdi>`.apothem/`</bdi> في جذر التثبيت
   (<bdi>`memory/`</bdi>، و<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>) ما دام
   إطار عمل مُثبَّت آخر في الجذر نفسه لا يزال يستخدمها. أما إلغاء تثبيت آخر إطار عمل

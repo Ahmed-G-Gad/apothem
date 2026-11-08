@@ -2,14 +2,14 @@
 title: "OpenCode"
 description: "OpenCode（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f4ee42d9d05adcf7"
+sourceHash: "d7cbf6354ea54e5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** OpenCode
 **インストール名：** `opencode`
 **ステータス：** ベータ版
-**ネイティブ設定：** `~/.config/opencode/`
+**ネイティブ設定：** `~/.config/opencode/`（または `$XDG_CONFIG_HOME/opencode/`）
 
 ## インストール
 
@@ -30,6 +30,11 @@ apothem install --harness opencode
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+これらはデフォルトのパスです。
+`XDG_CONFIG_HOME` が絶対パスのフォルダーに設定されている場合、アダプターは代わりに `$XDG_CONFIG_HOME/opencode/` に書き込みます。これは OpenCode 1 と OpenCode 2 の両方が読み取るフォルダーです。
+相対パスの値やファイルシステムのルートは使用されず、インストールはその旨を伝えます。
+`OPENCODE_CONFIG_DIR` には従いません。OpenCode 1 はそのフォルダーをデフォルトのフォルダーに加えて読み取りますが、OpenCode 2 はデフォルトの代わりにそのフォルダーを読み取るため、この変数が別のフォルダーを指している場合、インストールは OpenCode 2 がこのインストールを読み込まないことを警告します。
+
 ## プロファイルからネイティブ設定へのマッピング
 
 アダプターは、あなたのプロファイルドキュメント、4 つのコアルール、ルールインデックスを指定する `instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーのいずれかへ伝播します。
@@ -37,9 +42,35 @@ apothem install --harness opencode
 
 ## 互換性に関する注意
 
+このインストールは OpenCode 1 と OpenCode 2 の両方で動作します。
+インストールは 1 つの設定を書き込み、OpenCode 1 はそれをそのまま読み取り、OpenCode 2 は読み替えます。
+どちらも同じ設定フォルダーを読み取り、OpenCode 2 は、インストールが書き込む OpenCode 1 形式を、ファイルを書き換えずにメモリ上で変換します。
+ヘルパーの `permission` リストと `mcp` サーバーエントリは、この読み替えを通じて OpenCode 2 に読み込まれます。
+OpenCode 1 は、その設定フォルダーに `AGENTS.md` がなく、かつ `OPENCODE_DISABLE_CLAUDE_CODE` も `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` も設定されていない場合、Claude Code のインストールが `~/.claude/CLAUDE.md` に書き込むブロックも読み込みます。
+OpenCode 2 には `CLAUDE.md` のフォールバックがないため、そのファイルを読み込みません。
+
+ヘルパー定義が持つのは `deny` ルールだけで、ヘルパーが使ってはならないツールに対するものです。
+OpenCode はデフォルトですべてのツールを許可し、`.env` ファイルまたは `.env.*` ファイルを読む前に確認を求めます。
+ヘルパーに `allow` ルールがあると、その確認が無効になり、あなた自身の OpenCode 設定にあるより厳格なルールも上書きしてしまうため、ヘルパーはあなたの `permission` 設定に従います。
+
+共有プロファイルが MCP サーバーを列挙している場合、インストールはそれらを `opencode.json` の `mcp` ブロックに書き込みます。
+OpenCode が置換するのは `${NAME}` ではなく `{env:NAME}` であるため、サーバーの環境、ヘッダー、URL にある各 `${NAME}` は `{env:NAME}` として書き込まれます。
+コマンド引数は書かれたとおりにコピーされます。
+そこにある参照は、サーバー、またはサーバーが実行するシェルが展開するものとして、そのまま残されます。
+環境値またはヘッダー値にある `$NAME`、およびそのまま残された `${...}` 形式（コマンド引数にあるものを含む）は、書かれたとおりにコピーされ、インストールは OpenCode がそれを展開しないことを警告します。
+警告は `environment.TOKEN` のように参照のある場所を示し、値を出力することはありません。
+
+OpenCode は、`{env:NAME}` の値を、読み込む設定テキストにエスケープせずに挿入します。
+OpenCode 2 は、そのテキストがそのままでは解析できない場合にのみエスケープします。
+そのため、バックスラッシュ（Windows のパスなど）、二重引用符、制御文字を含む値は、OpenCode 1 がファイルを読み取れなくなる原因になり得ます。
+また、どちらのバージョンでも、その中の `\t` や `\n` は制御文字としてサーバーに届きます。
+インストールは実行時にそのような変数を 1 つずつ確認し、これらの文字を含むものについて警告します。
+他のツールが `${NAME}` 参照を保持できるよう、代わりにその値を `harnesses.opencode.mcp_servers.<name>` の下に `{file:path}` として設定してください。
+
 OpenCode は、`instructions` リストが指定するすべてのファイルを、すべてのセッションに結合します（[OpenCode のルール](https://opencode.ai/docs/rules/)）。
-そのため、このリストは最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` であるルールのみを、それぞれ 1 つの明示的な `~/.config/opencode/.apothem/support/rules/<name>.md` パスとして指定します。
+そのため、このリストは最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` であるルールのみを、それぞれ 1 つの明示的なパス（デフォルトでは `~/.config/opencode/.apothem/support/rules/<name>.md`）として指定します。
 OpenCode は先頭の `~/` をあなたのホームディレクトリに展開します。
+設定フォルダーがホームディレクトリの外にある場合、パスは絶対パスになり、サポートツリーは常に設定フォルダーの配下に置かれます。
 それらのルールは、`agnostic-posture`、`authority-inquiry`、`context-management`、`session-closure`、そしてルールインデックスの `apothem-rule-index` です。
 OpenCode はどのルールもパスでスコープしないため、それ以外のすべてのルールはオンデマンドで読み込まれます。
 それらは `~/.config/opencode/.apothem/support/` 配下に参照素材としてインストールされたまま残り、インデックスが各ルールとそれを必要とする状況を名指しします。
@@ -73,6 +104,12 @@ apothem update --harness opencode
 ```
 
 `opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、Apothem サポートツリーを更新します。
+インストールが書き込んだ MCP サーバーのうち、あなたが内容を変えずに OpenCode 2 の `mcp.servers` 形式に変換したものは、`mcp` の下に書き戻され、OpenCode の両方のバージョンがそれを読み取ります。
+`mcp.servers` 配下のサーバーがその変換とみなされるのは、対応する `mcp` エントリがなくなっていて、インストールが書き込んだ内容と全体として一致する場合だけです。
+同じ名前のあなた自身のサーバー、あなたが編集した変換結果、無効にした変換結果は、そのまま残されます。
+そのような変換結果は残したまま、更新はそのサーバーを `mcp` の下にもう一度書き込むため、OpenCode 1 はそのコピーを使い、OpenCode 2 は変換されたほうを使います。
+どちらのバージョンでもそのサーバーをオフにしておくには、プロファイルから削除してください。
+これには、インストールが書き込んだエントリを列挙したインストールレコードが必要です。Apothem がその一覧を保持するようになる前のレコードは対象外です。
 
 ## アンインストール
 
@@ -81,10 +118,15 @@ apothem uninstall --harness opencode
 ```
 
 アダプターが `~/.config/opencode/opencode.json` に追加したエントリを削除します（あなた自身のキー、MCP サーバー、`instructions` エントリは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます）。
+インストールが書き込んだ MCP サーバーのうち、あなたが内容を変えずに OpenCode 2 の `mcp.servers` 形式に変換したものも、全体として削除されます。`mcp.servers` 配下のその他のサーバーは残ります。
+`mcp.servers` 配下にあるあなた自身のサーバーが、あなたがインストールの `mcp` エントリを削除した後に、インストールが書き込んだものと一致する場合、変換されたコピーと区別できないため、一緒に削除されます。その前にファイルはバックアップされます。
 プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` から Apothem のブロックを削除し、その中の他のテキストは残します。このファイルは、その中に他に何も残っていない場合にのみ削除されます。
 また、`~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/`、`~/.config/opencode/.apothem/support/` 内の Apothem のファイルも削除します。これらのフォルダー内のその他のファイルは残ります。
 各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+以前のリリースが、`XDG_CONFIG_HOME` が別のフォルダーを指している間に `~/.config/opencode/` に行ったインストールは、そこに残り、OpenCode がそれを読み取ったことはありません。
+次回のインストールがその旨を伝えます。削除するには、`XDG_CONFIG_HOME` を未設定にしてアンインストールを実行してください。
 
 ## コンフォーミティゲート
 

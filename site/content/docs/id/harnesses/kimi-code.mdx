@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adapter harness Apothem untuk Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "7baab16542cfcb94"
+sourceHash: "88671d55a3315922"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,11 @@ tetap berada di bawah pohon pendukung milik Apothem di
 `<project>/.kimi-code/.apothem/support/`.
 `AGENTS.md` proyek dibaca oleh banyak alat pengodean selain Kimi Code, sehingga
 blok tersebut ditulis sebagai panduan seluruh proyek yang tidak menyebut satu
-alat tunggal pun sebagai pembacanya.
+alat tunggal pun sebagai pembacanya. Sebagian alat itu memuatnya hanya di
+beberapa proyek, misalnya hanya ketika proyek tidak memiliki berkas instruksi
+khusus alat itu, dan catatan pemasangan menyebut setiap alat semacam itu beserta
+syaratnya ([registri harness](/docs/reference/harness-registry#shared-roots)
+mencantumkannya).
 
 Kimi Code membaca berkas instruksi `AGENTS.md` di akar proyek mengikuti konvensi
 AGENTS.md universal, dan konfigurasi proyek berada di bawah

@@ -2,7 +2,7 @@
 title: "하니스 레지스트리"
 description: "내장 Apothem 하니스 어댑터에 대한 기술 레지스트리 레퍼런스입니다."
 machineTranslated: true
-sourceHash: "fafca976f970f790"
+sourceHash: "242f7f2bf421b85e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,7 +95,7 @@ sourceHash: "fafca976f970f790"
 설치 수를 셉니다. 기록상 소유자는 등록된 소유자가 그 폴더를 사용하는 동안에는 등록된
 소유자이고, 그렇지 않으면 그 폴더를 사용하는 가장 오래된 설치입니다. 등록된 소유자가
 제거되어도 아무것도 이동하지 않습니다. 제거는 다른 어떤 설치도 그 폴더를 사용하지
-않을 때만 폴더를 삭제합니다([`uninstall`](/docs/cli-reference/uninstall#홈-디렉터리의-공유-폴더) 참조).
+않을 때만 폴더를 삭제합니다([`uninstall`](/docs/cli-reference/uninstall#shared-folders-in-your-home-directory) 참조).
 리더를 설치해도 그 폴더에는 아무 파일도 놓이지 않습니다. 소유자나 공동 설치자를
 설치하면 모든 리더 앞에 Apothem 콘텐츠가 놓입니다.
 
@@ -121,15 +121,46 @@ sourceHash: "fafca976f970f790"
 도구만 그 폴더를 로드하므로 공유 루트가 아닙니다.
 
 리더는 벤더 문서가 바로 그 경로의 기본 로드를 보여 주는 곳에만 나열됩니다.
-레지스트리는 세 가지 조건을 기록하며, 설치 안내가 각 조건을 반복합니다.
+리더가 일부 경우에만 어떤 경로를 로드하면, 레지스트리가 그 조건을 기록하고
+설치 안내가 이를 반복합니다.
 `Open-Claw`는 기본 상태 디렉터리에서만 `~/.agents/skills/`를
 인덱싱합니다(`OPENCLAW_STATE_DIR`가 다른 곳을 가리키면 그 폴더를 건너뜁니다).
-`Hermes`는 세션당 한 종류의 프로젝트 컨텍스트만 로드하며, 첫 번째 일치 항목이
-우선합니다. 순서는 `.hermes.md` 또는 `HERMES.md`, `AGENTS.md`, `CLAUDE.md`,
-그다음 `Cursor` 규칙입니다. 따라서 `<project>/AGENTS.md`는 프로젝트에
-`.hermes.md`나 `HERMES.md`가 없고 그 옆에 `AGENTS.override.md`도 없을 때만
-로드하고, `<project>/.cursor/rules/apothem-rules.mdc`는 프로젝트에
-`.hermes.md`, `AGENTS.md`, `CLAUDE.md`가 모두 없을 때만 로드합니다.
+`OpenCode` 1은 자체 구성 폴더(기본값은 `~/.config/opencode/`)에 `AGENTS.md`가 없을
+때만 `~/.claude/CLAUDE.md`를 로드하며, `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 또는
+`OPENCODE_DISABLE_CLAUDE_CODE=1`이 설정되면 건너뜁니다. `OpenCode` 2는 같은
+`~/.config/opencode/` 구성을 읽지만 `CLAUDE.md` 폴백이 없으므로
+`~/.claude/CLAUDE.md`를 로드하지 않습니다. `Codex`는 각 폴더에서
+`AGENTS.override.md`와 `AGENTS.md` 중 첫 번째를 사용하므로,
+`<project>/AGENTS.md`는 프로젝트에서 그 옆에 `AGENTS.override.md`가 없을 때만
+로드합니다. `CodeBuddy`는 프로젝트에 `CODEBUDDY.md`가 없을 때만
+`<project>/AGENTS.md`를 프로젝트 메모리로 사용합니다. `Zed`는 목록의 첫 번째
+프로젝트 지침 파일만 로드합니다. 목록은 `.rules`, `.cursorrules`,
+`.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
+`AGENTS.md`, `CLAUDE.md`, 그다음 `GEMINI.md`입니다. 따라서
+`<project>/.github/copilot-instructions.md`, `<project>/AGENTS.md`,
+`<project>/GEMINI.md`는 프로젝트에 목록에서 그 파일보다 앞선 파일이 하나도 없을
+때만 로드합니다. `Zed` 설치는 목록의 첫 번째 파일인 `<project>/.rules`를
+작성하므로, `Zed`는 설치된 프로젝트에서는 이 세 파일을 하나도 로드하지 않습니다.
+
+`Hermes`는 세션당 한 종류의 프로젝트 컨텍스트만 로드합니다. 비어 있지 않은 파일이
+있는 첫 번째 종류가 로드되며, 순서는 `.hermes.md` 또는 `HERMES.md`, `AGENTS.md`
+체인(각 폴더에서 비어 있지 않은 `AGENTS.override.md`가 그 옆의 `AGENTS.md`를
+대체합니다), `CLAUDE.md`, 그다음 `Cursor` 규칙입니다. 따라서
+`<project>/AGENTS.md`는 프로젝트에 `.hermes.md`나 `HERMES.md`가 없고 그 옆에
+`AGENTS.override.md`도 없을 때만 로드하고,
+`<project>/.cursor/rules/apothem-rules.mdc`는 프로젝트에 `.hermes.md`,
+`HERMES.md`, `AGENTS.override.md`, `AGENTS.md`, `CLAUDE.md`가 모두 없을 때만
+로드합니다. `Hermes`는 `.hermes.md`와 `HERMES.md`를 시작한 폴더에서 git 루트까지
+올라가며 찾고, `AGENTS.md` 체인은 git 루트에서 아래로 내려오며 읽으므로, 프로젝트
+위쪽 폴더에 있는 그러한 파일도 대상에 포함됩니다. 비어 있는 파일은 대상에
+포함되지 않습니다. 비어 있는 `.hermes.md`는 그 옆의 `HERMES.md`도 가리므로, 그
+`HERMES.md`에 텍스트가 있어도 `Hermes`는 `AGENTS.md` 체인으로 넘어갑니다. 이
+조건들은 프로젝트에서 시작한 세션에 적용됩니다. 프로젝트 위쪽 폴더에서 시작한
+세션도, 프로젝트에 어떤 `.hermes.md`나 `HERMES.md`가 있든, 프로젝트의 파일을 처음
+다룰 때 `<project>/AGENTS.md` 또는 그 옆의 비어 있지 않은 `AGENTS.override.md`를
+로드할 수 있습니다. `Hermes`는 홈 폴더와 일부 컨테이너 폴더에서는 이를
+건너뜁니다.
+
 `Cursor` 문서는 `~/.codex/agents/`를 `Codex` 호환
 폴더로 나열하지만 `Cursor`가 그곳에서 어떤 파일 형식을 파싱하는지는 밝히지 않으며,
 `Codex` 설치는 TOML 파일을 쓰므로 `Cursor`가 그 도우미를 읽는지는 확인되지
@@ -180,7 +211,7 @@ sourceHash: "fafca976f970f790"
 
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
-| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/config/plugins/apothem/` |
 | Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.apothem/support/hooks/`<br />`<project>/.codebuddy/agents/`<br />`<project>/.codebuddy/rules/apothem-rules.md`<br />`<project>/.codebuddy/settings.local.json`<br />`~/.codebuddy/skills/`<br />`~/.config/apothem/{rules,templates}/` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
