@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import posixpath
+import shutil
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -335,6 +336,13 @@ def test_current_installs_never_back_up_a_retired_sweep_path(
     if public_id in ("claude-code", "codex"):
         assert stamps
     assert not [s for s in stamps if _holds_retired_sweep(s, package)]
+    # Most harnesses take no backup set here, so prove the check can see one:
+    # a set holding any retired path of this harness is detected.
+    for index, rel in enumerate(RETIRED_SWEEPS[package]):
+        stamp = f"1999010{index % 10}T0000{index:02d}Z"
+        held = backups / stamp / package / rel.replace("*", "control-home")
+        held.mkdir(parents=True)
+        assert _holds_retired_sweep(stamp, package), rel
 
 
 def test_rollback_leaves_a_swept_folder_that_is_now_a_file(
@@ -387,6 +395,76 @@ def test_rollback_leaves_a_swept_folder_that_is_now_a_link(
     assert row.outcome == "skipped"
     assert row.backup_path is not None
     assert "is now a link" in row.message
+
+
+_IN_THE_WAY = [
+    "file",
+    "symlink",
+    *(["junction"] if sys.platform == "win32" else []),
+    "backup-gone",
+]
+
+
+def _leave_in_place(kind: str, home: Path, backups: Path) -> None:
+    """Record an old sweep and put *kind* in the way of restoring it."""
+    record = _old_sweep_record(home, backups, "20261001T000000Z")
+    commands = home / ".claude" / "commands"
+    commands.parent.mkdir(parents=True, exist_ok=True)
+    if kind == "file":
+        commands.write_text("now a file\n", "utf-8")
+    elif kind == "backup-gone":
+        shutil.rmtree(Path(str(record.targets[0].backup_ref)))
+    else:
+        elsewhere = home / "my-commands"
+        elsewhere.mkdir()
+        if kind == "junction":
+            import _winapi
+
+            _winapi.CreateJunction(str(elsewhere), str(commands))
+        else:
+            try:
+                commands.symlink_to(elsewhere, target_is_directory=True)
+            except OSError as exc:  # pragma: no cover - no symlink rights
+                pytest.skip(f"symlinks unavailable: {exc}")
+
+
+@pytest.mark.parametrize("kind", _IN_THE_WAY)
+def test_a_path_left_in_place_is_a_plain_warning(
+    kind: str, home: Path, backups: Path
+) -> None:
+    # Nothing is restored there, so the rollback says so in words and in JSON,
+    # and still exits 0: nothing failed.
+    _leave_in_place(kind, home, backups)
+
+    outcome = CliRunner().invoke(
+        main, ["rollback", "--harness", "claude-code", "--yes", "--json"]
+    )
+
+    assert outcome.exit_code == 0, outcome.output
+    payload = json.loads(outcome.output)
+    assert payload["status"] == "success"
+    [warning] = payload["warnings"]
+    assert warning["outcome"] == "advisory"
+    assert warning["operation"] == "rollback"
+    assert warning["path"] == str(home / ".claude" / "commands")
+    assert "nothing was restored there" in warning["message"]
+    if kind != "backup-gone":
+        assert "20261001T000000Z" in warning["message"]
+
+
+@pytest.mark.parametrize("kind", _IN_THE_WAY)
+def test_a_path_left_in_place_warns_in_plain_output(
+    kind: str, home: Path, backups: Path
+) -> None:
+    _leave_in_place(kind, home, backups)
+
+    outcome = CliRunner().invoke(
+        main, ["rollback", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    assert outcome.exit_code == 0, outcome.output
+    assert "Warning:" in outcome.output
+    assert "nothing was restored there" in " ".join(outcome.output.split())
 
 
 def test_rollback_fails_and_lists_a_file_it_cannot_write(
