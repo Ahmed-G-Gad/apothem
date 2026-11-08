@@ -941,14 +941,20 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # .codebuddy/CODEBUDDY.md alone keeps AGENTS.md out is not documented.
 # Claude Code reads AGENTS.md from v2.1.277 on. Under its default Project
 # instructions setting (claude-md-or-agents-md) it loads every AGENTS.md and
-# .claude/AGENTS.md in the working folder and the folders above it, but only
-# when none of those folders holds a CLAUDE.md, .claude/CLAUDE.md or
-# CLAUDE.local.md; ~/.claude/CLAUDE.md, a managed CLAUDE.md and .claude/rules/
-# files do not count and load alongside it. claude-md-and-agents-md loads both
-# kinds, while claude-md and managed-only load no AGENTS.md (its memory page,
-# read 2026-11-03). No install writes .claude/AGENTS.md, and ~/.codex/AGENTS.md
-# is not in a working folder or above one by default, so <project>/AGENTS.md is the one
-# shared root Claude Code reads under this rule.
+# .claude/AGENTS.md in the working folder and the folders above it at session
+# start, but only when none of those folders holds a CLAUDE.md,
+# .claude/CLAUDE.md or CLAUDE.local.md. It loads the AGENTS.md of a folder below
+# the working folder, such as a project opened from a parent folder, when its
+# Read tool opens a file there and that folder holds none of the three either; the
+# condition names the project folder for that case. ~/.claude/CLAUDE.md, a
+# managed CLAUDE.md and .claude/rules/ files do not count and load alongside
+# it. claude-md-and-agents-md loads both kinds, while claude-md and
+# managed-only load no AGENTS.md (its memory page, read 2026-11-03 and
+# 2026-11-07). The sessions that read no AGENTS.md under any setting are in the
+# Claude Code pin, not in the condition. No install writes .claude/AGENTS.md,
+# and Claude Code reaches ~/.codex/AGENTS.md only from a session in ~/.codex or
+# in a folder above it that reads a file in ~/.codex, so <project>/AGENTS.md is
+# the one shared root the registry lists Claude Code as reading under this rule.
 # Zed loads only the first project instruction file in the list
 # .rules, .cursorrules, .windsurfrules, .clinerules,
 # .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md (its
@@ -1138,8 +1144,8 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "claude-code": "only in v2.1.277 or later, not under the claude-md or "
             "managed-only Project instructions setting, and under the default "
             "setting only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md "
-            "is in the working folder or a folder above it, not counting "
-            "~/.claude/CLAUDE.md",
+            "is in the project folder, the working folder or a folder above it, "
+            "not counting ~/.claude/CLAUDE.md",
             "codebuddy": "only when the project has no CODEBUDDY.md",
             "codex": "only when the project has no AGENTS.override.md beside it",
             "hermes": "only when the project has no .hermes.md or HERMES.md and no "
