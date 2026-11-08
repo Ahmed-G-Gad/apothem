@@ -25,7 +25,8 @@ def uninstall(output_path: Path) -> None:
     An install from before the plugin moved to ``~/.gemini/config/plugins/``
     holds it at ``~/.gemini/antigravity-cli/plugins/apothem/``, a path no install
     entry targets any longer. The manifest's ``stale-sweep`` list names it, so it
-    is swept first (backed up, then removed whole) and its backup is passed on as
+    is swept first (backed up, then removed; a link in it is left in place
+    with a warning) and its backup is passed on as
     ``prior_results``: the uninstall record then references it and retention
     keeps it. The same sweep removes a retired ``~/.antigravity/profile.yaml``,
     also after a backup. ``~/.gemini/antigravity/`` is never swept: Antigravity
@@ -33,7 +34,8 @@ def uninstall(output_path: Path) -> None:
 
     A stale path that resolves onto the plugin under ``config/plugins/`` (a
     link between the two folders, a junction on Windows) is the live folder
-    under another name, so the sweep leaves it in place.
+    under another name, so the sweep leaves it in place. Any other link at or
+    below a stale path is left in place too, with a warning.
     """
     harness_root = output_path.parent
     legacy = install_driver.sweep_stale(

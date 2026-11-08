@@ -46,9 +46,7 @@ from .install_driver_planvalidation import (
     make_ignore,
 )
 from .install_driver_shared import _protected_targets, entry_scope
-from .install_driver_treeops import (
-    sweep_stale,
-)
+from .install_driver_sweep import sweep_stale
 from .install_driver_types import (
     AuthorizeFn,
     IgnoreFn,

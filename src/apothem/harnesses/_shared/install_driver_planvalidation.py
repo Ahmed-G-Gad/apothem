@@ -60,12 +60,12 @@ from .install_driver_shared import (
     entry_write_root,
 )
 from .install_driver_skillguard import SkillGuard, user_level_folders_ok
+from .install_driver_sweep import preview_stale_sweep, stale_blocker
 from .install_driver_treeops import (
     SkillFolderGuard,
     _directory_contents_equal,
     _generated_directory_matches,
     preview_native_skills,
-    stale_needs_sweep,
 )
 from .install_driver_types import (
     _INSTALL_ENTRY_MODES,
@@ -223,14 +223,15 @@ def _validate_install_plan(
     """Validate all sources and targets before the first write starts."""
     errors: list[MaterializationResult] = []
     allowed_root = _allowed_write_root(harness_root, project_root)
+    protect = _protected_targets(
+        rules, harness_root=harness_root, project_root=project_root
+    )
     for legacy in rules.stale_sweep:
-        target_error = _validate_target_path(
-            root / legacy,
-            allowed_root=allowed_root,
-            operation="sweep_stale",
-        )
-        if target_error is not None:
-            errors.append(target_error)
+        # The sweep's own check: a stale path that names a live target or is a
+        # link is kept, not refused, so a real run and a dry run agree.
+        blocker = stale_blocker(root / legacy, protect, allowed_root)
+        if blocker is not None and blocker.outcome == "error":
+            errors.append(blocker)
     for entry in rules.install:
         target = resolve_target(
             entry.target,
@@ -604,16 +605,15 @@ def _dry_run_results(
     protect = _protected_targets(
         rules, harness_root=harness_root, project_root=project_root
     )
+    boundary = _allowed_write_root(harness_root, project_root)
     for legacy in rules.stale_sweep:
-        stale = root / legacy
-        results.append(
-            _result(
-                "skipped"
-                if stale_needs_sweep(stale, preserve, protect)
-                else "unchanged",
-                "sweep_stale",
-                stale,
-                _DRY_RUN_MESSAGE,
+        results.extend(
+            preview_stale_sweep(
+                root / legacy,
+                preserve=preserve,
+                protect=protect,
+                allowed_root=boundary,
+                message=_DRY_RUN_MESSAGE,
             )
         )
     for entry in rules.install:

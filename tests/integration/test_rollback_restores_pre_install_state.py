@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_pathsafety import _is_link
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import get_harness_entry, load_adapter_class
 
@@ -167,6 +169,51 @@ def test_rollback_of_a_record_that_swept_the_app_folder_leaves_it_in_place(
     # Only files missing now would come back; this one is there, so it stays.
     assert kept["outcome"] == "unchanged"
     assert str(stale_copy) in str(kept["message"])
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junctions")
+def test_a_junction_at_the_old_plugin_path_is_left_alone_and_rolls_back(
+    home: Path,
+) -> None:
+    # The old plugin path is a junction to a folder of the operator's that is
+    # not the new plugin folder. The update must neither back it up nor report
+    # it removed (it warns, naming the link), and rolling the update back must
+    # succeed and leave it as is.
+    import _winapi
+
+    gemini = home / ".gemini"
+    adapter = load_adapter_class(get_harness_entry("antigravity"))()
+    adapter.install(_PROFILE)
+    elsewhere = home / "my-plugins" / "apothem"
+    elsewhere.mkdir(parents=True)
+    (elsewhere / "notes.md").write_bytes(b"mine\n")
+    link = gemini / "antigravity-cli" / "plugins" / "apothem"
+    link.parent.mkdir(parents=True)
+    _winapi.CreateJunction(str(elsewhere), str(link))
+    assert _is_link(link)
+    assert not _is_link(elsewhere)
+
+    preview = adapter.preview(_PROFILE)
+    [planned] = [
+        r
+        for r in preview.results
+        if r.operation == "sweep_stale" and Path(r.path) == link
+    ]
+    assert planned.outcome == "warning"
+    assert str(link) in planned.message
+
+    adapter.update(_PROFILE)
+
+    record = install_ledger.latest_record("antigravity")
+    assert record is not None
+    assert not [t for t in record.targets if Path(t.path) == link]
+    assert _is_link(link)
+    assert (elsewhere / "notes.md").read_bytes() == b"mine\n"
+
+    _rollback("antigravity", "--last")
+
+    assert _is_link(link)
+    assert (link / "notes.md").read_bytes() == b"mine\n"
 
 
 def test_same_second_backups_restore_to_their_own_paths(
