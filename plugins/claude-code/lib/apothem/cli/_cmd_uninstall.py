@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import click
+from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
@@ -63,6 +64,50 @@ def _retention_advisories(
         return uninstall_advisories(harness_id, preview_uninstall(harness_id, root))
     except (OSError, ValueError):
         return []
+
+
+def _report_run(
+    harness_id: str,
+    outcome: object,
+    warnings: list[dict[str, object]],
+    *,
+    fmt: str,
+    con: Console,
+    no_color: bool,
+) -> list[dict[str, object]]:
+    """Report an adapter's uninstall results; return its error results.
+
+    A link the uninstall left in place, or a step that failed (such as removing
+    a leftover folder), is reported rather than hidden behind the success line.
+    Each warning is printed and added to *warnings*.
+    """
+    run = outcome if isinstance(outcome, MaterializationRun) else None
+    if run is None:
+        return []
+    warnings.extend(_warning_dicts(harness_id, run))
+    if fmt != "json":
+        for warning in run.warnings:
+            con.print(f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}")
+        for error in run.errors:
+            get_error_console(no_color=no_color).print(
+                f"[red]✗[/] {harness_id} uninstall failed: {escape(error.message)}"
+            )
+    return [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+
+
+def _print_removed(
+    harness_id: str,
+    retention: list[dict[str, object]],
+    *,
+    fmt: str,
+    con: Console,
+) -> None:
+    """Print the success line and each retention note (plain output only)."""
+    if fmt == "json":
+        return
+    con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
+    for advisory in retention:
+        con.print(f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}")
 
 
 def _uninstall_impl(
@@ -156,27 +201,12 @@ def _uninstall_impl(
                     f"[red]✗[/] {harness_id} uninstall failed: {escape(str(exc))}"
                 )
             continue
-        run = outcome if isinstance(outcome, MaterializationRun) else None
-        # A link the uninstall left in place, or a step that failed (such as
-        # removing a leftover folder), is reported rather than hidden behind
-        # the success line.
-        warnings.extend(_warning_dicts(harness_id, run))
-        if fmt != "json" and run is not None:
-            for warning in run.warnings:
-                con.print(
-                    f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}"
-                )
-        if run is not None and run.errors:
+        failures = _report_run(
+            harness_id, outcome, warnings, fmt=fmt, con=con, no_color=no_color
+        )
+        if failures:
             errored = True
-            results.extend(
-                {"harness": harness_id, **error.to_dict()} for error in run.errors
-            )
-            if fmt != "json":
-                for error in run.errors:
-                    get_error_console(no_color=no_color).print(
-                        f"[red]✗[/] {harness_id} uninstall failed: "
-                        f"{escape(error.message)}"
-                    )
+            results.extend(failures)
             continue
         removed_any = True
         results.append(
@@ -189,12 +219,7 @@ def _uninstall_impl(
             }
         )
         warnings.extend(retention)
-        if fmt != "json":
-            con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
-            for advisory in retention:
-                con.print(
-                    f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}"
-                )
+        _print_removed(harness_id, retention, fmt=fmt, con=con)
 
     exit_code = 0
     if errored:
