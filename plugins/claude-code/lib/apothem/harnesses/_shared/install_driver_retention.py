@@ -29,10 +29,17 @@ from .install_driver_types import _handle_rm_error
 BACKUP_KEEP: Final[int] = 10
 
 #: Paths, relative to a harness's backup set, that releases 1.0.1 to 1.5.0
-#: removed whole on every install and update, though they hold a user's own
-#: files (``~/.claude/commands``, ``~/.codex/rules``). A backup set holding one
-#: is the user's only copy, so retention never deletes it; ``apothem backups
-#: prune`` neither. Later releases never back these paths up again.
+#: removed whole on every install and update and the current release no longer
+#: sweeps: a backup set holding one may be the user's only copy of their files
+#: (``~/.claude/commands``, ``~/.codex/rules``), so retention never deletes it,
+#: and ``apothem backups prune`` neither. Each path is where those releases put
+#: the backup, measured by running each release's install: relative to the
+#: home, to ``~/.config`` for OpenCode, or to the project for Gemini CLI and
+#: Kimi Code. Codex keyed its paths relative to the parent of ``CODEX_HOME``,
+#: so a custom ``CODEX_HOME`` put them under its own folder name: the ``*``
+#: entries match those (one folder deep, like ``.codex``). An entry is a
+#: :meth:`pathlib.Path.glob` pattern. Current releases never back these paths
+#: up.
 RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
     "claude_code": tuple(
         f".claude/{name}"
@@ -68,10 +75,38 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
         ".agents/skills/AGENTS.md",
         ".codex/rules",
         ".codex/commands",
+        "*/rules",
+        "*/commands",
     ),
-    "gemini_cli": ("skills/AGENTS.md",),
-    "hermes": (".hermes/cli-config.yaml", ".hermes/profile.yaml"),
-    "open_claw": (".open-claw/config.yaml",),
+    "gemini_cli": (
+        "skills/AGENTS.md",
+        ".gemini/apothem/templates",
+        ".gemini/apothem/hooks",
+        ".gemini/apothem/rules",
+    ),
+    "opencode": ("opencode/apothem/templates", "opencode/apothem/hooks"),
+    "qwen_code": (
+        ".qwen/skills/AGENTS.md",
+        ".qwen/apothem/templates",
+        ".qwen/apothem/hooks",
+    ),
+    "hermes": (
+        ".hermes/cli-config.yaml",
+        ".hermes/profile.yaml",
+        ".hermes/apothem/templates",
+        ".hermes/apothem/hooks",
+        ".hermes/apothem/skills",
+        ".hermes/apothem/agents",
+    ),
+    "open_claw": (
+        ".open-claw/config.yaml",
+        ".openclaw/apothem/templates",
+        ".openclaw/apothem/hooks",
+        ".openclaw/apothem/skills",
+        ".openclaw/apothem/agents",
+    ),
+    # The old non-dotted folder whole: those releases also wrote "skills.1".
+    "kimi_code": (".kimi-code/apothem",),
     # The Antigravity App's own data folder (MCP tokens, transcripts).
     "antigravity": (".gemini/antigravity",),
 }
@@ -80,7 +115,12 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
 def _holds_retired_sweep(stamp: str, harness_name: str) -> bool:
     """Return True when the backup set *stamp* holds a path in RETIRED_SWEEPS."""
     base = install_driver.BACKUP_ROOT / stamp / harness_name
-    return any((base / rel).exists() for rel in RETIRED_SWEEPS.get(harness_name, ()))
+    if not base.is_dir():
+        return False
+    return any(
+        next(base.glob(rel), None) is not None
+        for rel in RETIRED_SWEEPS.get(harness_name, ())
+    )
 
 
 @dataclass(frozen=True)
@@ -100,6 +140,8 @@ class RetentionReport:
     kept: tuple[str, ...]
     pruned: tuple[str, ...]
     protected: tuple[str, ...]
+    #: The *protected* sets kept because they hold a path in RETIRED_SWEEPS.
+    retired: tuple[str, ...]
     failed: tuple[str, ...]
     records_before: int
     records_after: int
@@ -184,7 +226,8 @@ def prune_history(
         _latest_installs(before)
     )
     stamps = list_backup_timestamps(harness_name)
-    referenced |= {s for s in stamps if _holds_retired_sweep(s, harness_name)}
+    retired = {s for s in stamps if _holds_retired_sweep(s, harness_name)}
+    referenced |= retired
     older = stamps[: max(0, len(stamps) - keep)]
     pruned = tuple(stamp for stamp in older if stamp not in referenced)
     failed: list[str] = []
@@ -203,6 +246,7 @@ def prune_history(
         kept=tuple(stamp for stamp in stamps if stamp not in pruned),
         pruned=pruned,
         protected=tuple(stamp for stamp in older if stamp in referenced),
+        retired=tuple(stamp for stamp in older if stamp in retired),
         failed=tuple(failed),
         records_before=len(before),
         records_after=len(kept_records),
