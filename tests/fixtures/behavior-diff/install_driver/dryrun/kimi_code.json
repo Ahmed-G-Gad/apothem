@@ -43,42 +43,6 @@
     "message": "dry run: no filesystem changes made",
     "operation": "sweep_stale",
     "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/skills/AGENTS.md"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/templates"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/hooks"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/rules"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/skills"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
-    "path": "<ROOT>/.kimi-code/apothem/agents"
-  },
-  {
-    "message": "dry run: no filesystem changes made",
-    "operation": "sweep_stale",
-    "outcome": "unchanged",
     "path": "<ROOT>/.kimi-code/.apothem/support/skills"
   },
   {

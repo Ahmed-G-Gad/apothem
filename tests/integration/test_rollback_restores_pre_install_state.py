@@ -164,7 +164,8 @@ def test_rollback_of_a_record_that_swept_the_app_folder_leaves_it_in_place(
         for row in report["results"]  # type: ignore[union-attr]
         if Path(str(row["path"])) == app
     ]
-    assert kept["outcome"] == "skipped"
+    # Only files missing now would come back; this one is there, so it stays.
+    assert kept["outcome"] == "unchanged"
     assert str(stale_copy) in str(kept["message"])
 
 

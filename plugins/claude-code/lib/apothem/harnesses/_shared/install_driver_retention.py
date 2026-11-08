@@ -28,6 +28,60 @@ from .install_driver_types import _handle_rm_error
 #: rollback; anything a kept record still references is never deleted.
 BACKUP_KEEP: Final[int] = 10
 
+#: Paths, relative to a harness's backup set, that releases 1.0.1 to 1.5.0
+#: removed whole on every install and update, though they hold a user's own
+#: files (``~/.claude/commands``, ``~/.codex/rules``). A backup set holding one
+#: is the user's only copy, so retention never deletes it; ``apothem backups
+#: prune`` neither. Later releases never back these paths up again.
+RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
+    "claude_code": tuple(
+        f".claude/{name}"
+        for name in (
+            "src",
+            "conformity",
+            "schemas",
+            "hooks",
+            "config",
+            "scripts",
+            "tools",
+            "lib",
+            "templates",
+            "docs",
+            "tests",
+            "packaging",
+            "mcp",
+            "examples",
+            "assets",
+            "site",
+            "public",
+            "commands",
+            "statuslines/__init__.py",
+            "rules/AGENTS.md",
+            "skills/AGENTS.md",
+            "agents/AGENTS.md",
+            "statuslines/AGENTS.md",
+            "output-styles/AGENTS.md",
+        )
+    ),
+    "codex": (
+        ".config/apothem/hooks",
+        ".agents/skills/AGENTS.md",
+        ".codex/rules",
+        ".codex/commands",
+    ),
+    "gemini_cli": ("skills/AGENTS.md",),
+    "hermes": (".hermes/cli-config.yaml", ".hermes/profile.yaml"),
+    "open_claw": (".open-claw/config.yaml",),
+    # The Antigravity App's own data folder (MCP tokens, transcripts).
+    "antigravity": (".gemini/antigravity",),
+}
+
+
+def _holds_retired_sweep(stamp: str, harness_name: str) -> bool:
+    """Return True when the backup set *stamp* holds a path in RETIRED_SWEEPS."""
+    base = install_driver.BACKUP_ROOT / stamp / harness_name
+    return any((base / rel).exists() for rel in RETIRED_SWEEPS.get(harness_name, ()))
+
 
 @dataclass(frozen=True)
 class RetentionReport:
@@ -130,6 +184,7 @@ def prune_history(
         _latest_installs(before)
     )
     stamps = list_backup_timestamps(harness_name)
+    referenced |= {s for s in stamps if _holds_retired_sweep(s, harness_name)}
     older = stamps[: max(0, len(stamps) - keep)]
     pruned = tuple(stamp for stamp in older if stamp not in referenced)
     failed: list[str] = []

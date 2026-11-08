@@ -117,8 +117,9 @@ def test_uninstall_deletes_apothem_only_config(
 
 
 def test_capabilities_declare_subagent_dispatch_and_no_mcp_file() -> None:
-    # Open-Claw documents subagents via agents.list[].subagents.allowAgents,
-    # but MCP is a CLI-command surface with no adapter-owned config-file block.
+    # Open-Claw documents subagents via agents.entries.<id>.subagents.allowAgents,
+    # and MCP servers live in the mcp.servers block of openclaw.json, managed
+    # with the `openclaw mcp` CLI; the adapter owns no entry there.
     # Skills load through skills.load.extraDirs, which the adapter authors.
     capabilities = _capabilities()
     assert capabilities["sub_agent_dispatch"] is True
@@ -129,8 +130,8 @@ def test_capabilities_declare_subagent_dispatch_and_no_mcp_file() -> None:
 # --- skills.load.extraDirs ---------------------------------------------------
 #
 # OpenClaw reads skills from several roots and, when one skill name appears in
-# more than one, uses the highest source; skills.load.extraDirs is the lowest
-# (https://docs.openclaw.ai/tools/skills, read 2026-10-24). The adapter lists
+# more than one, uses the highest source; skills.load.extraDirs comes after the
+# agent's other sources (https://docs.openclaw.ai/tools/skills, read 2026-11-03). The adapter lists
 # its support skills directory there and owns only that entry.
 
 _OPERATOR_EXTRA_DIRS = ["~/team-skills"]
