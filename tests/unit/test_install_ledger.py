@@ -389,3 +389,40 @@ def test_current_install_record_replays_uninstall_and_rollback(
     third = add("install")
     assert current_install_record("qwen", root="/r", state_root=state) == third
     assert current_install_record("qwen", root="/other", state_root=state) is None
+
+
+def test_bytes_that_are_not_utf8_raise_ledger_error(tmp_path: Path) -> None:
+    # Found by tests/fuzz/fuzz_install_ledger.py. Apothem writes ASCII-only
+    # lines, so such a byte is damage; callers that catch only LedgerError
+    # (doctor, update) must still get a LedgerError, not a UnicodeDecodeError.
+    state = tmp_path / "state"
+    append_record(
+        LedgerRecord.create(harness="codex", root="/r", kind="install"),
+        state_root=state,
+    )
+    path = ledger_path("codex", state_root=state)
+    with path.open("ab") as handle:
+        handle.write(b'{"root":"\xff"}\n')
+    with pytest.raises(LedgerError, match="not UTF-8 text"):
+        read_records("codex", state_root=state)
+
+
+def test_interior_line_nested_too_deep_raises_ledger_error(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    path = ledger_path("codex", state_root=state)
+    path.parent.mkdir(parents=True)
+    path.write_text("[" * 100_000 + "\n" + "{}\n", encoding="utf-8")
+    with pytest.raises(LedgerError, match="line 1 is not valid JSON"):
+        read_records("codex", state_root=state)
+
+
+def test_final_line_nested_too_deep_reads_as_a_torn_append(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    record = LedgerRecord.create(harness="codex", root="/r", kind="install")
+    append_record(record, state_root=state)
+    path = ledger_path("codex", state_root=state)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("[" * 100_000)
+    assert [r.install_id for r in read_records("codex", state_root=state)] == [
+        record.install_id
+    ]

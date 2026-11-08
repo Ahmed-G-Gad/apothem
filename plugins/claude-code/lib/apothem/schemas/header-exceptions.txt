@@ -81,6 +81,11 @@ tests/fixtures/**.yml
 tests/fixtures/**.txt
 tests/fixtures/**.json
 
+# --- Fuzz seed inputs ---------------------------------------------------------
+# Inputs the fuzz targets in tests/fuzz/ start from and the replay test runs.
+# A seed's bytes are the input under test, so a header would change it.
+tests/fuzz/seeds/**
+
 # --- Injector smoke-test inputs ------------------------------------------------
 # Header-less on purpose: the injector smoke test copies these inputs and
 # checks that the injector adds the header. A header in the inputs would make

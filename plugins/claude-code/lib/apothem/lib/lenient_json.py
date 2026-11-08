@@ -23,11 +23,22 @@ from __future__ import annotations
 
 from typing import Final
 
-__all__ = ["LenientJSONError", "loads"]
+__all__ = ["MAX_DEPTH", "NESTING_TOO_DEEP", "LenientJSONError", "loads"]
+
+#: The deepest nesting of objects and arrays the reader accepts. The parser
+#: recurses once per level, so a limit keeps a deeply nested file a
+#: :class:`LenientJSONError` instead of a ``RecursionError``; operator configs
+#: nest a handful of levels.
+MAX_DEPTH: Final[int] = 200
+#: The message of the error a document nested deeper than :data:`MAX_DEPTH` raises.
+NESTING_TOO_DEEP: Final[str] = "objects and arrays nest too deeply"
 
 # JSON5 line terminators: LF, CR, LINE SEPARATOR, PARAGRAPH SEPARATOR.
 # Spelled with chr() so no invisible code point sits in the source.
 _LINE_BREAKS: Final[frozenset[str]] = frozenset({"\n", "\r", chr(0x2028), chr(0x2029)})
+# The line terminators a string may not hold unescaped. JSON and JSON5 both
+# allow LINE SEPARATOR and PARAGRAPH SEPARATOR inside a string (JSON5 5.2).
+_STRING_BREAKS: Final[frozenset[str]] = frozenset({"\n", "\r"})
 # JSON5 white space: the line terminators plus space, tab, vertical tab,
 # form feed, NO-BREAK SPACE and the BYTE ORDER MARK.
 _WHITESPACE: Final[frozenset[str]] = _LINE_BREAKS | frozenset(
@@ -64,9 +75,16 @@ class _Parser:
     def __init__(self, text: str) -> None:
         self.text = text
         self.pos = 0
+        self.depth = 0
 
     def error(self, message: str) -> LenientJSONError:
         return LenientJSONError(message, self.pos)
+
+    def enter(self) -> None:
+        """Step into an object or array, refusing nesting past :data:`MAX_DEPTH`."""
+        if self.depth >= MAX_DEPTH:
+            raise self.error(NESTING_TOO_DEEP)
+        self.depth += 1
 
     def peek(self) -> str:
         return self.text[self.pos] if self.pos < len(self.text) else ""
@@ -114,12 +132,14 @@ class _Parser:
         raise self.error(f"unexpected token {word!r}")
 
     def obj(self) -> dict[str, object]:
+        self.enter()
         self.pos += 1
         result: dict[str, object] = {}
         while True:
             self.skip_space()
             if self.peek() == "}":
                 self.pos += 1
+                self.depth -= 1
                 return result
             key = self.string() if self.peek() in {'"', "'"} else self.identifier()
             self.skip_space()
@@ -136,12 +156,14 @@ class _Parser:
                 raise self.error("expected ',' or '}' in object")
 
     def array(self) -> list[object]:
+        self.enter()
         self.pos += 1
         result: list[object] = []
         while True:
             self.skip_space()
             if self.peek() == "]":
                 self.pos += 1
+                self.depth -= 1
                 return result
             result.append(self.value())
             self.skip_space()
@@ -176,7 +198,7 @@ class _Parser:
             if char == quote:
                 self.pos += 1
                 return "".join(parts)
-            if char in _LINE_BREAKS:
+            if char in _STRING_BREAKS:
                 raise self.error("unescaped line break in string")
             if char != "\\":
                 parts.append(char)
@@ -258,6 +280,12 @@ def loads(text: str) -> object:
     """Parse *text* as JSON, JSONC, or JSON5 and return the Python value.
 
     Raises:
-        LenientJSONError: When *text* is not valid in any of the three dialects.
+        LenientJSONError: When *text* is not valid in any of the three dialects,
+            or nests objects and arrays deeper than :data:`MAX_DEPTH`.
     """
-    return _Parser(text).document()
+    parser = _Parser(text)
+    try:
+        return parser.document()
+    except RecursionError:
+        # A caller already deep in its own stack can run out before MAX_DEPTH.
+        raise parser.error(NESTING_TOO_DEEP) from None

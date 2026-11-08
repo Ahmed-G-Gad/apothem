@@ -415,22 +415,31 @@ def read_records(harness: str, *, state_root: Path | None = None) -> list[Ledger
     silently skipped. An absent ledger yields an empty list.
 
     Raises:
-        LedgerError: When a non-final line is not valid JSON, or when any line
-            parses to a non-object or to an object missing a required record
-            field.
+        LedgerError: When the file is not UTF-8 text, when a non-final line is
+            not valid JSON (nesting too deep to parse counts as invalid), or
+            when any line parses to a non-object or to an object missing a
+            required record field.
     """
     path = ledger_path(harness, state_root=state_root)
     if not path.is_file():
         return []
     records: list[LedgerRecord] = []
-    lines = path.read_text(encoding="utf-8").splitlines()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        # Apothem writes ASCII-only lines (json.dumps escapes the rest), so a
+        # byte that is not UTF-8 is damage, not a torn append.
+        raise LedgerError(
+            f"{path}: byte {exc.start} is not UTF-8 text: {exc.reason}"
+        ) from exc
+    lines = text.splitlines()
     for index, line in enumerate(lines):
         stripped = line.strip()
         if not stripped:
             continue
         try:
             data = json.loads(stripped)
-        except ValueError as exc:
+        except (ValueError, RecursionError) as exc:
             # Only the final line can be a torn crash-mid-append artifact.
             if index == len(lines) - 1:
                 break

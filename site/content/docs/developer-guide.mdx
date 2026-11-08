@@ -636,7 +636,21 @@ Use the `Ruff` formatter / linter for Python files. For Markdown, use
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+The fuzz targets in `tests/fuzz/` run under Atheris in CI. To fuzz one on your
+own machine (Linux or macOS, Python 3.11 or later), install Atheris, put the
+checkout on the path, and point the target at a copy of its seeds:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` lists the targets and what to do when one finds a crash.
 
 The suite is hermetic: it passes with the checkout under `$TMPDIR` and with a
 `python` on `PATH` that lacks the CLI prerequisites, because the integration
