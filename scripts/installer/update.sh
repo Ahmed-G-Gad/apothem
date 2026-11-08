@@ -241,11 +241,30 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
         ok "Latest release tag: ${APOTHEM_REF}"
     fi
 
+    if is_release_tag "$APOTHEM_REF" && [ "$APOTHEM_ALLOW_UNVERIFIED" != "1" ] \
+        && [ "$(git config --get gpg.format 2>/dev/null || true)" != "ssh" ]; then
+        _gpg_prog="$(git config --get gpg.program 2>/dev/null || true)"
+        command -v "${_gpg_prog:-gpg}" >/dev/null 2>&1 \
+            || die "gpg not found in PATH — needed to check the ${APOTHEM_REF} release tag's signature against the maintainer key. Install GnuPG (https://gnupg.org/download/), then re-run."
+    fi
+
     info "Updating clone at $APOTHEM_HOME (ref: ${APOTHEM_REF})"
     git -C "$APOTHEM_HOME" fetch --quiet --tags origin
-    git -C "$APOTHEM_HOME" checkout --quiet --force "$APOTHEM_REF" \
-        || git -C "$APOTHEM_HOME" checkout --quiet --force "origin/${APOTHEM_REF}" \
-        || die "Could not check out ${APOTHEM_REF} in $APOTHEM_HOME"
+    if is_release_tag "$APOTHEM_REF"; then
+        # The full refs/tags/ name keeps a branch that shares the tag's name
+        # from standing in for it; HEAD must then be the tag's commit.
+        git -C "$APOTHEM_HOME" checkout --quiet --force "refs/tags/${APOTHEM_REF}" \
+            || die "Could not check out the ${APOTHEM_REF} tag in $APOTHEM_HOME"
+        _co_head="$(git -C "$APOTHEM_HOME" rev-parse --verify --quiet HEAD || true)"
+        _co_tag="$(git -C "$APOTHEM_HOME" rev-parse --verify --quiet "refs/tags/${APOTHEM_REF}^{commit}" || true)"
+        if [ -z "$_co_tag" ] || [ "$_co_head" != "$_co_tag" ]; then
+            die "The checkout in $APOTHEM_HOME is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${_co_tag}'. Aborting before re-materialization."
+        fi
+    else
+        git -C "$APOTHEM_HOME" checkout --quiet --force "$APOTHEM_REF" \
+            || git -C "$APOTHEM_HOME" checkout --quiet --force "origin/${APOTHEM_REF}" \
+            || die "Could not check out ${APOTHEM_REF} in $APOTHEM_HOME"
+    fi
     SOURCE="$APOTHEM_HOME"
     is_apothem_source "$SOURCE" || die "Updated tree is not an apothem source: $SOURCE"
     ok "Source updated at $SOURCE (ref: ${APOTHEM_REF})"
@@ -253,7 +272,7 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
     # Fail-closed signature verification before re-materializing.
     bold "Verifying source signature"
     if is_release_tag "$APOTHEM_REF"; then
-        if verify_tag "$SOURCE" "$APOTHEM_REF" && verify_tag_by_maintainer; then
+        if verify_tag "$SOURCE" "refs/tags/${APOTHEM_REF}" && verify_tag_by_maintainer; then
             ok "Tag ${APOTHEM_REF} carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
             warn "Tag ${APOTHEM_REF} is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
@@ -273,7 +292,7 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
     fi
     echo
 elif is_apothem_source "$APOTHEM_HOME"; then
-    die "$APOTHEM_HOME was installed from a release archive, which has no git clone to update. Re-run install.sh with cosign on PATH to update it to the latest verified release."
+    die "$APOTHEM_HOME was installed from a release archive, which has no git clone to update. Re-run install.sh with cosign and gpg on PATH to update it to the latest verified release."
 else
     die "No source found at $APOTHEM_HOME — run install.sh first or set APOTHEM_SOURCE"
 fi

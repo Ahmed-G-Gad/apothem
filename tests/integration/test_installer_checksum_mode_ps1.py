@@ -111,6 +111,10 @@ def _run(
             "APOTHEM_RELEASE_BASE": base_url,
             "APOTHEM_REF": TAG,
             "APOTHEM_HOME": str(apothem_home or tmp_path / "apothem-home"),
+            # -Yes lets the installer pip-install a missing click or rich;
+            # with no package index that fails instead of changing the host.
+            "PIP_NO_INDEX": "1",
+            "PIP_CONFIG_FILE": os.devnull,
         }
     )
     staging = tmp_path / "installer-under-test"
@@ -127,7 +131,6 @@ def _run(
             "-File",
             str(installer),
             "-Yes",
-            "-DryRun",
         ],
         cwd=str(staging),
         env=env,
@@ -155,9 +158,7 @@ def _leftovers(tmp_path: Path) -> list[str]:
     temp = [
         p.name for p in (tmp_path / "temp").iterdir() if p.name.startswith("apothem-")
     ]
-    staged = [
-        p.name for p in tmp_path.iterdir() if p.name.startswith(".apothem-extract-")
-    ]
+    staged = [p.name for p in tmp_path.iterdir() if p.name.startswith(".apothem-")]
     return temp + staged
 
 

@@ -1,0 +1,3 @@
+ce4e0b6ee0e809ed780deb7e154e772a381c0dfcea4d919a9ab7ea0e4a36894a  apothem-v1.5.0-darwin.tar.gz
+ce4e0b6ee0e809ed780deb7e154e772a381c0dfcea4d919a9ab7ea0e4a36894a  apothem-v1.5.0-linux.tar.gz
+5f9918367a61981ec1090b528301719817d1d154fc03119f5daaeb57d4b87cc6  apothem-v1.5.0-windows.zip

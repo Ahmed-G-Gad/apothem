@@ -3,16 +3,18 @@
 # REUSE-IgnoreStart
 """The POSIX installer's cosign release mode (``APOTHEM_VERIFY=release``/``auto``).
 
-A signed git tag names its commit by SHA-1. The release mode avoids that: it
-downloads the release's platform archive, ``SHA256SUMS`` and
-``SHA256SUMS.cosign.bundle``, has cosign confirm that the release workflow at
-the installed tag signed ``SHA256SUMS``, and only then checks the archive's
-SHA-256. ``auto``, the default, takes this path whenever cosign is on PATH.
+The release mode requires two checks before it trusts the release's
+``SHA256SUMS``: the release tag carries the maintainer key's signature, and
+cosign confirms that the release workflow at that tag signed ``SHA256SUMS``
+in a run on the tag's commit (the certificate's source-commit extension).
+The archive's SHA-256 is checked last. ``auto``, the default, takes this
+path whenever cosign is on PATH.
 
-A stub ``cosign`` records its arguments and succeeds or fails on request, so
-the tests check the exact identity the installer asks cosign to verify
-without network access or a real Sigstore bundle. The fake release is served
-from a ``file://`` base, as in ``test_installer_checksum_mode.py``.
+A stub ``cosign`` records its arguments and succeeds or fails on request, a
+stub gpg replays a canned GnuPG result for the fixture repository's tag, and
+the bundle holds an unsigned certificate that names a chosen commit (see
+``tests/_shared/release_fixture.py``). The fake release is served from a
+``file://`` base, as in ``test_installer_checksum_mode.py``.
 """
 
 from __future__ import annotations
@@ -27,6 +29,18 @@ import tarfile
 from pathlib import Path
 
 import pytest
+
+from tests._shared.git_env import hermetic_git_env
+from tests._shared.release_fixture import (
+    MAINTAINER_FINGERPRINT,
+    OTHER_FINGERPRINT,
+    V150_BUNDLE,
+    V150_COMMIT,
+    fake_bundle,
+    good_signature_status,
+    make_tagged_repo,
+    write_stub_gpg,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
@@ -48,6 +62,11 @@ COSIGN_OK_MARKER = "cosign: SHA256SUMS is signed by the v9.9.9 release workflow"
 COSIGN_FAIL_MARKER = "cosign could not confirm that the v9.9.9 release workflow"
 INTEGRITY_WARNING = "does not prove who published it"
 MISMATCH_MARKER = "does not match the release's SHA256SUMS"
+TAG_OK_MARKER = "carries a valid signature from the maintainer key"
+COMMIT_OK_MARKER = "The signing workflow ran on the tag's commit"
+COMMIT_MISMATCH_MARKER = "was signed in a workflow run on commit"
+# A sentinel for _release: the bundle's certificate names the tag's commit.
+TAG_COMMIT = "tag-commit"
 
 # Permission bits for the stub cosign (owner rwx, others rx).
 EXECUTABLE_MODE = 0o755
@@ -87,8 +106,18 @@ def _release(
     *,
     tamper: bool = False,
     bundle: str | None = "SHA256SUMS.cosign.bundle",
+    cert_commit: str | None = TAG_COMMIT,
+    bundle_text: str | None = None,
+    sigstore_format: bool = False,
 ) -> Path:
-    """Write a fake release under ``<base>/<tag>/`` and return the base."""
+    """Write a fixture repository tagged TAG and a fake release for it under
+    ``<base>/<tag>/``; return the base.
+
+    The bundle's certificate names CERT_COMMIT as its source commit (the
+    tag's commit by default, none with None); BUNDLE_TEXT replaces the whole
+    bundle.
+    """
+    _, commit = make_tagged_repo(tmp_path, TAG)
     base = tmp_path / "releases"
     folder = base / TAG
     folder.mkdir(parents=True)
@@ -98,7 +127,10 @@ def _release(
     digest = hashlib.sha256(data).hexdigest()
     (folder / "SHA256SUMS").write_text(f"{digest}  {name}\n", encoding="utf-8")
     if bundle:
-        (folder / bundle).write_text("{}\n", encoding="utf-8")
+        if bundle_text is None:
+            named = commit if cert_commit == TAG_COMMIT else cert_commit
+            bundle_text = fake_bundle(named, sigstore_format=sigstore_format)
+        (folder / bundle).write_text(bundle_text, encoding="utf-8")
     return base
 
 
@@ -159,11 +191,20 @@ def _run(
     yes: bool = True,
     apothem_home: Path | None = None,
     ref: str = TAG,
+    dry_run: bool = False,
+    gpg_status: str | None = None,
+    gpg_program: str | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    """Run install.sh against the fixture release.
+
+    The tag check reads GPG_STATUS from a stub gpg (a good signature by the
+    maintainer key by default); GPG_PROGRAM names another gpg.program.
+    """
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     (tmp_path / "temp").mkdir(exist_ok=True)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("APOTHEM_")}
+    env = {k: v for k, v in hermetic_git_env().items() if not k.startswith("APOTHEM_")}
     env.pop("PYTHONPATH", None)
     # --yes lets the installer pip-install a missing click or rich; with no
     # package index that install fails instead of changing the host Python.
@@ -177,10 +218,20 @@ def _run(
             "TMPDIR": str(tmp_path / "temp"),
             "APOTHEM_RELEASE_BASE": base.as_uri(),
             "APOTHEM_REF": ref,
-            "APOTHEM_REPO": str(tmp_path / "no-such-repo"),
+            "APOTHEM_REPO": str(tmp_path / "fixture-repo"),
             "APOTHEM_HOME": str(apothem_home or tmp_path / "apothem-home"),
         }
     )
+    if gpg_program is None:
+        status = gpg_status
+        if status is None:
+            status = good_signature_status(MAINTAINER_FINGERPRINT)
+        env["GIT_CONFIG_GLOBAL"] = str(write_stub_gpg(tmp_path / "stub-gpg", status))
+    else:
+        gitconfig = tmp_path / "gitconfig"
+        gitconfig.write_text(f"[gpg]\n\tprogram = {gpg_program}\n", encoding="utf-8")
+        env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
+    env.update(extra_env or {})
     if mode is not None:
         env["APOTHEM_VERIFY"] = mode
     if cosign_dir is not None:
@@ -189,7 +240,9 @@ def _run(
     staging.mkdir(exist_ok=True)
     installer = staging / "install.sh"
     shutil.copy2(INSTALLER, installer)
-    args = ["bash", str(installer), "--dry-run"]
+    args = ["bash", str(installer)]
+    if dry_run:
+        args.append("--dry-run")
     if yes:
         args.append("--yes")
     return subprocess.run(
@@ -322,7 +375,7 @@ def test_an_earlier_install_is_updated_without_yes_and_keeps_engine_data(
     assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
     assert not (home / "src" / "apothem" / "removed_module.py").exists(), combined
     _assert_engine_data_kept(home)
-    assert not list(tmp_path.glob(".apothem-extract-*")), "staging left behind"
+    assert not list(tmp_path.glob(".apothem-*")), "staging left behind"
 
 
 def test_explicit_release_mode_refuses_a_git_clone_without_yes(tmp_path: Path) -> None:
@@ -409,6 +462,137 @@ def test_other_content_at_apothem_home_is_refused_without_yes(tmp_path: Path) ->
     assert result.returncode != 0, combined
     assert "holds no Apothem install; refusing to replace it" in combined, combined
     assert sentinel.is_file()
+
+
+def test_release_mode_checks_the_tag_and_the_certificate_commit(
+    tmp_path: Path,
+) -> None:
+    """Both checks run and pass before the archive is placed, and no staging
+    directory is left beside APOTHEM_HOME."""
+    base = _release(tmp_path)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path))
+
+    combined = result.stdout + result.stderr
+    assert TAG_OK_MARKER in combined, combined
+    assert COSIGN_OK_MARKER in combined, combined
+    assert COMMIT_OK_MARKER in combined, combined
+    assert (tmp_path / "apothem-home" / "src" / "apothem" / "__init__.py").is_file()
+    assert not list(tmp_path.glob(".apothem-*")), "staging left behind"
+
+
+@pytest.mark.parametrize(
+    ("status", "marker"),
+    [
+        pytest.param(
+            good_signature_status(OTHER_FINGERPRINT),
+            "not from the maintainer key",
+            id="another-key",
+        ),
+        pytest.param("", "is unsigned or its signature did not verify", id="unsigned"),
+    ],
+)
+def test_a_cosign_valid_release_without_the_maintainer_tag_is_refused(
+    tmp_path: Path, status: str, marker: str
+) -> None:
+    """Anyone who can push a tag can make the release workflow sign a
+    release; without the maintainer key's tag signature it is refused before
+    cosign runs, and APOTHEM_ALLOW_UNVERIFIED does not change that."""
+    base = _release(tmp_path)
+    cosign_dir = _stub_cosign(tmp_path)
+
+    result = _run(
+        tmp_path,
+        base,
+        cosign_dir=cosign_dir,
+        gpg_status=status,
+        extra_env={"APOTHEM_ALLOW_UNVERIFIED": "1"},
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert marker in combined, combined
+    assert not (cosign_dir / "cosign-args.txt").exists(), combined
+    assert not (tmp_path / "apothem-home").exists(), combined
+
+
+def test_a_certificate_for_another_commit_is_refused(tmp_path: Path) -> None:
+    """The signing run must have run on the tag's commit."""
+    base = _release(tmp_path, cert_commit="0" * 40)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path))
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert COSIGN_OK_MARKER in combined, combined
+    assert f"{COMMIT_MISMATCH_MARKER} {'0' * 40}" in combined, combined
+    assert not (tmp_path / "apothem-home").exists(), combined
+
+
+def test_a_certificate_without_a_source_commit_is_refused(tmp_path: Path) -> None:
+    base = _release(tmp_path, cert_commit=None)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path))
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert "names no source commit" in combined, combined
+    assert not (tmp_path / "apothem-home").exists(), combined
+
+
+def test_the_sigstore_bundle_format_is_read(tmp_path: Path) -> None:
+    base = _release(tmp_path, sigstore_format=True)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path))
+
+    combined = result.stdout + result.stderr
+    assert COMMIT_OK_MARKER in combined, combined
+
+
+def test_the_v150_release_certificate_names_its_commit(tmp_path: Path) -> None:
+    """The real v1.5.0 Fulcio certificate is read: it names the v1.5.0
+    commit, which is not the fixture tag's, so the install is refused."""
+    base = _release(tmp_path, bundle_text=V150_BUNDLE.read_text(encoding="utf-8"))
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path))
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert f"{COMMIT_MISMATCH_MARKER} {V150_COMMIT}" in combined, combined
+
+
+def test_dry_run_leaves_apothem_home_and_its_parent_alone(tmp_path: Path) -> None:
+    home = tmp_path / "apothem-home"
+    _seed_earlier_install(home)
+    before = sorted(str(path.relative_to(home)) for path in home.rglob("*"))
+    base = _release(tmp_path)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path), dry_run=True)
+
+    combined = result.stdout + result.stderr
+    assert COMMIT_OK_MARKER in combined, combined
+    assert "dry run, so" in combined, combined
+    assert (home / "src" / "apothem" / "removed_module.py").is_file(), combined
+    assert not (home / "src" / "apothem" / "__init__.py").exists(), combined
+    after = sorted(str(path.relative_to(home)) for path in home.rglob("*"))
+    assert after == before, combined
+    assert not list(tmp_path.glob(".apothem-*")), "staging left behind"
+    assert list((tmp_path / "temp").iterdir()) == [], "the scratch copy was left behind"
+
+
+def test_a_missing_gpg_is_named(tmp_path: Path) -> None:
+    base = _release(tmp_path)
+
+    result = _run(
+        tmp_path,
+        base,
+        cosign_dir=_stub_cosign(tmp_path),
+        gpg_program=str(tmp_path / "no-such-gpg"),
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert "gpg not found" in combined, combined
 
 
 # REUSE-IgnoreEnd

@@ -63,11 +63,15 @@ a message directing you to the installer first.
 
 The update script works only on a git clone. An install made with cosign, or
 with `APOTHEM_VERIFY=checksum`, places the release archive instead, so the
-update script stops and tells you to re-run the installer with cosign on
-`PATH`. That re-run replaces only the files the new archive ships and keeps
-the engine's backups and install ledgers. Without cosign, re-run it with
-`APOTHEM_VERIFY=checksum`, or with `--yes` (`-Yes` on Windows) to replace the
-archive install with a git clone.
+update script stops and tells you to re-run the installer with cosign and
+`gpg` on `PATH`. That re-run swaps in the new release and keeps every file it
+does not ship, including the engine's backups and install ledgers. Without
+cosign, re-run the installer with `--yes` (`-Yes` on Windows): it switches the
+archive install to a git clone checked against the maintainer key, and keeps
+the backups and ledgers. `APOTHEM_VERIFY=checksum` also updates the archive in
+place, but it checks only that the archive matches the release's
+`SHA256SUMS`, which anyone who can change the release files can change too, so
+it does not prove who published the release.
 
 ## Re-materialize harness output
 

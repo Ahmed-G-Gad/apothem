@@ -863,15 +863,17 @@ def test_existing_nonclone_home_is_refused_without_yes(tmp_path: Path) -> None:
 
     combined = result.stdout + result.stderr
     assert result.returncode != 0, f"installer should refuse\n{combined}"
-    assert "refusing to delete" in combined, combined
+    assert "is not a git clone; refusing to replace it" in combined, combined
     assert sentinel.is_file(), "sentinel must survive the refused install"
 
 
 @requires_bash
-def test_yes_authorizes_replacing_nonclone_home(tmp_path: Path) -> None:
-    """--yes authorizes the replacement: the non-clone directory gives way
-    to the clone (this run still aborts later, at the verification gate,
-    which is fine — the guard under test sits before the clone)."""
+def test_yes_lets_a_failed_tag_check_leave_the_nonclone_home_alone(
+    tmp_path: Path,
+) -> None:
+    """--yes passes the ownership guard, but the clone is checked in a
+    staging directory first: an unsigned tag aborts there, and the existing
+    directory is left exactly as it was."""
     fixture = _make_fixture_repo(tmp_path)
     _git(["tag", "-a", "v9.9.9", "-m", "unsigned release"], cwd=fixture)
     env = _installer_env(tmp_path, fixture, "v9.9.9")
@@ -883,8 +885,69 @@ def test_yes_authorizes_replacing_nonclone_home(tmp_path: Path) -> None:
 
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined  # unsigned tag aborts at the gate
-    assert not (apothem_home / "keep.txt").exists(), combined
+    assert "Replacing the existing non-clone" in combined, combined
+    assert (apothem_home / "keep.txt").is_file(), combined
+    assert not (apothem_home / ".git").exists(), combined
+    assert not list(tmp_path.glob(".apothem-*")), "staging left behind"
+
+
+@requires_bash
+def test_yes_switches_an_archive_install_to_a_clone_and_keeps_engine_data(
+    tmp_path: Path,
+) -> None:
+    """An archive install switched to a clone with --yes keeps the engine's
+    rollback backups and install ledgers."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.9")
+    env = _installer_env(tmp_path, fixture, "v9.9.9")
+    _use_stub_gpg(env, _good_signature_status(MAINTAINER_FINGERPRINT), "", 0)
+    apothem_home = Path(env["APOTHEM_HOME"])
+    (apothem_home / "src" / "apothem").mkdir(parents=True)
+    (apothem_home / "src" / "apothem" / "removed_module.py").write_text(
+        "old\n", encoding="utf-8"
+    )
+    (apothem_home / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    (apothem_home / "backups" / "claude-code").mkdir(parents=True)
+    (apothem_home / "backups" / "claude-code" / "set.json").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    (apothem_home / "state").mkdir()
+    (apothem_home / "state" / "ledger.json").write_text("{}\n", encoding="utf-8")
+
+    result = _run_installer(env)  # passes --yes
+
+    combined = result.stdout + result.stderr
+    assert "carries a valid signature from the maintainer key" in combined, combined
     assert (apothem_home / ".git").is_dir(), combined
+    assert not (apothem_home / "src" / "apothem" / "removed_module.py").exists()
+    assert (apothem_home / "backups" / "claude-code" / "set.json").is_file()
+    assert (apothem_home / "state" / "ledger.json").is_file()
+    assert not list(tmp_path.glob(".apothem-*")), "staging left behind"
+
+
+@requires_bash
+def test_a_branch_named_like_the_tag_cannot_stand_in_for_it(tmp_path: Path) -> None:
+    """The clone checks out refs/tags/<tag>, never a branch of the same name,
+    and the tree it verifies is the tag's commit."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.9")
+    tagged = _git(["rev-parse", "HEAD"], cwd=fixture).strip()
+    _git(["checkout", "--quiet", "-b", "v9.9.9"], cwd=fixture)
+    (fixture / "planted.txt").write_text("not in the release\n", encoding="utf-8")
+    _git(["add", "planted.txt"], cwd=fixture)
+    _git(["commit", "--quiet", "-m", "branch named like the tag"], cwd=fixture)
+    _git(["checkout", "--quiet", "main"], cwd=fixture)
+    env = _installer_env(tmp_path, fixture, "v9.9.9")
+    _use_stub_gpg(env, _good_signature_status(MAINTAINER_FINGERPRINT), "", 0)
+
+    result = _run_installer(env)
+
+    combined = result.stdout + result.stderr
+    apothem_home = Path(env["APOTHEM_HOME"])
+    assert "carries a valid signature from the maintainer key" in combined, combined
+    assert not (apothem_home / "planted.txt").exists(), combined
+    head = _git(["rev-parse", "HEAD"], cwd=apothem_home).strip()
+    assert head == tagged, combined
 
 
 @pytest.mark.parametrize(
@@ -929,4 +992,4 @@ def test_updater_sends_an_archive_install_back_to_the_installer(
     plain = _plain(result.stdout + result.stderr)
     assert result.returncode != 0, plain
     assert "was installed from a release archive" in plain, plain
-    assert f"Re-run {installer} with cosign on PATH" in plain, plain
+    assert f"Re-run {installer} with cosign and gpg on PATH" in plain, plain

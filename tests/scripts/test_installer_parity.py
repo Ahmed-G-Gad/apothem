@@ -587,8 +587,11 @@ def test_checksum_mode_messages_agree() -> None:
         "Could not download",
         "Could not extract",
         "Could not create the parent directory of",
-        "Could not remove the existing",
-        "Could not move the extracted source to",
+        "Could not move the existing",
+        "Could not move the new source to",
+        "the earlier install is back in place",
+        "the earlier install is kept at",
+        "dry run, so",
     ):
         assert phrase in SH, f"install.sh lacks {phrase!r}"
         assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
@@ -646,7 +649,15 @@ def test_release_mode_trust_roots_and_messages_agree() -> None:
         "cosign: SHA256SUMS is signed by the",
         "holds no Apothem install; refusing to replace it.",
         "or SHA256SUMS.sig as early releases name it",
-        "Set APOTHEM_VERIFY=signature to check the release tag instead.",
+        "Set APOTHEM_VERIFY=signature to check the release tag alone.",
+        "Verifying the ",
+        "fetch --quiet --depth=1 --no-tags",
+        "names no source commit (extension 1.3.6.1.4.1.57264.1.19)",
+        "was signed in a workflow run on commit",
+        "but the maintainer-signed tag points at",
+        "The signing workflow ran on the tag's commit",
+        "gpg not found",
+        "release tag's signature against the maintainer key",
     ):
         assert phrase in SH, f"install.sh lacks {phrase!r}"
         assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
@@ -667,4 +678,6 @@ def test_updaters_point_archive_installs_at_the_installer(
 ) -> None:
     """An archive install has no clone, so each updater sends it back to the
     installer instead of claiming no source was found."""
-    assert f"Re-run {installer} with cosign on PATH to update it" in SCRIPTS[name]
+    assert (
+        f"Re-run {installer} with cosign and gpg on PATH to update it" in SCRIPTS[name]
+    )

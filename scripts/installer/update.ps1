@@ -270,11 +270,50 @@ if ($env:APOTHEM_SOURCE) {
         Write-Ok "Latest release tag: $ApothemRef"
     }
 
+    if ((Test-ReleaseTag $ApothemRef) -and $ApothemAllowUnverified -ne '1') {
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $GpgFormat = & git config --get gpg.format 2>$null
+            $GpgProg = & git config --get gpg.program 2>$null
+            $GitExecPath = & git --exec-path 2>$null
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        $GpgFound = ($GpgFormat -eq 'ssh')
+        if (-not $GpgFound -and $GpgProg) {
+            $GpgFound = (Test-Path -LiteralPath $GpgProg -PathType Leaf) -or [bool](Get-Command $GpgProg -ErrorAction SilentlyContinue)
+        } elseif (-not $GpgFound) {
+            # Git for Windows runs the gpg it ships (usr\bin\gpg.exe under its
+            # install root), which is not on PATH.
+            $GpgFound = [bool](Get-Command 'gpg' -ErrorAction SilentlyContinue)
+            if (-not $GpgFound -and $GitExecPath) {
+                $GitRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $GitExecPath))
+                $GpgFound = [bool]($GitRoot -and (Test-Path -LiteralPath (Join-Path $GitRoot 'usr\bin\gpg.exe')))
+            }
+        }
+        if (-not $GpgFound) {
+            Write-Fail "gpg not found - needed to check the $ApothemRef release tag's signature against the maintainer key. Install Git for Windows (it ships gpg) or GnuPG (https://gnupg.org/download/), then re-run."
+        }
+    }
+
     Write-Info "Updating clone at $ApothemHome (ref: $ApothemRef)"
     & git -C $ApothemHome fetch --quiet --tags origin
-    & git -C $ApothemHome checkout --quiet --force $ApothemRef
-    if ($LASTEXITCODE -ne 0) { & git -C $ApothemHome checkout --quiet --force "origin/$ApothemRef" }
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $ApothemHome" }
+    if (Test-ReleaseTag $ApothemRef) {
+        # The full refs/tags/ name keeps a branch that shares the tag's name
+        # from standing in for it; HEAD must then be the tag's commit.
+        & git -C $ApothemHome checkout --quiet --force "refs/tags/$ApothemRef"
+        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome" }
+        $CoHead = & git -C $ApothemHome rev-parse --verify --quiet HEAD
+        $CoTag = & git -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
+        if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
+            Write-Fail "The checkout in $ApothemHome is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before re-materialization."
+        }
+    } else {
+        & git -C $ApothemHome checkout --quiet --force $ApothemRef
+        if ($LASTEXITCODE -ne 0) { & git -C $ApothemHome checkout --quiet --force "origin/$ApothemRef" }
+        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $ApothemHome" }
+    }
     $Source = $ApothemHome
     if (-not (Test-ApothemSource $Source)) { Write-Fail "Updated tree is not an apothem source: $Source" }
     Write-Ok "Source updated at $Source (ref: $ApothemRef)"
@@ -282,7 +321,7 @@ if ($env:APOTHEM_SOURCE) {
     # Fail-closed signature verification - runs BEFORE any re-materialization.
     Write-Bold "Verifying source signature"
     if (Test-ReleaseTag $ApothemRef) {
-        if ((Test-TagSignature $Source $ApothemRef) -and (Test-TagSignedByMaintainer)) {
+        if ((Test-TagSignature $Source "refs/tags/$ApothemRef") -and (Test-TagSignedByMaintainer)) {
             Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
         } elseif ($ApothemAllowUnverified -eq '1') {
             Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
@@ -301,7 +340,7 @@ if ($env:APOTHEM_SOURCE) {
         }
     }
 } elseif (Test-ApothemSource $ApothemHome) {
-    Write-Fail "$ApothemHome was installed from a release archive, which has no git clone to update. Re-run install.ps1 with cosign on PATH to update it to the latest verified release."
+    Write-Fail "$ApothemHome was installed from a release archive, which has no git clone to update. Re-run install.ps1 with cosign and gpg on PATH to update it to the latest verified release."
 } else {
     Write-Fail "No source found at $ApothemHome - run install.ps1 first or set APOTHEM_SOURCE"
 }

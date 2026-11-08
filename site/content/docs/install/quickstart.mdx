@@ -30,10 +30,10 @@ default. Swap the adapter name at any step to target a different tool; the
 Apothem ships as a self-contained runtime — the engine runs straight from its
 source tree with vendored dependencies. One command fetches the source, places
 the engine, and materializes your first harness. It verifies the signed
-release first. With [cosign](https://docs.sigstore.dev/cosign/system_config/installation/)
-installed, that needs no setup. Without cosign, the installer checks the
-signed release tag instead, so import the maintainer signing key once before
-the first install and check that the fingerprint reads
+release first: it checks the signed release tag against the maintainer key,
+and with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/)
+installed it also checks the signed release archive. Import the maintainer
+signing key once before the first install and check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
@@ -55,7 +55,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-The installer requires a system Python 3.10+, plus `git`, and either cosign or `gpg`, for the network form.
+The installer requires a system Python 3.10+, plus `git` and `gpg` (and optionally cosign) for the network form.
 It checks the prerequisites and places the engine under `~/.apothem`. When
 `click` or `rich` is missing, it installs the package with your confirmation or
 on `--yes` (`-Yes` on PowerShell) or `APOTHEM_AUTO_INSTALL_DEPS=1`, and

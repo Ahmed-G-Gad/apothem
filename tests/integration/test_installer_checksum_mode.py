@@ -94,6 +94,12 @@ def _run(
     (tmp_path / "temp").mkdir(exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith("APOTHEM_")}
     env.pop("PYTHONPATH", None)
+    # --yes lets the installer pip-install a missing click or rich; with no
+    # package index that install fails instead of changing the host Python.
+    for key in [k for k in env if k.startswith("PIP_")]:
+        del env[key]
+    env["PIP_NO_INDEX"] = "1"
+    env["PIP_CONFIG_FILE"] = os.devnull
     env.update(
         {
             "HOME": str(home),
@@ -109,7 +115,7 @@ def _run(
     installer = staging / "install.sh"
     shutil.copy2(INSTALLER, installer)
     return subprocess.run(
-        ["bash", str(installer), "--yes", "--dry-run"],
+        ["bash", str(installer), "--yes"],
         cwd=str(staging),
         env=env,
         capture_output=True,

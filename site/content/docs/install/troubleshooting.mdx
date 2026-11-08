@@ -91,8 +91,8 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### The installer stops: the maintainer public key is not in the local keyring
 
-Without cosign, the installer verifies the signed release tag and stops when
-the signing key is not in your keyring. Import it once, check that the fingerprint reads
+Every network install verifies the signed release tag, with or without cosign,
+and stops when the signing key is not in your keyring. Import it once, check that the fingerprint reads
 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, then run the installer
 again:
 
@@ -107,11 +107,17 @@ gpg --fingerprint 70396FED9C634163
 
 On Windows, import through Git's `bash` as shown: `git verify-tag` reads the
 keyring of the `gpg` that ships with Git for Windows. Installing
-[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) avoids
-the key import: with cosign on `PATH`, the installer checks the signed release
-archive instead of the tag. A host with neither can install with
-`APOTHEM_VERIFY=checksum`, which checks the archive's digest only and does not
-prove who published it.
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) does
+not replace the key import: with cosign on `PATH`, the installer checks the
+signed release archive as well as the tag. A host without `gpg` can install
+with `APOTHEM_VERIFY=checksum`, which checks the archive's digest only and does
+not prove who published it.
+
+### The installer stops: gpg not found
+
+Install GnuPG, or on Windows Git for Windows, which ships the `gpg` that
+`git verify-tag` runs. Then import the maintainer key as shown above and run
+the installer again.
 
 ### The installer stops: the tag is not signed by the maintainer key
 
@@ -129,9 +135,13 @@ Read the `cosign said:` text at the end of the message first.
 - A network, proxy or trusted-root error means cosign could not reach
   Sigstore. Retry when you are online, upgrade cosign, or install with
   `APOTHEM_VERIFY=signature`, which checks the release tag against the
-  maintainer key instead.
+  maintainer key alone.
 - A fork set through `APOTHEM_REPO` is expected to stop here: the installer
   accepts only Apothem's own release workflow.
+- "names no source commit" or "was signed in a workflow run on commit" means
+  the signing certificate does not tie `SHA256SUMS` to the commit the signed
+  tag points at. Do not install; report it through the channels in
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 - An identity or signature mismatch on Apothem's own releases means
   `SHA256SUMS` was not signed by Apothem's release workflow for this tag. Do
   not install; report it through the channels in

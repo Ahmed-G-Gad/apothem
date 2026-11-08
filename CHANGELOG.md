@@ -545,25 +545,39 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
-- **The installers accept only the maintainer key, and prefer a check that
-  uses no SHA-1.** `install.sh`, `install.ps1`, `update.sh` and `update.ps1`
-  checked a release tag with `git verify-tag`, which accepts a valid signature
-  from any key the local GnuPG keyring holds. They now read GnuPG's `VALIDSIG`
-  status and refuse the tag unless its primary-key fingerprint is
-  `5C8998F9F241720445D3F28B70396FED9C634163`, the key SECURITY.md publishes.
-  The installers also gain a check that does not rest on the git tag, which
-  names its commit by SHA-1: `APOTHEM_VERIFY=release` downloads the platform
-  archive, `SHA256SUMS` and `SHA256SUMS.cosign.bundle`, has cosign confirm
-  that the release workflow at that exact tag signed `SHA256SUMS`, then
-  checks the archive's SHA-256. The new default, `APOTHEM_VERIFY=auto`, takes
-  that path whenever `cosign` is on `PATH` and the key-pinned tag check
-  otherwise, and keeps an existing git clone at `APOTHEM_HOME` on the tag
-  check; `signature` and `checksum` stay available. A re-run in an archive
-  mode updates an earlier archive install in place without `--yes` and
-  replaces only the files the archive ships, so the engine's backups and
-  install ledgers are kept (before, `APOTHEM_VERIFY=checksum --yes` deleted
-  them); the update scripts tell an archive install to re-run the installer.
-  The
+- **The installers accept only the maintainer key, and with cosign they
+  also check the signed release archive.** `install.sh`, `install.ps1`,
+  `update.sh` and `update.ps1` checked a release tag with `git verify-tag`,
+  which accepts a valid signature from any key the local GnuPG keyring holds.
+  They now read GnuPG's `VALIDSIG` status and refuse the tag unless its
+  primary-key fingerprint is `5C8998F9F241720445D3F28B70396FED9C634163`, the
+  key SECURITY.md publishes, and they check out the tag by its full
+  `refs/tags/` name and confirm the checkout is the tag's commit. A missing
+  `gpg` is now named as such.
+- **A new release check needs both signatures.** `APOTHEM_VERIFY=release`
+  first checks the release tag against the maintainer key, then downloads the
+  platform archive, `SHA256SUMS` and `SHA256SUMS.cosign.bundle`. cosign must
+  confirm that the release workflow at that exact tag signed `SHA256SUMS`,
+  and the signing certificate must name the tag's commit as its source
+  commit, before the archive's SHA-256 is checked. The release workflow runs
+  for any tag that is pushed, so its signature alone would accept a release
+  nobody signed off; the tag signature alone says nothing about the archive.
+  `APOTHEM_ALLOW_UNVERIFIED` never relaxes this path. The new default,
+  `APOTHEM_VERIFY=auto`, takes it whenever `cosign` is on `PATH` and uses the
+  tag check alone otherwise, and keeps an existing git clone at
+  `APOTHEM_HOME` on the tag check; `signature` and `checksum` stay available.
+  The checks pass under cosign v2 and v3.
+- **The installers no longer delete the engine's backups and ledgers.**
+  Replacing an install at `APOTHEM_HOME` with `--yes` removed the whole
+  folder, including the rollback backups (`backups/`) and install ledgers
+  (`state/`) the engine keeps there. The new source is now checked in a
+  staging folder beside `APOTHEM_HOME`, swapped in only after every check
+  passes, and every file it does not ship is kept; if the swap fails, the
+  earlier install is put back. A re-run in an archive mode updates an earlier
+  archive install in place without `--yes`, and the update scripts tell an
+  archive install to re-run the installer. `--dry-run` (`-DryRun`) now
+  checks the release in a temporary folder and leaves `APOTHEM_HOME`
+  unchanged. The
   [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
   explains each mode.
 - **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode

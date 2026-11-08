@@ -304,6 +304,198 @@ function Test-ReleaseTag {
     return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z')
 }
 
+# Assert-GpgAvailable - fail unless the program `git verify-tag` runs for an
+# OpenPGP signature is present, so a missing GnuPG is named as such instead
+# of surfacing as a failed signature check. That program is gpg.program when
+# it is set, else gpg on PATH, else the gpg Git for Windows ships under its
+# install root (usr\bin\gpg.exe), which git runs although it is not on PATH.
+function Assert-GpgAvailable {
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $Format = & git config --get gpg.format 2>$null
+        $Prog = & git config --get gpg.program 2>$null
+        $ExecPath = & git --exec-path 2>$null
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    if ($Format -eq 'ssh') { return }
+    if ($Prog) {
+        if ((Test-Path -LiteralPath $Prog -PathType Leaf) -or (Get-Command $Prog -ErrorAction SilentlyContinue)) { return }
+    } else {
+        if (Get-Command 'gpg' -ErrorAction SilentlyContinue) { return }
+        if ($ExecPath) {
+            $GitRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ExecPath))
+            if ($GitRoot -and (Test-Path -LiteralPath (Join-Path $GitRoot 'usr\bin\gpg.exe'))) { return }
+        }
+    }
+    Write-Fail "gpg not found - needed to check the $ApothemRef release tag's signature against the maintainer key. Install Git for Windows (it ships gpg) or GnuPG (https://gnupg.org/download/), then re-run."
+}
+
+# Test-MaintainerTag DIR REF ALLOW - the key-pinned tag gate (mirrors
+# install.sh's check_release_tag). Checks the tag refs/tags/REF in the
+# repository at DIR and prints the result. A tag signed by the maintainer key
+# returns the commit it points at; any other outcome aborts with the reason,
+# unless ALLOW is $true, which downgrades the abort to a warning and returns
+# $null.
+function Test-MaintainerTag {
+    param([string]$Dir, [string]$Ref, [bool]$Allow)
+    if ((Test-TagSignature $Dir "refs/tags/$Ref") -and (Test-TagSignedByMaintainer)) {
+        $Commit = & git -C $Dir rev-parse --verify --quiet "refs/tags/$Ref^{commit}"
+        if ($LASTEXITCODE -ne 0 -or -not $Commit) { Write-Fail "Could not read the commit the $Ref tag points at" }
+        Write-Ok "Tag $Ref carries a valid signature from the maintainer key $MaintainerFingerprint"
+        return ([string]$Commit).Trim()
+    }
+    if ($Allow) {
+        Write-Warn "Tag $Ref is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        return $null
+    }
+    if (Test-TagSignedByOtherKey) {
+        Write-Fail "Tag $Ref carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before any configuration is materialized."
+    }
+    if (Test-VerifyTagMissingKey) {
+        Write-Fail "Tag $Ref is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this installer."
+    }
+    Write-Fail "Tag $Ref is unsigned or its signature did not verify (possible tampering). Aborting before any configuration is materialized."
+}
+
+# Invoke-CheckoutRef DIR - check out APOTHEM_REF in the clone at DIR. A
+# release tag is checked out by its full refs/tags/ name, so a branch that
+# shares the tag's name cannot stand in for it, and HEAD must then be the
+# tag's commit. Any other ref resolves directly or through origin/<branch>.
+function Invoke-CheckoutRef {
+    param([string]$Dir)
+    if (Test-ReleaseTag $ApothemRef) {
+        & git -C $Dir checkout --quiet --force "refs/tags/$ApothemRef"
+        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $Dir" }
+        $CoHead = & git -C $Dir rev-parse --verify --quiet HEAD
+        $CoTag = & git -C $Dir rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
+        if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
+            Write-Fail "The checkout in $Dir is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before anything is verified or materialized."
+        }
+    } else {
+        & git -C $Dir checkout --quiet --force $ApothemRef
+        if ($LASTEXITCODE -ne 0) { & git -C $Dir checkout --quiet --force "origin/$ApothemRef" }
+        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $Dir" }
+    }
+}
+
+# Read-DerItem BUF AT - decode the DER item at offset AT of BUF into its tag,
+# its value bytes and the offset just past it.
+function Read-DerItem {
+    param([byte[]]$Buf, [int]$At)
+    $Tag = [int]$Buf[$At]
+    $Size = [int]$Buf[$At + 1]
+    $At += 2
+    if ($Size -band 0x80) {
+        $Count = $Size -band 0x7F
+        $Size = 0
+        for ($k = 0; $k -lt $Count; $k++) { $Size = ($Size * 256) + [int]$Buf[$At + $k] }
+        $At += $Count
+    }
+    if ($At + $Size -gt $Buf.Length) { throw 'truncated DER item' }
+    $Value = New-Object byte[] $Size
+    [System.Array]::Copy($Buf, $At, $Value, 0, $Size)
+    return @{ Tag = $Tag; Value = $Value; Next = $At + $Size }
+}
+
+# Get-DerContent BUF - the DER items that BUF holds, one after another.
+function Get-DerContent {
+    param([byte[]]$Buf)
+    $Items = @()
+    $At = 0
+    while ($At -lt $Buf.Length) {
+        $Item = Read-DerItem $Buf $At
+        $Items += , $Item
+        $At = $Item.Next
+    }
+    return , $Items
+}
+
+# Get-CertSourceCommit BUNDLE - the commit that the Sigstore signing
+# certificate in BUNDLE names in its source-repository-digest extension (OID
+# 1.3.6.1.4.1.57264.1.19, a DER UTF8String), or $null when the bundle holds
+# no certificate or the certificate has no such extension. It reads cosign's
+# own bundle ("cert": a base64 PEM) and the Sigstore bundle format
+# (verificationMaterial), and walks the DER as install.sh does. Run only
+# after cosign has verified the bundle, so the certificate it reads is the
+# one cosign checked.
+function Get-CertSourceCommit {
+    param([string]$Bundle)
+    try {
+        $Json = Get-Content -LiteralPath $Bundle -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        if ($Json.PSObject.Properties.Name -contains 'cert') {
+            $Pem = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($Json.cert))
+            $Body = [regex]::Match($Pem, '-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+            if (-not $Body.Success) { return $null }
+            $Der = [System.Convert]::FromBase64String(($Body.Groups[1].Value -replace '\s', ''))
+        } else {
+            $Material = $Json.verificationMaterial
+            $CertEntry = if ($Material.certificate) { $Material.certificate } else { @($Material.x509CertificateChain.certificates)[0] }
+            $Der = [System.Convert]::FromBase64String($CertEntry.rawBytes)
+        }
+        $Tbs = (Read-DerItem (Read-DerItem $Der 0).Value 0).Value
+        foreach ($Field in (Get-DerContent $Tbs)) {
+            if ($Field.Tag -ne 0xA3) { continue }
+            foreach ($Extension in (Get-DerContent (Read-DerItem $Field.Value 0).Value)) {
+                $Parts = Get-DerContent $Extension.Value
+                if ($Parts.Count -ge 2 -and $Parts[0].Tag -eq 6 -and [System.BitConverter]::ToString($Parts[0].Value) -ceq '2B-06-01-04-01-83-BF-30-01-13') {
+                    $Digest = $Parts[$Parts.Count - 1].Value
+                    if ($Digest.Length -gt 0 -and $Digest[0] -eq 0x0C) { $Digest = (Read-DerItem $Digest 0).Value }
+                    return [System.Text.Encoding]::ASCII.GetString($Digest)
+                }
+            }
+        }
+    } catch {
+        return $null
+    }
+    return $null
+}
+
+# Invoke-SwapIn NEW DROP - put the tree at NEW in place of APOTHEM_HOME
+# (mirrors install.sh's swap_in). NEW sits beside APOTHEM_HOME, so each move
+# stays on one drive. The earlier APOTHEM_HOME moves aside first and comes
+# back if NEW cannot move in. Then every top-level entry of the earlier tree
+# that NEW does not ship moves into the new tree, except DROP (.git when an
+# archive replaces a clone): that keeps the engine's rollback backups
+# (backups\) and install ledgers (state\), which live in APOTHEM_HOME too.
+# The rest of the earlier tree is removed.
+function Invoke-SwapIn {
+    param([string]$New, [string]$Drop)
+    if (-not (Test-Path -LiteralPath $ApothemHome)) {
+        try { Move-Item -LiteralPath $New -Destination $ApothemHome }
+        catch { Write-Fail "Could not move the new source to $ApothemHome" }
+        return
+    }
+    $SwParent = Split-Path -Parent $ApothemHome
+    if (-not $SwParent) { $SwParent = (Get-Location).Path }
+    $SwOld = Join-Path $SwParent (".apothem-old." + [System.Guid]::NewGuid().ToString('N'))
+    try { New-Item -ItemType Directory -Path $SwOld | Out-Null }
+    catch { Write-Fail "Could not make room beside $ApothemHome" }
+    $SwOldHome = Join-Path $SwOld 'home'
+    try { Move-Item -LiteralPath $ApothemHome -Destination $SwOldHome }
+    catch {
+        Remove-Item -LiteralPath $SwOld -Force
+        Write-Fail "Could not move the existing $ApothemHome aside; nothing was changed"
+    }
+    try { Move-Item -LiteralPath $New -Destination $ApothemHome }
+    catch {
+        Move-Item -LiteralPath $SwOldHome -Destination $ApothemHome
+        Remove-Item -LiteralPath $SwOld -Force
+        Write-Fail "Could not move the new source to $ApothemHome; the earlier install is back in place"
+    }
+    if (Test-Path -LiteralPath $SwOldHome -PathType Container) {
+        foreach ($SwEntry in @(Get-ChildItem -LiteralPath $SwOldHome -Force)) {
+            if ($Drop -and $SwEntry.Name -eq $Drop) { continue }
+            $SwTarget = Join-Path $ApothemHome $SwEntry.Name
+            if (Test-Path -LiteralPath $SwTarget) { continue }
+            try { Move-Item -LiteralPath $SwEntry.FullName -Destination $SwTarget }
+            catch { Write-Fail "Could not move $($SwEntry.Name) into the new $ApothemHome; the earlier install is kept at $SwOldHome" }
+        }
+    }
+    Remove-Item -LiteralPath $SwOld -Recurse -Force
+}
+
 Write-Bold "Apothem installer"
 
 # Prerequisite: Python >= 3.10 ------------------------------------------------
@@ -415,10 +607,9 @@ if (@('auto', 'release', 'signature', 'checksum') -cnotcontains $ApothemVerify) 
 $ApothemReleaseBase = if ($env:APOTHEM_RELEASE_BASE) { $env:APOTHEM_RELEASE_BASE } else { "$ApothemRepo/releases/download" }
 
 # Pick the verification path for a fetched source (mirrors install.sh). `auto`
-# takes the cosign + SHA-256 archive path when cosign is on PATH, since a
-# signed git tag names its commit by SHA-1, and falls back to the key-pinned
-# tag check otherwise. A ref that is not a release tag (main, a SHA) has no
-# release archive, so it goes to the clone path, whose gate refuses it unless
+# takes the release path when cosign is on PATH and the key-pinned tag check
+# otherwise. A ref that is not a release tag (main, a SHA) has no release
+# archive, so it goes to the clone path, whose gate refuses it unless
 # APOTHEM_ALLOW_UNVERIFIED=1. An existing git clone at APOTHEM_HOME stays a
 # clone: replacing it with an archive would drop its history and any local
 # work, so it is updated through the clone path's key-pinned tag check.
@@ -433,21 +624,38 @@ if (-not $Source -and $VerifyMode -eq 'auto') {
         Write-Info "$ApothemHome is a git clone - updating it and checking the release tag's signature. To use the cosign-checked release archive instead, move the clone aside first."
     } elseif ($HasCosign) {
         $VerifyMode = 'release'
-        Write-Info "cosign found - installing the release archive after checking its signed SHA-256 digest"
+        Write-Info "cosign found - installing the release archive once both the release tag's signature and cosign's check of its SHA-256 digest pass"
     } else {
         $VerifyMode = 'signature'
-        Write-Info "cosign not found - checking the release tag's signature instead. Install cosign ($CosignInstallDoc) to check the release archive's signed SHA-256 digest."
+        Write-Info "cosign not found - checking the release tag's signature only. Install cosign ($CosignInstallDoc) to also check the release archive's signed SHA-256 digest."
     }
 }
 if (-not $Source -and $VerifyMode -eq 'release' -and -not $HasCosign) {
-    Write-Fail "APOTHEM_VERIFY=release needs cosign on PATH ($CosignInstallDoc). Install it, or set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+    Write-Fail "APOTHEM_VERIFY=release needs cosign on PATH ($CosignInstallDoc). Install it, or set APOTHEM_VERIFY=signature to check the release tag against the maintainer key alone."
+}
+
+# A dry run fetches and checks the source in a scratch folder and leaves
+# APOTHEM_HOME alone; the folder is removed once the engine's preview ends,
+# or by this trap when the run stops early on a terminating error.
+$script:DryRunScratch = $null
+# A trap covers its whole scope, including the lines above this one, so the
+# variable is read in a way that tolerates its not being set yet.
+trap {
+    $TrapScratch = Get-Variable -Name DryRunScratch -Scope Script -ValueOnly -ErrorAction SilentlyContinue
+    if ($TrapScratch -and (Test-Path -LiteralPath $TrapScratch)) {
+        Remove-Item -LiteralPath $TrapScratch -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    break
 }
 
 # Archive modes: install the release's Windows archive after checking its
-# SHA-256 against the release's SHA256SUMS. They replace the git clone and the
-# tag-signature gate below. `release` first has cosign check that the release
-# workflow at this tag signed SHA256SUMS, which proves who published the
-# digest; `checksum` skips that step for hosts without cosign or the
+# SHA-256 against the release's SHA256SUMS. They replace the git clone below.
+# `release` checks two things before it trusts the digest, and both must
+# pass: the release tag is signed by the maintainer key, and cosign shows
+# that the release workflow signed SHA256SUMS in a run on the commit that tag
+# points at. Either alone is not enough: anyone who can push a tag can make
+# the workflow sign a release, and a signed tag says nothing about the
+# archive. `checksum` skips both, for hosts with neither cosign nor the
 # maintainer key, and says plainly that a matching digest proves integrity,
 # not origin.
 if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')) {
@@ -468,10 +676,37 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
     $CkTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-" + [System.Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $CkTmp -Force | Out-Null
     $CkExtract = $null
-    # Everything from here to the move into APOTHEM_HOME runs inside try, so
+    # Everything from here to the swap into APOTHEM_HOME runs inside try, so
     # the download and the staging folder are removed on every path, success,
-    # failure or interrupt.
+    # failure or interrupt. A dry run keeps the scratch folder for the
+    # engine's preview.
     try {
+        $CkTagCommit = $null
+        if ($VerifyMode -eq 'release') {
+            if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
+                Write-Fail "git not found in PATH - needed to check the $ApothemRef release tag"
+            }
+            Assert-GpgAvailable
+            Write-Bold "Verifying the $ApothemRef release tag"
+            # Only the tag and the commit it points at are fetched, into a
+            # throwaway repository; the source itself comes from the archive.
+            $CkTagGit = Join-Path $CkTmp 'tag.git'
+            & git init --quiet --bare $CkTagGit
+            if ($LASTEXITCODE -ne 0) { Write-Fail "Could not create a scratch repository to check the $ApothemRef tag" }
+            $prior = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $CkFetchOut = & git -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
+                $CkFetchCode = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+            if ($CkFetchCode -ne 0) {
+                $CkSaid = (@($CkFetchOut | Where-Object { $null -ne $_ } | ForEach-Object { $_.ToString() }) | Select-Object -Last 2) -join ' '
+                Write-Fail "Could not fetch the $ApothemRef tag from ${ApothemRepo}: $CkSaid"
+            }
+            $CkTagCommit = Test-MaintainerTag $CkTagGit $ApothemRef $false
+        }
         $CkArchive = Join-Path $CkTmp $CkName
         $CkSums = Join-Path $CkTmp 'SHA256SUMS'
         Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
@@ -491,7 +726,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.cosign.bundle" -OutFile $CkBundle }
             catch {
                 try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.sig" -OutFile $CkBundle }
-                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef. Set APOTHEM_VERIFY=signature to check the release tag instead." }
+                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef. Set APOTHEM_VERIFY=signature to check the release tag alone." }
             }
             # cosign reports on stderr, which PowerShell before 7.2 turns into
             # a terminating error under 'Stop' once redirected, so the
@@ -508,9 +743,21 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             }
             if ($CkCosignCode -ne 0) {
                 $CkSaid = (@($CkCosignOut | Where-Object { $null -ne $_ } | ForEach-Object { $_.ToString() }) | Select-Object -Last 3) -join ' '
-                Write-Fail "cosign could not confirm that the $ApothemRef release workflow ($CkIdentity) signed SHA256SUMS (possible tampering). Aborting before anything is extracted. cosign said: $CkSaid If cosign could not reach Sigstore (offline or behind a proxy), set APOTHEM_VERIFY=signature to check the release tag against the maintainer key instead."
+                Write-Fail "cosign could not confirm that the $ApothemRef release workflow ($CkIdentity) signed SHA256SUMS (possible tampering). Aborting before anything is extracted. cosign said: $CkSaid If cosign could not reach Sigstore (offline or behind a proxy), set APOTHEM_VERIFY=signature to check the release tag alone."
             }
             Write-Ok "cosign: SHA256SUMS is signed by the $ApothemRef release workflow"
+            # The workflow run that signed SHA256SUMS must have run on the
+            # commit the maintainer signed. Fulcio writes that run's commit
+            # into the certificate; a certificate without it cannot be tied to
+            # the tag.
+            $CkCertCommit = Get-CertSourceCommit $CkBundle
+            if (-not $CkCertCommit) {
+                Write-Fail "The $ApothemRef signing certificate names no source commit (extension 1.3.6.1.4.1.57264.1.19), so it cannot be tied to the signed tag. Aborting before anything is extracted."
+            }
+            if ($CkCertCommit.ToLowerInvariant() -cne $CkTagCommit) {
+                Write-Fail "The $ApothemRef release was signed in a workflow run on commit $CkCertCommit, but the maintainer-signed tag points at $CkTagCommit (possible tampering). Aborting before anything is extracted."
+            }
+            Write-Ok "The signing workflow ran on the tag's commit $CkTagCommit"
         }
         $CkExpected = $null
         foreach ($Line in Get-Content -LiteralPath $CkSums) {
@@ -527,78 +774,68 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
         }
         Write-Ok "$CkName matches the release's SHA256SUMS"
         if ($VerifyMode -eq 'checksum') {
-            Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For proof of the publisher, install cosign and run without APOTHEM_VERIFY=checksum."
+            Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For proof of the publisher, install cosign and gpg and run without APOTHEM_VERIFY=checksum."
         }
         # Who owns what is already at APOTHEM_HOME decides whether -Yes is
         # needed (mirrors install.sh). An earlier archive install is
         # Apothem's own and is updated without asking. A git clone (history,
-        # branches, local work) or anything else needs -Yes. In every case
-        # only the entries the new archive ships are replaced: the engine
-        # keeps its rollback backups (backups\) and install ledgers (state\)
-        # in the same directory, and they, like any other file the archive
-        # does not ship, are kept.
-        $CkDropGit = $false
+        # branches, local work) or anything else needs -Yes. Invoke-SwapIn
+        # keeps every entry the archive does not ship, the engine's backups\
+        # and state\ among them.
+        $CkDrop = ''
         if ((Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
             if ($HomeIsClone) {
                 if ($Yes) {
-                    Write-Warn "Replacing the git clone's source at $ApothemHome with the $ApothemRef archive; its git history is removed (-Yes)"
-                    $CkDropGit = $true
+                    Write-Warn "Replacing the git clone's source at $ApothemHome with the $ApothemRef archive; its git history is removed, its backups\ and state\ are kept (-Yes)"
+                    $CkDrop = '.git'
                 } else {
                     Write-Fail "Destination $ApothemHome is a git clone; refusing to replace it with the $ApothemRef archive, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with -Yes."
                 }
             } elseif (Test-ApothemSource $ApothemHome) {
                 Write-Info "Updating the earlier install at $ApothemHome to the $ApothemRef archive"
             } elseif ($Yes) {
-                Write-Warn "Writing the $ApothemRef archive into the existing $ApothemHome (-Yes)"
+                Write-Warn "Writing the $ApothemRef archive into the existing $ApothemHome; files it does not ship are kept (-Yes)"
             } else {
                 Write-Fail "Destination $ApothemHome is not empty and holds no Apothem install; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
             }
         }
         # The release archive roots every file under apothem-<tag>\ (see
-        # scripts/build_release_tarball.py). It is extracted into a staging
-        # folder beside APOTHEM_HOME, because Windows PowerShell 5.1's Move-Item
-        # moves a directory only within one drive; the root is then required and
-        # moved into place.
-        $CkParent = Split-Path -Parent $ApothemHome
-        if (-not $CkParent) { $CkParent = (Get-Location).Path }
-        try { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
-        catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
-        if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
-            Write-Fail "Could not create the parent directory of $ApothemHome"
+        # scripts/build_release_tarball.py). A real install extracts it into
+        # a staging folder beside APOTHEM_HOME, because Windows PowerShell
+        # 5.1's Move-Item moves a directory only within one drive; a dry run
+        # extracts it into the scratch folder and leaves APOTHEM_HOME alone.
+        if ($DryRun) {
+            $CkExtract = Join-Path $CkTmp 'extract'
+        } else {
+            $CkParent = Split-Path -Parent $ApothemHome
+            if (-not $CkParent) { $CkParent = (Get-Location).Path }
+            try { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
+            catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
+            if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
+                Write-Fail "Could not create the parent directory of $ApothemHome"
+            }
+            $CkExtract = Join-Path $CkParent (".apothem-extract." + [System.Guid]::NewGuid().ToString('N'))
         }
-        $CkExtract = Join-Path $CkParent (".apothem-extract-" + [System.Guid]::NewGuid().ToString('N'))
         try { Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force }
         catch { Write-Fail "Could not extract $CkName" }
         $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
         if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
-        if (Test-Path -LiteralPath $ApothemHome -PathType Container) {
-            foreach ($CkEntry in @(Get-ChildItem -LiteralPath $CkRoot -Force)) {
-                $CkTarget = Join-Path $ApothemHome $CkEntry.Name
-                if (Test-Path -LiteralPath $CkTarget) {
-                    try { Remove-Item -LiteralPath $CkTarget -Recurse -Force }
-                    catch { Write-Fail "Could not remove the existing $CkTarget" }
-                }
-                try { Move-Item -LiteralPath $CkEntry.FullName -Destination $CkTarget }
-                catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
-            }
-            if ($CkDropGit) {
-                try { Remove-Item -LiteralPath (Join-Path $ApothemHome '.git') -Recurse -Force }
-                catch { Write-Fail "Could not remove the existing $ApothemHome\.git" }
-            }
+        if ($DryRun) {
+            $script:DryRunScratch = $CkTmp
+            $Source = $CkRoot
         } else {
-            if (Test-Path -LiteralPath $ApothemHome) {
-                try { Remove-Item -LiteralPath $ApothemHome -Force }
-                catch { Write-Fail "Could not remove the existing $ApothemHome" }
-            }
-            try { Move-Item -LiteralPath $CkRoot -Destination $ApothemHome }
-            catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
+            Invoke-SwapIn $CkRoot $CkDrop
+            $Source = $ApothemHome
         }
     } finally {
-        if ($CkExtract -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
-        if (Test-Path -LiteralPath $CkTmp) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
+        if ($CkExtract -and -not $DryRun -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
+        if (-not $script:DryRunScratch -and (Test-Path -LiteralPath $CkTmp)) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
     }
-    $Source = $ApothemHome
-    Write-Ok "Source ready at $Source (release archive $ApothemRef)"
+    if ($DryRun) {
+        Write-Ok "Source ready at $Source (release archive $ApothemRef; dry run, so $ApothemHome is not changed)"
+    } else {
+        Write-Ok "Source ready at $Source (release archive $ApothemRef)"
+    }
 }
 
 if (-not $Source) {
@@ -616,63 +853,77 @@ if (-not $Source) {
         }
         Write-Ok "Latest release tag: $ApothemRef"
     }
+    if ((Test-ReleaseTag $ApothemRef) -and $ApothemAllowUnverified -ne '1') { Assert-GpgAvailable }
 
-    if (Test-Path -LiteralPath (Join-Path $ApothemHome '.git')) {
+    # An existing clone is updated in place. Otherwise the clone is made in a
+    # fresh staging folder, checked, and only then swapped in by
+    # Invoke-SwapIn, which keeps the engine's backups\ and state\ from an
+    # earlier archive install. A dry run clones into a scratch folder and
+    # leaves APOTHEM_HOME alone.
+    $ClStage = $null
+    if ($HomeIsClone -and -not $DryRun) {
         Write-Info "Updating existing clone at $ApothemHome (ref: $ApothemRef)"
         & git -C $ApothemHome fetch --quiet --tags origin
-        & git -C $ApothemHome checkout --quiet --force $ApothemRef
-        if ($LASTEXITCODE -ne 0) { & git -C $ApothemHome checkout --quiet --force "origin/$ApothemRef" }
-        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $ApothemHome" }
+        Invoke-CheckoutRef $ApothemHome
+        $ClTree = $ApothemHome
     } else {
-        Write-Info "Cloning $ApothemRepo into $ApothemHome"
-        $ParentDir = Split-Path -Parent $ApothemHome
-        if ($ParentDir) { New-Item -ItemType Directory -Force -Path $ParentDir | Out-Null }
-        # An existing non-clone path here was not placed by a previous
-        # install (no .git), so it is not Apothem's to delete. Refuse unless
-        # -Yes explicitly authorizes the destructive replacement; a stale
-        # empty directory is removed quietly.
-        if (Test-Path -LiteralPath $ApothemHome) {
+        # An existing non-clone path here may not be Apothem's, so replacing
+        # it needs -Yes; a stale empty folder is replaced quietly.
+        if (-not $DryRun -and (Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
             if ($Yes) {
-                Write-Warn "Replacing existing non-clone path at $ApothemHome (-Yes)"
-                Remove-Item -Recurse -Force -LiteralPath $ApothemHome
-            } elseif ((Test-Path -LiteralPath $ApothemHome -PathType Container) -and -not (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
-                Remove-Item -LiteralPath $ApothemHome
+                Write-Warn "Replacing the existing non-clone $ApothemHome with a clone of $ApothemRef; files the clone does not ship, such as backups\ and state\, are kept (-Yes)"
             } else {
-                Write-Fail "Destination $ApothemHome exists but is not a git clone; refusing to delete it. If it is an earlier archive install, re-run with cosign on PATH (or APOTHEM_VERIFY=checksum) to update it in place. Otherwise move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes to replace it."
+                Write-Fail "Destination $ApothemHome exists but is not a git clone; refusing to replace it. If it is an earlier archive install, install cosign and gpg and re-run to update it in place, or re-run with -Yes to switch it to a clone (its backups\ and state\ are kept). Otherwise move it aside or point APOTHEM_HOME at another directory."
             }
         }
-        # Full clone (no --single-branch) so both tags and branches are
-        # checkout-able, then pin to the resolved ref.
-        & git clone --quiet $ApothemRepo $ApothemHome
-        if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
-        & git -C $ApothemHome checkout --quiet --force $ApothemRef
-        if ($LASTEXITCODE -ne 0) { & git -C $ApothemHome checkout --quiet --force "origin/$ApothemRef" }
-        if ($LASTEXITCODE -ne 0) { Write-Fail "Could not check out $ApothemRef in $ApothemHome" }
+        if ($DryRun) {
+            $ClStage = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-" + [System.Guid]::NewGuid().ToString('N'))
+            $script:DryRunScratch = $ClStage
+        } else {
+            $ClParent = Split-Path -Parent $ApothemHome
+            if (-not $ClParent) { $ClParent = (Get-Location).Path }
+            New-Item -ItemType Directory -Force -Path $ClParent | Out-Null
+            $ClStage = Join-Path $ClParent (".apothem-clone." + [System.Guid]::NewGuid().ToString('N'))
+        }
+        New-Item -ItemType Directory -Path $ClStage | Out-Null
+        $ClTree = Join-Path $ClStage 'apothem'
     }
-    $Source = $ApothemHome
-    if (-not (Test-ApothemSource $Source)) { Write-Fail "Fetched tree is not an apothem source: $Source" }
-    Write-Ok "Source ready at $Source (ref: $ApothemRef)"
+    try {
+        if ($ClStage) {
+            Write-Info "Cloning $ApothemRepo"
+            # Full clone (no --single-branch) so both tags and branches are
+            # checkout-able, then pin to the resolved ref.
+            & git clone --quiet $ApothemRepo $ClTree
+            if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
+            Invoke-CheckoutRef $ClTree
+        }
+        if (-not (Test-ApothemSource $ClTree)) { Write-Fail "Fetched tree is not an apothem source: $ClTree" }
 
-    # Fail-closed signature verification - runs BEFORE any materialization.
-    Write-Bold "Verifying source signature"
-    if (Test-ReleaseTag $ApothemRef) {
-        if ((Test-TagSignature $Source $ApothemRef) -and (Test-TagSignedByMaintainer)) {
-            Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
-        } elseif ($ApothemAllowUnverified -eq '1') {
-            Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
-        } elseif (Test-TagSignedByOtherKey) {
-            Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before any configuration is materialized."
-        } elseif (Test-VerifyTagMissingKey) {
-            Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this installer."
+        # Fail-closed signature verification - runs BEFORE the clone is
+        # swapped in and before any materialization.
+        Write-Bold "Verifying source signature"
+        if (Test-ReleaseTag $ApothemRef) {
+            $null = Test-MaintainerTag $ClTree $ApothemRef ($ApothemAllowUnverified -eq '1')
         } else {
-            Write-Fail "Tag $ApothemRef is unsigned or its signature did not verify (possible tampering). Aborting before any configuration is materialized."
+            if ($ApothemAllowUnverified -eq '1') {
+                Write-Warn "Ref $ApothemRef is not a signed release tag - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+            } else {
+                Write-Fail "Ref $ApothemRef is not a signed release tag and cannot be verified. Pin a vMAJOR.MINOR.PATCH tag, or set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
+            }
         }
-    } else {
-        if ($ApothemAllowUnverified -eq '1') {
-            Write-Warn "Ref $ApothemRef is not a signed release tag - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        if (-not $ClStage) {
+            $Source = $ApothemHome
+            Write-Ok "Source ready at $Source (ref: $ApothemRef)"
+        } elseif ($DryRun) {
+            $Source = $ClTree
+            Write-Ok "Source ready at $Source (ref: $ApothemRef; dry run, so $ApothemHome is not changed)"
         } else {
-            Write-Fail "Ref $ApothemRef is not a signed release tag and cannot be verified. Pin a vMAJOR.MINOR.PATCH tag, or set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
+            Invoke-SwapIn $ClTree ''
+            $Source = $ApothemHome
+            Write-Ok "Source ready at $Source (ref: $ApothemRef)"
         }
+    } finally {
+        if ($ClStage -and -not $DryRun -and (Test-Path -LiteralPath $ClStage)) { Remove-Item -LiteralPath $ClStage -Recurse -Force }
     }
 }
 $SrcPath = Join-Path $Source 'src'
@@ -751,6 +1002,9 @@ try {
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
+    if ($script:DryRunScratch -and (Test-Path -LiteralPath $script:DryRunScratch)) {
+        Remove-Item -LiteralPath $script:DryRunScratch -Recurse -Force
+    }
 }
 
 # Entry-point shim ------------------------------------------------------------
