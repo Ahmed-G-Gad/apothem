@@ -101,15 +101,15 @@ def _other_harness_shares_home(*, current_harness: str, shared_home: Path) -> bo
     for package_key in SUPPORTED_PACKAGE_KEYS:
         if package_key == current_harness:
             continue
-        # Records are append-ordered, so the last record per root is the latest.
-        latest_by_root: dict[str, install_ledger.LedgerRecord] = {}
-        for record in install_ledger.read_records(package_key):
-            latest_by_root[str(_normalized(Path(record.root)))] = record
-        for record in latest_by_root.values():
-            if record.kind != "install":
+        # An install is in place at a root while the ledger's replay keeps it
+        # active: a rollback of a later install, or an uninstall that did not
+        # finish, leaves the earlier one active, and its home still in use.
+        roots = {record.root for record in install_ledger.read_records(package_key)}
+        for raw_root in sorted(roots):
+            current = install_ledger.current_install_record(package_key, root=raw_root)
+            if current is None:
                 continue
-            root = Path(record.root)
-            if _same_path(_data_home_for(record, root=root), shared_home):
+            if _same_path(_data_home_for(current, root=Path(raw_root)), shared_home):
                 return True
     return False
 

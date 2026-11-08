@@ -72,6 +72,7 @@ def _retention_advisories(
 #: The grouped line for paths an uninstall kept, by ``kept_reason``.
 _KEPT_GROUP_LINES = {
     "unrecorded": "{count} paths were kept: the install record does not list them",
+    "no-record": "{count} paths were kept: no install record shows Apothem wrote them",
     "no-digests": (
         "{count} paths were kept: the install record does not show which files "
         "Apothem wrote (it was made by an earlier release); run apothem update, "
@@ -172,7 +173,11 @@ def _report_run(
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
         return [], False
-    warnings.extend({"harness": harness_id, **group} for group in _warning_groups(run))
+    warnings.extend(
+        {"harness": harness_id, **group}
+        for group in _warning_groups(run)
+        if not _is_blocked(group)
+    )
     counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
     problems = [
@@ -203,6 +208,26 @@ def _report_run(
     steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
     removed = any(result.outcome == "updated" for result in run.results)
     return [summary, *steps], bool(blocked) or removed
+
+
+def _finished_row(
+    harness_id: str, outcome: object, output_path: Path
+) -> dict[str, object]:
+    """Return the ``results`` row of an uninstall that finished.
+
+    ``updated`` when it removed files; ``unchanged`` when everything it found
+    stayed (each kept path is a warning), so a batch is not reported partial
+    on the strength of a harness that removed nothing.
+    """
+    run = outcome if isinstance(outcome, MaterializationRun) else None
+    removed = run is None or any(result.outcome == "updated" for result in run.results)
+    return {
+        "harness": harness_id,
+        "outcome": "updated" if removed else "unchanged",
+        "operation": "uninstall",
+        "path": str(output_path),
+        "message": "managed files removed" if removed else "no files removed",
+    }
 
 
 def _print_removed(
@@ -326,16 +351,9 @@ def _uninstall_impl(
             errored = True
             results.extend(failures)
             continue
-        removed_any = True
-        results.append(
-            {
-                "harness": harness_id,
-                "outcome": "updated",
-                "operation": "uninstall",
-                "path": str(output_path),
-                "message": "managed files removed",
-            }
-        )
+        row = _finished_row(harness_id, outcome, output_path)
+        removed_any |= row["outcome"] == "updated"
+        results.append(row)
         warnings.extend(retention)
         _print_removed(harness_id, retention, fmt=fmt, con=con)
 

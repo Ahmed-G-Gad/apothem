@@ -15,10 +15,15 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from apothem.harnesses._shared import install_driver
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_pathsafety import _is_link, _walk_without_links
-from .install_driver_types import MaterializationResult, MaterializationRun
+from .install_driver_types import (
+    IgnoreFn,
+    MaterializationResult,
+    MaterializationRun,
+)
 
 #: Modes whose targets are surgically edited rather than written whole: their
 #: removal compares the managed content itself, so no digest is recorded.
@@ -37,22 +42,47 @@ def file_digest(path: Path) -> str | None:
     return digest.hexdigest()
 
 
-def folder_digests(folder: Path) -> dict[str, str]:
+def folder_digests(folder: Path, ignore: IgnoreFn | None = None) -> dict[str, str]:
     """Return each file under *folder* mapped to its SHA-256, never entering a link.
 
     Keys are ``/``-separated paths relative to *folder*. A file that cannot be
-    read is left out, so it is never treated as Apothem's.
+    read is left out, so it is never treated as Apothem's, and so is a file
+    *ignore* (the install's own copy filter) leaves out at any level: the
+    install neither copies nor compares such a name (``README.md``,
+    ``__pycache__``), so a file of that name is never one it wrote.
     """
     digests: dict[str, str] = {}
     for path in _walk_without_links(folder).files:
+        relative = path.relative_to(folder)
+        if ignore is not None and _ignored(folder, relative, ignore):
+            continue
         digest = file_digest(path)
         if digest is not None:
-            digests[path.relative_to(folder).as_posix()] = digest
+            digests[relative.as_posix()] = digest
     return digests
 
 
+def _ignored(folder: Path, relative: Path, ignore: IgnoreFn) -> bool:
+    """Return True when *ignore* leaves out *relative* or a folder above it."""
+    parent = folder
+    for part in relative.parts:
+        if part in ignore(str(parent), [part]):
+            return True
+        parent = parent / part
+    return False
+
+
+def _install_ignore(harness: str) -> IgnoreFn | None:
+    """Return the copy filter *harness*'s install applies, or ``None`` when unknown."""
+    try:
+        rules = install_driver.load_rules(harness)
+    except RuntimeError:
+        return None
+    return install_driver.make_ignore(rules.exclude, rules.per_directory_filters)
+
+
 def _written_digests(
-    result: MaterializationResult,
+    result: MaterializationResult, ignore: IgnoreFn | None
 ) -> tuple[str | None, dict[str, str] | None]:
     """Return the ``digest`` and ``files`` fields for one written target."""
     if result.owned is not None or result.operation in _EDITED_MODES:
@@ -63,7 +93,7 @@ def _written_digests(
     if path.is_file():
         return file_digest(path), None
     if path.is_dir():
-        return None, folder_digests(path)
+        return None, folder_digests(path, ignore)
     return None, None
 
 
@@ -99,6 +129,7 @@ def _ledger_targets(
     collapse to the first occurrence.
     """
     earlier = {target.path: target for target in prior.targets} if prior else {}
+    ignore = _install_ignore(run.harness)
     targets: list[LedgerTarget] = []
     seen: set[str] = set()
     for result in run.results:
@@ -119,7 +150,7 @@ def _ledger_targets(
             created = before.created
         else:
             created = False
-        digest, files = _written_digests(result)
+        digest, files = _written_digests(result, ignore)
         targets.append(
             LedgerTarget(
                 path=result.path,

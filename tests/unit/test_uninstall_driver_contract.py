@@ -104,16 +104,16 @@ def _wire_single_sentinel_uninstall(
     return appended
 
 
-def test_run_uninstall_returns_error_and_skips_ledger_marker(
+def test_run_uninstall_returns_error_and_records_it_unfinished(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A removal error is returned to the caller and blocks the uninstall marker."""
+    """A removal error is returned, and the uninstall is recorded as unfinished."""
     appended = _wire_single_sentinel_uninstall(monkeypatch, _result("error"))
 
     results = lifecycle.run_uninstall("zed", harness_root=tmp_path)
 
     assert [r.outcome for r in results] == ["error"]
-    assert appended == []
+    assert [record.kind for record in appended] == ["uninstall-incomplete"]  # type: ignore[attr-defined]
 
 
 def test_run_uninstall_success_appends_ledger_marker(

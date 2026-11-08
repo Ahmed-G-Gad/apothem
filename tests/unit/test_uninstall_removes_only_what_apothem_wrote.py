@@ -159,7 +159,7 @@ def test_a_hand_cleaned_partial_uninstall_keeps_the_users_files(
     assert code == 0, envelope
     assert all(path.read_text(encoding="utf-8") == "mine\n" for path in mine)
     assert (claude / "CLAUDE.md").read_text(encoding="utf-8") == "my own CLAUDE.md\n"
-    assert _unfinished(claude) is None
+    assert ClaudeCodeAdapter().is_installed() is False
 
 
 def test_the_users_files_survive_an_uninstall_after_a_rollback(
@@ -217,7 +217,12 @@ def test_a_finished_retry_clears_the_unfinished_uninstall(
 def test_a_link_holding_only_the_users_files_lets_the_uninstall_finish(
     claude: Path, tmp_path: Path
 ) -> None:
-    rules, dotfiles = _partial_uninstall(claude, tmp_path)
+    ClaudeCodeAdapter().install({})
+    rules = claude / "rules"
+    dotfiles = tmp_path / "dotfiles" / "rules"
+    dotfiles.parent.mkdir(parents=True)
+    shutil.move(str(rules), str(dotfiles))
+    _link_folder(rules, dotfiles)
     edited, *others = sorted(dotfiles.iterdir())
     for path in others:
         shutil.rmtree(path) if path.is_dir() else path.unlink()
@@ -225,11 +230,9 @@ def test_a_link_holding_only_the_users_files_lets_the_uninstall_finish(
     mine = dotfiles / "my-own-rule.md"
     mine.write_text("mine\n", encoding="utf-8")
 
-    installed = ClaudeCodeAdapter().is_installed()
     code, envelope = _uninstall()
     again, _ = _uninstall()
 
-    assert installed is True
     assert code == 0, envelope
     assert envelope["status"] == "success"
     messages = [str(w["message"]) for w in envelope["warnings"]]
@@ -363,3 +366,111 @@ def test_json_warnings_are_grouped_like_the_plain_output(
     assert len(changed) == 1
     assert sorted(changed[0]["paths"]) == sorted(str(a) for a in agents)
     assert plain.exit_code == 0
+
+
+def test_files_the_install_ignores_are_never_recorded_as_apothems(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    skill = claude / "skills" / _skill_name()
+    mine = [skill / "README.md", skill / "AGENTS.md", skill / "__pycache__" / "x.pyc"]
+    mine[2].parent.mkdir()
+    for path in mine:
+        path.write_text("mine\n", encoding="utf-8")
+
+    ClaudeCodeAdapter().install({})
+    record = install_ledger.current_install_record("claude_code", root=_root(claude))
+    code, envelope = _uninstall()
+
+    assert record is not None
+    recorded = next(t for t in record.targets if t.path == str(skill))
+    assert recorded.files is not None
+    assert not {"README.md", "AGENTS.md", "__pycache__/x.pyc"} & set(recorded.files)
+    assert code == 0, envelope
+    assert all(path.read_text(encoding="utf-8") == "mine\n" for path in mine)
+
+
+def test_a_file_that_cannot_be_removed_leaves_the_uninstall_unfinished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    stuck = claude / "agents" / "citation-auditor.md"
+    real_unlink = Path.unlink
+
+    def refuse(self: Path, missing_ok: bool = False) -> None:
+        if self == stuck:
+            raise PermissionError("in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", refuse)
+    code, envelope = _uninstall()
+    monkeypatch.setattr(Path, "unlink", real_unlink)
+    unfinished = _unfinished(claude)
+    retry_code, retry = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["results"][0]["outcome"] == "error"
+    assert unfinished is not None
+    assert retry_code == 0, retry
+    assert not stuck.exists()
+
+
+def test_recreated_files_alone_do_not_keep_an_unfinished_uninstall_installed(
+    claude: Path, tmp_path: Path
+) -> None:
+    rules, dotfiles = _partial_uninstall(claude, tmp_path)
+    _unlink_folder(rules)
+    shutil.rmtree(dotfiles)
+    (claude / "settings.json").write_text("{}\n", encoding="utf-8")
+    (claude / "CLAUDE.md").write_text("", encoding="utf-8")
+
+    installed = ClaudeCodeAdapter().is_installed()
+    code, _ = _uninstall()
+
+    assert installed is False
+    assert code == 0
+    assert (claude / "settings.json").read_text(encoding="utf-8") == "{}\n"
+    assert (claude / "CLAUDE.md").exists()
+
+
+def test_a_failed_installs_own_rollback_does_not_clear_the_unfinished_state(
+    claude: Path, tmp_path: Path
+) -> None:
+    _partial_uninstall(claude, tmp_path)
+    install_ledger.append_record(
+        LedgerRecord.create(harness="claude_code", root=_root(claude), kind="rollback")
+    )
+
+    assert _unfinished(claude) is not None
+
+
+@pytest.mark.parametrize("later", ["rollback", "uninstall-incomplete"])
+def test_a_still_active_install_keeps_the_shared_data_home(
+    tmp_path: Path, later: str
+) -> None:
+    from apothem.harnesses._shared import install_driver_datahome as datahome
+
+    project = tmp_path / "project"
+    home = project / ".apothem"
+    first = LedgerRecord.create(
+        harness="windsurf", root=project, kind="install", data_home=str(home)
+    )
+    second = LedgerRecord.create(
+        harness="windsurf", root=project, kind="install", data_home=str(home)
+    )
+    install_ledger.append_record(first)
+    install_ledger.append_record(second)
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="windsurf",
+            root=project,
+            kind=later,  # type: ignore[arg-type]
+            install_id=second.install_id,
+        )
+    )
+
+    shared = datahome._other_harness_shares_home(
+        current_harness="cursor", shared_home=home
+    )
+
+    assert shared is True

@@ -133,11 +133,12 @@ When an uninstall does not finish (a step failed, it stopped with an
 exception, or Apothem's own files stay behind a link), it appends an
 `uninstall-incomplete` record to the install ledger instead of an `uninstall`
 record. The install stays recorded, so `apothem status`, `verify` and
-`rollback` still see it, and the harness reads as installed while a path the
-install recorded exists, so running `uninstall` again finishes the job. An
-`install`, `update`, `rollback` or finished `uninstall` of that harness at that
-location replaces the state, and so does removing the remaining files by hand:
-with none of the recorded paths left, the harness reads as not installed.
+`rollback` still see it, and the harness reads as installed while a file the
+install wrote is still there unchanged, so running `uninstall` again finishes
+the job. An `install`, `update`, `rollback` or finished `uninstall` of that
+harness at that location replaces the state, and so does removing the
+remaining files by hand: with none of Apothem's files left as it wrote them,
+the harness reads as not installed, whatever else is in the folder.
 `backups prune` keeps the record, and the backups it references, while the
 install it belongs to is kept.
 

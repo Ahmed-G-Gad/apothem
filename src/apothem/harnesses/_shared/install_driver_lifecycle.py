@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import contextlib
 import functools
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -68,6 +67,7 @@ from .install_driver_written import (
     kept_file_warnings,
     links_on_the_way,
     remove_written,
+    still_written,
 )
 
 
@@ -238,12 +238,11 @@ def detect_install(
 
 
 def _unfinished_here(harness_name: str, root: Path) -> bool:
-    """Return True when an unfinished uninstall left recorded paths at *root*.
+    """Return True when an unfinished uninstall left Apothem's files at *root*.
 
-    The ledger's latest record for *root* is ``uninstall-incomplete`` (an
-    install, update, rollback or finished uninstall since then supersedes it)
-    and a path the still-active install lists exists. A root cleaned by hand
-    reads as not installed; an unreadable ledger reads as no evidence.
+    *root*'s latest record is ``uninstall-incomplete`` and a file the active
+    install lists still has the content Apothem wrote (see
+    :func:`still_written`); an unreadable ledger reads as no evidence.
     """
     try:
         if install_ledger.unfinished_uninstall(harness_name, root=root) is None:
@@ -252,7 +251,7 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
     except install_ledger.LedgerError:
         return False
     return any(
-        os.path.lexists(target.path) for install in active for target in install.targets
+        still_written(target) for install in active for target in install.targets
     )
 
 
@@ -440,11 +439,13 @@ def run_uninstall(
     *prior_results* also makes the uninstall unfinished.
     """
     root = _root_for(harness_root, project_root)
-    active = install_ledger.active_install_records(harness_name, root=root)
-    record = active[-1] if active else None
+    active: list[LedgerRecord] = []
+    record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
     finished = False
     try:
+        active = install_ledger.active_install_records(harness_name, root=root)
+        record = active[-1] if active else None
         _remove_installed(
             harness_name,
             record,
@@ -464,7 +465,12 @@ def run_uninstall(
         )
     kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
     created = {Path(path) for install in active for path in install.created_dirs}
-    kept += links_left_in(created, known=kept)
+    named = {result.detail.get("symlink") for result in results}
+    kept += [
+        warning
+        for warning in links_left_in(created, known=kept)
+        if warning.path not in named
+    ]
     recorded = (target.path for install in active for target in install.targets)
     floor = _allowed_write_root(harness_root, project_root)
     return [

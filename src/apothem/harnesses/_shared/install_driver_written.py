@@ -11,6 +11,7 @@ that replaced an Apothem file of the same name, stays.
 from __future__ import annotations
 
 import contextlib
+import os
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
@@ -32,6 +33,10 @@ from .install_driver_types import MaterializationResult, _path_text, _result
 #: ``detail`` key of a removal: the files it kept because nothing shows Apothem
 #: wrote them as they are now (newline-joined paths).
 KEPT_FILES = "kept_files"
+
+#: ``detail`` key of a failed removal: the files Apothem wrote that it could
+#: not remove (newline-joined paths).
+STUCK_FILES = "stuck_files"
 
 #: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
 KEPT_REASON = "kept_reason"
@@ -56,14 +61,24 @@ def _written_now(target: Path, proof: dict[str, str]) -> list[Path]:
     *target*.
     """
     if target.is_file():
-        return [target] if file_digest(target) == proof.get("") else []
+        return [target] if _matches(target, proof.get("")) else []
     if not target.is_dir():
         return []
     return [
         path
         for path in _walk_without_links(target).files
-        if proof.get(path.relative_to(target).as_posix()) == file_digest(path)
+        if _matches(path, proof.get(path.relative_to(target).as_posix()))
     ]
+
+
+def _matches(path: Path, expected: str | None) -> bool:
+    """Return True when *path* is readable and has the recorded SHA-256 *expected*.
+
+    A path the record does not list, or one that cannot be read, never matches.
+    """
+    if expected is None:
+        return False
+    return file_digest(path) == expected
 
 
 def _kept_whole(target: Path, reason: str, message: str) -> MaterializationResult:
@@ -156,7 +171,11 @@ def remove_written(
     if not target.exists():
         return None
     if proof is None:
-        if recorded is not None and entry is None:
+        if recorded is None:
+            return _kept_whole(
+                target, "no-record", "no install record shows Apothem wrote it"
+            )
+        if entry is None:
             return _kept_whole(
                 target, "unrecorded", "the install record does not list it"
             )
@@ -185,6 +204,18 @@ def remove_written(
         kept_links: list[Path] = []
     else:
         kept_files, kept_links = _remove_matching(target, written)
+    stuck = [path for path in written if os.path.lexists(path)]
+    if stuck:
+        return _result(
+            "error",
+            "remove_existing",
+            target,
+            f"could not remove {len(stuck)} file(s) Apothem wrote at {target}; "
+            "close what holds them or make them writable, then run the command "
+            "again",
+            backup_path=backup,
+            detail={STUCK_FILES: "\n".join(_path_text(path) for path in stuck)},
+        )
     detail = kept_links_detail(kept_links)
     if kept_files:
         detail[KEPT_FILES] = "\n".join(_path_text(path) for path in kept_files)
@@ -247,3 +278,14 @@ def links_on_the_way(
                 seen.add(_path_text(ancestor))
                 notes.append(link_kept(ancestor))
     return notes
+
+
+def still_written(entry: LedgerTarget) -> bool:
+    """Return True when a file *entry* records still has the content Apothem wrote.
+
+    Used as install evidence after an unfinished uninstall: a path that merely
+    exists (a settings file the tool recreated, a folder of the operator's)
+    proves nothing.
+    """
+    proof = _proof(entry)
+    return proof is not None and bool(_written_now(Path(entry.path), proof))

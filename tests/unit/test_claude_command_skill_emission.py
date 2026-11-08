@@ -235,7 +235,9 @@ def test_a_smaller_budget_adds_references_and_reinstall_removes_them(
 
 def test_uninstall_removes_the_skill_directories(tmp_path: Path) -> None:
     root = tmp_path / ".claude"
-    install_driver.run_install("claude_code", harness_root=root)
+    install_driver.finalize_install(
+        install_driver.run_install("claude_code", harness_root=root), root=root
+    )
     assert (root / "skills" / "plan-execute" / "references").is_dir()
     install_driver.run_uninstall("claude_code", harness_root=root)
     for name in ("plan-execute", "elevate", "plan-suite"):

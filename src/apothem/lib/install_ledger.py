@@ -582,15 +582,27 @@ def unfinished_uninstall(
     """Return the ``uninstall-incomplete`` record when it is *root*'s latest.
 
     An install, update, rollback or finished uninstall appended after it
-    supersedes it, so ``None`` then, and when *root* has no record.
+    supersedes it, so ``None`` then, and when *root* has no record. The
+    rollback a failed install appends to undo itself (its id matches no
+    install) changed nothing and supersedes nothing.
 
     Raises:
         LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
     """
-    latest = latest_record(harness, root=root, kind=None, state_root=state_root)
-    if latest is None or latest.kind != "uninstall-incomplete":
-        return None
-    return latest
+    root_str = str(root)
+    records = [
+        record
+        for record in read_records(harness, state_root=state_root)
+        if record.root == root_str
+    ]
+    installed = {record.install_id for record in records if record.kind == "install"}
+    for record in reversed(records):
+        # A failed install that undid itself appends a rollback of an id no
+        # install has; it changed nothing, so it supersedes nothing.
+        if record.kind == "rollback" and record.install_id not in installed:
+            continue
+        return record if record.kind == "uninstall-incomplete" else None
+    return None
 
 
 def _active_ids(records: list[LedgerRecord]) -> set[str]:
