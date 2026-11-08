@@ -646,6 +646,7 @@ def test_antigravity_skips_a_folder_without_a_manifest_or_marked_disabled(
     assert cm.measure_surfaces("antigravity", home, project) == (0, 0)
 
 
+@_needs_tomllib
 def test_an_unreadable_launch_file_records_a_null(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
