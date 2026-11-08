@@ -56,4 +56,9 @@ regexes = [
   '''(?i)^(?:mailto:)?me@ahmedgad\.com$''',
   '''(?i)^(?:https?://)?(?:www\.)?ahmedgad\.com(?:/[\w./-]*)?$''',
   '''(?i)^(?:@|https?://(?:www\.)?github\.com/)?ahmed-g-gad(?:/[\w./-]*)?$''',
+  # The maintainer's release-signing key fingerprint. SECURITY.md publishes
+  # it, and the installers pin it (MAINTAINER_SIGNING_KEY) to check the tag
+  # signature, so it is a public identifier, not a secret. Anchored to the
+  # exact 40-hex value so no other string is suppressed.
+  '''^5C8998F9F241720445D3F28B70396FED9C634163$''',
 ]
