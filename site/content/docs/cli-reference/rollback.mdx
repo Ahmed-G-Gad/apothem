@@ -29,8 +29,11 @@ first, it:
   files are missing: every file there now is kept, and the output names the
   backup used. A file it cannot write is listed for you to copy by hand, and
   the rollback then exits 2 (partial) when it wrote any other file. A path
-  that is now a link (a symlink or a Windows junction) is never written
-  through. Rollback reaches that install only while its record is among the
+  that is now a link (a symlink or a Windows junction), or a file where the
+  backup has a folder or the other way round, is never written through:
+  nothing is restored there, the rollback still exits 0, and it prints a
+  `Warning:` line (a `warnings` entry under `--json`) naming the backup to
+  copy from by hand. Rollback reaches that install only while its record is among the
   newest 10 kept (below). `apothem backups prune --keep N` prunes to `N` once;
   the next install, update, uninstall or rollback prunes to 10 again. The
   backup set itself stays even after the record goes, so copying the files

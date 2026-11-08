@@ -315,7 +315,8 @@ def _restore_missing(
                 "skipped",
                 "restore_backup",
                 target,
-                f"left in place: {target} is now {in_the_way}; its backup is {backup}",
+                f"left in place: {target} is now {in_the_way}, so nothing was "
+                f"restored there; copy what you need from {backup}",
                 backup_path=backup,
             )
         ]

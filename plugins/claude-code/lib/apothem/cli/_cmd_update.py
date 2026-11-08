@@ -186,6 +186,9 @@ class _RollbackTally:
     restored_any: bool = False
     errored: bool = False
     last_output_path: Path | None = None
+    #: Swept paths left in place because something else now stands there, so
+    #: nothing was restored at them (``nothing was restored there``).
+    warnings: list[dict[str, object]] = field(default_factory=list)
 
     def exit_code(self) -> int:
         """0 when clean; partial when something was restored; else expected-error."""
@@ -278,7 +281,7 @@ def _rollback_impl(
                     if item.get("outcome") in {"created", "updated"}
                 ],
                 results=tally.results,
-                warnings=[],
+                warnings=tally.warnings,
                 output_path=tally.last_output_path if run.solo else None,
             )
         )
@@ -446,6 +449,16 @@ def _record_rollback_results(
     for result in target_results:
         if result.outcome in {"created", "updated"}:
             tally.restored_any = True
+        elif "nothing was restored there" in result.message:
+            tally.warnings.append(
+                {
+                    "harness": harness_id,
+                    "outcome": "advisory",
+                    "operation": "rollback",
+                    "path": result.path,
+                    "message": result.message,
+                }
+            )
         elif result.outcome == "error":
             tally.errored = True
             harness_failures.append(result)
@@ -482,8 +495,13 @@ def _record_rollback_results(
                 "missing file" in kept.message
                 or kept.message.startswith("left in place")
             ):
+                label = (
+                    "Warning"
+                    if "nothing was restored there" in kept.message
+                    else "Note"
+                )
                 run.con.print(
-                    f"[yellow]Note:[/] {harness_id} - {escape(str(kept.path))} "
+                    f"[yellow]{label}:[/] {harness_id} - {escape(str(kept.path))} "
                     f"{escape(str(kept.message))}"
                 )
 

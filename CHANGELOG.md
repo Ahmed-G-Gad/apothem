@@ -246,9 +246,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     other way round, is left in place and its backup is named.
   - Retention, and `apothem backups prune`, now keep every backup set that
     holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter
-    and for Codex under a custom `CODEX_HOME` too, including the old `apothem/hooks`, `apothem/templates`, `apothem/skills`
-    and `apothem/agents` folders of OpenCode, Qwen Code, Hermes and Open-Claw,
-    Gemini CLI's `.gemini/apothem/` and Kimi Code's old `.kimi-code/apothem/`.
+    and for Codex under a custom `CODEX_HOME` too. They include the old
+    `apothem/hooks` and `apothem/templates` folders of OpenCode, Qwen Code,
+    Hermes and Open-Claw, the old `apothem/skills` and `apothem/agents`
+    folders of Hermes and Open-Claw, Gemini CLI's `.gemini/apothem/` and Kimi
+    Code's old `.kimi-code/apothem/`.
     `prune` names why it keeps such a set.
   - Uninstall no longer deletes a `~/.claude/statuslines/__init__.py` of your
     own: install never writes that name, and uninstall now skips it too.

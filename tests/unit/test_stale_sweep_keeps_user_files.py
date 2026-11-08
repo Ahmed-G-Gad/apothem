@@ -335,6 +335,13 @@ def test_current_installs_never_back_up_a_retired_sweep_path(
     if public_id in ("claude-code", "codex"):
         assert stamps
     assert not [s for s in stamps if _holds_retired_sweep(s, package)]
+    # Most harnesses take no backup set here, so prove the check can see one:
+    # a set holding any retired path of this harness is detected.
+    for index, rel in enumerate(RETIRED_SWEEPS[package]):
+        stamp = f"1999010{index % 10}T0000{index:02d}Z"
+        held = backups / stamp / package / rel.replace("*", "control-home")
+        held.mkdir(parents=True)
+        assert _holds_retired_sweep(stamp, package), rel
 
 
 def test_rollback_leaves_a_swept_folder_that_is_now_a_file(
@@ -387,6 +394,42 @@ def test_rollback_leaves_a_swept_folder_that_is_now_a_link(
     assert row.outcome == "skipped"
     assert row.backup_path is not None
     assert "is now a link" in row.message
+
+
+def test_a_path_left_in_place_is_a_plain_warning(home: Path, backups: Path) -> None:
+    # Nothing is restored there, so the rollback says so in words and in JSON.
+    _old_sweep_record(home, backups, "20261001T000000Z")
+    commands = home / ".claude" / "commands"
+    commands.parent.mkdir(parents=True, exist_ok=True)
+    commands.write_text("now a file\n", "utf-8")
+    runner = CliRunner()
+
+    payload = json.loads(
+        runner.invoke(
+            main, ["rollback", "--harness", "claude-code", "--yes", "--json"]
+        ).output
+    )
+
+    assert payload["status"] == "success"
+    [warning] = payload["warnings"]
+    assert warning["outcome"] == "advisory"
+    assert "nothing was restored there" in warning["message"]
+    assert "20261001T000000Z" in warning["message"]
+
+
+def test_a_path_left_in_place_warns_in_plain_output(home: Path, backups: Path) -> None:
+    _old_sweep_record(home, backups, "20261001T000000Z")
+    commands = home / ".claude" / "commands"
+    commands.parent.mkdir(parents=True, exist_ok=True)
+    commands.write_text("now a file\n", "utf-8")
+
+    outcome = CliRunner().invoke(
+        main, ["rollback", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    assert outcome.exit_code == 0, outcome.output
+    assert "Warning:" in outcome.output
+    assert "nothing was restored there" in " ".join(outcome.output.split())
 
 
 def test_rollback_fails_and_lists_a_file_it_cannot_write(
