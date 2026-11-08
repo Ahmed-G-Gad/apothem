@@ -84,10 +84,6 @@ def _messages(run: object) -> list[str]:
     return [result.message for result in run.results if result.outcome == "warning"]  # type: ignore[attr-defined]
 
 
-def _skipped(run: object) -> list[str]:
-    return [result.message for result in run.results if result.outcome == "skipped"]  # type: ignore[attr-defined]
-
-
 # --- install ---------------------------------------------------------------------
 
 
@@ -135,8 +131,7 @@ def test_install_reaches_every_configured_workspace(
         assert (workspace / RULES_FILE_RELATIVE).is_file()
     missing = home / ".openclaw" / "workspace-later"
     assert not missing.exists()
-    assert any("workspace-later" in message for message in _skipped(run))
-    assert not any("workspace-later" in message for message in _messages(run))
+    assert not any("workspace-later" in r.path for r in run.results)
 
 
 def test_install_writes_no_workspace_outside_the_home(
@@ -157,8 +152,8 @@ def test_install_does_not_create_a_workspace_openclaw_has_not_set_up(
     run = adapter.install({})
 
     assert not (home / ".openclaw" / "workspace").exists()
-    assert any("does not exist yet" in message for message in _skipped(run))
-    assert not any("does not exist yet" in message for message in _messages(run))
+    # Nothing to write is no pending change: no result names the workspace.
+    assert not any(r.path.endswith(RULES_FILE_RELATIVE) for r in run.results)
     assert _entry(home) == {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
 
 

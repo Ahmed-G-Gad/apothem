@@ -66,7 +66,9 @@ class Workspaces:
     """The workspaces an install writes into, and the ones it passes over.
 
     ``missing`` are workspaces OpenClaw has not created yet: the normal state
-    before OpenClaw is set up, reported as skipped, not as a warning.
+    before OpenClaw is set up. The install reports nothing for them (there is
+    nothing to write, so ``apothem diff`` shows no pending change); once
+    OpenClaw creates one, ``apothem verify`` fails until an update fills it.
     ``notes`` describe configured workspaces the install cannot use.
     """
 
@@ -265,18 +267,6 @@ def apply(
     results: list[MaterializationResult] = [
         _warning(harness_root, note) for note in found.notes
     ]
-    results.extend(
-        MaterializationResult(
-            outcome="skipped",
-            operation=_OPERATION,
-            path=str(workspace / RULES_FILE_RELATIVE),
-            message=(
-                f"workspace {workspace} does not exist yet; run `apothem update "
-                "--harness open-claw` once OpenClaw has created it"
-            ),
-        )
-        for workspace in found.missing
-    )
     body, text = rules_text(harness_root, profile)
     file_max = _limit(config, "bootstrapMaxChars", DEFAULT_FILE_MAX_CHARS)
     total_max = _limit(config, "bootstrapTotalMaxChars", DEFAULT_TOTAL_MAX_CHARS)

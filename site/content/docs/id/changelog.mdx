@@ -75,8 +75,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `AGENTS.md`, OpenClaw also loads it in cron and sub-agent sessions. The
   workspace's own `AGENTS.md` is never edited. The install covers the default
   workspace and each `agents.entries` workspace that exists in the home
-  directory; it reports the others as skipped, and warns about a workspace
-  outside the home directory. It leaves the hook settings
+  directory; one OpenClaw has not created yet is filled by the next
+  `apothem update` (`apothem verify` fails until then), and one outside the home
+  directory is skipped with a warning. It leaves the hook settings
   alone, with a warning, when internal hooks are off, the hook's entry is off, or
   `hooks.internal.enabled: true` names no hook (naming one would switch the
   others off). A rules file over OpenClaw's 20,000-character limit per file is

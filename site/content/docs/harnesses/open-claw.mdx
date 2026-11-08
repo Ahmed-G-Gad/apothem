@@ -98,9 +98,9 @@ Apothem writes the file into every workspace that exists in your home
 directory: `agents.defaults.workspace` (else `OPENCLAW_WORKSPACE_DIR`, else
 `~/.openclaw/workspace`), the `workspace` of each `agents.entries` entry, and
 for an entry without one, `<agents.defaults.workspace>/<id>` or
-`~/.openclaw/workspace-<id>`. A workspace that does not exist yet is skipped
-and listed as skipped in the install output; run `apothem update --harness open-claw` after OpenClaw has
-created it. A workspace outside your home directory is skipped.
+`~/.openclaw/workspace-<id>`. A workspace that does not exist yet is skipped:
+once OpenClaw creates it, `apothem verify --harness open-claw` fails until you
+run `apothem update --harness open-claw`. A workspace outside your home directory is skipped.
 
 If your config already has a `bootstrap-extra-files` entry, Apothem adds its
 path to the list the hook reads: the first non-empty one of `paths`,
