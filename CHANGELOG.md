@@ -207,6 +207,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     bytes.
 
   No published number changes: Apothem's installs write none of these files.
+- **The launch-size metric counts Antigravity's plugin rules.** The five
+  always-on rules in `~/.gemini/config/plugins/apothem/rules/` now count, so
+  Antigravity's figure rises from 3,623 bytes in 1 file to 41,937 bytes in 6.
+  The Kimi Code, OpenClaw, Claude Code and CodeBuddy rule notes now say what
+  the count leaves out.
 - **The Antigravity install writes its plugin where the CLI loads it.**
   Current Antigravity CLI releases load plugins from
   `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put

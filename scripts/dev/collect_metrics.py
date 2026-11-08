@@ -255,7 +255,11 @@ _OPEN_CLAW_TOTAL_CHARS = 60_000
 #: OpenClaw stops adding files once fewer characters than this remain.
 _OPEN_CLAW_MIN_REMAINING = 64
 
-#: Antigravity truncates each instruction file at this many bytes.
+#: Antigravity truncates each instruction file at this many bytes. It applies
+#: the cap after @ includes expand; the collector does not expand includes
+#: (Apothem's files hold none). Antigravity's 20,000-token budget across the
+#: global and always_on rules, past which the largest become on-demand
+#: pointers, is not modeled.
 _ANTIGRAVITY_FILE_MAX_BYTES = 24_000
 
 _ZED_ORDER = (
@@ -281,14 +285,20 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         "~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md, "
         "~/.gemini/config/rules/*.md with trigger: always_on, and in the project "
         "{GEMINI,AGENTS}.md, .agents/{GEMINI,AGENTS}.md and .agents/rules/*.md "
-        "with trigger: always_on; each file counted up to 24,000 bytes. Plugin "
-        "rules (~/.gemini/config/plugins/<name>/rules/) are not counted yet.",
+        "with trigger: always_on, plus ~/.gemini/config/plugins/<name>/rules/*.md "
+        "with trigger: always_on; each file counted up to 24,000 bytes. "
+        "@ includes are not expanded, and the 20,000-token budget across "
+        "always-on rules is not modeled.",
         (
             _home(".gemini/GEMINI.md"),
             _home(".gemini/AGENTS.md"),
             _home(".gemini/config/GEMINI.md"),
             _home(".gemini/config/AGENTS.md"),
             _home(".gemini/config/rules/*.md", _key_is("trigger", "always_on")),
+            _home(
+                ".gemini/config/plugins/*/rules/*.md",
+                _key_is("trigger", "always_on"),
+            ),
             _project("GEMINI.md"),
             _project("AGENTS.md"),
             _project(".agents/GEMINI.md"),
@@ -348,8 +358,9 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
         (_project(".github/copilot-instructions.md"), _project("AGENTS.md")),
     ),
     "hermes": (
-        "~/.hermes/SOUL.md when it holds text, plus the first of these kinds in the project with a "
-        "non-empty file (Hermes loads one): .hermes.md or HERMES.md (the first of "
+        "~/.hermes/SOUL.md when it holds text, plus the first of these kinds "
+        "in the project with a non-empty file (Hermes loads one): .hermes.md "
+        "or HERMES.md (the first of "
         "the two that exists is the only candidate), AGENTS.override.md or "
         "AGENTS.md, CLAUDE.md, then .cursorrules with every .cursor/rules/*.mdc. "
         "The Apothem support tree and apothem/rules/ are not launch surfaces.",
@@ -358,7 +369,9 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
     "kimi-code": (
         "~/.kimi-code/AGENTS.md, the first non-empty of ~/.agents/AGENTS.md and "
         "~/.agents/agents.md, and the project .kimi-code/AGENTS.md and "
-        "AGENTS.md; blank files load nothing.",
+        "AGENTS.md; blank files load nothing. Kimi also reads AGENTS.md in "
+        "each folder from the git root down; the scratch project has no .git, "
+        "so only its root is read.",
         (
             _home(".kimi-code/AGENTS.md", _has_text),
             _project(".kimi-code/AGENTS.md", _has_text),
@@ -381,8 +394,10 @@ LAUNCH_SURFACES: dict[str, tuple[str, tuple[Surface, ...]]] = {
     "open-claw": (
         "The non-blank workspace bootstrap files in ~/.openclaw/workspace/, in "
         "prompt order: " + ", ".join(_OPEN_CLAW_ORDER) + "; each up to 20,000 "
-        "characters (USER.md 4,000), 60,000 in all. apothem/rules/ is not a "
-        "launch surface.",
+        "characters (USER.md 4,000), 60,000 in all. The count is approximate: "
+        "OpenClaw's own trimming, head-and-tail truncation, missing-file "
+        "markers and per-session filtering are not modeled. apothem/rules/ is "
+        "not a launch surface.",
         (),
     ),
     "opencode": (
@@ -534,7 +549,9 @@ def _hermes_files(project: Path) -> list[Path]:
 
 def _claude_code_agents_files(project: Path) -> list[Path]:
     # Claude Code reads AGENTS.md only when no CLAUDE file is in the working
-    # folder or above it. ~/.claude/CLAUDE.md and the rules do not count.
+    # folder or above it. The collector checks only the project root: the
+    # scratch project has no parent that holds one. ~/.claude/CLAUDE.md and
+    # the rules do not count.
     # TODO(clarify): whether an empty CLAUDE.md blocks the fallback; it is
     # treated as present.
     if any(
@@ -551,7 +568,8 @@ def _claude_code_agents_files(project: Path) -> list[Path]:
 
 def _codebuddy_memory_files(project: Path) -> list[Path]:
     # The docs call ./CODEBUDDY.md and ./.codebuddy/CODEBUDDY.md equivalent and
-    # read AGENTS.md only without a CODEBUDDY.md.
+    # read AGENTS.md only without a CODEBUDDY.md. The collector checks only
+    # the project root: the scratch project has no parent that holds one.
     # TODO(clarify): CodeBuddy documents neither which of the two loads when
     # both exist nor whether a lone .codebuddy/CODEBUDDY.md blocks AGENTS.md;
     # the first that exists is counted, and either one blocks AGENTS.md.
@@ -562,6 +580,9 @@ def _codebuddy_memory_files(project: Path) -> list[Path]:
 
 
 def _kimi_cross_tool_files(home: Path) -> list[Path]:
+    # MoonshotAI/kimi-code packages/agent-core-v2/src/agent/profile/context.ts:
+    # AGENTS_MD_PLAIN_NAMES lists AGENTS.md then agents.md, the first match
+    # wins, and a file whose trimmed text is empty is skipped.
     return _first_non_empty(home / ".agents" / n for n in ("AGENTS.md", "agents.md"))
 
 

@@ -575,6 +575,24 @@ def test_antigravity_does_not_count_the_old_plugin_folder(
     assert cm.measure_surfaces("antigravity", home, project) == (0, 0)
 
 
+def test_antigravity_counts_always_on_plugin_rules(tmp_path: Path) -> None:
+    home, project = tmp_path / "home", tmp_path / "project"
+    always = "<!-- SPDX-License-Identifier: MIT -->\n---\ntrigger: always_on\n---\nr\n"
+    rules = ".gemini/config/plugins/apothem/rules/"
+    _write(
+        home,
+        {
+            rules + "always.md": always,
+            rules + "scoped.md": "---\ntrigger: glob\nglobs: '*.py'\n---\nscoped\n",
+            rules + "nested/deep.md": always,
+            ".gemini/config/plugins/apothem/plugin.json": "{}\n",
+        },
+    )
+    project.mkdir()
+
+    assert cm.measure_surfaces("antigravity", home, project) == (_size(always), 1)
+
+
 def test_open_claw_reads_the_bootstrap_files_in_order_with_caps(
     tmp_path: Path,
 ) -> None:
