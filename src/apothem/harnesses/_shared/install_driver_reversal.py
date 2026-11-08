@@ -41,9 +41,11 @@ from .install_driver_lifecycle import _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
+    _is_link,
     _normalized,
     _root_for,
     _validate_target_path,
+    _walk_without_links,
     _within_allowed_root,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
@@ -113,12 +115,31 @@ def capture_missing_dirs(
 def _restore_directory(
     target: Path, backup: Path, *, root: Path, harness_name: str, allowed_root: Path
 ) -> MaterializationResult:
-    """Replace *target* with the backed-up directory *backup*."""
+    """Replace *target* with the backed-up directory *backup*.
+
+    A link at *target* (a junction on Windows) is left in place: removing it
+    fails, and copying the backup over it would write through it. Below
+    *target*, the backup is copied in around any link, which stays as it is.
+    """
+    if _is_link(target):
+        return _result(
+            "unchanged",
+            "restore_backup",
+            target,
+            f"{target} is a link (a symbolic link or a junction), so it was left "
+            "in place and the backup was not restored there",
+            source=backup,
+        )
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="restore_backup"
     )
     if target_error is not None:
         return target_error
+    links = _walk_without_links(target)[2] if target.is_dir() else []
+    if links:
+        return _restore_around_links(
+            target, backup, links, root, harness_name, allowed_root
+        )
     existed = target.exists()
     current = (
         backup_existing(
@@ -141,6 +162,36 @@ def _restore_directory(
         "restore_backup",
         target,
         "restored the directory the install replaced",
+        source=backup,
+        backup_path=current,
+    )
+
+
+def _restore_around_links(
+    target: Path,
+    backup: Path,
+    links: list[Path],
+    root: Path,
+    harness_name: str,
+    allowed_root: Path,
+) -> MaterializationResult:
+    """Copy *backup* into *target* without removing, entering or replacing a link."""
+    current = backup_existing(
+        target, install_root=root, harness_name=harness_name, allowed_root=allowed_root
+    )
+    kept = {_normalized(link) for link in links}
+
+    def skip(folder: str, names: list[str]) -> set[str]:
+        here = target / Path(folder).relative_to(backup)
+        return {name for name in names if _normalized(here / name) in kept}
+
+    shutil.copytree(backup, target, dirs_exist_ok=True, ignore=skip)
+    return _result(
+        "updated",
+        "restore_backup",
+        target,
+        f"restored the directory the install replaced; left {len(links)} "
+        "link(s) in it in place",
         source=backup,
         backup_path=current,
     )

@@ -355,8 +355,8 @@ def _link_folder(link: Path, target: Path) -> None:
     """Make *link* a junction to *target* on Windows, else a symbolic link.
 
     Always a junction on Windows, even where the process may create symbolic
-    links (CI runners can): the symlink guard refuses a symbolic link before
-    the sweep runs, and the Windows tests are about the junction it misses.
+    links (CI runners can): the Windows run covers the junction, which
+    ``is_symlink()`` does not see.
     """
     if sys.platform == "win32":
         import _winapi
@@ -375,16 +375,13 @@ def _link_old_plugins_folder_to_the_new_one(gemini: Path) -> Path:
     return live / "apothem"
 
 
-@pytest.mark.skipif(
-    sys.platform != "win32",
-    reason="a Windows junction is a link the symlink guard does not see",
-)
-def test_a_junction_between_the_plugin_folders_keeps_the_live_plugin(
+def test_a_link_between_the_plugin_folders_keeps_the_live_plugin(
     adapter: AntigravityAdapter, gemini: Path
 ) -> None:
-    # The old plugins folder is a junction onto the live one, so the stale path
-    # `antigravity-cli/plugins/apothem` names the live plugin. The sweep must
-    # not back it up and remove it, and an operator's own file in it stays.
+    # The old plugins folder is a link onto the live one (a junction on
+    # Windows), so the stale path `antigravity-cli/plugins/apothem` names the
+    # live plugin. The sweep must not back it up and remove it, and an
+    # operator's own file in it stays.
     adapter.install({})
     plugin = _link_old_plugins_folder_to_the_new_one(gemini)
     own = plugin / "skills" / "my-own" / "SKILL.md"
@@ -405,11 +402,7 @@ def test_a_junction_between_the_plugin_folders_keeps_the_live_plugin(
     assert not (plugin / "plugin.json").exists()
 
 
-@pytest.mark.skipif(
-    sys.platform != "win32",
-    reason="a Windows junction is a link the symlink guard does not see",
-)
-def test_a_dry_run_leaves_a_junctioned_old_folder_alone(
+def test_a_dry_run_leaves_a_linked_old_folder_alone(
     adapter: AntigravityAdapter, gemini: Path
 ) -> None:
     adapter.install({})
@@ -422,26 +415,3 @@ def test_a_dry_run_leaves_a_junctioned_old_folder_alone(
         r for r in swept if r.path.endswith("apothem") and "antigravity-cli" in r.path
     ]
     assert [r.outcome for r in old] == ["unchanged"]
-
-
-@pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="creating a directory symlink needs a privilege on Windows",
-)
-def test_a_symlink_between_the_plugin_folders_stops_the_update_unchanged(
-    adapter: AntigravityAdapter, gemini: Path
-) -> None:
-    # On POSIX the symlink guard refuses the link before anything is swept, so
-    # the update fails and writes nothing.
-    adapter.install({})
-    plugin = _link_old_plugins_folder_to_the_new_one(gemini)
-    own = plugin / "skills" / "my-own" / "SKILL.md"
-    own.parent.mkdir(parents=True)
-    own.write_text(_SKILL_TEXT, encoding="utf-8")
-    before = _snapshot(gemini.parent)
-
-    with pytest.raises(install_driver.MaterializationError):
-        adapter.update({})
-
-    assert _snapshot(gemini.parent) == before
-    assert _old_plugin_backups() == []

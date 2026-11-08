@@ -253,6 +253,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     bytes.
 
   No published number changes: Apothem's installs write none of these files.
+- **The launch-size metric counts Antigravity's plugin rules.** The five
+  always-on rules in `~/.gemini/config/plugins/apothem/rules/` now count, so
+  Antigravity's figure rises by 38,395 bytes and 5 files. The rest of its
+  figure is `~/.gemini/GEMINI.md`, whose size depends on the install path it
+  names. The count reads only plugins with a `plugin.json`, includes a
+  plugin's `rules/AGENTS.md` or `rules/GEMINI.md`, and skips a rule file that
+  does not open with frontmatter. The Kimi Code, OpenClaw, Claude Code and
+  CodeBuddy rule notes now say what the count leaves out.
 - **A `CODEX_HOME` that starts with `~` now names the folder Codex uses.**
   Codex takes `CODEX_HOME` as written, without expanding `~`, and resolves a
   relative value against the current folder, but Apothem expanded `~` to your
@@ -287,8 +295,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   listed nor loaded, so the skills, agents and rules the install wrote there
   may not have reached Antigravity. The install now writes the plugin to
   `~/.gemini/config/plugins/apothem/`. An install or update over an earlier
-  install backs up the old folder and removes it whole; an uninstall removes
-  the old folder whole and Apothem's files from the new one. The new folder
+  install backs up the old folder and removes it; an uninstall removes
+  the old folder and Apothem's files from the new one. The new folder
   is shared by the CLI, the Antigravity App and the IDE, so the Apothem
   plugin, with its always-on rules, skills and helper definitions, now also
   applies in the App and the IDE, and Antigravity documents no per-surface
@@ -314,6 +322,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   so copies from older installs may already be gone, and the next install,
   update, uninstall or rollback prunes again: copy the sets you need out of
   `~/.apothem/backups/` first.
+- **Removing a leftover folder no longer deletes files through a link.**
+  Releases up to 1.5.0 remove folders that earlier layouts wrote, such as
+  `~/.config/opencode/apothem/rules/` or
+  `~/.gemini/antigravity-cli/plugins/apothem/`. When such a folder still held
+  a file the install keeps, the removal walked into any Windows junction
+  inside it and deleted the files of the folder the junction points to. Now
+  an install, update, uninstall or `--dry-run` never enters, removes or
+  backs up through a symbolic link or junction at or below a leftover path:
+  it leaves the link in place and prints a warning that names it, and a
+  backup leaves links out. A link directly at the leftover path is left in
+  place and warned about too, where before a junction there was backed up
+  and reported as removed although nothing was removed. A rollback leaves a
+  link at a restored folder in place, with a reason, and copies the rest of
+  the folder back around any link in it; before, rolling back such an
+  install failed with a "file already exists" error, and records written by
+  earlier releases still roll back this way. A junction above a write path
+  is now refused like a symbolic link, and a leftover link no longer makes
+  an uninstalled tool read as installed.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
