@@ -195,8 +195,11 @@ def test_posix_is_release_tag_agrees_with_the_ps1_regex(
 
 def _sh_function(script: str, name: str) -> str:
     """Return the definition of shell function NAME, from ``NAME() {`` to the
-    closing ``}`` at column 0, as SCRIPT carries it."""
-    match = re.search(rf"^{name}\(\) \{{\n.*?^\}}$", script, re.MULTILINE | re.DOTALL)
+    closing ``}`` at column 0 (or, for a subshell body, from ``NAME() (`` to
+    the closing ``)`` at column 0), as SCRIPT carries it."""
+    match = re.search(
+        rf"^{name}\(\) (?:\{{\n.*?^\}}|\(\n.*?^\))$", script, re.MULTILINE | re.DOTALL
+    )
     assert match, f"no {name}() definition found"
     return match.group(0)
 
@@ -492,9 +495,15 @@ def _sh_resolve_latest_tag(sh_name: str, lines: tuple[str, ...]) -> str | None:
     """Return the tag SH_NAME's own ``resolve_latest_tag``, run under sh,
     picks from the ``git ls-remote --tags`` output LINES, or None when it
     prints nothing. A shell function named ``git`` takes the place of git on
-    PATH."""
+    PATH. Like the PowerShell stub, it prints nothing unless the script runs
+    it through ``ngit``: from an empty folder, with GIT_CEILING_DIRECTORIES
+    set, so a repository around the current folder is never read."""
     program = (
-        "git() { printf '%s\\n' \"$LS_REMOTE_LINES\"; }\n"
+        'git() { [ -n "${GIT_CEILING_DIRECTORIES:-}" ] && [ "$(pwd -P)" != "$START" ]'
+        " && printf '%s\\n' \"$LS_REMOTE_LINES\"; }\n"
+        'START="$(pwd -P)"\n'
+        + _sh_function(SCRIPTS[sh_name], "ngit")
+        + "\n"
         + _sh_function(SCRIPTS[sh_name], "resolve_latest_tag")
         + "\nresolve_latest_tag https://example.invalid/apothem.git\n"
     )

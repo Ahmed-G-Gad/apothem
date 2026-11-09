@@ -298,8 +298,12 @@ def _full_path_entries(value: str | None, engine: list[str] | None = None) -> li
     """The entries of a user PYTHONPATH that are full paths, once each and
     without the ENGINE paths: the ones every launcher passes on to the
     engine."""
-    entries = (value or "").split(";")
-    kept = [entry for entry in entries if FULL_PATH.match(entry)]
+    entries = (value or "").split(os.pathsep)
+    if sys.platform == "win32":
+        kept = [entry for entry in entries if FULL_PATH.match(entry)]
+    else:
+        # PowerShell off Windows keeps only POSIX full paths.
+        kept = [entry for entry in entries if entry.startswith("/")]
     return [entry for entry in dict.fromkeys(kept) if entry not in (engine or [])]
 
 
@@ -314,7 +318,7 @@ def _assert_full_path_entries_reach_the_engine(
         path = [str(entry) for entry in run["path"]]
         wanted = _full_path_entries(value, path[:2])
         assert path[2 : 2 + len(wanted)] == wanted, (wanted, path)
-        assert run["pythonpath"] == ";".join(path[:2] + wanted), run
+        assert run["pythonpath"] == os.pathsep.join(path[:2] + wanted), run
 
 
 def _with_pythonpath(env: dict[str, str], value: str | None) -> dict[str, str]:
