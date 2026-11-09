@@ -40,6 +40,7 @@ from typing import Any, Final
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
+from apothem.harnesses._shared.install_driver_types import _path_text
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
@@ -792,8 +793,10 @@ def _retire_one(
 ) -> list[MaterializationResult]:
     """Take the managed block out of one earlier rules file.
 
-    With *strict* (uninstall), a file that cannot be cleaned is an ``error``,
-    which keeps the install record so the file is not forgotten.
+    With *strict* (uninstall), a file reached through a link that still holds
+    the block is a ``blocked`` warning, and a block the strip could not take
+    out is an ``error``; either way the uninstall is recorded unfinished and
+    the install stays active, so the file is not forgotten.
     """
     home = harness_root.parent
     flag = _error if strict else _warning
@@ -803,10 +806,13 @@ def _retire_one(
         return []
     link = _unsafe_symlink(path, home)
     if link is not None:
-        detail = {"symlink": str(link)}
+        detail = {"symlink": _path_text(link)}
         if strict:
-            # The tool still loads it, so the uninstall is unfinished.
+            # Apothem's block stays in a file it wrote, so the uninstall is
+            # unfinished. OpenClaw no longer loads it: the uninstall removes
+            # the hook entry's path (``loaded: "0"`` lets the report say so).
             detail["blocked"] = "1"
+            detail["loaded"] = "0"
         return [
             MaterializationResult(
                 outcome="warning",

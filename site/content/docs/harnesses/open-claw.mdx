@@ -296,12 +296,17 @@ Some leftovers need your hand:
   that names the entries to remove.
 - **A rules file reached through a link that still holds the Apothem block.**
   Uninstall removes everything else, leaves that file in place, and reports the
-  uninstall as unfinished (exit code 2), naming the file.
+  uninstall as unfinished (exit code 2), naming the linked folder. OpenClaw no
+  longer loads the file: its path is gone from `openclaw.json`.
+- **A rules file Apothem cannot rewrite** (read-only, for example). Uninstall
+  stops at that file with an error, before it changes `openclaw.json` or the
+  support files; files it already cleaned stay cleaned.
 
-In both cases Apothem keeps its install record. Remove the named entries, or
-the Apothem block (or the file), then run the uninstall again to finish. The shared profile
-YAML and
-Apothem engine are unaffected.
+In each case Apothem records the uninstall as unfinished and keeps its install
+record, even if you later add your own text beside the block. Remove the named
+entries, or the Apothem block (or the file), or fix the file, then run the
+uninstall again to finish. The shared profile YAML and Apothem engine are
+unaffected.
 
 ## Conformity gate
 

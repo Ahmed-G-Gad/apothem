@@ -151,6 +151,21 @@ def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
     )
 
 
+def _unloaded_links(run: MaterializationRun) -> set[str]:
+    """Return the blocking links whose files the tool no longer loads.
+
+    A warning says so with ``loaded: "0"`` (open-claw's rules file, whose hook
+    entry the uninstall has already removed); a link counts only when every
+    blocked warning for it says so.
+    """
+    loaded = {
+        warning.detail.get("symlink", "")
+        for warning in run.warnings
+        if warning.detail.get("blocked") and warning.detail.get("loaded") != "0"
+    }
+    return set(_blocked_by_link(run)) - loaded
+
+
 def _earlier_release_paths(run: MaterializationRun) -> int:
     """Count the paths kept because an earlier release recorded them without digests."""
     return sum(
@@ -178,7 +193,7 @@ def _report_run(
     failure returns one ``uninstall`` error row for the harness, then one row
     per failed step. The uninstall is partial when it removed files before the
     failure, or when installed files stay because they are reached through a
-    link: the tool still loads them.
+    link (most tools still load them).
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
@@ -190,11 +205,14 @@ def _report_run(
     )
     counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
+    unloaded = _unloaded_links(run)
     earlier = _earlier_release_paths(run)
     problems = [
         f"{count} installed path(s) stay because they are reached through the "
-        f"link {link}, and {harness_id} still loads them; replace the link with a "
-        "real folder that holds the same files, then run the command again"
+        f"link {link}"
+        + ("" if link in unloaded else f", and {harness_id} still loads them")
+        + "; replace the link with a real folder that holds the same files, "
+        "then run the command again"
         for link, count in blocked.items()
     ] + [
         f"{message} ({count} paths)" if count > 1 else message

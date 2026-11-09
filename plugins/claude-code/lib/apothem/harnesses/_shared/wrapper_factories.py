@@ -18,6 +18,7 @@ in the same order, so no rendered install output changes.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -25,6 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from apothem.lib import install_ledger
 from apothem.lib.harness_registry import package_key_for_public_id
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.profile import (
@@ -42,6 +44,7 @@ from .install_driver import (
 )
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
+from .install_driver_written import record_uninstall
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
@@ -628,11 +631,13 @@ def make_native_config_uninstall(
     install record says Apothem owns (opencode); they are removed too.
     *before_fn* removes files written beside the native config (open_claw's
     workspace rules files) first. When it reports an ``error`` (something the
-    operator has to clear by hand), the uninstall returns those results at
-    once, before it touches the native config or the support tree, so the next
+    operator has to clear by hand), the uninstall records itself unfinished,
+    with the backups *before_fn* took, and returns those results at once,
+    before it touches the native config or the support tree, so the next
     uninstall, after the fix, does the whole job. Otherwise its results join
-    the uninstall's, where a ``blocked`` warning (Apothem's file behind a link)
-    leaves the uninstall unfinished like any other.
+    the uninstall's: their paths are not handled again, and a ``blocked``
+    warning (Apothem's file behind a link) leaves the uninstall unfinished
+    like any other.
     """
 
     @install_driver.backup_session()
@@ -640,7 +645,19 @@ def make_native_config_uninstall(
         before = before_fn(output_path) if before_fn is not None else ()
         if any(result.outcome == "error" for result in before):
             # Something the operator has to clear by hand: stop before the
-            # native config or the support tree changes.
+            # native config or the support tree changes. What before_fn did
+            # change (an earlier workspace's rules file) was backed up, so the
+            # unfinished uninstall is recorded with those backups: retention
+            # keeps them, and the next run continues from the same install.
+            root = output_path.parent
+            with contextlib.suppress(install_ledger.LedgerError):
+                record_uninstall(
+                    harness_name,
+                    root,
+                    install_ledger.current_install_record(harness_name, root=root),
+                    list(before),
+                    finished=False,
+                )
             return MaterializationRun(
                 harness=harness_name, dry_run=False, results=tuple(before)
             )

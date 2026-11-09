@@ -101,9 +101,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     empty, and only the hook entries Apothem added. Apothem's entries in a
     commented `openclaw.json` stop it before anything changes, with an error
     naming what to remove; a rules file behind a link is left in place and the
-    uninstall reported unfinished (exit 2). Either way the install record
-    stays, so a second uninstall after the hand fix finishes. `apothem verify`
-    reports a missing file or registration.
+    uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
+    stops it at that file, after the files already cleaned are recorded with
+    their backups. Either way the install record stays, so a second uninstall
+    after the hand fix finishes. `apothem verify` reports a missing file or
+    registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -475,6 +477,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished
   uninstall replaces that state, and so does removing the files by hand. A
+  file where Apothem keeps a managed block (such as `CLAUDE.md`) counts as
+  Apothem's while the block is there, even after you add text of your own
+  beside it, so the second run still finishes the job. A
   linked folder that holds only your own files no longer stops an uninstall:
   it is left in place with a warning and the uninstall finishes. An uninstall
   that removed files before a step failed now exits `2` with the status

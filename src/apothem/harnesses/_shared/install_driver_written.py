@@ -16,6 +16,7 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import extract_managed_block
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_backup import backup_existing
@@ -30,6 +31,7 @@ from .install_driver_pathsafety import (
 )
 from .install_driver_retention import apply_retention
 from .install_driver_sweep import _link_kept as link_kept
+from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_types import MaterializationResult, _path_text, _result
 
 #: ``detail`` key of a removal: the files it kept because nothing shows Apothem
@@ -329,13 +331,49 @@ def links_on_the_way(
     return notes
 
 
+def left_behind(
+    results: list[MaterializationResult],
+    active: list[LedgerRecord],
+    *,
+    floor: Path,
+    prior: tuple[MaterializationResult, ...] = (),
+) -> list[MaterializationResult]:
+    """Return a warning for each path the uninstall kept: links and the user's files.
+
+    A link a *prior* result (the caller's own removal) already names is not
+    named again.
+    """
+    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
+    created = {Path(path) for install in active for path in install.created_dirs}
+    named = {result.detail.get("symlink") for result in (*prior, *results)}
+    kept += [
+        warning
+        for warning in links_left_in(created, known=kept)
+        if warning.path not in named
+    ]
+    recorded = (target.path for install in active for target in install.targets)
+    return [
+        *kept,
+        *links_on_the_way(recorded, floor, known=[*prior, *results, *kept]),
+    ]
+
+
 def still_written(entry: LedgerTarget) -> bool:
     """Return True when a file *entry* records still has the content Apothem wrote.
 
     Used as install evidence after an unfinished uninstall: a path that merely
     exists (a settings file the tool recreated, a folder of the operator's)
-    proves nothing, unless the record predates digests.
+    proves nothing, unless the record predates digests. A managed-block file
+    (``sentinel_merge``) is meant to hold the operator's text beside Apothem's
+    block, so the block, not the whole file, is what Apothem wrote: it counts
+    while it carries the block, as install evidence does elsewhere.
     """
+    if entry.mode == "sentinel_merge":
+        try:
+            text = Path(entry.path).read_bytes().decode("utf-8", errors="replace")
+        except OSError:
+            return False
+        return extract_managed_block(text) is not None
     proof = _proof(entry)
     if proof is None:
         # An earlier release recorded no digests: the path is the evidence,

@@ -1399,3 +1399,142 @@ def test_an_install_recorded_without_digests_still_uninstalls_cleanly(
     assert (workspace / "AGENTS.md").read_text(encoding="utf-8") == _AGENT_OWN
     assert _config(home) == {"gateway": {"port": 1}}
     assert install_ledger.read_records("open_claw")[-1].kind == "uninstall"
+
+
+# --- follow-up to the #228 merge review ------------------------------------------------
+
+
+def _linked_old_workspace(adapter: OpenClawAdapter, home: Path) -> Path:
+    """Install into ~/ws-a, make its apothem/ folder a link, move to ~/ws-b.
+
+    Returns the real folder the link points to, which holds the rules file.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    moved = old / "apothem-real"
+    (old / "apothem").rename(moved)
+    _link_folder(old / "apothem", moved)
+    _move_default_workspace(home, "~/ws-b")
+    return moved
+
+
+def _uninstall_cli() -> tuple[int, str]:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "open-claw", "--yes"])
+    return result.exit_code, result.output
+
+
+def _kinds(home: Path) -> list[str]:
+    return [record.kind for record in install_ledger.read_records("open_claw")]
+
+
+def test_a_retry_after_editing_beside_the_block_is_still_unfinished(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # The block, not the whole file, is what Apothem wrote: adding a line of
+    # your own must not make the retry report "not installed" and close the
+    # install while the block stays.
+    moved = _linked_old_workspace(adapter, home)
+    first, _ = _uninstall_cli()
+    target = moved / "AGENTS.md"
+    target.write_text(
+        target.read_text(encoding="utf-8") + "\nmy own line\n", encoding="utf-8"
+    )
+
+    code, output = _uninstall_cli()
+
+    assert first == 2
+    assert code == 2, output
+    assert _kinds(home)[-1] == "uninstall-incomplete"
+    assert "BEGIN APOTHEM MANAGED BLOCK" in target.read_text(encoding="utf-8")
+
+
+def test_a_linked_rules_file_the_latest_record_lists_is_reported_once(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _linked_old_workspace(adapter, home)
+
+    run = adapter.uninstall()
+
+    assert [r for r in run.results if r.outcome == "error"] == []
+    blocked = [r for r in run.results if r.detail.get("blocked")]
+    assert len(blocked) == 1
+    link = blocked[0].detail["symlink"]
+    assert not [
+        r for r in run.results if r is not blocked[0] and link in (r.path, r.message)
+    ]
+
+
+def test_a_linked_rules_file_only_an_older_record_lists_still_blocks(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # An update made while ws-a/apothem was a link leaves ws-a out of the
+    # latest record, so the blocked warning is the only signal.
+    moved = _linked_old_workspace(adapter, home)
+    adapter.update({})
+    latest = install_ledger.current_install_record("open_claw", root=home / ".openclaw")
+    assert latest is not None
+    assert all("ws-a" not in target.path for target in latest.targets)
+
+    code, output = _uninstall_cli()
+
+    assert code == 2, output
+    assert _kinds(home)[-1] == "uninstall-incomplete"
+    assert (moved / "AGENTS.md").is_file()
+
+
+def test_the_report_does_not_say_openclaw_still_loads_the_file(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _linked_old_workspace(adapter, home)
+
+    code, output = _uninstall_cli()
+
+    assert code == 2
+    assert "still loads" not in output
+    assert "reached through the link" in output
+
+
+def test_a_strip_that_fails_in_a_later_workspace_records_the_earlier_backup(
+    adapter: OpenClawAdapter, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = _workspace(home / "ws-a")
+    second = _workspace(home / "ws-b")
+    _write_config(
+        home,
+        {
+            "agents": {
+                "defaults": {"workspace": "~/ws-a"},
+                "entries": {"b": {"workspace": "~/ws-b"}, "c": {}},
+            }
+        },
+    )
+    adapter.install({})
+    real = rules_file.install_driver.strip_managed_anchor
+
+    def stuck_on_b(path: Path, **kwargs: object) -> MaterializationResult | None:
+        if "ws-b" in str(path):
+            return MaterializationResult("updated", "retire_anchor", str(path), "x")
+        return real(path, **kwargs)  # type: ignore[arg-type]
+
+    with monkeypatch.context() as patch:
+        patch.setattr(rules_file.install_driver, "strip_managed_anchor", stuck_on_b)
+        run = adapter.uninstall()
+
+    assert any(r.outcome == "error" for r in run.results)
+    assert not (first / "apothem").exists()
+    assert (second / RULES_FILE_RELATIVE).is_file()
+    assert (home / ".openclaw" / ".apothem" / "support").is_dir()
+    last = install_ledger.read_records("open_claw")[-1]
+    assert last.kind == "uninstall-incomplete"
+    assert any(target.backup_ref for target in last.targets)
+
+    adapter.uninstall()
+
+    assert not (second / "apothem").exists()
+    assert _kinds(home)[-1] == "uninstall"

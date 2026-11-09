@@ -52,7 +52,6 @@ from .install_driver_removal import (
     _surgical_remove_from_target,
 )
 from .install_driver_shared import UserLevelGate, locked_for_harness
-from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationError,
@@ -64,9 +63,8 @@ from .install_driver_types import (
     skills_sharing_command_target,
 )
 from .install_driver_written import (
-    kept_file_warnings,
+    left_behind,
     left_unfinished,
-    links_on_the_way,
     record_uninstall,
     remove_written,
     still_written,
@@ -467,6 +465,7 @@ def run_uninstall(
             results,
             harness_root=harness_root,
             project_root=project_root,
+            already=frozenset(result.path for result in prior_results),
         )
         finished = not left_unfinished([*prior_results, *results])
     except Exception as exc:
@@ -483,26 +482,13 @@ def run_uninstall(
             finished=finished,
         )
     try:
-        return [*results, *_left_behind(results, active, floor=root_floor)]
+        return [
+            *results,
+            *left_behind(results, active, floor=root_floor, prior=prior_results),
+        ]
     except Exception as exc:
         run = MaterializationRun(harness_name, False, tuple(results))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-
-
-def _left_behind(
-    results: list[MaterializationResult], active: list[LedgerRecord], *, floor: Path
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files."""
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in results}
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
 
 
 def _remove_installed(
@@ -513,11 +499,13 @@ def _remove_installed(
     *,
     harness_root: Path | None,
     project_root: Path | None,
+    already: frozenset[str] = frozenset(),
 ) -> None:
     """Remove what *record* shows this install wrote, appending to *results*.
 
     *results* is the caller's list, so the removals made before an exception
-    are still recorded.
+    are still recorded. A path in *already* (one the caller removed or
+    reported before this pass) is not handled again.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -533,7 +521,7 @@ def _remove_installed(
     recorded_paths: set[str] | None = (
         set(recorded_targets) if record is not None else None
     )
-    handled: set[str] = set()
+    handled: set[str] = set(already)
     remove = functools.partial(
         remove_written,
         recorded=recorded_targets if record is not None else None,
