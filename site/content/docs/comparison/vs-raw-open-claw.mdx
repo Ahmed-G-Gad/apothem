@@ -6,7 +6,7 @@ description: "Hand-maintaining Open-Claw config versus managing it through Apoth
 
 Open-Claw reads `~/.openclaw/openclaw.json`. Apothem installs shared command and
 skill cohorts under `~/.openclaw/.apothem/support/skills/` and edits two
-places there. It adds that directory to `skills.load.extraDirs`, so OpenClaw
+places in `~/.openclaw/openclaw.json`. It adds that directory to `skills.load.extraDirs`, so OpenClaw
 loads the skills. It adds the path `apothem/AGENTS.md` to the path list of the
 `hooks.internal.entries.bootstrap-extra-files` hook entry, creating the entry
 with `enabled: true` when there is none, so OpenClaw loads the Apothem rules
