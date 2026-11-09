@@ -269,8 +269,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that the one-shot installers and the update scripts check a signed tag that
   names its commit by a SHA-1 object ID, that they pin the maintainer key by
   its OpenPGP v4 fingerprint, also a SHA-1 hash, and that an install without
-  cosign or over an existing Apothem clone, and every run of the update
-  scripts, installs a git checkout in which every file rests on SHA-1. The
+  cosign, and every install or update over an existing Apothem clone,
+  installs a git checkout in which every file rests on SHA-1. The
   `crypto_keylength`, `crypto_working` and `crypto_published` answers name the
   same SHA-1 uses, the TLS rows name the programs that make Apothem's TLS
   connections (pip and npm included), and `delivery_mitm` says which release
