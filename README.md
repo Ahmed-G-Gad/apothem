@@ -342,6 +342,26 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+A piped one-liner never uses a local tree: `curl ... | sh` and `irm ... | iex`
+ignore the folder you run them from and its parent folders, and fetch and
+verify the release. The installer uses a local tree only when you run the
+checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
+from any folder (for example `sh ~/src/apothem/scripts/installer/install.sh`),
+or when `APOTHEM_SOURCE` names that tree. The engine and the `apothem` command
+never import `click`, `rich` or `apothem` modules from the current folder.
+Empty and relative entries in your own `PYTHONPATH` are not passed on to the
+engine by any launcher (the installers, updaters, uninstallers, the POSIX and
+Windows `apothem` shims, and the npm launcher). A kept entry must be a full
+path: on Windows a drive path such as `C:\lib` or a network path, elsewhere a
+path that starts with `/`. A rooted `\lib` or a drive-relative `C:lib` is
+dropped. The sh scripts ask the Python they run which form it reads, and the
+`apothem` shim they write keeps that form. A Windows Python (the usual one
+under Git Bash) gets the engine paths in Windows form, joined with `;`, and
+keeps only the drive and network paths of your `PYTHONPATH`. A POSIX Python,
+including Cygwin's and MSYS2's own `python3`, gets POSIX paths joined with `:`
+and keeps only entries that start with `/`. The installers' `git` commands
+that do not work on a clone do not read a repository in the current folder.
+
 **Trust model (verified by default).** With no `APOTHEM_REF` set, the
 installer resolves the highest `vMAJOR.MINOR.PATCH` release — never the moving
 `main` branch — and checks it before any configuration is materialized. With
@@ -442,8 +462,9 @@ runtime dependency is vendored into the source tree. Apart from that opt-in
 prerequisite install, the installer never modifies your Python environment.
 
 **What it does.** Prerequisite-check (Python ≥ 3.10, `click`, `rich`) →
-locate the source (a surrounding checkout, or — for a network install —
-resolve the latest signed tag and clone the repository at it) → verify the
+locate the source (your own checkout, when you run the script by path from
+inside it or set `APOTHEM_SOURCE`; otherwise resolve the latest signed tag and
+clone the repository at it) → verify the
 tag signature (fail-closed) → create a starter profile from the example when
 none exists → run `python -m apothem install --harness <name>` from that
 source → verify → place an `apothem` command on PATH → print the next-step
@@ -458,8 +479,10 @@ dependencies) — POSIX into `$HOME/.local/bin`, Windows into
 Windows PATH). The installer never edits your PATH. Once the directory is on
 PATH you run `apothem <command>` directly, with no manual `PYTHONPATH`. If the
 directory is not on PATH (or the shim was not placed), the banner prints how
-to add it and falls back to the self-contained `PYTHONPATH=… python -m apothem`
-form — it never advertises a bare `apothem` command the run did not resolve.
+to add it. It prints the shim's full path so you can run it before the PATH
+change, or, when there is no shim, a command that starts the engine with the
+current folder kept off `sys.path`. Copy the command from the banner. It never
+advertises a bare `apothem` command the run did not resolve.
 
 **Configuration (environment variables).** Both installers read the same names:
 
