@@ -33,10 +33,13 @@ wrote. For it, the uninstall compares each file with what this release writes
 at that path and removes the ones with the same bytes. A file at a name
 Apothem writes that differs (written by that earlier release, or edited by
 you) stays, and the uninstall does not finish: it prints `✗ <harness>
-uninstall did not finish:` with the number of such paths and exits `2`. Run
-`apothem update`, which records the files as they are, then `apothem
-uninstall` again. A file at a name Apothem never writes is yours: it stays,
-and the uninstall still finishes.
+uninstall did not finish:` with the number of such paths and exits `2`.
+First move any file of your own out of those folders: an update replaces
+each Apothem folder whole (it backs the folder up first, under
+`~/.apothem/backups/`), so a file you added there would go. The uninstall's
+`Warning:` lines name your files. Then run `apothem update`, which records the
+files as they are, and `apothem uninstall` again. A file at a name Apothem
+never writes is yours: it stays, and the uninstall still finishes.
 
 The shared working directory's memory, contexts, and learning stores are
 backed up and removed only when this is the last harness installed at that
@@ -106,7 +109,9 @@ record), print as one line with their count; a file it could not remove is
 named too. In the `--format json` envelope each such line is one `warnings`
 entry with `"outcome": "warning"`, the line's `message`, `count` (how many
 paths it covers) and `paths` (each of them). These warnings do not stop the
-uninstall.
+uninstall. One kind does: files of an install an earlier release recorded
+that differ from what this release writes (see
+[What an uninstall removes](#what-an-uninstall-removes)).
 
 Apothem's own files reached through a link are different: the tool still
 loads them, so the uninstall is not finished. Say `~/.claude/rules` is a
@@ -148,7 +153,9 @@ install wrote is still there unchanged, so running `uninstall` again finishes
 the job. An `install`, `update`, `rollback` or finished `uninstall` of that
 harness at that location replaces the state, and so does removing the
 remaining files by hand: with none of Apothem's files left as it wrote them,
-the harness reads as not installed, whatever else is in the folder.
+the harness reads as not installed, whatever else is in the folder. The first
+command that checks whether the harness is installed (`status`, `verify`,
+`uninstall`) then appends an `uninstall` record that closes the install.
 `backups prune` keeps the record, and the backups it references, while the
 install it belongs to is kept.
 
@@ -241,7 +248,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
 | 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or nothing was removed because each installed harness failed before removing anything |
-| 2 | Partial removal — an uninstall failed after removing files, at least one harness was removed and another failed, or an uninstall left Apothem's own files in place because a link leads to them |
+| 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, or files of an install an earlier release recorded differ from what this release writes |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

@@ -84,7 +84,7 @@ def _tracked_root_entries() -> set[str]:
     git = shutil.which("git")
     if git is None or not (ROOT / ".git").exists():
         pytest.skip("not a git checkout")
-    listed = subprocess.run(  # noqa: S603 - fixed arguments, resolved git
+    listed = subprocess.run(
         [git, "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
     ).stdout
     return {line.split("/", 1)[0] for line in listed.splitlines() if line}

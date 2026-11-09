@@ -75,8 +75,9 @@ _KEPT_GROUP_LINES = {
     "no-record": "{count} paths were kept: no install record shows Apothem wrote them",
     "no-digests": (
         "{count} paths were kept: the install record does not show which files "
-        "Apothem wrote (it was made by an earlier release); run apothem update, "
-        "then uninstall again"
+        "Apothem wrote (it was made by an earlier release); move any file of "
+        "your own out of those folders (an update replaces them), then run "
+        "apothem update, then apothem uninstall again"
     ),
     "changed": "{count} paths were kept: they are not what Apothem wrote (changed or yours)",
 }
@@ -203,8 +204,9 @@ def _report_run(
         problems.append(
             f"{earlier} path(s) an earlier release installed stay because its "
             "install record does not show which files Apothem wrote and they "
-            "differ from what this release writes; run apothem update, then "
-            "apothem uninstall again"
+            "differ from what this release writes; move any file of your own "
+            "out of those folders (an update replaces them), then run apothem "
+            "update, then apothem uninstall again"
         )
     if fmt != "json":
         for line in _warning_lines(run):

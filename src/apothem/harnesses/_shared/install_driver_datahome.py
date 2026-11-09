@@ -123,6 +123,29 @@ def _other_harness_shares_home(
     return False
 
 
+def _holder(*, current_harness: str, shared_home: Path, current_root: Path) -> str:
+    """Name an install, other than the one being removed, that uses *shared_home*.
+
+    Says when that install's folder no longer exists, so the operator learns
+    why the store stayed. Empty when none is found.
+    """
+    for package_key in SUPPORTED_PACKAGE_KEYS:
+        roots = {record.root for record in install_ledger.read_records(package_key)}
+        for raw_root in sorted(roots):
+            if package_key == current_harness and _same_path(
+                Path(raw_root), current_root
+            ):
+                continue
+            current = install_ledger.current_install_record(package_key, root=raw_root)
+            if current is None or not _same_path(
+                _data_home_for(current, root=Path(raw_root)), shared_home
+            ):
+                continue
+            gone = "" if Path(raw_root).exists() else " (that folder no longer exists)"
+            return f"{package_key} installed at {raw_root}{gone}"
+    return ""
+
+
 def _remove_data_home(
     harness_name: str,
     *,
@@ -175,11 +198,28 @@ def _remove_data_home(
     except Exception:  # pragma: no cover - defensive: ledger read is robust
         retain = True
     if retain:
+        try:
+            holder = _holder(
+                current_harness=harness_name, shared_home=home, current_root=root
+            )
+        except Exception:  # pragma: no cover - defensive: ledger read is robust
+            holder = ""
+        if holder.endswith("(that folder no longer exists)"):
+            # The install that keeps the store cannot be uninstalled where it
+            # was, so say why the store stayed and what removes it.
+            return _result(
+                "warning",
+                "remove_data_home",
+                home,
+                f"{home} was kept: {holder} still uses it; restore that folder "
+                "and uninstall there, or remove the store by hand",
+            )
         return _result(
             "unchanged",
             "remove_data_home",
             home,
-            "shared data home retained — another harness is still installed",
+            "shared data home retained — another harness is still installed"
+            + (f" ({holder})" if holder else ""),
         )
 
     spec = DataHome.from_root(home)

@@ -46,6 +46,7 @@ from apothem.harnesses._shared.install_driver_pathsafety import (
     link_leaving_home_refusal,
 )
 from apothem.harnesses._shared.install_driver_reversal import LEFT_IN_PLACE
+from apothem.harnesses._shared.install_driver_written import kept_file_warnings
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -479,6 +480,23 @@ def _rollback_record(
     return record
 
 
+def _kept_by_rollback(
+    target_results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Return a warning for each path the rollback kept because it is not Apothem's.
+
+    A file the install created that has changed since, or a file of the
+    operator's in a folder it created, stays; each such target, and each
+    folder that keeps such files, gets one warning.
+    """
+    whole = [
+        result
+        for result in target_results
+        if result.outcome == "warning" and "kept_reason" in result.detail
+    ]
+    return [*whole, *kept_file_warnings(target_results)]
+
+
 def _record_rollback_results(
     run: _RollbackRun,
     tally: _RollbackTally,
@@ -514,6 +532,10 @@ def _record_rollback_results(
         if result.backup_path is not None:
             entry_dict["backup_path"] = result.backup_path
         tally.results.append(entry_dict)
+    kept_paths = _kept_by_rollback(target_results)
+    tally.warnings.extend(
+        {"harness": harness_id, **warning.to_dict()} for warning in kept_paths
+    )
     if run.fmt == "json":
         return
     # A restore failure is visible in plain mode, not only as a JSON
@@ -530,6 +552,10 @@ def _record_rollback_results(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
+        for warning in kept_paths:
+            run.con.print(
+                f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}"
+            )
         # A swept path is restored only where files are missing (see
         # ``rollback_install``); say what was kept and where the backup is.
         for kept in target_results:
@@ -552,13 +578,13 @@ def _record_rollback_results(
     metavar="ULID",
     help=(
         "Roll back the install pass with this ULID, taken from the harness "
-        "install ledger (default: the latest recorded install)."
+        "install ledger (default: the newest install still in place)."
     ),
 )
 @click.option(
     "--last",
     is_flag=True,
-    help="Roll back the latest recorded install (the default; explicit form).",
+    help="Roll back the newest install still in place (the default; explicit form).",
 )
 @click.option("--yes", is_flag=True, help="Skip confirmation prompt.")
 @_project_option

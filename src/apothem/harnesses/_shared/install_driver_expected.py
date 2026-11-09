@@ -54,23 +54,36 @@ _RENDERED: dict[str, tuple[Callable[[Path], str], str | None]] = {
 }
 
 
-#: An install-time token the adapter fills in (``${PYTHON_BIN}``, the
-#: interpreter path on this machine) that the shipped source leaves unrendered.
-_TOKEN = re.compile(rb"\$\{[A-Z_]+\}")
+#: The install-time tokens an adapter fills in that the shipped source leaves
+#: unrendered, each with what it can stand for: an interpreter path on one
+#: line without quotes (``${PYTHON_BIN}``), or the PowerShell call operator
+#: (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere). Any other
+#: ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``) is text the
+#: tool reads, so it must match exactly.
+_FILLED: dict[bytes, bytes] = {
+    b"${PYTHON_BIN}": rb"[^\r\n\"'`]+",
+    b"${STATUSLINE_PYTHON_BIN}": rb"[^\r\n\"'`]+",
+    b"${CALL_OP}": rb"(?:& )?",
+}
+
+#: Splits text on the filled tokens, keeping each token.
+_TOKEN = re.compile(b"(" + b"|".join(re.escape(token) for token in _FILLED) + b")")
 
 
 def _filled(expected: bytes, actual: Path) -> bool:
-    """Return True when *actual* is *expected* with each token filled on its line.
+    """Return True when *actual* is *expected* with each filled token in place.
 
-    Everything outside the tokens must match byte for byte; a token stands for
-    any text that does not cross a line.
+    Everything outside the tokens of :data:`_FILLED` must match byte for byte,
+    and each token only what it can stand for.
     """
     try:
         data = actual.read_bytes()
     except OSError:
         return False
-    parts = _TOKEN.split(expected)
-    pattern = rb"[^\r\n]*?".join(re.escape(part) for part in parts)
+    pattern = b"".join(
+        _FILLED[part] if part in _FILLED else re.escape(part)
+        for part in _TOKEN.split(expected)
+    )
     return re.fullmatch(pattern, data, flags=re.DOTALL) is not None
 
 

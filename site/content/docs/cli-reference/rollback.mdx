@@ -164,7 +164,10 @@ its backup is gone) is a `skipped` row in `results` and also an entry in
 
 When no matching install record exists for a single
 named harness, the command reports a `rollback.no_record` error with
-`"status": "error"`. Under `--harness all`, a harness with no matching record
+`"status": "error"`, and an `--install-id` of an install already rolled back
+or uninstalled reports `rollback.already_reversed`. Once the ledger has
+trimmed that record (see above), such an id reports `rollback.no_record`
+instead. Under `--harness all`, a harness with no matching record
 is an `"outcome": "error"` row in `results` instead.
 
 ## Examples

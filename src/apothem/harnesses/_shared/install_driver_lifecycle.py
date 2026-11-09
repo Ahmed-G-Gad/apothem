@@ -452,6 +452,7 @@ def run_uninstall(
     *prior_results* also makes the uninstall unfinished.
     """
     root = _root_for(harness_root, project_root)
+    root_floor = _allowed_write_root(harness_root, project_root)
     active: list[LedgerRecord] = []
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
@@ -481,6 +482,17 @@ def run_uninstall(
             [*prior_results, *results],
             finished=finished,
         )
+    try:
+        return [*results, *_left_behind(results, active, floor=root_floor)]
+    except Exception as exc:
+        run = MaterializationRun(harness_name, False, tuple(results))
+        raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
+
+
+def _left_behind(
+    results: list[MaterializationResult], active: list[LedgerRecord], *, floor: Path
+) -> list[MaterializationResult]:
+    """Return a warning for each path the uninstall kept: links and the user's files."""
     kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
     created = {Path(path) for install in active for path in install.created_dirs}
     named = {result.detail.get("symlink") for result in results}
@@ -490,12 +502,7 @@ def run_uninstall(
         if warning.path not in named
     ]
     recorded = (target.path for install in active for target in install.targets)
-    floor = _allowed_write_root(harness_root, project_root)
-    return [
-        *results,
-        *kept,
-        *links_on_the_way(recorded, floor, known=[*results, *kept]),
-    ]
+    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
 
 
 def _remove_installed(
@@ -556,13 +563,7 @@ def _remove_installed(
         if entry.user_level:
             # Record-driven and shared: a target another install still lists is
             # kept; the rest is removed within the home (see UserLevelGate).
-            results.extend(
-                gate.release(
-                    entry,
-                    record,
-                    remove,
-                )
-            )
+            gate.release(entry, record, remove, results=results)
             continue
         if entry.mode in {"write_text", "sentinel_merge", HOOK_FILE_MODE}:
             target = resolve_target(

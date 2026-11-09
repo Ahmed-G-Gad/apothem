@@ -525,6 +525,7 @@ class UserLevelGate:
         entry: InstallEntry,
         record: LedgerRecord | None,
         remove: Callable[..., MaterializationResult | None],
+        results: list[MaterializationResult] | None = None,
     ) -> list[MaterializationResult]:
         """Remove the targets *record* lists under *entry*'s folder, unless held.
 
@@ -533,9 +534,13 @@ class UserLevelGate:
         removes nothing here and an operator's same-named folder is never
         touched. A folder shared by two entries (skills and commands) is handled
         once. *remove* is called as ``remove(target, allowed_root=<home>)``.
+        Each result is appended to *results* (a new list when not given) as it
+        comes, so a caller that passes its own list keeps what was removed
+        before an exception; the list is returned.
         """
+        results = [] if results is None else results
         if record is None:
-            return []
+            return results
         base = resolve_target(
             entry.target,
             harness_root=self.harness_root,
@@ -543,9 +548,8 @@ class UserLevelGate:
         )
         key = path_key(base)
         if key in self._released:
-            return []
+            return results
         self._released.add(key)
-        results: list[MaterializationResult] = []
         for recorded in record.targets:
             if path_key(Path(recorded.path).parent) != key:
                 continue

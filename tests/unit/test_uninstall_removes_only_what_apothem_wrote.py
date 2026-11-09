@@ -660,3 +660,67 @@ def test_an_earlier_release_install_of_shared_skills_is_removed(claude: Path) ->
 
     assert result.exit_code == 0, result.output
     assert not skills.exists() or not any(skills.rglob("SKILL.md"))
+
+
+def test_an_earlier_release_file_edited_at_an_unfilled_token_stays(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    edited = next(
+        path
+        for path in sorted((claude / "skills").glob("*/SKILL.md"))
+        if "${CLAUDE_SKILL_DIR}" in path.read_text(encoding="utf-8")
+    )
+    text = edited.read_text(encoding="utf-8").replace(
+        "${CLAUDE_SKILL_DIR}", "/my/own/notes", 1
+    )
+    edited.write_text(text, encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert edited.read_text(encoding="utf-8") == text
+
+
+def test_an_exception_in_the_shared_skills_keeps_what_was_removed(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    CodexAdapter().install({})
+    real = install_driver_lifecycle.remove_written
+    calls = {"n": 0}
+
+    def fails_fourth(target: Path, **kwargs: object) -> object:
+        if ".agents" in target.parts:
+            calls["n"] += 1
+            if calls["n"] == 4:
+                raise OSError("disk went away")
+        return real(target, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_driver_lifecycle, "remove_written", fails_fourth)
+    result = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "codex", "--yes", "--format", "json"]
+    )
+    unfinished = install_ledger.unfinished_uninstall(
+        "codex", root=str(Path.home() / ".codex")
+    )
+
+    assert result.exit_code == cli._EXIT_PARTIAL, result.output
+    assert unfinished is not None
+    shared = [t for t in unfinished.targets if ".agents" in Path(t.path).parts]
+    assert len(shared) >= 3
+
+
+def test_a_rollback_names_the_files_it_kept(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    notes = claude / "skills" / _skill_name() / "my-notes.md"
+    notes.write_text("mine\n", encoding="utf-8")
+
+    code, envelope = _rollback()
+
+    assert code == 0, envelope
+    assert notes.read_text(encoding="utf-8") == "mine\n"
+    messages = " ".join(str(w["message"]) for w in envelope["warnings"])
+    assert "my-notes.md" in messages

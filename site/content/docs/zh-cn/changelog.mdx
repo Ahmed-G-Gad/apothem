@@ -429,8 +429,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   had put there since. For an install recorded by an earlier release, which
   does not say which files Apothem wrote, the uninstall removes the files that
   have the same bytes as what this release writes there; a file that differs
-  leaves the uninstall unfinished (exit `2`) with the next step: run `apothem
-  update`, then `apothem uninstall` again. An uninstall that does not finish
+  leaves the uninstall unfinished (exit `2`) with the next step: move any file
+  of your own out of those folders, then run `apothem update` and `apothem
+  uninstall` again. An uninstall that does not finish
   (a failed step, an error, or Apothem's own files reached through a link)
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished

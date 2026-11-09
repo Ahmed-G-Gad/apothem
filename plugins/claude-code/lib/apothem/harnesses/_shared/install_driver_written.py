@@ -203,9 +203,7 @@ def remove_written(
         return _kept_whole(
             target,
             "no-digests",
-            "the install record does not show which files Apothem wrote "
-            "(it was made by an earlier release); run apothem update, then "
-            "uninstall again",
+            _EARLIER_RELEASE,
         )
     written = _written_now(target, proof)
     if not written:
@@ -257,8 +255,9 @@ def remove_written(
 #: Why a target an earlier release recorded stays, and the next step.
 _EARLIER_RELEASE = (
     "the install record (made by an earlier release) does not show which files "
-    "Apothem wrote, and it differs from what this release writes; run apothem "
-    "update, then uninstall again"
+    "Apothem wrote, and it differs from what this release writes; move any file "
+    "of your own out of it (an update replaces it), then run apothem update, "
+    "then apothem uninstall again"
 )
 
 
