@@ -18,12 +18,21 @@ The closed removal target set is the four paths under the resolved home:
 ``~/.claude``, ``~/.codex``, ``~/.agents``, and ``~/.config/apothem``. Every
 other ``~/.config`` entry is preserved; the entire ``~/.config`` directory is
 never a removal target.
+
+No removal follows a link. A target that is itself a link (a symbolic link,
+or a Windows junction) loses only the link, and a link inside a target is
+removed, never entered. A target below a link that leads out of the home
+(``~/.config`` linked to another drive, above ``~/.config/apothem``) is
+refused before the backup, since removing it would delete the folder at the
+far end of that link.
 """
 
 from __future__ import annotations
 
+import os
 import shutil
 import stat
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -56,6 +65,9 @@ _BOUNDED_TARGET_RELPATHS: tuple[tuple[str, ...], ...] = (
 # ``~/.config`` is preserved.
 _CONFIG_DIRNAME = ".config"
 _CONFIG_REMOVABLE_CHILD = "apothem"
+
+# The bit in a reparse tag that marks a reparse point naming another location.
+_NAME_SURROGATE_BIT = 0x20000000
 
 #: A predicate that decides whether a single target should be removed.
 ConfirmFn = Callable[[Path], bool]
@@ -169,6 +181,58 @@ def _unsafe_reason(target: Path, home: Path) -> str | None:
     return None
 
 
+def _is_link(path: Path) -> bool:
+    """Return True when *path* itself is a symbolic link or a Windows junction.
+
+    ``is_symlink()`` is False for a junction, and ``Path.is_junction`` exists
+    only from Python 3.12, so the reparse tag is read from ``lstat``.
+    """
+    if path.is_symlink():
+        return True
+    if sys.platform != "win32":
+        return False
+    try:
+        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
+    except OSError:
+        return False
+    return bool(tag & _NAME_SURROGATE_BIT) or tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+
+
+def _is_within(path: Path, folder: Path) -> bool:
+    """Return True when *path* is *folder* or below it, ignoring case on Windows."""
+    path_key = os.path.normcase(str(path))
+    folder_key = os.path.normcase(str(folder))
+    return path_key == folder_key or path_key.startswith(
+        folder_key.rstrip(os.sep) + os.sep
+    )
+
+
+def _link_leading_out(target: Path, home: Path) -> Path | None:
+    """Return a link between *home* and *target* that leads out of the home.
+
+    Only the folders strictly between the two are read: *target* itself
+    being a link is safe, since only the link is removed. A link that stays
+    inside the home (a dotfiles folder) is followed as before.
+    """
+    try:
+        relative = target.relative_to(home)
+    except ValueError:
+        return None
+    resolved_home = home.resolve()
+    folder = home
+    for part in relative.parts[:-1]:
+        folder = folder / part
+        if not _is_link(folder):
+            continue
+        try:
+            leads_to = folder.resolve()
+        except (OSError, RuntimeError):
+            return folder
+        if not _is_within(leads_to, resolved_home):
+            return folder
+    return None
+
+
 def _utcnow() -> datetime:
     """Return the current UTC time."""
     return datetime.now(timezone.utc)
@@ -224,32 +288,63 @@ def _backup_targets(
     return backup_dir
 
 
+def _entries_without_links(top: Path) -> list[Path]:
+    """Return every entry below *top*, deepest first, never entering a link.
+
+    A link (a symbolic link or a junction) is listed itself, so it is removed
+    as a link; what it leads to is never listed.
+    """
+    found: list[Path] = []
+    pending = [top]
+    while pending:
+        folder = pending.pop()
+        try:
+            children = list(folder.iterdir())
+        except OSError:
+            continue
+        for child in children:
+            found.append(child)
+            if not _is_link(child) and child.is_dir():
+                pending.append(child)
+    return sorted(found, key=lambda item: len(item.parts), reverse=True)
+
+
 def _remove_tree(path: Path) -> None:
     """Remove a directory tree, clearing read-only bits on a first failure.
 
     The retry clears the read-only attribute that Windows sets on some files
     (for example, files under a ``.git`` object store) and which otherwise
-    blocks removal.
+    blocks removal. It removes a link inside the tree as a link and never
+    enters it.
     """
     try:
         shutil.rmtree(path)
     except OSError:
-        for child in sorted(path.rglob("*"), reverse=True):
+        for child in _entries_without_links(path):
             try:
+                if _is_link(child):
+                    child.unlink(missing_ok=True)
+                    continue
                 child.chmod(stat.S_IWRITE)
-                if child.is_dir() and not child.is_symlink():
+                if child.is_dir():
                     child.rmdir()
                 else:
                     child.unlink(missing_ok=True)
             except OSError:
                 continue
-        path.chmod(stat.S_IWRITE)
+        # Owner read and search stay set, or the second pass cannot list the
+        # folder on Linux and macOS.
+        path.chmod(stat.S_IRWXU)
         shutil.rmtree(path)
 
 
 def _remove_path(path: Path) -> None:
-    """Remove a single target, whether a symlink, directory, or file."""
-    if path.is_symlink():
+    """Remove a single target, whether a link, directory, or file.
+
+    A link, a Windows junction included, is removed as a link: what it leads
+    to is left in place.
+    """
+    if _is_link(path):
         path.unlink(missing_ok=True)
     elif path.is_dir():
         _remove_tree(path)
@@ -307,7 +402,8 @@ def run_clean_slate(
         A :class:`CleanSlateResult` describing the disposition of every target.
 
     Raises:
-        UnsafeRootError: When the home directory or any target is unsafe.
+        UnsafeRootError: When the home directory or any target is unsafe,
+            including a target below a link that leads out of the home.
         CleanSlateError: When the run is non-interactive without ``assume_yes``.
         BackupError: When the pre-removal backup cannot be written.
     """
@@ -334,6 +430,12 @@ def run_clean_slate(
         reason = _unsafe_reason(target, home_resolved)
         if reason is not None:
             raise UnsafeRootError(reason)
+        link = _link_leading_out(target, home_resolved)
+        if link is not None:
+            raise UnsafeRootError(
+                f"refuses {target}: {link} is a link that leads outside the "
+                "home directory, so removing it would delete the folder there"
+            )
 
     if dry_run:
         emit("Clean-slate dry-run — no files will be changed.")
