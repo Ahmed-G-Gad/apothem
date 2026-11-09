@@ -10,7 +10,8 @@ install driver share:
 - :func:`append_line_durably` — a single ``O_APPEND`` record with ``fsync`` of
   the fd and the parent directory, so an append-only ledger never rewrites the
   whole file (a torn full-file rewrite would lose every prior record; a torn
-  append loses only the partial final record).
+  append loses only the partial final record, and the next append starts on
+  a line of its own).
 - :func:`advisory_lock` — one ratified cross-platform advisory file lock
   (``fcntl.flock`` on POSIX, ``msvcrt.locking`` on Windows) as a
   blocking-with-timeout context manager. Both release automatically on fd close
@@ -21,6 +22,7 @@ install driver share:
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import stat
 import sys
@@ -29,6 +31,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import BinaryIO
 
 # Default ceiling for advisory-lock acquisition. A hung holder must not wedge
 # every future acquirer forever; acquisition raises TimeoutError past this.
@@ -114,18 +117,92 @@ def append_line_durably(path: Path, line: str) -> None:
     :func:`write_bytes_atomically`: this never rewrites the whole file, so a
     crash mid-append loses at most the partial final record — every prior
     record stays readable.
+
+    The caller holds the advisory lock that serializes appends to *path*
+    (the install ledger and the learning store both do), so this append is
+    the only writer. A write that fails part way is cut back off, so the file
+    ends where it did; the error still propagates. A final line a crash left
+    without its newline is settled first (see :func:`_settle_torn_tail`), so
+    the new record never lands on the same line as a torn one.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     record = line if line.endswith("\n") else f"{line}\n"
+    # Best effort: when the tail cannot be settled, the append goes ahead as
+    # it always did.
+    with contextlib.suppress(OSError):
+        _settle_torn_tail(path)
     # Owner-only (0o600): append records are per-user state and may carry
     # profile-derived content; a new file must not be created world-readable.
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     try:
-        _write_all(fd, record.encode("utf-8"), path)
+        start = os.lseek(fd, 0, os.SEEK_END)
+        try:
+            _write_all(fd, record.encode("utf-8"), path)
+        except BaseException:
+            # Never mask the write's own error with the cleanup's.
+            with contextlib.suppress(OSError):
+                os.ftruncate(fd, start)
+            raise
         os.fsync(fd)
     finally:
         os.close(fd)
     _fsync_dir(path.parent)
+
+
+#: How much of a file :func:`_line_start` reads at a time, from the end.
+_TAIL_CHUNK = 64 * 1024
+
+
+def _settle_torn_tail(path: Path) -> None:
+    """End *path* at a line break before a record is appended to it.
+
+    Every line :func:`append_line_durably` writes ends in ``\n``, so a final
+    line without one was torn by a crash mid-append. When it does not parse as
+    JSON, it is cut off: the readers of both stores that append here drop such
+    a final line anyway. When it parses, only its newline was lost, and the
+    readers return it, so it is ended instead. Either way the readers return
+    what they did before.
+    """
+    if not path.is_file():
+        return
+    with path.open("r+b") as handle:
+        end = handle.seek(0, os.SEEK_END)
+        if end == 0:
+            return
+        handle.seek(end - 1)
+        if handle.read(1) == b"\n":
+            return
+        start = _line_start(handle, end)
+        handle.seek(start)
+        if _parses(handle.read()):
+            handle.seek(0, os.SEEK_END)
+            handle.write(b"\n")
+        else:
+            handle.truncate(start)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _line_start(handle: BinaryIO, end: int) -> int:
+    """Return the offset just past the last ``\n`` before *end*, else ``0``."""
+    position = end
+    while position > 0:
+        step = min(_TAIL_CHUNK, position)
+        position -= step
+        handle.seek(position)
+        found = handle.read(step).rfind(b"\n")
+        if found >= 0:
+            return position + found + 1
+    return 0
+
+
+def _parses(data: bytes) -> bool:
+    """Return True when *data* is one JSON document (surrounding blanks allowed)."""
+    try:
+        json.loads(data)
+    except (ValueError, RecursionError):
+        return False
+    return True
 
 
 def _write_all(fd: int, data: bytes, path: Path) -> None:

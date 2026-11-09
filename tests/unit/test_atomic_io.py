@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 import subprocess
@@ -334,3 +335,66 @@ def test_append_line_durably_raises_when_a_write_makes_no_progress(
 
     with pytest.raises(OSError, match="could not write"):
         atomic_io.append_line_durably(tmp_path / "ledger.jsonl", "{}")
+
+
+def test_a_failed_append_is_cut_back_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+    real_write = atomic_io.os.write
+    calls = {"n": 0}
+
+    def half_then_full(fd: int, data: bytes) -> int:
+        calls["n"] += 1
+        if calls["n"] > 1:
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_write(fd, bytes(data[: len(data) // 2]))
+
+    monkeypatch.setattr(atomic_io.os, "write", half_then_full)
+    with pytest.raises(OSError, match="No space left"):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall", "pad": "xxxx"}')
+    after_failure = target.read_bytes()
+    monkeypatch.setattr(atomic_io.os, "write", real_write)
+    atomic_io.append_line_durably(target, '{"kind": "uninstall-incomplete"}')
+
+    assert after_failure == before
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall-incomplete"}',
+    ]
+
+
+def test_a_torn_last_line_is_cut_before_the_next_append(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "unin')
+
+    atomic_io.append_line_durably(target, '{"kind": "uninstall-incomplete"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall-incomplete"}',
+    ]
+
+
+def test_a_whole_last_line_that_lost_its_newline_is_kept(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "uninstall"}')
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall"}',
+        '{"kind": "install"}',
+    ]
+
+
+def test_a_torn_only_line_is_cut_before_the_next_append(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "ins')
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == ['{"kind": "install"}']
