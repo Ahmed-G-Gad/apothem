@@ -753,6 +753,7 @@ def test_rollback_batch_no_record_error_visible_in_plain_mode(
     """
     with patch("apothem.cli._cmd_update.install_ledger") as ledger:
         ledger.latest_record.return_value = None
+        ledger.active_install_records.return_value = []
         result = runner.invoke(
             main,
             ["rollback", "--harness", "all", "--project", str(tmp_path), "--yes"],

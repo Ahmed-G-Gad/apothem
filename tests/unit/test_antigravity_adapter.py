@@ -20,10 +20,14 @@ from pathlib import Path
 
 import pytest
 import yaml
+from click.testing import CliRunner
 
+from apothem import cli
 from apothem.harnesses import HarnessAdapter
 from apothem.harnesses import antigravity as antigravity_pkg
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_lifecycle
+from apothem.harnesses._shared.install_driver_pathsafety import _is_link
+from apothem.harnesses._shared.install_driver_types import _result
 from apothem.harnesses.antigravity import AntigravityAdapter
 from apothem.lib import install_ledger
 
@@ -388,18 +392,26 @@ def test_a_link_between_the_plugin_folders_keeps_the_live_plugin(
     own.parent.mkdir(parents=True)
     own.write_text(_SKILL_TEXT, encoding="utf-8")
 
-    adapter.update({})
+    updated = adapter.update({})
 
     assert own.is_file()
     assert (plugin / "plugin.json").is_file()
     assert _old_plugin_backups() == []
     assert adapter.verify() is True
+    link = gemini / "antigravity-cli" / "plugins"
+    assert [w.message for w in updated.warnings if str(link) in w.message]
 
-    adapter.uninstall()
+    removed = adapter.uninstall()
 
-    # Uninstall removes Apothem's files from the plugin, not the operator's.
+    # Uninstall removes Apothem's files from the plugin, not the operator's,
+    # and says the link it kept stays behind.
     assert own.is_file()
     assert not (plugin / "plugin.json").exists()
+    assert not removed.errors
+    assert any(
+        str(link) in w.message and "after an uninstall" in w.message
+        for w in removed.warnings
+    )
 
 
 def test_a_dry_run_leaves_a_linked_old_folder_alone(
@@ -414,4 +426,112 @@ def test_a_dry_run_leaves_a_linked_old_folder_alone(
     old = [
         r for r in swept if r.path.endswith("apothem") and "antigravity-cli" in r.path
     ]
-    assert [r.outcome for r in old] == ["unchanged"]
+    assert [r.outcome for r in old] == ["warning"]
+    assert str(gemini / "antigravity-cli" / "plugins") in old[0].message
+
+
+def _uninstall_json() -> tuple[int, dict]:  # type: ignore[type-arg]
+    result = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "antigravity", "--yes", "--format", "json"]
+    )
+    return result.exit_code, json.loads(result.output)
+
+
+def test_an_old_folder_behind_a_dotfiles_link_lets_uninstall_finish(
+    adapter: AntigravityAdapter, gemini: Path, tmp_path: Path
+) -> None:
+    # ~/.gemini/antigravity-cli/plugins is the operator's link to a dotfiles
+    # folder. The old plugin path is reached through it, so it is kept with a
+    # warning, and the uninstall completes instead of failing for good.
+    adapter.install({})
+    dotfiles = tmp_path / "dotfiles" / "plugins"
+    (dotfiles / "apothem").mkdir(parents=True)
+    keep = dotfiles / "apothem" / "notes.md"
+    keep.write_text("mine\n", encoding="utf-8")
+    link = gemini / "antigravity-cli" / "plugins"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    _link_folder(link, dotfiles)
+
+    first_code, first = _uninstall_json()
+    second_code, second = _uninstall_json()
+
+    assert first_code == 0, first
+    assert any(str(link) in w["message"] for w in first["warnings"])
+    assert keep.read_text(encoding="utf-8") == "mine\n"
+    assert _is_link(link)
+    assert not (gemini / _PLUGIN / "plugin.json").exists()
+    assert second_code == 0
+    assert [r["outcome"] for r in second["results"]] == ["skipped"]
+
+
+def test_a_link_inside_an_installed_folder_stays_with_a_warning(
+    adapter: AntigravityAdapter, gemini: Path, tmp_path: Path
+) -> None:
+    adapter.install({})
+    skill = sorted(p for p in (gemini / _PLUGIN / "skills").iterdir() if p.is_dir())[0]
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    (mine / "x.md").write_text("mine\n", encoding="utf-8")
+    _link_folder(skill / "refs", mine)
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    _link_folder(skill / "broken", gone)
+    gone.rmdir()
+
+    run = adapter.uninstall()
+
+    assert not run.errors
+    warned = {w.path for w in run.warnings}
+    assert {str(skill / "refs"), str(skill / "broken")} <= warned
+    assert _is_link(skill / "refs")
+    assert (mine / "x.md").read_text(encoding="utf-8") == "mine\n"
+
+
+def test_a_failed_uninstall_can_be_run_again(
+    adapter: AntigravityAdapter, gemini: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter.install({})
+    real = install_driver_lifecycle.remove_written
+    failed: list[Path] = []
+
+    def fail_once(target: Path, **kwargs: object) -> object:
+        if not failed and target.exists():
+            failed.append(target)
+            return _result("error", "remove_existing", target, "injected failure")
+        return real(target, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_driver_lifecycle, "remove_written", fail_once)
+    first_code, first = _uninstall_json()
+    left = [path.exists() for path in failed]
+    monkeypatch.setattr(install_driver_lifecycle, "remove_written", real)
+    second_code, second = _uninstall_json()
+
+    assert first_code == cli._EXIT_PARTIAL
+    assert first["status"] == "partial"
+    assert first["results"][0]["operation"] == "uninstall"
+    assert first["results"][0]["outcome"] == "error"
+    assert "injected failure" in first["results"][0]["message"]
+    assert left == [True]
+    assert second_code == 0, second
+    assert [r["outcome"] for r in second["results"]] == ["updated"]
+    assert not failed[0].exists()
+
+
+def test_a_link_directly_inside_the_plugin_folder_is_named_at_uninstall(
+    adapter: AntigravityAdapter, gemini: Path, tmp_path: Path
+) -> None:
+    adapter.install({})
+    plugin = gemini / _PLUGIN
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    _link_folder(plugin / "linked", mine)
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    _link_folder(plugin / "dangling", gone)
+    gone.rmdir()
+
+    run = adapter.uninstall()
+
+    warned = {w.path for w in run.warnings}
+    assert {str(plugin / "linked"), str(plugin / "dangling")} <= warned
+    assert _is_link(plugin / "linked")

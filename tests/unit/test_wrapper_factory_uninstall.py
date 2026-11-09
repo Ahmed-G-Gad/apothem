@@ -157,7 +157,7 @@ def _refusing_run_uninstall(
     monkeypatch.setattr(install_driver, "run_uninstall", fake_run_uninstall)
 
 
-def test_every_uninstall_shim_raises_on_an_error_result(
+def test_every_uninstall_shim_returns_its_error_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _refusing_run_uninstall(monkeypatch)
@@ -169,7 +169,7 @@ def test_every_uninstall_shim_raises_on_an_error_result(
         lambda: make_native_config_uninstall("opencode", lambda profile: "{}")(
             tmp_path / "opencode" / "opencode.json"
         ),
-        # The adapters with their own uninstall module call the same check.
+        # The adapters with their own uninstall module return the same run.
         lambda: claude_code_uninstall(tmp_path / ".claude" / "settings.json"),
         lambda: antigravity_uninstall(
             tmp_path / ".gemini" / "config" / "plugins" / "apothem" / "plugin.json"
@@ -179,15 +179,17 @@ def test_every_uninstall_shim_raises_on_an_error_result(
         ),
     ]
     for shim in shims:
-        with pytest.raises(install_driver.MaterializationError, match="symlink"):
-            shim()
+        run = shim()
+        assert [error.message for error in run.errors] == [
+            "target path crosses a symlink"
+        ]
 
     _refusing_run_uninstall(monkeypatch, outcome="skipped")
     for shim in shims:
-        shim()
+        assert not shim().errors
 
 
-def test_an_error_in_the_native_config_removal_raises(
+def test_an_error_in_the_native_config_removal_is_returned(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # The surgical removal of the rendered config refused, the support pass
@@ -211,8 +213,9 @@ def test_an_error_in_the_native_config_removal_raises(
         lambda *args, **kwargs: _refusal(target),
     )
 
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
-        make_native_config_uninstall("opencode", lambda profile: "{}")(target)
+    run = make_native_config_uninstall("opencode", lambda profile: "{}")(target)
+
+    assert [error.path for error in run.errors] == [str(target)]
     assert [len(prior) for prior in seen] == [1]
 
 
@@ -226,4 +229,4 @@ def test_a_refused_uninstall_is_not_reported_as_done(
 
     assert result.exit_code != 0
     assert "Uninstalled" not in result.output
-    assert "uninstall failed" in result.output
+    assert "uninstall did not finish" in result.output
