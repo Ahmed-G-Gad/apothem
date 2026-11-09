@@ -868,9 +868,12 @@ def test_a_cloned_volume_is_not_the_same_folder(
     install_ledger.append_record(_record_with_file(first, "a.md"))
     real_stat = Path.stat
     same = real_stat(first)
+    # Spelled before the patch: on Python 3.12 and earlier, Path.resolve and
+    # Path.exists call Path.stat, so resolving inside it never returns.
+    clone = {str(second), str(second.resolve())}
 
     def stat(self: Path, *, follow_symlinks: bool = True) -> os.stat_result:
-        if str(self) in {str(second), str(second.resolve())}:
+        if str(self) in clone:
             return same
         return real_stat(self, follow_symlinks=follow_symlinks)
 
