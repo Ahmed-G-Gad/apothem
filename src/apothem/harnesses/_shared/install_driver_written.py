@@ -19,7 +19,9 @@ from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     complete_managed_block,
+    extract_managed_block,
     has_stray_begin,
+    remove_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
@@ -48,7 +50,7 @@ STUCK_FILES = "stuck_files"
 
 #: Kept reasons that leave the uninstall unfinished: files of an install an
 #: earlier release recorded, which this release cannot show are Apothem's.
-UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests"})
+UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests", "another-block"})
 
 #: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
 KEPT_REASON = "kept_reason"
@@ -481,16 +483,84 @@ def install_may_be_open(harness_name: str, root: Path) -> bool:
     try:
         if install_ledger.current_install_record(harness_name, root=root):
             return True
-        latest = install_ledger.latest_record(harness_name, root=root, kind=None)
+        here = [
+            record
+            for record in install_ledger.read_records(harness_name)
+            if record.root == str(root)
+        ]
     except (OSError, install_ledger.LedgerError):
         return True
-    if latest is None:
+    if not here:
         return True
-    # Closed: an uninstall, or a rollback of a known install. An unfinished
-    # uninstall or a rollback with no install leaves it possibly open.
+    # Closed: an uninstall, or a rollback of an install recorded here. An
+    # unfinished uninstall or a rollback of no known install leaves it open.
+    latest = here[-1]
+    installs = {record.install_id for record in here if record.kind == "install"}
     return not (
         latest.kind == "uninstall"
-        or (latest.kind == "rollback" and latest.install_id is not None)
+        or (latest.kind == "rollback" and latest.install_id in installs)
+    )
+
+
+def endless_block_warning(target: Path, operation: str) -> MaterializationResult | None:
+    """Return a warning when *target*'s managed block lost its END marker.
+
+    A BEGIN marker with no END after it: the text below it may be the
+    operator's, so nothing is removed, and the file no longer counts as
+    Apothem's (see :func:`still_written`). ``None`` when the file holds a whole
+    block, holds no marker, or cannot be read.
+    """
+    try:
+        text = target.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    if extract_managed_block(text) is None or complete_managed_block(text):
+        return None
+    return _result(
+        "warning",
+        operation,
+        target,
+        f"{_path_text(target)} has the Apothem BEGIN marker but no END marker "
+        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
+        "ends and left the file as it is. Delete that marker line, and what is "
+        "left of the block, by hand, "
+        "keeping your own text.",
+    )
+
+
+def sentinel_refusal(target: Path) -> MaterializationResult | None:
+    """Return why an uninstall leaves the managed-block file *target* as it is.
+
+    Its block lost its END marker (:func:`endless_block_warning`), or another
+    whole block stays once Apothem's own and its copies are out
+    (:func:`another_block_warning`). ``None`` when the strip may go ahead.
+    """
+    endless = endless_block_warning(target, "surgical_uninstall")
+    if endless is not None:
+        return endless
+    try:
+        text = target.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    if complete_managed_block(remove_managed_block(text)):
+        return another_block_warning(target)
+    return None
+
+
+def another_block_warning(target: Path) -> MaterializationResult:
+    """Name a file that holds another whole block besides Apothem's own.
+
+    It is not a copy of Apothem's block, so it may be the operator's (a marker
+    pair they quote): nothing changes, and the uninstall stays unfinished.
+    """
+    return _result(
+        "warning",
+        "surgical_uninstall",
+        target,
+        f"{_path_text(target)} holds another block between Apothem's markers that "
+        "is not a copy of Apothem's own, so Apothem left the file as it is. Delete "
+        "it by hand (or the marker pair you quoted), then run the uninstall again.",
+        detail={KEPT_REASON: "another-block"},
     )
 
 

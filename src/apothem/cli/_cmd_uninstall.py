@@ -226,6 +226,16 @@ def _report_run(
             "out of those folders (an update replaces them), then run apothem "
             "update, then apothem uninstall again"
         )
+    another = sum(
+        1 for w in run.warnings if w.detail.get("kept_reason") == "another-block"
+    )
+    if another:
+        problems.append(
+            f"{another} file(s) hold another block between Apothem's markers that "
+            "is not a copy of Apothem's own, so Apothem left them as they are; "
+            "delete it by hand (or the marker pair you quoted), then run apothem "
+            "uninstall again"
+        )
     if fmt != "json":
         for line in _warning_lines(run):
             con.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")

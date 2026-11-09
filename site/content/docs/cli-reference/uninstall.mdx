@@ -175,10 +175,12 @@ gone, nothing shows where Apothem's text stops and yours starts, so the
 uninstall leaves the file as it is, names it in a warning and finishes; so
 does a retry after an uninstall that did not finish. If a BEGIN marker of
 yours is left with no END after it once Apothem's block is out, the uninstall
-names that file too. Delete such a marker, or the rest of the block, by hand.
-An `install` or `update` keeps the text after it as it is, writes Apothem's
-block apart from it and names the file, and `verify` fails until the marker is
-gone.
+names that file too. A file that holds another block between the markers that
+is not a copy of Apothem's own (a marker pair you quote, say) is left as it is
+and named, and the uninstall stays unfinished until you remove that block.
+Delete such a marker, or the rest of the block, by hand. An `install` or
+`update` keeps the text after it as it is, writes Apothem's block apart from it
+and names the file, and `verify` fails until the marker is gone.
 
 If a folder stays because of an install you cannot find, the note names it.
 When the project folder was deleted, the install is ignored and the folder goes

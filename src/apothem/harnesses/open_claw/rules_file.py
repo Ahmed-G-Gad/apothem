@@ -40,9 +40,9 @@ from typing import Any, Final
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
-from apothem.harnesses._shared.install_driver_removal import endless_block_warning
 from apothem.harnesses._shared.install_driver_types import _path_text
 from apothem.harnesses._shared.install_driver_written import (
+    endless_block_warning,
     stray_begin_install_warnings,
 )
 from apothem.harnesses.open_claw.materializer import (
@@ -866,6 +866,9 @@ def _retire_one(
             else replace(result, message=f"{path}: {result.message}")
         )
         return [named if strict else replace(named, outcome="warning")]
+    if result is not None and result.outcome == "warning":
+        # Another marked block that is not Apothem's: the file is left as it is.
+        return [result]
     if path.exists() and _holds_block(path, whole=True):
         which, then = (
             (

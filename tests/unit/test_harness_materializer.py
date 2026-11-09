@@ -118,6 +118,13 @@ class TestManagedBlockMerge:
         assert "v2" in merged
         assert "v1" not in merged
 
+    def test_remove_keeps_a_quoted_marker_pair_after_the_block(self):
+        # Only Apothem's block and its exact copies go: a marker pair the
+        # operator quotes stays, with the text between the markers.
+        block = wrap_managed_block("body")
+        quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+        assert remove_managed_block(f"{block}\n{quoted}") == quoted
+
     def test_install_merge_keeps_a_frontmatter_block_without_end(self):
         cut = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nold body\n"
         body = "---\ndescription: x\n---\nnew body"

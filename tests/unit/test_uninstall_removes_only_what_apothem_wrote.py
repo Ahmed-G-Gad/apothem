@@ -880,3 +880,41 @@ def test_an_install_stays_possibly_open_until_an_uninstall_closes_it(
     assert unknown is True
     assert unfinished is True
     assert written.install_may_be_open("claude_code", claude) is False
+
+
+def test_an_uninstall_leaves_a_file_with_another_marked_block(claude: Path) -> None:
+    # A marker pair the user quotes is not Apothem's block: the file stays as it
+    # is, the warning names it, and the install stays open for a retry.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code != 0, envelope
+    assert anchor.read_bytes() == before
+    assert any("CLAUDE.md" in str(w["message"]) for w in envelope["warnings"]), envelope
+    assert _unfinished(claude) is not None
+
+
+def test_a_rollback_of_a_recorded_install_closes_it(claude: Path) -> None:
+    def record(kind: str, install_id: str) -> None:
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness="claude_code",
+                root=_root(claude),
+                kind=kind,
+                install_id=install_id,
+            )
+        )
+
+    record("install", "known")
+    record("rollback", "known")
+    closed = written.install_may_be_open("claude_code", claude)
+    record("rollback", "never-installed")
+    orphan = written.install_may_be_open("claude_code", claude)
+
+    assert closed is False
+    assert orphan is True

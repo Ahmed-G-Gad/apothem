@@ -200,12 +200,15 @@ def remove_managed_block(existing: str) -> str:
     ending in a single newline, merged-then-removed, returns the original.
 
     For the frontmatter-first shape (Apothem's frontmatter directly followed by
-    the block), the frontmatter is removed together with the block. Every
-    whole block goes, so a block pasted in twice goes too.
+    the block), the frontmatter is removed together with the block. The first
+    whole block goes, and so does each later exact copy of it (a block pasted
+    in twice); any other whole block, such as a marker pair the operator
+    quotes, stays.
     """
-    text = existing
-    while (rest := _remove_block(text)) != text:
-        text = rest
+    first = complete_managed_block(existing)
+    text = _remove_block(existing)
+    while first is not None and complete_managed_block(text) == first:
+        text = _remove_block(text)
     return text
 
 
