@@ -451,18 +451,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Uninstall checks an earlier release's files more strictly and says
   more.** When an install recorded by an earlier release is compared with what
   this release writes, the place where a file holds the Python interpreter
-  matches only an interpreter path (`pythonw`, an 8.3 short name, a
-  free-threaded or debug build included) or a launcher an earlier release
-  wrote (`py -3`, `python3`). A command, an option, prose or a JSON escape
-  written there no longer makes the file compare as Apothem's. A path that
-  holds `&`, `#` or `$` never matches, so such a file is kept. The plain output
-  of `apothem uninstall` now lists each file it kept, up to 20, and the
-  `--format json` warnings list them all as `files`. When the only installs
-  that keep the shared `memory`, `contexts` and `learning` stores sit in
-  folders that no longer exist, the warning now prints the commands that
-  release them, including the `--profile` that install used. An uninstall
-  whose ledger record cannot be written is recorded as unfinished, so running
-  it again finishes the job.
+  matches only a launcher an earlier release wrote (`py -3`, `python3`) or the
+  full path of an interpreter file on this machine (`pythonw`, an 8.3 short
+  name, a free-threaded or debug build included). A command, an option, prose,
+  a JSON escape or a path that names no file here no longer makes the file
+  compare as Apothem's. A path that holds `&`, `#` or `$` never matches, so
+  such a file is kept. An install with no ledger record at all now leaves the
+  uninstall unfinished too, with the advice to run `apothem update` first. The
+  plain output of `apothem uninstall` and `apothem rollback` now lists every
+  file kept, and the `--format json` warnings list them as `files`; with
+  `--quiet`, an uninstall that did not finish lists them on standard error.
+  When the only installs that keep the shared `memory`, `contexts` and
+  `learning` stores sit in folders that no longer exist, the warning now gives
+  the steps that release them: for a project install, the exact commands, with
+  a `--profile` placeholder for the profile that install used. When an
+  uninstall cannot write its ledger record, the install stays recorded, as
+  unfinished where the ledger takes that record, so running the uninstall
+  again finishes the job.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
