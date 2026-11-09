@@ -863,8 +863,6 @@ def _retire_one(
             else replace(result, message=f"{path}: {result.message}")
         )
         return [named if strict else replace(named, outcome="warning")]
-    if result is not None and result.outcome == "warning":
-        return [result]
     if path.exists() and _holds_block(path, whole=True):
         which, then = (
             (
