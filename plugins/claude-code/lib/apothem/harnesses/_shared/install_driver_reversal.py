@@ -58,6 +58,7 @@ from .install_driver_types import (
     _result,
     backup_session,
 )
+from .install_driver_written import remove_written
 
 
 def _chain(path: Path, boundary: Path) -> list[Path]:
@@ -244,9 +245,31 @@ def _restore_target(
 
 
 def _remove_created(
-    target: Path, *, root: Path, harness_name: str, allowed_root: Path
+    target: Path,
+    *,
+    root: Path,
+    harness_name: str,
+    allowed_root: Path,
+    recorded: LedgerTarget | None = None,
 ) -> MaterializationResult | None:
-    """Back up and remove a file or directory the install created."""
+    """Back up and remove a file or directory the install created.
+
+    With the *recorded* target of the install being reversed, only what still
+    has the content that install wrote goes (see :func:`remove_written`): a
+    file the operator made at the path since then stays, with a warning, and
+    so does everything when the record predates file digests.
+    """
+    if recorded is not None:
+        removal = remove_written(
+            target,
+            recorded={recorded.path: recorded},
+            install_root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+        if removal is None or removal.outcome != "updated":
+            return removal
+        return replace(removal, operation="remove_created")
     if not target.exists() and not target.is_symlink():
         return None
     target_error = _validate_target_path(
@@ -495,6 +518,7 @@ def rollback_install(
                     root=root,
                     harness_name=harness_name,
                     allowed_root=target_root,
+                    recorded=recorded,
                 )
         if result is not None:
             results.append(result)

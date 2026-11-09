@@ -75,14 +75,18 @@ def _store_boundary(home: Path, *, allowed_root: Path) -> Path:
     return home.parent
 
 
-def _other_harness_shares_home(*, current_harness: str, shared_home: Path) -> bool:
+def _other_harness_shares_home(
+    *, current_harness: str, shared_home: Path, current_root: Path | None = None
+) -> bool:
     """Report whether another installed harness still shares *shared_home*.
 
     The shared data home is collapsed across harnesses, so removing it on the
     first uninstall would destroy data the remaining harnesses depend on. This
-    consults the install ledger across every package key (except
-    *current_harness*) and returns ``True`` when any other harness is still
-    installed at a root whose data home is *shared_home*.
+    consults the install ledger across every package key and returns ``True``
+    when any other install is still in place at a root whose data home is
+    *shared_home*. Only the install being removed (*current_harness* at
+    *current_root*) is left out: the same harness installed at another root
+    (a second project sharing the user-home store) still counts.
 
     A harness is "still installed at a root" when its most recent ledger
     record of any kind for that root is an ``install``. The records are grouped
@@ -90,22 +94,27 @@ def _other_harness_shares_home(*, current_harness: str, shared_home: Path) -> bo
     let an ``uninstall`` marker (which carries no home) go unmatched, leaving the
     guard stuck on "retain". The home of each latest install record comes from
     :func:`_data_home_for`, so two roots that share a user-home store are both
-    counted. *current_harness* is excluded explicitly because the current
-    uninstall's own ``uninstall`` marker is appended only AFTER this guard runs
-    (see :func:`run_uninstall`).
+    counted. The install being removed is excluded explicitly because its own
+    ``uninstall`` record is appended only AFTER this guard runs (see
+    :func:`run_uninstall`); with no *current_root*, every root of
+    *current_harness* is left out.
 
     The check is fail-safe: any error reading the ledger raises out to the
     caller, which treats it as "cannot prove last-harness" and retains the
     shared home rather than risk a destructive removal on an uncertain count.
     """
     for package_key in SUPPORTED_PACKAGE_KEYS:
-        if package_key == current_harness:
+        if package_key == current_harness and current_root is None:
             continue
         # An install is in place at a root while the ledger's replay keeps it
         # active: a rollback of a later install, or an uninstall that did not
         # finish, leaves the earlier one active, and its home still in use.
         roots = {record.root for record in install_ledger.read_records(package_key)}
         for raw_root in sorted(roots):
+            if package_key == current_harness and _same_path(
+                Path(raw_root), current_root or Path(raw_root)
+            ):
+                continue
             current = install_ledger.current_install_record(package_key, root=raw_root)
             if current is None:
                 continue
@@ -161,7 +170,7 @@ def _remove_data_home(
     # back to RETAIN — the safe default that never risks shared-data loss.
     try:
         retain = _other_harness_shares_home(
-            current_harness=harness_name, shared_home=home
+            current_harness=harness_name, shared_home=home, current_root=root
         )
     except Exception:  # pragma: no cover - defensive: ledger read is robust
         retain = True

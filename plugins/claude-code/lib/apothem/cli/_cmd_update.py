@@ -383,22 +383,52 @@ def _rollback_harness(
     return True
 
 
+def _refuse_reversed(harness_id: str, install_id: str) -> None:
+    """Refuse to roll back an install a rollback or uninstall already reversed.
+
+    Raises:
+        _RollbackRefusedError: Always.
+    """
+    reason = f"install {install_id!r} was already rolled back or uninstalled"
+    reversed_already = _CliUserError(
+        code="rollback.already_reversed",
+        message="That install was already reversed.",
+        field="install-id",
+        reason=f"{harness_id}: {reason}.",
+        fix="Leave --install-id out to roll back the install now in place.",
+    )
+    raise _RollbackRefusedError(
+        reversed_already, f"[red]✗[/] {harness_id} rollback refused: {escape(reason)}."
+    )
+
+
 def _rollback_record(
     run: _RollbackRun, package_key: str, harness_id: str, install_root: Path
 ) -> LedgerRecord:
-    """Return the install record to reverse: ``--install-id``'s, else the latest.
+    """Return the install record to reverse: ``--install-id``'s, else the current.
+
+    The current install is the newest one still in place, so a second rollback
+    reverses the install before it rather than the one already reversed. An
+    ``--install-id`` naming an install a rollback or uninstall already
+    reversed is refused: reversing it again would remove what came after.
 
     Raises:
-        _RollbackRefusedError: When the ledger is corrupted or holds no such record.
+        _RollbackRefusedError: When the ledger is corrupted, holds no such
+            record, or the record was already reversed.
     """
     install_id = run.install_id
     try:
+        active = install_ledger.active_install_records(package_key, root=install_root)
         if install_id is not None:
             record = install_ledger.find_record(
                 package_key, install_id, root=install_root
             )
+            if record is not None and all(
+                live.install_id != install_id for live in active
+            ):
+                _refuse_reversed(harness_id, install_id)
         else:
-            record = install_ledger.latest_record(package_key, root=install_root)
+            record = active[-1] if active else None
     except install_ledger.LedgerError as exc:
         # The ledger is the source of truth for what to restore; a corrupted
         # record cannot be silently skipped without risking a wrong or

@@ -474,3 +474,72 @@ def test_a_still_active_install_keeps_the_shared_data_home(
     )
 
     assert shared is True
+
+
+def test_the_same_harness_at_another_root_keeps_the_shared_data_home(
+    claude: Path, tmp_path: Path
+) -> None:
+    from apothem.harnesses._shared import install_driver_datahome as datahome
+
+    home = Path.home() / ".apothem"
+    first, second = tmp_path / "a", tmp_path / "b"
+    for root in (first, second):
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness="cursor", root=root, kind="install", data_home=str(home)
+            )
+        )
+
+    shared = datahome._other_harness_shares_home(
+        current_harness="cursor", shared_home=home, current_root=first
+    )
+    alone = datahome._other_harness_shares_home(
+        current_harness="cursor", shared_home=tmp_path / "elsewhere", current_root=first
+    )
+
+    assert shared is True
+    assert alone is False
+
+
+def _rollback(*extra: str) -> tuple[int, dict]:  # type: ignore[type-arg]
+    return _run("rollback", "--harness", "claude-code", "--yes", *extra)
+
+
+def test_a_second_rollback_reverses_the_earlier_install_and_keeps_the_users_files(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    skill = claude / "skills" / _skill_name()
+    shutil.rmtree(skill)
+    ClaudeCodeAdapter().install({})
+    later = install_ledger.current_install_record("claude_code", root=_root(claude))
+
+    first_code, first = _rollback()
+    again_code, again = _rollback("--install-id", str(later.install_id))  # type: ignore[union-attr]
+    skill.mkdir(parents=True, exist_ok=True)
+    mine = skill / "my-notes.md"
+    mine.write_text("mine\n", encoding="utf-8")
+    second_code, second = _rollback()
+
+    assert first_code == 0, first
+    assert second_code == 0, second
+    assert mine.read_text(encoding="utf-8") == "mine\n"
+    assert again_code != 0, again
+    assert "already" in json.dumps(again)
+
+
+def test_a_rollback_after_a_hand_cleaned_partial_uninstall_keeps_the_users_files(
+    claude: Path, tmp_path: Path
+) -> None:
+    rules, dotfiles = _partial_uninstall(claude, tmp_path)
+    rule_name = sorted(path.name for path in dotfiles.iterdir())[0]
+    _unlink_folder(rules)
+    shutil.rmtree(claude)
+    mine = _add_users_files(claude, rule_name)
+    (claude / "CLAUDE.md").write_text("my own CLAUDE.md\n", encoding="utf-8")
+
+    code, envelope = _rollback()
+
+    assert code in (0, cli._EXIT_PARTIAL, cli._EXIT_EXPECTED), envelope
+    assert all(path.read_text(encoding="utf-8") == "mine\n" for path in mine)
+    assert (claude / "CLAUDE.md").read_text(encoding="utf-8") == "my own CLAUDE.md\n"

@@ -25,9 +25,9 @@ from .install_driver_types import (
     MaterializationRun,
 )
 
-#: Modes whose targets are surgically edited rather than written whole: their
-#: removal compares the managed content itself, so no digest is recorded.
-_EDITED_MODES: frozenset[str] = frozenset({"sentinel_merge", "sweep_stale"})
+#: Operations whose result is not a file the pass left in place: a stale
+#: sweep records what it removed, so there is nothing to digest.
+_EDITED_MODES: frozenset[str] = frozenset({"sweep_stale"})
 
 
 def file_digest(path: Path) -> str | None:
@@ -85,7 +85,7 @@ def _written_digests(
     result: MaterializationResult, ignore: IgnoreFn | None
 ) -> tuple[str | None, dict[str, str] | None]:
     """Return the ``digest`` and ``files`` fields for one written target."""
-    if result.owned is not None or result.operation in _EDITED_MODES:
+    if result.operation in _EDITED_MODES:
         return None, None
     path = Path(result.path)
     if _is_link(path):
