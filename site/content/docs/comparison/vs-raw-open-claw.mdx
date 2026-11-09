@@ -30,6 +30,9 @@ material.
 The Open-Claw adapter writes `openclaw.json`, wraps Apothem slash commands as
 skills, copies Apothem skills into the referenced support directory, and keeps
 rules, templates, agents, and hook material under the Apothem support subtree.
+It also writes `apothem/AGENTS.md` into each workspace and registers it with the
+bundled `bootstrap-extra-files` hook, so OpenClaw loads the Apothem rules without
+any change to the workspace's own `AGENTS.md`.
 OpenClaw reads `skills.load.extraDirs` after its workspace, `~/.agents/skills`,
 and `~/.openclaw/skills` sources, so a skill of the same name in any of them is
 used instead of the Apothem copy.

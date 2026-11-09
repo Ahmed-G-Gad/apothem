@@ -21,6 +21,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,11 @@ from apothem.lib.profile import (
 from apothem.lib.python_resolver import resolve_python_bin
 
 from . import install_driver
-from .install_driver import MaterializationError, MaterializationRun
+from .install_driver import (
+    MaterializationError,
+    MaterializationResult,
+    MaterializationRun,
+)
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
 
@@ -57,6 +62,24 @@ _ProjectScopeVerify = Callable[..., bool]
 _ProjectScopePlan = Callable[..., list[dict[str, str]]]
 _MaterializeFn = Callable[[dict[str, Any]], str]
 _RetiredFn = Callable[[dict[str, Any]], tuple[OwnedEntry, ...]]
+_MaterializeAtFn = Callable[[Path, dict[str, Any]], str]
+
+
+@dataclass(frozen=True)
+class ExtraWrites:
+    """Files a native-config install writes beside its config (open_claw).
+
+    ``targets`` returns, for the native config path, every file the install may
+    write, so the directories it creates on the way are recorded and an
+    uninstall removes them again. ``apply`` writes them (or, with ``dry_run``,
+    reports what it would write) and returns one result per file plus any
+    warnings. The writes run inside the install's backup session, before the
+    install is finalized, so the install record lists them.
+    """
+
+    targets: Callable[[Path], tuple[Path, ...]]
+    apply: Callable[[Path, dict[str, Any], bool], tuple[MaterializationResult, ...]]
+
 
 _UPDATE_DOC = """Re-materialize the harness configuration from the updated profile.
 
@@ -582,6 +605,7 @@ def make_native_config_uninstall(
     apothem_keys: frozenset[str] = frozenset(),
     retired_fn: _RetiredFn | None = None,
     relocated_fn: RelocatedFn | None = None,
+    before_fn: Callable[[Path], tuple[MaterializationResult, ...]] | None = None,
 ) -> _NativeUninstallFn:
     """Return a native-config (materializer) ``uninstall`` shim.
 
@@ -602,10 +626,24 @@ def make_native_config_uninstall(
     :func:`_retired_at_uninstall` for the profile they are rendered from).
     *relocated_fn* returns where the harness may have moved the entries the
     install record says Apothem owns (opencode); they are removed too.
+    *before_fn* removes files written beside the native config (open_claw's
+    workspace rules files) first. When it reports an ``error`` (something the
+    operator has to clear by hand), the uninstall returns those results at
+    once, before it touches the native config or the support tree, so the next
+    uninstall, after the fix, does the whole job. Otherwise its results join
+    the uninstall's, where a ``blocked`` warning (Apothem's file behind a link)
+    leaves the uninstall unfinished like any other.
     """
 
     @install_driver.backup_session()
     def uninstall(output_path: Path) -> MaterializationRun:
+        before = before_fn(output_path) if before_fn is not None else ()
+        if any(result.outcome == "error" for result in before):
+            # Something the operator has to clear by hand: stop before the
+            # native config or the support tree changes.
+            return MaterializationRun(
+                harness=harness_name, dry_run=False, results=tuple(before)
+            )
         native = install_driver.surgically_remove_materialized_config(
             output_path,
             materialize_fn({}),
@@ -616,7 +654,7 @@ def make_native_config_uninstall(
             retired=_retired_at_uninstall(retired_fn),
             relocated=relocated_fn,
         )
-        prior = (native,) if native is not None else ()
+        prior = (*before, *((native,) if native is not None else ()))
         removed = install_driver.run_uninstall(
             harness_name, harness_root=output_path.parent, prior_results=prior
         )
@@ -637,6 +675,8 @@ def make_native_config_install(
     support_profile: bool = False,
     retired_fn: _RetiredFn | None = None,
     relocated_fn: RelocatedFn | None = None,
+    materialize_at: _MaterializeAtFn | None = None,
+    extra_writes: ExtraWrites | None = None,
 ) -> _UserScopeInstall:
     """Return a native-config (materializer) ``install`` shim.
 
@@ -656,6 +696,13 @@ def make_native_config_install(
     - *relocated_fn*: returns where the harness may have moved the entries
       Apothem owns, so an update strips them there before writing them in
       place (opencode).
+    - *materialize_at*: when given, renders the native config from the config
+      path as well as the profile, so the content can depend on what the
+      operator's file already holds (open_claw). It replaces *materialize_fn*
+      for the install; *materialize_fn* still names Apothem's structural
+      contribution elsewhere.
+    - *extra_writes*: files written beside the native config (open_claw's
+      workspace rules files); see :class:`ExtraWrites`.
 
     With ``dry_run=True`` the closure writes nothing and returns the
     prospective run: the native config (with its diff), the support tree, the
@@ -675,9 +722,14 @@ def make_native_config_install(
             extra=(
                 output_path,
                 output_path.parent / install_driver.PROFILE_DOCUMENT_RELATIVE,
+                *(extra_writes.targets(output_path) if extra_writes else ()),
             ),
         )
-        content = materialize_fn(profile)
+        content = (
+            materialize_at(output_path, profile)
+            if materialize_at is not None
+            else materialize_fn(profile)
+        )
         if render_tokens:
             content = install_driver.render_content_tokens(
                 content, harness_root=output_path.parent
@@ -719,6 +771,9 @@ def make_native_config_install(
             profile=profile,
             dry_run=dry_run,
         )
+        extra_results = (
+            extra_writes.apply(output_path, profile, dry_run) if extra_writes else ()
+        )
         run = MaterializationRun(
             harness=harness_name,
             dry_run=dry_run,
@@ -727,6 +782,7 @@ def make_native_config_install(
                 native_result,
                 *support_results,
                 profile_result,
+                *extra_results,
             ),
         )
         if dry_run:

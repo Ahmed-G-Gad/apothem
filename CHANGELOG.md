@@ -55,6 +55,45 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
+  `apothem/AGENTS.md` into each OpenClaw workspace and lists that path in the
+  bundled `bootstrap-extra-files` hook's entry in `openclaw.json`
+  (`hooks.internal.entries.bootstrap-extra-files`). The file holds the profile's
+  managed block and the pointer to the installed rule index. Because it is named
+  `AGENTS.md`, OpenClaw also loads it in cron and sub-agent sessions. The
+  workspace's own `AGENTS.md` is never edited.
+  - **Workspaces:** the default workspace and each `agents.entries` (or older
+    `agents.list`) workspace that exists in the home directory, resolved as
+    OpenClaw does: ids normalized, and the entry marked `default: true` or a
+    sole entry uses the default workspace.
+    One OpenClaw has not created yet is filled by the next `apothem update`
+    (`apothem verify` fails until then). One outside the home directory, or
+    reached through a link, is skipped with a warning. When a workspace leaves
+    the config, the next install or update takes the Apothem block out of the
+    file it wrote there.
+  - **Hook settings:** left alone, with a warning, when internal hooks are off,
+    the hook's entry is off, or `hooks.internal.enabled: true` names no hook
+    (naming one would switch the others off).
+  - **Size limits:** a rules file that OpenClaw would cut or skip is not written,
+    and an earlier copy is taken out. That covers the per-file limit
+    (`bootstrapMaxChars`, 20,000 by default) and the room the six workspace
+    files and the entry's other extra files leave in the total
+    (`bootstrapTotalMaxChars`, 60,000), with each entry's own limits and
+    characters counted as OpenClaw counts them. When the file fits no
+    workspace, no path is registered.
+  - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
+    entry to a file with comments or other JSON5 syntax without dropping them.
+    If you added the `skills.load.extraDirs` entry by hand, as these docs said
+    before, install and update now print the hook entry to add as well;
+    `apothem verify` fails until you add it.
+  - **Uninstall** removes the managed blocks, the files and folders they leave
+    empty, and only the hook entries Apothem added. Apothem's entries in a
+    commented `openclaw.json` stop it before anything changes, with an error
+    naming what to remove; a rules file behind a link is left in place and the
+    uninstall reported unfinished (exit 2). Either way the install record
+    stays, so a second uninstall after the hand fix finishes. `apothem verify`
+    reports a missing file or registration.
+
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
   removal (Kiro, GitHub Copilot, Cursor), the shared-profile loader, the install

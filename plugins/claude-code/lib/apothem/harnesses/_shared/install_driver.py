@@ -154,6 +154,7 @@ from .install_driver_merge import (
 )
 from .install_driver_merge import apply_sentinel_merge as apply_sentinel_merge
 from .install_driver_merge import content_tokens as content_tokens
+from .install_driver_merge import profile_document_body as profile_document_body
 from .install_driver_merge import project_profile_document as project_profile_document
 from .install_driver_merge import render_content_tokens as render_content_tokens
 from .install_driver_merge import write_text_safely as write_text_safely
@@ -202,6 +203,7 @@ from .install_driver_removal import _strip_apothem_yaml as _strip_apothem_yaml
 from .install_driver_removal import (
     _surgical_remove_from_target as _surgical_remove_from_target,
 )
+from .install_driver_removal import strip_managed_anchor as strip_managed_anchor
 from .install_driver_removal import (
     surgically_remove_materialized_config as surgically_remove_materialized_config,
 )

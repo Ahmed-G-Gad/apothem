@@ -111,6 +111,24 @@ def apply_managed_block_anchor(
 PROFILE_DOCUMENT_RELATIVE: Final[str] = "apothem/rules/00-apothem-profile.md"
 
 
+def profile_document_body(
+    harness_root: Path, *, harness_id: str, harness_name: str, profile: dict[str, Any]
+) -> str:
+    """Return the managed-block body the profile document carries.
+
+    The profile's projected block for *harness_id*, plus the support
+    announcement when the harness has no instruction anchor of its own.
+    """
+    from apothem.lib.profile import coerce_profile
+    from apothem.lib.profile_projection import project
+
+    for_harness = coerce_profile(profile).for_harness(harness_id)
+    body = project(for_harness, harness_id).managed_block_body
+    if announces_in_profile_document(harness_name):
+        body = with_support_announcement(body, harness_name, harness_root)
+    return body
+
+
 def project_profile_document(
     harness_root: Path,
     *,
@@ -131,16 +149,14 @@ def project_profile_document(
     its own (no ``sentinel_merge`` entry) also gets its support announcement
     here: this document is the instruction file such an install writes.
     """
-    from apothem.lib.profile import coerce_profile
-    from apothem.lib.profile_projection import project
-
-    for_harness = coerce_profile(profile).for_harness(harness_id)
-    body = project(for_harness, harness_id).managed_block_body
-    if announces_in_profile_document(harness_name):
-        body = with_support_announcement(body, harness_name, harness_root)
     return apply_managed_block_anchor(
         harness_root / relative_path,
-        body,
+        profile_document_body(
+            harness_root,
+            harness_id=harness_id,
+            harness_name=harness_name,
+            profile=profile,
+        ),
         install_root=harness_root,
         harness_name=harness_name,
         allowed_root=harness_root.parent,

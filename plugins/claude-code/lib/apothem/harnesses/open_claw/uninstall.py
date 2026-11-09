@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
+from apothem.harnesses.open_claw import rules_file
 from apothem.harnesses.open_claw.materializer import materialize_native_config
 
 _HARNESS_NAME: str = "open_claw"
@@ -20,5 +21,13 @@ _HARNESS_NAME: str = "open_claw"
 # ``.bak`` sibling is left beside the operator's file. The manifest support
 # subtree is then cleaned child-by-child by the shared driver. No profile-derived
 # namespace is owned wholesale here, so ``apothem_keys`` stays at the driver
-# default (empty).
-uninstall = make_native_config_uninstall(_HARNESS_NAME, materialize_native_config)
+# default (empty). Before that, every workspace rules file an install still in
+# effect wrote loses its managed block (rules_file.retire_all); a file that
+# cannot be cleaned is an error, which keeps the install record; so is an
+# openclaw.json with comments that still holds Apothem's entries, which the
+# shared strip cannot rewrite (the error names what to remove by hand).
+uninstall = make_native_config_uninstall(
+    _HARNESS_NAME,
+    materialize_native_config,
+    before_fn=rules_file.before_uninstall,
+)
