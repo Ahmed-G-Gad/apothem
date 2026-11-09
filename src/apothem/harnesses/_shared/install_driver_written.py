@@ -19,7 +19,7 @@ from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     complete_managed_block,
-    extract_managed_block,
+    has_stray_begin,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
@@ -363,13 +363,43 @@ def left_behind(
     ]
 
 
-def _endless(path: Path) -> bool:
-    """Return True when *path* holds a BEGIN marker with no END marker after it."""
+def stray_begin_at(path: Path) -> bool:
+    """Return True when *path* holds a BEGIN marker that starts no whole block."""
     try:
         text = path.read_bytes().decode("utf-8", errors="replace")
     except OSError:
         return False
-    return extract_managed_block(text) is not None and not complete_managed_block(text)
+    return has_stray_begin(text)
+
+
+def stray_begin_install_warnings(
+    results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Name each managed-block file an install or update keeps a stray BEGIN in.
+
+    The text after a BEGIN marker with no END is kept as it is, and Apothem's
+    own block is written apart from it, so the marker stays until the operator
+    deletes it; verify reports the file until then.
+    """
+    paths = dict.fromkeys(
+        result.path
+        for result in results
+        if result.operation == "sentinel_merge" and result.outcome != "error"
+    )
+    return [
+        _result(
+            "warning",
+            "sentinel_merge",
+            Path(path),
+            f"{path} has an Apothem BEGIN marker with no END marker "
+            f"({APOTHEM_BLOCK_END}) after it. Apothem keeps that text as it is "
+            "and writes its own block apart from it; delete the old marker, and "
+            "any of its text you do not want, by hand. Until then, verify "
+            "reports the file as damaged.",
+        )
+        for path in paths
+        if stray_begin_at(Path(path))
+    ]
 
 
 def endless_block_left(entry: LedgerTarget) -> bool:
@@ -379,7 +409,7 @@ def endless_block_left(entry: LedgerTarget) -> bool:
     next uninstall runs, names the file and finishes (see :func:`still_written`,
     which does not count it as Apothem's).
     """
-    return entry.mode == "sentinel_merge" and _endless(Path(entry.path))
+    return entry.mode == "sentinel_merge" and stray_begin_at(Path(entry.path))
 
 
 def stray_begin_warnings(
@@ -388,8 +418,8 @@ def stray_begin_warnings(
     """Name each file the uninstall rewrote that still holds a BEGIN marker alone.
 
     Taking Apothem's whole block out can leave such a line above where it was
-    (a stray line of the operator's, say). An install or update that writes
-    the file again replaces everything from that line to the end of the file.
+    (a stray line of the operator's, say). An install keeps it as it is and
+    verify reports the file, so the operator deletes it by hand.
     """
     rewritten = {
         result.path: result.operation
@@ -404,12 +434,11 @@ def stray_begin_warnings(
             Path(path),
             f"{path} still holds a line that reads as the Apothem BEGIN marker, "
             f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
-            "Apothem's block is out. Delete that line by hand: an install or "
-            "update that writes this file again replaces everything from it to "
-            "the end of the file.",
+            "Apothem's block is out. Delete that line by hand: an install keeps "
+            "it as it is, and verify reports the file as damaged.",
         )
         for path, operation in rewritten.items()
-        if _endless(Path(path))
+        if stray_begin_at(Path(path))
     ]
 
 

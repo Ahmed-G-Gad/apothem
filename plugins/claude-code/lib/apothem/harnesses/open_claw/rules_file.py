@@ -42,6 +42,9 @@ from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
 from apothem.harnesses._shared.install_driver_removal import endless_block_warning
 from apothem.harnesses._shared.install_driver_types import _path_text
+from apothem.harnesses._shared.install_driver_written import (
+    stray_begin_install_warnings,
+)
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
@@ -955,6 +958,7 @@ def apply(
                 dry_run=dry_run,
             )
         )
+        results.extend(stray_begin_install_warnings(results[-1:]))
     results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
     return tuple(results)
 

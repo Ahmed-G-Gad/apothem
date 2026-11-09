@@ -1867,3 +1867,26 @@ def test_an_unreadable_ledger_keeps_the_hand_removal_error(
     run = adapter.uninstall()
 
     assert [r for r in run.results if r.outcome == "error"], run.results
+
+
+def test_an_install_keeps_your_text_after_a_rules_file_begin_with_no_end(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / "ws-a")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    cut = target.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b"")
+    target.write_bytes(cut + b"my own line\n")
+    before = target.read_bytes()
+
+    run = adapter.install({})
+    damaged = adapter.verify()
+
+    assert target.read_bytes().startswith(before)
+    assert target.read_bytes().count(APOTHEM_BLOCK_END.encode()) == 1
+    assert any(
+        APOTHEM_BLOCK_END in w.message and str(workspace) in w.message
+        for w in run.warnings
+    ), run.warnings
+    assert damaged is False

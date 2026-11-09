@@ -18,6 +18,7 @@ from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
     extract_markdown_fields,
+    has_stray_begin,
     merge_managed_block,
     remove_managed_block,
     wrap_managed_block,
@@ -37,21 +38,37 @@ class TestManagedBlockMerge:
         assert extract_managed_block("plain operator prose") is None
 
     def test_extract_returns_orphan_region_on_truncated_block(self):
-        # A begin sentinel with no matching end returns the degenerate region
-        # (begin to end-of-text) so the next merge replaces it, not appends.
+        # A begin sentinel with no matching end returns the region from it to
+        # the end of the text, so callers can tell such a marker is there.
         text = f"{APOTHEM_BLOCK_BEGIN}\nbody"
         assert extract_managed_block(text) == text
 
-    def test_orphan_begin_sentinel_is_idempotent_and_preserves_prior_prose(self):
-        # Operator prose BEFORE a stray (unclosed) begin sentinel survives; the
-        # merge is idempotent and never accumulates a second begin sentinel.
+    def test_a_begin_without_end_keeps_its_text_and_gets_a_fresh_block(self):
+        # Install and update never cut the text after a BEGIN with no END:
+        # it stays, a whole block is added, and the next merge finds that
+        # block by its own sentinels, so merging again changes nothing.
         mangled = f"# My notes\n{APOTHEM_BLOCK_BEGIN}\ntrapped operator text\n"
         once = merge_managed_block(mangled, "body")
         twice = merge_managed_block(once, "body")
-        assert once == twice  # idempotent — no double-begin accumulation
-        assert once.count(APOTHEM_BLOCK_BEGIN) == 1
-        assert "# My notes" in once  # prose before the orphan begin preserved
-        assert "body" in once
+        assert once == twice
+        assert once.startswith(mangled)
+        assert once.count(APOTHEM_BLOCK_BEGIN) == 2
+        assert once.count(APOTHEM_BLOCK_END) == 1
+        assert has_stray_begin(once)
+
+    def test_merge_replaces_the_whole_block_and_keeps_a_stray_begin(self):
+        block = wrap_managed_block("v1").rstrip("\n")
+        text = f"{APOTHEM_BLOCK_BEGIN}\nmine\n\n{block}\n"
+        merged = merge_managed_block(text, "v2")
+        assert merged == text.replace(block, wrap_managed_block("v2").rstrip("\n"))
+
+    def test_has_stray_begin(self):
+        block = wrap_managed_block("body")
+        assert not has_stray_begin(f"mine\n\n{block}")
+        assert not has_stray_begin("plain operator prose")
+        assert has_stray_begin(f"{APOTHEM_BLOCK_BEGIN}\nmine\n")
+        assert has_stray_begin(f"{APOTHEM_BLOCK_BEGIN}\nmine\n\n{block}")
+        assert has_stray_begin(f"{block}\n{APOTHEM_BLOCK_BEGIN}\nmine\n")
 
     def test_complete_block_needs_both_sentinels(self):
         block = wrap_managed_block("body").rstrip("\n")
@@ -90,15 +107,14 @@ class TestManagedBlockMerge:
         text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
         assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
 
-    def test_reclaim_removes_a_block_without_end_as_the_install_does(self):
-        assert remove_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nold\n", reclaim=True) == ""
-
-    def test_install_merge_still_reclaims_a_frontmatter_block_without_end(self):
+    def test_install_merge_keeps_a_frontmatter_block_without_end(self):
         cut = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nold body\n"
-        merged = merge_managed_block(cut, "---\ndescription: x\n---\nnew body")
-        assert merged.count(APOTHEM_BLOCK_BEGIN) == 1
-        assert "old body" not in merged
+        body = "---\ndescription: x\n---\nnew body"
+        merged = merge_managed_block(cut, body)
+        assert "old body" in merged
         assert "new body" in merged
+        assert merged.count(APOTHEM_BLOCK_END) == 1
+        assert merge_managed_block(merged, body) == merged
 
     def test_merge_into_empty_returns_wrapped_block(self):
         assert merge_managed_block("", "body") == wrap_managed_block("body")

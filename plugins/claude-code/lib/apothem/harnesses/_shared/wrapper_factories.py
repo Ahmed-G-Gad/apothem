@@ -44,7 +44,10 @@ from .install_driver import (
 )
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
-from .install_driver_written import record_uninstall
+from .install_driver_written import (
+    record_uninstall,
+    stray_begin_install_warnings,
+)
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
@@ -799,6 +802,8 @@ def make_native_config_install(
                 native_result,
                 *support_results,
                 profile_result,
+                # The support run's own warnings are dropped above.
+                *stray_begin_install_warnings([*support_results, profile_result]),
                 *extra_results,
             ),
         )

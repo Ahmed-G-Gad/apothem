@@ -15,7 +15,10 @@ from apothem.harnesses.open_claw.materializer import (
     SKILLS_DIRECTORY,
     plan_registration,
 )
-from apothem.lib.harness_materializer import extract_managed_block
+from apothem.lib.harness_materializer import (
+    complete_managed_block,
+    has_stray_begin,
+)
 
 _HARNESS_NAME: str = "open_claw"
 
@@ -87,7 +90,7 @@ def workspaces_hold_rules_file(config_path: Path, config: object) -> bool:
             text = workspace.rules_file.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             return False
-        if extract_managed_block(text) is None:
+        if complete_managed_block(text) is None or has_stray_begin(text):
             return False
     return True
 

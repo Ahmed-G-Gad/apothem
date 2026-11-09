@@ -72,6 +72,7 @@ from .install_driver_written import (
     record_uninstall,
     remove_written,
     still_written,
+    stray_begin_at,
 )
 
 
@@ -155,7 +156,10 @@ def verify_install(
                 return False
         elif not target.exists():
             return False
-    return True
+    anchors = _profile_anchor_targets(
+        harness_name, harness_root=harness_root, project_root=project_root
+    )
+    return not any(stray_begin_at(anchor) for anchor in anchors)
 
 
 def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
@@ -164,9 +168,8 @@ def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bo
     The managed block is self-delimiting and Apothem-specific, so finding one
     inside an operator-owned anchor is positive proof of an install even though
     the file itself is not Apothem's to own. A BEGIN marker whose END is gone
-    counts unless the ledger shows the install was closed (*install_open*):
-    the uninstall then runs, leaves that file as it is and names it, and once
-    the install is closed the file no longer reads as installed.
+    counts until the ledger shows the install closed (*install_open*), so an
+    uninstall still runs, names that file and closes the install.
     """
     if not target.is_file():
         return False
@@ -375,7 +378,7 @@ def check_fidelity(
         block = extract_managed_block(text)
         if block is None:
             results.append(FidelityResult(_path_text(target), "missing"))
-        elif expected and expected in block:
+        elif expected and expected in block and not stray_begin_at(target):
             results.append(FidelityResult(_path_text(target), "faithful"))
         else:
             results.append(FidelityResult(_path_text(target), "drifted"))

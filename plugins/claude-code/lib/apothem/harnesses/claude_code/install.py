@@ -52,6 +52,9 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.install_driver_layout import with_support_announcement
 from apothem.harnesses._shared.install_driver_types import _result, resolve_source
+from apothem.harnesses._shared.install_driver_written import (
+    stray_begin_install_warnings,
+)
 from apothem.lib.claude_agent_mcp import agent_mcp_grants, grant_problems
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project
@@ -153,10 +156,11 @@ def install(
         allowed_root=harness_root.parent,
         dry_run=dry_run,
     )
+    anchor = [anchor_result, *stray_begin_install_warnings([anchor_result])]
     if dry_run:
-        return run.extend([anchor_result])
+        return run.extend(anchor)
     return install_driver.finalize_install(
-        run.extend([anchor_result]),
+        run.extend(anchor),
         root=harness_root,
         missing_before=missing,
     )

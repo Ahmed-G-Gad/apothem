@@ -308,7 +308,9 @@ Some leftovers need your hand:
 In each case Apothem records the uninstall as unfinished and keeps its install
 record, even if you later add your own text beside the block. Remove the named
 entries, or the Apothem block (or the file), or fix the file, then run the
-uninstall again to finish. A rules file whose Apothem block lost its END
+uninstall again to finish. An install or update keeps the text of a rules
+file whose Apothem block lost its END line, writes Apothem's block apart from
+it and names the file. A rules file whose Apothem block lost its END
 line is left as it is too, with a warning that names it, but the uninstall
 still finishes; delete the rest of the block by hand. Until you do, each
 install and update names such a file in a workspace the install no longer

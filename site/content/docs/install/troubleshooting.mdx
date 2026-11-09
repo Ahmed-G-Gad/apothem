@@ -301,6 +301,25 @@ checks only when you pass `--project <path>`. If doctor reports
 Re-run apothem install to re-materialize the adapter. If the issue persists, check the
 adapter-specific page under [Harness Adapters](/docs/harnesses).
 
+### A file has an Apothem BEGIN marker with no END marker
+
+Apothem keeps its own text in a block that runs from a
+`<!-- BEGIN APOTHEM MANAGED BLOCK -->` marker to the next
+`<!-- END APOTHEM MANAGED BLOCK -->` marker. If the END marker is gone (an edit
+by hand or a merge that dropped the line), or a BEGIN marker of yours sits
+outside a whole block, nothing shows where Apothem's text stops and yours
+starts. So Apothem never cuts the text after that marker:
+
+- `apothem install` and `apothem update` keep it as it is, write Apothem's block
+  apart from it, and print a warning that names the file.
+- `apothem uninstall` leaves the file as it is and names it.
+- `apothem verify` fails, and `apothem status --profile` shows drift, until the
+  stray marker is gone.
+
+To fix it, open the named file, delete the stray BEGIN marker line and any
+leftover text of the old block you do not want, and keep your own lines. Then
+run `apothem verify` again.
+
 ### Hooks not firing in Claude Code
 
 Confirm Apothem is wired by checking ~/.claude/settings.json for the hook entries.
