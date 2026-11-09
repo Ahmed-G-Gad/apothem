@@ -1369,3 +1369,33 @@ def test_a_retired_rules_file_is_not_listed_in_the_new_record(
     listed = {Path(target.path) for target in record.targets}
     assert old / RULES_FILE_RELATIVE not in listed
     assert new / RULES_FILE_RELATIVE in listed
+
+
+def test_an_install_recorded_without_digests_still_uninstalls_cleanly(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # A record from before digests (#220): the rules file and openclaw.json are
+    # removed surgically, not through the byte-for-byte digest check, so the
+    # uninstall finishes instead of keeping them as unproven.
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    _write_config(home, {"gateway": {"port": 1}})
+    adapter.install({})
+    ledger = install_ledger.ledger_path("open_claw")
+    records = [
+        json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()
+    ]
+    for record in records:
+        for target in record.get("targets", []):
+            target.pop("digest", None)
+            target.pop("files", None)
+    ledger.write_text(
+        "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+    )
+
+    run = adapter.uninstall()
+
+    assert not [r for r in run.results if r.detail.get("kept_reason")]
+    assert not (workspace / "apothem").exists()
+    assert (workspace / "AGENTS.md").read_text(encoding="utf-8") == _AGENT_OWN
+    assert _config(home) == {"gateway": {"port": 1}}
+    assert install_ledger.read_records("open_claw")[-1].kind == "uninstall"
