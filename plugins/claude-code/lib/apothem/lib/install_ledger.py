@@ -605,6 +605,66 @@ def unfinished_uninstall(
     return None
 
 
+def recorded_root(harness: str, root: Path, *, state_root: Path | None = None) -> Path:
+    """Return the spelling of *root* that *harness*'s install records use.
+
+    A record keeps its install root as a string, and every reader matches it
+    exactly. The CLI resolves ``--project`` before it reads or writes a
+    record, while a Python caller passes the folder as it typed it, so the
+    two can name one folder two ways: through a link, or with ``~``. Use
+    this before reading or writing a record by root, so both find the same
+    record. In order:
+
+    1. *root* as given, when a record uses that spelling;
+    2. *root* resolved (``~`` expanded, links followed), when a record uses it;
+    3. another recorded root that names the same folder, as recorded (the
+       newest such record wins), so an install made under another spelling
+       is still found. Only an absolute recorded root counts: a relative or
+       ``~`` one was kept as typed, relative to the folder the install ran
+       from, so it cannot be matched from here;
+    4. otherwise *root* resolved, so a new install records the folder the
+       way the CLI does.
+
+    A ledger that cannot be read gives *root* resolved, without raising: the
+    caller that reads the ledger next reports the error itself. A *root* that
+    cannot be resolved (a link loop) is returned as given.
+    """
+    try:
+        resolved = root.expanduser().resolve(strict=False)
+    except (OSError, RuntimeError):
+        return root
+    try:
+        roots = [record.root for record in read_records(harness, state_root=state_root)]
+    except (LedgerError, OSError):
+        return resolved
+    if str(root) in roots:
+        return root
+    if str(resolved) in roots:
+        return resolved
+    for recorded in dict.fromkeys(reversed(roots)):
+        if _names_folder(recorded, resolved):
+            return Path(recorded)
+    return resolved
+
+
+def _names_folder(recorded: str, resolved: Path) -> bool:
+    """Return True when the recorded root *recorded* names the folder *resolved*.
+
+    A relative recorded root (``~`` included, which the driver never
+    expanded) names a folder relative to where its install ran, which is not
+    known here, so it names no folder.
+    """
+    if not Path(recorded).is_absolute():
+        return False
+    try:
+        candidate = Path(recorded).resolve(strict=False)
+        if candidate == resolved:
+            return True
+        return candidate.exists() and resolved.exists() and candidate.samefile(resolved)
+    except (OSError, RuntimeError, ValueError):
+        return False
+
+
 def active_install_ids(records: list[LedgerRecord]) -> set[str]:
     """Return the install-ids still active in one root's *records* (replayed).
 
@@ -751,5 +811,6 @@ __all__ = [
     "latest_record",
     "ledger_path",
     "read_records",
+    "recorded_root",
     "unfinished_uninstall",
 ]

@@ -138,14 +138,20 @@ the uninstall finishes.
 When a removal step reports an error (an installed file whose path leads out
 of your home folder, say), the command prints `✗ <harness> uninstall did not
 finish: <reason>` instead of `Uninstalled`, once per reason with the number of
-paths it applies to. The install stays recorded, so running the command again
-removes what the first run left. The retention notes are not printed, because
-the folders they describe were not released. In JSON output the harness gets a
-`results` row with `"outcome": "error"` and `"operation": "uninstall"`,
-followed by one row for each failed step. The envelope's `status` is
-`"partial"` and the exit code `2` when the uninstall removed files before the
-step failed, or when another harness was removed; otherwise `status` is
-`"error"` and the exit code `1`. The top-level `error` stays `null`: the
+paths it applies to. When a link in a folder of your home leads those paths
+out of it (`target escapes the allowed materialization root`), the line also
+names the link and the folder it leads to, and says to replace the link with
+a real folder; paths behind two links give two lines. The link still gets its
+warning that it was left in place. The install stays recorded, so running the
+command again removes what the first run left. The retention notes are not
+printed, because the folders they describe were not released. In JSON output
+the harness gets a `results` row with `"outcome": "error"` and `"operation":
+"uninstall"`, followed by one row for each failed step. When the reasons name
+one link, that row carries it in `detail.symlink` and the folder it leads to
+in `detail.leads_to`. The envelope's `status` is `"partial"` and the exit
+code `2` when the uninstall removed files before the step failed, or when
+another harness was removed; otherwise `status` is `"error"` and the exit
+code `1`. The top-level `error` stays `null`: the
 reasons are in `results`. An uninstall that stops with an exception (a backup
 that cannot be written, say) prints `✗ <harness> uninstall stopped after
 removing files:` (or `failed:` when it removed nothing) with the message, and
@@ -178,6 +184,14 @@ block from its rules file by hand, `uninstall` reports the harness as not
 installed and does not release its claim; run `install` for that harness and
 project, then `uninstall`, to release it. `apothem verify` shows whether a
 folder is still complete.
+
+`--project` is read with its links followed and `~` expanded. An install made
+from Python code with the project folder spelled another way, through a link
+say, is still found under the spelling its record keeps. One case is not: an
+install that an earlier release recorded twice, once from the command line
+and once from Python through a link, keeps the second record after
+`uninstall`, and the shared folders stay for it. Remove that one from Python
+with the folder spelled as it was installed.
 
 A `--harness all` removal is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips

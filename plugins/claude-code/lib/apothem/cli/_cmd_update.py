@@ -316,7 +316,11 @@ def _rollback_harness(
         install_root = output_path.parent
         root_kwargs: dict[str, Path] = {"harness_root": install_root}
     else:
-        install_root = cast(Path, run.project_root)
+        # Spelled as the install record spells it: an install made through
+        # the Python API can keep the project folder as typed, a link included.
+        install_root = install_ledger.recorded_root(
+            entry.package_key, cast(Path, run.project_root)
+        )
         root_kwargs = {"project_root": install_root}
 
     try:

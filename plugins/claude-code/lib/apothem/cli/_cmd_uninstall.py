@@ -46,6 +46,8 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from apothem.lib.harness_registry import package_key_for_public_id
+from apothem.lib.install_ledger import recorded_root
 
 
 def _retention_advisories(
@@ -57,14 +59,17 @@ def _retention_advisories(
     """Return the retained and released advisories for uninstalling *adapter*.
 
     Empty when the harness writes no user-home folder or has no install record.
-    The ledger root is the project for a project-scope adapter and the harness
-    folder for a user-scope one. A report that cannot be built never blocks the
-    uninstall.
+    The ledger root is the project for a project-scope adapter, spelled as its
+    install record spells it (an install made through the Python API can keep
+    the folder as typed), and the harness folder for a user-scope one. A
+    report that cannot be built never blocks the uninstall.
     """
     root = project_root if is_project_scope(adapter) else output_path.parent
     if root is None:
         return []
     try:
+        if is_project_scope(adapter):
+            root = recorded_root(package_key_for_public_id(harness_id), root)
         return uninstall_advisories(harness_id, preview_uninstall(harness_id, root))
     except (OSError, ValueError):
         return []
@@ -190,6 +195,55 @@ def _earlier_release_paths(run: MaterializationRun) -> int:
     )
 
 
+def _error_groups(run: MaterializationRun) -> list[tuple[MaterializationResult, int]]:
+    """Group a run's failed steps by message and by the link they name.
+
+    Returns the first step of each group with the group's size, so the
+    steps refused at one link form one line, and steps refused at two links
+    form two.
+    """
+    groups: dict[tuple[str, str], list[MaterializationResult]] = {}
+    for error in run.errors:
+        key = (error.message, error.detail.get("symlink", ""))
+        groups.setdefault(key, []).append(error)
+    return [(members[0], len(members)) for members in groups.values()]
+
+
+def _error_line(error: MaterializationResult, count: int) -> str:
+    """Return the line reporting *count* failed steps like *error*.
+
+    A step refused because a link leads it out of the allowed folder has a
+    message that does not name the link; the line adds the link, where it
+    leads and the fix.
+    """
+    line = f"{error.message} ({count} paths)" if count > 1 else error.message
+    named = install_driver_homelink.unnamed_link_text(error)
+    return f"{line}: {named}" if named else line
+
+
+def _one_named_link(run: MaterializationRun, blocked: Counter[str]) -> dict[str, str]:
+    """Return ``symlink`` and ``leads_to`` when the problems name one link only.
+
+    The link is one a failed step names, or one that keeps installed paths
+    behind it. Empty when the problems name no link, or more than one.
+    """
+    links: dict[str, str] = {}
+    for error in run.errors:
+        link = error.detail.get("symlink")
+        if link:
+            links.setdefault(link, error.detail.get("leads_to", ""))
+    for link in blocked:
+        if link:
+            links.setdefault(link, "")
+    if len(links) != 1:
+        return {}
+    ((link, leads_to),) = links.items()
+    return {
+        "symlink": link,
+        "leads_to": leads_to or install_driver_homelink.leads_to_text(link),
+    }
+
+
 def _report_run(
     harness_id: str,
     outcome: object,
@@ -218,7 +272,6 @@ def _report_run(
         for group in _warning_groups(run)
         if not _is_blocked(group)
     )
-    counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
     earlier = _earlier_release_paths(run)
     problems = [
@@ -226,10 +279,7 @@ def _report_run(
         f"link {link}, and {harness_id} still loads them; replace the link with a "
         "real folder that holds the same files, then run the command again"
         for link, count in blocked.items()
-    ] + [
-        f"{message} ({count} paths)" if count > 1 else message
-        for message, count in counts.items()
-    ]
+    ] + [_error_line(error, count) for error, count in _error_groups(run)]
     if earlier:
         problems.append(
             f"{earlier} path(s) an earlier release installed stay because its "
@@ -254,6 +304,9 @@ def _report_run(
         "path": str(output_path),
         "message": "; ".join(problems),
     }
+    link = _one_named_link(run, blocked)
+    if link:
+        summary["detail"] = link
     steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
     removed = any(result.outcome == "updated" for result in run.results)
     return [summary, *steps], bool(blocked) or bool(earlier) or removed

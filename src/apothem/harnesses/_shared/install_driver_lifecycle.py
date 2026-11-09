@@ -12,7 +12,6 @@ from typing import Any, Literal
 
 import yaml
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
@@ -66,6 +65,7 @@ from .install_driver_types import (
 from .install_driver_written import (
     kept_file_warnings,
     left_unfinished,
+    links_named,
     links_on_the_way,
     record_uninstall,
     remove_written,
@@ -121,6 +121,8 @@ def verify_install(
     wrote them (see :func:`user_level_entry_ok`). Returns False on the first
     unsatisfied target.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     if native_config is not None:
         if not native_config.is_file() or native_config.stat().st_size <= 0:
@@ -227,6 +229,8 @@ def detect_install(
     :func:`_stale_path_proves_install`). So does an uninstall that did not
     finish (see :func:`_unfinished_here`), so a second run can complete it.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     if any(
@@ -292,6 +296,8 @@ def _profile_anchor_targets(
     install from before the ledger) a bolt-on counts only when present. An
     adapter that projects no profile content (GLM) has no anchors.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     targets: list[Path] = [
@@ -495,7 +501,7 @@ def _left_behind(
     """Return a warning for each path the uninstall kept: links and the user's files."""
     kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
     created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in results}
+    named = links_named(results)
     kept += [
         warning
         for warning in links_left_in(created, known=kept)
@@ -519,6 +525,8 @@ def _remove_installed(
     *results* is the caller's list, so the removals made before an exception
     are still recorded.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
@@ -673,6 +681,8 @@ def build_plan(
     target string so the operator sees the unresolved template form instead
     of a misleading absolute path.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     return [
         {

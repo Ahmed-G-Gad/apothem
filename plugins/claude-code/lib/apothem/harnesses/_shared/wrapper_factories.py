@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from apothem.lib.harness_registry import package_key_for_public_id
-from apothem.lib.install_ledger import OwnedEntry
+from apothem.lib.install_ledger import OwnedEntry, recorded_root
 from apothem.lib.profile import (
     ProfileValidationError,
     load_profile_file,
@@ -111,7 +111,8 @@ def make_update_project(install_fn: _ProjectScopeInstall) -> _ProjectScopeUpdate
     """Return a project-scope ``update`` shim delegating to *install_fn*.
 
     The returned closure threads the operator-supplied ``project`` keyword
-    through to *install_fn*, matching the hand-written project-scope shim.
+    through to *install_fn*, matching the hand-written project-scope shim;
+    the install spells it as the install records do.
     """
 
     def update(
@@ -211,7 +212,9 @@ def make_verify_project(harness_name: str) -> _ProjectScopeVerify:
         del output_path  # the manifest walk resolves targets from the project root
         if project is None:
             return False
-        return install_driver.verify_install(harness_name, project_root=project)
+        return install_driver.verify_install(
+            harness_name, project_root=recorded_root(harness_name, project)
+        )
 
     verify.__doc__ = _VERIFY_DOC_PROJECT
     return verify
@@ -493,6 +496,11 @@ def make_project_scope_install(
         del output_path  # resolved per-entry from manifest + project root
         if project is None:
             raise ValueError(error_message)
+        # A Python caller passes the folder as typed (a link, ``~``); the CLI
+        # passes it resolved. Every project-scope entry point spells it as
+        # the install records do, so an install made one way is found,
+        # updated and removed the other way.
+        project = recorded_root(harness_name, project)
         with _rendering_tokens(content_tokens):
             if dry_run:
                 return install_driver.run_install(
@@ -521,6 +529,8 @@ def make_project_scope_plan(harness_name: str) -> _ProjectScopePlan:
 
     def plan(output_path: Path, *, project: Path | None = None) -> list[dict[str, str]]:
         del output_path  # resolved per-entry from manifest + project root
+        if project is not None:
+            project = recorded_root(harness_name, project)
         return install_driver.build_plan(harness_name, project_root=project)
 
     plan.__doc__ = _PLAN_DOC_PROJECT
@@ -552,7 +562,10 @@ def make_project_scope_uninstall(
     def uninstall(
         output_path: Path, *, project: Path | None = None
     ) -> MaterializationRun:
-        project_root = project if project is not None else output_path.parents[_depth]
+        project_root = recorded_root(
+            harness_name,
+            project if project is not None else output_path.parents[_depth],
+        )
         return MaterializationRun(
             harness=harness_name,
             dry_run=False,
@@ -907,8 +920,9 @@ def make_project_scope_adapter(
             """Return True if this project root carries an Apothem install."""
             if project is None:
                 return False
+            key = package_key_for_public_id(_name)
             return install_driver.detect_install(
-                package_key_for_public_id(_name), project_root=project
+                key, project_root=recorded_root(key, project)
             )
 
         def verify(self, *, project: Path | None = None) -> bool:

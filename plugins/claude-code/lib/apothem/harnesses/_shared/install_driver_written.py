@@ -303,6 +303,20 @@ def kept_file_warnings(
     return warnings
 
 
+def links_named(results: Iterable[MaterializationResult]) -> set[str]:
+    """Return the links that *results* name in their messages.
+
+    An escape refusal (``target escapes the allowed materialization root``)
+    records its link in ``detail["symlink"]`` without naming it in the
+    message; that link still gets its own warning that it was left in place.
+    """
+    return {
+        link
+        for result in results
+        if (link := result.detail.get("symlink")) and link in result.message
+    }
+
+
 def links_on_the_way(
     paths: Iterable[str],
     floor: Path,
@@ -313,11 +327,9 @@ def links_on_the_way(
 
     An uninstall leaves a link and what it points to in place; when nothing
     of Apothem's is left behind it, nothing else would name it. A link a
-    result in *known* already names is skipped.
+    result in *known* already names is skipped (see :func:`links_named`).
     """
-    seen = {result.path for result in known} | {
-        result.detail["symlink"] for result in known if "symlink" in result.detail
-    }
+    seen = {result.path for result in known} | links_named(known)
     notes = []
     for text in paths:
         for ancestor in Path(text).parents:

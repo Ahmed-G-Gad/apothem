@@ -10,7 +10,6 @@ import os
 import shutil
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
@@ -99,6 +98,8 @@ def _reserve_unique_backup(base: Path, *, is_dir: bool) -> Path:
 
 def _sibling_backup_path(target: Path) -> Path:
     """Return a timestamped sibling backup path for a file target."""
+    from apothem.harnesses._shared import install_driver
+
     timestamp = install_driver._timestamp_slug()
     return _unique_path(target.parent / f"{target.name}.{timestamp}.bak")
 
@@ -246,6 +247,8 @@ def backup_existing(
     two), so the backup tree mirrors the boundary-relative layout that
     :func:`restore_backup` reconstructs against.
     """
+    from apothem.harnesses._shared import install_driver
+
     if not target.exists():
         return None
     rel = _backup_relative_path(target, _write_boundary(allowed_root, install_root))
@@ -285,6 +288,8 @@ def write_bytes_safely(
     allowed_root: Path | None = None,
 ) -> MaterializationResult:
     """Write bytes with no-op detection, backup-before-replace, and atomic swap."""
+    from apothem.harnesses._shared import install_driver
+
     target_error = _validate_target_path(
         target,
         allowed_root=_write_boundary(allowed_root, install_root),
@@ -544,6 +549,8 @@ def restore_backup(
     Raises:
         ValueError: When neither *harness_root* nor *project_root* is supplied.
     """
+    from apothem.harnesses._shared import install_driver
+
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
     backup_set = install_driver.BACKUP_ROOT / timestamp / harness_name

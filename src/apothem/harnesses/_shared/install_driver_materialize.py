@@ -8,7 +8,6 @@ import contextlib
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
@@ -307,6 +306,8 @@ def run_install(
     a native config. If the pass fails, they are undone with its own writes
     and listed in the same rollback record.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
     root = _root_for(harness_root, project_root)

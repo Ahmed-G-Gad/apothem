@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -114,6 +113,8 @@ RETIRED_SWEEPS: Final[dict[str, tuple[str, ...]]] = {
 
 def _holds_retired_sweep(stamp: str, harness_name: str) -> bool:
     """Return True when the backup set *stamp* holds a path in RETIRED_SWEEPS."""
+    from apothem.harnesses._shared import install_driver
+
     base = install_driver.BACKUP_ROOT / stamp / harness_name
     if not base.is_dir():
         return False
@@ -160,6 +161,8 @@ def list_backup_timestamps(harness_name: str | None = None) -> list[str]:
     timestamps carrying a backup set for that harness are returned. Results are
     sorted oldest-to-newest (the timestamp slug sorts lexically by time).
     """
+    from apothem.harnesses._shared import install_driver
+
     if not install_driver.BACKUP_ROOT.is_dir():
         return []
     stamps: list[str] = []
@@ -173,6 +176,8 @@ def list_backup_timestamps(harness_name: str | None = None) -> list[str]:
 
 def _referenced_timestamps(records: list[LedgerRecord]) -> set[str]:
     """Return the backup-set timestamps the *records* still reference."""
+    from apothem.harnesses._shared import install_driver
+
     backup_root = install_driver.BACKUP_ROOT.resolve()
     stamps: set[str] = set()
     for record in records:
@@ -218,6 +223,8 @@ def prune_history(
             changed.
         OSError: When the backup root cannot be listed.
     """
+    from apothem.harnesses._shared import install_driver
+
     before = install_ledger.read_records(harness_name)
     kept_records = install_ledger.compact_records(
         harness_name, keep_installs=keep, dry_run=dry_run

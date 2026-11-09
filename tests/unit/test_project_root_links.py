@@ -29,7 +29,6 @@ from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared import install_driver_pathsafety as pathsafety
 from apothem.harnesses._shared.install_driver import MaterializationResult
-from apothem.harnesses._shared.install_driver_backup import _replace_path
 from apothem.harnesses._shared.install_driver_sweep import stale_blocker
 from apothem.harnesses._shared.install_driver_written import remove_written
 
@@ -341,9 +340,9 @@ def test_a_boundary_derived_from_the_floor_does_not_follow_the_named_link(
 def test_the_sweep_and_uninstall_checks_follow_the_named_project_folder(
     home: Path, tmp_path: Path
 ) -> None:
-    # The stale sweep, the removal of written files and the removal of a
-    # folder each ask whether a link caused a refusal. With the folder the
-    # operator named as a link, none of them reports that link.
+    # The stale sweep and the removal of written files each ask whether a
+    # link caused a refusal. With the folder the operator named as a link,
+    # neither of them reports that link.
     _link(home / "proj", tmp_path / "outside" / "proj")
     project = home / "proj"
     floor = pathsafety._allowed_write_root(None, project)
@@ -360,16 +359,11 @@ def test_the_sweep_and_uninstall_checks_follow_the_named_project_folder(
         harness_name="t",
         allowed_root=floor,
     )
-    replaced = _replace_path(
-        rules, install_root=project, harness_name="t", allowed_root=floor, removing=True
-    )
 
     assert kept is not None
     assert kept.outcome == "unchanged", kept.message
     assert written is not None
     assert "symlink" not in written.detail, written.message
-    assert replaced is None or replaced.outcome not in {"error", "warning"}
-    assert not rules.exists()
 
 
 def test_the_sweep_and_uninstall_checks_name_a_link_inside_the_project(
