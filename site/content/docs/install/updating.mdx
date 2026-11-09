@@ -60,11 +60,19 @@ origin's copy of that branch. The checkout never discards local changes: a clone
 changes to tracked files stops the update, and you commit or stash them and
 re-run. Before it fetches, the update also stops when files are marked
 assume-unchanged or skip-worktree (git would not see their changes), when the
-clone's work tree is not `APOTHEM_HOME`, or when the clone's own git config
-sets `gpg.program`, `gpg.openpgp.program`, `core.fsmonitor`,
-`core.hooksPath`, `include.*` or `includeIf.*`; the message names what to
-remove. The clone's git hooks never run during the update, and a clone of a
-project other than Apothem is not updated at all. A signed tag
+clone's work tree is not `APOTHEM_HOME`, when the clone holds a submodule,
+when `.git/info/attributes` sets a `filter=`, or when the clone's
+`.git/config` or `.git/config.worktree` holds a setting other than the ones
+`git clone` and `git init` write there, branch settings, `user.name`,
+`user.email`, `maintenance.auto`, `maintenance.strategy`, `pull.rebase` and
+`pull.ff`. The message names the setting and the file it is in, and
+[Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+lists the accepted settings. The clone's git hooks never run during the
+update, and a clone of a project other than Apothem is not updated at all.
+Each run holds a lock, `<APOTHEM_HOME>.lock`, for its whole length, so a
+second install, update or uninstall on the same `APOTHEM_HOME` stops; see
+[Troubleshooting](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)
+when a lock is left behind. A signed tag
 whose maintainer public key is missing from the local keyring aborts with
 key-import guidance pointing at the fingerprint published in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).

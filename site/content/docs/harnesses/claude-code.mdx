@@ -24,8 +24,10 @@ Claude Code skill surface. The statusline renderer is copied to
 the `statusLine` setting, which the adapter leaves unset. To turn it on, add a
 `statusLine` entry of `"type": "command"` that runs
 `~/.claude/statuslines/render.py` to `settings.json`. The snippet's commands
-start Python with `-E -s`, as the hooks do. Its `commandWindows` value runs on
-Windows and names the interpreter unquoted. When
+start Python with `-E -s`, as the hooks do. No install or update changes
+`statusLine`, so if you copied an earlier snippet's command, which had no
+`-E -s`, add `-E -s` after the interpreter yourself. Its `commandWindows`
+value runs on Windows and names the interpreter unquoted. When
 the interpreter path contains a space, the install writes its Windows 8.3 short
 form in that value when the volume has one. The hook entries in `settings.json`
 keep the full path.
@@ -310,10 +312,14 @@ The installed `apothem` package and source repository are unaffected.
 python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-Run it from your project folder (on Windows, `python` in place of
-`python3`). The path is where the installer puts the engine, and `-E -s`
-keeps your `PYTHONPATH` and user site-packages out of the gate;
-[Conformity gate](/docs/conformity-gate) explains both and the other installs.
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 Run against the repository, the gate requires the `## Bindings` section on every
 rule, command, helper, and skill. Run against an installed `~/.claude/` tree, it

@@ -25,6 +25,7 @@ leaves APOTHEM_HOME alone, and is not stopped.
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -39,6 +40,7 @@ from tests.integration.test_installer_cwd_isolation import _run as _run_local
 from tests.integration.test_installer_release_mode import (
     ARCHIVE_ROOT,
     SOURCE_MANIFEST,
+    _clone_into,
     _cosign_args,
     _release,
     _run,
@@ -84,8 +86,8 @@ def _report(home: Path, *lines: str) -> str:
             *(f"    {line}" for line in lines),
             f"    Nothing was changed. If {home} is missing, move the earlier "
             "install back to it first. Then move every entry listed above as "
-            f"moved from {home} back into it, remove the folders listed above, "
-            "and re-run.",
+            "moved into a new source back into the home it came from, remove "
+            "the folders listed above, and re-run.",
         ]
     )
 
@@ -199,14 +201,14 @@ def test_folders_with_the_earlier_names_are_reported_with_a_note(
             f"{mine}: empty",
             _older(
                 f"{clone}: the new source that was being installed, in "
-                f"{clone}/apothem, with these entries moved into it from {home}: "
-                "plans, state",
+                f"{clone}/apothem, with these entries moved into it from the "
+                "Apothem home it was made for: plans, state",
                 tmp_path,
             ),
             _older(
                 f"{extract}: the new source that was being installed, in "
                 f"{extract}/{ARCHIVE_ROOT}, with these entries moved into it "
-                f"from {home}: .env, backups, my-notes",
+                "from the Apothem home it was made for: .env, backups, my-notes",
                 tmp_path,
             ),
         )
@@ -429,3 +431,267 @@ def test_a_local_source_is_not_stopped_by_leftovers(tmp_path: Path) -> None:
     assert result.returncode == 0, combined
     assert "stopped part-way" not in combined, combined
     assert _tree(old) == before, combined
+
+
+def test_a_clone_tree_a_killed_run_was_keeping_is_named_as_that(
+    tmp_path: Path,
+) -> None:
+    """--yes replacing a clone keeps the clone's own tree. A forced kill
+    right after the new install moved in leaves that tree, with its .git,
+    in .apothem-old.<leaf>.*/home while APOTHEM_HOME holds the new install.
+    The next run names it as the tree that run was keeping, to move
+    somewhere of the user's own, not as an earlier install to put back."""
+    home = tmp_path / LEAF
+    base = _release(tmp_path)
+    _clone_into(tmp_path, home)
+    mv_dir = _stub_mv(tmp_path, [("*/.apothem-extract.*/*", str(home), "KILL")])
+
+    killed = _run(
+        tmp_path,
+        base,
+        cosign_dir=_stub_cosign(tmp_path),
+        yes=True,
+        path_first=[mv_dir],
+    )
+
+    assert killed.returncode != 0, killed.stdout + killed.stderr
+    assert (home / "src" / "apothem" / "__init__.py").is_file()
+    (extract,) = tmp_path.glob(f".apothem-extract.{LEAF}.*")
+    (old,) = tmp_path.glob(f".apothem-old.{LEAF}.*")
+    assert (old / "home" / ".git").is_dir()
+    # The killed run could not let its lock go; the user removes it.
+    shutil.rmtree(tmp_path / f"{LEAF}.lock")
+    shutil.rmtree(mv_dir)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert (
+        _report(
+            home,
+            f"{extract}: files from that run ({CARRY_LIST})",
+            f"{old}: the earlier clone's tree, which that run was keeping, in "
+            f"{old}/home: move it to a folder of your own if you still need it",
+        )
+        in result.stderr
+    ), combined
+    assert (old / "home" / ".git").is_dir(), combined
+
+
+# --- a folder that appears where a move is going ---------------------------
+
+
+def _racing_stub_mv(
+    tmp_path: Path, source: str, target: str, *, as_file: bool = False
+) -> Path:
+    """A stub mv that, when its two arguments match the sh patterns SOURCE
+    and TARGET and the target is not there yet, first makes the target a
+    folder holding someone else's file (or, with AS_FILE, a file), as a
+    process racing the installer could; mv then puts the source inside the
+    folder, or fails on the file. Every other call goes to the real mv.
+    Return the stub's folder."""
+    real = shutil.which("mv")
+    assert real is not None
+    stub_dir = tmp_path / "racing-mv"
+    stub_dir.mkdir()
+    stub = stub_dir / "mv"
+    q_real = shlex.quote(real)
+    plant = (
+        'echo theirs > "$2"'
+        if as_file
+        else 'mkdir "$2" && echo theirs > "$2/theirs.txt"'
+    )
+    stub.write_text(
+        "#!/bin/sh\n"
+        f'case "$1" in {source}) ;; *) exec {q_real} "$@" ;; esac\n'
+        f'case "$2" in {target}) ;; *) exec {q_real} "$@" ;; esac\n'
+        f'if [ ! -e "$2" ]; then {plant}; fi\n'
+        f'exec {q_real} "$@"\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    stub.chmod(0o755)
+    return stub_dir
+
+
+def test_a_folder_that_appears_in_the_aside_folder_is_not_moved_into(
+    tmp_path: Path,
+) -> None:
+    """mv puts a folder inside the target when a folder of that name appeared
+    after the run looked. The earlier contents of APOTHEM_HOME were about to
+    move into <aside>/<leaf> when someone made that folder: the run sees the
+    tree landed inside it, moves it back, and stops with nothing changed."""
+    home = tmp_path / LEAF
+    home.mkdir()
+    (home / "keep.txt").write_text("mine\n", encoding="utf-8")
+    before = _snapshot(home)
+    base = _release(tmp_path)
+    mv_dir = _racing_stub_mv(
+        tmp_path, shlex.quote(str(home)), f"*/{LEAF}.before-apothem-*/{LEAF}"
+    )
+
+    result = _run(
+        tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True, path_first=[mv_dir]
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert f"Could not move the existing {home} aside; nothing was changed" in (
+        result.stderr
+    ), combined
+    assert _snapshot(home) == before, combined
+    (aside,) = tmp_path.glob(f"{LEAF}.before-apothem-*")
+    assert [p.name for p in (aside / LEAF).iterdir()] == ["theirs.txt"], combined
+    assert not (tmp_path / f"{LEAF}.lock").exists(), combined
+
+
+def test_a_folder_that_appears_at_apothem_home_is_not_moved_into(
+    tmp_path: Path,
+) -> None:
+    """The earlier install has moved aside and the new tree is about to move
+    to APOTHEM_HOME when someone makes a folder there. The new tree does not
+    stay inside that folder: it is moved back, the run stops, and it says
+    where the earlier install and its moved data are, leaving both in
+    place."""
+    home = tmp_path / LEAF
+    _seed_earlier_install(home)
+    base = _release(tmp_path)
+    mv_dir = _racing_stub_mv(tmp_path, "*/.apothem-extract.*/*", shlex.quote(str(home)))
+
+    result = _run(
+        tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True, path_first=[mv_dir]
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    (extract,) = tmp_path.glob(f".apothem-extract.{LEAF}.*")
+    (old,) = tmp_path.glob(f".apothem-old.{LEAF}.*")
+    new = extract / ARCHIVE_ROOT
+    assert (
+        f"Could not move the new source to {home}, and putting the earlier "
+        f"install back also failed: it is at {old}/home (with any moved data "
+        f"under {new}). Move it back to {home} by hand."
+    ) in result.stderr, combined
+    assert [p.name for p in home.iterdir()] == ["theirs.txt"], combined
+    assert (old / "home" / "pyproject.toml").is_file(), combined
+    assert (new / "state" / "ledger.json").is_file(), combined
+    assert (new / "src" / "apothem" / "__init__.py").is_file(), combined
+
+
+def test_a_folder_that_appears_where_the_clone_tree_goes_is_not_moved_into(
+    tmp_path: Path,
+) -> None:
+    """After --yes replaced a clone, its own tree moves to <aside>/<leaf>.
+    When someone makes that folder first, the tree is moved back, kept where
+    it was, and the run names that place."""
+    home = tmp_path / LEAF
+    base = _release(tmp_path)
+    _clone_into(tmp_path, home)
+    mv_dir = _racing_stub_mv(
+        tmp_path, "*/.apothem-old.*/home", f"*/{LEAF}.before-apothem-*/{LEAF}"
+    )
+
+    result = _run(
+        tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True, path_first=[mv_dir]
+    )
+
+    # The fixture release holds no profile example, so the run stops after
+    # the swap, at the profile step.
+    combined = result.stdout + result.stderr
+    assert f"Source ready at {home} (release archive v9.9.9)" in combined, combined
+    (old,) = tmp_path.glob(f".apothem-old.{LEAF}.*")
+    assert (
+        f"The earlier clone's tree is kept at {old}/home; delete it once you no "
+        "longer need it."
+    ) in combined, combined
+    assert (old / "home" / ".git").is_dir(), combined
+    (aside,) = tmp_path.glob(f"{LEAF}.before-apothem-*")
+    assert [p.name for p in (aside / LEAF).iterdir()] == ["theirs.txt"], combined
+    assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
+
+
+def test_a_file_that_appears_in_the_aside_folder_changes_nothing(
+    tmp_path: Path,
+) -> None:
+    """When a file, not a folder, appears at <aside>/<leaf>, mv fails and the
+    earlier contents of APOTHEM_HOME never move. The run says nothing was
+    changed, not that they are in the aside folder, and keeps no staging
+    folder that would stop the next run."""
+    home = tmp_path / LEAF
+    home.mkdir()
+    (home / "keep.txt").write_text("mine\n", encoding="utf-8")
+    before = _snapshot(home)
+    base = _release(tmp_path)
+    mv_dir = _racing_stub_mv(
+        tmp_path,
+        shlex.quote(str(home)),
+        f"*/{LEAF}.before-apothem-*/{LEAF}",
+        as_file=True,
+    )
+
+    result = _run(
+        tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True, path_first=[mv_dir]
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert f"Could not move the existing {home} aside; nothing was changed" in (
+        result.stderr
+    ), combined
+    assert "also failed" not in combined, combined
+    assert _snapshot(home) == before, combined
+    assert list(tmp_path.glob(".apothem-*")) == [], combined
+    assert not (tmp_path / f"{LEAF}.lock").exists(), combined
+
+
+@pytest.mark.parametrize("as_file", [False, True], ids=["folder", "file"])
+def test_something_that_appears_where_the_earlier_install_goes_is_named(
+    tmp_path: Path, as_file: bool
+) -> None:
+    """The earlier install's engine data has moved into the new tree, and the
+    install itself is about to move to .apothem-old.<leaf>.*/home, when a
+    folder or a file appears there. The install stays (or is moved back) at
+    APOTHEM_HOME, its data moves back, and the run says so and names what
+    appeared, which it leaves alone. The next run names that folder as one
+    that holds no Apothem install, not as the earlier install."""
+    home = tmp_path / LEAF
+    _seed_earlier_install(home)
+    before = _snapshot(home)
+    base = _release(tmp_path)
+    mv_dir = _racing_stub_mv(
+        tmp_path, shlex.quote(str(home)), "*/.apothem-old.*/home", as_file=as_file
+    )
+
+    result = _run(
+        tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True, path_first=[mv_dir]
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    (old,) = tmp_path.glob(f".apothem-old.{LEAF}.*")
+    assert (
+        f"Something this run did not make appeared at {old}/home and was left "
+        f"there. Check what it holds, then remove {old}."
+    ) in combined, combined
+    assert (
+        f"Could not move the existing {home} aside; the earlier install at "
+        f"{home} is back in place and unchanged"
+    ) in result.stderr, combined
+    assert _snapshot(home) == before, combined
+    assert list(tmp_path.glob(".apothem-extract.*")) == [], combined
+    assert not (tmp_path / f"{LEAF}.lock").exists(), combined
+    shutil.rmtree(mv_dir)
+
+    again = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True)
+
+    combined = again.stdout + again.stderr
+    assert again.returncode != 0, combined
+    if as_file:
+        line = f"{old}: files from that run (home)"
+    else:
+        line = (
+            f"{old}: a folder that holds no Apothem install, in {old}/home: check "
+            "what it holds before you remove it"
+        )
+    assert _report(home, line) in again.stderr, combined

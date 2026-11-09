@@ -382,8 +382,9 @@ function Invoke-GitOutsideRepository {
 # so there each redirect is followed by hand (at most 10) and the first
 # one to an address that is not https:// stops the download. A file that
 # came from anywhere else is removed and the download fails, with the
-# reason in the error. A base of another scheme (an http:// mirror on the
-# local network) is used as given, as in install.sh.
+# reason in the error; PowerShell 7's own refusal is given the same words.
+# A base of another scheme (an http:// mirror on the local network) is used
+# as given, as in install.sh.
 function Save-Download {
     param([string]$Uri, [string]$OutFile)
     $FromHttps = $Uri.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)
@@ -413,7 +414,17 @@ function Save-Download {
         }
         throw "$Uri was redirected more than 10 times"
     }
-    $Response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile -PassThru
+    try {
+        $Response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile -PassThru
+    } catch {
+        # PowerShell 7 refuses a redirect from https to http itself, with a
+        # message that does not say what happened, and no address.
+        if ([string]$_.FullyQualifiedErrorId -like 'InsecureRedirection*') {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            throw "$Uri was redirected to a plain http:// address; a download from an https:// address follows only https:// redirects"
+        }
+        throw
+    }
     if (-not $FromHttps) { return }
     $Base = $Response.BaseResponse
     $Final = $null
@@ -1075,11 +1086,10 @@ function Invoke-SwapIn {
         if ($EngineDataNames -cnotcontains $Entry.Name) { $null = $SourceNames.Add($Entry.Name) }
     }
     $SwKeep = @(@(Get-ChildItem -LiteralPath $ApothemHome -Force) | Where-Object { -not $SourceNames.Contains($_.Name) } | ForEach-Object { $_.Name })
-    # The names about to move, sorted ordinally, go into the staging folder
-    # first ($CarryList), so a forced kill during the moves leaves a record
-    # of what came from APOTHEM_HOME.
-    $SwCarry = [string[]]@($SwKeep)
-    [Array]::Sort($SwCarry, [System.StringComparer]::Ordinal)
+    # The names about to move, sorted by their bytes, go into the staging
+    # folder first ($CarryList), so a forced kill during the moves leaves a
+    # record of what came from APOTHEM_HOME.
+    $SwCarry = Get-SortedName $SwKeep
     try {
         $SwCarryPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Join-Path $SwStage $CarryList))
         [System.IO.File]::WriteAllText($SwCarryPath, (@($SwCarry | ForEach-Object { "$_`n" }) -join ''), (New-Object System.Text.UTF8Encoding $false))
@@ -1151,6 +1161,48 @@ function Invoke-SwapIn {
     catch { Write-Warn "Could not remove the earlier source at $SwOld; delete it by hand" }
 }
 
+# Get-LockHome - the path the install lock is named after: APOTHEM_HOME, or,
+# when APOTHEM_HOME is a symbolic link or a junction to a folder, that
+# folder's own path with every link on the way followed, as install.sh's
+# take_lock gets it with cd -P. A run through the link, a run through the
+# folder's own path, and a Git Bash run on either then take the same lock.
+# The messages still name APOTHEM_HOME as given.
+function Get-LockHome {
+    $LhKinds = @('SymbolicLink', 'Junction')
+    $LhItem = Get-Item -LiteralPath $ApothemHome -Force -ErrorAction SilentlyContinue
+    if (-not $LhItem -or $LhKinds -notcontains [string]$LhItem.LinkType) { return $ApothemHome }
+    $LhPath = $ApothemHome
+    # Each turn follows the first link on the path, from its root; 64 turns
+    # stop a loop of links.
+    for ($LhTurn = 0; $LhTurn -lt 64; $LhTurn++) {
+        $LhRoot = [System.IO.Path]::GetPathRoot($LhPath)
+        $LhParts = @($LhPath.Substring($LhRoot.Length).Split([char[]]@([char]'\', [char]'/'), [System.StringSplitOptions]::RemoveEmptyEntries))
+        $LhAt = $LhRoot
+        $LhFollowed = $false
+        for ($LhIndex = 0; $LhIndex -lt $LhParts.Count; $LhIndex++) {
+            $LhNext = [System.IO.Path]::Combine($LhAt, $LhParts[$LhIndex])
+            $LhStep = Get-Item -LiteralPath $LhNext -Force -ErrorAction SilentlyContinue
+            if (-not $LhStep) { return $ApothemHome }
+            if ($LhKinds -contains [string]$LhStep.LinkType) {
+                $LhTarget = [string]@($LhStep.Target)[0]
+                if (-not $LhTarget) { return $ApothemHome }
+                if ($LhTarget.StartsWith('\??\', [System.StringComparison]::Ordinal)) { $LhTarget = $LhTarget.Substring(4) }
+                # A relative target is read from the folder the link is in.
+                $LhJoin = [string[]](@($LhAt, $LhTarget) + @($LhParts | Select-Object -Skip ($LhIndex + 1)))
+                $LhPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($LhJoin))
+                $LhFollowed = $true
+                break
+            }
+            $LhAt = $LhNext
+        }
+        if (-not $LhFollowed) {
+            if (Test-Path -LiteralPath $LhPath -PathType Container) { return $LhPath.TrimEnd('\', '/') }
+            return $ApothemHome
+        }
+    }
+    return $ApothemHome
+}
+
 # Lock-ApothemHome - take the install lock: an install, update or uninstall
 # holds <APOTHEM_HOME>.lock for its whole run, so two runs never change
 # APOTHEM_HOME, or the folders beside it, at the same time (mirrors
@@ -1160,11 +1212,13 @@ function Invoke-SwapIn {
 # install.sh, update.sh and uninstall.sh use a folder of the same name that
 # holds the process ID of the run that made it. That ID cannot be checked
 # from here (under Git Bash it is not a Windows process ID), so such a
-# folder is reported, with how to remove it, and never taken over.
+# folder is reported, with how to remove it, and never taken over. When
+# APOTHEM_HOME is a link, the lock sits beside the folder it leads to (see
+# Get-LockHome).
 $script:HomeLock = $null
-$HomeLockPath = "$ApothemHome.lock"
+$HomeLockPath = "$(Get-LockHome).lock"
 function Lock-ApothemHome {
-    $LkParent = Split-Path -Parent $ApothemHome
+    $LkParent = Split-Path -Parent $HomeLockPath
     if (-not $LkParent) { return }
     if (-not (Test-Path -LiteralPath $LkParent -PathType Container)) {
         # Nothing is at APOTHEM_HOME or beside it yet. A dry run writes
@@ -1182,6 +1236,13 @@ function Lock-ApothemHome {
         $LkPid = ''
         if ($LkItem.PSIsContainer -and -not $LkItem.LinkType) {
             try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+            if ($LkPid -notmatch '^[0-9]+$') {
+                # A POSIX run that has just made the lock folder writes
+                # its process ID a moment later; look again before
+                # calling the lock stale.
+                Start-Sleep -Seconds 1
+                try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+            }
         }
         if ($LkPid -notmatch '^[0-9]+$') {
             Write-Fail "$HomeLockPath exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $HomeLockPath, then re-run."
@@ -1197,7 +1258,13 @@ function Lock-ApothemHome {
         if ($LkError -is [System.IO.IOException] -and $LkError -isnot [System.IO.DirectoryNotFoundException] -and $LkError -isnot [System.IO.FileNotFoundException] -and $LkError -isnot [System.IO.PathTooLongException]) {
             Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
         }
-        Write-Fail "Could not create the lock $HomeLockPath beside $ApothemHome. Check that you can write to $LkParent, then re-run."
+        # A folder or link made there since the look above (a Git Bash run
+        # taking its lock) makes the open fail as a folder does.
+        $LkItem = Get-Item -LiteralPath $HomeLockPath -Force -ErrorAction SilentlyContinue
+        if ($LkItem -and ($LkItem.LinkType -or $LkItem.PSIsContainer)) {
+            Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Could not create the lock $HomeLockPath. Check that you can write to $LkParent, then re-run."
     }
 }
 
@@ -1222,8 +1289,43 @@ function Test-RealFolderPath {
     return (Test-RealFolder (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue))
 }
 
+# Get-SortedName NAMES - NAMES sorted by their UTF-8 bytes, the order
+# install.sh gets from LC_ALL=C sort. An ordinal sort of .NET strings
+# compares UTF-16 code units instead, which puts a character above U+FFFF
+# (an emoji) before one from U+E000 to U+FFFF.
+function Get-SortedName {
+    param([string[]]$Names)
+    $SnNames = [string[]]@($Names | Where-Object { $null -ne $_ })
+    $SnKeys = [string[]]@($SnNames | ForEach-Object { [System.BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes($_)) })
+    [Array]::Sort($SnKeys, $SnNames, [System.StringComparer]::Ordinal)
+    return , $SnNames
+}
+
+# Test-SameLeaf NAME LEAF - $true when NAME, the home part of a folder's
+# name, names APOTHEM_HOME's own folder LEAF: the same text, or, where file
+# names ignore case (Windows and macOS: everywhere but Linux), the same
+# text but for ASCII case (mirrors install.sh's same_leaf).
+function Test-SameLeaf {
+    param([string]$Name, [string]$Leaf)
+    if ([string]::Equals($Name, $Leaf, [System.StringComparison]::Ordinal)) { return $true }
+    if ((Get-Variable -Name IsLinux -ValueOnly -ErrorAction SilentlyContinue) -eq $true) { return $false }
+    return [string]::Equals((ConvertTo-AsciiLower $Name), (ConvertTo-AsciiLower $Leaf), [System.StringComparison]::Ordinal)
+}
+
+# ConvertTo-AsciiLower TEXT - TEXT with A to Z made a to z, and nothing else
+# changed.
+function ConvertTo-AsciiLower {
+    param([string]$Text)
+    $AlChars = $Text.ToCharArray()
+    for ($AlAt = 0; $AlAt -lt $AlChars.Length; $AlAt++) {
+        $AlCode = [int]$AlChars[$AlAt]
+        if ($AlCode -ge 65 -and $AlCode -le 90) { $AlChars[$AlAt] = [char]($AlCode + 32) }
+    }
+    return (-join $AlChars)
+}
+
 # Get-LeftoverEntry DIR - the names in the leftover folder DIR, sorted
-# ordinally, or $null when DIR cannot be listed. An empty folder named
+# by their bytes, or $null when DIR cannot be listed. An empty folder named
 # aside.<32 hex digits> is left out: it is New-AsideFolder's temporary
 # folder, left by a kill between its creation and its rename.
 function Get-LeftoverEntry {
@@ -1238,9 +1340,7 @@ function Get-LeftoverEntry {
         if ($LeItem.Name -cmatch '^aside\.[0-9a-f]{32}\z' -and (Test-RealFolder $LeItem) -and @(Get-ChildItem -LiteralPath $LeItem.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0) { continue }
         $LeNames.Add($LeItem.Name)
     }
-    $LeArray = $LeNames.ToArray()
-    [Array]::Sort($LeArray, [System.StringComparer]::Ordinal)
-    return , $LeArray
+    return , (Get-SortedName $LeNames.ToArray())
 }
 
 # Get-CarriedEntry DIR TREE - the entries a swap moved from APOTHEM_HOME
@@ -1249,7 +1349,8 @@ function Get-LeftoverEntry {
 # TREE are named, in the list's order. With no list (a folder an earlier
 # installer made, or a kill before the list was written), an archive's tree
 # names what its .apothem-source-entries manifest does not list, and any
-# other tree names the engine's data folders it holds, sorted ordinally.
+# other tree names the engine's data folders it holds, sorted by their
+# bytes.
 function Get-CarriedEntry {
     param([string]$Dir, [string]$Tree)
     $CeListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
@@ -1264,14 +1365,19 @@ function Get-CarriedEntry {
     } else {
         $CeNames = [string[]]@($EngineDataNames | Where-Object { Test-Entry (Join-Path $Tree $_) })
     }
-    [Array]::Sort($CeNames, [System.StringComparer]::Ordinal)
-    return , $CeNames
+    return , (Get-SortedName $CeNames)
 }
 
 # Get-LeftoverLine DIR OLDNAME - one line saying what the leftover folder DIR
-# holds (see Assert-NoLeftover; mirrors install.sh). Names are sorted
-# ordinally and joined with ", ". OLDNAME marks a folder whose name does not
-# say which APOTHEM_HOME it was made for.
+# holds (see Assert-NoLeftover; mirrors install.sh's leftover_line). Names
+# are sorted by their bytes and joined with ", ". OLDNAME marks a folder
+# whose name does not say which APOTHEM_HOME it was made for, whose
+# entries came from that home, not necessarily from this one. A clone's
+# tree in DIR\home while APOTHEM_HOME is in place is one a clone swap was
+# keeping (APOTHEM_HOME being there is taken to mean that the new install
+# had moved in). A DIR\home that holds no Apothem install while
+# APOTHEM_HOME is in place is a folder that appeared there, which the run
+# left alone.
 function Get-LeftoverLine {
     param([string]$Dir, [bool]$OldName)
     $LlNames = Get-LeftoverEntry $Dir
@@ -1283,7 +1389,13 @@ function Get-LeftoverLine {
         $LlText = "${Dir}: files from that run ($($LlNames -join ', '))"
         if ((Split-Path -Leaf $Dir).StartsWith('.apothem-old.', [System.StringComparison]::Ordinal)) {
             if ($LlNames.Count -eq 1 -and $LlNames[0] -ceq 'home' -and (Test-RealFolderPath (Join-Path $Dir 'home'))) {
-                $LlText = "${Dir}: the earlier install that was being replaced, in $(Join-Path $Dir 'home')"
+                if ((Test-Entry (Join-Path (Join-Path $Dir 'home') '.git')) -and (Test-Entry $ApothemHome)) {
+                    $LlText = "${Dir}: the earlier clone's tree, which that run was keeping, in $(Join-Path $Dir 'home'): move it to a folder of your own if you still need it"
+                } elseif ((Test-Entry $ApothemHome) -and -not (Test-Entry (Join-Path (Join-Path (Join-Path $Dir 'home') 'src') 'apothem')) -and -not (Test-Entry (Join-Path (Join-Path $Dir 'home') $SourceManifest)) -and @(Get-ChildItem -LiteralPath (Join-Path $Dir 'home') -Force -ErrorAction SilentlyContinue).Count -gt 0) {
+                    $LlText = "${Dir}: a folder that holds no Apothem install, in $(Join-Path $Dir 'home'): check what it holds before you remove it"
+                } else {
+                    $LlText = "${Dir}: the earlier install that was being replaced, in $(Join-Path $Dir 'home')"
+                }
             }
         } else {
             $LlListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
@@ -1294,7 +1406,8 @@ function Get-LeftoverLine {
                 $LlText = "${Dir}: the new source that was being installed, in $LlTree"
                 $LlCarried = Get-CarriedEntry $Dir $LlTree
                 if ($LlCarried.Count -gt 0) {
-                    $LlText += ", with these entries moved into it from ${ApothemHome}: $($LlCarried -join ', ')"
+                    $LlFrom = if ($OldName) { 'the Apothem home it was made for' } else { $ApothemHome }
+                    $LlText += ", with these entries moved into it from ${LlFrom}: $($LlCarried -join ', ')"
                 }
             }
         }
@@ -1320,14 +1433,16 @@ function Get-LeftoverLine {
 # Apothem home in that folder. They may hold the earlier install or its
 # data, so nothing is moved or removed here: the folder lines go to the
 # error stream, one per line, this home's first, then the older ones, each
-# group sorted ordinally, and the run stops with what to do. When
-# APOTHEM_HOME itself is missing, the folders it may have been moved into
-# (<APOTHEM_HOME>.before-apothem-<time>) are named too.
+# group sorted by the names' bytes, and the run stops with what to do.
+# When APOTHEM_HOME itself is missing, the folders it may have been moved
+# into (<APOTHEM_HOME>.before-apothem-<time>) are named too. Where file
+# names ignore case, a folder made for the same home spelled with other
+# capitals counts as this home's (see Test-SameLeaf).
 function Assert-NoLeftover {
     $LoParent = Split-Path -Parent $ApothemHome
     if (-not $LoParent -or -not (Test-Path -LiteralPath $LoParent -PathType Container)) { return }
     $LoLeaf = Split-Path -Leaf $ApothemHome
-    $LoAside = '^' + [regex]::Escape($LoLeaf) + '\.before-apothem-[0-9]{14}(-[0-9]+)?\z'
+    $LoAside = '^(.*)\.before-apothem-[0-9]{14}(-[0-9]+)?\z'
     $LoMine = New-Object 'System.Collections.Generic.List[string]'
     $LoOld = New-Object 'System.Collections.Generic.List[string]'
     $LoAsides = New-Object 'System.Collections.Generic.List[string]'
@@ -1342,22 +1457,22 @@ function Assert-NoLeftover {
             $LoDot = $LoRest.LastIndexOf('.')
             if ($LoDot -lt 0) {
                 $LoOld.Add($LoName)
-            } elseif ($LoDot -lt $LoRest.Length - 1 -and $LoRest.Substring(0, $LoDot) -ceq $LoLeaf) {
+            } elseif ($LoDot -lt $LoRest.Length - 1 -and (Test-SameLeaf $LoRest.Substring(0, $LoDot) $LoLeaf)) {
                 $LoMine.Add($LoName)
             }
         }
-        if ($LoName -cmatch $LoAside) { $LoAsides.Add($LoName) }
+        if ($LoName -cmatch $LoAside) {
+            if (Test-SameLeaf $Matches[1] $LoLeaf) { $LoAsides.Add($LoName) }
+        }
     }
     if ($LoMine.Count + $LoOld.Count -eq 0) { return }
     $LoLines = New-Object 'System.Collections.Generic.List[string]'
     foreach ($LoGroup in @(@($LoMine.ToArray(), $false), @($LoOld.ToArray(), $true))) {
-        $LoNames = [string[]]$LoGroup[0]
-        [Array]::Sort($LoNames, [System.StringComparer]::Ordinal)
+        $LoNames = Get-SortedName ([string[]]$LoGroup[0])
         foreach ($LoName in $LoNames) { $LoLines.Add((Get-LeftoverLine (Join-Path $LoParent $LoName) $LoGroup[1])) }
     }
     if (-not (Test-Entry $ApothemHome)) {
-        $LoAsideNames = $LoAsides.ToArray()
-        [Array]::Sort($LoAsideNames, [System.StringComparer]::Ordinal)
+        $LoAsideNames = Get-SortedName $LoAsides.ToArray()
         foreach ($LoName in $LoAsideNames) {
             $LoAt = Join-Path $LoParent $LoName
             $LoIn = Join-Path $LoAt $LoLeaf
@@ -1367,7 +1482,7 @@ function Assert-NoLeftover {
     }
     [Console]::Error.WriteLine("  x An earlier run was stopped part-way and left these folders beside ${ApothemHome}:")
     foreach ($LoLine in $LoLines) { [Console]::Error.WriteLine("    $LoLine") }
-    Write-Fail "Nothing was changed. If $ApothemHome is missing, move the earlier install back to it first. Then move every entry listed above as moved from $ApothemHome back into it, remove the folders listed above, and re-run."
+    Write-Fail "Nothing was changed. If $ApothemHome is missing, move the earlier install back to it first. Then move every entry listed above as moved into a new source back into the home it came from, remove the folders listed above, and re-run."
 }
 
 Write-Bold "Apothem installer"
@@ -1772,13 +1887,20 @@ function Assert-CloneConfig {
     $CfFile = Get-ClonePath $Dir 'info/attributes'
     if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
     if (Test-Path -LiteralPath $CfFile -PathType Leaf) {
+        # Read as git reads it, byte by byte: NUL bytes dropped (as
+        # install.sh does), lines ended by LF only, and a comment only where
+        # # follows nothing but spaces, tabs or CR. Read as text, a
+        # UTF-16 byte-order mark would turn every line into other characters
+        # while git still applies them.
         try {
-            $CfLines = @([System.IO.File]::ReadAllLines($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CfFile)))
+            $CfBytes = [System.IO.File]::ReadAllBytes($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CfFile))
+            $CfText = [System.Text.Encoding]::GetEncoding(28591).GetString($CfBytes).Replace([string][char]0, '')
+            $CfLines = @($CfText.Split([char]10))
         } catch {
             $CfLines = @()
         }
         foreach ($CfLine in $CfLines) {
-            if ($CfLine -notmatch '^\s*#' -and $CfLine.Contains('filter=')) {
+            if ($CfLine -cnotmatch '^[ \t\r]*#' -and $CfLine.Contains('filter=')) {
                 Write-Fail "$Dir's own git attributes set a filter (filter=), which the update would trust. Remove it from $CfFile, then re-run."
             }
         }
@@ -2020,7 +2142,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                $CkFetchOut = & git -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
+                $CkFetchOut = & git -c core.longpaths=true -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
                 $CkFetchCode = $LASTEXITCODE
             } finally {
                 $ErrorActionPreference = $prior
@@ -2207,8 +2329,10 @@ if (-not $Source) {
             Write-Info "Cloning $ApothemRepo"
             # Full clone (no --single-branch) so both tags and branches are
             # checkout-able, with nothing checked out until the gate passes.
+            # core.longpaths lets the clone write its pack files under a
+            # long staging folder.
             $ClTree = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ClTree)
-            Invoke-GitOutsideRepository { & git clone --quiet --no-checkout $ApothemRepo $ClTree }
+            Invoke-GitOutsideRepository { & git -c core.longpaths=true clone --quiet --no-checkout $ApothemRepo $ClTree }
             if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
             Write-Bold "Verifying source signature"
             Assert-FetchedRef $ClTree

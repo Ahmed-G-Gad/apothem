@@ -375,3 +375,103 @@ def test_uninstall_runs_the_engine_from_the_planted_folder(tmp_path: Path) -> No
     assert result.returncode == 0, result.stdout + result.stderr
     assert _marks(installed) == ["userlib-sitecustomize"], result.stdout
     assert not installed.shim.exists()
+
+
+# --- the in-place clone's work-tree check ----------------------------------
+
+#: Stubs for the checks check_clone_setup runs before and after its own
+#: work-tree check, which the tests below exercise alone.
+_CLONE_CHECK_STUBS = """\
+clone_git_ok() { :; }
+check_clone_config() { :; }
+check_clone_modules() { :; }
+check_clone_gitlinks() { :; }
+die() { printf 'DIE %s\\n' "$*"; exit 1; }
+HOOKS_OFF=
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+"""
+
+
+def _make_clone(root: Path) -> Path:
+    """A git clone with one commit, at ROOT/Clone (capitals on disk)."""
+    clone = root / "Clone"
+    clone.mkdir(parents=True)
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+    for args in (
+        ["init", "--quiet"],
+        [
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "--quiet",
+            "--allow-empty",
+            "-m",
+            "one",
+        ],
+    ):
+        subprocess.run(["git", *args], cwd=clone, env=env, check=True)
+    return clone
+
+
+def _check_clone_setup(script_name: str, spelling: str, cwd: Path) -> str:
+    """Run SCRIPT_NAME's check_clone_setup on the clone spelled SPELLING."""
+    script = (INSTALLER / script_name).read_text(encoding="utf-8")
+    program = "\n".join(
+        (
+            _CLONE_CHECK_STUBS,
+            _block(script, r"^cgit\(\) \{\n.*?^\}$"),
+            _block(script, r"^check_clone_setup\(\) \{\n.*?^\}$"),
+            f"check_clone_setup {_sq(spelling)}",
+            "echo PASSED",
+        )
+    )
+    result = _bash(program, cwd, None)
+    return result.stdout + result.stderr
+
+
+def _other_capitals(path: Path) -> str:
+    """PATH as Git Bash spells it, every letter after the drive in the
+    other case (NTFS folders match either way)."""
+    posix = _posix(path)
+    return posix[:2] + posix[2:].swapcase()
+
+
+@pytest.mark.parametrize("script_name", ["install.sh", "update.sh"])
+@pytest.mark.parametrize("spelling", ["as on disk", "other capitals"])
+def test_an_in_place_clone_is_accepted_however_its_path_is_spelled(
+    tmp_path: Path, script_name: str, spelling: str
+) -> None:
+    """git spells the clone's top folder C:/... with its on-disk capitals,
+    and maps the Windows temp folder onto /tmp, while pwd -P keeps the
+    spelling a folder was reached by. The check asks git whether the folder
+    is the top of the work tree, so a clone reached by /c/... (under the
+    temp folder) or with other capitals passes."""
+    clone = _make_clone(tmp_path)
+    path = _posix(clone) if spelling == "as on disk" else _other_capitals(clone)
+
+    output = _check_clone_setup(script_name, path, tmp_path)
+
+    assert output.strip().endswith("PASSED"), output
+
+
+@pytest.mark.parametrize("script_name", ["install.sh", "update.sh"])
+@pytest.mark.parametrize("setup", ["core.bare", "subfolder"])
+def test_an_in_place_clone_without_its_work_tree_at_the_top_is_refused(
+    tmp_path: Path, script_name: str, setup: str
+) -> None:
+    """A clone git finds no work tree in (core.bare=true), and a folder
+    inside a clone rather than at its top, are still refused."""
+    clone = _make_clone(tmp_path)
+    target = clone
+    if setup == "core.bare":
+        subprocess.run(["git", "config", "core.bare", "true"], cwd=clone, check=True)
+    else:
+        target = clone / "inner"
+        target.mkdir()
+
+    output = _check_clone_setup(script_name, _posix(target), tmp_path)
+
+    assert "PASSED" not in output, output
+    assert "is not the work tree of its git clone" in output, output

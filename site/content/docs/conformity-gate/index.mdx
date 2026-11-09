@@ -120,7 +120,12 @@ puts the current folder first on Python's module search path; a script start
 puts the script's own folder there instead. That alone is not enough: an empty
 or relative entry in `PYTHONPATH` also names the current folder. `-E` makes
 Python ignore `PYTHONPATH` and the other `PYTHON*` variables, and `-s` leaves
-out your user site-packages. The gate needs nothing from either. After a
+out your user site-packages. The gate needs nothing from either. These
+flags keep the project's files out of the gate's own Python code only:
+`--all`, `--all-perwrite` and a few single validators also run `git` in the
+project folder, and git reads that repository's own `.git/config`, which
+can make git run a program. Run them only on a repository whose `.git`
+folder you made yourself with `git clone` or `git init`. After a
 script install the script is `~/.apothem/src/apothem/conformity/gate.py` (on
 Windows, `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`, run with
 `python` in place of `python3`); in a checkout it is

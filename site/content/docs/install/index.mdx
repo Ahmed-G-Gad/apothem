@@ -238,15 +238,17 @@ the check depends on whether `cosign` is on your `PATH`:
 
 The installer ignores the git environment variables that redirect git
 (`GIT_DIR`, `GIT_WORK_TREE` and similar) and the ones that point git at another
-config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM` and
-`GIT_CONFIG_NOSYSTEM`), and stops when `APOTHEM_REPO` starts with `-`. git
-still reads your own global config and the system config from the places it
-always looks, and `git`, `gpg` and `cosign` are the programs your `PATH`
-finds: the installer trusts them as found. The installer reads the release tag
-once, records the commit it names, verifies the tag, checks that commit out by
-ID, and requires `HEAD` to be that commit, so a tag moved after the check
-changes nothing. On Windows PowerShell 5.1 and 7, a download that redirects to
-an address that is not https is refused, as the POSIX installers' `curl` does.
+config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`), and
+stops when `APOTHEM_REPO` starts with `-`. `GIT_CONFIG_NOSYSTEM` stays as you
+set it; it only stops git reading the system config. git still reads your own
+global config and, unless you set `GIT_CONFIG_NOSYSTEM`, the system config
+from the places it always looks, and `git`, `gpg` and `cosign` are the
+programs your `PATH` finds: the installer trusts them as found. The installer
+reads the release tag once, records the commit it names, verifies the tag,
+checks that commit out by ID, and requires `HEAD` to be that commit, so a tag
+moved after the check changes nothing. On Windows PowerShell 5.1 and 7, a
+download that redirects to an address that is not https is refused, as the
+POSIX installers' `curl` does.
 
 A failed check aborts the install before any configuration is written and
 before the installer replaces `APOTHEM_HOME`. A
@@ -295,8 +297,9 @@ them (see below). These rules apply when the installer replaces `~/.apothem`:
   pager, no automatic maintenance, its file-system monitor off, only the file,
   git, http, https and ssh transports allowed (so an address in the clone's
   config cannot make git run a helper program such as `ext::`) and no
-  submodule recursion; `git diff` and `git status` skip submodules. A clone that another user owns stops the run with an explanation
-  (see Troubleshooting).
+  submodule recursion; `git diff` and `git status` skip submodules. A clone
+  that another user owns stops the run with an explanation (see
+  Troubleshooting).
 - A folder that holds only the engine's own data (`backups`, `state`, `plans`,
   `memory`, `contexts`, `learning`, `providers`) is updated without `--yes`,
   and that data is kept.
@@ -319,10 +322,15 @@ ends by success, failure, Ctrl+C or a termination signal. The `apothem`
 commands themselves do not take it. A second run stops with "Another Apothem
 install, update or uninstall is running". On POSIX the lock is a folder that
 holds the process ID of the run. A lock left by a run that was killed is
-reported with how to remove it and never taken over. On Windows PowerShell the
-lock is a file that Windows closes and deletes when the process ends. A dry run
-takes the lock too, unless the folder that holds `APOTHEM_HOME` does not exist
-yet.
+reported with how to remove it and never taken over, and a lock made in
+another environment (WSL and Git Bash on one machine, say) is reported as one
+whose process cannot be checked from there. On Windows PowerShell the lock is
+a file that Windows closes and deletes when the process ends. When
+`APOTHEM_HOME` is a link, every script takes the lock beside the folder it
+leads to. A dry run takes the lock too, unless the folder that holds
+`APOTHEM_HOME` does not exist yet. So every run, an update in place, an
+uninstall and a dry run included, needs write access to the folder that holds
+`APOTHEM_HOME`; without it the run stops before it changes anything.
 
 A forced kill or a power loss during a swap can leave the earlier install or
 other entries of `APOTHEM_HOME` in `.apothem-old.<name>.*`,
@@ -330,8 +338,10 @@ other entries of `APOTHEM_HOME` in `.apothem-old.<name>.*`,
 `<name>` is the last part of `APOTHEM_HOME`, or in an
 `APOTHEM_HOME.before-apothem-<time>` folder. The next fetched install for that
 `APOTHEM_HOME`, a dry run included, stops before it changes anything, names
-each folder and every entry that was moved out of `APOTHEM_HOME`, and says how
-to move them back. It deletes nothing. See
+each folder and the entries that were moved into it, and says how to move them
+back. For a folder an earlier installer made, which does not say which home it
+belongs to, the line may name only the engine data: look inside it. It
+deletes nothing. See
 [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home).
 
 `--dry-run` (`-DryRun` on Windows) fetches and checks the release in a

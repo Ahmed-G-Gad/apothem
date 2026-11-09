@@ -1283,6 +1283,19 @@ def _posix_sh() -> str | None:
 
 
 _SH = _posix_sh()
+
+
+def _sh_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment for a run of _SH: BASE (or this process's own), with
+    _SH's own folder first on PATH on Windows, so the scripts' sort, tr and
+    the rest are Git's and never Windows' own sort.exe (which ends lines with
+    CRLF and ignores case) that a PowerShell PATH lists first."""
+    env = dict(os.environ if base is None else base)
+    if sys.platform == "win32" and _SH is not None:
+        env["PATH"] = str(Path(_SH).parent) + os.pathsep + env.get("PATH", "")
+    return env
+
+
 requires_posix_sh = pytest.mark.skipif(_SH is None, reason="no POSIX sh on this host")
 requires_powershell = pytest.mark.skipif(
     _PWSH is None, reason="no PowerShell on this host"
@@ -1446,6 +1459,7 @@ def test_sh_allows_exactly_the_clone_settings_the_table_allows(sh_name: str) -> 
         text=True,
         timeout=60,
         check=False,
+        env=_sh_env(),
     )
     assert result.returncode == 0, result.stderr
     verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
@@ -1607,7 +1621,7 @@ def test_sh_checks_a_clones_own_config_file(
         text=True,
         timeout=60,
         check=False,
-        env=_git_env_without_user_config(),
+        env=_sh_env(_git_env_without_user_config()),
     )
     expected = "passed" if named is None else _config_message(home, named)
     assert result.stdout.strip() == expected, result.stdout + result.stderr
@@ -1831,7 +1845,9 @@ def test_every_script_takes_the_same_lock(sh_name: str, ps1_name: str) -> None:
         assert phrase in sh, f"{sh_name} lacks {phrase!r}"
         assert phrase in ps1, f"{ps1_name} lacks {phrase!r}"
     assert 'LOCK_DIR="${_tl_home}.lock"' in sh
-    assert '$HomeLockPath = "$ApothemHome.lock"' in ps1
+    assert '$HomeLockPath = "$(Get-LockHome).lock"' in ps1
+    assert "$LkParent = Split-Path -Parent $HomeLockPath" in ps1
+    assert _ps1_function(ps1, "Get-LockHome") == _ps1_function(PS1, "Get-LockHome")
     assert "([System.IO.FileShare]::None)" in ps1
     banner = re.search(r'^Write-Bold "Apothem [a-z]+"\r?\n', ps1, re.MULTILINE)
     assert banner, f"{ps1_name} has no banner line"
@@ -1861,10 +1877,13 @@ LEFTOVER_PHRASES = (
     ": empty",
     ": the earlier contents of ",
     ", moved aside, in ",
+    "the Apothem home it was made for",
+    ": the earlier clone's tree, which that run was keeping, in ",
+    ": move it to a folder of your own if you still need it",
     "Nothing was changed. If ",
     " is missing, move the earlier install back to it first. Then move every "
-    "entry listed above as moved from ",
-    " back into it, remove the folders listed above, and re-run.",
+    "entry listed above as moved into a new source back into the home it came "
+    "from, remove the folders listed above, and re-run.",
     ".apothem-old.",
     ".apothem-extract.",
     ".apothem-clone.",
@@ -1911,8 +1930,9 @@ def test_both_installers_refuse_a_redirect_off_https_only_for_an_https_base() ->
     assert "$Final.Scheme -ne 'https'" in download
 
 
-#: What the sh scripts say when <APOTHEM_HOME>.lock is a file: the lock of a
-#: PowerShell run, which Windows removes when that run ends.
+#: What the sh scripts say when <APOTHEM_HOME>.lock is a file where a
+#: PowerShell run can hold one: the lock of a PowerShell run, which Windows
+#: removes when that run ends.
 POWERSHELL_LOCK_PHRASES = (
     " is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 "
     "or uninstall.ps1) on ",
@@ -1920,17 +1940,32 @@ POWERSHELL_LOCK_PHRASES = (
     "Windows will not let anyone remove it. Wait for that run to finish, then "
     "re-run. If no Apothem install, update or uninstall is running, remove ",
 )
+#: What they say for a file there anywhere else, and for a lock folder made
+#: in another environment, whose process cannot be checked from here.
+OTHER_LOCK_PHRASES = (
+    " is a file where the Apothem lock folder belongs. If no Apothem install, "
+    "update or uninstall is running, remove ",
+    " was made by an Apothem run in another environment (such as WSL, Git Bash "
+    "or a container), so whether its process ",
+    " still runs cannot be checked from here. Wait for that run to finish, then "
+    "re-run. If no Apothem install, update or uninstall is running anywhere, "
+    "remove ",
+)
 
 
 @pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
 def test_the_sh_scripts_name_a_lock_file_as_a_powershell_runs(sh_name: str) -> None:
     """A lock that is a file, not a folder, is held by install.ps1, update.ps1
-    or uninstall.ps1: the sh scripts say so, before they look for a process
-    ID in it, and a symbolic link there keeps the "names no running
-    process" message. A process of another user that kill -0 may not signal
-    counts as running, and signals wait while the lock is made."""
-    body = _sh_function(_script(sh_name), "take_lock")
-    for phrase in POWERSHELL_LOCK_PHRASES:
+    or uninstall.ps1 where those can run: the sh scripts say so, before they
+    look for a process ID in it, and a symbolic link there keeps the "names
+    no running process" message. A lock records the environment of its run
+    before its process ID, and one from another environment is reported
+    before its process is looked for. A process of another user that kill -0
+    may not signal counts as running, and signals wait while the lock is
+    made. The three scripts hold the same helpers."""
+    script = _script(sh_name)
+    body = _sh_function(script, "take_lock")
+    for phrase in POWERSHELL_LOCK_PHRASES + OTHER_LOCK_PHRASES:
         assert phrase in body, f"{sh_name} lacks {phrase!r}"
     assert _in_order(
         body,
@@ -1938,35 +1973,91 @@ def test_the_sh_scripts_name_a_lock_file_as_a_powershell_runs(sh_name: str) -> N
         'mkdir "$LOCK_DIR"',
         "LOCK_HELD=1",
         "trap_signals_to_exit",
+        'lock_env > "${LOCK_DIR}/env"',
+        '> "${LOCK_DIR}/pid"',
         '[ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]',
+        "if powershell_may_lock; then",
         'cat "${LOCK_DIR}/pid"',
+        '"$(lock_env)"',
         'process_running "$_tl_pid"',
     )
     assert '[ -L "$APOTHEM_HOME" ]' in body
     assert 'cd -P -- "$APOTHEM_HOME"' in body
-    running = _sh_function(_script(sh_name), "process_running")
+    running = _sh_function(script, "process_running")
     assert 'kill -0 "$1"' in running
     assert "ot permitted" in running
+    for helper in ("lock_env", "powershell_may_lock", "process_running"):
+        assert _sh_function(script, helper) == _sh_function(SH, helper), helper
+
+
+#: The most bytes Linux passes in one argument (MAX_ARG_STRLEN, 32 pages of
+#: 4096 bytes, the ending NUL included).
+ONE_ARGUMENT_LIMIT = 131072
+
+
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+def test_each_sh_script_fits_in_one_argument(sh_name: str) -> None:
+    """The documented one-liner, sh -c "$(curl -fsSL .../install.sh)", hands
+    the whole script to sh as one argument, and Linux refuses a longer one
+    ("Argument list too long") before sh starts."""
+    size = len((INSTALLER / sh_name).read_bytes())
+    assert size < ONE_ARGUMENT_LIMIT, f"{sh_name} is {size} bytes"
+
+
+#: uname answers (-s, -r) and whether a PowerShell run can hold the lock
+#: there: Git Bash, MSYS2, Cygwin and WSL, not other Linux or macOS.
+UNAME_CASES: tuple[tuple[str, str, str, bool], ...] = (
+    ("git-bash", "MINGW64_NT-10.0-26100", "3.5.4-0bc1222b.x86_64", True),
+    ("msys", "MSYS_NT-10.0-26100", "3.5.4-0bc1222b.x86_64", True),
+    ("cygwin", "CYGWIN_NT-10.0-26100", "3.5.4-1.x86_64", True),
+    ("wsl2", "Linux", "5.15.153.1-microsoft-standard-WSL2", True),
+    ("wsl1", "Linux", "4.4.0-19041-Microsoft", True),
+    ("linux", "Linux", "6.8.0-45-generic", False),
+    ("macos", "Darwin", "24.1.0", False),
+)
+
+
+def _uname_stub(system: str, release: str) -> str:
+    """sh that defines uname to answer -s with SYSTEM and -r with RELEASE."""
+    return (
+        "uname() { case \"$1\" in -s) printf '%s\\n' "
+        f"'{system}' ;; -r) printf '%s\\n' '{release}' ;; "
+        '*) command uname "$@" ;; esac; }\n'
+    )
 
 
 @requires_posix_sh
 @pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+@pytest.mark.parametrize(
+    ("case", "system", "release", "powershell"),
+    UNAME_CASES,
+    ids=[c[0] for c in UNAME_CASES],
+)
 def test_the_sh_scripts_report_a_lock_file_in_the_same_words(
-    tmp_path: Path, sh_name: str
+    tmp_path: Path,
+    sh_name: str,
+    case: str,
+    system: str,
+    release: str,
+    powershell: bool,
 ) -> None:
     """Each sh script's take_lock, run against a file at <home>.lock, stops
-    with the PowerShell-lock message and leaves the file there."""
+    and leaves the file there: with the PowerShell-lock message where a
+    PowerShell run can hold that file, and a plain one everywhere else."""
     assert _SH is not None
     home = (tmp_path / "home").as_posix()
     lock = tmp_path / "home.lock"
     lock.write_bytes(b"")
+    script = _script(sh_name)
     program = (
         "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
         'exists() { [ -e "$1" ] || [ -L "$1" ]; }\n'
-        "trap_signals_to_exit() { :; }\n"
-        "DRY_RUN=0\n"
+        "trap_signals_to_exit() { :; }\n" + _uname_stub(system, release) + "DRY_RUN=0\n"
         'APOTHEM_HOME="$1"\n'
-        + _sh_function(_script(sh_name), "take_lock")
+        + "\n".join(
+            _sh_function(script, name)
+            for name in ("take_lock", "lock_env", "powershell_may_lock")
+        )
         + "\ntake_lock\necho taken\n"
     )
     result = subprocess.run(
@@ -1975,16 +2066,164 @@ def test_the_sh_scripts_report_a_lock_file_in_the_same_words(
         text=True,
         timeout=60,
         check=False,
+        env=_sh_env(),
     )
-    assert result.stdout.strip() == (
-        f"{home}.lock is the lock file of an Apothem PowerShell run (install.ps1, "
-        f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
-        "that run ends; while the run is active, Windows will not let anyone "
-        "remove it. Wait for that run to finish, then re-run. If no Apothem "
-        f"install, update or uninstall is running, remove {home}.lock, then "
-        "re-run."
-    ), result.stdout + result.stderr
+    if powershell:
+        expected = (
+            f"{home}.lock is the lock file of an Apothem PowerShell run (install.ps1, "
+            f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
+            "that run ends; while the run is active, Windows will not let anyone "
+            "remove it. Wait for that run to finish, then re-run. If no Apothem "
+            f"install, update or uninstall is running, remove {home}.lock, then "
+            "re-run."
+        )
+    else:
+        expected = (
+            f"{home}.lock is a file where the Apothem lock folder belongs. If no "
+            "Apothem install, update or uninstall is running, remove "
+            f"{home}.lock, then re-run."
+        )
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
     assert lock.is_file()
+
+
+def _msys_stub(system: str, root: str) -> str:
+    """sh that defines uname to answer -s with SYSTEM, -o with Msys and -n
+    with one host name, and cygpath to give ROOT as the runtime's root."""
+    return (
+        "uname() { case \"$1\" in -s) printf '%s\\n' "
+        f"'{system}' ;; -o) printf 'Msys\\n' ;; -n) printf 'box\\n' ;; "
+        '*) command uname "$@" ;; esac; }\n'
+        f"cygpath() {{ printf '%s\\n' '{root}'; }}\n"
+    )
+
+
+#: Two runs' uname -s and runtime root, and whether their lock records must
+#: match: one runtime under another MSYSTEM or after a Windows update is the
+#: same process table; Git Bash and an MSYS2 install are two.
+LOCK_ENV_CASES: tuple[tuple[str, tuple[str, str], tuple[str, str], bool], ...] = (
+    (
+        "other-msystem",
+        ("MINGW64_NT-10.0-26100", "C:/Program Files/Git/"),
+        ("MSYS_NT-10.0-26100", "C:/Program Files/Git/"),
+        True,
+    ),
+    (
+        "windows-update",
+        ("MINGW64_NT-10.0-26100", "C:/Program Files/Git/"),
+        ("MINGW64_NT-10.0-26200", "C:/Program Files/Git/"),
+        True,
+    ),
+    (
+        "two-runtimes",
+        ("MINGW64_NT-10.0-26100", "C:/Program Files/Git/"),
+        ("MINGW64_NT-10.0-26100", "C:/msys64/"),
+        False,
+    ),
+)
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+@pytest.mark.parametrize(
+    ("case", "first", "second", "same"),
+    LOCK_ENV_CASES,
+    ids=[c[0] for c in LOCK_ENV_CASES],
+)
+def test_the_lock_record_names_the_msys_runtime_not_its_settings(
+    sh_name: str,
+    case: str,
+    first: tuple[str, str],
+    second: tuple[str, str],
+    same: bool,
+) -> None:
+    """lock_env records which process table a run's process ID belongs to:
+    two msys runtimes (Git Bash and MSYS2) differ, while one runtime started
+    under another MSYSTEM, or after a Windows update changed the build in
+    uname -s, records the same."""
+    assert _SH is not None
+    body = _sh_function(_script(sh_name), "lock_env")
+
+    def record(system: str, root: str) -> str:
+        return subprocess.run(
+            [_SH, "-c", _msys_stub(system, root) + body + "\nlock_env\n"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=True,
+            env=_sh_env(),
+        ).stdout
+
+    assert (record(*first) == record(*second)) is same
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+@pytest.mark.parametrize("env", ["other", "same", "none"])
+def test_the_sh_scripts_tell_a_lock_from_another_environment(
+    tmp_path: Path, sh_name: str, env: str
+) -> None:
+    """A lock folder records the environment of the run that made it. One
+    made in another environment (WSL and Git Bash on one machine, another
+    container) names a process ID that means nothing here, so it is reported
+    as one whose process cannot be checked, never as one whose process is
+    gone. A lock from this environment, or one with no record (an earlier
+    installer made it), still has its process checked."""
+    assert _SH is not None
+    home = (tmp_path / "home").as_posix()
+    lock = tmp_path / "home.lock"
+    lock.mkdir()
+    script = _script(sh_name)
+    helpers = "\n".join(
+        _sh_function(script, name)
+        for name in ("take_lock", "lock_env", "powershell_may_lock", "process_running")
+    )
+    prelude = (
+        "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
+        'exists() { [ -e "$1" ] || [ -L "$1" ]; }\n'
+        "trap_signals_to_exit() { :; }\n"
+        "DRY_RUN=0\n"
+        'APOTHEM_HOME="$1"\n' + helpers + "\n"
+    )
+    if env == "other":
+        (lock / "env").write_text("OtherOS elsewhere pid:[1]\n", encoding="utf-8")
+    elif env == "same":
+        same = subprocess.run(
+            [_SH, "-c", prelude + "lock_env", "sh", home],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=True,
+            env=_sh_env(),
+        ).stdout
+        (lock / "env").write_text(same, encoding="utf-8", newline="\n")
+    (lock / "pid").write_text("999999999\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [_SH, "-c", prelude + "take_lock\necho taken\n", "sh", home],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        env=_sh_env(),
+    )
+
+    if env == "other":
+        expected = (
+            f"{home}.lock was made by an Apothem run in another environment (such "
+            "as WSL, Git Bash or a container), so whether its process 999999999 "
+            "still runs cannot be checked from here. Wait for that run to "
+            "finish, then re-run. If no Apothem install, update or uninstall is "
+            f"running anywhere, remove {home}.lock, then re-run."
+        )
+    else:
+        expected = (
+            f"{home}.lock was left by an Apothem run that did not finish (process "
+            "999999999 is no longer running). Check that no Apothem install, "
+            f"update or uninstall is running, remove {home}.lock, then re-run."
+        )
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
+    assert (lock / "pid").is_file()
 
 
 def test_both_installers_name_their_staging_folders_after_the_home() -> None:
@@ -2092,28 +2331,37 @@ def _expected_leftover_lines(parent: str, sep: str) -> list[str]:
         f"    {other}: files from that run (.h, B.txt, _x, a.txt)",
         f"    {older_clone}: the new source that was being installed, in "
         f"{older_clone}{sep}apothem, with these entries moved into it from "
-        f"{home}: memory, state{note}",
+        f"the Apothem home it was made for: memory, state{note}",
         f"    {older_extract}: the new source that was being installed, in "
         f"{older_extract}{sep}apothem-v1.5.0, with these entries moved into it "
-        f"from {home}: notes.txt, plans{note}",
+        f"from the Apothem home it was made for: notes.txt, plans{note}",
         f"    {older_old}: empty{note}",
         f"    {flat}: the earlier contents of {home}, moved aside, in {flat}",
         f"    {nested}: the earlier contents of {home}, moved aside, in "
         f"{nested}{sep}apothem-home",
-        f"    Nothing was changed. If {home} is missing, move the earlier install "
-        "back to it first. Then move every entry listed above as moved from "
-        f"{home} back into it, remove the folders listed above, and re-run.",
+        _closing_line(home),
     ]
 
 
-def _sh_leftover_program() -> str:
+def _closing_line(home: str) -> str:
+    """The last line of the leftovers report, for the home HOME."""
+    return (
+        f"    Nothing was changed. If {home} is missing, move the earlier install "
+        "back to it first. Then move every entry listed above as moved into a "
+        "new source back into the home it came from, remove the folders listed "
+        "above, and re-run."
+    )
+
+
+def _sh_leftover_program(prelude: str = "") -> str:
     """sh source that defines install.sh's check_leftovers and what it uses,
-    then runs it for the home "$1"."""
+    then runs it for the home "$1" (PRELUDE, such as a uname stub, first)."""
     names = (
         "exists",
         "list_entries",
         "paint",
         "check_leftovers",
+        "same_leaf",
         "is_aside_name",
         "is_aside_temp",
         "is_extract_staging",
@@ -2122,7 +2370,7 @@ def _sh_leftover_program() -> str:
         "leftover_carried",
     )
     return (
-        "COLOR_ERR=0\n"
+        prelude + "COLOR_ERR=0\n"
         'CARRY_LIST=".apothem-carried-entries"\n'
         'SOURCE_MANIFEST=".apothem-source-entries"\n'
         'APOTHEM_HOME="$1"\n'
@@ -2150,6 +2398,7 @@ def test_install_sh_reports_leftovers_in_the_agreed_order_and_words(
         encoding="utf-8",
         timeout=60,
         check=False,
+        env=_sh_env(),
     )
     lines = result.stderr.replace("✗", "x").splitlines()
     assert result.returncode == 1, result.stdout + result.stderr
@@ -2165,6 +2414,16 @@ def test_install_ps1_reports_leftovers_in_the_same_order_and_words(
     words, then the closing line (through Write-Fail)."""
     _plant_leftovers(tmp_path)
     parent = str(tmp_path)
+    result = _ps1_leftovers(tmp_path / "apothem-home")
+    assert result.returncode == 1, result.stdout + result.stderr
+    # PowerShell joins paths with "\" on Windows; compare them with "/".
+    expected = _expected_leftover_lines(parent.replace("\\", "/"), "/")
+    got = [line.replace("\\", "/") for line in result.stderr.splitlines()]
+    assert got == expected, result.stderr
+
+
+def _ps1_leftovers(home: Path) -> subprocess.CompletedProcess[str]:
+    """Run install.ps1's Assert-NoLeftover, and what it uses, for HOME."""
     program = "; ".join(
         (
             *_ps1_define(
@@ -2174,6 +2433,9 @@ def test_install_ps1_reports_leftovers_in_the_same_order_and_words(
                 "Test-Entry",
                 "Test-RealFolder",
                 "Test-RealFolderPath",
+                "Get-SortedName",
+                "Test-SameLeaf",
+                "ConvertTo-AsciiLower",
                 "Get-LeftoverEntry",
                 "Get-CarriedEntry",
                 "Get-LeftoverLine",
@@ -2186,14 +2448,359 @@ def test_install_ps1_reports_leftovers_in_the_same_order_and_words(
             "'none'",
         )
     )
-    result = _run_powershell(
-        program, "install.ps1", LEFTOVER_HOME=str(tmp_path / "apothem-home")
+    return _run_powershell(program, "install.ps1", LEFTOVER_HOME=str(home))
+
+
+def _sh_leftovers(home: Path, prelude: str = "") -> subprocess.CompletedProcess[str]:
+    """Run install.sh's check_leftovers, and what it uses, for HOME."""
+    assert _SH is not None
+    return subprocess.run(
+        [_SH, "-c", _sh_leftover_program(prelude), "sh", home.as_posix()],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+        check=False,
+        env=_sh_env(),
     )
+
+
+def _report_lines(home: str, *lines: str) -> list[str]:
+    """The leftovers report for HOME naming LINES, with "x" for the sh
+    family's mark."""
+    return [
+        "  x An earlier run was stopped part-way and left these folders beside "
+        f"{home}:",
+        *(f"    {line}" for line in lines),
+        _closing_line(home),
+    ]
+
+
+def _got_lines(result: subprocess.CompletedProcess[str]) -> list[str]:
+    return [
+        line.replace("✗", "x").replace("\\", "/") for line in result.stderr.splitlines()
+    ]
+
+
+#: Folders made for the home "apothem-home" spelled "APOTHEM-Home", as a run
+#: given that spelling names them, and the home missing. The aside has the
+#: earlier layout (contents directly inside), so its line reads the same
+#: whether the file system ignores case or not.
+CASE_LAYOUT: dict[str, str] = {
+    ".apothem-extract.APOTHEM-Home.Ab12Cd/apothem-v9.9.9/src/": "",
+    "APOTHEM-Home.before-apothem-20261101000000/a.txt": "a\n",
+}
+
+
+def _case_lines(parent: str) -> list[str]:
+    extract = f"{parent}/.apothem-extract.APOTHEM-Home.Ab12Cd"
+    aside = f"{parent}/APOTHEM-Home.before-apothem-20261101000000"
+    home = f"{parent}/apothem-home"
+    return _report_lines(
+        home,
+        f"{extract}: the new source that was being installed, in "
+        f"{extract}/apothem-v9.9.9",
+        f"{aside}: the earlier contents of {home}, moved aside, in {aside}",
+    )
+
+
+def _plant(parent: Path, layout: dict[str, str]) -> None:
+    for rel, text in layout.items():
+        target = parent / rel
+        if rel.endswith("/"):
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8", newline="\n")
+
+
+@requires_posix_sh
+@pytest.mark.parametrize(
+    ("system", "fold"),
+    [("Linux", False), ("Darwin", True), ("MINGW64_NT-10.0-26100", True)],
+    ids=["linux", "macos", "git-bash"],
+)
+def test_install_sh_counts_another_spelling_of_the_home_where_case_is_ignored(
+    tmp_path: Path, system: str, fold: bool
+) -> None:
+    """On Windows and macOS, APP.HOME and app.home name one folder, so the
+    staging folders and asides a run made for this home spelled with other
+    capitals are this home's, and are reported. On Linux they belong to
+    another home and are left alone (uname says which system it is)."""
+    _plant(tmp_path, CASE_LAYOUT)
+    result = _sh_leftovers(tmp_path / "apothem-home", _uname_stub(system, "1.0"))
+    if fold:
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert _got_lines(result) == _case_lines(tmp_path.as_posix()), result.stderr
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert result.stdout.strip() == "none", result.stdout + result.stderr
+
+
+@requires_powershell
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows ignores case in names")
+def test_install_ps1_counts_another_spelling_of_the_home_on_windows(
+    tmp_path: Path,
+) -> None:
+    """install.ps1 reports this home's folders made under another spelling
+    of it, in the same words as install.sh under Git Bash."""
+    _plant(tmp_path, CASE_LAYOUT)
+    result = _ps1_leftovers(tmp_path / "apothem-home")
     assert result.returncode == 1, result.stdout + result.stderr
-    # PowerShell joins paths with "\" on Windows; compare them with "/".
-    expected = _expected_leftover_lines(parent.replace("\\", "/"), "/")
-    got = [line.replace("\\", "/") for line in result.stderr.splitlines()]
-    assert got == expected, result.stderr
+    assert _got_lines(result) == _case_lines(str(tmp_path).replace("\\", "/"))
+
+
+#: What a keep-clone swap stopped after its move-in leaves: the clone's own
+#: tree, with its .git, in .apothem-old.<leaf>.*/home, beside the carry list
+#: in the staging folder the new tree left, while APOTHEM_HOME holds the new
+#: install.
+KEPT_CLONE_LAYOUT: dict[str, str] = {
+    "apothem-home/src/apothem/__init__.py": "",
+    ".apothem-old.apothem-home.Kp00Kp/home/.git/HEAD": "ref: refs/heads/main\n",
+    ".apothem-old.apothem-home.Kp00Kp/home/src/apothem/__init__.py": "",
+    ".apothem-extract.apothem-home.Ex00Ex/.apothem-carried-entries": "state\n",
+}
+
+
+def _kept_clone_lines(parent: str) -> list[str]:
+    old = f"{parent}/.apothem-old.apothem-home.Kp00Kp"
+    extract = f"{parent}/.apothem-extract.apothem-home.Ex00Ex"
+    return _report_lines(
+        f"{parent}/apothem-home",
+        f"{extract}: files from that run (.apothem-carried-entries)",
+        f"{old}: the earlier clone's tree, which that run was keeping, in "
+        f"{old}/home: move it to a folder of your own if you still need it",
+    )
+
+
+@requires_posix_sh
+def test_install_sh_names_a_clone_tree_a_stopped_run_was_keeping(
+    tmp_path: Path,
+) -> None:
+    """A clone's tree a keep-clone swap was keeping, with the new install
+    already in place, is named as that, not as an earlier install to put
+    back or remove."""
+    _plant(tmp_path, KEPT_CLONE_LAYOUT)
+    result = _sh_leftovers(tmp_path / "apothem-home")
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert _got_lines(result) == _kept_clone_lines(tmp_path.as_posix())
+
+
+@requires_powershell
+def test_install_ps1_names_a_clone_tree_a_stopped_run_was_keeping(
+    tmp_path: Path,
+) -> None:
+    """install.ps1 names that tree in the same words."""
+    _plant(tmp_path, KEPT_CLONE_LAYOUT)
+    result = _ps1_leftovers(tmp_path / "apothem-home")
+    assert result.returncode == 1, result.stdout + result.stderr
+    expected = _kept_clone_lines(str(tmp_path).replace("\\", "/"))
+    assert _got_lines(result) == expected, result.stderr
+
+
+#: What a keep swap leaves when a folder that is not Apothem's appeared at
+#: .apothem-old.<leaf>.*/home just before its move of the earlier tree there:
+#: the move is undone and the earlier install stays at APOTHEM_HOME, but
+#: that folder is left in place for the user to check.
+STRAY_OLD_HOME_LAYOUT: dict[str, str] = {
+    "apothem-home/src/apothem/__init__.py": "",
+    ".apothem-old.apothem-home.St00St/home/theirs.txt": "t\n",
+}
+
+
+def _stray_old_home_lines(parent: str) -> list[str]:
+    old = f"{parent}/.apothem-old.apothem-home.St00St"
+    return _report_lines(
+        f"{parent}/apothem-home",
+        f"{old}: a folder that holds no Apothem install, in {old}/home: check "
+        "what it holds before you remove it",
+    )
+
+
+@requires_posix_sh
+def test_install_sh_does_not_call_a_stray_folder_the_earlier_install(
+    tmp_path: Path,
+) -> None:
+    """A home folder in .apothem-old.* that holds no Apothem source, while
+    APOTHEM_HOME is in place, is not called the earlier install."""
+    _plant(tmp_path, STRAY_OLD_HOME_LAYOUT)
+    result = _sh_leftovers(tmp_path / "apothem-home")
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert _got_lines(result) == _stray_old_home_lines(tmp_path.as_posix())
+
+
+@requires_powershell
+def test_install_ps1_does_not_call_a_stray_folder_the_earlier_install(
+    tmp_path: Path,
+) -> None:
+    """install.ps1 names that folder in the same words."""
+    _plant(tmp_path, STRAY_OLD_HOME_LAYOUT)
+    result = _ps1_leftovers(tmp_path / "apothem-home")
+    assert result.returncode == 1, result.stdout + result.stderr
+    expected = _stray_old_home_lines(str(tmp_path).replace("\\", "/"))
+    assert _got_lines(result) == expected, result.stderr
+
+
+#: Names whose byte order and UTF-16 order differ: U+FF21 (EF BC A1 in
+#: UTF-8) sorts before U+1F600 (F0 9F 98 80) by bytes, after it by UTF-16
+#: code units (the surrogate D83D is below FF21).
+SORT_NAMES: tuple[str, ...] = (
+    "a\U0001f600",
+    "a\uff21",
+    "B",
+    "_x",
+    ".h",
+    "a",
+    "\u00e9",
+    "a\ue000",
+)
+
+
+@requires_powershell
+def test_powershell_sorts_names_in_the_byte_order_sh_uses() -> None:
+    """install.ps1's Get-SortedName puts names in the order LC_ALL=C sort
+    gives install.sh (their UTF-8 bytes), names outside the Basic
+    Multilingual Plane included, where an ordinal .NET sort differs."""
+    by_bytes = sorted(SORT_NAMES, key=lambda name: name.encode("utf-8"))
+    by_utf16 = sorted(SORT_NAMES, key=lambda name: name.encode("utf-16-be"))
+    assert by_bytes != by_utf16
+    program = "; ".join(
+        (
+            *_ps1_define("Get-SortedName"),
+            "$names = [string[]]($env:SORT_NAMES | ConvertFrom-Json)",
+            "foreach ($name in (Get-SortedName $names)) { "
+            "[BitConverter]::ToString([Text.Encoding]::UTF8.GetBytes($name)) }",
+        )
+    )
+    result = _run_powershell(
+        program, "install.ps1", SORT_NAMES=json.dumps(list(SORT_NAMES))
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    got = [
+        bytes.fromhex(line.replace("-", "")).decode("utf-8")
+        for line in result.stdout.splitlines()
+    ]
+    assert got == by_bytes, result.stdout
+
+
+@requires_posix_sh
+def test_sh_sorts_names_by_their_bytes(tmp_path: Path) -> None:
+    """install.sh sorts with LC_ALL=C sort: by the names' UTF-8 bytes."""
+    assert _SH is not None
+    names = tmp_path / "names"
+    names.write_bytes(b"".join(name.encode("utf-8") + b"\n" for name in SORT_NAMES))
+    result = subprocess.run(
+        [_SH, "-c", 'LC_ALL=C sort < "$1"', "sh", names.as_posix()],
+        capture_output=True,
+        timeout=60,
+        check=False,
+        env=_sh_env(),
+    )
+    got = result.stdout.decode("utf-8").splitlines()
+    assert got == sorted(SORT_NAMES, key=lambda name: name.encode("utf-8"))
+    assert "LC_ALL=C sort" in _sh_function(SH, "check_leftovers")
+
+
+#: .git/info/attributes contents and whether both families refuse them: a
+#: filter= line counts unless the line is a comment, with lines ended by LF
+#: only (as git reads them), NUL bytes dropped, and a UTF-16 byte-order mark
+#: read as the bytes it is, so it hides nothing git sees.
+ATTRIBUTE_CASES: tuple[tuple[str, bytes, bool], ...] = (
+    ("plain", b"# mine\n*.toml filter=lfs\n", True),
+    ("nul-byte", b"#\0\n*.toml filter=lfs\n", True),
+    ("utf16-le-bom", b"\xff\xfe\n* filter=lfs\n", True),
+    ("utf16-be-bom", b"\xfe\xff\n* filter=lfs\n", True),
+    ("utf8-bom", b"\xef\xbb\xbf* filter=lfs\n", True),
+    ("crlf", b"*.toml filter=lfs\r\n", True),
+    ("comment", b"  # was: * filter=evil\n*.txt text\n", False),
+    ("comment-with-cr", b"#c\r* filter=evil\n", False),
+    ("comment-after-tab-and-cr", b"\t\r# filter=evil\n", False),
+    # git skips only spaces, tabs and CR before a comment's #: after a VT
+    # or FF the line is a pattern, and git applies it.
+    ("vt-before-hash", b"\x0b#x filter=evil\n", True),
+    ("ff-before-hash", b"\x0c# filter=evil\n", True),
+    ("no-filter", b"*.txt -text\n", False),
+)
+
+
+def _attributes_home(root: Path, content: bytes) -> str:
+    home = _clone_with_config(root, "")
+    (root / ".git" / "info").mkdir()
+    (root / ".git" / "info" / "attributes").write_bytes(content)
+    return home
+
+
+def _attributes_message(home: str) -> str:
+    return (
+        f"{home}'s own git attributes set a filter (filter=), which the update "
+        f"would trust. Remove it from {home}/.git/info/attributes, then re-run."
+    )
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+@pytest.mark.parametrize(
+    ("case", "content", "refused"), ATTRIBUTE_CASES, ids=[c[0] for c in ATTRIBUTE_CASES]
+)
+def test_sh_reads_a_clones_attributes_as_git_does(
+    tmp_path: Path, sh_name: str, case: str, content: bytes, refused: bool
+) -> None:
+    """Each sh script's check_clone_config refuses exactly the attribute
+    files ATTRIBUTE_CASES marks."""
+    assert _SH is not None
+    home = _attributes_home(tmp_path / "clone", content)
+    program = (
+        "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
+        "git_path() { printf '%s\\n' \"$1/.git/$2\"; }\n"
+        + _sh_function(SCRIPTS[sh_name], "cgit")
+        + "\nHOOKS_OFF=\n"
+        + _sh_allow_program(sh_name)
+        + _sh_function(SCRIPTS[sh_name], "config_file_problem")
+        + "\n"
+        + _sh_function(SCRIPTS[sh_name], "check_clone_config")
+        + '\ncheck_clone_config "$1"\necho passed\n'
+    )
+    result = subprocess.run(
+        [_SH, "-c", program, "sh", home],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        env=_sh_env(_git_env_without_user_config()),
+    )
+    expected = _attributes_message(home) if refused else "passed"
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
+
+
+@requires_powershell
+@pytest.mark.parametrize("ps1_name", ["install.ps1", "update.ps1"])
+@pytest.mark.parametrize(
+    ("case", "content", "refused"), ATTRIBUTE_CASES, ids=[c[0] for c in ATTRIBUTE_CASES]
+)
+def test_powershell_reads_a_clones_attributes_as_sh_does(
+    tmp_path: Path, ps1_name: str, case: str, content: bytes, refused: bool
+) -> None:
+    """Each .ps1 script's Assert-CloneConfig gives the same verdict, and the
+    same message, as the sh scripts on every ATTRIBUTE_CASES file."""
+    home = _attributes_home(tmp_path / "clone", content)
+    program = "; ".join(
+        (
+            *_ps1_define(
+                "$GitNoProgram",
+                "$CloneConfigAllow",
+                "Test-AllowedConfigKey",
+                "Assert-CloneConfig",
+            ),
+            "function Write-Fail { param([string]$Msg) throw $Msg }",
+            "function Get-ClonePath { param([string]$Dir, [string]$Name) "
+            '"$Dir/.git/$Name" }',
+            "try { Assert-CloneConfig $env:CLONE_HOME; 'passed' } "
+            "catch { $_.Exception.Message }",
+        )
+    )
+    result = _run_powershell(program, ps1_name, CLONE_HOME=home, **_git_env_overrides())
+    expected = _attributes_message(home) if refused else "passed"
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
 
 
 def _git(*args: str, cwd: Path | None = None) -> None:
@@ -2243,7 +2850,7 @@ def _fetch_origin(name: str, home: Path, path_entry: str) -> str:
             text=True,
             timeout=120,
             check=False,
-            env={**os.environ, **env},
+            env=_sh_env({**os.environ, **env}),
         )
     else:
         program = "; ".join(
@@ -2332,7 +2939,7 @@ def test_a_clone_whose_index_git_cannot_read_is_refused_in_both(
             text=True,
             timeout=60,
             check=False,
-            env=_git_env_without_user_config(),
+            env=_sh_env(_git_env_without_user_config()),
         )
         assert result.stdout.strip() == expected, result.stdout + result.stderr
     if _PWSH is not None:
@@ -2440,7 +3047,7 @@ def test_a_checkout_on_a_clone_writes_a_path_past_the_windows_limit(
             text=True,
             timeout=120,
             check=False,
-            env={**os.environ, **env},
+            env=_sh_env({**os.environ, **env}),
         )
     else:
         program = "; ".join(
@@ -2453,3 +3060,62 @@ def test_a_checkout_on_a_clone_writes_a_path_past_the_windows_limit(
         )
         result = _run_powershell(program, name, **env)
     assert Path("\\\\?\\" + str(target)).exists(), result.stdout + result.stderr
+
+
+#: The git options install.sh and install.ps1 pass to the fresh clone and to
+#: the fetch of the tag into a scratch repository.
+_FRESH_CLONE_OPTIONS = {
+    "install.sh": (
+        r'ngit ((?:-c \S+ )*)clone --quiet --no-checkout "\$APOTHEM_REPO"',
+        r'git ((?:-c \S+ )*)-C "\$\{_ck_tmp\}/tag\.git" fetch ',
+    ),
+    "install.ps1": (
+        r"& git ((?:-c \S+ )*)clone --quiet --no-checkout \$ApothemRepo ",
+        r"& git ((?:-c \S+ )*)-C \$CkTagGit fetch ",
+    ),
+}
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' path limit")
+@pytest.mark.parametrize("name", sorted(_FRESH_CLONE_OPTIONS))
+def test_a_fresh_clone_writes_its_pack_under_a_long_staging_folder(
+    tmp_path: Path, name: str
+) -> None:
+    """The fresh clone goes into a staging folder named after APOTHEM_HOME,
+    so with a long profile folder the pack files it writes pass Windows'
+    usual path limit, and Git for Windows stops with "Filename too long"
+    unless core.longpaths is on. The clone runs here with the options the
+    script passes, into a folder whose pack paths pass that limit. The
+    scratch tag fetch passes the same setting."""
+    clone_pattern, fetch_pattern = _FRESH_CLONE_OPTIONS[name]
+    clone = re.search(clone_pattern, SCRIPTS[name])
+    fetch = re.search(fetch_pattern, SCRIPTS[name])
+    assert clone is not None, clone_pattern
+    assert fetch is not None, fetch_pattern
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", str(upstream))
+    _git("commit", "--quiet", "--allow-empty", "-m", "x", cwd=upstream)
+    parent = tmp_path / ("p" * max(1, 200 - len(str(tmp_path)) - 1))
+    parent.mkdir()
+    tree = parent / "apothem"
+    assert len(str(tree / ".git" / "objects" / "pack" / ("p" * 50))) > 260
+
+    result = subprocess.run(
+        [
+            "git",
+            *clone.group(1).split(),
+            "clone",
+            "--quiet",
+            "--no-checkout",
+            upstream.as_uri(),
+            str(tree),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        env=_git_env_without_user_config(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "core.longpaths=true" in fetch.group(1).split(), fetch.group(0)

@@ -29,14 +29,23 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 
 These commands run the gate from an Apothem checkout. `python -m` reads
 modules from the current folder first, so run them from the checkout root
-or another folder you trust. To check a project you do not control, run
-the gate by its script path with `-E -s` instead:
+or another folder you trust. To check a project whose files you do not
+trust, run the gate by its script path with `-E -s` instead:
 `python3 -E -s src/apothem/conformity/gate.py --all .` in a checkout, or
 `python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .` after a
-script install (on Windows, `python` in place of `python3`). A script start
+script install. On Windows, use `python` in place of `python3` and the full
+path, since Windows PowerShell and cmd do not expand `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. A script start
 keeps the current folder out of the first entry of Python's module search
 path; `-E` also keeps out `PYTHONPATH`, where an empty or relative entry
 names the current folder too, and `-s` keeps out your user site-packages.
+This keeps the project's files out of the gate's own Python code only.
+`--all`, `--all-perwrite` and a few single validators also run `git` in
+the project folder, and git reads that repository's own `.git/config`,
+which can make git run a program. Run them only on a repository whose
+`.git` folder you made yourself with `git clone` or `git init`, not one
+that arrived with its `.git` folder in an archive or a shared folder.
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a

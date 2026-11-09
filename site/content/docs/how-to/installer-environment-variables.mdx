@@ -85,9 +85,11 @@ trust that config.
 
 Each run of the install, update and uninstall scripts holds a lock,
 `<APOTHEM_HOME>.lock`, for the whole run; a second run on the same
-`APOTHEM_HOME` stops. A forced kill or a power loss can leave folders beside
-`APOTHEM_HOME`, and the next fetched install names them and stops before
-changing anything; see
+`APOTHEM_HOME` stops. When `APOTHEM_HOME` is a symbolic link (or, on Windows,
+a junction), the POSIX and the PowerShell scripts both take the lock beside
+the folder it leads to. A forced kill or a power loss can leave folders
+beside `APOTHEM_HOME`, and the next fetched install names them and stops
+before changing anything; see
 [Troubleshooting](/docs/install/troubleshooting).
 
 When `APOTHEM_HOME` points at an existing directory, what happens depends on

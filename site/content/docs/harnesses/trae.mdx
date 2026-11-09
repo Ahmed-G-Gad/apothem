@@ -201,10 +201,14 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-Run it from your project folder (on Windows, `python` in place of
-`python3`). The path is where the installer puts the engine, and `-E -s`
-keeps your `PYTHONPATH` and user site-packages out of the gate;
-[Conformity gate](/docs/conformity-gate) explains both and the other installs.
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 ## Troubleshooting
 

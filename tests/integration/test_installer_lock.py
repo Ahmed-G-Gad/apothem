@@ -27,6 +27,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -83,6 +84,8 @@ lock = Path(os.environ["APOTHEM_HOME"] + ".lock")
 held = (lock / "pid").read_text(encoding="utf-8").strip() if lock.is_dir() else "-"
 with open(os.environ["FAKE_ENGINE_RECORD"], "a", encoding="utf-8") as record:
     record.write(sys.argv[1] + " " + held + "\\n")
+if os.environ.get("FAKE_ENGINE_ENV_RECORD") and (lock / "env").is_file():
+    Path(os.environ["FAKE_ENGINE_ENV_RECORD"]).write_bytes((lock / "env").read_bytes())
 mode = os.environ.get("FAKE_ENGINE_MODE", "")
 if mode == "wait":
     Path(os.environ["FAKE_ENGINE_STARTED"]).write_text("started", encoding="utf-8")
@@ -257,6 +260,33 @@ def test_a_lock_that_names_no_process_is_reported(tmp_path: Path, name: str) -> 
     ) in combined, combined
     assert lock.is_dir(), combined
     assert list(lock.iterdir()) == [], combined
+    assert _engine_calls(tmp_path) == [], combined
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_lock_whose_process_id_comes_a_moment_later_reads_as_held(
+    tmp_path: Path, name: str
+) -> None:
+    """A run that has just made the lock folder writes its process ID a
+    moment later. A second run that finds the folder in between looks again
+    and reports the lock as held, not as one a stopped run left."""
+    lock = tmp_path / "apothem-home.lock"
+    lock.mkdir()
+    holder = subprocess.Popen(["sleep", "60"])
+    writer = threading.Timer(0.3, (lock / "pid").write_text, args=(f"{holder.pid}\n",))
+    try:
+        writer.start()
+
+        result = _run_script(name, _lock_env(tmp_path), tmp_path)
+
+    finally:
+        writer.join()
+        holder.kill()
+        holder.wait(timeout=RUN_TIMEOUT_SECONDS)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert _held_message(tmp_path / "apothem-home") in combined, combined
+    assert "names no running process" not in combined, combined
     assert _engine_calls(tmp_path) == [], combined
 
 
@@ -447,32 +477,123 @@ def test_an_earlier_folder_never_moves_into_a_folder_someone_else_made(
 # --- what the lock message says, and which lock a run takes -----------------
 
 
+def _stub_uname(tmp_path: Path, system: str, release: str) -> Path:
+    """A stub uname that answers -s with SYSTEM and -r with RELEASE, and
+    passes anything else to the real uname; return its folder."""
+    real = shutil.which("uname")
+    assert real is not None
+    stub_dir = tmp_path / "stub-uname"
+    stub_dir.mkdir()
+    stub = stub_dir / "uname"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f'case "$1" in -s) echo {shlex.quote(system)} ;; '
+        f"-r) echo {shlex.quote(release)} ;; "
+        f'*) exec {shlex.quote(real)} "$@" ;; esac\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    stub.chmod(EXECUTABLE_MODE)
+    return stub_dir
+
+
 @pytest.mark.parametrize("name", SCRIPTS)
+@pytest.mark.parametrize(
+    ("system", "release", "powershell"),
+    [
+        pytest.param("Linux", "5.15.153.1-microsoft-standard-WSL2", True, id="wsl"),
+        pytest.param("Linux", "6.8.0-45-generic", False, id="linux"),
+        pytest.param("Darwin", "24.1.0", False, id="macos"),
+    ],
+)
 def test_a_lock_file_is_reported_as_a_powershell_runs_lock(
-    tmp_path: Path, name: str
+    tmp_path: Path, name: str, system: str, release: str, powershell: bool
 ) -> None:
     """install.ps1, update.ps1 and uninstall.ps1 hold a file at
     <APOTHEM_HOME>.lock, which Windows removes when that run ends and will
-    not let anyone remove while it runs. The sh scripts say so, instead of
-    calling it a lock that names no running process."""
+    not let anyone remove while it runs. Where such a run can hold it (in
+    WSL, a Windows run on a Windows drive) the sh scripts say so; on other
+    Linux and on macOS they say only that a file is where the lock folder
+    belongs. Neither calls it a lock that names no running process."""
     home = tmp_path / "apothem-home"
     lock = tmp_path / "apothem-home.lock"
     lock.write_bytes(b"")
+    env = _lock_env(tmp_path)
+    env["PATH"] = f"{_stub_uname(tmp_path, system, release)}{os.pathsep}{env['PATH']}"
+
+    result = _run_script(name, env, tmp_path)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    if powershell:
+        expected = (
+            f"{lock} is the lock file of an Apothem PowerShell run (install.ps1, "
+            f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
+            "that run ends; while the run is active, Windows will not let anyone "
+            "remove it. Wait for that run to finish, then re-run. If no Apothem "
+            f"install, update or uninstall is running, remove {lock}, then re-run."
+        )
+    else:
+        expected = (
+            f"{lock} is a file where the Apothem lock folder belongs. If no "
+            "Apothem install, update or uninstall is running, remove "
+            f"{lock}, then re-run."
+        )
+    assert expected in combined, combined
+    assert "names no running process" not in combined, combined
+    assert powershell == ("PowerShell" in combined), combined
+    assert lock.is_file(), combined
+    assert _engine_calls(tmp_path) == [], combined
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_lock_from_another_environment_is_not_called_gone(
+    tmp_path: Path, name: str
+) -> None:
+    """A lock folder made by a run in another environment (WSL and Git Bash
+    on one machine, another container) names a process this run cannot
+    see, so kill -0 says nothing about it. The run says the process cannot
+    be checked from here and to remove the lock only if no run is active
+    anywhere, never that the process is gone."""
+    gone = subprocess.Popen(["sh", "-c", "exit 0"])
+    gone.wait(timeout=RUN_TIMEOUT_SECONDS)
+    lock = tmp_path / "apothem-home.lock"
+    lock.mkdir()
+    (lock / "env").write_text("MINGW64_NT-10.0-26100 elsewhere \n", encoding="utf-8")
+    (lock / "pid").write_text(f"{gone.pid}\n", encoding="utf-8")
 
     result = _run_script(name, _lock_env(tmp_path), tmp_path)
 
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined
     assert (
-        f"{lock} is the lock file of an Apothem PowerShell run (install.ps1, "
-        f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
-        "that run ends; while the run is active, Windows will not let anyone "
-        "remove it. Wait for that run to finish, then re-run. If no Apothem "
-        f"install, update or uninstall is running, remove {lock}, then re-run."
+        f"{lock} was made by an Apothem run in another environment (such as WSL, "
+        f"Git Bash or a container), so whether its process {gone.pid} still runs "
+        "cannot be checked from here. Wait for that run to finish, then re-run. "
+        "If no Apothem install, update or uninstall is running anywhere, remove "
+        f"{lock}, then re-run."
     ) in combined, combined
-    assert "names no running process" not in combined, combined
-    assert lock.is_file(), combined
+    assert "is no longer running" not in combined, combined
+    assert (lock / "pid").is_file(), combined
     assert _engine_calls(tmp_path) == [], combined
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_the_lock_records_the_environment_of_its_run(tmp_path: Path, name: str) -> None:
+    """While a run holds the lock, the folder names the system and host the
+    run's process ID belongs to, next to that process ID."""
+    record = tmp_path / "lock-env"
+    env = _lock_env(tmp_path, FAKE_ENGINE_ENV_RECORD=str(record))
+
+    result = _run_script(name, env, tmp_path)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    fields = record.read_text(encoding="utf-8").split(" ")
+    system = subprocess.run(
+        ["uname", "-o"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert fields[:2] == [system, os.uname().nodename], fields
 
 
 @pytest.mark.skipif(

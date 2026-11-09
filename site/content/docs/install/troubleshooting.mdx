@@ -268,19 +268,33 @@ message names, then re-run.
   uninstall is running, remove the lock, and re-run. The installer never
   removes it for you. On POSIX the lock is a folder (`rm -rf ~/.apothem.lock`);
   on Windows PowerShell it is a file that Windows deletes when its run ends.
-- "is the lock file of an Apothem PowerShell run" comes from a POSIX script,
-  under Git Bash for example, that found the file a PowerShell run holds.
-  Windows removes that file when the run ends and lets no one remove it while
-  the run is active. Wait for that run to finish. If no Apothem install, update
-  or uninstall is running, remove the file, then re-run.
+- "is the lock file of an Apothem PowerShell run" comes from a POSIX script
+  under Git Bash, MSYS2, Cygwin or WSL that found the file a PowerShell run
+  holds. Windows removes that file when the run ends and lets no one remove it
+  while the run is active. Wait for that run to finish. If no Apothem install,
+  update or uninstall is running, remove the file, then re-run. On other
+  systems the message reads "is a file where the Apothem lock folder belongs":
+  remove the file if no run is active, then re-run.
+- "was made by an Apothem run in another environment" means the lock folder
+  names a process in another environment, such as WSL when the run is under
+  Git Bash, Git Bash when it is under WSL or MSYS2, or another container.
+  That process cannot be checked from here. Wait for that run to finish;
+  remove the lock only if no Apothem install, update or uninstall is running
+  anywhere.
 - The POSIX scripts count a process that belongs to another user, such as a
   run under `sudo`, as running, so its lock reads as held. PowerShell cannot
   check the process ID of a lock folder made by the POSIX scripts (for example
   under Git Bash), so it reports that lock as held too.
-- When `APOTHEM_HOME` is a symbolic link, the POSIX scripts take the lock
-  beside the folder the link leads to; the message names it.
-- "Could not create the lock ... Check that you can write to ..." means the
-  folder that holds `APOTHEM_HOME` is not writable by you.
+- When `APOTHEM_HOME` is a symbolic link (or, on Windows, a junction), the
+  POSIX and the PowerShell scripts take the lock beside the folder the link
+  leads to, so a run through the link and a run through that folder stop each
+  other; the message names that lock.
+- "Could not create the lock ... Check that you can write to ..." means you
+  cannot write to the folder the message names: the one that holds
+  `APOTHEM_HOME` or, when `APOTHEM_HOME` is a link, the one that holds the
+  folder it leads to. Every run
+  needs to write there, an update in place, an uninstall and a dry run
+  included.
 
 ### The installer stops: an earlier run left folders beside APOTHEM_HOME
 
@@ -290,7 +304,14 @@ termination signal are caught and the run cleans up; a forced kill or a
 power loss during a swap is not, and can leave:
 
 - `.apothem-old.<name>.*`: the earlier install that was being replaced, in its
-  `home` folder.
+  `home` folder. When that `home` folder holds a git clone and `APOTHEM_HOME`
+  is in place (as it is once the new install has moved in), the line says
+  instead that it holds the clone's tree, which that run was keeping: move it
+  to a folder of your own if you still need it. When the `home` folder holds
+  no Apothem install and `APOTHEM_HOME` is in place, the line says so: a folder
+  appeared there while the run was moving the earlier install, the run put the
+  install back and left that folder alone. Check what it holds before you
+  remove it.
 - `.apothem-extract.<name>.*` or `.apothem-clone.<name>.*`: the new source
   that was being installed. When the run had already moved entries of
   `APOTHEM_HOME` into it, the line names every one: engine data such as
@@ -302,16 +323,25 @@ power loss during a swap is not, and can leave:
 
 `<name>` is the last part of `APOTHEM_HOME` (`.apothem` by default), so the
 folders of another `APOTHEM_HOME` in the same parent folder, which a run on
-that home may be using, are not listed. A folder whose name has no `<name>`
-part was made by an earlier installer that did not record the home; it is
-listed with a note that it may belong to any Apothem home in that folder, so
-check what it holds first. Only folders count: a file or a link with such a
-name is not listed. A folder the installer cannot read is listed as "could not
-be read".
+that home may be using, are not listed. On Windows and macOS a `<name>` that
+differs only in capital letters counts as this home's, because `APP` and
+`app` name the same folder there by default. The rule follows the operating
+system, not the file system: under WSL, even on a Windows drive, names that
+differ in capitals are different homes, while on a case-sensitive macOS volume
+or Windows folder they still count as one, so another home there whose name
+differs only in capitals is listed too. A folder whose name has no `<name>` part was made by
+an earlier installer that did not record the home; it is listed with a note
+that it may belong to any Apothem home in that folder, and its line says the
+entries were moved from the home it was made for. For such a folder made by
+a clone install, the line names only the engine data it finds, so look inside
+for anything else. Only folders count: a file or a link with such a name is
+not listed. A folder the installer cannot read is listed as "could not be
+read".
 
 Nothing was changed and nothing is deleted. If `APOTHEM_HOME` is missing,
 move the earlier install back to it first. Then move every entry the list
-names as moved from `APOTHEM_HOME` back into it, remove the listed folders, and
+names as moved into a new source back into the home it came from (check
+which home first for a folder with the note), remove the listed folders, and
 re-run. The check runs for a fetched install, a dry run included; it does not
 run for an install from your own checkout, nor for an update or an uninstall.
 
@@ -333,8 +363,10 @@ messages stop the update before the checkout. "Could not fetch" usually means a
 local tag differs from the one on origin: delete it with
 `git -C ~/.apothem tag -d <tag>` and re-run. "has changes to tracked files.
 Commit or stash them, then re-run." means the clone has uncommitted changes to
-files git tracks: commit or stash them, then re-run. A dry run does not make
-this check, since it does not fetch into the clone. "Could not check out"
+files git tracks: commit or stash them, then re-run. A dry run does not check
+for ordinary uncommitted changes, since it does not fetch into the clone, but
+it stops with the same message when files are marked assume-unchanged or
+skip-worktree (see the clone setup section above). "Could not check out"
 means the checkout would still overwrite local changes. The installer never
 discards local changes. For a non-release ref such as `main`, an existing
 clone follows origin's copy of that branch.

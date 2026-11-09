@@ -199,20 +199,37 @@ take_lock() {
     if mkdir "$LOCK_DIR" 2>/dev/null; then
         LOCK_HELD=1
         trap_signals_to_exit
+        # The environment goes in before the process ID, so a lock that
+        # names a process always says where that process runs.
+        lock_env > "${LOCK_DIR}/env" || die "Could not write the lock ${LOCK_DIR}."
         printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
         return 0
     fi
     trap_signals_to_exit
     exists "$LOCK_DIR" \
-        || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+        || die "Could not create the lock $LOCK_DIR. Check that you can write to ${_tl_parent}, then re-run."
     if [ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]; then
-        die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+        if powershell_may_lock; then
+            die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+        fi
+        die "$LOCK_DIR is a file where the Apothem lock folder belongs. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
     fi
     _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    if [ -z "$_tl_pid" ]; then
+        # A run that has just made the lock writes its process ID a moment
+        # later; look again before calling the lock stale.
+        sleep 1
+        _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    fi
     case "$_tl_pid" in
         "" | *[!0-9]*)
             die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
     esac
+    # A lock made before the environment was recorded has no env file; its
+    # process is checked here as before.
+    if [ -f "${LOCK_DIR}/env" ] && [ "$(cat "${LOCK_DIR}/env" 2>/dev/null)" != "$(lock_env)" ]; then
+        die "$LOCK_DIR was made by an Apothem run in another environment (such as WSL, Git Bash or a container), so whether its process ${_tl_pid} still runs cannot be checked from here. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running anywhere, remove $LOCK_DIR, then re-run."
+    fi
     if process_running "$_tl_pid"; then
         die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
     fi
@@ -233,6 +250,22 @@ process_running() {
     _pr_err="$(LC_ALL=C; export LC_ALL; kill -0 "$1" 2>&1)" && return 0
     case "$_pr_err" in
         *[Nn]"ot permitted"*) return 0 ;;
+    esac
+    return 1
+}
+
+# lock_env and powershell_may_lock: see install.sh.
+lock_env() {
+    printf '%s %s %s %s\n' "$(uname -o 2>/dev/null || uname -s 2>/dev/null)" \
+        "$(uname -n 2>/dev/null)" "$(readlink /proc/self/ns/pid 2>/dev/null)" \
+        "$(cygpath -m / 2>/dev/null)"
+}
+powershell_may_lock() {
+    case "$(uname -s 2>/dev/null)" in
+        MINGW* | MSYS* | CYGWIN*) return 0 ;;
+    esac
+    case "$(uname -r 2>/dev/null)" in
+        *[Mm]icrosoft*) return 0 ;;
     esac
     return 1
 }

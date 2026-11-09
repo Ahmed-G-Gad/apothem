@@ -599,8 +599,9 @@ def test_folders_a_stopped_run_left_stop_the_install(
     assert lines[first : first + len(expected)] == expected, plain
     assert _in(
         f"Nothing was changed. If {home} is missing, move the earlier install back "
-        f"to it first. Then move every entry listed above as moved from {home} back "
-        "into it, remove the folders listed above, and re-run.",
+        "to it first. Then move every entry listed above as moved into a new "
+        "source back into the home it came from, remove the folders listed "
+        "above, and re-run.",
         plain,
     ), plain
     for name in ("foreign", "longer", "file", "junction"):
@@ -722,6 +723,60 @@ def test_a_lock_folder_from_the_sh_scripts_is_reported_not_taken(
     assert (lock / "pid").exists() == bool(pid)
     if script == "install.ps1":
         assert not home.exists(), plain
+
+
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1", "uninstall.ps1"])
+def test_a_lock_folder_whose_process_id_comes_a_moment_later_reads_as_held(
+    tmp_path: Path, script: str
+) -> None:
+    """A POSIX run writes its process ID a moment after it makes the lock
+    folder. A PowerShell run that finds the folder in between looks again
+    and reports the lock as held, not as one a stopped run left. The test
+    writes the process ID 0.3 seconds after Lock-ApothemHome starts."""
+    lock = _lock(tmp_path)
+    lock.mkdir()
+    ready = tmp_path / "ready"
+    body = (
+        "function Write-Fail { param([string]$Msg) throw $Msg }; "
+        "$DryRun = $false; $ApothemHome = $env:T_HOME; "
+        "$HomeLockPath = $env:T_LOCK; "
+        "Set-Content -LiteralPath $env:T_READY -Value 'ready'; "
+        "try { Lock-ApothemHome; 'TAKEN' } "
+        "catch { 'REFUSED: ' + $_.Exception.Message }"
+    )
+    assert _PWSH is not None
+    run = subprocess.Popen(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            _ps1_function_program(script, ("Lock-ApothemHome",), body),
+        ],
+        env={
+            **os.environ,
+            "T_HOME": str(tmp_path / "apothem-home"),
+            "T_LOCK": str(lock),
+            "T_READY": str(ready),
+        },
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    deadline = time.monotonic() + 120
+    while not ready.exists():
+        assert run.poll() is None, run.communicate()
+        assert time.monotonic() < deadline, "Lock-ApothemHome never started"
+        time.sleep(0.02)
+    time.sleep(0.3)
+    (lock / "pid").write_text("4242\n", encoding="utf-8")
+
+    out, err = run.communicate(timeout=120)
+
+    plain = out + err
+    assert "REFUSED: " in plain, plain
+    assert _in(_held_message(tmp_path), plain), plain
+    assert "names no running process" not in plain, plain
 
 
 def _lock_probe(tmp_path: Path, record: Path, *, release: Path | None = None) -> str:
@@ -882,7 +937,9 @@ def test_a_run_in_the_callers_session_frees_the_lock_when_it_fails(
 
 # PowerShell stops the running pipeline on Ctrl+C; Stop() on the instance
 # that runs the script does the same, while the stub gpg holds the run in
-# the tag check.
+# the tag check. Ctrl+C also reaches every process in the console, but
+# Stop() ends only the one process the run started, so the run gets the
+# git.exe that does the work first on PATH (see _working_git_dir).
 _STOP_LIKE_CTRL_C = """
 $ps = [powershell]::Create()
 $null = $ps.AddScript((Get-Content -Raw -LiteralPath $env:APOTHEM_TEST_SCRIPT)).AddParameter('Yes')
@@ -905,6 +962,18 @@ $ps.EndStop($stop)
 """
 
 
+# The git a PowerShell PATH finds first is Git for Windows' cmd\git.exe (or
+# bin\git.exe), which only starts the git.exe that does the work and waits
+# for it. Stop() would end that starter and leave the working git.exe
+# running, holding the run's output open, so the stop could not finish
+# before the tag check did. Git Bash's PATH has the working git.exe first.
+def _working_git_dir() -> str:
+    """The folder `git --exec-path` names, which holds the working git.exe."""
+    folder = Path(git(["--exec-path"], REPO_ROOT).strip())
+    assert (folder / "git.exe").is_file(), f"no git.exe in {folder}"
+    return str(folder)
+
+
 def test_stopping_a_run_like_ctrl_c_frees_the_lock(tmp_path: Path) -> None:
     """Ctrl+C stops the run's pipeline; the run lets the lock go as it stops,
     while the tag check it was in has not even finished."""
@@ -921,6 +990,7 @@ def test_stopping_a_run_like_ctrl_c_frees_the_lock(tmp_path: Path) -> None:
             "APOTHEM_TEST_LOCK": str(_lock(tmp_path)),
             "APOTHEM_TEST_RECORD": str(record),
             "APOTHEM_TEST_RELEASE": str(release),
+            "PATH": os.pathsep.join([_working_git_dir(), env["PATH"]]),
         }
     )
     assert _PWSH is not None
@@ -1572,13 +1642,14 @@ def test_the_entries_a_swap_carried_are_all_named(tmp_path: Path) -> None:
     ) in lines, plain
     assert (
         f"    {unlisted}: the new source that was being installed, in {earlier}, "
-        f"with these entries moved into it from {home}: notes.txt, state"
-        + OLD_NOTE.format(parent=tmp_path)
+        "with these entries moved into it from the Apothem home it was made for: "
+        "notes.txt, state" + OLD_NOTE.format(parent=tmp_path)
     ) in lines, plain
 
 
 _SWAP_FUNCTIONS = (
     "Write-Fail",
+    "Get-SortedName",
     "Test-Entry",
     "Move-Entry",
     "Get-SourceEntry",
@@ -1979,3 +2050,160 @@ def test_a_failed_download_says_why(tmp_path: Path) -> None:
     )
     assert match, plain
     assert match.group(1).strip(), plain
+
+
+# Round 3: what the PowerShell scripts read and say ---------------------------
+
+
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
+@pytest.mark.parametrize(
+    "bom", [b"\xff\xfe", b"\xfe\xff"], ids=["utf16-le-bom", "utf16-be-bom"]
+)
+def test_a_filter_behind_a_utf16_byte_order_mark_is_refused(
+    tmp_path: Path, script: str, bom: bytes
+) -> None:
+    """git reads .git/info/attributes byte by byte, so a UTF-16 byte-order
+    mark in front hides nothing from it: the next line's filter still runs
+    on checkout. The scripts read the file the same way and refuse it before
+    anything is fetched; the filter never runs."""
+    repo, home, old_commit = _clone_at_old_tag(tmp_path)
+    repoint_tag(repo, TAG, TAG)
+    marker = tmp_path / "smudge-ran"
+    (home / ".git" / "info").mkdir(exist_ok=True)
+    attributes = home / ".git" / "info" / "attributes"
+    attributes.write_bytes(bom + b"\n* filter=evil\n")
+    env = _script_env(
+        tmp_path, gitconfig_extra=_SMUDGE_CONFIG.format(marker=marker.as_posix())
+    )
+
+    result = _invoke(tmp_path, script, env)
+
+    plain = _out(result)
+    assert not marker.exists(), plain
+    assert _head(home) == old_commit, plain
+    assert result.returncode != 0, plain
+    assert _in(
+        f"{home}'s own git attributes set a filter (filter=), which the update "
+        f"would trust. Remove it from {home}/.git/info/attributes, then re-run.",
+        plain,
+    ), plain
+
+
+def test_a_comment_line_holding_a_carriage_return_is_not_refused(
+    tmp_path: Path,
+) -> None:
+    """git ends a line of attributes at LF only, so "#c<CR>* filter=x" is one
+    comment line, as install.sh reads it too: the update goes on."""
+    repo, home, _ = _clone_at_old_tag(tmp_path)
+    repoint_tag(repo, TAG, TAG)
+    (home / ".git" / "info").mkdir(exist_ok=True)
+    (home / ".git" / "info" / "attributes").write_bytes(b"#c\r* filter=evil\n")
+
+    result = _invoke(tmp_path, "update.ps1", _script_env(tmp_path))
+
+    plain = _out(result)
+    assert "own git attributes set a filter" not in plain, plain
+    assert _head(home) == _head(repo), plain
+
+
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1", "uninstall.ps1"])
+def test_a_run_through_a_junction_takes_the_lock_of_the_folder_it_leads_to(
+    tmp_path: Path, script: str
+) -> None:
+    """APOTHEM_HOME given as a junction takes the lock beside the folder the
+    junction leads to, as the sh scripts do with cd -P, so a Git Bash run on
+    that folder (its lock folder here) stops it. The message names the home
+    as given and the lock it found."""
+    home = _prepare(tmp_path, script)
+    home.mkdir(exist_ok=True)
+    link = tmp_path / "home-link"
+    _make_junction(link, home)
+    lock = tmp_path / "apothem-home.lock"
+    lock.mkdir()
+    (lock / "pid").write_text("4242\n", encoding="utf-8")
+    env = _script_env(tmp_path, extra_env={"APOTHEM_HOME": str(link)})
+
+    result = _invoke(tmp_path, script, env)
+
+    plain = _out(result)
+    assert result.returncode != 0, plain
+    assert _in(
+        f"Another Apothem install, update or uninstall is running on {link}. "
+        f"Wait for it to finish, then re-run. If none is running, remove {lock}, "
+        "then re-run.",
+        plain,
+    ), plain
+    assert not (tmp_path / "home-link.lock").exists(), plain
+    assert (lock / "pid").is_file(), plain
+
+
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1", "uninstall.ps1"])
+def test_a_lock_folder_made_while_the_lock_is_opened_is_named_as_held(
+    tmp_path: Path, script: str
+) -> None:
+    """A Git Bash run can make its lock folder between the look for one and
+    the open of the lock file. The open then fails as it does on a folder,
+    and the run says another run holds the lock, not that it cannot write
+    beside APOTHEM_HOME. Here the first look finds nothing (a stand-in
+    Get-Item), and the folder is already there for the open."""
+    home = tmp_path / "apothem-home"
+    lock = tmp_path / "apothem-home.lock"
+    lock.mkdir()
+    body = (
+        "$script:LkLooks = 0; "
+        "function Get-Item { [CmdletBinding()] param([string]$LiteralPath, "
+        "[switch]$Force) $script:LkLooks++; if ($script:LkLooks -eq 1) "
+        "{ return $null }; Microsoft.PowerShell.Management\\Get-Item "
+        "-LiteralPath $LiteralPath -Force:$Force -ErrorAction SilentlyContinue }; "
+        "function Write-Fail { param([string]$Msg) throw $Msg }; "
+        "$ApothemHome = $env:T_HOME; $HomeLockPath = $env:T_LOCK; "
+        "$DryRun = $false; $script:HomeLock = $null; "
+        "try { Lock-ApothemHome; 'LOCKED' } catch { 'REFUSED: ' + $_.Exception.Message }"
+    )
+
+    result = _pwsh_program(
+        _ps1_function_program(script, ("Lock-ApothemHome",), body),
+        T_HOME=str(home),
+        T_LOCK=str(lock),
+    )
+
+    text = result.stdout + result.stderr
+    assert result.returncode == 0, text
+    assert _in(
+        f"REFUSED: Another Apothem install, update or uninstall is running on "
+        f"{home}. Wait for it to finish, then re-run. If none is running, "
+        f"remove {lock}, then re-run.",
+        text,
+    ), text
+    assert lock.is_dir(), text
+
+
+@pytest.mark.skipif(not _PWSH_IS_7, reason="PowerShell 7 refuses this redirect itself")
+def test_powershell_7s_own_redirect_refusal_says_what_happened(tmp_path: Path) -> None:
+    """PowerShell 7 refuses a redirect from https to http itself, with the
+    error InsecureRedirection, whose message ("Operation is not valid due to
+    the current state of the object.") says nothing of it. Save-Download
+    says what happened and why it stops, and leaves no file. A stand-in Invoke-WebRequest raises that error here."""
+    out = tmp_path / "download.bin"
+    body = (
+        "function Invoke-WebRequest { [CmdletBinding()] param([switch]$UseBasicParsing, "
+        "$Uri, $OutFile, [switch]$PassThru, $MaximumRedirection) "
+        "Set-Content -LiteralPath $OutFile -Value 'partial'; "
+        "$PSCmdlet.ThrowTerminatingError([System.Management.Automation.ErrorRecord]::new("
+        "[System.InvalidOperationException]::new(), 'InsecureRedirection', "
+        "[System.Management.Automation.ErrorCategory]::InvalidOperation, $null)) }; "
+        "try { Save-Download 'https://a.invalid/f' $env:T_OUT; 'SAVED' } "
+        "catch { 'REFUSED: ' + $_.Exception.Message }"
+    )
+
+    result = _pwsh_program(
+        _ps1_function_program("install.ps1", ("Save-Download",), body), T_OUT=str(out)
+    )
+
+    text = result.stdout + result.stderr
+    assert result.returncode == 0, text
+    assert (
+        "REFUSED: https://a.invalid/f was redirected to a plain http:// address; "
+        "a download from an https:// address follows only https:// redirects"
+    ) in text, text
+    assert not out.exists(), text

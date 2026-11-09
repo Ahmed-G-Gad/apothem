@@ -80,32 +80,18 @@
 #     not deleted.
 #   - A git clone of anything other than an Apothem source is treated like
 #     any other folder that holds no Apothem install.
-#   - Before an existing clone is fetched (or replaced), the run stops when
-#     git will not work in it because another user owns it, when its own git
-#     settings (in its config or config.worktree) hold any setting that is
-#     not on a short list of the ones git clone and git init write there,
-#     plus branch settings, user.name, user.email, maintenance.auto,
-#     maintenance.strategy, pull.rebase and pull.ff (CLONE_CONFIG_ALLOW
-#     below), or when its info/attributes sets a filter. An update in place
-#     also stops when the clone holds a submodule, when it hides changes from
-#     git (assume-unchanged or skip-worktree files), or when its work tree is
-#     not APOTHEM_HOME; a dry run applies these checks too. Every git command
-#     on the clone runs with its hooks, its fsmonitor, its pager and git's
-#     automatic maintenance off, with no ext:: transport, and without looking
-#     inside nested repositories.
+#   - Before an existing clone is fetched or replaced, its owner, its own
+#     git settings (CLONE_CONFIG_ALLOW), attributes, submodules and hidden
+#     changes are checked (check_clone_setup), in a dry run too; git runs on
+#     it with its hooks, fsmonitor, pager and maintenance off (cgit).
 #   - An entry to keep whose name has a space or another special character
 #     stops the install; move it out of APOTHEM_HOME first.
 #   - A symbolic link at APOTHEM_HOME is refused (point APOTHEM_HOME at the
 #     folder the link leads to), except when it leads to an existing clone
 #     that is updated in place.
-#   - A failure or an interrupt puts the earlier install back unchanged. A
-#     forced kill or a power loss can leave folders beside APOTHEM_HOME
-#     (.apothem-extract.<name>.*, .apothem-clone.<name>.*,
-#     .apothem-old.<name>.*, <name> being APOTHEM_HOME's own folder name):
-#     the next fetched install into that APOTHEM_HOME stops, names each one
-#     and what it holds, and changes nothing.
-#   - One install, update or uninstall runs at a time: each holds the lock
-#     folder <APOTHEM_HOME>.lock while it runs, and a second run stops.
+#   - A failure or an interrupt puts the earlier install back unchanged; a
+#     forced kill can leave folders the next install reports
+#     (check_leftovers). One run at a time holds the lock (take_lock).
 #
 # Usage (recommended — tag-pinned, verified):
 #     # default: resolves and verifies the latest signed release tag
@@ -821,25 +807,15 @@ git_path() {
 }
 
 # The settings a clone's own git config (.git/config, and .git/config.worktree
-# when there is one) may hold for an update in place to go ahead: the ones
-# git clone and git init write there (any git 2.x, any platform, sha1 or
-# sha256, files or reftable refs, --no-tags, --single-branch, --depth,
-# --filter), branch settings, which tools such as editors add, the user's
-# name and email, the two maintenance settings `git maintenance register`
-# writes, and the two pull settings git pull's own hint suggests. None of
-# them names a program for git to run, a file or folder git reads settings,
-# hooks, attributes or objects from, a URL rewrite, or another work tree or
-# git folder. remote.origin.url names the address the update fetches from (a
-# file in the git folder's remotes or branches folder can name an address
-# too, which gives no more than that setting does). An address can name a
-# transport whose helper git runs (<name>::...), so cgit allows only the
-# file, git, http, https and ssh transports, and the release tag check
-# decides what is checked out.
-# Any other setting stops the update. Section and key compare without regard
-# to case; the part between them (branch.<name>.merge) compares exactly, and
-# `*` there stands for any name that is not empty, as `*` as the key stands
-# for any key. install.sh, update.sh, install.ps1 and update.ps1 hold the
-# same list (tests/scripts/test_installer_parity.py compares them).
+# when there is one) may hold for an update in place: the ones git clone and
+# git init write there, branch settings, user.name and user.email, and the
+# maintenance and pull settings git itself suggests. None names a program,
+# a file or folder git reads from, a URL rewrite, or another work tree;
+# cgit allows only the file, git, http, https and ssh transports for
+# remote.origin.url. Any other setting stops the update. Section and key
+# compare without regard to case, the part between them exactly; `*` is any
+# name that is not empty. install.sh, update.sh, install.ps1 and update.ps1
+# hold the same list (tests/scripts/test_installer_parity.py compares them).
 # clone-config-allow-list begin
 CLONE_CONFIG_ALLOW='core.repositoryformatversion
 core.filemode
@@ -964,8 +940,11 @@ check_clone_config() {
         die "$1's own git config sets ${_cc_key}, which an update in place does not accept in a clone's own config. Remove it from ${_cc_file}, then re-run."
     fi
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
+    # As git reads it: a line is a comment only where # follows nothing but
+    # spaces, tabs and CR (not VT or FF, which [[:space:]] would take).
+    _cc_blank="$(printf ' \t\r')"
     if [ -f "$_cc_file" ] && tr -d '\000' 2>/dev/null < "$_cc_file" \
-        | LC_ALL=C grep -v '^[[:space:]]*#' | LC_ALL=C grep -q 'filter='; then
+        | LC_ALL=C grep -v "^[${_cc_blank}]*#" | LC_ALL=C grep -q 'filter='; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
 }
@@ -1011,12 +990,13 @@ check_clone_setup() {
     clone_git_ok "$1"
     check_clone_config "$1"
     check_clone_modules "$1"
-    _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
-    # git prints C:/... under Git Bash, where pwd prints /c/...: compare the
-    # physical folders both name.
-    [ -z "$_cs_top" ] || _cs_top="$(cd "$_cs_top" 2>/dev/null && pwd -P || true)"
-    _cs_here="$(cd "$1" && pwd -P)"
-    if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
+    # Ask git whether DIR is inside the work tree and at its top, rather
+    # than comparing folder names: under Git Bash, git and pwd can spell one
+    # folder differently (other capitals, or /tmp for the Windows temp
+    # folder).
+    _cs_inside="$(cgit -C "$1" rev-parse --is-inside-work-tree 2>/dev/null || true)"
+    _cs_prefix="$(cgit -C "$1" rev-parse --show-prefix 2>/dev/null)" || _cs_prefix="?"
+    if [ "$_cs_inside" != "true" ] || [ -n "$_cs_prefix" ]; then
         die "$1 is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
     fi
     check_clone_gitlinks "$1"
@@ -1215,16 +1195,36 @@ _SW_ASIDE=""
 _SW_ASIDE_ITEM=""
 _SW_KEEP=""
 _SW_KEEP_STAGING=0
+
+# move_tree FROM TO — mv FROM to TO, and fail as mv would when FROM went
+# inside a folder TO that appeared meanwhile (found by its inode), after
+# moving it back. MOVED_BACK=1 says FROM is where it was: moved back, or
+# never moved because mv failed (a file that appeared at TO, say).
+file_id() { ls -di -- "$1" 2>/dev/null | awk 'NR == 1 { print $1 }'; }
+MOVED_BACK=0
+move_tree() {
+    MOVED_BACK=0
+    _mt_id="$(file_id "$1")"
+    if ! mv "$1" "$2"; then
+        [ -n "$_mt_id" ] && [ "$(file_id "$1")" = "$_mt_id" ] && MOVED_BACK=1
+        return 1
+    fi
+    _mt_in="$2/${1##*/}"
+    [ -n "$_mt_id" ] && exists "$_mt_in" && [ "$(file_id "$_mt_in")" = "$_mt_id" ] || return 0
+    mv "$_mt_in" "$1" && MOVED_BACK=1 || warn "$1 could not be moved back from $_mt_in"
+    return 1
+}
+
 swap_rollback() {
     _sw_ok=1
     if [ "$_SW_MODE" = "aside" ]; then
         # Undo the move-in, then move the set-aside folder back and remove
         # the folder it was moved into, which is then empty.
         if exists "$APOTHEM_HOME" && ! exists "$_SW_NEW" && exists "$_SW_ASIDE_ITEM"; then
-            mv "$APOTHEM_HOME" "$_SW_NEW" || _sw_ok=0
+            move_tree "$APOTHEM_HOME" "$_SW_NEW" || _sw_ok=0
         fi
         if [ "$_sw_ok" = "1" ] && ! exists "$APOTHEM_HOME" && exists "$_SW_ASIDE_ITEM"; then
-            mv "$_SW_ASIDE_ITEM" "$APOTHEM_HOME" || _sw_ok=0
+            move_tree "$_SW_ASIDE_ITEM" "$APOTHEM_HOME" || _sw_ok=0
         fi
         if exists "$_SW_ASIDE_ITEM" || ! exists "$APOTHEM_HOME"; then _sw_ok=0; fi
         if [ "$_sw_ok" = "1" ] && [ -n "$_SW_ASIDE" ]; then
@@ -1235,11 +1235,11 @@ swap_rollback() {
         # Undo the move-in: the new tree is at APOTHEM_HOME while the
         # earlier one is aside.
         if exists "$APOTHEM_HOME" && ! exists "$_SW_NEW" && exists "$_sw_oldhome"; then
-            mv "$APOTHEM_HOME" "$_SW_NEW" || _sw_ok=0
+            move_tree "$APOTHEM_HOME" "$_SW_NEW" || _sw_ok=0
         fi
         # Undo the rename of the earlier tree.
         if [ "$_sw_ok" = "1" ] && ! exists "$APOTHEM_HOME" && exists "$_sw_oldhome"; then
-            mv "$_sw_oldhome" "$APOTHEM_HOME" || _sw_ok=0
+            move_tree "$_sw_oldhome" "$APOTHEM_HOME" || _sw_ok=0
         fi
         if exists "$_sw_oldhome" || ! exists "$APOTHEM_HOME"; then _sw_ok=0; fi
         # Undo the carry: every planned entry now in NEW moves back. One that
@@ -1250,7 +1250,7 @@ swap_rollback() {
                 if exists "${APOTHEM_HOME}/${_sw_name}"; then
                     _sw_ok=0
                 else
-                    mv "${_SW_NEW}/${_sw_name}" "${APOTHEM_HOME}/${_sw_name}" || _sw_ok=0
+                    move_tree "${_SW_NEW}/${_sw_name}" "${APOTHEM_HOME}/${_sw_name}" || _sw_ok=0
                 fi
             done
         fi
@@ -1329,11 +1329,12 @@ on_exit() {
 # holds the owning run's process ID. on_exit removes it on every way out of
 # the run. A forced kill (or a power loss) leaves it behind: the next run
 # then says so and how to remove it, and never takes it over, since it
-# cannot be sure the other run has ended. When APOTHEM_HOME is a symbolic
-# link, the lock sits beside the folder it leads to, so a run through the
-# link and a run through that folder's own path take the same lock.
-# install.ps1, update.ps1 and uninstall.ps1 hold a file there instead, open
-# with no sharing, which Windows removes when that run ends.
+# cannot be sure the other run has ended. A lock from another environment
+# (lock_env) cannot have its process checked. When APOTHEM_HOME is a
+# symbolic link, the lock sits beside the folder it leads to, so a run
+# through the link and a run through that folder's own path take the same
+# lock. install.ps1, update.ps1 and uninstall.ps1 hold a file there
+# instead, open with no sharing, which Windows removes when that run ends.
 LOCK_DIR=""
 LOCK_HELD=0
 take_lock() {
@@ -1359,20 +1360,34 @@ take_lock() {
     if mkdir "$LOCK_DIR" 2>/dev/null; then
         LOCK_HELD=1
         trap_signals_to_exit
+        lock_env > "${LOCK_DIR}/env" || die "Could not write the lock ${LOCK_DIR}."
         printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
         return 0
     fi
     trap_signals_to_exit
     exists "$LOCK_DIR" \
-        || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+        || die "Could not create the lock $LOCK_DIR. Check that you can write to ${_tl_parent}, then re-run."
     if [ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]; then
-        die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+        if powershell_may_lock; then
+            die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+        fi
+        die "$LOCK_DIR is a file where the Apothem lock folder belongs. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
     fi
     _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    if [ -z "$_tl_pid" ]; then
+        # A run that has just made the lock writes its process ID a moment
+        # later; look again before calling the lock stale.
+        sleep 1
+        _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    fi
     case "$_tl_pid" in
         "" | *[!0-9]*)
             die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
     esac
+    # (an earlier installer's lock has no env)
+    if [ -f "${LOCK_DIR}/env" ] && [ "$(cat "${LOCK_DIR}/env" 2>/dev/null)" != "$(lock_env)" ]; then
+        die "$LOCK_DIR was made by an Apothem run in another environment (such as WSL, Git Bash or a container), so whether its process ${_tl_pid} still runs cannot be checked from here. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running anywhere, remove $LOCK_DIR, then re-run."
+    fi
     if process_running "$_tl_pid"; then
         die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
     fi
@@ -1397,6 +1412,29 @@ process_running() {
     return 1
 }
 
+# lock_env — print the system, host, process ID namespace and runtime root
+# this run's process ID belongs to (WSL and Git Bash on one machine differ;
+# so do two msys runtimes, such as Git Bash and MSYS2, each with its own
+# process table). uname -o, not uname -s, so that MSYSTEM and the Windows
+# build number play no part.
+lock_env() {
+    printf '%s %s %s %s\n' "$(uname -o 2>/dev/null || uname -s 2>/dev/null)" \
+        "$(uname -n 2>/dev/null)" "$(readlink /proc/self/ns/pid 2>/dev/null)" \
+        "$(cygpath -m / 2>/dev/null)"
+}
+
+# powershell_may_lock — return 0 where a PowerShell run can hold the lock
+# file: Git Bash, MSYS2, Cygwin, and WSL (a lock on a Windows drive).
+powershell_may_lock() {
+    case "$(uname -s 2>/dev/null)" in
+        MINGW* | MSYS* | CYGWIN*) return 0 ;;
+    esac
+    case "$(uname -r 2>/dev/null)" in
+        *[Mm]icrosoft*) return 0 ;;
+    esac
+    return 1
+}
+
 # make_staging KIND — make a new, empty folder beside APOTHEM_HOME named
 # .apothem-KIND.<leaf>.<six letters or digits>, <leaf> being APOTHEM_HOME's
 # own folder name, and print its path. The leaf lets check_leftovers in a
@@ -1413,26 +1451,21 @@ make_staging() {
 # every entry that has to go back.
 CARRY_LIST=".apothem-carried-entries"
 
-# check_leftovers — stop, before anything is fetched or swapped, when a run
-# that was stopped part-way left folders beside APOTHEM_HOME:
-# .apothem-extract.<leaf>.* and .apothem-clone.<leaf>.* (a new source being
-# installed, perhaps with entries of APOTHEM_HOME already moved into it) or
-# .apothem-old.<leaf>.* (the earlier install being replaced), <leaf> being
-# APOTHEM_HOME's own folder name. Every other way out of a run puts things
-# back and removes them, so they are there only after a forced kill or a
-# power loss, and the install lock keeps any other run on this APOTHEM_HOME
-# from using them now. Folders made for another APOTHEM_HOME in the same
-# folder are left out: a run on that home may be using them. Folders with
-# the earlier names (.apothem-extract.<letters>, no leaf) are reported too,
-# with a note that they may belong to any Apothem home there. Only real
-# folders count, never files or links. They may hold the earlier install or
-# its data, so nothing is moved or removed here: the message names each
-# folder, what it holds, and what to do. When APOTHEM_HOME itself is
-# missing, the folders it may have been moved into
-# (<APOTHEM_HOME>.before-apothem-<time>) are named too.
+# check_leftovers — stop, before anything is fetched or swapped, when a
+# forced kill left staging folders beside APOTHEM_HOME:
+# .apothem-{extract,clone,old}.<leaf>.*, <leaf> being APOTHEM_HOME's own
+# folder name (another spelling of it where names ignore case; another
+# home's are left out), and those with the earlier names (no leaf), with a
+# note. Only real folders count. Nothing is moved or removed: the message
+# names each folder, what it holds, and what to do; and, when APOTHEM_HOME
+# is missing, its <APOTHEM_HOME>.before-apothem-<time> folders.
 check_leftovers() {
     _lo_parent="$(dirname -- "$APOTHEM_HOME")"
     _lo_leaf="$(basename -- "$APOTHEM_HOME")"
+    _lo_fold=0
+    case "$(uname -s 2>/dev/null)" in
+        MINGW* | MSYS* | CYGWIN* | Darwin*) _lo_fold=1 ;;
+    esac
     _lo_mine=""
     _lo_older=""
     for _lo_dir in "$_lo_parent"/.apothem-old.* "$_lo_parent"/.apothem-extract.* "$_lo_parent"/.apothem-clone.*; do
@@ -1441,7 +1474,7 @@ check_leftovers() {
         _lo_rest="${_lo_rest#.apothem-*.}"
         case "$_lo_rest" in
             *.*)
-                [ -n "${_lo_rest##*.}" ] && [ "${_lo_rest%.*}" = "$_lo_leaf" ] || continue
+                [ -n "${_lo_rest##*.}" ] && same_leaf "${_lo_rest%.*}" "$_lo_leaf" "$_lo_fold" || continue
                 _lo_mine="${_lo_mine}${_lo_dir}
 " ;;
             *)
@@ -1451,17 +1484,20 @@ check_leftovers() {
     done
     [ -n "${_lo_mine}${_lo_older}" ] || return 0
     _lo_note=" (made by an earlier installer that did not record which home it was for, so it may belong to any Apothem home in ${_lo_parent}: check what it holds before you move or remove it)"
+    _lo_base="${APOTHEM_HOME%"$_lo_leaf"}"
     _lo_list="$(
         printf '%s' "$_lo_mine" | LC_ALL=C sort | while IFS= read -r _lo_dir; do
-            leftover_line "$_lo_dir"
+            leftover_line "$_lo_dir" 0
         done
         printf '%s' "$_lo_older" | LC_ALL=C sort | while IFS= read -r _lo_dir; do
-            printf '%s%s\n' "$(leftover_line "$_lo_dir")" "$_lo_note"
+            printf '%s%s\n' "$(leftover_line "$_lo_dir" 1)" "$_lo_note"
         done
         if ! exists "$APOTHEM_HOME"; then
-            for _lo_dir in "$APOTHEM_HOME".before-apothem-*; do
+            for _lo_dir in "$_lo_base"*.before-apothem-* "$_lo_base".*.before-apothem-*; do
                 [ -d "$_lo_dir" ] && [ ! -L "$_lo_dir" ] || continue
-                is_aside_name "${_lo_dir#"$APOTHEM_HOME".before-apothem-}" || continue
+                _lo_name="${_lo_dir##*/}"
+                same_leaf "${_lo_name%.before-apothem-*}" "$_lo_leaf" "$_lo_fold" || continue
+                is_aside_name "${_lo_name##*.before-apothem-}" || continue
                 printf '%s\n' "$_lo_dir"
             done | LC_ALL=C sort | while IFS= read -r _lo_dir; do
                 if [ -d "$_lo_dir/$_lo_leaf" ] && [ ! -L "$_lo_dir/$_lo_leaf" ]; then
@@ -1474,8 +1510,16 @@ check_leftovers() {
     )"
     printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "An earlier run was stopped part-way and left these folders beside $APOTHEM_HOME:" >&2
     printf '%s\n' "$_lo_list" | sed 's/^/    /' >&2
-    printf '    %s\n' "Nothing was changed. If $APOTHEM_HOME is missing, move the earlier install back to it first. Then move every entry listed above as moved from $APOTHEM_HOME back into it, remove the folders listed above, and re-run." >&2
+    printf '    %s\n' "Nothing was changed. If $APOTHEM_HOME is missing, move the earlier install back to it first. Then move every entry listed above as moved into a new source back into the home it came from, remove the folders listed above, and re-run." >&2
     exit 1
+}
+
+# same_leaf NAME LEAF FOLD — return 0 when NAME is LEAF, or, with FOLD 1,
+# is LEAF but for ASCII case.
+same_leaf() {
+    [ "$1" = "$2" ] && return 0
+    [ "$3" = "1" ] || return 1
+    [ "$(printf '%sx' "$1" | LC_ALL=C tr 'A-Z' 'a-z')" = "$(printf '%sx' "$2" | LC_ALL=C tr 'A-Z' 'a-z')" ]
 }
 
 # is_aside_name TIME — return 0 when TIME is what claim_aside puts after
@@ -1528,10 +1572,14 @@ join_names() {
     awk 'NR > 1 { printf ", " } { printf "%s", $0 } END { printf "\n" }'
 }
 
-# leftover_line DIR — print one line saying what the leftover folder DIR
-# holds (see check_leftovers): that it cannot be read, that it is empty, the
-# earlier install in DIR/home, the new source in DIR/<tree> with every entry
-# moved into it from APOTHEM_HOME, or else every name in it.
+# leftover_line DIR OLDNAME — print one line saying what the leftover folder
+# DIR holds (see check_leftovers): that it cannot be read, that it is empty,
+# the earlier install in DIR/home, the new source in DIR/<tree> with every
+# entry moved into it from APOTHEM_HOME (from its own home, for OLDNAME 1:
+# an earlier-name folder), or else every name in it. A clone's tree in
+# DIR/home while APOTHEM_HOME is there is one a keep-clone swap was keeping.
+# A DIR/home that holds no Apothem install while APOTHEM_HOME is there is a
+# folder that appeared there, which the swap left alone (see swap_in).
 leftover_line() {
     if ! ls -A -- "$1" >/dev/null 2>&1 || ! _ll_all="$(list_entries "$1")"; then
         printf '%s\n' "$1: could not be read (check its owner and permissions)"
@@ -1548,7 +1596,14 @@ leftover_line() {
     case "$1" in
         */.apothem-old.*)
             if [ "$_ll_names" = "home" ] && [ -d "$1/home" ] && [ ! -L "$1/home" ]; then
-                printf '%s\n' "$1: the earlier install that was being replaced, in $1/home"
+                if exists "$1/home/.git" && exists "$APOTHEM_HOME"; then
+                    printf '%s\n' "$1: the earlier clone's tree, which that run was keeping, in $1/home: move it to a folder of your own if you still need it"
+                elif exists "$APOTHEM_HOME" && ! exists "$1/home/src/apothem" \
+                    && ! exists "$1/home/$SOURCE_MANIFEST" && [ -n "$(ls -A -- "$1/home" 2>/dev/null)" ]; then
+                    printf '%s\n' "$1: a folder that holds no Apothem install, in $1/home: check what it holds before you remove it"
+                else
+                    printf '%s\n' "$1: the earlier install that was being replaced, in $1/home"
+                fi
                 return 0
             fi ;;
         *)
@@ -1562,8 +1617,10 @@ leftover_line() {
                 *)
                     if [ -d "$1/$_ll_tree" ] && [ ! -L "$1/$_ll_tree" ]; then
                         _ll_carried="$(leftover_carried "$1" "$_ll_tree" | join_names)"
+                        _ll_from="$APOTHEM_HOME"
+                        if [ "$2" = "1" ]; then _ll_from="the Apothem home it was made for"; fi
                         if [ -n "$_ll_carried" ]; then
-                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_tree, with these entries moved into it from $APOTHEM_HOME: $_ll_carried"
+                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_tree, with these entries moved into it from ${_ll_from}: $_ll_carried"
                         else
                             printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_tree"
                         fi
@@ -1640,7 +1697,7 @@ swap_in() {
     _SW_ASIDE_ITEM=""
     _SW_KEEP=""
     if ! exists "$APOTHEM_HOME"; then
-        mv "$_SW_NEW" "$APOTHEM_HOME" || die "Could not move the new source to $APOTHEM_HOME"
+        move_tree "$_SW_NEW" "$APOTHEM_HOME" || die "Could not move the new source to $APOTHEM_HOME"
         return 0
     fi
     if [ "$_SW_MODE" = "aside" ]; then
@@ -1654,8 +1711,8 @@ swap_in() {
         fi
         _SW_ASIDE_ITEM="${_SW_ASIDE}/$(basename -- "$APOTHEM_HOME")"
         _SW_PHASE="aside"
-        if ! mv "$APOTHEM_HOME" "$_SW_ASIDE_ITEM"; then
-            if exists "$APOTHEM_HOME" && ! exists "$_SW_ASIDE_ITEM"; then
+        if ! move_tree "$APOTHEM_HOME" "$_SW_ASIDE_ITEM"; then
+            if exists "$APOTHEM_HOME" && { [ "$MOVED_BACK" = "1" ] || ! exists "$_SW_ASIDE_ITEM"; }; then
                 rmdir "$_SW_ASIDE" 2>/dev/null || true
                 trap_signals_to_exit
                 _SW_PHASE=""
@@ -1664,7 +1721,7 @@ swap_in() {
             swap_abort "Could not move the existing $APOTHEM_HOME aside"
         fi
         _SW_PHASE="move-in"
-        mv "$_SW_NEW" "$APOTHEM_HOME" \
+        move_tree "$_SW_NEW" "$APOTHEM_HOME" \
             || swap_abort "Could not move the new source to $APOTHEM_HOME"
         trap_signals_to_exit
         _SW_PHASE=""
@@ -1694,14 +1751,26 @@ ${_sw_new_names}"
     trap 'swap_abort "Interrupted while replacing $APOTHEM_HOME"' HUP INT TERM QUIT PIPE
     for _sw_name in $_SW_KEEP; do
         _SW_PHASE="carry"
-        mv "${APOTHEM_HOME}/${_sw_name}" "${_SW_NEW}/${_sw_name}" \
-            || swap_abort "Could not move ${_sw_name} into the new install"
+        if ! move_tree "${APOTHEM_HOME}/${_sw_name}" "${_SW_NEW}/${_sw_name}"; then
+            # Moved back, it is not to be carried back from NEW.
+            # shellcheck disable=SC2086
+            [ "$MOVED_BACK" = "0" ] || _SW_KEEP="$(printf '%s\n' $_SW_KEEP | grep -vxF -- "$_sw_name" || true)"
+            swap_abort "Could not move ${_sw_name} into the new install"
+        fi
     done
     _SW_PHASE="aside"
-    mv "$APOTHEM_HOME" "${_SW_OLD}/home" \
-        || swap_abort "Could not move the existing $APOTHEM_HOME aside"
+    if ! move_tree "$APOTHEM_HOME" "${_SW_OLD}/home"; then
+        # The earlier tree is still in place. Anything at _SW_OLD/home then
+        # is not it, and not this run's either, so it is left there and
+        # named, and _SW_OLD is no longer this run's to remove.
+        if [ "$MOVED_BACK" = "1" ] && exists "${_SW_OLD}/home"; then
+            warn "Something this run did not make appeared at ${_SW_OLD}/home and was left there. Check what it holds, then remove ${_SW_OLD}."
+            _SW_OLD=""
+        fi
+        swap_abort "Could not move the existing $APOTHEM_HOME aside"
+    fi
     _SW_PHASE="move-in"
-    mv "$_SW_NEW" "$APOTHEM_HOME" \
+    move_tree "$_SW_NEW" "$APOTHEM_HOME" \
         || swap_abort "Could not move the new source to $APOTHEM_HOME"
     trap_signals_to_exit
     _SW_PHASE=""
@@ -1715,7 +1784,7 @@ ${_sw_new_names}"
         _SW_OLD=""
         _sw_tree_aside="${_sw_old}/home"
         if _sw_claim="$(claim_aside)"; then
-            if mv "${_sw_old}/home" "${_sw_claim}/$(basename -- "$APOTHEM_HOME")"; then
+            if move_tree "${_sw_old}/home" "${_sw_claim}/$(basename -- "$APOTHEM_HOME")"; then
                 _sw_tree_aside="${_sw_claim}/$(basename -- "$APOTHEM_HOME")"
                 rmdir "$_sw_old" 2>/dev/null || true
             else
@@ -2187,7 +2256,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
         # throwaway repository; the source itself comes from the archive.
         ngit init --quiet --bare "${_ck_tmp}/tag.git" \
             || die "Could not create a scratch repository to check the ${APOTHEM_REF} tag"
-        git -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
+        git -c core.longpaths=true -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
             "+refs/tags/${APOTHEM_REF}:refs/tags/${APOTHEM_REF}" >"${_ck_tmp}/fetch.log" 2>&1 \
             || die "Could not fetch the ${APOTHEM_REF} tag from ${APOTHEM_REPO}: $(tail -n 2 "${_ck_tmp}/fetch.log" | tr '\n' ' ')"
         check_release_tag "${_ck_tmp}/tag.git" "$APOTHEM_REF" 0
@@ -2333,7 +2402,9 @@ if [ -z "$SOURCE" ]; then
         info "Cloning ${APOTHEM_REPO}"
         # Full clone (no --single-branch) so both tags and branches are
         # checkout-able from the placed tree, then pin to the resolved ref.
-        ngit clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
+        # core.longpaths (Git for Windows; other gits ignore it) lets the
+        # clone write its pack files under a long staging folder.
+        ngit -c core.longpaths=true clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
             || die "git clone failed for $APOTHEM_REPO"
         bold "Verifying source signature"
         check_fetched_ref "$_cl_tree"
