@@ -288,33 +288,54 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- **OpenCode installs say when an `opencode.jsonc` keeps the rules from
-  OpenCode 1.**
-  OpenCode 1 reads `opencode.json` and then `opencode.jsonc` from its
-  configuration folder, and a list in the later file replaces the earlier one.
-  So an `instructions` list in an `opencode.jsonc` beside the `opencode.json`
-  the install writes, even an empty one, kept OpenCode 1 from loading the
-  profile document and the rules, and nothing said so. `apothem install` and
-  `apothem update` now print a note that names the file, dry runs included,
-  and `apothem verify` prints it while `opencode.json` lists an entry the
-  install wrote, without failing the check. When that list already holds
+- **OpenCode installs say when a file in OpenCode's folder keeps the rules
+  from OpenCode 1.**
+  OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
+  from its configuration folder, and a list in a later file replaces the
+  earlier one. So an `instructions` list in an `opencode.jsonc` beside the
+  `opencode.json` the install writes, even an empty one, kept OpenCode 1 from
+  loading the profile document and the rules, and nothing said so. `apothem
+  install` and `apothem update` now print a note that names the file, dry runs
+  included, and `apothem verify` prints it while `opencode.json` lists an entry
+  the install wrote, without failing the check. When that list already holds
   every entry the install writes, the note says installs do not refresh the
   copy. OpenCode 2 joins the lists of every file it reads, so the note is
   about OpenCode 1 only. There is no note for a file with no `instructions`
   list or for a symbolic link to `opencode.json`. There is none while
   `OPENCODE_CONFIG_DIR` names that folder or `OPENCODE_CONFIG` names that
   `opencode.json` either, because OpenCode 1 then reads the written list again
-  and joins it to the others. An `opencode.jsonc` there that OpenCode 1
-  cannot parse as JSONC (JSON5 syntax, `NaN`, a comment never closed, or only
-  spaces or comments), once it has put in each `{env:NAME}` and `{file:path}`,
-  stops OpenCode 1 with an error before it loads any of its configuration, the
-  rules included, so it gets a note too, whatever those variables say; so does
-  a folder with that name, or a file OpenCode 1 cannot read, such as a link
-  that leads back to itself. OpenCode 2 skips a file it cannot parse. In
-  current OpenCode 1 releases, a file with no bytes, or only a byte order
-  mark, reads as empty and gets no note, and a file they may not read is
-  skipped and gets no note, except on Windows, where they stop for it. The
-  notes change no file and no exit code.
+  and joins it to the others.
+
+  OpenCode 1 also stops with an error, and loads none of its configuration,
+  the rules included, when `config.json`, `opencode.json` or `opencode.jsonc`
+  in that folder:
+  - cannot be parsed as JSONC once each `{env:NAME}` and `{file:path}` is put
+    in. JSON5 syntax, `NaN`, a comment never closed, only spaces or comments,
+    and a file that is one token that puts in nothing all count. So does an
+    `{env:NAME}` value with a backslash, a double quote or a control character
+    in it, such as a Windows path, since OpenCode 1 does not escape it.
+  - has a top level that is not an object, or an `instructions` value that is
+    not a list of text.
+  - has a `{file:path}` naming a file it cannot read.
+  - is a folder, or a file it cannot read, such as a link that leads back to
+    itself.
+
+  Each such file gets a note too, even while `OPENCODE_CONFIG_DIR` or
+  `OPENCODE_CONFIG` is set, and two names that lead to one file through a
+  symbolic link share one note. Only those shapes are checked, not every
+  setting, and a file that is not a regular file, such as a named pipe, or is
+  very large is not read. Install and update still refuse an `opencode.json`
+  they cannot parse even as JSON5 with `config.unparseable`, so that file gets
+  the error and not a note there; verify gives the note for `opencode.json`
+  while the profile document holds the Apothem block. Each note says what
+  OpenCode 2 does with the file when that is known: it reads no `config.json`,
+  skips a file it cannot parse or whose top level is not an object, escapes
+  an `{env:NAME}` value the file would not parse with, puts in empty text for
+  a `{file:path}` it cannot read, and drops what in `instructions` is not
+  text. In current OpenCode 1 releases, a file with no bytes, or only a byte
+  order mark, reads as empty and gets no note, and a file they may not read
+  (`Permission denied`) is skipped and gets no note, except on Windows, where
+  they stop for it. The notes change no file and no exit code.
 - **The JSONC / JSON5 config reader accepts LINE SEPARATOR and PARAGRAPH
   SEPARATOR inside strings.** JSON and JSON5 allow U+2028 and U+2029 unescaped
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config

@@ -152,41 +152,74 @@ them, but from a copy that installs and updates do not refresh, and the note
 says so. OpenCode 2 joins the `instructions` lists of every file it reads, so
 the note is about OpenCode 1 only.
 
-There is no note for an `opencode.jsonc` with no `instructions` list, for one
-whose `instructions` is not a list of text, or for a symbolic link to
-`opencode.json`. There is no note while `OPENCODE_CONFIG_DIR` names this
-folder, because current OpenCode 1 releases then read both files there a second
-time and join their lists (the first OpenCode 1 release did not read them
-again). There is none while `OPENCODE_CONFIG` names this `opencode.json` either,
-because OpenCode 1 then reads that file again after the others and joins its
-list. To load the list in OpenCode 1, remove the `instructions` key from
-`opencode.jsonc`, or move its entries into the list in `opencode.json`, where
-installs and updates keep the entries they did not write.
+Apart from the files described below that stop OpenCode 1, there is no note
+for an `opencode.jsonc` with no `instructions` list, or for a symbolic link to
+`opencode.json`. There is no note while `OPENCODE_CONFIG_DIR`
+names this folder, because current OpenCode 1 releases then read both files
+there a second time and join their lists (the first OpenCode 1 release did not
+read them again). There is none while `OPENCODE_CONFIG` names this
+`opencode.json` either, because OpenCode 1 then reads that file again after the
+others and joins its list. To load the list in OpenCode 1, remove the
+`instructions` key from `opencode.jsonc`, or move its entries into the list in
+`opencode.json`, where installs and updates keep the entries they did not
+write.
 
-OpenCode 1 reads `opencode.jsonc` as JSONC: JSON with comments and trailing
-commas, and nothing more. It first replaces each `{env:NAME}` in the file with
-that variable's value and each `{file:path}` with that file's text. When it
-cannot parse the result, it stops with the error `Config file at <path> is not
-valid JSON(C)` and loads none of its configuration, so the profile document
-and the rules in `opencode.json` do not reach it either. JSON5 syntax such as
-unquoted keys or single quotes, `NaN`, a comment that is never closed, and a
-file that holds only spaces or only comments all count. `apothem install`,
-`apothem update` and `apothem verify` print a note that names the file, under
-the same conditions as the note above, and the note stays even while
-`OPENCODE_CONFIG_DIR` or `OPENCODE_CONFIG` is set, because OpenCode 1 still
-reads the file. Apothem replaces `{env:NAME}` with the value in its own
-environment, so the note is right when Apothem runs with the variables
-OpenCode sees. When a `{file:path}` names a file Apothem cannot read, it does
-not know what OpenCode 1 parses and gives no note. OpenCode 2 skips a file it
-cannot parse and still loads `opencode.json`.
+OpenCode 1 reads `config.json`, `opencode.json` and `opencode.jsonc` as JSONC:
+JSON with comments and trailing commas, and nothing more. In each file it first
+replaces each `{env:NAME}` with that variable's value and each `{file:path}`
+with the text of that file. It stops with an error and loads none of its
+configuration, so the profile document and the rules do not reach it either,
+when one of those files:
+
+- cannot be parsed once those values are in. JSON5 syntax such as unquoted keys
+  or single quotes, `NaN`, a comment that is never closed, and a file that
+  holds only spaces or only comments all count. So does a file that is only one
+  `{env:NAME}` or `{file:path}` that puts in nothing. OpenCode 1 puts in an
+  `{env:NAME}` value as it is, so a value with a backslash, such as a Windows
+  path, a double quote or a control character can break a file that is
+  otherwise valid; that note says so.
+- has a top level that is not an object, or an `instructions` value that is not
+  a list of text.
+- has a `{file:path}` that names a file OpenCode 1 cannot read, even inside a
+  `/* */` comment. A `{file:path}` on a line that starts with `//` is left as
+  it is.
+- is a folder, or a file OpenCode 1 cannot read for a reason other than the
+  ones described below, such as a symbolic link that leads back to itself.
+
+`apothem install`, `apothem update` and `apothem verify` print a note that names
+each such file, and the note stays even while `OPENCODE_CONFIG_DIR` or
+`OPENCODE_CONFIG` is set, because OpenCode 1 still reads the file. Two of these
+names that lead to one file through a symbolic link get one note between them.
+The check looks at the top level and the `instructions` value only, not at every
+setting OpenCode reads, and it does not read a file that is not a regular file,
+such as a named pipe, or a very large one. Verify prints these notes while
+`opencode.json` lists an entry the install wrote; the note for `opencode.json`
+itself also prints while the profile document holds the Apothem block, since
+such a file may list nothing Apothem can read. When install or update cannot
+parse `opencode.json` even as JSON5, they stop with a `config.unparseable` error
+that names it instead of the note; verify, which then fails the check, prints
+the note.
+
+OpenCode 2 reads no `config.json`. It skips an `opencode.json` or
+`opencode.jsonc` it cannot parse or whose top level is not an object, so it
+still loads `opencode.json` when only `opencode.jsonc` is broken. It escapes
+`{env:NAME}` values when a file would not parse with them as they are, puts in
+empty text for a `{file:path}` it cannot read, and drops what in `instructions`
+is not text, so none of those stops it from loading the file. A note says
+what OpenCode 2 does with its file when that is known.
+
+Apothem replaces `{env:NAME}` with the value in its own environment, so the
+note is right when Apothem runs with the environment variables OpenCode sees.
+OpenCode 1 also takes values for `{env:NAME}` from the providers you signed in
+to with `opencode auth`, which Apothem cannot see, so a token outside quotes
+that holds such a value can get a parse note OpenCode 1 does not agree with.
 
 In current OpenCode 1 releases, a file with no bytes at all, or only a byte
-order mark, is read as an empty configuration and gets no note. A folder named
-`opencode.jsonc` stops OpenCode 1 the same way as a file it cannot parse, and
-gets a note. So does a file OpenCode 1 cannot read for another reason, such as
-a symbolic link that leads back to itself. On Linux and macOS, current
-OpenCode 1 releases skip a file they are not allowed to read, so it gets no
-note there. On Windows they stop for such a file, so it gets a note. Earlier
+order mark, is read as an empty configuration and gets no note. On Linux and
+macOS, current OpenCode 1 releases skip a file they are not allowed to read
+(`Permission denied`), so it gets no note there; a read the system refuses
+with `Operation not permitted` stops them, and gets a note. On Windows they
+stop for a file they are not allowed to read, so it gets a note. Earlier
 OpenCode 1 releases stop for it on every system, but Apothem notes it only on
 Windows.
 
@@ -289,9 +322,12 @@ python -m apothem.conformity.gate --all .
 | Verification failed | Run `apothem update --harness opencode`, then verify again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness opencode` |
 | A note says OpenCode 1 reads the `instructions` list in `opencode.jsonc` | Remove the `instructions` key from `opencode.jsonc` in the configuration folder, or move its entries into the list in `opencode.json` |
-| A note says OpenCode 1 cannot parse `opencode.jsonc` | Correct the file in the configuration folder so it is JSON with only comments and trailing commas added (quote every key, use double quotes, close every `/*` comment), or remove it |
-| A note says `opencode.jsonc` is a folder | Move or rename that folder in the configuration folder |
-| A note says OpenCode 1 cannot read `opencode.jsonc` | Let your user account read the file, point a symbolic link at a file that exists, or remove it |
+| A note says OpenCode 1 cannot parse a file | Correct that file in the configuration folder so it is JSON with only comments and trailing commas added (quote every key, use double quotes, close every `/*` comment), or remove it |
+| A note says OpenCode 1 cannot parse a file once it puts in its `{env:NAME}` values | Change the variable so its value holds no backslash, double quote or control character (on Windows, write a path with forward slashes), or remove that `{env:NAME}` |
+| A note says OpenCode 1 needs an object at the top level of a file, or an `instructions` value that is a list of text | Make the file one JSON object, and make `instructions` a list of text such as `["notes.md"]`, or remove that key |
+| A note says OpenCode 1 cannot read the file that a `{file:path}` names | Create that file, correct the path, or remove the `{file:path}` |
+| A note says a file is a folder | Move or rename that folder in the configuration folder |
+| A note says OpenCode 1 cannot read a file | Let your user account read the file, replace a symbolic link that leads back to itself, or remove the file |
 
 ## Configuration knobs
 

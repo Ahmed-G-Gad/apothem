@@ -38,11 +38,15 @@ names that file and the JSON envelope's `warnings` gains an entry with
 [`install`](/docs/cli-reference/install)). One such file is an
 `AGENTS.override.md` with text beside the `AGENTS.md` that
 [one supported tool](/docs/harnesses/codex#compatibility-notes) loads from its
-home folder. Another is an `opencode.jsonc` beside the `opencode.json` that
-[OpenCode 1](/docs/harnesses/opencode#compatibility-notes) loads, when it has
-an `instructions` list or OpenCode 1 cannot parse or read it. The note does
-not fail the check. There is no note when the Apothem block is not in that
-`AGENTS.md`, or when `opencode.json` lists no entry the install wrote.
+home folder. Others are files that
+[OpenCode 1](/docs/harnesses/opencode#compatibility-notes) loads from its
+configuration folder: an `opencode.jsonc` with its own `instructions` list, and
+a `config.json`, `opencode.json` or `opencode.jsonc` that OpenCode 1 cannot
+load at all. The note does not fail the check. There is no note when the
+Apothem block is not in that `AGENTS.md`, or when `opencode.json` lists no
+entry the install wrote; the note for an `opencode.json` that OpenCode 1
+cannot load needs only the profile document the install writes to hold the
+Apothem block.
 
 A `--harness all` sweep honors the profile's `exclude_harnesses` — the same
 exclusions the `install`/`update` batch applied — so verify never reports a
