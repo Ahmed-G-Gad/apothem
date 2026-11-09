@@ -31,18 +31,22 @@
 #   A failed check ABORTS the install before any config is written.
 #   Before an existing clone is fetched (or replaced), the run stops when
 #   git will not work in it because another user owns it, when its own git
-#   settings (in its config or config.worktree) name a program for git to
-#   run, pull in other settings, or change where or how git connects
-#   (Test-RefusedConfigKey lists them), or when its info\attributes sets a
-#   filter. An update in place also stops when the clone hides changes from
-#   git (assume-unchanged or skip-worktree files) or when its work tree is
-#   not APOTHEM_HOME. Every git command on the clone runs with its hooks and
-#   its fsmonitor off and with no ext:: transport. A git clone of something
-#   other than Apothem counts as a folder that holds no Apothem install.
+#   config (its config or config.worktree file) sets a key that is not on
+#   $CloneConfigAllow (the keys git clone and git init write, and a few
+#   that name no program, file or address), or when its info\attributes
+#   sets a filter. An update in place, and a dry run, also stop when the
+#   clone holds submodules, hides changes from git (assume-unchanged or
+#   skip-worktree files), or has a work tree that is not APOTHEM_HOME.
+#   Every git command on the clone runs with its hooks, its fsmonitor, the
+#   pager and automatic maintenance off, with no ext:: transport, and
+#   without going into submodules. A git clone of something other than
+#   Apothem counts as a folder that holds no Apothem install.
 #   A failure or an interrupt puts the earlier install back unchanged. A
 #   forced kill or a power loss can leave folders beside APOTHEM_HOME
-#   (.apothem-extract.*, .apothem-clone.*, .apothem-old.*): the next run
-#   stops, names each one and what it holds, and changes nothing.
+#   (.apothem-extract.<name>.*, .apothem-clone.<name>.*,
+#   .apothem-old.<name>.*, <name> being APOTHEM_HOME's own folder name):
+#   the next fetched install for that APOTHEM_HOME stops, names each one
+#   and what it holds, and changes nothing.
 #   One install, update or uninstall runs at a time: each holds
 #   <APOTHEM_HOME>.lock while it runs, and a second run stops.
 #   git, gpg and cosign are the ones found on PATH; they, and the user's own
@@ -242,15 +246,15 @@ function Write-Fail  { param([string]$Msg) Write-Error "  x $Msg" }
 # A git variable set in the calling shell would point every git command
 # below at another repository, work tree, index or object store, add
 # settings, read its configuration from other files, use another git
-# program, or swap objects through replace refs, so they are cleared first
-# (mirrors install.sh). git still reads the user's own global and system
-# configuration from the places it always looks, and git, gpg and cosign
-# are the ones PATH finds. An APOTHEM_REPO that starts with - would reach
-# git as an option.
-foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM')) {
-    if (Test-Path -LiteralPath "Env:$GitVar") { Remove-Item -LiteralPath "Env:$GitVar" }
-}
-$env:GIT_NO_REPLACE_OBJECTS = '1'
+# program, or swap objects through replace refs, so the run clears them
+# once it holds the install lock (see the start of the run, below;
+# mirrors install.sh). Run by irm | iex, the script shares the caller's
+# session, so the caller's values are put back as the run ends, however
+# it ends. GIT_CONFIG_NOSYSTEM is left as the caller set it: it only
+# stops git reading the system configuration. git still reads the user's
+# own global and system configuration from the places it always looks,
+# and git, gpg and cosign are the ones PATH finds. An APOTHEM_REPO that
+# starts with - would reach git as an option.
 if ($ApothemRepo.StartsWith('-')) {
     Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
 }
@@ -261,14 +265,25 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 }
 
 # Every git command on a clone takes $GitNoProgram: git never runs the
-# clone's fsmonitor program (core.fsmonitor is emptied), never runs a
-# program named by an ext:: address, and never goes into submodules, whose
-# own settings nothing here checks. The calls of an update (fetch,
-# verify-tag, cat-file, checkout and the rest) take $GitSafe, which adds
-# core.hooksPath pointing at an empty folder made for the run, so none of
-# the clone's hooks runs either. core.sshCommand is left alone: setting it
-# would also override the user's own GIT_SSH (mirrors install.sh's cgit).
-$GitNoProgram = @('-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false')
+# clone's fsmonitor program (core.fsmonitor is emptied) or a pager
+# (--no-pager), never starts automatic maintenance (gc.auto=0,
+# maintenance.auto=false), uses only the file, git, http, https and ssh
+# transports (protocol.allow=never with those five allowed), so an
+# address in the clone's config cannot make git run a program (ext::,
+# or <name>:: for a git-remote-<name> found on PATH), writes a path
+# longer than Windows' usual limit at checkout (core.longpaths=true)
+# instead of leaving the file out, and does not go into submodules:
+# fetch and checkout leave
+# them alone, and diff and status skip them (diff.ignoreSubmodules=all),
+# so the settings of a repository nested in the clone, which nothing
+# here checks, are never read. An update in place refuses a clone that
+# holds submodules anyway (Assert-CleanClone). The calls of an update
+# (fetch, verify-tag, cat-file, checkout and the rest) take $GitSafe,
+# which adds core.hooksPath pointing at an empty folder made for the
+# run, so none of the clone's hooks runs either. core.sshCommand is left
+# alone: setting it would also override the user's own GIT_SSH (mirrors
+# install.sh's cgit).
+$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true')
 $GitSafe = @()
 
 # The current folder must never shadow the engine's modules (mirrors
@@ -359,17 +374,47 @@ function Invoke-GitOutsideRepository {
 }
 
 # Save-Download URI FILE - download URI to FILE. A download from an https://
-# address may only be redirected to another https:// one, as install.sh's
-# curl --proto-redir =https allows: PowerShell 7 does not follow a redirect
-# from https to plain http, but Windows PowerShell 5.1 does, so the address
-# the response finally came from is checked, and a file that came from
-# anywhere else is removed and the download fails. A base of another scheme
-# (an http:// mirror on the local network) is used as given, as in
-# install.sh.
+# address may only be redirected to another https:// one, at every step,
+# as install.sh's curl --proto-redir =https allows. PowerShell 7 does not
+# follow a redirect from https to plain http, and the address the response
+# finally came from is checked as well. Windows PowerShell 5.1 does follow
+# one, and would accept a chain that goes through http and back to https,
+# so there each redirect is followed by hand (at most 10) and the first
+# one to an address that is not https:// stops the download. A file that
+# came from anywhere else is removed and the download fails, with the
+# reason in the error. A base of another scheme (an http:// mirror on the
+# local network) is used as given, as in install.sh.
 function Save-Download {
     param([string]$Uri, [string]$OutFile)
+    $FromHttps = $Uri.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)
+    if ($FromHttps -and $PSVersionTable.PSVersion.Major -lt 6) {
+        $DlAt = [uri]$Uri
+        foreach ($DlHop in 0..10) {
+            # 5.1 returns a redirect's response, with its Location, only when
+            # its own error for it is silenced; a failed request still throws.
+            $DlError = $null
+            $DlResponse = Invoke-WebRequest -UseBasicParsing -Uri $DlAt -OutFile $OutFile -PassThru -MaximumRedirection 0 -ErrorAction SilentlyContinue -ErrorVariable DlError
+            if (-not $DlResponse) {
+                Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+                throw "$DlAt gave no response ($(@($DlError | ForEach-Object { $_.ToString() }) -join ' '))"
+            }
+            $DlCode = [int]$DlResponse.StatusCode
+            if ($DlCode -lt 300 -or $DlCode -ge 400) { return }
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            $DlLocation = [string]$DlResponse.Headers['Location']
+            if (@(301, 302, 303, 307, 308) -notcontains $DlCode -or -not $DlLocation) {
+                throw "$DlAt answered $DlCode with no address to go to"
+            }
+            $DlNext = New-Object System.Uri -ArgumentList $DlAt, $DlLocation
+            if ($DlNext.Scheme -ne 'https') {
+                throw "$Uri was redirected to $DlNext, which is not an https:// address"
+            }
+            $DlAt = $DlNext
+        }
+        throw "$Uri was redirected more than 10 times"
+    }
     $Response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile -PassThru
-    if (-not $Uri.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)) { return }
+    if (-not $FromHttps) { return }
     $Base = $Response.BaseResponse
     $Final = $null
     if ($Base -and $Base.PSObject.Properties['ResponseUri']) {
@@ -826,6 +871,11 @@ function Move-Entry {
 # clone as a .git folder does. The engine's data folders ($EngineDataNames)
 # are never source, whatever a manifest or the clone says.
 $SourceManifest = '.apothem-source-entries'
+# The file a keep or clone swap writes into its staging folder, beside the
+# new tree, before it moves anything: the names it is about to move from
+# APOTHEM_HOME into that tree, one per line, so the leftover report can
+# name them after a forced kill (see Get-CarriedEntry).
+$CarryList = '.apothem-carried-entries'
 $EngineDataNames = @('backups', 'state', 'plans', 'memory', 'contexts', 'learning', 'providers')
 function Get-SourceEntry {
     param([string]$Dir)
@@ -1025,9 +1075,20 @@ function Invoke-SwapIn {
         if ($EngineDataNames -cnotcontains $Entry.Name) { $null = $SourceNames.Add($Entry.Name) }
     }
     $SwKeep = @(@(Get-ChildItem -LiteralPath $ApothemHome -Force) | Where-Object { -not $SourceNames.Contains($_.Name) } | ForEach-Object { $_.Name })
+    # The names about to move, sorted ordinally, go into the staging folder
+    # first ($CarryList), so a forced kill during the moves leaves a record
+    # of what came from APOTHEM_HOME.
+    $SwCarry = [string[]]@($SwKeep)
+    [Array]::Sort($SwCarry, [System.StringComparer]::Ordinal)
+    try {
+        $SwCarryPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Join-Path $SwStage $CarryList))
+        [System.IO.File]::WriteAllText($SwCarryPath, (@($SwCarry | ForEach-Object { "$_`n" }) -join ''), (New-Object System.Text.UTF8Encoding $false))
+    } catch {
+        Write-Fail "Could not make room beside $ApothemHome; nothing was changed"
+    }
     $SwParent = Split-Path -Parent $ApothemHome
     if (-not $SwParent) { $SwParent = (Get-Location).Path }
-    $SwOld = Join-Path $SwParent (".apothem-old." + [System.Guid]::NewGuid().ToString('N'))
+    $SwOld = Join-Path $SwParent (".apothem-old.$SwLeaf." + [System.Guid]::NewGuid().ToString('N'))
     try { New-Item -ItemType Directory -Path $SwOld | Out-Null }
     catch { Write-Fail "Could not make room beside $ApothemHome; nothing was changed" }
     $SwOldHome = Join-Path $SwOld 'home'
@@ -1149,66 +1210,164 @@ function Unlock-ApothemHome {
     }
 }
 
-# Get-LeftoverLine DIR - one line saying what the leftover folder DIR holds
-# (see Assert-NoLeftover; mirrors install.sh's leftover_line). Its entries
-# are listed as install.sh lists them: names without a leading dot first.
-function Get-LeftoverLine {
+# Test-RealFolder ITEM - $true when ITEM (from Get-Item or Get-ChildItem) is
+# a folder, not a symbolic link or junction to one; Test-RealFolderPath PATH
+# says the same of what is at PATH.
+function Test-RealFolder {
+    param($Item)
+    return [bool]($Item -and $Item.PSIsContainer -and -not $Item.LinkType)
+}
+function Test-RealFolderPath {
+    param([string]$Path)
+    return (Test-RealFolder (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue))
+}
+
+# Get-LeftoverEntry DIR - the names in the leftover folder DIR, sorted
+# ordinally, or $null when DIR cannot be listed. An empty folder named
+# aside.<32 hex digits> is left out: it is New-AsideFolder's temporary
+# folder, left by a kill between its creation and its rename.
+function Get-LeftoverEntry {
     param([string]$Dir)
-    $LlNames = @()
-    if (Test-Path -LiteralPath $Dir -PathType Container) {
-        $LlAll = @(Get-ChildItem -LiteralPath $Dir -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
-        $LlNames = @(@($LlAll | Where-Object { -not $_.StartsWith('.') } | Sort-Object) + @($LlAll | Where-Object { $_.StartsWith('.') } | Sort-Object))
+    try {
+        $LeItems = @(Get-ChildItem -LiteralPath $Dir -Force -ErrorAction Stop)
+    } catch {
+        return $null
     }
-    if ($LlNames.Count -eq 0) { return "${Dir}: empty" }
-    if ((Split-Path -Leaf $Dir) -clike '.apothem-old.*') {
-        if ($LlNames.Count -eq 1 -and $LlNames[0] -ceq 'home') {
-            return "${Dir}: the earlier install that was being replaced, in $(Join-Path $Dir 'home')"
-        }
-    } elseif ($LlNames.Count -eq 1 -and (Test-Path -LiteralPath (Join-Path $Dir $LlNames[0]) -PathType Container)) {
-        $LlTree = Join-Path $Dir $LlNames[0]
-        $LlData = @($EngineDataNames | Where-Object { Test-Entry (Join-Path $LlTree $_) })
-        if ($LlData.Count -gt 0) {
-            return "${Dir}: the new source that was being installed, in $LlTree, with engine data moved into it: $($LlData -join ' ')"
-        }
-        return "${Dir}: the new source that was being installed, in $LlTree"
+    $LeNames = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LeItem in $LeItems) {
+        if ($LeItem.Name -cmatch '^aside\.[0-9a-f]{32}\z' -and (Test-RealFolder $LeItem) -and @(Get-ChildItem -LiteralPath $LeItem.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0) { continue }
+        $LeNames.Add($LeItem.Name)
     }
-    return "${Dir}: files from that run ($($LlNames -join ' '))"
+    $LeArray = $LeNames.ToArray()
+    [Array]::Sort($LeArray, [System.StringComparer]::Ordinal)
+    return , $LeArray
+}
+
+# Get-CarriedEntry DIR TREE - the entries a swap moved from APOTHEM_HOME
+# into TREE, the new tree in the staging folder DIR. The run that made DIR
+# listed them in DIR's $CarryList before its first move; those still in
+# TREE are named, in the list's order. With no list (a folder an earlier
+# installer made, or a kill before the list was written), an archive's tree
+# names what its .apothem-source-entries manifest does not list, and any
+# other tree names the engine's data folders it holds, sorted ordinally.
+function Get-CarriedEntry {
+    param([string]$Dir, [string]$Tree)
+    $CeListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
+    if ($CeListItem -and -not $CeListItem.PSIsContainer -and -not $CeListItem.LinkType) {
+        try { $CeLines = @([System.IO.File]::ReadAllText($CeListItem.FullName).Split("`n")) } catch { $CeLines = @() }
+        return , @($CeLines | Where-Object { $_ -and (Test-Entry (Join-Path $Tree $_)) })
+    }
+    $CeManifest = Join-Path $Tree $SourceManifest
+    if ((Split-Path -Leaf $Dir).StartsWith('.apothem-extract.', [System.StringComparison]::Ordinal) -and (Test-Path -LiteralPath $CeManifest -PathType Leaf)) {
+        $CeListed = @(Get-Content -LiteralPath $CeManifest | ForEach-Object { ([string]$_).TrimEnd("`r") })
+        $CeNames = [string[]]@(Get-ChildItem -LiteralPath $Tree -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.Name } | Where-Object { $CeListed -cnotcontains $_ })
+    } else {
+        $CeNames = [string[]]@($EngineDataNames | Where-Object { Test-Entry (Join-Path $Tree $_) })
+    }
+    [Array]::Sort($CeNames, [System.StringComparer]::Ordinal)
+    return , $CeNames
+}
+
+# Get-LeftoverLine DIR OLDNAME - one line saying what the leftover folder DIR
+# holds (see Assert-NoLeftover; mirrors install.sh). Names are sorted
+# ordinally and joined with ", ". OLDNAME marks a folder whose name does not
+# say which APOTHEM_HOME it was made for.
+function Get-LeftoverLine {
+    param([string]$Dir, [bool]$OldName)
+    $LlNames = Get-LeftoverEntry $Dir
+    if ($null -eq $LlNames) {
+        $LlText = "${Dir}: could not be read (check its owner and permissions)"
+    } elseif ($LlNames.Count -eq 0) {
+        $LlText = "${Dir}: empty"
+    } else {
+        $LlText = "${Dir}: files from that run ($($LlNames -join ', '))"
+        if ((Split-Path -Leaf $Dir).StartsWith('.apothem-old.', [System.StringComparison]::Ordinal)) {
+            if ($LlNames.Count -eq 1 -and $LlNames[0] -ceq 'home' -and (Test-RealFolderPath (Join-Path $Dir 'home'))) {
+                $LlText = "${Dir}: the earlier install that was being replaced, in $(Join-Path $Dir 'home')"
+            }
+        } else {
+            $LlListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
+            $LlListIsFile = [bool]($LlListItem -and -not $LlListItem.PSIsContainer -and -not $LlListItem.LinkType)
+            $LlTreeNames = @($LlNames | Where-Object { -not ($LlListIsFile -and $_ -ceq $CarryList) })
+            if ($LlTreeNames.Count -eq 1 -and (Test-RealFolderPath (Join-Path $Dir $LlTreeNames[0]))) {
+                $LlTree = Join-Path $Dir $LlTreeNames[0]
+                $LlText = "${Dir}: the new source that was being installed, in $LlTree"
+                $LlCarried = Get-CarriedEntry $Dir $LlTree
+                if ($LlCarried.Count -gt 0) {
+                    $LlText += ", with these entries moved into it from ${ApothemHome}: $($LlCarried -join ', ')"
+                }
+            }
+        }
+    }
+    if ($OldName) {
+        $LlText += " (made by an earlier installer that did not record which home it was for, so it may belong to any Apothem home in $(Split-Path -Parent $ApothemHome): check what it holds before you move or remove it)"
+    }
+    return $LlText
 }
 
 # Assert-NoLeftover - stop, before anything is fetched or swapped, when a run
-# that was stopped part-way left folders beside APOTHEM_HOME
-# (mirrors install.sh's check_leftovers): .apothem-extract.* and
-# .apothem-clone.* (a new source being installed, perhaps with engine data
-# already moved into it) or .apothem-old.* (the earlier install being
-# replaced). Every other way out of a run puts things back and removes them,
-# so they are there only after a forced kill or a power loss, and the
-# install lock keeps any other run from using them now. They may hold the
-# earlier install or its data, so nothing is moved or removed here: the
-# message names each folder, what it holds, and what to do. When
-# APOTHEM_HOME itself is missing, folders it may have been moved into
-# (<APOTHEM_HOME>.before-apothem-*) are named too.
+# that was stopped part-way left folders beside APOTHEM_HOME (mirrors
+# install.sh's check_leftovers): .apothem-extract.<name>.* and
+# .apothem-clone.<name>.* (a new source being installed, perhaps with
+# entries of APOTHEM_HOME already moved into it) or .apothem-old.<name>.*
+# (the earlier install being replaced), <name> being APOTHEM_HOME's own
+# folder name. Every other way out of a run puts things back and removes
+# them, so they are there only after a forced kill or a power loss. Only
+# real folders count, only this APOTHEM_HOME's (the install lock keeps any
+# other run on it from using them now; another APOTHEM_HOME's run may be
+# using its own), and folders an earlier installer made, whose names hold
+# no <name>, which are reported with a note that they may belong to any
+# Apothem home in that folder. They may hold the earlier install or its
+# data, so nothing is moved or removed here: the folder lines go to the
+# error stream, one per line, this home's first, then the older ones, each
+# group sorted ordinally, and the run stops with what to do. When
+# APOTHEM_HOME itself is missing, the folders it may have been moved into
+# (<APOTHEM_HOME>.before-apothem-<time>) are named too.
 function Assert-NoLeftover {
     $LoParent = Split-Path -Parent $ApothemHome
     if (-not $LoParent -or -not (Test-Path -LiteralPath $LoParent -PathType Container)) { return }
-    $LoAll = @(Get-ChildItem -LiteralPath $LoParent -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
-    $LoLines = @()
-    foreach ($LoPattern in @('.apothem-old.*', '.apothem-extract.*', '.apothem-clone.*')) {
-        foreach ($LoName in @($LoAll | Where-Object { $_ -clike $LoPattern } | Sort-Object)) {
-            $LoLines += Get-LeftoverLine (Join-Path $LoParent $LoName)
+    $LoLeaf = Split-Path -Leaf $ApothemHome
+    $LoAside = '^' + [regex]::Escape($LoLeaf) + '\.before-apothem-[0-9]{14}(-[0-9]+)?\z'
+    $LoMine = New-Object 'System.Collections.Generic.List[string]'
+    $LoOld = New-Object 'System.Collections.Generic.List[string]'
+    $LoAsides = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LoItem in @(Get-ChildItem -LiteralPath $LoParent -Force -ErrorAction SilentlyContinue)) {
+        if (-not (Test-RealFolder $LoItem)) { continue }
+        $LoName = $LoItem.Name
+        foreach ($LoPrefix in @('.apothem-old.', '.apothem-extract.', '.apothem-clone.')) {
+            if (-not $LoName.StartsWith($LoPrefix, [System.StringComparison]::Ordinal)) { continue }
+            # The suffix after the last dot holds no dot, so the part before
+            # it is the home's folder name, dots and all.
+            $LoRest = $LoName.Substring($LoPrefix.Length)
+            $LoDot = $LoRest.LastIndexOf('.')
+            if ($LoDot -lt 0) {
+                $LoOld.Add($LoName)
+            } elseif ($LoDot -lt $LoRest.Length - 1 -and $LoRest.Substring(0, $LoDot) -ceq $LoLeaf) {
+                $LoMine.Add($LoName)
+            }
         }
+        if ($LoName -cmatch $LoAside) { $LoAsides.Add($LoName) }
     }
-    if ($LoLines.Count -eq 0) { return }
+    if ($LoMine.Count + $LoOld.Count -eq 0) { return }
+    $LoLines = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LoGroup in @(@($LoMine.ToArray(), $false), @($LoOld.ToArray(), $true))) {
+        $LoNames = [string[]]$LoGroup[0]
+        [Array]::Sort($LoNames, [System.StringComparer]::Ordinal)
+        foreach ($LoName in $LoNames) { $LoLines.Add((Get-LeftoverLine (Join-Path $LoParent $LoName) $LoGroup[1])) }
+    }
     if (-not (Test-Entry $ApothemHome)) {
-        $LoLeaf = Split-Path -Leaf $ApothemHome
-        foreach ($LoName in @($LoAll | Where-Object { $_.StartsWith("$LoLeaf.before-apothem-", [System.StringComparison]::Ordinal) } | Sort-Object)) {
-            $LoAside = Join-Path $LoParent $LoName
-            $LoLines += "${LoAside}: the earlier contents of $ApothemHome, moved aside, in $(Join-Path $LoAside $LoLeaf)"
+        $LoAsideNames = $LoAsides.ToArray()
+        [Array]::Sort($LoAsideNames, [System.StringComparer]::Ordinal)
+        foreach ($LoName in $LoAsideNames) {
+            $LoAt = Join-Path $LoParent $LoName
+            $LoIn = Join-Path $LoAt $LoLeaf
+            if (-not (Test-RealFolderPath $LoIn)) { $LoIn = $LoAt }
+            $LoLines.Add("${LoAt}: the earlier contents of $ApothemHome, moved aside, in $LoIn")
         }
     }
-    $LoText = "An earlier run was stopped part-way and left these folders beside ${ApothemHome}:"
-    foreach ($LoLine in $LoLines) { $LoText += "`n    $LoLine" }
-    $LoText += "`n    Nothing was changed. If $ApothemHome is missing, move the earlier install back to it first. Then move any engine data listed above back into $ApothemHome, remove these folders, and re-run."
-    Write-Fail $LoText
+    [Console]::Error.WriteLine("  x An earlier run was stopped part-way and left these folders beside ${ApothemHome}:")
+    foreach ($LoLine in $LoLines) { [Console]::Error.WriteLine("    $LoLine") }
+    Write-Fail "Nothing was changed. If $ApothemHome is missing, move the earlier install back to it first. Then move every entry listed above as moved from $ApothemHome back into it, remove the folders listed above, and re-run."
 }
 
 Write-Bold "Apothem installer"
@@ -1217,6 +1376,18 @@ Write-Bold "Apothem installer"
 # Lock-ApothemHome); the finally block at the end lets the lock go.
 Lock-ApothemHome
 try {
+# The git variables described at the top are cleared for the run: each
+# one set now is kept in $SavedGitEnv, with GIT_NO_REPLACE_OBJECTS as it
+# was, and the finally block at the end puts them all back.
+$SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS }
+try {
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM')) {
+    if (Test-Path -LiteralPath "Env:$GitVar") {
+        $SavedGitEnv[$GitVar] = [string](Get-Item -LiteralPath "Env:$GitVar").Value
+        Remove-Item -LiteralPath "Env:$GitVar"
+    }
+}
+$env:GIT_NO_REPLACE_OBJECTS = '1'
 
 # Prerequisite: Python >= 3.10 ------------------------------------------------
 #
@@ -1419,27 +1590,85 @@ if (-not $Source -and $VerifyMode -eq 'checksum') {
     Write-Warn "$ChecksumCaveat Proceeding because APOTHEM_ALLOW_UNVERIFIED=1."
 }
 
-# Test-RefusedConfigKey KEY - $true when an update refuses to trust the
-# git setting KEY (a name as git config --name-only prints it) in a clone's
-# own config: one that names a program for git to run (gpg.*,
-# core.fsmonitor, core.hooksPath, core.sshCommand, core.gitProxy,
-# core.askPass, core.alternateRefsCommand, filter.*, credential.*,
-# uploadpack.*, remote.*.uploadpack, remote.*.receivepack, remote.*.vcs,
-# diff.external, diff.*.command, diff.*.textconv), pulls in other settings
-# or attributes (include.*, includeIf.*, core.attributesFile), or changes
-# where or how git connects (url.*.insteadOf, url.*.pushInsteadOf,
-# protocol.*, http.*, remote.*.proxy). The update's own git commands
-# (fetch, verify-tag, diff, checkout, status) would act on any of them; the
-# user's global and system settings are not read here and stay trusted
-# (mirrors install.sh's refused_config_key).
-function Test-RefusedConfigKey {
+# $CloneConfigAllow - the only keys a clone's own git config (its config
+# and config.worktree files) may set for an update to go on: the keys
+# git clone and git init write on any git 2.x and system, the branch
+# keys checkout and editors write, the user's name and email, and the
+# keys git maintenance and git pull's own advice write. None of them
+# names a program, a file or folder git reads settings, hooks,
+# attributes or objects from, a URL rewrite, or another work tree.
+# remote.origin.url names the address the fetch needs (a file in the
+# git folder's remotes or branches folder can name an address too,
+# which gives no more than that key does). An address can name a
+# transport whose helper git runs (<name>::...), so $GitNoProgram
+# allows only the file, git, http, https and ssh transports, and the
+# tag check decides what is checked out. Any other key, whatever
+# program or file it would
+# name, stops the run (Test-AllowedConfigKey; the user's global and
+# system settings are not read here and stay trusted). install.sh,
+# update.sh, install.ps1 and update.ps1 each hold this same list.
+# clone-config-allow-list begin
+$CloneConfigAllow = @(
+    'core.repositoryformatversion'
+    'core.filemode'
+    'core.bare'
+    'core.logallrefupdates'
+    'core.symlinks'
+    'core.ignorecase'
+    'core.precomposeunicode'
+    'core.longpaths'
+    'core.partialclonefilter'
+    'extensions.objectformat'
+    'extensions.refstorage'
+    'extensions.partialclone'
+    'extensions.worktreeconfig'
+    'remote.origin.url'
+    'remote.origin.fetch'
+    'remote.origin.tagopt'
+    'remote.origin.promisor'
+    'remote.origin.partialclonefilter'
+    'branch.*.*'
+    'user.name'
+    'user.email'
+    'maintenance.auto'
+    'maintenance.strategy'
+    'pull.rebase'
+    'pull.ff'
+)
+# clone-config-allow-list end
+
+# Test-AllowedConfigKey KEY - $true when KEY, a name as git config
+# --name-only prints it, matches an entry of $CloneConfigAllow. The
+# section is the text before the first dot and the key the text after
+# the last; both compare without regard to case. The subsection, the
+# text between them, compares exactly, character by character: -ceq
+# can treat an invisible character such as a soft hyphen as absent
+# and pass "ori<soft hyphen>gin" as origin. A two-part entry matches only a
+# name with no subsection, a three-part entry only one with a
+# subsection, where * stands for any non-empty subsection or any key
+# (mirrors install.sh).
+function Test-AllowedConfigKey {
     param([string]$Key)
-    $Name = $Key.ToLowerInvariant()
-    return (($Name -cmatch '^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\.') -or
-        (@('core.fsmonitor', 'core.hookspath', 'core.sshcommand', 'core.gitproxy', 'core.askpass', 'core.attributesfile', 'core.alternaterefscommand', 'diff.external') -ccontains $Name) -or
-        ($Name -cmatch '^url\..*\.(insteadof|pushinsteadof)$') -or
-        ($Name -cmatch '^remote\..*\.(uploadpack|receivepack|proxy|vcs)$') -or
-        ($Name -cmatch '^diff\..*\.(command|textconv)$'))
+    $AkFirst = $Key.IndexOf('.')
+    $AkLast = $Key.LastIndexOf('.')
+    if ($AkFirst -lt 1 -or $AkLast -ge $Key.Length - 1) { return $false }
+    $AkSection = $Key.Substring(0, $AkFirst).ToLowerInvariant()
+    $AkName = $Key.Substring($AkLast + 1).ToLowerInvariant()
+    $AkSub = $null
+    if ($AkLast -gt $AkFirst) { $AkSub = $Key.Substring($AkFirst + 1, $AkLast - $AkFirst - 1) }
+    $AkOrdinal = [System.StringComparison]::Ordinal
+    foreach ($AkEntry in $CloneConfigAllow) {
+        $AkParts = $AkEntry.Split('.')
+        if (-not [string]::Equals($AkParts[0], $AkSection, $AkOrdinal)) { continue }
+        if ($AkParts.Count -eq 2) {
+            if ($null -eq $AkSub -and [string]::Equals($AkParts[1], $AkName, $AkOrdinal)) { return $true }
+        } elseif ($AkSub) {
+            $AkSubOk = [string]::Equals($AkParts[1], '*', $AkOrdinal) -or [string]::Equals($AkParts[1], $AkSub, $AkOrdinal)
+            $AkNameOk = [string]::Equals($AkParts[2], '*', $AkOrdinal) -or [string]::Equals($AkParts[2], $AkName, $AkOrdinal)
+            if ($AkSubOk -and $AkNameOk) { return $true }
+        }
+    }
+    return $false
 }
 
 # Assert-CloneGit DIR - stop, saying what to do, when git will not work in
@@ -1455,7 +1684,7 @@ function Assert-CloneGit {
     $ErrorActionPreference = 'Continue'
     $env:LC_ALL = 'C'
     try {
-        $CgOut = @(& git -C $Dir rev-parse --git-dir 2>&1)
+        $CgOut = @(& git @GitNoProgram -C $Dir rev-parse --git-dir 2>&1)
         $CgCode = $LASTEXITCODE
     } finally {
         $env:LC_ALL = $priorLcAll
@@ -1489,15 +1718,17 @@ function Get-ClonePath {
     return "$Dir/$GpPath"
 }
 
-# Assert-CloneConfig DIR - stop when the clone at DIR carries git settings of
-# its own that an update would trust (Test-RefusedConfigKey), in its config
-# file or, for a worktree, its config.worktree, or when its info\attributes
-# sets a filter, whose program checkout and diff run (mirrors install.sh's
-# check_clone_config). Each file is listed alone, so its include lines are
-# not followed (an include is refused itself); the first refused name in
-# file order stops the run, config first, and the message names it and its
-# file. This runs before any git command that reads the clone's index or
-# could run one of its programs.
+# Assert-CloneConfig DIR - stop when the clone's own git config at DIR (its
+# config file or, for a worktree, its config.worktree) sets a key that is
+# not on $CloneConfigAllow (Test-AllowedConfigKey), or sets
+# extensions.refStorage to anything but files or reftable (a value of
+# another form names a folder git reads refs from), or when its
+# info\attributes sets a filter, whose program checkout and diff run
+# (mirrors install.sh's check_clone_config). Each file is listed alone, so
+# its include lines are not followed (include is not on the list); the
+# first name in file order that fails stops the run, config first, and
+# the message names it and its file. This runs before any git command
+# that reads the clone's index or could run one of its programs.
 function Assert-CloneConfig {
     param([string]$Dir)
     foreach ($CfName in @('config', 'config.worktree')) {
@@ -1514,8 +1745,27 @@ function Assert-CloneConfig {
         }
         if ($CfCode -ne 0) { Write-Fail "Could not read the git config of $Dir at $CfFile." }
         foreach ($CfKey in $CfKeys) {
-            if (Test-RefusedConfigKey $CfKey) {
-                Write-Fail "$Dir's own git config sets $CfKey, which the update would trust. Remove it from $CfFile, then re-run."
+            $CfBad = -not (Test-AllowedConfigKey $CfKey)
+            if (-not $CfBad -and $CfKey.ToLowerInvariant() -ceq 'extensions.refstorage') {
+                # Every value, each ended by a NUL byte (a value may hold a
+                # line break), must read exactly files or reftable.
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $CfValues = (@(& git @GitNoProgram -C $Dir config --file $CfFile --null --get-all extensions.refstorage 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+                    $CfValueCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $prior
+                }
+                $CfParts = @($CfValues.Split([char]0))
+                $CfBad = $CfValueCode -ne 0 -or $CfParts.Count -lt 2 -or $CfParts[-1] -ne ''
+                if (-not $CfBad) {
+                    foreach ($CfValue in $CfParts[0..($CfParts.Count - 2)]) {
+                        if ($CfValue -cne 'files' -and $CfValue -cne 'reftable') { $CfBad = $true }
+                    }
+                }
+            }
+            if ($CfBad) {
+                Write-Fail "$Dir's own git config sets $CfKey, which an update in place does not accept in a clone's own config. Remove it from $CfFile, then re-run."
             }
         }
     }
@@ -1542,8 +1792,9 @@ function Assert-CloneConfig {
 # fails counts as local work, so a clone git cannot read is not replaced.
 # Untracked top-level entries (the engine's backups\ and state\) are carried
 # over by the swap, so they do not count (mirrors install.sh). The caller
-# has run Assert-CloneConfig first, git runs here with the clone's
-# fsmonitor program off, and git status takes none of its optional locks.
+# has run Assert-CloneConfig first, git runs here with $GitNoProgram (no
+# fsmonitor program, and git status does not go into submodules), and git
+# status takes none of its optional locks.
 function Test-CloneHasLocalWork {
     param([string]$Dir)
     $prior = $ErrorActionPreference
@@ -1578,15 +1829,24 @@ function Test-CloneHasLocalWork {
 # clone at DIR whose check the update could not trust (mirrors install.sh's
 # check_clone_setup). git must work in it (Assert-CloneGit), and its own
 # settings and attributes must pass Assert-CloneConfig; both run first,
-# before any git command that reads the clone's index. Its work tree must
-# be DIR itself, not one core.worktree or a .git file names: git must place
-# DIR inside the work tree, at its top. And no tracked file may be marked
-# assume-unchanged or skip-worktree (git ls-files -v prints a lower-case
-# letter or S for one), since git then hides a change to it.
+# before any git command that reads the clone's index. It may hold no
+# submodules: no folder where git keeps their repositories (.git\modules,
+# or wherever git rev-parse --git-path modules points) and no gitlink in
+# its index (git ls-files -s mode 160000). A release tree has none, and
+# the settings and attributes of a repository inside the clone are not
+# checked. Its work tree must be DIR itself, not one core.worktree or a
+# .git file names: git must place DIR inside the work tree, at its top.
+# And no tracked file may be marked assume-unchanged or skip-worktree (git
+# ls-files -v prints a lower-case letter or S for one), since git then
+# hides a change to it. Nothing here writes, so a dry run runs it too.
 function Assert-CleanClone {
     param([string]$Dir)
     Assert-CloneGit $Dir
     Assert-CloneConfig $Dir
+    $CcModules = Get-ClonePath $Dir 'modules'
+    if ($CcModules -and (Test-Path -LiteralPath $CcModules -PathType Container)) {
+        Write-Fail "$Dir keeps submodule repositories in $CcModules. A release tree has no submodules, and the update would run git inside them. Remove the submodules and $CcModules, then re-run."
+    }
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
@@ -1594,12 +1854,29 @@ function Assert-CleanClone {
         $CcInsideCode = $LASTEXITCODE
         $CcPrefix = "$(& git @GitNoProgram -C $Dir rev-parse --show-prefix 2>$null)"
         $CcPrefixCode = $LASTEXITCODE
+        $CcStages = @(& git @GitNoProgram -C $Dir ls-files -s 2>$null | ForEach-Object { [string]$_ })
+        $CcStagesCode = $LASTEXITCODE
         $CcFlags = @(& git @GitNoProgram -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlagsCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
     }
     if ($CcInsideCode -ne 0 -or $CcInside.Trim() -cne 'true' -or $CcPrefixCode -ne 0 -or $CcPrefix.Trim() -ne '') {
-        Write-Fail "$Dir is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+        Write-Fail "$Dir is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
+    }
+    # An index git cannot read fails here as in install.sh, not only at the
+    # checkout after the fetch, so a dry run stops where the real run would.
+    if ($CcStagesCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
+    }
+    foreach ($CcLine in $CcStages) {
+        if ($CcLine.StartsWith('160000 ', [System.StringComparison]::Ordinal)) {
+            $CcPath = @($CcLine -split "`t", 2)[-1]
+            Write-Fail "$Dir holds a submodule at $CcPath (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
+        }
+    }
+    if ($CcFlagsCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
     }
     foreach ($CcLine in $CcFlags) {
         if ($CcLine.Length -gt 0 -and ([char]::IsLower($CcLine[0]) -or $CcLine[0] -ceq 'S')) {
@@ -1758,9 +2035,9 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
         $CkSums = Join-Path $CkTmp 'SHA256SUMS'
         Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
         try { Save-Download "$ApothemReleaseBase/$ApothemRef/$CkName" $CkArchive }
-        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef" }
+        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message))" }
         try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" $CkSums }
-        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef" }
+        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message))" }
         if ($VerifyMode -eq 'release') {
             # The certificate identity is exact, never a pattern: a regular
             # expression would also match a forged subject that merely
@@ -1776,7 +2053,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.cosign.bundle" $CkBundle }
             catch {
                 try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.sig" $CkBundle }
-                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef. Set APOTHEM_VERIFY=signature to check the release tag alone." }
+                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message)). Set APOTHEM_VERIFY=signature to check the release tag alone." }
             }
             # cosign reports on stderr, which PowerShell before 7.2 turns into
             # a terminating error under 'Stop' once redirected, so the
@@ -1826,7 +2103,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
                 Write-Fail "Could not create the parent directory of $ApothemHome"
             }
-            $CkExtract = Join-Path $CkParent (".apothem-extract." + [System.Guid]::NewGuid().ToString('N'))
+            $CkExtract = Join-Path $CkParent (".apothem-extract.$(Split-Path -Leaf $ApothemHome)." + [System.Guid]::NewGuid().ToString('N'))
         }
         try { Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force }
         catch { Write-Fail "Could not extract $CkName" }
@@ -1895,7 +2172,7 @@ if (-not $Source) {
             if (-not $ClParent) { $ClParent = (Get-Location).Path }
             try { New-Item -ItemType Directory -Force -Path $ClParent | Out-Null }
             catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
-            $ClStage = Join-Path $ClParent (".apothem-clone." + [System.Guid]::NewGuid().ToString('N'))
+            $ClStage = Join-Path $ClParent (".apothem-clone.$(Split-Path -Leaf $ApothemHome)." + [System.Guid]::NewGuid().ToString('N'))
         }
         try { New-Item -ItemType Directory -Path $ClStage | Out-Null }
         catch { Write-Fail "Could not create a staging directory beside $ApothemHome" }
@@ -2154,6 +2431,16 @@ completion (opt-in; appends to your profile):
   apothem completion powershell >> `$PROFILE   # or bash / zsh / fish
 
 "@
+}
+} finally {
+    # The caller's git variables, as they were before the run.
+    foreach ($GitVar in @($SavedGitEnv.Keys)) {
+        if ($null -eq $SavedGitEnv[$GitVar]) {
+            Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -LiteralPath "Env:$GitVar" -Value $SavedGitEnv[$GitVar]
+        }
+    }
 }
 } finally {
     Unlock-ApothemHome

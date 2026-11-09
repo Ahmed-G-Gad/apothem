@@ -25,17 +25,18 @@
 # maintainer key's signature, and the tag's commit is checked out by its ID,
 # so a tag ref moved after the check changes nothing. Before the clone is
 # fetched it is checked: git must work in it (a clone another user owns is
-# refused), its own git settings (in its config or config.worktree) may not
-# name a program for git to run, pull in other settings, or change where or
-# how git connects (Test-RefusedConfigKey lists them), its info\attributes
-# may not set a filter, no tracked file may be marked assume-unchanged or
-# skip-worktree, and its work tree must be APOTHEM_HOME itself. Every git
-# command on the clone runs with its hooks and its fsmonitor off and with no
-# ext:: transport, and a clone of something other than Apothem is not
-# updated. One install, update or uninstall runs at a time: each holds
-# <APOTHEM_HOME>.lock while it runs, and a second run stops. git and gpg are
-# the ones found on PATH; they, and the user's own global and system git
-# config, are trusted as found.
+# refused), its own git config (its config or config.worktree file) may set
+# only the keys on $CloneConfigAllow (the keys git clone and git init write,
+# and a few that name no program, file or address), its info\attributes
+# may not set a filter, it may hold no submodules, no tracked file may be
+# marked assume-unchanged or skip-worktree, and its work tree must be
+# APOTHEM_HOME itself. Every git command on the clone runs with its hooks,
+# its fsmonitor, the pager and automatic maintenance off, with no ext::
+# transport, and without going into submodules, and a clone of something
+# other than Apothem is not updated. One install, update or uninstall runs
+# at a time: each holds <APOTHEM_HOME>.lock while it runs, and a second run
+# stops. git and gpg are the ones found on PATH; they, and the user's own
+# global and system git config, are trusted as found.
 # APOTHEM_REF=main checks out the branch on request (it needs
 # APOTHEM_ALLOW_UNVERIFIED=1). The APOTHEM_SOURCE local-checkout path fetches
 # nothing and skips verification. An install made from a release archive
@@ -128,15 +129,15 @@ function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 # A git variable set in the calling shell would point every git command
 # below at another repository, work tree, index or object store, add
 # settings, read its configuration from other files, use another git
-# program, or swap objects through replace refs, so they are cleared first
-# (mirrors update.sh). git still reads the user's own global and system
-# configuration from the places it always looks, and git, gpg and cosign
-# are the ones PATH finds. An APOTHEM_REPO that starts with - would reach
-# git as an option.
-foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM')) {
-    if (Test-Path -LiteralPath "Env:$GitVar") { Remove-Item -LiteralPath "Env:$GitVar" }
-}
-$env:GIT_NO_REPLACE_OBJECTS = '1'
+# program, or swap objects through replace refs, so the run clears them
+# once it holds the install lock (see the start of the run, below;
+# mirrors update.sh). Run by irm | iex, the script shares the caller's
+# session, so the caller's values are put back as the run ends, however
+# it ends. GIT_CONFIG_NOSYSTEM is left as the caller set it: it only
+# stops git reading the system configuration. git still reads the user's
+# own global and system configuration from the places it always looks,
+# and git, gpg and cosign are the ones PATH finds. An APOTHEM_REPO that
+# starts with - would reach git as an option.
 if ($ApothemRepo.StartsWith('-')) {
     Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
 }
@@ -147,14 +148,25 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 }
 
 # Every git command on a clone takes $GitNoProgram: git never runs the
-# clone's fsmonitor program (core.fsmonitor is emptied), never runs a
-# program named by an ext:: address, and never goes into submodules, whose
-# own settings nothing here checks. The calls of an update (fetch,
-# verify-tag, cat-file, checkout and the rest) take $GitSafe, which adds
-# core.hooksPath pointing at an empty folder made for the run, so none of
-# the clone's hooks runs either. core.sshCommand is left alone: setting it
-# would also override the user's own GIT_SSH (mirrors update.sh's cgit).
-$GitNoProgram = @('-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false')
+# clone's fsmonitor program (core.fsmonitor is emptied) or a pager
+# (--no-pager), never starts automatic maintenance (gc.auto=0,
+# maintenance.auto=false), uses only the file, git, http, https and ssh
+# transports (protocol.allow=never with those five allowed), so an
+# address in the clone's config cannot make git run a program (ext::,
+# or <name>:: for a git-remote-<name> found on PATH), writes a path
+# longer than Windows' usual limit at checkout (core.longpaths=true)
+# instead of leaving the file out, and does not go into submodules:
+# fetch and checkout leave
+# them alone, and diff and status skip them (diff.ignoreSubmodules=all),
+# so the settings of a repository nested in the clone, which nothing
+# here checks, are never read. An update in place refuses a clone that
+# holds submodules anyway (Assert-CleanClone). The calls of an update
+# (fetch, verify-tag, cat-file, checkout and the rest) take $GitSafe,
+# which adds core.hooksPath pointing at an empty folder made for the
+# run, so none of the clone's hooks runs either. core.sshCommand is left
+# alone: setting it would also override the user's own GIT_SSH (mirrors
+# update.sh's cgit).
+$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true')
 $GitSafe = @()
 
 # The current folder must never shadow the engine's modules (mirrors
@@ -398,27 +410,85 @@ function Test-ReleaseTag {
     return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z')
 }
 
-# Test-RefusedConfigKey KEY - $true when an update refuses to trust the
-# git setting KEY (a name as git config --name-only prints it) in a clone's
-# own config: one that names a program for git to run (gpg.*,
-# core.fsmonitor, core.hooksPath, core.sshCommand, core.gitProxy,
-# core.askPass, core.alternateRefsCommand, filter.*, credential.*,
-# uploadpack.*, remote.*.uploadpack, remote.*.receivepack, remote.*.vcs,
-# diff.external, diff.*.command, diff.*.textconv), pulls in other settings
-# or attributes (include.*, includeIf.*, core.attributesFile), or changes
-# where or how git connects (url.*.insteadOf, url.*.pushInsteadOf,
-# protocol.*, http.*, remote.*.proxy). The update's own git commands
-# (fetch, verify-tag, diff, checkout, status) would act on any of them; the
-# user's global and system settings are not read here and stay trusted
-# (mirrors update.sh's refused_config_key).
-function Test-RefusedConfigKey {
+# $CloneConfigAllow - the only keys a clone's own git config (its config
+# and config.worktree files) may set for an update to go on: the keys
+# git clone and git init write on any git 2.x and system, the branch
+# keys checkout and editors write, the user's name and email, and the
+# keys git maintenance and git pull's own advice write. None of them
+# names a program, a file or folder git reads settings, hooks,
+# attributes or objects from, a URL rewrite, or another work tree.
+# remote.origin.url names the address the fetch needs (a file in the
+# git folder's remotes or branches folder can name an address too,
+# which gives no more than that key does). An address can name a
+# transport whose helper git runs (<name>::...), so $GitNoProgram
+# allows only the file, git, http, https and ssh transports, and the
+# tag check decides what is checked out. Any other key, whatever
+# program or file it would
+# name, stops the run (Test-AllowedConfigKey; the user's global and
+# system settings are not read here and stay trusted). install.sh,
+# update.sh, install.ps1 and update.ps1 each hold this same list.
+# clone-config-allow-list begin
+$CloneConfigAllow = @(
+    'core.repositoryformatversion'
+    'core.filemode'
+    'core.bare'
+    'core.logallrefupdates'
+    'core.symlinks'
+    'core.ignorecase'
+    'core.precomposeunicode'
+    'core.longpaths'
+    'core.partialclonefilter'
+    'extensions.objectformat'
+    'extensions.refstorage'
+    'extensions.partialclone'
+    'extensions.worktreeconfig'
+    'remote.origin.url'
+    'remote.origin.fetch'
+    'remote.origin.tagopt'
+    'remote.origin.promisor'
+    'remote.origin.partialclonefilter'
+    'branch.*.*'
+    'user.name'
+    'user.email'
+    'maintenance.auto'
+    'maintenance.strategy'
+    'pull.rebase'
+    'pull.ff'
+)
+# clone-config-allow-list end
+
+# Test-AllowedConfigKey KEY - $true when KEY, a name as git config
+# --name-only prints it, matches an entry of $CloneConfigAllow. The
+# section is the text before the first dot and the key the text after
+# the last; both compare without regard to case. The subsection, the
+# text between them, compares exactly, character by character: -ceq
+# can treat an invisible character such as a soft hyphen as absent
+# and pass "ori<soft hyphen>gin" as origin. A two-part entry matches only a
+# name with no subsection, a three-part entry only one with a
+# subsection, where * stands for any non-empty subsection or any key
+# (mirrors update.sh).
+function Test-AllowedConfigKey {
     param([string]$Key)
-    $Name = $Key.ToLowerInvariant()
-    return (($Name -cmatch '^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\.') -or
-        (@('core.fsmonitor', 'core.hookspath', 'core.sshcommand', 'core.gitproxy', 'core.askpass', 'core.attributesfile', 'core.alternaterefscommand', 'diff.external') -ccontains $Name) -or
-        ($Name -cmatch '^url\..*\.(insteadof|pushinsteadof)$') -or
-        ($Name -cmatch '^remote\..*\.(uploadpack|receivepack|proxy|vcs)$') -or
-        ($Name -cmatch '^diff\..*\.(command|textconv)$'))
+    $AkFirst = $Key.IndexOf('.')
+    $AkLast = $Key.LastIndexOf('.')
+    if ($AkFirst -lt 1 -or $AkLast -ge $Key.Length - 1) { return $false }
+    $AkSection = $Key.Substring(0, $AkFirst).ToLowerInvariant()
+    $AkName = $Key.Substring($AkLast + 1).ToLowerInvariant()
+    $AkSub = $null
+    if ($AkLast -gt $AkFirst) { $AkSub = $Key.Substring($AkFirst + 1, $AkLast - $AkFirst - 1) }
+    $AkOrdinal = [System.StringComparison]::Ordinal
+    foreach ($AkEntry in $CloneConfigAllow) {
+        $AkParts = $AkEntry.Split('.')
+        if (-not [string]::Equals($AkParts[0], $AkSection, $AkOrdinal)) { continue }
+        if ($AkParts.Count -eq 2) {
+            if ($null -eq $AkSub -and [string]::Equals($AkParts[1], $AkName, $AkOrdinal)) { return $true }
+        } elseif ($AkSub) {
+            $AkSubOk = [string]::Equals($AkParts[1], '*', $AkOrdinal) -or [string]::Equals($AkParts[1], $AkSub, $AkOrdinal)
+            $AkNameOk = [string]::Equals($AkParts[2], '*', $AkOrdinal) -or [string]::Equals($AkParts[2], $AkName, $AkOrdinal)
+            if ($AkSubOk -and $AkNameOk) { return $true }
+        }
+    }
+    return $false
 }
 
 # Assert-CloneGit DIR - stop, saying what to do, when git will not work in
@@ -434,7 +504,7 @@ function Assert-CloneGit {
     $ErrorActionPreference = 'Continue'
     $env:LC_ALL = 'C'
     try {
-        $CgOut = @(& git -C $Dir rev-parse --git-dir 2>&1)
+        $CgOut = @(& git @GitNoProgram -C $Dir rev-parse --git-dir 2>&1)
         $CgCode = $LASTEXITCODE
     } finally {
         $env:LC_ALL = $priorLcAll
@@ -468,15 +538,17 @@ function Get-ClonePath {
     return "$Dir/$GpPath"
 }
 
-# Assert-CloneConfig DIR - stop when the clone at DIR carries git settings of
-# its own that an update would trust (Test-RefusedConfigKey), in its config
-# file or, for a worktree, its config.worktree, or when its info\attributes
-# sets a filter, whose program checkout and diff run (mirrors update.sh's
-# check_clone_config). Each file is listed alone, so its include lines are
-# not followed (an include is refused itself); the first refused name in
-# file order stops the run, config first, and the message names it and its
-# file. This runs before any git command that reads the clone's index or
-# could run one of its programs.
+# Assert-CloneConfig DIR - stop when the clone's own git config at DIR (its
+# config file or, for a worktree, its config.worktree) sets a key that is
+# not on $CloneConfigAllow (Test-AllowedConfigKey), or sets
+# extensions.refStorage to anything but files or reftable (a value of
+# another form names a folder git reads refs from), or when its
+# info\attributes sets a filter, whose program checkout and diff run
+# (mirrors update.sh's check_clone_config). Each file is listed alone, so
+# its include lines are not followed (include is not on the list); the
+# first name in file order that fails stops the run, config first, and
+# the message names it and its file. This runs before any git command
+# that reads the clone's index or could run one of its programs.
 function Assert-CloneConfig {
     param([string]$Dir)
     foreach ($CfName in @('config', 'config.worktree')) {
@@ -493,8 +565,27 @@ function Assert-CloneConfig {
         }
         if ($CfCode -ne 0) { Write-Fail "Could not read the git config of $Dir at $CfFile." }
         foreach ($CfKey in $CfKeys) {
-            if (Test-RefusedConfigKey $CfKey) {
-                Write-Fail "$Dir's own git config sets $CfKey, which the update would trust. Remove it from $CfFile, then re-run."
+            $CfBad = -not (Test-AllowedConfigKey $CfKey)
+            if (-not $CfBad -and $CfKey.ToLowerInvariant() -ceq 'extensions.refstorage') {
+                # Every value, each ended by a NUL byte (a value may hold a
+                # line break), must read exactly files or reftable.
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $CfValues = (@(& git @GitNoProgram -C $Dir config --file $CfFile --null --get-all extensions.refstorage 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+                    $CfValueCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $prior
+                }
+                $CfParts = @($CfValues.Split([char]0))
+                $CfBad = $CfValueCode -ne 0 -or $CfParts.Count -lt 2 -or $CfParts[-1] -ne ''
+                if (-not $CfBad) {
+                    foreach ($CfValue in $CfParts[0..($CfParts.Count - 2)]) {
+                        if ($CfValue -cne 'files' -and $CfValue -cne 'reftable') { $CfBad = $true }
+                    }
+                }
+            }
+            if ($CfBad) {
+                Write-Fail "$Dir's own git config sets $CfKey, which an update in place does not accept in a clone's own config. Remove it from $CfFile, then re-run."
             }
         }
     }
@@ -518,15 +609,24 @@ function Assert-CloneConfig {
 # clone at DIR whose check the update could not trust (mirrors update.sh's
 # check_clone_setup). git must work in it (Assert-CloneGit), and its own
 # settings and attributes must pass Assert-CloneConfig; both run first,
-# before any git command that reads the clone's index. Its work tree must
-# be DIR itself, not one core.worktree or a .git file names: git must place
-# DIR inside the work tree, at its top. And no tracked file may be marked
-# assume-unchanged or skip-worktree (git ls-files -v prints a lower-case
-# letter or S for one), since git then hides a change to it.
+# before any git command that reads the clone's index. It may hold no
+# submodules: no folder where git keeps their repositories (.git\modules,
+# or wherever git rev-parse --git-path modules points) and no gitlink in
+# its index (git ls-files -s mode 160000). A release tree has none, and
+# the settings and attributes of a repository inside the clone are not
+# checked. Its work tree must be DIR itself, not one core.worktree or a
+# .git file names: git must place DIR inside the work tree, at its top.
+# And no tracked file may be marked assume-unchanged or skip-worktree (git
+# ls-files -v prints a lower-case letter or S for one), since git then
+# hides a change to it.
 function Assert-CleanClone {
     param([string]$Dir)
     Assert-CloneGit $Dir
     Assert-CloneConfig $Dir
+    $CcModules = Get-ClonePath $Dir 'modules'
+    if ($CcModules -and (Test-Path -LiteralPath $CcModules -PathType Container)) {
+        Write-Fail "$Dir keeps submodule repositories in $CcModules. A release tree has no submodules, and the update would run git inside them. Remove the submodules and $CcModules, then re-run."
+    }
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
@@ -534,12 +634,29 @@ function Assert-CleanClone {
         $CcInsideCode = $LASTEXITCODE
         $CcPrefix = "$(& git @GitNoProgram -C $Dir rev-parse --show-prefix 2>$null)"
         $CcPrefixCode = $LASTEXITCODE
+        $CcStages = @(& git @GitNoProgram -C $Dir ls-files -s 2>$null | ForEach-Object { [string]$_ })
+        $CcStagesCode = $LASTEXITCODE
         $CcFlags = @(& git @GitNoProgram -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlagsCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
     }
     if ($CcInsideCode -ne 0 -or $CcInside.Trim() -cne 'true' -or $CcPrefixCode -ne 0 -or $CcPrefix.Trim() -ne '') {
-        Write-Fail "$Dir is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+        Write-Fail "$Dir is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
+    }
+    # An index git cannot read fails here as in install.sh, not only at the
+    # checkout after the fetch, so a dry run stops where the real run would.
+    if ($CcStagesCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
+    }
+    foreach ($CcLine in $CcStages) {
+        if ($CcLine.StartsWith('160000 ', [System.StringComparison]::Ordinal)) {
+            $CcPath = @($CcLine -split "`t", 2)[-1]
+            Write-Fail "$Dir holds a submodule at $CcPath (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
+        }
+    }
+    if ($CcFlagsCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
     }
     foreach ($CcLine in $CcFlags) {
         if ($CcLine.Length -gt 0 -and ([char]::IsLower($CcLine[0]) -or $CcLine[0] -ceq 'S')) {
@@ -604,6 +721,18 @@ Write-Bold "Apothem updater"
 # Lock-ApothemHome); the finally block at the end lets the lock go.
 Lock-ApothemHome
 try {
+# The git variables described at the top are cleared for the run: each
+# one set now is kept in $SavedGitEnv, with GIT_NO_REPLACE_OBJECTS as it
+# was, and the finally block at the end puts them all back.
+$SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS }
+try {
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM')) {
+    if (Test-Path -LiteralPath "Env:$GitVar") {
+        $SavedGitEnv[$GitVar] = [string](Get-Item -LiteralPath "Env:$GitVar").Value
+        Remove-Item -LiteralPath "Env:$GitVar"
+    }
+}
+$env:GIT_NO_REPLACE_OBJECTS = '1'
 
 function Test-ApothemSource {
     param([string]$Dir)
@@ -893,6 +1022,16 @@ finally {
 }
 
 Write-Bold "Update complete."
+} finally {
+    # The caller's git variables, as they were before the run.
+    foreach ($GitVar in @($SavedGitEnv.Keys)) {
+        if ($null -eq $SavedGitEnv[$GitVar]) {
+            Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -LiteralPath "Env:$GitVar" -Value $SavedGitEnv[$GitVar]
+        }
+    }
+}
 } finally {
     Unlock-ApothemHome
 }

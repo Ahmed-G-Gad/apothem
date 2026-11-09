@@ -75,7 +75,7 @@ sourceHash: "df04c51efc417e4a"
 إلى مقدّمة <bdi>`PYTHONPATH`</bdi>:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع <bdi>`install.sh`</bdi> هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حلّه المُثبِّت بدلًا من <bdi>`python`</bdi>. ويطبع <bdi>`install.ps1`</bdi> الإعدادين نفسيهما بصيغة <bdi>PowerShell</bdi>: إسنادٌ إلى <bdi>`$env:PYTHONPATH`</bdi> يصل الدليل المُضمَّن ودليل <bdi>`src/`</bdi> بالفاصلة المنقوطة <bdi>`;`</bdi>، ثم <bdi>`& '<CPython>' -m apothem <command>`</bdi>.

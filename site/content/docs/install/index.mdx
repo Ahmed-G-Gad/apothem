@@ -262,8 +262,8 @@ install ledgers (`state/`), plans, memory and its other data. If a step fails
 or you stop the run with Ctrl+C or a termination signal, the earlier install is
 put back unchanged; if even that fails, the message names where the earlier
 files are. A forced kill or a power loss during the swap cannot be caught: it
-can leave folders beside `~/.apothem`, and the next run reports them (see
-below). These rules apply when the installer replaces `~/.apothem`:
+can leave folders beside `~/.apothem`, and the next fetched install reports
+them (see below). These rules apply when the installer replaces `~/.apothem`:
 
 - A git clone is not replaced by a release archive without `--yes`. The files
   the clone does not track move into the new install, and the clone's own tree
@@ -277,25 +277,26 @@ below). These rules apply when the installer replaces `~/.apothem`:
   and so does a `.git` folder.
 - A git clone of anything other than Apothem is treated like any folder that
   holds no Apothem install (see below), never updated or replaced as a clone.
-- An existing clone is updated in place only when git can see every change in
-  it and nothing in its own setup runs code during the update. Before the fetch,
+- An existing clone is updated in place only when git can see every change in it
+  and nothing in its own setup runs code during the update. Before the fetch,
   the installer stops when files are marked assume-unchanged or skip-worktree,
-  when the clone's work tree is not `APOTHEM_HOME` (`core.worktree`, or a `.git`
-  file pointing at another clone), or when the clone's `.git/config` or
-  `.git/config.worktree` sets a key that makes git run a program, read other
-  config or connect elsewhere (every `gpg.*`, `include.*`, `includeIf.*`,
-  `filter.*`, `protocol.*`, `credential.*`, `http.*` and `uploadpack.*` key;
-  `core.fsmonitor`, `core.hooksPath`, `core.sshCommand`, `core.gitProxy`,
-  `core.askPass`, `core.attributesFile` and `core.alternateRefsCommand`;
-  `diff.external` and `diff.<driver>.command` or `textconv`;
-  `url.<base>.insteadOf` and `pushInsteadOf`; and `remote.<name>.uploadpack`,
-  `receivepack`, `proxy` and `vcs`), or when `.git/info/attributes` sets a
-  `filter=`. The message names the key and the file it is in. This check runs
-  before any git command that reads the clone's index, also when `--yes` is
-  about to replace the clone. The clone's git hooks never run during the update,
-  and every git command on the clone runs with its file-system monitor off, the
-  `ext::` transport refused and submodule recursion off. A clone that another
-  user owns stops the run with an explanation (see Troubleshooting).
+  when git finds no work tree in `APOTHEM_HOME` (as when the clone's config
+  sets `core.bare` to `true`), when the clone holds a submodule (recorded in its
+  index, or kept in `.git/modules`), or when `.git/info/attributes` sets a
+  `filter=`. It also stops on any setting in the clone's own `.git/config` or
+  `.git/config.worktree` other than the ones `git clone` and `git init` write
+  there, branch settings, `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` and `pull.ff`;
+  [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  lists them. The message names the setting and the file it is in. The settings
+  and attributes checks run before any git command that reads the clone's index,
+  and also when `--yes` is about to replace the clone. The clone's git hooks
+  never run during the update, and every git command on the clone runs with no
+  pager, no automatic maintenance, its file-system monitor off, only the file,
+  git, http, https and ssh transports allowed (so an address in the clone's
+  config cannot make git run a helper program such as `ext::`) and no
+  submodule recursion; `git diff` and `git status` skip submodules. A clone that another user owns stops the run with an explanation
+  (see Troubleshooting).
 - A folder that holds only the engine's own data (`backups`, `state`, `plans`,
   `memory`, `contexts`, `learning`, `providers`) is updated without `--yes`,
   and that data is kept.
@@ -311,26 +312,34 @@ below). These rules apply when the installer replaces `~/.apothem`:
   another special character stops the install. Move it out of `APOTHEM_HOME`
   first.
 
-**One run at a time, and runs that were stopped.** Each install, update and
-uninstall takes a lock beside `APOTHEM_HOME`, `~/.apothem.lock` by default, for
-the whole run, and gives it up when the run ends by success, failure, Ctrl+C or
-a termination signal. A second run stops with "Another Apothem install, update
-or uninstall is running". On POSIX the lock is a folder that holds the process
-ID of the run. A lock left by a run that was killed is reported with how to
-remove it and never taken over. On Windows PowerShell the lock is a file that
-Windows closes and deletes when the process ends. A dry run takes the lock too.
+**One run at a time, and runs that were stopped.** Each run of the install,
+update and uninstall scripts takes a lock beside `APOTHEM_HOME`,
+`~/.apothem.lock` by default, for the whole run, and gives it up when the run
+ends by success, failure, Ctrl+C or a termination signal. The `apothem`
+commands themselves do not take it. A second run stops with "Another Apothem
+install, update or uninstall is running". On POSIX the lock is a folder that
+holds the process ID of the run. A lock left by a run that was killed is
+reported with how to remove it and never taken over. On Windows PowerShell the
+lock is a file that Windows closes and deletes when the process ends. A dry run
+takes the lock too, unless the folder that holds `APOTHEM_HOME` does not exist
+yet.
 
 A forced kill or a power loss during a swap can leave the earlier install or
-engine data in `.apothem-old.*`, `.apothem-extract.*` or `.apothem-clone.*`
-beside `APOTHEM_HOME`, or in an `APOTHEM_HOME.before-apothem-<time>` folder. The
-next fetched install, a dry run included, stops before it changes anything,
-names each folder and what it holds, and says how to move the data back. It
-deletes nothing. See
+other entries of `APOTHEM_HOME` in `.apothem-old.<name>.*`,
+`.apothem-extract.<name>.*` or `.apothem-clone.<name>.*` beside it, where
+`<name>` is the last part of `APOTHEM_HOME`, or in an
+`APOTHEM_HOME.before-apothem-<time>` folder. The next fetched install for that
+`APOTHEM_HOME`, a dry run included, stops before it changes anything, names
+each folder and every entry that was moved out of `APOTHEM_HOME`, and says how
+to move them back. It deletes nothing. See
 [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home).
 
 `--dry-run` (`-DryRun` on Windows) fetches and checks the release in a
-temporary folder, applies the same refusals as a real run, and leaves
-`~/.apothem` unchanged. Pin a specific release with `APOTHEM_REF`:
+temporary folder and leaves `~/.apothem` unchanged. It makes the same checks
+as a real run, with one exception for an existing clone: it checks the clone's
+own setup, as listed above, but does not fetch into the clone, and so does not
+check it for changes to tracked files, which a real update does after its
+fetch. Pin a specific release with `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

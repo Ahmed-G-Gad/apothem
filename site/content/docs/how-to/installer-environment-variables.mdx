@@ -72,19 +72,22 @@ The installers ignore the git environment variables that redirect git
 when `APOTHEM_REPO` starts with `-`, so a value cannot be read as a git
 option.
 
-The installers and updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL`,
-`GIT_CONFIG_SYSTEM` and `GIT_CONFIG_NOSYSTEM`, so a value inherited from your
-environment cannot point git at another config file. If you set one of them,
-the installer ignores it. git still reads your own global config
-(`~/.gitconfig` or `$XDG_CONFIG_HOME/git/config`) and the system config from
-the places it always looks, and `git`, `gpg` and `cosign` are the programs your
-`PATH` finds. The installers trust them as found, and so they trust that
-config.
+The installers and updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
+`GIT_CONFIG_SYSTEM`, so a value inherited from your environment cannot point
+git at another config file. If you set one of them, the installer ignores it;
+the PowerShell scripts put it back when the run ends, so an `irm ... | iex`
+run leaves your session as it was. `GIT_CONFIG_NOSYSTEM` stays as you set it:
+it only stops git reading the system config. git still reads your own global
+config (`~/.gitconfig` or `$XDG_CONFIG_HOME/git/config`) and the system config
+from the places it always looks, and `git`, `gpg` and `cosign` are the
+programs your `PATH` finds. The installers trust them as found, and so they
+trust that config.
 
-Each install, update and uninstall holds a lock, `<APOTHEM_HOME>.lock`, for
-the whole run; a second run on the same `APOTHEM_HOME` stops. A forced kill
-or a power loss can leave folders beside `APOTHEM_HOME`, and the next fetched
-install names them and stops before changing anything; see
+Each run of the install, update and uninstall scripts holds a lock,
+`<APOTHEM_HOME>.lock`, for the whole run; a second run on the same
+`APOTHEM_HOME` stops. A forced kill or a power loss can leave folders beside
+`APOTHEM_HOME`, and the next fetched install names them and stops before
+changing anything; see
 [Troubleshooting](/docs/install/troubleshooting).
 
 When `APOTHEM_HOME` points at an existing directory, what happens depends on
@@ -103,18 +106,15 @@ what it holds.
   `<APOTHEM_HOME>.before-apothem-<time>`, under its own name, rather than being
   deleted. Before the fetch, an update in place stops when files are marked
   assume-unchanged or skip-worktree, when the clone's work tree is not
-  `APOTHEM_HOME`, or when the clone's `.git/config` or `.git/config.worktree`
-  sets a key that makes git run a program, read other config or connect
-  elsewhere (every `gpg.*`, `include.*`, `includeIf.*`, `filter.*`,
-  `protocol.*`, `credential.*`, `http.*` and `uploadpack.*` key;
-  `core.fsmonitor`, `core.hooksPath`, `core.sshCommand`, `core.gitProxy`,
-  `core.askPass`, `core.attributesFile` and `core.alternateRefsCommand`;
-  `diff.external` and `diff.<driver>.command` or `textconv`;
-  `url.<base>.insteadOf` and `pushInsteadOf`; and `remote.<name>.uploadpack`,
-  `receivepack`, `proxy` and `vcs`), or `.git/info/attributes` sets a `filter=`;
-  the clone's git hooks never run during the update. Only a clone of an Apothem
-  source counts: a clone of anything else is handled as a folder that holds no
-  Apothem install.
+  `APOTHEM_HOME`, when the clone holds a submodule, when `.git/info/attributes`
+  sets a `filter=`, or when the clone's `.git/config` or `.git/config.worktree`
+  holds a setting other than the ones `git clone` and `git init` write there,
+  branch settings, `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` and `pull.ff`
+  ([Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  lists them); the clone's git hooks never run during the update. Only a clone
+  of an Apothem source counts: a clone of anything else is handled as a folder
+  that holds no Apothem install.
 - An earlier release-archive install is updated by a re-run in `auto` mode
   with cosign (or `release`, or `checksum`).
 - A folder that holds no Apothem install is refused: move it aside, point
@@ -137,9 +137,11 @@ Everything in the old install that is not part of its source tree, including the
 engine's backups, install ledgers, plans and memory, is kept. If a step fails or
 the run is stopped by Ctrl+C or a termination signal, the earlier install is put
 back unchanged; a forced kill or a power loss can leave folders beside
-`APOTHEM_HOME` that the next run reports. `--dry-run` (`-DryRun` on Windows)
-does its checks in a temporary folder, applies the same refusals as a real run,
-and leaves `APOTHEM_HOME` unchanged.
+`APOTHEM_HOME` that the next fetched install reports. `--dry-run` (`-DryRun` on
+Windows) does its checks in a temporary folder and leaves `APOTHEM_HOME`
+unchanged. It makes the same checks as a real run, except that it does not
+fetch into an existing clone, and so does not check it for changes to tracked
+files, which a real update does after its fetch.
 
 ## Trust model
 

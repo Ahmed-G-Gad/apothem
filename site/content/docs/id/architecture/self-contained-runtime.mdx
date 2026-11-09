@@ -81,7 +81,7 @@ Direktori paket menjadi dapat diimpor dengan menambahkan direktori `src/` milik
 checkout di awal `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Ketika peluncur `apothem` tidak ada di PATH, `install.sh` mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`. `install.ps1` mencetak dua pengaturan yang sama dalam bentuk PowerShell: penugasan `$env:PYTHONPATH` yang menggabungkan direktori vendor dan `src/` dengan `;`, lalu `& '<CPython>' -m apothem <command>`.

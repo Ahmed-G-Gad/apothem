@@ -82,19 +82,17 @@
 #     any other folder that holds no Apothem install.
 #   - Before an existing clone is fetched (or replaced), the run stops when
 #     git will not work in it because another user owns it, when its own git
-#     settings (in its config or config.worktree) name a program for git to
-#     run, pull in other settings, or change where or how git connects
-#     (gpg.*, core.fsmonitor, core.hooksPath, core.sshCommand, core.gitProxy,
-#     core.askPass, core.attributesFile, core.alternateRefsCommand,
-#     include.*, includeIf.*, filter.*, credential.*, url.*.insteadOf,
-#     url.*.pushInsteadOf, protocol.*, http.*, uploadpack.*,
-#     remote.*.uploadpack, remote.*.receivepack, remote.*.proxy,
-#     remote.*.vcs, diff.external, diff.*.command, diff.*.textconv), or when
-#     its info/attributes sets a filter. An update in place also stops when
-#     the clone hides changes from git (assume-unchanged or skip-worktree
-#     files) or when its work tree is not APOTHEM_HOME. Every git command on
-#     the clone runs with its hooks and its fsmonitor off and with no ext::
-#     transport.
+#     settings (in its config or config.worktree) hold any setting that is
+#     not on a short list of the ones git clone and git init write there,
+#     plus branch settings, user.name, user.email, maintenance.auto,
+#     maintenance.strategy, pull.rebase and pull.ff (CLONE_CONFIG_ALLOW
+#     below), or when its info/attributes sets a filter. An update in place
+#     also stops when the clone holds a submodule, when it hides changes from
+#     git (assume-unchanged or skip-worktree files), or when its work tree is
+#     not APOTHEM_HOME; a dry run applies these checks too. Every git command
+#     on the clone runs with its hooks, its fsmonitor, its pager and git's
+#     automatic maintenance off, with no ext:: transport, and without looking
+#     inside nested repositories.
 #   - An entry to keep whose name has a space or another special character
 #     stops the install; move it out of APOTHEM_HOME first.
 #   - A symbolic link at APOTHEM_HOME is refused (point APOTHEM_HOME at the
@@ -102,8 +100,10 @@
 #     that is updated in place.
 #   - A failure or an interrupt puts the earlier install back unchanged. A
 #     forced kill or a power loss can leave folders beside APOTHEM_HOME
-#     (.apothem-extract.*, .apothem-clone.*, .apothem-old.*): the next run
-#     stops, names each one and what it holds, and changes nothing.
+#     (.apothem-extract.<name>.*, .apothem-clone.<name>.*,
+#     .apothem-old.<name>.*, <name> being APOTHEM_HOME's own folder name):
+#     the next fetched install into that APOTHEM_HOME stops, names each one
+#     and what it holds, and changes nothing.
 #   - One install, update or uninstall runs at a time: each holds the lock
 #     folder <APOTHEM_HOME>.lock while it runs, and a second run stops.
 #
@@ -189,11 +189,13 @@ set -eu
 # from elsewhere; none of them may reach the installer's git commands. git
 # still reads the user's own global and system configuration from the
 # places it always looks, and git, gpg and cosign are the ones PATH finds.
+# GIT_CONFIG_NOSYSTEM stays as the caller set it: it only makes git skip
+# the system configuration.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
-    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
+    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
@@ -273,10 +275,11 @@ settle_python_form() {
     fi
 }
 
-# native_path PATH — print PATH in the form the chosen Python reads: the
-# Windows form (cygpath -w) for a Windows Python, unchanged for a POSIX one.
-# Returns 1, so the caller stops, when cygpath fails or prints anything but a
-# drive or network path, or when a POSIX path does not start with "/".
+# native_path PATH — print the full path PATH in the form the chosen Python
+# reads: the Windows form (cygpath -w) for a Windows Python, unchanged for a
+# POSIX one. Every caller passes a path that starts with "/". Returns 1, so
+# the caller stops, when cygpath fails or prints anything but a drive or
+# network path; that can only happen for a Windows Python.
 native_path() {
     if [ "$PY_WINDOWS" = "1" ]; then
         _np_path="$(cygpath -w -- "$1" 2>/dev/null)" || return 1
@@ -285,10 +288,7 @@ native_path() {
             *) return 1 ;;
         esac
     else
-        case "$1" in
-            /*) printf '%s\n' "$1" ;;
-            *) return 1 ;;
-        esac
+        printf '%s\n' "$1"
     fi
 }
 
@@ -405,17 +405,18 @@ stashes, unpushed commits, or untracked files in its source tree); its own
 tree is then moved into <APOTHEM_HOME>.before-apothem-<time>. A clone of
 anything other than Apothem counts as a folder with no Apothem install. An
 existing clone is not updated or replaced when another user owns it, when
-its own git settings name a program for git to run or change where git
-connects, or when its info/attributes sets a filter; an update in place
-also stops when it hides changes from git or its work tree is elsewhere.
-Its hooks and fsmonitor never run during the update. An entry to keep
-whose name has a space or another special character stops the install
-until it is moved out. A symbolic link at APOTHEM_HOME is refused, except
-when it leads to an existing clone that is updated in place. A failure or
-an interrupt puts the earlier install back unchanged; folders that a forced
-kill leaves beside APOTHEM_HOME stop the next run, which names them. One
-install, update or uninstall runs at a time (the lock is
-<APOTHEM_HOME>.lock).
+its own git config holds a setting outside the short list that git clone
+and git init write there (plus branch, user name and email, maintenance
+and pull settings), or when its info/attributes sets a filter; an update in
+place also stops when it holds a submodule, hides changes from git, or has
+no work tree that git can find. Its hooks, fsmonitor and pager never run
+during the update. An entry to keep whose name has a space or another
+special character stops the install until it is moved out. A symbolic link
+at APOTHEM_HOME is refused, except when it leads to an existing clone that
+is updated in place. A failure or an interrupt puts the earlier install back
+unchanged; folders that a forced kill leaves beside APOTHEM_HOME stop the
+next fetched install, which names them. One install, update or uninstall
+runs at a time (the lock is <APOTHEM_HOME>.lock).
 
 Overrides:
   APOTHEM_REF=main             check out the moving branch (needs
@@ -560,20 +561,39 @@ resolve_latest_tag() {
 }
 
 # cgit ARGS — run git with ARGS on a clone. git never runs the clone's
-# fsmonitor program (core.fsmonitor is emptied), never runs a program named
-# by an ext:: address, and never goes into submodules, whose own settings
-# nothing here checks. Once HOOKS_OFF names an empty folder (an existing
-# clone is being updated in place), core.hooksPath points at it as well, so
-# none of the clone's hooks run during the update. core.sshCommand is left
-# alone: setting it would also override the user's own GIT_SSH.
+# fsmonitor program (core.fsmonitor is emptied) or a pager (--no-pager),
+# never starts its automatic maintenance (gc.auto=0, maintenance.auto=false),
+# uses only the file, git, http, https and ssh transports (protocol.allow=never
+# with those five allowed), so an address in the clone's config cannot make
+# git run a program (ext::, or <name>:: for a git-remote-<name> found on
+# PATH), does not recurse into submodules, and does not run git status
+# inside a nested repository to report on it (diff.ignoreSubmodules=all): a
+# nested repository's own settings are never checked here, and an update in
+# place refuses a clone that holds a submodule. core.longpaths=true, which
+# only Git for Windows reads, lets checkout write a path longer than
+# Windows' usual limit instead of leaving the file out. Once HOOKS_OFF names
+# an empty folder (an existing clone is being updated in place),
+# core.hooksPath points at it as well, so none of the clone's hook scripts
+# run during the update. core.sshCommand is left alone: setting it would
+# also override the user's own GIT_SSH.
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
-            -c fetch.recurseSubmodules=false -c core.hooksPath="$HOOKS_OFF" "$@"
+        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
+            -c protocol.allow=never -c protocol.file.allow=always \
+            -c protocol.git.allow=always -c protocol.http.allow=always \
+            -c protocol.https.allow=always -c protocol.ssh.allow=always \
+            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
+            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
+            -c core.longpaths=true -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
-            -c fetch.recurseSubmodules=false "$@"
+        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
+            -c protocol.allow=never -c protocol.file.allow=always \
+            -c protocol.git.allow=always -c protocol.http.allow=always \
+            -c protocol.https.allow=always -c protocol.ssh.allow=always \
+            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
+            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
+            -c core.longpaths=true "$@"
     fi
 }
 
@@ -778,7 +798,7 @@ require_clean_clone() {
 # ways out. git runs in the C locale here, so its message reads the same in
 # every language.
 clone_git_ok() {
-    if _cg_err="$(LC_ALL=C git -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
+    if _cg_err="$(LC_ALL=C; export LC_ALL; cgit -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
         return 0
     fi
     case "$_cg_err" in
@@ -792,7 +812,7 @@ clone_git_ok() {
 # NAME: config and info/ sit in the git folder all its worktrees share,
 # config.worktree in the worktree's own.
 git_path() {
-    _gp_path="$(git -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
+    _gp_path="$(cgit -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
     [ -n "$_gp_path" ] || return 1
     case "$_gp_path" in
         /* | [A-Za-z]:[\\/]*) printf '%s\n' "$_gp_path" ;;
@@ -800,82 +820,206 @@ git_path() {
     esac
 }
 
-# refused_config_key — read git setting names, one per line, and print the
-# first one that an update in place refuses to trust: a setting that names
-# a program for git to run (gpg.*, core.fsmonitor, core.hooksPath,
-# core.sshCommand, core.gitProxy, core.askPass, core.alternateRefsCommand,
-# filter.*, credential.*, uploadpack.*, remote.*.uploadpack,
-# remote.*.receivepack, remote.*.vcs, diff.external, diff.*.command,
-# diff.*.textconv), pulls in other settings or attributes (include.*,
-# includeIf.*, core.attributesFile), or changes where or how git connects
-# (url.*.insteadOf, url.*.pushInsteadOf, protocol.*, http.*,
-# remote.*.proxy). The update's own git commands (fetch, verify-tag, diff,
-# checkout, status) would act on any of them; the user's global and system
-# settings are not read here and stay trusted.
-refused_config_key() {
-    awk '
+# The settings a clone's own git config (.git/config, and .git/config.worktree
+# when there is one) may hold for an update in place to go ahead: the ones
+# git clone and git init write there (any git 2.x, any platform, sha1 or
+# sha256, files or reftable refs, --no-tags, --single-branch, --depth,
+# --filter), branch settings, which tools such as editors add, the user's
+# name and email, the two maintenance settings `git maintenance register`
+# writes, and the two pull settings git pull's own hint suggests. None of
+# them names a program for git to run, a file or folder git reads settings,
+# hooks, attributes or objects from, a URL rewrite, or another work tree or
+# git folder. remote.origin.url names the address the update fetches from (a
+# file in the git folder's remotes or branches folder can name an address
+# too, which gives no more than that setting does). An address can name a
+# transport whose helper git runs (<name>::...), so cgit allows only the
+# file, git, http, https and ssh transports, and the release tag check
+# decides what is checked out.
+# Any other setting stops the update. Section and key compare without regard
+# to case; the part between them (branch.<name>.merge) compares exactly, and
+# `*` there stands for any name that is not empty, as `*` as the key stands
+# for any key. install.sh, update.sh, install.ps1 and update.ps1 hold the
+# same list (tests/scripts/test_installer_parity.py compares them).
+# clone-config-allow-list begin
+CLONE_CONFIG_ALLOW='core.repositoryformatversion
+core.filemode
+core.bare
+core.logallrefupdates
+core.symlinks
+core.ignorecase
+core.precomposeunicode
+core.longpaths
+core.partialclonefilter
+extensions.objectformat
+extensions.refstorage
+extensions.partialclone
+extensions.worktreeconfig
+remote.origin.url
+remote.origin.fetch
+remote.origin.tagopt
+remote.origin.promisor
+remote.origin.partialclonefilter
+branch.*.*
+user.name
+user.email
+maintenance.auto
+maintenance.strategy
+pull.rebase
+pull.ff'
+# clone-config-allow-list end
+
+# unallowed_config_key [REFUSE] — read git setting names, one per line, as
+# `git config --name-only --list` prints them, and print the first one that
+# CLONE_CONFIG_ALLOW does not hold, or that equals REFUSE (compared without
+# regard to case). The section is the text before the first dot, the key the
+# text after the last dot, and the subsection whatever lies between (a name
+# with one dot has none); a name with an empty section or key matches
+# nothing. A two-part entry (user.name) matches only a name with no
+# subsection; a three-part entry matches only a name with one.
+unallowed_config_key() {
+    CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
+        function split_name(name, parts,    first, rest, i, last) {
+            first = index(name, ".")
+            if (first == 0) return 0
+            parts["sec"] = tolower(substr(name, 1, first - 1))
+            rest = substr(name, first + 1)
+            last = 0
+            for (i = length(rest); i > 0; i--) {
+                if (substr(rest, i, 1) == ".") { last = i; break }
+            }
+            if (last == 0) {
+                parts["has"] = 0
+                parts["sub"] = ""
+                parts["key"] = tolower(rest)
+            } else {
+                parts["has"] = 1
+                parts["sub"] = substr(rest, 1, last - 1)
+                parts["key"] = tolower(substr(rest, last + 1))
+            }
+            return 1
+        }
+        BEGIN {
+            n = split(ENVIRON["CLONE_CONFIG_ALLOW"], allow, "\n")
+            refuse = tolower(ENVIRON["CLONE_CONFIG_REFUSE"])
+        }
+        $0 == "" { next }
         {
-            k = tolower($0)
-            if (k ~ /^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\./ ||
-                k == "core.fsmonitor" || k == "core.hookspath" || k == "core.sshcommand" ||
-                k == "core.gitproxy" || k == "core.askpass" || k == "core.attributesfile" ||
-                k == "core.alternaterefscommand" || k == "diff.external" ||
-                k ~ /^url\..*\.(insteadof|pushinsteadof)$/ ||
-                k ~ /^remote\..*\.(uploadpack|receivepack|proxy|vcs)$/ ||
-                k ~ /^diff\..*\.(command|textconv)$/) { print; exit }
+            if (!split_name($0, got) || got["sec"] == "" || got["key"] == "") { print; exit }
+            if (refuse != "" && tolower($0) == refuse) { print; exit }
+            ok = 0
+            for (j = 1; j <= n && !ok; j++) {
+                if (allow[j] == "" || !split_name(allow[j], want)) continue
+                if (want["sec"] != got["sec"] || want["has"] != got["has"]) continue
+                if (want["key"] != "*" && want["key"] != got["key"]) continue
+                if (want["has"]) {
+                    if (want["sub"] == "*") { if (got["sub"] == "") continue }
+                    else if (want["sub"] != got["sub"]) continue
+                }
+                ok = 1
+            }
+            if (!ok) { print; exit }
         }'
 }
 
-# check_clone_config DIR — die when the clone at DIR carries its own git
-# settings that an update in place would trust (see refused_config_key), in
-# its config file or, for a worktree, in its config.worktree, or when its
-# info/attributes file sets a filter, whose program checkout and diff run.
-# The message names the setting and the file it is in. This runs before any
-# git command that reads the clone's index or could run its programs.
+# config_file_problem DIR FILE — print the first setting, in file order, in
+# the config file FILE of the clone at DIR that an update in place does not
+# accept: a name unallowed_config_key reports, or extensions.refstorage
+# when any of its values is other than files or reftable (a later git reads
+# refs from a folder such a value names). The values are read NUL-ended, and
+# a line break inside one turns into a byte that makes it fail. git runs in
+# the clone (-C DIR), never in the current folder, whose own repository
+# could stop it. Die when FILE cannot be read.
+config_file_problem() {
+    _cp_keys="$(cgit -C "$1" config --file "$2" --name-only --list 2>/dev/null)" \
+        || die "Could not read the git config of $1 at ${2}."
+    _cp_refuse=""
+    if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
+        | tr '\000\n' '\n\001' \
+        | awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
+        _cp_refuse="extensions.refstorage"
+    fi
+    printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
+}
+
+# check_clone_config DIR — die when the clone at DIR holds a git setting of
+# its own that an update in place does not accept (see CLONE_CONFIG_ALLOW),
+# in its config file or, when there is one, in its config.worktree, or when
+# its info/attributes file sets a filter, whose program checkout and diff
+# run. The message names the setting and the file it is in. Neither file's
+# include.path is followed (include settings are not on the list). This runs
+# before any git command that reads the clone's index or could run one of
+# its programs. A NUL byte would make grep treat info/attributes as binary
+# and print nothing, while git still reads the lines around it, so NUL
+# bytes are dropped first.
 check_clone_config() {
-    _cc_file="$(git_path "$1" config)" || die "Could not read the git config of $1."
     _cc_key=""
-    if [ -e "$_cc_file" ]; then
-        _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
-            || die "Could not read the git config of $1 at ${_cc_file}."
-        _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
-    fi
-    if [ -z "$_cc_key" ]; then
-        _cc_file="$(git_path "$1" config.worktree)" || die "Could not read the git config of $1."
+    for _cc_name in config config.worktree; do
+        _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
         if [ -e "$_cc_file" ]; then
-            _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
-                || die "Could not read the git config of $1 at ${_cc_file}."
-            _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+            _cc_key="$(config_file_problem "$1" "$_cc_file")" || exit 1
+            [ -z "$_cc_key" ] || break
         fi
-    fi
+    done
     if [ -n "$_cc_key" ]; then
-        die "$1's own git config sets ${_cc_key}, which the update would trust. Remove it from ${_cc_file}, then re-run."
+        die "$1's own git config sets ${_cc_key}, which an update in place does not accept in a clone's own config. Remove it from ${_cc_file}, then re-run."
     fi
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
-    if [ -f "$_cc_file" ] && grep -v '^[[:space:]]*#' "$_cc_file" 2>/dev/null | grep -q 'filter='; then
+    if [ -f "$_cc_file" ] && tr -d '\000' 2>/dev/null < "$_cc_file" \
+        | LC_ALL=C grep -v '^[[:space:]]*#' | LC_ALL=C grep -q 'filter='; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
+    fi
+}
+
+# check_clone_modules DIR — die when the clone at DIR keeps submodule
+# repositories (a modules folder in its git folder). A release tree has
+# none, and git would run inside such a repository, under settings and
+# attributes nothing here checks. Reads no index.
+check_clone_modules() {
+    _sm_dir="$(git_path "$1" modules)" || die "Could not read the git config of $1."
+    if [ -d "$_sm_dir" ]; then
+        die "$1 keeps submodule repositories in ${_sm_dir}. A release tree has no submodules, and the update would run git inside them. Remove the submodules and ${_sm_dir}, then re-run."
+    fi
+}
+
+# check_clone_gitlinks DIR — die when the index of the clone at DIR records
+# a git repository inside its tree (a gitlink, mode 160000), as a clone with
+# a submodule, or with another clone added inside it, has it. A release tree
+# has none, and git diff and git status would run git inside it. Reading the
+# index runs no program of the clone's own once check_clone_config has
+# passed.
+check_clone_gitlinks() {
+    _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
+        || die "$1 has changes to tracked files. Commit or stash them, then re-run."
+    _sm_path="$(printf '%s\n' "$_sm_list" | awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
+    if [ -n "$_sm_path" ]; then
+        die "$1 holds a submodule at ${_sm_path} (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
     fi
 }
 
 # check_clone_setup DIR — die, before anything is fetched, when the clone at
 # DIR is set up so that updating it in place would trust something the
 # release does not hold: a clone git will not work in, git settings or
-# attributes of its own that the update would trust (check_clone_config,
-# which runs first, before any git command that reads the index), a work
-# tree other than DIR (core.worktree, or a .git that points at another
-# clone's), or files git has been told to ignore changes to
-# (assume-unchanged or skip-worktree, which require_clean_clone cannot see).
+# attributes of its own that an update does not accept (check_clone_config,
+# which runs first, before any git command that reads the index), kept
+# submodule repositories (check_clone_modules, right after it), a work tree
+# other than DIR (core.worktree, or a .git that points at another clone's),
+# a submodule in its index (check_clone_gitlinks), or files git has been
+# told to ignore changes to (assume-unchanged or skip-worktree, which
+# require_clean_clone cannot see). Every check only reads, so a dry
+# run makes them too.
 check_clone_setup() {
     clone_git_ok "$1"
     check_clone_config "$1"
+    check_clone_modules "$1"
     _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
     # git prints C:/... under Git Bash, where pwd prints /c/...: compare the
     # physical folders both name.
     [ -z "$_cs_top" ] || _cs_top="$(cd "$_cs_top" 2>/dev/null && pwd -P || true)"
     _cs_here="$(cd "$1" && pwd -P)"
     if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
-        die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+        die "$1 is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
     fi
+    check_clone_gitlinks "$1"
     _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
     if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
@@ -1020,17 +1164,18 @@ ${_cn_base}
 # holds, or an untracked path inside a top-level entry the clone tracks (an
 # untracked top-level entry of its own is carried over instead). A git
 # command that fails counts as work, so an unreadable clone is not replaced.
-# The caller has run check_clone_config first, and git runs here with the
-# clone's fsmonitor program off, as cgit runs it.
+# The caller has run check_clone_config first, and every git command here
+# goes through cgit, so none runs the clone's fsmonitor or pager, starts
+# automatic maintenance, or runs git status inside a nested repository.
 clone_has_local_work() {
-    _lw_out="$(GIT_OPTIONAL_LOCKS=0 git -c core.fsmonitor= -c protocol.ext.allow=never -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
+    _lw_out="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_out="$(cgit -C "$1" stash list 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_out="$(cgit -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_tracked="$(cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
-    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0 git -c core.fsmonitor= -c protocol.ext.allow=never -C "$1" status --porcelain 2>/dev/null)" || return 0
+    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain 2>/dev/null)" || return 0
     _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" awk '
         BEGIN { n = split(ENVIRON["LW_TRACKED"], names, "\n"); for (i = 1; i <= n; i++) top[names[i]] = 1 }
         substr($0, 1, 3) == "?? " {
@@ -1184,12 +1329,20 @@ on_exit() {
 # holds the owning run's process ID. on_exit removes it on every way out of
 # the run. A forced kill (or a power loss) leaves it behind: the next run
 # then says so and how to remove it, and never takes it over, since it
-# cannot be sure the other run has ended.
+# cannot be sure the other run has ended. When APOTHEM_HOME is a symbolic
+# link, the lock sits beside the folder it leads to, so a run through the
+# link and a run through that folder's own path take the same lock.
+# install.ps1, update.ps1 and uninstall.ps1 hold a file there instead, open
+# with no sharing, which Windows removes when that run ends.
 LOCK_DIR=""
 LOCK_HELD=0
 take_lock() {
-    LOCK_DIR="${APOTHEM_HOME}.lock"
-    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
+    _tl_home="$APOTHEM_HOME"
+    if [ -L "$APOTHEM_HOME" ] && _tl_real="$(cd -P -- "$APOTHEM_HOME" 2>/dev/null && pwd -P)"; then
+        _tl_home="$_tl_real"
+    fi
+    LOCK_DIR="${_tl_home}.lock"
+    _tl_parent="$(dirname -- "$_tl_home")"
     if [ ! -d "$_tl_parent" ]; then
         # Nothing is at APOTHEM_HOME or beside it yet. A dry run writes
         # nothing, so it goes on without the lock; a real run makes the
@@ -1198,19 +1351,29 @@ take_lock() {
         mkdir -p "$_tl_parent" \
             || die "Could not create the parent directory of $APOTHEM_HOME"
     fi
+    # Signals are ignored from the mkdir until LOCK_HELD says the lock is
+    # this run's: a signal in between would otherwise leave a lock with no
+    # process ID in it, and a run whose mkdir failed must never remove the
+    # lock that another run holds.
+    trap '' HUP INT QUIT PIPE TERM
     if mkdir "$LOCK_DIR" 2>/dev/null; then
         LOCK_HELD=1
+        trap_signals_to_exit
         printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
         return 0
     fi
+    trap_signals_to_exit
     exists "$LOCK_DIR" \
         || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    if [ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]; then
+        die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+    fi
     _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
     case "$_tl_pid" in
         "" | *[!0-9]*)
             die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
     esac
-    if kill -0 "$_tl_pid" 2>/dev/null; then
+    if process_running "$_tl_pid"; then
         die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
     fi
     die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
@@ -1222,76 +1385,218 @@ release_lock() {
     fi
 }
 
+# process_running PID — return 0 when the process PID is running. kill -0
+# also fails for a running process that belongs to another user (a run under
+# sudo on the same APOTHEM_HOME, say); only then does it say "not
+# permitted".
+process_running() {
+    _pr_err="$(LC_ALL=C; export LC_ALL; kill -0 "$1" 2>&1)" && return 0
+    case "$_pr_err" in
+        *[Nn]"ot permitted"*) return 0 ;;
+    esac
+    return 1
+}
+
+# make_staging KIND — make a new, empty folder beside APOTHEM_HOME named
+# .apothem-KIND.<leaf>.<six letters or digits>, <leaf> being APOTHEM_HOME's
+# own folder name, and print its path. The leaf lets check_leftovers in a
+# later run tell this home's staging folders from those of another
+# APOTHEM_HOME in the same folder, which another run may be using.
+make_staging() {
+    mktemp -d "$(dirname -- "$APOTHEM_HOME")/.apothem-$1.$(basename -- "$APOTHEM_HOME").XXXXXX"
+}
+
+# CARRY_LIST — the file a keep-mode swap writes into the staging folder,
+# beside the new tree and never inside it, before it moves anything: the
+# names of the entries it carries from APOTHEM_HOME into the new tree, one
+# per line, sorted. After a forced kill, check_leftovers reads it to name
+# every entry that has to go back.
+CARRY_LIST=".apothem-carried-entries"
+
 # check_leftovers — stop, before anything is fetched or swapped, when a run
 # that was stopped part-way left folders beside APOTHEM_HOME:
-# .apothem-extract.* and .apothem-clone.* (a new source being installed,
-# perhaps with engine data already moved into it) or .apothem-old.* (the
-# earlier install being replaced). Every other way out of a run puts things
+# .apothem-extract.<leaf>.* and .apothem-clone.<leaf>.* (a new source being
+# installed, perhaps with entries of APOTHEM_HOME already moved into it) or
+# .apothem-old.<leaf>.* (the earlier install being replaced), <leaf> being
+# APOTHEM_HOME's own folder name. Every other way out of a run puts things
 # back and removes them, so they are there only after a forced kill or a
-# power loss, and the install lock keeps any other run from using them now.
-# They may hold the earlier install or its data, so nothing is moved or
-# removed here: the message names each folder, what it holds, and what to
-# do. When APOTHEM_HOME itself is missing, folders it may have been moved
-# into (<APOTHEM_HOME>.before-apothem-*) are named too.
+# power loss, and the install lock keeps any other run on this APOTHEM_HOME
+# from using them now. Folders made for another APOTHEM_HOME in the same
+# folder are left out: a run on that home may be using them. Folders with
+# the earlier names (.apothem-extract.<letters>, no leaf) are reported too,
+# with a note that they may belong to any Apothem home there. Only real
+# folders count, never files or links. They may hold the earlier install or
+# its data, so nothing is moved or removed here: the message names each
+# folder, what it holds, and what to do. When APOTHEM_HOME itself is
+# missing, the folders it may have been moved into
+# (<APOTHEM_HOME>.before-apothem-<time>) are named too.
 check_leftovers() {
     _lo_parent="$(dirname -- "$APOTHEM_HOME")"
-    _lo_list=""
+    _lo_leaf="$(basename -- "$APOTHEM_HOME")"
+    _lo_mine=""
+    _lo_older=""
     for _lo_dir in "$_lo_parent"/.apothem-old.* "$_lo_parent"/.apothem-extract.* "$_lo_parent"/.apothem-clone.*; do
-        exists "$_lo_dir" || continue
-        _lo_list="${_lo_list}$(leftover_line "$_lo_dir")
-"
+        [ -d "$_lo_dir" ] && [ ! -L "$_lo_dir" ] || continue
+        _lo_rest="${_lo_dir##*/}"
+        _lo_rest="${_lo_rest#.apothem-*.}"
+        case "$_lo_rest" in
+            *.*)
+                [ -n "${_lo_rest##*.}" ] && [ "${_lo_rest%.*}" = "$_lo_leaf" ] || continue
+                _lo_mine="${_lo_mine}${_lo_dir}
+" ;;
+            *)
+                _lo_older="${_lo_older}${_lo_dir}
+" ;;
+        esac
     done
-    [ -n "$_lo_list" ] || return 0
-    if ! exists "$APOTHEM_HOME"; then
-        _lo_base="$(basename -- "$APOTHEM_HOME")"
-        for _lo_dir in "$APOTHEM_HOME".before-apothem-*; do
-            exists "$_lo_dir" || continue
-            _lo_list="${_lo_list}${_lo_dir}: the earlier contents of $APOTHEM_HOME, moved aside, in ${_lo_dir}/${_lo_base}
-"
+    [ -n "${_lo_mine}${_lo_older}" ] || return 0
+    _lo_note=" (made by an earlier installer that did not record which home it was for, so it may belong to any Apothem home in ${_lo_parent}: check what it holds before you move or remove it)"
+    _lo_list="$(
+        printf '%s' "$_lo_mine" | LC_ALL=C sort | while IFS= read -r _lo_dir; do
+            leftover_line "$_lo_dir"
         done
-    fi
+        printf '%s' "$_lo_older" | LC_ALL=C sort | while IFS= read -r _lo_dir; do
+            printf '%s%s\n' "$(leftover_line "$_lo_dir")" "$_lo_note"
+        done
+        if ! exists "$APOTHEM_HOME"; then
+            for _lo_dir in "$APOTHEM_HOME".before-apothem-*; do
+                [ -d "$_lo_dir" ] && [ ! -L "$_lo_dir" ] || continue
+                is_aside_name "${_lo_dir#"$APOTHEM_HOME".before-apothem-}" || continue
+                printf '%s\n' "$_lo_dir"
+            done | LC_ALL=C sort | while IFS= read -r _lo_dir; do
+                if [ -d "$_lo_dir/$_lo_leaf" ] && [ ! -L "$_lo_dir/$_lo_leaf" ]; then
+                    printf '%s\n' "${_lo_dir}: the earlier contents of $APOTHEM_HOME, moved aside, in ${_lo_dir}/${_lo_leaf}"
+                else
+                    printf '%s\n' "${_lo_dir}: the earlier contents of $APOTHEM_HOME, moved aside, in ${_lo_dir}"
+                fi
+            done
+        fi
+    )"
     printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "An earlier run was stopped part-way and left these folders beside $APOTHEM_HOME:" >&2
-    printf '%s' "$_lo_list" | sed 's/^/    /' >&2
-    printf '    %s\n' "Nothing was changed. If $APOTHEM_HOME is missing, move the earlier install back to it first. Then move any engine data listed above back into $APOTHEM_HOME, remove these folders, and re-run." >&2
+    printf '%s\n' "$_lo_list" | sed 's/^/    /' >&2
+    printf '    %s\n' "Nothing was changed. If $APOTHEM_HOME is missing, move the earlier install back to it first. Then move every entry listed above as moved from $APOTHEM_HOME back into it, remove the folders listed above, and re-run." >&2
     exit 1
 }
 
+# is_aside_name TIME — return 0 when TIME is what claim_aside puts after
+# .before-apothem-: 14 digits, or 14 digits, a dash and a process ID.
+is_aside_name() {
+    _an_time="${1%%-*}"
+    case "$_an_time" in
+        "" | *[!0-9]*) return 1 ;;
+    esac
+    [ "${#_an_time}" -eq 14 ] || return 1
+    case "$1" in
+        *-*)
+            _an_pid="${1#*-}"
+            case "$_an_pid" in
+                "" | *[!0-9]*) return 1 ;;
+            esac ;;
+    esac
+    return 0
+}
+
+# is_aside_temp DIR NAME — return 0 when DIR/NAME is an empty folder named
+# aside. and 32 lower-case hex digits: install.ps1 makes one in its staging
+# folder and renames it at once, so only a forced kill leaves it. It is left
+# out when a staging folder is described.
+is_aside_temp() {
+    case "$2" in
+        aside.*) ;;
+        *) return 1 ;;
+    esac
+    _at_hex="${2#aside.}"
+    [ "${#_at_hex}" -eq 32 ] || return 1
+    case "$_at_hex" in
+        *[!0-9a-f]*) return 1 ;;
+    esac
+    [ -d "$1/$2" ] && [ ! -L "$1/$2" ] || return 1
+    _at_in="$(ls -A -- "$1/$2" 2>/dev/null)" || return 1
+    [ -z "$_at_in" ]
+}
+
+# is_extract_staging DIR — return 0 when DIR is an archive's staging folder.
+is_extract_staging() {
+    case "${1##*/}" in
+        .apothem-extract.*) return 0 ;;
+    esac
+    return 1
+}
+
+# join_names — read names, one per line, and print them joined with ", ".
+join_names() {
+    awk 'NR > 1 { printf ", " } { printf "%s", $0 } END { printf "\n" }'
+}
+
 # leftover_line DIR — print one line saying what the leftover folder DIR
-# holds (see check_leftovers).
+# holds (see check_leftovers): that it cannot be read, that it is empty, the
+# earlier install in DIR/home, the new source in DIR/<tree> with every entry
+# moved into it from APOTHEM_HOME, or else every name in it.
 leftover_line() {
-    _ll_names="$(list_entries "$1" 2>/dev/null)" || _ll_names=""
+    if ! ls -A -- "$1" >/dev/null 2>&1 || ! _ll_all="$(list_entries "$1")"; then
+        printf '%s\n' "$1: could not be read (check its owner and permissions)"
+        return 0
+    fi
+    _ll_names="$(printf '%s\n' "$_ll_all" | while IFS= read -r _ll_name; do
+        [ -n "$_ll_name" ] || continue
+        is_aside_temp "$1" "$_ll_name" || printf '%s\n' "$_ll_name"
+    done | LC_ALL=C sort)"
     if [ -z "$_ll_names" ]; then
         printf '%s\n' "$1: empty"
         return 0
     fi
     case "$1" in
         */.apothem-old.*)
-            if [ "$_ll_names" = "home" ]; then
+            if [ "$_ll_names" = "home" ] && [ -d "$1/home" ] && [ ! -L "$1/home" ]; then
                 printf '%s\n' "$1: the earlier install that was being replaced, in $1/home"
                 return 0
             fi ;;
         *)
-            case "$_ll_names" in
-                *"
+            _ll_tree="$_ll_names"
+            if [ -f "$1/$CARRY_LIST" ] && [ ! -L "$1/$CARRY_LIST" ]; then
+                _ll_tree="$(printf '%s\n' "$_ll_names" | LC_ALL=C grep -vxF -- "$CARRY_LIST" || true)"
+            fi
+            case "$_ll_tree" in
+                "" | *"
 "*) ;;
                 *)
-                    if [ -d "$1/$_ll_names" ]; then
-                        _ll_data=""
-                        for _ll_name in $ENGINE_DATA_NAMES; do
-                            if exists "$1/$_ll_names/$_ll_name"; then
-                                _ll_data="${_ll_data:+$_ll_data }${_ll_name}"
-                            fi
-                        done
-                        if [ -n "$_ll_data" ]; then
-                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_names, with engine data moved into it: $_ll_data"
+                    if [ -d "$1/$_ll_tree" ] && [ ! -L "$1/$_ll_tree" ]; then
+                        _ll_carried="$(leftover_carried "$1" "$_ll_tree" | join_names)"
+                        if [ -n "$_ll_carried" ]; then
+                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_tree, with these entries moved into it from $APOTHEM_HOME: $_ll_carried"
                         else
-                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_names"
+                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_tree"
                         fi
                         return 0
                     fi ;;
             esac ;;
     esac
-    printf '%s\n' "$1: files from that run ($(printf '%s\n' "$_ll_names" | tr '\n' ' ' | sed 's/ $//'))"
+    printf '%s\n' "$1: files from that run ($(printf '%s\n' "$_ll_names" | join_names))"
+}
+
+# leftover_carried DIR TREE — print, one per line, the entries a swap moved
+# from APOTHEM_HOME into DIR/TREE: the names DIR's carry list holds that are
+# in TREE; with no carry list (a folder from an earlier installer, or a kill
+# before the swap began), for an archive's staging folder the entries of
+# TREE that its source manifest does not name, and otherwise the engine's
+# data folders TREE holds.
+leftover_carried() {
+    if [ -f "$1/$CARRY_LIST" ] && [ ! -L "$1/$CARRY_LIST" ]; then
+        while IFS= read -r _lc_name; do
+            [ -n "$_lc_name" ] || continue
+            if exists "$1/$2/$_lc_name"; then printf '%s\n' "$_lc_name"; fi
+        done < "$1/$CARRY_LIST"
+    elif is_extract_staging "$1" && [ -f "$1/$2/$SOURCE_MANIFEST" ] \
+        && [ ! -L "$1/$2/$SOURCE_MANIFEST" ]; then
+        list_entries "$1/$2" 2>/dev/null | while IFS= read -r _lc_name; do
+            LC_ALL=C grep -qxF -- "$_lc_name" "$1/$2/$SOURCE_MANIFEST" 2>/dev/null \
+                || printf '%s\n' "$_lc_name"
+        done | LC_ALL=C sort
+    else
+        for _lc_name in backups contexts learning memory plans providers state; do
+            if exists "$1/$2/$_lc_name"; then printf '%s\n' "$_lc_name"; fi
+        done
+    fi
 }
 
 # aside_name — print the name claim_aside would try first,
@@ -1377,8 +1682,15 @@ ${_sw_new_names}"
             die "Cannot carry $APOTHEM_HOME/${_sw_name} over to the new install, which has an entry of that name. Move it out of $APOTHEM_HOME, then re-run."
         fi
     done
-    _SW_OLD="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-old.XXXXXX")" \
+    _SW_OLD="$(make_staging old)" \
         || die "Could not make room beside $APOTHEM_HOME; nothing was changed"
+    # The carry list goes beside NEW, in its staging folder, before anything
+    # moves, so that after a forced kill check_leftovers can name every entry
+    # to move back. The names hold no space or special character
+    # (carry_names checked), so they split safely.
+    # shellcheck disable=SC2086
+    printf '%s\n' $_SW_KEEP | LC_ALL=C sort > "$(dirname -- "$_SW_NEW")/${CARRY_LIST}" \
+        || die "Could not write the list of entries to carry over beside $_SW_NEW; nothing was changed"
     trap 'swap_abort "Interrupted while replacing $APOTHEM_HOME"' HUP INT TERM QUIT PIPE
     for _sw_name in $_SW_KEEP; do
         _SW_PHASE="carry"
@@ -1934,7 +2246,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
     else
         mkdir -p "$(dirname "$APOTHEM_HOME")" \
             || die "Could not create the parent directory of $APOTHEM_HOME"
-        _ck_stage="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-extract.XXXXXX")" \
+        _ck_stage="$(make_staging extract)" \
             || die "Could not create a staging directory beside $APOTHEM_HOME"
     fi
     tar -xzf "${_ck_tmp}/${_ck_name}" -C "$_ck_stage" \
@@ -1981,7 +2293,9 @@ if [ -z "$SOURCE" ]; then
     # the clone is made in a fresh staging directory, checked and checked out
     # there, and swapped in by swap_in, which keeps the engine's backups/ and
     # state/ from an earlier archive install. A dry run clones into a scratch
-    # directory and leaves APOTHEM_HOME alone.
+    # directory and leaves APOTHEM_HOME alone; on an existing clone it first
+    # makes the same read-only checks of the clone as a real run, so it
+    # stops where the real run would.
     _cl_stage=""
     if is_apothem_clone "$APOTHEM_HOME" && [ "$DRY_RUN" != "1" ]; then
         info "Updating existing clone at $APOTHEM_HOME (ref: ${APOTHEM_REF})"
@@ -1999,6 +2313,8 @@ if [ -z "$SOURCE" ]; then
         _cl_tree="$APOTHEM_HOME"
     else
         if is_apothem_clone "$APOTHEM_HOME"; then
+            # Only a dry run gets here with a clone at APOTHEM_HOME.
+            check_clone_setup "$APOTHEM_HOME"
             _cl_mode="keep"
         else
             _cl_mode="$(home_mode "a clone of ${APOTHEM_REF}")"
@@ -2010,7 +2326,7 @@ if [ -z "$SOURCE" ]; then
         else
             mkdir -p "$(dirname "$APOTHEM_HOME")" \
                 || die "Could not create the parent directory of $APOTHEM_HOME"
-            _cl_stage="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-clone.XXXXXX")" \
+            _cl_stage="$(make_staging clone)" \
                 || die "Could not create a staging directory beside $APOTHEM_HOME"
         fi
         _cl_tree="$(abs_path "${_cl_stage}/apothem")"
@@ -2048,9 +2364,9 @@ SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Python reads (see settle_python_form and native_path): ":" and POSIX paths
 # for a POSIX Python, ";" and Windows paths for a Windows one.
 _ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
-    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}/apothem/_vendor, which ${PY} needs. Check that cygpath works in this shell, or run install.ps1 from PowerShell instead."
 _ep_src="$(native_path "${SRC_PATH}")" \
-    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}, which ${PY} needs. Check that cygpath works in this shell, or run install.ps1 from PowerShell instead."
 ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 echo
 

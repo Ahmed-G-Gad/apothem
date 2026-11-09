@@ -25,14 +25,16 @@
 # moved after the check cannot change what is installed.
 # Before anything is fetched, the update also stops when git will not work
 # in the clone because another user owns it, when the clone's own git
-# settings (in its config or config.worktree) name a program for git to run,
-# pull in other settings, or change where or how git connects (the list is
-# install.sh's: gpg.*, core.fsmonitor, core.hooksPath, core.sshCommand,
-# include.*, filter.*, url.*.insteadOf, protocol.*, credential.*, http.* and
-# more), when its info/attributes sets a filter, when the clone hides
-# changes from git (files marked assume-unchanged or skip-worktree), or when
-# its work tree is not APOTHEM_HOME. Every git command on the clone runs
-# with its hooks and its fsmonitor turned off and with no ext:: transport.
+# settings (in its config or config.worktree) hold any setting that is not
+# on the short list install.sh keeps (CLONE_CONFIG_ALLOW: what git clone and
+# git init write there, plus branch settings, user.name, user.email,
+# maintenance.auto, maintenance.strategy, pull.rebase and pull.ff), when its
+# info/attributes sets a filter, when the clone holds a submodule, when it
+# hides changes from git (files marked assume-unchanged or skip-worktree),
+# or when its work tree is not APOTHEM_HOME. Every git command on the clone
+# runs with its hooks, its fsmonitor, its pager and git's automatic
+# maintenance off, with no ext:: transport, and without looking inside
+# nested repositories.
 # Only one install, update or uninstall runs at a time: each holds the lock
 # folder <APOTHEM_HOME>.lock while it runs. Only a clone of an Apothem
 # source tree is updated; any other folder is left alone. APOTHEM_REF=main
@@ -71,11 +73,13 @@ set -eu
 # configuration from other files, or run its helper programs and templates
 # from elsewhere (mirrors install.sh). git still reads the user's own global
 # and system configuration from the places it always looks.
+# GIT_CONFIG_NOSYSTEM stays as the caller set it: it only makes git skip
+# the system configuration.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
-    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
+    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
@@ -156,10 +160,11 @@ settle_python_form() {
     fi
 }
 
-# native_path PATH — print PATH in the form the chosen Python reads: the
-# Windows form (cygpath -w) for a Windows Python, unchanged for a POSIX one.
-# Returns 1, so the caller stops, when cygpath fails or prints anything but a
-# drive or network path, or when a POSIX path does not start with "/".
+# native_path PATH — print the full path PATH in the form the chosen Python
+# reads: the Windows form (cygpath -w) for a Windows Python, unchanged for a
+# POSIX one. Every caller passes a path that starts with "/". Returns 1, so
+# the caller stops, when cygpath fails or prints anything but a drive or
+# network path; that can only happen for a Windows Python.
 native_path() {
     if [ "$PY_WINDOWS" = "1" ]; then
         _np_path="$(cygpath -w -- "$1" 2>/dev/null)" || return 1
@@ -168,10 +173,7 @@ native_path() {
             *) return 1 ;;
         esac
     else
-        case "$1" in
-            /*) printf '%s\n' "$1" ;;
-            *) return 1 ;;
-        esac
+        printf '%s\n' "$1"
     fi
 }
 
@@ -294,17 +296,30 @@ resolve_latest_tag() {
 }
 
 # cgit ARGS — run git with ARGS on the clone, with its fsmonitor program
-# off, no ext:: transport and no submodules, and, once HOOKS_OFF names an
-# empty folder, with core.hooksPath pointing at it, so none of the clone's
-# hooks run (mirrors install.sh).
+# and pager off, no automatic maintenance, only the file, git, http, https
+# and ssh transports (so no ext:: or other remote helper program), no
+# recursion into submodules, no git status run inside a nested repository,
+# paths longer than Windows' usual limit allowed (Git for Windows), and,
+# once HOOKS_OFF names an empty folder, with core.hooksPath pointing at it,
+# so none of the clone's hook scripts run (mirrors install.sh).
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
-            -c fetch.recurseSubmodules=false -c core.hooksPath="$HOOKS_OFF" "$@"
+        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
+            -c protocol.allow=never -c protocol.file.allow=always \
+            -c protocol.git.allow=always -c protocol.http.allow=always \
+            -c protocol.https.allow=always -c protocol.ssh.allow=always \
+            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
+            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
+            -c core.longpaths=true -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
-            -c fetch.recurseSubmodules=false "$@"
+        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
+            -c protocol.allow=never -c protocol.file.allow=always \
+            -c protocol.git.allow=always -c protocol.http.allow=always \
+            -c protocol.https.allow=always -c protocol.ssh.allow=always \
+            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
+            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
+            -c core.longpaths=true "$@"
     fi
 }
 
@@ -318,24 +333,38 @@ exists() {
 LOCK_DIR=""
 LOCK_HELD=0
 take_lock() {
-    LOCK_DIR="${APOTHEM_HOME}.lock"
-    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
+    _tl_home="$APOTHEM_HOME"
+    if [ -L "$APOTHEM_HOME" ] && _tl_real="$(cd -P -- "$APOTHEM_HOME" 2>/dev/null && pwd -P)"; then
+        _tl_home="$_tl_real"
+    fi
+    LOCK_DIR="${_tl_home}.lock"
+    _tl_parent="$(dirname -- "$_tl_home")"
     # With no folder to hold APOTHEM_HOME there is nothing to update, and the
     # run stops below without the lock.
     [ -d "$_tl_parent" ] || return 0
+    # Signals are ignored from the mkdir until LOCK_HELD says the lock is
+    # this run's: a signal in between would otherwise leave a lock with no
+    # process ID in it, and a run whose mkdir failed must never remove the
+    # lock that another run holds.
+    trap '' HUP INT QUIT PIPE TERM
     if mkdir "$LOCK_DIR" 2>/dev/null; then
         LOCK_HELD=1
+        trap_signals_to_exit
         printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
         return 0
     fi
+    trap_signals_to_exit
     exists "$LOCK_DIR" \
         || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    if [ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]; then
+        die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+    fi
     _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
     case "$_tl_pid" in
         "" | *[!0-9]*)
             die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
     esac
-    if kill -0 "$_tl_pid" 2>/dev/null; then
+    if process_running "$_tl_pid"; then
         die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
     fi
     die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
@@ -345,6 +374,28 @@ release_lock() {
         rm -rf -- "$LOCK_DIR"
         LOCK_HELD=0
     fi
+}
+
+# process_running PID — return 0 when the process PID is running. kill -0
+# also fails for a running process that belongs to another user (a run under
+# sudo on the same APOTHEM_HOME, say); only then does it say "not
+# permitted".
+process_running() {
+    _pr_err="$(LC_ALL=C; export LC_ALL; kill -0 "$1" 2>&1)" && return 0
+    case "$_pr_err" in
+        *[Nn]"ot permitted"*) return 0 ;;
+    esac
+    return 1
+}
+
+# trap_signals_to_exit — make each signal that would end the run exit
+# through the EXIT trap, so the lock is let go (mirrors install.sh).
+trap_signals_to_exit() {
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 131' QUIT
+    trap 'exit 141' PIPE
+    trap 'exit 143' TERM
 }
 
 # on_exit — the EXIT trap from the moment the lock is taken: removes the
@@ -359,13 +410,14 @@ verify_tag() {
     VERIFY_TAG_OUTPUT="$(cgit -C "$1" verify-tag --raw "$2" 2>&1)"
 }
 
-# clone_git_ok / git_path / refused_config_key / check_clone_config /
-# check_clone_setup mirror install.sh, whose comments give the reasons: the
-# checks run on an existing clone before the fetch, and the settings and
-# attributes check runs before any git command that reads the clone's index
-# or could run one of its programs.
+# clone_git_ok, git_path and the checks below them (the clone config
+# allow-list, check_clone_config, check_clone_modules, check_clone_gitlinks
+# and check_clone_setup) mirror install.sh, whose comments give the
+# reasons: the checks run on an existing clone before the fetch, and the
+# settings and attributes check runs before any git command that reads the
+# clone's index or could run one of its programs.
 clone_git_ok() {
-    if _cg_err="$(LC_ALL=C git -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
+    if _cg_err="$(LC_ALL=C; export LC_ALL; cgit -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
         return 0
     fi
     case "$_cg_err" in
@@ -376,7 +428,7 @@ clone_git_ok() {
 }
 
 git_path() {
-    _gp_path="$(git -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
+    _gp_path="$(cgit -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
     [ -n "$_gp_path" ] || return 1
     case "$_gp_path" in
         /* | [A-Za-z]:[\\/]*) printf '%s\n' "$_gp_path" ;;
@@ -384,54 +436,206 @@ git_path() {
     esac
 }
 
-refused_config_key() {
-    awk '
+# The settings a clone's own git config (.git/config, and .git/config.worktree
+# when there is one) may hold for an update in place to go ahead: the ones
+# git clone and git init write there (any git 2.x, any platform, sha1 or
+# sha256, files or reftable refs, --no-tags, --single-branch, --depth,
+# --filter), branch settings, which tools such as editors add, the user's
+# name and email, the two maintenance settings `git maintenance register`
+# writes, and the two pull settings git pull's own hint suggests. None of
+# them names a program for git to run, a file or folder git reads settings,
+# hooks, attributes or objects from, a URL rewrite, or another work tree or
+# git folder. remote.origin.url names the address the update fetches from (a
+# file in the git folder's remotes or branches folder can name an address
+# too, which gives no more than that setting does). An address can name a
+# transport whose helper git runs (<name>::...), so cgit allows only the
+# file, git, http, https and ssh transports, and the release tag check
+# decides what is checked out.
+# Any other setting stops the update. Section and key compare without regard
+# to case; the part between them (branch.<name>.merge) compares exactly, and
+# `*` there stands for any name that is not empty, as `*` as the key stands
+# for any key. install.sh, update.sh, install.ps1 and update.ps1 hold the
+# same list (tests/scripts/test_installer_parity.py compares them).
+# clone-config-allow-list begin
+CLONE_CONFIG_ALLOW='core.repositoryformatversion
+core.filemode
+core.bare
+core.logallrefupdates
+core.symlinks
+core.ignorecase
+core.precomposeunicode
+core.longpaths
+core.partialclonefilter
+extensions.objectformat
+extensions.refstorage
+extensions.partialclone
+extensions.worktreeconfig
+remote.origin.url
+remote.origin.fetch
+remote.origin.tagopt
+remote.origin.promisor
+remote.origin.partialclonefilter
+branch.*.*
+user.name
+user.email
+maintenance.auto
+maintenance.strategy
+pull.rebase
+pull.ff'
+# clone-config-allow-list end
+
+# unallowed_config_key [REFUSE] — read git setting names, one per line, as
+# `git config --name-only --list` prints them, and print the first one that
+# CLONE_CONFIG_ALLOW does not hold, or that equals REFUSE (compared without
+# regard to case). The section is the text before the first dot, the key the
+# text after the last dot, and the subsection whatever lies between (a name
+# with one dot has none); a name with an empty section or key matches
+# nothing. A two-part entry (user.name) matches only a name with no
+# subsection; a three-part entry matches only a name with one.
+unallowed_config_key() {
+    CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
+        function split_name(name, parts,    first, rest, i, last) {
+            first = index(name, ".")
+            if (first == 0) return 0
+            parts["sec"] = tolower(substr(name, 1, first - 1))
+            rest = substr(name, first + 1)
+            last = 0
+            for (i = length(rest); i > 0; i--) {
+                if (substr(rest, i, 1) == ".") { last = i; break }
+            }
+            if (last == 0) {
+                parts["has"] = 0
+                parts["sub"] = ""
+                parts["key"] = tolower(rest)
+            } else {
+                parts["has"] = 1
+                parts["sub"] = substr(rest, 1, last - 1)
+                parts["key"] = tolower(substr(rest, last + 1))
+            }
+            return 1
+        }
+        BEGIN {
+            n = split(ENVIRON["CLONE_CONFIG_ALLOW"], allow, "\n")
+            refuse = tolower(ENVIRON["CLONE_CONFIG_REFUSE"])
+        }
+        $0 == "" { next }
         {
-            k = tolower($0)
-            if (k ~ /^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\./ ||
-                k == "core.fsmonitor" || k == "core.hookspath" || k == "core.sshcommand" ||
-                k == "core.gitproxy" || k == "core.askpass" || k == "core.attributesfile" ||
-                k == "core.alternaterefscommand" || k == "diff.external" ||
-                k ~ /^url\..*\.(insteadof|pushinsteadof)$/ ||
-                k ~ /^remote\..*\.(uploadpack|receivepack|proxy|vcs)$/ ||
-                k ~ /^diff\..*\.(command|textconv)$/) { print; exit }
+            if (!split_name($0, got) || got["sec"] == "" || got["key"] == "") { print; exit }
+            if (refuse != "" && tolower($0) == refuse) { print; exit }
+            ok = 0
+            for (j = 1; j <= n && !ok; j++) {
+                if (allow[j] == "" || !split_name(allow[j], want)) continue
+                if (want["sec"] != got["sec"] || want["has"] != got["has"]) continue
+                if (want["key"] != "*" && want["key"] != got["key"]) continue
+                if (want["has"]) {
+                    if (want["sub"] == "*") { if (got["sub"] == "") continue }
+                    else if (want["sub"] != got["sub"]) continue
+                }
+                ok = 1
+            }
+            if (!ok) { print; exit }
         }'
 }
 
+# config_file_problem DIR FILE — print the first setting, in file order, in
+# the config file FILE of the clone at DIR that an update in place does not
+# accept: a name unallowed_config_key reports, or extensions.refstorage
+# when any of its values is other than files or reftable (a later git reads
+# refs from a folder such a value names). The values are read NUL-ended, and
+# a line break inside one turns into a byte that makes it fail. git runs in
+# the clone (-C DIR), never in the current folder, whose own repository
+# could stop it. Die when FILE cannot be read.
+config_file_problem() {
+    _cp_keys="$(cgit -C "$1" config --file "$2" --name-only --list 2>/dev/null)" \
+        || die "Could not read the git config of $1 at ${2}."
+    _cp_refuse=""
+    if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
+        | tr '\000\n' '\n\001' \
+        | awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
+        _cp_refuse="extensions.refstorage"
+    fi
+    printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
+}
+
+# check_clone_config DIR — die when the clone at DIR holds a git setting of
+# its own that an update in place does not accept (see CLONE_CONFIG_ALLOW),
+# in its config file or, when there is one, in its config.worktree, or when
+# its info/attributes file sets a filter, whose program checkout and diff
+# run. The message names the setting and the file it is in. Neither file's
+# include.path is followed (include settings are not on the list). This runs
+# before any git command that reads the clone's index or could run one of
+# its programs. A NUL byte would make grep treat info/attributes as binary
+# and print nothing, while git still reads the lines around it, so NUL
+# bytes are dropped first.
 check_clone_config() {
-    _cc_file="$(git_path "$1" config)" || die "Could not read the git config of $1."
     _cc_key=""
-    if [ -e "$_cc_file" ]; then
-        _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
-            || die "Could not read the git config of $1 at ${_cc_file}."
-        _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
-    fi
-    if [ -z "$_cc_key" ]; then
-        _cc_file="$(git_path "$1" config.worktree)" || die "Could not read the git config of $1."
+    for _cc_name in config config.worktree; do
+        _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
         if [ -e "$_cc_file" ]; then
-            _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
-                || die "Could not read the git config of $1 at ${_cc_file}."
-            _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+            _cc_key="$(config_file_problem "$1" "$_cc_file")" || exit 1
+            [ -z "$_cc_key" ] || break
         fi
-    fi
+    done
     if [ -n "$_cc_key" ]; then
-        die "$1's own git config sets ${_cc_key}, which the update would trust. Remove it from ${_cc_file}, then re-run."
+        die "$1's own git config sets ${_cc_key}, which an update in place does not accept in a clone's own config. Remove it from ${_cc_file}, then re-run."
     fi
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
-    if [ -f "$_cc_file" ] && grep -v '^[[:space:]]*#' "$_cc_file" 2>/dev/null | grep -q 'filter='; then
+    if [ -f "$_cc_file" ] && tr -d '\000' 2>/dev/null < "$_cc_file" \
+        | LC_ALL=C grep -v '^[[:space:]]*#' | LC_ALL=C grep -q 'filter='; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
 }
 
+# check_clone_modules DIR — die when the clone at DIR keeps submodule
+# repositories (a modules folder in its git folder). A release tree has
+# none, and git would run inside such a repository, under settings and
+# attributes nothing here checks. Reads no index.
+check_clone_modules() {
+    _sm_dir="$(git_path "$1" modules)" || die "Could not read the git config of $1."
+    if [ -d "$_sm_dir" ]; then
+        die "$1 keeps submodule repositories in ${_sm_dir}. A release tree has no submodules, and the update would run git inside them. Remove the submodules and ${_sm_dir}, then re-run."
+    fi
+}
+
+# check_clone_gitlinks DIR — die when the index of the clone at DIR records
+# a git repository inside its tree (a gitlink, mode 160000), as a clone with
+# a submodule, or with another clone added inside it, has it. A release tree
+# has none, and git diff and git status would run git inside it. Reading the
+# index runs no program of the clone's own once check_clone_config has
+# passed.
+check_clone_gitlinks() {
+    _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
+        || die "$1 has changes to tracked files. Commit or stash them, then re-run."
+    _sm_path="$(printf '%s\n' "$_sm_list" | awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
+    if [ -n "$_sm_path" ]; then
+        die "$1 holds a submodule at ${_sm_path} (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
+    fi
+}
+
+# check_clone_setup DIR — die, before anything is fetched, when the clone at
+# DIR is set up so that updating it in place would trust something the
+# release does not hold: a clone git will not work in, git settings or
+# attributes of its own that an update does not accept (check_clone_config,
+# which runs first, before any git command that reads the index), kept
+# submodule repositories (check_clone_modules, right after it), a work tree
+# other than DIR (core.worktree, or a .git that points at another clone's),
+# a submodule in its index (check_clone_gitlinks), or files git has been
+# told to ignore changes to (assume-unchanged or skip-worktree, which
+# require_clean_clone cannot see). Every check only reads, so a dry
+# run makes them too.
 check_clone_setup() {
     clone_git_ok "$1"
     check_clone_config "$1"
+    check_clone_modules "$1"
     _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+    # git prints C:/... under Git Bash, where pwd prints /c/...: compare the
+    # physical folders both name.
     [ -z "$_cs_top" ] || _cs_top="$(cd "$_cs_top" 2>/dev/null && pwd -P || true)"
     _cs_here="$(cd "$1" && pwd -P)"
     if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
-        die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+        die "$1 is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
     fi
+    check_clone_gitlinks "$1"
     _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
     if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
@@ -524,11 +728,7 @@ echo
 # take_lock). on_exit, the EXIT trap from here on, lets the lock go, and
 # each signal that ends the run exits through it.
 trap on_exit EXIT
-trap 'exit 129' HUP
-trap 'exit 130' INT
-trap 'exit 131' QUIT
-trap 'exit 141' PIPE
-trap 'exit 143' TERM
+trap_signals_to_exit
 take_lock
 
 is_apothem_source() {
@@ -738,9 +938,9 @@ SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
 _ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
-    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}/apothem/_vendor, which ${PY} needs. Check that cygpath works in this shell, or run update.ps1 from PowerShell instead."
 _ep_src="$(native_path "${SRC_PATH}")" \
-    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}, which ${PY} needs. Check that cygpath works in this shell, or run update.ps1 from PowerShell instead."
 ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 echo
 

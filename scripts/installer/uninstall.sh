@@ -96,10 +96,11 @@ settle_python_form() {
     fi
 }
 
-# native_path PATH — print PATH in the form the chosen Python reads: the
-# Windows form (cygpath -w) for a Windows Python, unchanged for a POSIX one.
-# Returns 1, so the caller stops, when cygpath fails or prints anything but a
-# drive or network path, or when a POSIX path does not start with "/".
+# native_path PATH — print the full path PATH in the form the chosen Python
+# reads: the Windows form (cygpath -w) for a Windows Python, unchanged for a
+# POSIX one. Every caller passes a path that starts with "/". Returns 1, so
+# the caller stops, when cygpath fails or prints anything but a drive or
+# network path; that can only happen for a Windows Python.
 native_path() {
     if [ "$PY_WINDOWS" = "1" ]; then
         _np_path="$(cygpath -w -- "$1" 2>/dev/null)" || return 1
@@ -108,10 +109,7 @@ native_path() {
             *) return 1 ;;
         esac
     else
-        case "$1" in
-            /*) printf '%s\n' "$1" ;;
-            *) return 1 ;;
-        esac
+        printf '%s\n' "$1"
     fi
 }
 
@@ -184,24 +182,38 @@ exists() {
 LOCK_DIR=""
 LOCK_HELD=0
 take_lock() {
-    LOCK_DIR="${APOTHEM_HOME}.lock"
-    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
-    # With no folder to hold APOTHEM_HOME there is no install to remove, and
-    # the run stops below without the lock.
+    _tl_home="$APOTHEM_HOME"
+    if [ -L "$APOTHEM_HOME" ] && _tl_real="$(cd -P -- "$APOTHEM_HOME" 2>/dev/null && pwd -P)"; then
+        _tl_home="$_tl_real"
+    fi
+    LOCK_DIR="${_tl_home}.lock"
+    _tl_parent="$(dirname -- "$_tl_home")"
+    # With no folder to hold APOTHEM_HOME there is no install to remove, and the
+    # run stops below without the lock.
     [ -d "$_tl_parent" ] || return 0
+    # Signals are ignored from the mkdir until LOCK_HELD says the lock is
+    # this run's: a signal in between would otherwise leave a lock with no
+    # process ID in it, and a run whose mkdir failed must never remove the
+    # lock that another run holds.
+    trap '' HUP INT QUIT PIPE TERM
     if mkdir "$LOCK_DIR" 2>/dev/null; then
         LOCK_HELD=1
+        trap_signals_to_exit
         printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
         return 0
     fi
+    trap_signals_to_exit
     exists "$LOCK_DIR" \
         || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    if [ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]; then
+        die "$LOCK_DIR is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 or uninstall.ps1) on $APOTHEM_HOME, and Windows removes it when that run ends; while the run is active, Windows will not let anyone remove it. Wait for that run to finish, then re-run. If no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+    fi
     _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
     case "$_tl_pid" in
         "" | *[!0-9]*)
             die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
     esac
-    if kill -0 "$_tl_pid" 2>/dev/null; then
+    if process_running "$_tl_pid"; then
         die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
     fi
     die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
@@ -213,6 +225,28 @@ release_lock() {
     fi
 }
 
+# process_running PID — return 0 when the process PID is running. kill -0
+# also fails for a running process that belongs to another user (a run under
+# sudo on the same APOTHEM_HOME, say); only then does it say "not
+# permitted".
+process_running() {
+    _pr_err="$(LC_ALL=C; export LC_ALL; kill -0 "$1" 2>&1)" && return 0
+    case "$_pr_err" in
+        *[Nn]"ot permitted"*) return 0 ;;
+    esac
+    return 1
+}
+
+# trap_signals_to_exit — make each signal that would end the run exit
+# through the EXIT trap, so the lock is let go (mirrors install.sh).
+trap_signals_to_exit() {
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 131' QUIT
+    trap 'exit 141' PIPE
+    trap 'exit 143' TERM
+}
+
 bold "Apothem uninstaller"
 echo
 
@@ -220,11 +254,7 @@ echo
 # take_lock). The EXIT trap lets the lock go on every way out, and each
 # signal that ends the run exits through it.
 trap release_lock EXIT
-trap 'exit 129' HUP
-trap 'exit 130' INT
-trap 'exit 131' QUIT
-trap 'exit 141' PIPE
-trap 'exit 143' TERM
+trap_signals_to_exit
 take_lock
 
 is_apothem_source() {
@@ -278,9 +308,9 @@ fi
 bold "Uninstalling harness: ${HARNESS}"
 # Vendor-first PYTHONPATH mirrors the install/update invocations.
 _ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
-    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}/apothem/_vendor, which ${PY} needs. Check that cygpath works in this shell, or run uninstall.ps1 from PowerShell instead."
 _ep_src="$(native_path "${SRC_PATH}")" \
-    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+    || die "cygpath could not give the Windows path (a drive or network path) of ${SRC_PATH}, which ${PY} needs. Check that cygpath works in this shell, or run uninstall.ps1 from PowerShell instead."
 ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 # The current folder must never shadow the engine's modules: `-m` puts it
 # first on sys.path and `-c` puts '' there. `-P` / PYTHONSAFEPATH does not

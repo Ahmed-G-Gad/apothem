@@ -81,11 +81,9 @@ LOCAL_WORK_MARKER = (
     "stashes, unpushed commits, or untracked files in its source tree). Commit "
     "and push that work, or move it elsewhere, then re-run."
 )
-WORK_TREE_MARKER = (
-    "is not the work tree of its git clone (core.worktree is set, or its .git "
-    "points elsewhere). Remove that setting, then re-run."
+TRUSTED_CONFIG_MARKER = (
+    ", which an update in place does not accept in a clone's own config. Remove it from"
 )
-TRUSTED_CONFIG_MARKER = ", which the update would trust. Remove it from"
 KEPT_TREE_MARKER = "The earlier clone's tree is kept at"
 NO_HOME_MARKER = "holds no Apothem install; refusing to replace it"
 ROLLBACK_FAILED_MARKER = "and putting the earlier install back also failed: it is at"
@@ -1828,11 +1826,24 @@ def _prepare_unclean_clone(tmp_path: Path, case: str) -> tuple[Path, str, str]:
         git(["update-index", f"--{case}", "pyproject.toml"], home)
         assert git(["status", "--porcelain"], home) == ""
         return home, old_commit, TRACKED_CHANGES_MARKER
+    if case == "core.bare":
+        git(["config", "core.bare", "true"], home)
+        return (
+            home,
+            old_commit,
+            " is not the work tree of its git clone (git finds no work tree there, "
+            "as when its git config sets core.bare to true). Set core.bare to "
+            "false, then re-run.",
+        )
     if case == "core.worktree":
         decoy = tmp_path / "decoy"
         shutil.copytree(home, decoy, ignore=shutil.ignore_patterns(".git"))
         git(["config", "core.worktree", decoy.as_posix()], home)
-        return home, old_commit, WORK_TREE_MARKER
+        return (
+            home,
+            old_commit,
+            f"'s own git config sets core.worktree{TRUSTED_CONFIG_MARKER}",
+        )
     key, value = {
         "gpg.program": ("gpg.program", "C:/elsewhere/gpg"),
         "gpg.openpgp.program": ("gpg.openpgp.program", "C:/elsewhere/gpg"),
@@ -1852,6 +1863,7 @@ def _prepare_unclean_clone(tmp_path: Path, case: str) -> tuple[Path, str, str]:
     [
         "assume-unchanged",
         "skip-worktree",
+        "core.bare",
         "core.worktree",
         "gpg.program",
         "gpg.openpgp.program",

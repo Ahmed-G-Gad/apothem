@@ -794,10 +794,22 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "status --porcelain --untracked-files=no",
         "checkout --quiet --detach",
         "refs/remotes/origin/",
-        "is not the work tree of its git clone (core.worktree is set, or its .git "
-        "points elsewhere). Remove that setting, then re-run.",
+        "is not the work tree of its git clone (git finds no work tree there, as "
+        "when its git config sets core.bare to true). Set core.bare to false, then "
+        "re-run.",
         "'s own git config sets ",
-        ", which the update would trust. Remove it from ",
+        ", which an update in place does not accept in a clone's own config. "
+        "Remove it from ",
+        " keeps submodule repositories in ",
+        ". A release tree has no submodules, and the update would run git "
+        "inside them. Remove the submodules and ",
+        " holds a submodule at ",
+        " (its index records a git repository there). A release tree has none, "
+        "and the update would run git inside it. Remove the submodule from the "
+        "clone, then re-run.",
+        "ls-files -s",
+        "160000",
+        "--get-all extensions.refstorage",
         "'s own git attributes set a filter (filter=), which the update would "
         "trust. Remove it from ",
         "Could not read the git config of ",
@@ -842,8 +854,11 @@ CLEARED_GIT_VARIABLES = (
     "GIT_CONFIG",
     "GIT_CONFIG_GLOBAL",
     "GIT_CONFIG_SYSTEM",
-    "GIT_CONFIG_NOSYSTEM",
 )
+
+#: The git variables every script leaves as the caller set them:
+#: GIT_CONFIG_NOSYSTEM only makes git skip the system configuration.
+KEPT_GIT_VARIABLES = ("GIT_CONFIG_NOSYSTEM",)
 
 
 def _cleared_git_variables(name: str, content: str) -> set[str]:
@@ -865,13 +880,16 @@ def _cleared_git_variables(name: str, content: str) -> set[str]:
 def test_every_script_clears_the_git_environment_and_checks_the_repo(
     name: str,
 ) -> None:
-    """All four scripts clear the same git variables, turn replace refs off,
-    refuse an APOTHEM_REPO that reads as an option in the same words, and
-    look for the gpg program git runs in the same order."""
+    """All four scripts clear the same git variables, keep
+    GIT_CONFIG_NOSYSTEM (it only narrows what git reads), turn replace refs
+    off, refuse an APOTHEM_REPO that reads as an option in the same words,
+    and look for the gpg program git runs in the same order."""
     content = SCRIPTS[name]
     cleared = _cleared_git_variables(name, content)
     for variable in CLEARED_GIT_VARIABLES:
         assert variable in cleared, f"{name} does not clear {variable}"
+    for variable in KEPT_GIT_VARIABLES:
+        assert variable not in cleared, f"{name} clears {variable}"
     for phrase in (
         "GIT_NO_REPLACE_OBJECTS",
         "APOTHEM_REPO must be a repository URL or path, not an option: ",
@@ -1249,75 +1267,244 @@ def _script(name: str) -> str:
     return (INSTALLER / name).read_text(encoding="utf-8")
 
 
-#: Setting names a clone's own git config may not hold (True) or may hold
-#: (False), as `git config --name-only --list` prints them. install.sh and
-#: update.sh decide with refused_config_key, install.ps1 and update.ps1 with
-#: Test-RefusedConfigKey; both must give these answers.
+def _posix_sh() -> str | None:
+    """A POSIX sh to run the sh scripts' functions: Git for Windows' sh on
+    Windows (found from git on PATH, never WSL's), else sh on PATH."""
+    if sys.platform != "win32":
+        return shutil.which("sh")
+    git = shutil.which("git")
+    if git is None:
+        return None
+    for root in Path(git).resolve().parents[:3]:
+        for candidate in (root / "usr" / "bin" / "sh.exe", root / "bin" / "sh.exe"):
+            if candidate.is_file():
+                return str(candidate)
+    return None
+
+
+_SH = _posix_sh()
+requires_posix_sh = pytest.mark.skipif(_SH is None, reason="no POSIX sh on this host")
+requires_powershell = pytest.mark.skipif(
+    _PWSH is None, reason="no PowerShell on this host"
+)
+
+#: The settings a clone's own git config may hold for an update in place,
+#: in the order every script lists them (the round-2 spec, section 1.1).
+CLONE_CONFIG_ALLOW: tuple[str, ...] = (
+    "core.repositoryformatversion",
+    "core.filemode",
+    "core.bare",
+    "core.logallrefupdates",
+    "core.symlinks",
+    "core.ignorecase",
+    "core.precomposeunicode",
+    "core.longpaths",
+    "core.partialclonefilter",
+    "extensions.objectformat",
+    "extensions.refstorage",
+    "extensions.partialclone",
+    "extensions.worktreeconfig",
+    "remote.origin.url",
+    "remote.origin.fetch",
+    "remote.origin.tagopt",
+    "remote.origin.promisor",
+    "remote.origin.partialclonefilter",
+    "branch.*.*",
+    "user.name",
+    "user.email",
+    "maintenance.auto",
+    "maintenance.strategy",
+    "pull.rebase",
+    "pull.ff",
+)
+
+ALLOW_BEGIN = "# clone-config-allow-list begin"
+ALLOW_END = "# clone-config-allow-list end"
+
+
+def _allow_list_block(name: str) -> str:
+    """The lines between the allow-list markers in script NAME."""
+    content = _script(name)
+    assert content.count(ALLOW_BEGIN) == 1, f"{name}: no single allow-list start"
+    assert content.count(ALLOW_END) == 1, f"{name}: no single allow-list end"
+    return content.split(ALLOW_BEGIN, 1)[1].split(ALLOW_END, 1)[0]
+
+
+def _allow_list(name: str) -> list[str]:
+    """The entries of script NAME's allow-list, in order: its tokens made of
+    lower-case letters, digits, '*', '.' and '-', once the quotes and the
+    CLONE_CONFIG_ALLOW= / $CloneConfigAllow = @( / ) wrappers are gone."""
+    block = _allow_list_block(name)
+    block = block.replace("CLONE_CONFIG_ALLOW=", " ").replace(
+        "$CloneConfigAllow = @(", " "
+    )
+    block = block.replace("'", " ").replace('"', " ").replace(")", " ")
+    tokens = block.split()
+    for token in tokens:
+        assert re.fullmatch(r"[a-z0-9*.-]+", token), f"{name}: odd entry {token!r}"
+    return tokens
+
+
+@pytest.mark.parametrize(
+    "name", ["install.sh", "update.sh", "install.ps1", "update.ps1"]
+)
+def test_every_script_holds_the_same_clone_config_allow_list(name: str) -> None:
+    """install.sh, update.sh, install.ps1 and update.ps1 each hold the list
+    of settings a clone's own config may hold, once, in the same order."""
+    assert _allow_list(name) == list(CLONE_CONFIG_ALLOW)
+
+
+#: Setting names as `git config --name-only --list` prints them, and
+#: whether a clone's own config may hold them (True) or stops the update
+#: (False). Both families must give these answers.
 CONFIG_KEY_CASES: tuple[tuple[str, bool], ...] = (
-    ("gpg.program", True),
-    ("gpg.openpgp.program", True),
-    ("gpg.ssh.program", True),
-    ("GPG.Program", True),
-    ("include.path", True),
-    ("includeif.gitdir:C:/x/.path", True),
-    ("filter.lfs.smudge", True),
-    ("filter.evil.clean", True),
-    ("protocol.ext.allow", True),
-    ("protocol.allow", True),
-    ("credential.helper", True),
-    ("credential.https://example.invalid.helper", True),
-    ("http.proxy", True),
-    ("http.sslverify", True),
-    ("http.https://example.invalid/.proxy", True),
-    ("uploadpack.packobjectshook", True),
-    ("core.fsmonitor", True),
-    ("core.hookspath", True),
-    ("core.sshcommand", True),
-    ("core.gitproxy", True),
-    ("core.askpass", True),
-    ("core.attributesfile", True),
-    ("core.alternaterefscommand", True),
-    ("diff.external", True),
-    ("url.ext::sh -c touch.insteadof", True),
-    ("url.https://evil.invalid/.pushinsteadof", True),
-    ("url.a.b.c.insteadof", True),
-    ("remote.origin.uploadpack", True),
-    ("remote.origin.receivepack", True),
-    ("remote.origin.proxy", True),
-    ("remote.origin.vcs", True),
-    ("diff.evil.command", True),
-    ("diff.evil.textconv", True),
-    ("core.repositoryformatversion", False),
-    ("core.filemode", False),
-    ("core.bare", False),
-    ("core.logallrefupdates", False),
-    ("core.symlinks", False),
-    ("core.ignorecase", False),
+    *((key, True) for key in CLONE_CONFIG_ALLOW if "*" not in key),
+    ("Core.Bare", True),
+    ("USER.NAME", True),
+    ("branch.main.merge", True),
+    ("branch.main.remote", True),
+    ("branch.Main.Merge", True),
+    ("branch.feature.x.remote", True),
+    ("branch.a b.description", True),
+    ("branch..merge", False),
+    ("branch.autosetupmerge", False),
+    ("branch.main.", False),
+    ("user.foo.name", False),
+    ("remote.Origin.url", False),
+    # PowerShell's -ceq passes these as origin: a soft hyphen, a zero-width
+    # space.
+    ("remote.ori­gin.url", False),
+    ("remote.origin​.promisor", False),
+    ("branch.m­ain.merge", True),
+    ("remote.upstream.url", False),
+    ("remote.origin.pushurl", False),
+    ("remote.origin.uploadpack", False),
+    ("remote.origin.mirror", False),
+    ("hook.evil.command", False),
+    ("hook.evil.event", False),
+    ("gc.recentobjectshook", False),
+    ("gc.auto", False),
+    ("pager.fetch", False),
+    ("core.pager", False),
+    ("core.editor", False),
+    ("core.fsmonitor", False),
+    ("core.hookspath", False),
+    ("core.sshcommand", False),
+    ("core.worktree", False),
     ("core.autocrlf", False),
-    ("remote.origin.url", False),
-    ("remote.origin.fetch", False),
-    ("branch.main.remote", False),
-    ("branch.main.merge", False),
-    ("user.name", False),
+    ("core.sparsecheckout", False),
+    ("gpg.program", False),
+    ("include.path", False),
+    ("includeif.gitdir:C:/x/.path", False),
+    ("filter.lfs.smudge", False),
+    ("merge.evil.driver", False),
+    ("diff.evil.textconv", False),
+    ("url.ext::sh -c touch.insteadof", False),
+    ("http.proxy", False),
+    ("credential.helper", False),
+    ("protocol.allow", False),
+    ("submodule.active", False),
     ("commit.gpgsign", False),
-    ("pull.rebase", False),
-    ("diff.renames", False),
-    ("url.insteadof", False),
-    ("extensions.worktreeconfig", False),
+    ("fetch.bundleuri", False),
+    ("extensions.relativeworktrees", False),
+    ("lfs.repositoryformatversion", False),
+    ("nodot", False),
+    (".bare", False),
+    ("core.", False),
 )
 
 
-@pytest.mark.skipif(_PWSH is None, reason="no PowerShell on this host")
+def _sh_allow_program(name: str) -> str:
+    """sh source that defines script NAME's allow-list and its
+    unallowed_config_key."""
+    return (
+        _allow_list_block(name)
+        + "\n"
+        + _sh_function(SCRIPTS[name], "unallowed_config_key")
+        + "\n"
+    )
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+def test_sh_allows_exactly_the_clone_settings_the_table_allows(sh_name: str) -> None:
+    """Each sh script's own unallowed_config_key, run under sh, lets through
+    exactly the settings CONFIG_KEY_CASES allows: section and key compared
+    without regard to case, the name between them exactly."""
+    assert _SH is not None
+    keys = [key for key, _ in CONFIG_KEY_CASES]
+    program = (
+        _sh_allow_program(sh_name)
+        + 'for key in "$@"; do\n'
+        + '    if [ -n "$(printf \'%s\\n\' "$key" | unallowed_config_key)" ]; '
+        + "then echo refused; else echo allowed; fi\n"
+        + "done\n"
+    )
+    result = subprocess.run(
+        [_SH, "-c", program, "sh", *keys],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
+    wrong = {
+        key: verdicts[key]
+        for key, allowed in CONFIG_KEY_CASES
+        if (verdicts[key] == "allowed") != allowed
+    }
+    assert not wrong, f"{sh_name}'s unallowed_config_key disagrees: {wrong}"
+
+
+def _ps1_define(*names: str) -> tuple[str, ...]:
+    """PowerShell statements that parse the script named by
+    ``$env:RELEASE_TAG_SCRIPT`` and define, in this session, each of its
+    functions and script variables NAMES (a name starting with '$' is a
+    variable, whose assignment statement runs). Nothing else in the script
+    runs."""
+    statements = [
+        "Set-StrictMode -Version Latest",
+        "$ErrorActionPreference = 'Stop'",
+        "$tokens = $null",
+        "$parseErrors = $null",
+        "$ast = [Management.Automation.Language.Parser]::ParseFile("
+        "$env:RELEASE_TAG_SCRIPT, [ref]$tokens, [ref]$parseErrors)",
+        "if ($parseErrors) { throw ($parseErrors -join ' | ') }",
+    ]
+    for name in names:
+        if name.startswith("$"):
+            find = (
+                "$node -is [Management.Automation.Language.AssignmentStatementAst] "
+                f"-and $node.Left.Extent.Text -eq '{name}'"
+            )
+        else:
+            find = (
+                "$node -is [Management.Automation.Language.FunctionDefinitionAst] "
+                f"-and $node.Name -eq '{name}'"
+            )
+        statements += [
+            f"$found = $ast.Find({{ param($node) {find} }}, $true)",
+            f"if (-not $found) {{ throw 'no {name} in the script' }}",
+            ". ([scriptblock]::Create($found.Extent.Text))",
+        ]
+    return tuple(statements)
+
+
+@requires_powershell
 @pytest.mark.parametrize("ps1_name", ["install.ps1", "update.ps1"])
-def test_powershell_refuses_the_clone_settings_the_table_names(ps1_name: str) -> None:
-    """Each .ps1 script's own Test-RefusedConfigKey, run under PowerShell,
-    refuses exactly the settings CONFIG_KEY_CASES marks."""
+def test_powershell_allows_exactly_the_clone_settings_the_table_allows(
+    ps1_name: str,
+) -> None:
+    """Each .ps1 script's own Test-AllowedConfigKey, run under PowerShell
+    with the script's own $CloneConfigAllow, lets through exactly the
+    settings CONFIG_KEY_CASES allows."""
     keys = [key for key, _ in CONFIG_KEY_CASES]
     program = "; ".join(
         (
-            *_ps1_load_function("Test-RefusedConfigKey"),
+            *_ps1_define("$CloneConfigAllow", "Test-AllowedConfigKey"),
             "foreach ($key in ($env:CONFIG_KEYS | ConvertFrom-Json)) "
-            "{ if (& $body $key) { 'refused' } else { 'allowed' } }",
+            "{ if (Test-AllowedConfigKey $key) { 'allowed' } else { 'refused' } }",
         )
     )
     result = _run_powershell(program, ps1_name, CONFIG_KEYS=json.dumps(keys))
@@ -1325,52 +1512,167 @@ def test_powershell_refuses_the_clone_settings_the_table_names(ps1_name: str) ->
     verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
     wrong = {
         key: verdicts[key]
-        for key, refused in CONFIG_KEY_CASES
-        if (verdicts[key] == "refused") != refused
+        for key, allowed in CONFIG_KEY_CASES
+        if (verdicts[key] == "allowed") != allowed
     }
-    assert not wrong, f"{ps1_name}'s Test-RefusedConfigKey disagrees: {wrong}"
+    assert not wrong, f"{ps1_name}'s Test-AllowedConfigKey disagrees: {wrong}"
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32" or shutil.which("sh") is None,
-    reason="runs the POSIX refused_config_key under sh",
+#: A clone's own config file and the setting the check names in it (None
+#: when the file passes): the first failing name in file order, and
+#: extensions.refstorage when a value of it is not exactly files or
+#: reftable (a later git reads refs from a folder such a value names).
+CONFIG_FILE_CASES: tuple[tuple[str, str, str | None], ...] = (
+    ("reftable", "[extensions]\n\trefstorage = reftable\n", None),
+    ("files", "[extensions]\n\trefstorage = files\n", None),
+    ("folder", "[extensions]\n\trefstorage = reftable://x\n", "extensions.refstorage"),
+    ("case", "[extensions]\n\trefstorage = Files\n", "extensions.refstorage"),
+    ("empty", "[extensions]\n\trefstorage =\n", "extensions.refstorage"),
+    (
+        "two-values",
+        "[extensions]\n\trefstorage = files\n\trefstorage = reftable:x\n",
+        "extensions.refstorage",
+    ),
+    (
+        "line-break",
+        '[extensions]\n\trefstorage = "files\\nreftable"\n',
+        "extensions.refstorage",
+    ),
+    (
+        "refstorage-first",
+        "[extensions]\n\trefstorage = x://y\n[core]\n\tpager = less\n",
+        "extensions.refstorage",
+    ),
+    (
+        "pager-first",
+        "[core]\n\tpager = less\n[extensions]\n\trefstorage = x://y\n",
+        "core.pager",
+    ),
+    ("branch", '[branch "main"]\n\tremote = origin\n\tmerge = refs/heads/main\n', None),
+    ("hook", '[hook "x"]\n\tcommand = touch y\n', "hook.x.command"),
 )
+
+
+def _clone_with_config(root: Path, text: str) -> str:
+    """A folder ROOT holding .git/config with what git init writes, then
+    TEXT; return its path with forward slashes, as both families get it.
+    It is not a repository git would open (a value such as a reftable://
+    refstorage would stop git there), so the tests give each family a
+    git_path / Get-ClonePath that names ROOT/.git/<name>."""
+    (root / ".git").mkdir(parents=True)
+    (root / ".git" / "config").write_text(
+        "[core]\n\trepositoryformatversion = 0\n\tfilemode = false\n"
+        "\tbare = false\n\tlogallrefupdates = true\n" + text,
+        encoding="utf-8",
+        newline="\n",
+    )
+    return root.as_posix()
+
+
+def _config_message(home: str, key: str) -> str:
+    return (
+        f"{home}'s own git config sets {key}, which an update in place does not "
+        f"accept in a clone's own config. Remove it from {home}/.git/config, "
+        "then re-run."
+    )
+
+
+@requires_posix_sh
 @pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
-def test_sh_refuses_the_clone_settings_the_table_names(sh_name: str) -> None:
-    """Each sh script's own refused_config_key, run under sh, refuses exactly
-    the settings CONFIG_KEY_CASES marks, so it agrees with the .ps1 rule."""
-    keys = [key for key, _ in CONFIG_KEY_CASES]
+@pytest.mark.parametrize(
+    ("case", "text", "named"), CONFIG_FILE_CASES, ids=[c[0] for c in CONFIG_FILE_CASES]
+)
+def test_sh_checks_a_clones_own_config_file(
+    tmp_path: Path, sh_name: str, case: str, text: str, named: str | None
+) -> None:
+    """Each sh script's check_clone_config, run on a clone, names the first
+    setting in file order its config may not hold, extensions.refstorage
+    with a value that names a folder included, or passes the clone."""
+    assert _SH is not None
+    home = _clone_with_config(tmp_path / "clone", text)
     program = (
-        _sh_function(SCRIPTS[sh_name], "refused_config_key")
-        + '\nfor key in "$@"; do\n'
-        + '    if [ -n "$(printf \'%s\\n\' "$key" | refused_config_key)" ]; '
-        + "then echo refused; else echo allowed; fi\n"
-        + "done\n"
+        "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
+        "git_path() { printf '%s\\n' \"$1/.git/$2\"; }\n"
+        + _sh_function(SCRIPTS[sh_name], "cgit")
+        + "\nHOOKS_OFF=\n"
+        + _sh_allow_program(sh_name)
+        + _sh_function(SCRIPTS[sh_name], "config_file_problem")
+        + "\n"
+        + _sh_function(SCRIPTS[sh_name], "check_clone_config")
+        + '\ncheck_clone_config "$1"\necho passed\n'
     )
     result = subprocess.run(
-        ["sh", "-c", program, "sh", *keys],
+        [_SH, "-c", program, "sh", home],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=60,
         check=False,
+        env=_git_env_without_user_config(),
     )
-    assert result.returncode == 0, result.stderr
-    verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
-    wrong = {
-        key: verdicts[key]
-        for key, refused in CONFIG_KEY_CASES
-        if (verdicts[key] == "refused") != refused
-    }
-    assert not wrong, f"{sh_name}'s refused_config_key disagrees: {wrong}"
+    expected = "passed" if named is None else _config_message(home, named)
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
+
+
+@requires_powershell
+@pytest.mark.parametrize("ps1_name", ["install.ps1", "update.ps1"])
+@pytest.mark.parametrize(
+    ("case", "text", "named"), CONFIG_FILE_CASES, ids=[c[0] for c in CONFIG_FILE_CASES]
+)
+def test_powershell_checks_a_clones_own_config_file(
+    tmp_path: Path, ps1_name: str, case: str, text: str, named: str | None
+) -> None:
+    """Each .ps1 script's Assert-CloneConfig gives the same verdict, and the
+    same message, as the sh scripts' check_clone_config."""
+    home = _clone_with_config(tmp_path / "clone", text)
+    program = "; ".join(
+        (
+            *_ps1_define(
+                "$GitNoProgram",
+                "$CloneConfigAllow",
+                "Test-AllowedConfigKey",
+                "Assert-CloneConfig",
+            ),
+            "function Write-Fail { param([string]$Msg) throw $Msg }",
+            "function Get-ClonePath { param([string]$Dir, [string]$Name) "
+            '"$Dir/.git/$Name" }',
+            "try { Assert-CloneConfig $env:CLONE_HOME; 'passed' } "
+            "catch { $_.Exception.Message }",
+        )
+    )
+    result = _run_powershell(program, ps1_name, CLONE_HOME=home, **_git_env_overrides())
+    expected = "passed" if named is None else _config_message(home, named)
+    assert result.stdout.strip() == expected, result.stdout + result.stderr
+
+
+def _git_env_overrides() -> dict[str, str]:
+    """Settings that keep the user's own git config out of these checks."""
+    return {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+
+
+def _git_env_without_user_config() -> dict[str, str]:
+    return {**os.environ, **_git_env_overrides()}
 
 
 #: The settings every git command on an existing clone runs with: no
-#: fsmonitor program, no ext:: transport, no descent into submodules.
+#: fsmonitor program, only the file, git, http, https and ssh transports
+#: (no ext:: and no other remote helper), no recursion into submodules, no
+#: git status run inside a nested repository, no automatic maintenance,
+#: and paths longer than Windows' usual limit written at checkout.
 GIT_NO_PROGRAM_SETTINGS = (
     "core.fsmonitor=",
     "protocol.ext.allow=never",
+    "protocol.allow=never",
+    "protocol.file.allow=always",
+    "protocol.git.allow=always",
+    "protocol.http.allow=always",
+    "protocol.https.allow=always",
+    "protocol.ssh.allow=always",
     "submodule.recurse=false",
     "fetch.recurseSubmodules=false",
+    "diff.ignoreSubmodules=all",
+    "gc.auto=0",
+    "maintenance.auto=false",
+    "core.longpaths=true",
 )
 
 
@@ -1379,15 +1681,17 @@ def test_git_runs_on_a_clone_with_the_same_settings_in_both(
     sh_name: str, ps1_name: str
 ) -> None:
     """install.sh's and update.sh's cgit and the .ps1 scripts' $GitNoProgram
-    pass the same -c settings, and the .ps1 scripts add the empty hooks
-    folder on the update's calls as cgit does."""
+    pass the same -c settings and --no-pager, and the .ps1 scripts add the
+    empty hooks folder on the update's calls as cgit does."""
     cgit = _sh_function(SCRIPTS[sh_name], "cgit")
     match = re.search(
         r"^\$GitNoProgram = @\((.*)\)\r?$", SCRIPTS[ps1_name], re.MULTILINE
     )
     assert match, f"{ps1_name} no longer defines $GitNoProgram"
+    assert cgit.count("git --no-pager ") == 2, f"{sh_name}'s cgit lacks --no-pager"
+    assert "'--no-pager'" in match.group(1), f"{ps1_name} lacks --no-pager"
     for setting in GIT_NO_PROGRAM_SETTINGS:
-        assert f"-c {setting}" in cgit, f"{sh_name}'s cgit lacks -c {setting}"
+        assert cgit.count(f"-c {setting}") == 2, f"{sh_name}'s cgit lacks -c {setting}"
         assert f"'-c', '{setting}'" in match.group(1), (
             f"{ps1_name}'s $GitNoProgram lacks -c {setting}"
         )
@@ -1417,10 +1721,48 @@ def test_a_clone_is_checked_in_the_same_order_in_both(
     -v)."""
     sh_body = _sh_function(SCRIPTS[sh_name], "check_clone_setup")
     ps1_body = _ps1_function(SCRIPTS[ps1_name], "Assert-CleanClone")
-    assert _in_order(sh_body, "clone_git_ok", "check_clone_config", "ls-files -v")
+    assert _in_order(
+        sh_body,
+        "clone_git_ok",
+        "check_clone_config",
+        "check_clone_modules",
+        "is not the work tree",
+        "check_clone_gitlinks",
+        "ls-files -v",
+    )
     assert _in_order(
         ps1_body, "Assert-CloneGit $Dir", "Assert-CloneConfig $Dir", "ls-files -v"
     )
+    assert _in_order(
+        ps1_body,
+        "Assert-CloneConfig $Dir",
+        "keeps submodule repositories in",
+        "is not the work tree",
+        "if ($CcStagesCode -ne 0)",
+        "holds a submodule at",
+        "if ($CcFlagsCode -ne 0)",
+        "[char]::IsLower",
+    )
+
+
+def test_the_check_for_local_work_runs_git_with_the_same_settings_in_both() -> None:
+    """Every git command clone_has_local_work and Test-CloneHasLocalWork run
+    on a clone they may replace goes through cgit / $GitNoProgram, so git
+    status there runs no fsmonitor or pager, starts no maintenance, and runs
+    no git status inside a nested repository."""
+    sh_body = _sh_function(SH, "clone_has_local_work")
+    code = "\n".join(
+        line for line in sh_body.splitlines() if not line.lstrip().startswith("#")
+    )
+    calls = re.findall(r"(?<![\w$.-])(c?git) -", code)
+    assert calls, "clone_has_local_work runs no git command"
+    assert set(calls) == {"cgit"}, calls
+    assert sh_body.count("status --porcelain") == 2
+    ps1_body = _ps1_function(PS1, "Test-CloneHasLocalWork")
+    git_calls = re.findall(r"& git (@\w+)", ps1_body)
+    assert git_calls, "Test-CloneHasLocalWork runs no git command"
+    assert set(git_calls) <= {"@GitNoProgram", "@GitSafe"}, git_calls
+    assert len(re.findall(r"& git ", ps1_body)) == len(git_calls)
 
 
 def test_replacing_a_clone_checks_it_before_git_status_in_both() -> None:
@@ -1488,7 +1830,7 @@ def test_every_script_takes_the_same_lock(sh_name: str, ps1_name: str) -> None:
     for phrase in LOCK_PHRASES:
         assert phrase in sh, f"{sh_name} lacks {phrase!r}"
         assert phrase in ps1, f"{ps1_name} lacks {phrase!r}"
-    assert 'LOCK_DIR="${APOTHEM_HOME}.lock"' in sh
+    assert 'LOCK_DIR="${_tl_home}.lock"' in sh
     assert '$HomeLockPath = "$ApothemHome.lock"' in ps1
     assert "([System.IO.FileShare]::None)" in ps1
     banner = re.search(r'^Write-Bold "Apothem [a-z]+"\r?\n', ps1, re.MULTILINE)
@@ -1509,15 +1851,20 @@ LEFTOVER_PHRASES = (
     "An earlier run was stopped part-way and left these folders beside ",
     ": the earlier install that was being replaced, in ",
     ": the new source that was being installed, in ",
-    ", with engine data moved into it: ",
+    ", with these entries moved into it from ",
+    ": could not be read (check its owner and permissions)",
+    " (made by an earlier installer that did not record which home it was "
+    "for, so it may belong to any Apothem home in ",
+    ": check what it holds before you move or remove it)",
+    ".apothem-carried-entries",
     ": files from that run (",
     ": empty",
     ": the earlier contents of ",
     ", moved aside, in ",
     "Nothing was changed. If ",
-    " is missing, move the earlier install back to it first. Then move any "
-    "engine data listed above back into ",
-    ", remove these folders, and re-run.",
+    " is missing, move the earlier install back to it first. Then move every "
+    "entry listed above as moved from ",
+    " back into it, remove the folders listed above, and re-run.",
     ".apothem-old.",
     ".apothem-extract.",
     ".apothem-clone.",
@@ -1562,3 +1909,547 @@ def test_both_installers_refuse_a_redirect_off_https_only_for_an_https_base() ->
         in download
     )
     assert "$Final.Scheme -ne 'https'" in download
+
+
+#: What the sh scripts say when <APOTHEM_HOME>.lock is a file: the lock of a
+#: PowerShell run, which Windows removes when that run ends.
+POWERSHELL_LOCK_PHRASES = (
+    " is the lock file of an Apothem PowerShell run (install.ps1, update.ps1 "
+    "or uninstall.ps1) on ",
+    ", and Windows removes it when that run ends; while the run is active, "
+    "Windows will not let anyone remove it. Wait for that run to finish, then "
+    "re-run. If no Apothem install, update or uninstall is running, remove ",
+)
+
+
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+def test_the_sh_scripts_name_a_lock_file_as_a_powershell_runs(sh_name: str) -> None:
+    """A lock that is a file, not a folder, is held by install.ps1, update.ps1
+    or uninstall.ps1: the sh scripts say so, before they look for a process
+    ID in it, and a symbolic link there keeps the "names no running
+    process" message. A process of another user that kill -0 may not signal
+    counts as running, and signals wait while the lock is made."""
+    body = _sh_function(_script(sh_name), "take_lock")
+    for phrase in POWERSHELL_LOCK_PHRASES:
+        assert phrase in body, f"{sh_name} lacks {phrase!r}"
+    assert _in_order(
+        body,
+        "trap '' HUP INT QUIT PIPE TERM",
+        'mkdir "$LOCK_DIR"',
+        "LOCK_HELD=1",
+        "trap_signals_to_exit",
+        '[ ! -L "$LOCK_DIR" ] && [ ! -d "$LOCK_DIR" ]',
+        'cat "${LOCK_DIR}/pid"',
+        'process_running "$_tl_pid"',
+    )
+    assert '[ -L "$APOTHEM_HOME" ]' in body
+    assert 'cd -P -- "$APOTHEM_HOME"' in body
+    running = _sh_function(_script(sh_name), "process_running")
+    assert 'kill -0 "$1"' in running
+    assert "ot permitted" in running
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh", "uninstall.sh"])
+def test_the_sh_scripts_report_a_lock_file_in_the_same_words(
+    tmp_path: Path, sh_name: str
+) -> None:
+    """Each sh script's take_lock, run against a file at <home>.lock, stops
+    with the PowerShell-lock message and leaves the file there."""
+    assert _SH is not None
+    home = (tmp_path / "home").as_posix()
+    lock = tmp_path / "home.lock"
+    lock.write_bytes(b"")
+    program = (
+        "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
+        'exists() { [ -e "$1" ] || [ -L "$1" ]; }\n'
+        "trap_signals_to_exit() { :; }\n"
+        "DRY_RUN=0\n"
+        'APOTHEM_HOME="$1"\n'
+        + _sh_function(_script(sh_name), "take_lock")
+        + "\ntake_lock\necho taken\n"
+    )
+    result = subprocess.run(
+        [_SH, "-c", program, "sh", home],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.stdout.strip() == (
+        f"{home}.lock is the lock file of an Apothem PowerShell run (install.ps1, "
+        f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
+        "that run ends; while the run is active, Windows will not let anyone "
+        "remove it. Wait for that run to finish, then re-run. If no Apothem "
+        f"install, update or uninstall is running, remove {home}.lock, then "
+        "re-run."
+    ), result.stdout + result.stderr
+    assert lock.is_file()
+
+
+def test_both_installers_name_their_staging_folders_after_the_home() -> None:
+    """Both installers name every staging folder beside APOTHEM_HOME
+    .apothem-<kind>.<leaf>.<suffix>, <leaf> being APOTHEM_HOME's own folder
+    name, so a later run tells this home's leftovers from another home's,
+    and both write the carry list under the same name."""
+    staging = _sh_function(SH, "make_staging")
+    assert (
+        'mktemp -d "$(dirname -- "$APOTHEM_HOME")/.apothem-$1.$(basename -- '
+        '"$APOTHEM_HOME").XXXXXX"'
+    ) in staging
+    for kind in ("old", "extract", "clone"):
+        assert f"make_staging {kind})" in SH, kind
+        assert re.search(
+            rf"\.apothem-{kind}\.(\$\(Split-Path -Leaf \$ApothemHome\)|\$SwLeaf)\.",
+            PS1,
+        ), f"install.ps1 does not name .apothem-{kind}. after the home"
+    assert 'mktemp -d "$(dirname' not in SH.replace(staging, "")
+    assert 'CARRY_LIST=".apothem-carried-entries"' in SH
+    assert "$CarryList = '.apothem-carried-entries'" in PS1
+
+
+#: A layout of leftovers beside a home named "apothem-home", relative to
+#: the folder that holds it: a path ending in "/" is a folder, any other a
+#: file with that text.
+LEFTOVER_LAYOUT: dict[str, str] = {
+    # This home's, with a carry list that names user files as well.
+    ".apothem-extract.apothem-home.Ab12Cd/.apothem-carried-entries": (
+        ".env\nbackups\nmy-notes\nstate\ngone\n"
+    ),
+    ".apothem-extract.apothem-home.Ab12Cd/apothem-v9.9.9/src/": "",
+    ".apothem-extract.apothem-home.Ab12Cd/apothem-v9.9.9/backups/": "",
+    ".apothem-extract.apothem-home.Ab12Cd/apothem-v9.9.9/state/": "",
+    ".apothem-extract.apothem-home.Ab12Cd/apothem-v9.9.9/.env": "KEY=1\n",
+    ".apothem-extract.apothem-home.Ab12Cd/apothem-v9.9.9/my-notes/": "",
+    ".apothem-old.apothem-home.Ef34Gh/home/": "",
+    # install.ps1's aside temp folder, which both leave out.
+    f".apothem-clone.apothem-home.{'9' * 6}/aside.{'0a' * 16}/": "",
+    ".apothem-clone.apothem-home.999999/apothem/src/": "",
+    ".apothem-old.apothem-home.Zz99Zz/a.txt": "a\n",
+    ".apothem-old.apothem-home.Zz99Zz/B.txt": "B\n",
+    ".apothem-old.apothem-home.Zz99Zz/_x": "x\n",
+    ".apothem-old.apothem-home.Zz99Zz/.h": "h\n",
+    # Earlier names, with no home in them.
+    ".apothem-extract.Qr90St/apothem-v1.5.0/.apothem-source-entries": (
+        ".apothem-source-entries\nsrc\n"
+    ),
+    ".apothem-extract.Qr90St/apothem-v1.5.0/src/": "",
+    ".apothem-extract.Qr90St/apothem-v1.5.0/plans/": "",
+    ".apothem-extract.Qr90St/apothem-v1.5.0/notes.txt": "n\n",
+    ".apothem-clone.Uv12Wx/apothem/state/": "",
+    ".apothem-clone.Uv12Wx/apothem/memory/": "",
+    ".apothem-old.Mn78Op/": "",
+    # Another home's, and a home whose name has a dot: never reported.
+    ".apothem-extract.other-home.Ab12Cd/apothem-v9.9.9/backups/": "",
+    ".apothem-old.apothem-home.x.Cd34Ef/home/": "",
+    # The folders a missing home was set aside in.
+    "apothem-home.before-apothem-20261101000000/apothem-home/notes.txt": "n\n",
+    "apothem-home.before-apothem-20261001120000-4242/notes.txt": "n\n",
+    "apothem-home.before-apothem-notes/a.txt": "a\n",
+}
+
+
+def _plant_leftovers(parent: Path) -> None:
+    for rel, text in LEFTOVER_LAYOUT.items():
+        target = parent / rel
+        if rel.endswith("/"):
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8", newline="\n")
+
+
+def _expected_leftover_lines(parent: str, sep: str) -> list[str]:
+    """The report for LEFTOVER_LAYOUT under PARENT, SEP joining a folder and
+    an entry in it (each family writes its own separator there)."""
+    home = f"{parent}/apothem-home"
+    note = (
+        " (made by an earlier installer that did not record which home it was "
+        f"for, so it may belong to any Apothem home in {parent}: check what it "
+        "holds before you move or remove it)"
+    )
+
+    def at(name: str) -> str:
+        return f"{parent}/{name}"
+
+    clone = at(".apothem-clone.apothem-home.999999")
+    extract = at(".apothem-extract.apothem-home.Ab12Cd")
+    old = at(".apothem-old.apothem-home.Ef34Gh")
+    other = at(".apothem-old.apothem-home.Zz99Zz")
+    older_clone = at(".apothem-clone.Uv12Wx")
+    older_extract = at(".apothem-extract.Qr90St")
+    older_old = at(".apothem-old.Mn78Op")
+    flat = at("apothem-home.before-apothem-20261001120000-4242")
+    nested = at("apothem-home.before-apothem-20261101000000")
+    return [
+        "  x An earlier run was stopped part-way and left these folders beside "
+        f"{home}:",
+        f"    {clone}: the new source that was being installed, in {clone}{sep}apothem",
+        f"    {extract}: the new source that was being installed, in "
+        f"{extract}{sep}apothem-v9.9.9, with these entries moved into it from "
+        f"{home}: .env, backups, my-notes, state",
+        f"    {old}: the earlier install that was being replaced, in {old}{sep}home",
+        f"    {other}: files from that run (.h, B.txt, _x, a.txt)",
+        f"    {older_clone}: the new source that was being installed, in "
+        f"{older_clone}{sep}apothem, with these entries moved into it from "
+        f"{home}: memory, state{note}",
+        f"    {older_extract}: the new source that was being installed, in "
+        f"{older_extract}{sep}apothem-v1.5.0, with these entries moved into it "
+        f"from {home}: notes.txt, plans{note}",
+        f"    {older_old}: empty{note}",
+        f"    {flat}: the earlier contents of {home}, moved aside, in {flat}",
+        f"    {nested}: the earlier contents of {home}, moved aside, in "
+        f"{nested}{sep}apothem-home",
+        f"    Nothing was changed. If {home} is missing, move the earlier install "
+        "back to it first. Then move every entry listed above as moved from "
+        f"{home} back into it, remove the folders listed above, and re-run.",
+    ]
+
+
+def _sh_leftover_program() -> str:
+    """sh source that defines install.sh's check_leftovers and what it uses,
+    then runs it for the home "$1"."""
+    names = (
+        "exists",
+        "list_entries",
+        "paint",
+        "check_leftovers",
+        "is_aside_name",
+        "is_aside_temp",
+        "is_extract_staging",
+        "join_names",
+        "leftover_line",
+        "leftover_carried",
+    )
+    return (
+        "COLOR_ERR=0\n"
+        'CARRY_LIST=".apothem-carried-entries"\n'
+        'SOURCE_MANIFEST=".apothem-source-entries"\n'
+        'APOTHEM_HOME="$1"\n'
+        + "\n".join(_sh_function(SH, name) for name in names)
+        + "\ncheck_leftovers\necho none\n"
+    )
+
+
+@requires_posix_sh
+def test_install_sh_reports_leftovers_in_the_agreed_order_and_words(
+    tmp_path: Path,
+) -> None:
+    """install.sh's check_leftovers, run on LEFTOVER_LAYOUT: this home's
+    folders by name, then the earlier-name folders with their note, then
+    the folders a missing home was set aside in, every list of names in
+    byte order; another home's folders and a non-matching aside name are
+    left out."""
+    assert _SH is not None
+    _plant_leftovers(tmp_path)
+    parent = tmp_path.as_posix()
+    result = subprocess.run(
+        [_SH, "-c", _sh_leftover_program(), "sh", f"{parent}/apothem-home"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+        check=False,
+    )
+    lines = result.stderr.replace("✗", "x").splitlines()
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert lines == _expected_leftover_lines(parent, "/"), result.stderr
+
+
+@requires_powershell
+def test_install_ps1_reports_leftovers_in_the_same_order_and_words(
+    tmp_path: Path,
+) -> None:
+    """install.ps1's Assert-NoLeftover, run on LEFTOVER_LAYOUT, prints the
+    same lines as install.sh: one line per folder, in the same order and
+    words, then the closing line (through Write-Fail)."""
+    _plant_leftovers(tmp_path)
+    parent = str(tmp_path)
+    program = "; ".join(
+        (
+            *_ps1_define(
+                "$CarryList",
+                "$SourceManifest",
+                "$EngineDataNames",
+                "Test-Entry",
+                "Test-RealFolder",
+                "Test-RealFolderPath",
+                "Get-LeftoverEntry",
+                "Get-CarriedEntry",
+                "Get-LeftoverLine",
+                "Assert-NoLeftover",
+            ),
+            "$ApothemHome = $env:LEFTOVER_HOME",
+            "function Write-Fail { param([string]$Msg) [Console]::Error.WriteLine("
+            "'    ' + $Msg); exit 1 }",
+            "Assert-NoLeftover",
+            "'none'",
+        )
+    )
+    result = _run_powershell(
+        program, "install.ps1", LEFTOVER_HOME=str(tmp_path / "apothem-home")
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    # PowerShell joins paths with "\" on Windows; compare them with "/".
+    expected = _expected_leftover_lines(parent.replace("\\", "/"), "/")
+    got = [line.replace("\\", "/") for line in result.stderr.splitlines()]
+    assert got == expected, result.stderr
+
+
+def _git(*args: str, cwd: Path | None = None) -> None:
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        env=_git_env_without_user_config(),
+    )
+
+
+def _upstream_and_clone(tmp_path: Path) -> tuple[Path, Path]:
+    """A repository with one commit, and a clone of it."""
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", str(upstream))
+    (upstream / "README").write_text("x\n", encoding="utf-8")
+    _git("add", "README", cwd=upstream)
+    _git("commit", "--quiet", "-m", "x", cwd=upstream)
+    home = tmp_path / "home"
+    _git("clone", "--quiet", str(upstream), str(home))
+    return upstream, home
+
+
+#: The git command each family runs on a clone, then a fetch from origin.
+_FETCH_PROGRAMS = ("install.sh", "update.sh", "install.ps1", "update.ps1")
+
+
+def _fetch_origin(name: str, home: Path, path_entry: str) -> str:
+    """Run `fetch --tags origin` on HOME through script NAME's cgit or
+    $GitNoProgram, with PATH_ENTRY put first on PATH; return the output."""
+    env = {
+        **_git_env_overrides(),
+        "PATH": path_entry + os.pathsep + os.environ.get("PATH", ""),
+        "CLONE_HOME": home.as_posix(),
+    }
+    if name.endswith(".sh"):
+        assert _SH is not None
+        program = (
+            _sh_function(SCRIPTS[name], "cgit")
+            + "\nHOOKS_OFF=\n"
+            + 'cgit -C "$CLONE_HOME" fetch --tags origin 2>&1\necho "rc=$?"\n'
+        )
+        result = subprocess.run(
+            [_SH, "-c", program],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env={**os.environ, **env},
+        )
+    else:
+        program = "; ".join(
+            (
+                *_ps1_define("$GitNoProgram"),
+                "$ErrorActionPreference = 'Continue'",
+                "$out = & git @GitNoProgram -C $env:CLONE_HOME fetch --tags origin 2>&1",
+                "$out | ForEach-Object { [string]$_ }",
+                '"rc=$LASTEXITCODE"',
+            )
+        )
+        result = _run_powershell(program, name, **env)
+    return result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("name", _FETCH_PROGRAMS)
+def test_git_on_a_clone_runs_no_helper_program_its_address_names(
+    tmp_path: Path, name: str
+) -> None:
+    """A clone's remote.origin.url of the form <name>::<address> makes git
+    look up git-remote-<name> on PATH, after git -C has moved into the
+    clone; with a '.' entry on PATH that is a program planted in the
+    clone. cgit and $GitNoProgram allow only the file, git, http, https and
+    ssh transports, so git refuses the address and runs nothing, while a
+    plain path address still fetches."""
+    if name.endswith(".sh") and _SH is None:
+        pytest.skip("no POSIX sh on this host")
+    if name.endswith(".ps1") and _PWSH is None:
+        pytest.skip("no PowerShell on this host")
+    upstream, home = _upstream_and_clone(tmp_path)
+    marker = tmp_path / "helper-ran"
+    helper = home / "git-remote-evil"
+    helper.write_text(
+        f"#!/bin/sh\necho ran > '{marker.as_posix()}'\nexit 1\n", encoding="utf-8"
+    )
+    helper.chmod(0o755)
+    _git("-C", str(home), "config", "remote.origin.url", f"evil::{upstream.as_posix()}")
+
+    out = _fetch_origin(name, home, ".")
+
+    assert not marker.exists(), out
+    assert "transport 'evil' not allowed" in out, out
+
+    _git("-C", str(home), "config", "remote.origin.url", upstream.as_posix())
+    out = _fetch_origin(name, home, ".")
+    assert "rc=0" in out, out
+
+
+@pytest.mark.parametrize(("sh_name", "ps1_name"), RELEASE_TAG_PAIRS)
+def test_a_clone_whose_index_git_cannot_read_is_refused_in_both(
+    tmp_path: Path, sh_name: str, ps1_name: str
+) -> None:
+    """When git cannot read the clone's index, ls-files fails; both families
+    stop with the same message before anything is fetched, so a .ps1 dry run
+    fails where the real run would, as the sh scripts do."""
+    _, home_path = _upstream_and_clone(tmp_path)
+    (home_path / ".git" / "index").write_bytes(b"DIRCgarbage")
+    home = home_path.as_posix()
+    expected = (
+        f"{home} has changes to tracked files. Commit or stash them, then re-run."
+    )
+    if _SH is not None:
+        sh = SCRIPTS[sh_name]
+        program = (
+            "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
+            + _sh_function(sh, "cgit")
+            + "\nHOOKS_OFF=\n"
+            + _sh_allow_program(sh_name)
+            + "".join(
+                _sh_function(sh, function) + "\n"
+                for function in (
+                    "git_path",
+                    "config_file_problem",
+                    "check_clone_config",
+                    "clone_git_ok",
+                    "check_clone_modules",
+                    "check_clone_gitlinks",
+                    "check_clone_setup",
+                )
+            )
+            + 'check_clone_setup "$1"\necho passed\n'
+        )
+        result = subprocess.run(
+            [_SH, "-c", program, "sh", home],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+            env=_git_env_without_user_config(),
+        )
+        assert result.stdout.strip() == expected, result.stdout + result.stderr
+    if _PWSH is not None:
+        program = "; ".join(
+            (
+                *_ps1_define(
+                    "$GitNoProgram",
+                    "$CloneConfigAllow",
+                    "Test-AllowedConfigKey",
+                    "Get-ClonePath",
+                    "Assert-CloneConfig",
+                    "Assert-CloneGit",
+                    "Assert-CleanClone",
+                ),
+                "function Write-Fail { param([string]$Msg) throw $Msg }",
+                "try { Assert-CleanClone $env:CLONE_HOME; 'passed' } "
+                "catch { $_.Exception.Message }",
+            )
+        )
+        result = _run_powershell(
+            program, ps1_name, CLONE_HOME=home, **_git_env_overrides()
+        )
+        assert result.stdout.strip() == expected, result.stdout + result.stderr
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' path limit")
+@pytest.mark.parametrize("name", _FETCH_PROGRAMS)
+def test_a_checkout_on_a_clone_writes_a_path_past_the_windows_limit(
+    tmp_path: Path, name: str
+) -> None:
+    """Git for Windows leaves out a file whose full path passes 259
+    characters unless core.longpaths is on, and its checkout still exits 0.
+    The staging folders beside APOTHEM_HOME carry the home's name, so a
+    long profile folder can push the release tree's deepest test fixtures
+    past it; cgit and $GitNoProgram turn core.longpaths on."""
+    if name.endswith(".sh") and _SH is None:
+        pytest.skip("no POSIX sh on this host")
+    if name.endswith(".ps1") and _PWSH is None:
+        pytest.skip("no PowerShell on this host")
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", "--bare", str(upstream))
+    deep = "/".join(["d" * 60] * 4) + "/file.txt"
+    blob = subprocess.run(
+        ["git", "-C", str(upstream), "hash-object", "-w", "--stdin"],
+        input="x\n",
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    index = {**_git_env_without_user_config(), "GIT_INDEX_FILE": str(tmp_path / "ix")}
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(upstream),
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"100644,{blob},{deep}",
+        ],
+        check=True,
+        env=index,
+    )
+    tree = subprocess.run(
+        ["git", "-C", str(upstream), "write-tree"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=index,
+    ).stdout.strip()
+    commit = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(upstream),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit-tree",
+            tree,
+            "-m",
+            "x",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=_git_env_without_user_config(),
+    ).stdout.strip()
+    home = tmp_path / "home"
+    _git("clone", "--quiet", "--no-checkout", str(upstream), str(home))
+    target = home / deep
+    assert len(str(target)) > 260, len(str(target))
+    env = {**_git_env_overrides(), "CLONE_HOME": home.as_posix(), "COMMIT": commit}
+    if name.endswith(".sh"):
+        assert _SH is not None
+        program = (
+            _sh_function(SCRIPTS[name], "cgit")
+            + "\nHOOKS_OFF=\n"
+            + 'cgit -C "$CLONE_HOME" checkout --quiet --detach "$COMMIT"\n'
+        )
+        result = subprocess.run(
+            [_SH, "-c", program],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env={**os.environ, **env},
+        )
+    else:
+        program = "; ".join(
+            (
+                *_ps1_define("$GitNoProgram"),
+                "$ErrorActionPreference = 'Continue'",
+                "& git @GitNoProgram -C $env:CLONE_HOME checkout --quiet --detach "
+                "$env:COMMIT 2>&1 | ForEach-Object { [string]$_ }",
+            )
+        )
+        result = _run_powershell(program, name, **env)
+    assert Path("\\\\?\\" + str(target)).exists(), result.stdout + result.stderr

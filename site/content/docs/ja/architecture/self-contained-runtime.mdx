@@ -72,7 +72,7 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 パッケージディレクトリがインポート可能になります。
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 `apothem` ランチャーが PATH 上にない場合、`install.sh` は完了時にこの形式を表示します。その際、ベンダリングされたディレクトリを `src/` より前に置き、`python` の代わりに解決された CPython を使います。`install.ps1` は、同じ 2 つの設定を PowerShell の形式で表示します。すなわち、ベンダリングされたディレクトリと `src/` ディレクトリを `;` で連結する `$env:PYTHONPATH` の代入と、続けて `& '<CPython>' -m apothem <command>` です。

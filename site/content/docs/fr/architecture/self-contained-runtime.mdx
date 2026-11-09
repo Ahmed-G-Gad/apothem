@@ -83,7 +83,7 @@ Le répertoire du paquet devient importable en plaçant le répertoire `src/` du
 checkout en tête de `PYTHONPATH` :
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Lorsque le lanceur `apothem` ne figure pas dans le PATH, `install.sh` affiche cette forme

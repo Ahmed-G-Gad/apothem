@@ -33,10 +33,12 @@ import hashlib
 import io
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
+import time
 from pathlib import Path
 
 import pytest
@@ -1711,9 +1713,14 @@ def test_an_unreadable_home_is_refused(tmp_path: Path) -> None:
 
 def test_replacing_a_clone_never_runs_its_fsmonitor(tmp_path: Path) -> None:
     """Replacing a clone with --yes reads its state with git status, which
-    runs the clone's core.fsmonitor program. The clone's own settings are
-    checked first, so a clone that names one is refused, before anything is
-    downloaded, without it running."""
+    would run the clone's core.fsmonitor program. A clone that names one is
+    refused, before anything is downloaded, and the program never runs. Two
+    defences stop it: the clone's own settings are checked before git status
+    runs, and git status runs with core.fsmonitor emptied. This test passes
+    while either holds; the order is guarded by
+    test_replacing_a_clone_checks_it_before_git_status_in_both in
+    tests/scripts/test_installer_parity.py, and the emptied setting by
+    test_replacing_a_clone_runs_no_fsmonitor_from_the_users_config here."""
     base = _release(tmp_path)
     home = tmp_path / "apothem-home"
     _clone_into(tmp_path, home)
@@ -1732,8 +1739,9 @@ def test_replacing_a_clone_never_runs_its_fsmonitor(tmp_path: Path) -> None:
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined
     assert (
-        f"{home}'s own git config sets core.fsmonitor, which the update would "
-        f"trust. Remove it from {home}/.git/config, then re-run."
+        f"{home}'s own git config sets core.fsmonitor, which an update in place "
+        "does not accept in a clone's own config. Remove it from "
+        f"{home}/.git/config, then re-run."
     ) in combined, combined
     assert not marker.exists(), marker.read_text(encoding="utf-8")
     assert _cosign_args(cosign_dir) is None, combined
@@ -1768,6 +1776,82 @@ def test_replacing_a_clone_owned_by_someone_else_is_explained(tmp_path: Path) ->
     assert "with local work" not in combined, combined
     assert _cosign_args(cosign_dir) is None, combined
     assert _snapshot(home) == before, combined
+
+
+def _append_user_config(settings: dict[str, str]) -> str:
+    """A prelude for _run that adds SETTINGS to the isolated HOME's own
+    .gitconfig, which _run writes (and the installer, as the user's own
+    config, trusts and does not check)."""
+    return "\n".join(
+        f'git config --file "$HOME/.gitconfig" {shlex.quote(key)} {shlex.quote(value)}'
+        for key, value in settings.items()
+    )
+
+
+def test_replacing_a_clone_runs_no_fsmonitor_from_the_users_config(
+    tmp_path: Path,
+) -> None:
+    """git status, which checks a clone for local work before --yes
+    replaces it, runs with core.fsmonitor emptied, so a fsmonitor program
+    the user's own config names never runs either."""
+    base = _release(tmp_path)
+    home = tmp_path / "apothem-home"
+    _clone_into(tmp_path, home)
+    marker = tmp_path / "fsmonitor-ran"
+    monitor = tmp_path / "fsmonitor"
+    monitor.write_text(f"#!/bin/sh\necho ran >> '{marker}'\nexit 1\n", encoding="utf-8")
+    monitor.chmod(EXECUTABLE_MODE)
+
+    result = _run(
+        tmp_path,
+        base,
+        cosign_dir=_stub_cosign(tmp_path),
+        yes=True,
+        prelude=_append_user_config({"core.fsmonitor": str(monitor)}),
+    )
+
+    combined = result.stdout + result.stderr
+    assert "Replacing the git clone" in combined, combined
+    assert not marker.exists(), combined
+
+
+def test_replacing_a_clone_never_runs_git_inside_a_nested_repository(
+    tmp_path: Path,
+) -> None:
+    """git status reports a submodule by running git status inside it,
+    under the nested repository's own config and attributes, which nothing
+    checks. The check for local work tells git not to, so a filter only
+    that nested repository names never runs."""
+    base = _release(tmp_path)
+    home = tmp_path / "apothem-home"
+    _clone_into(tmp_path, home)
+    marker = tmp_path / "nested-filter-ran"
+    sub = home / "sub"
+    sub.mkdir()
+    git(["init", "--quiet"], sub)
+    (sub / "a.txt").write_text("a\n", encoding="utf-8")
+    git(["add", "a.txt"], sub)
+    git([*_COMMIT_AS, "commit", "--quiet", "-m", "sub"], sub)
+    clean = tmp_path / "clean"
+    clean.write_text(f"#!/bin/sh\necho ran >> '{marker}'\ncat\n", encoding="utf-8")
+    clean.chmod(EXECUTABLE_MODE)
+    git(["config", "filter.planted.clean", str(clean)], sub)
+    (sub / ".git" / "info").mkdir(exist_ok=True)
+    (sub / ".git" / "info" / "attributes").write_text(
+        "* filter=planted\n", encoding="utf-8"
+    )
+    # The same size and a later time: git status there has to read the file
+    # through the clean filter to tell whether it changed.
+    (sub / "a.txt").write_text("b\n", encoding="utf-8")
+    later = time.time() + 60
+    os.utime(sub / "a.txt", (later, later))
+    head = git(["rev-parse", "HEAD"], sub).strip()
+    git(["update-index", "--add", "--cacheinfo", f"160000,{head},sub"], home)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path), yes=True)
+
+    combined = result.stdout + result.stderr
+    assert not marker.exists(), combined
 
 
 # REUSE-IgnoreEnd

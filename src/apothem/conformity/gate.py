@@ -1049,9 +1049,17 @@ def _list_validators() -> str:
 # makes the ``apothem`` package importable the same way it does for the gate
 # itself, then runs the validator module as ``__main__`` with the remaining
 # arguments. A child process therefore resolves its imports without relying on
-# the parent's ``PYTHONPATH`` or on an installed package.
+# the parent's ``PYTHONPATH`` or on an installed package. The child starts with
+# ``-E -s`` (see :func:`_run_standalone`), which also ignores
+# ``PYTHONSAFEPATH``, so the launcher drops the ``''`` entry ``-c`` puts first
+# on ``sys.path`` itself. ``-E`` ignores ``PYTHONIOENCODING`` and
+# ``PYTHONUTF8`` too, so the launcher sets the child's output streams to UTF-8,
+# which is how the gate reads them.
 _STANDALONE_LAUNCHER: Final[str] = (
     "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]\n"
+    "for _stream in (sys.stdout, sys.stderr):\n"
+    "    if hasattr(_stream, 'reconfigure'):\n"
+    "        _stream.reconfigure(encoding='utf-8')\n"
     "import runpy\n"
     "gate_path, module = sys.argv[1], sys.argv[2]\n"
     "sys.argv = [module, *sys.argv[3:]]\n"
@@ -1081,11 +1089,13 @@ def _is_full_path_entry(entry: str, *, windows: bool = os.name == "nt") -> bool:
 def _standalone_env() -> dict[str, str]:
     """Return the environment for a standalone-validator child process.
 
-    ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the working directory to
-    ``sys.path``. A user ``PYTHONPATH`` keeps only its full-path entries (see
-    :func:`_is_full_path_entry`), because an empty, relative, rooted or
-    drive-relative entry depends on the working directory or drive; the
-    variable is dropped when none remain.
+    The child itself starts with ``-E -s`` and reads none of these variables.
+    The environment still reaches any process a validator starts, so it is
+    narrowed here too: ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the
+    working directory to ``sys.path``, and a user ``PYTHONPATH`` keeps only its
+    full-path entries (see :func:`_is_full_path_entry`), because an empty,
+    relative, rooted or drive-relative entry depends on the working directory
+    or drive; the variable is dropped when none remain.
     """
     env = {**os.environ, "PYTHONSAFEPATH": "1"}
     kept = [
@@ -1109,7 +1119,10 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     before resolving the script path so ``--all`` and ``--check`` both
     locate the script regardless of which form the caller supplied. The
     validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
-    which the caller has already resolved to an absolute directory.
+    which the caller has already resolved to an absolute directory. The
+    child starts with ``-E -s``: no ``PYTHON*`` variable (so no
+    ``PYTHONPATH`` entry) and no user site-packages folder can load code into
+    it.
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
@@ -1119,6 +1132,8 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
         completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
             [
                 sys.executable,
+                "-E",
+                "-s",
                 "-c",
                 _STANDALONE_LAUNCHER,
                 str(Path(__file__).resolve()),

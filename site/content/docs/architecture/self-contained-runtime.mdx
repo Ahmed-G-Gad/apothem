@@ -53,12 +53,15 @@ invocation surfaces instead:
 
 | Surface | Invocation | Context |
 | ------- | ---------- | ------- |
-| Engine CLI | `python -m apothem <command>` | A source tree with `src/` on `PYTHONPATH` (checkout, npx cache, plugin tree) |
+| Engine CLI | `apothem <command>`; from a checkout, `PYTHONPATH=src python -m apothem <command>` | The installers' `apothem` shim and the npm launcher run the package from its source tree with the current folder kept off `sys.path`; the `-m` form is for a checkout you trust |
 | Hook runtime | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The Claude Code materialization: the copy under the harness root's shared `.apothem/support/` tree, by absolute path |
 
-- `python -m apothem` runs `src/apothem/__main__.py`, which puts
+- The engine's entry point, `src/apothem/__main__.py`, puts
   `src/apothem/_vendor` on `sys.path`, checks that `click` and `rich` are
   importable, then calls `apothem.cli:main` — the Click command group.
+  `python -m apothem` runs it directly. The `apothem` shims and the npm
+  launcher run it through `runpy` from a `-c` program that first drops the
+  current folder from `sys.path`.
 - Hook entries in the materialized `settings.json` / `hooks.json` invoke
   the dispatcher (and, for Claude Code, the conformity gate at
   `<harness-root>/.apothem/support/conformity/gate.py`) by absolute script path,
@@ -74,18 +77,27 @@ invocation surfaces instead:
   `python -m apothem.hooks.dispatch` and
   `python -m apothem.conformity.gate` run the same code for development.
 
-The package directory becomes importable by prepending the checkout's
-`src/` directory to `PYTHONPATH`:
+In a checkout, the package directory becomes importable by prepending the
+checkout's `src/` directory to `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-When the `apothem` launcher is not on PATH, `install.sh` prints this form at
-completion, with the vendored directory ahead of `src/` and the CPython it
-resolved in place of `python`. `install.ps1` prints the same two settings in
-PowerShell form: a `$env:PYTHONPATH` assignment that joins the vendored and
-`src/` directories with `;`, then `& '<CPython>' -m apothem <command>`.
+`-m` reads modules from the current folder first, so run this form only from
+the checkout root or another folder you trust.
+
+The installers never print a `-m` command. When the `apothem` command is not on
+`PATH` at completion, `install.sh` and `install.ps1` print the full path of the
+`apothem` shim they placed. When no shim could be placed, they print a
+self-contained command instead. `install.sh` prints
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`,
+followed by the command. `install.ps1` prints a PowerShell block that sets
+`PYTHONSAFEPATH` and `PYTHONPATH` (the vendored and `src/` folders joined with
+`;`) for one run of `& '<CPython>' -c "<program>"`, then puts both back. The
+program drops the current folder from `sys.path` and runs the `apothem`
+package; `PYTHONSAFEPATH=1` keeps Python 3.11 and later from adding that folder
+in the first place.
 
 ## Plugin-tree bootstrap
 
@@ -130,5 +142,5 @@ When run from a source tree, the installers reuse the bundled
 
 ## Recommended Next Step
 
-**Run `python -m apothem --help`** with the checkout's `src/` directory on
-`PYTHONPATH` to confirm the self-contained CLI path resolves on your host.
+**Run `PYTHONPATH=src python -m apothem --help`** from the root of an
+Apothem checkout to confirm the self-contained CLI path resolves on your host.

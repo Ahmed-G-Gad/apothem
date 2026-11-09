@@ -145,6 +145,68 @@ def test_standalone_validators_ignore_modules_in_the_current_folder(
     assert isinstance(passed, bool)
 
 
+def _user_site(userbase: Path) -> Path | None:
+    """Return the user site-packages folder under *userbase*, or ``None`` when off."""
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import site; print(site.ENABLE_USER_SITE); print(site.getusersitepackages())",
+        ],
+        env={**os.environ, "PYTHONUSERBASE": str(userbase)},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    enabled, folder = probe.stdout.strip().splitlines()[-2:]
+    return Path(folder) if enabled == "True" else None
+
+
+def test_standalone_validators_start_with_e_and_s(tmp_path: Path) -> None:
+    """No ``PYTHONPATH`` entry and no user site-packages folder runs in a child.
+
+    The gate runs by path with ``-E -s``, so the parent reads neither; a marker
+    can only come from a validator child. A full-path ``PYTHONPATH`` entry
+    holding ``sitecustomize.py`` and a user site holding ``usercustomize.py``
+    must not run there, and the validator must still run.
+    """
+    marks = tmp_path / "marks"
+    marks.mkdir()
+    body = (
+        "import os, pathlib\n"
+        f"pathlib.Path({str(marks)!r}, __name__ + str(os.getpid())).write_text('ran')\n"
+    )
+    plant = tmp_path / "plant"
+    plant.mkdir()
+    (plant / "sitecustomize.py").write_text(body, encoding="utf-8")
+    userbase = tmp_path / "userbase"
+    user_site = _user_site(userbase)
+    if user_site is not None:
+        user_site.mkdir(parents=True)
+        (user_site / "usercustomize.py").write_text(body, encoding="utf-8")
+    project = tmp_path / "project"
+    project.mkdir()
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(plant),
+        "PYTHONUSERBASE": str(userbase),
+    }
+    env.pop("PYTHONSAFEPATH", None)
+    completed = subprocess.run(
+        [sys.executable, "-E", "-s", str(_GATE_SCRIPT), "--check", "naming-grep", "."],
+        cwd=project,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        encoding="utf-8",
+        timeout=120,
+    )
+    assert sorted(path.name for path in marks.iterdir()) == []
+    assert "Traceback" not in completed.stdout + completed.stderr, completed.stderr
+    assert "naming" in completed.stdout, completed.stdout
+
+
 def test_standalone_env_keeps_only_absolute_pythonpath_entries(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

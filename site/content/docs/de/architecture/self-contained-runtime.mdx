@@ -82,7 +82,7 @@ Das Paketverzeichnis wird importierbar, indem das `src/`-Verzeichnis des
 Checkouts dem `PYTHONPATH` vorangestellt wird:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Wenn der Starter `apothem` nicht im PATH liegt, gibt `install.sh` bei Abschluss

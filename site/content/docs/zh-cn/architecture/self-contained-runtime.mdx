@@ -39,7 +39,7 @@ Apothem 有意不在 `pyproject.toml` 中声明任何控制台脚本——控制
 将检出的 `src/` 目录前置到 `PYTHONPATH`，即可使包目录可导入：
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 当 `apothem` 启动器不在 PATH 上时，`install.sh` 会在安装完成时打印这一形式：vendored 目录排在 `src/` 之前，并以其所解析到的 CPython 代替 `python`。`install.ps1` 以 PowerShell 形式打印同样的两项设置：一条 `$env:PYTHONPATH` 赋值，它用 `;` 连接 vendored 目录与 `src/` 目录，随后是 `& '<CPython>' -m apothem <command>`。

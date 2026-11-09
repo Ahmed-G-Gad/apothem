@@ -22,6 +22,7 @@ before the move or between the early check and the swap, is never used.
 
 from __future__ import annotations
 
+import os
 import shlex
 import shutil
 import subprocess
@@ -441,3 +442,126 @@ def test_an_earlier_folder_never_moves_into_a_folder_someone_else_made(
     assert _snapshot(moved[0]) == before, combined
     assert f"were moved, unchanged, to {moved[0]}\n" in combined, combined
     assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
+
+
+# --- what the lock message says, and which lock a run takes -----------------
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_lock_file_is_reported_as_a_powershell_runs_lock(
+    tmp_path: Path, name: str
+) -> None:
+    """install.ps1, update.ps1 and uninstall.ps1 hold a file at
+    <APOTHEM_HOME>.lock, which Windows removes when that run ends and will
+    not let anyone remove while it runs. The sh scripts say so, instead of
+    calling it a lock that names no running process."""
+    home = tmp_path / "apothem-home"
+    lock = tmp_path / "apothem-home.lock"
+    lock.write_bytes(b"")
+
+    result = _run_script(name, _lock_env(tmp_path), tmp_path)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert (
+        f"{lock} is the lock file of an Apothem PowerShell run (install.ps1, "
+        f"update.ps1 or uninstall.ps1) on {home}, and Windows removes it when "
+        "that run ends; while the run is active, Windows will not let anyone "
+        "remove it. Wait for that run to finish, then re-run. If no Apothem "
+        f"install, update or uninstall is running, remove {lock}, then re-run."
+    ) in combined, combined
+    assert "names no running process" not in combined, combined
+    assert lock.is_file(), combined
+    assert _engine_calls(tmp_path) == [], combined
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or os.geteuid() == 0,
+    reason="needs a process of another user that kill -0 may not signal",
+)
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_lock_held_by_another_users_run_is_reported_as_running(
+    tmp_path: Path, name: str
+) -> None:
+    """kill -0 fails for a running process of another user (a run under
+    sudo) as it does for one that is gone; only the first says "not
+    permitted", and then the lock's run is reported as running, not as
+    gone. Process 1 belongs to root and always runs."""
+    home = tmp_path / "apothem-home"
+    lock = tmp_path / "apothem-home.lock"
+    lock.mkdir()
+    (lock / "pid").write_text("1\n", encoding="utf-8")
+
+    result = _run_script(name, _lock_env(tmp_path), tmp_path)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert _held_message(home) in combined, combined
+    assert "is no longer running" not in combined, combined
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_signal_while_the_lock_is_made_leaves_no_lock_behind(
+    tmp_path: Path, name: str
+) -> None:
+    """A TERM that arrives just after mkdir made the lock, before the run
+    has recorded it as its own, would leave a lock with no process ID that
+    stops every later run. The run ignores signals for that moment, so it
+    goes on, and the lock is gone when it ends."""
+    real = shutil.which("mkdir")
+    assert real is not None
+    stub_dir = tmp_path / "stub-mkdir"
+    stub_dir.mkdir()
+    stub = stub_dir / "mkdir"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f'{shlex.quote(real)} "$@" || exit\n'
+        'case "$*" in *.lock) kill -TERM "$PPID" ;; esac\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    stub.chmod(EXECUTABLE_MODE)
+    env = _lock_env(tmp_path)
+    env["PATH"] = f"{stub_dir}{os.pathsep}{env['PATH']}"
+
+    result = _run_script(name, env, tmp_path)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert not (tmp_path / "apothem-home.lock").exists(), combined
+    assert len(_engine_calls(tmp_path)) == 1, combined
+
+
+@pytest.mark.parametrize("name", SCRIPTS)
+def test_a_run_through_a_link_takes_the_lock_of_the_folder_it_leads_to(
+    tmp_path: Path, name: str
+) -> None:
+    """APOTHEM_HOME given as a symbolic link takes the lock beside the
+    folder the link leads to, so it stops while a run through that folder's
+    own path holds the lock."""
+    real_home = tmp_path / "apothem-home"
+    real_home.mkdir()
+    link = tmp_path / "home-link"
+    link.symlink_to(real_home)
+    lock = tmp_path / "apothem-home.lock"
+    holder = subprocess.Popen(["sleep", "60"])
+    try:
+        lock.mkdir()
+        (lock / "pid").write_text(f"{holder.pid}\n", encoding="utf-8")
+
+        result = _run_script(
+            name, _lock_env(tmp_path, APOTHEM_HOME=str(link)), tmp_path
+        )
+    finally:
+        holder.kill()
+        holder.wait(timeout=RUN_TIMEOUT_SECONDS)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert (
+        f"Another Apothem install, update or uninstall is running on {link}. "
+        f"Wait for it to finish, then re-run. If none is running, remove "
+        f"{lock}, then re-run."
+    ) in combined, combined
+    assert not (tmp_path / "home-link.lock").exists(), combined
+    assert _engine_calls(tmp_path) == [], combined

@@ -427,47 +427,46 @@ beside `APOTHEM_HOME`, and swaps it in only when every check has passed; if a
 step fails or you stop the run with Ctrl+C or a termination signal, the earlier
 install is put back unchanged. A forced kill or a power loss can leave folders
 beside `APOTHEM_HOME`; the next fetched install names them, stops before it
-changes anything, and deletes nothing. Each run holds the lock
-`<APOTHEM_HOME>.lock`, and a second run stops. An earlier Apothem install keeps
-everything that is not part of its source tree: backups, state, plans, memory
-and the other data the engine keeps there. A folder that holds only that engine
-data (`backups`, `state`, `plans`, `memory`, `contexts`, `learning`,
-`providers`) is updated without `--yes`. If `APOTHEM_HOME` holds a folder that
-is not an Apothem install, the installer refuses to touch it unless you pass
-`--yes` (`-Yes` on PowerShell); with `--yes` it moves the whole folder,
-unchanged, into a new folder, `<APOTHEM_HOME>.before-apothem-<time>`, and
-installs fresh. `--yes` can also replace a git clone with a release archive, but
-not while the clone holds local work: changes, stashes, unpushed commits, or
-untracked files in its source tree. Commit and push that work, or move it
-elsewhere, then re-run. When it does replace a clone, the clone's own tree (its
-history and source) moves into a new folder,
-`<APOTHEM_HOME>.before-apothem-<time>`, under its own name instead of being
-deleted, and the installer says where. A git clone of anything other than
+changes anything, and deletes nothing. Each run of the install, update or
+uninstall script holds the lock `<APOTHEM_HOME>.lock`, and a second run stops.
+An earlier Apothem install keeps everything that is not part of its source tree:
+backups, state, plans, memory and the other data the engine keeps there. A
+folder that holds only that engine data (`backups`, `state`, `plans`, `memory`,
+`contexts`, `learning`, `providers`) is updated without `--yes`. If
+`APOTHEM_HOME` holds a folder that is not an Apothem install, the installer
+refuses to touch it unless you pass `--yes` (`-Yes` on PowerShell); with `--yes`
+it moves the whole folder, unchanged, into a new folder,
+`<APOTHEM_HOME>.before-apothem-<time>`, and installs fresh. `--yes` can also
+replace a git clone with a release archive, but not while the clone holds local
+work: changes, stashes, unpushed commits, or untracked files in its source tree.
+Commit and push that work, or move it elsewhere, then re-run. When it does
+replace a clone, the clone's own tree (its history and source) moves into a new
+folder, `<APOTHEM_HOME>.before-apothem-<time>`, under its own name instead of
+being deleted, and the installer says where. A git clone of anything other than
 Apothem counts as a folder with no Apothem install. Before it fetches into an
 existing clone, the installer stops when the clone hides changes from git (files
 marked assume-unchanged or skip-worktree), when the clone's work tree is
-somewhere other than `APOTHEM_HOME`, or when the clone's own git config
-(`.git/config`, and `.git/config.worktree` when the clone has one) names a
-program for git to run, pulls in other config or redirects where git connects
-(every `gpg.*`, `include.*`, `includeIf.*`, `filter.*`, `protocol.*`,
-`credential.*`, `http.*` and `uploadpack.*` key; `core.fsmonitor`,
-`core.hooksPath`, `core.sshCommand`, `core.gitProxy`, `core.askPass`,
-`core.attributesFile` and `core.alternateRefsCommand`; `diff.external` and
-`diff.<driver>.command` or `textconv`; `url.<base>.insteadOf` and
-`pushInsteadOf`; and `remote.<name>.uploadpack`, `receivepack`, `proxy` and
-`vcs`), or when `.git/info/attributes` sets a `filter=`. The clone's git hooks
-never run during an update. If `APOTHEM_HOME` is a symbolic link (on Windows, a
-symbolic link or a junction), the installer refuses and asks you to point
-`APOTHEM_HOME` at the folder the link leads to; the exception is an existing
-clone, which is updated in place. On Linux and macOS, a file or folder to carry
-over whose name has a space or another special character stops the install; move
-it out of `APOTHEM_HOME` first. The installer ignores `GIT_DIR` and the other
-`GIT_*` variables that redirect git or point it at another config file
-(`GIT_CONFIG_GLOBAL` and the other `GIT_CONFIG*` names), trusts the `git`, `gpg`
-and `cosign` that `PATH` finds and your own global git config, and refuses an
-`APOTHEM_REPO` that starts with `-`. `--dry-run` fetches and checks the source
-in a temporary folder, applies the same refusals as a real run, and leaves
-`APOTHEM_HOME` as it is.
+somewhere other than `APOTHEM_HOME`, when the clone holds a submodule, when
+`.git/info/attributes` sets a `filter=`, or when the clone's own git config
+(`.git/config`, and `.git/config.worktree` when the clone has one) holds a
+setting other than the ones `git clone` and `git init` write there, branch
+settings, `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+`pull.rebase` and `pull.ff`; the
+[troubleshooting page](https://apothem.ahmedgad.com/docs/install/troubleshooting/)
+lists them. The clone's git hooks never run during an update. If `APOTHEM_HOME`
+is a symbolic link (on Windows, a symbolic link or a junction), the installer
+refuses and asks you to point `APOTHEM_HOME` at the folder the link leads to;
+the exception is an existing clone, which is updated in place. On Linux and
+macOS, a file or folder to carry over whose name has a space or another special
+character stops the install; move it out of `APOTHEM_HOME` first. The installer
+ignores `GIT_DIR` and the other `GIT_*` variables that redirect git or point it
+at another config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
+`GIT_CONFIG_SYSTEM`; `GIT_CONFIG_NOSYSTEM` stays as you set it), trusts the
+`git`, `gpg` and `cosign` that `PATH` finds and your own global git config, and
+refuses an `APOTHEM_REPO` that starts with `-`. `--dry-run` fetches and checks
+the source in a temporary folder and leaves `APOTHEM_HOME` as it is. It makes
+the same checks as a real run, except that it does not fetch into an existing
+clone, and so does not check it for changes to tracked files.
 
 **Requirements.** A system Python 3.10 or newer must be on PATH, and the
 `click` and `rich` packages must be importable under that interpreter; the
@@ -482,7 +481,7 @@ locate the source (your own checkout, when you run the script by path from
 inside it or set `APOTHEM_SOURCE`; otherwise resolve the latest signed tag and
 clone the repository at it) → verify the
 tag signature (fail-closed) → create a starter profile from the example when
-none exists → run `python -m apothem install --harness <name>` from that
+none exists → run the engine's `install --harness <name>` from that
 source → verify → place an `apothem` command on PATH → print the next-step
 banner, all in one run. Re-running is idempotent: an existing clone is fetched,
 its new tag is checked, and only then is the clone checked out to the resolved

@@ -207,34 +207,60 @@ once you no longer need it.
 ### The installer stops: the existing clone is set up in a way the update would trust
 
 Before it fetches into an existing clone, the installer (and the update script)
-checks how the clone is set up. "has changes to tracked files" also appears when
-files are marked assume-unchanged or skip-worktree, which hides their changes
-from git: run `git update-index --no-assume-unchanged <file>` or `git
-update-index --no-skip-worktree <file>`, then commit or stash the change. "is
-not the work tree of its git clone" means `core.worktree` is set, or the `.git`
-file points at another clone: remove that setting so the clone checks out into
-`APOTHEM_HOME`. "own git config sets `<key>`, which the update would trust"
-names a setting in the clone's `.git/config`, or in `.git/config.worktree` when
-the clone has one, that makes git run a program, read other config or connect
-elsewhere. The refused keys are every `gpg.*`, `include.*`, `includeIf.*`,
-`filter.*`, `protocol.*`, `credential.*`, `http.*` and `uploadpack.*` key;
-`core.fsmonitor`, `core.hooksPath`, `core.sshCommand`, `core.gitProxy`,
-`core.askPass`, `core.attributesFile` and `core.alternateRefsCommand`;
-`diff.external` and `diff.<driver>.command` or `textconv`;
-`url.<base>.insteadOf` and `pushInsteadOf`; and `remote.<name>.uploadpack`,
-`receivepack`, `proxy` and `vcs`. Remove the setting from the file the message
-names (for `.git/config`: `git -C ~/.apothem config --unset <key>`; for
-`.git/config.worktree`, add `--worktree`), then re-run. "own git attributes set
-a filter" names `.git/info/attributes`: remove the `filter=` line. The clone's
-git hooks never run during an update.
+checks how the clone is set up. `--dry-run` makes these checks too. "has
+changes to tracked files" also appears when files are marked assume-unchanged
+or skip-worktree, which hides their changes from git: run
+`git update-index --no-assume-unchanged <file>` or
+`git update-index --no-skip-worktree <file>`, then commit or stash the change.
+"is not the work tree of its git clone" means git finds no work tree in
+`APOTHEM_HOME`, as when the clone's git config sets `core.bare` to `true`: set
+it to `false` so the clone checks out into `APOTHEM_HOME`. A `core.worktree`
+setting, which would send the checkout to another folder, is reported as a
+setting an update in place does not accept (below).
+
+"own git config sets `<key>`, which an update in place does not accept in a
+clone's own config" names a setting in the clone's `.git/config`, or in
+`.git/config.worktree` when the clone has one. An update in place accepts only
+these settings there (the section and the key compare without regard to case):
+
+- the settings `git clone` and `git init` write: `core.repositoryformatversion`,
+  `core.filemode`, `core.bare`, `core.logallrefupdates`, `core.symlinks`,
+  `core.ignorecase`, `core.precomposeunicode`, `core.longpaths`,
+  `core.partialclonefilter`, `extensions.objectformat`,
+  `extensions.refstorage` (only with the value `files` or `reftable`),
+  `extensions.partialclone`, `extensions.worktreeconfig`,
+  `remote.origin.url`, `remote.origin.fetch`, `remote.origin.tagopt`,
+  `remote.origin.promisor` and `remote.origin.partialclonefilter`;
+- branch settings, `branch.<name>.<key>`, which git and editors add;
+- `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+  `pull.rebase` and `pull.ff`.
+
+Any other setting stops the update, because it could make git run a program,
+read settings, hooks or attributes from another place, or connect somewhere
+else. A clone made with `--mirror`, `--sparse`, `--recurse-submodules` or a
+remote not named `origin` stops here too. Remove the setting from the file the
+message names, for example
+`git config --file ~/.apothem/.git/config --unset-all <key>`, then re-run.
+`--unset-all` also removes a setting that is there more than once. "own git
+attributes set a filter" names `.git/info/attributes`: remove the `filter=`
+line.
+
+"keeps submodule repositories in ..." and "holds a submodule at ..." mean the
+clone has a submodule, kept in the folder the first message names or recorded
+in its index at the path the second one names. A release tree has none, and
+git would run inside the submodule, whose own settings the installer does not
+check. Remove the submodule and that folder from the clone, or move the clone
+aside, then re-run. The clone's git hooks never run during an update.
 
 ### The installer stops: another run holds the lock
 
-Each install, update and uninstall holds a lock beside `APOTHEM_HOME`
-(`<APOTHEM_HOME>.lock`, so `~/.apothem.lock` by default) while it runs. The
-message "Another Apothem install, update or uninstall is running on ..."
-means a second run found it held. Wait for the other run to finish, then
-re-run. If none is running, remove the lock the message names, then re-run.
+Each run of the install, update and uninstall scripts holds a lock beside
+`APOTHEM_HOME` (`<APOTHEM_HOME>.lock`, so `~/.apothem.lock` by default) while
+it runs; the `apothem install`, `apothem update` and `apothem uninstall`
+commands do not take it. The message "Another Apothem install, update or
+uninstall is running on ..." means a second run found it held. Wait for the
+other run to finish, then re-run. If none is running, remove the lock the
+message names, then re-run.
 
 - "was left by an Apothem run that did not finish (process N is no longer
   running)" and "exists but names no running process" mean a run was killed
@@ -242,11 +268,17 @@ re-run. If none is running, remove the lock the message names, then re-run.
   uninstall is running, remove the lock, and re-run. The installer never
   removes it for you. On POSIX the lock is a folder (`rm -rf ~/.apothem.lock`);
   on Windows PowerShell it is a file that Windows deletes when its run ends.
-- A POSIX check cannot see another user's process, so a lock held by a run of
-  another user can read as left over. Make sure that user's run has ended
-  before you remove it. PowerShell cannot check the process ID of a lock
-  folder made by the POSIX scripts (for example under Git Bash), so it
-  reports that lock as held.
+- "is the lock file of an Apothem PowerShell run" comes from a POSIX script,
+  under Git Bash for example, that found the file a PowerShell run holds.
+  Windows removes that file when the run ends and lets no one remove it while
+  the run is active. Wait for that run to finish. If no Apothem install, update
+  or uninstall is running, remove the file, then re-run.
+- The POSIX scripts count a process that belongs to another user, such as a
+  run under `sudo`, as running, so its lock reads as held. PowerShell cannot
+  check the process ID of a lock folder made by the POSIX scripts (for example
+  under Git Bash), so it reports that lock as held too.
+- When `APOTHEM_HOME` is a symbolic link, the POSIX scripts take the lock
+  beside the folder the link leads to; the message names it.
 - "Could not create the lock ... Check that you can write to ..." means the
   folder that holds `APOTHEM_HOME` is not writable by you.
 
@@ -257,22 +289,31 @@ folders beside ..." and lists each folder with what it holds. Ctrl+C and a
 termination signal are caught and the run cleans up; a forced kill or a
 power loss during a swap is not, and can leave:
 
-- `.apothem-old.*`: the earlier install that was being replaced, in its
+- `.apothem-old.<name>.*`: the earlier install that was being replaced, in its
   `home` folder.
-- `.apothem-extract.*` or `.apothem-clone.*`: the new source that was being
-  installed, possibly with engine data (`backups`, `state`, `plans`,
-  `memory`, `contexts`, `learning`, `providers`) already moved into it. The
-  line names that data.
+- `.apothem-extract.<name>.*` or `.apothem-clone.<name>.*`: the new source
+  that was being installed. When the run had already moved entries of
+  `APOTHEM_HOME` into it, the line names every one: engine data such as
+  `backups` and `state`, and any other file or folder that was there.
 - `<APOTHEM_HOME>.before-apothem-<time>`: listed only when `APOTHEM_HOME`
-  itself is missing; it holds the earlier contents of `APOTHEM_HOME`.
+  itself is missing. It holds the earlier contents of `APOTHEM_HOME`, in a
+  folder named after the last part of `APOTHEM_HOME`, or directly inside it
+  for a folder an earlier installer made; the line says which.
+
+`<name>` is the last part of `APOTHEM_HOME` (`.apothem` by default), so the
+folders of another `APOTHEM_HOME` in the same parent folder, which a run on
+that home may be using, are not listed. A folder whose name has no `<name>`
+part was made by an earlier installer that did not record the home; it is
+listed with a note that it may belong to any Apothem home in that folder, so
+check what it holds first. Only folders count: a file or a link with such a
+name is not listed. A folder the installer cannot read is listed as "could not
+be read".
 
 Nothing was changed and nothing is deleted. If `APOTHEM_HOME` is missing,
-move the earlier install back to it first. Then move any engine data the list
-names back into `APOTHEM_HOME`, remove the listed folders, and re-run. The
-check runs for a fetched install, a dry run included; it does not run for an
-install from your own checkout. The folder names do not say which
-`APOTHEM_HOME` they belong to, so a leftover from an install of another
-`APOTHEM_HOME` in the same parent folder is listed too.
+move the earlier install back to it first. Then move every entry the list
+names as moved from `APOTHEM_HOME` back into it, remove the listed folders, and
+re-run. The check runs for a fetched install, a dry run included; it does not
+run for an install from your own checkout, nor for an update or an uninstall.
 
 ### The installer stops: another user owns the clone
 
@@ -292,7 +333,8 @@ messages stop the update before the checkout. "Could not fetch" usually means a
 local tag differs from the one on origin: delete it with
 `git -C ~/.apothem tag -d <tag>` and re-run. "has changes to tracked files.
 Commit or stash them, then re-run." means the clone has uncommitted changes to
-files git tracks: commit or stash them, then re-run. "Could not check out"
+files git tracks: commit or stash them, then re-run. A dry run does not make
+this check, since it does not fetch into the clone. "Could not check out"
 means the checkout would still overwrite local changes. The installer never
 discards local changes. For a non-release ref such as `main`, an existing
 clone follows origin's copy of that branch.

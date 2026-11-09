@@ -76,7 +76,7 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 임포트할 수 있게 됩니다.
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 `apothem` 런처가 PATH에 없으면, `install.sh`는 완료 시 이 형식을 출력합니다. 이 형식에서는 벤더링된 디렉터리가 `src/`보다 앞에 오며, `python` 대신 설치 프로그램이 해석한 CPython이 쓰입니다. `install.ps1`은 같은 두 설정을 PowerShell 형식으로 출력합니다. 그 형식은 벤더링된 디렉터리와 `src/` 디렉터리를 `;`로 잇는 `$env:PYTHONPATH` 할당과, 그다음 `& '<CPython>' -m apothem <command>`입니다.

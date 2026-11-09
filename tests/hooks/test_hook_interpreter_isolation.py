@@ -20,7 +20,9 @@ opened folder too, then a warm one; ``bootstrap.ps1`` on Windows under
 PowerShell 7 and Windows PowerShell, the same way; and the commands the Claude
 Code install writes into ``settings.json`` (the dispatcher and the conformity
 gate). The unset run is the control: it shows the hook works when nothing is
-planted in reach.
+planted in reach. A user site-packages folder inside the opened folder is
+kept out of the Claude Code commands, ``bootstrap.sh`` and ``bootstrap.ps1``
+alike, each stub with a cold cache.
 
 ``-E`` also turns off ``PYTHONUTF8`` and ``PYTHONIOENCODING``, so the dispatcher
 and the gate set their streams to UTF-8 themselves. The non-ASCII tests hold
@@ -386,6 +388,21 @@ def test_a_user_site_inside_the_opened_folder_stays_out_of_the_hooks(
             project,
         )
         assert _event(_answer(done, markers)) == "SessionStart"
+
+    for index, shell in enumerate(_POWERSHELLS):
+        tree = _hook_tree(tmp_path / f"ps-{index}")
+        stub = str(tree / "hooks" / "lib" / "bootstrap.ps1")
+        # A state folder of its own: a cold cache, so the locator runs here too.
+        shell_env = _env(tmp_path, state=f"state-ps-{index}", PYTHONUSERBASE=".")
+        argv = [shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", stub]
+        done = _run(
+            [*argv, "SessionStart"],
+            _payload(project, "SessionStart"),
+            shell_env,
+            project,
+        )
+        assert _event(_answer(done, markers, Path(shell).stem)) == "SessionStart"
+        assert (tmp_path / f"state-ps-{index}" / "interpreter-path-ps1").is_file()
 
 
 # --- a payload that is not ASCII --------------------------------------------------------

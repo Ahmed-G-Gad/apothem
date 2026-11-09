@@ -76,7 +76,7 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
 इम्पोर्ट-योग्य बन जाती है:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 जब `apothem` लॉन्चर PATH पर नहीं होता, तब `install.sh` समापन पर यही रूप प्रिंट करता है, जिसमें वेंडर्ड डायरेक्टरी `src/` से पहले होती है और `python` के स्थान पर वह CPython होता है जिसे उसने रिज़ॉल्व किया। `install.ps1` PowerShell रूप में वही दो सेटिंग्स प्रिंट करता है: एक `$env:PYTHONPATH` असाइनमेंट, जो वेंडर्ड और `src/` डायरेक्टरियों को `;` से जोड़ता है, फिर `& '<CPython>' -m apothem <command>`।

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
@@ -121,20 +122,65 @@ def _through_link(
     )
 
 
+def _own_bytecode(source: Path) -> list[Path]:
+    """Return the bytecode files Python compiled from the module *source*.
+
+    These are ``__pycache__/<stem>.<tag>.pyc`` and
+    ``__pycache__/<stem>.<tag>.opt-<n>.pyc`` beside *source*, for any
+    interpreter tag. No other file in ``__pycache__`` counts as Apothem's, and
+    nothing is read through a link.
+    """
+    if source.suffix != ".py":
+        return []
+    cache = source.parent / "__pycache__"
+    if _is_link(cache) or not cache.is_dir():
+        return []
+    name = re.compile(
+        re.escape(source.stem) + r"\.[A-Za-z0-9_-]+(?:\.opt-[0-9]+)?\.pyc"
+    )
+    try:
+        entries = sorted(cache.iterdir())
+    except OSError:
+        return []
+    return [
+        path
+        for path in entries
+        if name.fullmatch(path.name) and not _is_link(path) and path.is_file()
+    ]
+
+
+def _remove_own_bytecode(removed: list[Path]) -> set[Path]:
+    """Remove the bytecode of each module in *removed*; return its cache folders.
+
+    A module that is still there (it could not be removed) keeps its bytecode.
+    The caller removes each returned ``__pycache__`` folder once it is empty.
+    """
+    caches: set[Path] = set()
+    for source in removed:
+        if os.path.lexists(source):
+            continue
+        for path in _own_bytecode(source):
+            with contextlib.suppress(OSError):
+                path.unlink()
+            caches.add(path.parent)
+    return caches
+
+
 def _remove_matching(
     target: Path, written: list[Path]
 ) -> tuple[list[Path], list[Path]]:
     """Remove *written* under the folder *target*; return the files and links kept.
 
-    Each folder that held a removed file goes once empty, deepest first; a
-    folder that still holds something stays, and so does an empty folder the
-    operator made, which held nothing Apothem wrote.
+    The bytecode Python compiled from a removed module goes with it (see
+    :func:`_own_bytecode`). Each folder that held a removed file goes once
+    empty, deepest first; a folder that still holds something stays, and so
+    does an empty folder the operator made, which held nothing Apothem wrote.
     """
     for path in written:
         if not _is_link(path):
             with contextlib.suppress(OSError):
                 path.unlink()
-    emptied = {target}
+    emptied = {target, *_remove_own_bytecode(written)}
     for path in written:
         emptied.update(
             parent
@@ -221,6 +267,9 @@ def remove_written(
     if target.is_file():
         with contextlib.suppress(OSError):
             target.unlink()
+        for cache in _remove_own_bytecode([target]):
+            with contextlib.suppress(OSError):
+                cache.rmdir()
         kept_files: list[Path] = []
         kept_links: list[Path] = []
     else:

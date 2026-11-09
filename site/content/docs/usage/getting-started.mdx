@@ -73,11 +73,12 @@ modules from the current folder first, so use a folder you trust):
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-After a script install, run the gate by its script path, from the project
-you want to check:
+After a script install, run the gate by its script path with `-E -s`, from
+the project you want to check (on Windows, `python` in place of `python3`;
+[Conformity gate](/docs/conformity-gate) explains the flags):
 
 ```bash
-python3 ~/.apothem/src/apothem/conformity/gate.py --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Runs all mechanical conformity checks and reports pass/fail per bar.
