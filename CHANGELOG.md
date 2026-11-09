@@ -254,6 +254,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config
   holding one read as unparseable and the install refused to merge into a valid
   file. Found by the new fuzzer.
+- **The OpenSSF Best Practices answer sheet describes the installers' checks
+  accurately.** The `crypto_weaknesses` answer and its Remaining gaps entry say
+  that the one-shot installers and the update scripts check a signed tag that
+  names its commit by a SHA-1 object ID, that they pin the maintainer key by
+  its OpenPGP v4 fingerprint, also a SHA-1 hash, and that an install without
+  cosign or over an existing Apothem clone, and every run of the update
+  scripts, installs a git checkout in which every file rests on SHA-1. The
+  `crypto_keylength`, `crypto_working` and `crypto_published` answers name the
+  same SHA-1 uses, the TLS rows name the programs that make Apothem's TLS
+  connections (pip and npm included), and `delivery_mitm` says which release
+  files carry SLSA provenance and when the cosign check runs. Every answer
+  stays as it was; `crypto_weaknesses` is still Unmet.
 - **Deeply nested input is a parse error, not a crash.** The config reader now
   stops at 200 levels of objects and arrays with a `LenientJSONError`, and the
   install-ledger reader reports a line nested too deeply to parse as invalid
