@@ -179,6 +179,23 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+A piped one-liner never uses a local tree: `curl ... | sh` and `irm ... | iex`
+ignore the folder you run them from and its parent folders, and fetch and
+verify the release. The installer uses a local tree only when you run the
+checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
+from any folder (for example `sh ~/src/apothem/scripts/installer/install.sh`),
+or when `APOTHEM_SOURCE` names that tree. The engine and the `apothem` command
+never import `click`, `rich` or `apothem` modules from the current folder.
+
+Empty and relative entries in your own `PYTHONPATH` are not passed on to the
+engine by any launcher (the installers, updaters, uninstallers, the POSIX and
+Windows `apothem` shims, and the npm launcher). A kept entry must be a full
+path: on Windows a drive path such as `C:\lib` or a network path, elsewhere a
+path that starts with `/`. A rooted `\lib` or a drive-relative `C:lib` is
+dropped. Under Git Bash, Windows-style entries are kept as such. The
+installers' `git` commands that do not work on a clone do not read a
+repository in the current folder.
+
 ### Trust model
 
 With no `APOTHEM_REF` set, the installer resolves the highest
@@ -310,11 +327,10 @@ name when `SHA256SUMS.cosign.bundle` is absent.
 
 The engine then runs directly from the placed tree. Every third-party
 dependency except `click` and `rich` is vendored inside the source tree, and
-the entry point puts that vendor directory on `sys.path` itself:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
+the entry point puts that vendor directory on `sys.path` itself. The installer
+prints the full path of the `apothem` shim it wrote. When it wrote no shim, it
+prints a command that starts the engine with the current folder kept off
+`sys.path`; copy that command from the banner.
 
 Both scripts read the same configuration environment variables
 (`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,

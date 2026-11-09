@@ -339,13 +339,13 @@ def _use_test_python(env: dict[str, str], shim_dir: Path) -> None:
 def _stage_installer(env: dict[str, str], installer: Path = INSTALLER) -> Path:
     """Copy INSTALLER OUTSIDE the repo tree and return the staged path.
 
-    The installer's source-detection walks up from its own directory looking
-    for a surrounding apothem checkout; run in place (under scripts/installer/)
-    it finds this repo and takes the local-source branch, which skips the clone
-    path — the clone + signature gate and the non-clone-home guard both live
-    there. Staging the copy under the isolated HOME's parent (the pytest tmp
-    dir, outside the repo) makes that walk find nothing, so the installer
-    deterministically takes the fetch + clone branch on every host.
+    Run by path from this repo's scripts/installer/, the installer uses this
+    checkout and takes the local-source branch, which skips the clone path —
+    the clone + signature gate and the non-clone-home guard both live there.
+    A copy staged under the isolated HOME's parent (the pytest tmp dir, not
+    in a scripts/installer folder of a checkout) has no checkout of its own,
+    so the installer deterministically takes the fetch + clone branch on
+    every host.
     """
     assert installer.is_file(), f"installer missing: {installer}"
     staging = Path(env["HOME"]).parent / "installer-under-test"

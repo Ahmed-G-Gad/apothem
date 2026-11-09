@@ -43,15 +43,11 @@ Debian-family hosts, or `pip install click rich`) and re-run.
 The installer places the source tree at `~/.apothem` and writes an `apothem`
 shim to `~/.local/bin` by default (POSIX) or `%LOCALAPPDATA%\Microsoft\WindowsApps`
 (Windows). It does not edit your `PATH`. If `apothem` is not found, that
-directory is not on `PATH`; add it, or use the `PYTHONPATH` form below until you
-do. Run the engine through the invocation the installer prints at completion:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-or use the npx form (`npx @ahmed-g-gad/apothem <command>`), which needs no
-`PATH` entry.
+directory is not on `PATH`; add it, or run the shim by its full path. The
+installer prints that path at completion. When it wrote no shim, it prints a
+command that starts the engine with the current folder kept off `sys.path`;
+copy that command from the banner. The npx form
+(`npx @ahmed-g-gad/apothem <command>`) needs no `PATH` entry.
 
 ### `/plugin marketplace add` fails
 
@@ -214,7 +210,7 @@ their changes from git: run `git update-index --no-assume-unchanged <file>`
 or `git update-index --no-skip-worktree <file>`, then commit or stash the
 change. "is not the work tree of its git clone" means `core.worktree` is set,
 or the `.git` file points at another clone: remove that setting so the clone
-checks out into `APOTHEM_HOME`. "own git config sets <key>, which the update
+checks out into `APOTHEM_HOME`. "own git config sets `<key>`, which the update
 would trust" names a setting in the clone's `.git/config` (`gpg.program`,
 `gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
 `includeIf.*`) that makes git run a program or read other config: remove it
@@ -242,6 +238,35 @@ If PowerShell execution policy blocks the installer:
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
+
+### The installer ignored the checkout in my current folder
+
+This is intended. A piped one-liner (`curl ... | sh`, `irm ... | iex`) never
+uses a local tree, and never looks in the current folder or its parent folders:
+it fetches and verifies the release. To install from a checkout, run that
+checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
+from any folder (for example `sh ~/src/apothem/scripts/installer/install.sh`),
+or set `APOTHEM_SOURCE` to the checkout. Give the script a path with a folder
+part: `sh scripts/installer/install.sh` or `sh ./scripts/installer/install.sh`
+works, but `sh install.sh` with no folder part does not count as running from a
+checkout, so the installer prints "Not using a checkout: to install from one,
+run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE." and
+fetches and verifies the release instead. A script started through `sh -c` is
+not treated as a checkout either, in shells that mark `-c` runs. `install.sh`
+follows a symlink to its real file and uses the checkout that holds it.
+`install.ps1` does the opposite: it refuses a checkout that it reaches through a
+symlink or junction, prints a one-line note, and takes the fetched and verified
+path. Run it from the real folder, or set `APOTHEM_SOURCE`. The engine and the
+`apothem` command also never import `click`, `rich` or `apothem` modules from
+the current folder, so a file named `click.py` in the folder you work in has no
+effect on them.
+
+### An old `apothem` command still looks at my current folder
+
+Earlier releases wrote an `apothem` command shim that started Python in
+a way that let the current folder shadow the engine's modules. Updating does
+not rewrite that shim. Run the installer (`install.sh` or `install.ps1`) again
+to replace it. The uninstallers remove both the old and the new shim.
 
 ## Runtime issues
 

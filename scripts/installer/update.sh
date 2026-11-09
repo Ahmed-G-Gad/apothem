@@ -68,6 +68,53 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
+# keep_full_pythonpath VALUE — print the entries of the PYTHONPATH value
+# VALUE that are full paths, joined the way Python splits them. Python turns
+# an empty or relative entry (":/x", "/x:", ".") into the current folder,
+# ahead of site-packages, so a sitecustomize.py, click.py or apothem/ there
+# would run in place of the real module. On POSIX an entry is kept only when
+# it starts with "/". Under Git Bash, MSYS or Cygwin the Python is a Windows
+# one that splits PYTHONPATH on ";": there an entry is kept only when it is a
+# drive path ("C:\x", "C:/x") or a network path ("\\server\x", "//server/x"),
+# so a rooted "\lib" and a drive-relative "C:rel" are dropped. Every Python
+# this script starts gets only the kept entries (mirrors install.sh).
+keep_full_pythonpath() {
+    case "$(uname -s 2>/dev/null || true)" in
+        MINGW* | MSYS* | CYGWIN*) _kp_sep=";" ;;
+        *) _kp_sep=":" ;;
+    esac
+    _kp_rest="$1"
+    _kp_keep=""
+    while [ -n "$_kp_rest" ]; do
+        _kp_entry="${_kp_rest%%"$_kp_sep"*}"
+        case "$_kp_rest" in
+            *"$_kp_sep"*) _kp_rest="${_kp_rest#*"$_kp_sep"}" ;;
+            *) _kp_rest="" ;;
+        esac
+        if [ "$_kp_sep" = ";" ]; then
+            case "$_kp_entry" in
+                [A-Za-z]:[\\/]* | [\\/][\\/]*) ;;
+                *) continue ;;
+            esac
+        else
+            case "$_kp_entry" in
+                /*) ;;
+                *) continue ;;
+            esac
+        fi
+        _kp_keep="${_kp_keep:+${_kp_keep}${_kp_sep}}${_kp_entry}"
+    done
+    printf '%s' "$_kp_keep"
+}
+_pp_keep="$(keep_full_pythonpath "${PYTHONPATH:-}"; printf x)"
+_pp_keep="${_pp_keep%x}"
+if [ -n "$_pp_keep" ]; then
+    PYTHONPATH="$_pp_keep"
+    export PYTHONPATH
+else
+    unset PYTHONPATH
+fi
+
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
 APOTHEM_REPO="${APOTHEM_REPO:-https://github.com/ahmed-g-gad/apothem}"
 APOTHEM_REF="${APOTHEM_REF:-}"
@@ -112,12 +159,57 @@ die()   { printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$*" >&2; exit 1; 
 case "$APOTHEM_REPO" in
     -*) die "APOTHEM_REPO must be a repository URL or path, not an option: ${APOTHEM_REPO}" ;;
 esac
+# A relative local path names a folder or a file (a git bundle) below the
+# current one; git runs from another folder (see ngit), so make it absolute
+# first.
+case "$APOTHEM_REPO" in
+    /*|*:*) ;;
+    *)
+        if [ -d "$APOTHEM_REPO" ]; then
+            APOTHEM_REPO="$(cd -P -- "$APOTHEM_REPO" && pwd -P)"
+        elif [ -e "$APOTHEM_REPO" ]; then
+            _repo_dir="$(cd -P -- "$(dirname -- "$APOTHEM_REPO")" && pwd -P)"
+            APOTHEM_REPO="${_repo_dir%/}/$(basename -- "$APOTHEM_REPO")"
+        fi
+        ;;
+esac
+
+# ngit ARGS — run a git command that works on no clone of its own from an
+# empty folder made for it, with GIT_CEILING_DIRECTORIES at that folder's
+# parent, so the config of a repository around the current folder (which can
+# make git run programs) is never read (mirrors install.sh).
+ngit() (
+    _ng_dir="$(mktemp -d)" || exit 1
+    # The subshell does not keep the caller's signal traps: remove the
+    # folder on any exit, and turn a signal into an exit so that runs.
+    trap 'cd / && rm -rf -- "$_ng_dir"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap 'exit 129' HUP
+    cd -P -- "$_ng_dir" || exit 1
+    _ng_dir="$(pwd -P)"
+    if GIT_CEILING_DIRECTORIES="$(dirname -- "$_ng_dir")" git "$@"; then
+        _ng_rc=0
+    else
+        _ng_rc=$?
+    fi
+    cd / && rm -rf -- "$_ng_dir"
+    exit "$_ng_rc"
+)
+
+# abs_path PATH — print PATH made absolute against the current folder.
+abs_path() {
+    case "$1" in
+        /*) printf '%s\n' "$1" ;;
+        *) printf '%s/%s\n' "$(pwd)" "$1" ;;
+    esac
+}
 
 # resolve_latest_tag / verify_tag / is_release_tag mirror install.sh; see that
 # script's helper comments for the per-function contract. Kept POSIX-clean.
 resolve_latest_tag() {
     _rlt_tab="$(printf '\t')"
-    git ls-remote --tags "$1" 2>/dev/null \
+    ngit ls-remote --tags "$1" 2>/dev/null \
         | sed -n "s#^[0-9a-f][0-9a-f]*${_rlt_tab}refs/tags/\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\(\^{}\)\{0,1\}\$#\1#p" \
         | sort -u \
         | sort -t. -k1.2,1n -k2,2n -k3,3n \
@@ -247,22 +339,33 @@ for _cand in python3 python python3.14 python3.13 python3.12 python3.11 python3.
 done
 [ -n "$PY" ] || die "No Python >= 3.10 found in PATH"
 
+# The current folder must never shadow the engine's modules: `-c` puts ''
+# first on sys.path and `-m` puts the working directory there, so a
+# `click.py`, `rich/` or `apothem/` in the folder this runs from would run
+# instead of the real package. `-P` / PYTHONSAFEPATH does not exist on
+# Python 3.10 and `-I` would drop PYTHONPATH and the user site, so every such
+# start sets PYTHONSAFEPATH=1 and runs a `-c` program that first drops a
+# leading ''. Only sys.path changes; the working directory does not.
+DROP_CWD_FROM_PATH="import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+ENGINE_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+PIP_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('pip', run_name='__main__', alter_sys=True)"
+
 # CLI prerequisite check (robust probe; offers to install the missing deps).
 probe_missing_deps() {
     _missing=""
     for _dep in $RUNTIME_DEPS; do
-        "$PY" -c "import ${_dep}" >/dev/null 2>&1 || _missing="${_missing:+$_missing }${_dep}"
+        PYTHONSAFEPATH=1 "$PY" -c "${DROP_CWD_FROM_PATH}; import ${_dep}" >/dev/null 2>&1 || _missing="${_missing:+$_missing }${_dep}"
     done
     printf '%s' "$_missing"
 }
 
 install_runtime_deps() {
-    if ! "$PY" -m pip --version >/dev/null 2>&1; then
+    if ! PYTHONSAFEPATH=1 "$PY" -c "$PIP_PROGRAM" --version >/dev/null 2>&1; then
         warn "pip is unavailable under $PY - install $* manually."
         return 1
     fi
     info "Installing $* under $PY (pip)"
-    if "$PY" -m pip install "$@"; then
+    if PYTHONSAFEPATH=1 "$PY" -c "$PIP_PROGRAM" install "$@"; then
         ok "Installed $*"
         return 0
     fi
@@ -319,8 +422,8 @@ elif { [ -e "$APOTHEM_HOME/.git" ] || [ -L "$APOTHEM_HOME/.git" ]; } && is_apoth
     if is_release_tag "$APOTHEM_REF" && [ "$APOTHEM_ALLOW_UNVERIFIED" != "1" ]; then
         # Release tags carry OpenPGP signatures whatever gpg.format says; git
         # runs gpg.openpgp.program for them, else gpg.program, else gpg.
-        _gpg_prog="$(git config --get gpg.openpgp.program 2>/dev/null || true)"
-        [ -n "$_gpg_prog" ] || _gpg_prog="$(git config --get gpg.program 2>/dev/null || true)"
+        _gpg_prog="$(ngit config --get gpg.openpgp.program 2>/dev/null || true)"
+        [ -n "$_gpg_prog" ] || _gpg_prog="$(ngit config --get gpg.program 2>/dev/null || true)"
         command -v "${_gpg_prog:-gpg}" >/dev/null 2>&1 \
             || die "gpg not found in PATH — needed to check the ${APOTHEM_REF} release tag's signature against the maintainer key. Install GnuPG (https://gnupg.org/download/), then re-run."
     fi
@@ -407,7 +510,8 @@ elif is_apothem_source "$APOTHEM_HOME"; then
 else
     die "No source found at $APOTHEM_HOME — run install.sh first or set APOTHEM_SOURCE"
 fi
-SRC_PATH="${SOURCE}/src"
+# Absolute, so no PYTHONPATH entry below can name the current folder.
+SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
 ENGINE_PYPATH="${SRC_PATH}/apothem/_vendor:${SRC_PATH}"
@@ -415,8 +519,8 @@ echo
 
 bold "Re-materializing harness: ${HARNESS}"
 [ -f "$PROFILE" ] || die "Profile not found at $PROFILE — run install.sh first or set APOTHEM_PROFILE"
-PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
-    "$PY" -m apothem update --harness "$HARNESS" --profile "$PROFILE"
+PYTHONSAFEPATH=1 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
+    "$PY" -c "$ENGINE_PROGRAM" update --harness "$HARNESS" --profile "$PROFILE"
 ok "Harness ${HARNESS} updated"
 echo
 

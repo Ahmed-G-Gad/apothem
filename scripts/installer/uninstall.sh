@@ -17,6 +17,53 @@
 
 set -eu
 
+# keep_full_pythonpath VALUE — print the entries of the PYTHONPATH value
+# VALUE that are full paths, joined the way Python splits them. Python turns
+# an empty or relative entry (":/x", "/x:", ".") into the current folder,
+# ahead of site-packages, so a sitecustomize.py, click.py or apothem/ there
+# would run in place of the real module. On POSIX an entry is kept only when
+# it starts with "/". Under Git Bash, MSYS or Cygwin the Python is a Windows
+# one that splits PYTHONPATH on ";": there an entry is kept only when it is a
+# drive path ("C:\x", "C:/x") or a network path ("\\server\x", "//server/x"),
+# so a rooted "\lib" and a drive-relative "C:rel" are dropped. Every Python
+# this script starts gets only the kept entries (mirrors install.sh).
+keep_full_pythonpath() {
+    case "$(uname -s 2>/dev/null || true)" in
+        MINGW* | MSYS* | CYGWIN*) _kp_sep=";" ;;
+        *) _kp_sep=":" ;;
+    esac
+    _kp_rest="$1"
+    _kp_keep=""
+    while [ -n "$_kp_rest" ]; do
+        _kp_entry="${_kp_rest%%"$_kp_sep"*}"
+        case "$_kp_rest" in
+            *"$_kp_sep"*) _kp_rest="${_kp_rest#*"$_kp_sep"}" ;;
+            *) _kp_rest="" ;;
+        esac
+        if [ "$_kp_sep" = ";" ]; then
+            case "$_kp_entry" in
+                [A-Za-z]:[\\/]* | [\\/][\\/]*) ;;
+                *) continue ;;
+            esac
+        else
+            case "$_kp_entry" in
+                /*) ;;
+                *) continue ;;
+            esac
+        fi
+        _kp_keep="${_kp_keep:+${_kp_keep}${_kp_sep}}${_kp_entry}"
+    done
+    printf '%s' "$_kp_keep"
+}
+_pp_keep="$(keep_full_pythonpath "${PYTHONPATH:-}"; printf x)"
+_pp_keep="${_pp_keep%x}"
+if [ -n "$_pp_keep" ]; then
+    PYTHONPATH="$_pp_keep"
+    export PYTHONPATH
+else
+    unset PYTHONPATH
+fi
+
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 ASSUME_YES=0
@@ -95,7 +142,9 @@ elif is_apothem_source "$APOTHEM_HOME"; then
     SOURCE="$APOTHEM_HOME"
 fi
 [ -n "$SOURCE" ] || die "No apothem source found at $APOTHEM_HOME — nothing to uninstall"
+# Absolute, so no PYTHONPATH entry below can name the current folder.
 SRC_PATH="${SOURCE}/src"
+case "$SRC_PATH" in /*) ;; *) SRC_PATH="$(pwd)/${SRC_PATH}" ;; esac
 
 if [ "$ASSUME_YES" -eq 0 ]; then
     printf "  Remove %s harness configuration? [y/N] " "$HARNESS"
@@ -109,8 +158,15 @@ fi
 bold "Uninstalling harness: ${HARNESS}"
 # Vendor-first PYTHONPATH mirrors the install/update invocations.
 ENGINE_PYPATH="${SRC_PATH}/apothem/_vendor:${SRC_PATH}"
-PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
-    "$PY" -m apothem uninstall --harness "$HARNESS" --yes
+# The current folder must never shadow the engine's modules: `-m` puts it
+# first on sys.path and `-c` puts '' there. `-P` / PYTHONSAFEPATH does not
+# exist on Python 3.10 and `-I` would drop PYTHONPATH and the user site, so
+# the engine starts with PYTHONSAFEPATH=1 and a `-c` program that first drops
+# a leading '' (mirrors install.sh). Only sys.path changes.
+DROP_CWD_FROM_PATH="import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+ENGINE_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+PYTHONSAFEPATH=1 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
+    "$PY" -c "$ENGINE_PROGRAM" uninstall --harness "$HARNESS" --yes
 ok "Harness ${HARNESS} uninstalled"
 echo
 
@@ -119,7 +175,9 @@ echo
 # Remove the `apothem` PATH shim install.sh placed at
 # ${APOTHEM_BIN_DIR:-$HOME/.local/bin}/apothem (same dir/filename derivation).
 # Only the file carrying the install.sh-generated marker is removed, so an
-# operator's own `apothem` on PATH is never touched. Idempotent: absent shim is
+# operator's own `apothem` on PATH is never touched. Every install.sh since
+# 1.0.1 writes that marker line, both the earlier `-m apothem` shim and the
+# current one, so both are removed. Idempotent: absent shim is
 # a no-op. Never removes the directory — only the specific shim file.
 SHIM_BIN_DIR="${APOTHEM_BIN_DIR:-$HOME/.local/bin}"
 SHIM="${SHIM_BIN_DIR}/apothem"

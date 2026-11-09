@@ -38,6 +38,29 @@ contains `src/apothem`, the installer uses it directly, never touches
 `APOTHEM_REPO` / `APOTHEM_REF`, and skips tag resolution and signature
 verification (nothing is fetched to verify).
 
+`APOTHEM_SOURCE` and running a checkout's own installer script by its path
+(from any folder) are the only two ways to use a local tree. A piped one-liner
+(`curl ... | sh`, `irm ... | iex`) never uses one: it ignores the current folder
+and its parent folders, and fetches and verifies the release. The engine and the
+`apothem` command never import `click`, `rich` or `apothem` modules from the
+current folder.
+
+Empty and relative entries in your own `PYTHONPATH` are not passed on to the
+engine by any launcher (the installers, updaters, uninstallers, the POSIX and
+Windows `apothem` shims, and the npm launcher). A kept entry must be a full
+path: on Windows a drive path such as `C:\lib` or a network path, elsewhere a
+path that starts with `/`. A rooted `\lib` or a drive-relative `C:lib` is
+dropped. Under Git Bash, Windows-style entries are kept as such. The
+installers' `git` commands that do not work on a clone do not read a
+repository in the current folder.
+
+Those `git` commands run from an empty temporary folder that the installer
+creates for the run, so a relative path in a git environment variable
+(`GIT_CONFIG_GLOBAL`, `GIT_SSH` and similar) no longer points where it did
+before. Use an absolute path in those variables. A relative `APOTHEM_REPO` that
+names a folder or a file (such as a git bundle) is still resolved from the
+folder you started in.
+
 The installers ignore the git environment variables that redirect git
 (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` and similar), and they stop
 when `APOTHEM_REPO` starts with `-`, so a value cannot be read as a git

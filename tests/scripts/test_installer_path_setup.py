@@ -42,11 +42,18 @@ def _read(name: str) -> str:
 
 @pytest.mark.parametrize("name", ["install.sh", "install.ps1"])
 def test_installer_invokes_cli_path_independently(name: str) -> None:
-    """The installer drives apothem via ``-m apothem`` so its own calls succeed
-    with no launcher on PATH."""
+    """The installer runs the ``apothem`` module itself, so its own calls
+    succeed with no launcher on PATH.
+
+    It starts the module through ``runpy`` from a ``-c`` program that drops the
+    current folder from ``sys.path`` (with ``PYTHONSAFEPATH=1``), not through
+    ``-m apothem``, which puts the current folder first on ``sys.path``.
+    """
     content = _read(name)
-    assert "-m apothem install" in content
-    assert "-m apothem verify" in content
+    assert "runpy.run_module('apothem', run_name='__main__', alter_sys=True)" in content
+    assert "PYTHONSAFEPATH" in content
+    assert "-m apothem install" not in content
+    assert "-m apothem verify" not in content
 
 
 @pytest.mark.parametrize(
@@ -58,3 +65,19 @@ def test_installer_carries_no_managed_path_block(name: str) -> None:
     content = _read(name)
     for marker in _RETIRED_PATH_MARKERS:
         assert marker not in content, f"{name} carries retired PATH idiom: {marker}"
+
+
+@pytest.mark.parametrize("name", ["install.sh", "update.sh", "uninstall.sh"])
+def test_posix_scripts_start_no_module_with_dash_m(name: str) -> None:
+    """The POSIX installer, updater and uninstaller start the engine and pip
+    through ``runpy`` with ``PYTHONSAFEPATH=1``, never ``-m``, which puts the
+    current folder first on ``sys.path``; nor do their banners suggest
+    ``-m apothem``."""
+    content = _read(name)
+    assert "PYTHONSAFEPATH=1" in content
+    assert "runpy.run_module('apothem', run_name='__main__', alter_sys=True)" in content
+    for started in ('-m apothem "', "-m apothem <command>", "-m apothem quickstart"):
+        assert started not in content, f"{name} starts {started!r}"
+    assert "-m apothem uninstall" not in content
+    assert "-m pip --version" not in content
+    assert '-m pip install "$@"' not in content

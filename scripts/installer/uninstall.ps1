@@ -24,6 +24,28 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
+# A relative APOTHEM_HOME is resolved once, here, against the current
+# file-system folder (never a registry or other location the session sits
+# in), so every path built from it (the engine paths in PYTHONPATH and in
+# the shim among them) is a full path, never one Python would read against
+# whatever folder it starts in. A value that names no file-system path
+# stops the run.
+$ApothemHomeValue = $ApothemHome
+$HomeProvider = $null
+try {
+    Push-Location -LiteralPath (Get-Location -PSProvider FileSystem).ProviderPath
+    try {
+        $HomeDrive = $null
+        $ApothemHome = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ApothemHomeValue, [ref]$HomeProvider, [ref]$HomeDrive)
+    } finally {
+        Pop-Location
+    }
+} catch {
+    $HomeProvider = $null
+}
+if (-not $HomeProvider -or $HomeProvider.Name -ne 'FileSystem') {
+    Write-Error "  x APOTHEM_HOME is not a usable folder path: $ApothemHomeValue"
+}
 
 # Colour only an interactive console. NO_COLOR (https://no-color.org/) or
 # redirected output (a pipe, a file, a CI log) gets plain text.
@@ -40,6 +62,40 @@ function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
 Write-Bold "Apothem uninstaller"
 
+# The current folder must never shadow the engine's modules (mirrors
+# install.ps1): the engine starts with PYTHONSAFEPATH=1 and a `-c` program
+# whose first statement drops a leading '' from sys.path, never with
+# `-m apothem`, which puts the working directory first. The programs hold no
+# double quote, which Windows PowerShell 5.1 strips from a native command's
+# argument.
+$DropCwdFromPath = "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+$EngineProgram = "$DropCwdFromPath; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+
+# Test-AbsolutePath PATH - $true when PATH is a full path. On Windows that is
+# a drive letter and a separator (X:\ or X:/) or two separators (a \\server
+# or //server share); elsewhere a leading /. A drive-relative C:x or a
+# rooted \x is not. Every launcher uses this one rule.
+function Test-AbsolutePath {
+    param([string]$Path)
+    if (-not $Path) { return $false }
+    if ([System.IO.Path]::PathSeparator -eq ';') { return ($Path -match '^([A-Za-z]:[\\/]|[\\/]{2})') }
+    return $Path.StartsWith('/')
+}
+
+# Get-SafePythonPath LEAD USER - LEAD followed by the entries of USER (the
+# caller's PYTHONPATH) that are full paths. Python reads an empty or relative
+# entry as the current folder, whatever PYTHONSAFEPATH says, so those are
+# dropped (mirrors install.ps1). $null when nothing is left.
+function Get-SafePythonPath {
+    param([string]$Lead, [string]$UserPath)
+    $Sep = [System.IO.Path]::PathSeparator
+    $Kept = @()
+    if ($Lead) { $Kept += $Lead }
+    if ($UserPath) { $Kept += @($UserPath.Split($Sep) | Where-Object { Test-AbsolutePath $_ }) }
+    if ($Kept.Count -eq 0) { return $null }
+    return ($Kept -join $Sep)
+}
+
 function Test-ApothemSource {
     param([string]$Dir)
     if (-not (Test-Path -LiteralPath ([System.IO.Path]::Combine($Dir, 'src', 'apothem')))) { return $false }
@@ -47,14 +103,21 @@ function Test-ApothemSource {
            (Test-Path -LiteralPath (Join-Path $Dir '.claude-plugin'))
 }
 
-# Resolve a Python interpreter >= 3.10.
+# Resolve a Python interpreter >= 3.10. The probes get the caller's
+# PYTHONPATH without its empty and relative entries.
 $PY = $null
-foreach ($Cmd in @('python3', 'python', 'python3.14', 'python3.13', 'python3.12', 'python3.11', 'python3.10')) {
-    $Resolved = Get-Command $Cmd -ErrorAction SilentlyContinue
-    if (-not $Resolved) { continue }
-    if ($Resolved.Source -and $Resolved.Source -match 'WindowsApps') { continue }
-    & $Cmd -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 10) else 1)' 2>$null
-    if ($LASTEXITCODE -eq 0) { $PY = if ($Resolved.Source) { $Resolved.Source } else { $Cmd }; break }
+$PriorProbePyPath = $env:PYTHONPATH
+$env:PYTHONPATH = Get-SafePythonPath '' $PriorProbePyPath
+try {
+    foreach ($Cmd in @('python3', 'python', 'python3.14', 'python3.13', 'python3.12', 'python3.11', 'python3.10')) {
+        $Resolved = Get-Command $Cmd -ErrorAction SilentlyContinue
+        if (-not $Resolved) { continue }
+        if ($Resolved.Source -and $Resolved.Source -match 'WindowsApps') { continue }
+        & $Cmd -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 10) else 1)' 2>$null
+        if ($LASTEXITCODE -eq 0) { $PY = if ($Resolved.Source) { $Resolved.Source } else { $Cmd }; break }
+    }
+} finally {
+    $env:PYTHONPATH = $PriorProbePyPath
 }
 if (-not $PY) { Write-Fail "No Python >= 3.10 found in PATH - nothing to uninstall" }
 
@@ -81,30 +144,39 @@ Write-Bold "Uninstalling harness: $Harness"
 $VendorPath = [System.IO.Path]::Combine($SrcPath, 'apothem', '_vendor')
 $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 $PriorPyPath = $env:PYTHONPATH
-$env:PYTHONPATH = if ($PriorPyPath) { "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" } else { $EnginePyPath }
+$PriorSafePath = $env:PYTHONSAFEPATH
+$env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
+$env:PYTHONSAFEPATH = '1'
 try {
-    & $PY -m apothem uninstall --harness $Harness --yes
+    & $PY -c $EngineProgram uninstall --harness $Harness --yes
     if ($LASTEXITCODE -ne 0) { Write-Fail "Harness uninstall failed for $Harness" }
     Write-Ok "Harness $Harness uninstalled"
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
+    $env:PYTHONSAFEPATH = $PriorSafePath
 }
 
 # Entry-point shim ------------------------------------------------------------
 #
 # Remove the `apothem.cmd` PATH shim install.ps1 placed at
 # ${APOTHEM_BIN_DIR:-%LOCALAPPDATA%\Microsoft\WindowsApps}\apothem.cmd (same
-# dir/filename derivation). The .cmd body carries no marker comment, so match
-# its distinctive `-m apothem %*` forwarding line before removing — an
-# operator's own `apothem.cmd` on PATH is never touched. Idempotent: absent
-# shim is a no-op. Never removes the directory — only the specific shim file.
+# dir/filename derivation). It is removed only when it is Apothem's: the
+# shim install.ps1 writes now carries the line
+# `rem Apothem entry-point shim (generated by install.ps1).`, and the one
+# releases 1.0.1 to 1.5.0 wrote ends in the forwarding line `"<python>" -m
+# apothem %*`. An operator's own `apothem.cmd` on PATH is never touched.
+# Idempotent: absent shim is a no-op. Never removes the directory, only the
+# specific shim file.
 $DefaultBinDir = [System.IO.Path]::Combine($env:LOCALAPPDATA, 'Microsoft', 'WindowsApps')
 $BinDir = if ($env:APOTHEM_BIN_DIR) { $env:APOTHEM_BIN_DIR } else { $DefaultBinDir }
 $Shim = Join-Path $BinDir 'apothem.cmd'
 if (Test-Path -LiteralPath $Shim) {
     $ShimText = Get-Content -LiteralPath $Shim -Raw -ErrorAction SilentlyContinue
-    if ($ShimText -and $ShimText -match '(?m)^"[^"]*"\s+-m apothem %\*') {
+    $ShimIsOurs = $ShimText -and (
+        ($ShimText -match '(?m)^rem Apothem entry-point shim \(generated by install\.ps1\)\.\r?$') -or
+        ($ShimText -match '(?m)^"[^"]*"\s+-m apothem %\*'))
+    if ($ShimIsOurs) {
         try {
             Remove-Item -Force -LiteralPath $Shim
             Write-Ok "Removed apothem command: $Shim"

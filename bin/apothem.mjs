@@ -22,6 +22,20 @@ const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const vendorPath = join(packageRoot, "src", "apothem", "_vendor");
 const sourcePath = join(packageRoot, "src");
 
+// The current folder must never shadow the engine's modules. Python puts ''
+// (the working directory) first on sys.path for `-c`, and `-m` puts the working
+// directory there, so a `click.py`, `rich/` or `apothem/` in the folder the
+// user runs from would run instead of the real package. `-P` / PYTHONSAFEPATH
+// does not exist on Python 3.10, and `-I` would also drop PYTHONPATH and the
+// user site (where click and rich may be installed). So: PYTHONSAFEPATH=1 keeps
+// 3.11+ from adding the folder, and every start drops a leading '' itself.
+// Only sys.path changes; the working directory and the arguments are untouched.
+const dropCwdFromPath =
+  "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]; ";
+const engineProgram =
+  dropCwdFromPath +
+  "import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)";
+
 // The probe both enforces the version floor and rejects the Microsoft Store
 // launcher shims (zero-byte stubs under AppData\Local\Microsoft\WindowsApps).
 // Those stubs satisfy `python`/`py` on PATH but, when executed, open the Store
@@ -29,9 +43,24 @@ const sourcePath = join(packageRoot, "src");
 // via hooks/lib/find-python.sh, install.ps1) already rejects them. `sys.executable`
 // is printed so a real interpreter can be distinguished from a shim by path.
 const versionProbe =
-  "import sys; " +
+  dropCwdFromPath +
   `sys.exit(1) if sys.version_info[:2] < (${MIN_PYTHON[0]}, ${MIN_PYTHON[1]}) else ` +
   "print(sys.executable or '')";
+
+// An empty or relative PYTHONPATH entry (`:/x`, `/x:`, `.`) means the current
+// folder to Python, so only the user's full-path entries are passed on. On
+// Windows an entry is kept only when it starts with a drive letter and a
+// separator (`C:\` or `C:/`) or with two separators (a network path); a
+// rooted `\lib` or a drive-relative `C:lib` is dropped, because each still
+// depends on the current folder or drive. Elsewhere it must start with `/`.
+// This applies to the interpreter probe as well as to the engine run.
+const fullPathEntry =
+  process.platform === "win32"
+    ? /^([A-Za-z]:[\\/]|[\\/]{2})/
+    : /^\//;
+const userPythonPath = (process.env.PYTHONPATH || "")
+  .split(delimiter)
+  .filter((entry) => entry && fullPathEntry.test(entry));
 
 /** True when a resolved interpreter path is a Microsoft Store launcher shim. */
 function isWindowsAppsShim(execPath) {
@@ -49,6 +78,11 @@ function probe(candidate) {
   const [command, ...lead] = candidate;
   const result = spawnSync(command, [...lead, "-c", versionProbe], {
     encoding: "utf8",
+    env: {
+      ...process.env,
+      PYTHONSAFEPATH: "1",
+      PYTHONPATH: userPythonPath.join(delimiter),
+    },
   });
   if (result.status !== 0) {
     return false;
@@ -74,12 +108,11 @@ if (!interpreter) {
 const [command, ...lead] = interpreter;
 const env = {
   ...process.env,
-  PYTHONPATH: [vendorPath, sourcePath, process.env.PYTHONPATH]
-    .filter(Boolean)
-    .join(delimiter),
+  PYTHONSAFEPATH: "1",
+  PYTHONPATH: [vendorPath, sourcePath, ...userPythonPath].join(delimiter),
 };
 
-const run = spawnSync(command, [...lead, "-m", "apothem", ...process.argv.slice(2)], {
+const run = spawnSync(command, [...lead, "-c", engineProgram, ...process.argv.slice(2)], {
   stdio: "inherit",
   env,
 });
