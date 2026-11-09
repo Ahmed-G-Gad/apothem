@@ -44,8 +44,9 @@ from apothem.harnesses._shared.install_driver import (
     fidelity_is_faithful,
     write_bytes_safely,
 )
-from apothem.harnesses._shared.install_driver_pathsafety import (
+from apothem.harnesses._shared.install_driver_homelink import (
     link_leaving_home_refusal,
+    link_refusal_reason_and_fix,
 )
 from apothem.lib.harness_registry import (
     SUPPORTED_HARNESS_IDS,
@@ -478,7 +479,7 @@ def _refuse_profile_outside_home(profile_path: Path) -> None:
     """Raise when a link leads a profile write at *profile_path* out of the home.
 
     The rule the harness installs apply to their folders (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.link_leaving_home_refusal`):
+    :func:`~apothem.harnesses._shared.install_driver_homelink.link_leaving_home_refusal`):
     a path spelled inside the home, such as the default
     ``~/.config/apothem/profile.yaml``, is refused when a link on it leads out
     of the home; a link that stays inside the home (a dotfiles folder) is
@@ -496,16 +497,18 @@ def _refuse_profile_outside_home(profile_path: Path) -> None:
     if refusal is None:
         return
     link = refusal.detail.get("symlink", str(profile_path))
+    leads_to = refusal.detail.get("leads_to")
+    where = f" to {leads_to}" if leads_to and leads_to != link else ""
     if link == str(profile_path):
-        reason = f"{refusal.message}: {profile_path} is a link that leads outside "
+        reason = f"{refusal.message}: {profile_path} is a link{where}, outside "
         reason += "your home directory"
         fix = (
             "Pass --profile PATH with the path the link leads to, or make the "
             "link lead to a file inside your home directory."
         )
     else:
-        reason = f"{refusal.message}: {link} leads {profile_path} outside your "
-        reason += "home directory"
+        reason = f"{refusal.message}: {link} is a link{where}, so it leads "
+        reason += f"{profile_path} outside your home directory"
         fix = (
             "Make the link lead to a folder inside your home directory, or "
             "pass --profile PATH with the profile's own path outside your home "
@@ -554,15 +557,17 @@ def _write_profile_text_safely(
         operation=operation,
     )
     if result.outcome == "error":
+        reason, fix = link_refusal_reason_and_fix(result) or (
+            result.message,
+            "Choose a profile path inside a normal directory and check "
+            "file permissions.",
+        )
         raise _CliUserError(
             code="profile.write_failed",
             message="Apothem profile write failed.",
             field="profile",
-            reason=result.message,
-            fix=(
-                "Choose a profile path inside a normal directory and check "
-                "file permissions."
-            ),
+            reason=reason,
+            fix=fix,
         )
     return result
 
@@ -1107,19 +1112,25 @@ def _materialization_error(
 
     A result that carries its own structured ``code`` / ``fix`` in ``detail``
     (for example ``config.unparseable`` for an operator config the install
-    refuses to rewrite) surfaces those instead of the generic pair.
+    refuses to rewrite) surfaces those instead of the generic pair; a link
+    refusal names the link (see ``link_refusal_reason_and_fix``).
     """
     first = exc.run.errors[0] if exc.run.errors else None
     detail = first.detail if first is not None else {}
+    named = link_refusal_reason_and_fix(first) if first is not None else None
+    reason, fix = named or (
+        first.message if first is not None else str(exc),
+        detail.get(
+            "fix",
+            "Review the target path, permissions, and harness "
+            "support files before retrying.",
+        ),
+    )
     return _CliUserError(
         code=detail.get("code", "materialization.failed"),
         message="Apothem materialization failed.",
         field=first.operation if first is not None else "materialization",
-        reason=first.message if first is not None else str(exc),
-        fix=detail.get(
-            "fix",
-            "Review the target path, permissions, and harness support files "
-            "before retrying.",
-        ),
+        reason=reason,
+        fix=fix,
         files_written=tuple(files_written),
     ).to_dict()

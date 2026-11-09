@@ -17,14 +17,15 @@ from pathlib import Path
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
     KEPT_LINKS,
-    _existing_chain,
     _is_lexically_within,
     _is_link,
     _is_relative_to,
+    _link_below_floor,
     _normalized,
     _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
+    _write_boundary,
 )
 from .install_driver_types import (
     MaterializationOutcome,
@@ -97,11 +98,7 @@ def stale_blocker(
     refused with an error, the same way in a dry run and a real run.
     """
     live = protected_by(stale, protect)
-    link = (
-        next((p for p in _existing_chain(stale, allowed_root) if _is_link(p)), None)
-        if live is not None
-        else None
-    )
+    link = _link_below_floor(stale, allowed_root) if live is not None else None
     if live is not None and link is not None:
         # Kept on every run, and still there after an uninstall, when it points
         # at a folder Apothem no longer fills: the operator removes it.
@@ -128,11 +125,7 @@ def stale_blocker(
     refused = _validate_target_path(
         stale, allowed_root=allowed_root, operation="sweep_stale"
     )
-    through = (
-        _unsafe_symlink(stale, _normalized(allowed_root))
-        if refused is not None
-        else None
-    )
+    through = _unsafe_symlink(stale, allowed_root) if refused is not None else None
     if through is not None:
         # A link above the leftover path (a dotfiles folder linked in, say):
         # removing through it is what the write guard refuses, so the path is
@@ -331,7 +324,7 @@ def sweep_stale(
     warning.
     """
     results: list[MaterializationResult] = []
-    boundary = allowed_root or root
+    boundary = _write_boundary(allowed_root, root)
     for legacy in stale_sweep:
         stale = root / legacy
         blocker = stale_blocker(stale, protect, boundary)

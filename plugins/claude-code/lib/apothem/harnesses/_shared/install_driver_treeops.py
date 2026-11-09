@@ -19,6 +19,7 @@ from .install_driver_pathsafety import (
     _remove_tree_keeping_links,
     _skip_links_into,
     _validate_target_path,
+    _write_boundary,
     kept_links_detail,
 )
 from .install_driver_types import (
@@ -92,7 +93,7 @@ def replace_tree(
     root = install_root or dst.parent
     target_error = _validate_target_path(
         dst,
-        allowed_root=allowed_root or root,
+        allowed_root=_write_boundary(allowed_root, root),
         operation="replace_tree",
     )
     if target_error is not None:
@@ -113,7 +114,7 @@ def replace_tree(
             dst,
             install_root=root,
             harness_name=harness_name,
-            allowed_root=allowed_root or root,
+            allowed_root=_write_boundary(allowed_root, root),
         )
         # A link inside the old tree is the operator's: it stays, and the copy
         # goes around it.

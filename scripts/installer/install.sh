@@ -178,6 +178,108 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
+# The caller's PYTHONPATH is set aside until the Python this script runs is
+# chosen: which separator and which path form are safe depends on that
+# Python, not on the shell (see settle_python_form). Until then every Python
+# started here (the locator, the version probes) runs with no PYTHONPATH.
+# APOTHEM_CALLER_PYTHONPATH is a plain shell variable, never exported.
+unset APOTHEM_CALLER_PYTHONPATH
+APOTHEM_CALLER_PYTHONPATH="${PYTHONPATH:-}"
+unset PYTHONPATH
+PY_WINDOWS=""
+PY_PATHSEP=""
+
+# keep_full_pythonpath VALUE — print the entries of the PYTHONPATH value
+# VALUE that are full paths, joined the way the chosen Python splits them.
+# Python turns an empty or relative entry (":/x", "/x:", ".") into the
+# current folder, ahead of site-packages, so a sitecustomize.py, click.py or
+# apothem/ there would run in place of the real module. For a POSIX Python
+# (including Cygwin's and MSYS2's own python3) the value is split on ":" and
+# an entry is kept only when it starts with "/". For a Windows Python (the
+# usual one under Git Bash) it is split on ";" and an entry is kept only when
+# it is a drive path ("C:\x", "C:/x") or a network path ("\\server\x",
+# "//server/x"), so a rooted "\lib", a drive-relative "C:rel" and a "/c/x"
+# entry are dropped. Reads PY_WINDOWS, which settle_python_form sets.
+keep_full_pythonpath() {
+    if [ "$PY_WINDOWS" = "1" ]; then _kp_sep=";"; else _kp_sep=":"; fi
+    _kp_rest="$1"
+    _kp_keep=""
+    while [ -n "$_kp_rest" ]; do
+        _kp_entry="${_kp_rest%%"$_kp_sep"*}"
+        case "$_kp_rest" in
+            *"$_kp_sep"*) _kp_rest="${_kp_rest#*"$_kp_sep"}" ;;
+            *) _kp_rest="" ;;
+        esac
+        if [ "$PY_WINDOWS" = "1" ]; then
+            case "$_kp_entry" in
+                [A-Za-z]:[\\/]* | [\\/][\\/]*) ;;
+                *) continue ;;
+            esac
+        else
+            case "$_kp_entry" in
+                /*) ;;
+                *) continue ;;
+            esac
+        fi
+        _kp_keep="${_kp_keep:+${_kp_keep}${_kp_sep}}${_kp_entry}"
+    done
+    printf '%s' "$_kp_keep"
+}
+
+# settle_python_form — ask the chosen Python ($PY) which PYTHONPATH form it
+# reads, then give it the caller's full-path entries in that form. A Windows
+# Python (the usual one under Git Bash) splits on ";" and reads Windows
+# paths. A POSIX Python, including Cygwin's and MSYS2's own python3, splits
+# on ":" and reads POSIX paths. The shell cannot tell them apart: uname says
+# MINGW, MSYS or CYGWIN for both, and a ";"-joined list of Windows paths
+# reads to a POSIX Python as relative entries such as "C", folders in the
+# current folder. The probe runs isolated (-I) and needs only os and sys.
+# Sets PY_WINDOWS (1 or 0) and PY_PATHSEP, and exports the kept entries as
+# PYTHONPATH (unset when none are kept).
+settle_python_form() {
+    _pf_form="$("$PY" -I -c 'import os, sys; sys.stdout.write(os.pathsep + sys.platform)' 2>/dev/null)" \
+        || _pf_form=""
+    case "$_pf_form" in
+        ";win32") PY_WINDOWS=1; PY_PATHSEP=";" ;;
+        :?*) PY_WINDOWS=0; PY_PATHSEP=":" ;;
+        *) die "Could not tell which PYTHONPATH form ${PY} reads (it printed '${_pf_form}')." ;;
+    esac
+    _pp_keep="$(keep_full_pythonpath "$APOTHEM_CALLER_PYTHONPATH"; printf x)"
+    _pp_keep="${_pp_keep%x}"
+    if [ -n "$_pp_keep" ]; then
+        PYTHONPATH="$_pp_keep"
+        export PYTHONPATH
+    else
+        unset PYTHONPATH
+    fi
+}
+
+# native_path PATH — print PATH in the form the chosen Python reads: the
+# Windows form (cygpath -w) for a Windows Python, unchanged for a POSIX one.
+# Returns 1, so the caller stops, when cygpath fails or prints anything but a
+# drive or network path, or when a POSIX path does not start with "/".
+native_path() {
+    if [ "$PY_WINDOWS" = "1" ]; then
+        _np_path="$(cygpath -w -- "$1" 2>/dev/null)" || return 1
+        case "$_np_path" in
+            [A-Za-z]:[\\/]* | [\\/][\\/]*) printf '%s\n' "$_np_path" ;;
+            *) return 1 ;;
+        esac
+    else
+        case "$1" in
+            /*) printf '%s\n' "$1" ;;
+            *) return 1 ;;
+        esac
+    fi
+}
+
+# engine_pythonpath — print the PYTHONPATH an engine run gets: the engine
+# paths, then the full-path entries of the caller's PYTHONPATH that
+# settle_python_form kept, joined with PY_PATHSEP.
+engine_pythonpath() {
+    printf '%s' "${ENGINE_PYPATH}${PYTHONPATH:+${PY_PATHSEP}${PYTHONPATH}}"
+}
+
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
 # A trailing "/" or "/." would make the link test and the renames beside
 # APOTHEM_HOME act on the folder a link leads to, not on the link.
@@ -360,6 +462,58 @@ die()   { printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$*" >&2; exit 1; 
 case "$APOTHEM_REPO" in
     -*) die "APOTHEM_REPO must be a repository URL or path, not an option: ${APOTHEM_REPO}" ;;
 esac
+# A relative local path names a folder or a file (a git bundle) below the
+# current one; git runs from another folder (see ngit), so make it absolute
+# first.
+case "$APOTHEM_REPO" in
+    /*|*:*) ;;
+    *)
+        if [ -d "$APOTHEM_REPO" ]; then
+            APOTHEM_REPO="$(cd -P -- "$APOTHEM_REPO" && pwd -P)"
+        elif [ -e "$APOTHEM_REPO" ]; then
+            _repo_dir="$(cd -P -- "$(dirname -- "$APOTHEM_REPO")" && pwd -P)"
+            APOTHEM_REPO="${_repo_dir%/}/$(basename -- "$APOTHEM_REPO")"
+        fi
+        ;;
+esac
+
+# abs_path PATH — print PATH made absolute against the current folder.
+abs_path() {
+    case "$1" in
+        /*) printf '%s\n' "$1" ;;
+        *) printf '%s/%s\n' "$(pwd)" "$1" ;;
+    esac
+}
+
+# ngit ARGS — run a git command that works on no clone of its own (ls-remote,
+# clone, init, a global config read) from an empty folder made for it, with
+# GIT_CEILING_DIRECTORIES at that folder's parent. Run from the current
+# folder, git would read the config of a repository there or above it, and
+# that config can make git run programs (an ext:: url rewrite,
+# core.sshCommand). Every path argument must be absolute.
+ngit() (
+    _ng_dir="$(mktemp -d)" || exit 1
+    # The subshell does not keep the caller's signal traps: remove the
+    # folder on any exit, and turn a signal into an exit so that runs.
+    trap 'cd / && rm -rf -- "$_ng_dir"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap 'exit 129' HUP
+    cd -P -- "$_ng_dir" || exit 1
+    _ng_dir="$(pwd -P)"
+    if GIT_CEILING_DIRECTORIES="$(dirname -- "$_ng_dir")" git "$@"; then
+        _ng_rc=0
+    else
+        _ng_rc=$?
+    fi
+    cd / && rm -rf -- "$_ng_dir"
+    exit "$_ng_rc"
+)
+
+# sq TEXT — print TEXT as one single-quoted shell word.
+sq() {
+    printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
 
 # resolve_latest_tag REPO — print the highest vMAJOR.MINOR.PATCH tag advertised
 # by the remote, or nothing when the remote carries no release tag. Uses only
@@ -374,7 +528,7 @@ resolve_latest_tag() {
     # the "refs/tags/" prefix, dedupe, then sort by the three numeric
     # components and take the highest.
     _rlt_tab="$(printf '\t')"
-    git ls-remote --tags "$1" 2>/dev/null \
+    ngit ls-remote --tags "$1" 2>/dev/null \
         | sed -n "s#^[0-9a-f][0-9a-f]*${_rlt_tab}refs/tags/\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\(\^{}\)\{0,1\}\$#\1#p" \
         | sort -u \
         | sort -t. -k1.2,1n -k2,2n -k3,3n \
@@ -485,8 +639,8 @@ is_release_tag() {
 # check. Apothem release tags carry OpenPGP signatures whatever gpg.format
 # says: that setting picks how git signs, not how it verifies.
 require_gpg() {
-    _rg_prog="$(git config --get gpg.openpgp.program 2>/dev/null || true)"
-    [ -n "$_rg_prog" ] || _rg_prog="$(git config --get gpg.program 2>/dev/null || true)"
+    _rg_prog="$(ngit config --get gpg.openpgp.program 2>/dev/null || true)"
+    [ -n "$_rg_prog" ] || _rg_prog="$(ngit config --get gpg.program 2>/dev/null || true)"
     command -v "${_rg_prog:-gpg}" >/dev/null 2>&1 \
         || die "gpg not found in PATH — needed to check the ${APOTHEM_REF} release tag's signature against the maintainer key. Install GnuPG (https://gnupg.org/download/), then re-run."
 }
@@ -977,20 +1131,108 @@ echo
 # Prerequisite: Python >= 3.10 ----------------------------------------------------
 #
 # Locate a real CPython >= 3.10, rejecting Microsoft Store launcher shims.
-# The locator at hooks/lib/find-python.sh is reused when this script runs
-# from a source tree; otherwise an inline probe applies the same version
-# floor and the same Store-shim rejection against PATH candidates.
+# The locator at src/apothem/hooks/lib/find-python.sh is reused when a local
+# tree is in use (see own_checkout below); otherwise an inline probe applies
+# the same version floor and the same Store-shim rejection against PATH
+# candidates.
 
 bold "Checking prerequisites"
 
+is_apothem_source() {
+    [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }
+}
+
+# own_checkout — print the checkout this script file belongs to, if any.
+# It is found by the script's own path and nothing else: $0, with any
+# symbolic links followed, must be an existing regular file named install.sh
+# in a scripts/installer folder whose ../.. is an Apothem source. A piped run (`curl … | sh`, `sh < install.sh`)
+# has $0 set to the shell's name, so it never matches, and the current folder
+# and its parents are never searched: a folder shaped like an Apothem tree
+# there could otherwise put its own code in front of an unverified install.
+#
+# A bare `install.sh` with no "/" (as `sh -c "$(curl …)" install.sh` sets
+# it) names nothing on disk, so it is refused rather than looked up in the
+# current folder. A symbolic link, whatever its name, is followed to the
+# real file first, and the name and folder checks apply to that file.
+#
+# Under `sh -c "<text>" <name>`, $0 is whatever the caller typed, not the
+# file the text came from, so a path-shaped $0 there proves nothing. bash,
+# zsh and ksh put "c" in $- for a -c run, and that refuses it here. dash
+# leaves $- empty under -c, so with dash the check cannot tell; do not pass
+# a path-shaped name after `sh -c`.
+OWN_CHECKOUT_MAX_LINKS=40
+own_checkout() {
+    case "$-" in
+        *c*) return 1 ;;
+    esac
+    case "$0" in
+        /*) _oc_self="$0" ;;
+        */*) _oc_self="./$0" ;;
+        *) return 1 ;;
+    esac
+    _oc_links=0
+    while [ -L "$_oc_self" ]; do
+        _oc_links=$((_oc_links + 1))
+        [ "$_oc_links" -le "$OWN_CHECKOUT_MAX_LINKS" ] || return 1
+        _oc_target="$(readlink "$_oc_self" 2>/dev/null)" || return 1
+        case "$_oc_target" in
+            /*) _oc_self="$_oc_target" ;;
+            *) _oc_self="${_oc_self%/*}/${_oc_target}" ;;
+        esac
+    done
+    case "$_oc_self" in
+        */install.sh) ;;
+        *) return 1 ;;
+    esac
+    [ -f "$_oc_self" ] || return 1
+    _oc_dir="${_oc_self%/install.sh}"
+    [ -n "$_oc_dir" ] || _oc_dir="/"
+    _oc_dir="$(cd -P -- "$_oc_dir" 2>/dev/null && pwd -P)" || return 1
+    case "$_oc_dir" in
+        */scripts/installer) ;;
+        *) return 1 ;;
+    esac
+    _oc_root="$(cd -P -- "$_oc_dir/../.." 2>/dev/null && pwd -P)" || return 1
+    is_apothem_source "$_oc_root" || return 1
+    printf '%s\n' "$_oc_root"
+}
+
+# The local tree, if any: APOTHEM_SOURCE when set, else this script's own
+# checkout. An APOTHEM_SOURCE that is not an Apothem tree is refused under
+# "Locating Apothem source"; until then it supplies no locator.
+LOCAL_TREE=""
+LOCAL_KIND=""
+if [ -n "${APOTHEM_SOURCE:-}" ]; then
+    LOCAL_TREE="$(cd "$APOTHEM_SOURCE" 2>/dev/null && pwd || true)"
+    if [ -z "$LOCAL_TREE" ] || ! is_apothem_source "$LOCAL_TREE"; then
+        LOCAL_TREE=""
+    fi
+    LOCAL_KIND=explicit
+elif LOCAL_TREE="$(own_checkout)"; then
+    LOCAL_KIND=checkout
+else
+    LOCAL_TREE=""
+    # `sh install.sh` from inside scripts/installer looks like a checkout run
+    # but cannot be told apart from `sh -c "$(curl …)" install.sh`; say why
+    # the checkout is not used, and read nothing from the current folder.
+    # Only existence tests here: the note shows when this folder looks like a
+    # checkout's scripts/installer, never for a downloaded copy run in a
+    # folder of its own, and never under a -c run.
+    case "$-" in
+        *c*) _oc_note=0 ;;
+        *) _oc_note=1 ;;
+    esac
+    if [ "$_oc_note" = "1" ] && [ "$0" = "install.sh" ] \
+        && [ -f ./install.sh ] && [ -d ../../src/apothem ]; then
+        info "Not using a checkout: to install from one, run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE."
+    fi
+fi
+
 PY=""
-SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || true)"
 LOCATOR=""
-for _cand in \
-    "${SCRIPT_DIR}/../../src/apothem/hooks/lib/find-python.sh" \
-    "${SCRIPT_DIR}/../../hooks/lib/find-python.sh"; do
-    if [ -f "$_cand" ]; then LOCATOR="$_cand"; break; fi
-done
+if [ -n "$LOCAL_TREE" ] && [ -f "${LOCAL_TREE}/src/apothem/hooks/lib/find-python.sh" ]; then
+    LOCATOR="${LOCAL_TREE}/src/apothem/hooks/lib/find-python.sh"
+fi
 if [ -n "$LOCATOR" ]; then
     # shellcheck source=/dev/null
     . "$LOCATOR"
@@ -1017,6 +1259,7 @@ if [ -z "$PY" ]; then
 fi
 
 [ -n "$PY" ] || die "No Python >= 3.10 found in PATH"
+settle_python_form
 PY_VERSION="$("$PY" -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
 ok "$PY ($PY_VERSION)"
 
@@ -1028,10 +1271,24 @@ ok "$PY ($PY_VERSION)"
 # the chosen interpreter — auto-confirmed with --yes or APOTHEM_AUTO_INSTALL_DEPS=1,
 # prompted interactively, and declined (with manual guidance) in a piped
 # non-interactive session so the install never silently mutates the host.
+#
+# The current folder must never shadow the engine's modules. Python puts ''
+# (the working directory) first on sys.path for `-c`, and `-m` puts the
+# working directory there, so a `click.py`, `rich/` or `apothem/` in the
+# folder the installer (or the shim) runs from would run instead of the real
+# package. `-P` / PYTHONSAFEPATH does not exist on Python 3.10, and `-I` would
+# also drop PYTHONPATH and the user site (where click and rich may be
+# installed). So every such start sets PYTHONSAFEPATH=1 (3.11+ then adds
+# nothing) and runs a `-c` program whose first statement drops a leading ''.
+# Only sys.path changes; the working directory and the arguments do not.
+DROP_CWD_FROM_PATH="import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+ENGINE_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+PIP_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('pip', run_name='__main__', alter_sys=True)"
+
 probe_missing_deps() {
     _missing=""
     for _dep in $RUNTIME_DEPS; do
-        if ! "$PY" -c "import ${_dep}" >/dev/null 2>&1; then
+        if ! PYTHONSAFEPATH=1 "$PY" -c "${DROP_CWD_FROM_PATH}; import ${_dep}" >/dev/null 2>&1; then
             _missing="${_missing:+$_missing }${_dep}"
         fi
     done
@@ -1043,12 +1300,12 @@ probe_missing_deps() {
 # (non-fatally) on no-pip / no-network / PEP-668-externally-managed failures so
 # the caller can fall through to manual guidance.
 install_runtime_deps() {
-    if ! "$PY" -m pip --version >/dev/null 2>&1; then
+    if ! PYTHONSAFEPATH=1 "$PY" -c "$PIP_PROGRAM" --version >/dev/null 2>&1; then
         warn "pip is unavailable under ${PY} — install $* manually."
         return 1
     fi
     info "Installing $* under ${PY} (pip)"
-    if "$PY" -m pip install "$@"; then
+    if PYTHONSAFEPATH=1 "$PY" -c "$PIP_PROGRAM" install "$@"; then
         ok "Installed $*"
         return 0
     fi
@@ -1093,8 +1350,9 @@ echo
 # Source precedence:
 #   1. APOTHEM_SOURCE — an explicit local source tree (no fetch; verification
 #      is skipped because nothing is fetched).
-#   2. A surrounding local checkout (this script lives in scripts/installer/
-#      of an apothem source tree; no fetch; verification skipped).
+#   2. This script's own checkout (it was run by path from
+#      scripts/installer/ of an apothem source tree; no fetch; verification
+#      skipped). The current folder and its parents are never used.
 #   3. A git clone of APOTHEM_REPO into APOTHEM_HOME, pinned to the resolved
 #      ref (the latest release tag by default, or an explicit APOTHEM_REF),
 #      then signature-verified before materializing (idempotent: an existing
@@ -1102,30 +1360,20 @@ echo
 
 bold "Locating Apothem source"
 
-is_apothem_source() {
-    [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }
-}
-
 SOURCE=""
-if [ -n "${APOTHEM_SOURCE:-}" ]; then
-    SOURCE="$(cd "$APOTHEM_SOURCE" 2>/dev/null && pwd || true)"
-    [ -n "$SOURCE" ] && is_apothem_source "$SOURCE" \
+if [ "$LOCAL_KIND" = "explicit" ]; then
+    SOURCE="$LOCAL_TREE"
+    [ -n "$SOURCE" ] \
         || die "APOTHEM_SOURCE is not an apothem source tree: ${APOTHEM_SOURCE}"
     ok "Using explicit source: $SOURCE"
     # The local-source path fetches nothing, so there is no tag to resolve and
     # no signature to verify. State plainly what is being run and skip the
     # tag-resolution + verification gate (which applies only to fetched refs).
     info "Local source — skipping tag resolution and signature verification"
-elif [ -n "$SCRIPT_DIR" ]; then
-    _walk="$SCRIPT_DIR"
-    while [ -n "$_walk" ] && [ "$_walk" != "/" ]; do
-        if is_apothem_source "$_walk"; then SOURCE="$_walk"; break; fi
-        _walk="$(dirname "$_walk")"
-    done
-    if [ -n "$SOURCE" ]; then
-        ok "Using local checkout: $SOURCE"
-        info "Local checkout — skipping tag resolution and signature verification"
-    fi
+elif [ "$LOCAL_KIND" = "checkout" ]; then
+    SOURCE="$LOCAL_TREE"
+    ok "Using local checkout: $SOURCE"
+    info "Local checkout — skipping tag resolution and signature verification"
 fi
 
 # sha256_of FILE — print FILE's SHA-256 hex digest with whichever of
@@ -1292,6 +1540,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
     trap on_exit EXIT
     trap_signals_to_exit
     _ck_tmp="$(mktemp -d)"
+    _ck_tmp="$(abs_path "$_ck_tmp")"
     _ck_stage=""
     _ck_tag_commit=""
     if [ "$VERIFY_MODE" = "release" ]; then
@@ -1300,7 +1549,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
         bold "Verifying the ${APOTHEM_REF} release tag"
         # Only the tag and the commit it points at are fetched, into a
         # throwaway repository; the source itself comes from the archive.
-        git init --quiet --bare "${_ck_tmp}/tag.git" \
+        ngit init --quiet --bare "${_ck_tmp}/tag.git" \
             || die "Could not create a scratch repository to check the ${APOTHEM_REF} tag"
         git -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
             "+refs/tags/${APOTHEM_REF}:refs/tags/${APOTHEM_REF}" >"${_ck_tmp}/fetch.log" 2>&1 \
@@ -1440,11 +1689,11 @@ if [ -z "$SOURCE" ]; then
             _cl_stage="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-clone.XXXXXX")" \
                 || die "Could not create a staging directory beside $APOTHEM_HOME"
         fi
-        _cl_tree="${_cl_stage}/apothem"
+        _cl_tree="$(abs_path "${_cl_stage}/apothem")"
         info "Cloning ${APOTHEM_REPO}"
         # Full clone (no --single-branch) so both tags and branches are
         # checkout-able from the placed tree, then pin to the resolved ref.
-        git clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
+        ngit clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
             || die "git clone failed for $APOTHEM_REPO"
         bold "Verifying source signature"
         check_fetched_ref "$_cl_tree"
@@ -1466,19 +1715,19 @@ if [ -z "$SOURCE" ]; then
     fi
     echo
 fi
-SRC_PATH="${SOURCE}/src"
+# Absolute, so no PYTHONPATH entry below can name the current folder.
+SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
 #
-# PYTHONPATH entries are joined with a literal ':' (the POSIX os.pathsep) here
-# and in every ${PYTHONPATH:+:${PYTHONPATH}} extension below. This is correct
-# for the documented target: a POSIX shell (dash/ash/bash) driving a POSIX
-# CPython, where os.pathsep is ':'. It is INTENTIONALLY NOT portable to a
-# native Windows CPython, whose os.pathsep is ';' — under Git Bash on Windows a
-# ':'-joined PYTHONPATH would not split into two entries and the vendored tree
-# would not resolve. Windows operators use install.ps1, which joins with
-# [System.IO.Path]::PathSeparator (';') for exactly this reason.
-ENGINE_PYPATH="${SRC_PATH}/apothem/_vendor:${SRC_PATH}"
+# The entries are joined with PY_PATHSEP and written in the form the chosen
+# Python reads (see settle_python_form and native_path): ":" and POSIX paths
+# for a POSIX Python, ";" and Windows paths for a Windows one.
+_ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
+    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+_ep_src="$(native_path "${SRC_PATH}")" \
+    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 echo
 
 # Profile setup ------------------------------------------------------------------
@@ -1521,8 +1770,8 @@ set --
 [ "$CLEAN" = "1" ]      && set -- "$@" --clean
 [ "$DRY_RUN" = "1" ]    && set -- "$@" --dry-run
 [ "$ASSUME_YES" = "1" ] && set -- "$@" --yes
-PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
-    "$PY" -m apothem install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@"
+PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
+    "$PY" -c "$ENGINE_PROGRAM" install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@"
 if [ "$DRY_RUN" = "1" ]; then
     ok "Harness ${HARNESS} preview generated (dry-run)"
 else
@@ -1542,8 +1791,8 @@ if [ "${APOTHEM_SKIP_VERIFY:-0}" = "1" ]; then
     warn "APOTHEM_SKIP_VERIFY=1 — skipping verification"
 else
     bold "Verifying installation"
-    if PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
-        "$PY" -m apothem verify --harness "$HARNESS"; then
+    if PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
+        "$PY" -c "$ENGINE_PROGRAM" verify --harness "$HARNESS"; then
         ok "verify passed"
     else
         warn "verify reported issues — run the verify command below for details"
@@ -1558,8 +1807,9 @@ echo
 # engine with the vendored PYTHONPATH (mirroring the self-contained banner). The
 # POSIX user-bin convention is $HOME/.local/bin (override with APOTHEM_BIN_DIR).
 # When the bin directory is not already on PATH, the banner prints the exact
-# line to add it and falls back to the self-contained form, so it never
-# advertises a bare `apothem` command the operator cannot yet resolve.
+# line to add it and the shim's full path (or, with no shim, the self-contained
+# form), so it never advertises a bare `apothem` command the operator cannot
+# yet resolve.
 
 BIN_DIR="${APOTHEM_BIN_DIR:-$HOME/.local/bin}"
 SHIM="${BIN_DIR}/apothem"
@@ -1569,8 +1819,33 @@ if mkdir -p "$BIN_DIR" 2>/dev/null; then
     if {
         printf '%s\n' '#!/bin/sh'
         printf '%s\n' '# Apothem entry-point shim (generated by install.sh).'
-        printf 'PYTHONPATH="%s${PYTHONPATH:+:${PYTHONPATH}}" exec "%s" -m apothem "$@"\n' \
-            "$ENGINE_PYPATH" "$PY_ABS"
+        printf '%s\n' '# The current folder is kept off sys.path, so its modules never shadow the engine:'
+        printf '%s\n' '# only the absolute entries of PYTHONPATH are passed on, after the engine paths.'
+        printf 'apothem_pp=%s\n' "$(sq "$ENGINE_PYPATH")"
+        printf 'apothem_sep=%s\n' "$(sq "$PY_PATHSEP")"
+        cat <<'SHIM_BODY'
+# apothem_sep is the separator the engine's Python reads: ":" for a POSIX
+# Python, ";" for a Windows one, where only drive and network paths are kept.
+apothem_rest="${PYTHONPATH:-}"
+while [ -n "$apothem_rest" ]; do
+    apothem_entry="${apothem_rest%%"$apothem_sep"*}"
+    case "$apothem_rest" in
+        *"$apothem_sep"*) apothem_rest="${apothem_rest#*"$apothem_sep"}" ;;
+        *) apothem_rest="" ;;
+    esac
+    if [ "$apothem_sep" = ";" ]; then
+        case "$apothem_entry" in
+            [A-Za-z]:[\\/]* | [\\/][\\/]*) apothem_pp="${apothem_pp};${apothem_entry}" ;;
+        esac
+    else
+        case "$apothem_entry" in
+            /*) apothem_pp="${apothem_pp}:${apothem_entry}" ;;
+        esac
+    fi
+done
+SHIM_BODY
+        printf 'PYTHONSAFEPATH=1 PYTHONPATH="$apothem_pp" exec %s -c %s "$@"\n' \
+            "$(sq "$PY_ABS")" "$(sq "$ENGINE_PROGRAM")"
     } >"$SHIM" 2>/dev/null; then
         if chmod +x "$SHIM" 2>/dev/null; then SHIM_OK=1; fi
     fi
@@ -1615,20 +1890,25 @@ EOF
 else
     if [ "$SHIM_OK" = "1" ]; then
         info "Add ${BIN_DIR} to your PATH, then run the guided setup: apothem quickstart"
-        printf '    export PATH="%s:$PATH"\n' "$BIN_DIR"
+        printf '    export PATH=%s:"$PATH"\n' "$(sq "$BIN_DIR")"
         echo
+        RUN_HEADER="Until then, run the apothem command by its full path:"
+        RUN_CMD="$(sq "$SHIM")"
+    else
+        RUN_HEADER="Run the engine from the bundled source (self-contained — no package installation; the current folder is kept off sys.path):"
+        RUN_CMD="PYTHONSAFEPATH=1 PYTHONPATH=$(sq "$ENGINE_PYPATH") $(sq "$PY") -c $(sq "$ENGINE_PROGRAM")"
     fi
     cat <<EOF
-Run the engine from the bundled source (self-contained — no package installation):
-  PYTHONPATH="${ENGINE_PYPATH}" "${PY}" -m apothem <command>
+${RUN_HEADER}
+  ${RUN_CMD} <command>
 
 Recommended first step — the guided setup (profile -> preview -> install):
-  PYTHONPATH="${ENGINE_PYPATH}" "${PY}" -m apothem quickstart
+  ${RUN_CMD} quickstart
 
 Or run individual commands:
-  PYTHONPATH="${ENGINE_PYPATH}" "${PY}" -m apothem harnesses list   # list harnesses
-  PYTHONPATH="${ENGINE_PYPATH}" "${PY}" -m apothem doctor           # system health
-  PYTHONPATH="${ENGINE_PYPATH}" "${PY}" -m apothem profile edit     # edit profile
+  ${RUN_CMD} harnesses list   # list harnesses
+  ${RUN_CMD} doctor           # system health
+  ${RUN_CMD} profile edit     # edit profile
 
 Optional — once the 'apothem' command is on your PATH, enable <TAB> shell
 completion (opt-in; appends to your shell rc):

@@ -50,7 +50,7 @@ the same `--profile PATH` to the install; the install then still needs
 your home directory that a link leads out of it, such as `~/xdg` linked to
 another drive, stops the install, the uninstall and `apothem rollback` too. A
 link on a path the install writes inside `~/.config/opencode/` stops it as
-well, with `target path crosses a symlink`, or with `target escapes the
+well, with `target path crosses a link`, or with `target escapes the
 allowed materialization root` when that link leads out of `~/.config`.
 
 To install through a `~/.config` link that leaves your home directory, set
@@ -67,6 +67,12 @@ folders that install created go too. When `XDG_CONFIG_HOME` names `~/.config`
 by another spelling inside your home directory (`$HOME/.config` through a
 link, another case, or a short name), the install keeps using
 `~/.config/opencode`, so it stays one install.
+
+`XDG_CONFIG_HOME` does not have to come from your shell profile. A project's
+`.envrc` or a script you source can set it too. When it names a folder outside
+your home directory, install, update, uninstall and `apothem rollback` change
+files in that folder, because that is the folder it names. Check
+`XDG_CONFIG_HOME` before you run Apothem in a project folder that sets it.
 
 ## Profile-to-native-config mapping
 
@@ -214,7 +220,7 @@ An install made by an earlier release in `~/.config/opencode/` while
 The next install says so while its files are there; to remove it, run the
 uninstall with `XDG_CONFIG_HOME` unset. When `~/.config` has since become a
 link that leads out of your home directory, that uninstall is refused with
-`target path crosses a symlink`, and the note names the folder the link leads
+`target path crosses a link`, and the note names the folder the link leads
 to instead: run the uninstall with `XDG_CONFIG_HOME` set to that folder.
 
 ## Conformity gate

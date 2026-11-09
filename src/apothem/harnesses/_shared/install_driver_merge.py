@@ -51,6 +51,7 @@ from .install_driver_pathsafety import (
     _allowed_write_root,
     _root_for,
     _validate_target_path,
+    _write_boundary,
 )
 from .install_driver_preview import prospective_result
 from .install_driver_types import (
@@ -111,6 +112,24 @@ def apply_managed_block_anchor(
 PROFILE_DOCUMENT_RELATIVE: Final[str] = "apothem/rules/00-apothem-profile.md"
 
 
+def profile_document_body(
+    harness_root: Path, *, harness_id: str, harness_name: str, profile: dict[str, Any]
+) -> str:
+    """Return the managed-block body the profile document carries.
+
+    The profile's projected block for *harness_id*, plus the support
+    announcement when the harness has no instruction anchor of its own.
+    """
+    from apothem.lib.profile import coerce_profile
+    from apothem.lib.profile_projection import project
+
+    for_harness = coerce_profile(profile).for_harness(harness_id)
+    body = project(for_harness, harness_id).managed_block_body
+    if announces_in_profile_document(harness_name):
+        body = with_support_announcement(body, harness_name, harness_root)
+    return body
+
+
 def project_profile_document(
     harness_root: Path,
     *,
@@ -131,16 +150,14 @@ def project_profile_document(
     its own (no ``sentinel_merge`` entry) also gets its support announcement
     here: this document is the instruction file such an install writes.
     """
-    from apothem.lib.profile import coerce_profile
-    from apothem.lib.profile_projection import project
-
-    for_harness = coerce_profile(profile).for_harness(harness_id)
-    body = project(for_harness, harness_id).managed_block_body
-    if announces_in_profile_document(harness_name):
-        body = with_support_announcement(body, harness_name, harness_root)
     return apply_managed_block_anchor(
         harness_root / relative_path,
-        body,
+        profile_document_body(
+            harness_root,
+            harness_id=harness_id,
+            harness_name=harness_name,
+            profile=profile,
+        ),
         install_root=harness_root,
         harness_name=harness_name,
         allowed_root=harness_root.parent,
@@ -174,7 +191,7 @@ def write_text_safely(
     """Write text with backup-before-replace and JSON-preserving merge."""
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation="write_text",
     )
     if target_error is not None:
@@ -226,7 +243,7 @@ def apply_operator_owned_content(
     written: the prospective result (with its diff) is returned, or the
     refusal the write would raise.
     """
-    write_allowed = allowed_root or install_root
+    write_allowed = _write_boundary(allowed_root, install_root)
     target_error = _validate_target_path(
         target, allowed_root=write_allowed, operation="write_text"
     )

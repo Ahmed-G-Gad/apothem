@@ -44,7 +44,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
-from apothem.harnesses._shared.install_driver_pathsafety import (
+from apothem.harnesses._shared.install_driver_homelink import (
     link_leaving_home_refusal,
 )
 from apothem.harnesses._shared.install_driver_reversal import LEFT_IN_PLACE

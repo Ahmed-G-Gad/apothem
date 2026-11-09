@@ -46,9 +46,13 @@
 #       check protects only tags that carry the maintainer key's
 #       signature.
 #     - It allows APOTHEM_VERIFY=checksum (below), which checks no signature.
-#   The APOTHEM_SOURCE local-checkout path fetches nothing, so it skips tag
-#   resolution and verification - it prints the source it is running and
-#   proceeds.
+#   A local tree fetches nothing, so it skips tag resolution and
+#   verification - the installer prints the source it is running and
+#   proceeds. A local tree is used only when APOTHEM_SOURCE names it, or when
+#   this script runs from its own file inside a checkout
+#   (scripts\installer\install.ps1 run by path). A piped run (irm | iex) never
+#   uses the current folder or its parents. No Python start imports a module
+#   from the current folder.
 #
 # Usage (recommended - tag-pinned, verified):
 #   irm https://apothem.ahmedgad.com/install.ps1 | iex
@@ -60,7 +64,7 @@
 #   # review install.ps1, then run:
 #   pwsh -NoProfile -File install.ps1
 #
-# Usage (local install):
+# Usage (local install, from inside the checkout; or set APOTHEM_SOURCE):
 #   pwsh -NoProfile -File scripts/installer/install.ps1
 #
 # Parameters (opt-in clean-slate pass-through to the engine):
@@ -146,6 +150,28 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
+# A relative APOTHEM_HOME is resolved once, here, against the current
+# file-system folder (never a registry or other location the session sits
+# in), so every path built from it (the engine paths in PYTHONPATH and in
+# the shim among them) is a full path, never one Python would read against
+# whatever folder it starts in. A value that names no file-system path
+# stops the run.
+$ApothemHomeValue = $ApothemHome
+$HomeProvider = $null
+try {
+    Push-Location -LiteralPath (Get-Location -PSProvider FileSystem).ProviderPath
+    try {
+        $HomeDrive = $null
+        $ApothemHome = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ApothemHomeValue, [ref]$HomeProvider, [ref]$HomeDrive)
+    } finally {
+        Pop-Location
+    }
+} catch {
+    $HomeProvider = $null
+}
+if (-not $HomeProvider -or $HomeProvider.Name -ne 'FileSystem') {
+    Write-Error "  x APOTHEM_HOME is not a usable folder path: $ApothemHomeValue"
+}
 # A trailing separator would put the folders the installer makes beside
 # APOTHEM_HOME inside it instead; a drive root keeps its separator.
 if ($ApothemHome.Length -gt 1 -and $ApothemHome -notmatch '^[A-Za-z]:[\\/]$') {
@@ -213,11 +239,103 @@ $env:GIT_NO_REPLACE_OBJECTS = '1'
 if ($ApothemRepo.StartsWith('-')) {
     Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
 }
+# git runs ls-remote and clone from an empty folder (Invoke-GitOutsideRepository),
+# so a repository given as a relative path is made a full path first.
+if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -LiteralPath $ApothemRepo)) {
+    $ApothemRepo = (Resolve-Path -LiteralPath $ApothemRepo).ProviderPath
+}
 
 # The git calls that run in an existing clone (fetch, verify-tag, cat-file,
 # checkout) take these arguments, which point core.hooksPath at an empty
 # folder made for the run, so none of the clone's hooks runs.
 $GitSafe = @()
+
+# The current folder must never shadow the engine's modules (mirrors
+# install.sh). Python puts '' (the working directory) first on sys.path for
+# `-c`, and `-m` puts the working directory there, so a click.py, rich\ or
+# apothem\ in the folder the installer (or the shim) runs from would run
+# instead of the real package. `-P` / PYTHONSAFEPATH does not exist on
+# Python 3.10, and `-I` would also drop PYTHONPATH and the user site (where
+# click and rich may be installed). So every such start sets
+# PYTHONSAFEPATH=1 (3.11+ then adds nothing) and runs a `-c` program whose
+# first statement drops a leading ''. Only sys.path changes; the working
+# directory and the arguments do not. The programs hold no double quote,
+# which Windows PowerShell 5.1 strips from a native command's argument.
+$DropCwdFromPath = "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+$EngineProgram = "$DropCwdFromPath; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+$PipProgram = "$DropCwdFromPath; import runpy; runpy.run_module('pip', run_name='__main__', alter_sys=True)"
+# The apothem.cmd shim's program. A batch file cannot tell a full path from a
+# relative one, so the shim sets PYTHONPATH to the engine paths only and
+# hands the caller's value over in APOTHEM_USER_PYTHONPATH. This program
+# keeps that value's full-path entries (the Test-AbsolutePath rule below),
+# inserts them on sys.path right after the engine paths (skipping any that
+# repeat one), puts them back into PYTHONPATH after the engine paths so
+# child processes see what the other launchers give them, drops the
+# hand-over variable, then runs the engine. Empty and relative entries,
+# which Python would read as the current folder, are left out. The kept
+# entries join sys.path after startup, so neither a .pth file nor a
+# sitecustomize.py in them runs. The program holds no double quote and no
+# percent sign, which the batch file would read.
+$ShimProgram = "$DropCwdFromPath; import os, re; e = os.environ.get('PYTHONPATH', ''); n = len(e.split(os.pathsep)) if e else 0; k = [p for p in dict.fromkeys(os.environ.pop('APOTHEM_USER_PYTHONPATH', '').split(os.pathsep)) if re.match('([A-Za-z]:[\\\\/]|[\\\\/]{2})', p) and p not in sys.path[:n]]; sys.path[n:n] = k; os.environ['PYTHONPATH'] = os.pathsep.join(([e] if e else []) + k); import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+
+# Test-AbsolutePath PATH - $true when PATH is a full path. On Windows that is
+# a drive letter and a separator (X:\ or X:/) or two separators (a \\server
+# or //server share); elsewhere a leading /. A drive-relative C:x or a
+# rooted \x is not. Every launcher, and $ShimProgram, uses this one rule.
+function Test-AbsolutePath {
+    param([string]$Path)
+    if (-not $Path) { return $false }
+    if ([System.IO.Path]::PathSeparator -eq ';') { return ($Path -match '^([A-Za-z]:[\\/]|[\\/]{2})') }
+    return $Path.StartsWith('/')
+}
+
+# ConvertTo-PsLiteral TEXT - TEXT as a single-quoted PowerShell string for a
+# command the banner prints: each quote PowerShell reads as a single quote
+# (the ASCII one and the typographic U+2018-U+201B) is doubled.
+function ConvertTo-PsLiteral {
+    param([string]$Text)
+    return "'" + ($Text -replace "['\u2018\u2019\u201A\u201B]", '$0$0') + "'"
+}
+
+# Get-SafePythonPath LEAD USER - the PYTHONPATH a Python start gets: LEAD
+# (the engine's paths, or nothing) followed by the entries of USER (the
+# caller's PYTHONPATH) that are full paths. Python reads an empty entry, or a
+# relative one such as `.`, as the current folder before any -c program runs
+# and whatever PYTHONSAFEPATH says, so a sitecustomize.py there would run;
+# those entries are dropped (mirrors install.sh). $null when nothing is left.
+function Get-SafePythonPath {
+    param([string]$Lead, [string]$UserPath)
+    $Sep = [System.IO.Path]::PathSeparator
+    $Kept = @()
+    if ($Lead) { $Kept += $Lead }
+    if ($UserPath) { $Kept += @($UserPath.Split($Sep) | Where-Object { Test-AbsolutePath $_ }) }
+    if ($Kept.Count -eq 0) { return $null }
+    return ($Kept -join $Sep)
+}
+
+# Invoke-GitOutsideRepository BLOCK - run BLOCK, whose git commands work on
+# no repository of their own (ls-remote, clone, init, config lookups), from
+# an empty folder made for the call, with GIT_CEILING_DIRECTORIES set to that
+# folder's parent. git then finds no repository in the current folder or its
+# parents, whose .git\config could otherwise run a command (an ext:: URL
+# rewrite, core.sshCommand). The location and the variable are restored and
+# the folder removed afterwards (mirrors install.sh). Paths BLOCK passes to
+# git must be full paths. BLOCKARGS are passed to BLOCK.
+function Invoke-GitOutsideRepository {
+    param([scriptblock]$Block, [object[]]$BlockArgs = @())
+    $GoEmpty = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-git-" + [System.Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $GoEmpty -ErrorAction Stop | Out-Null
+    $GoCeiling = $env:GIT_CEILING_DIRECTORIES
+    Push-Location -LiteralPath $GoEmpty
+    try {
+        $env:GIT_CEILING_DIRECTORIES = Split-Path -Parent $GoEmpty
+        & $Block @BlockArgs
+    } finally {
+        $env:GIT_CEILING_DIRECTORIES = $GoCeiling
+        Pop-Location
+        Remove-Item -LiteralPath $GoEmpty -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 # Test-PythonImport INTERPRETER MODULE - return $true when MODULE imports under
 # INTERPRETER, $false otherwise. A missing module makes CPython print an
@@ -231,10 +349,13 @@ function Test-PythonImport {
     param([string]$Interpreter, [string]$Module)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $priorSafePath = $env:PYTHONSAFEPATH
+    $env:PYTHONSAFEPATH = '1'
     try {
-        & $Interpreter -c "import $Module" *> $null
+        & $Interpreter -c "$DropCwdFromPath; import $Module" *> $null
         return ($LASTEXITCODE -eq 0)
     } finally {
+        $env:PYTHONSAFEPATH = $priorSafePath
         $ErrorActionPreference = $prior
     }
 }
@@ -261,16 +382,21 @@ function Install-RuntimeDependency {
     param([string]$Interpreter, [string[]]$Deps)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    # pip starts through the same guarded -c program as the engine, so a
+    # pip\ in the current folder never runs in its place.
+    $priorSafePath = $env:PYTHONSAFEPATH
+    $env:PYTHONSAFEPATH = '1'
     try {
-        & $Interpreter -m pip --version *> $null
+        & $Interpreter -c $PipProgram --version *> $null
         if ($LASTEXITCODE -ne 0) {
             Write-Warn "pip is unavailable under $Interpreter - install $($Deps -join ', ') manually."
             return $false
         }
         Write-Info "Installing $($Deps -join ', ') under $Interpreter (pip)"
-        & $Interpreter -m pip install @Deps
+        & $Interpreter -c $PipProgram install @Deps
         $code = $LASTEXITCODE
     } finally {
+        $env:PYTHONSAFEPATH = $priorSafePath
         $ErrorActionPreference = $prior
     }
     if ($code -eq 0) {
@@ -288,7 +414,7 @@ function Install-RuntimeDependency {
 # components via a [version] cast on the stripped "v" prefix.
 function Resolve-LatestTag {
     param([string]$Repo)
-    $raw = & git ls-remote --tags $Repo 2>$null
+    $raw = Invoke-GitOutsideRepository { param($LsRepo) & git ls-remote --tags $LsRepo 2>$null } @($Repo)
     if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
     $tags = @()
     foreach ($line in $raw) {
@@ -401,8 +527,8 @@ function Assert-GpgAvailable {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $Prog = & git config --get gpg.openpgp.program 2>$null
-        if (-not $Prog) { $Prog = & git config --get gpg.program 2>$null }
+        $Prog = Invoke-GitOutsideRepository { & git config --get gpg.openpgp.program 2>$null }
+        if (-not $Prog) { $Prog = Invoke-GitOutsideRepository { & git config --get gpg.program 2>$null } }
         $ExecPath = & git --exec-path 2>$null
     } finally {
         $ErrorActionPreference = $prior
@@ -821,17 +947,77 @@ Write-Bold "Apothem installer"
 # Prerequisite: Python >= 3.10 ------------------------------------------------
 #
 # Locate a real CPython >= 3.10, rejecting Microsoft Store launcher shims.
-# The locator at hooks/lib/find-python.ps1 is reused when this script runs
-# from a source tree; otherwise an inline probe applies the same floor.
+# The locator at src\apothem\hooks\lib\find-python.ps1 is reused when a
+# local tree is in use (see Get-OwnCheckout below); otherwise an inline probe
+# applies the same floor.
 Write-Bold "Checking prerequisites"
 
-$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+function Test-ApothemSource {
+    param([string]$Dir)
+    if (-not (Test-Path -LiteralPath ([System.IO.Path]::Combine($Dir, 'src', 'apothem')))) { return $false }
+    return (Test-Path -LiteralPath (Join-Path $Dir 'pyproject.toml')) -or
+           (Test-Path -LiteralPath (Join-Path $Dir '.claude-plugin'))
+}
+
+# Get-OwnCheckout - return the checkout this script file belongs to, or $null.
+# It is found by the script's own path and nothing else (mirrors install.sh's
+# own_checkout): $PSCommandPath must name an existing file install.ps1 in a
+# scripts\installer folder whose ..\.. is an Apothem source. A piped run
+# (irm | iex) has no $PSCommandPath, so it never matches, and the current
+# folder and its parents are never searched: a folder shaped like an Apothem
+# tree there could otherwise put its own code in front of an unverified
+# install.
+function Get-OwnCheckout {
+    $Self = $PSCommandPath
+    if (-not $Self -or -not (Test-Path -LiteralPath $Self -PathType Leaf)) { return $null }
+    if ((Split-Path -Leaf $Self) -ne 'install.ps1') { return $null }
+    $SelfDir = Split-Path -Parent $Self
+    if ((Split-Path -Leaf $SelfDir) -ne 'installer') { return $null }
+    if ((Split-Path -Leaf (Split-Path -Parent $SelfDir)) -ne 'scripts') { return $null }
+    $Root = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($SelfDir, '..', '..'))
+    if (-not (Test-ApothemSource $Root)) { return $null }
+    # A symbolic link or junction in the script's path would make ..\.. a
+    # folder other than the one the file really sits in, so such a run is not
+    # taken as a local checkout. Judged by LinkType, as Test-HomeIsLink does:
+    # a OneDrive placeholder carries the ReparsePoint attribute too.
+    $OcPath = $Self
+    while ($OcPath) {
+        $OcItem = Get-Item -LiteralPath $OcPath -Force -ErrorAction SilentlyContinue
+        if ($OcItem -and $OcItem.LinkType -in @('SymbolicLink', 'Junction')) {
+            Write-Info "Not using $Root as a local checkout: $OcPath is a symbolic link or junction. Run install.ps1 from the checkout's real path, or set APOTHEM_SOURCE, to install from it."
+            return $null
+        }
+        $OcPath = Split-Path -Parent $OcPath
+    }
+    return $Root
+}
+
+# The local tree, if any: APOTHEM_SOURCE when set (its messages follow under
+# "Locating Apothem source"), else this script's own checkout.
+$LocalTree = $null
+$LocalKind = $null
+if ($env:APOTHEM_SOURCE) {
+    if (-not (Test-Path -LiteralPath $env:APOTHEM_SOURCE) -or -not (Test-ApothemSource $env:APOTHEM_SOURCE)) {
+        Write-Fail "APOTHEM_SOURCE is not an apothem source tree: $($env:APOTHEM_SOURCE)"
+    }
+    $LocalTree = (Resolve-Path -LiteralPath $env:APOTHEM_SOURCE).Path
+    $LocalKind = 'explicit'
+} else {
+    $LocalTree = Get-OwnCheckout
+    if ($LocalTree) { $LocalKind = 'checkout' }
+}
+
+# Every Python start from here to the prerequisite check gets the caller's
+# PYTHONPATH without its empty and relative entries (Get-SafePythonPath); the
+# caller's value is restored afterwards.
+$PriorProbePyPath = $env:PYTHONPATH
+$env:PYTHONPATH = Get-SafePythonPath '' $PriorProbePyPath
+try {
 $PY = $null
 $Locator = $null
-foreach ($Cand in @(
-    ([System.IO.Path]::Combine($ScriptDir, '..', '..', 'src', 'apothem', 'hooks', 'lib', 'find-python.ps1')),
-    ([System.IO.Path]::Combine($ScriptDir, '..', '..', 'hooks', 'lib', 'find-python.ps1')))) {
-    if (Test-Path -LiteralPath $Cand) { $Locator = $Cand; break }
+if ($LocalTree) {
+    $Cand = [System.IO.Path]::Combine($LocalTree, 'src', 'apothem', 'hooks', 'lib', 'find-python.ps1')
+    if (Test-Path -LiteralPath $Cand -PathType Leaf) { $Locator = $Cand }
 }
 if ($Locator) {
     . $Locator
@@ -852,9 +1038,10 @@ if (-not $PY) { Write-Fail "No Python >= 3.10 found in PATH" }
 # NOTE: keep this `-c` program free of embedded double quotes. Windows
 # PowerShell 5.1 strips embedded quotes when passing an argument to a native
 # executable, so `".".join(...)` would reach python as `..join(...)` and raise
-# a SyntaxError. `platform.python_version()` returns the same MAJOR.MINOR.MICRO
-# string with no quoting.
-$PyVer = & $PY -c 'import platform; print(platform.python_version())'
+# a SyntaxError. The %-format prints the same MAJOR.MINOR.MICRO string with no
+# quoting, and only the built-in sys module is imported, so nothing in the
+# current folder can stand in for it (a platform.py there would).
+$PyVer = & $PY -c "import sys; print('%d.%d.%d' % sys.version_info[:3])"
 Write-Ok "$PY ($PyVer)"
 
 # Prerequisite: CLI prerequisites importable ----------------------------------
@@ -879,47 +1066,33 @@ if ($MissingDeps.Count -gt 0) {
     Write-Fail "Missing prerequisites under ${PY}: $($MissingDeps -join ', '). Install them with: '${PY}' -m pip install $($MissingSpecs -join ' ') - or re-run with -Yes (or set APOTHEM_AUTO_INSTALL_DEPS=1) to install automatically. See $VendoringDoc for the vendoring strategy."
 }
 Write-Ok "Prerequisites present: $($RuntimeDeps -join ', ')"
+} finally {
+    $env:PYTHONPATH = $PriorProbePyPath
+}
 
 # Locate or fetch the bundled source ------------------------------------------
 #
 # Source precedence:
 #   1. APOTHEM_SOURCE - an explicit local source tree (no fetch; verification
 #      skipped because nothing is fetched).
-#   2. A surrounding local checkout (this script lives in scripts/installer/;
-#      no fetch; verification skipped).
+#   2. This script's own checkout (it was run by path from
+#      scripts\installer\ of an apothem source tree; no fetch; verification
+#      skipped). The current folder and its parents are never used.
 #   3. The release archive, or a git clone of APOTHEM_REPO, pinned to the
 #      resolved ref (the latest release tag by default, or an explicit
 #      APOTHEM_REF) and checked before it is placed at APOTHEM_HOME. An
 #      existing clone is fetched, checked, and only then checked out.
 Write-Bold "Locating Apothem source"
 
-function Test-ApothemSource {
-    param([string]$Dir)
-    if (-not (Test-Path -LiteralPath ([System.IO.Path]::Combine($Dir, 'src', 'apothem')))) { return $false }
-    return (Test-Path -LiteralPath (Join-Path $Dir 'pyproject.toml')) -or
-           (Test-Path -LiteralPath (Join-Path $Dir '.claude-plugin'))
-}
-
 $Source = $null
-if ($env:APOTHEM_SOURCE) {
-    if (-not (Test-Path -LiteralPath $env:APOTHEM_SOURCE) -or -not (Test-ApothemSource $env:APOTHEM_SOURCE)) {
-        Write-Fail "APOTHEM_SOURCE is not an apothem source tree: $($env:APOTHEM_SOURCE)"
-    }
-    $Source = (Resolve-Path -LiteralPath $env:APOTHEM_SOURCE).Path
+if ($LocalKind -eq 'explicit') {
+    $Source = $LocalTree
     Write-Ok "Using explicit source: $Source"
     Write-Info "Local source - skipping tag resolution and signature verification"
-} else {
-    $Walk = $ScriptDir
-    while ($Walk) {
-        if (Test-ApothemSource $Walk) { $Source = $Walk; break }
-        $Parent = Split-Path -Parent $Walk
-        if (-not $Parent -or $Parent -eq $Walk) { break }
-        $Walk = $Parent
-    }
-    if ($Source) {
-        Write-Ok "Using local checkout: $Source"
-        Write-Info "Local checkout - skipping tag resolution and signature verification"
-    }
+} elseif ($LocalKind -eq 'checkout') {
+    $Source = $LocalTree
+    Write-Ok "Using local checkout: $Source"
+    Write-Info "Local checkout - skipping tag resolution and signature verification"
 }
 
 if (@('auto', 'release', 'signature', 'checksum') -cnotcontains $ApothemVerify) {
@@ -1172,7 +1345,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             # Only the tag and the commit it points at are fetched, into a
             # throwaway repository; the source itself comes from the archive.
             $CkTagGit = Join-Path $CkTmp 'tag.git'
-            & git init --quiet --bare $CkTagGit
+            Invoke-GitOutsideRepository { & git init --quiet --bare $CkTagGit }
             if ($LASTEXITCODE -ne 0) { Write-Fail "Could not create a scratch repository to check the $ApothemRef tag" }
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
@@ -1364,7 +1537,8 @@ if (-not $Source) {
             Write-Info "Cloning $ApothemRepo"
             # Full clone (no --single-branch) so both tags and branches are
             # checkout-able, with nothing checked out until the gate passes.
-            & git clone --quiet --no-checkout $ApothemRepo $ClTree
+            $ClTree = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ClTree)
+            Invoke-GitOutsideRepository { & git clone --quiet --no-checkout $ApothemRepo $ClTree }
             if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
             Write-Bold "Verifying source signature"
             Assert-FetchedRef $ClTree
@@ -1398,6 +1572,7 @@ $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 # The profile setup and the engine run share one try, so a dry run's
 # scratch folder is removed however the run stops, Ctrl+C included.
 $PriorPyPath = $env:PYTHONPATH
+$PriorSafePath = $env:PYTHONSAFEPATH
 try {
     # Profile setup ---------------------------------------------------------------
     # A first run with no profile creates one from the example and carries on to
@@ -1440,8 +1615,9 @@ try {
     if ($DryRun)           { $EngineFlags += '--dry-run' }
     if ($Yes)              { $EngineFlags += '--yes' }
 
-    $env:PYTHONPATH = if ($PriorPyPath) { "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" } else { $EnginePyPath }
-    & $PY -m apothem install --harness $Harness --profile $EngineProfile @EngineFlags
+    $env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
+    $env:PYTHONSAFEPATH = '1'
+    & $PY -c $EngineProgram install --harness $Harness --profile $EngineProfile @EngineFlags
     if ($LASTEXITCODE -ne 0) { Write-Fail "Harness materialization failed for $Harness" }
 
     if ($DryRun) {
@@ -1454,7 +1630,7 @@ try {
         # Verify --------------------------------------------------------------
         if ($env:APOTHEM_SKIP_VERIFY -ne '1') {
             Write-Bold "Verifying installation"
-            & $PY -m apothem verify --harness $Harness
+            & $PY -c $EngineProgram verify --harness $Harness
             if ($LASTEXITCODE -ne 0) {
                 Write-Warn "verify reported issues - run the verify command below for details"
             } else {
@@ -1467,6 +1643,7 @@ try {
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
+    $env:PYTHONSAFEPATH = $PriorSafePath
     if ($script:DryRunScratch -and (Test-Path -LiteralPath $script:DryRunScratch)) {
         Remove-Item -LiteralPath $script:DryRunScratch -Recurse -Force
     }
@@ -1477,15 +1654,26 @@ finally {
 # Place an `apothem` command on PATH so the operator runs `apothem <command>`
 # instead of the verbose self-contained form (PowerShell parity to install.sh).
 # The shim is a `.cmd` (resolvable as a bare `apothem` via PATHEXT) that forwards
-# to the bundled engine with the vendored PYTHONPATH. It defaults into
+# to the bundled engine with the vendored PYTHONPATH, keeping the current
+# folder off sys.path (PYTHONSAFEPATH=1 and $ShimProgram above), so a
+# module in the folder it runs from never shadows the engine. PYTHONPATH
+# holds the engine paths only; the caller's PYTHONPATH travels in
+# APOTHEM_USER_PYTHONPATH, and $ShimProgram puts its full-path entries right
+# after the engine paths (on sys.path and in the PYTHONPATH child processes
+# get), leaving out the empty and relative ones Python would read as the
+# current folder. It turns delayed expansion off, so a `!` in PYTHONPATH or
+# in an argument passes through as written even under cmd /v:on. Its first
+# rem line marks it as Apothem's for uninstall.ps1. It defaults into
 # %LOCALAPPDATA%\Microsoft\WindowsApps - a user-owned directory already on the
 # default Windows user PATH - so the shim resolves WITHOUT modifying PATH (the
 # installer manages no PATH entry; see the self-contained invocation model).
 # Override the directory with APOTHEM_BIN_DIR. Dry-run writes nothing. The banner
 # advertises a bare `apothem` command only when its directory is on PATH;
-# otherwise it prints how to add the directory and falls back to the
-# self-contained form, so it never promises a command the run did not resolve.
+# otherwise it prints how to add the directory and the shim's full path, or,
+# with no shim, the self-contained form (mirrors install.sh), so it never
+# promises a command the run did not resolve.
 $ShimOnPath = $false
+$ShimPlaced = $false
 if (-not $DryRun) {
     $DefaultBinDir = [System.IO.Path]::Combine($env:LOCALAPPDATA, 'Microsoft', 'WindowsApps')
     $BinDir = if ($env:APOTHEM_BIN_DIR) { $env:APOTHEM_BIN_DIR } else { $DefaultBinDir }
@@ -1494,22 +1682,26 @@ if (-not $DryRun) {
         New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
         $ShimBody = @"
 @echo off
-setlocal
-set "PYTHONPATH=$EnginePyPath;%PYTHONPATH%"
-"$PY" -m apothem %*
+setlocal DisableDelayedExpansion
+rem Apothem entry-point shim (generated by install.ps1).
+rem The current folder is kept off sys.path, so its modules never shadow the engine.
+rem Your PYTHONPATH's full-path entries follow the engine paths on sys.path
+rem and in the PYTHONPATH child processes get; its empty and relative
+rem entries are left out.
+set "PYTHONSAFEPATH=1"
+set "APOTHEM_USER_PYTHONPATH=%PYTHONPATH%"
+set "PYTHONPATH=$EnginePyPath"
+"$PY" -c "$ShimProgram" %*
 "@
         Set-Content -LiteralPath $Shim -Value $ShimBody -Encoding ascii
         Write-Ok "Installed apothem command: $Shim"
+        $ShimPlaced = $true
 
         # Resolve $BinDir against the current process PATH WITHOUT editing PATH.
         $Sep = [System.IO.Path]::PathSeparator
         $BinNorm = $BinDir.TrimEnd('\').ToLowerInvariant()
         $OnPath = @($env:Path.Split($Sep) | ForEach-Object { $_.TrimEnd('\').ToLowerInvariant() })
-        if ($OnPath -contains $BinNorm) {
-            $ShimOnPath = $true
-        } else {
-            Write-Info "Add $BinDir to your PATH to use the 'apothem' command directly."
-        }
+        if ($OnPath -contains $BinNorm) { $ShimOnPath = $true }
     } catch {
         Write-Warn "Could not place an apothem shim in $BinDir - use the self-contained form below."
     }
@@ -1536,18 +1728,33 @@ Optional - enable <TAB> shell completion (opt-in; appends to your profile):
 
 "@
 } else {
+    # The self-contained form keeps the current folder off sys.path the way
+    # the shim does: PYTHONSAFEPATH=1 and the -c program, never -m apothem.
+    # Every path the banner prints goes through ConvertTo-PsLiteral, so one
+    # holding a quote still pastes as a working command.
+    if ($ShimPlaced) {
+        Write-Info "Add $BinDir to your PATH, then run the guided setup: apothem quickstart"
+        Write-Host "    `$env:Path = $(ConvertTo-PsLiteral "$BinDir;") + `$env:Path"
+        $RunHeader = 'Until then, run the apothem command by its full path:'
+        $RunCmd = "& $(ConvertTo-PsLiteral $Shim)"
+    } else {
+        $RunHeader = 'Run the engine from the bundled source (self-contained - no package installation; the current folder is kept off sys.path):'
+        # A one-shot block: the variables it sets are put back as they were
+        # when the command ends, so the session keeps its own values.
+        $RunCmd = "& { `$PriorPath = `$env:PYTHONPATH; `$PriorSafe = `$env:PYTHONSAFEPATH; `$env:PYTHONSAFEPATH = '1'; `$env:PYTHONPATH = $(ConvertTo-PsLiteral $EnginePyPath); try { & $(ConvertTo-PsLiteral $PY) -c `"$EngineProgram`" @args } finally { `$env:PYTHONPATH = `$PriorPath; `$env:PYTHONSAFEPATH = `$PriorSafe } }"
+    }
     Write-Host @"
 
-Run the engine from the bundled source (self-contained - no package installation):
-  `$env:PYTHONPATH = '$EnginePyPath'; & '$PY' -m apothem <command>
+$RunHeader
+  $RunCmd <command>
 
 Recommended first step - the guided setup (profile -> preview -> install):
-  `$env:PYTHONPATH = '$EnginePyPath'; & '$PY' -m apothem quickstart
+  $RunCmd quickstart
 
 Or run individual commands:
-  `$env:PYTHONPATH = '$EnginePyPath'; & '$PY' -m apothem harnesses list   # list harnesses
-  `$env:PYTHONPATH = '$EnginePyPath'; & '$PY' -m apothem doctor           # system health
-  `$env:PYTHONPATH = '$EnginePyPath'; & '$PY' -m apothem profile edit     # edit profile
+  $RunCmd harnesses list   # list harnesses
+  $RunCmd doctor           # system health
+  $RunCmd profile edit     # edit profile
 
 Optional - once the 'apothem' command is on your PATH, enable <TAB> shell
 completion (opt-in; appends to your profile):

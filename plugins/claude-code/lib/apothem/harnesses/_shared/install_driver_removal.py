@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 from apothem.lib.harness_materializer import (
+    extract_managed_block,
     remove_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
@@ -22,6 +23,7 @@ from .install_driver_jsonmerge import (
     _leading_comment_block,
     _LossyRewriteError,
     is_apothem_hook,
+    is_handler_map,
 )
 from .install_driver_ownership import (
     RelocatedFn,
@@ -29,7 +31,7 @@ from .install_driver_ownership import (
     remove_owned_text,
     strip_owned,
 )
-from .install_driver_pathsafety import _validate_target_path
+from .install_driver_pathsafety import _validate_target_path, _write_boundary
 from .install_driver_types import (
     _REMOVE_KEY,
     MaterializationResult,
@@ -164,7 +166,11 @@ def _remove_apothem_values(
             result[key] = value
             continue
         template_value = template[key]
-        if key == "hooks" and isinstance(value, dict):
+        if (
+            key == "hooks"
+            and isinstance(value, dict)
+            and is_handler_map(template_value)
+        ):
             stripped_hooks = _remove_apothem_hooks(
                 value,
                 template_value,
@@ -385,6 +391,10 @@ def _surgical_remove_from_target(
     """
     if not target.exists() or not target.is_file():
         return None
+    if mode == "sentinel_merge" and not _holds_managed_block(target):
+        # Nothing of Apothem's is left in the anchor, so there is nothing to
+        # remove (and no reason to refuse a path reached through a link).
+        return None
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="surgical_uninstall"
     )
@@ -394,6 +404,17 @@ def _surgical_remove_from_target(
         existing = target.read_text(encoding="utf-8")
     except OSError:  # pragma: no cover - defensive
         return None
+    except UnicodeDecodeError:
+        # An error, not a skip: the uninstall then keeps the install record,
+        # so the file stays listed for status, rollback and the next attempt.
+        return _result(
+            "error",
+            "surgical_uninstall",
+            target,
+            "not UTF-8 text, so Apothem cannot tell its own content apart; left "
+            "in place. Save it as UTF-8 or delete the Apothem block in it by "
+            "hand, then run the uninstall again",
+        )
     backup = backup_existing(
         target,
         install_root=install_root,
@@ -452,7 +473,17 @@ def _surgical_remove_from_target(
             earlier_digests=earlier_digests,
             recorded=recorded,
         )
-    if remainder is None:
+    if remainder is None and suffix == ".json" and not _is_plain_json(existing):
+        # Only Apothem's keys were left, but the file still carries the
+        # operator's comments or other JSON5 syntax: deleting it would lose them.
+        result = _result(
+            "skipped",
+            "surgical_uninstall",
+            target,
+            "holds only comments besides what Apothem removed; left in place",
+            backup_path=backup,
+        )
+    elif remainder is None:
         result = _guarded_unlink(
             target, allowed_root=allowed_root, operation="surgical_uninstall"
         )
@@ -527,12 +558,58 @@ def surgically_remove_materialized_config(
         mode="write_text",
         install_root=install_root,
         harness_name=harness_name,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         apothem_keys=apothem_keys,
         recorded=recorded,
         retired=retired,
         unrecorded=unrecorded,
     )
+
+
+def _is_plain_json(text: str) -> bool:
+    """Return True when *text* parses as strict JSON (no comments, no JSON5)."""
+    try:
+        json.loads(text)
+    except ValueError:
+        return False
+    return True
+
+
+def _holds_managed_block(target: Path) -> bool:
+    """Return True when *target* still carries an Apothem managed block.
+
+    Bytes that are not UTF-8 are read as U+FFFD, so the sentinels are still
+    found in a file that has them; an unreadable file counts as holding one,
+    so the caller reports it rather than passing over it.
+    """
+    try:
+        text = target.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return True
+    return extract_managed_block(text) is not None
+
+
+def strip_managed_anchor(
+    target: Path, *, install_root: Path, harness_name: str, allowed_root: Path
+) -> MaterializationResult | None:
+    """Take Apothem's managed block out of *target*, an anchor it wrote earlier.
+
+    The update-time counterpart of the uninstall strip: for a managed-block
+    file an earlier install wrote that the current install no longer writes.
+    Only the block goes; operator text outside it stays, and the file is
+    deleted only when nothing else is left. The file is backed up first. The
+    result's operation is ``retire_anchor``, which the install record leaves
+    out. Returns ``None`` when *target* does not exist.
+    """
+    result = _surgical_remove_from_target(
+        target,
+        "",
+        mode="sentinel_merge",
+        install_root=install_root,
+        harness_name=harness_name,
+        allowed_root=allowed_root,
+    )
+    return None if result is None else replace(result, operation="retire_anchor")
 
 
 def _current_text(target: Path) -> str | None:

@@ -320,11 +320,22 @@ class TestCrossAdapterParity:
         openclaw_out = oc(profile)
         assert len(openclaw_out) > 0, "open-claw produced empty output"
         openclaw_parsed = json.loads(openclaw_out)
-        # The one key Apothem authors is skills.load.extraDirs, pointed at the
-        # support skills directory. agents.defaults.skills is a NAME allowlist
-        # the operator owns, so a directory path never goes there.
+        # Apothem authors skills.load.extraDirs, pointed at the support skills
+        # directory, and its path in the bootstrap-extra-files hook entry.
+        # agents.defaults.skills is a NAME allowlist the operator owns, so a
+        # directory path never goes there.
         assert openclaw_parsed == {
-            "skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}}
+            "skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}},
+            "hooks": {
+                "internal": {
+                    "entries": {
+                        "bootstrap-extra-files": {
+                            "enabled": True,
+                            "paths": ["apothem/AGENTS.md"],
+                        }
+                    }
+                }
+            },
         }
 
         qwen_out = qwen(profile)

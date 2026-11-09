@@ -22,10 +22,10 @@ from .install_driver_backup import backup_existing
 from .install_driver_digests import backup_ledger_targets, file_digest
 from .install_driver_pathsafety import (
     _is_link,
-    _normalized,
     _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
+    _write_boundary,
     kept_links_detail,
 )
 from .install_driver_sweep import _link_kept as link_kept
@@ -286,7 +286,7 @@ def remove_written(
     them. Without *expected* (a rollback), such a target is compared with
     nothing, so it stays with a warning that says only that.
     """
-    allowed = allowed_root or install_root
+    allowed = _write_boundary(allowed_root, install_root)
     entry = None if recorded is None else recorded.get(_path_text(target))
     proof = _proof(entry)
     legacy = proof is None and entry is not None and expected is not None
@@ -296,7 +296,7 @@ def remove_written(
         target, allowed_root=allowed, operation="remove_existing"
     )
     if target_error is not None:
-        link = _unsafe_symlink(target, _normalized(allowed))
+        link = _unsafe_symlink(target, allowed)
         if link is None:
             return target_error
         return _through_link(target, link, proof, legacy=legacy)

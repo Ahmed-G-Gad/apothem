@@ -18,7 +18,11 @@ import apothem.harnesses.open_claw as open_claw_pkg
 from apothem.harnesses import HarnessAdapter
 from apothem.harnesses._shared.install_driver import MaterializationError
 from apothem.harnesses.open_claw import OpenClawAdapter
-from apothem.harnesses.open_claw.materializer import SKILLS_DIRECTORY
+from apothem.harnesses.open_claw.materializer import (
+    HOOK_NAME,
+    RULES_FILE_RELATIVE,
+    SKILLS_DIRECTORY,
+)
 from apothem.lib.propagation import load_manifest
 
 _ADAPTER_DIR = Path(open_claw_pkg.__file__).resolve().parent
@@ -137,6 +141,12 @@ def test_capabilities_declare_subagent_dispatch_and_no_mcp_file() -> None:
 _OPERATOR_EXTRA_DIRS = ["~/team-skills"]
 _SKILL_FILE = "SKILL.md"
 
+#: The hook registration an install writes, in the JSON5 an operator might keep.
+_HOOK_JSON5 = (
+    f'hooks: {{ internal: {{ entries: {{ "{HOOK_NAME}": '
+    f'{{ enabled: true, paths: ["{RULES_FILE_RELATIVE}"] }} }} }} }}'
+)
+
 
 @pytest.fixture
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -214,7 +224,16 @@ def test_install_lists_the_directory_the_skills_land_in(
 ) -> None:
     adapter.install({})
 
-    assert _config(home) == {"skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}}}
+    assert _config(home) == {
+        "skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}},
+        "hooks": {
+            "internal": {
+                "entries": {
+                    HOOK_NAME: {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
+                }
+            }
+        },
+    }
     listed = Path(SKILLS_DIRECTORY).expanduser()
     assert listed == home / ".openclaw" / ".apothem" / "support" / "skills"
     assert any(listed.glob(f"*/{_SKILL_FILE}"))
@@ -347,7 +366,8 @@ def test_verify_reads_the_json5_dialect_openclaw_reads(
     adapter.install({})
     _write_text(
         home,
-        f'// mine\n{{ skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}",], }}, }}, }}\n',
+        f'// mine\n{{ skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}",], }}, }}, '
+        f"{_HOOK_JSON5}, }}\n",
     )
 
     assert adapter.verify()
@@ -373,7 +393,8 @@ def test_install_leaves_a_commented_config_that_already_lists_the_directory(
     # The fix the refusal names: the operator adds the entry themselves, and a
     # later install has nothing to change.
     text = (
-        f'// mine\n{{ skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}"] }} }} }}\n'
+        f'// mine\n{{ skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}"] }} }}, '
+        f"{_HOOK_JSON5} }}\n"
     )
     _write_text(home, text)
 

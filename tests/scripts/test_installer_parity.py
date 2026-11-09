@@ -195,8 +195,11 @@ def test_posix_is_release_tag_agrees_with_the_ps1_regex(
 
 def _sh_function(script: str, name: str) -> str:
     """Return the definition of shell function NAME, from ``NAME() {`` to the
-    closing ``}`` at column 0, as SCRIPT carries it."""
-    match = re.search(rf"^{name}\(\) \{{\n.*?^\}}$", script, re.MULTILINE | re.DOTALL)
+    closing ``}`` at column 0 (or, for a subshell body, from ``NAME() (`` to
+    the closing ``)`` at column 0), as SCRIPT carries it."""
+    match = re.search(
+        rf"^{name}\(\) (?:\{{\n.*?^\}}|\(\n.*?^\))$", script, re.MULTILINE | re.DOTALL
+    )
     assert match, f"no {name}() definition found"
     return match.group(0)
 
@@ -426,13 +429,25 @@ def test_resolve_latest_tag_picks_the_same_tag_in_both(
 
 
 # Run the script's Resolve-LatestTag with `git` shadowed by a function, which
-# PowerShell resolves ahead of git on PATH. The stub writes each element of
-# the JSON array $env:LS_REMOTE_LINES as one output line and sets
-# $LASTEXITCODE to 0, as a successful `git ls-remote --tags` does.
+# PowerShell resolves ahead of git on PATH. The script's own
+# Invoke-GitOutsideRepository is defined too, since ls-remote runs through it.
+# The stub writes each element of the JSON array $env:LS_REMOTE_LINES as one
+# output line and sets $LASTEXITCODE to 0, as a successful
+# `git ls-remote --tags` does, but only when it runs from the empty folder
+# with GIT_CEILING_DIRECTORIES set; anywhere else it fails, as no tag found.
 _RESOLVE_LATEST_TAG = "; ".join(
     (
         *_ps1_load_function("Resolve-LatestTag"),
-        "function git { $global:LASTEXITCODE = 0; "
+        "$outside = $ast.Find({ param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] "
+        "-and $node.Name -eq 'Invoke-GitOutsideRepository' }, $true)",
+        "if (-not $outside) { throw 'no Invoke-GitOutsideRepository definition' }",
+        ". ([scriptblock]::Create($outside.Extent.Text))",
+        "function git { "
+        "if (-not $env:GIT_CEILING_DIRECTORIES -or "
+        "(Split-Path -Leaf (Get-Location).Path) -notlike 'apothem-git-*') "
+        "{ $global:LASTEXITCODE = 1; return }; "
+        "$global:LASTEXITCODE = 0; "
         "foreach ($line in ($env:LS_REMOTE_LINES | ConvertFrom-Json)) { $line } }",
         "& $body 'https://example.invalid/apothem.git'",
     )
@@ -480,9 +495,15 @@ def _sh_resolve_latest_tag(sh_name: str, lines: tuple[str, ...]) -> str | None:
     """Return the tag SH_NAME's own ``resolve_latest_tag``, run under sh,
     picks from the ``git ls-remote --tags`` output LINES, or None when it
     prints nothing. A shell function named ``git`` takes the place of git on
-    PATH."""
+    PATH. Like the PowerShell stub, it prints nothing unless the script runs
+    it through ``ngit``: from an empty folder, with GIT_CEILING_DIRECTORIES
+    set, so a repository around the current folder is never read."""
     program = (
-        "git() { printf '%s\\n' \"$LS_REMOTE_LINES\"; }\n"
+        'git() { [ -n "${GIT_CEILING_DIRECTORIES:-}" ] && [ "$(pwd -P)" != "$START" ]'
+        " && printf '%s\\n' \"$LS_REMOTE_LINES\"; }\n"
+        'START="$(pwd -P)"\n'
+        + _sh_function(SCRIPTS[sh_name], "ngit")
+        + "\n"
         + _sh_function(SCRIPTS[sh_name], "resolve_latest_tag")
         + "\nresolve_latest_tag https://example.invalid/apothem.git\n"
     )
@@ -946,3 +967,233 @@ def test_updaters_point_archive_installs_at_the_installer(
     assert (
         f"Re-run {installer} with cosign and gpg on PATH to update it" in SCRIPTS[name]
     )
+
+
+#: The -c program text every script runs before the engine, the shims and the
+#: dependency probes: it drops a leading '' (the current folder) from
+#: sys.path, which Python 3.10 adds even with PYTHONSAFEPATH=1 set.
+DROP_CWD_FROM_PATH = (
+    "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+)
+RUN_ENGINE = (
+    "; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+)
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_every_script_keeps_the_current_folder_off_sys_path(name: str) -> None:
+    """No Python start that imports click, rich or apothem has the current
+    folder on sys.path: each script sets PYTHONSAFEPATH=1 and runs the same
+    -c program, and no engine start or probe uses ``-m apothem`` or a bare
+    ``-c "import ..."`` (both put the current folder first)."""
+    content = SCRIPTS[name]
+    assert DROP_CWD_FROM_PATH in content, f"{name} lacks the sys.path guard"
+    assert RUN_ENGINE in content, f"{name} does not run the engine through runpy"
+    safe_path = "PYTHONSAFEPATH=1" if name.endswith(".sh") else "PYTHONSAFEPATH = '1'"
+    assert safe_path in content, f"{name} does not set PYTHONSAFEPATH"
+    for unsafe in (
+        r'"\$PY" -m apothem',
+        r"& \$PY -m apothem",
+        r'exec "%s" -m apothem',
+        r" -m apothem %\*",
+        r'-c "import \$\{?_?[dD]ep\}?"',
+        r'-c "import \$Module"',
+    ):
+        assert not re.search(unsafe, content), f"{name} still runs {unsafe!r}"
+
+
+@pytest.mark.parametrize("name", ["uninstall.sh", "uninstall.ps1"])
+def test_the_uninstallers_keep_the_current_folder_off_sys_path(name: str) -> None:
+    """The uninstallers start the engine the way the installers do: with
+    PYTHONSAFEPATH=1 and the same -c program, never ``-m apothem``."""
+    content = (INSTALLER / name).read_text(encoding="utf-8")
+    assert DROP_CWD_FROM_PATH in content, f"{name} lacks the sys.path guard"
+    assert RUN_ENGINE in content, f"{name} does not run the engine through runpy"
+    safe_path = "PYTHONSAFEPATH=1" if name.endswith(".sh") else "PYTHONSAFEPATH = '1'"
+    assert safe_path in content, f"{name} does not set PYTHONSAFEPATH"
+    for unsafe in (r'"\$PY" -m apothem', r"& \$PY -m apothem"):
+        assert not re.search(unsafe, content), f"{name} still runs {unsafe!r}"
+
+
+@pytest.mark.parametrize("name", ["install.ps1", "update.ps1", "uninstall.ps1"])
+def test_the_powershell_scripts_drop_empty_and_relative_pythonpath_entries(
+    name: str,
+) -> None:
+    """Each PowerShell engine start builds PYTHONPATH with Get-SafePythonPath,
+    which keeps only the caller's full-path entries; none prepends the engine
+    paths to the caller's raw value."""
+    content = (INSTALLER / name).read_text(encoding="utf-8")
+    assert "Get-SafePythonPath $EnginePyPath $PriorPyPath" in content
+    assert "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" not in content
+
+
+def _powershell_shim_body() -> str:
+    """The apothem.cmd text install.ps1 writes, before its variables expand."""
+    match = re.search(r'\$ShimBody = @"\r?\n(.*?)\r?\n"@', PS1, re.DOTALL)
+    assert match, "install.ps1 no longer builds $ShimBody from a here-string"
+    return match.group(1).replace("\r\n", "\n")
+
+
+#: The program the apothem.cmd shim runs: the sys.path guard, then the
+#: caller's full-path PYTHONPATH entries (handed over in
+#: APOTHEM_USER_PYTHONPATH, kept by the one full-path rule) inserted right
+#: after the engine paths on sys.path and in PYTHONPATH, then the engine.
+SHIM_PROGRAM = (
+    DROP_CWD_FROM_PATH + "; import os, re; e = os.environ.get('PYTHONPATH', '');"
+    " n = len(e.split(os.pathsep)) if e else 0;"
+    " k = [p for p in dict.fromkeys(os.environ.pop('APOTHEM_USER_PYTHONPATH',"
+    " '').split(os.pathsep)) if re.match('([A-Za-z]:[\\\\\\\\/]|[\\\\\\\\/]{2})', p)"
+    " and p not in sys.path[:n]]; sys.path[n:n] = k;"
+    " os.environ['PYTHONPATH'] = os.pathsep.join(([e] if e else []) + k)" + RUN_ENGINE
+)
+
+
+def _powershell_shim_program() -> str:
+    """The $ShimProgram install.ps1 defines, with $DropCwdFromPath expanded."""
+    match = re.search(r'^\$ShimProgram = "(.*)"\r?$', PS1, re.MULTILINE)
+    assert match, "install.ps1 no longer defines $ShimProgram"
+    return match.group(1).replace("$DropCwdFromPath", DROP_CWD_FROM_PATH)
+
+
+def test_the_powershell_shim_keeps_the_current_folder_off_sys_path() -> None:
+    """The apothem.cmd shim install.ps1 writes sets PYTHONSAFEPATH=1, sets
+    PYTHONPATH to the engine paths only (a batch file cannot drop the
+    caller's empty and relative entries, which Python reads as the current
+    folder), and hands the caller's value to a program that keeps only its
+    full-path entries. The program holds no double quote or percent sign,
+    which the batch line would read."""
+    body = _powershell_shim_body()
+    assert 'set "PYTHONSAFEPATH=1"' in body
+    assert 'set "APOTHEM_USER_PYTHONPATH=%PYTHONPATH%"' in body
+    assert 'set "PYTHONPATH=$EnginePyPath"\n' in body + "\n"
+    assert '"$PY" -c "$ShimProgram" %*' in body
+    assert body.index("APOTHEM_USER_PYTHONPATH=") < body.index('"PYTHONPATH=')
+    assert body.count("%PYTHONPATH%") == 1, "the shim passes PYTHONPATH on raw"
+    program = _powershell_shim_program()
+    assert program == SHIM_PROGRAM
+    assert '"' not in program
+    assert "%" not in program
+    # Delayed expansion is off, so a `!` is never read as a variable.
+    assert body.startswith("@echo off\nsetlocal DisableDelayedExpansion\n")
+
+
+@pytest.mark.parametrize("name", ["install.ps1", "update.ps1", "uninstall.ps1"])
+def test_the_powershell_scripts_make_a_relative_apothem_home_a_full_path(
+    name: str,
+) -> None:
+    """A relative APOTHEM_HOME is resolved right after it is read, so the
+    engine paths built from it (in PYTHONPATH and in the shim) are full
+    paths, never ones Python would read against the folder it starts in."""
+    content = (INSTALLER / name).read_text(encoding="utf-8")
+    read = (
+        "$ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } "
+        "else { Join-Path $HOME '.apothem' }"
+    )
+    resolve = (
+        "$ApothemHome = $ExecutionContext.SessionState.Path"
+        ".GetUnresolvedProviderPathFromPSPath($ApothemHomeValue, "
+        "[ref]$HomeProvider, [ref]$HomeDrive)"
+    )
+    assert read in content
+    assert resolve in content
+    between = content[content.index(read) : content.index(resolve)]
+    assert "$ApothemHome" not in between[len(read) :].replace(
+        "$ApothemHomeValue = $ApothemHome", ""
+    ).replace("$ApothemHomeValue", ""), f"{name} uses APOTHEM_HOME before resolving it"
+    # Relative values are read against the file-system location, and a
+    # value that names no folder path stops the run.
+    assert (
+        "Push-Location -LiteralPath (Get-Location -PSProvider FileSystem).ProviderPath"
+        in between
+    )
+    after = content[content.index(resolve) :]
+    assert "$HomeProvider.Name -ne 'FileSystem'" in after
+    assert "APOTHEM_HOME is not a usable folder path: $ApothemHomeValue" in after
+
+
+def test_the_installers_next_step_banners_do_not_suggest_dash_m_apothem() -> None:
+    """With no apothem command on PATH, both banners point at the shim by its
+    full path, or else at the guarded -c form, with the same wording; neither
+    suggests ``-m apothem``, which puts the current folder first."""
+    for phrase in (
+        "Until then, run the apothem command by its full path:",
+        "the current folder is kept off sys.path):",
+        "then run the guided setup: apothem quickstart",
+    ):
+        assert phrase in SH, f"install.sh lacks {phrase!r}"
+        assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
+    for started in ("-m apothem <command>", "-m apothem quickstart"):
+        assert started not in PS1, f"install.ps1 suggests {started!r}"
+    # A one-shot block that puts PYTHONPATH and PYTHONSAFEPATH back when the
+    # command ends, so the session keeps its own values.
+    assert (
+        "& { `$PriorPath = `$env:PYTHONPATH; `$PriorSafe = `$env:PYTHONSAFEPATH; "
+        "`$env:PYTHONSAFEPATH = '1'; "
+        "`$env:PYTHONPATH = $(ConvertTo-PsLiteral $EnginePyPath); "
+        'try { & $(ConvertTo-PsLiteral $PY) -c `"$EngineProgram`" @args } finally { '
+        "`$env:PYTHONPATH = `$PriorPath; `$env:PYTHONSAFEPATH = `$PriorSafe } }"
+    ) in PS1
+    # Every path the PowerShell banner prints is a quoted literal, its own
+    # quotes doubled, so a path holding a quote still pastes as a command.
+    assert '$RunCmd = "& $(ConvertTo-PsLiteral $Shim)"' in PS1
+    assert '$(ConvertTo-PsLiteral "$BinDir;") + `$env:Path' in PS1
+    assert "'$BinDir" not in PS1
+    assert "'$Shim'" not in PS1
+
+
+#: The shim releases 1.0.1 to 1.5.0 wrote; uninstall.ps1 still removes it.
+OLD_POWERSHELL_SHIM = (
+    "@echo off\nsetlocal\n"
+    'set "PYTHONPATH=C:\\h\\src\\apothem\\_vendor;C:\\h\\src;%PYTHONPATH%"\n'
+    '"C:\\Python\\python.exe" -m apothem %*\n'
+)
+OPERATOR_SHIM = "@echo off\nrem apothem launcher\nC:\\tools\\apothem.exe %*\n"
+
+
+@pytest.mark.parametrize("newline", ["\r\n", "\n"], ids=["crlf", "lf"])
+def test_the_uninstaller_recognises_the_shims_install_ps1_writes(newline: str) -> None:
+    """uninstall.ps1 removes apothem.cmd only when it is Apothem's: its
+    patterns match the shim install.ps1 writes now and the one older releases
+    wrote, and not an operator's own apothem.cmd."""
+    uninstall = (INSTALLER / "uninstall.ps1").read_text(encoding="utf-8")
+    block = re.search(
+        r"\$ShimIsOurs = (.*?)\r?\n    if \(\$ShimIsOurs\)", uninstall, re.DOTALL
+    )
+    assert block, "uninstall.ps1 no longer decides through $ShimIsOurs"
+    patterns = re.findall(r"-match '([^']*)'", block.group(1))
+    assert len(patterns) == 2, patterns
+    current = (
+        _powershell_shim_body()
+        .replace("$EnginePyPath", "C:\\h\\src\\apothem\\_vendor;C:\\h\\src")
+        .replace("$PY", "C:\\Python\\python.exe")
+        .replace("$ShimProgram", SHIM_PROGRAM)
+    )
+    assert "$" not in current, current
+
+    def ours(text: str) -> bool:
+        text = text.replace("\n", newline)
+        return any(re.search(pattern, text) for pattern in patterns)
+
+    assert ours(current), "uninstall.ps1 would leave the shim install.ps1 writes"
+    assert ours(OLD_POWERSHELL_SHIM), "uninstall.ps1 would leave a 1.5.0 shim"
+    assert not ours(OPERATOR_SHIM), "uninstall.ps1 would remove an operator's command"
+
+
+def test_both_installers_find_a_local_tree_only_by_their_own_path() -> None:
+    """A local tree is APOTHEM_SOURCE or the checkout the script file sits in
+    (scripts/installer); neither installer falls back to the current folder
+    or walks its parents, and both say the same thing when they use one."""
+    for phrase in (
+        "Using explicit source: ",
+        "Using local checkout: ",
+        "skipping tag resolution and signature verification",
+    ):
+        assert phrase in SH, f"install.sh lacks {phrase!r}"
+        assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
+    assert "_walk" not in SH, "install.sh still walks parent folders"
+    assert 'dirname "$0"' not in SH, "install.sh still derives a folder from $0"
+    assert "*/scripts/installer)" in SH
+    assert "$Walk" not in PS1, "install.ps1 still walks parent folders"
+    assert "PSScriptRoot" not in PS1, "install.ps1 still falls back to the cwd"
+    assert "$PSCommandPath" in PS1
+    assert "-ne 'installer'" in PS1

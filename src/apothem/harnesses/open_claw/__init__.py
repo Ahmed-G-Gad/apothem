@@ -14,10 +14,11 @@ operator manages with the ``openclaw mcp`` CLI, so Apothem authors neither; the
 shared cohorts (rules, agents, skills, hooks, templates) land as individual
 files under ``~/.openclaw/.apothem/support/``. The profile's managed block goes
 to ``~/.openclaw/apothem/rules/00-apothem-profile.md``, which OpenClaw does not
-load. OpenClaw injects ``AGENTS.md`` and five other instruction files from each
-agent's workspace (``~/.openclaw/workspace`` by default), but the adapter
-writes none of them and none points at the support tree, so the operator wires
-the other cohorts in through the vendor's own mechanisms.
+load, and into ``<workspace>/apothem/AGENTS.md`` in each agent workspace, which
+it does: the install registers that path with OpenClaw's bundled
+``bootstrap-extra-files`` hook (:mod:`apothem.harnesses.open_claw.rules_file`).
+The block names the rule index under the support tree. The workspace's own
+``AGENTS.md`` and the other bootstrap files stay the operator's.
 """
 
 from __future__ import annotations
