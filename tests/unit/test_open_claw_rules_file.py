@@ -1341,3 +1341,23 @@ def test_the_warning_for_an_apothem_entry_without_the_path_does_not_say_add_entr
     assert registration.entry is None
     assert "add this entry" not in (registration.reason or "")
     assert "paths" in (registration.reason or "")
+
+
+# --- third review nits ----------------------------------------------------------------
+
+
+def test_an_array_in_the_list_roster_counts_as_an_entry(home: Path) -> None:
+    config = {"agents": {"list": [[], {"id": "ops"}]}}
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [w.agent_ids for w in workspaces] == [(), ("main",), ("ops",)]
+
+
+def test_a_relative_workspace_variable_is_not_expanded(home: Path) -> None:
+    workspaces, notes = candidate_workspaces(
+        {}, home, env={"OPENCLAW_WORKSPACE_DIR": "~/ws"}
+    )
+
+    assert workspaces == []
+    assert any("not an absolute path" in note for note in notes)

@@ -216,7 +216,16 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
   (then empty), an `agents.list` item without `id` is `main`, and ids that
   normalize alike still count as separate entries when the sole entry or the
   `default: true` owner is decided. The id pattern is ASCII-only, as in
-  JavaScript.
+  JavaScript. In `agents.list`, any non-null object counts as an entry,
+  arrays included (`entry !== null && typeof entry === "object"`).
+- Environment: the adapter follows `OPENCLAW_WORKSPACE_DIR` as OpenClaw does
+  (taken as given, no `~` expansion; a relative value is skipped with a note,
+  since it depends on OpenClaw's working folder). It does not follow
+  `OPENCLAW_STATE_DIR` or `OPENCLAW_PROFILE`, which move the state folder and
+  the default workspace with it (`workspace-default-path.ts:8-25`); like the
+  rest of the adapter, it assumes the default `~/.openclaw` state folder.
+- Counting: OpenClaw trims trailing whitespace (`trimEnd`) before it counts a
+  file; the adapter counts it, so its estimate errs on the side of refusing.
 - Limits: 20,000 characters per file and 60,000 in total by default
   (`agents.defaults.bootstrapMaxChars`, `bootstrapTotalMaxChars`), `USER.md`
   4,000; extra files come after the six workspace files, and a file is skipped

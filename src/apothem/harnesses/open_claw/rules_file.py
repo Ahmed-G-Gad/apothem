@@ -304,10 +304,14 @@ def roster_list(config: object) -> list[tuple[str, dict[str, Any]]]:
     listed = agents.get("list")
     if not isinstance(listed, list):
         return []
+    # Any non-null object counts, arrays included (``entry !== null &&
+    # typeof entry === "object"``); one without a string ``id`` is ``main``.
     return [
         (normalize_agent_id(entry.get("id")), entry)
-        for entry in listed
         if isinstance(entry, dict)
+        else (normalize_agent_id(None), {})
+        for entry in listed
+        if isinstance(entry, dict | list)
     ]
 
 
@@ -355,20 +359,30 @@ def candidate_workspaces(
     notes: list[str] = []
     found = _Candidates()
     defaults_workspace = _text(_mapping(config, "agents", "defaults").get("workspace"))
-    default: str = (
-        defaults_workspace
-        or _text(environ.get("OPENCLAW_WORKSPACE_DIR"))
-        or "~/.openclaw/workspace"
-    )
+    from_env = _text(environ.get("OPENCLAW_WORKSPACE_DIR"))
+    default: str | None = defaults_workspace or "~/.openclaw/workspace"
+    if defaults_workspace is None and from_env is not None:
+        # OpenClaw takes the variable as given (``path.resolve``): no ``~``
+        # expansion, and a relative value depends on its working folder.
+        if Path(from_env).is_absolute():
+            default = from_env
+        else:
+            default = None
+            notes.append(
+                f"OPENCLAW_WORKSPACE_DIR {from_env!r} is not an absolute path, so "
+                "the default workspace depends on the folder OpenClaw runs in; "
+                "skipped"
+            )
     entries = roster(config)
     owner = default_owner(config)
-    raw: list[tuple[str, str | None]] = [(default, None)]
+    raw: list[tuple[str, str | None]] = [] if default is None else [(default, None)]
     for agent_id, entry in entries.items():
         own = _text(entry.get("workspace"))
         if own is not None:
             raw.append((own, agent_id))
         elif agent_id == owner:
-            raw.append((default, agent_id))
+            if default is not None:
+                raw.append((default, agent_id))
         elif defaults_workspace is not None:
             raw.append((f"{defaults_workspace.rstrip('/')}/{agent_id}", agent_id))
         else:
@@ -576,8 +590,10 @@ def used_chars(config: object, workspace: Path, limits: Limits) -> int:
 
     The six canonical files (each capped at the per-file limit, ``USER.md`` at
     4,000), the ``[MISSING]`` marker OpenClaw puts in for an absent
-    ``AGENTS.md``, ``SOUL.md`` or ``IDENTITY.md``, and the operator's extra
-    files from the same hook entry.
+    ``AGENTS.md``, ``SOUL.md``, ``IDENTITY.md`` or ``BOOTSTRAP.md``, and the
+    operator's extra files from the same hook entry. OpenClaw trims trailing
+    whitespace (``trimEnd``) before it counts a file, so counting it here, as
+    this does, errs on the side of refusing.
     """
     used = 0
     for name in CANONICAL_FILES:
