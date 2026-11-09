@@ -752,8 +752,26 @@ def test_a_bare_script_name_is_not_a_checkout(tmp_path: Path) -> None:
     combined = result.stdout + result.stderr
     assert not marker.exists(), combined
     assert LOCAL_CHECKOUT_MARKER not in combined, combined
-    assert BARE_NAME_NOTE in combined, combined
+    # The note is printed only when the shell does not mark -c runs in $-
+    # (dash). A shell that does (bash, which is /bin/sh on macOS) is known to
+    # be running script text, so the installer says nothing about checkouts.
+    if _sh_marks_dash_c():
+        assert BARE_NAME_NOTE not in combined, combined
+    else:
+        assert BARE_NAME_NOTE in combined, combined
     assert TAG_OK_MARKER in combined, combined
+
+
+def _sh_marks_dash_c() -> bool:
+    """Whether ``sh`` sets ``c`` in ``$-`` for an ``sh -c`` run."""
+    probe = subprocess.run(
+        ["sh", "-c", 'case "$-" in *c*) echo yes ;; esac'],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return probe.stdout.strip() == "yes"
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
