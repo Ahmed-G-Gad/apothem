@@ -14,6 +14,7 @@ import errno
 import json
 import os
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -1993,6 +1994,10 @@ def test_a_file_token_path_is_normalized_as_opencode_1_does(
     where: str,
     windows: bool,
 ) -> None:
+    if windows and sys.platform != "win32":
+        # The Windows branch leaves ".." to the system, and only Windows
+        # reads it by the text; a POSIX kernel looks up the missing folder.
+        pytest.skip("only Windows folds '..' in a path by its text")
     monkeypatch.setattr(install_advisories, "_WINDOWS", windows)
     folder = _opencode_folder()
     file = Path.home() / where[2:] if where.startswith("~/") else folder / where
