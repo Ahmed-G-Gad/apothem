@@ -424,6 +424,122 @@ def test_a_folder_a_legacy_codex_record_lists_is_replaced_with_a_backup(
     assert Path(*key.parts[2:]) == Path("__home__/.agents/skills/alpha")
 
 
+def test_a_deleted_project_does_not_vouch_for_a_folder_put_there_since(
+    world: Path, tmp_path: Path
+) -> None:
+    """A stale holder counts only while the folder still holds what it wrote."""
+    gone = _project(tmp_path, "gone")
+    _install("cursor", gone)
+    shutil.rmtree(gone)
+    mine = _skills() / "alpha"
+    shutil.rmtree(mine)
+    mine.mkdir()
+    (mine / "SKILL.md").write_text(
+        "---\nname: alpha\ndescription: mine\n---\n", "utf-8"
+    )
+    before = _tree(mine)
+    project = _project(tmp_path, "b")
+    run = _install("cursor", project)
+    conflicts = [r for r in run.results if r.operation == "skill_conflict"]
+    assert [Path(r.path) for r in conflicts] == [mine]
+    assert "no longer exists" in conflicts[0].message
+    assert _tree(mine) == before
+    # The skipped folder is not this install's, so verify says so.
+    assert _adapter("cursor").verify(project=project) is False
+
+
+def test_a_deleted_project_does_not_vouch_for_a_folder_edited_since(
+    world: Path, tmp_path: Path
+) -> None:
+    """One changed file is enough: the folder is left alone, with no backup."""
+    gone = _project(tmp_path, "gone")
+    _install("cursor", gone)
+    shutil.rmtree(gone)
+    skill = _skills() / "alpha" / "SKILL.md"
+    skill.write_text(skill.read_text("utf-8") + "My own note.\n", "utf-8")
+    before = _tree(skill.parent)
+    world_skill = world / "skills" / "alpha" / "SKILL.md"
+    world_skill.write_text(_SKILL_ALPHA.replace("Body of alpha.", "New."), "utf-8")
+    run = _install("cursor", _project(tmp_path, "b"))
+    conflicts = [r for r in run.results if r.operation == "skill_conflict"]
+    assert [Path(r.path) for r in conflicts] == [skill.parent]
+    assert "has changed since" in conflicts[0].message
+    assert conflicts[0].backup_path is None
+    assert _tree(skill.parent) == before
+
+
+def test_a_live_holder_still_vouches_beside_a_deleted_one(
+    world: Path, tmp_path: Path
+) -> None:
+    """A deleted root that no longer matches does not outvote a live install."""
+    gone = _project(tmp_path, "gone")
+    _install("cursor", gone)
+    _install("cursor", _project(tmp_path, "live"))
+    shutil.rmtree(gone)
+    skill = _skills() / "alpha" / "SKILL.md"
+    skill.write_text("edited\n", "utf-8")
+    run = _install("cursor", _project(tmp_path, "b"))
+    assert not [r for r in run.results if r.operation == "skill_conflict"]
+    replaced = next(r for r in run.results if Path(r.path) == skill.parent)
+    assert replaced.outcome == "updated"
+    assert replaced.backup_path is not None
+
+
+def test_one_matching_deleted_holder_is_enough(world: Path, tmp_path: Path) -> None:
+    """Of two deleted roots, the one whose record matches the folder vouches."""
+    first, second = _project(tmp_path, "gone-1"), _project(tmp_path, "gone-2")
+    _install("cursor", first)
+    world_skill = world / "skills" / "alpha" / "SKILL.md"
+    world_skill.write_text(_SKILL_ALPHA.replace("Body of alpha.", "Two."), "utf-8")
+    _install("cursor", second)  # first's record still lists the older digest
+    shutil.rmtree(first)
+    shutil.rmtree(second)
+    world_skill.write_text(_SKILL_ALPHA.replace("Body of alpha.", "Three."), "utf-8")
+    run = _install("cursor", _project(tmp_path, "b"))
+    assert not [r for r in run.results if r.operation == "skill_conflict"]
+    assert "Three." in (_skills() / "alpha" / "SKILL.md").read_text("utf-8")
+
+
+def test_a_deleted_project_still_vouches_for_a_folder_as_it_wrote_it(
+    world: Path, tmp_path: Path
+) -> None:
+    gone = _project(tmp_path, "gone")
+    _install("cursor", gone)
+    shutil.rmtree(gone)
+    skill = world / "skills" / "alpha" / "SKILL.md"
+    skill.write_text(_SKILL_ALPHA.replace("Body of alpha.", "New body."), "utf-8")
+    run = _install("cursor", _project(tmp_path, "b"))
+    assert not [r for r in run.results if r.operation == "skill_conflict"]
+    updated = next(r for r in run.results if Path(r.path) == _skills() / "alpha")
+    assert updated.outcome == "updated"
+    assert "New body." in (_skills() / "alpha" / "SKILL.md").read_text("utf-8")
+
+
+def test_a_deleted_root_whose_record_has_no_digests_vouches_for_nothing(
+    world: Path, tmp_path: Path
+) -> None:
+    folder = _skills() / "alpha"
+    folder.mkdir(parents=True)
+    (folder / "SKILL.md").write_text("old copy\n", "utf-8")
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex",
+            root=tmp_path / "gone-codex-home",
+            kind="install",
+            targets=(
+                LedgerTarget(
+                    str(folder), "native_skills", "apothem-owned", outcome="created"
+                ),
+            ),
+        )
+    )
+    run = _install("cursor", _project(tmp_path, "b"))
+    conflicts = [r for r in run.results if r.operation == "skill_conflict"]
+    assert [Path(r.path) for r in conflicts] == [folder]
+    assert "did not record its files" in conflicts[0].message
+    assert (folder / "SKILL.md").read_text("utf-8") == "old copy\n"
+
+
 def test_restoring_a_home_backup_never_writes_into_the_project(
     world: Path, tmp_path: Path
 ) -> None:

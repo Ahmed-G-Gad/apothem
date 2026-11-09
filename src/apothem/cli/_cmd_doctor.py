@@ -36,6 +36,7 @@ from apothem.cli._helpers import (
     _EXIT_EXPECTED,
     _CliUserError,
     _emit_expected_error,
+    _harness_roots,
     _invoke_with_project,
     _project_option,
     _resolve_profile_path,
@@ -74,10 +75,21 @@ def _check(
     }
 
 
-def _update_fix(harness: str) -> str:
+def _update_command(harness: str, project: Path | None = None) -> str:
+    """Return the ``update`` command line; a project-scope harness names its root."""
+    flag = f' --project "{project}"' if project is not None else ""
+    return f"update --harness {harness}{flag}"
+
+
+def _update_fix(
+    harness: str,
+    project: Path | None = None,
+    *,
+    then: str = "then run doctor again.",
+) -> str:
     return (
-        f"Run 'update --harness {harness}' with the same command prefix you "
-        "installed with, then run doctor again."
+        f"Run '{_update_command(harness, project)}' with the same command prefix "
+        f"you installed with, {then}"
     )
 
 
@@ -89,6 +101,7 @@ def _probe_harness(
     """Check one harness, append its check records, and return its report row."""
     name = entry.public_id
     row: dict[str, object] = {"name": name, "installed": False, "verified": None}
+    fix = _update_fix(name, project_root if entry.scope == "project" else None)
     try:
         adapter = _pkg._load_adapter_for_entry(entry)
     except Exception as exc:
@@ -123,7 +136,7 @@ def _probe_harness(
                 "fail",
                 f"{name}: the install probe raised ({row['error']}).",
                 harness=name,
-                fix=_update_fix(name),
+                fix=fix,
             )
         )
         return row
@@ -137,28 +150,39 @@ def _probe_harness(
                 f"{name} is installed but does not verify: managed files are "
                 "missing or changed.",
                 harness=name,
-                fix=_update_fix(name),
+                fix=fix,
             )
         )
         return row
     checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
     row["status"] = "ok"
-    _probe_registered_hooks(entry, project_root, row, checks)
+    harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
+    install_root = harness_root if harness_root is not None else scoped_project
+    if install_root is None:  # pragma: no cover - a project scope needs --project
+        return row
+    _probe_registered_hooks(entry, install_root, row, checks)
     return row
 
 
 def _probe_registered_hooks(
     entry: HarnessRegistryEntry,
-    project_root: Path | None,
+    install_root: Path,
     row: dict[str, object],
     checks: list[dict[str, object]],
 ) -> None:
-    """Start the hooks a verified harness registered; record the outcome on *row*."""
+    """Start the hooks the install at *install_root* registered; record the outcome.
+
+    *install_root* is the root doctor examined: the harness folder of a
+    user-scope harness, the ``--project`` root of a project-scope one.
+    """
     name = entry.public_id
+    project = install_root if entry.scope == "project" else None
+    fix = _update_fix(name, project)
     try:
         argvs = registered_hook_argvs(
             entry.package_key,
-            within=project_root if entry.scope == "project" else None,
+            root=install_root,
+            within=install_root if entry.scope == "project" else None,
         )
     except LedgerError as exc:
         row.update(status="error", hooks=None)
@@ -169,7 +193,7 @@ def _probe_registered_hooks(
                 f"{name}: the install ledger cannot be read ({exc}).",
                 harness=name,
                 fix="Move the damaged ledger file aside, then re-run "
-                f"'update --harness {name}' to record a fresh install.",
+                f"'{_update_command(name, project)}' to record a fresh install.",
             )
         )
         return
@@ -179,9 +203,10 @@ def _probe_registered_hooks(
             _check(
                 "hook.unchecked",
                 "info",
-                f"{name}: no install record, so its hook commands were not checked.",
+                f"{name}: no install record for {install_root}, so its hook "
+                "commands were not checked.",
                 harness=name,
-                fix=f"Run 'update --harness {name}' to record the install.",
+                fix=_update_fix(name, project, then="to record the install."),
             )
         )
         return
@@ -200,7 +225,7 @@ def _probe_registered_hooks(
                 f"({probe.detail}).",
                 harness=name,
                 fix="Check that the interpreter in the hook command exists and "
-                f"runs, then {_update_fix(name)[0].lower()}{_update_fix(name)[1:]}",
+                f"runs, then {fix[0].lower()}{fix[1:]}",
             )
         )
     if failed:
@@ -369,9 +394,12 @@ def _render_doctor_report(
     con.print(table)
 
     for check in checks:
-        if check["status"] != "fail":
+        if check["status"] == "info" and check["fix"]:
+            con.print(f"[yellow]![/] {escape(str(check['message']))}")
+        elif check["status"] == "fail":
+            con.print(f"[red]✗[/] {escape(str(check['message']))}")
+        else:
             continue
-        con.print(f"[red]✗[/] {escape(str(check['message']))}")
         if check["fix"]:
             con.print(f"  Fix: {escape(str(check['fix']))}")
 
@@ -379,6 +407,8 @@ def _render_doctor_report(
 def _hook_cell(row: dict[str, object]) -> str:
     """Return the harness table's Hooks cell for one report row."""
     hooks = row.get("hooks")
+    if hooks is None and "hooks" in row and row.get("status") == "ok":
+        return "[yellow]not checked[/]"
     if not isinstance(hooks, dict):
         return ""
     failed = hooks.get("failed")

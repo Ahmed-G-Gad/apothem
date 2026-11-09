@@ -3,13 +3,16 @@
 """Find and start the hook commands an install registered, for ``doctor``.
 
 The check is harness-neutral: it holds no vendor config format. It reads the
-files the latest install wrote (from the install ledger), parses the JSON ones,
-and collects every handler mapping the shared install driver recognizes as
-Apothem-owned (``is_apothem_hook``: a ``command`` plus optional ``args`` that
-point at the materialized ``hooks/dispatch.py`` or ``conformity/gate.py``).
-Both registration shapes in use resolve to an argv: exec form (``command`` is
-the interpreter, ``args`` the script and its arguments) and shell form (one
-``command`` string, split with :mod:`shlex`).
+files the current install at the root being checked wrote (from that root's
+install record in the ledger), parses the JSON ones, and collects every handler
+mapping the shared install driver recognizes as Apothem-owned
+(``is_apothem_hook``: a ``command`` plus optional ``args`` that point at the
+materialized ``hooks/dispatch.py`` or ``conformity/gate.py``). Both registration
+shapes in use resolve to an argv: exec form (``command`` is the interpreter,
+``args`` the script and its arguments) and shell form (one ``command`` string,
+split with :mod:`shlex`, a leading PowerShell call operator ``&`` dropped). A
+hook registered another way (outside JSON, or under keys other than
+``command``) is not probed.
 
 Each distinct interpreter and script pair is started once with a no-op
 payload: the registered arguments plus ``--help``, and ``{}`` on stdin. The
@@ -57,19 +60,23 @@ class HookProbe:
 
 
 def registered_hook_argvs(
-    package_key: str, *, within: Path | None = None
+    package_key: str, *, root: Path, within: Path | None = None
 ) -> list[list[str]] | None:
-    """Return the argv of every Apothem hook the latest install registered.
+    """Return the argv of every Apothem hook the install at *root* registered.
 
-    Returns ``None`` when the harness has no install record (installed before
-    the ledger existed, or by other means), so the caller can report the hook
+    *root* is the install root being checked: the harness folder of a
+    user-scope harness, the project root of a project-scope one. Only that
+    root's current install record is read, so a newer install at another root
+    (a ``CODEX_HOME`` or project since deleted, say) never stands in for it.
+    Returns ``None`` when *root* has no install record (installed before the
+    ledger existed, or by other means), so the caller can report the hook
     check as not run rather than as passed. *within* limits the scan to files
     under a project root (project-scope harnesses).
 
     Raises:
         install_ledger.LedgerError: The ledger exists but cannot be read.
     """
-    record = install_ledger.latest_record(package_key)
+    record = install_ledger.current_install_record(package_key, root=root)
     if record is None:
         return None
     argvs: list[list[str]] = []
@@ -133,7 +140,10 @@ def _handler_argv(handler: dict[str, object]) -> list[str] | None:
         tokens = shlex.split(command, posix=sys.platform != "win32")
     except ValueError:
         return None
-    return [token.strip('"') for token in tokens] or None
+    argv = [token.strip('"') for token in tokens]
+    if argv[:1] == ["&"]:  # PowerShell's call operator, as a Windows install writes it
+        argv = argv[1:]
+    return argv or None
 
 
 def _start(argv: list[str], *, display: str) -> HookProbe:

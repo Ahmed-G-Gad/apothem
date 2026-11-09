@@ -26,12 +26,21 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   without it they are reported as `needs_project`.
 - **Verify.** Each installed harness must pass the same check as
   [`verify`](/docs/cli-reference/verify).
-- **Hook runtime.** For each verified harness, doctor reads the files its latest
-  install wrote, finds the hook commands Apothem registered there, and starts
+- **Hook runtime.** For each verified harness, doctor reads the files that the
+  install it checks wrote: the install in the harness's own folder (a
+  `CODEX_HOME` set where doctor runs is that folder), or, for a project-scope
+  harness, in the `--project` folder. An install in another folder, such as a
+  `CODEX_HOME` doctor is not pointed at or a project you have since deleted,
+  is not used in its place. doctor finds the hook commands Apothem registered
+  in the JSON files among them (a `command`, with optional `args`), and starts
   each interpreter and hook script once with a no-op payload (the registered
   arguments plus `--help`, `{}` on stdin, a scratch working directory, and
   `PYTHONPATH` removed). Nothing is written. A missing interpreter, a missing
-  script, or a crash at import time fails the check.
+  script, or a crash at import time fails the check. A hook registered another
+  way (outside a JSON file, or under keys other than `command`) is not
+  started, and the harness shows `0 started`. When the install ledger has no record for that folder, the check
+  is not run: the report shows `not checked`, and the JSON output carries a
+  `hook.unchecked` check.
 
 Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
 
@@ -46,7 +55,8 @@ and `profile_error` when the profile is invalid) and adds:
 - `project` — the resolved `--project` root, or `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed`, or `error`; plus `verified` and `hooks`
-  (`{"probed": N, "failed": [...]}`, or `null` when no install record exists).
+  (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
+  install record or the install ledger cannot be read).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
   `hook.start_failed`, `ledger.unreadable`, or a `profile.*` code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.

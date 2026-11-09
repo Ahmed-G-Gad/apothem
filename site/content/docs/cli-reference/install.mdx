@@ -148,6 +148,14 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   envelope carries a `warnings` entry with `"outcome": "warning"` and
   `"operation": "skill_conflict"` that names the folder. Rename or move the
   folder, then run [`update`](/docs/cli-reference/update).
+- An install whose folder you have since deleted (a project, or a `CODEX_HOME`)
+  still shows a skill folder is Apothem's only while that folder holds every
+  file the install recorded, unchanged. When no install that still exists
+  lists the folder, a folder you replaced with your own skill, a folder you
+  edited, and a folder an earlier release wrote (it did not record its files)
+  are all skipped with the same warning, and
+  [`verify`](/docs/cli-reference/verify) reports the harness as not verified.
+  Move the folder aside, then run [`update`](/docs/cli-reference/update).
 - Every such install, update, and dry run prints a `Note:` that names the
   folders it writes outside `--project`. In the JSON envelope it is a `warnings`
   entry with `"operation": "user_level_write"` and a `paths` list.
