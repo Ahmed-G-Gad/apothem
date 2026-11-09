@@ -858,7 +858,9 @@ def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
     else:
         assert result.outcome == "warning"
         assert "no longer exists" in result.message
-        assert "apothem install" in result.message
+        assert f"apothem install --harness cursor --project {gone}" in result.message
+        assert "--profile" in result.message
+        assert f"apothem uninstall --harness cursor --project {gone}" in result.message
 
 
 def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(

@@ -52,9 +52,9 @@ The shared working directory's memory, contexts, and learning stores are
 backed up and removed only when this is the last harness installed at that
 directory. Uninstall removes them at the location the install recorded, so it
 finds them wherever the install wrote them (see the `workspace` profile
-fields). The `plans/` directory is never removed. An install whose folder no
-longer exists (a deleted project) still counts, unlike for the shared folders
-below; see the next paragraphs for the warning that says so.
+fields). The `plans/` directory is never removed. Here an install whose
+folder no longer exists (a deleted project) still counts as using the stores,
+unlike for the shared folders below, and the uninstall says so (see below).
 
 Prompts for confirmation unless
 `--yes` is supplied. When no prompt is possible — `--format json` (prompt
@@ -72,12 +72,22 @@ root, the command copies each store into the Apothem backup root
 (`~/.apothem/backups/`) first, then removes it with everything in it.
 Anything you keep in `plans/` is never removed.
 
-When the install that keeps the stores sits in a folder that no longer exists,
-the command keeps them and prints a `Warning:` line that names that install
-(`<tool> installed at <folder> (that folder no longer exists)`). Uninstalling
-there takes a real install: create the folder again, run `apothem install` for
-that tool there, then `apothem uninstall` there, and the stores go with the
-last uninstall. Or remove the stores by hand.
+When the only installs that keep the stores sit in folders that no longer
+exist, the command keeps the stores and prints a `Warning:` line that names
+one such install and the commands that release it. An uninstall in an empty
+recreated folder finds nothing installed, so the steps install the tool there
+again first. Use the same `--profile` that install used, if any: a profile can
+put the stores in your home folder, and an install without it writes stores of
+its own and leaves those held. For a project tool, the steps are:
+
+```bash
+mkdir -p /path/to/old-project
+apothem install --harness cursor --project /path/to/old-project --profile /path/to/that-profile.yaml
+apothem uninstall --harness cursor --project /path/to/old-project --yes
+```
+
+The stores go with that uninstall when no other install still uses them. You
+can also remove the stores by hand.
 
 ## Shared folders in your home directory
 
