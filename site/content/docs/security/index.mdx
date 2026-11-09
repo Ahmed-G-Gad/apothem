@@ -19,6 +19,10 @@ harness reads. That single function bounds what it trusts and what it does not.
   after validation: schema failures, unknown harness IDs, unsafe project paths,
   missing manifest sources, target traversal, and symlink crossings all stop
   before any write and return structured diagnostics with `files_written: []`.
+  The exceptions are the links dotfile managers make at `~/.config`, or at or
+  above a shared skill, rule or template folder, which are followed while they
+  lead somewhere inside your home directory. On Windows a junction counts as a
+  link.
 - **What materialized output never carries.** No secrets. Profile diagnostics
   redact secret-like keys and token-shaped values before they reach plain
   output, JSON, logs, docs snippets, or tests, and public examples use fake
@@ -39,7 +43,28 @@ harness reads. That single function bounds what it trusts and what it does not.
 Harness lifecycle and profile-write commands validate before writing. Profile
 schema failures, unknown harness IDs, unsafe project paths, missing manifest
 sources, target traversal, and symlink crossings stop before filesystem writes
-and return structured diagnostics with `files_written: []`.
+and return structured diagnostics with `files_written: []`. A Windows junction
+counts as a symlink. The exceptions are a link at `~/.config`, or at or above a
+shared skill, rule or template folder, that stays inside your home directory,
+and a home folder that is itself a link. A link never takes a write to a
+harness folder or to the profile out of your home directory unless you name
+the folder outside it yourself, through `XDG_CONFIG_HOME` or `CODEX_HOME`
+spelled as a path outside your home directory, or through `--profile PATH`
+spelled the same way for the profile. Such a spelled path is followed wherever
+its links lead. This holds for install, update, uninstall, `apothem rollback`
+and the `apothem profile` commands, including `profile set` and `profile init
+--force` over an existing profile. `install --clean` stops before it backs up
+or removes anything when `~/.config` is a link that leads out of your home
+directory, and it removes a target that is itself a link as a link, without
+entering it. On Windows a junction at or inside a tool's folder therefore stops
+the install, also when it leads somewhere inside your home directory; replace
+it with the folder itself.
+
+Apothem's own folder, `~/.apothem`, is not checked this way. It holds the
+backups, the install ledger and their lock files; when it is a link, every
+command that writes there follows it wherever it leads, and `apothem backups
+prune` and the automatic backup retention delete old backup sets at the far
+end of that link.
 
 Install and update operations preserve existing managed targets by backing them
 up before replacement. Shared discovery directories are merged child-by-child so

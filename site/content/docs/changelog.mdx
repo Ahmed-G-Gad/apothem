@@ -578,22 +578,89 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   literal text. The install now writes each one as `{env:NAME}` in a server's
   environment, headers and URL; command arguments are copied as written, for
   the server or a shell it runs to expand. It warns about a `$NAME` in an
-  environment or header value and about another `${...}` form, which OpenCode
-  does not expand either; the warning names where the reference sits, never the
-  value. OpenCode inserts an `{env:NAME}` value into the config text it reads
-  without escaping it (OpenCode 2 escapes it only when that text would not
-  parse otherwise), so a value holding a backslash (such as a Windows path), a
-  double quote or a control character can stop OpenCode 1 from reading the
-  file, and in both lines a `\t` or `\n` in it reaches the server as a control
-  character. The install warns about such a value and suggests setting it as
-  `{file:path}` under `harnesses.opencode.mcp_servers.<name>`.
+  environment or header value and about any other `${...}` form, a plain
+  `${NAME}` in a command argument included, which OpenCode does not expand
+  either; the warning names where the reference sits, never the value.
+  OpenCode inserts an `{env:NAME}` value into the config text it reads without
+  escaping it (OpenCode 2 escapes it only when that text would not parse
+  otherwise), so a value holding a backslash (such as a Windows path), a double
+  quote or a control character can stop OpenCode 1 from reading the file, and
+  in both lines a `\t` or `\n` in it reaches the server as a control
+  character. The install warns about such a value and suggests restating that
+  whole server under `harnesses.opencode.mcp_servers.<name>`, with the value
+  written as `{file:path}`, since an override replaces the whole server.
 - **The OpenCode install follows `XDG_CONFIG_HOME`.** OpenCode 1 and OpenCode 2
   read `$XDG_CONFIG_HOME/opencode` when that variable is set, but the install
   always wrote to `~/.config/opencode`. It now writes to the folder OpenCode
   reads. It warns when `XDG_CONFIG_HOME` cannot be used, when
   `OPENCODE_CONFIG_DIR` names another folder (OpenCode 2 reads that folder
-  instead), and when an earlier install is still recorded in
-  `~/.config/opencode`.
+  instead), and when the files of an earlier install are still in
+  `~/.config/opencode`. When `XDG_CONFIG_HOME` names the same folder as
+  `~/.config` inside your home directory, through a link, a junction, a change
+  of case or a short name, the install keeps using `~/.config/opencode`, so it
+  stays one install, also after a `~/.config` link is replaced by the folder
+  itself.
+- **Installs follow a `~/.config` that is a link into your home directory.**
+  Dotfile managers often make `~/.config` a link into a dotfiles folder. The
+  write guard stopped every OpenCode install there, and every Codex install
+  whose `CODEX_HOME` is a folder directly in `~/.config`, with `target path
+  crosses a symlink`. It now follows a link at `~/.config` that leads somewhere
+  inside your home directory, as it already did for the shared skill, rule and
+  template folders. A `~/.config` link that leaves your home directory still
+  stops the install before it writes any file. To install OpenCode there, set
+  `XDG_CONFIG_HOME` to the folder the link leads to, spelled as that folder's
+  own path outside your home directory. An install made earlier in
+  `~/.config/opencode` then keeps one set of `instructions` entries, and an
+  uninstall with the same setting removes that earlier install too. A Codex
+  install cannot be moved out of the home this way, because it also writes
+  `~/.config/apothem/`. An `XDG_CONFIG_HOME` or `CODEX_HOME` spelled inside
+  your home directory that a link leads out of it, such as `~/work/codex` with
+  `~/work` linked to another drive, stops the install, the uninstall and
+  `apothem rollback` too, wherever above the folder the link sits; a refused
+  rollback changes nothing, writes no `rollback` record and exits 1. A link
+  on a path the install writes inside the harness folder still stops it, with
+  `target path crosses a symlink`, or with `target escapes the allowed
+  materialization root` when that link leads out of the folder holding the
+  harness folder.
+- **The profile is not written through a link that leaves your home
+  directory.** A first `apothem install`, `apothem quickstart`, `apothem
+  profile init`, `apothem profile set` and `apothem profile edit` write the
+  profile at `~/.config/apothem/profile.yaml`. When `~/.config` is a link that
+  leads out of your home directory, each now stops before it writes or opens
+  the editor, with `Apothem could not create the starter profile` when there
+  is no profile yet and `Apothem could not write the profile` over an existing
+  one, also for `profile init --force`. Before, `quickstart`, `profile init`
+  and `profile set` wrote the profile outside your home directory, and
+  `profile set` created its folder there even when it then failed. A
+  `--profile PATH` spelled inside your home directory follows the same rule; a
+  `--profile PATH` spelled outside your home directory is written as before.
+  A profile file that is itself a link out of your home directory is refused
+  the same way, and the error names it as the link. With no profile yet, the
+  error says to create one outside your home directory with `apothem profile
+  init --profile PATH` first. Commands that only read the profile still read
+  it.
+- **`install --clean` does not remove through a link that leaves your home
+  directory.** When `~/.config` was a link out of your home directory, the
+  clean-slate step deleted the `apothem` folder at the far end of that link
+  and then wrote the profile back there. It now stops with `Clean-slate
+  removal was refused` before it backs up or removes anything. On Windows a
+  junction at `~/.claude`, `~/.codex` or `~/.agents` was entered: the files it
+  led to were deleted and the run ended with a traceback. The clean-slate step
+  now removes a target that is a link or a junction as a link, and removes a
+  link inside a target without entering it. The backup under
+  `~/.apothem/backups/clean-slate-*` still holds what an earlier run removed.
+- **A home folder that is itself a link installs.** On Linux and macOS, a home
+  folder that is a symbolic link, such as `/home/name` leading to
+  `/data/home/name`, stopped every install of a tool whose folder sits directly
+  in the home, such as Claude Code or Codex, with `target path crosses a
+  symlink`. That link leads to the home folder itself, so every write stays in
+  it, and the install now follows it. On Windows a home folder that is a
+  junction, as moving a user profile to another drive makes it, is followed
+  the same way.
+- **A refused uninstall is reported as failed.** When the write guard, a
+  failed backup or an unreadable install record stopped part of an uninstall,
+  `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
+  and the install record stayed. It now prints the error and exits non-zero.
 - **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
   shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
   `mcp.<name>` entries the install writes in place, without rewriting the file.
@@ -632,6 +699,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **A link no longer takes an install out of your home directory through
+  `~/.config` or a moved tool folder.** A junction at `~/.config` leading out
+  of your home directory let an OpenCode install, and the starter profile of a
+  first run, write outside it. On every system, a link two or more folders
+  above a `CODEX_HOME` spelled inside your home directory let a Codex install
+  write outside it. Both now stop before anything is written. On Windows a
+  junction on a path an install writes counts as a link, as a symbolic link
+  already did, so a junction at or inside a tool's folder, such as
+  `~/.claude`, `~/.claude/skills`, or a project's `.cursor` or `.gemini`
+  folder, now stops the install with `target path crosses a symlink`, also
+  when it leads somewhere inside your home directory or project. Replace such
+  a junction with the folder itself, or link `~/.config` or `~/.agents`
+  instead, which are followed while they lead somewhere inside your home
+  directory.
 - **The installers accept only the maintainer key, and with cosign they
   also check the signed release archive.** `install.sh`, `install.ps1`,
   `update.sh` and `update.ps1` checked a release tag with `git verify-tag`,

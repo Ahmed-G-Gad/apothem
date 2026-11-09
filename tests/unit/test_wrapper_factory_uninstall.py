@@ -5,7 +5,9 @@
 Covers the H2 project-scope uninstall factory: the direct-module-call fallback
 must derive the project root from the adapter's declared ``relative_target``
 component count, not a hardcoded ``parents[N]`` magic index, so a manifest
-target-depth change can never silently derive the wrong root.
+target-depth change can never silently derive the wrong root. Also covers
+what every uninstall shim does with an ``error`` result: it raises, so the CLI
+does not report a refused uninstall as done.
 """
 
 from __future__ import annotations
@@ -13,9 +15,20 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from apothem.cli import main
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.wrapper_factories import make_project_scope_uninstall
+from apothem.harnesses._shared.install_driver import MaterializationResult
+from apothem.harnesses._shared.wrapper_factories import (
+    make_native_config_uninstall,
+    make_project_scope_uninstall,
+    make_uninstall,
+)
+from apothem.harnesses.antigravity.uninstall import uninstall as antigravity_uninstall
+from apothem.harnesses.claude_code.uninstall import uninstall as claude_code_uninstall
+from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_code_uninstall
+from apothem.harnesses.opencode import OpenCodeAdapter
 
 
 def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
@@ -27,8 +40,9 @@ def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
         *,
         harness_root: Path | None = None,
         project_root: Path | None = None,
-    ) -> None:
+    ) -> list[MaterializationResult]:
         seen.append(project_root)
+        return []
 
     monkeypatch.setattr(install_driver, "run_uninstall", fake_run_uninstall)
     return seen
@@ -113,3 +127,103 @@ def test_explicit_project_takes_precedence_over_derivation(
     uninstall(misleading_output, project=explicit)
 
     assert seen == [explicit]
+
+
+def _refusal(path: Path) -> MaterializationResult:
+    return MaterializationResult(
+        outcome="error",
+        operation="surgical_uninstall",
+        path=str(path),
+        message="target path crosses a symlink",
+    )
+
+
+def _refusing_run_uninstall(
+    monkeypatch: pytest.MonkeyPatch, outcome: str = "error"
+) -> None:
+    """Patch ``run_uninstall`` to return one result with *outcome*."""
+
+    def fake_run_uninstall(
+        harness_name: str, **kwargs: object
+    ) -> list[MaterializationResult]:
+        del harness_name, kwargs
+        result = _refusal(Path("refused"))
+        if outcome != "error":
+            result = MaterializationResult(
+                outcome="skipped", operation="uninstall", path="kept", message="kept"
+            )
+        return [result]
+
+    monkeypatch.setattr(install_driver, "run_uninstall", fake_run_uninstall)
+
+
+def test_every_uninstall_shim_raises_on_an_error_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _refusing_run_uninstall(monkeypatch)
+    shims = [
+        lambda: make_uninstall("codex")(tmp_path / ".codex" / "AGENTS.md"),
+        lambda: make_project_scope_uninstall(
+            "cursor", relative_target=Path(".cursor") / "rules" / "a.mdc"
+        )(tmp_path / ".cursor" / "rules" / "a.mdc"),
+        lambda: make_native_config_uninstall("opencode", lambda profile: "{}")(
+            tmp_path / "opencode" / "opencode.json"
+        ),
+        # The adapters with their own uninstall module call the same check.
+        lambda: claude_code_uninstall(tmp_path / ".claude" / "settings.json"),
+        lambda: antigravity_uninstall(
+            tmp_path / ".gemini" / "config" / "plugins" / "apothem" / "plugin.json"
+        ),
+        lambda: kimi_code_uninstall(
+            tmp_path / "AGENTS.md", project=tmp_path / "project"
+        ),
+    ]
+    for shim in shims:
+        with pytest.raises(install_driver.MaterializationError, match="symlink"):
+            shim()
+
+    _refusing_run_uninstall(monkeypatch, outcome="skipped")
+    for shim in shims:
+        shim()
+
+
+def test_an_error_in_the_native_config_removal_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The surgical removal of the rendered config refused, the support pass
+    # did not: the uninstall still fails.
+    seen: list[tuple[MaterializationResult, ...]] = []
+
+    def fake_run_uninstall(
+        harness_name: str,
+        *,
+        harness_root: Path | None = None,
+        prior_results: tuple[MaterializationResult, ...] = (),
+    ) -> list[MaterializationResult]:
+        seen.append(prior_results)
+        return []
+
+    target = tmp_path / "opencode" / "opencode.json"
+    monkeypatch.setattr(install_driver, "run_uninstall", fake_run_uninstall)
+    monkeypatch.setattr(
+        install_driver,
+        "surgically_remove_materialized_config",
+        lambda *args, **kwargs: _refusal(target),
+    )
+
+    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+        make_native_config_uninstall("opencode", lambda profile: "{}")(target)
+    assert [len(prior) for prior in seen] == [1]
+
+
+def test_a_refused_uninstall_is_not_reported_as_done(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    OpenCodeAdapter().install({})
+    _refusing_run_uninstall(monkeypatch)
+
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "opencode", "--yes"])
+
+    assert result.exit_code != 0
+    assert "Uninstalled" not in result.output
+    assert "uninstall failed" in result.output

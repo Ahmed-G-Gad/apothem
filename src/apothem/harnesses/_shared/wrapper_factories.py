@@ -19,7 +19,7 @@ in the same order, so no rendered install output changes.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -152,18 +152,21 @@ _UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
 
     The shared driver strips only Apothem's managed block and keys, backing each
     target up under the Apothem backup root first, so operator-authored content
-    in a shared file survives."""
+    in a shared file survives. A step that reports an error raises
+    :class:`MaterializationError`, so the uninstall is not reported as done."""
 
 _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
 
     The project root passes through when the CLI supplied it; otherwise it is
-    derived from the adapter's declared relative target."""
+    derived from the adapter's declared relative target. A step that reports
+    an error raises :class:`MaterializationError`."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 
     The materializer-rendered config is not a manifest entry, so Apothem's
     structural contribution is identified by re-rendering from an empty profile
-    and removed surgically before the shared driver cleans the support tree."""
+    and removed surgically before the shared driver cleans the support tree.
+    A step that reports an error raises :class:`MaterializationError`."""
 
 
 def make_verify_harness_root(harness_name: str) -> _UserScopeVerify:
@@ -276,10 +279,35 @@ def make_uninstall(harness_name: str) -> _NativeUninstallFn:
     """
 
     def uninstall(output_path: Path) -> None:
-        install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
+        raise_on_uninstall_error(
+            harness_name,
+            install_driver.run_uninstall(harness_name, harness_root=output_path.parent),
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC
     return uninstall
+
+
+def raise_on_uninstall_error(
+    harness_name: str, results: Sequence[install_driver.MaterializationResult]
+) -> None:
+    """Raise when an uninstall step reported an error.
+
+    ``run_uninstall`` returns its refusals (a path the write guard refuses, an
+    unreadable ledger, a failed backup) as ``error`` results instead of
+    raising; the CLI reports a run that raises as failed, so a refused
+    uninstall is not reported as done.
+
+    Raises:
+        MaterializationError: Naming the first ``error`` result.
+    """
+    failed = next((result for result in results if result.outcome == "error"), None)
+    if failed is None:
+        return
+    raise MaterializationError(
+        f"uninstall failed at {failed.path}: {failed.message}",
+        MaterializationRun(harness=harness_name, dry_run=False, results=tuple(results)),
+    )
 
 
 def make_user_scope_adapter(
@@ -517,7 +545,10 @@ def make_project_scope_uninstall(
 
     def uninstall(output_path: Path, *, project: Path | None = None) -> None:
         project_root = project if project is not None else output_path.parents[_depth]
-        install_driver.run_uninstall(harness_name, project_root=project_root)
+        raise_on_uninstall_error(
+            harness_name,
+            install_driver.run_uninstall(harness_name, project_root=project_root),
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC_PROJECT
     return uninstall
@@ -597,11 +628,11 @@ def make_native_config_uninstall(
             retired=_retired_at_uninstall(retired_fn),
             relocated=relocated_fn,
         )
-        install_driver.run_uninstall(
-            harness_name,
-            harness_root=output_path.parent,
-            prior_results=(native,) if native is not None else (),
+        prior = (native,) if native is not None else ()
+        results = install_driver.run_uninstall(
+            harness_name, harness_root=output_path.parent, prior_results=prior
         )
+        raise_on_uninstall_error(harness_name, (*prior, *results))
 
     uninstall.__doc__ = _UNINSTALL_DOC_NATIVE
     return uninstall
