@@ -54,15 +54,22 @@ _RENDERED: dict[str, tuple[Callable[[Path], str], str | None]] = {
 }
 
 
+#: An interpreter path as an install writes it: one line, ending in the
+#: Python executable's name (``python``, ``python3.12``, ``python.exe``), with
+#: none of the characters a shell command or a comment needs (``;&|<>#$``,
+#: backquote, double quote). Spaces, ``()``, ``~``, an apostrophe
+#: (``O'Brien``) and non-ASCII letters are allowed, as real paths hold them.
+_INTERPRETER = rb"[^\r\n;&|<>#$`\"]*?[Pp]ython[0-9.]*(?:\.[Ee][Xx][Ee])?"
+
 #: The install-time tokens an adapter fills in that the shipped source leaves
 #: unrendered, each with what it can stand for: an interpreter path on one
-#: line without quotes (``${PYTHON_BIN}``), or the PowerShell call operator
+#: line ending in the interpreter (``${PYTHON_BIN}``, see :data:`_INTERPRETER`), or the PowerShell call operator
 #: (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere). Any other
 #: ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``) is text the
 #: tool reads, so it must match exactly.
 _FILLED: dict[bytes, bytes] = {
-    b"${PYTHON_BIN}": rb"[^\r\n\"'`]+",
-    b"${STATUSLINE_PYTHON_BIN}": rb"[^\r\n\"'`]+",
+    b"${PYTHON_BIN}": _INTERPRETER,
+    b"${STATUSLINE_PYTHON_BIN}": _INTERPRETER,
     b"${CALL_OP}": rb"(?:& )?",
 }
 

