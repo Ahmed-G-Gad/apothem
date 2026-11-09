@@ -935,7 +935,7 @@ def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(
     def broken(*args: object, **kwargs: object) -> list[object]:
         raise OSError("listing failed")
 
-    monkeypatch.setattr(install_driver_lifecycle, "_left_behind", broken)
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
     code, envelope = _uninstall()
 
     assert code == cli._EXIT_PARTIAL, envelope
