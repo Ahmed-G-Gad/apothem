@@ -198,13 +198,16 @@ def remove_managed_block(existing: str, *, reclaim: bool = False) -> str:
 
     For the frontmatter-first shape (Apothem's frontmatter directly followed by
     the block), the frontmatter is removed together with the block. Without
-    *reclaim*, every whole block goes, so a block pasted in twice goes too.
+    *reclaim*, the first whole block goes, and so does each later exact copy of
+    it (a block pasted in twice); any other whole block, such as a marker pair
+    the operator quotes, stays.
     """
     if reclaim:
         return _remove_block(existing, extract_managed_block)
-    text = existing
-    while (rest := _remove_block(text, complete_managed_block)) != text:
-        text = rest
+    first = complete_managed_block(existing)
+    text = _remove_block(existing, complete_managed_block)
+    while first is not None and complete_managed_block(text) == first:
+        text = _remove_block(text, complete_managed_block)
     return text
 
 

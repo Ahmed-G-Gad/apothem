@@ -12,8 +12,6 @@ from pathlib import Path
 import yaml
 
 from apothem.lib.harness_materializer import (
-    APOTHEM_BLOCK_END,
-    complete_managed_block,
     extract_managed_block,
     remove_managed_block,
 )
@@ -40,6 +38,7 @@ from .install_driver_types import (
     _path_text,
     _result,
 )
+from .install_driver_written import sentinel_refusal
 
 
 def _remove_apothem_hook_handlers(
@@ -398,11 +397,9 @@ def _surgical_remove_from_target(
         # Nothing of Apothem's is left in the anchor, so there is nothing to
         # remove (and no reason to refuse a path reached through a link).
         return None
-    if mode == "sentinel_merge" and (
-        endless := endless_block_warning(target, "surgical_uninstall")
-    ):
+    if mode == "sentinel_merge" and (refusal := sentinel_refusal(target)):
         # Nothing is changed, so a link or a non-UTF-8 byte does not matter.
-        return endless
+        return refusal
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="surgical_uninstall"
     )
@@ -596,31 +593,6 @@ def _holds_managed_block(target: Path) -> bool:
     except OSError:
         return True
     return extract_managed_block(text) is not None
-
-
-def endless_block_warning(target: Path, operation: str) -> MaterializationResult | None:
-    """Return a warning when *target*'s managed block lost its END marker.
-
-    A BEGIN marker with no END after it: the text below it may be the
-    operator's, so nothing is removed, and the file no longer counts as
-    Apothem's (see :func:`still_written`). ``None`` when the file holds a whole
-    block, holds no marker, or cannot be read.
-    """
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return None
-    if extract_managed_block(text) is None or complete_managed_block(text):
-        return None
-    return _result(
-        "warning",
-        operation,
-        target,
-        f"{_path_text(target)} has the Apothem BEGIN marker but no END marker "
-        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
-        "ends and left the file as it is. Delete the block in it by hand, "
-        "keeping your own text.",
-    )
 
 
 def strip_managed_anchor(

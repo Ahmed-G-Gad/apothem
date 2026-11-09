@@ -90,6 +90,13 @@ class TestManagedBlockMerge:
         text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
         assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
 
+    def test_remove_keeps_a_quoted_marker_pair_after_the_block(self):
+        # Only Apothem's block and its exact copies go: a marker pair the
+        # operator quotes stays, with the text between the markers.
+        block = wrap_managed_block("body")
+        quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+        assert remove_managed_block(f"{block}\n{quoted}") == quoted
+
     def test_reclaim_removes_a_block_without_end_as_the_install_does(self):
         assert remove_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nold\n", reclaim=True) == ""
 
