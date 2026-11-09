@@ -30,10 +30,15 @@ keep keeps its folder.
 
 An install recorded by an earlier release does not say which files Apothem
 wrote. For it, the uninstall compares each file with what this release writes
-at that path and removes the ones with the same bytes. A file at a name
-Apothem writes that differs (written by that earlier release, or edited by
-you) stays, and the uninstall does not finish: it prints `✗ <harness>
-uninstall did not finish:` with the number of such paths and exits `2`.
+at that path and removes the ones with the same bytes. Where a file holds the
+Python interpreter the install found (a hook command, the statusline), that
+spot compares as the same only when it holds an interpreter path or a launcher
+an earlier release wrote (`py -3`, `python3`), and nothing else. A path there
+that holds `&`, `#` or `$` (a Windows user name such as `R&D`) never compares
+as the same, so that file is kept. A file at a name Apothem writes that differs
+(written by that earlier release, or edited by you) stays, and the uninstall
+does not finish: it prints `✗ <harness> uninstall did not finish:` with the
+number of such paths and exits `2`.
 `apothem update` records the files as they are, so running it and then
 `apothem uninstall` again finishes the job. Before you do, two kinds of file
 need moving, because the update overwrites the paths it writes and replaces

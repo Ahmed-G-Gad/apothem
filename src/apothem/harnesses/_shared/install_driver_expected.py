@@ -54,19 +54,63 @@ _RENDERED: dict[str, tuple[Callable[[Path], str], str | None]] = {
 }
 
 
-#: An interpreter path as an install writes it: one line, ending in the
-#: Python executable's name (``python``, ``python3.12``, ``python.exe``), with
-#: none of the characters a shell command or a comment needs (``;&|<>#$``,
-#: backquote, double quote). Spaces, ``()``, ``~``, an apostrophe
-#: (``O'Brien``) and non-ASCII letters are allowed, as real paths hold them.
-_INTERPRETER = rb"[^\r\n;&|<>#$`\"]*?[Pp]ython[0-9.]*(?:\.[Ee][Xx][Ee])?"
+#: The interpreter's own file name, in any case (``PYTHON.EXE``, macOS's
+#: ``Python``): ``python`` with an optional ``w`` (``pythonw``), version
+#: (``3``, ``3.12``), free-threaded ``t``, build suffix (``-dbg``, ``_d``,
+#: ``-intel64``, ``-arm64``) and ``.exe``, or its Windows 8.3 short form
+#: (``PYTHON~1.EXE``).
+_INTERPRETER_NAME = (
+    rb"(?i:pythonw?(?:[0-9]+(?:\.[0-9]+)*)?t?(?:-dbg|_d|-intel64|-arm64)?"
+    rb"(?:\.exe)?|python~[0-9]+\.exe)"
+)
+
+#: One run of path characters: no whitespace, separator, colon, quote,
+#: backquote or shell metacharacter (``;&|<>#$``). An apostrophe
+#: (``O'Brien``), parentheses, ``~`` and non-ASCII letters are path characters.
+_PATH_WORD = rb"[^\s/\\:;&|<>#$`\"]+"
+
+#: A folder name: words joined by single spaces (``Program Files (x86)``). A
+#: word after a space may not start an option (``-I``) or a home path (``~``),
+#: so a second command written after the interpreter never reads as a folder.
+_PATH_SEGMENT = _PATH_WORD + rb"(?: (?![-~])" + _PATH_WORD + rb")*"
+
+#: A separator: ``/``, a doubled backslash (as JSON writes one), or a single
+#: backslash not followed by a letter JSON reads as an escape (``\n``).
+_PATH_SEP = rb"(?:/|\\\\|\\(?![bfnrtu]))"
+
+#: Where an absolute path starts: a drive (``C:/``, ``C:\``, also after the
+#: long-path prefix ``//?/`` or ``\\?\``), a UNC share (``//``, ``\\``), the
+#: home (``~/``) or the root (``/``).
+_PATH_ROOT = rb"(?:(?://\?/|\\\\\?\\)?[A-Za-z]:" + _PATH_SEP + rb"|//|\\\\|~/|/)"
+
+#: The bare launchers earlier releases wrote at these positions (v1.0.1's
+#: Codex hooks ran ``python3``, and ``py -3`` on Windows).
+_LAUNCHER = rb"(?:py(?: -3)?|python3?)"
+
+#: What an install writes for the interpreter: exactly one bare launcher, or
+#: an absolute path whose last component is an interpreter (see
+#: :data:`_INTERPRETER_NAME`), and nothing else. A path that holds ``&``,
+#: ``#`` or ``$`` (a Windows user name such as ``R&D``) never matches, so such
+#: a file is kept rather than removed: the check fails safe.
+_INTERPRETER = (
+    rb"(?:"
+    + _LAUNCHER
+    + rb"|"
+    + _PATH_ROOT
+    + rb"(?:"
+    + _PATH_SEGMENT
+    + _PATH_SEP
+    + rb")*"
+    + _INTERPRETER_NAME
+    + rb")"
+)
 
 #: The install-time tokens an adapter fills in that the shipped source leaves
-#: unrendered, each with what it can stand for: an interpreter path on one
-#: line ending in the interpreter (``${PYTHON_BIN}``, see :data:`_INTERPRETER`), or the PowerShell call operator
-#: (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere). Any other
-#: ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``) is text the
-#: tool reads, so it must match exactly.
+#: unrendered, each with what it can stand for: the interpreter
+#: (``${PYTHON_BIN}``, see :data:`_INTERPRETER`), or the PowerShell call
+#: operator (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere).
+#: Any other ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``)
+#: is text the tool reads, so it must match exactly.
 _FILLED: dict[bytes, bytes] = {
     b"${PYTHON_BIN}": _INTERPRETER,
     b"${STATUSLINE_PYTHON_BIN}": _INTERPRETER,

