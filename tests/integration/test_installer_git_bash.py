@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MIT
+
 """Under Git Bash, the sh installers keep the current folder off sys.path.
 
 Git Bash (MSYS) rewrites a ":"-joined list of /c/... paths into ";"-joined
