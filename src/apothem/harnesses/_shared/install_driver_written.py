@@ -87,14 +87,33 @@ def _matches(path: Path, expected: str | None) -> bool:
     return file_digest(path) == expected
 
 
-def _kept_whole(target: Path, reason: str, message: str) -> MaterializationResult:
-    """Return the warning for a target an uninstall left entirely in place."""
+def _files_in(target: Path) -> list[str] | None:
+    """Return the files in the folder *target* (never through a link), or ``None``.
+
+    A folder kept whole lists them, so the report can name each file.
+    """
+    if not target.is_dir() or _is_link(target):
+        return None
+    return [_path_text(path) for path in _walk_without_links(target).files]
+
+
+def _kept_whole(
+    target: Path, reason: str, message: str, files: list[str] | None = None
+) -> MaterializationResult:
+    """Return the warning for a target an uninstall left in place.
+
+    *files* names the files kept inside a folder target (``detail``
+    ``kept_files``), so the report can list each one.
+    """
+    detail = {KEPT_REASON: reason}
+    if files:
+        detail[KEPT_FILES] = "\n".join(files)
     return _result(
         "warning",
         "remove_existing",
         target,
         f"{target} was kept: {message}",
-        detail={KEPT_REASON: reason},
+        detail=detail,
     )
 
 
@@ -194,23 +213,32 @@ def remove_written(
     if proof is None:
         if recorded is None:
             return _kept_whole(
-                target, "no-record", "no install record shows Apothem wrote it"
+                target,
+                "no-record",
+                "no install record shows Apothem wrote it",
+                files=_files_in(target),
             )
         if entry is None:
             return _kept_whole(
-                target, "unrecorded", "the install record does not list it"
+                target,
+                "unrecorded",
+                "the install record does not list it",
+                files=_files_in(target),
             )
         return _kept_whole(
-            target,
-            "no-digests",
-            _EARLIER_RELEASE,
+            target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
         )
     written = _written_now(target, proof)
     if not written:
         if legacy and _named_by(target, proof):
-            return _kept_whole(target, "no-digests", _EARLIER_RELEASE)
+            return _kept_whole(
+                target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
+            )
         return _kept_whole(
-            target, "changed", "it is not what Apothem wrote (changed or yours)"
+            target,
+            "changed",
+            "it is not what Apothem wrote (changed or yours)",
+            files=_files_in(target),
         )
     backup = backup_existing(
         target,
@@ -277,7 +305,8 @@ def kept_file_warnings(
     """Return one warning per folder in which a removal kept files.
 
     The files were not written by Apothem as they are now: the operator added
-    or changed them, so the folder stays with them in it.
+    or changed them, so the folder stays with them in it. Each warning names
+    the files in its ``detail`` (``kept_files``).
     """
     warnings = []
     for result in results:
@@ -286,18 +315,17 @@ def kept_file_warnings(
             continue
         folder = Path(result.path)
         if result.detail.get(KEPT_REASON) == "no-digests":
-            warnings.append(_kept_whole(folder, "no-digests", _EARLIER_RELEASE))
+            warnings.append(
+                _kept_whole(folder, "no-digests", _EARLIER_RELEASE, files=kept)
+            )
             continue
-        names = [Path(path).relative_to(folder).as_posix() for path in kept]
-        shown = ", ".join(names[:5]) + (
-            f" and {len(names) - 5} more" if len(names) > 5 else ""
-        )
         warnings.append(
             _kept_whole(
                 folder,
                 "changed",
                 f"{len(kept)} file(s) in it are not what Apothem wrote "
-                f"(changed or yours): {shown}",
+                "(changed or yours)",
+                files=kept,
             )
         )
     return warnings

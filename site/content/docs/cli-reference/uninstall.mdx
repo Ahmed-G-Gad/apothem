@@ -122,11 +122,14 @@ junction, so a link in a folder it removes stays, and so does a leftover folder
 from an earlier release that is reached through a link. Paths kept for the same
 link, or for the same reason (not what Apothem wrote, not in the install
 record), print as one line with their count; a file it could not remove is
-named too. In the `--format json` envelope each such line is one `warnings`
-entry with `"outcome": "warning"`, the line's `message`, `count` (how many
-paths it covers) and `paths` (each of them). These warnings do not stop the
-uninstall. One kind does: files of an install an earlier release recorded
-that differ from what this release writes (see
+named too. Under a line for kept paths, each file it kept is listed, the
+files inside a kept folder included, up to 20; the rest are counted, and
+`--format json` lists them all. In the `--format json` envelope each such line
+is one `warnings` entry with `"outcome": "warning"`, the line's `message`,
+`count` (how many paths it covers), `paths` (each of them) and, for kept
+paths, `files` (each file kept). These warnings do not stop the uninstall. One
+kind does: files of an install an earlier release recorded that differ from
+what this release writes (see
 [What an uninstall removes](#what-an-uninstall-removes)).
 
 Apothem's own files reached through a link are different: the tool still

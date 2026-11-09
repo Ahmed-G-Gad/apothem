@@ -122,19 +122,49 @@ def _group(
         group["message"] = _KEPT_GROUP_LINES[value].format(count=count)
     group["count"] = count
     group["paths"] = [member.path for member in members]
+    if kind == "kept":
+        group["files"] = [
+            path
+            for member in members
+            for path in (
+                member.detail.get("kept_files", "").splitlines() or [member.path]
+            )
+            if path
+        ]
     return group
 
 
-def _warning_lines(run: MaterializationRun) -> list[str]:
-    """Return the warnings to print, one line per group (see :func:`_warning_groups`).
+#: How many kept files a printed warning lists before pointing at the JSON.
+_LISTED_FILES = 20
 
-    A link that keeps Apothem's own files is reported as a failure instead.
+
+def _warning_lines(run: MaterializationRun) -> list[str]:
+    """Return the warnings to print, one per group (see :func:`_warning_groups`).
+
+    A group of kept paths lists each file under its line, so the advice that
+    names them ("copy any you edited") points at files the reader can see;
+    after :data:`_LISTED_FILES` the rest are counted, and ``--format json``
+    lists them all. A link that keeps Apothem's own files is reported as a
+    failure instead.
     """
     return [
-        str(group["message"])
-        for group in _warning_groups(run)
-        if not _is_blocked(group)
+        _with_files(group) for group in _warning_groups(run) if not _is_blocked(group)
     ]
+
+
+def _with_files(group: dict[str, object]) -> str:
+    """Return *group*'s message, followed by the files it kept, one per line."""
+    message = str(group["message"])
+    files = group.get("files")
+    if not isinstance(files, list) or files == [group.get("path")]:
+        return message
+    shown = [f"    {path}" for path in files[:_LISTED_FILES]]
+    if len(files) > _LISTED_FILES:
+        shown.append(
+            f"    and {len(files) - _LISTED_FILES} more; run with --format json "
+            "to list them all"
+        )
+    return "\n".join([message, *shown])
 
 
 def _is_blocked(group: dict[str, object]) -> bool:

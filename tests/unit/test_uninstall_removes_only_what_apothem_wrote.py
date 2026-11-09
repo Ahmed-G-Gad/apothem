@@ -875,3 +875,28 @@ def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(
     assert code == cli._EXIT_PARTIAL, envelope
     assert envelope["status"] == "partial"
     assert _unfinished(claude) is not None
+
+
+def test_the_plain_output_names_every_file_its_advice_is_about(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    skill = claude / "skills" / _skill_name()
+    mine = skill / "mine.md"
+    mine.write_text("mine\n", encoding="utf-8")
+    edited = skill / "SKILL.md"
+    edited.write_text(edited.read_text(encoding="utf-8") + "\nmy edit\n", "utf-8")
+    agents = sorted((claude / "agents").glob("*.md"))[:2]
+    for agent in agents:
+        agent.write_text("my own agent\n", encoding="utf-8")
+
+    plain = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+    code, envelope = _uninstall()
+
+    assert plain.exit_code == cli._EXIT_PARTIAL, plain.output
+    for path in (mine, edited, *agents):
+        assert str(path) in plain.output, path
+    assert code == cli._EXIT_PARTIAL
+    listed = {path for w in envelope["warnings"] for path in w.get("files", [])}
+    assert {str(mine), str(edited), *(str(agent) for agent in agents)} <= listed
