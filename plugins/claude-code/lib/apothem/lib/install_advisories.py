@@ -30,9 +30,11 @@ together.
 Instruction overrides. Some harnesses load only the first file with text from a
 fixed list in one folder, so a file ahead of the one an install writes hides the
 Apothem block. :func:`instruction_override_advisories` names that file when it
-has text and is not a symbolic link to the instruction file itself. Install and
-update print the note; verify prints it only while the instruction file holds
-the Apothem block.
+has text and is not a symbolic link to the instruction file itself. OpenCode 1
+instead lets an ``instructions`` list in ``opencode.jsonc`` replace the list an
+install writes in ``opencode.json`` in the same folder, and the function names
+that file too. Install and update print the note; verify prints it only while
+the instruction file holds what the install wrote.
 
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
@@ -43,6 +45,8 @@ into every harness config file that takes MCP servers.
 from __future__ import annotations
 
 import ipaddress
+import json
+import os
 import re
 from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
@@ -575,8 +579,11 @@ def instruction_override_advisories(
     instruction file; install and update, which write the block, leave it off.
     The folder comes from *home* and the harness's own settings, not from an
     adapter. Reads the folder; writes nothing, and never raises for a folder it
-    cannot read.
+    cannot read. OpenCode has its own check, :func:`_opencode_override_advisories`,
+    which finds its folder the way the OpenCode install does and ignores *home*.
     """
+    if public_id == "opencode":
+        return _opencode_override_advisories(require_block=require_block)
     entry = _INSTRUCTION_OVERRIDES.get(public_id)
     if entry is None:
         return []
@@ -617,6 +624,178 @@ def instruction_override_advisories(
             }
         ]
     return []
+
+
+# OpenCode 1 loads the global files config.json, opencode.json and opencode.jsonc
+# from its config folder in that order and folds them with remeda's mergeDeep,
+# which lets a list in a later file replace the earlier list, an empty one too:
+# anomalyco/opencode v1.19.5 packages/opencode/src/config/config.ts:42-44 and
+# 272-274, read 2026-11-09 (the same fold in v1.0.0, v1.0.100, v1.1.4 and
+# v1.18.35). Only OPENCODE_CONFIG, project files and the OPENCODE_CONFIG_DIR
+# folder are merged later by joining the lists (config.ts:46-52, 365-366,
+# 412-446), so a same-folder opencode.jsonc is the one file that hides the list
+# the install writes, unless OPENCODE_CONFIG names opencode.json or
+# OPENCODE_CONFIG_DIR names its folder. OpenCode 2 joins the instructions lists
+# of every file it reads (v2.2.5 and v2.2.6
+# packages/core/src/config/plugin/instruction.ts:155).
+_OPENCODE_WRITTEN = "opencode.json"
+_OPENCODE_LATER = "opencode.jsonc"
+
+# OpenCode 1 parses with jsonc-parser 3.3.1 and allowTrailingComma
+# (packages/opencode/src/config/parse.ts:10): JSON plus comments and trailing
+# commas, nothing JSON5 adds. Each pattern matches a string first, so a comment
+# marker or a comma inside a string is kept.
+_JSONC_STRING = r'"(?:[^"\\\n\r]|\\.)*"'
+_JSONC_COMMENT = re.compile(_JSONC_STRING + r"|//[^\n\r]*|/\*.*?\*/|/\*", re.DOTALL)
+_JSONC_TRAILING_COMMA = re.compile(_JSONC_STRING + r"|,(?=[ \t\n\r]*[}\]])")
+
+
+def _drop_comment(match: re.Match[str]) -> str:
+    """Return a string as it is and a comment as one space; refuse an open one."""
+    text = match.group()
+    if text == "/*":
+        raise ValueError("a block comment is not closed")
+    return text if text.startswith('"') else " "
+
+
+def _drop_comma(match: re.Match[str]) -> str:
+    """Return a string as it is and drop a trailing comma."""
+    text = match.group()
+    return text if text.startswith('"') else ""
+
+
+def _refuse_constant(name: str) -> object:
+    """Refuse ``NaN`` and ``Infinity``, which JSONC does not have."""
+    raise ValueError(f"{name} is not JSONC")
+
+
+def _jsonc_object(path: Path) -> dict[str, object] | None:
+    """Return the JSON object in the file at *path*, read the way OpenCode 1 does.
+
+    OpenCode 1 decodes the bytes with ``TextDecoder``, which drops a leading
+    byte order mark and replaces bytes that are not UTF-8, and parses JSONC:
+    comments and trailing commas, nothing else beyond JSON. Numbers are read as
+    floats, as JavaScript reads them. A missing or unreadable file, text that
+    is not JSONC (JSON5 syntax, ``NaN``, an open comment) and a document that
+    is not an object all give ``None``.
+    """
+    try:
+        if not path.is_file():
+            return None
+        text = path.read_bytes().decode("utf-8-sig", errors="replace")
+        text = _JSONC_COMMENT.sub(_drop_comment, text)
+        text = _JSONC_TRAILING_COMMA.sub(_drop_comma, text)
+        document = json.loads(text, parse_int=float, parse_constant=_refuse_constant)
+    except (OSError, ValueError, RecursionError):
+        return None
+    return document if isinstance(document, dict) else None
+
+
+def _string_list(document: dict[str, object] | None) -> list[str] | None:
+    """Return the top-level ``instructions`` of *document* when it lists strings.
+
+    OpenCode 1 refuses a file whose ``instructions`` is anything else, so such
+    a file replaces no list.
+    """
+    value = document.get("instructions") if document else None
+    if not isinstance(value, list) or not all(isinstance(e, str) for e in value):
+        return None
+    return value
+
+
+def _opencode_joins_back(root: Path, target: Path) -> bool:
+    """Return whether OpenCode 1 joins the list in *target* back in after the fold.
+
+    It does when ``OPENCODE_CONFIG_DIR`` names *root*: OpenCode 1 reads
+    ``opencode.json`` and ``opencode.jsonc`` there a second time and joins
+    their lists (v1.19.5 ``config.ts:438-446``). It does when
+    ``OPENCODE_CONFIG`` names *target* too: OpenCode 1 reads that file again
+    and joins its list (``config.ts:415-416``).
+    """
+    from apothem.harnesses.opencode.materializer import same_path
+
+    folder = os.environ.get("OPENCODE_CONFIG_DIR", "")
+    config = os.environ.get("OPENCODE_CONFIG", "")
+    return bool(folder and same_path(folder, root)) or bool(
+        config and same_path(config, target)
+    )
+
+
+def _opencode_override_advisories(*, require_block: bool) -> list[dict[str, object]]:
+    """Return a note when ``opencode.jsonc`` replaces the list an install writes.
+
+    The folder is the one the OpenCode install writes to (its ``config_root``).
+    The note needs an ``opencode.jsonc`` there whose top-level ``instructions``
+    is a list of strings, empty or not, since OpenCode 1 then reads that list in
+    place of the one in ``opencode.json``. A file that is missing, cannot be
+    read or is not JSONC gets no note, and neither does an ``instructions``
+    value OpenCode 1 refuses. A symbolic link to ``opencode.json`` replaces the
+    list with the same list, and ``OPENCODE_CONFIG_DIR`` naming the folder or
+    ``OPENCODE_CONFIG`` naming ``opencode.json`` brings the written list back
+    (see :func:`_opencode_joins_back`), so none of them gets a note. With
+    *require_block*, as for ``verify``, the note also needs ``opencode.json``
+    to list an entry the install writes. When ``opencode.jsonc`` already lists
+    every entry the install writes, the note says that list is a copy installs
+    do not refresh. Never raises for a folder it cannot read.
+    """
+    # Imported here: the materializer imports lib modules this one sits beside.
+    from apothem.harnesses.opencode import materializer
+
+    try:
+        root = materializer.config_root()
+        target = root / _OPENCODE_WRITTEN
+        path = root / _OPENCODE_LATER
+        if _links_to(path, target) or _opencode_joins_back(root, target):
+            return []
+        replacing = _string_list(_jsonc_object(path))
+        if replacing is None:
+            return []
+        entries = materializer.instruction_entries()
+        if require_block:
+            listed = _string_list(_jsonc_object(target)) or []
+            if not any(entry in listed for entry in entries):
+                return []
+    except (OSError, RuntimeError, ValueError):
+        return []
+    copy = all(entry in replacing for entry in entries)
+    return [
+        {
+            "harness": "opencode",
+            "outcome": "advisory",
+            "operation": "instruction_override",
+            "path": str(path),
+            "target": str(target),
+            "message": _opencode_message(path, target, copy=copy),
+        }
+    ]
+
+
+def _opencode_message(path: Path, target: Path, *, copy: bool) -> str:
+    """Return the note's text for an ``opencode.jsonc`` at *path*.
+
+    *copy* is True when that file's list already holds every entry the install
+    writes: OpenCode 1 loads them today, from a copy no install refreshes.
+    """
+    reason = (
+        f"OpenCode 1 reads the instructions list in {path} in place of the one "
+        f"in {target}: it loads {target.name} and then {path.name} from "
+        f"{target.parent}, and a list in the later file replaces the earlier "
+        f"one, even an empty list. OpenCode 2 reads both lists. "
+    )
+    if copy:
+        return reason + (
+            f"The list in {path.name} holds its own copy of every entry Apothem "
+            f"writes, which installs and updates do not refresh: remove the "
+            f"instructions key from {path.name}, or move its other entries into "
+            f"the list in {target.name}, where installs and updates keep the "
+            f"entries they did not write."
+        )
+    return reason + (
+        f"The profile document and rules Apothem lists in {target.name} "
+        f"therefore do not reach OpenCode 1. Remove the instructions key from "
+        f"{path.name}, or move its entries into the list in {target.name}, where "
+        f"installs and updates keep the entries they did not write."
+    )
 
 
 # --- MCP profile advisories ---------------------------------------------------

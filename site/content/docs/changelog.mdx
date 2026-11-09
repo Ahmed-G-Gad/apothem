@@ -298,6 +298,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **OpenCode installs say when an `opencode.jsonc` replaces the rules list.**
+  OpenCode 1 reads `opencode.json` and then `opencode.jsonc` from its
+  configuration folder, and a list in the later file replaces the earlier one.
+  So an `instructions` list in an `opencode.jsonc` beside the `opencode.json`
+  the install writes, even an empty one, kept OpenCode 1 from loading the
+  profile document and the rules, and nothing said so. `apothem install` and
+  `apothem update` now print a note that names the file, dry runs included,
+  and `apothem verify` prints it while `opencode.json` lists an entry the
+  install wrote, without failing the check. When that list already holds
+  every entry the install writes, the note says installs do not refresh the
+  copy. OpenCode 2 joins the lists of every file it reads, so the note is
+  about OpenCode 1 only. There is no note for a file with no `instructions`
+  list, for a symbolic link to `opencode.json`, or for a file OpenCode 1
+  cannot read as JSONC. There is none while `OPENCODE_CONFIG_DIR` names that
+  folder or `OPENCODE_CONFIG` names that `opencode.json` either, because
+  OpenCode 1 then reads the written list again and joins it to the others.
 - **The JSONC / JSON5 config reader accepts LINE SEPARATOR and PARAGRAPH
   SEPARATOR inside strings.** JSON and JSON5 allow U+2028 and U+2029 unescaped
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config

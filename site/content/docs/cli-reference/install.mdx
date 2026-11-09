@@ -205,10 +205,14 @@ Apothem block. For example,
 beside it in that tool's home folder. Install and update then print a note that
 names that file, dry runs included. An empty override is skipped, and so is
 a symbolic link to `AGENTS.md`; a hard link or a copy gets the note, because an
-install that rewrites `AGENTS.md` leaves it a separate file. The note is a
+install that rewrites `AGENTS.md` leaves it a separate file. OpenCode 1 works
+differently: an `instructions` list in an `opencode.jsonc`, even an empty one,
+replaces the list Apothem writes to `opencode.json` in the same folder. Install
+and update print an `instruction_override` note for that file too
+([OpenCode notes](/docs/harnesses/opencode#compatibility-notes)). The note is a
 `warnings` entry with `"outcome": "advisory"` and `"operation": "instruction_override"`,
-the `harness`, the `path` of the file that hides the block, the `target` the
-install writes, and a `message`.
+the `harness`, the `path` of the file that hides what the install writes, the
+`target` the install writes, and a `message`.
 
 The profile's MCP servers get three advisories, each naming the profile field:
 

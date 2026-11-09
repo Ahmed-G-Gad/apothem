@@ -138,6 +138,33 @@ names each rule and the situation that calls for it. A rule, skill, or command
 that cites a rule, template, or hook prompt reads it from there. Commands,
 skills, and helper definitions use native discovery locations.
 
+OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc` from
+its configuration folder, and a list in a later file replaces the list in an
+earlier one. This is the same in every OpenCode 1 release whose source was
+checked, from the first to the newest. So an `instructions` list in an
+`opencode.jsonc` beside the `opencode.json` Apothem writes, even an empty one,
+keeps OpenCode 1 from loading the profile document and the rules. `apothem
+install`, `apothem update` and `apothem verify` print a note that names the file
+when that happens; verify prints it only while `opencode.json` lists an entry
+the install wrote, and the note does not fail the check. When the list in
+`opencode.jsonc` already holds every entry Apothem writes, OpenCode 1 loads
+them, but from a copy that installs and updates do not refresh, and the note
+says so. OpenCode 2 joins the `instructions` lists of every file it reads, so
+the note is about OpenCode 1 only.
+
+There is no note for an `opencode.jsonc` with no `instructions` list, or for a
+symbolic link to `opencode.json`. There is none for a file OpenCode 1 cannot
+read as JSONC (JSON5 syntax, for example) or one whose `instructions` is not a
+list of text either: OpenCode 1 reports an error for such a file instead of
+reading its list. There is no note while `OPENCODE_CONFIG_DIR` names this
+folder, because current OpenCode 1 releases then read both files there a second
+time and join their lists (the first OpenCode 1 release did not read them
+again). There is none while `OPENCODE_CONFIG` names this `opencode.json` either,
+because OpenCode 1 then reads that file again after the others and joins its
+list. To load the list in OpenCode 1, remove the `instructions` key from
+`opencode.jsonc`, or move its entries into the list in `opencode.json`, where
+installs and updates keep the entries they did not write.
+
 Every install and update deletes every file in
 `~/.config/opencode/apothem/rules/` that Apothem did not put there, after
 saving it in a backup set under `~/.apothem/backups/`. That backup is deleted
@@ -236,6 +263,7 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness opencode` |
 | Verification failed | Run `apothem update --harness opencode`, then verify again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness opencode` |
+| A note says OpenCode 1 reads the `instructions` list in `opencode.jsonc` | Remove the `instructions` key from `opencode.jsonc` in the configuration folder, or move its entries into the list in `opencode.json` |
 
 ## Configuration knobs
 

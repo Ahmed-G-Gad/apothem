@@ -520,7 +520,7 @@ def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
     """
     notes: list[str] = []
     override = os.environ.get("OPENCODE_CONFIG_DIR", "")
-    if override and not _same_folder(override, root):
+    if override and not same_path(override, root):
         notes.append(
             f"OPENCODE_CONFIG_DIR is set to {override}. OpenCode 1 reads that "
             f"folder as well as {root}, where Apothem installed, but OpenCode 2 "
@@ -540,16 +540,18 @@ def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
     return notes
 
 
-def _same_folder(configured: str, root: Path) -> bool:
-    """Return True when *configured* names *root* the way OpenCode reads it.
+def same_path(configured: str, path: Path) -> bool:
+    """Return True when *configured* names *path* the way OpenCode reads it.
 
+    *configured* is the value of an OpenCode environment variable such as
+    ``OPENCODE_CONFIG_DIR`` (a folder) or ``OPENCODE_CONFIG`` (a file).
     OpenCode does not expand ``~`` and resolves a relative path against its
-    own working directory, so only an absolute path can name *root*.
+    own working directory, so only an absolute path can name *path*.
     """
-    path = Path(configured)
-    if not path.is_absolute():
+    named = Path(configured)
+    if not named.is_absolute():
         return False
-    return _names_same_folder(path, root)
+    return _names_same_folder(named, path)
 
 
 def _earlier_root_notes(root: Path) -> list[str]:
