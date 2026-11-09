@@ -37,6 +37,8 @@ from apothem.cli._helpers import (
     _profile_option,
     _project_option,
     _resolve_project_root,
+    kept_listing,
+    kept_paths,
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
@@ -497,6 +499,19 @@ def _kept_by_rollback(
     return [*whole, *kept_file_warnings(target_results)]
 
 
+def _kept_dict(harness_id: str, warning: MaterializationResult) -> dict[str, object]:
+    """Return the JSON ``warnings`` entry for a path the rollback kept.
+
+    ``files`` lists each file kept, as the uninstall's warnings do.
+    """
+    entry: dict[str, object] = {"harness": harness_id, **warning.to_dict()}
+    entry["files"] = kept_paths(warning)
+    detail = entry.get("detail")
+    if isinstance(detail, dict):
+        detail.pop("kept_files", None)
+    return entry
+
+
 def _record_rollback_results(
     run: _RollbackRun,
     tally: _RollbackTally,
@@ -532,10 +547,8 @@ def _record_rollback_results(
         if result.backup_path is not None:
             entry_dict["backup_path"] = result.backup_path
         tally.results.append(entry_dict)
-    kept_paths = _kept_by_rollback(target_results)
-    tally.warnings.extend(
-        {"harness": harness_id, **warning.to_dict()} for warning in kept_paths
-    )
+    kept_here = _kept_by_rollback(target_results)
+    tally.warnings.extend(_kept_dict(harness_id, warning) for warning in kept_here)
     if run.fmt == "json":
         return
     # A restore failure is visible in plain mode, not only as a JSON
@@ -552,10 +565,9 @@ def _record_rollback_results(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
-        for warning in kept_paths:
-            run.con.print(
-                f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}"
-            )
+        for warning in kept_here:
+            listed = kept_listing(warning.message, kept_paths(warning), warning.path)
+            run.con.print(f"[yellow]Warning:[/] {harness_id} - {escape(listed)}")
         # A swept path is restored only where files are missing (see
         # ``rollback_install``); say what was kept and where the backup is.
         for kept in target_results:

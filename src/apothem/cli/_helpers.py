@@ -779,6 +779,29 @@ def _result_dicts(
     ]
 
 
+def kept_paths(warning: MaterializationResult) -> list[str]:
+    """Return what an uninstall or rollback *warning* kept.
+
+    The paths its ``detail`` names (``kept_files``: the files kept in a
+    folder), or its own path. Only ``\n`` separates the named paths, as a file
+    name may hold other line breaks.
+    """
+    if "kept_files" not in warning.detail:
+        return [warning.path]
+    return [path for path in warning.detail["kept_files"].split("\n") if path]
+
+
+def kept_listing(message: str, paths: list[str], own: str) -> str:
+    """Return *message* with *paths* under it, one indented path per line.
+
+    A warning about one kept file already names it (*own*), so it is not
+    listed again.
+    """
+    if paths == [own]:
+        return message
+    return "\n".join([message, *(f"    {path}" for path in paths)])
+
+
 def _warning_dicts(
     harness: str, materialization: MaterializationRun | None
 ) -> list[dict[str, object]]:

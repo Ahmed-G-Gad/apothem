@@ -714,16 +714,33 @@ def test_an_exception_in_the_shared_skills_keeps_what_was_removed(
 
 
 def test_a_rollback_names_the_files_it_kept(claude: Path) -> None:
-    ClaudeCodeAdapter().install({})
     notes = claude / "skills" / _skill_name() / "my-notes.md"
+    ClaudeCodeAdapter().install({})
     notes.write_text("mine\n", encoding="utf-8")
+    plain = CliRunner().invoke(
+        cli.main, ["rollback", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+    plain_kept = notes.read_text(encoding="utf-8")
+    # A folder the next install creates afresh (the first one now holds only
+    # the notes, so that install replaces it and its rollback restores it).
+    ClaudeCodeAdapter().install({})
+    other = sorted(
+        path
+        for path in (claude / "skills").iterdir()
+        if path.is_dir() and path.name != notes.parent.name
+    )[0]
+    other_notes = other / "my-notes.md"
+    other_notes.write_text("mine\n", encoding="utf-8")
 
     code, envelope = _rollback()
 
+    assert plain.exit_code == 0, plain.output
+    assert plain_kept == "mine\n"
+    assert str(notes) in plain.output
     assert code == 0, envelope
-    assert notes.read_text(encoding="utf-8") == "mine\n"
-    messages = " ".join(str(w["message"]) for w in envelope["warnings"])
-    assert "my-notes.md" in messages
+    assert other_notes.read_text(encoding="utf-8") == "mine\n"
+    listed = [path for w in envelope["warnings"] for path in w.get("files", [])]
+    assert str(other_notes) in listed
 
 
 _BS = "\\"
@@ -994,3 +1011,131 @@ def test_a_user_scope_holder_gets_steps_not_a_command_for_the_default_folder(
     assert result.outcome == "warning"
     assert "CODEX_HOME" in result.message
     assert "apothem uninstall --harness codex" not in result.message
+
+
+def test_a_folder_kept_whole_is_reported_once(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    skill = claude / "skills" / _skill_name()
+    edited = sorted(path for path in skill.rglob("*") if path.is_file())
+    for path in edited:
+        path.write_text("my edit\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    listed = [path for w in envelope["warnings"] for path in w.get("files", [])]
+    assert sorted(listed) == sorted({*listed})
+    assert {str(path) for path in edited} <= set(listed)
+    assert all(path.read_text(encoding="utf-8") == "my edit\n" for path in edited)
+
+
+def test_an_earlier_release_folder_names_the_users_own_file_apart(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    skill = claude / "skills" / _skill_name()
+    edited = skill / "SKILL.md"
+    edited.write_text(edited.read_text(encoding="utf-8") + "\nmy edit\n", "utf-8")
+    mine = skill / "mine.md"
+    mine.write_text("mine\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    by_reason: dict[str, set[str]] = {}
+    for warning in envelope["warnings"]:
+        reason = warning.get("detail", {}).get("kept_reason", "")
+        by_reason.setdefault(reason, set()).update(warning.get("files", []))
+    assert str(edited) in by_reason["no-digests"]
+    assert str(mine) not in by_reason["no-digests"]
+    assert str(mine) in by_reason["changed"]
+
+
+def test_a_file_that_cannot_be_removed_still_names_the_users_files(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    skill = claude / "skills" / _skill_name()
+    stuck = skill / "SKILL.md"
+    mine = skill / "mine.md"
+    mine.write_text("mine\n", encoding="utf-8")
+    real_unlink = Path.unlink
+
+    def refuse(self: Path, missing_ok: bool = False) -> None:
+        if self == stuck:
+            raise PermissionError("in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", refuse)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    listed = [path for w in envelope["warnings"] for path in w.get("files", [])]
+    assert str(mine) in listed
+
+
+def test_an_install_with_no_record_leaves_the_uninstall_unfinished(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    shutil.rmtree(install_ledger.ledger_path("claude_code").parent)
+
+    plain = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    assert plain.exit_code == cli._EXIT_PARTIAL, plain.output
+    assert "apothem update" in plain.output
+    assert (claude / "agents" / "citation-auditor.md").exists()
+
+
+def test_quiet_still_lists_the_paths_an_unfinished_uninstall_kept(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    agent = claude / "agents" / "citation-auditor.md"
+    agent.write_text("an earlier release wrote this\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.main,
+        ["uninstall", "--harness", "claude-code", "--yes", "--quiet", "--no-color"],
+    )
+
+    assert result.exit_code == cli._EXIT_PARTIAL
+    assert str(agent) in result.stderr
+
+
+def test_a_kept_file_name_with_a_line_separator_is_listed_whole(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    odd = claude / "skills" / _skill_name() / "notes\u2028v2.md"
+    odd.write_text("mine\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    listed = [path for w in envelope["warnings"] for path in w.get("files", [])]
+    assert str(odd) in listed
+
+
+def test_an_earlier_releases_differing_files_behind_a_link_block_the_uninstall(
+    claude: Path, tmp_path: Path
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    rules = claude / "rules"
+    for rule in rules.glob("*.md"):
+        rule.write_text(rule.read_text(encoding="utf-8") + "\nolder text\n", "utf-8")
+    dotfiles = tmp_path / "dotfiles" / "rules"
+    dotfiles.parent.mkdir(parents=True)
+    shutil.move(str(rules), str(dotfiles))
+    _link_folder(rules, dotfiles)
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert "still loads them" in envelope["results"][0]["message"]
+    assert _unfinished(claude) is not None

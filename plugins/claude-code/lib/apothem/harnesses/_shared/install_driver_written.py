@@ -29,19 +29,28 @@ from .install_driver_pathsafety import (
     kept_links_detail,
 )
 from .install_driver_sweep import _link_kept as link_kept
+from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_types import MaterializationResult, _path_text, _result
 
 #: ``detail`` key of a removal: the files it kept because nothing shows Apothem
 #: wrote them as they are now (newline-joined paths).
 KEPT_FILES = "kept_files"
 
+#: ``detail`` key of a removal: the files it kept that sit at a name this
+#: release writes but differ from it, under an install an earlier release
+#: recorded without digests (newline-joined paths).
+KEPT_DIFFERING = "kept_differing"
+
 #: ``detail`` key of a failed removal: the files Apothem wrote that it could
 #: not remove (newline-joined paths).
 STUCK_FILES = "stuck_files"
 
-#: Kept reasons that leave the uninstall unfinished: files of an install an
-#: earlier release recorded, which this release cannot show are Apothem's.
-UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests"})
+#: Kept reasons that leave the uninstall unfinished: files this release cannot
+#: show are Apothem's or not, under an install an earlier release recorded
+#: without digests (``no-digests``) or with no install record at all
+#: (``no-record``). ``apothem update`` records them; a second uninstall then
+#: finishes.
+UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests", "no-record"})
 
 #: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
 KEPT_REASON = "kept_reason"
@@ -86,14 +95,25 @@ def _matches(path: Path, expected: str | None) -> bool:
     return file_digest(path) == expected
 
 
-def _files_in(target: Path) -> list[str] | None:
-    """Return the files in the folder *target* (never through a link), or ``None``.
+def _paths(text: str) -> list[str]:
+    """Split a newline-joined ``detail`` value into paths.
 
-    A folder kept whole lists them, so the report can name each file.
+    Only ``\n`` separates them: a file name may hold other line breaks
+    (``U+2028``, ``\x85``), which :meth:`str.splitlines` would split on.
+    """
+    return [path for path in text.split("\n") if path]
+
+
+def _files_in(target: Path) -> list[str] | None:
+    """Return what the folder *target* holds (never through a link), or ``None``.
+
+    Files, the links in it and the folders that cannot be read: a folder kept
+    whole lists them all, so the report can name each one.
     """
     if not target.is_dir() or _is_link(target):
         return None
-    return [_path_text(path) for path in _walk_without_links(target).files]
+    walk = _walk_without_links(target)
+    return [_path_text(path) for path in (*walk.files, *walk.links, *walk.unreadable)]
 
 
 def _kept_whole(
@@ -101,11 +121,11 @@ def _kept_whole(
 ) -> MaterializationResult:
     """Return the warning for a target an uninstall left in place.
 
-    *files* names the files kept inside a folder target (``detail``
-    ``kept_files``), so the report can list each one.
+    *files* names what is kept inside a folder target (``detail``
+    ``kept_files``, present even when empty), so the report can list each one.
     """
     detail = {KEPT_REASON: reason}
-    if files:
+    if files is not None:
         detail[KEPT_FILES] = "\n".join(files)
     return _result(
         "warning",
@@ -117,15 +137,18 @@ def _kept_whole(
 
 
 def _through_link(
-    target: Path, link: Path, proof: dict[str, str] | None
+    target: Path, link: Path, proof: dict[str, str] | None, *, legacy: bool
 ) -> MaterializationResult:
     """Return the warning for a target reached through *link*.
 
-    It blocks the uninstall only while Apothem's own files are behind the
-    link: the tool still loads them. Otherwise the target stays and the
-    uninstall completes.
+    It blocks the uninstall while Apothem's own files are behind the link, or,
+    under an install an earlier release recorded (*legacy*), files at names
+    this release writes: the tool still loads them. Otherwise the target stays
+    and the uninstall completes.
     """
-    blocked = proof is not None and bool(_written_now(target, proof))
+    blocked = proof is not None and (
+        bool(_written_now(target, proof)) or (legacy and _named_by(target, proof))
+    )
     detail = {"symlink": _path_text(link)}
     if blocked:
         detail["blocked"] = "1"
@@ -169,6 +192,59 @@ def _remove_matching(
     return after.files, [*after.links, *after.unreadable]
 
 
+def _kept_detail(
+    target: Path, kept: list[Path], legacy_proof: dict[str, str] | None
+) -> dict[str, str]:
+    """Return the ``detail`` that names the files kept in the folder *target*.
+
+    Under an install an earlier release recorded (*legacy_proof*, what this
+    release writes there), a kept file at a name this release writes is
+    ``kept_differing`` and makes the uninstall unfinished; every other kept
+    file is the operator's or changed (``kept_files``).
+    """
+    differing = [
+        path
+        for path in kept
+        if legacy_proof is not None
+        and path.relative_to(target).as_posix() in legacy_proof
+    ]
+    others = [path for path in kept if path not in differing]
+    detail: dict[str, str] = {}
+    if others:
+        detail[KEPT_FILES] = "\n".join(_path_text(path) for path in others)
+    if differing:
+        detail[KEPT_DIFFERING] = "\n".join(_path_text(path) for path in differing)
+        detail[KEPT_REASON] = "no-digests"
+    return detail
+
+
+def _kept_folder(
+    target: Path, legacy_proof: dict[str, str] | None
+) -> MaterializationResult | None:
+    """Return the result for a folder in which nothing is Apothem's as it is now.
+
+    Nothing is removed. The folder's files are named in the result's
+    ``detail`` (see :func:`_kept_detail`), and its links and unreadable
+    folders as ``kept_links``; :func:`kept_file_warnings` and the link
+    warnings report them. An empty folder goes (it holds nothing of anyone's).
+    """
+    walk = _walk_without_links(target)
+    if not walk.files and not walk.links and not walk.unreadable:
+        with contextlib.suppress(OSError):
+            target.rmdir()
+        return None
+    return _result(
+        "unchanged",
+        "remove_existing",
+        target,
+        f"{target} was kept",
+        detail={
+            **kept_links_detail([*walk.links, *walk.unreadable]),
+            **_kept_detail(target, walk.files, legacy_proof),
+        },
+    )
+
+
 def remove_written(
     target: Path,
     *,
@@ -192,8 +268,11 @@ def remove_written(
     what this release writes there (*expected*, the digests of those files;
     see :func:`install_driver_expected.expected_digests`): a file with those
     bytes goes. A file at a name Apothem writes that differs stays and leaves
-    the uninstall unfinished (``kept_reason`` ``no-digests``), since run
-    ``apothem update`` records it, then a second uninstall finishes.
+    the uninstall unfinished (``kept_reason`` ``no-digests``): ``apothem
+    update`` records it, then a second uninstall finishes. The files kept in
+    a folder are named in the result's ``detail`` (``kept_differing`` for
+    those, ``kept_files`` for the rest); :func:`kept_file_warnings` reports
+    them.
     """
     allowed = allowed_root or install_root
     entry = None if recorded is None else recorded.get(_path_text(target))
@@ -206,7 +285,9 @@ def remove_written(
     )
     if target_error is not None:
         link = _unsafe_symlink(target, _normalized(allowed))
-        return target_error if link is None else _through_link(target, link, proof)
+        if link is None:
+            return target_error
+        return _through_link(target, link, proof, legacy=legacy)
     if not target.exists():
         return None
     if proof is None:
@@ -228,17 +309,14 @@ def remove_written(
             target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
         )
     written = _written_now(target, proof)
-    if not written:
+    if not written and target.is_file():
         if legacy and _named_by(target, proof):
-            return _kept_whole(
-                target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
-            )
+            return _kept_whole(target, "no-digests", _EARLIER_RELEASE)
         return _kept_whole(
-            target,
-            "changed",
-            "it is not what Apothem wrote (changed or yours)",
-            files=_files_in(target),
+            target, "changed", "it is not what Apothem wrote (changed or yours)"
         )
+    if not written:
+        return _kept_folder(target, proof if legacy else None)
     backup = backup_existing(
         target,
         install_root=install_root,
@@ -262,13 +340,15 @@ def remove_written(
             "close what holds them or make them writable, then run the command "
             "again",
             backup_path=backup,
-            detail={STUCK_FILES: "\n".join(_path_text(path) for path in stuck)},
+            detail={
+                STUCK_FILES: "\n".join(_path_text(path) for path in stuck),
+                **_kept_detail(target, kept_files, proof if legacy else None),
+            },
         )
-    detail = kept_links_detail(kept_links)
-    if kept_files:
-        detail[KEPT_FILES] = "\n".join(_path_text(path) for path in kept_files)
-    if legacy and _named_by(target, proof, kept_files):
-        detail[KEPT_REASON] = "no-digests"
+    detail = {
+        **kept_links_detail(kept_links),
+        **_kept_detail(target, kept_files, proof if legacy else None),
+    }
     return _result(
         "updated",
         "remove_existing",
@@ -279,12 +359,20 @@ def remove_written(
     )
 
 
-#: Why a target an earlier release recorded stays, and the next step.
+#: Why a file an earlier release recorded stays, and the next step.
 _EARLIER_RELEASE = (
     "the install record (made by an earlier release) cannot show it is "
     "Apothem's, and it differs from what this release writes; apothem update "
-    "overwrites it (after a backup), so copy it first if you edited it, then "
-    "run apothem update, then apothem uninstall again"
+    "overwrites it with this release's file (after a backup), so copy it first "
+    "if you edited it, then run apothem update, then apothem uninstall again"
+)
+
+#: The same for files kept in a folder.
+_EARLIER_RELEASE_FILES = (
+    "the install record (made by an earlier release) cannot show they are "
+    "Apothem's; apothem update overwrites them with this release's files "
+    "(after a backup), so copy any you edited first, then run apothem update, "
+    "then apothem uninstall again"
 )
 
 
@@ -301,33 +389,62 @@ def _named_by(
 def kept_file_warnings(
     results: list[MaterializationResult],
 ) -> list[MaterializationResult]:
-    """Return one warning per folder in which a removal kept files.
+    """Return a warning for each kind of file a removal kept in a folder.
 
-    The files were not written by Apothem as they are now: the operator added
-    or changed them, so the folder stays with them in it. Each warning names
-    the files in its ``detail`` (``kept_files``).
+    A file at a name this release writes that differs, under an install an
+    earlier release recorded (``kept_differing``), gets the earlier-release
+    warning; any other kept file is the operator's or changed
+    (``kept_files``). Each warning names its files in ``detail``
+    (``kept_files``). A result that is itself a warning already reports its
+    target and is skipped, so nothing is reported twice.
     """
     warnings = []
     for result in results:
-        kept = [line for line in result.detail.get(KEPT_FILES, "").splitlines() if line]
-        if not kept:
+        if result.outcome == "warning":
             continue
         folder = Path(result.path)
-        if result.detail.get(KEPT_REASON) == "no-digests":
+        differing = _paths(result.detail.get(KEPT_DIFFERING, ""))
+        kept = _paths(result.detail.get(KEPT_FILES, ""))
+        if differing:
             warnings.append(
-                _kept_whole(folder, "no-digests", _EARLIER_RELEASE, files=kept)
+                _kept_whole(
+                    folder,
+                    "no-digests",
+                    f"{len(differing)} file(s) in it differ from what this "
+                    f"release writes; {_EARLIER_RELEASE_FILES}",
+                    files=differing,
+                )
             )
-            continue
-        warnings.append(
-            _kept_whole(
-                folder,
-                "changed",
-                f"{len(kept)} file(s) in it are not what Apothem wrote "
-                "(changed or yours)",
-                files=kept,
+        if kept:
+            warnings.append(
+                _kept_whole(
+                    folder,
+                    "changed",
+                    f"{len(kept)} file(s) in it are not what Apothem wrote "
+                    "(changed or yours)",
+                    files=kept,
+                )
             )
-        )
     return warnings
+
+
+def left_behind(
+    results: list[MaterializationResult],
+    active: list[LedgerRecord],
+    *,
+    floor: Path,
+) -> list[MaterializationResult]:
+    """Return a warning for each path the uninstall kept: links and the user's files."""
+    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
+    created = {Path(path) for install in active for path in install.created_dirs}
+    named = {result.detail.get("symlink") for result in results}
+    kept += [
+        warning
+        for warning in links_left_in(created, known=kept)
+        if warning.path not in named
+    ]
+    recorded = (target.path for install in active for target in install.targets)
+    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
 
 
 def links_on_the_way(

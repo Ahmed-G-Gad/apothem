@@ -53,7 +53,6 @@ from .install_driver_removal import (
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
-from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationError,
@@ -66,8 +65,8 @@ from .install_driver_types import (
 )
 from .install_driver_written import (
     kept_file_warnings,
+    left_behind,
     left_unfinished,
-    links_on_the_way,
     record_uninstall,
     remove_written,
     still_written,
@@ -471,7 +470,7 @@ def run_uninstall(
         )
         # The warnings are built before the record, so a failure here leaves
         # the uninstall recorded as unfinished, as the CLI then reports it.
-        kept = _left_behind(results, active, floor=root_floor)
+        kept = left_behind(results, active, floor=root_floor)
         finished = not left_unfinished([*prior_results, *results])
         record_uninstall(
             harness_name, root, record, [*prior_results, *results], finished=finished
@@ -480,9 +479,10 @@ def run_uninstall(
         # interrupted falls back to an uninstall-incomplete record below.
         recorded = True
         if finished:
-            # Housekeeping: a failure here leaves older backup sets for the
-            # next pass or ``backups prune``, and does not undo the uninstall.
-            with contextlib.suppress(OSError, install_ledger.LedgerError):
+            # Housekeeping after the final record: any failure here leaves
+            # older backup sets for the next pass or ``backups prune``, and the
+            # finished uninstall stands, as its record says.
+            with contextlib.suppress(Exception):
                 apply_retention(harness_name)
     except BaseException as exc:
         if not recorded:
@@ -493,25 +493,10 @@ def run_uninstall(
             raise
         # Hand the caller what this pass removed before it stopped, so the CLI
         # can report the uninstall as partial instead of a bare failure.
-        run = MaterializationRun(harness_name, False, tuple(results))
+        kept_now = kept_file_warnings(results)
+        run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]
-
-
-def _left_behind(
-    results: list[MaterializationResult], active: list[LedgerRecord], *, floor: Path
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files."""
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in results}
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
 
 
 def _remove_installed(
