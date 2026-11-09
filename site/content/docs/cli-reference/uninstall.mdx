@@ -28,6 +28,20 @@ added to an Apothem folder, an Apothem file you edited, a file of your own that
 has an Apothem name, and a path the install record does not list. A file you
 keep keeps its folder.
 
+When no install record matches the folder at all, the files the install
+copied into place stay, with a `Warning:` line that names the one path or
+counts them (`<N> paths were kept: no install record shows Apothem wrote
+them`). Only what Apothem marks as its own goes: its lines in a shared file
+such as a rules file or `hooks.json` (a file left empty goes too) and its
+data folder. The command then prints `Not uninstalled: <harness> - no
+install record matched, so <N> paths were kept`, says what it still
+removed, and ends with the next step: check that `--project` names the
+folder you installed into, and if it does, remove the kept paths by hand
+(`--format json` lists them). It still exits 0. In `--format json` output
+the harness's `uninstall` row carries that message and
+`"detail": {"kept_reason": "no-record"}`, with `"outcome": "updated"` when
+the marked parts were removed and `"unchanged"` when nothing was.
+
 An install recorded by an earlier release does not say which files Apothem
 wrote. For it, the uninstall compares each file with what this release writes
 at that path and removes the ones with the same bytes. A file at a name
@@ -187,11 +201,25 @@ folder is still complete.
 
 `--project` is read with its links followed and `~` expanded. An install made
 from Python code with the project folder spelled another way, through a link
-say, is still found under the spelling its record keeps. One case is not: an
-install that an earlier release recorded twice, once from the command line
-and once from Python through a link, keeps the second record after
-`uninstall`, and the shared folders stay for it. Remove that one from Python
-with the folder spelled as it was installed.
+say, is still found under the spelling its record keeps. A spelling whose
+install is still in place comes before one whose install was removed. An
+install none of whose files is in the folder is not taken for it. Folder
+names are compared exactly: in a case-sensitive folder (one WSL made, say)
+`Proj` and `proj` are two folders and are never taken for each other; in an
+ordinary Windows folder they are one folder, as Windows treats them. A
+record on another network share is compared by its text only, so a share
+that cannot be reached does not stall the command.
+
+Two cases are not found as you might expect. An install that an earlier
+release recorded twice, once from the command line and once from Python
+through a link, keeps the second record after `uninstall`, and the shared
+folders stay for it. Remove that one from Python with the folder spelled as
+it was installed. And when two installs were made through two links to two
+different folders, and one link was later pointed at the other folder, the
+uninstall takes the install whose files are in that folder. If both wrote the
+same file names (two installs of the same release), it cannot tell them apart
+and takes the newer one, whose files may be in the folder the link used to
+lead to.
 
 A `--harness all` removal is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips

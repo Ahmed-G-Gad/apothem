@@ -819,18 +819,45 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (follows its links and expands `~`) before it reads or writes the install
   record, but Python code that called an install function kept the project
   folder as it was typed. With `~/proj` a link, `apothem uninstall --project
-  ~/proj` then found no record, printed `Uninstalled`, exited 0 and left the
-  installed files in place. The same happened when a folder above the project
-  was a link. Every project-scope install, update, preview, plan, verify,
-  uninstall and installed check now uses the spelling the install record
-  already has, and records a new install with the folder resolved, as the
-  command line does; `apothem rollback --project` and the notes `apothem
-  uninstall` prints about shared folders find such a record too. An install
-  recorded with the folder as typed is still found; one recorded with a
-  relative folder or `~` is not taken for another folder of the same name.
-  An install that an earlier release recorded twice, from the command line
-  and from Python through a link, keeps the second record after `apothem
-  uninstall`; remove it from Python with the folder spelled as installed.
+  ~/proj` then found no record, left most installed files in place with a
+  warning, printed `Uninstalled` and exited 0. The same happened when a
+  folder above the project was a link. Every project-scope install, update,
+  preview, plan, verify, uninstall and installed check now uses the spelling
+  the install record already has, and records a new install with the folder
+  resolved, as the command line does; `apothem rollback --project` and the
+  notes `apothem uninstall` prints about shared folders find such a record
+  too. A spelling whose install is still in place is taken before one whose
+  install was removed, and an install none of whose files is in the folder
+  is not taken for it. An install recorded with the folder as typed is still
+  found; one recorded with a relative folder or `~` is not taken for another
+  folder of the same name. Folder names are compared exactly: in a
+  case-sensitive folder (one WSL made, say) `Proj` and `proj` are two
+  folders and are never taken for each other; in an ordinary Windows folder
+  they are one folder, as Windows treats them. A record on another network
+  share is compared by its text only, so a share that cannot be reached does
+  not stall the command. Known limits: an install that an earlier release
+  recorded twice, from the command line and from Python through a link,
+  keeps the second record after `apothem uninstall`; remove it from Python
+  with the folder spelled as installed. And when two installs were made
+  through two links to two different folders, and one link was later pointed
+  at the other folder, the uninstall takes the install whose files are in
+  that folder; if both wrote the same file names (the same release), it
+  cannot tell them apart and takes the newer one, whose files may be in the
+  folder the link used to lead to.
+- **An uninstall that finds no install record no longer says
+  `Uninstalled`.** When no install record matched the folder, `apothem
+  uninstall` kept the files the install copied into place, printed
+  `<N> paths were kept: no install record shows Apothem wrote them`, then
+  `✓ Uninstalled`. It now prints `Not uninstalled: <harness> - no install
+  record matched` with the number of paths kept, says what it still removed
+  (Apothem's own lines in a shared file such as a rules file or
+  `hooks.json`, its data folder), and ends with the next step: check that
+  `--project` names the folder you installed into, and if it does, remove
+  the kept paths by hand. In `--format json` output the harness's
+  `uninstall` row carries the same message and
+  `"detail": {"kept_reason": "no-record"}`, with `"outcome": "updated"` when
+  those parts were removed and `"unchanged"` when nothing was. The exit code
+  is unchanged.
 - **A write that a link leads out of the allowed folder names the link.**
   A write refused with `target escapes the allowed materialization root`
   because a link inside the folder leads it out, such as `~/.agents/skills`

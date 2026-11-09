@@ -25,7 +25,6 @@ from .install_driver_pathsafety import (
     _remove_tree_keeping_links,
     _root_for,
     _skip_links_into,
-    _unsafe_symlink,
     _validate_target_path,
     _within_allowed_root,
     _write_boundary,
@@ -36,7 +35,6 @@ from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
-    _path_text,
     _result,
 )
 
@@ -110,39 +108,17 @@ def _replace_path(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
-    removing: bool = False,
 ) -> MaterializationResult | None:
     """Backup and remove one existing target before writing its replacement.
 
     A link inside a folder target stays (see
-    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it. With
-    *removing* (an uninstall), a target reached through a link, or that is a
-    link, is left in place with a warning: removing through the link is what
-    the write guard refuses, and an error would keep the install recorded
-    while the files a retry looks for are already gone.
+    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it.
     """
     target_error = _validate_target_path(
         target,
         allowed_root=_write_boundary(allowed_root, install_root),
         operation="remove_existing",
     )
-    # The link is looked up directly: one pointing out of the allowed root
-    # fails the escape check before the link check names it.
-    link = (
-        _unsafe_symlink(target, _write_boundary(allowed_root, install_root))
-        if removing and target_error is not None
-        else None
-    )
-    if link is not None:
-        return _result(
-            "warning",
-            "remove_existing",
-            target,
-            f"{target} is reached through the link {link}, so it was left in "
-            "place: Apothem does not remove anything through a link",
-            # "blocked": an installed file stays, so the uninstall is unfinished.
-            detail={"symlink": _path_text(link), "blocked": "1"},
-        )
     if target_error is not None:
         return target_error
     if not target.exists():

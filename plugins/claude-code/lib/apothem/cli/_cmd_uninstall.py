@@ -354,25 +354,87 @@ def _failed_adapter(
 
 
 def _finished_row(
-    harness_id: str, outcome: object, output_path: Path
+    harness_id: str, outcome: object, output_path: Path, *, project_scope: bool
 ) -> dict[str, object]:
     """Return the ``results`` row of an uninstall that finished.
 
     ``updated`` when it removed files; ``unchanged`` when everything it found
     stayed (each kept path is a warning), so a batch is not reported partial
-    on the strength of a harness that removed nothing.
+    on the strength of a harness that removed nothing. When no install record
+    matched, the row's ``detail`` carries ``kept_reason`` ``no-record`` and
+    the message says what was kept, what was still removed and what to do.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     removed = run is not None and any(
         result.outcome == "updated" for result in run.results
     )
-    return {
+    row: dict[str, object] = {
         "harness": harness_id,
         "outcome": "updated" if removed else "unchanged",
         "operation": "uninstall",
         "path": str(output_path),
         "message": "managed files removed" if removed else "no files removed",
     }
+    if run is not None and _no_record(run):
+        row["message"] = _no_record_message(run, project_scope=project_scope)
+        row["detail"] = {_KEPT_REASON: _NO_RECORD}
+    return row
+
+
+#: The ``kept_reason`` of a path kept because no install record matched.
+_KEPT_REASON, _NO_RECORD = "kept_reason", "no-record"
+
+
+def _no_record(run: MaterializationRun) -> bool:
+    """Return True when the uninstall kept files because no install record matched."""
+    return any(
+        warning.detail.get(_KEPT_REASON) == _NO_RECORD for warning in run.warnings
+    )
+
+
+def _no_record_message(run: MaterializationRun, *, project_scope: bool) -> str:
+    """Return the message of an uninstall that matched no install record.
+
+    It counts the paths kept, names what the run still removed (Apothem's
+    own lines in a shared file, its data folder) and ends with the next step.
+    """
+    kept = sum(
+        1 for warning in run.warnings if warning.detail.get(_KEPT_REASON) == _NO_RECORD
+    )
+    removed = Counter(
+        result.operation for result in run.results if result.outcome == "updated"
+    )
+    lines, data = (
+        removed.pop("surgical_uninstall", 0),
+        removed.pop("remove_data_home", 0),
+    )
+    other = sum(removed.values())
+    parts = [
+        *([f"Apothem's own lines in {_count(lines, 'file')}"] if lines else []),
+        *(["its data folder"] if data == 1 else []),
+        *([f"its {data} data folders"] if data > 1 else []),
+        *([f"{_count(other, 'other path')}"] if other else []),
+    ]
+    message = f"no install record matched, so {_count(kept, 'path')} {_was(kept)} kept"
+    if parts:
+        single = len(parts) == 1 and (data == 1 or other == 1)
+        message += f"; {' and '.join(parts)} {'was' if single else 'were'} removed"
+    step = (
+        "check that --project names the folder you installed into; if it does, "
+        if project_scope
+        else ""
+    )
+    return f"{message}; {step}remove the kept paths by hand (--format json lists them)"
+
+
+def _count(number: int, noun: str) -> str:
+    """Return *number* and *noun*, with the noun plural unless *number* is 1."""
+    return f"{number} {noun}" if number == 1 else f"{number} {noun}s"
+
+
+def _was(number: int) -> str:
+    """Return ``was`` for 1, else ``were``."""
+    return "was" if number == 1 else "were"
 
 
 def _settled(retention: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -403,11 +465,22 @@ def _print_removed(
     *,
     fmt: str,
     con: Console,
+    row: dict[str, object],
 ) -> None:
-    """Print the success line and each retention note (plain output only)."""
+    """Print the outcome line and each retention note (plain output only).
+
+    An uninstall that matched no install record (the row's ``detail`` says
+    so) kept the files the install copied into place, so it says that
+    instead of ``Uninstalled``.
+    """
     if fmt == "json":
         return
-    con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
+    detail = row.get("detail")
+    if isinstance(detail, dict) and detail.get(_KEPT_REASON) == _NO_RECORD:
+        message = escape(str(row["message"]))
+        con.print(f"[yellow]Not uninstalled:[/] {harness_id} - {message}.")
+    else:
+        con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
     for advisory in retention:
         con.print(f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}")
 
@@ -512,12 +585,17 @@ def _uninstall_impl(
             errored = True
             results.extend(failures)
             continue
-        row = _finished_row(harness_id, outcome, output_path)
+        row = _finished_row(
+            harness_id,
+            outcome,
+            output_path,
+            project_scope=is_project_scope(adapter),
+        )
         removed_any |= row["outcome"] == "updated"
         results.append(row)
         retention = _settled(retention)
         warnings.extend(retention)
-        _print_removed(harness_id, retention, fmt=fmt, con=con)
+        _print_removed(harness_id, retention, fmt=fmt, con=con, row=row)
 
     exit_code = 0
     if errored:

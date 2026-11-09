@@ -160,7 +160,15 @@ class LedgerView:
         return [i for i in self.installs if i is not exclude and i.lists(key)]
 
     def find(self, harness: str, root: Path) -> _Install | None:
-        """Return the active install of *harness* at *root*, or ``None``."""
+        """Return the active install of *harness* at *root*, or ``None``.
+
+        A root recorded with exactly *root*'s text comes first: the folded
+        comparison after it ignores case on Windows, where a case-sensitive
+        folder can hold ``Proj`` and ``proj`` as two installs.
+        """
+        for install in self.installs:
+            if install.harness == harness and install.root == str(root):
+                return install
         wanted = path_key(root)
         for install in self.installs:
             if install.harness == harness and path_key(install.root) == wanted:

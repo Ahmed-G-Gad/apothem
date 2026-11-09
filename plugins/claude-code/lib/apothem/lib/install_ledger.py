@@ -613,17 +613,31 @@ def recorded_root(harness: str, root: Path, *, state_root: Path | None = None) -
     record, while a Python caller passes the folder as it typed it, so the
     two can name one folder two ways: through a link, or with ``~``. Use
     this before reading or writing a record by root, so both find the same
-    record. In order:
+    record. A spelling whose install is still active (installed and not
+    uninstalled) comes first, in this order:
 
-    1. *root* as given, when a record uses that spelling;
-    2. *root* resolved (``~`` expanded, links followed), when a record uses it;
-    3. another recorded root that names the same folder, as recorded (the
-       newest such record wins), so an install made under another spelling
-       is still found. Only an absolute recorded root counts: a relative or
-       ``~`` one was kept as typed, relative to the folder the install ran
-       from, so it cannot be matched from here;
-    4. otherwise *root* resolved, so a new install records the folder the
-       way the CLI does.
+    1. *root* as given;
+    2. *root* resolved (``~`` expanded, links followed);
+    3. another recorded root that names the same folder, as recorded (see
+       :func:`_same_folder_installs`); the one with the fewest recorded
+       files missing from the folder wins, then the newest.
+
+    Then a spelling whose install is no longer active, *root* as given, then
+    *root* resolved; otherwise *root* resolved, so a new install records the
+    folder the way the CLI does.
+
+    Text is compared exactly, never with the case folded. In a
+    case-sensitive folder (one WSL made, say) ``Proj`` and ``proj`` are two
+    folders and are never taken for each other; in an ordinary Windows
+    folder resolving gives both the case on disk, so they are one folder, as
+    Windows treats them.
+
+    Rule 3 cannot always tell two installs apart. When two installs were
+    made through two links to two different folders, and one link was later
+    pointed at the other folder, it takes the install whose files are in
+    that folder. If both wrote the same file names (the same release), it
+    takes the newer one, whose files may be in the folder the link used to
+    lead to.
 
     A ledger that cannot be read gives *root* resolved, without raising: the
     caller that reads the ledger next reports the error itself. A *root* that
@@ -634,35 +648,142 @@ def recorded_root(harness: str, root: Path, *, state_root: Path | None = None) -
     except (OSError, RuntimeError):
         return root
     try:
-        roots = [record.root for record in read_records(harness, state_root=state_root)]
+        records = read_records(harness, state_root=state_root)
     except (LedgerError, OSError):
         return resolved
-    if str(root) in roots:
+    by_root: dict[str, list[LedgerRecord]] = {}
+    for record in records:
+        by_root.setdefault(record.root, []).append(record)
+    live = {spelling: _live_install(group) for spelling, group in by_root.items()}
+    as_given, as_resolved = str(root), str(resolved)
+    if live.get(as_given) is not None:
         return root
-    if str(resolved) in roots:
+    if live.get(as_resolved) is not None:
         return resolved
-    for recorded in dict.fromkeys(reversed(roots)):
-        if _names_folder(recorded, resolved):
-            return Path(recorded)
+    # How many records came after each root's newest one: 0 for the newest.
+    age = {record.root: len(records) - i for i, record in enumerate(records, 1)}
+    others = [
+        (missing, age[spelling], spelling)
+        for spelling, missing in _same_folder_installs(
+            live, resolved, skip=(as_given, as_resolved)
+        )
+    ]
+    if others:
+        return Path(min(others)[2])
+    if as_given in by_root:
+        return root
     return resolved
 
 
-def _names_folder(recorded: str, resolved: Path) -> bool:
-    """Return True when the recorded root *recorded* names the folder *resolved*.
+def _same_folder_installs(
+    live: dict[str, LedgerRecord | None], resolved: Path, *, skip: tuple[str, ...]
+) -> list[tuple[str, int]]:
+    """Return ``(recorded root, files missing)`` for live installs of *resolved*.
 
-    A relative recorded root (``~`` included, which the driver never
-    expanded) names a folder relative to where its install ran, which is not
-    known here, so it names no folder.
+    Only an absolute recorded root counts: a relative or ``~`` one was kept
+    as typed, relative to the folder the install ran from, so it cannot be
+    matched from here. A recorded root names the folder when, resolved, it
+    is the same text, or when both are the same folder on disk (see
+    :func:`_same_on_disk`) and at least one file the install recorded is in
+    the folder: file identity alone is no proof, since some network and
+    cloud drives give every folder the same ID. A root none of whose
+    recorded files is in the folder is left out. *files missing* counts the
+    recorded files the folder lacks.
     """
-    if not Path(recorded).is_absolute():
-        return False
+    found: list[tuple[str, int]] = []
+    for spelling, install in live.items():
+        if install is None or spelling in skip:
+            continue
+        match = _names_folder(spelling, resolved)
+        if match is None:
+            continue
+        missing, counted = _file_counts(spelling, install, resolved)
+        if counted and missing == counted:
+            continue
+        if match == "disk" and not counted:
+            continue
+        found.append((spelling, missing))
+    return found
+
+
+def _live_install(records: list[LedgerRecord]) -> LedgerRecord | None:
+    """Return the newest install of one root's *records* that is still active."""
+    active = active_install_ids(records)
+    for record in reversed(records):
+        if record.kind == "install" and record.install_id in active:
+            return record
+    return None
+
+
+def _file_counts(spelling: str, install: LedgerRecord, folder: Path) -> tuple[int, int]:
+    """Return ``(missing, counted)`` for *install*'s recorded files under *spelling*.
+
+    Each target the install wrote (a file with a digest, or a folder with
+    its file list) under its root *spelling* is counted and looked for at
+    the same place under *folder*; *missing* is how many *folder* lacks.
+    Targets outside the root (shared folders in the home) and targets
+    without that proof are not counted.
+    """
+    base = Path(spelling)
+    missing = counted = 0
+    for target in install.targets:
+        if target.digest is None and target.files is None:
+            continue
+        try:
+            relative = Path(target.path).relative_to(base)
+            exists = os.path.lexists(folder / relative)
+        except (OSError, ValueError):
+            continue
+        counted += 1
+        missing += not exists
+    return missing, counted
+
+
+def _names_folder(recorded: str, resolved: Path) -> str | None:
+    """Return how the recorded root *recorded* names the folder *resolved*.
+
+    ``"text"`` when *recorded*, resolved, is the same text as *resolved*;
+    ``"disk"`` when the text differs but both are the same folder on disk
+    (see :func:`_same_on_disk`); ``None`` when it names another folder or
+    none. Path equality is not used: on Windows it ignores case, and a
+    case-sensitive folder can hold ``Proj`` and ``proj`` as two folders. A
+    relative recorded root (``~`` included, which the driver never expanded)
+    names no folder. One on a network share other than *resolved*'s is not
+    looked up: a share that cannot be reached stalls for many seconds.
+    """
+    path = Path(recorded)
+    if not path.is_absolute():
+        return None
+    if _on_network_share(path) and path.drive != resolved.drive:
+        return None
     try:
-        candidate = Path(recorded).resolve(strict=False)
-        if candidate == resolved:
-            return True
-        return candidate.exists() and resolved.exists() and candidate.samefile(resolved)
+        candidate = path.resolve(strict=False)
+        if str(candidate) == str(resolved):
+            return "text"
+        return "disk" if _same_on_disk(candidate, resolved) else None
     except (OSError, RuntimeError, ValueError):
+        return None
+
+
+def _on_network_share(path: Path) -> bool:
+    """Return True when *path* is spelled on a network share (``\\\\server\\share``)."""
+    return path.drive[:2] in {"\\\\", "//"}
+
+
+def _same_on_disk(left: Path, right: Path) -> bool:
+    """Return True when the existing folders *left* and *right* are one folder.
+
+    They are one when their volume and file ID match. A volume that reports
+    an ID of 0 (some network, WebDAV and cloud drives) cannot tell its
+    folders apart, so a 0 never matches.
+    """
+    try:
+        first, second = left.stat(), right.stat()
+    except OSError:
         return False
+    if not (first.st_ino and first.st_dev and second.st_ino and second.st_dev):
+        return False
+    return os.path.samestat(first, second)
 
 
 def active_install_ids(records: list[LedgerRecord]) -> set[str]:
