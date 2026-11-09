@@ -557,15 +557,17 @@ def _write_profile_text_safely(
         operation=operation,
     )
     if result.outcome == "error":
+        reason, fix = link_refusal_reason_and_fix(result) or (
+            result.message,
+            "Choose a profile path inside a normal directory and check "
+            "file permissions.",
+        )
         raise _CliUserError(
             code="profile.write_failed",
             message="Apothem profile write failed.",
             field="profile",
-            reason=result.message,
-            fix=(
-                "Choose a profile path inside a normal directory and check "
-                "file permissions."
-            ),
+            reason=reason,
+            fix=fix,
         )
     return result
 

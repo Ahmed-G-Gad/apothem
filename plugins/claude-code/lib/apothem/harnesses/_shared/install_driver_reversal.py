@@ -35,9 +35,9 @@ from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
+from . import install_driver_homelink
 from .install_driver_backup import backup_existing, write_bytes_safely
 from .install_driver_datahome import _data_home_for, _remove_data_home
-from .install_driver_homelink import link_leaving_home_refusal, link_refusal_text
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
@@ -474,11 +474,13 @@ def rollback_install(
     The rollback holds the user-level lock (see ``shared_scope``).
     """
     if harness_root is not None:
-        refusal = link_leaving_home_refusal(harness_root, operation="rollback_refused")
+        refusal = install_driver_homelink.link_leaving_home_refusal(
+            harness_root, operation="rollback_refused"
+        )
         if refusal is not None:
             message = (
                 f"rollback refused: {refusal.message} "
-                f"{link_refusal_text(refusal)}; nothing was changed. "
+                f"{install_driver_homelink.link_refusal_text(refusal)}; nothing was changed. "
                 f"{refusal.detail['fix']}"
             )
             return [replace(refusal, message=message)]

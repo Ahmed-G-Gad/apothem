@@ -34,6 +34,7 @@ from apothem.cli._helpers import (
     _CliUserError,
     _materialization_error,
     _refuse_profile_outside_home,
+    _write_profile_text_safely,
 )
 from apothem.harnesses._shared import install_driver_homelink as homelink
 from apothem.harnesses._shared import install_driver_pathsafety as pathsafety
@@ -153,7 +154,7 @@ def test_a_refused_restore_names_the_copy_that_holds_the_profile(
             code="profile.write_failed",
             message="refused",
             field="profile",
-            reason="target path crosses a symlink: L leads outside",
+            reason="target path crosses a link: L leads outside",
             fix="-",
         )
 
@@ -164,7 +165,7 @@ def test_a_refused_restore_names_the_copy_that_holds_the_profile(
     assert result.exit_code == 1, result.output
     error = json.loads(result.output)["error"]
     assert error["code"] == "clean_slate.profile_restore_refused"
-    assert "crosses a symlink" in error["reason"]
+    assert "crosses a link" in error["reason"]
     saved = re.search(r"saved at (.+?profile\.yaml)\. ", error["fix"])
     assert saved, error["fix"]
     assert Path(saved.group(1)).read_bytes() == _PROFILE
@@ -615,3 +616,57 @@ def test_one_link_test_is_shared() -> None:
     assert pathsafety._is_link is links.is_link
     assert clean_slate.is_link is links.is_link
     assert not hasattr(clean_slate, "_is_link")
+
+
+def test_the_outside_the_home_module_can_be_imported_first() -> None:
+    # A fresh interpreter, with nothing of Apothem loaded yet.
+    src = Path(homelink.__file__).resolve().parents[3]
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import apothem.harnesses._shared.install_driver_homelink",
+        ],
+        env={**os.environ, "PYTHONPATH": str(src)},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+
+    assert done.returncode == 0, done.stderr
+
+
+def test_the_fix_for_a_file_link_is_a_copy_of_the_file(tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    file = tmp_path / "settings.json"
+    file.write_text("{}\n", encoding="utf-8")
+
+    assert "with a real folder that holds the same files" in pathsafety._link_fix(
+        folder
+    )
+    assert "with a copy of the file it leads to" in pathsafety._link_fix(file)
+    assert pathsafety._link_fix(file, named=True).startswith(
+        f"replace the link {file} "
+    )
+
+
+def test_a_profile_write_refused_at_a_link_gives_one_fix(
+    home: Path, tmp_path: Path
+) -> None:
+    # Spelled outside the home, so the write guard is the check that refuses
+    # it: the link stays inside the folder above the profile's folder.
+    linked = tmp_path / "profiles" / "linked"
+    _link(linked, tmp_path / "profiles" / "real")
+
+    with pytest.raises(_CliUserError) as caught:
+        _write_profile_text_safely(
+            linked / "profile.yaml", "identity: {}\n", operation="profile_write"
+        )
+
+    error = caught.value.to_dict()
+    assert str(linked) in str(error["reason"])
+    assert "To fix it" not in str(error["reason"])
+    assert str(error["fix"]).startswith(f"Replace the link {linked} ")
+    assert "Choose a profile path" not in str(error["fix"])

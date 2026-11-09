@@ -41,20 +41,7 @@ from apothem.cli._user_level_report import (
     preview_uninstall,
     uninstall_advisories,
 )
-
-# Import order matters here. ``install_driver_homelink`` imports
-# ``install_driver_pathsafety``, which imports ``install_driver_types``, which
-# imports ``install_driver``; that loads its concern modules, and
-# ``install_driver_backup`` among them imports names from
-# ``install_driver_pathsafety`` while it is still half loaded, which raises
-# ImportError. Importing ``install_driver`` first loads the whole cycle in the
-# order it expects. The one ``from`` statement keeps the order (names import
-# left to right, and the sorter keeps them in this order), and ``noqa: F401``
-# keeps the otherwise unused ``install_driver`` import.
-from apothem.harnesses._shared import (
-    install_driver,  # noqa: F401
-    install_driver_homelink,
-)
+from apothem.harnesses._shared import install_driver_homelink
 from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,

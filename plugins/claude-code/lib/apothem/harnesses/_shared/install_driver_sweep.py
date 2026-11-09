@@ -20,7 +20,7 @@ from .install_driver_pathsafety import (
     _is_lexically_within,
     _is_link,
     _is_relative_to,
-    _link_on_path,
+    _link_below_floor,
     _normalized,
     _unsafe_symlink,
     _validate_target_path,
@@ -98,7 +98,7 @@ def stale_blocker(
     refused with an error, the same way in a dry run and a real run.
     """
     live = protected_by(stale, protect)
-    link = _link_on_path(stale, allowed_root) if live is not None else None
+    link = _link_below_floor(stale, allowed_root) if live is not None else None
     if live is not None and link is not None:
         # Kept on every run, and still there after an uninstall, when it points
         # at a folder Apothem no longer fills: the operator removes it.

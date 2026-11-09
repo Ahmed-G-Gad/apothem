@@ -533,7 +533,7 @@ def test_the_link_named_is_the_highest_leading_out_of_the_home(
     root = home / "a" / "b" / "codex"
 
     assert install_driver_homelink._link_leaving_home(root) == expected
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         install_driver_homelink.refuse_link_leaving_home(
             "codex", root, operation="codex_home"
         )

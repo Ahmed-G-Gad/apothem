@@ -62,7 +62,7 @@ linked to another drive. On Windows a junction counts as a link. In an
 interactive run the command does not ask for confirmation first. A run that
 cannot ask (JSON output, or no terminal) still stops first and asks for
 `--yes`; the link error shows once you pass it. The error contains `uninstall
-refused: target path crosses a symlink`, names the link and the folder it
+refused: target path crosses a link`, names the link and the folder it
 leads to, and says what to do; the command exits 1. Make the link lead to a
 folder inside your home directory, or replace it with the folder itself, and
 run the uninstall again. A folder you spell as a path outside your home

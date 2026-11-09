@@ -29,6 +29,9 @@ from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared import install_driver_pathsafety as pathsafety
 from apothem.harnesses._shared.install_driver import MaterializationResult
+from apothem.harnesses._shared.install_driver_backup import _replace_path
+from apothem.harnesses._shared.install_driver_sweep import stale_blocker
+from apothem.harnesses._shared.install_driver_written import remove_written
 
 
 @pytest.fixture
@@ -313,12 +316,12 @@ def test_the_link_lookups_read_the_project_floor_they_are_given(
     target.parent.mkdir(parents=True)
 
     assert pathsafety._unsafe_symlink(target, floor) is None
-    assert pathsafety._link_on_path(target, floor) is None
+    assert pathsafety._link_below_floor(target, floor) is None
 
     _link(project / "inner", tmp_path / "elsewhere")
     inner = project / "inner" / "x.md"
     assert pathsafety._unsafe_symlink(inner, floor) == project / "inner"
-    assert pathsafety._link_on_path(inner, floor) == project / "inner"
+    assert pathsafety._link_below_floor(inner, floor) == project / "inner"
 
 
 def test_a_boundary_derived_from_the_floor_does_not_follow_the_named_link(
@@ -333,6 +336,70 @@ def test_a_boundary_derived_from_the_floor_does_not_follow_the_named_link(
     target.parent.mkdir(parents=True)
 
     assert pathsafety._unsafe_symlink(target, pathsafety._normalized(floor)) == project
+
+
+def test_the_sweep_and_uninstall_checks_follow_the_named_project_folder(
+    home: Path, tmp_path: Path
+) -> None:
+    # The stale sweep, the removal of written files and the removal of a
+    # folder each ask whether a link caused a refusal. With the folder the
+    # operator named as a link, none of them reports that link.
+    _link(home / "proj", tmp_path / "outside" / "proj")
+    project = home / "proj"
+    floor = pathsafety._allowed_write_root(None, project)
+    rules = project / ".cursor" / "rules"
+    rules.mkdir(parents=True)
+    (rules / "a.md").write_text("x\n", encoding="utf-8")
+    live = frozenset({pathsafety._normalized(rules)})
+
+    kept = stale_blocker(project / ".cursor", live, floor)
+    written = remove_written(
+        rules / "a.md",
+        recorded=None,
+        install_root=project,
+        harness_name="t",
+        allowed_root=floor,
+    )
+    replaced = _replace_path(
+        rules, install_root=project, harness_name="t", allowed_root=floor, removing=True
+    )
+
+    assert kept is not None
+    assert kept.outcome == "unchanged", kept.message
+    assert written is not None
+    assert "symlink" not in written.detail, written.message
+    assert replaced is None or replaced.outcome not in {"error", "warning"}
+    assert not rules.exists()
+
+
+def test_the_sweep_and_uninstall_checks_name_a_link_inside_the_project(
+    home: Path, tmp_path: Path
+) -> None:
+    project = home / "proj"
+    project.mkdir()
+    floor = pathsafety._allowed_write_root(None, project)
+    _link(project / ".cursor", tmp_path / "elsewhere")
+    rules = project / ".cursor" / "rules"
+    rules.mkdir(parents=True)
+    (rules / "a.md").write_text("x\n", encoding="utf-8")
+    live = frozenset({pathsafety._normalized(rules)})
+
+    kept = stale_blocker(project / ".cursor", live, floor)
+    written = remove_written(
+        rules / "a.md",
+        recorded=None,
+        install_root=project,
+        harness_name="t",
+        allowed_root=floor,
+    )
+
+    assert kept is not None
+    assert kept.outcome == "warning", kept.message
+    assert str(project / ".cursor") in kept.message
+    assert written is not None
+    assert written.outcome == "warning", written.message
+    assert written.detail["symlink"] == str(project / ".cursor")
+    assert (rules / "a.md").exists()
 
 
 # -- the CLI ------------------------------------------------------------------

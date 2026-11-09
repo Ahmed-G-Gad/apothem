@@ -342,7 +342,7 @@ def _unsafe_symlink(
     return None
 
 
-def _link_on_path(path: Path, floor: Path) -> Path | None:
+def _link_below_floor(path: Path, floor: Path) -> Path | None:
     """Return the first link or junction from *path* up to *floor*, if any.
 
     No link is exempt, except a :class:`_ProjectFloor`'s project folder as
@@ -494,6 +494,25 @@ def _allowed_write_root(harness_root: Path | None, project_root: Path | None) ->
 LINK_FIX_LEAD = ". To fix it, "
 
 
+def _link_fix(link: Path, *, named: bool = False) -> str:
+    """Return what to do about *link*, refused by the write guard.
+
+    A link to a file is replaced by a copy of that file; any other link (to
+    a folder, or one whose target is gone) by a real folder. *named* puts the
+    link's path in the text. The text has no final full stop.
+    """
+    which = f"the link {link}" if named else "the link"
+    if link.is_file():
+        return (
+            f"replace {which} with a copy of the file it leads to, then run the "
+            "command again"
+        )
+    return (
+        f"replace {which} with a real folder that holds the same files, then "
+        "run the command again"
+    )
+
+
 def _validate_target_path(
     target: Path,
     *,
@@ -534,8 +553,7 @@ def _validate_target_path(
             operation,
             target,
             f"target path crosses a link ({kind}) at {symlink}{where}; Apothem does "
-            f"not write through a link{LINK_FIX_LEAD}replace the link with a real "
-            "folder that holds the same files, then run the command again",
+            f"not write through a link{LINK_FIX_LEAD}{_link_fix(symlink)}",
             detail={"symlink": _path_text(symlink), "leads_to": leads_to},
         )
     return None

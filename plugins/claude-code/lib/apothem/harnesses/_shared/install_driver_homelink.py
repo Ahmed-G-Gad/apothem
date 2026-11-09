@@ -14,12 +14,17 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Loaded first, so this module can be the first one a program imports: the
+# concern modules it loads read ``install_driver_pathsafety`` in the order
+# the driver expects (see ``install_driver_types``, which does the same).
+from apothem.harnesses._shared import install_driver  # noqa: F401
 from apothem.lib.propagation import user_home
 
 from .install_driver_pathsafety import (
     LINK_FIX_LEAD,
     _is_link,
     _leads_to,
+    _link_fix,
     _normalized,
     _within_allowed_root,
 )
@@ -127,7 +132,7 @@ def link_leaving_home_refusal(
         "error",
         operation,
         root,
-        "target path crosses a symlink",
+        "target path crosses a link",
         detail={
             "symlink": _path_text(link),
             "leads_to": _leads_to(link),
@@ -163,7 +168,8 @@ def link_refusal_reason_and_fix(
     write-guard refusal's message already names the kind of link, the link
     and where it leads, then its fix after
     :data:`~.install_driver_pathsafety.LINK_FIX_LEAD`: the reason is the part
-    before it, so the fix is given once.
+    before the last one (a folder name may hold the same words), and the fix
+    names the link, so it is given once.
     """
     link = result.detail.get("symlink")
     if not link:
@@ -175,11 +181,11 @@ def link_refusal_reason_and_fix(
     own_fix = result.detail.get("fix")
     if own_fix:
         return f"{result.message}: {named}, outside your home directory", own_fix
-    reason, lead, _ = result.message.partition(LINK_FIX_LEAD)
+    reason, lead, _ = result.message.rpartition(LINK_FIX_LEAD)
+    fix = _link_fix(Path(link), named=True)
     return (
         reason if lead else f"{result.message}: {named}",
-        f"Replace the link {link} with a real folder that holds the same files, "
-        "then run the command again.",
+        f"{fix[:1].upper()}{fix[1:]}.",
     )
 
 

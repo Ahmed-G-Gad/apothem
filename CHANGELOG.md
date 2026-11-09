@@ -706,9 +706,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it lead inside your home directory. The `install --clean` error for a
   `~/.config` link that leaves your home directory gives the same fix instead
   of asking you to re-run interactively. A write refused at a link inside a
-  tool's folder also names the folder the link leads to. In `--format json`
+  tool's folder also names where the link leads, and for a link to a file it
+  says to replace the link with a copy of the file. In `--format json`
   output, a result refused at a link carries a new key, `detail.leads_to`,
-  the folder the link leads to. A result refused because a link leads a
+  the path the link leads to. A result refused because a link leads a
   tool's folder out of your home directory now also carries `detail.fix`,
   the fix, as other refused results already do. No existing key changed.
 - **`install --clean` writes your profile back when a removal stops
@@ -755,14 +756,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Security
 
 - **`install --clean` no longer rewrites a profile it did not remove.** After
-  the clean-slate step, the install wrote the profile back to the
-  `--profile PATH` it was given, whether or not the step had removed it, and
-  without the link check every other profile write has. With `--profile ~/ext/profile.yaml`
+  the clean-slate step, the install wrote the profile back to the `--profile
+  PATH` it was given, whether or not the step had removed it, and without the
+  link check every other profile write has. With `--profile ~/ext/profile.yaml`
   and `~/ext` a link or a junction leading out of your home directory, it
-  replaced the file at the far end of the link. The profile is now written
-  back only when the clean-slate step removed it, and that write is refused
-  when a link would lead it out of your home directory. A refused or failed
-  write back names the backup copy that holds your profile.
+  replaced the file at the far end of the link. The profile is now written back
+  only when the clean-slate step removed it, and that write is refused when a
+  link would lead it out of your home directory. A refused or failed write back
+  names the backup copy that holds your profile.
 - **The folder you name with `--project` is followed wherever it leads.**
   A project folder that is itself a link, `~/.config` among them, is the
   folder you named, so Apothem writes in the folder the link leads to, also

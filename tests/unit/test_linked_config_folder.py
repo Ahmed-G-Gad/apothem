@@ -121,7 +121,7 @@ def test_a_linked_config_folder_leaving_the_home_stops_the_install(
         monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "xdg"))
 
     assert config_root() == home / ".config" / "opencode"
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         OpenCodeAdapter().install({})
 
     assert _files(outside) == []
@@ -156,7 +156,7 @@ def test_an_xdg_config_home_in_the_home_leading_out_of_it_is_refused(
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / spelling))
 
     assert config_root() == home / spelling / "opencode"
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         OpenCodeAdapter().install({})
     with pytest.raises(install_driver.MaterializationError, match="uninstall refused"):
         OpenCodeAdapter().uninstall()
@@ -339,7 +339,7 @@ def test_a_record_through_a_link_leaving_the_home_is_not_followed(
         )
 
     assert config_root() == home / ".config" / "opencode"
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         OpenCodeAdapter().install({})
     assert _files(outside) == []
 
@@ -457,7 +457,7 @@ def test_a_change_of_case_in_xdg_config_home_names_the_default_install(
     shutil.rmtree(home / ".config")
     outside = tmp_path / "outside" / "config"
     _link(home / ".config", outside)
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         adapter.update({})
     assert _files(outside) == []
 
@@ -544,7 +544,7 @@ def test_a_codex_home_below_a_link_leaving_the_home_is_refused(
     _link(home / "w", outside)
     monkeypatch.setenv("CODEX_HOME", str(home / depth))
 
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="crosses a link"):
         CodexAdapter().install({})
     with pytest.raises(install_driver.MaterializationError, match="uninstall refused"):
         CodexAdapter().uninstall()
