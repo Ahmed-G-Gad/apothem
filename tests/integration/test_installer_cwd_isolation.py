@@ -44,6 +44,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -1090,34 +1091,78 @@ def test_uninstall_keeps_an_apothem_command_it_did_not_write(tmp_path: Path) -> 
     assert own.is_file()
 
 
-# --- the PYTHONPATH filter under POSIX and under Git Bash -------------------
+# --- the PYTHONPATH form follows the chosen Python, not the shell -----------
+#
+# Under Git Bash, MSYS or Cygwin, uname says MINGW, MSYS or CYGWIN whether the
+# Python the script runs is a Windows one (";" and Windows paths) or Cygwin's
+# or MSYS2's own python3 (":" and POSIX paths). The scripts used to pick the
+# form from uname, so a POSIX Python there got a ";"-joined list of Windows
+# paths, read "C:\\x;C:\\y" as relative entries such as "C", and loaded
+# C/sitecustomize.py from the current folder. They now ask the Python.
 
-_KEEP_HELPER = "keep_full_pythonpath() {"
+#: A uname that reports Git Bash, and a cygpath that prints "C:" + its last
+#: argument (what the earlier scripts would then hand a POSIX Python).
+_GIT_BASH_UNAME = "#!/bin/sh\nprintf '%s\\n' 'MINGW64_NT-10.0-26100'\n"
+_FAKE_CYGPATH = "#!/bin/sh\nfor last; do :; done\nprintf 'C:%s\\n' \"$last\"\n"
+
+# A stand-in engine that records the arguments and its sys.path.
+_PATH_ENGINE = """\
+# SPDX-License-Identifier: MIT
+import json
+import os
+import sys
+
+import click  # noqa: F401
+with open(os.environ["FAKE_ENGINE_RECORD"], "a", encoding="utf-8") as record:
+    record.write(json.dumps({"argv": sys.argv[1:], "path": sys.path}) + "\\n")
+"""
 
 
-def _keep_helper(script: Path) -> str:
-    """The keep_full_pythonpath function text, as SCRIPT defines it."""
+def _function(script: Path, name: str) -> str:
+    """The text of shell function NAME, as SCRIPT defines it."""
     text = script.read_text(encoding="utf-8")
-    start = text.index(_KEEP_HELPER)
+    start = text.index(f"\n{name}() {{\n") + 1
     end = text.index("\n}\n", start) + len("\n}\n")
     return text[start:end]
 
 
-def _run_keep_helper(
-    tmp_path: Path, script: Path, shell: str, system: str, value: str
-) -> str:
-    stub = tmp_path / "uname-stub"
-    stub.mkdir(exist_ok=True)
-    _write(stub / "uname", f"#!/bin/sh\nprintf '%s\\n' '{system}'\n")
-    (stub / "uname").chmod(0o755)
-    program = _keep_helper(script) + 'keep_full_pythonpath "$1"\n'
-    result = subprocess.run(
-        [shell, "-c", program, "keep", value],
-        env={"PATH": f"{stub}{os.pathsep}/usr/bin{os.pathsep}/bin"},
+def _stub_dir(tmp_path: Path, **stubs: str) -> Path:
+    """A folder of executable stubs, NAME -> script text."""
+    folder = tmp_path / "stubs"
+    for name, body in stubs.items():
+        _write(folder / name, body)
+        (folder / name).chmod(0o755)
+    return folder
+
+
+def _run_helper(
+    shell: str, program: str, args: list[str], env: dict[str, str]
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [shell, "-c", program, "helper", *args],
+        env=env,
         capture_output=True,
         text=True,
         timeout=RUN_TIMEOUT_SECONDS,
         check=False,
+    )
+
+
+def _run_keep_helper(
+    tmp_path: Path, script: Path, shell: str, py_windows: str, value: str
+) -> str:
+    # uname reports Git Bash in every case: the filter must not read it.
+    stub = _stub_dir(tmp_path, uname=_GIT_BASH_UNAME)
+    program = (
+        f"PY_WINDOWS={py_windows}\n"
+        + _function(script, "keep_full_pythonpath")
+        + 'keep_full_pythonpath "$1"\n'
+    )
+    result = _run_helper(
+        shell,
+        program,
+        [value],
+        {"PATH": f"{stub}{os.pathsep}/usr/bin{os.pathsep}/bin"},
     )
     assert result.returncode == 0, result.stderr
     return result.stdout
@@ -1140,25 +1185,23 @@ _HELPER_SHELLS = [
 
 @pytest.mark.parametrize("shell", _HELPER_SHELLS)
 @pytest.mark.parametrize("script", _HELPER_SCRIPTS)
-def test_the_pythonpath_filter_keeps_only_slash_rooted_entries_on_posix(
+def test_the_pythonpath_filter_keeps_only_slash_rooted_entries_for_a_posix_python(
     tmp_path: Path, script: Path, shell: str
 ) -> None:
-    """On POSIX only entries starting with "/" are kept, joined with ":"."""
-    kept = _run_keep_helper(tmp_path, script, shell, "Linux", ":/a:.:rel:C:\\x:/b c:")
+    """For a POSIX Python only entries starting with "/" are kept, joined
+    with ":", even where uname reports Git Bash."""
+    kept = _run_keep_helper(tmp_path, script, shell, "0", ":/a:.:rel:C:\\x:/b c:")
     assert kept == "/a:/b c", kept
 
 
-@pytest.mark.parametrize(
-    "system", ["MINGW64_NT-10.0", "MSYS_NT-10.0", "CYGWIN_NT-10.0"]
-)
 @pytest.mark.parametrize("shell", _HELPER_SHELLS)
 @pytest.mark.parametrize("script", _HELPER_SCRIPTS)
-def test_the_pythonpath_filter_keeps_windows_full_paths_under_git_bash(
-    tmp_path: Path, script: Path, shell: str, system: str
+def test_the_pythonpath_filter_keeps_windows_full_paths_for_a_windows_python(
+    tmp_path: Path, script: Path, shell: str
 ) -> None:
-    """Under Git Bash, MSYS or Cygwin the value is split on ";" and only a
-    drive path or a network path is kept; a rooted "\\lib", a drive-relative
-    "C:rel", a relative or empty entry and a "/x" entry are dropped."""
+    """For a Windows Python the value is split on ";" and only a drive path
+    or a network path is kept; a rooted "\\lib", a drive-relative "C:rel", a
+    relative or empty entry and a "/x" entry are dropped."""
     value = ";".join(
         [
             "",
@@ -1173,5 +1216,311 @@ def test_the_pythonpath_filter_keeps_windows_full_paths_under_git_bash(
             "",
         ]
     )
-    kept = _run_keep_helper(tmp_path, script, shell, system, value)
+    kept = _run_keep_helper(tmp_path, script, shell, "1", value)
     assert kept == "C:\\a b;\\\\server\\share;//server/x;d:/b", kept
+
+
+def _settle_program(script: Path) -> str:
+    """The script's startup block and settle_python_form, then a report."""
+    text = script.read_text(encoding="utf-8")
+    start = text.index("unset APOTHEM_CALLER_PYTHONPATH\n")
+    end = text.index('PY_PATHSEP=""\n', start) + len('PY_PATHSEP=""\n')
+    return (
+        'die() { printf "DIE %s\\n" "$*"; exit 3; }\n'
+        + text[start:end]
+        + _function(script, "keep_full_pythonpath")
+        + _function(script, "settle_python_form")
+        + 'printf "early=%s\\n" "${PYTHONPATH-<unset>}"\n'
+        + "settle_python_form\n"
+        + 'printf "windows=%s sep=%s pp=%s\\n" "$PY_WINDOWS" "$PY_PATHSEP"'
+        + ' "${PYTHONPATH-<unset>}"\n'
+        + "env | grep -c '^APOTHEM_CALLER_PYTHONPATH=' || true\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("printed", "pythonpath", "wanted"),
+    [
+        pytest.param(
+            ";win32",
+            "C:\\a;/c/b;rel;\\\\s\\x",
+            "windows=1 sep=; pp=C:\\a;\\\\s\\x",
+            id="windows",
+        ),
+        pytest.param(
+            ":cygwin", "/a:C:\\b;C:\\c:rel:/d", "windows=0 sep=: pp=/a:/d", id="cygwin"
+        ),
+        pytest.param(":msys", "/a", "windows=0 sep=: pp=/a", id="msys2"),
+        pytest.param(":linux", "rel:.", "windows=0 sep=: pp=<unset>", id="linux"),
+    ],
+)
+@pytest.mark.parametrize("script", _HELPER_SCRIPTS)
+def test_settle_python_form_asks_the_python(
+    tmp_path: Path, script: Path, printed: str, pythonpath: str, wanted: str
+) -> None:
+    """The form comes from what the chosen Python prints, not from uname
+    (which reports Git Bash here); the caller's PYTHONPATH is unset until
+    then, filtered by that form after, and never exported under another
+    name."""
+    stub = _stub_dir(tmp_path, uname=_GIT_BASH_UNAME)
+    fake_py = tmp_path / "fake-python"
+    _write(fake_py, f"#!/bin/sh\nprintf '%s' '{printed}'\n")
+    fake_py.chmod(0o755)
+    env = {
+        "PATH": f"{stub}{os.pathsep}/usr/bin{os.pathsep}/bin",
+        "PY": str(fake_py),
+        "PYTHONPATH": pythonpath,
+        "APOTHEM_CALLER_PYTHONPATH": "exported-by-the-caller",
+    }
+
+    result = _run_helper("sh", "PY=$PY\n" + _settle_program(script), [], env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.splitlines() == ["early=<unset>", wanted, "0"], result.stdout
+
+
+@pytest.mark.parametrize("printed", ["", ";cygwin", "win32", ";"])
+@pytest.mark.parametrize("script", _HELPER_SCRIPTS)
+def test_settle_python_form_stops_on_an_unknown_answer(
+    tmp_path: Path, script: Path, printed: str
+) -> None:
+    """Empty or unexpected output from the probe stops the script."""
+    fake_py = tmp_path / "fake-python"
+    _write(fake_py, f"#!/bin/sh\nprintf '%s' '{printed}'\n")
+    fake_py.chmod(0o755)
+    env = {"PATH": f"/usr/bin{os.pathsep}/bin", "PY": str(fake_py)}
+
+    result = _run_helper("sh", "PY=$PY\n" + _settle_program(script), [], env)
+
+    assert result.returncode == 3, result.stdout + result.stderr
+    assert "DIE Could not tell which PYTHONPATH form" in result.stdout, result.stdout
+
+
+@pytest.mark.parametrize(
+    ("cygpath", "py_windows", "path", "wanted"),
+    [
+        pytest.param(
+            "#!/bin/sh\nexit 0\n", "1", "/x", None, id="cygpath-prints-nothing"
+        ),
+        pytest.param("#!/bin/sh\nexit 1\n", "1", "/x", None, id="cygpath-fails"),
+        pytest.param(
+            "#!/bin/sh\nprintf '%s\\n' 'C'\n", "1", "/x", None, id="cygpath-prints-C"
+        ),
+        pytest.param(
+            "#!/bin/sh\nprintf '%s\\n' '/c/x'\n",
+            "1",
+            "/x",
+            None,
+            id="cygpath-prints-posix",
+        ),
+        pytest.param(
+            "#!/bin/sh\nprintf '%s\\n' 'C:rel'\n",
+            "1",
+            "/x",
+            None,
+            id="cygpath-prints-drive-relative",
+        ),
+        pytest.param(
+            "#!/bin/sh\nprintf '%s\\n' 'C:\\x y'\n",
+            "1",
+            "/x",
+            "C:\\x y",
+            id="cygpath-prints-a-drive-path",
+        ),
+        pytest.param(
+            "#!/bin/sh\nprintf '%s\\n' '\\\\srv\\x'\n",
+            "1",
+            "/x",
+            "\\\\srv\\x",
+            id="cygpath-prints-a-network-path",
+        ),
+        pytest.param("#!/bin/sh\nexit 1\n", "0", "/x y", "/x y", id="posix-full"),
+        pytest.param("#!/bin/sh\nexit 1\n", "0", "rel", None, id="posix-relative"),
+    ],
+)
+@pytest.mark.parametrize("script", _HELPER_SCRIPTS)
+def test_native_path_refuses_anything_but_a_full_path(
+    tmp_path: Path,
+    script: Path,
+    cygpath: str,
+    py_windows: str,
+    path: str,
+    wanted: str | None,
+) -> None:
+    """native_path prints a drive or network path from cygpath for a Windows
+    Python and a "/" path unchanged for a POSIX one; empty or other output
+    returns 1, so the caller stops."""
+    stub = _stub_dir(tmp_path, cygpath=cygpath)
+    program = (
+        f"PY_WINDOWS={py_windows}\n"
+        + _function(script, "native_path")
+        + 'native_path "$1"\n'
+    )
+
+    result = _run_helper(
+        "sh", program, [path], {"PATH": f"{stub}{os.pathsep}/usr/bin{os.pathsep}/bin"}
+    )
+
+    if wanted is None:
+        assert result.returncode == 1, (result.returncode, result.stdout)
+        assert result.stdout == "", result.stdout
+    else:
+        assert result.returncode == 0, result.stderr
+        assert result.stdout == wanted + "\n", result.stdout
+
+
+def _posix_python_under_git_bash(
+    tmp_path: Path, checkout: Path, lib: Path, **extra: str
+) -> dict[str, str]:
+    """The environment of a POSIX Python under a shell whose uname says
+    MINGW64: the stubs come first on PATH, and PYTHONPATH holds an absolute
+    and a relative entry."""
+    env = _env(
+        tmp_path,
+        pythonpath=f"{lib}:relative",
+        APOTHEM_SOURCE=str(checkout),
+        **extra,
+    )
+    stub = _stub_dir(tmp_path, uname=_GIT_BASH_UNAME, cygpath=_FAKE_CYGPATH)
+    env["PATH"] = f"{stub}{os.pathsep}{env['PATH']}"
+    return env
+
+
+def _check_engine_paths(
+    calls: list[dict[str, object]], checkout: Path, lib: Path
+) -> None:
+    """Every engine run got the engine paths in POSIX form, then LIB, and no
+    entry that names the current folder."""
+    assert calls, "the engine did not run"
+    for call in calls:
+        path = [str(entry) for entry in cast("list[object]", call["path"])]
+        assert str(checkout.resolve() / "src") in path, path
+        assert str(lib) in path, path
+        assert all(entry.startswith("/") for entry in path), path
+
+
+@pytest.mark.parametrize("shell", _HELPER_SHELLS)
+def test_install_asks_the_python_for_its_pythonpath_form(
+    tmp_path: Path, shell: str
+) -> None:
+    """Where uname reports Git Bash but the Python is a POSIX one (Cygwin's
+    or MSYS2's own python3), install.sh hands it ":" and POSIX paths: nothing
+    loads from the current folder or its C subfolder, the caller's absolute
+    entry reaches the engine, and the shim it writes uses ":"."""
+    marker = tmp_path / "shadow-ran"
+    workdir = _plant_modules(tmp_path / "workdir", marker)
+    _plant_modules(workdir / "C", marker)
+    checkout = _fake_checkout(tmp_path / "checkout")
+    _write(checkout / "src" / "apothem" / "__main__.py", _PATH_ENGINE)
+    lib = tmp_path / "userlib"
+    lib.mkdir()
+    env = _posix_python_under_git_bash(tmp_path, checkout, lib)
+
+    result = _run([shell, str(INSTALLER), "--yes"], cwd=workdir, env=env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert not marker.exists(), combined
+    calls = _engine_calls(tmp_path)
+    assert [call["argv"][:1] for call in calls] == [["install"], ["verify"]], calls
+    shim = tmp_path / "bin" / "apothem"
+    assert "\napothem_sep=':'\n" in shim.read_text(encoding="utf-8")
+
+    shim_result = _run([str(shim), "doctor"], cwd=workdir, env=env)
+
+    assert shim_result.returncode == 0, shim_result.stdout + shim_result.stderr
+    assert not marker.exists(), shim_result.stdout + shim_result.stderr
+    _check_engine_paths(_engine_calls(tmp_path), checkout, lib)
+
+
+def test_install_dry_run_asks_the_python_for_its_pythonpath_form(
+    tmp_path: Path,
+) -> None:
+    """The same for a dry run, which runs the engine once."""
+    marker = tmp_path / "shadow-ran"
+    workdir = _plant_modules(tmp_path / "workdir", marker)
+    _plant_modules(workdir / "C", marker)
+    checkout = _fake_checkout(tmp_path / "checkout")
+    _write(checkout / "src" / "apothem" / "__main__.py", _PATH_ENGINE)
+    lib = tmp_path / "userlib"
+    lib.mkdir()
+    env = _posix_python_under_git_bash(tmp_path, checkout, lib)
+
+    result = _run(["sh", str(INSTALLER), "--dry-run", "--yes"], cwd=workdir, env=env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert not marker.exists(), combined
+    calls = _engine_calls(tmp_path)
+    assert [call["argv"][:1] for call in calls] == [["install"]], calls
+    _check_engine_paths(calls, checkout, lib)
+
+
+def test_update_asks_the_python_for_its_pythonpath_form(tmp_path: Path) -> None:
+    """update.sh does the same for its engine run."""
+    marker = tmp_path / "shadow-ran"
+    workdir = _plant_modules(tmp_path / "workdir", marker)
+    _plant_modules(workdir / "C", marker)
+    checkout = _fake_checkout(tmp_path / "checkout")
+    _write(checkout / "src" / "apothem" / "__main__.py", _PATH_ENGINE)
+    lib = tmp_path / "userlib"
+    lib.mkdir()
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("identity: {}\n", encoding="utf-8")
+    env = _posix_python_under_git_bash(
+        tmp_path, checkout, lib, APOTHEM_PROFILE=str(profile)
+    )
+
+    result = _run(["sh", str(UPDATER)], cwd=workdir, env=env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert not marker.exists(), combined
+    calls = _engine_calls(tmp_path)
+    assert [call["argv"][:1] for call in calls] == [["update"]], calls
+    _check_engine_paths(calls, checkout, lib)
+
+
+def test_uninstall_asks_the_python_for_its_pythonpath_form(tmp_path: Path) -> None:
+    """uninstall.sh does the same for its engine run."""
+    marker = tmp_path / "shadow-ran"
+    workdir = _plant_modules(tmp_path / "workdir", marker)
+    _plant_modules(workdir / "C", marker)
+    checkout = _fake_checkout(tmp_path / "checkout")
+    _write(checkout / "src" / "apothem" / "__main__.py", _PATH_ENGINE)
+    lib = tmp_path / "userlib"
+    lib.mkdir()
+    env = _posix_python_under_git_bash(tmp_path, checkout, lib)
+
+    result = _run(["sh", str(UNINSTALLER), "--yes"], cwd=workdir, env=env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert not marker.exists(), combined
+    calls = _engine_calls(tmp_path)
+    assert [call["argv"][:1] for call in calls] == [["uninstall"]], calls
+    _check_engine_paths(calls, checkout, lib)
+
+
+def test_the_locator_runs_with_no_pythonpath(tmp_path: Path) -> None:
+    """The interpreter locator (and every Python it starts) runs before the
+    form is known, so it gets no PYTHONPATH at all."""
+    record = tmp_path / "locator-env"
+    checkout = _fake_checkout(tmp_path / "checkout")
+    _write(
+        checkout / "src" / "apothem" / "hooks" / "lib" / "find-python.sh",
+        "find_real_python() {\n"
+        f"    printf '%s\\n' \"${{PYTHONPATH-<unset>}}\" > '{record}'\n"
+        "    command -v python3\n"
+        "}\n",
+    )
+    env = _env(tmp_path, pythonpath=f"{tmp_path}:relative")
+
+    result = _run(
+        ["sh", str(checkout / "scripts" / "installer" / "install.sh"), "--dry-run"],
+        cwd=tmp_path,
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert record.read_text(encoding="utf-8") == "<unset>\n"

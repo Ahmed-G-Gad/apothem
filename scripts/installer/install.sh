@@ -178,21 +178,30 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
+# The caller's PYTHONPATH is set aside until the Python this script runs is
+# chosen: which separator and which path form are safe depends on that
+# Python, not on the shell (see settle_python_form). Until then every Python
+# started here (the locator, the version probes) runs with no PYTHONPATH.
+# APOTHEM_CALLER_PYTHONPATH is a plain shell variable, never exported.
+unset APOTHEM_CALLER_PYTHONPATH
+APOTHEM_CALLER_PYTHONPATH="${PYTHONPATH:-}"
+unset PYTHONPATH
+PY_WINDOWS=""
+PY_PATHSEP=""
+
 # keep_full_pythonpath VALUE — print the entries of the PYTHONPATH value
-# VALUE that are full paths, joined the way Python splits them. Python turns
-# an empty or relative entry (":/x", "/x:", ".") into the current folder,
-# ahead of site-packages, so a sitecustomize.py, click.py or apothem/ there
-# would run in place of the real module. On POSIX an entry is kept only when
-# it starts with "/". Under Git Bash, MSYS or Cygwin the Python is a Windows
-# one that splits PYTHONPATH on ";": there an entry is kept only when it is a
-# drive path ("C:\x", "C:/x") or a network path ("\\server\x", "//server/x"),
-# so a rooted "\lib" and a drive-relative "C:rel" are dropped. Every Python
-# this script starts gets only the kept entries.
+# VALUE that are full paths, joined the way the chosen Python splits them.
+# Python turns an empty or relative entry (":/x", "/x:", ".") into the
+# current folder, ahead of site-packages, so a sitecustomize.py, click.py or
+# apothem/ there would run in place of the real module. For a POSIX Python
+# (including Cygwin's and MSYS2's own python3) the value is split on ":" and
+# an entry is kept only when it starts with "/". For a Windows Python (the
+# usual one under Git Bash) it is split on ";" and an entry is kept only when
+# it is a drive path ("C:\x", "C:/x") or a network path ("\\server\x",
+# "//server/x"), so a rooted "\lib", a drive-relative "C:rel" and a "/c/x"
+# entry are dropped. Reads PY_WINDOWS, which settle_python_form sets.
 keep_full_pythonpath() {
-    case "$(uname -s 2>/dev/null || true)" in
-        MINGW* | MSYS* | CYGWIN*) _kp_sep=";" ;;
-        *) _kp_sep=":" ;;
-    esac
+    if [ "$PY_WINDOWS" = "1" ]; then _kp_sep=";"; else _kp_sep=":"; fi
     _kp_rest="$1"
     _kp_keep=""
     while [ -n "$_kp_rest" ]; do
@@ -201,7 +210,7 @@ keep_full_pythonpath() {
             *"$_kp_sep"*) _kp_rest="${_kp_rest#*"$_kp_sep"}" ;;
             *) _kp_rest="" ;;
         esac
-        if [ "$_kp_sep" = ";" ]; then
+        if [ "$PY_WINDOWS" = "1" ]; then
             case "$_kp_entry" in
                 [A-Za-z]:[\\/]* | [\\/][\\/]*) ;;
                 *) continue ;;
@@ -216,44 +225,60 @@ keep_full_pythonpath() {
     done
     printf '%s' "$_kp_keep"
 }
-# PY_PATHSEP is the separator the Python this script starts reads in
-# PYTHONPATH. Under Git Bash, MSYS or Cygwin that Python is a Windows one,
-# which splits on ";" and wants Windows paths. MSYS rewrites a ":"-joined list
-# of /c/... paths into ";"-joined Windows paths when it starts a Windows
-# program, and in doing so splits a "C:\x" entry into "C" and "\x": the
-# relative "C" then names a folder in the current folder, ahead of the
-# standard library. So there every engine path is turned into its Windows form
-# with cygpath -w and the list is joined with ";", which MSYS leaves alone.
-case "$(uname -s 2>/dev/null || true)" in
-    MINGW* | MSYS* | CYGWIN*) PY_PATHSEP=";" ;;
-    *) PY_PATHSEP=":" ;;
-esac
 
-# native_path PATH — print PATH in the form the Python this script starts
-# reads: unchanged on POSIX, the Windows form under Git Bash, MSYS or Cygwin.
-native_path() {
-    if [ "$PY_PATHSEP" = ";" ]; then
-        cygpath -w -- "$1" 2>/dev/null
+# settle_python_form — ask the chosen Python ($PY) which PYTHONPATH form it
+# reads, then give it the caller's full-path entries in that form. A Windows
+# Python (the usual one under Git Bash) splits on ";" and reads Windows
+# paths. A POSIX Python, including Cygwin's and MSYS2's own python3, splits
+# on ":" and reads POSIX paths. The shell cannot tell them apart: uname says
+# MINGW, MSYS or CYGWIN for both, and a ";"-joined list of Windows paths
+# reads to a POSIX Python as relative entries such as "C", folders in the
+# current folder. The probe runs isolated (-I) and needs only os and sys.
+# Sets PY_WINDOWS (1 or 0) and PY_PATHSEP, and exports the kept entries as
+# PYTHONPATH (unset when none are kept).
+settle_python_form() {
+    _pf_form="$("$PY" -I -c 'import os, sys; sys.stdout.write(os.pathsep + sys.platform)' 2>/dev/null)" \
+        || _pf_form=""
+    case "$_pf_form" in
+        ";win32") PY_WINDOWS=1; PY_PATHSEP=";" ;;
+        :?*) PY_WINDOWS=0; PY_PATHSEP=":" ;;
+        *) die "Could not tell which PYTHONPATH form ${PY} reads (it printed '${_pf_form}')." ;;
+    esac
+    _pp_keep="$(keep_full_pythonpath "$APOTHEM_CALLER_PYTHONPATH"; printf x)"
+    _pp_keep="${_pp_keep%x}"
+    if [ -n "$_pp_keep" ]; then
+        PYTHONPATH="$_pp_keep"
+        export PYTHONPATH
     else
-        printf '%s\n' "$1"
+        unset PYTHONPATH
+    fi
+}
+
+# native_path PATH — print PATH in the form the chosen Python reads: the
+# Windows form (cygpath -w) for a Windows Python, unchanged for a POSIX one.
+# Returns 1, so the caller stops, when cygpath fails or prints anything but a
+# drive or network path, or when a POSIX path does not start with "/".
+native_path() {
+    if [ "$PY_WINDOWS" = "1" ]; then
+        _np_path="$(cygpath -w -- "$1" 2>/dev/null)" || return 1
+        case "$_np_path" in
+            [A-Za-z]:[\\/]* | [\\/][\\/]*) printf '%s\n' "$_np_path" ;;
+            *) return 1 ;;
+        esac
+    else
+        case "$1" in
+            /*) printf '%s\n' "$1" ;;
+            *) return 1 ;;
+        esac
     fi
 }
 
 # engine_pythonpath — print the PYTHONPATH an engine run gets: the engine
 # paths, then the full-path entries of the caller's PYTHONPATH that
-# keep_full_pythonpath kept, joined with PY_PATHSEP.
+# settle_python_form kept, joined with PY_PATHSEP.
 engine_pythonpath() {
     printf '%s' "${ENGINE_PYPATH}${PYTHONPATH:+${PY_PATHSEP}${PYTHONPATH}}"
 }
-
-_pp_keep="$(keep_full_pythonpath "${PYTHONPATH:-}"; printf x)"
-_pp_keep="${_pp_keep%x}"
-if [ -n "$_pp_keep" ]; then
-    PYTHONPATH="$_pp_keep"
-    export PYTHONPATH
-else
-    unset PYTHONPATH
-fi
 
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
 # A trailing "/" or "/." would make the link test and the renames beside
@@ -1234,6 +1259,7 @@ if [ -z "$PY" ]; then
 fi
 
 [ -n "$PY" ] || die "No Python >= 3.10 found in PATH"
+settle_python_form
 PY_VERSION="$("$PY" -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
 ok "$PY ($PY_VERSION)"
 
@@ -1694,9 +1720,9 @@ SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
 #
-# The entries are joined with PY_PATHSEP and written in the form that Python
-# reads (see native_path): ":" and POSIX paths on POSIX, ";" and Windows paths
-# under Git Bash, MSYS or Cygwin.
+# The entries are joined with PY_PATHSEP and written in the form the chosen
+# Python reads (see settle_python_form and native_path): ":" and POSIX paths
+# for a POSIX Python, ";" and Windows paths for a Windows one.
 _ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
     || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
 _ep_src="$(native_path "${SRC_PATH}")" \
@@ -1798,8 +1824,8 @@ if mkdir -p "$BIN_DIR" 2>/dev/null; then
         printf 'apothem_pp=%s\n' "$(sq "$ENGINE_PYPATH")"
         printf 'apothem_sep=%s\n' "$(sq "$PY_PATHSEP")"
         cat <<'SHIM_BODY'
-# apothem_sep is the separator the engine's Python reads: ":" on POSIX, ";"
-# under Git Bash, MSYS or Cygwin, where only drive and network paths are kept.
+# apothem_sep is the separator the engine's Python reads: ":" for a POSIX
+# Python, ";" for a Windows one, where only drive and network paths are kept.
 apothem_rest="${PYTHONPATH:-}"
 while [ -n "$apothem_rest" ]; do
     apothem_entry="${apothem_rest%%"$apothem_sep"*}"

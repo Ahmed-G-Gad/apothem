@@ -274,6 +274,17 @@ a way that let the current folder shadow the engine's modules. Updating does
 not rewrite that shim. Run the installer (`install.sh` or `install.ps1`) again
 to replace it. The uninstallers remove both the old and the new shim.
 
+### Git Bash: my `/c/...` PYTHONPATH entries are ignored
+
+Under Git Bash the installers usually run a Windows Python, and a Windows
+Python reads `PYTHONPATH` as `;`-separated Windows paths. The sh scripts and
+the `apothem` shim they write keep only the drive and network paths of your
+`PYTHONPATH` for that Python, so a POSIX-style entry such as `/c/Users/me/lib`
+is dropped. Write the entry as a drive path, `C:\Users\me\lib` or
+`C:/Users/me/lib`, and separate entries with `;`. A POSIX Python, such as
+Cygwin's or MSYS2's own `python3`, reads `:`-separated paths that start with
+`/`, and the scripts keep those for it.
+
 ## Runtime issues
 
 ### apothem install finds no harnesses
