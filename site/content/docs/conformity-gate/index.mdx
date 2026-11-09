@@ -37,7 +37,7 @@ Each validator runs in one of three ways:
 
 - **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`.
 - **standalone**: across the whole repository with `--all`, or one at a time with `--check <name>`.
-- **change-set**: against a staged diff, run directly as `python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
+- **change-set**: against a staged diff, run directly from the checkout root as `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
 
 The table below is generated from the validator modules.
 
@@ -111,33 +111,42 @@ On an installed harness the gate runs automatically: Claude Code's
 materialized copy at `~/.claude/.apothem/support/conformity/gate.py` before every
 Write/Edit. The gate then checks only writes under its hook scope, and a write
 outside the scope passes silently; [Running the conformity gate](/docs/usage/conformity-gate)
-lists the scope. From a source checkout, the module form drives the same code;
-prefix each `python` command below with `PYTHONPATH=src`. The
+lists the scope. Run the gate by its script path, as the examples below do, and not as
+`python -m apothem.conformity.gate`: a script start puts only the
+script's own folder on Python's module search path, while `-m` puts the
+current folder first, and the project you check may hold a file named like
+one of the gate's modules. After a script install the script is
+`~/.apothem/src/apothem/conformity/gate.py` (on Windows,
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`); in a checkout it is
+`src/apothem/conformity/gate.py`. The gate starts each standalone validator
+in its own process with the current folder kept off the search path. The
 gate is advisory by default: it reports findings and exits `0`. Add `--strict`
 to exit `2` on a blocking finding. An unknown validator name exits `3`.
 
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` prints the usage summary.
+`python "$gate" --help` prints the usage summary.
 See [Running the conformity gate](/docs/usage/conformity-gate) for the full procedure.
 
 ## Reference

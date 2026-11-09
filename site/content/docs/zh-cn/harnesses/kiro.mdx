@@ -105,7 +105,7 @@ Apothem 不在 Kiro 上注册 `PreToolUse` 或 `PostToolUse` 钩子。Kiro 只�
 钩子文件中的命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` 让分发器以纯文本形式打印上下文，这正是 Kiro 为 `SessionStart` 添加到上下文中的内容。Kiro 没有记载 Windows 上命令操作所用的 shell。该命令是为 sh 和 cmd.exe 编写的，解释器路径使用正斜杠并加上引号；如果在你的机器上 Kiro 在 PowerShell 下运行它，带引号的路径前面需要一个调用运算符（`&`），你可以手动添加。

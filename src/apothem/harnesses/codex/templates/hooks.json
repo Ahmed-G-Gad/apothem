@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" SessionStart",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" SessionStart",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" SessionStart",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" SessionStart",
             "timeout": 30,
             "statusMessage": "Initializing session posture"
           }
@@ -20,8 +20,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
             "timeout": 10,
             "statusMessage": "Checking the shell command"
           }
@@ -32,8 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
             "timeout": 10,
             "statusMessage": "Checking the write target and content"
           }
@@ -46,8 +46,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" PreCompact precompact",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" PreCompact precompact",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreCompact precompact",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PreCompact precompact",
             "timeout": 30,
             "statusMessage": "Externalizing state before context compression"
           }
@@ -60,8 +60,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" PostCompact postcompact",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" PostCompact postcompact",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PostCompact postcompact",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" PostCompact postcompact",
             "timeout": 30,
             "statusMessage": "Restoring state from durable files after compaction"
           }
@@ -73,8 +73,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${HARNESS_ROOT}/hooks/dispatch.py\" Stop stop",
-            "commandWindows": "\"${PYTHON_BIN}\" \"${HARNESS_ROOT}/hooks/dispatch.py\" Stop stop",
+            "command": "python3 -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" Stop stop",
+            "commandWindows": "\"${PYTHON_BIN}\" -E -s \"${HARNESS_ROOT}/hooks/dispatch.py\" Stop stop",
             "timeout": 60,
             "statusMessage": "Finalizing session and externalizing state"
           }

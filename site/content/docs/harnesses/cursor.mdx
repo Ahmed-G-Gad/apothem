@@ -181,8 +181,12 @@ A command looks like this, with your interpreter and project path in place of th
 two paths:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
+
+`-E -s` makes Python ignore `PYTHONPATH` and the other `PYTHON*` variables
+and skip your user site-packages, so no file in the project can load into
+the hook.
 
 On a Windows host the command starts with `& `, PowerShell's call operator, because
 Cursor's desktop app runs hook commands through PowerShell, where a line that
@@ -341,8 +345,11 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. The path is where the installer puts the engine;
+[Conformity gate](/docs/conformity-gate) explains the script path and the other installs.
 
 ## Troubleshooting
 

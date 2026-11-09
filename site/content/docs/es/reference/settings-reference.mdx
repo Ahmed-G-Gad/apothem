@@ -27,7 +27,7 @@ Cada hook configurado usa la forma de comando exec de Claude Code. La plantilla 
 {
   "type": "command",
   "command": "${PYTHON_BIN}",
-  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 

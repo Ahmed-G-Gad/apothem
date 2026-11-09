@@ -74,12 +74,18 @@ a user-scope harness does not.
 
 ## Rule validation
 
-Run the frontmatter validator against the rule file you wrote. From an Apothem
-checkout, `PYTHONPATH=src` makes the package importable; after a script install,
-use `PYTHONPATH="$HOME/.apothem/src"` in its place.
+Run the frontmatter validator against the rule file you wrote. From the root of an
+Apothem checkout, `PYTHONPATH=src` makes the package importable (`python -m`
+reads modules from the current folder first, so use a folder you trust):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+After a script install, run the gate by its script path:
+
+```bash
+python "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 A per-write check such as `frontmatter-grep` takes the file to check, or

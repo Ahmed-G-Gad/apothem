@@ -51,7 +51,7 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 | 面 | 呼び出し | コンテキスト |
 | ------- | ---------- | ------- |
 | エンジン CLI | `python -m apothem <command>` | `src/` を `PYTHONPATH` に含むソースツリー（チェックアウト、npx キャッシュ、プラグインツリー） |
-| フックランタイム | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code のマテリアライズ：ハーネスルートの共有 `.apothem/support/` ツリー配下にあるコピーを、絶対パスで指定したもの |
+| フックランタイム | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code のマテリアライズ：ハーネスルートの共有 `.apothem/support/` ツリー配下にあるコピーを、絶対パスで指定したもの |
 
 - `python -m apothem` は `src/apothem/__main__.py` を実行します。これは
   `src/apothem/_vendor` を `sys.path` に置き、`click` と `rich` が

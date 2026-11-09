@@ -21,6 +21,7 @@ SessionStart shares the vendor registration's per-session marker.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -467,6 +468,36 @@ def _best_effort_event_name(argv: list[str] | None) -> str:
     return namespace.event_name or namespace.event_positional or ""
 
 
+#: How the script entry sets up each standard stream: encoding, error handler.
+#: Standard input is read as ``utf-8-sig`` so a byte-order mark a Windows
+#: caller puts first is dropped, and a byte that is not UTF-8 reads as U+FFFD,
+#: so the read never fails; standard error keeps Python's own error handler.
+_UTF8_STREAMS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("stdin", "utf-8-sig", "replace"),
+    ("stdout", "utf-8", "strict"),
+    ("stderr", "utf-8", "backslashreplace"),
+)
+
+
+def use_utf8_streams() -> None:
+    """Read the payload and write the answer as UTF-8, whatever the locale says.
+
+    Every hook command starts Python with ``-E``, so ``PYTHONUTF8`` and
+    ``PYTHONIOENCODING`` are not read, and a pipe then takes the locale's
+    encoding: on Windows the ANSI code page (cp1252, cp1256 and the like),
+    which misreads the UTF-8 JSON the harness writes. The streams are set to
+    UTF-8 here, before anything is read. Called from the script entry only, so
+    an in-process :func:`main` call leaves the caller's streams alone; a stream
+    without ``reconfigure`` (one a test put in place) is skipped.
+    """
+    for name, encoding, errors in _UTF8_STREAMS:
+        reconfigure = getattr(getattr(sys, name, None), "reconfigure", None)
+        if reconfigure is None:
+            continue
+        with contextlib.suppress(ValueError, OSError):
+            reconfigure(encoding=encoding, errors=errors)
+
+
 def main(argv: list[str] | None = None) -> None:
     """Entry point. Emits a failure envelope on any error; never raises non-zero.
 
@@ -515,4 +546,5 @@ def main(argv: list[str] | None = None) -> None:
 
 
 if __name__ == "__main__":
+    use_utf8_streams()
     main()

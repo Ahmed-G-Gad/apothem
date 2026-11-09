@@ -362,14 +362,18 @@ def _run(
     so its ``$$`` is the installer's process ID.
 
     The tag check reads GPG_STATUS from a stub gpg (a good signature by the
-    maintainer key by default); GPG_PROGRAM names another gpg.program.
-    PATH_FIRST lists stub directories to put ahead of everything on PATH.
+    maintainer key by default); GPG_PROGRAM names another gpg.program. The
+    installer clears GIT_CONFIG_GLOBAL, so the stub is named in the isolated
+    HOME's own .gitconfig, which GIT_CONFIG_GLOBAL names too for the test's
+    own git. PATH_FIRST lists stub directories to put ahead of everything on
+    PATH.
     """
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     (tmp_path / "temp").mkdir(exist_ok=True)
     env = {k: v for k, v in hermetic_git_env().items() if not k.startswith("APOTHEM_")}
     env.pop("PYTHONPATH", None)
+    env.pop("XDG_CONFIG_HOME", None)
     # --yes lets the installer pip-install a missing click or rich; with no
     # package index that install fails instead of changing the host Python.
     for key in [k for k in env if k.startswith("PIP_")]:
@@ -386,15 +390,15 @@ def _run(
             "APOTHEM_HOME": str(apothem_home or tmp_path / "apothem-home"),
         }
     )
+    gitconfig = home / ".gitconfig"
     if gpg_program is None:
         status = gpg_status
         if status is None:
             status = good_signature_status(MAINTAINER_FINGERPRINT)
-        env["GIT_CONFIG_GLOBAL"] = str(write_stub_gpg(tmp_path / "stub-gpg", status))
+        shutil.copyfile(write_stub_gpg(tmp_path / "stub-gpg", status), gitconfig)
     else:
-        gitconfig = tmp_path / "gitconfig"
         gitconfig.write_text(f"[gpg]\n\tprogram = {gpg_program}\n", encoding="utf-8")
-        env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
+    env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
     env.update(extra_env or {})
     if mode is not None:
         env["APOTHEM_VERIFY"] = mode
@@ -560,7 +564,8 @@ def test_release_mode_without_cosign_fails_before_downloading(tmp_path: Path) ->
     [
         pytest.param(
             good_signature_status(OTHER_FINGERPRINT),
-            "not from the maintainer key",
+            f"Tag v9.9.9 is signed by the key {OTHER_FINGERPRINT}. A release tag "
+            "must be signed by the maintainer key",
             id="another-key",
         ),
         pytest.param("", "is unsigned or its signature did not verify", id="unsigned"),
@@ -779,8 +784,9 @@ def test_yes_replaces_a_clone_with_the_archive_and_keeps_untracked_data(
     """--yes replaces a real clone with the archive: the entries the clone
     does not track (the engine's backups/ and state/, a user's notes) move
     into the new install, and the clone's own tree (.git and every entry it
-    tracks, .github here) is moved to <home>.before-apothem-<time> instead
-    of being deleted, and the installer says where."""
+    tracks, .github here) is moved, under its own name, into a new
+    <home>.before-apothem-<time> folder instead of being deleted, and the
+    installer says where."""
     base = _release(tmp_path)
     home = tmp_path / "apothem-home"
     _commit_upstream(tmp_path, {".github/workflows/ci.yml": "name: ci\n"})
@@ -799,20 +805,22 @@ def test_yes_replaces_a_clone_with_the_archive_and_keeps_untracked_data(
     assert (home / "notes.txt").read_text(encoding="utf-8") == "mine\n"
     _assert_engine_data_kept(home)
     assert (home / SOURCE_MANIFEST).is_file(), combined
-    kept = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
-    assert len(kept) == 1, combined
+    asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
+    assert len(asides) == 1, combined
+    assert [p.name for p in asides[0].iterdir()] == ["apothem-home"], combined
+    kept = asides[0] / "apothem-home"
     assert (
-        f"The earlier clone's tree is kept at {kept[0]}; delete it once you no "
+        f"The earlier clone's tree is kept at {kept}; delete it once you no "
         "longer need it."
     ) in combined, combined
-    assert (kept[0] / ".git").is_dir(), combined
-    assert (kept[0] / ".github" / "workflows" / "ci.yml").is_file(), combined
+    assert (kept / ".git").is_dir(), combined
+    assert (kept / ".github" / "workflows" / "ci.yml").is_file(), combined
     assert (
-        git(["rev-parse", "HEAD"], kept[0]).strip()
+        git(["rev-parse", "HEAD"], kept).strip()
         == git(["rev-parse", "main"], tmp_path / "fixture-repo").strip()
     )
-    assert not ENGINE_DATA & {p.name for p in kept[0].iterdir()}, combined
-    assert not (kept[0] / "notes.txt").exists(), combined
+    assert not ENGINE_DATA & {p.name for p in kept.iterdir()}, combined
+    assert not (kept / "notes.txt").exists(), combined
     _assert_no_staging(tmp_path)
 
 
@@ -836,10 +844,10 @@ def test_other_content_at_apothem_home_is_refused_without_yes(tmp_path: Path) ->
 
 
 def test_yes_moves_a_non_apothem_folder_aside_unchanged(tmp_path: Path) -> None:
-    """--yes moves a folder that holds no Apothem install, whole and
-    unchanged, to a sibling <home>.before-apothem-<time> folder, says where,
-    and installs fresh. Entries that share a name with the source tree
-    (src/, README.md) are not mixed into the new install."""
+    """--yes moves a folder that holds no Apothem install, whole, unchanged
+    and under its own name, into a new sibling <home>.before-apothem-<time>
+    folder, says where, and installs fresh. Entries that share a name with
+    the source tree (src/, README.md) are not mixed into the new install."""
     home = tmp_path / "apothem-home"
     (home / "src").mkdir(parents=True)
     (home / "src" / "mine.py").write_text("print('mine')\n", encoding="utf-8")
@@ -853,10 +861,11 @@ def test_yes_moves_a_non_apothem_folder_aside_unchanged(tmp_path: Path) -> None:
     combined = result.stdout + result.stderr
     asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
     assert len(asides) == 1, combined
-    aside = asides[0]
-    assert re.fullmatch(r"apothem-home\.before-apothem-\d{14}(-\d+)?", aside.name)
+    assert re.fullmatch(r"apothem-home\.before-apothem-\d{14}(-\d+)?", asides[0].name)
+    assert [p.name for p in asides[0].iterdir()] == ["apothem-home"], combined
+    aside = asides[0] / "apothem-home"
     assert _snapshot(aside) == before, combined
-    assert f"were moved, unchanged, to {aside}" in combined, combined
+    assert f"were moved, unchanged, to {aside}\n" in combined, combined
     assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
     assert not (home / "src" / "mine.py").exists(), combined
     assert not (home / "README.md").exists(), combined
@@ -1463,8 +1472,9 @@ def test_yes_moves_a_clone_of_something_else_aside_whole(tmp_path: Path) -> None
     combined = result.stdout + result.stderr
     asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
     assert len(asides) == 1, combined
-    assert _snapshot(asides[0]) == before, combined
-    assert f"were moved, unchanged, to {asides[0]}" in combined, combined
+    aside = asides[0] / "apothem-home"
+    assert _snapshot(aside) == before, combined
+    assert f"were moved, unchanged, to {aside}\n" in combined, combined
     assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
     assert not (home / ".git").exists(), combined
     assert not (home / "notes.txt").exists(), combined
@@ -1694,6 +1704,70 @@ def test_an_unreadable_home_is_refused(tmp_path: Path) -> None:
     assert f"Cannot read {home}." in combined, combined
     assert (home / "state" / "ledger.json").is_file(), combined
     _assert_no_staging(tmp_path)
+
+
+# --- replacing a clone: its own settings and its owner ----------------------
+
+
+def test_replacing_a_clone_never_runs_its_fsmonitor(tmp_path: Path) -> None:
+    """Replacing a clone with --yes reads its state with git status, which
+    runs the clone's core.fsmonitor program. The clone's own settings are
+    checked first, so a clone that names one is refused, before anything is
+    downloaded, without it running."""
+    base = _release(tmp_path)
+    home = tmp_path / "apothem-home"
+    _clone_into(tmp_path, home)
+    marker = tmp_path / "fsmonitor-ran"
+    monitor = tmp_path / "fsmonitor"
+    monitor.write_text(
+        f"#!/bin/sh\necho \"$@\" >> '{marker}'\nexit 1\n", encoding="utf-8"
+    )
+    monitor.chmod(EXECUTABLE_MODE)
+    git(["config", "core.fsmonitor", str(monitor)], home)
+    before = _snapshot(home)
+    cosign_dir = _stub_cosign(tmp_path)
+
+    result = _run(tmp_path, base, cosign_dir=cosign_dir, yes=True)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert (
+        f"{home}'s own git config sets core.fsmonitor, which the update would "
+        f"trust. Remove it from {home}/.git/config, then re-run."
+    ) in combined, combined
+    assert not marker.exists(), marker.read_text(encoding="utf-8")
+    assert _cosign_args(cosign_dir) is None, combined
+    assert _snapshot(home) == before, combined
+    _assert_no_staging(tmp_path)
+
+
+def test_replacing_a_clone_owned_by_someone_else_is_explained(tmp_path: Path) -> None:
+    """git refuses a clone another user owns; replacing it says so plainly,
+    instead of reporting it as a clone with local work (git's test switch
+    stands in for another owner)."""
+    base = _release(tmp_path)
+    home = tmp_path / "apothem-home"
+    _clone_into(tmp_path, home)
+    before = _snapshot(home)
+    cosign_dir = _stub_cosign(tmp_path)
+
+    result = _run(
+        tmp_path,
+        base,
+        cosign_dir=cosign_dir,
+        yes=True,
+        extra_env={"GIT_TEST_ASSUME_DIFFERENT_OWNER": "1"},
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert (
+        f"{home} is owned by someone else, so git refuses to work in it (git "
+        'reports "dubious ownership").'
+    ) in combined, combined
+    assert "with local work" not in combined, combined
+    assert _cosign_args(cosign_dir) is None, combined
+    assert _snapshot(home) == before, combined
 
 
 # REUSE-IgnoreEnd

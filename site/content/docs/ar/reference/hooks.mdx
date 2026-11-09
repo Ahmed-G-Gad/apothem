@@ -71,7 +71,7 @@ sourceHash: "2fe3999ec76b34d3"
 
 يُشغِّل إطار العمل الذي ليس <bdi>Claude Code</bdi> المُوزِّعَ نفسه مع
 <bdi>`--contract <id>`</bdi> بعد البرنامج النصّي، مثلًا
-<bdi>`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`</bdi>.
+<bdi>`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`</bdi>.
 ويُترجِم العقد (<bdi>`hooks/lib/vendor_contract.py`</bdi>) تهجئات المورّد للأحداث وأسماء
 الأدوات ومفاتيح الحمولة إلى شكل <bdi>Claude</bdi> الذي تقرؤه المُعالِجات، ويُعيد كتابة
 الغلاف إلى الشكل الذي يقرؤه المورّد، ويُسقِط الحدث الذي لا يُسلِّمه المورّد إلى النموذج.

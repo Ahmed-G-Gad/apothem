@@ -202,6 +202,7 @@ def _env(
     env = {k: v for k, v in hermetic_git_env().items() if not k.startswith("APOTHEM_")}
     for key in [k for k in env if k.startswith(("PIP_", "PYTHON"))]:
         del env[key]
+    env.pop("XDG_CONFIG_HOME", None)
     env.update(
         {
             "HOME": str(home),
@@ -291,12 +292,17 @@ def _piped_release_env(tmp_path: Path) -> dict[str, str]:
         APOTHEM_REF=TAG,
         APOTHEM_REPO=str(tmp_path / "fixture-repo"),
         APOTHEM_VERIFY="release",
-        GIT_CONFIG_GLOBAL=str(
-            write_stub_gpg(
-                tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
-            )
-        ),
     )
+    # The installer clears GIT_CONFIG_GLOBAL, so the stub gpg is named in the
+    # isolated HOME's own .gitconfig (GIT_CONFIG_GLOBAL names it too).
+    gitconfig = Path(env["HOME"]) / ".gitconfig"
+    shutil.copyfile(
+        write_stub_gpg(
+            tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
+        ),
+        gitconfig,
+    )
+    env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
     env["PATH"] = f"{cosign_dir}{os.pathsep}{env['PATH']}"
     return env
 

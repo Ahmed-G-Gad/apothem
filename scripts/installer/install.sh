@@ -68,28 +68,44 @@
 #   - An earlier Apothem install keeps everything that is not part of its
 #     source tree (backups, state, plans, memory and other engine data).
 #   - A folder that holds no Apothem install is refused unless --yes is given;
-#     with --yes it is moved, unchanged, to
-#     <APOTHEM_HOME>.before-apothem-<time> and the install starts fresh.
+#     with --yes it is moved, unchanged and under its own name, into a new
+#     folder <APOTHEM_HOME>.before-apothem-<time> and the install starts
+#     fresh.
 #   - A folder that holds only the engine's data (backups, state, plans,
 #     memory, contexts, learning, providers) is kept, like an earlier install.
 #   - A git clone is replaced by a release archive only with --yes, and never
 #     while it holds local work (changes, stashes, unpushed commits, or
 #     untracked files in its source tree). Its own tree (history and source)
-#     is then moved to <APOTHEM_HOME>.before-apothem-<time>, not deleted.
+#     is then moved into a new folder <APOTHEM_HOME>.before-apothem-<time>,
+#     not deleted.
 #   - A git clone of anything other than an Apothem source is treated like
 #     any other folder that holds no Apothem install.
-#   - Before an existing clone is fetched, the update stops when the clone
-#     hides changes from git (assume-unchanged or skip-worktree files), when
-#     its work tree is not APOTHEM_HOME, or when its own git config names a
-#     program for git to run or pulls in other config (gpg.program,
-#     gpg.openpgp.program, core.fsmonitor, core.hooksPath, include.*,
-#     includeIf.*). Every git command on the clone runs with its hooks off.
+#   - Before an existing clone is fetched (or replaced), the run stops when
+#     git will not work in it because another user owns it, when its own git
+#     settings (in its config or config.worktree) name a program for git to
+#     run, pull in other settings, or change where or how git connects
+#     (gpg.*, core.fsmonitor, core.hooksPath, core.sshCommand, core.gitProxy,
+#     core.askPass, core.attributesFile, core.alternateRefsCommand,
+#     include.*, includeIf.*, filter.*, credential.*, url.*.insteadOf,
+#     url.*.pushInsteadOf, protocol.*, http.*, uploadpack.*,
+#     remote.*.uploadpack, remote.*.receivepack, remote.*.proxy,
+#     remote.*.vcs, diff.external, diff.*.command, diff.*.textconv), or when
+#     its info/attributes sets a filter. An update in place also stops when
+#     the clone hides changes from git (assume-unchanged or skip-worktree
+#     files) or when its work tree is not APOTHEM_HOME. Every git command on
+#     the clone runs with its hooks and its fsmonitor off and with no ext::
+#     transport.
 #   - An entry to keep whose name has a space or another special character
 #     stops the install; move it out of APOTHEM_HOME first.
 #   - A symbolic link at APOTHEM_HOME is refused (point APOTHEM_HOME at the
 #     folder the link leads to), except when it leads to an existing clone
 #     that is updated in place.
-#   - A failure or interrupt puts the earlier install back unchanged.
+#   - A failure or an interrupt puts the earlier install back unchanged. A
+#     forced kill or a power loss can leave folders beside APOTHEM_HOME
+#     (.apothem-extract.*, .apothem-clone.*, .apothem-old.*): the next run
+#     stops, names each one and what it holds, and changes nothing.
+#   - One install, update or uninstall runs at a time: each holds the lock
+#     folder <APOTHEM_HOME>.lock while it runs, and a second run stops.
 #
 # Usage (recommended — tag-pinned, verified):
 #     # default: resolves and verifies the latest signed release tag
@@ -116,7 +132,7 @@
 #     --yes             Non-interactive; skip per-target confirmation prompts.
 #                       Also authorizes replacing an existing git clone with
 #                       a release archive, and moving a folder that holds no
-#                       Apothem install aside to
+#                       Apothem install aside into
 #                       <APOTHEM_HOME>.before-apothem-<time>.
 #
 # Environment overrides:
@@ -168,13 +184,16 @@ set -eu
 
 # git reads these from the environment and would then work on another
 # repository, index or object store than the one each command names, swap
-# objects through replace refs, take extra configuration, or run its helper
-# programs and templates from elsewhere; none of them may reach the
-# installer's git commands.
+# objects through replace refs, take extra configuration or read its
+# configuration from other files, or run its helper programs and templates
+# from elsewhere; none of them may reach the installer's git commands. git
+# still reads the user's own global and system configuration from the
+# places it always looks, and git, gpg and cosign are the ones PATH finds.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
-    GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR
+    GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
+    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
@@ -357,7 +376,7 @@ Usage: install.sh [--clean|--fresh] [--dry-run] [--yes] [-h|--help]
   --yes             Non-interactive; skip per-target confirmation prompts.
                     Also authorizes replacing an existing git clone with a
                     release archive, and moving a folder that holds no
-                    Apothem install aside to
+                    Apothem install aside into
                     <APOTHEM_HOME>.before-apothem-<time>.
   -h, --help        Show this help and exit.
 
@@ -383,15 +402,20 @@ so does a folder that holds only that data. A folder that holds no Apothem
 install is refused unless --yes is given. A git clone is replaced by a release
 archive only with --yes, and never while it holds local work (changes,
 stashes, unpushed commits, or untracked files in its source tree); its own
-tree is then moved to <APOTHEM_HOME>.before-apothem-<time>. A clone of
+tree is then moved into <APOTHEM_HOME>.before-apothem-<time>. A clone of
 anything other than Apothem counts as a folder with no Apothem install. An
-existing clone is not updated when it hides changes from git, when its work
-tree is elsewhere, or when its own git config names a program for git to
-run; its hooks never run during the update. An entry
-to keep whose name has a space or another special character stops the
-install until it is moved out. A symbolic link at APOTHEM_HOME is refused,
-except when it leads to an existing clone that is updated in place. A
-failure or interrupt puts the earlier install back unchanged.
+existing clone is not updated or replaced when another user owns it, when
+its own git settings name a program for git to run or change where git
+connects, or when its info/attributes sets a filter; an update in place
+also stops when it hides changes from git or its work tree is elsewhere.
+Its hooks and fsmonitor never run during the update. An entry to keep
+whose name has a space or another special character stops the install
+until it is moved out. A symbolic link at APOTHEM_HOME is refused, except
+when it leads to an existing clone that is updated in place. A failure or
+an interrupt puts the earlier install back unchanged; folders that a forced
+kill leaves beside APOTHEM_HOME stop the next run, which names them. One
+install, update or uninstall runs at a time (the lock is
+<APOTHEM_HOME>.lock).
 
 Overrides:
   APOTHEM_REF=main             check out the moving branch (needs
@@ -535,15 +559,21 @@ resolve_latest_tag() {
         | tail -n 1
 }
 
-# cgit ARGS — run git with ARGS. Once HOOKS_OFF names an empty folder (an
-# existing clone is being updated in place), git runs with core.hooksPath
-# pointing at it, so none of the clone's hooks run during the update.
+# cgit ARGS — run git with ARGS on a clone. git never runs the clone's
+# fsmonitor program (core.fsmonitor is emptied), never runs a program named
+# by an ext:: address, and never goes into submodules, whose own settings
+# nothing here checks. Once HOOKS_OFF names an empty folder (an existing
+# clone is being updated in place), core.hooksPath points at it as well, so
+# none of the clone's hooks run during the update. core.sshCommand is left
+# alone: setting it would also override the user's own GIT_SSH.
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.hooksPath="$HOOKS_OFF" "$@"
+        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
+            -c fetch.recurseSubmodules=false -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git "$@"
+        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
+            -c fetch.recurseSubmodules=false "$@"
     fi
 }
 
@@ -592,6 +622,33 @@ verify_tag_valid_other_key() {
 [GNUPG:] VALIDSIG "*) ! verify_tag_by_maintainer ;;
         *) return 1 ;;
     esac
+}
+
+# verify_tag_other_keys — print the primary-key fingerprints, other than
+# MAINTAINER_FINGERPRINT, of the valid signatures in the captured status
+# lines: each once, upper-case, comma-separated.
+verify_tag_other_keys() {
+    printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            fpr = toupper((NF >= 12) ? $12 : $3)
+            if (fpr != want && !(fpr in seen)) {
+                seen[fpr] = 1
+                out = (out == "") ? fpr : out ", " fpr
+            }
+        }
+        END { print out }'
+}
+
+# other_key_message REF — the abort message for a tag with a valid signature
+# from another key: it names the key (or keys) that signed it and the one a
+# release tag must be signed by.
+other_key_message() {
+    _om_keys="$(verify_tag_other_keys)"
+    case "$_om_keys" in
+        *", "*) _om_keys="the keys ${_om_keys}" ;;
+        *) _om_keys="the key ${_om_keys}" ;;
+    esac
+    printf '%s' "Tag $1 is signed by ${_om_keys}. A release tag must be signed by the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes, and by no other key (possible tampering). Aborting before anything is checked out or materialized."
 }
 
 # verify_tag_missing_key — return 0 when the captured status lines show the
@@ -647,33 +704,43 @@ require_gpg() {
 
 # check_release_tag DIR REF ALLOW — the key-pinned tag gate. Checks the tag
 # refs/tags/REF in the repository at DIR, before anything is checked out, and
-# prints the result. The tag passes when the maintainer key signed it and the
-# signed tag object names itself REF and points at a commit: a signed tag for
+# prints the result. The tag ref is read once: the signature, the signed tag
+# object's own name and the commit are all read from that one tag object,
+# and TAG_COMMIT records its commit, which checkout_ref then checks out by
+# its ID, so a tag ref moved after the check cannot change what is
+# installed. The tag passes when the maintainer key signed it and the signed
+# tag object names itself REF and points at a commit: a signed tag for
 # another release, re-pointed at refs/tags/REF, would otherwise roll an
 # install back to that release. Any other outcome aborts with the reason,
 # unless ALLOW is 1, which downgrades a missing or unverifiable signature to a
-# warning and returns 1. On a pass, TAG_COMMIT holds the tag's commit.
+# warning and returns 1; TAG_COMMIT then holds the commit the tag pointed at
+# when it was read.
 TAG_COMMIT=""
 check_release_tag() {
     TAG_COMMIT=""
-    if verify_tag "$1" "refs/tags/$2" && verify_tag_by_maintainer; then
-        cgit -C "$1" cat-file tag "refs/tags/$2" 2>/dev/null | awk -v want="$2" '
+    VERIFY_TAG_OUTPUT=""
+    _ct_object="$(cgit -C "$1" rev-parse --verify --quiet "refs/tags/$2" 2>/dev/null || true)"
+    if [ -n "$_ct_object" ] && verify_tag "$1" "$_ct_object" && verify_tag_by_maintainer; then
+        cgit -C "$1" cat-file tag "$_ct_object" 2>/dev/null | awk -v want="$2" '
             /^$/ { exit }
             $1 == "type" { type = $0 }
             $1 == "tag" { name = $0 }
             END { exit (type == "type commit" && name == "tag " want) ? 0 : 1 }' \
             || die "Tag $2 carries the maintainer key's signature, but the signed tag object is not the $2 release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or materialized."
-        TAG_COMMIT="$(cgit -C "$1" rev-parse --verify --quiet "refs/tags/$2^{commit}")" \
+        TAG_COMMIT="$(cgit -C "$1" rev-parse --verify --quiet "${_ct_object}^{commit}")" \
             || die "Could not read the commit the $2 tag points at"
         ok "Tag $2 carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         return 0
     fi
     if [ "$3" = "1" ]; then
+        if [ -n "$_ct_object" ]; then
+            TAG_COMMIT="$(cgit -C "$1" rev-parse --verify --quiet "${_ct_object}^{commit}" 2>/dev/null || true)"
+        fi
         warn "Tag $2 is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
         return 1
     fi
     if verify_tag_valid_other_key; then
-        die "Tag $2 carries a valid signature, but not from the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or materialized."
+        die "$(other_key_message "$2")"
     elif verify_tag_missing_key; then
         die "Tag $2 is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this installer."
     fi
@@ -704,40 +771,124 @@ require_clean_clone() {
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
 }
 
+# clone_git_ok DIR — die, saying what to do, when git will not work in the
+# clone at DIR. git refuses a repository that another user owns ("dubious
+# ownership"), and its own advice, to mark the folder safe, would trust
+# whatever that user put in its git config, so the message gives the safer
+# ways out. git runs in the C locale here, so its message reads the same in
+# every language.
+clone_git_ok() {
+    if _cg_err="$(LC_ALL=C git -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
+        return 0
+    fi
+    case "$_cg_err" in
+        *"dubious ownership"*)
+            die "$1 is owned by someone else, so git refuses to work in it (git reports \"dubious ownership\"). Run this as the user who owns $1, take ownership of it, or point APOTHEM_HOME at a folder you own, then re-run." ;;
+    esac
+    die "git could not read the clone at $1 ($(printf '%s\n' "$_cg_err" | sed -n '1p')). Repair it or move it aside, then re-run."
+}
+
+# git_path DIR NAME — print, as a full path, where the clone at DIR keeps
+# NAME: config and info/ sit in the git folder all its worktrees share,
+# config.worktree in the worktree's own.
+git_path() {
+    _gp_path="$(git -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
+    [ -n "$_gp_path" ] || return 1
+    case "$_gp_path" in
+        /* | [A-Za-z]:[\\/]*) printf '%s\n' "$_gp_path" ;;
+        *) printf '%s/%s\n' "$1" "$_gp_path" ;;
+    esac
+}
+
+# refused_config_key — read git setting names, one per line, and print the
+# first one that an update in place refuses to trust: a setting that names
+# a program for git to run (gpg.*, core.fsmonitor, core.hooksPath,
+# core.sshCommand, core.gitProxy, core.askPass, core.alternateRefsCommand,
+# filter.*, credential.*, uploadpack.*, remote.*.uploadpack,
+# remote.*.receivepack, remote.*.vcs, diff.external, diff.*.command,
+# diff.*.textconv), pulls in other settings or attributes (include.*,
+# includeIf.*, core.attributesFile), or changes where or how git connects
+# (url.*.insteadOf, url.*.pushInsteadOf, protocol.*, http.*,
+# remote.*.proxy). The update's own git commands (fetch, verify-tag, diff,
+# checkout, status) would act on any of them; the user's global and system
+# settings are not read here and stay trusted.
+refused_config_key() {
+    awk '
+        {
+            k = tolower($0)
+            if (k ~ /^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\./ ||
+                k == "core.fsmonitor" || k == "core.hookspath" || k == "core.sshcommand" ||
+                k == "core.gitproxy" || k == "core.askpass" || k == "core.attributesfile" ||
+                k == "core.alternaterefscommand" || k == "diff.external" ||
+                k ~ /^url\..*\.(insteadof|pushinsteadof)$/ ||
+                k ~ /^remote\..*\.(uploadpack|receivepack|proxy|vcs)$/ ||
+                k ~ /^diff\..*\.(command|textconv)$/) { print; exit }
+        }'
+}
+
+# check_clone_config DIR — die when the clone at DIR carries its own git
+# settings that an update in place would trust (see refused_config_key), in
+# its config file or, for a worktree, in its config.worktree, or when its
+# info/attributes file sets a filter, whose program checkout and diff run.
+# The message names the setting and the file it is in. This runs before any
+# git command that reads the clone's index or could run its programs.
+check_clone_config() {
+    _cc_file="$(git_path "$1" config)" || die "Could not read the git config of $1."
+    _cc_key=""
+    if [ -e "$_cc_file" ]; then
+        _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
+            || die "Could not read the git config of $1 at ${_cc_file}."
+        _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+    fi
+    if [ -z "$_cc_key" ]; then
+        _cc_file="$(git_path "$1" config.worktree)" || die "Could not read the git config of $1."
+        if [ -e "$_cc_file" ]; then
+            _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
+                || die "Could not read the git config of $1 at ${_cc_file}."
+            _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+        fi
+    fi
+    if [ -n "$_cc_key" ]; then
+        die "$1's own git config sets ${_cc_key}, which the update would trust. Remove it from ${_cc_file}, then re-run."
+    fi
+    _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
+    if [ -f "$_cc_file" ] && grep -v '^[[:space:]]*#' "$_cc_file" 2>/dev/null | grep -q 'filter='; then
+        die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
+    fi
+}
+
 # check_clone_setup DIR — die, before anything is fetched, when the clone at
 # DIR is set up so that updating it in place would trust something the
-# release does not hold: files git has been told to ignore changes to
-# (assume-unchanged or skip-worktree, which require_clean_clone cannot see),
-# a work tree other than DIR (core.worktree, or a .git that points at
-# another clone's), or local git configuration that names a program for
-# git to run or pulls in other configuration.
+# release does not hold: a clone git will not work in, git settings or
+# attributes of its own that the update would trust (check_clone_config,
+# which runs first, before any git command that reads the index), a work
+# tree other than DIR (core.worktree, or a .git that points at another
+# clone's), or files git has been told to ignore changes to
+# (assume-unchanged or skip-worktree, which require_clean_clone cannot see).
 check_clone_setup() {
+    clone_git_ok "$1"
+    check_clone_config "$1"
+    _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+    # git prints C:/... under Git Bash, where pwd prints /c/...: compare the
+    # physical folders both name.
+    [ -z "$_cs_top" ] || _cs_top="$(cd "$_cs_top" 2>/dev/null && pwd -P || true)"
+    _cs_here="$(cd "$1" && pwd -P)"
+    if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
+        die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+    fi
     _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
     if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
         die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
-    _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
-    _cs_here="$(cd "$1" && pwd -P)"
-    if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
-        die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
-    fi
-    _cs_keys="$(cgit -C "$1" config --local --name-only --get-regexp . 2>/dev/null || true)"
-    _cs_key="$(printf '%s\n' "$_cs_keys" | awk '
-        {
-            k = tolower($0)
-            if (k == "gpg.program" || k == "gpg.openpgp.program" || k == "core.fsmonitor" || k == "core.hookspath" || index(k, "include.") == 1 || index(k, "includeif.") == 1) { print; exit }
-        }')"
-    if [ -n "$_cs_key" ]; then
-        die "$1's own git config sets ${_cs_key}, which the update would trust. Remove it from $1/.git/config, then re-run."
-    fi
 }
 
 # checkout_ref DIR — check out APOTHEM_REF in the clone at DIR, after
-# check_fetched_ref has passed. A release tag is checked out, detached, as
-# refs/tags/<REF>^{commit}: that name can only mean the tag, never a branch
-# that shares the tag's name or is literally named refs/tags/<REF>, and HEAD
-# must then be the tag's commit. Any other ref is taken from origin when the
+# check_fetched_ref has passed. A release tag is checked out, detached, by
+# the commit ID check_release_tag recorded when it checked the tag
+# (TAG_COMMIT), never by its name again: a tag ref moved since, or a branch
+# that shares the tag's name, cannot change what is checked out, and HEAD
+# must then be that commit. Any other ref is taken from origin when the
 # fetch brought a remote-tracking branch of that name, so a stale local
 # branch cannot stand in for it, and otherwise as given (a commit, or a
 # branch only the clone has). No --force: a clone with local changes that the
@@ -745,12 +896,13 @@ check_clone_setup() {
 # tracked files must match the ref.
 checkout_ref() {
     if is_release_tag "$APOTHEM_REF"; then
-        cgit -C "$1" checkout --quiet --detach "refs/tags/${APOTHEM_REF}^{commit}" \
+        [ -n "$TAG_COMMIT" ] \
+            || die "Could not check out the ${APOTHEM_REF} tag in $1. If it has local changes, commit or stash them, then re-run."
+        cgit -C "$1" checkout --quiet --detach "$TAG_COMMIT" \
             || die "Could not check out the ${APOTHEM_REF} tag in $1. If it has local changes, commit or stash them, then re-run."
         _co_head="$(cgit -C "$1" rev-parse --verify --quiet HEAD || true)"
-        _co_tag="$(cgit -C "$1" rev-parse --verify --quiet "refs/tags/${APOTHEM_REF}^{commit}" || true)"
-        if [ -z "$_co_tag" ] || [ "$_co_head" != "$_co_tag" ]; then
-            die "The checkout in $1 is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${_co_tag}'. Aborting before anything is materialized."
+        if [ "$_co_head" != "$TAG_COMMIT" ]; then
+            die "The checkout in $1 is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${TAG_COMMIT}'. Aborting before anything is materialized."
         fi
     elif cgit -C "$1" rev-parse --verify --quiet "refs/remotes/origin/${APOTHEM_REF}" >/dev/null 2>&1; then
         cgit -C "$1" checkout --quiet --detach "refs/remotes/origin/${APOTHEM_REF}" \
@@ -825,7 +977,7 @@ source_entries() {
     {
         printf '%s\n' .git
         if is_clone "$1"; then
-            git -C "$1" ls-tree --name-only HEAD 2>/dev/null || true
+            cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null || true
         fi
         if [ -f "$1/$SOURCE_MANIFEST" ]; then
             cat "$1/$SOURCE_MANIFEST"
@@ -868,15 +1020,17 @@ ${_cn_base}
 # holds, or an untracked path inside a top-level entry the clone tracks (an
 # untracked top-level entry of its own is carried over instead). A git
 # command that fails counts as work, so an unreadable clone is not replaced.
+# The caller has run check_clone_config first, and git runs here with the
+# clone's fsmonitor program off, as cgit runs it.
 clone_has_local_work() {
-    _lw_out="$(GIT_OPTIONAL_LOCKS=0 git -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
+    _lw_out="$(GIT_OPTIONAL_LOCKS=0 git -c core.fsmonitor= -c protocol.ext.allow=never -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_out="$(git -C "$1" stash list 2>/dev/null)" || return 0
+    _lw_out="$(cgit -C "$1" stash list 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_out="$(git -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
+    _lw_out="$(cgit -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_tracked="$(git -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
-    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0 git -C "$1" status --porcelain 2>/dev/null)" || return 0
+    _lw_tracked="$(cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
+    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0 git -c core.fsmonitor= -c protocol.ext.allow=never -C "$1" status --porcelain 2>/dev/null)" || return 0
     _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" awk '
         BEGIN { n = split(ENVIRON["LW_TRACKED"], names, "\n"); for (i = 1; i <= n; i++) top[names[i]] = 1 }
         substr($0, 1, 3) == "?? " {
@@ -899,8 +1053,9 @@ clone_has_local_work() {
 #               tree moves aside, NEW moves in, and the earlier source is
 #               removed.
 #   MODE aside: APOTHEM_HOME holds something else, and --yes allowed
-#               replacing it. It moves, untouched, to a sibling
-#               <APOTHEM_HOME>.before-apothem-<time> folder, and NEW moves in.
+#               replacing it. It moves, untouched and under its own name,
+#               into a new sibling <APOTHEM_HOME>.before-apothem-<time>
+#               folder (see claim_aside), and NEW moves in.
 # A failure or an interrupt at any step puts everything back where it was and
 # says so, or names where the earlier tree was left when that also fails.
 # The rollback works from what is on disk, not from how far the swap got, so
@@ -912,19 +1067,24 @@ _SW_MODE=""
 _SW_NEW=""
 _SW_OLD=""
 _SW_ASIDE=""
+_SW_ASIDE_ITEM=""
 _SW_KEEP=""
 _SW_KEEP_STAGING=0
 swap_rollback() {
     _sw_ok=1
     if [ "$_SW_MODE" = "aside" ]; then
-        # Undo the move-in, then move the set-aside folder back.
-        if exists "$APOTHEM_HOME" && ! exists "$_SW_NEW" && exists "$_SW_ASIDE"; then
+        # Undo the move-in, then move the set-aside folder back and remove
+        # the folder it was moved into, which is then empty.
+        if exists "$APOTHEM_HOME" && ! exists "$_SW_NEW" && exists "$_SW_ASIDE_ITEM"; then
             mv "$APOTHEM_HOME" "$_SW_NEW" || _sw_ok=0
         fi
-        if [ "$_sw_ok" = "1" ] && ! exists "$APOTHEM_HOME" && exists "$_SW_ASIDE"; then
-            mv "$_SW_ASIDE" "$APOTHEM_HOME" || _sw_ok=0
+        if [ "$_sw_ok" = "1" ] && ! exists "$APOTHEM_HOME" && exists "$_SW_ASIDE_ITEM"; then
+            mv "$_SW_ASIDE_ITEM" "$APOTHEM_HOME" || _sw_ok=0
         fi
-        if exists "$_SW_ASIDE" || ! exists "$APOTHEM_HOME"; then _sw_ok=0; fi
+        if exists "$_SW_ASIDE_ITEM" || ! exists "$APOTHEM_HOME"; then _sw_ok=0; fi
+        if [ "$_sw_ok" = "1" ] && [ -n "$_SW_ASIDE" ]; then
+            rmdir "$_SW_ASIDE" 2>/dev/null || true
+        fi
     else
         _sw_oldhome="${_SW_OLD:+${_SW_OLD}/home}"
         # Undo the move-in: the new tree is at APOTHEM_HOME while the
@@ -971,7 +1131,7 @@ swap_report() {
         return 0
     fi
     if [ "$_SW_MODE" = "aside" ]; then
-        printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$1, and moving the earlier folder back also failed: it is at $_SW_ASIDE" >&2
+        printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$1, and moving the earlier folder back also failed: it is at $_SW_ASIDE_ITEM" >&2
     else
         # The earlier tree is aside only when the swap got that far.
         _sw_where="$APOTHEM_HOME"
@@ -996,10 +1156,10 @@ trap_signals_to_exit() {
     trap 'exit 143' TERM
 }
 
-# on_exit — the EXIT trap while a staging folder exists. A swap still under
-# way (a command failing under set -e, or a signal after the swap's own
-# trap was reset) is rolled back first; staging folders are removed unless a
-# failed rollback left data in them.
+# on_exit — the EXIT trap, set when the install lock is taken. A swap still
+# under way (a command failing under set -e, or a signal after the swap's
+# own trap was reset) is rolled back first; staging folders are removed
+# unless a failed rollback left data in them; the lock goes last.
 _ck_tmp=""
 _ck_stage=""
 _cl_stage=""
@@ -1014,12 +1174,130 @@ on_exit() {
         if [ -n "$_cl_stage" ]; then rm -rf "$_cl_stage"; fi
         if [ -n "$_SW_OLD" ]; then rm -rf "$_SW_OLD"; fi
     fi
+    release_lock
 }
 
-# aside_name — print the sibling name an earlier folder is moved to,
+# The install lock. An install, update or uninstall holds the folder
+# <APOTHEM_HOME>.lock for its whole run, so two runs never change
+# APOTHEM_HOME, or the folders beside it, at the same time. mkdir makes the
+# folder in one step that fails when it is already there, and the folder
+# holds the owning run's process ID. on_exit removes it on every way out of
+# the run. A forced kill (or a power loss) leaves it behind: the next run
+# then says so and how to remove it, and never takes it over, since it
+# cannot be sure the other run has ended.
+LOCK_DIR=""
+LOCK_HELD=0
+take_lock() {
+    LOCK_DIR="${APOTHEM_HOME}.lock"
+    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
+    if [ ! -d "$_tl_parent" ]; then
+        # Nothing is at APOTHEM_HOME or beside it yet. A dry run writes
+        # nothing, so it goes on without the lock; a real run makes the
+        # parent folder it would make anyway.
+        if [ "$DRY_RUN" = "1" ]; then return 0; fi
+        mkdir -p "$_tl_parent" \
+            || die "Could not create the parent directory of $APOTHEM_HOME"
+    fi
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        LOCK_HELD=1
+        printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
+        return 0
+    fi
+    exists "$LOCK_DIR" \
+        || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    case "$_tl_pid" in
+        "" | *[!0-9]*)
+            die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
+    esac
+    if kill -0 "$_tl_pid" 2>/dev/null; then
+        die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
+    fi
+    die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+}
+release_lock() {
+    if [ "$LOCK_HELD" = "1" ]; then
+        rm -rf -- "$LOCK_DIR"
+        LOCK_HELD=0
+    fi
+}
+
+# check_leftovers — stop, before anything is fetched or swapped, when a run
+# that was stopped part-way left folders beside APOTHEM_HOME:
+# .apothem-extract.* and .apothem-clone.* (a new source being installed,
+# perhaps with engine data already moved into it) or .apothem-old.* (the
+# earlier install being replaced). Every other way out of a run puts things
+# back and removes them, so they are there only after a forced kill or a
+# power loss, and the install lock keeps any other run from using them now.
+# They may hold the earlier install or its data, so nothing is moved or
+# removed here: the message names each folder, what it holds, and what to
+# do. When APOTHEM_HOME itself is missing, folders it may have been moved
+# into (<APOTHEM_HOME>.before-apothem-*) are named too.
+check_leftovers() {
+    _lo_parent="$(dirname -- "$APOTHEM_HOME")"
+    _lo_list=""
+    for _lo_dir in "$_lo_parent"/.apothem-old.* "$_lo_parent"/.apothem-extract.* "$_lo_parent"/.apothem-clone.*; do
+        exists "$_lo_dir" || continue
+        _lo_list="${_lo_list}$(leftover_line "$_lo_dir")
+"
+    done
+    [ -n "$_lo_list" ] || return 0
+    if ! exists "$APOTHEM_HOME"; then
+        _lo_base="$(basename -- "$APOTHEM_HOME")"
+        for _lo_dir in "$APOTHEM_HOME".before-apothem-*; do
+            exists "$_lo_dir" || continue
+            _lo_list="${_lo_list}${_lo_dir}: the earlier contents of $APOTHEM_HOME, moved aside, in ${_lo_dir}/${_lo_base}
+"
+        done
+    fi
+    printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "An earlier run was stopped part-way and left these folders beside $APOTHEM_HOME:" >&2
+    printf '%s' "$_lo_list" | sed 's/^/    /' >&2
+    printf '    %s\n' "Nothing was changed. If $APOTHEM_HOME is missing, move the earlier install back to it first. Then move any engine data listed above back into $APOTHEM_HOME, remove these folders, and re-run." >&2
+    exit 1
+}
+
+# leftover_line DIR — print one line saying what the leftover folder DIR
+# holds (see check_leftovers).
+leftover_line() {
+    _ll_names="$(list_entries "$1" 2>/dev/null)" || _ll_names=""
+    if [ -z "$_ll_names" ]; then
+        printf '%s\n' "$1: empty"
+        return 0
+    fi
+    case "$1" in
+        */.apothem-old.*)
+            if [ "$_ll_names" = "home" ]; then
+                printf '%s\n' "$1: the earlier install that was being replaced, in $1/home"
+                return 0
+            fi ;;
+        *)
+            case "$_ll_names" in
+                *"
+"*) ;;
+                *)
+                    if [ -d "$1/$_ll_names" ]; then
+                        _ll_data=""
+                        for _ll_name in $ENGINE_DATA_NAMES; do
+                            if exists "$1/$_ll_names/$_ll_name"; then
+                                _ll_data="${_ll_data:+$_ll_data }${_ll_name}"
+                            fi
+                        done
+                        if [ -n "$_ll_data" ]; then
+                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_names, with engine data moved into it: $_ll_data"
+                        else
+                            printf '%s\n' "$1: the new source that was being installed, in $1/$_ll_names"
+                        fi
+                        return 0
+                    fi ;;
+            esac ;;
+    esac
+    printf '%s\n' "$1: files from that run ($(printf '%s\n' "$_ll_names" | tr '\n' ' ' | sed 's/ $//'))"
+}
+
+# aside_name — print the name claim_aside would try first,
 # <APOTHEM_HOME>.before-apothem-<time>, with -<pid> added when that is
-# taken. Die, before anything moves, when both are taken: mv would move the
-# folder into the one that is there.
+# taken. Die, before anything moves, when both are taken. This only checks
+# early (in a dry run too); claim_aside makes the folder when the swap runs.
 aside_name() {
     _an_name="${APOTHEM_HOME}.before-apothem-$(date +%Y%m%d%H%M%S)"
     if exists "$_an_name"; then _an_name="${_an_name}-$$"; fi
@@ -1029,22 +1307,51 @@ aside_name() {
     printf '%s\n' "$_an_name"
 }
 
+# claim_aside — make the new folder an earlier tree is moved into, and print
+# its path: <APOTHEM_HOME>.before-apothem-<time>, or <time>-<pid> when that
+# name is taken. mkdir makes it in one step that fails when the name is
+# already there, so the folder is always an empty one this run made; the
+# earlier tree then moves inside it under its own name. It is never moved
+# into a folder someone else made, or to a name checked first and used
+# later. Fail, having made nothing, when both names are taken.
+claim_aside() {
+    _ca_name="${APOTHEM_HOME}.before-apothem-$(date +%Y%m%d%H%M%S)"
+    if mkdir "$_ca_name" 2>/dev/null; then
+        printf '%s\n' "$_ca_name"
+        return 0
+    fi
+    if mkdir "${_ca_name}-$$" 2>/dev/null; then
+        printf '%s\n' "${_ca_name}-$$"
+        return 0
+    fi
+    return 1
+}
+
 swap_in() {
     _SW_NEW="$1"
     _SW_MODE="$2"
     _SW_OLD=""
     _SW_ASIDE=""
+    _SW_ASIDE_ITEM=""
     _SW_KEEP=""
     if ! exists "$APOTHEM_HOME"; then
         mv "$_SW_NEW" "$APOTHEM_HOME" || die "Could not move the new source to $APOTHEM_HOME"
         return 0
     fi
     if [ "$_SW_MODE" = "aside" ]; then
-        _SW_ASIDE="$(aside_name)" || exit 1
         trap 'swap_abort "Interrupted while replacing $APOTHEM_HOME"' HUP INT TERM QUIT PIPE
+        _SW_PHASE="claim"
+        if ! _SW_ASIDE="$(claim_aside)"; then
+            _SW_ASIDE=""
+            trap_signals_to_exit
+            _SW_PHASE=""
+            die "Could not move the existing $APOTHEM_HOME aside; nothing was changed"
+        fi
+        _SW_ASIDE_ITEM="${_SW_ASIDE}/$(basename -- "$APOTHEM_HOME")"
         _SW_PHASE="aside"
-        if ! mv "$APOTHEM_HOME" "$_SW_ASIDE"; then
-            if exists "$APOTHEM_HOME" && ! exists "$_SW_ASIDE"; then
+        if ! mv "$APOTHEM_HOME" "$_SW_ASIDE_ITEM"; then
+            if exists "$APOTHEM_HOME" && ! exists "$_SW_ASIDE_ITEM"; then
+                rmdir "$_SW_ASIDE" 2>/dev/null || true
                 trap_signals_to_exit
                 _SW_PHASE=""
                 die "Could not move the existing $APOTHEM_HOME aside; nothing was changed"
@@ -1056,7 +1363,7 @@ swap_in() {
             || swap_abort "Could not move the new source to $APOTHEM_HOME"
         trap_signals_to_exit
         _SW_PHASE=""
-        warn "The earlier contents of $APOTHEM_HOME were moved, unchanged, to $_SW_ASIDE"
+        warn "The earlier contents of $APOTHEM_HOME were moved, unchanged, to $_SW_ASIDE_ITEM"
         return 0
     fi
     # keep: list the entries to carry over before anything moves.
@@ -1070,13 +1377,6 @@ ${_sw_new_names}"
             die "Cannot carry $APOTHEM_HOME/${_sw_name} over to the new install, which has an entry of that name. Move it out of $APOTHEM_HOME, then re-run."
         fi
     done
-    # keep-clone: an Apothem clone replaced with --yes. Its tree (history and
-    # source, the carried entries aside) is kept beside APOTHEM_HOME, not
-    # deleted.
-    _sw_tree_aside=""
-    if [ "$_SW_MODE" = "keep-clone" ]; then
-        _sw_tree_aside="$(aside_name)" || exit 1
-    fi
     _SW_OLD="$(mktemp -d "$(dirname "$APOTHEM_HOME")/.apothem-old.XXXXXX")" \
         || die "Could not make room beside $APOTHEM_HOME; nothing was changed"
     trap 'swap_abort "Interrupted while replacing $APOTHEM_HOME"' HUP INT TERM QUIT PIPE
@@ -1093,15 +1393,22 @@ ${_sw_new_names}"
         || swap_abort "Could not move the new source to $APOTHEM_HOME"
     trap_signals_to_exit
     _SW_PHASE=""
-    if [ -n "$_sw_tree_aside" ]; then
-        # From here the folder holds the clone's only copy, so on_exit must
-        # not remove it.
+    if [ "$_SW_MODE" = "keep-clone" ]; then
+        # keep-clone: an Apothem clone replaced with --yes. Its tree
+        # (history and source, the carried entries aside) is kept in a new
+        # <APOTHEM_HOME>.before-apothem-<time> folder, not deleted. From here
+        # the folder that holds it is the clone's only copy, so on_exit must
+        # not remove it; when no such folder can be made, it stays there.
         _sw_old="$_SW_OLD"
         _SW_OLD=""
-        if ! exists "$_sw_tree_aside" && mv "${_sw_old}/home" "$_sw_tree_aside"; then
-            rmdir "$_sw_old" 2>/dev/null || true
-        else
-            _sw_tree_aside="${_sw_old}/home"
+        _sw_tree_aside="${_sw_old}/home"
+        if _sw_claim="$(claim_aside)"; then
+            if mv "${_sw_old}/home" "${_sw_claim}/$(basename -- "$APOTHEM_HOME")"; then
+                _sw_tree_aside="${_sw_claim}/$(basename -- "$APOTHEM_HOME")"
+                rmdir "$_sw_old" 2>/dev/null || true
+            else
+                rmdir "$_sw_claim" 2>/dev/null || true
+            fi
         fi
         warn "The earlier clone's tree is kept at ${_sw_tree_aside}; delete it once you no longer need it."
         return 0
@@ -1127,6 +1434,12 @@ esac
 
 bold "Apothem installer"
 echo
+
+# One install, update or uninstall at a time on APOTHEM_HOME (see
+# take_lock). on_exit, the EXIT trap from here on, lets the lock go.
+trap on_exit EXIT
+trap_signals_to_exit
+take_lock
 
 # Prerequisite: Python >= 3.10 ----------------------------------------------------
 #
@@ -1226,6 +1539,13 @@ else
         && [ -f ./install.sh ] && [ -d ../../src/apothem ]; then
         info "Not using a checkout: to install from one, run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE."
     fi
+fi
+
+# A fetched install swaps folders beside APOTHEM_HOME, so it stops first on
+# any that a run stopped part-way left there (see check_leftovers). A local
+# tree is run where it is and leaves APOTHEM_HOME alone.
+if [ -z "$LOCAL_KIND" ]; then
+    check_leftovers
 fi
 
 PY=""
@@ -1463,6 +1783,10 @@ home_mode() {
     if is_apothem_clone "$APOTHEM_HOME"; then
         [ "$ASSUME_YES" = "1" ] \
             || die "Destination $APOTHEM_HOME is a git clone; refusing to replace it with $1, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with --yes."
+        # git status reads the clone's index, so the clone's own settings
+        # are checked first, as for an update in place.
+        clone_git_ok "$APOTHEM_HOME"
+        check_clone_config "$APOTHEM_HOME"
         if clone_has_local_work "$APOTHEM_HOME"; then
             die "$APOTHEM_HOME is a git clone with local work that replacing it would lose (changes, stashes, unpushed commits, or untracked files in its source tree). Commit and push that work, or move it elsewhere, then re-run."
         fi

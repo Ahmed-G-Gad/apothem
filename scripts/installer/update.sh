@@ -20,13 +20,21 @@
 # by another key, through, that re-pointed-tag check protects only tags that
 # carry the maintainer key's signature. Changes to tracked files stop the
 # update before the checkout, and the checkout runs without --force, so other
-# local changes it would overwrite stop it too instead of being lost.
-# Before anything is fetched, the update also stops when the clone hides
-# changes from git (files marked assume-unchanged or skip-worktree), when its
-# work tree is not APOTHEM_HOME, or when its own git config names a program
-# for git to run or pulls in other config (gpg.program, gpg.openpgp.program,
-# core.fsmonitor, core.hooksPath, include.*, includeIf.*). Every git command
-# on the clone runs with its hooks turned off. Only a clone of an Apothem
+# local changes it would overwrite stop it too instead of being lost. The
+# tag is checked out by the commit recorded when it was checked, so a tag
+# moved after the check cannot change what is installed.
+# Before anything is fetched, the update also stops when git will not work
+# in the clone because another user owns it, when the clone's own git
+# settings (in its config or config.worktree) name a program for git to run,
+# pull in other settings, or change where or how git connects (the list is
+# install.sh's: gpg.*, core.fsmonitor, core.hooksPath, core.sshCommand,
+# include.*, filter.*, url.*.insteadOf, protocol.*, credential.*, http.* and
+# more), when its info/attributes sets a filter, when the clone hides
+# changes from git (files marked assume-unchanged or skip-worktree), or when
+# its work tree is not APOTHEM_HOME. Every git command on the clone runs
+# with its hooks and its fsmonitor turned off and with no ext:: transport.
+# Only one install, update or uninstall runs at a time: each holds the lock
+# folder <APOTHEM_HOME>.lock while it runs. Only a clone of an Apothem
 # source tree is updated; any other folder is left alone. APOTHEM_REF=main
 # checks out the branch on request (it needs APOTHEM_ALLOW_UNVERIFIED=1). The
 # APOTHEM_SOURCE local-checkout path fetches nothing and skips verification.
@@ -59,12 +67,15 @@ set -eu
 
 # git reads these from the environment and would then work on another
 # repository, index or object store than the one each command names, swap
-# objects through replace refs, take extra configuration, or run its helper
-# programs and templates from elsewhere (mirrors install.sh).
+# objects through replace refs, take extra configuration or read its
+# configuration from other files, or run its helper programs and templates
+# from elsewhere (mirrors install.sh). git still reads the user's own global
+# and system configuration from the places it always looks.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
-    GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR
+    GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
+    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
 GIT_NO_REPLACE_OBJECTS=1
 export GIT_NO_REPLACE_OBJECTS
 
@@ -172,6 +183,16 @@ engine_pythonpath() {
 }
 
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
+# A trailing "/" or "/." would put the lock, <APOTHEM_HOME>.lock, inside
+# APOTHEM_HOME instead of beside it (mirrors install.sh).
+while [ "$APOTHEM_HOME" != "/" ]; do
+    case "$APOTHEM_HOME" in
+        */.) APOTHEM_HOME="${APOTHEM_HOME%/.}" ;;
+        */) APOTHEM_HOME="${APOTHEM_HOME%/}" ;;
+        *) break ;;
+    esac
+    [ -n "$APOTHEM_HOME" ] || APOTHEM_HOME="/"
+done
 APOTHEM_REPO="${APOTHEM_REPO:-https://github.com/ahmed-g-gad/apothem}"
 APOTHEM_REF="${APOTHEM_REF:-}"
 APOTHEM_ALLOW_UNVERIFIED="${APOTHEM_ALLOW_UNVERIFIED:-0}"
@@ -272,16 +293,65 @@ resolve_latest_tag() {
         | tail -n 1
 }
 
-# cgit ARGS — run git with ARGS and, once HOOKS_OFF names an empty folder,
-# with core.hooksPath pointing at it, so none of the clone's hooks run
-# (mirrors install.sh).
+# cgit ARGS — run git with ARGS on the clone, with its fsmonitor program
+# off, no ext:: transport and no submodules, and, once HOOKS_OFF names an
+# empty folder, with core.hooksPath pointing at it, so none of the clone's
+# hooks run (mirrors install.sh).
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.hooksPath="$HOOKS_OFF" "$@"
+        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
+            -c fetch.recurseSubmodules=false -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git "$@"
+        git -c core.fsmonitor= -c protocol.ext.allow=never -c submodule.recurse=false \
+            -c fetch.recurseSubmodules=false "$@"
     fi
+}
+
+# exists PATH — return 0 when PATH is there, a dangling symbolic link included.
+exists() {
+    [ -e "$1" ] || [ -L "$1" ]
+}
+
+# The install lock, <APOTHEM_HOME>.lock, held for the whole run; see
+# install.sh's take_lock. on_exit removes it on every way out of the run.
+LOCK_DIR=""
+LOCK_HELD=0
+take_lock() {
+    LOCK_DIR="${APOTHEM_HOME}.lock"
+    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
+    # With no folder to hold APOTHEM_HOME there is nothing to update, and the
+    # run stops below without the lock.
+    [ -d "$_tl_parent" ] || return 0
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        LOCK_HELD=1
+        printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
+        return 0
+    fi
+    exists "$LOCK_DIR" \
+        || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    case "$_tl_pid" in
+        "" | *[!0-9]*)
+            die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
+    esac
+    if kill -0 "$_tl_pid" 2>/dev/null; then
+        die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
+    fi
+    die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+}
+release_lock() {
+    if [ "$LOCK_HELD" = "1" ]; then
+        rm -rf -- "$LOCK_DIR"
+        LOCK_HELD=0
+    fi
+}
+
+# on_exit — the EXIT trap from the moment the lock is taken: removes the
+# empty hooks folder, then lets the lock go.
+on_exit() {
+    if [ -n "$HOOKS_OFF" ]; then rm -rf "$HOOKS_OFF"; fi
+    release_lock
 }
 
 VERIFY_TAG_OUTPUT=""
@@ -289,27 +359,83 @@ verify_tag() {
     VERIFY_TAG_OUTPUT="$(cgit -C "$1" verify-tag --raw "$2" 2>&1)"
 }
 
-# check_clone_setup DIR — the checks install.sh runs on an existing clone
-# before the fetch; see that script's comment.
-check_clone_setup() {
-    _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
-        || die "$1 has changes to tracked files. Commit or stash them, then re-run."
-    if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
-        die "$1 has changes to tracked files. Commit or stash them, then re-run."
+# clone_git_ok / git_path / refused_config_key / check_clone_config /
+# check_clone_setup mirror install.sh, whose comments give the reasons: the
+# checks run on an existing clone before the fetch, and the settings and
+# attributes check runs before any git command that reads the clone's index
+# or could run one of its programs.
+clone_git_ok() {
+    if _cg_err="$(LC_ALL=C git -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
+        return 0
     fi
+    case "$_cg_err" in
+        *"dubious ownership"*)
+            die "$1 is owned by someone else, so git refuses to work in it (git reports \"dubious ownership\"). Run this as the user who owns $1, take ownership of it, or point APOTHEM_HOME at a folder you own, then re-run." ;;
+    esac
+    die "git could not read the clone at $1 ($(printf '%s\n' "$_cg_err" | sed -n '1p')). Repair it or move it aside, then re-run."
+}
+
+git_path() {
+    _gp_path="$(git -C "$1" rev-parse --git-path "$2" 2>/dev/null)" || return 1
+    [ -n "$_gp_path" ] || return 1
+    case "$_gp_path" in
+        /* | [A-Za-z]:[\\/]*) printf '%s\n' "$_gp_path" ;;
+        *) printf '%s/%s\n' "$1" "$_gp_path" ;;
+    esac
+}
+
+refused_config_key() {
+    awk '
+        {
+            k = tolower($0)
+            if (k ~ /^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\./ ||
+                k == "core.fsmonitor" || k == "core.hookspath" || k == "core.sshcommand" ||
+                k == "core.gitproxy" || k == "core.askpass" || k == "core.attributesfile" ||
+                k == "core.alternaterefscommand" || k == "diff.external" ||
+                k ~ /^url\..*\.(insteadof|pushinsteadof)$/ ||
+                k ~ /^remote\..*\.(uploadpack|receivepack|proxy|vcs)$/ ||
+                k ~ /^diff\..*\.(command|textconv)$/) { print; exit }
+        }'
+}
+
+check_clone_config() {
+    _cc_file="$(git_path "$1" config)" || die "Could not read the git config of $1."
+    _cc_key=""
+    if [ -e "$_cc_file" ]; then
+        _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
+            || die "Could not read the git config of $1 at ${_cc_file}."
+        _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+    fi
+    if [ -z "$_cc_key" ]; then
+        _cc_file="$(git_path "$1" config.worktree)" || die "Could not read the git config of $1."
+        if [ -e "$_cc_file" ]; then
+            _cc_keys="$(git config --file "$_cc_file" --name-only --list 2>/dev/null)" \
+                || die "Could not read the git config of $1 at ${_cc_file}."
+            _cc_key="$(printf '%s\n' "$_cc_keys" | refused_config_key)"
+        fi
+    fi
+    if [ -n "$_cc_key" ]; then
+        die "$1's own git config sets ${_cc_key}, which the update would trust. Remove it from ${_cc_file}, then re-run."
+    fi
+    _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
+    if [ -f "$_cc_file" ] && grep -v '^[[:space:]]*#' "$_cc_file" 2>/dev/null | grep -q 'filter='; then
+        die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
+    fi
+}
+
+check_clone_setup() {
+    clone_git_ok "$1"
+    check_clone_config "$1"
     _cs_top="$(cgit -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+    [ -z "$_cs_top" ] || _cs_top="$(cd "$_cs_top" 2>/dev/null && pwd -P || true)"
     _cs_here="$(cd "$1" && pwd -P)"
     if [ -z "$_cs_top" ] || [ "$_cs_top" != "$_cs_here" ]; then
         die "$1 is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
     fi
-    _cs_keys="$(cgit -C "$1" config --local --name-only --get-regexp . 2>/dev/null || true)"
-    _cs_key="$(printf '%s\n' "$_cs_keys" | awk '
-        {
-            k = tolower($0)
-            if (k == "gpg.program" || k == "gpg.openpgp.program" || k == "core.fsmonitor" || k == "core.hookspath" || index(k, "include.") == 1 || index(k, "includeif.") == 1) { print; exit }
-        }')"
-    if [ -n "$_cs_key" ]; then
-        die "$1's own git config sets ${_cs_key}, which the update would trust. Remove it from $1/.git/config, then re-run."
+    _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
+        || die "$1 has changes to tracked files. Commit or stash them, then re-run."
+    if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
+        die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
 }
 
@@ -331,6 +457,29 @@ verify_tag_valid_other_key() {
 [GNUPG:] VALIDSIG "*) ! verify_tag_by_maintainer ;;
         *) return 1 ;;
     esac
+}
+
+# verify_tag_other_keys / other_key_message mirror install.sh: the message
+# names the key (or keys) that signed the tag and the one that must.
+verify_tag_other_keys() {
+    printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            fpr = toupper((NF >= 12) ? $12 : $3)
+            if (fpr != want && !(fpr in seen)) {
+                seen[fpr] = 1
+                out = (out == "") ? fpr : out ", " fpr
+            }
+        }
+        END { print out }'
+}
+
+other_key_message() {
+    _om_keys="$(verify_tag_other_keys)"
+    case "$_om_keys" in
+        *", "*) _om_keys="the keys ${_om_keys}" ;;
+        *) _om_keys="the key ${_om_keys}" ;;
+    esac
+    printf '%s' "Tag $1 is signed by ${_om_keys}. A release tag must be signed by the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes, and by no other key (possible tampering). Aborting before anything is checked out or re-materialized."
 }
 
 verify_tag_missing_key() {
@@ -370,6 +519,17 @@ is_release_tag() {
 
 bold "Apothem updater"
 echo
+
+# One install, update or uninstall at a time on APOTHEM_HOME (see
+# take_lock). on_exit, the EXIT trap from here on, lets the lock go, and
+# each signal that ends the run exits through it.
+trap on_exit EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 131' QUIT
+trap 'exit 141' PIPE
+trap 'exit 143' TERM
+take_lock
 
 is_apothem_source() {
     [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }
@@ -488,53 +648,59 @@ elif { [ -e "$APOTHEM_HOME/.git" ] || [ -L "$APOTHEM_HOME/.git" ]; } && is_apoth
     # Fetch, check the tag, and only then check it out, so a failed check
     # leaves the clone where it was (mirrors install.sh).
     info "Updating clone at $APOTHEM_HOME (ref: ${APOTHEM_REF})"
-    # Every git call on the clone from here runs with its hooks off; the
-    # empty hooks folder goes on every way out.
-    trap 'if [ -n "$HOOKS_OFF" ]; then rm -rf "$HOOKS_OFF"; fi' EXIT
-    trap 'exit 129' HUP
-    trap 'exit 130' INT
-    trap 'exit 131' QUIT
-    trap 'exit 141' PIPE
-    trap 'exit 143' TERM
+    # Every git call on the clone from here runs with its hooks off; on_exit
+    # removes the empty hooks folder on every way out.
     HOOKS_OFF="$(mktemp -d)" || die "Could not create a scratch directory for the update"
     check_clone_setup "$APOTHEM_HOME"
     cgit -C "$APOTHEM_HOME" fetch --quiet --tags origin \
         || die "Could not fetch from the origin of $APOTHEM_HOME. If a local tag differs from origin's, delete it with 'git -C $APOTHEM_HOME tag -d <tag>', then re-run."
 
     bold "Verifying source signature"
+    TAG_COMMIT=""
     if is_release_tag "$APOTHEM_REF"; then
-        if verify_tag "$APOTHEM_HOME" "refs/tags/${APOTHEM_REF}" && verify_tag_by_maintainer; then
+        # The tag ref is read once: the signature, the signed tag object's
+        # own name and the commit all come from that one tag object, and the
+        # commit is then checked out by its ID, so a tag ref moved after the
+        # check cannot change what is installed (mirrors install.sh).
+        _tag_object="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "refs/tags/${APOTHEM_REF}" 2>/dev/null || true)"
+        if [ -n "$_tag_object" ] && verify_tag "$APOTHEM_HOME" "$_tag_object" && verify_tag_by_maintainer; then
             # The signed tag object must name itself APOTHEM_REF: a signed tag
             # for another release, re-pointed here, would roll the update back.
-            cgit -C "$APOTHEM_HOME" cat-file tag "refs/tags/${APOTHEM_REF}" 2>/dev/null | awk -v want="$APOTHEM_REF" '
+            cgit -C "$APOTHEM_HOME" cat-file tag "$_tag_object" 2>/dev/null | awk -v want="$APOTHEM_REF" '
                 /^$/ { exit }
                 $1 == "type" { type = $0 }
                 $1 == "tag" { name = $0 }
                 END { exit (type == "type commit" && name == "tag " want) ? 0 : 1 }' \
                 || die "Tag ${APOTHEM_REF} carries the maintainer key's signature, but the signed tag object is not the ${APOTHEM_REF} release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or re-materialized."
+            TAG_COMMIT="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "${_tag_object}^{commit}")" \
+                || die "Could not read the commit the ${APOTHEM_REF} tag points at"
             ok "Tag ${APOTHEM_REF} carries a valid signature from the maintainer key ${MAINTAINER_FINGERPRINT}"
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
+            if [ -n "$_tag_object" ]; then
+                TAG_COMMIT="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "${_tag_object}^{commit}" 2>/dev/null || true)"
+            fi
             warn "Tag ${APOTHEM_REF} is unsigned, its signature did not verify, or the maintainer key did not make it — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
         elif verify_tag_valid_other_key; then
-            die "Tag ${APOTHEM_REF} carries a valid signature, but not from the maintainer key ${MAINTAINER_FINGERPRINT} that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or re-materialized."
+            die "$(other_key_message "$APOTHEM_REF")"
         elif verify_tag_missing_key; then
             die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this updater."
         else
             die "Tag ${APOTHEM_REF} is unsigned or its signature did not verify (possible tampering). Aborting before anything is checked out or re-materialized."
         fi
-        # refs/tags/<tag>^{commit} can only mean the tag, never a branch that
-        # shares its name or is literally named refs/tags/<tag>; HEAD must
-        # then be the tag's commit. Changes to tracked files stop the update
-        # first, and there is no --force, so other local changes the checkout
-        # would overwrite stop it instead of being lost.
+        # The commit recorded above is checked out by its ID, so neither a
+        # tag ref moved since nor a branch named like the tag can stand in
+        # for it, and HEAD must then be that commit. Changes to tracked files
+        # stop the update first, and there is no --force, so other local
+        # changes the checkout would overwrite stop it instead of being lost.
         { cgit -C "$APOTHEM_HOME" diff --quiet HEAD && cgit -C "$APOTHEM_HOME" diff --cached --quiet; } \
             || die "$APOTHEM_HOME has changes to tracked files. Commit or stash them, then re-run."
-        cgit -C "$APOTHEM_HOME" checkout --quiet --detach "refs/tags/${APOTHEM_REF}^{commit}" \
+        [ -n "$TAG_COMMIT" ] \
+            || die "Could not check out the ${APOTHEM_REF} tag in $APOTHEM_HOME. If it has local changes, commit or stash them, then re-run."
+        cgit -C "$APOTHEM_HOME" checkout --quiet --detach "$TAG_COMMIT" \
             || die "Could not check out the ${APOTHEM_REF} tag in $APOTHEM_HOME. If it has local changes, commit or stash them, then re-run."
         _co_head="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet HEAD || true)"
-        _co_tag="$(cgit -C "$APOTHEM_HOME" rev-parse --verify --quiet "refs/tags/${APOTHEM_REF}^{commit}" || true)"
-        if [ -z "$_co_tag" ] || [ "$_co_head" != "$_co_tag" ]; then
-            die "The checkout in $APOTHEM_HOME is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${_co_tag}'. Aborting before re-materialization."
+        if [ "$_co_head" != "$TAG_COMMIT" ]; then
+            die "The checkout in $APOTHEM_HOME is at '${_co_head}', not at the ${APOTHEM_REF} tag's commit '${TAG_COMMIT}'. Aborting before re-materialization."
         fi
     else
         if [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then

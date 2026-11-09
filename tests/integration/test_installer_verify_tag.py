@@ -92,7 +92,7 @@ BAD_SIGNATURE_MARKER = "did not verify (possible tampering)"
 MISSING_KEY_MARKER = "public key is not in the local keyring"
 KEY_IMPORT_MARKER = "gpg --import"
 OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
-OTHER_KEY_MARKER = "carries a valid signature, but not from the maintainer key"
+OTHER_KEY_MARKER = "A release tag must be signed by the maintainer key"
 MAINTAINER_OK_MARKER = "carries a valid signature from the maintainer key"
 REPOINTED_MARKER = "so it was re-pointed (possible tampering)"
 LOCAL_CHANGES_MARKER = "If it has local changes, commit or stash them, then re-run."
@@ -113,6 +113,8 @@ NOT_RELEASE_WARNING = (
 MAINTAINER_FINGERPRINT = "5C8998F9F241720445D3F28B70396FED9C634163"
 # The fixture signer's fingerprint in the canned GnuPG results below.
 OTHER_FINGERPRINT = "C2CD460ED9DCEF33C51123AE984AE72EA84995CA"
+# A third key, for a tag that carries two signatures from other keys.
+THIRD_FINGERPRINT = "0123456789ABCDEF0123456789ABCDEF01234567"
 
 
 def _good_signature_status(primary: str, signing: str | None = None) -> str:
@@ -288,6 +290,9 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
         if key.startswith("APOTHEM_"):
             del env[key]
     env.pop("PYTHONPATH", None)
+    # The scripts clear GIT_CONFIG_GLOBAL, so git reads the isolated HOME's
+    # own .gitconfig (and nothing under a host XDG_CONFIG_HOME).
+    env.pop("XDG_CONFIG_HOME", None)
     env["HOME"] = str(home)
     env["USERPROFILE"] = str(home)
     env["APOTHEM_REPO"] = str(fixture)
@@ -772,6 +777,14 @@ def test_valid_signature_from_another_key_aborts(
     assert result.returncode != 0, f"script should abort\n{combined}"
     assert OTHER_KEY_MARKER in plain, combined
     assert MAINTAINER_FINGERPRINT in plain, combined
+    # The message names the key that did sign it: the fixture's new key.
+    signer = re.search(
+        r"Tag v9\.9\.6 is signed by the key ([0-9A-F]{40})\. A release tag must "
+        r"be signed by the maintainer key " + MAINTAINER_FINGERPRINT,
+        plain,
+    )
+    assert signer is not None, combined
+    assert signer.group(1) != MAINTAINER_FINGERPRINT, combined
     assert MAINTAINER_OK_MARKER not in plain, combined
     assert OVERRIDE_SUGGESTION not in plain, combined
     _assert_aborted_before_materialization(env)
@@ -836,8 +849,43 @@ def test_key_pin_reads_the_validsig_primary_fingerprint(
     else:
         assert result.returncode != 0, f"script should abort\n{combined}"
         assert OTHER_KEY_MARKER in plain, combined
+        # The key that signed is named; the maintainer's own never is.
+        assert (
+            f"Tag v9.9.5 is signed by the key {OTHER_FINGERPRINT}. A release tag "
+            f"must be signed by the maintainer key {MAINTAINER_FINGERPRINT} that "
+            "SECURITY.md publishes, and by no other key (possible tampering)."
+        ) in plain, combined
         assert MAINTAINER_OK_MARKER not in plain, combined
     assert BAD_SIGNATURE_MARKER not in plain, combined
+    _assert_aborted_before_materialization(env)
+
+
+def test_every_other_key_that_signed_the_tag_is_named(
+    tmp_path: Path, run_gate: GateRunner
+) -> None:
+    """A tag with valid signatures from two keys, neither the maintainer's,
+    names both, once each, in the order GnuPG reported them."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.5")
+    env = _installer_env(tmp_path, fixture, "v9.9.5")
+    status = (
+        _good_signature_status(OTHER_FINGERPRINT)
+        + _good_signature_status(THIRD_FINGERPRINT)
+        + _good_signature_status(OTHER_FINGERPRINT)
+    )
+    _use_stub_gpg(env, status, "", exit_code=0)
+
+    result = run_gate(env)
+
+    combined = result.stdout + result.stderr
+    plain = _plain(combined)
+    assert result.returncode != 0, combined
+    assert (
+        f"Tag v9.9.5 is signed by the keys {OTHER_FINGERPRINT}, "
+        f"{THIRD_FINGERPRINT}. A release tag must be signed by the maintainer "
+        f"key {MAINTAINER_FINGERPRINT} that SECURITY.md publishes, and by no "
+        "other key (possible tampering)."
+    ) in plain, combined
     _assert_aborted_before_materialization(env)
 
 
@@ -1816,8 +1864,31 @@ def test_a_clone_whose_work_tree_is_elsewhere_is_refused(
         ("core.fsmonitor", "core.fsmonitor"),
         ("gpg.program", "gpg.program"),
         ("gpg.openpgp.program", "gpg.openpgp.program"),
+        ("gpg.ssh.program", "gpg.ssh.program"),
         ("include.path", "include.path"),
         ("includeIf.gitdir:/nowhere/.path", "includeif.gitdir:/nowhere/.path"),
+        ("core.sshCommand", "core.sshcommand"),
+        ("core.gitProxy", "core.gitproxy"),
+        ("core.askPass", "core.askpass"),
+        ("core.attributesFile", "core.attributesfile"),
+        ("core.alternateRefsCommand", "core.alternaterefscommand"),
+        ("filter.planted.smudge", "filter.planted.smudge"),
+        ("filter.planted.process", "filter.planted.process"),
+        ("credential.helper", "credential.helper"),
+        ("protocol.ext.allow", "protocol.ext.allow"),
+        ("protocol.allow", "protocol.allow"),
+        ("url.ext::planted.insteadOf", "url.ext::planted.insteadof"),
+        ("url.ext::planted.pushInsteadOf", "url.ext::planted.pushinsteadof"),
+        ("http.proxy", "http.proxy"),
+        ("http.https://example.invalid/.proxy", "http.https://example.invalid/.proxy"),
+        ("uploadpack.packObjectsHook", "uploadpack.packobjectshook"),
+        ("remote.origin.uploadpack", "remote.origin.uploadpack"),
+        ("remote.origin.receivepack", "remote.origin.receivepack"),
+        ("remote.origin.proxy", "remote.origin.proxy"),
+        ("remote.origin.vcs", "remote.origin.vcs"),
+        ("diff.external", "diff.external"),
+        ("diff.planted.textconv", "diff.planted.textconv"),
+        ("diff.planted.command", "diff.planted.command"),
     ],
 )
 def test_a_clone_whose_own_config_runs_programs_is_refused(
@@ -1913,3 +1984,338 @@ def test_a_clone_of_something_else_is_not_updated(tmp_path: Path, script: Path) 
     assert "Updating clone at" not in plain, combined
     assert _head(home) == old_head, combined
     assert (home / "notes.txt").read_text(encoding="utf-8") == "mine\n"
+
+
+# --- settings the clone's own check used to miss, and the inherited git config
+
+
+def _program(path: Path, body: str) -> Path:
+    """Write an executable sh program at PATH running BODY; return PATH."""
+    path.write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
+    path.chmod(EXECUTABLE_MODE)
+    return path
+
+
+def _gpg_that_records(tmp_path: Path, marker: Path, status: str) -> Path:
+    """A gpg program that records that it ran in MARKER, then answers like
+    the stub gpg with the GnuPG status lines STATUS (a good signature by the
+    maintainer key passes the tag check)."""
+    status_file = tmp_path / "recording-gpg.status"
+    status_file.write_text(status, encoding="utf-8")
+    return _program(
+        tmp_path / "recording-gpg",
+        f"echo ran >> {shlex.quote(str(marker))}\n"
+        "cat >/dev/null\n"
+        f"cat {shlex.quote(str(status_file))}\n"
+        "exit 0",
+    )
+
+
+def _config_refused(home: Path, printed: str, where: Path | None = None) -> str:
+    where = where or home / ".git" / "config"
+    return (
+        f"{home}'s own git config sets {printed}, which the update would trust. "
+        f"Remove it from {where}, then re-run."
+    )
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_a_gpg_program_in_the_worktree_config_is_refused(
+    tmp_path: Path, script: Path
+) -> None:
+    """With extensions.worktreeConfig set, git also reads .git/config.worktree,
+    so a gpg.program there would answer the tag check in gpg's place (this
+    one reports a good maintainer signature). The update reads that file too
+    and refuses the clone before the fetch, naming the setting and the file;
+    the program never runs."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    marker = tmp_path / "worktree-gpg-ran"
+    planted = _gpg_that_records(
+        tmp_path, marker, _good_signature_status(MAINTAINER_FINGERPRINT)
+    )
+    _git(["config", "extensions.worktreeConfig", "true"], cwd=home)
+    _git(["config", "--worktree", "gpg.program", str(planted)], cwd=home)
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result,
+        home,
+        old_head,
+        _config_refused(home, "gpg.program", home / ".git" / "config.worktree"),
+        env,
+    )
+    assert not marker.exists(), result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_a_filter_program_named_by_info_attributes_never_runs(
+    tmp_path: Path, script: Path
+) -> None:
+    """A filter driver in the clone's own config, assigned to every file by
+    its .git/info/attributes, would run when the update checks the new
+    release out. The clone is refused before the fetch and the filter's
+    program never runs."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    marker = tmp_path / "smudge-ran"
+    smudge = _program(
+        tmp_path / "smudge", f"echo ran >> {shlex.quote(str(marker))}\ncat"
+    )
+    _git(["config", "filter.planted.smudge", str(smudge)], cwd=home)
+    attributes = home / ".git" / "info" / "attributes"
+    attributes.parent.mkdir(exist_ok=True)
+    attributes.write_text("* filter=planted\n", encoding="utf-8")
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result, home, old_head, _config_refused(home, "filter.planted.smudge"), env
+    )
+    assert not marker.exists(), result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_a_filter_set_in_info_attributes_is_refused(
+    tmp_path: Path, script: Path
+) -> None:
+    """.git/info/attributes that sets filter= makes checkout run that filter
+    wherever its driver is defined, so the clone is refused before the fetch,
+    naming the file."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    attributes = home / ".git" / "info" / "attributes"
+    attributes.parent.mkdir(exist_ok=True)
+    attributes.write_text("# mine\n*.toml filter=lfs\n", encoding="utf-8")
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result,
+        home,
+        old_head,
+        f"{home}'s own git attributes set a filter (filter=), which the update "
+        f"would trust. Remove it from {attributes}, then re-run.",
+        env,
+    )
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_info_attributes_without_a_filter_do_not_stop_the_update(
+    tmp_path: Path, script: Path
+) -> None:
+    """Attributes that set no filter, and a comment that mentions one, leave
+    the update to go ahead."""
+    env, home, _ = _clone_with_a_new_tag(tmp_path)
+    new_head = _head(Path(env["APOTHEM_REPO"]))
+    attributes = home / ".git" / "info" / "attributes"
+    attributes.parent.mkdir(exist_ok=True)
+    attributes.write_text(
+        "# filter=planted is not set here\n*.txt -text\n", encoding="utf-8"
+    )
+
+    result = _run_in_place(env, script)
+
+    combined = result.stdout + result.stderr
+    assert MAINTAINER_OK_MARKER in _plain(combined), combined
+    assert _head(home) == new_head, combined
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_a_url_rewrite_to_an_ext_command_is_refused(
+    tmp_path: Path, script: Path
+) -> None:
+    """url.<base>.insteadOf can turn the clone's origin into an ext:: address,
+    which runs a command when git fetches once protocol.ext.allow lets it.
+    The clone is refused before the fetch, naming the rewrite, and the
+    command never runs."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    marker = tmp_path / "ext-ran"
+    base = f"ext::sh -c touch% {marker}% #"
+    _git(["config", f"url.{base}.insteadOf", env["APOTHEM_REPO"]], cwd=home)
+    _git(["config", "protocol.ext.allow", "always"], cwd=home)
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result, home, old_head, _config_refused(home, f"url.{base}.insteadof"), env
+    )
+    assert not marker.exists(), result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_the_clones_fsmonitor_never_runs(tmp_path: Path, script: Path) -> None:
+    """git runs core.fsmonitor whenever it reads the index, ls-files
+    included. The settings check runs before any git command that reads the
+    index, so a clone that names one is refused before it can run."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    marker = tmp_path / "fsmonitor-ran"
+    monitor = _program(
+        tmp_path / "fsmonitor", f'echo "$@" >> {shlex.quote(str(marker))}\nexit 1'
+    )
+    _git(["config", "core.fsmonitor", str(monitor)], cwd=home)
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result, home, old_head, _config_refused(home, "core.fsmonitor"), env
+    )
+    assert not marker.exists(), marker.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+@pytest.mark.parametrize("variable", ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"])
+def test_an_inherited_config_file_variable_is_ignored(
+    tmp_path: Path, script: Path, variable: str
+) -> None:
+    """GIT_CONFIG_GLOBAL or GIT_CONFIG_SYSTEM in the caller's environment
+    would point git at another config file than the user's own; the scripts
+    clear them (and GIT_CONFIG_NOSYSTEM), so a gpg program named there never
+    runs. No config of the user's names one here, so plain `gpg` from PATH
+    (the stub) checks the tag."""
+    env, home, _ = _clone_with_a_new_tag(tmp_path)
+    new_head = _head(Path(env["APOTHEM_REPO"]))
+    (Path(env["HOME"]) / ".gitconfig").unlink()
+    stub_gpg_dir = Path(env["HOME"]).parent / "stub-gpg"
+    env["PATH"] = f"{stub_gpg_dir}{os.pathsep}{env['PATH']}"
+    marker = tmp_path / "inherited-gpg-ran"
+    planted = _gpg_that_records(tmp_path, marker, "")
+    inherited = tmp_path / "inherited-gitconfig"
+    inherited.write_text(f"[gpg]\n\tprogram = {planted}\n", encoding="utf-8")
+    env[variable] = str(inherited)
+    env.pop("GIT_CONFIG_NOSYSTEM", None)
+
+    result = _run_in_place(env, script)
+
+    combined = result.stdout + result.stderr
+    assert MAINTAINER_OK_MARKER in _plain(combined), combined
+    assert _head(home) == new_head, combined
+    assert not marker.exists(), combined
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_git_config_in_the_environment_cannot_hide_the_clones_settings(
+    tmp_path: Path, script: Path
+) -> None:
+    """GIT_CONFIG makes `git config --local` fail ("only one config file at a
+    time"), which hid the clone's own settings from the check. The scripts
+    clear it, so a gpg.program in the clone's config is still refused and
+    never runs."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    marker = tmp_path / "local-gpg-ran"
+    planted = _gpg_that_records(
+        tmp_path, marker, _good_signature_status(MAINTAINER_FINGERPRINT)
+    )
+    _git(["config", "gpg.program", str(planted)], cwd=home)
+    elsewhere = tmp_path / "elsewhere.gitconfig"
+    elsewhere.write_text("", encoding="utf-8")
+    env["GIT_CONFIG"] = str(elsewhere)
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result, home, old_head, _config_refused(home, "gpg.program"), env
+    )
+    assert not marker.exists(), result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
+def test_a_clone_owned_by_someone_else_is_explained(
+    tmp_path: Path, script: Path
+) -> None:
+    """git refuses a repository another user owns ("dubious ownership").
+    The scripts say so plainly and what to do, instead of git's own advice
+    to trust the folder (git's test switch stands in for another owner)."""
+    env, home, old_head = _clone_with_a_new_tag(tmp_path)
+    env["GIT_TEST_ASSUME_DIFFERENT_OWNER"] = "1"
+
+    result = _run_in_place(env, script)
+
+    _assert_refused_before_fetch(
+        result,
+        home,
+        old_head,
+        f"{home} is owned by someone else, so git refuses to work in it (git "
+        'reports "dubious ownership"). Run this as the user who owns '
+        f"{home}, take ownership of it, or point APOTHEM_HOME at a folder you "
+        "own, then re-run.",
+        env,
+    )
+    assert "safe.directory" not in result.stdout + result.stderr
+
+
+def _wrap_git_moving_the_tag(env: dict[str, str], commit: str) -> Path:
+    """Put a git wrapper first on the scripts' PATH that, right after the
+    first `cat-file tag` succeeds (the scripts' look at the signed tag
+    object), points refs/tags/v9.9.9 in that repository at COMMIT, as a
+    process racing the update could. Return the file it touches when it
+    has done so."""
+    real = shutil.which("git", path=env["PATH"])
+    assert real is not None
+    wrap_dir = Path(env["HOME"]).parent / "git-wrapper"
+    wrap_dir.mkdir()
+    moved = wrap_dir / "moved"
+    _program(
+        wrap_dir / "git",
+        f"real={shlex.quote(real)}\n"
+        '"$real" "$@"\n'
+        "rc=$?\n"
+        f'if [ "$rc" = 0 ] && [ ! -e {shlex.quote(str(moved))} ]; then\n'
+        '    case " $* " in *" cat-file tag "*)\n'
+        '        dir=""; prev=""\n'
+        '        for arg in "$@"; do\n'
+        '            if [ "$prev" = "-C" ]; then dir="$arg"; fi\n'
+        '            prev="$arg"\n'
+        "        done\n"
+        '        if [ -n "$dir" ]; then\n'
+        f"            : > {shlex.quote(str(moved))}\n"
+        f'            "$real" -C "$dir" update-ref refs/tags/v9.9.9 {commit}\n'
+        "        fi ;;\n"
+        "    esac\n"
+        "fi\n"
+        'exit "$rc"',
+    )
+    env["PATH"] = f"{wrap_dir}{os.pathsep}{env['PATH']}"
+    return moved
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        pytest.param("fresh-install.sh", id="fresh-install.sh", marks=requires_bash),
+        *IN_PLACE_SCRIPTS,
+    ],
+)
+def test_the_commit_checked_out_is_the_one_whose_tag_was_checked(
+    tmp_path: Path, script: Path | str
+) -> None:
+    """The tag ref is read once: the signature, the tag object's own name
+    and its commit all come from that one object, and the commit is then
+    checked out by ID. A tag ref moved to another commit after the check
+    does not change what is installed."""
+    fixture = _make_fixture_repo(tmp_path)
+    env = _installer_env(tmp_path, fixture, "v9.9.9")
+    home = Path(env["APOTHEM_HOME"])
+    if script != "fresh-install.sh":
+        _clone_home(env)
+    tagged = _advance_fixture(fixture)
+    _make_stub_signed_tag(fixture, "v9.9.9")
+    # A commit the release never had, on a branch every clone fetches.
+    _git(["checkout", "--quiet", "-b", "planted"], cwd=fixture)
+    (fixture / "planted.txt").write_text("not in the release\n", encoding="utf-8")
+    _git(["add", "planted.txt"], cwd=fixture)
+    _git(["commit", "--quiet", "-m", "not the release"], cwd=fixture)
+    planted = _head(fixture)
+    _git(["checkout", "--quiet", "main"], cwd=fixture)
+    _use_stub_gpg(env, _good_signature_status(MAINTAINER_FINGERPRINT), "", 0)
+    moved = _wrap_git_moving_the_tag(env, planted)
+
+    if script == "fresh-install.sh":
+        result = _run_installer(env)
+    else:
+        assert isinstance(script, Path)
+        result = _run_in_place(env, script)
+
+    combined = result.stdout + result.stderr
+    assert MAINTAINER_OK_MARKER in _plain(combined), combined
+    assert moved.exists(), "the wrapper never moved the tag"
+    assert _head(home) == tagged, combined
+    assert not (home / "planted.txt").exists(), combined

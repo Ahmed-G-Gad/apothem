@@ -54,14 +54,16 @@ invocation surfaces instead:
 | Surface | Invocation | Context |
 | ------- | ---------- | ------- |
 | Engine CLI | `python -m apothem <command>` | A source tree with `src/` on `PYTHONPATH` (checkout, npx cache, plugin tree) |
-| Hook runtime | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The Claude Code materialization: the copy under the harness root's shared `.apothem/support/` tree, by absolute path |
+| Hook runtime | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The Claude Code materialization: the copy under the harness root's shared `.apothem/support/` tree, by absolute path |
 
 - `python -m apothem` runs `src/apothem/__main__.py`, which puts
   `src/apothem/_vendor` on `sys.path`, checks that `click` and `rich` are
   importable, then calls `apothem.cli:main` — the Click command group.
 - Hook entries in the materialized `settings.json` / `hooks.json` invoke
   the dispatcher (and, for Claude Code, the conformity gate at
-  `<harness-root>/.apothem/support/conformity/gate.py`) by absolute script path.
+  `<harness-root>/.apothem/support/conformity/gate.py`) by absolute script path,
+  starting Python with `-E -s` so no `PYTHON*` variable and no user
+  site-packages reach the hook.
   Both are standalone stdlib scripts that bootstrap their own `sys.path`,
   and the gate's schema fixtures ride beside it at
   `<harness-root>/.apothem/support/schemas/`, so hooks run with **no importable

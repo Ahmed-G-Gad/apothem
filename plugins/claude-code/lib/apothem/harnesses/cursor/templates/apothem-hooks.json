@@ -4,7 +4,7 @@
     "sessionStart": [
       {
         "type": "command",
-        "command": "${CALL_OP}\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/cursor/hooks/dispatch.py\" --contract cursor sessionStart",
+        "command": "${CALL_OP}\"${PYTHON_BIN}\" -E -s \"${PROJECT_ROOT}/.apothem/support/cursor/hooks/dispatch.py\" --contract cursor sessionStart",
         "timeout": 30
       }
     ]

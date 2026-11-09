@@ -6,6 +6,8 @@
 #          tree at $APOTHEM_HOME.
 # Contract: Idempotent. Confirms before removal unless --yes is supplied.
 #           POSIX sh only (no bashisms): runs under dash/ash as well as bash.
+#           Holds the lock folder <APOTHEM_HOME>.lock while it runs, so it
+#           never runs at the same time as an install or update.
 #
 # Usage:
 #     bash scripts/installer/uninstall.sh [--yes] [--harness NAME] [--remove-source]
@@ -121,6 +123,16 @@ engine_pythonpath() {
 }
 
 APOTHEM_HOME="${APOTHEM_HOME:-$HOME/.apothem}"
+# A trailing "/" or "/." would put the lock, <APOTHEM_HOME>.lock, inside
+# APOTHEM_HOME instead of beside it (mirrors install.sh).
+while [ "$APOTHEM_HOME" != "/" ]; do
+    case "$APOTHEM_HOME" in
+        */.) APOTHEM_HOME="${APOTHEM_HOME%/.}" ;;
+        */) APOTHEM_HOME="${APOTHEM_HOME%/}" ;;
+        *) break ;;
+    esac
+    [ -n "$APOTHEM_HOME" ] || APOTHEM_HOME="/"
+done
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 ASSUME_YES=0
 REMOVE_SOURCE=0
@@ -161,8 +173,59 @@ ok()    { printf '  %s %s\n' "$(paint "$COLOR_OUT" 32 '✓')" "$*"; }
 warn()  { printf '  %s %s\n' "$(paint "$COLOR_OUT" 33 '!')" "$*"; }
 die()   { printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$*" >&2; exit 1; }
 
+# exists PATH — return 0 when PATH is there, a dangling symbolic link included.
+exists() {
+    [ -e "$1" ] || [ -L "$1" ]
+}
+
+# The install lock, <APOTHEM_HOME>.lock, held for the whole run; see
+# install.sh's take_lock. The EXIT trap (release_lock) removes it on every
+# way out of the run.
+LOCK_DIR=""
+LOCK_HELD=0
+take_lock() {
+    LOCK_DIR="${APOTHEM_HOME}.lock"
+    _tl_parent="$(dirname -- "$APOTHEM_HOME")"
+    # With no folder to hold APOTHEM_HOME there is no install to remove, and
+    # the run stops below without the lock.
+    [ -d "$_tl_parent" ] || return 0
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        LOCK_HELD=1
+        printf '%s\n' "$$" > "${LOCK_DIR}/pid" || die "Could not write the lock ${LOCK_DIR}."
+        return 0
+    fi
+    exists "$LOCK_DIR" \
+        || die "Could not create the lock $LOCK_DIR beside $APOTHEM_HOME. Check that you can write to ${_tl_parent}, then re-run."
+    _tl_pid="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+    case "$_tl_pid" in
+        "" | *[!0-9]*)
+            die "$LOCK_DIR exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run." ;;
+    esac
+    if kill -0 "$_tl_pid" 2>/dev/null; then
+        die "Another Apothem install, update or uninstall is running on $APOTHEM_HOME. Wait for it to finish, then re-run. If none is running, remove $LOCK_DIR, then re-run."
+    fi
+    die "$LOCK_DIR was left by an Apothem run that did not finish (process ${_tl_pid} is no longer running). Check that no Apothem install, update or uninstall is running, remove $LOCK_DIR, then re-run."
+}
+release_lock() {
+    if [ "$LOCK_HELD" = "1" ]; then
+        rm -rf -- "$LOCK_DIR"
+        LOCK_HELD=0
+    fi
+}
+
 bold "Apothem uninstaller"
 echo
+
+# One install, update or uninstall at a time on APOTHEM_HOME (see
+# take_lock). The EXIT trap lets the lock go on every way out, and each
+# signal that ends the run exits through it.
+trap release_lock EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 131' QUIT
+trap 'exit 141' PIPE
+trap 'exit 143' TERM
+take_lock
 
 is_apothem_source() {
     [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }

@@ -95,8 +95,9 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 ## 4. Hooks
 
 Installed Claude Code hook entries use exec form: `command` is `${PYTHON_BIN}`,
-and `args` holds a script path under `${HARNESS_ROOT}/.apothem/support/` (for
-example `hooks/dispatch.py` and `conformity/gate.py`). The
+and `args` holds `-E` and `-s` (Python reads no `PYTHON*` variable and no user
+site-packages), then a script path under `${HARNESS_ROOT}/.apothem/support/`
+(for example `hooks/dispatch.py` and `conformity/gate.py`). The
 `-m apothem.hooks.dispatch` form is for development from a source checkout with
 `PYTHONPATH=src`. The dispatcher
 imports `src/apothem/hooks/lib/resolve_root.py` for ecosystem-root resolution and

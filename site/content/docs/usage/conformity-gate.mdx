@@ -27,6 +27,15 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
+These commands run the gate from an Apothem checkout. `python -m` reads
+modules from the current folder first, so run them from the checkout root
+or another folder you trust. To check a project you do not control, run
+the gate by its script path instead:
+`python src/apothem/conformity/gate.py --all .` in a checkout, or
+`python ~/.apothem/src/apothem/conformity/gate.py --all .` after a
+script install. A script start puts only the script's own folder on the
+search path.
+
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a
 root directory that does not exist. `--help` prints the full usage and exits
@@ -106,7 +115,7 @@ the file when you run it from a terminal. A standalone validator takes a root
 directory (the current directory when omitted). `--list` shows which group each
 validator belongs to.
 
-`--hook` mode (`python -m apothem.conformity.gate --hook`) is the
+`--hook` mode (`python .../conformity/gate.py --hook`) is the
 harness-dispatched entry point: it reads a tool-input JSON payload from stdin
 and runs the per-write matcher chain against the pending write. This is the
 form the deployed `PreToolUse` hook invokes; you rarely call it by hand.

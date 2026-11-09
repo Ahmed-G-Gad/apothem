@@ -680,7 +680,7 @@ def test_checksum_mode_is_gated_on_allow_unverified_in_both() -> None:
     """
     for name, content, download in (
         ("install.sh", SH, 'curl -fsSL $CURL_PROTO "${APOTHEM_RELEASE_BASE}'),
-        ("install.ps1", PS1, "Invoke-WebRequest -UseBasicParsing"),
+        ("install.ps1", PS1, 'Save-Download "$ApothemReleaseBase'),
     ):
         gate = content.find("Set APOTHEM_ALLOW_UNVERIFIED=1 as well")
         first_download = content.find(download)
@@ -776,8 +776,10 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "(possible tampering). Aborting before anything is checked out or " + after,
         "is unsigned or its signature did not verify (possible tampering). "
         "Aborting before anything is checked out or " + after,
-        "that SECURITY.md publishes (possible tampering). Aborting before "
-        "anything is checked out or " + after,
+        "A release tag must be signed by the maintainer key",
+        "that SECURITY.md publishes, and by no other key (possible tampering). "
+        "Aborting before anything is checked out or " + after,
+        "the keys ",
         "cat-file tag",
         "Could not fetch from the origin of",
         "If a local tag differs from origin's, delete it with",
@@ -796,8 +798,23 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "points elsewhere). Remove that setting, then re-run.",
         "'s own git config sets ",
         ", which the update would trust. Remove it from ",
-        "/.git/config, then re-run.",
-        "config --local --name-only --get-regexp",
+        "'s own git attributes set a filter (filter=), which the update would "
+        "trust. Remove it from ",
+        "Could not read the git config of ",
+        "config --file ",
+        "--name-only --list",
+        "config.worktree",
+        "info/attributes",
+        "rev-parse --git-path",
+        " is owned by someone else, so git refuses to work in it (git reports ",
+        "dubious ownership",
+        "Run this as the user who owns ",
+        ", take ownership of it, or point APOTHEM_HOME at a folder you own, "
+        "then re-run.",
+        "git could not read the clone at ",
+        "Repair it or move it aside, then re-run.",
+        "rev-parse --git-dir",
+        "LC_ALL",
         "ls-files -v",
         "core.hooksPath=",
     ):
@@ -822,7 +839,26 @@ CLEARED_GIT_VARIABLES = (
     "GIT_CONFIG_COUNT",
     "GIT_EXEC_PATH",
     "GIT_TEMPLATE_DIR",
+    "GIT_CONFIG",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_CONFIG_NOSYSTEM",
 )
+
+
+def _cleared_git_variables(name: str, content: str) -> set[str]:
+    """The names SCRIPT's startup statement clears: install.sh and update.sh
+    `unset` them (with continued lines), the .ps1 scripts loop over them."""
+    if name.endswith(".sh"):
+        match = re.search(
+            r"^unset GIT_DIR(?:[^\n]*\\\n)*[^\n]*$", content, re.MULTILINE
+        )
+    else:
+        match = re.search(
+            r"^foreach \(\$GitVar in @\(([^)]*)\)\)", content, re.MULTILINE
+        )
+    assert match, f"{name} no longer clears the git variables in one statement"
+    return set(re.findall(r"\bGIT_[A-Z_]+\b", match.group(0)))
 
 
 @pytest.mark.parametrize("name", sorted(SCRIPTS))
@@ -833,8 +869,9 @@ def test_every_script_clears_the_git_environment_and_checks_the_repo(
     refuse an APOTHEM_REPO that reads as an option in the same words, and
     look for the gpg program git runs in the same order."""
     content = SCRIPTS[name]
+    cleared = _cleared_git_variables(name, content)
     for variable in CLEARED_GIT_VARIABLES:
-        assert variable in content, f"{name} does not clear {variable}"
+        assert variable in cleared, f"{name} does not clear {variable}"
     for phrase in (
         "GIT_NO_REPLACE_OBJECTS",
         "APOTHEM_REPO must be a repository URL or path, not an option: ",
@@ -884,9 +921,10 @@ def test_every_script_pins_the_maintainer_key(name: str) -> None:
         f"{name} does not pin {MAINTAINER_FINGERPRINT}"
     )
     assert "VALIDSIG" in content, f"{name} does not read GnuPG's VALIDSIG status"
-    assert "carries a valid signature, but not from the maintainer key" in content, (
+    assert "A release tag must be signed by the maintainer key" in content, (
         f"{name} lacks the other-key abort"
     )
+    assert "carries a valid signature, but not from the maintainer key" not in content
 
 
 def test_security_md_publishes_the_pinned_fingerprint() -> None:
@@ -1197,3 +1235,330 @@ def test_both_installers_find_a_local_tree_only_by_their_own_path() -> None:
     assert "PSScriptRoot" not in PS1, "install.ps1 still falls back to the cwd"
     assert "$PSCommandPath" in PS1
     assert "-ne 'installer'" in PS1
+
+
+#: Each pair beside its third member: the uninstallers take the same lock.
+SCRIPT_TRIOS: tuple[tuple[str, str], ...] = (
+    ("install.sh", "install.ps1"),
+    ("update.sh", "update.ps1"),
+    ("uninstall.sh", "uninstall.ps1"),
+)
+
+
+def _script(name: str) -> str:
+    return (INSTALLER / name).read_text(encoding="utf-8")
+
+
+#: Setting names a clone's own git config may not hold (True) or may hold
+#: (False), as `git config --name-only --list` prints them. install.sh and
+#: update.sh decide with refused_config_key, install.ps1 and update.ps1 with
+#: Test-RefusedConfigKey; both must give these answers.
+CONFIG_KEY_CASES: tuple[tuple[str, bool], ...] = (
+    ("gpg.program", True),
+    ("gpg.openpgp.program", True),
+    ("gpg.ssh.program", True),
+    ("GPG.Program", True),
+    ("include.path", True),
+    ("includeif.gitdir:C:/x/.path", True),
+    ("filter.lfs.smudge", True),
+    ("filter.evil.clean", True),
+    ("protocol.ext.allow", True),
+    ("protocol.allow", True),
+    ("credential.helper", True),
+    ("credential.https://example.invalid.helper", True),
+    ("http.proxy", True),
+    ("http.sslverify", True),
+    ("http.https://example.invalid/.proxy", True),
+    ("uploadpack.packobjectshook", True),
+    ("core.fsmonitor", True),
+    ("core.hookspath", True),
+    ("core.sshcommand", True),
+    ("core.gitproxy", True),
+    ("core.askpass", True),
+    ("core.attributesfile", True),
+    ("core.alternaterefscommand", True),
+    ("diff.external", True),
+    ("url.ext::sh -c touch.insteadof", True),
+    ("url.https://evil.invalid/.pushinsteadof", True),
+    ("url.a.b.c.insteadof", True),
+    ("remote.origin.uploadpack", True),
+    ("remote.origin.receivepack", True),
+    ("remote.origin.proxy", True),
+    ("remote.origin.vcs", True),
+    ("diff.evil.command", True),
+    ("diff.evil.textconv", True),
+    ("core.repositoryformatversion", False),
+    ("core.filemode", False),
+    ("core.bare", False),
+    ("core.logallrefupdates", False),
+    ("core.symlinks", False),
+    ("core.ignorecase", False),
+    ("core.autocrlf", False),
+    ("remote.origin.url", False),
+    ("remote.origin.fetch", False),
+    ("branch.main.remote", False),
+    ("branch.main.merge", False),
+    ("user.name", False),
+    ("commit.gpgsign", False),
+    ("pull.rebase", False),
+    ("diff.renames", False),
+    ("url.insteadof", False),
+    ("extensions.worktreeconfig", False),
+)
+
+
+@pytest.mark.skipif(_PWSH is None, reason="no PowerShell on this host")
+@pytest.mark.parametrize("ps1_name", ["install.ps1", "update.ps1"])
+def test_powershell_refuses_the_clone_settings_the_table_names(ps1_name: str) -> None:
+    """Each .ps1 script's own Test-RefusedConfigKey, run under PowerShell,
+    refuses exactly the settings CONFIG_KEY_CASES marks."""
+    keys = [key for key, _ in CONFIG_KEY_CASES]
+    program = "; ".join(
+        (
+            *_ps1_load_function("Test-RefusedConfigKey"),
+            "foreach ($key in ($env:CONFIG_KEYS | ConvertFrom-Json)) "
+            "{ if (& $body $key) { 'refused' } else { 'allowed' } }",
+        )
+    )
+    result = _run_powershell(program, ps1_name, CONFIG_KEYS=json.dumps(keys))
+    assert result.returncode == 0, result.stdout + result.stderr
+    verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
+    wrong = {
+        key: verdicts[key]
+        for key, refused in CONFIG_KEY_CASES
+        if (verdicts[key] == "refused") != refused
+    }
+    assert not wrong, f"{ps1_name}'s Test-RefusedConfigKey disagrees: {wrong}"
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or shutil.which("sh") is None,
+    reason="runs the POSIX refused_config_key under sh",
+)
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+def test_sh_refuses_the_clone_settings_the_table_names(sh_name: str) -> None:
+    """Each sh script's own refused_config_key, run under sh, refuses exactly
+    the settings CONFIG_KEY_CASES marks, so it agrees with the .ps1 rule."""
+    keys = [key for key, _ in CONFIG_KEY_CASES]
+    program = (
+        _sh_function(SCRIPTS[sh_name], "refused_config_key")
+        + '\nfor key in "$@"; do\n'
+        + '    if [ -n "$(printf \'%s\\n\' "$key" | refused_config_key)" ]; '
+        + "then echo refused; else echo allowed; fi\n"
+        + "done\n"
+    )
+    result = subprocess.run(
+        ["sh", "-c", program, "sh", *keys],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    verdicts = dict(zip(keys, result.stdout.splitlines(), strict=True))
+    wrong = {
+        key: verdicts[key]
+        for key, refused in CONFIG_KEY_CASES
+        if (verdicts[key] == "refused") != refused
+    }
+    assert not wrong, f"{sh_name}'s refused_config_key disagrees: {wrong}"
+
+
+#: The settings every git command on an existing clone runs with: no
+#: fsmonitor program, no ext:: transport, no descent into submodules.
+GIT_NO_PROGRAM_SETTINGS = (
+    "core.fsmonitor=",
+    "protocol.ext.allow=never",
+    "submodule.recurse=false",
+    "fetch.recurseSubmodules=false",
+)
+
+
+@pytest.mark.parametrize(("sh_name", "ps1_name"), RELEASE_TAG_PAIRS)
+def test_git_runs_on_a_clone_with_the_same_settings_in_both(
+    sh_name: str, ps1_name: str
+) -> None:
+    """install.sh's and update.sh's cgit and the .ps1 scripts' $GitNoProgram
+    pass the same -c settings, and the .ps1 scripts add the empty hooks
+    folder on the update's calls as cgit does."""
+    cgit = _sh_function(SCRIPTS[sh_name], "cgit")
+    match = re.search(
+        r"^\$GitNoProgram = @\((.*)\)\r?$", SCRIPTS[ps1_name], re.MULTILINE
+    )
+    assert match, f"{ps1_name} no longer defines $GitNoProgram"
+    for setting in GIT_NO_PROGRAM_SETTINGS:
+        assert f"-c {setting}" in cgit, f"{sh_name}'s cgit lacks -c {setting}"
+        assert f"'-c', '{setting}'" in match.group(1), (
+            f"{ps1_name}'s $GitNoProgram lacks -c {setting}"
+        )
+    assert '-c core.hooksPath="$HOOKS_OFF"' in cgit
+    assert (
+        "$GitSafe = @($GitNoProgram + @('-c', \"core.hooksPath=$NoHooksDir\"))"
+        in SCRIPTS[ps1_name]
+    )
+
+
+def _in_order(body: str, *steps: str) -> bool:
+    """Each of STEPS appears in BODY, each after the one before."""
+    found = [body.find(step) for step in steps]
+    return -1 not in found and found == sorted(found)
+
+
+@pytest.mark.parametrize(
+    ("sh_name", "ps1_name"),
+    [("install.sh", "install.ps1"), ("update.sh", "update.ps1")],
+)
+def test_a_clone_is_checked_in_the_same_order_in_both(
+    sh_name: str, ps1_name: str
+) -> None:
+    """git is asked first whether it works in the clone at all (another
+    user's clone is refused), then the clone's own settings and attributes
+    are checked, and only then does any command read its index (ls-files
+    -v)."""
+    sh_body = _sh_function(SCRIPTS[sh_name], "check_clone_setup")
+    ps1_body = _ps1_function(SCRIPTS[ps1_name], "Assert-CleanClone")
+    assert _in_order(sh_body, "clone_git_ok", "check_clone_config", "ls-files -v")
+    assert _in_order(
+        ps1_body, "Assert-CloneGit $Dir", "Assert-CloneConfig $Dir", "ls-files -v"
+    )
+
+
+def test_replacing_a_clone_checks_it_before_git_status_in_both() -> None:
+    """With --yes / -Yes, replacing a clone with the archive asks git status
+    whether it holds local work; the clone's own settings are checked first,
+    so its fsmonitor program never runs."""
+    sh_body = _sh_function(SH, "home_mode")
+    ps1_body = _ps1_function(PS1, "Get-HomeMode")
+    assert _in_order(
+        sh_body,
+        'clone_git_ok "$APOTHEM_HOME"',
+        'check_clone_config "$APOTHEM_HOME"',
+        'clone_has_local_work "$APOTHEM_HOME"',
+    )
+    assert _in_order(
+        ps1_body,
+        "Assert-CloneGit $ApothemHome",
+        "Assert-CloneConfig $ApothemHome",
+        "Test-CloneHasLocalWork $ApothemHome",
+    )
+
+
+@pytest.mark.parametrize(
+    ("sh_name", "ps1_name"),
+    [("install.sh", "install.ps1"), ("update.sh", "update.ps1")],
+)
+def test_the_tag_is_read_once_and_its_commit_checked_out_in_both(
+    sh_name: str, ps1_name: str
+) -> None:
+    """Both families read refs/tags/<tag> once, check the tag object it
+    named, and check out the commit that check recorded, by its ID: no
+    checkout or HEAD comparison resolves the tag's name again."""
+    sh, ps1 = SCRIPTS[sh_name], SCRIPTS[ps1_name]
+    assert 'rev-parse --verify --quiet "refs/tags/' in sh
+    assert 'rev-parse --verify --quiet "refs/tags/$' in ps1
+    assert 'checkout --quiet --detach "$TAG_COMMIT"' in sh
+    assert re.search(r"checkout --quiet --detach \$(script:)?TagCommit\b", ps1)
+    for content, name in ((sh, sh_name), (ps1, ps1_name)):
+        assert (
+            '^{commit}"' not in content.split("checkout --quiet --detach", 1)[1][:200]
+        ), name
+        assert not re.search(r"checkout --quiet --detach \"refs/tags/", content), name
+
+
+#: The lock messages every script prints in the same words.
+LOCK_PHRASES = (
+    "Another Apothem install, update or uninstall is running on ",
+    ". Wait for it to finish, then re-run. If none is running, remove ",
+    " exists but names no running process; an Apothem run may have left it "
+    "when it was stopped. Check that no Apothem install, update or uninstall "
+    "is running, remove ",
+    "Could not create the lock ",
+    ". Check that you can write to ",
+)
+
+
+@pytest.mark.parametrize(("sh_name", "ps1_name"), SCRIPT_TRIOS)
+def test_every_script_takes_the_same_lock(sh_name: str, ps1_name: str) -> None:
+    """install, update and uninstall in both families hold
+    <APOTHEM_HOME>.lock for the whole run, taken right after the banner, and
+    say the same things when another run holds it or it cannot be made.
+    sh makes a folder there (with its process ID inside); PowerShell opens a
+    file there with no sharing, which the system frees when the run ends."""
+    sh, ps1 = _script(sh_name), _script(ps1_name)
+    for phrase in LOCK_PHRASES:
+        assert phrase in sh, f"{sh_name} lacks {phrase!r}"
+        assert phrase in ps1, f"{ps1_name} lacks {phrase!r}"
+    assert 'LOCK_DIR="${APOTHEM_HOME}.lock"' in sh
+    assert '$HomeLockPath = "$ApothemHome.lock"' in ps1
+    assert "([System.IO.FileShare]::None)" in ps1
+    banner = re.search(r'^Write-Bold "Apothem [a-z]+"\r?\n', ps1, re.MULTILINE)
+    assert banner, f"{ps1_name} has no banner line"
+    after = ps1[banner.end() :]
+    first_statement = next(
+        line for line in after.splitlines() if line.strip() and not line.startswith("#")
+    )
+    assert first_statement == "Lock-ApothemHome", first_statement
+    assert ps1.replace("\r\n", "\n").endswith(
+        "} finally {\n    Unlock-ApothemHome\n}\n"
+    ), f"{ps1_name} does not let the lock go on every way out"
+    assert sh.index("take_lock\n") > sh.index('bold "Apothem ')
+
+
+#: The leftovers report both installers print in the same words.
+LEFTOVER_PHRASES = (
+    "An earlier run was stopped part-way and left these folders beside ",
+    ": the earlier install that was being replaced, in ",
+    ": the new source that was being installed, in ",
+    ", with engine data moved into it: ",
+    ": files from that run (",
+    ": empty",
+    ": the earlier contents of ",
+    ", moved aside, in ",
+    "Nothing was changed. If ",
+    " is missing, move the earlier install back to it first. Then move any "
+    "engine data listed above back into ",
+    ", remove these folders, and re-run.",
+    ".apothem-old.",
+    ".apothem-extract.",
+    ".apothem-clone.",
+)
+
+
+def test_both_installers_report_leftovers_the_same_way() -> None:
+    """A run stopped part-way can leave staging folders beside APOTHEM_HOME;
+    both installers name each one and what it holds, change nothing, and
+    check only for a fetched install (a local tree swaps nothing)."""
+    for phrase in LEFTOVER_PHRASES:
+        assert phrase in SH, f"install.sh lacks {phrase!r}"
+        assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
+    assert 'if [ -z "$LOCAL_KIND" ]; then\n    check_leftovers' in SH
+    assert "if (-not $LocalKind) { Assert-NoLeftover }" in PS1
+
+
+def test_both_installers_make_the_aside_folder_themselves() -> None:
+    """An earlier folder is moved into a new <APOTHEM_HOME>.before-apothem-
+    <time> folder the run makes itself (mkdir in sh; in PowerShell a rename
+    of a folder only the run knows, which fails when the name is taken),
+    under its own name, never into a folder found there."""
+    claim = _sh_function(SH, "claim_aside")
+    assert 'mkdir "$_ca_name"' in claim
+    assert 'mkdir "${_ca_name}-$$"' in claim
+    aside = _ps1_function(PS1, "New-AsideFolder")
+    assert "[System.IO.Directory]::Move($AfTemp" in aside
+    assert '@($AfName, "$AfName-$PID")' in aside
+    assert '_SW_ASIDE_ITEM="${_SW_ASIDE}/$(basename -- "$APOTHEM_HOME")"' in SH
+    assert "$AsideItem = Join-Path $Aside $SwLeaf" in PS1
+
+
+def test_both_installers_refuse_a_redirect_off_https_only_for_an_https_base() -> None:
+    """install.sh limits curl to https (and its redirects) when the release
+    base is https://; install.ps1's Save-Download refuses a download from an
+    https:// address that ended anywhere else. Another base is used as
+    given by both."""
+    assert 'https://*) CURL_PROTO="--proto =https --proto-redir =https"' in SH
+    download = _ps1_function(PS1, "Save-Download")
+    assert (
+        "StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)"
+        in download
+    )
+    assert "$Final.Scheme -ne 'https'" in download

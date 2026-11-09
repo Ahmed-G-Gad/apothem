@@ -283,7 +283,7 @@ argument-hint: "[--focus area] [--fix]"
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -300,7 +300,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | string | टूल-नाम पैटर्न (या टूल-अज्ञेय इवेंटों के लिए `"*"`) | `"Write"` |
 | `hooks[].type` | शाब्दिक `"command"` | आज समर्थित एकमात्र हुक हैंडलर प्रकार | `"command"` |
 | `hooks[].command` | string | निष्पादन-योग्य कमांड; Apothem इंस्टॉल के समय हल होने वाला `${PYTHON_BIN}` प्लेसहोल्डर उपयोग करता है | `"${PYTHON_BIN}"` |
-| `hooks[].args` | स्ट्रिंग्स की ऐरे | exec-रूप आर्ग्युमेंट: `${HARNESS_ROOT}/.apothem/support/` के अंतर्गत एक स्क्रिप्ट पथ, फिर उसके आर्ग्युमेंट | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | स्ट्रिंग्स की ऐरे | exec-रूप आर्ग्युमेंट: `${HARNESS_ROOT}/.apothem/support/` के अंतर्गत एक स्क्रिप्ट पथ, फिर उसके आर्ग्युमेंट | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | पूर्णांक सेकंड | होस्ट द्वारा हुक को समाप्त करने से पहले अधिकतम रनटाइम | `30` |
 | `hooks[].statusMessage` | string | होस्ट UI में दिखाया जाने वाला संक्षिप्त लेबल | `"Session start"` |
 

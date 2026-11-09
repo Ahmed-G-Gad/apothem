@@ -22,11 +22,20 @@
 # release and re-pointed here aborts either way. Because
 # APOTHEM_ALLOW_UNVERIFIED=1 lets an unsigned tag, or one signed by another
 # key, through, the re-pointed-tag check protects only tags that carry the
-# maintainer key's signature. Before the clone is fetched it is checked: no
-# tracked file may be marked assume-unchanged or skip-worktree, its work tree
-# must be APOTHEM_HOME itself, and its own git config may not set a gpg
-# program, fsmonitor, hooks path or include; its hooks do not run during the
-# update, and a clone of something other than Apothem is not updated.
+# maintainer key's signature, and the tag's commit is checked out by its ID,
+# so a tag ref moved after the check changes nothing. Before the clone is
+# fetched it is checked: git must work in it (a clone another user owns is
+# refused), its own git settings (in its config or config.worktree) may not
+# name a program for git to run, pull in other settings, or change where or
+# how git connects (Test-RefusedConfigKey lists them), its info\attributes
+# may not set a filter, no tracked file may be marked assume-unchanged or
+# skip-worktree, and its work tree must be APOTHEM_HOME itself. Every git
+# command on the clone runs with its hooks and its fsmonitor off and with no
+# ext:: transport, and a clone of something other than Apothem is not
+# updated. One install, update or uninstall runs at a time: each holds
+# <APOTHEM_HOME>.lock while it runs, and a second run stops. git and gpg are
+# the ones found on PATH; they, and the user's own global and system git
+# config, are trusted as found.
 # APOTHEM_REF=main checks out the branch on request (it needs
 # APOTHEM_ALLOW_UNVERIFIED=1). The APOTHEM_SOURCE local-checkout path fetches
 # nothing and skips verification. An install made from a release archive
@@ -79,6 +88,12 @@ try {
 if (-not $HomeProvider -or $HomeProvider.Name -ne 'FileSystem') {
     Write-Error "  x APOTHEM_HOME is not a usable folder path: $ApothemHomeValue"
 }
+# A trailing separator would put the lock beside APOTHEM_HOME inside it
+# instead (install.ps1 trims it the same way); a drive root keeps its
+# separator.
+if ($ApothemHome.Length -gt 1 -and $ApothemHome -notmatch '^[A-Za-z]:[\\/]$') {
+    $ApothemHome = $ApothemHome.TrimEnd('\', '/')
+}
 $ApothemRepo = if ($env:APOTHEM_REPO) { $env:APOTHEM_REPO } else { 'https://github.com/ahmed-g-gad/apothem' }
 # Empty default sentinel: an unset APOTHEM_REF means "resolve the latest
 # released tag" (verified-by-default trust model); an explicit value pins a tag
@@ -112,12 +127,13 @@ function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
 # A git variable set in the calling shell would point every git command
 # below at another repository, work tree, index or object store, add
-# settings or another git program, or swap objects through replace refs,
-# so they are cleared first; GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM stay
-# (mirrors
-# update.sh). An APOTHEM_REPO that starts with - would reach git as an
-# option.
-foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR')) {
+# settings, read its configuration from other files, use another git
+# program, or swap objects through replace refs, so they are cleared first
+# (mirrors update.sh). git still reads the user's own global and system
+# configuration from the places it always looks, and git, gpg and cosign
+# are the ones PATH finds. An APOTHEM_REPO that starts with - would reach
+# git as an option.
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM')) {
     if (Test-Path -LiteralPath "Env:$GitVar") { Remove-Item -LiteralPath "Env:$GitVar" }
 }
 $env:GIT_NO_REPLACE_OBJECTS = '1'
@@ -130,9 +146,15 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
     $ApothemRepo = (Resolve-Path -LiteralPath $ApothemRepo).ProviderPath
 }
 
-# The git calls that run in an existing clone (fetch, verify-tag, cat-file,
-# checkout) take these arguments, which point core.hooksPath at an empty
-# folder made for the run, so none of the clone's hooks runs.
+# Every git command on a clone takes $GitNoProgram: git never runs the
+# clone's fsmonitor program (core.fsmonitor is emptied), never runs a
+# program named by an ext:: address, and never goes into submodules, whose
+# own settings nothing here checks. The calls of an update (fetch,
+# verify-tag, cat-file, checkout and the rest) take $GitSafe, which adds
+# core.hooksPath pointing at an empty folder made for the run, so none of
+# the clone's hooks runs either. core.sshCommand is left alone: setting it
+# would also override the user's own GIT_SSH (mirrors update.sh's cgit).
+$GitNoProgram = @('-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false')
 $GitSafe = @()
 
 # The current folder must never shadow the engine's modules (mirrors
@@ -338,6 +360,25 @@ function Test-TagSignedByOtherKey {
     return (-not (Test-TagSignedByMaintainer))
 }
 
+# Get-TagSigner - the primary-key fingerprints, other than
+# $MaintainerFingerprint, of the valid signatures in the captured status
+# lines, each once and upper-case, as the message names them: "the key X",
+# or "the keys X, Y" (mirrors update.sh's verify_tag_other_keys and
+# other_key_message).
+function Get-TagSigner {
+    $Signers = @()
+    foreach ($Line in ($script:VerifyTagOutput -split "`n")) {
+        $Fields = @($Line.Trim() -split '\s+')
+        if ($Fields.Count -ge 3 -and $Fields[0] -ceq '[GNUPG:]' -and $Fields[1] -ceq 'VALIDSIG') {
+            $Fpr = if ($Fields.Count -ge 12) { $Fields[11] } else { $Fields[2] }
+            $Fpr = $Fpr.ToUpperInvariant()
+            if ($Fpr -ne $MaintainerFingerprint -and $Signers -cnotcontains $Fpr) { $Signers += $Fpr }
+        }
+    }
+    if ($Signers.Count -gt 1) { return "the keys $($Signers -join ', ')" }
+    return "the key $($Signers -join ', ')"
+}
+
 # Test-VerifyTagMissingKey - $true when the captured status lines show the
 # signing public key is absent from the local keyring, so the signature was
 # not checked (GnuPG's NO_PUBKEY status), $false for any other failure
@@ -357,38 +398,143 @@ function Test-ReleaseTag {
     return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z')
 }
 
+# Test-RefusedConfigKey KEY - $true when an update refuses to trust the
+# git setting KEY (a name as git config --name-only prints it) in a clone's
+# own config: one that names a program for git to run (gpg.*,
+# core.fsmonitor, core.hooksPath, core.sshCommand, core.gitProxy,
+# core.askPass, core.alternateRefsCommand, filter.*, credential.*,
+# uploadpack.*, remote.*.uploadpack, remote.*.receivepack, remote.*.vcs,
+# diff.external, diff.*.command, diff.*.textconv), pulls in other settings
+# or attributes (include.*, includeIf.*, core.attributesFile), or changes
+# where or how git connects (url.*.insteadOf, url.*.pushInsteadOf,
+# protocol.*, http.*, remote.*.proxy). The update's own git commands
+# (fetch, verify-tag, diff, checkout, status) would act on any of them; the
+# user's global and system settings are not read here and stay trusted
+# (mirrors update.sh's refused_config_key).
+function Test-RefusedConfigKey {
+    param([string]$Key)
+    $Name = $Key.ToLowerInvariant()
+    return (($Name -cmatch '^(gpg|include|includeif|filter|protocol|credential|http|uploadpack)\.') -or
+        (@('core.fsmonitor', 'core.hookspath', 'core.sshcommand', 'core.gitproxy', 'core.askpass', 'core.attributesfile', 'core.alternaterefscommand', 'diff.external') -ccontains $Name) -or
+        ($Name -cmatch '^url\..*\.(insteadof|pushinsteadof)$') -or
+        ($Name -cmatch '^remote\..*\.(uploadpack|receivepack|proxy|vcs)$') -or
+        ($Name -cmatch '^diff\..*\.(command|textconv)$'))
+}
+
+# Assert-CloneGit DIR - stop, saying what to do, when git will not work in
+# the clone at DIR (mirrors update.sh's clone_git_ok). git refuses a
+# repository another user owns ("dubious ownership"), and its own advice, to
+# mark the folder safe, would trust whatever that user put in its git
+# config, so the message gives the safer ways out. git runs in the C
+# locale here, so its message reads the same in every language.
+function Assert-CloneGit {
+    param([string]$Dir)
+    $prior = $ErrorActionPreference
+    $priorLcAll = $env:LC_ALL
+    $ErrorActionPreference = 'Continue'
+    $env:LC_ALL = 'C'
+    try {
+        $CgOut = @(& git -C $Dir rev-parse --git-dir 2>&1)
+        $CgCode = $LASTEXITCODE
+    } finally {
+        $env:LC_ALL = $priorLcAll
+        $ErrorActionPreference = $prior
+    }
+    if ($CgCode -eq 0) { return }
+    $CgErr = @($CgOut | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { $_.ToString() })
+    if (($CgErr -join "`n").Contains('dubious ownership')) {
+        Write-Fail "$Dir is owned by someone else, so git refuses to work in it (git reports `"dubious ownership`"). Run this as the user who owns $Dir, take ownership of it, or point APOTHEM_HOME at a folder you own, then re-run."
+    }
+    $CgFirst = if ($CgErr.Count -gt 0) { $CgErr[0] } else { '' }
+    Write-Fail "git could not read the clone at $Dir ($CgFirst). Repair it or move it aside, then re-run."
+}
+
+# Get-ClonePath DIR NAME - where the clone at DIR keeps NAME, as a full
+# path, or $null when git cannot say: config and info\ sit in the git folder
+# all its worktrees share, config.worktree in the worktree's own (mirrors
+# update.sh's git_path).
+function Get-ClonePath {
+    param([string]$Dir, [string]$Name)
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $GpPath = "$(& git @GitNoProgram -C $Dir rev-parse --git-path $Name 2>$null)"
+        $GpCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    if ($GpCode -ne 0 -or -not $GpPath) { return $null }
+    if ($GpPath -match '^(/|[A-Za-z]:[\\/])') { return $GpPath }
+    return "$Dir/$GpPath"
+}
+
+# Assert-CloneConfig DIR - stop when the clone at DIR carries git settings of
+# its own that an update would trust (Test-RefusedConfigKey), in its config
+# file or, for a worktree, its config.worktree, or when its info\attributes
+# sets a filter, whose program checkout and diff run (mirrors update.sh's
+# check_clone_config). Each file is listed alone, so its include lines are
+# not followed (an include is refused itself); the first refused name in
+# file order stops the run, config first, and the message names it and its
+# file. This runs before any git command that reads the clone's index or
+# could run one of its programs.
+function Assert-CloneConfig {
+    param([string]$Dir)
+    foreach ($CfName in @('config', 'config.worktree')) {
+        $CfFile = Get-ClonePath $Dir $CfName
+        if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
+        if (-not (Test-Path -LiteralPath $CfFile)) { continue }
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $CfKeys = @(& git @GitNoProgram -C $Dir config --file $CfFile --name-only --list 2>$null | ForEach-Object { [string]$_ })
+            $CfCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if ($CfCode -ne 0) { Write-Fail "Could not read the git config of $Dir at $CfFile." }
+        foreach ($CfKey in $CfKeys) {
+            if (Test-RefusedConfigKey $CfKey) {
+                Write-Fail "$Dir's own git config sets $CfKey, which the update would trust. Remove it from $CfFile, then re-run."
+            }
+        }
+    }
+    $CfFile = Get-ClonePath $Dir 'info/attributes'
+    if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
+    if (Test-Path -LiteralPath $CfFile -PathType Leaf) {
+        try {
+            $CfLines = @([System.IO.File]::ReadAllLines($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CfFile)))
+        } catch {
+            $CfLines = @()
+        }
+        foreach ($CfLine in $CfLines) {
+            if ($CfLine -notmatch '^\s*#' -and $CfLine.Contains('filter=')) {
+                Write-Fail "$Dir's own git attributes set a filter (filter=), which the update would trust. Remove it from $CfFile, then re-run."
+            }
+        }
+    }
+}
+
 # Assert-CleanClone DIR - refuse, before anything is fetched, an existing
 # clone at DIR whose check the update could not trust (mirrors update.sh's
-# require_clean_clone). Its own git config may not set a program or file the
-# update's git calls would run or read (gpg.program, gpg.openpgp.program,
-# core.fsmonitor, core.hooksPath, include. and includeIf. entries); this is
-# read first, as the other checks run git in the clone. Its work tree must
+# check_clone_setup). git must work in it (Assert-CloneGit), and its own
+# settings and attributes must pass Assert-CloneConfig; both run first,
+# before any git command that reads the clone's index. Its work tree must
 # be DIR itself, not one core.worktree or a .git file names: git must place
 # DIR inside the work tree, at its top. And no tracked file may be marked
 # assume-unchanged or skip-worktree (git ls-files -v prints a lower-case
 # letter or S for one), since git then hides a change to it.
 function Assert-CleanClone {
     param([string]$Dir)
+    Assert-CloneGit $Dir
+    Assert-CloneConfig $Dir
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $CcConfig = @(& git -C $Dir config --local --name-only --get-regexp . 2>$null | ForEach-Object { [string]$_ })
-    } finally {
-        $ErrorActionPreference = $prior
-    }
-    foreach ($CcKey in $CcConfig) {
-        $CcLower = $CcKey.ToLowerInvariant()
-        if ((@('gpg.program', 'gpg.openpgp.program', 'core.fsmonitor', 'core.hookspath') -ccontains $CcLower) -or $CcLower.StartsWith('include.', [System.StringComparison]::Ordinal) -or $CcLower.StartsWith('includeif.', [System.StringComparison]::Ordinal)) {
-            Write-Fail "$Dir's own git config sets $CcKey, which the update would trust. Remove it from $Dir/.git/config, then re-run."
-        }
-    }
-    $ErrorActionPreference = 'Continue'
-    try {
-        $CcInside = [string](& git -C $Dir rev-parse --is-inside-work-tree 2>$null)
+        $CcInside = "$(& git @GitNoProgram -C $Dir rev-parse --is-inside-work-tree 2>$null)"
         $CcInsideCode = $LASTEXITCODE
-        $CcPrefix = [string](& git -C $Dir rev-parse --show-prefix 2>$null)
+        $CcPrefix = "$(& git @GitNoProgram -C $Dir rev-parse --show-prefix 2>$null)"
         $CcPrefixCode = $LASTEXITCODE
-        $CcFlags = @(& git -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlags = @(& git @GitNoProgram -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
     } finally {
         $ErrorActionPreference = $prior
     }
@@ -402,7 +548,62 @@ function Assert-CleanClone {
     }
 }
 
+# Lock-ApothemHome - take the install lock: an install, update or uninstall
+# holds <APOTHEM_HOME>.lock for its whole run, so two runs never change
+# APOTHEM_HOME, or the folders beside it, at the same time (mirrors
+# update.sh's take_lock). The lock is a file opened with no sharing, so a
+# second open fails while this run holds it; Windows closes it when the run
+# ends, a forced kill included, which frees the lock and deletes the file.
+# install.sh, update.sh and uninstall.sh use a folder of the same name that
+# holds the process ID of the run that made it. That ID cannot be checked
+# from here (under Git Bash it is not a Windows process ID), so such a
+# folder is reported, with how to remove it, and never taken over.
+$script:HomeLock = $null
+$HomeLockPath = "$ApothemHome.lock"
+function Lock-ApothemHome {
+    $LkParent = Split-Path -Parent $ApothemHome
+    # With no folder to hold APOTHEM_HOME there is nothing to work on, and
+    # the run stops below without the lock.
+    if (-not $LkParent -or -not (Test-Path -LiteralPath $LkParent -PathType Container)) { return }
+    $LkItem = Get-Item -LiteralPath $HomeLockPath -Force -ErrorAction SilentlyContinue
+    if ($LkItem -and ($LkItem.LinkType -or $LkItem.PSIsContainer)) {
+        $LkPid = ''
+        if ($LkItem.PSIsContainer -and -not $LkItem.LinkType) {
+            try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+        }
+        if ($LkPid -notmatch '^[0-9]+$') {
+            Write-Fail "$HomeLockPath exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+    }
+    try {
+        $script:HomeLock = New-Object System.IO.FileStream -ArgumentList $HomeLockPath, ([System.IO.FileMode]::OpenOrCreate), ([System.IO.FileAccess]::ReadWrite), ([System.IO.FileShare]::None), 4096, ([System.IO.FileOptions]::DeleteOnClose)
+    } catch {
+        # A sharing violation means another run holds the file; a folder
+        # that cannot be written to is a failure of its own.
+        $LkError = $_.Exception.GetBaseException()
+        if ($LkError -is [System.IO.IOException] -and $LkError -isnot [System.IO.DirectoryNotFoundException] -and $LkError -isnot [System.IO.FileNotFoundException] -and $LkError -isnot [System.IO.PathTooLongException]) {
+            Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Could not create the lock $HomeLockPath beside $ApothemHome. Check that you can write to $LkParent, then re-run."
+    }
+}
+
+# Unlock-ApothemHome - let the install lock go: closing the file frees it
+# and deletes it.
+function Unlock-ApothemHome {
+    if ($script:HomeLock) {
+        $script:HomeLock.Dispose()
+        $script:HomeLock = $null
+    }
+}
+
 Write-Bold "Apothem updater"
+
+# One install, update or uninstall at a time on APOTHEM_HOME (see
+# Lock-ApothemHome); the finally block at the end lets the lock go.
+Lock-ApothemHome
+try {
 
 function Test-ApothemSource {
     param([string]$Dir)
@@ -459,7 +660,7 @@ if ($env:APOTHEM_SOURCE) {
     $NoHooksDir = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-nohooks-" + [System.Guid]::NewGuid().ToString('N'))
     try {
         New-Item -ItemType Directory -Path $NoHooksDir | Out-Null
-        $GitSafe = @('-c', "core.hooksPath=$NoHooksDir")
+        $GitSafe = @($GitNoProgram + @('-c', "core.hooksPath=$NoHooksDir"))
         if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) { Write-Fail "git not found in PATH" }
 
         # Resolve the ref to update to. An unset APOTHEM_REF defaults to the latest
@@ -523,17 +724,31 @@ if ($env:APOTHEM_SOURCE) {
         }
 
         Write-Bold "Verifying source signature"
+        $TagCommit = ''
         if (Test-ReleaseTag $ApothemRef) {
-            if ((Test-TagSignature $ApothemHome "refs/tags/$ApothemRef") -and (Test-TagSignedByMaintainer)) {
+            # The tag ref is read once: the signature, the signed tag object's
+            # own name and the commit all come from that one tag object, and
+            # the commit is then checked out by its ID, so a tag ref moved
+            # after the check cannot change what is installed (mirrors
+            # update.sh).
+            $prior = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $TagObject = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef" 2>$null)".Trim()
+                if ($LASTEXITCODE -ne 0) { $TagObject = '' }
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+            $script:VerifyTagOutput = ''
+            if ($TagObject -and (Test-TagSignature $ApothemHome $TagObject) -and (Test-TagSignedByMaintainer)) {
                 # The signed tag object must name itself APOTHEM_REF: a signed tag
                 # for another release, re-pointed here, would roll the update
                 # back. Its header runs to the first empty line, and the last
                 # `type` and `tag` lines in it must read exactly `type commit` and
                 # `tag APOTHEM_REF`, as update.sh's awk check requires.
-                $prior = $ErrorActionPreference
                 $ErrorActionPreference = 'Continue'
                 try {
-                    $TagLines = @(& git @GitSafe -C $ApothemHome cat-file tag "refs/tags/$ApothemRef" 2>$null)
+                    $TagLines = @(& git @GitSafe -C $ApothemHome cat-file tag $TagObject 2>$null)
                 } finally {
                     $ErrorActionPreference = $prior
                 }
@@ -549,11 +764,23 @@ if ($env:APOTHEM_SOURCE) {
                 if (-not ($TagType -ceq 'type commit' -and $TagName -ceq "tag $ApothemRef")) {
                     Write-Fail "Tag $ApothemRef carries the maintainer key's signature, but the signed tag object is not the $ApothemRef release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or re-materialized."
                 }
+                $TagCommit = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}")".Trim()
+                if ($LASTEXITCODE -ne 0 -or -not $TagCommit) { Write-Fail "Could not read the commit the $ApothemRef tag points at" }
                 Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
             } elseif ($ApothemAllowUnverified -eq '1') {
+                if ($TagObject) {
+                    $ErrorActionPreference = 'Continue'
+                    try {
+                        $TagCommit = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
+                        if ($LASTEXITCODE -ne 0) { $TagCommit = '' }
+                    } finally {
+                        $ErrorActionPreference = $prior
+                    }
+                }
                 Write-Warn "Tag $ApothemRef is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
             } elseif (Test-TagSignedByOtherKey) {
-                Write-Fail "Tag $ApothemRef carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or re-materialized."
+                $Signers = Get-TagSigner
+                Write-Fail "Tag $ApothemRef is signed by $Signers. A release tag must be signed by the maintainer key $MaintainerFingerprint that SECURITY.md publishes, and by no other key (possible tampering). Aborting before anything is checked out or re-materialized."
             } elseif (Test-VerifyTagMissingKey) {
                 Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this updater."
             } else {
@@ -581,19 +808,23 @@ if ($env:APOTHEM_SOURCE) {
             Write-Fail "$ApothemHome has changes to tracked files. Commit or stash them, then re-run."
         }
 
-        # A release tag is checked out detached, as the commit
-        # refs/tags/<tag>^{commit} names, so neither a branch that shares the
-        # tag's name nor one named refs/tags/<tag> can stand in for it; HEAD must
-        # then be the tag's commit. Any other ref follows origin's branch of that
-        # name when there is one (a local branch may be stale), and otherwise
-        # resolves directly, after --end-of-options so a ref cannot pass for an
-        # option. No --force, so local changes stop the update instead of being
-        # lost, and afterwards the tracked files must match the ref.
+        # A release tag is checked out, detached, by the commit ID its check
+        # recorded ($TagCommit), never by its name again: a tag ref moved
+        # since, or a branch that shares the tag's name, cannot change what is
+        # checked out, and HEAD must then be that commit. Any other ref follows
+        # origin's branch of that name when there is one (a local branch may
+        # be stale), and otherwise resolves directly, after --end-of-options so
+        # a ref cannot pass for an option. No --force, so local changes stop
+        # the update instead of being lost, and afterwards the tracked files
+        # must match the ref. Submodules are left alone.
+        if ((Test-ReleaseTag $ApothemRef) -and -not $TagCommit) {
+            Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome. If it has local changes, commit or stash them, then re-run."
+        }
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
             if (Test-ReleaseTag $ApothemRef) {
-                & git @GitSafe -C $ApothemHome checkout --quiet --detach "refs/tags/$ApothemRef^{commit}"
+                & git @GitSafe -C $ApothemHome checkout --quiet --detach $TagCommit
                 $CoCode = $LASTEXITCODE
             } else {
                 & git @GitSafe -C $ApothemHome show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
@@ -610,8 +841,8 @@ if ($env:APOTHEM_SOURCE) {
         if (Test-ReleaseTag $ApothemRef) {
             if ($CoCode -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome. If it has local changes, commit or stash them, then re-run." }
             $CoHead = & git @GitSafe -C $ApothemHome rev-parse --verify --quiet HEAD
-            $CoTag = & git @GitSafe -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
-            if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
+            $CoTag = $TagCommit
+            if ("$CoHead" -ne "$CoTag") {
                 Write-Fail "The checkout in $ApothemHome is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before re-materialization."
             }
         } elseif ($CoCode -ne 0) {
@@ -662,3 +893,6 @@ finally {
 }
 
 Write-Bold "Update complete."
+} finally {
+    Unlock-ApothemHome
+}

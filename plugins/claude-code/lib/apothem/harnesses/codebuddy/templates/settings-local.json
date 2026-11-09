@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy SessionStart",
+            "command": "\"${PYTHON_BIN}\" -E -s \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy SessionStart",
             "timeout": 30
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy PostToolUse posttooluse-proactive-compaction",
+            "command": "\"${PYTHON_BIN}\" -E -s \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy PostToolUse posttooluse-proactive-compaction",
             "timeout": 10
           }
         ]

@@ -151,8 +151,8 @@ def test_each_command_runs_the_installed_dispatcher_under_the_contract(
         project.resolve() / ".apothem/support/windsurf/hooks/dispatch.py"
     ).as_posix()
     assert _commands(_load(project)) == [
-        f'"{python}" "{dispatcher}" --contract devin SessionStart',
-        f'"{python}" "{dispatcher}" --contract devin PostToolUse '
+        f'"{python}" -E -s "{dispatcher}" --contract devin SessionStart',
+        f'"{python}" -E -s "{dispatcher}" --contract devin PostToolUse '
         "posttooluse-proactive-compaction",
     ]
     assert Path(dispatcher).is_file()

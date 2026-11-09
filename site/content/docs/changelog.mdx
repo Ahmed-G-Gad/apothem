@@ -968,8 +968,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   source is now checked in a staging folder beside `APOTHEM_HOME`, swapped in
   only after every check passes, and everything in the earlier Apothem install
   that is not part of its source tree is kept. If a step fails or the run is
-  interrupted, the earlier install is put back unchanged, or the message says
-  where it was left. `--yes` on a folder that holds no Apothem install no
+  stopped by Ctrl+C or a termination signal, the earlier install is put back
+  unchanged, or the message says where it was left; a forced kill or a power
+  loss can leave folders that the next run reports (see below). `--yes` on a folder that holds no Apothem install no
   longer merges the new files into it: the folder moves, unchanged, to
   `<APOTHEM_HOME>.before-apothem-<time>` and the install starts fresh. A
   symbolic link at `APOTHEM_HOME` (on Windows, a symbolic link or a junction)
@@ -1009,6 +1010,73 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **Hooks no longer read your `PYTHON*` variables or your user site-packages.**
+  A hook runs in whatever folder the assistant opened, on every tool call, and
+  an empty entry in `PYTHONPATH` stands for that folder, so a file such as
+  `sitecustomize.py` placed there could run inside the hook. Every hook command
+  now starts Python with `-E -s`: `-E` makes Python ignore `PYTHONPATH` and the
+  other `PYTHON*` variables, and `-s` leaves out the user site-packages. The
+  same flags apply to the Claude Code plugin's bootstrap script and its
+  interpreter probe, and to the commands the Claude Code, Codex, CodeBuddy,
+  Cursor, GitHub Copilot, Kiro, Qwen Code and Windsurf adapters write. The hooks
+  use only the standard library and their own files, so nothing they need is
+  lost. Because `-E` also turns off `PYTHONUTF8` and `PYTHONIOENCODING`, the
+  dispatcher and the conformity gate now read their input as UTF-8 themselves,
+  which also fixes non-ASCII hook payloads on Windows. `-E` also ignores
+  `PYTHONDONTWRITEBYTECODE`, so the hooks can write `__pycache__` folders into
+  the support folder. An install made by an earlier release keeps its old
+  commands until you run `apothem install` or `apothem update`; an update
+  replaces them without touching your own hooks, and an uninstall removes the
+  old and the new form.
+- **An update in place checks more of the clone's own setup, and sooner.**
+  `install.sh`, `install.ps1`, `update.sh` and `update.ps1` now read both
+  `.git/config` and `.git/config.worktree` of an existing clone and stop on any
+  key that makes git run a program, read other config or connect elsewhere:
+  every `gpg.*`, `include.*`, `includeIf.*`, `filter.*`, `protocol.*`,
+  `credential.*`, `http.*` and `uploadpack.*` key; `core.fsmonitor`,
+  `core.hooksPath`, `core.sshCommand`, `core.gitProxy`, `core.askPass`,
+  `core.attributesFile` and `core.alternateRefsCommand`; `diff.external` and
+  `diff.<driver>.command` or `textconv`; `url.<base>.insteadOf` and
+  `pushInsteadOf`; and `remote.<name>.uploadpack`, `receivepack`, `proxy` and
+  `vcs`. They also stop on a `filter=` line in `.git/info/attributes`. The
+  message names the key and the file. The check runs before any git command that
+  reads the clone's index, so a configured file-system monitor cannot run first,
+  and it also runs before `--yes` replaces a clone. Every git command on the
+  clone now runs with the file-system monitor off, the `ext::` transport refused
+  and submodule recursion off. The installers and updaters also clear
+  `GIT_CONFIG`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM` and
+  `GIT_CONFIG_NOSYSTEM`, so a value inherited from your environment can no
+  longer point git at another config file. If you set `GIT_CONFIG_GLOBAL` for
+  the installer, it is now ignored; git still reads your own global and system
+  config from the usual places, and `git`, `gpg` and `cosign` are the ones your
+  `PATH` finds. A clone that another user owns now stops the run with an
+  explanation and what to do, in place of git's raw "dubious ownership" error.
+- **A second install, update or uninstall can no longer run on the same
+  `APOTHEM_HOME`, and a stopped run is reported.** Each run now holds a lock,
+  `<APOTHEM_HOME>.lock`, for its whole length and gives it up on success,
+  failure, Ctrl+C and a termination signal. A second run stops and says so. On
+  POSIX the lock is a folder that holds the process ID; a lock left by a run
+  that was killed is reported with how to remove it, and never taken over. On
+  Windows PowerShell the lock is a file that Windows closes and deletes when the
+  process ends. The folder that receives an earlier install when `--yes`
+  replaces it is now created by the run itself, and the earlier tree moves
+  inside it, to `<APOTHEM_HOME>.before-apothem-<time>/<name>`, where `<name>` is
+  the last part of `APOTHEM_HOME`; before, the tree was moved to a name that was
+  checked first and used later. A forced kill or a power loss during a swap can
+  still leave the earlier install or engine data in `.apothem-old.*`,
+  `.apothem-extract.*` or `.apothem-clone.*` beside `APOTHEM_HOME`. The next
+  fetched install, a dry run included, now stops before it changes anything,
+  names each folder and what it holds, and says how to move the data back. It
+  deletes nothing.
+- **The commit that is checked out is the commit that was verified.** The
+  installers and updaters read the release tag once, record the commit it names,
+  verify the tag, check that commit out by ID, and require `HEAD` to be that
+  commit, in place, on a fresh clone and in the update scripts. A tag that moves
+  between the check and the checkout no longer changes what is installed. The
+  message for a tag signed by another key now names the key that signed it and
+  the one that is required. On Windows PowerShell 5.1 and 7, a download that
+  redirects to an address that is not https is refused, as the POSIX installers'
+  `curl` already did.
 
 ## [1.5.0] - 2026-10-28
 

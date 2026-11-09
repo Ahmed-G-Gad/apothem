@@ -65,7 +65,7 @@ Claude Code のエンジンインストールは、Write と Edit に対して�
 
 Claude Code ではないハーネスは、同じディスパッチャーを、スクリプトの後に `--contract <id>` を付けて
 実行します。たとえば
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`
 のようにします。契約（`hooks/lib/vendor_contract.py`）は、ベンダーのイベント名とツール名の綴り、
 およびペイロードのキーを、ハンドラーが読む Claude の形に変換し、エンベロープをベンダーが読む形に
 書き換え、ベンダーがモデルに渡さないイベントを落とします。このフラグがなければ何も変換されず、

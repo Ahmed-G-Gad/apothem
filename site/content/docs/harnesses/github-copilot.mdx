@@ -162,8 +162,12 @@ PowerShell needs before a quoted program path. A `bash` command looks like this,
 with your interpreter and project path in place of the two paths:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
+
+`-E -s` makes Python ignore `PYTHONPATH` and the other `PYTHON*` variables
+and skip your user site-packages, so no file in the project can load into
+the hook.
 
 `--contract copilot` makes the dispatcher read Copilot's camelCase input and print
 `{"additionalContext": ...}`, which is what Copilot reads for these two events.
@@ -312,15 +316,18 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. The path is where the installer puts the engine;
+[Conformity gate](/docs/conformity-gate) explains the script path and the other installs.
 
 The `--all` run covers the standalone validators. It does not run the
 multi-surface coherence check described under Compatibility notes. To run that
 check by name in a checkout:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python ~/.apothem/src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## Troubleshooting

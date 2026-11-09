@@ -111,7 +111,7 @@ Apothem 不在 Devin 上注册 `PreToolUse` 守卫。Devin 的文档为 `UserPro
 命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
 
 `--contract devin` 将 Devin 的小写工具名称（`exec`、`write`、`edit`、`read`、`grep`、`glob`）映射到 Apothem 的处理程序所检测的名称上，并让输出保持为 Claude Code 读取的同一种信封格式。不会写入匹配器：Devin 的匹配器是一个正则表达式，省略时匹配每个工具，而 `SessionStart` 没有可匹配的工具。

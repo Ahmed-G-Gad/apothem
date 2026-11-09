@@ -41,13 +41,14 @@ Debian-family hosts, or `pip install click rich`) and re-run.
 ### `apothem` not found after running the installer
 
 The installer places the source tree at `~/.apothem` and writes an `apothem`
-shim to `~/.local/bin` by default (POSIX) or `%LOCALAPPDATA%\Microsoft\WindowsApps`
-(Windows). It does not edit your `PATH`. If `apothem` is not found, that
-directory is not on `PATH`; add it, or run the shim by its full path. The
-installer prints that path at completion. When it wrote no shim, it prints a
-command that starts the engine with the current folder kept off `sys.path`;
-copy that command from the banner. The npx form
-(`npx @ahmed-g-gad/apothem <command>`) needs no `PATH` entry.
+shim to `~/.local/bin` by default (POSIX) or
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows); `APOTHEM_BIN_DIR` changes the
+folder. It does not edit your `PATH`. If `apothem` is not found, that directory
+is not on `PATH`; add it, or run the shim by its full path. The installer prints
+that path at completion. When it wrote no shim, it prints a command that starts
+the engine with the current folder kept off `sys.path`; copy that command from
+the banner. The npx form (`npx @ahmed-g-gad/apothem <command>`) needs no `PATH`
+entry.
 
 ### `/plugin marketplace add` fails
 
@@ -118,11 +119,11 @@ the installer again.
 
 ### The installer stops: the tag is not signed by the maintainer key
 
-The message reads "carries a valid signature, but not from the maintainer
-key". The tag's signature is valid, but the key that made it is not the one
+The message reads "Tag ... is signed by the key ..." and names the key that
+signed it. The tag's signature is valid, but that key is not the one
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
-publishes. Apothem release tags are signed only with that key, so treat this
-as possible tampering: do not install, and report it through the channels in
+publishes. Apothem release tags are signed only with that key, so treat this as
+possible tampering: do not install, and report it through the channels in
 SECURITY.md. A fork signed with its own key is expected to stop here.
 
 ### The installer stops: cosign could not confirm the release signature
@@ -175,9 +176,10 @@ without `APOTHEM_VERIFY=checksum`.
 The installer does not replace a folder that holds something other than an
 Apothem install. Move it aside, point `APOTHEM_HOME` at another folder, or
 re-run with `--yes` (`-Yes` on PowerShell). With `--yes`, the installer moves
-the whole folder, unchanged, to `<APOTHEM_HOME>.before-apothem-<time>` beside
-it, says where, and installs fresh. A git clone of another project counts as
-such a folder. If both `<APOTHEM_HOME>.before-apothem-<time>` and the same
+the whole folder, unchanged, into a new folder,
+`<APOTHEM_HOME>.before-apothem-<time>`, beside it (it keeps its own name
+inside), says where, and installs fresh. A git clone of another project counts
+as such a folder. If both `<APOTHEM_HOME>.before-apothem-<time>` and the same
 name with the installer's process ID added already exist, the installer stops
 with "Could not move the existing ... aside; nothing was changed" before
 anything moves; rename or remove one of them and re-run.
@@ -198,24 +200,89 @@ tracked files, stashes, commits that are not on a remote, or untracked files
 in the clone's source tree. Commit and push that work, or move it elsewhere,
 then re-run. The check also runs with `--dry-run`. When the clone has no
 such work, `--yes` replaces it and keeps the clone's own tree at
-`<APOTHEM_HOME>.before-apothem-<time>`; the installer prints that path, and
-you delete the folder once you no longer need it.
+`<APOTHEM_HOME>.before-apothem-<time>/<name>`, where `<name>` is the last part
+of `APOTHEM_HOME`; the installer prints that path, and you delete the folder
+once you no longer need it.
 
 ### The installer stops: the existing clone is set up in a way the update would trust
 
-Before it fetches into an existing clone, the installer (and the update
-script) checks how the clone is set up. "has changes to tracked files" also
-appears when files are marked assume-unchanged or skip-worktree, which hides
-their changes from git: run `git update-index --no-assume-unchanged <file>`
-or `git update-index --no-skip-worktree <file>`, then commit or stash the
-change. "is not the work tree of its git clone" means `core.worktree` is set,
-or the `.git` file points at another clone: remove that setting so the clone
-checks out into `APOTHEM_HOME`. "own git config sets `<key>`, which the update
-would trust" names a setting in the clone's `.git/config` (`gpg.program`,
-`gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
-`includeIf.*`) that makes git run a program or read other config: remove it
-with `git -C ~/.apothem config --unset <key>`, then re-run. The clone's git
-hooks never run during an update.
+Before it fetches into an existing clone, the installer (and the update script)
+checks how the clone is set up. "has changes to tracked files" also appears when
+files are marked assume-unchanged or skip-worktree, which hides their changes
+from git: run `git update-index --no-assume-unchanged <file>` or `git
+update-index --no-skip-worktree <file>`, then commit or stash the change. "is
+not the work tree of its git clone" means `core.worktree` is set, or the `.git`
+file points at another clone: remove that setting so the clone checks out into
+`APOTHEM_HOME`. "own git config sets `<key>`, which the update would trust"
+names a setting in the clone's `.git/config`, or in `.git/config.worktree` when
+the clone has one, that makes git run a program, read other config or connect
+elsewhere. The refused keys are every `gpg.*`, `include.*`, `includeIf.*`,
+`filter.*`, `protocol.*`, `credential.*`, `http.*` and `uploadpack.*` key;
+`core.fsmonitor`, `core.hooksPath`, `core.sshCommand`, `core.gitProxy`,
+`core.askPass`, `core.attributesFile` and `core.alternateRefsCommand`;
+`diff.external` and `diff.<driver>.command` or `textconv`;
+`url.<base>.insteadOf` and `pushInsteadOf`; and `remote.<name>.uploadpack`,
+`receivepack`, `proxy` and `vcs`. Remove the setting from the file the message
+names (for `.git/config`: `git -C ~/.apothem config --unset <key>`; for
+`.git/config.worktree`, add `--worktree`), then re-run. "own git attributes set
+a filter" names `.git/info/attributes`: remove the `filter=` line. The clone's
+git hooks never run during an update.
+
+### The installer stops: another run holds the lock
+
+Each install, update and uninstall holds a lock beside `APOTHEM_HOME`
+(`<APOTHEM_HOME>.lock`, so `~/.apothem.lock` by default) while it runs. The
+message "Another Apothem install, update or uninstall is running on ..."
+means a second run found it held. Wait for the other run to finish, then
+re-run. If none is running, remove the lock the message names, then re-run.
+
+- "was left by an Apothem run that did not finish (process N is no longer
+  running)" and "exists but names no running process" mean a run was killed
+  before it could release the lock. Check that no Apothem install, update or
+  uninstall is running, remove the lock, and re-run. The installer never
+  removes it for you. On POSIX the lock is a folder (`rm -rf ~/.apothem.lock`);
+  on Windows PowerShell it is a file that Windows deletes when its run ends.
+- A POSIX check cannot see another user's process, so a lock held by a run of
+  another user can read as left over. Make sure that user's run has ended
+  before you remove it. PowerShell cannot check the process ID of a lock
+  folder made by the POSIX scripts (for example under Git Bash), so it
+  reports that lock as held.
+- "Could not create the lock ... Check that you can write to ..." means the
+  folder that holds `APOTHEM_HOME` is not writable by you.
+
+### The installer stops: an earlier run left folders beside APOTHEM_HOME
+
+The message reads "An earlier run was stopped part-way and left these
+folders beside ..." and lists each folder with what it holds. Ctrl+C and a
+termination signal are caught and the run cleans up; a forced kill or a
+power loss during a swap is not, and can leave:
+
+- `.apothem-old.*`: the earlier install that was being replaced, in its
+  `home` folder.
+- `.apothem-extract.*` or `.apothem-clone.*`: the new source that was being
+  installed, possibly with engine data (`backups`, `state`, `plans`,
+  `memory`, `contexts`, `learning`, `providers`) already moved into it. The
+  line names that data.
+- `<APOTHEM_HOME>.before-apothem-<time>`: listed only when `APOTHEM_HOME`
+  itself is missing; it holds the earlier contents of `APOTHEM_HOME`.
+
+Nothing was changed and nothing is deleted. If `APOTHEM_HOME` is missing,
+move the earlier install back to it first. Then move any engine data the list
+names back into `APOTHEM_HOME`, remove the listed folders, and re-run. The
+check runs for a fetched install, a dry run included; it does not run for an
+install from your own checkout. The folder names do not say which
+`APOTHEM_HOME` they belong to, so a leftover from an install of another
+`APOTHEM_HOME` in the same parent folder is listed too.
+
+### The installer stops: another user owns the clone
+
+The message reads "is owned by someone else, so git refuses to work in it
+(git reports "dubious ownership")". git will not read a clone that another
+user owns. Run the installer as the user who owns `APOTHEM_HOME`, take
+ownership of the folder, or point `APOTHEM_HOME` at a folder you own, then
+re-run. The installer does not add the folder to git's `safe.directory`
+list. Any other failure of that first git command reads "git could not read
+the clone at ..." followed by git's own first line of explanation.
 
 ### The installer stops: the existing clone could not be updated
 
@@ -253,19 +320,20 @@ checkout, so the installer prints "Not using a checkout: to install from one,
 run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE." and
 fetches and verifies the release instead. A script started through `sh -c` is
 not treated as a checkout either, in shells that mark `-c` runs. dash does not
-mark them, so under dash `sh -c "<script>" ./install.sh` started from a
-folder named `scripts/installer` inside a source tree uses that tree: start
-script text that way only from a folder you trust. In the same way, a copy of
-`install.sh` that you save into another source tree's `scripts/installer`
-folder and run there by path becomes that tree's own installer and installs
-it. Save a downloaded script to an empty folder. `install.sh`
-follows a symlink to its real file and uses the checkout that holds it.
-`install.ps1` does the opposite: it refuses a checkout that it reaches through a
-symlink or junction, prints a one-line note, and takes the fetched and verified
-path. Run it from the real folder, or set `APOTHEM_SOURCE`. The engine and the
-`apothem` command also never import `click`, `rich` or `apothem` modules from
-the current folder, so a file named `click.py` in the folder you work in has no
-effect on them.
+mark them, so under dash `sh -c "<script>" ./install.sh` started from a folder
+named `scripts/installer` inside a source tree uses that tree: start script text
+that way only from a folder you trust. In the same way, a copy of `install.sh`
+that you save into another source tree's `scripts/installer` folder and run
+there by path becomes that tree's own installer and installs it. Save a
+downloaded script to an empty folder. `install.sh` follows a symlink to its real
+file and uses the checkout that holds it. `install.ps1` does the opposite: it
+refuses a checkout that it reaches through a symlink or junction, prints a
+one-line note, and takes the fetched and verified path. Run it from the real
+folder, or set `APOTHEM_SOURCE`. The installers, the `apothem` command, the npm
+launcher and the hooks also keep the current folder off Python's module search
+path, so a file named `click.py` in the folder you work in has no effect on
+them. A `python -m apothem` command you type yourself does not: `-m` reads
+modules from the current folder first, so run it only from a folder you trust.
 
 ### An old `apothem` command still looks at my current folder
 

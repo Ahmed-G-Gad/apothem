@@ -121,7 +121,7 @@ Apothem は Copilot に `preToolUse` のガードを登録しません。
 `bash` コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` は、ディスパッチャーに Copilot の camelCase の入力を読み取らせ、`{"additionalContext": ...}` を出力させます。これは Copilot がこの 2 つのイベントで読み取る形式です。

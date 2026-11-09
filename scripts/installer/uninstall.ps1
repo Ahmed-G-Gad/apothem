@@ -5,6 +5,9 @@
 #          $APOTHEM_HOME (PowerShell parity to uninstall.sh).
 # Usage:   pwsh -NoProfile -File scripts/installer/uninstall.ps1 [-Yes] [-Harness NAME] [-RemoveSource]
 #
+# One run at a time: the uninstaller holds <APOTHEM_HOME>.lock while it runs,
+# as install.ps1 and update.ps1 do, and a second run stops.
+#
 # Environment overrides:
 #   APOTHEM_HOME     Bundled source location (default: $HOME/.apothem)
 #   APOTHEM_SOURCE   Explicit local source tree to drive the CLI from
@@ -46,6 +49,12 @@ try {
 if (-not $HomeProvider -or $HomeProvider.Name -ne 'FileSystem') {
     Write-Error "  x APOTHEM_HOME is not a usable folder path: $ApothemHomeValue"
 }
+# A trailing separator would put the lock file beside APOTHEM_HOME inside it
+# instead (install.ps1 trims it the same way); a drive root keeps its
+# separator.
+if ($ApothemHome.Length -gt 1 -and $ApothemHome -notmatch '^[A-Za-z]:[\\/]$') {
+    $ApothemHome = $ApothemHome.TrimEnd('\', '/')
+}
 
 # Colour only an interactive console. NO_COLOR (https://no-color.org/) or
 # redirected output (a pipe, a file, a CI log) gets plain text.
@@ -60,7 +69,59 @@ function Write-Ok   { param([string]$Msg) $c = Get-ColorParameter Green;  Write-
 function Write-Warn { param([string]$Msg) $c = Get-ColorParameter Yellow; Write-Host "  ! $Msg" @c }
 function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
+# Lock-ApothemHome - take the install lock: an install, update or uninstall
+# holds <APOTHEM_HOME>.lock for its whole run, so two runs never change
+# APOTHEM_HOME, or the folders beside it, at the same time (mirrors
+# uninstall.sh's take_lock). The lock is a file opened with no sharing, so a
+# second open fails while this run holds it; Windows closes it when the run
+# ends, a forced kill included, which frees the lock and deletes the file.
+# install.sh, update.sh and uninstall.sh use a folder of the same name that
+# holds the process ID of the run that made it. That ID cannot be checked
+# from here (under Git Bash it is not a Windows process ID), so such a
+# folder is reported, with how to remove it, and never taken over.
+$script:HomeLock = $null
+$HomeLockPath = "$ApothemHome.lock"
+function Lock-ApothemHome {
+    $LkParent = Split-Path -Parent $ApothemHome
+    # With no folder to hold APOTHEM_HOME there is nothing to work on, and
+    # the run stops below without the lock.
+    if (-not $LkParent -or -not (Test-Path -LiteralPath $LkParent -PathType Container)) { return }
+    $LkItem = Get-Item -LiteralPath $HomeLockPath -Force -ErrorAction SilentlyContinue
+    if ($LkItem -and ($LkItem.LinkType -or $LkItem.PSIsContainer)) {
+        $LkPid = ''
+        if ($LkItem.PSIsContainer -and -not $LkItem.LinkType) {
+            try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+        }
+        if ($LkPid -notmatch '^[0-9]+$') {
+            Write-Fail "$HomeLockPath exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+    }
+    try {
+        $script:HomeLock = New-Object System.IO.FileStream -ArgumentList $HomeLockPath, ([System.IO.FileMode]::OpenOrCreate), ([System.IO.FileAccess]::ReadWrite), ([System.IO.FileShare]::None), 4096, ([System.IO.FileOptions]::DeleteOnClose)
+    } catch {
+        # A sharing violation means another run holds the file; a folder
+        # that cannot be written to is a failure of its own.
+        $LkError = $_.Exception.GetBaseException()
+        if ($LkError -is [System.IO.IOException] -and $LkError -isnot [System.IO.DirectoryNotFoundException] -and $LkError -isnot [System.IO.FileNotFoundException] -and $LkError -isnot [System.IO.PathTooLongException]) {
+            Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Could not create the lock $HomeLockPath beside $ApothemHome. Check that you can write to $LkParent, then re-run."
+    }
+}
+
+# Unlock-ApothemHome - let the install lock go: closing the file frees it
+# and deletes it.
+function Unlock-ApothemHome {
+    if ($script:HomeLock) {
+        $script:HomeLock.Dispose()
+        $script:HomeLock = $null
+    }
+}
+
 Write-Bold "Apothem uninstaller"
+Lock-ApothemHome
+try {
 
 # The current folder must never shadow the engine's modules (mirrors
 # install.ps1): the engine starts with PYTHONSAFEPATH=1 and a `-c` program
@@ -214,3 +275,6 @@ Next steps:
   3. Re-install a harness later:    pwsh -NoProfile -File scripts/installer/install.ps1
 
 "@
+} finally {
+    Unlock-ApothemHome
+}

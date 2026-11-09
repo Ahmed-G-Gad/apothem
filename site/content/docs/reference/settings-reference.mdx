@@ -27,7 +27,7 @@ shipped template carries the `${PYTHON_BIN}` and `${HARNESS_ROOT}` tokens;
 {
   "type": "command",
   "command": "${PYTHON_BIN}",
-  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -38,7 +38,9 @@ shipped template carries the `${PYTHON_BIN}` and `${HARNESS_ROOT}` tokens;
 conformity gate (`~/.claude/.apothem/support/conformity/gate.py`, with its schema
 fixtures beside it at `~/.claude/.apothem/support/schemas/`) are standalone stdlib
 scripts — no importable `apothem` package is required on the host, and one
-template serves every platform.
+template serves every platform. `-E -s` makes Python ignore `PYTHONPATH` and
+the other `PYTHON*` variables and skip the user's site-packages, so nothing in
+the project the assistant opened loads into a hook.
 
 ## Hook Configuration Schema
 

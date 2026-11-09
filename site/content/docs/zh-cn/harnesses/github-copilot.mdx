@@ -107,7 +107,7 @@ Apothem 不在 Copilot 上注册 `preToolUse` 守卫。对于 `preToolUse`，Cop
 每个钩子都有一条 `bash` 命令和一条 `powershell` 命令。它们运行同一个分发器；`powershell` 那条在前面带有一个调用运算符（`&`），PowerShell 在带引号的程序路径之前需要它。一条 `bash` 命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` 让分发器读取 Copilot 的 camelCase 输入并打印 `{"additionalContext": ...}`，这正是 Copilot 为这两个事件读取的内容。

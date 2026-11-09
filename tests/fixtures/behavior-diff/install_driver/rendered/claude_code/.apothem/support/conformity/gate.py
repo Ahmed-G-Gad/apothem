@@ -1682,7 +1682,7 @@ def _dispatch(
 
 
 def _force_utf8_streams() -> None:
-    """Pin stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
+    """Pin stdin/stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
 
     The gate emits a machine-facing JSON report on stdout and a human-facing
     findings summary on stderr; the summary carries em-dashes and other
@@ -1690,14 +1690,22 @@ def _force_utf8_streams() -> None:
     console code page (cp1252), so an em-dash leaves the process as byte 0x97
     rather than its UTF-8 encoding — a UTF-8-reading consumer (the harness that
     surfaces the hook's stderr to the operator, or a test that captures it) then
-    fails to decode it. Every *file* the gate touches is already opened
-    ``encoding="utf-8"``; this closes the one remaining gap, the process's own
-    standard streams. Scoped to the ``__main__`` entry so an in-process
-    ``main()`` call (the package-invocation tests) leaves the interpreter's
-    streams — and any pytest capture wrapper standing in for them — untouched.
-    Guarded and idempotent: a stream without ``reconfigure`` is skipped, and a
-    detached stream is best-effort only.
+    fails to decode it. The harness writes its payload to stdin as UTF-8 JSON,
+    and the hook command starts Python with ``-E``, which ignores
+    ``PYTHONUTF8`` and ``PYTHONIOENCODING``, so stdin is read as UTF-8 here too
+    (``utf-8-sig`` drops a leading byte-order mark; a byte that is not UTF-8
+    reads as U+FFFD instead of failing the read). Every *file* the gate touches
+    is already opened ``encoding="utf-8"``; this closes the one remaining gap,
+    the process's own standard streams. Scoped to the ``__main__`` entry so an
+    in-process ``main()`` call (the package-invocation tests) leaves the
+    interpreter's streams — and any pytest capture wrapper standing in for
+    them — untouched. Guarded and idempotent: a stream without ``reconfigure``
+    is skipped, and a detached stream is best-effort only.
     """
+    stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if stdin_reconfigure is not None:
+        with contextlib.suppress(ValueError, OSError):
+            stdin_reconfigure(encoding="utf-8-sig", errors="replace")
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:

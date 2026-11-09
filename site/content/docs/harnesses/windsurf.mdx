@@ -174,8 +174,12 @@ A command looks like this, with your interpreter and project path in place of th
 two paths:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+`-E -s` makes Python ignore `PYTHONPATH` and the other `PYTHON*` variables
+and skip your user site-packages, so no file in the project can load into
+the hook.
 
 `--contract devin` maps Devin's lowercase tool names (`exec`, `write`, `edit`,
 `read`, `grep`, `glob`) onto the names Apothem's handlers test, and leaves the
@@ -367,8 +371,11 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. The path is where the installer puts the engine;
+[Conformity gate](/docs/conformity-gate) explains the script path and the other installs.
 
 ## Troubleshooting
 

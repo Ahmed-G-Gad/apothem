@@ -27,7 +27,7 @@ Chaque hook configur√© utilise la forme de commande exec de Claude Code. Le mod√
 {
   "type": "command",
   "command": "${PYTHON_BIN}",
-  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 

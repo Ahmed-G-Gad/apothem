@@ -70,7 +70,7 @@ und `hooks/session_start_bootstrap.py`.
 
 Ein Harness, der nicht Claude Code ist, führt denselben Dispatcher mit
 `--contract <id>` nach dem Skript aus, zum Beispiel
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 Der Vertrag (`hooks/lib/vendor_contract.py`) übersetzt die Schreibweisen der
 Ereignis- und Werkzeugnamen sowie die Nutzlastschlüssel des Anbieters in die
 Claude-Form, die die Handler lesen, schreibt den Umschlag in die Form um, die der

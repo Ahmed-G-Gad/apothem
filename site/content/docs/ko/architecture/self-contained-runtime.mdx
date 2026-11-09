@@ -54,7 +54,7 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 | 표면 | 호출 | 맥락 |
 | ------- | ---------- | ------- |
 | 엔진 CLI | `python -m apothem <command>` | `src/`가 `PYTHONPATH`에 있는 소스 트리(체크아웃, npx 캐시, 플러그인 트리) |
-| 훅 런타임 | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code용 머티리얼라이즈 결과: 하니스 루트의 공유 `.apothem/support/` 트리 아래에 있는 사본을 절대 경로로 호출 |
+| 훅 런타임 | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code용 머티리얼라이즈 결과: 하니스 루트의 공유 `.apothem/support/` 트리 아래에 있는 사본을 절대 경로로 호출 |
 
 - `python -m apothem`은 `src/apothem/__main__.py`를 실행합니다. 이 파일은
   `src/apothem/_vendor`를 `sys.path`에 넣고, `click`과 `rich`를 임포트할 수

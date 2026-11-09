@@ -95,6 +95,8 @@ def test_install_renders_hook_paths_and_propagates_support_trees(
     root_posix = tmp_path.resolve().as_posix()
     session_args = settings["hooks"]["SessionStart"][0]["hooks"][0]["args"]
     assert session_args == [
+        "-E",
+        "-s",
         f"{root_posix}/.apothem/support/hooks/dispatch.py",
         "SessionStart",
     ]
@@ -354,7 +356,7 @@ class TestStatuslineInterpreter:
             (tmp_path / "statuslines" / "conformity.json").read_text(encoding="utf-8")
         )
         assert statusline["commandWindows"] == (
-            f'{short.as_posix()} "{root_posix}/statuslines/render.py"'
+            f'{short.as_posix()} -E -s "{root_posix}/statuslines/render.py"'
         )
         settings = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
         hook = settings["hooks"]["SessionStart"][0]["hooks"][0]

@@ -46,6 +46,16 @@ runs once rather than before every tool call; delete the cache file to force a
 new probe. Only an absolute state directory and an absolute cached path are
 honoured.
 
+Every hook command starts Python with `-E -s`, the plugin's bootstrap and its
+interpreter probe included. `-E` makes Python ignore `PYTHONPATH` and the
+other `PYTHON*` variables, and `-s` leaves out your user site-packages. A hook
+runs in whatever folder the assistant opened, and an empty `PYTHONPATH` entry
+stands for that folder, so without the flags a `sitecustomize.py` or a
+`json.py` placed there would run inside the hook. The hooks use only the
+standard library and their own files. The dispatcher and the conformity gate
+read their input as UTF-8 themselves, because `-E` also turns off
+`PYTHONUTF8` and `PYTHONIOENCODING`.
+
 Every surface registers one dispatcher entry per event and matcher, listing
 every message that matcher evaluates: one process reads the payload once, runs
 each guard, and answers with one envelope, so a Write starts one dispatcher
@@ -55,7 +65,9 @@ conformity gate (`gate.py --hook`) on Write and Edit as its own entry. On Window
 The dispatcher is a standalone stdlib script: it bootstraps its own
 `sys.path`, so no importable `apothem` package is needed on the host. From a source
 checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
-`PYTHONPATH=src`) runs the same code for development. The dispatcher loads
+`PYTHONPATH=src`, run from the checkout root: `-m` reads modules from the
+current folder first) runs the same code for development. The commands the
+adapters write run the script by path with `-E -s`. The dispatcher loads
 `hooks/lib/resolve_root.py` for ecosystem-root resolution and delegates to
 `hooks/emit_hook_context.py` and `hooks/session_start_bootstrap.py`.
 
@@ -63,7 +75,7 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 
 A harness that is not Claude Code runs the same dispatcher with
 `--contract <id>` after the script, for example
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 The contract (`hooks/lib/vendor_contract.py`) translates the vendor's event and
 tool-name spellings and payload keys into the Claude shape the handlers read,
 rewrites the envelope into the shape the vendor reads, and drops an event the

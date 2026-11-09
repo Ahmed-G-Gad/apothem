@@ -162,7 +162,7 @@ Apothem은 Kiro에 `PreToolUse`나 `PostToolUse` 훅을 등록하지 않습니�
 경로가 들어갑니다.
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro`는 디스패처가 컨텍스트를 일반 텍스트로 출력하게 하며, 이는

@@ -174,7 +174,7 @@ Apothem не регистрирует в Kiro хуки `PreToolUse` или `Post
 месте двух путей:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` заставляет диспетчер выводить контекст обычным текстом —

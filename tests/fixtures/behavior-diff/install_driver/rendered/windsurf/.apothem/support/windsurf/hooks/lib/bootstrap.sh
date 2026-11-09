@@ -159,6 +159,13 @@ if [ ! -f "$dispatch" ]; then
 fi
 
 # --- Hand off to dispatch.py -------------------------------------------------
+# -E makes Python ignore every PYTHON* environment variable, PYTHONPATH among
+# them, and -s leaves out the user's own site-packages. The hook runs in
+# whatever folder the harness opened, and an empty PYTHONPATH entry stands for
+# that folder, so without the flags a sitecustomize.py or json.py placed there
+# would load into the hook. The hooks need only the standard library and their
+# own folder, and dispatch.py reads its payload as UTF-8 itself. Mirrors
+# bootstrap.ps1.
 # Rebuild the argument list in place: each message becomes one --context-file.
 # Positional parameters, not an array, so an empty list stays safe under `set -u`
 # on bash 3.2.
@@ -171,4 +178,4 @@ while [ "$count" -gt 0 ]; do
     fi
     count=$((count - 1))
 done
-exec "$py" "$dispatch" --event-name "$event" "$@"
+exec "$py" -E -s "$dispatch" --event-name "$event" "$@"

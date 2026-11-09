@@ -214,11 +214,11 @@ def test_each_command_runs_the_installed_dispatcher_under_the_contract(
     python = python_bin_tokens()["PYTHON_BIN"]
     dispatcher = (project.resolve() / spec.support / "dispatch.py").as_posix()
     expected = [
-        f'"{python}" "{dispatcher}" --contract {spec.contract} {spec.events[0]}'
+        f'"{python}" -E -s "{dispatcher}" --contract {spec.contract} {spec.events[0]}'
     ]
     if not spec.is_list:
         expected.append(
-            f'"{python}" "{dispatcher}" --contract copilot postToolUse '
+            f'"{python}" -E -s "{dispatcher}" --contract copilot postToolUse '
             "posttooluse-proactive-compaction"
         )
     assert _commands(spec, doc) == expected

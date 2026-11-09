@@ -55,7 +55,7 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
 | सतह | आह्वान | संदर्भ |
 | ------- | ---------- | ------- |
 | इंजन CLI | `python -m apothem <command>` | `PYTHONPATH` पर `src/` वाला एक स्रोत ट्री (चेकआउट, npx कैश, प्लगइन ट्री) |
-| हुक रनटाइम | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code का मूर्तीकरण: हार्नेस रूट के साझा `.apothem/support/` ट्री के अंतर्गत प्रति, निरपेक्ष पथ द्वारा |
+| हुक रनटाइम | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code का मूर्तीकरण: हार्नेस रूट के साझा `.apothem/support/` ट्री के अंतर्गत प्रति, निरपेक्ष पथ द्वारा |
 
 - `python -m apothem` `src/apothem/__main__.py` चलाता है, जो
   `src/apothem/_vendor` को `sys.path` पर रखता है, जाँचता है कि `click` और `rich`

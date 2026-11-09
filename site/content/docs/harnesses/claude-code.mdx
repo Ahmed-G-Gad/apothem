@@ -23,8 +23,9 @@ Claude Code skill surface. The statusline renderer is copied to
 `~/.claude/statuslines/` but not wired: Claude Code reads its status line from
 the `statusLine` setting, which the adapter leaves unset. To turn it on, add a
 `statusLine` entry of `"type": "command"` that runs
-`~/.claude/statuslines/render.py` to `settings.json`. The snippet's
-`commandWindows` value runs on Windows and names the interpreter unquoted. When
+`~/.claude/statuslines/render.py` to `settings.json`. The snippet's commands
+start Python with `-E -s`, as the hooks do. Its `commandWindows` value runs on
+Windows and names the interpreter unquoted. When
 the interpreter path contains a space, the install writes its Windows 8.3 short
 form in that value when the volume has one. The hook entries in `settings.json`
 keep the full path.
@@ -38,7 +39,9 @@ child skill directories. The hook dispatcher and conformity gate run from
 their materialized copies — `settings.json` hook entries invoke
 `~/.claude/.apothem/support/hooks/dispatch.py` and
 `~/.claude/.apothem/support/conformity/gate.py` by absolute path, so no importable
-`apothem` package is needed on the host.
+`apothem` package is needed on the host. Each entry starts Python with `-E -s`,
+so `PYTHONPATH`, the other `PYTHON*` variables and your user site-packages
+never reach a hook.
 
 `~/.claude/CLAUDE.md` stays operator-owned. The adapter writes one
 sentinel-delimited Apothem block into it, holding the profile projection
@@ -304,8 +307,11 @@ The installed `apothem` package and source repository are unaffected.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. The path is where the installer puts the engine;
+[Conformity gate](/docs/conformity-gate) explains the script path and the other installs.
 
 Run against the repository, the gate requires the `## Bindings` section on every
 rule, command, helper, and skill. Run against an installed `~/.claude/` tree, it

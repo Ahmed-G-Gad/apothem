@@ -177,11 +177,18 @@ if (-not (Test-Path -LiteralPath $dispatch)) {
 }
 
 # --- Hand off to dispatch.py -------------------------------------------------
+# -E makes Python ignore every PYTHON* environment variable, PYTHONPATH among
+# them, and -s leaves out the user's own site-packages. The hook runs in
+# whatever folder the harness opened, and an empty PYTHONPATH entry stands
+# for that folder, so without the flags a sitecustomize.py or json.py placed
+# there would load into the hook. The hooks need only the standard library
+# and their own folder, and dispatch.py reads its payload as UTF-8 itself.
+# Mirrors bootstrap.sh.
 $dispatchArgs = @('--event-name', $HookEvent)
 foreach ($message in @($ContextFile) + @($MoreContextFiles)) {
     if ($message) {
         $dispatchArgs += @('--context-file', $message)
     }
 }
-& $py $dispatch @dispatchArgs
+& $py -E -s $dispatch @dispatchArgs
 exit $LASTEXITCODE

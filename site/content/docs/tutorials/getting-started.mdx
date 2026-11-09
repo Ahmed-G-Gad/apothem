@@ -113,15 +113,17 @@ that directory is on `PATH` you run the engine directly:
 apothem <command>
 ```
 
-If the shim could not be placed — or its directory is not yet on `PATH` — the
-banner prints a self-contained fallback that needs no shim:
+If its directory is not yet on `PATH`, the banner prints the shim's full path
+(`~/.local/bin/apothem` by default, or in the folder `APOTHEM_BIN_DIR` names):
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+~/.local/bin/apothem <command>
 ```
 
-The rest of this tutorial writes `apothem <command>`; if you are on the fallback
-form, prepend the exact prefix your installer banner printed.
+If the shim could not be placed, the banner prints a command that starts the
+engine with the current folder kept off `sys.path`. The rest of this tutorial
+writes `apothem <command>`; if you are on one of these forms, use what your
+installer banner printed in its place.
 
 ## Step 2 — Make the profile yours
 

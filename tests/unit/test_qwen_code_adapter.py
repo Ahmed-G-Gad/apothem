@@ -84,7 +84,7 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
     # token; the install driver renders that token to an absolute path at write
     # time.
     assert first_hook["command"] == (
-        '/usr/bin/python3.12 "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py" '
+        '/usr/bin/python3.12 -E -s "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py" '
         "PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard"
     )
     # Every guard for the matcher shares this one dispatcher entry.
@@ -206,7 +206,7 @@ def test_materializer_quotes_an_interpreter_path_with_spaces(
             command = handler["command"]
             assert isinstance(command, str)
             assert command.startswith(
-                f'"{interpreter}" "${{HARNESS_ROOT}}/.apothem/support/hooks/'
+                f'"{interpreter}" -E -s "${{HARNESS_ROOT}}/.apothem/support/hooks/'
             ), command
 
 

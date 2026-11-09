@@ -130,7 +130,7 @@ Devin は自身のローカル設定ファイルを（`.git/info/exclude` を通
 コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
 
 `--contract devin` は、Devin の小文字のツール名（`exec`、`write`、`edit`、`read`、`grep`、`glob`）を Apothem のハンドラーが判定する名前に対応付け、出力は Claude Code が読むのと同じエンベロープのままにします。
