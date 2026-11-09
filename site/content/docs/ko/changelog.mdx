@@ -449,6 +449,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   wrote. Uninstalling a tool from one project no longer removes the shared
   memory, contexts and learning stores in your home folder while the same tool
   installed in another project still uses them.
+- **Uninstall checks an earlier release's files more strictly and says
+  more.** When an install recorded by an earlier release is compared with what
+  this release writes, the place where a file holds the Python interpreter
+  matches only an interpreter path (`pythonw`, an 8.3 short name, a
+  free-threaded or debug build included) or a launcher an earlier release
+  wrote (`py -3`, `python3`). A command, an option, prose or a JSON escape
+  written there no longer makes the file compare as Apothem's. A path that
+  holds `&`, `#` or `$` never matches, so such a file is kept. The plain output
+  of `apothem uninstall` now lists each file it kept, up to 20, and the
+  `--format json` warnings list them all as `files`. When the only installs
+  that keep the shared `memory`, `contexts` and `learning` stores sit in
+  folders that no longer exist, the warning now prints the commands that
+  release them, including the `--profile` that install used. An uninstall
+  whose ledger record cannot be written is recorded as unfinished, so running
+  it again finishes the job.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that

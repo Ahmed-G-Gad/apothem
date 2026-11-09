@@ -28,7 +28,6 @@ from .install_driver_pathsafety import (
     _walk_without_links,
     kept_links_detail,
 )
-from .install_driver_retention import apply_retention
 from .install_driver_sweep import _link_kept as link_kept
 from .install_driver_types import MaterializationResult, _path_text, _result
 
@@ -87,14 +86,33 @@ def _matches(path: Path, expected: str | None) -> bool:
     return file_digest(path) == expected
 
 
-def _kept_whole(target: Path, reason: str, message: str) -> MaterializationResult:
-    """Return the warning for a target an uninstall left entirely in place."""
+def _files_in(target: Path) -> list[str] | None:
+    """Return the files in the folder *target* (never through a link), or ``None``.
+
+    A folder kept whole lists them, so the report can name each file.
+    """
+    if not target.is_dir() or _is_link(target):
+        return None
+    return [_path_text(path) for path in _walk_without_links(target).files]
+
+
+def _kept_whole(
+    target: Path, reason: str, message: str, files: list[str] | None = None
+) -> MaterializationResult:
+    """Return the warning for a target an uninstall left in place.
+
+    *files* names the files kept inside a folder target (``detail``
+    ``kept_files``), so the report can list each one.
+    """
+    detail = {KEPT_REASON: reason}
+    if files:
+        detail[KEPT_FILES] = "\n".join(files)
     return _result(
         "warning",
         "remove_existing",
         target,
         f"{target} was kept: {message}",
-        detail={KEPT_REASON: reason},
+        detail=detail,
     )
 
 
@@ -194,23 +212,32 @@ def remove_written(
     if proof is None:
         if recorded is None:
             return _kept_whole(
-                target, "no-record", "no install record shows Apothem wrote it"
+                target,
+                "no-record",
+                "no install record shows Apothem wrote it",
+                files=_files_in(target),
             )
         if entry is None:
             return _kept_whole(
-                target, "unrecorded", "the install record does not list it"
+                target,
+                "unrecorded",
+                "the install record does not list it",
+                files=_files_in(target),
             )
         return _kept_whole(
-            target,
-            "no-digests",
-            _EARLIER_RELEASE,
+            target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
         )
     written = _written_now(target, proof)
     if not written:
         if legacy and _named_by(target, proof):
-            return _kept_whole(target, "no-digests", _EARLIER_RELEASE)
+            return _kept_whole(
+                target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
+            )
         return _kept_whole(
-            target, "changed", "it is not what Apothem wrote (changed or yours)"
+            target,
+            "changed",
+            "it is not what Apothem wrote (changed or yours)",
+            files=_files_in(target),
         )
     backup = backup_existing(
         target,
@@ -264,7 +291,7 @@ _EARLIER_RELEASE = (
 def _named_by(
     target: Path, proof: dict[str, str], paths: list[Path] | None = None
 ) -> bool:
-    """Return True when a file at *target* (or among *paths*) has a name *proof* lists."""
+    """Return True when *proof* lists the name of a file at *target* or in *paths*."""
     if target.is_file():
         return "" in proof
     found = _walk_without_links(target).files if paths is None else paths
@@ -277,7 +304,8 @@ def kept_file_warnings(
     """Return one warning per folder in which a removal kept files.
 
     The files were not written by Apothem as they are now: the operator added
-    or changed them, so the folder stays with them in it.
+    or changed them, so the folder stays with them in it. Each warning names
+    the files in its ``detail`` (``kept_files``).
     """
     warnings = []
     for result in results:
@@ -286,18 +314,17 @@ def kept_file_warnings(
             continue
         folder = Path(result.path)
         if result.detail.get(KEPT_REASON) == "no-digests":
-            warnings.append(_kept_whole(folder, "no-digests", _EARLIER_RELEASE))
+            warnings.append(
+                _kept_whole(folder, "no-digests", _EARLIER_RELEASE, files=kept)
+            )
             continue
-        names = [Path(path).relative_to(folder).as_posix() for path in kept]
-        shown = ", ".join(names[:5]) + (
-            f" and {len(names) - 5} more" if len(names) > 5 else ""
-        )
         warnings.append(
             _kept_whole(
                 folder,
                 "changed",
                 f"{len(kept)} file(s) in it are not what Apothem wrote "
-                f"(changed or yours): {shown}",
+                "(changed or yours)",
+                files=kept,
             )
         )
     return warnings
@@ -371,10 +398,11 @@ def record_uninstall(
     """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
 
     Either record references every backup the pass took. A finished uninstall
-    ends the install and runs retention. An unfinished one keeps the install
-    active, so a second run is driven by the same record; it is written even
-    when the pass raised, and a failure to write it then does not hide the
-    pass's own error.
+    ends the install, and a failure to write it raises, so the caller can
+    record the uninstall as unfinished instead. An unfinished one keeps the
+    install active, so a second run is driven by the same record; it is
+    written even when the pass raised, and a failure to write it then does not
+    hide the pass's own error. Retention is the caller's to run.
     """
     entry = LedgerRecord.create(
         harness=harness_name,
@@ -388,4 +416,3 @@ def record_uninstall(
             install_ledger.append_record(entry)
         return
     install_ledger.append_record(entry)
-    apply_retention(harness_name)

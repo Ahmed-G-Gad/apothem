@@ -80,7 +80,9 @@ _KEPT_GROUP_LINES = {
         "so copy any you edited first, then run apothem update, then apothem "
         "uninstall again"
     ),
-    "changed": "{count} paths were kept: they are not what Apothem wrote (changed or yours)",
+    "changed": (
+        "{count} paths were kept: they are not what Apothem wrote (changed or yours)"
+    ),
 }
 
 
