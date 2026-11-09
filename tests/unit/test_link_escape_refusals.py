@@ -31,6 +31,7 @@ from apothem.harnesses._shared.install_driver_homelink import (
 )
 from apothem.harnesses._shared.install_driver_sweep import stale_blocker
 from apothem.harnesses._shared.install_driver_written import remove_written
+from tests._shared.case_sensitive import case_sensitive_folder
 
 ESCAPE = "target escapes the allowed materialization root"
 
@@ -103,16 +104,16 @@ def test_an_escape_spelled_with_dots_names_no_link(tmp_path: Path) -> None:
 
 
 def test_an_escape_spelled_with_another_case_names_no_link(tmp_path: Path) -> None:
-    # On a volume that tells ``root`` from ``Root``, ``Root`` is another
+    # In a folder that tells ``root`` from ``Root``, ``Root`` is another
     # folder: its link is outside the allowed folder, so it is not the cause.
-    root = tmp_path / "root"
+    base = tmp_path / "cs"
+    case_sensitive_folder(base)
+    root = base / "root"
     root.mkdir()
-    if (tmp_path / "ROOT").exists():
-        pytest.skip("this volume does not tell names apart by case")
-    _link(tmp_path / "Root" / "away", tmp_path / "outside")
+    _link(base / "Root" / "away", tmp_path / "outside")
 
     error = pathsafety._validate_target_path(
-        tmp_path / "Root" / "away" / "x.md", allowed_root=root, operation="t"
+        base / "Root" / "away" / "x.md", allowed_root=root, operation="t"
     )
 
     assert error is not None

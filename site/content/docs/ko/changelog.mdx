@@ -821,43 +821,95 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder as it was typed. With `~/proj` a link, `apothem uninstall --project
   ~/proj` then found no record, left most installed files in place with a
   warning, printed `Uninstalled` and exited 0. The same happened when a
-  folder above the project was a link. Every project-scope install, update,
-  preview, plan, verify, uninstall and installed check now uses the spelling
-  the install record already has, and records a new install with the folder
-  resolved, as the command line does; `apothem rollback --project` and the
-  notes `apothem uninstall` prints about shared folders find such a record
-  too. A spelling whose install is still in place is taken before one whose
-  install was removed, and an install none of whose files is in the folder
-  is not taken for it. An install recorded with the folder as typed is still
-  found; one recorded with a relative folder or `~` is not taken for another
-  folder of the same name. Folder names are compared exactly: in a
-  case-sensitive folder (one WSL made, say) `Proj` and `proj` are two
-  folders and are never taken for each other; in an ordinary Windows folder
-  they are one folder, as Windows treats them. A record on another network
-  share is compared by its text only, so a share that cannot be reached does
-  not stall the command. Known limits: an install that an earlier release
-  recorded twice, from the command line and from Python through a link,
-  keeps the second record after `apothem uninstall`; remove it from Python
-  with the folder spelled as installed. And when two installs were made
-  through two links to two different folders, and one link was later pointed
-  at the other folder, the uninstall takes the install whose files are in
-  that folder; if both wrote the same file names (the same release), it
-  cannot tell them apart and takes the newer one, whose files may be in the
-  folder the link used to lead to.
+  folder above the project was a link. Every project-scope update, preview,
+  plan, verify, uninstall and installed check now reads the install record
+  under the spelling it already has, and `apothem rollback --project` and
+  the notes `apothem uninstall` prints about shared folders find such a
+  record too. An install or update records the folder resolved, as the
+  command line does. An install still recorded under another spelling, such
+  as a link, is moved to the resolved one once the install passes its
+  checks, so it is still found after the link is removed, and an install
+  that is refused changes no record. A folder that a record names another
+  way on disk (a `\\localhost\C$` path to a folder recorded as `C:\...`)
+  keeps the spelling the record has, and an install into a folder that has
+  an install record of its own leaves a record under another spelling as it
+  is. A spelling whose install is still in place is taken before one whose
+  install was removed; of two in place, the one with more of its files in
+  the folder, then the newer. An install none of whose files is in the
+  folder is not taken for it, unless its uninstall did not finish: running
+  the uninstall again then finishes it. One recorded with a relative folder
+  or `~` is not taken for another folder of the same name. Folder names are
+  compared exactly: in a case-sensitive folder (one WSL made, say) `Proj`
+  and `proj` are two folders and are never taken for each other. In an
+  ordinary Windows folder they are one folder while it exists; once it is
+  gone, only the spelling the record has finds it. Two folders that look the
+  same on disk count as one only when the volume gives them real file IDs
+  and, when Windows can name both volumes, the names match, so a cloned
+  volume is not taken for the original. A record on another network share
+  (a `\\server\share` path or a drive letter mapped to one) is compared by
+  its text only, so a share that cannot be reached does not stall the record
+  lookup. The notes about shared folders still check each recorded folder,
+  so they can still wait on such a share. Known limits: an install that an
+  earlier release recorded twice, from the command line and from Python
+  through a link, keeps the second record after `apothem uninstall`, and
+  that record keeps the shared folders in your home; remove it from Python
+  with the folder spelled as installed. An install recorded under a
+  `\\localhost\C$` spelling of a folder on this computer is not found from
+  its `C:\` spelling, since a record on a share is not looked up from
+  elsewhere. And when two installs were made through two links to two
+  different folders, and one link was later pointed at the other folder, the
+  uninstall takes the install with more of its files in that folder. If both
+  wrote the same file names (the same release), or an earlier release
+  recorded them (it did not list its files), it takes the newer one, whose
+  files may be in the folder the link used to lead to.
 - **An uninstall that finds no install record no longer says
   `Uninstalled`.** When no install record matched the folder, `apothem
   uninstall` kept the files the install copied into place, printed
   `<N> paths were kept: no install record shows Apothem wrote them`, then
-  `✓ Uninstalled`. It now prints `Not uninstalled: <harness> - no install
-  record matched` with the number of paths kept, says what it still removed
-  (Apothem's own lines in a shared file such as a rules file or
-  `hooks.json`, its data folder), and ends with the next step: check that
-  `--project` names the folder you installed into, and if it does, remove
-  the kept paths by hand. In `--format json` output the harness's
-  `uninstall` row carries the same message and
+  `✓ Uninstalled`. It now prints `Partly uninstalled: <harness> - no install
+  record matched` when it still removed something, and `Not uninstalled:`
+  when it removed nothing, with the number of paths kept, in place of the
+  warning line. The line names the shared folders in your home it left, and
+  what it still removed: Apothem-only files such as a rules file or
+  `hooks.json`, Apothem's lines in a shared file, and the memory, contexts
+  and learning stores of its data folder, which are backed up. It ends with
+  the next step: run `apothem install` for that harness, then `apothem
+  uninstall`, which removes the rest, or remove the kept paths by hand
+  (running the same uninstall again with `--yes --format json` lists them in
+  its warnings). For a project-scope harness it first says to check that
+  `--project` names the folder you installed into, and the commands name
+  that folder, quoted when a shell would split it. The line is printed under
+  `--quiet` too, to the error stream. In `--format json` output the
+  harness's `uninstall` row carries the same message and
   `"detail": {"kept_reason": "no-record"}`, with `"outcome": "updated"` when
-  those parts were removed and `"unchanged"` when nothing was. The exit code
-  is unchanged.
+  something was removed and `"unchanged"` when nothing was. When a step of
+  that uninstall also failed, its error row carries the message and the
+  `kept_reason` too, and a `Note:` line says it,
+  under `--quiet` too. The exit code is unchanged: 0 when nothing failed.
+- **Uninstalling a project keeps the shared folders a project named in
+  another case uses.** In a case-sensitive folder that holds `Proj` and
+  `proj`, each with an install, `apothem uninstall --project .../proj`
+  removed `~/.agents/skills` and `~/.config/apothem/rules` and `templates`,
+  which `Proj`'s install still loads, while its note said they were kept.
+  The uninstall now matches its own install by the exact folder name, as
+  the install records do, so `Proj`'s install keeps those folders, and a
+  data home both use. The notes no longer describe `Proj`'s install when
+  `proj` has none.
+- **An uninstall that cannot delete a file says so.** When another program
+  held an Apothem-only file open, such as `.cursor/rules/apothem-rules.mdc`
+  in an editor, `apothem uninstall` reported it removed, printed
+  `✓ Uninstalled` and exited 0, though the file stayed and the harness kept
+  loading it. That step is now an error: the command says `could not remove
+  <file>, an Apothem-only file`, exits 2 when it removed other files, and
+  keeps the install recorded, so running it again once the file is closed
+  finishes it.
+- **A rules file that is not UTF-8 no longer stops the uninstall with a
+  decoding error.** A rules file Apothem merged into, saved in another
+  encoding, made `apothem uninstall` print `'utf-8' codec can't decode
+  byte` and exit 1 before looking at anything. It now removes the rest and
+  exits 2, and names that file, left in place, with the fix: save it as
+  UTF-8 or delete the Apothem block in it by hand, then run the uninstall
+  again.
 - **A write that a link leads out of the allowed folder names the link.**
   A write refused with `target escapes the allowed materialization root`
   because a link inside the folder leads it out, such as `~/.agents/skills`

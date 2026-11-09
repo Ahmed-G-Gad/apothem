@@ -49,6 +49,7 @@ from apothem.lib.clean_slate import (
     RemovalError,
     run_clean_slate,
 )
+from tests._shared.case_sensitive import case_sensitive_folder
 
 _phase = importlib.import_module("apothem.cli._clean_slate_phase")
 
@@ -456,28 +457,13 @@ def test_case_probe_without_inode_numbers_falls_back_to_the_platform(
     assert pathsafety._filesystem_is_case_insensitive(folder / "x") is expected
 
 
-def _case_sensitive_folder(folder: Path) -> None:
-    """Turn on Windows per-folder case sensitivity for *folder*, or skip."""
-    if sys.platform != "win32":
-        pytest.skip("per-folder case sensitivity is a Windows setting")
-    folder.mkdir()
-    try:
-        done = subprocess.run(
-            ["fsutil", "file", "setCaseSensitiveInfo", str(folder), "enable"],
-            capture_output=True,
-            check=False,
-        )
-    except OSError:
-        pytest.skip("fsutil is not available")
-    if done.returncode != 0:
-        pytest.skip("this host cannot turn on per-folder case sensitivity")
-
-
 def test_a_case_sibling_in_a_case_sensitive_windows_folder_is_outside(
     tmp_path: Path,
 ) -> None:
     folder = tmp_path / "cs"
-    _case_sensitive_folder(folder)
+    if sys.platform != "win32":
+        pytest.skip("per-folder case sensitivity is a Windows setting")
+    case_sensitive_folder(folder)
     (folder / "root").mkdir()
     (folder / "ROOT").mkdir()
     root = folder / "root"

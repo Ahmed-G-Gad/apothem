@@ -18,7 +18,11 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 Loads and validates the shared profile, selects a named adapter or the
 registry-wide `all` set, validates the materialization plan, and writes
 harness-native configuration plus support cohorts. Project-scope adapters
-require `--project PATH`.
+require `--project PATH`. The folder is read with its links followed and `~`
+expanded, and the install record names it that way. An install recorded under
+another spelling of the folder, such as a link that Python code or an earlier
+release kept, is moved to that spelling once the install passes its checks
+(see [`uninstall`](/docs/cli-reference/uninstall)).
 
 The continuous-form alias `apothem installing` (also accepted as
 `apothem Installing`) resolves to the same handler.

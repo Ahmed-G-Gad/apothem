@@ -42,7 +42,8 @@ Related commands:
   verify       Check installation status
 
 Exit codes:
-  0  Adapter uninstalled or was not installed
+  0  Adapter uninstalled or was not installed, or no install record
+     matched and no step failed (kept_reason no-record)
   1  Harness not found, confirmation declined or unavailable
      (non-interactive or JSON mode without --yes), or every removal failed
   2  Partial removal — at least one harness removed before a failure

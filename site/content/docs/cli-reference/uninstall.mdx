@@ -29,18 +29,26 @@ has an Apothem name, and a path the install record does not list. A file you
 keep keeps its folder.
 
 When no install record matches the folder at all, the files the install
-copied into place stay, with a `Warning:` line that names the one path or
-counts them (`<N> paths were kept: no install record shows Apothem wrote
-them`). Only what Apothem marks as its own goes: its lines in a shared file
-such as a rules file or `hooks.json` (a file left empty goes too) and its
-data folder. The command then prints `Not uninstalled: <harness> - no
-install record matched, so <N> paths were kept`, says what it still
-removed, and ends with the next step: check that `--project` names the
-folder you installed into, and if it does, remove the kept paths by hand
-(`--format json` lists them). It still exits 0. In `--format json` output
-the harness's `uninstall` row carries that message and
-`"detail": {"kept_reason": "no-record"}`, with `"outcome": "updated"` when
-the marked parts were removed and `"unchanged"` when nothing was.
+copied into place stay, and so do the shared folders in your home. Some
+parts still go: Apothem's lines in a shared file such as a rules file or
+`hooks.json` (a file left with nothing else goes too), the memory, contexts
+and learning stores of the data folder (backed up first; they hold your
+data, not only Apothem's), and, for some harnesses, folders of an older
+layout that the harness lists as stale. The command then prints `Partly
+uninstalled: <harness> - no install record matched, so <N> paths were kept`
+(`Not uninstalled:` when it removed nothing), names the shared folders it
+left and what it still removed, and ends with the next step: run `install`
+for that harness, then `uninstall`, which removes the rest. Or remove the
+kept paths by hand: running the same `uninstall` again with `--yes --format
+json` lists them in its warnings. For a project-scope harness the line
+first says to check that `--project` names the folder you installed into,
+and its commands name that folder, quoted when a shell would split it. The
+line is printed under `--quiet` too, to the error stream. It still exits 0
+when no step failed. In `--format json` output the harness's `uninstall`
+row carries that message and `"detail": {"kept_reason": "no-record"}`, with
+`"outcome": "updated"` when something was removed and `"unchanged"` when
+nothing was. When a step also failed, the error row carries the message and
+the `kept_reason`, and a `Note:` line says it, under `--quiet` too.
 
 An install recorded by an earlier release does not say which files Apothem
 wrote. For it, the uninstall compares each file with what this release writes
@@ -201,24 +209,41 @@ folder is still complete.
 
 `--project` is read with its links followed and `~` expanded. An install made
 from Python code with the project folder spelled another way, through a link
-say, is still found under the spelling its record keeps. A spelling whose
-install is still in place comes before one whose install was removed. An
-install none of whose files is in the folder is not taken for it. Folder
-names are compared exactly: in a case-sensitive folder (one WSL made, say)
-`Proj` and `proj` are two folders and are never taken for each other; in an
-ordinary Windows folder they are one folder, as Windows treats them. A
-record on another network share is compared by its text only, so a share
-that cannot be reached does not stall the command.
+say, is still found under the spelling its record keeps. An `install` or
+`update` records the folder resolved. Once the install passes its checks, it
+moves an install recorded under another spelling to the resolved one, so the
+install is still found after the link is removed; an install that is refused
+changes no record. A folder that a record names another way on disk (a
+`\\localhost\C$` path to a folder recorded as `C:\...`) keeps the spelling
+the record has, and an install into a folder that has an install record of
+its own leaves a record under another spelling as it is. A spelling whose
+install is still in place comes before one whose install was removed; of
+two in place, the one with more of its files in the folder, then the newer.
+An install none of whose files is in the folder is not taken for it, unless
+its uninstall did not finish: running `uninstall` again then finishes it.
+Folder names are compared exactly: in a case-sensitive folder (one WSL made,
+say) `Proj` and `proj` are two folders and are never taken for each other,
+and uninstalling one keeps the shared folders the other uses. In an
+ordinary Windows folder they are one folder while it exists; once it is
+gone, only the spelling the record has finds it. A cloned volume attached
+beside its original is not taken for it when Windows can name both volumes.
+A record on another network share (a `\\server\share` path or a drive
+letter mapped to one) is compared by its text only, so a share that cannot
+be reached does not stall the record lookup. The notes about shared folders
+still check each recorded folder, so they can still wait on such a share.
 
-Two cases are not found as you might expect. An install that an earlier
+Three cases are not found as you might expect. An install that an earlier
 release recorded twice, once from the command line and once from Python
 through a link, keeps the second record after `uninstall`, and the shared
 folders stay for it. Remove that one from Python with the folder spelled as
-it was installed. And when two installs were made through two links to two
-different folders, and one link was later pointed at the other folder, the
-uninstall takes the install whose files are in that folder. If both wrote the
-same file names (two installs of the same release), it cannot tell them apart
-and takes the newer one, whose files may be in the folder the link used to
+it was installed. An install recorded under a `\\localhost\C$` spelling of a
+folder on this computer is not found from its `C:\` spelling, since a record
+on a share is not looked up from elsewhere. And when two installs were made
+through two links to two different folders, and one link was later pointed
+at the other folder, the uninstall takes the install with more of its files
+in that folder. If both wrote the same file names (two installs of the same
+release), or an earlier release recorded them (it did not list its files),
+it takes the newer one, whose files may be in the folder the link used to
 lead to.
 
 A `--harness all` removal is deliberately exhaustive: it covers every
@@ -304,7 +329,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 
 | Code | Meaning |
 |---|---|
-| 0 | Adapter uninstalled, or was not installed |
+| 0 | Adapter uninstalled, or was not installed, or no install record matched and no step failed (the `uninstall` row says `"kept_reason": "no-record"`) |
 | 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or nothing was removed because each installed harness failed before removing anything |
 | 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, or files of an install an earlier release recorded differ from what this release writes |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |

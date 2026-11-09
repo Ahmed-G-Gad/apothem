@@ -334,6 +334,10 @@ def write_bytes_safely(
     )
 
 
+#: The message of a result that deleted an Apothem-only file outright.
+REMOVED_APOTHEM_ONLY_FILE = "removed Apothem-only file"
+
+
 def _guarded_unlink(
     target: Path,
     *,
@@ -345,15 +349,28 @@ def _guarded_unlink(
     The deletion path for an Apothem-only file the surgical uninstall reduced to
     empty. Guards the unlink with the same path-escape / symlink check the write
     paths use, so an uninstall can never delete outside the materialization root.
+    A file that cannot be deleted (another program holds it open, say) is an
+    error, so the uninstall is unfinished and keeps the install recorded.
     """
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation=operation
     )
     if target_error is not None:
         return target_error
-    with contextlib.suppress(OSError):  # pragma: no cover - defensive
+    try:
         target.unlink()
-    return _result("updated", operation, target, "removed Apothem-only file")
+    except FileNotFoundError:
+        return _result("unchanged", operation, target, "Apothem-only file already gone")
+    except OSError as exc:
+        return _result(
+            "error",
+            operation,
+            target,
+            f"could not remove {target}, an Apothem-only file "
+            f"({exc.strerror or exc}); close any program that holds it, then "
+            "run the uninstall again",
+        )
+    return _result("updated", operation, target, REMOVED_APOTHEM_ONLY_FILE)
 
 
 def _install_lock_path(harness_name: str, root: Path) -> Path:

@@ -411,9 +411,9 @@ def _surgical_remove_from_target(
             "error",
             "surgical_uninstall",
             target,
-            "not UTF-8 text, so Apothem cannot tell its own content apart; left "
-            "in place. Save it as UTF-8 or delete the Apothem block in it by "
-            "hand, then run the uninstall again",
+            f"{target} is not UTF-8 text, so Apothem cannot tell its own "
+            "content apart; left in place. Save it as UTF-8 or delete the "
+            "Apothem block in it by hand, then run the uninstall again",
         )
     backup = backup_existing(
         target,

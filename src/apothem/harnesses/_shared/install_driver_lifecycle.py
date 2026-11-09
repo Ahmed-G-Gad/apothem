@@ -33,6 +33,7 @@ from .install_driver_hookfile import (
     registration_present,
     release_native_hooks,
 )
+from .install_driver_layout import _load_rules
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _APOTHEM_SUBTREE,
@@ -121,9 +122,7 @@ def verify_install(
     wrote them (see :func:`user_level_entry_ok`). Returns False on the first
     unsatisfied target.
     """
-    from apothem.harnesses._shared import install_driver
-
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     if native_config is not None:
         if not native_config.is_file() or native_config.stat().st_size <= 0:
             return False
@@ -163,12 +162,14 @@ def _carries_managed_block(target: Path) -> bool:
 
     The managed block is self-delimiting and Apothem-specific, so finding one
     inside an operator-owned anchor is positive proof of an install even though
-    the file itself is not Apothem's to own.
+    the file itself is not Apothem's to own. The markers are ASCII, so a file
+    that is not UTF-8 is read with its bad bytes replaced: the uninstall then
+    reaches the step that says how to fix it, instead of a decoding error.
     """
     if not target.is_file():
         return False
     try:
-        text = target.read_text(encoding="utf-8")
+        text = target.read_bytes().decode("utf-8", errors="replace")
     except OSError:
         return False
     return extract_managed_block(text) is not None
@@ -229,9 +230,7 @@ def detect_install(
     :func:`_stale_path_proves_install`). So does an uninstall that did not
     finish (see :func:`_unfinished_here`), so a second run can complete it.
     """
-    from apothem.harnesses._shared import install_driver
-
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     if any(
         _entry_proves_install(
@@ -296,9 +295,7 @@ def _profile_anchor_targets(
     install from before the ledger) a bolt-on counts only when present. An
     adapter that projects no profile content (GLM) has no anchors.
     """
-    from apothem.harnesses._shared import install_driver
-
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     targets: list[Path] = [
         resolve_target(
@@ -525,9 +522,7 @@ def _remove_installed(
     *results* is the caller's list, so the removals made before an exception
     are still recorded.
     """
-    from apothem.harnesses._shared import install_driver
-
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
     # Ledger-driven: the latest install record is the source of truth for what
@@ -681,9 +676,7 @@ def build_plan(
     target string so the operator sees the unresolved template form instead
     of a misleading absolute path.
     """
-    from apothem.harnesses._shared import install_driver
-
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     return [
         {
             "source": str(resolve_source(entry.source)),
