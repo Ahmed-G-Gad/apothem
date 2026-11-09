@@ -22,6 +22,7 @@ from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
+from apothem.cli._clean_slate_phase import _clean_slate_phase
 from apothem.cli._common_flags import get_console
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
@@ -59,8 +60,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
-from apothem.lib.atomic_io import write_bytes_atomically
-from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
+from apothem.lib.clean_slate import CleanSlateResult
 from apothem.lib.install_advisories import (
     hook_review_advisories,
     instruction_override_advisories,
@@ -249,79 +249,6 @@ def _load_run_inputs(
         run.fail(exc.to_dict())
         return None
     return _RunInputs(project_root, shared_profile, adapters, first_run_entry)
-
-
-def _clean_slate_phase(
-    run: _RunContext, *, assume_yes: bool
-) -> tuple[bool, CleanSlateResult | None]:
-    """Run the opt-in clean-slate removal, then restore the profile file.
-
-    It runs after the profile is loaded into memory and before any fresh
-    materialization. The profile file is one of the bounded removal targets,
-    so its bytes are captured here and restored after removal: the shared
-    profile is the operator's identity source of truth, not stale install
-    state, and the timestamped backup preserves every removed target for
-    recovery. Returns ``(proceed, result)``; *proceed* is false once an
-    error has been emitted.
-    """
-    profile_path = run.profile_path
-    profile_bytes = profile_path.read_bytes() if profile_path.is_file() else None
-    try:
-        clean_result = run_clean_slate(
-            Path.home(),
-            dry_run=run.dry_run,
-            assume_yes=assume_yes,
-            # Use the patchable seam (not raw sys.stdin.isatty()) so the
-            # clean-slate interactivity gate is test-reachable, matching the
-            # blast-radius confirmation.
-            interactive=_pkg._stdin_is_interactive(),
-            echo=(run.con.print if run.fmt != "json" else None),
-        )
-    except CleanSlateError as exc:
-        run.fail(
-            _CliUserError(
-                code="clean_slate.refused",
-                message="Clean-slate removal was refused.",
-                field="clean",
-                reason=str(exc),
-                fix="Re-run interactively, pass --yes for non-interactive use, "
-                "or correct the unsafe target before retrying.",
-            ).to_dict()
-        )
-        return False, None
-    if not run.dry_run and profile_bytes is not None:
-        # This restore is the identity safety net, so it gets the same care
-        # as every other write: clean-slate has just removed the profile,
-        # and these in-memory bytes plus the timestamped backup are the only
-        # copies left. A raw write would surface a disk-full or
-        # permission failure as a traceback with the canonical path already
-        # empty, and an interruption mid-write would leave it truncated.
-        try:
-            write_bytes_atomically(profile_path, profile_bytes)
-        except OSError as exc:
-            backup_dir = clean_result.backup_dir if clean_result else None
-            run.fail(
-                _CliUserError(
-                    code="clean_slate.profile_restore_failed",
-                    message="Clean-slate removal ran, but the profile could "
-                    "not be written back.",
-                    field="clean",
-                    reason=str(exc),
-                    fix=(
-                        "Copy the profile back from the clean-slate backup "
-                        f"at {backup_dir}."
-                        if backup_dir is not None
-                        else "Restore the profile from the clean-slate "
-                        "backup directory reported above."
-                    ),
-                ).to_dict()
-            )
-            return False, clean_result
-    # A clean dry run falls through to the materialization preview: the
-    # operation previews both phases (removals, then fresh writes), and JSON
-    # mode keeps its single-envelope contract — the removal preview rides the
-    # envelope's "clean" key instead of truncating the run.
-    return True, clean_result
 
 
 def _disclose_blast_radius(

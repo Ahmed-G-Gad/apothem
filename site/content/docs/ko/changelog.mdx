@@ -717,7 +717,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `apothem rollback` too, wherever above the folder the link sits; a refused
   rollback changes nothing, writes no `rollback` record and exits 1. A link
   on a path the install writes inside the harness folder still stops it, with
-  `target path crosses a symlink`, or with `target escapes the allowed
+  `target path crosses a link`, or with `target escapes the allowed
   materialization root` when that link leads out of the folder holding the
   harness folder.
 - **The profile is not written through a link that leaves your home
@@ -759,6 +759,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
   and the install record stayed. It now prints the error and exits non-zero.
+- **An uninstall that a link refuses no longer asks first.** When a link
+  leads a tool's folder in your home directory out of it, `apothem uninstall`
+  asked `Remove ... configuration?` and only then refused. It now refuses
+  before the question, as `apothem rollback` does. The install, update,
+  uninstall and rollback errors for such a link now name the link and the
+  folder it leads to, and say to replace the link with a real folder or make
+  it lead inside your home directory. The `install --clean` error for a
+  `~/.config` link that leaves your home directory gives the same fix instead
+  of asking you to re-run interactively. A write refused at a link inside a
+  tool's folder also names where the link leads, and for a link to a file it
+  says to replace the link with a copy of the file. In `--format json`
+  output, a result refused at a link carries a new key, `detail.leads_to`,
+  the path the link leads to. A result refused because a link leads a
+  tool's folder out of your home directory now also carries `detail.fix`,
+  the fix, as other refused results already do. No existing key changed.
+- **`install --clean` writes your profile back when a removal stops
+  partway.** When the clean-slate step could not remove a folder, for example
+  because another program held a file in it, the command stopped with a
+  traceback, and a profile it had already removed was not written back. It now
+  writes the profile back first and names the backup folder.
 - **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
   shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
   `mcp.<name>` entries the install writes in place, without rewriting the file.
@@ -797,6 +817,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`install --clean` no longer rewrites a profile it did not remove.** After
+  the clean-slate step, the install wrote the profile back to the `--profile
+  PATH` it was given, whether or not the step had removed it, and without the
+  link check every other profile write has. With `--profile ~/ext/profile.yaml`
+  and `~/ext` a link or a junction leading out of your home directory, it
+  replaced the file at the far end of the link. The profile is now written back
+  only when the clean-slate step removed it, and that write is refused when a
+  link would lead it out of your home directory. A refused or failed write back
+  names the backup copy that holds your profile.
+- **The folder you name with `--project` is followed wherever it leads.**
+  A project folder that is itself a link, `~/.config` among them, is the
+  folder you named, so Apothem writes in the folder the link leads to, also
+  outside your home directory. A link inside the project folder stops the
+  install, also when it leads back into the project folder. A tool that also
+  writes in `~/.config/apothem` still stops when `~/.config` leads out of your
+  home directory. The command line already followed the folder you name.
+  Python code that calls Apothem's install functions with a project folder now
+  follows the same rule; before, it refused a project folder that was a
+  symbolic link.
+- **Two folders whose names differ only in case are no longer taken for one
+  folder where the system keeps them apart.** On Linux, and in a Windows
+  folder set to keep case, a folder such as `/home/U` beside `/home/u` counted
+  as inside `/home/u`, so a write could land in the other folder. Apothem now
+  checks the case exactly first, and treats the names as one folder only when
+  both name the same folder on disk.
 - **A piped install no longer adopts a source tree from the current folder
   (GHSA-799g-h543-w5gg).** In releases 1.0.1 to 1.5.0, `curl ... | sh` and
   `irm ... | iex` fell back to the folder they were started in, and to its
@@ -851,7 +896,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   junction on a path an install writes counts as a link, as a symbolic link
   already did, so a junction at or inside a tool's folder, such as
   `~/.claude`, `~/.claude/skills`, or a project's `.cursor` or `.gemini`
-  folder, now stops the install with `target path crosses a symlink`, also
+  folder, now stops the install with `target path crosses a link`, also
   when it leads somewhere inside your home directory or project. Replace such
   a junction with the folder itself, or link `~/.config` or `~/.agents`
   instead, which are followed while they lead somewhere inside your home

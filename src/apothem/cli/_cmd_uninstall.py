@@ -41,6 +41,7 @@ from apothem.cli._user_level_report import (
     preview_uninstall,
     uninstall_advisories,
 )
+from apothem.harnesses._shared import install_driver_homelink
 from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
@@ -67,6 +68,35 @@ def _retention_advisories(
         return uninstall_advisories(harness_id, preview_uninstall(harness_id, root))
     except (OSError, ValueError):
         return []
+
+
+def _refuse_or_confirm(
+    harness_id: str, adapter: object, output_path: Path, *, yes: bool
+) -> None:
+    """Refuse an uninstall a link would lead out of the home, else confirm it.
+
+    Such an uninstall changes nothing, so it is refused before the question,
+    as rollback is (see
+    :func:`~apothem.harnesses._shared.install_driver_homelink.refuse_link_leaving_home`).
+    A project-scope install root is the ``--project`` folder, already
+    resolved, so only a user-scope one is checked.
+
+    Raises:
+        MaterializationError: When a link leads the install root out of the home.
+        click.Abort: When the operator declines the confirmation.
+    """
+    if not is_project_scope(adapter):
+        install_driver_homelink.refuse_link_leaving_home(
+            harness_id,
+            output_path.parent,
+            operation="uninstall_refused",
+            uninstall=True,
+        )
+    if not yes:
+        click.confirm(
+            f"Remove {harness_id} configuration at {output_path}?",
+            abort=True,
+        )
 
 
 #: The grouped line for paths an uninstall kept, by ``kept_reason``.
@@ -396,11 +426,7 @@ def _uninstall_impl(
                         f"[dim]{harness_id} is not installed; nothing to remove.[/]"
                     )
                 continue
-            if not yes:
-                click.confirm(
-                    f"Remove {harness_id} configuration at {output_path}?",
-                    abort=True,
-                )
+            _refuse_or_confirm(harness_id, adapter, output_path, yes=yes)
             # What the uninstall keeps in the user home because another install
             # still uses it is read from the ledger before the install's own
             # record is replaced.

@@ -9,7 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_pathsafety import _names_same_folder
+from apothem.harnesses._shared.install_driver_homelink import _names_same_folder
 from apothem.harnesses._shared.install_driver_sharedlock import shared_scope
 from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
 from apothem.harnesses.opencode.install import refuse_link_leaving_home

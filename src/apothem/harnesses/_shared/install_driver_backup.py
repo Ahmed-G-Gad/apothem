@@ -29,6 +29,7 @@ from .install_driver_pathsafety import (
     _unsafe_symlink,
     _validate_target_path,
     _within_allowed_root,
+    _write_boundary,
     kept_links_detail,
 )
 from .install_driver_retention import apply_retention
@@ -121,13 +122,13 @@ def _replace_path(
     """
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation="remove_existing",
     )
     # The link is looked up directly: one pointing out of the allowed root
     # fails the escape check before the link check names it.
     link = (
-        _unsafe_symlink(target, _normalized(allowed_root or install_root))
+        _unsafe_symlink(target, _write_boundary(allowed_root, install_root))
         if removing and target_error is not None
         else None
     )
@@ -149,7 +150,7 @@ def _replace_path(
         target,
         install_root=install_root,
         harness_name=harness_name,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
     )
     kept: list[Path] = []
     if target.is_dir():
@@ -247,7 +248,7 @@ def backup_existing(
     """
     if not target.exists():
         return None
-    rel = _backup_relative_path(target, allowed_root or install_root)
+    rel = _backup_relative_path(target, _write_boundary(allowed_root, install_root))
     base = (
         install_driver.BACKUP_ROOT
         / install_driver._timestamp_slug()
@@ -286,7 +287,7 @@ def write_bytes_safely(
     """Write bytes with no-op detection, backup-before-replace, and atomic swap."""
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation=operation,
     )
     if target_error is not None:
@@ -321,7 +322,7 @@ def write_bytes_safely(
                 target,
                 install_root=install_root,
                 harness_name=harness_name,
-                allowed_root=allowed_root or install_root,
+                allowed_root=_write_boundary(allowed_root, install_root),
             )
         except OSError as exc:
             return _result(

@@ -38,7 +38,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver, install_driver_pathsafety
+from apothem.harnesses._shared import install_driver, install_driver_homelink
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.wrapper_factories import (
     make_plan_harness_root,
@@ -66,9 +66,9 @@ def install(
     :class:`RuntimeError` and leaves the harness root untouched. A
     ``CODEX_HOME`` spelled inside the home that a link leads out of it is
     refused first, wherever above it the link sits (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.refuse_link_leaving_home`).
+    :func:`~apothem.harnesses._shared.install_driver_homelink.refuse_link_leaving_home`).
     """
-    install_driver_pathsafety.refuse_link_leaving_home(
+    install_driver_homelink.refuse_link_leaving_home(
         _HARNESS_NAME, output_path.parent, operation="codex_home", dry_run=dry_run
     )
     python_bin = resolve_python_bin().as_posix()
