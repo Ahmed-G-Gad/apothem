@@ -25,8 +25,8 @@ the `click` and `rich` packages, on the `PATH`):
 
 Pass `--harness all` to sync every supported tool at once. Every install backs
 up existing targets first. The matching uninstall removes only the files
-Apothem wrote and reports anything it had to leave (exit 2), so a second run
-can finish.
+Apothem wrote and lists any file of yours it kept; when it cannot finish, it
+says why and exits non-zero, so a second run can finish.
 
 ## Engineering disciplines in force
 

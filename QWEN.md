@@ -29,8 +29,9 @@ under `~/.qwen/` — the `QWEN.md` context file, `settings.json`, and the
 every supported tool at once. `verify` checks that the managed files are
 present and valid; add `--profile PATH` to report drift from the profile and
 `--json` for structured JSON. Every install backs up existing targets first.
-The matching `uninstall` removes only the files Apothem wrote and reports
-anything it had to leave (exit 2), so a second run can finish.
+The matching `uninstall` removes only the files Apothem wrote and lists any
+file of yours it kept; when it cannot finish, it says why and exits non-zero,
+so a second run can finish.
 
 ## Engineering disciplines in force
 

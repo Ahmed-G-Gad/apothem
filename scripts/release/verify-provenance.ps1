@@ -12,8 +12,9 @@
                            identity of the release workflow at this tag and the
                            GitHub Actions OIDC issuer
         3. slsa-verifier   the SLSA build provenance (provenance.intoto.jsonl)
-                           for the wheel and sdist, bound to the source repo
-                           and tag
+                           for the wheel, the sdist and, when present,
+                           apothem.vsix and the signed SBOM, bound to the
+                           source repo and tag
 
     Identity checks are case-sensitive and the certificates carry the owner as
     GitHub reports it, Ahmed-G-Gad, so the default repository uses that
@@ -26,18 +27,24 @@
     (cosign, slsa-verifier) or file (SHA256SUMS) is missing is skipped. The
     last line names the layers that ran and the ones skipped; only
     "chain OK (3 of 3 layers verified: ...)" means the release was verified.
+    A partial check exits 0 unless -RequireAll is given; with it, any skipped
+    layer fails the run, so a caller can rely on the exit status alone.
 
 .PARAMETER AssetsDir
     Directory holding the downloaded assets. Defaults to the current directory.
 
 .PARAMETER Tag
     Release tag (vX.Y.Z). Defaults to the tag the wheel file name carries.
+
+.PARAMETER RequireAll
+    Fail unless all three layers ran.
 #>
 
 [CmdletBinding()]
 param(
     [string] $AssetsDir = '.',
-    [string] $Tag = $env:APOTHEM_RELEASE_TAG
+    [string] $Tag = $env:APOTHEM_RELEASE_TAG,
+    [switch] $RequireAll
 )
 
 Set-StrictMode -Version Latest
@@ -116,8 +123,9 @@ try {
         $layersSkipped.Add('cosign signatures (cosign not found)')
     }
 
-    # Layer 3: SLSA build provenance for the wheel and sdist (the platform
-    # archives are not its subjects).
+    # Layer 3: SLSA build provenance for the wheel, the sdist, apothem.vsix (in
+    # every release that ships it) and the signed SBOM. The platform archives
+    # are not its subjects.
     if (Get-Command -Name slsa-verifier -ErrorAction SilentlyContinue) {
         Write-Information 'verify-provenance: layer 3 — slsa-verifier' -InformationAction Continue
         if (-not (Test-Path -LiteralPath 'provenance.intoto.jsonl')) {
@@ -127,6 +135,9 @@ try {
                 $_.Name -match '^apothem-\d[^/]*-py3-none-any\.whl$' -or $_.Name -match '^apothem-\d[^/]*\.tar\.gz$'
             } | ForEach-Object { $_.Name })
         if ($subjects.Count -eq 0) { throw 'verify-provenance: layer 3: no wheel or sdist to verify' }
+        if (Test-Path -LiteralPath 'apothem.vsix') {
+            $subjects += 'apothem.vsix'
+        }
         # From the release that started signing the SBOM, it is a subject too.
         if ((Test-Path -LiteralPath 'sbom.cdx.json') -and (Test-Path -LiteralPath 'sbom.cdx.json.cosign.bundle')) {
             $subjects += 'sbom.cdx.json'
@@ -151,6 +162,7 @@ try {
         Write-Information "verify-provenance: chain OK (3 of 3 layers verified: $($layersOk -join ', '))" -InformationAction Continue
     } else {
         Write-Information "verify-provenance: partial check, $layersRun of 3 layers verified ($($layersOk -join ', ')); skipped: $($layersSkipped -join ', '). The release is not verified until all three layers run." -InformationAction Continue
+        if ($RequireAll) { throw "verify-provenance: -RequireAll: $layersRun of 3 layers ran" }
     }
 } finally {
     Pop-Location

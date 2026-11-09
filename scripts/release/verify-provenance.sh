@@ -7,11 +7,12 @@
 #                             certificate identity of the release workflow at
 #                             this tag and the GitHub Actions OIDC issuer
 #   3. slsa-verifier        — the SLSA build provenance (provenance.intoto.jsonl)
-#                             for the wheel and sdist, bound to the source repo
-#                             and tag
+#                             for the wheel, the sdist and, when present,
+#                             apothem.vsix and the signed SBOM, bound to the
+#                             source repo and tag
 #
 # Usage:
-#   verify-provenance.sh [--tag vX.Y.Z] [ASSETS_DIR]
+#   verify-provenance.sh [--tag vX.Y.Z] [--require-all] [ASSETS_DIR]
 #
 # ASSETS_DIR defaults to the current directory (where `gh release download`
 # puts the assets). The tag defaults to the one named by the wheel file
@@ -29,6 +30,8 @@
 # whose tool (cosign, slsa-verifier) or file (SHA256SUMS) is missing is
 # skipped. The last line names the layers that ran and the ones skipped; only
 # "chain OK (3 of 3 layers verified: ...)" means the release was verified.
+# A partial check exits 0 unless --require-all is given; with it, any skipped
+# layer exits 1, so a caller can rely on the exit status alone.
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -37,12 +40,14 @@ GITHUB_REPO="${APOTHEM_GITHUB_REPO:-Ahmed-G-Gad/apothem}"
 OIDC_ISSUER="${APOTHEM_COSIGN_OIDC_ISSUER:-https://token.actions.githubusercontent.com}"
 TAG="${APOTHEM_RELEASE_TAG:-}"
 ASSETS_DIR="."
+REQUIRE_ALL=0
 
 while (( $# > 0 )); do
     case "$1" in
         --tag) TAG="${2:?--tag needs a value}"; shift 2 ;;
         --tag=*) TAG="${1#--tag=}"; shift ;;
-        -h|--help) sed -n '4,31p' "${BASH_SOURCE[0]}"; exit 0 ;;
+        --require-all) REQUIRE_ALL=1; shift ;;
+        -h|--help) sed -n '4,34p' "${BASH_SOURCE[0]}"; exit 0 ;;
         *) ASSETS_DIR="$1"; shift ;;
     esac
 done
@@ -128,16 +133,20 @@ else
 fi
 
 # Layer 3: SLSA build provenance. One provenance file covers the build job's
-# outputs: the wheel, the sdist and, from the release that started signing it,
-# the SBOM. The platform archives are not its subjects.
+# outputs: the wheel, the sdist, apothem.vsix (in every release that ships it)
+# and, from the release that started signing it, the SBOM. The platform
+# archives are not its subjects.
 if command -v slsa-verifier >/dev/null 2>&1; then
     printf 'verify-provenance: layer 3 — slsa-verifier\n' >&2
     [[ -f provenance.intoto.jsonl ]] || fail "layer 3: provenance.intoto.jsonl not found"
     subjects=(apothem-[0-9]*-py3-none-any.whl apothem-[0-9]*.tar.gz)
+    (( ${#subjects[@]} > 0 )) || fail "layer 3: no wheel or sdist to verify"
+    if [[ -f apothem.vsix ]]; then
+        subjects+=(apothem.vsix)
+    fi
     if [[ -f sbom.cdx.json && -f sbom.cdx.json.cosign.bundle ]]; then
         subjects+=(sbom.cdx.json)
     fi
-    (( ${#subjects[@]} > 0 )) || fail "layer 3: no wheel or sdist to verify"
     slsa-verifier verify-artifact \
         --provenance-path provenance.intoto.jsonl \
         --source-uri "github.com/${GITHUB_REPO}" \
@@ -158,4 +167,5 @@ if (( layers_run == 3 )); then
 else
     printf 'verify-provenance: partial check, %d of 3 layers verified (%s); skipped: %s. The release is not verified until all three layers run.\n' \
         "${layers_run}" "${layers_ok}" "${layers_skipped}" >&2
+    (( REQUIRE_ALL == 0 )) || exit 1
 fi

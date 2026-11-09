@@ -46,7 +46,9 @@ What to do depends on whether anything was published from the tag:
 
 - **Nothing published yet** (the release workflow failed before its publish
   job, and `publish-npm.yml` did not publish): delete the tag and re-tag the
-  same commit with `-a -s`.
+  same commit with `-a -s`. When the failure needs a fix on `main` first, such
+  as a missed plugin version bump, tag the new release commit instead (see the
+  release-cycle runbook's failure table).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -58,7 +60,8 @@ What to do depends on whether anything was published from the tag:
 - **Anything published** (a GitHub Release with assets, or the npm version):
   never move, delete or reuse the tag. Fix forward with `vX.Y.(Z+1)`.
 
-A tag name is never reused for a different commit.
+Once anything was published from a tag, its name is never reused for a
+different commit.
 
 ## 3. Publisher recovery
 

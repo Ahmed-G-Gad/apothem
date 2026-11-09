@@ -87,7 +87,7 @@ Apothem cuts the drift at the root, and goes wider than file-copying or rules-on
 - **A wide synced unit, not rules alone.** Each primitive a harness can load is translated into that harness's native schema, or placed under an Apothem support folder where the harness has no matching primitive — never flattened to a lowest common denominator. The [harness registry](https://apothem.ahmedgad.com/docs/reference/harness-registry/) lists what reaches each harness.
 - **A mechanized governance gate.** `python -m apothem.conformity.gate` runs multi-bar pre-emission checks — authorship headers, naming, code-craft, hedging, binding reciprocity — so every materialized surface stays conformant.
 - **Deterministic pipelines.** A review pipeline (`/plan-spec → /plan-generate → /plan-review → /plan-design → /plan-execute`, where `/plan-design` runs only for architecture-bearing suites), a thirteen-stage `/research` pipeline, and an eleven-command audit fortress apply to every change to the profile itself.
-- **Reversible, verified lifecycle.** The matching uninstall removes only the files Apothem wrote, backs them up first, and reports anything it had to leave (exit 2) so a second run can finish; `apothem verify --harness <name> --profile <path>` answers "is the profile faithfully installed here?" in plain text, or as a structured JSON drift report with `--json`; without `--profile` it checks that the managed files are present and valid.
+- **Reversible, verified lifecycle.** The matching uninstall removes only the files Apothem wrote, backs them up first, and lists any file of yours it kept; when it cannot finish, it says why and exits non-zero, so a second run can finish; `apothem verify --harness <name> --profile <path>` answers "is the profile faithfully installed here?" in plain text, or as a structured JSON drift report with `--json`; without `--profile` it checks that the managed files are present and valid.
 - **Durable memory + opt-in learning.** A persistent memory tier and an opt-in continuous-learning loop carry confirmed conventions forward across sessions.
 - **Work that survives session, account, and machine boundaries.** Long-running work externalizes its full state to a project-local `.apothem/plans/` suite — a resumption contract plus a cold-start protocol. Because the state lives in your project's files, not locked inside one cloud chat history, a fresh session on any account or machine pointed at the project picks the work back up in place. See [Resumable planning](https://apothem.ahmedgad.com/docs/concepts/resumable-planning/).
 
@@ -103,7 +103,7 @@ Apothem cuts the drift at the root, and goes wider than file-copying or rules-on
 | 🧠 | **Durable memory + opt-in learning** | A persistent memory tier and an opt-in continuous-learning loop carry confirmed conventions forward across sessions. |
 | 👁️ | **Preview before write** | `apothem diff --harness <name>` shows every pending change to a harness's native config before anything lands — inspect the full diff, then install. |
 | 🔍 | **Verifiable state** | `apothem verify --harness <name>` reports drift between source profile and harness destination when you pass `--profile <path>` — structured JSON with `--format json` for CI. |
-| ↩️ | **Reversible lifecycle** | Every install has a matching uninstall that removes only the files Apothem wrote — timestamped backups at `~/.apothem/backups/`, a report of anything it had to leave (exit 2), confirmation-gated removal (`--yes` for batch). |
+| ↩️ | **Reversible lifecycle** | Every install has a matching uninstall that removes only the files Apothem wrote — timestamped backups at `~/.apothem/backups/`, a warning for each file of yours it keeps, the reason and a non-zero exit when it cannot finish, confirmation-gated removal (`--yes` for batch). |
 | 🗂️ | **Multi-scope adapters** | User-scope and project-scope targets; `--project .` directs project-scope harnesses such as Cursor, Gemini CLI, GitHub Copilot, and Windsurf. |
 | 🔐 | **Supply-chain hardened releases** | SLSA-3 build provenance · Sigstore signatures · CycloneDX SBOM · npm provenance · OpenSSF Scorecard tracked. |
 | 📦 | **Self-contained runtime** | Runs from a checkout on system Python 3.10+ with vendored dependencies — only `click` and `rich` need to be importable. |
@@ -719,7 +719,7 @@ Each harness has its own per-harness adapter that:
 
 - **Maps** profile elements (rules, skills, helpers, hooks) onto harness-native primitives where they exist and Apothem-owned support paths where they do not.
 - **Translates** between the shared schema and the harness's expected filesystem layout.
-- **Reverses** on uninstall — removes only the files Apothem wrote, backs them up first, and reports anything it had to leave so a second run can finish.
+- **Reverses** on uninstall — removes only the files Apothem wrote, backs them up first, lists any file of yours it kept, and says why when it cannot finish, so a second run can finish.
 - **Verifies** at install time, update time, and on demand.
 
 Read the [architecture overview](https://apothem.ahmedgad.com/docs/architecture/) for the deep walkthrough.
@@ -810,8 +810,8 @@ command surface does not include `update --self`, `update --check`, or
 
 Updates do not silently discard operator edits: matching managed targets are
 backed up before replacement, shared directories are merged child-by-child, and
-unchanged generated content is left untouched. The earlier releases named in
-the warning above did remove those folders.
+unchanged generated content is left untouched. The earlier releases the
+changelog names did remove those folders.
 
 ## Uninstalling
 

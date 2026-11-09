@@ -188,6 +188,17 @@ def test_signed_vsix_is_verified(tmp_path: Path) -> None:
     assert any(c.endswith(" apothem.vsix") for c in _calls(log, "verify-blob"))
 
 
+def test_vsix_is_a_provenance_subject(tmp_path: Path) -> None:
+    """The build job hashes dist/*, the .vsix included, into the provenance."""
+    fake_bin, log = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "apothem.vsix").write_bytes(b"vsix")
+    (assets / "apothem.vsix.cosign.bundle").write_text("{}", encoding="utf-8")
+    assert _run(assets, fake_bin).returncode == 0
+    (slsa,) = _calls(log, "verify-artifact")
+    assert slsa.endswith(" apothem.vsix") or " apothem.vsix " in slsa
+
+
 def test_unsigned_vsix_fails(tmp_path: Path) -> None:
     fake_bin, _ = _fake_bin(tmp_path)
     assets = _release_dir(tmp_path)
@@ -274,6 +285,27 @@ def test_a_missing_tool_is_named_as_skipped(tmp_path: Path) -> None:
     )
 
 
+def test_require_all_fails_a_partial_check(tmp_path: Path) -> None:
+    """--require-all lets a caller trust the exit status alone."""
+    fake_bin, _ = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "SHA256SUMS").unlink()
+    (assets / "SHA256SUMS.cosign.bundle").unlink()
+    result = _run(assets, fake_bin, "--require-all")
+    assert result.returncode == 1, result.stderr
+    assert result.stderr.splitlines()[-1].startswith(
+        "verify-provenance: partial check, 2 of 3 layers verified"
+    )
+
+
+def test_require_all_passes_a_full_check(tmp_path: Path) -> None:
+    fake_bin, _ = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path)
+    result = _run(assets, fake_bin, "--require-all")
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.splitlines()[-1] == _FULL_RUN
+
+
 def test_checksum_mismatch_fails(tmp_path: Path) -> None:
     fake_bin, _ = _fake_bin(tmp_path)
     assets = _release_dir(tmp_path)
@@ -346,3 +378,106 @@ def test_ps1_sibling_matches_the_posix_contract() -> None:
     assert "partial check, $layersRun of 3 layers verified" in text
     for name in ("SHA256SUMS manifest", "cosign signatures", "SLSA provenance"):
         assert f"$layersOk.Add('{name}')" in text, name
+
+
+# --- the PowerShell sibling, executed ----------------------------------------
+
+_FAKE_PS_TOOL = """Add-Content -LiteralPath '{log}' -Value ($args -join ' ')
+exit $(if ($env:FAKE_{name}_EXIT) {{ [int]$env:FAKE_{name}_EXIT }} else {{ 0 }})
+"""
+
+
+def _fake_ps_bin(tmp_path: Path) -> tuple[Path, Path]:
+    """Fake tools as .ps1 scripts, which pwsh resolves by bare name on PATH."""
+    fake_bin = tmp_path / "psbin"
+    fake_bin.mkdir()
+    log = tmp_path / "ps-calls.log"
+    for tool, name in (("cosign", "COSIGN"), ("slsa-verifier", "SLSA")):
+        (fake_bin / f"{tool}.ps1").write_text(
+            _FAKE_PS_TOOL.format(log=log, name=name), encoding="utf-8", newline="\n"
+        )
+    return fake_bin, log
+
+
+def _run_ps(
+    assets: Path, fake_bin: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
+    pwsh = shutil.which("pwsh")
+    if pwsh is None:
+        pytest.skip("pwsh is not on PATH")
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}{os.pathsep}{env.get('PATH', '')}"
+    for key in ("APOTHEM_RELEASE_TAG", "APOTHEM_GITHUB_REPO"):
+        env.pop(key, None)
+    return subprocess.run(
+        [
+            pwsh,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(PS1_SCRIPT),
+            "-AssetsDir",
+            str(assets),
+            *args,
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+
+
+def test_ps1_full_run_names_every_layer(tmp_path: Path) -> None:
+    fake_bin, log = _fake_ps_bin(tmp_path)
+    assets = _release_dir(tmp_path)
+    (assets / "apothem.vsix").write_bytes(b"vsix")
+    (assets / "apothem.vsix.cosign.bundle").write_text("{}", encoding="utf-8")
+    result = _run_ps(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines()[-1] == _FULL_RUN
+    (slsa,) = _calls(log, "verify-artifact")
+    assert "apothem.vsix" in slsa
+
+
+def test_ps1_missing_manifest_is_a_partial_check(tmp_path: Path) -> None:
+    fake_bin, _ = _fake_ps_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "SHA256SUMS").unlink()
+    (assets / "SHA256SUMS.cosign.bundle").unlink()
+    result = _run_ps(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines()[-1] == (
+        "verify-provenance: partial check, 2 of 3 layers verified "
+        "(cosign signatures, SLSA provenance); skipped: SHA256SUMS manifest "
+        "(no SHA256SUMS file). The release is not verified until all three "
+        "layers run."
+    )
+
+
+def test_ps1_missing_tool_is_a_partial_check(tmp_path: Path) -> None:
+    if shutil.which("slsa-verifier") is not None:
+        pytest.skip("a real slsa-verifier is on PATH")
+    fake_bin, _ = _fake_ps_bin(tmp_path)
+    (fake_bin / "slsa-verifier.ps1").unlink()
+    assets = _release_dir(tmp_path)
+    result = _run_ps(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines()[-1] == (
+        "verify-provenance: partial check, 2 of 3 layers verified "
+        "(SHA256SUMS manifest, cosign signatures); skipped: SLSA provenance "
+        "(slsa-verifier not found). The release is not verified until all "
+        "three layers run."
+    )
+
+
+def test_ps1_require_all_fails_a_partial_check(tmp_path: Path) -> None:
+    fake_bin, _ = _fake_ps_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "SHA256SUMS").unlink()
+    (assets / "SHA256SUMS.cosign.bundle").unlink()
+    result = _run_ps(assets, fake_bin, "-RequireAll")
+    assert result.returncode != 0
+    assert "-RequireAll: 2 of 3 layers ran" in result.stderr

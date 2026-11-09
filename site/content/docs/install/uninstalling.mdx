@@ -114,15 +114,23 @@ any custom rules, helpers, or profile files you want to keep.
 
 ## If uninstall reports it did not finish
 
-An uninstall can stop part way. It then prints
-`✗ <harness> uninstall did not finish:` with the reason and the number of
-paths it left, keeps the install recorded, and exits `2` (`1` when it removed
-nothing). Reasons include a
-link (a symlink or junction) that leads to files Apothem wrote, files that an
-earlier release's install recorded and that differ from what this release
-writes, and a removal step that failed. Fix what the message
-names, then run the same `apothem uninstall` command again: it removes what
-the first run left. The
+An uninstall can stop part way, and it keeps the install recorded when it
+does. The message depends on the reason:
+
+- `✗ <harness> uninstall did not finish:` names Apothem files it left behind a
+  link (a symlink or junction), files that an earlier release's install
+  recorded and that differ from what this release writes, or removal steps
+  that reported errors. For a link or an earlier release's files it also gives
+  the number of paths it left.
+- `✗ <harness> uninstall stopped after removing files:` means a removal step
+  stopped the uninstall after it had removed some files.
+- `✗ <harness> uninstall failed:` means a removal step stopped the uninstall
+  before it removed anything.
+
+It exits `2` when it removed files or left Apothem's own files behind a link
+or from an earlier release, and `1` when it stopped before removing anything
+for any other reason. Fix what the message names, then run the same
+`apothem uninstall` command again: it removes what the first run left. The
 [uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
 describes each case, and its [exit codes](/docs/cli-reference/uninstall#exit-codes)
 table lists what `1` and `2` mean.

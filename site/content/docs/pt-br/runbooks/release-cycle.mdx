@@ -111,13 +111,24 @@ dispersas.
 Revise o diff e depois faça o commit:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-O sinalizador `-S` assina o commit com a chave GPG. O push dispara a matriz de
-CI padrão (lint, test, build); aguarde o verde antes de marcar a tag.
+O sinalizador `-s` adiciona a linha `Signed-off-by` que a verificação
+obrigatória `Require Signed-off-by` procura. O commit de release chega à `main`
+como o squash merge deste pull request; o GitHub assina esse commit com a
+própria chave, e a sua assinatura do release é a da tag (§2.2). O merge dispara
+a matriz de CI padrão (lint, test, build) na `main`; aguarde o verde antes de
+marcar a tag.
 
 A verificação de prontidão da §2.4 também exige CodeQL e Conformity em verde no
 commit de lançamento. Os dois só são executados quando os caminhos próprios de
@@ -561,11 +572,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Esperado: `Verified OK`, `PASSED: SLSA verification passed` e
-`verify-provenance: chain OK (3 of 3 layers verified)`. O script verifica
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. O script verifica
 `SHA256SUMS`, cada bundle de assinatura e a procedência em uma única execução;
 ele deriva a tag do nome do wheel (`--tag vX.Y.Z` a substitui).
 
