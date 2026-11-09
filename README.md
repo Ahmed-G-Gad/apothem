@@ -354,7 +354,10 @@ engine by any launcher (the installers, updaters, uninstallers, the POSIX and
 Windows `apothem` shims, and the npm launcher). A kept entry must be a full
 path: on Windows a drive path such as `C:\lib` or a network path, elsewhere a
 path that starts with `/`. A rooted `\lib` or a drive-relative `C:lib` is
-dropped. Under Git Bash, Windows-style entries are kept as such. The
+dropped. Under Git Bash, MSYS or Cygwin, the sh
+scripts and their `apothem` shim hand Python the engine paths in Windows
+form, joined with `;`, and keep only the drive and network paths of your
+`PYTHONPATH`; POSIX-style `/c/...` entries are dropped. The
 installers' `git` commands that do not work on a clone do not read a
 repository in the current folder.
 

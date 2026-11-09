@@ -252,7 +252,13 @@ works, but `sh install.sh` with no folder part does not count as running from a
 checkout, so the installer prints "Not using a checkout: to install from one,
 run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE." and
 fetches and verifies the release instead. A script started through `sh -c` is
-not treated as a checkout either, in shells that mark `-c` runs. `install.sh`
+not treated as a checkout either, in shells that mark `-c` runs. dash does not
+mark them, so under dash `sh -c "<script>" ./install.sh` started from a
+folder named `scripts/installer` inside a source tree uses that tree: start
+script text that way only from a folder you trust. In the same way, a copy of
+`install.sh` that you save into another source tree's `scripts/installer`
+folder and run there by path becomes that tree's own installer and installs
+it. Save a downloaded script to an empty folder. `install.sh`
 follows a symlink to its real file and uses the checkout that holds it.
 `install.ps1` does the opposite: it refuses a checkout that it reaches through a
 symlink or junction, prints a one-line note, and takes the fetched and verified

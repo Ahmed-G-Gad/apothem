@@ -732,8 +732,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   installers, the updaters, the uninstallers and the npm launcher. A kept
   entry must be a full path: on Windows a drive path such as `C:\lib` or a
   network path, elsewhere a path that starts with `/`. A rooted `\lib` or a
-  drive-relative `C:lib` is dropped, and under Git Bash Windows-style entries
-  are kept as such. The conformity gate starts its validators the same way.
+  drive-relative `C:lib` is dropped. Under Git Bash, MSYS or Cygwin, the sh
+  scripts and their `apothem` shim hand Python the engine paths in Windows
+  form, joined with `;`, and keep only the drive and network paths of your
+  `PYTHONPATH`; POSIX-style `/c/...` entries are dropped. The conformity gate starts its validators the same way.
   Your working directory and the arguments you pass are not changed, and your
   full-path `PYTHONPATH` entries and user-installed packages still work. The
   updaters do not rewrite an existing shim: to replace a shim written by an

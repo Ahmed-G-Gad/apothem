@@ -216,6 +216,36 @@ keep_full_pythonpath() {
     done
     printf '%s' "$_kp_keep"
 }
+# PY_PATHSEP is the separator the Python this script starts reads in
+# PYTHONPATH. Under Git Bash, MSYS or Cygwin that Python is a Windows one,
+# which splits on ";" and wants Windows paths. MSYS rewrites a ":"-joined list
+# of /c/... paths into ";"-joined Windows paths when it starts a Windows
+# program, and in doing so splits a "C:\x" entry into "C" and "\x": the
+# relative "C" then names a folder in the current folder, ahead of the
+# standard library. So there every engine path is turned into its Windows form
+# with cygpath -w and the list is joined with ";", which MSYS leaves alone.
+case "$(uname -s 2>/dev/null || true)" in
+    MINGW* | MSYS* | CYGWIN*) PY_PATHSEP=";" ;;
+    *) PY_PATHSEP=":" ;;
+esac
+
+# native_path PATH — print PATH in the form the Python this script starts
+# reads: unchanged on POSIX, the Windows form under Git Bash, MSYS or Cygwin.
+native_path() {
+    if [ "$PY_PATHSEP" = ";" ]; then
+        cygpath -w -- "$1" 2>/dev/null
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+# engine_pythonpath — print the PYTHONPATH an engine run gets: the engine
+# paths, then the full-path entries of the caller's PYTHONPATH that
+# keep_full_pythonpath kept, joined with PY_PATHSEP.
+engine_pythonpath() {
+    printf '%s' "${ENGINE_PYPATH}${PYTHONPATH:+${PY_PATHSEP}${PYTHONPATH}}"
+}
+
 _pp_keep="$(keep_full_pythonpath "${PYTHONPATH:-}"; printf x)"
 _pp_keep="${_pp_keep%x}"
 if [ -n "$_pp_keep" ]; then
@@ -1664,15 +1694,14 @@ SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
 #
-# PYTHONPATH entries are joined with a literal ':' (the POSIX os.pathsep) here
-# and in every ${PYTHONPATH:+:${PYTHONPATH}} extension below. This is correct
-# for the documented target: a POSIX shell (dash/ash/bash) driving a POSIX
-# CPython, where os.pathsep is ':'. It is INTENTIONALLY NOT portable to a
-# native Windows CPython, whose os.pathsep is ';' — under Git Bash on Windows a
-# ':'-joined PYTHONPATH would not split into two entries and the vendored tree
-# would not resolve. Windows operators use install.ps1, which joins with
-# [System.IO.Path]::PathSeparator (';') for exactly this reason.
-ENGINE_PYPATH="${SRC_PATH}/apothem/_vendor:${SRC_PATH}"
+# The entries are joined with PY_PATHSEP and written in the form that Python
+# reads (see native_path): ":" and POSIX paths on POSIX, ";" and Windows paths
+# under Git Bash, MSYS or Cygwin.
+_ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
+    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+_ep_src="$(native_path "${SRC_PATH}")" \
+    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 echo
 
 # Profile setup ------------------------------------------------------------------
@@ -1715,7 +1744,7 @@ set --
 [ "$CLEAN" = "1" ]      && set -- "$@" --clean
 [ "$DRY_RUN" = "1" ]    && set -- "$@" --dry-run
 [ "$ASSUME_YES" = "1" ] && set -- "$@" --yes
-PYTHONSAFEPATH=1 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
+PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
     "$PY" -c "$ENGINE_PROGRAM" install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@"
 if [ "$DRY_RUN" = "1" ]; then
     ok "Harness ${HARNESS} preview generated (dry-run)"
@@ -1736,7 +1765,7 @@ if [ "${APOTHEM_SKIP_VERIFY:-0}" = "1" ]; then
     warn "APOTHEM_SKIP_VERIFY=1 — skipping verification"
 else
     bold "Verifying installation"
-    if PYTHONSAFEPATH=1 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
+    if PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
         "$PY" -c "$ENGINE_PROGRAM" verify --harness "$HARNESS"; then
         ok "verify passed"
     else
@@ -1767,17 +1796,26 @@ if mkdir -p "$BIN_DIR" 2>/dev/null; then
         printf '%s\n' '# The current folder is kept off sys.path, so its modules never shadow the engine:'
         printf '%s\n' '# only the absolute entries of PYTHONPATH are passed on, after the engine paths.'
         printf 'apothem_pp=%s\n' "$(sq "$ENGINE_PYPATH")"
+        printf 'apothem_sep=%s\n' "$(sq "$PY_PATHSEP")"
         cat <<'SHIM_BODY'
+# apothem_sep is the separator the engine's Python reads: ":" on POSIX, ";"
+# under Git Bash, MSYS or Cygwin, where only drive and network paths are kept.
 apothem_rest="${PYTHONPATH:-}"
 while [ -n "$apothem_rest" ]; do
-    apothem_entry="${apothem_rest%%:*}"
+    apothem_entry="${apothem_rest%%"$apothem_sep"*}"
     case "$apothem_rest" in
-        *:*) apothem_rest="${apothem_rest#*:}" ;;
+        *"$apothem_sep"*) apothem_rest="${apothem_rest#*"$apothem_sep"}" ;;
         *) apothem_rest="" ;;
     esac
-    case "$apothem_entry" in
-        /*) apothem_pp="${apothem_pp}:${apothem_entry}" ;;
-    esac
+    if [ "$apothem_sep" = ";" ]; then
+        case "$apothem_entry" in
+            [A-Za-z]:[\\/]* | [\\/][\\/]*) apothem_pp="${apothem_pp};${apothem_entry}" ;;
+        esac
+    else
+        case "$apothem_entry" in
+            /*) apothem_pp="${apothem_pp}:${apothem_entry}" ;;
+        esac
+    fi
 done
 SHIM_BODY
         printf 'PYTHONSAFEPATH=1 PYTHONPATH="$apothem_pp" exec %s -c %s "$@"\n' \

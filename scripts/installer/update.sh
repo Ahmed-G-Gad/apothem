@@ -106,6 +106,36 @@ keep_full_pythonpath() {
     done
     printf '%s' "$_kp_keep"
 }
+# PY_PATHSEP is the separator the Python this script starts reads in
+# PYTHONPATH. Under Git Bash, MSYS or Cygwin that Python is a Windows one,
+# which splits on ";" and wants Windows paths. MSYS rewrites a ":"-joined list
+# of /c/... paths into ";"-joined Windows paths when it starts a Windows
+# program, and in doing so splits a "C:\x" entry into "C" and "\x": the
+# relative "C" then names a folder in the current folder, ahead of the
+# standard library. So there every engine path is turned into its Windows form
+# with cygpath -w and the list is joined with ";", which MSYS leaves alone.
+case "$(uname -s 2>/dev/null || true)" in
+    MINGW* | MSYS* | CYGWIN*) PY_PATHSEP=";" ;;
+    *) PY_PATHSEP=":" ;;
+esac
+
+# native_path PATH — print PATH in the form the Python this script starts
+# reads: unchanged on POSIX, the Windows form under Git Bash, MSYS or Cygwin.
+native_path() {
+    if [ "$PY_PATHSEP" = ";" ]; then
+        cygpath -w -- "$1" 2>/dev/null
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+# engine_pythonpath — print the PYTHONPATH an engine run gets: the engine
+# paths, then the full-path entries of the caller's PYTHONPATH that
+# keep_full_pythonpath kept, joined with PY_PATHSEP.
+engine_pythonpath() {
+    printf '%s' "${ENGINE_PYPATH}${PYTHONPATH:+${PY_PATHSEP}${PYTHONPATH}}"
+}
+
 _pp_keep="$(keep_full_pythonpath "${PYTHONPATH:-}"; printf x)"
 _pp_keep="${_pp_keep%x}"
 if [ -n "$_pp_keep" ]; then
@@ -514,12 +544,16 @@ fi
 SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
-ENGINE_PYPATH="${SRC_PATH}/apothem/_vendor:${SRC_PATH}"
+_ep_vendor="$(native_path "${SRC_PATH}/apothem/_vendor")" \
+    || die "cygpath could not convert ${SRC_PATH}/apothem/_vendor to a Windows path"
+_ep_src="$(native_path "${SRC_PATH}")" \
+    || die "cygpath could not convert ${SRC_PATH} to a Windows path"
+ENGINE_PYPATH="${_ep_vendor}${PY_PATHSEP}${_ep_src}"
 echo
 
 bold "Re-materializing harness: ${HARNESS}"
 [ -f "$PROFILE" ] || die "Profile not found at $PROFILE — run install.sh first or set APOTHEM_PROFILE"
-PYTHONSAFEPATH=1 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
+PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
     "$PY" -c "$ENGINE_PROGRAM" update --harness "$HARNESS" --profile "$PROFILE"
 ok "Harness ${HARNESS} updated"
 echo
