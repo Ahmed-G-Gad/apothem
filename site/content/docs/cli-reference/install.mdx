@@ -60,6 +60,14 @@ still performs the writes. Declining the home-directory prompt aborts before the
 `--clean`, the clean-slate step runs first under its own per-target confirmation:
 it writes a backup under `~/.apothem/backups` and removes the targets it confirms.
 Those removals and the backup stay in place when the install prompt is declined.
+The targets are the tool folders in your home directory that the prompt lists,
+`~/.agents` and `~/.config/apothem` among them.
+A target that is itself a link, a Windows junction included, loses only the
+link, and a link inside a target is removed without being entered. When
+`~/.config` is a link that leads out of your home directory, the clean-slate
+step stops with `Clean-slate removal was refused` before it backs up or removes
+anything, since removing `~/.config/apothem` would delete the folder at the far
+end of that link.
 
 ## Folders in your home directory
 
@@ -88,11 +96,34 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   beside it and renamed into place when complete, so a failed or interrupted
   write never leaves a half-written skill folder under its final name. Run the
   install again to finish; it replaces a leftover staging folder.
-- A symbolic link at or above one of these folders, as dotfile managers create
-  for `~/.config` or `~/.agents`, is followed when it leads to somewhere inside
-  your home directory. A link that leaves your home directory stops the install
-  with `target escapes the allowed materialization root`, and so does a link
-  inside a skill folder.
+- A link at or above one of these folders, as dotfile managers create for
+  `~/.config` or `~/.agents`, is followed when it leads to somewhere inside
+  your home directory. On Windows a junction counts as a link. A link that
+  leaves your home directory stops the install with `target escapes the
+  allowed materialization root`. A skill folder that is itself a link is never
+  written through: the install skips it with a warning, or stops when Apothem
+  wrote that skill there before. A link inside a skill folder Apothem wrote is
+  replaced by a folder the next time the install writes that skill.
+- A harness folder below `~/.config`, such as OpenCode's `~/.config/opencode/`
+  or a `CODEX_HOME` there, also follows a link at `~/.config` that leads
+  somewhere inside your home directory. A link at `~/.config` that leaves your
+  home directory stops the install before it writes any file, and so does a
+  link on a path the install writes inside the harness folder. On a first run
+  the starter profile, also below `~/.config`, is not written through a link
+  that leaves your home directory either: the run stops with `Apothem could
+  not create the starter profile`, as `apothem quickstart`, `apothem profile
+  init`, `apothem profile set` and `apothem profile edit` do. To keep the
+  profile outside your home directory, create it there first with `apothem
+  profile init --profile PATH`, spelling PATH as its own path outside your
+  home directory, and pass the same `--profile PATH` to each command. That only
+  gets past the profile step: an install that writes below `~/.config` still
+  stops at the link. For OpenCode, also set `XDG_CONFIG_HOME` (see
+  [OpenCode](/docs/harnesses/opencode)). A harness whose install always
+  writes `~/.config/apothem/` needs the link to lead inside your home
+  directory instead; its harness page says so.
+- A home folder that is itself a link, such as a Windows user profile moved
+  to another drive behind a junction, is followed: every write stays inside
+  the folder it leads to.
 - The install adds no skill or rule file to your repository. The project gets
   the adapter's rules file, plus the `.apothem/` data folder every project
   install creates.

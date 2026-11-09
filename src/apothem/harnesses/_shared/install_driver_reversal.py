@@ -49,6 +49,7 @@ from .install_driver_pathsafety import (
     _walk_without_links,
     _within_allowed_root,
     kept_links_detail,
+    link_leaving_home_refusal,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -465,9 +466,22 @@ def rollback_install(
     A target this install only found in place goes too when an install that has
     let go of it created it (:meth:`UserLevelGate.inherited`), so rolling back
     every holder does not strand the folder. An unreadable ledger stops the
-    rollback before anything changes.
+    rollback before anything changes, and so does a link that leads a
+    user-scope root spelled inside the home out of it (``CODEX_HOME=~/a/b/codex``
+    after ``~/a`` became a link to a folder outside the home): the one result
+    is a ``rollback_refused`` error naming the link (see
+    :func:`~.install_driver_pathsafety.link_leaving_home_refusal`).
     The rollback holds the user-level lock (see ``shared_scope``).
     """
+    if harness_root is not None:
+        refusal = link_leaving_home_refusal(harness_root, operation="rollback_refused")
+        if refusal is not None:
+            link = refusal.detail["symlink"]
+            message = (
+                f"rollback refused: {refusal.message} ({link} leads outside the "
+                "home folder); nothing was changed"
+            )
+            return [replace(refusal, message=message)]
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
     gate = UserLevelGate.for_harness(

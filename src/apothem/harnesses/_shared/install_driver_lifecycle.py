@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import functools
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,9 +23,6 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_backup import (
-    backup_ledger_targets,
-)
 from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
@@ -53,19 +49,22 @@ from .install_driver_removal import (
     _remove_unlisted_anchors,
     _surgical_remove_from_target,
 )
-from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
 from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
+    MaterializationError,
     MaterializationResult,
+    MaterializationRun,
     _path_text,
     backup_session,
     resolve_source,
 )
 from .install_driver_written import (
     kept_file_warnings,
+    left_unfinished,
     links_on_the_way,
+    record_uninstall,
     remove_written,
     still_written,
 )
@@ -431,7 +430,7 @@ def run_uninstall(
     unconditional success. A ``kind="uninstall"`` record is appended only when
     no removal errored and nothing Apothem wrote stays behind a link;
     otherwise, and when the pass raises, an ``uninstall-incomplete`` record is
-    appended instead (see :func:`_record_uninstall`): the install stays
+    appended instead (see :func:`record_uninstall`): the install stays
     active, so verify, status, rollback and a second uninstall keep operating
     against it. Either record references every backup the uninstall took,
     including those in *prior_results*: removals the caller made just before
@@ -454,9 +453,14 @@ def run_uninstall(
             harness_root=harness_root,
             project_root=project_root,
         )
-        finished = not _left_unfinished([*prior_results, *results])
+        finished = not left_unfinished([*prior_results, *results])
+    except Exception as exc:
+        # Hand the caller what this pass removed before it stopped, so the CLI
+        # can report the uninstall as partial instead of a bare failure.
+        run = MaterializationRun(harness_name, False, tuple(results))
+        raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     finally:
-        _record_uninstall(
+        record_uninstall(
             harness_name,
             root,
             record,
@@ -478,44 +482,6 @@ def run_uninstall(
         *kept,
         *links_on_the_way(recorded, floor, known=[*results, *kept]),
     ]
-
-
-def _left_unfinished(results: list[MaterializationResult]) -> bool:
-    """Return True when a removal failed or left Apothem's files behind a link."""
-    return any(
-        result.outcome == "error" or result.detail.get("blocked") for result in results
-    )
-
-
-def _record_uninstall(
-    harness_name: str,
-    root: Path,
-    record: LedgerRecord | None,
-    results: list[MaterializationResult],
-    *,
-    finished: bool,
-) -> None:
-    """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
-
-    Either record references every backup the pass took. A finished uninstall
-    ends the install and runs retention. An unfinished one keeps the install
-    active, so a second run is driven by the same record; it is written even
-    when the pass raised, and a failure to write it then does not hide the
-    pass's own error.
-    """
-    entry = LedgerRecord.create(
-        harness=harness_name,
-        root=root,
-        kind="uninstall" if finished else "uninstall-incomplete",
-        targets=backup_ledger_targets(results),
-        install_id=record.install_id if record is not None else None,
-    )
-    if not finished:
-        with contextlib.suppress(OSError, install_ledger.LedgerError):
-            install_ledger.append_record(entry)
-        return
-    install_ledger.append_record(entry)
-    apply_retention(harness_name)
 
 
 def _remove_installed(

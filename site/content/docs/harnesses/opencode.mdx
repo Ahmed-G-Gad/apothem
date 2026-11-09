@@ -38,6 +38,36 @@ OpenCode 1 reads that folder as well as the default one, but OpenCode 2 reads it
 instead, so when it names another folder the install warns that OpenCode 2 does
 not load the install.
 
+A `~/.config` that is a link into your home directory, as dotfile managers
+make it, is followed. On Windows a junction counts as a link. When that link
+leads outside your home directory, the install stops with `target path crosses
+a symlink` before it writes any file. On a first run, with no profile yet, it
+stops one step earlier, before the starter profile is written, with `Apothem
+could not create the starter profile`. To keep the profile outside your home
+directory, create it there with `apothem profile init --profile PATH` and pass
+the same `--profile PATH` to the install; the install then still needs
+`XDG_CONFIG_HOME`, as described below. An `XDG_CONFIG_HOME` spelled inside
+your home directory that a link leads out of it, such as `~/xdg` linked to
+another drive, stops the install, the uninstall and `apothem rollback` too. A
+link on a path the install writes inside `~/.config/opencode/` stops it as
+well, with `target path crosses a symlink`, or with `target escapes the
+allowed materialization root` when that link leads out of `~/.config`.
+
+To install through a `~/.config` link that leaves your home directory, set
+`XDG_CONFIG_HOME` to the folder the link leads to, spelled as that folder's own
+path, outside your home directory. Only the path as you spell it counts: a
+path outside your home directory is followed wherever its links lead. The
+install then writes there, and the `instructions` entries an install made
+earlier in `~/.config/opencode` wrote are replaced, so the config lists each
+file once. An uninstall with the same setting removes that earlier install as
+well, also when nothing was installed with the setting first: its
+`opencode.json`, once only Apothem's entries were in it, is copied into the
+Apothem backup root (`~/.apothem/backups/`) before it goes, and the empty
+folders that install created go too. When `XDG_CONFIG_HOME` names `~/.config`
+by another spelling inside your home directory (`$HOME/.config` through a
+link, another case, or a short name), the install keeps using
+`~/.config/opencode`, so it stays one install.
+
 ## Profile-to-native-config mapping
 
 The adapter renders `opencode.json` with an `instructions` file list naming
@@ -69,11 +99,12 @@ When the shared profile lists MCP servers, the install writes them to the `mcp`
 block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
 each `${NAME}` in a server's environment, headers or URL is written as
 `{env:NAME}`. Command arguments are copied as written: a reference there is
-left for the server, or a shell it runs, to expand. A `$NAME` in an
-environment or header value, and any `${...}` form left as written, a command
-argument's included, is copied as written, and the install warns that
-OpenCode does not expand it. The warning names where the reference sits, such
-as `environment.TOKEN`, and never prints the value.
+left for the server, or a shell it runs, to expand. The install warns about
+two kinds of `$` reference OpenCode does not expand, which the server then
+receives as written: a `$NAME` in an environment or header value, and any
+other `${...}` form, a plain `${NAME}` in a command argument included. The
+warning names where the reference sits, such as `environment.TOKEN`, and never
+prints the value.
 
 OpenCode inserts an `{env:NAME}` value into the config text it reads without
 escaping it; OpenCode 2 escapes it only when that text would not parse
@@ -81,8 +112,9 @@ otherwise. So a value with a backslash (such as a Windows path), a double
 quote or a control character can stop OpenCode 1 from reading the file, and
 in both lines a `\t` or `\n` in it reaches the server as a control character.
 The install checks each such variable when it runs and warns about one that
-holds those characters. Set that value as `{file:path}` under
-`harnesses.opencode.mcp_servers.<name>` instead, so the other tools keep the
+holds those characters. Restate that whole server under
+`harnesses.opencode.mcp_servers.<name>`, since an override replaces the whole
+server, and write the value there as `{file:path}`; the other tools keep the
 `${NAME}` reference.
 
 OpenCode combines every file the `instructions` list names into every session
@@ -179,8 +211,11 @@ removed. The shared profile YAML and Apothem engine are unaffected.
 
 An install made by an earlier release in `~/.config/opencode/` while
 `XDG_CONFIG_HOME` named another folder stays there, and OpenCode never read it.
-The next install says so; to remove it, run the uninstall with
-`XDG_CONFIG_HOME` unset.
+The next install says so while its files are there; to remove it, run the
+uninstall with `XDG_CONFIG_HOME` unset. When `~/.config` has since become a
+link that leads out of your home directory, that uninstall is refused with
+`target path crosses a symlink`, and the note names the folder the link leads
+to instead: run the uninstall with `XDG_CONFIG_HOME` set to that folder.
 
 ## Conformity gate
 

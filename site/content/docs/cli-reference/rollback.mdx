@@ -53,6 +53,16 @@ back every tool leaves nothing behind. When an install's record that could use
 the folder cannot be read, rollback stops with an error before it changes
 anything and writes no `rollback` record; repair the record and run it again.
 
+A rollback also stops before it changes anything, and writes no `rollback`
+record, when a link leads the tool's folder out of your home directory: a
+`CODEX_HOME` or `XDG_CONFIG_HOME` spelled inside your home directory, such as
+`~/work/tool`, where `~/work` became a link to another drive after the
+install. On Windows a junction counts as a link. The error reads `rollback
+refused: target path crosses a symlink` and names the link, and the command
+exits 1 without asking for confirmation first. Make the link lead to a folder inside your home directory, or replace
+it with the folder itself, and run the rollback again. A folder you spell as a
+path outside your home directory is followed.
+
 Everything rollback removes or replaces is first copied into the Apothem backup
 root (`~/.apothem/backups/`), so a rollback can itself be undone by hand.
 Rollback then appends a `rollback` record to the harness ledger. Rolling back an

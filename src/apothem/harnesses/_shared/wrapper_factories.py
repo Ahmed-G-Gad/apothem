@@ -152,18 +152,21 @@ _UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
 
     The shared driver strips only Apothem's managed block and keys, backing each
     target up under the Apothem backup root first, so operator-authored content
-    in a shared file survives."""
+    in a shared file survives. Returns the run; a step that reports an error
+    is an ``error`` result in it, so the uninstall is not reported as done."""
 
 _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
 
     The project root passes through when the CLI supplied it; otherwise it is
-    derived from the adapter's declared relative target."""
+    derived from the adapter's declared relative target. Returns the run; a
+    step that reports an error is an ``error`` result in it."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 
     The materializer-rendered config is not a manifest entry, so Apothem's
     structural contribution is identified by re-rendering from an empty profile
-    and removed surgically before the shared driver cleans the support tree."""
+    and removed surgically before the shared driver cleans the support tree.
+    Returns the run; a step that reports an error is an ``error`` result in it."""
 
 
 def make_verify_harness_root(harness_name: str) -> _UserScopeVerify:

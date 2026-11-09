@@ -445,3 +445,109 @@ def test_remove_tree_retries_after_clearing_readonly(tmp_path: Path) -> None:
     )
 
     assert not target.exists()
+
+
+# --- links that lead out of the home --------------------------------------
+
+
+def _dir_link(link: Path, target: Path) -> None:
+    """Make *link* lead to *target*: a symbolic link, or a junction on Windows."""
+    target.mkdir(parents=True, exist_ok=True)
+    link.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        import _winapi
+
+        _winapi.CreateJunction(str(target), str(link))
+
+
+def test_a_config_link_leaving_the_home_refuses_before_any_change(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    outside = tmp_path / "outside" / "config"
+    _dir_link(home / ".config", outside)
+    (outside / "apothem").mkdir()
+    (outside / "apothem" / "keep.txt").write_text("keep", encoding="utf-8")
+    (home / ".claude").mkdir()
+
+    with pytest.raises(UnsafeRootError, match="leads outside the home"):
+        run_clean_slate(
+            home, assume_yes=True, backup_root=_backups(home), clock=_FIXED_CLOCK
+        )
+
+    assert (outside / "apothem" / "keep.txt").read_text(encoding="utf-8") == "keep"
+    assert (home / ".claude").is_dir()
+    assert not _backups(home).exists()
+
+
+def test_a_config_link_inside_the_home_is_followed(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    dotfiles = home / "dotfiles" / "config"
+    _dir_link(home / ".config", dotfiles)
+    (dotfiles / "apothem").mkdir()
+    (dotfiles / "apothem" / "profile.yaml").write_text("x", encoding="utf-8")
+
+    result = run_clean_slate(
+        home, assume_yes=True, backup_root=_backups(home), clock=_FIXED_CLOCK
+    )
+
+    assert not (dotfiles / "apothem").exists()
+    assert {p.name for p in result.removed} == {"apothem"}
+
+
+def test_a_target_that_is_a_junction_or_link_loses_only_the_link(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    outside = tmp_path / "outside" / "claude"
+    (outside / "sub").mkdir(parents=True)
+    (outside / "sentinel.txt").write_text("s", encoding="utf-8")
+    (outside / "sub" / "deep.txt").write_text("d", encoding="utf-8")
+    _dir_link(home / ".claude", outside)
+
+    result = run_clean_slate(
+        home, assume_yes=True, backup_root=_backups(home), clock=_FIXED_CLOCK
+    )
+
+    assert not os.path.lexists(home / ".claude")
+    assert (outside / "sentinel.txt").read_text(encoding="utf-8") == "s"
+    assert (outside / "sub" / "deep.txt").read_text(encoding="utf-8") == "d"
+    assert [p.name for p in result.removed] == [".claude"]
+
+
+def test_the_retry_removes_a_link_inside_the_tree_without_entering_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = tmp_path / "home"
+    target = home / ".claude"
+    (target / "plain").mkdir(parents=True)
+    (target / "plain" / "file.txt").write_text("x", encoding="utf-8")
+    outside = tmp_path / "outside"
+    (outside / "deep").mkdir(parents=True)
+    (outside / "deep" / "keep.txt").write_text("keep", encoding="utf-8")
+    _dir_link(target / "linked", outside)
+    outside.chmod(0o755)
+    mode = outside.stat().st_mode
+    real_rmtree = _cs.shutil.rmtree
+    calls: list[Path] = []
+
+    def _fail_first(path: Path, *args: object, **kwargs: object) -> None:
+        calls.append(Path(path))
+        if len(calls) == 1:
+            raise OSError("simulated first failure")
+        real_rmtree(path)
+
+    monkeypatch.setattr(_cs.shutil, "rmtree", _fail_first)
+
+    _cs._remove_tree(target)
+
+    assert not target.exists()
+    assert (outside / "deep" / "keep.txt").read_text(encoding="utf-8") == "keep"
+    # The read-only bit is cleared on what is removed, never through a link.
+    assert outside.stat().st_mode == mode

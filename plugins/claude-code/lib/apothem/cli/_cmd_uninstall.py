@@ -210,6 +210,47 @@ def _report_run(
     return [summary, *steps], bool(blocked) or removed
 
 
+def _failed_adapter(
+    harness_id: str,
+    exc: Exception,
+    output_path: Path,
+    warnings: list[dict[str, object]],
+    *,
+    fmt: str,
+    no_color: bool,
+) -> tuple[list[dict[str, object]], bool]:
+    """Report an uninstall that raised; return its rows and whether it removed files.
+
+    An uninstall that stops after removing files carries the run so far (a
+    :class:`~apothem.harnesses._shared.install_driver.MaterializationError`
+    with ``run``): its warnings and failed steps are reported, and the files
+    it removed make the uninstall partial.
+    """
+    run = getattr(exc, "run", None)
+    run = run if isinstance(run, MaterializationRun) else None
+    removed = run is not None and any(
+        result.outcome == "updated" for result in run.results
+    )
+    if run is not None:
+        warnings.extend(
+            {"harness": harness_id, **group}
+            for group in _warning_groups(run)
+            if not _is_blocked(group)
+        )
+    if fmt != "json":
+        verb = "stopped after removing files" if removed else "failed"
+        get_error_console(no_color=no_color).print(
+            f"[red]✗[/] {harness_id} uninstall {verb}: {escape(str(exc))}"
+        )
+    steps = (
+        [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+        if run is not None
+        else []
+    )
+    row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
+    return [row, *steps], removed
+
+
 def _finished_row(
     harness_id: str, outcome: object, output_path: Path
 ) -> dict[str, object]:
@@ -220,7 +261,9 @@ def _finished_row(
     on the strength of a harness that removed nothing.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
-    removed = run is None or any(result.outcome == "updated" for result in run.results)
+    removed = run is not None and any(
+        result.outcome == "updated" for result in run.results
+    )
     return {
         "harness": harness_id,
         "outcome": "updated" if removed else "unchanged",
@@ -328,13 +371,11 @@ def _uninstall_impl(
             raise
         except Exception as exc:
             errored = True
-            results.append(
-                _adapter_failure_result(harness_id, "uninstall", output_path, exc)
+            rows, removed = _failed_adapter(
+                harness_id, exc, output_path, warnings, fmt=fmt, no_color=no_color
             )
-            if fmt != "json":
-                get_error_console(no_color=no_color).print(
-                    f"[red]✗[/] {harness_id} uninstall failed: {escape(str(exc))}"
-                )
+            results.extend(rows)
+            removed_any |= removed
             continue
         failures, partial = _report_run(
             harness_id,

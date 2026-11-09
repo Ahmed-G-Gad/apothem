@@ -293,7 +293,8 @@ def test_an_exception_mid_uninstall_keeps_the_install_for_a_retry(
     installed = ClaudeCodeAdapter().is_installed()
     retry_code, retry = _uninstall()
 
-    assert code == cli._EXIT_EXPECTED, envelope
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["status"] == "partial"
     assert envelope["results"][0]["outcome"] == "error"
     assert unfinished is not None
     assert unfinished.targets

@@ -16,7 +16,9 @@ from typing import NamedTuple
 from apothem.lib.propagation import USER_LEVEL_PREFIXES, user_home
 
 from .install_driver_types import (
+    MaterializationError,
     MaterializationResult,
+    MaterializationRun,
     _handle_rm_error,
     _path_text,
     _result,
@@ -80,13 +82,15 @@ def _within_allowed_root(target: Path, root: Path) -> bool:
 def _existing_chain(path: Path, floor: Path) -> list[Path]:
     """Return existing path components from *path* upward to *floor*."""
     expanded = path.expanduser()
-    # ``_is_link`` also sees a junction whose target folder is gone, for which
-    # ``exists()`` and ``is_symlink()`` are both False.
-    probe = expanded if expanded.exists() or _is_link(expanded) else expanded.parent
+    # ``lexists`` (an ``lstat``) also sees a link or junction whose target is
+    # gone; ``_is_link`` covers a junction ``lstat`` may not report.
+    probe = (
+        expanded if os.path.lexists(expanded) or _is_link(expanded) else expanded.parent
+    )
     floor_expanded = floor.expanduser()
     chain: list[Path] = []
     while True:
-        if probe.exists() or _is_link(probe):
+        if os.path.lexists(probe) or _is_link(probe):
             chain.append(probe)
         if _normalized(probe) == _normalized(floor_expanded):
             break
@@ -109,22 +113,35 @@ def _is_lexically_within(path: Path, parent: Path) -> bool:
 
 
 def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
-    """Return the user-level folders *path* sits in, when *floor* is the user home.
+    """Return the folders a link at or above which *path* may cross.
 
     Dotfile managers link ``~/.config`` or ``~/.agents`` into a dotfiles
-    folder, so a link at or above one of the manifest's closed user-level
-    folders (``~/.agents/skills``, ``~/.config/apothem/rules``, ...) is
-    allowed. The write guard has already confirmed the resolved path stays in
-    the home, and a link below the folder (a skill folder or a file in it) is
-    still refused.
+    folder. When *floor* is the user home, a link at or above one of the
+    manifest's closed user-level folders (``~/.agents/skills``,
+    ``~/.config/apothem/rules``, ...) is allowed: the write guard has already
+    confirmed the resolved path stays in the home. When the install root is
+    below ``~/.config`` (OpenCode's folder, or a ``CODEX_HOME`` there), *floor*
+    is at or below the folder ``~/.config`` leads to, and a link at
+    ``~/.config`` is allowed when that folder is inside the home. A link below
+    either folder (a skill folder, the install root, a file in it) is still
+    refused. The walk stops at *floor*, so a link above it is not examined.
     """
-    if _normalized(floor) != _normalized(user_home()):
-        return []
-    return [
-        base
-        for base in (user_home() / prefix for prefix in USER_LEVEL_PREFIXES)
-        if _is_lexically_within(path, base)
-    ]
+    home = user_home()
+    bases: list[Path] = []
+    if _normalized(floor) == _normalized(home):
+        bases = [
+            base
+            for base in (home / prefix for prefix in USER_LEVEL_PREFIXES)
+            if _is_lexically_within(path, base)
+        ]
+    config = home / ".config"
+    if (
+        _is_lexically_within(path, config)
+        and _is_relative_to(_normalized(floor), _normalized(config))
+        and _within_allowed_root(config, home)
+    ):
+        bases.append(config)
+    return bases
 
 
 #: Bit set in the reparse tag of a Windows reparse point that names another
@@ -255,18 +272,160 @@ def _remove_tree_keeping_links(top: Path) -> list[Path]:
 
 
 def _unsafe_symlink(path: Path, floor: Path) -> Path | None:
-    """Return the first symlink in the write path, if any.
+    """Return the first symlink or junction in the write path, if any.
 
-    A link at or above a user-level folder (see :func:`_linkable_ancestors`)
-    does not count.
+    A link at or above a user-level folder, or at ``~/.config`` for an install
+    root below it (see :func:`_linkable_ancestors`), does not count. Nor does
+    the home folder itself or a folder above it, as the home is spelled (a
+    profile moved to another drive behind a junction): the caller has already
+    checked that the resolved path stays inside the resolved allowed root, so
+    such a link cannot lead the write out of the home.
     """
+    home = user_home()
     bases = _linkable_ancestors(path, floor)
     for candidate in _existing_chain(path, floor):
+        if _is_lexically_within(home, candidate):
+            continue
         if _is_link(candidate) and not any(
             _is_lexically_within(base, candidate) for base in bases
         ):
             return candidate
     return None
+
+
+def _names_same_folder(first: Path, second: Path) -> bool:
+    """Return True when *first* and *second* name one folder.
+
+    When both exist they are compared by file identity, which also matches a
+    change of case on a case-insensitive volume, a short (8.3) name, a bind
+    mount, a link or a junction. Otherwise, or when the filesystem reports no
+    inode numbers (some network and FUSE mounts do), their resolved paths are
+    compared.
+    """
+    try:
+        stats = [first.stat(), second.stat()]
+    except OSError:
+        stats = []
+    if stats and all(item.st_ino for item in stats):
+        return os.path.samestat(stats[0], stats[1])
+    return _normalized(first) == _normalized(second)
+
+
+def _spelled_inside_home(path: Path) -> bool:
+    """Return True when *path*, as spelled, passes through the home folder.
+
+    One of its spelled ancestors (or *path* itself) is the home folder, by
+    file identity: the home as it is spelled, resolved, in another case or by
+    its short name.
+    """
+    home = user_home()
+    return any(_names_same_folder(folder, home) for folder in (path, *path.parents))
+
+
+def _link_leaving_home(root: Path) -> Path | None:
+    """Return the link that leads *root*, spelled inside the home, out of it.
+
+    ``None`` when *root* is spelled outside the home (the operator named that
+    folder, through ``XDG_CONFIG_HOME`` or ``CODEX_HOME``), when it stays
+    inside the home once resolved, or when no link sits between it and the
+    home (a bind mount or a macOS firmlink naming the home another way leads
+    nowhere else). The write guard stops its walk at the folder above the
+    install root, so a link higher up (``CODEX_HOME=~/a/b/codex`` with ``~/a``
+    leading out of the home) is found here. Of the links on the way up, the
+    one named is the highest that leads out of the home itself, not a link
+    below it that stays inside (``~/a`` leading to ``~/c`` while ``~/a/b``
+    leads out names ``~/a/b``).
+    """
+    home = user_home()
+    if not _spelled_inside_home(root) or _within_allowed_root(root, home):
+        return None
+    first: Path | None = None
+    leading_out: Path | None = None
+    for folder in (root, *root.parents):
+        if _names_same_folder(folder, home):
+            break
+        if not _is_link(folder):
+            continue
+        first = first or folder
+        if not _within_allowed_root(folder, home):
+            leading_out = folder
+    return leading_out or first
+
+
+def _first_link(root: Path) -> Path | None:
+    """Return the first link at or above *root*, read without resolving any."""
+    for folder in (root, *root.parents):
+        try:
+            if _is_link(folder):
+                return folder
+        except OSError:
+            return None
+    return None
+
+
+def link_leaving_home_refusal(
+    root: Path, *, operation: str
+) -> MaterializationResult | None:
+    """Return the error result for a link that leads *root* out of the home.
+
+    ``None`` when there is no such link (see :func:`_link_leaving_home`) or a
+    folder on the way cannot be read; the result's ``detail["symlink"]``
+    names the link. A link loop counts as such a link where resolving it
+    raises :class:`RuntimeError` (Python 3.10 to 3.12): the first link found
+    is named. From Python 3.13 resolving a loop does not raise, so this check
+    names no link for it; the write that follows cannot pass through the loop
+    and stops there.
+    """
+    try:
+        link = _link_leaving_home(root)
+    except RuntimeError:
+        link = _first_link(root) or root
+    except (OSError, ValueError):
+        return None
+    if link is None:
+        return None
+    return _result(
+        "error",
+        operation,
+        root,
+        "target path crosses a symlink",
+        detail={"symlink": _path_text(link)},
+    )
+
+
+def refuse_link_leaving_home(
+    harness_name: str,
+    root: Path,
+    *,
+    operation: str,
+    uninstall: bool = False,
+    dry_run: bool = False,
+) -> None:
+    """Raise when a link leads the install root *root* out of the home.
+
+    Run before an install, update or uninstall of a harness whose root an
+    environment variable moves (see :func:`_link_leaving_home`); nothing is
+    written or removed. A link loop on the way up (Python 3.10 to 3.12 raise
+    :class:`RuntimeError` resolving one) is refused too, naming the first link
+    found. A folder that cannot be read is left to the write guard, which
+    still checks every target. Read-only commands never call this.
+
+    Raises:
+        MaterializationError: When there is such a link, or a link loop.
+    """
+    refusal = link_leaving_home_refusal(root, operation=operation)
+    if refusal is None:
+        return
+    link = refusal.detail.get("symlink", str(root))
+    message = (
+        f"uninstall refused: {refusal.message} ({link} leads outside the home folder)"
+        if uninstall
+        else f"materialization write failed: {refusal.message}"
+    )
+    raise MaterializationError(
+        message,
+        MaterializationRun(harness=harness_name, dry_run=dry_run, results=(refusal,)),
+    )
 
 
 def _ensure_directory(path: Path, *, operation: str) -> MaterializationResult | None:

@@ -44,6 +44,9 @@ from apothem.harnesses._shared.install_driver import (
     fidelity_is_faithful,
     write_bytes_safely,
 )
+from apothem.harnesses._shared.install_driver_pathsafety import (
+    link_leaving_home_refusal,
+)
 from apothem.lib.harness_registry import (
     SUPPORTED_HARNESS_IDS,
     HarnessRegistryEntry,
@@ -471,13 +474,78 @@ def _load_profile(profile_path: Path) -> dict[str, Any]:
     return load_profile_file(profile_path).to_dict()
 
 
+def _refuse_profile_outside_home(profile_path: Path) -> None:
+    """Raise when a link leads a profile write at *profile_path* out of the home.
+
+    The rule the harness installs apply to their folders (see
+    :func:`~apothem.harnesses._shared.install_driver_pathsafety.link_leaving_home_refusal`):
+    a path spelled inside the home, such as the default
+    ``~/.config/apothem/profile.yaml``, is refused when a link on it leads out
+    of the home; a link that stays inside the home (a dotfiles folder) is
+    followed. A path spelled outside the home, passed with ``--profile``, is
+    the operator naming that place and is written as before. A profile file
+    that is itself a link out of the home (a dotfiles file on another drive)
+    is refused the same way. Every profile write is checked: creating the
+    starter profile, ``profile set`` and ``profile init --force`` over an
+    existing one, and opening it in the editor.
+
+    Raises:
+        _CliUserError: When a link leads *profile_path* out of the home.
+    """
+    refusal = link_leaving_home_refusal(profile_path, operation="profile_write")
+    if refusal is None:
+        return
+    link = refusal.detail.get("symlink", str(profile_path))
+    if link == str(profile_path):
+        reason = f"{refusal.message}: {profile_path} is a link that leads outside "
+        reason += "your home directory"
+        fix = (
+            "Pass --profile PATH with the path the link leads to, or make the "
+            "link lead to a file inside your home directory."
+        )
+    else:
+        reason = f"{refusal.message}: {link} leads {profile_path} outside your "
+        reason += "home directory"
+        fix = (
+            "Make the link lead to a folder inside your home directory, or "
+            "pass --profile PATH with the profile's own path outside your home "
+            "directory."
+        )
+    if not profile_path.exists():
+        fix = (
+            "Make the link lead to a folder inside your home directory, or "
+            "create the profile outside your home directory with "
+            "`apothem profile init --profile PATH` and pass the same "
+            "--profile PATH to each command."
+        )
+    raise _CliUserError(
+        code="profile.write_failed",
+        message=(
+            "Apothem could not write the profile."
+            if profile_path.exists()
+            else "Apothem could not create the starter profile."
+        ),
+        field="profile",
+        reason=reason,
+        fix=fix,
+    )
+
+
 def _write_profile_text_safely(
     profile_path: Path,
     text: str,
     *,
     operation: str,
 ) -> MaterializationResult:
-    """Write a profile document through the shared atomic write boundary."""
+    """Write a profile document through the shared atomic write boundary.
+
+    A write at a path spelled inside the home that a link leads out of it, the
+    default path or a ``--profile`` path, is refused first (see
+    :func:`_refuse_profile_outside_home`), so ``install``, ``quickstart``,
+    ``profile init``, ``profile set`` and ``profile edit`` all stop the same
+    way.
+    """
+    _refuse_profile_outside_home(profile_path)
     result = write_bytes_safely(
         profile_path,
         text.encode("utf-8"),

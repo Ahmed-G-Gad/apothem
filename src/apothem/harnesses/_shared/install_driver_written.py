@@ -15,10 +15,11 @@ import os
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-from apothem.lib.install_ledger import LedgerTarget
+from apothem.lib import install_ledger
+from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_backup import backup_existing
-from .install_driver_digests import file_digest
+from .install_driver_digests import backup_ledger_targets, file_digest
 from .install_driver_pathsafety import (
     _is_link,
     _normalized,
@@ -27,6 +28,7 @@ from .install_driver_pathsafety import (
     _walk_without_links,
     kept_links_detail,
 )
+from .install_driver_retention import apply_retention
 from .install_driver_sweep import _link_kept as link_kept
 from .install_driver_types import MaterializationResult, _path_text, _result
 
@@ -37,6 +39,10 @@ KEPT_FILES = "kept_files"
 #: ``detail`` key of a failed removal: the files Apothem wrote that it could
 #: not remove (newline-joined paths).
 STUCK_FILES = "stuck_files"
+
+#: Kept reasons that leave the uninstall unfinished: files of an install an
+#: earlier release recorded, which this release cannot show are Apothem's.
+UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests"})
 
 #: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
 KEPT_REASON = "kept_reason"
@@ -289,3 +295,50 @@ def still_written(entry: LedgerTarget) -> bool:
     """
     proof = _proof(entry)
     return proof is not None and bool(_written_now(Path(entry.path), proof))
+
+
+def left_unfinished(results: list[MaterializationResult]) -> bool:
+    """Return True when Apothem's files stay where the uninstall could not finish.
+
+    A removal failed, Apothem's files stay behind a link, or files an earlier
+    release recorded without digests stay because this release cannot show
+    they are Apothem's (``apothem update`` records them, then a second
+    uninstall finishes).
+    """
+    return any(
+        result.outcome == "error"
+        or result.detail.get("blocked")
+        or result.detail.get(KEPT_REASON) in UNFINISHED_REASONS
+        for result in results
+    )
+
+
+def record_uninstall(
+    harness_name: str,
+    root: Path,
+    record: LedgerRecord | None,
+    results: list[MaterializationResult],
+    *,
+    finished: bool,
+) -> None:
+    """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
+
+    Either record references every backup the pass took. A finished uninstall
+    ends the install and runs retention. An unfinished one keeps the install
+    active, so a second run is driven by the same record; it is written even
+    when the pass raised, and a failure to write it then does not hide the
+    pass's own error.
+    """
+    entry = LedgerRecord.create(
+        harness=harness_name,
+        root=root,
+        kind="uninstall" if finished else "uninstall-incomplete",
+        targets=backup_ledger_targets(results),
+        install_id=record.install_id if record is not None else None,
+    )
+    if not finished:
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            install_ledger.append_record(entry)
+        return
+    install_ledger.append_record(entry)
+    apply_retention(harness_name)
