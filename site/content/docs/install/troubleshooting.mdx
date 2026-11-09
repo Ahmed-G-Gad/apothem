@@ -306,6 +306,24 @@ adapter-specific page under [Harness Adapters](/docs/harnesses).
 Confirm Apothem is wired by checking ~/.claude/settings.json for the hook entries.
 If the file is missing the hooks, run apothem install again.
 
+### OpenCode does not load the Apothem rules
+
+`apothem install`, `apothem update` and `apothem verify` print a note when a
+file of yours in OpenCode's configuration folder keeps OpenCode 1 from loading
+the `instructions` list Apothem writes in `opencode.json`:
+
+- An `opencode.jsonc` with its own `instructions` list, even an empty one,
+  replaces Apothem's list. Remove that key, or move its entries into the list
+  in `opencode.json`, where installs keep the entries they did not write.
+- An `opencode.jsonc` that OpenCode 1 cannot parse or read, or a folder with
+  that name, stops OpenCode 1 from loading any of its configuration. Correct
+  the file so it is JSON with only comments and trailing commas added, or move
+  it out of the folder.
+
+OpenCode 2 reads both lists and skips a file it cannot parse, so these notes
+are about OpenCode 1. The notes change no file and no exit code. See
+[OpenCode](/docs/harnesses/opencode) for the details.
+
 ## Getting help
 
 - [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- bug reports

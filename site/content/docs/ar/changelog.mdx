@@ -300,7 +300,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- **OpenCode installs say when an `opencode.jsonc` replaces the rules list.**
+- **OpenCode installs say when an `opencode.jsonc` keeps the rules from
+  OpenCode 1.**
   OpenCode 1 reads `opencode.json` and then `opencode.jsonc` from its
   configuration folder, and a list in the later file replaces the earlier one.
   So an `instructions` list in an `opencode.jsonc` beside the `opencode.json`
@@ -312,10 +313,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   every entry the install writes, the note says installs do not refresh the
   copy. OpenCode 2 joins the lists of every file it reads, so the note is
   about OpenCode 1 only. There is no note for a file with no `instructions`
-  list, for a symbolic link to `opencode.json`, or for a file OpenCode 1
-  cannot read as JSONC. There is none while `OPENCODE_CONFIG_DIR` names that
-  folder or `OPENCODE_CONFIG` names that `opencode.json` either, because
-  OpenCode 1 then reads the written list again and joins it to the others.
+  list or for a symbolic link to `opencode.json`. There is none while
+  `OPENCODE_CONFIG_DIR` names that folder or `OPENCODE_CONFIG` names that
+  `opencode.json` either, because OpenCode 1 then reads the written list again
+  and joins it to the others. An `opencode.jsonc` there that OpenCode 1
+  cannot parse as JSONC (JSON5 syntax, `NaN`, a comment never closed, or only
+  spaces or comments), once it has put in each `{env:NAME}` and `{file:path}`,
+  stops OpenCode 1 with an error before it loads any of its configuration, the
+  rules included, so it gets a note too, whatever those variables say; so does
+  a folder with that name, or a file OpenCode 1 cannot read, such as a link
+  that leads back to itself. OpenCode 2 skips a file it cannot parse. In
+  current OpenCode 1 releases, a file with no bytes, or only a byte order
+  mark, reads as empty and gets no note, and a file they may not read is
+  skipped and gets no note, except on Windows, where they stop for it. The
+  notes change no file and no exit code.
 - **The JSONC / JSON5 config reader accepts LINE SEPARATOR and PARAGRAPH
   SEPARATOR inside strings.** JSON and JSON5 allow U+2028 and U+2029 unescaped
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config

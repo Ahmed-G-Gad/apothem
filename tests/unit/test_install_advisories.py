@@ -10,6 +10,7 @@ Apothem content says where that content comes from.
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,7 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
+from apothem.lib import install_advisories
 from apothem.lib.codex_home import codex_home
 from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
@@ -1378,16 +1380,13 @@ def test_an_opencode_jsonc_instructions_list_replaces_the_written_list(
         '{"instructions": "a.md"}',
         '{"instructions": null}',
         '["instructions"]',
-        '{"instructions": [',
         '{"nested": {"instructions": []}}',
-        # OpenCode 1 refuses these files instead of reading their list: it
-        # parses JSONC, not JSON5, and wants a list of strings.
-        "{instructions: []}",
-        "{'instructions': ['a.md']}",
-        '{"x": NaN, "instructions": []}',
+        # OpenCode 1 wants a list of strings, so it reads no list from these.
         '{"instructions": [1, 2]}',
         '{"instructions": ["a.md", null]}',
-        '{"instructions": []} /* not closed',
+        # OpenCode 1 reads empty text as {}, and TextDecoder drops a lone byte
+        # order mark first, so neither file stops it.
+        chr(0xFEFF),
     ],
 )
 def test_opencode_gives_no_note_without_a_top_level_instructions_list(
@@ -1399,19 +1398,209 @@ def test_opencode_gives_no_note_without_a_top_level_instructions_list(
     assert instruction_override_advisories("opencode", home=tmp_path) == []
 
 
-def test_an_unreadable_opencode_jsonc_gives_no_note_instead_of_an_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "text",
+    [
+        # JSON5 syntax: OpenCode 1 parses JSONC only.
+        "{instructions: []}",
+        "{'instructions': ['a.md']}",
+        '{"x": NaN, "instructions": []}',
+        "not a config file",
+        '{"instructions": []} /* not closed',
+        '{"instructions": [',
+        '{"instructions": [,]}',
+        '{} {"instructions": []}',
+        # Whitespace or comments alone are no value, which jsonc-parser
+        # refuses; a byte order mark ahead of whitespace is dropped first.
+        "  \n",
+        "// nothing else\n",
+        chr(0xFEFF) + " ",
+    ],
+)
+def test_an_opencode_jsonc_opencode_1_cannot_parse_gets_a_note(
+    tmp_path: Path, text: str
 ) -> None:
-    path = _opencode_jsonc(_opencode_folder(), '{"instructions": []}')
+    # OpenCode 1 then loads no configuration at all; OpenCode 2 skips the file.
+    folder = _opencode_folder()
+    path = _opencode_jsonc(folder, text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert note["harness"] == "opencode"
+    assert note["outcome"] == "advisory"
+    assert note["operation"] == "instruction_override"
+    assert note["path"] == str(path)
+    assert note["target"] == str(folder / "opencode.json")
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 cannot parse {path} as JSONC" in message
+    quoted = f'stops with the error "Config file at {path} is not valid JSON(C)"'
+    assert quoted in message
+    assert "loads none of its configuration" in message
+    assert "rules Apothem lists in opencode.json included" in message
+    assert "until the file is fixed or removed" in message
+    assert "OpenCode 2 skips that file and still loads opencode.json" in message
+    assert path.read_bytes() == text.encode("utf-8")
+    assert not (folder / "opencode.json").exists()
+
+
+@pytest.mark.parametrize("variable", ["OPENCODE_CONFIG_DIR", "OPENCODE_CONFIG"])
+def test_an_opencode_jsonc_opencode_1_cannot_parse_keeps_its_note_when_joined(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, variable: str
+) -> None:
+    # OpenCode 1 still reads the file with the other global files first, so a
+    # later join of the lists does not save the configuration.
+    folder = _opencode_folder()
+    path = _opencode_jsonc(folder, "{instructions: []}")
+    named = folder if variable == "OPENCODE_CONFIG_DIR" else folder / "opencode.json"
+    monkeypatch.setenv(variable, str(named))
+    notes = instruction_override_advisories("opencode", home=tmp_path)
+    assert [note["path"] for note in notes] == [str(path)]
+
+
+def test_a_folder_named_opencode_jsonc_gets_a_note(tmp_path: Path) -> None:
+    # Reading a folder fails with an error OpenCode 1 does not skip.
+    path = _opencode_folder() / "opencode.jsonc"
+    path.mkdir(parents=True)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert note["path"] == str(path)
+    message = " ".join(str(note["message"]).split())
+    assert f"{path} is a folder" in message
+    assert "so it stops with an error and loads none of its configuration" in message
+    assert "until the folder is moved or renamed" in message
+    assert "OpenCode 2" not in message
+    assert path.is_dir()
+
+
+def _refuse_read(monkeypatch: pytest.MonkeyPatch, path: Path, error: OSError) -> None:
+    """Make every read of *path* raise *error*."""
     real_read_bytes = Path.read_bytes
 
     def read_bytes(self: Path) -> bytes:
         if self == path:
-            raise PermissionError(13, "Permission denied", str(self))
+            raise error
         return real_read_bytes(self)
 
     monkeypatch.setattr(Path, "read_bytes", read_bytes)
+
+
+@pytest.mark.parametrize("text", ['{"instructions": []}', "{instructions: []}"])
+def test_an_opencode_jsonc_it_may_not_read_gets_a_note_on_windows_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str
+) -> None:
+    # Current OpenCode 1 releases skip a file they may not read (EACCES), as if
+    # missing. Windows reports such a file as EPERM, which they do not skip.
+    path = _opencode_jsonc(_opencode_folder(), text)
+    denied = PermissionError(errno.EACCES, "Permission denied", str(path))
+    _refuse_read(monkeypatch, path, denied)
+    monkeypatch.setattr(install_advisories, "_WINDOWS", False)
     assert instruction_override_advisories("opencode", home=tmp_path) == []
+
+    monkeypatch.setattr(install_advisories, "_WINDOWS", True)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert note["path"] == str(path)
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 cannot read {path} (Permission denied)" in message
+    assert "so it stops with an error and loads none of its configuration" in message
+    assert "until the file can be read or is removed" in message
+    assert "OpenCode 2" not in message
+
+
+@pytest.mark.parametrize("code", [errno.ELOOP, errno.EBUSY, errno.EIO])
+@pytest.mark.parametrize("windows", [True, False])
+def test_an_opencode_jsonc_read_error_opencode_1_does_not_skip_gets_a_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, code: int, windows: bool
+) -> None:
+    # OpenCode 1 skips only a missing file and one it may not read; a link loop
+    # or a file another program holds stops its config like a parse error.
+    path = _opencode_jsonc(_opencode_folder(), '{"instructions": []}')
+    _refuse_read(monkeypatch, path, OSError(code, os.strerror(code), str(path)))
+    monkeypatch.setattr(install_advisories, "_WINDOWS", windows)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 cannot read {path} ({os.strerror(code)})" in message
+
+
+def test_a_symbolic_link_loop_at_opencode_jsonc_gets_a_note(tmp_path: Path) -> None:
+    folder = _opencode_folder()
+    folder.mkdir(parents=True)
+    path = folder / "opencode.jsonc"
+    try:
+        path.symlink_to(folder / "loop")
+        (folder / "loop").symlink_to(path)
+    except OSError:
+        pytest.skip("symbolic links are not available here")
+    notes = instruction_override_advisories("opencode", home=tmp_path)
+    assert [note["path"] for note in notes] == [str(path)]
+    assert "OpenCode 1 cannot read" in str(notes[0]["message"])
+
+
+@pytest.mark.parametrize(
+    ("text", "value", "parses"),
+    [
+        # An unquoted token parses once OpenCode 1 puts the value in.
+        ('{"port": {env:APOTHEM_TEST_PORT}}', "4000", True),
+        ('{"port": {env:APOTHEM_TEST_PORT}}', None, False),
+        ('{"port": {env:APOTHEM_TEST_PORT}}', "", False),
+        # OpenCode 1 does not escape the value, so a double quote breaks it.
+        ('{"name": "{env:APOTHEM_TEST_PORT}"}', "plain", True),
+        ('{"name": "{env:APOTHEM_TEST_PORT}"}', 'a"b', False),
+    ],
+)
+def test_an_opencode_jsonc_is_parsed_after_its_env_tokens_are_replaced(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    text: str,
+    value: str | None,
+    parses: bool,
+) -> None:
+    if value is None:
+        monkeypatch.delenv("APOTHEM_TEST_PORT", raising=False)
+    else:
+        monkeypatch.setenv("APOTHEM_TEST_PORT", value)
+    path = _opencode_jsonc(_opencode_folder(), text)
+    notes = instruction_override_advisories("opencode", home=tmp_path)
+    assert [note["path"] for note in notes] == ([] if parses else [str(path)])
+    assert path.read_text(encoding="utf-8") == text
+
+
+def test_an_env_token_can_hold_the_instructions_list_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The raw text is not JSONC, but OpenCode 1 parses it once the value is in,
+    # and then reads its list in place of the written one.
+    monkeypatch.setenv("APOTHEM_TEST_PORT", "4000")
+    text = '{"port": {env:APOTHEM_TEST_PORT}, "instructions": []}'
+    path = _opencode_jsonc(_opencode_folder(), text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 reads the instructions list in {path}" in message
+
+
+@pytest.mark.parametrize(
+    ("text", "files", "parses"),
+    [
+        # OpenCode 1 puts the trimmed text in, escaped as a JSON string's inside.
+        ('{"port": {file:port.txt}}', {"port.txt": "4000" + chr(10)}, True),
+        ('{"port": {file:word.txt}}', {"word.txt": "abc"}, False),
+        ('{"name": "{file:note.txt}"}', {"note.txt": 'a "b"' + chr(10) + "c"}, True),
+        ('{"name": "{file:~/home-note.txt}"}', {"~/home-note.txt": "x"}, True),
+        # A file that cannot be read stops OpenCode 1 with another error, so
+        # what it would parse is not known and there is no parse note.
+        ('{"port": {file:missing.txt}}', {}, True),
+        # A token on a line that starts with // stays as it is, in a comment.
+        ("// {file:missing.txt}" + chr(10) + "{}", {}, True),
+        ("// {file:missing.txt}" + chr(10) + "{x}", {}, False),
+    ],
+)
+def test_an_opencode_jsonc_is_parsed_after_its_file_tokens_are_replaced(
+    tmp_path: Path, text: str, files: dict[str, str], parses: bool
+) -> None:
+    folder = _opencode_folder()
+    for name, content in files.items():
+        where = Path.home() / name[2:] if name.startswith("~/") else folder / name
+        where.parent.mkdir(parents=True, exist_ok=True)
+        where.write_bytes(content.encode("utf-8"))
+    path = _opencode_jsonc(folder, text)
+    notes = instruction_override_advisories("opencode", home=tmp_path)
+    assert [note["path"] for note in notes] == ([] if parses else [str(path)])
 
 
 def test_the_opencode_check_follows_xdg_config_home(
@@ -1505,13 +1694,14 @@ def test_a_symbolic_link_to_opencode_json_hides_nothing(tmp_path: Path) -> None:
     assert instruction_override_advisories("opencode", home=tmp_path) == []
 
 
+@pytest.mark.parametrize("text", ['{"instructions": []}', "{instructions: []}"])
 def test_the_opencode_verify_note_needs_an_entry_the_install_wrote(
-    tmp_path: Path,
+    tmp_path: Path, text: str
 ) -> None:
     from apothem.harnesses.opencode.materializer import instruction_entries
 
     folder = _opencode_folder()
-    _opencode_jsonc(folder, '{"instructions": []}')
+    _opencode_jsonc(folder, text)
     target = folder / "opencode.json"
     verify = {"home": tmp_path, "require_block": True}
     assert instruction_override_advisories("opencode", **verify) == []
@@ -1571,11 +1761,12 @@ def test_cli_opencode_dry_runs_name_a_replacing_jsonc(
     assert not (folder / "opencode.json").exists()
 
 
+@pytest.mark.parametrize("text", ['{"instructions": []}', "{instructions: []}"])
 def test_cli_opencode_verify_gives_no_note_without_an_install(
-    cli_env: tuple[Path, Path],
+    cli_env: tuple[Path, Path], text: str
 ) -> None:
     home, profile = cli_env
-    _opencode_jsonc(home / ".config" / "opencode", '{"instructions": []}')
+    _opencode_jsonc(home / ".config" / "opencode", text)
     runner = CliRunner()
     verify = ["verify", "--harness", "opencode", "--no-color", "--format", "json"]
     before = runner.invoke(main, verify)
@@ -1599,3 +1790,31 @@ def test_cli_opencode_install_says_nothing_without_an_instructions_list(
     result = CliRunner().invoke(main, [*args, "--no-color", "--format", "json"])
     assert result.exit_code == 0, result.output
     assert _override_notes(json.loads(result.output)) == []
+
+
+def test_cli_opencode_install_update_and_verify_name_an_unparsable_jsonc(
+    cli_env: tuple[Path, Path],
+) -> None:
+    home, profile = cli_env
+    folder = home / ".config" / "opencode"
+    text = "{instructions: ['mine.md']}"
+    path = _opencode_jsonc(folder, text)
+    expected = [(str(path), str(folder / "opencode.json"))]
+    runner = CliRunner()
+    for args in (
+        ["install", "--harness", "opencode", "--profile", str(profile)],
+        ["update", "--harness", "opencode", "--profile", str(profile)],
+        ["verify", "--harness", "opencode"],
+    ):
+        result = runner.invoke(main, [*args, "--no-color", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        notes = _override_notes(json.loads(result.output))
+        assert [(n["path"], n["target"]) for n in notes] == expected, args[0]
+    # The note changes no file of the operator's.
+    assert path.read_text(encoding="utf-8") == text
+
+    # The note does not fail verify; plain mode prints it under the row.
+    plain = runner.invoke(main, ["verify", "--harness", "opencode", "--no-color"])
+    assert plain.exit_code == 0, plain.output
+    flat = " ".join(plain.output.split())
+    assert f"Note: OpenCode 1 cannot parse {path} as JSONC" in flat
