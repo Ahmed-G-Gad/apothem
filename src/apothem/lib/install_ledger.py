@@ -622,6 +622,83 @@ def active_install_ids(records: list[LedgerRecord]) -> set[str]:
     return set(installs)
 
 
+def created_here(target: LedgerTarget) -> bool:
+    """Return True when the install record listing *target* says Apothem made it.
+
+    The pass created the file, or an earlier install still in place at the
+    same root did and the record carried that forward (``created``).
+    """
+    return target.outcome == "created" or target.created is True
+
+
+def _endings(records: list[LedgerRecord]) -> dict[int, int]:
+    """Map each install in one root's *records* that a later record ended to it.
+
+    Positions index *records*, replayed as :func:`active_install_records`
+    does: an ``uninstall`` ends every install still in place; a ``rollback``
+    ends the install it names and every later one.
+    """
+    stack: list[int] = []
+    ended: dict[int, int] = {}
+    for position, record in enumerate(records):
+        ids = [records[index].install_id for index in stack]
+        if record.kind == "install":
+            stack.append(position)
+        elif record.kind == "uninstall" or (
+            record.kind == "rollback" and record.install_id in ids
+        ):
+            cut = 0 if record.kind == "uninstall" else ids.index(record.install_id)
+            ended.update(dict.fromkeys(stack[cut:], position))
+            del stack[cut:]
+    return ended
+
+
+def _without_backups(record: LedgerRecord) -> LedgerRecord:
+    """Return *record* with no backup set referenced, so retention pins none."""
+    return replace(
+        record, targets=tuple(replace(t, backup_ref=None) for t in record.targets)
+    )
+
+
+def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRecord]:
+    """Return the records before position *before* that say what Apothem made.
+
+    *records* are one root's. Each install ended before *before* that made a
+    file (see :func:`created_here`) its ending record did not change is kept,
+    cut down to those files, with the record that ended it, and for a rollback
+    the install it names, so the kept records still replay to nothing in
+    place. A file a later kept install made is left out of an earlier one. No
+    kept record references a backup set. A shared folder another install kept
+    is then still known as made by Apothem, so the last holder's rollback
+    removes it (see ``UserLevelGate.inherited``).
+    """
+    ended = _endings(records)
+    kept: dict[int, LedgerRecord] = {}
+    claimed: set[str] = set()
+    for position in sorted((p for p in ended if p < before), reverse=True):
+        record, end = records[position], records[ended[position]]
+        changed = claimed | {target.path for target in end.targets}
+        made = tuple(
+            replace(target, backup_ref=None)
+            for target in record.targets
+            if created_here(target) and target.path not in changed
+        )
+        if not made:
+            continue
+        claimed.update(target.path for target in made)
+        kept[position] = replace(record, targets=made, created_dirs=())
+        kept[ended[position]] = _without_backups(end)
+        if end.kind == "rollback":
+            named = next(
+                index
+                for index in range(position + 1)
+                if records[index].kind == "install"
+                and records[index].install_id == end.install_id
+            )
+            kept.setdefault(named, replace(records[named], targets=(), created_dirs=()))
+    return kept
+
+
 def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRecord]:
     """Return the records retention keeps, per root, in ledger order.
 
@@ -630,23 +707,26 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
     gives the same active installs as replaying the whole history. The
     directories older dropped installs created are folded into the first kept
     install, so uninstall still removes them. A root with no active install
-    keeps only its last record.
+    keeps its last record. Before the tail (or that last record) the records
+    :func:`_provenance` picks are kept too; they replay to nothing in place.
     """
     by_root: dict[str, list[int]] = {}
     for index, record in enumerate(records):
         by_root.setdefault(record.root, []).append(index)
     kept: dict[int, LedgerRecord] = {}
     for indices in by_root.values():
-        active = active_install_ids([records[index] for index in indices])
+        group = [records[index] for index in indices]
+        active = active_install_ids(group)
         active_positions = [
             index
             for index in indices
             if records[index].kind == "install" and records[index].install_id in active
         ]
-        if not active_positions:
-            kept[indices[-1]] = records[indices[-1]]
-            continue
-        start = active_positions[-keep_installs:][0]
+        start = (
+            active_positions[-keep_installs:][0] if active_positions else indices[-1]
+        )
+        for position, record in _provenance(group, indices.index(start)).items():
+            kept[indices[position]] = record
         for index in indices:
             if index >= start:
                 kept[index] = records[index]
@@ -745,6 +825,7 @@ __all__ = [
     "active_install_records",
     "append_record",
     "compact_records",
+    "created_here",
     "current_install_record",
     "find_record",
     "generate_ulid",

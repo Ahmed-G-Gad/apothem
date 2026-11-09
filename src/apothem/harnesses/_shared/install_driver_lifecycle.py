@@ -34,6 +34,7 @@ from .install_driver_hookfile import (
     registration_present,
     release_native_hooks,
 )
+from .install_driver_keys import one_install
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _APOTHEM_SUBTREE,
@@ -414,42 +415,36 @@ def run_uninstall(
     """Remove Apothem-generated targets declared for *harness_name*.
 
     ``write_text`` / ``sentinel_merge`` operator-owned targets are cleaned
-    surgically: only Apothem's contribution is stripped (the sentinel-delimited
-    managed block for Markdown anchors; Apothem's keys / hook handlers for JSON
-    and YAML configs), operator prose and operator-authored keys survive, and a
-    file reduced to Apothem-only content is deleted rather than left as a stub.
-    The pre-mutation file is copied into the Apothem backup root first — no
-    whole-file ``.bak`` sibling is left in the operator's directory. Directory
-    discovery surfaces are cleaned child-by-child, and each child only as far
+    surgically: only Apothem's contribution is stripped (the managed block of
+    a Markdown anchor; Apothem's keys / hook handlers in JSON and YAML), the
+    operator's prose and keys survive, and a file left with Apothem-only
+    content is deleted. The file is backed up first, never to a ``.bak``
+    sibling. Directory surfaces are cleaned child by child, each only as far
     as the install record shows Apothem wrote it (see :func:`remove_written`):
-    a file goes only while it still has the recorded SHA-256, so a file the
-    operator added or changed stays, with a warning. Removed entries are
-    backed up first.
+    a file goes only while it has the recorded SHA-256, so one the operator
+    added or changed stays, with a warning.
 
     The pass is ledger-driven: the latest install record for this harness+root
-    is the source of truth for which single-file targets were actually written,
-    so manifest drift after install cannot strand or over-remove them (a target
-    added to the manifest later is untouched; a recorded target removed from the
-    manifest is still cleaned). Tree/discovery surfaces are enumerated from the
-    manifest and source, and a child the record does not list stays. A record
-    written before file digests existed, or no record at all (a pre-ledger
-    install), proves nothing about the files, so those children stay too. The
-    shared data home (memory / contexts / learning) is backed up and removed
-    only when last-referenced, at the home the latest install recorded (see
-    :func:`_data_home_for`). The directories the installs since the last
-    uninstall created are removed once empty.
+    says which single-file targets were written, so manifest drift cannot
+    strand or over-remove them. Tree surfaces are enumerated from the manifest
+    and source, and a child the record does not list stays; a record without
+    file digests, or none (a pre-ledger install), proves nothing, so those
+    children stay too. The shared data home (memory / contexts / learning) is
+    backed up and removed only when last-referenced, at the home the latest
+    install recorded (see :func:`_data_home_for`). The directories the
+    installs since the last uninstall created are removed once empty. This
+    harness's records under another spelling of the root's folder are this
+    install too (see :func:`one_install`): what they list goes, and they end.
 
-    Returns every removal's :class:`MaterializationResult` so callers can
-    surface path-escape, backup, and write failures instead of reporting an
-    unconditional success. A ``kind="uninstall"`` record is appended only when
-    no removal errored and nothing Apothem wrote stays behind a link;
-    otherwise, and when the pass raises, an ``uninstall-incomplete`` record is
-    appended instead (see :func:`record_uninstall`): the install stays
-    active, so verify, status, rollback and a second uninstall keep operating
-    against it. Either record references every backup the uninstall took,
-    including those in *prior_results*: removals the caller made just before
-    this pass, such as a native config stripped of Apothem's keys. An error in
-    *prior_results* also makes the uninstall unfinished.
+    Returns every :class:`MaterializationResult`. A ``kind="uninstall"``
+    record is appended only when no removal errored and nothing Apothem wrote
+    stays behind a link; otherwise, and when the pass raises, an
+    ``uninstall-incomplete`` record is (see :func:`record_uninstall`): the
+    install stays active, so verify, status, rollback and a second uninstall
+    keep operating against it. Either record references every backup the
+    uninstall took, including those in *prior_results* (removals the caller
+    made just before, such as a native config stripped of Apothem's keys),
+    and an error there also makes the uninstall unfinished.
     """
     root = _root_for(harness_root, project_root)
     root_floor = _allowed_write_root(harness_root, project_root)
@@ -457,8 +452,9 @@ def run_uninstall(
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
     finished = False
+    same: tuple[str, ...] = ()
     try:
-        active = install_ledger.active_install_records(harness_name, root=root)
+        active, same = one_install(harness_name, root)
         record = active[-1] if active else None
         _remove_installed(
             harness_name,
@@ -467,6 +463,7 @@ def run_uninstall(
             results,
             harness_root=harness_root,
             project_root=project_root,
+            same=same,
         )
         finished = not left_unfinished([*prior_results, *results])
     except Exception as exc:
@@ -481,6 +478,7 @@ def run_uninstall(
             record,
             [*prior_results, *results],
             finished=finished,
+            same=same,
         )
     try:
         return [*results, *_left_behind(results, active, floor=root_floor)]
@@ -513,6 +511,7 @@ def _remove_installed(
     *,
     harness_root: Path | None,
     project_root: Path | None,
+    same: tuple[str, ...] = (),
 ) -> None:
     """Remove what *record* shows this install wrote, appending to *results*.
 
@@ -552,6 +551,7 @@ def _remove_installed(
         root=root,
         harness_root=harness_root,
         project_root=project_root,
+        same_install=same,
     )
     if record is not None:
         blocked = gate.ledger_blocked(target.path for target in record.targets)

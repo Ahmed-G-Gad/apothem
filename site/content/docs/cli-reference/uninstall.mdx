@@ -93,8 +93,13 @@ Apothem install still uses it.
   each install ran. When your home folder is a link, such as `/home` leading
   to `/var/home` on Fedora Silverblue or a Windows user profile moved behind a
   junction, an install made through the link and one made through the folder
-  it leads to use the same folders, and uninstalling one keeps them for the
-  other.
+  it leads to use the same folders. Two tools installed that way are two
+  installs, and uninstalling one keeps the folders for the other. One tool
+  installed both ways is one install: uninstalling it, with your home spelled
+  either way, removes what either install wrote and the folders no other
+  install uses. An uninstall finds an install only with your home spelled one
+  of the ways an install of that tool used; with it spelled any other way, it
+  finds nothing to remove.
 - Only what the install's own record lists is removed. An install made before
   the folders were managed has no such record, so uninstalling it removes
   nothing in your home. Files you added to the folders stay, and so does a

@@ -25,7 +25,6 @@ callback the lifecycle supplies.
 from __future__ import annotations
 
 import contextlib
-import os
 import shutil
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import AbstractContextManager, contextmanager
@@ -49,13 +48,12 @@ from apothem.lib.propagation import (
     user_level_prefix,
 )
 
+from .install_driver_keys import made_keys, path_key, same_folder_roots, same_location
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _normalized,
     _validate_target_path,
     _within_allowed_root,
-    path_key,
-    spelling_key,
 )
 from .install_driver_sharedlock import (
     locked_for_harness,
@@ -97,13 +95,6 @@ HOME_BACKUP_SEGMENT: Final[str] = "__home__"
 
 #: Operations a user-level skill write can have.
 SKILL_MODES: Final[frozenset[str]] = frozenset({"native_skills", "command_skills"})
-
-
-def same_location(left: str | Path, right: str | Path) -> bool:
-    """Return True when *left* and *right* name the same location."""
-    return os.path.normcase(str(_normalized(Path(left)))) == os.path.normcase(
-        str(_normalized(Path(right)))
-    )
 
 
 def entry_write_root(
@@ -279,19 +270,25 @@ class HolderIndex:
         return tuple(h for h in found if not (live_only and h.stale))
 
 
-def holder_index(*, exclude: tuple[str, str | Path] | None = None) -> HolderIndex:
+def holder_index(
+    *,
+    exclude: tuple[str, str | Path] | None = None,
+    also: Iterable[str] = (),
+    memo: dict[str, str] | None = None,
+) -> HolderIndex:
     """Index every active install record, across all harnesses and roots, by path.
 
     A ``(harness, root)`` pair holds a path while its *current* install record
     lists it (:func:`install_ledger.current_install_record`, which replays
     install, uninstall and rollback records). *exclude* names the pair doing the
-    asking; only that exact pair is left out, so one harness installed in two
-    projects counts as two holders. The root is matched as spelled, the way
-    the ledger finds an install's own records: a record of the same harness
-    under another spelling of the same folder is one the uninstall or rollback
-    cannot reach, so it still holds what it lists. A holder whose root directory no longer
-    exists is marked stale and ignored by :meth:`HolderIndex.holders_of`, so a
-    deleted project does not pin a folder for good.
+    asking; only that pair is left out, so one harness installed in two
+    projects counts as two holders. Its root is matched by exact text, as the
+    ledger matches it, so a root spelled any other way stays a holder. *also*
+    names more roots of that harness to leave out: an uninstall passes the
+    other spellings of its folder (see :func:`same_folder_roots`). A holder
+    whose root no longer exists is marked stale and ignored by
+    :meth:`HolderIndex.holders_of`, so a deleted project does not pin a folder
+    for good. *memo* is the caller's (see :func:`path_key`).
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
@@ -300,7 +297,8 @@ def holder_index(*, exclude: tuple[str, str | Path] | None = None) -> HolderInde
     """
     by_path: dict[str, list[Holder]] = {}
     stale: list[Holder] = []
-    memo: dict[str, str] = {}  # one pass: each holding folder is resolved once
+    memo = {} if memo is None else memo  # one pass: each folder resolved once
+    left_out = set() if exclude is None else {str(exclude[1]), *also}
     for package_key in SUPPORTED_PACKAGE_KEYS:
         if not writes_user_level(package_key):
             # Only a harness that writes a user-level folder can hold one, so
@@ -310,13 +308,7 @@ def holder_index(*, exclude: tuple[str, str | Path] | None = None) -> HolderInde
             record.root for record in install_ledger.read_records(package_key)
         )
         for root in roots:
-            if (
-                exclude is not None
-                and package_key == exclude[0]
-                # By spelling until the ledger matches roots by folder: a record
-                # it cannot find under this spelling stays another holder.
-                and spelling_key(root) == spelling_key(exclude[1])
-            ):
+            if exclude is not None and package_key == exclude[0] and root in left_out:
                 continue
             record = install_ledger.current_install_record(package_key, root=root)
             if record is None:
@@ -377,10 +369,12 @@ class UserLevelGate:
     harness_root: Path | None
     project_root: Path | None
     bases: dict[str, Path] = field(default_factory=dict)
+    same_install: tuple[str, ...] = ()  # see holder_index's *also*
     _index: HolderIndex | None = None
     _loaded: bool = False
     _released: set[str] = field(default_factory=set)
     _memo: dict[str, str] = field(default_factory=dict)  # see path_key
+    _made: frozenset[str] | None = None  # see inherited
 
     @classmethod
     def build(
@@ -391,6 +385,7 @@ class UserLevelGate:
         root: Path,
         harness_root: Path | None,
         project_root: Path | None,
+        same_install: tuple[str, ...] = (),
     ) -> UserLevelGate:
         """Return the gate for *rules* installed at *root*."""
         bases = {
@@ -402,7 +397,7 @@ class UserLevelGate:
                 for entry in user_level_entries(rules)
             )
         }
-        return cls(harness_name, root, harness_root, project_root, bases)
+        return cls(harness_name, root, harness_root, project_root, bases, same_install)
 
     @classmethod
     def for_harness(
@@ -451,7 +446,11 @@ class UserLevelGate:
         if not self._loaded:
             self._loaded = True
             try:
-                self._index = holder_index(exclude=(self.harness_name, self.root))
+                self._index = holder_index(
+                    exclude=(self.harness_name, self.root),
+                    also=self.same_install,
+                    memo=self._memo,
+                )
             except (install_ledger.LedgerError, OSError, ValueError):
                 self._index = None
         return self._index
@@ -499,7 +498,9 @@ class UserLevelGate:
         rolled back or uninstalled since while this install kept the folder.
         When this is the first claim on the folder and no other install lists
         it, the creation it inherited is removed with it, or nothing would be.
-        An unreadable ledger proves nothing.
+        It counts only while no uninstall or rollback has changed the path
+        since (see :func:`made_keys`): a folder Apothem removed and someone
+        put back is theirs. An unreadable ledger proves nothing.
         """
         memo = self._memo
         key = path_key(path, memo)
@@ -515,14 +516,9 @@ class UserLevelGate:
                 key == path_key(t.path, memo) for item in earlier for t in item.targets
             ):
                 return False
-            return any(
-                target.outcome == "created" and path_key(target.path, memo) == key
-                for package_key in SUPPORTED_PACKAGE_KEYS
-                if writes_user_level(package_key)
-                for item in install_ledger.read_records(package_key)
-                if item.kind == "install"
-                for target in item.targets
-            )
+            if self._made is None:
+                self._made = made_keys(memo)
+            return key in self._made
         except (install_ledger.LedgerError, OSError, ValueError):
             return False
 
@@ -687,8 +683,8 @@ __all__ = [
     "locked_for_harness",
     "path_key",
     "retained_result",
+    "same_folder_roots",
     "same_location",
     "shared_scope",
-    "spelling_key",
     "user_level_entries",
 ]

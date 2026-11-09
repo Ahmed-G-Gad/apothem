@@ -69,9 +69,9 @@ step stops with `Clean-slate removal was refused` before it backs up or removes
 anything, since removing `~/.config/apothem` would delete the folder at the far
 end of that link. The error names the link: replace it with a real folder, or
 make it lead to a folder inside your home directory. The step also stops before
-it changes anything when your home directory is the root of a drive or file
-system, is a link or a junction that leads to one, or has links that cannot be
-followed.
+it changes anything, and before it creates the starter profile, when your home
+directory is not a full path, is the root of a drive or file system, is a link
+or a junction that leads to one, or is reached through a link that loops.
 
 The clean-slate step removes the default profile,
 `~/.config/apothem/profile.yaml`, with `~/.config/apothem`, and writes it back

@@ -22,7 +22,7 @@ from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
-from apothem.cli._clean_slate_phase import _clean_slate_phase
+from apothem.cli._clean_slate_phase import _clean_slate_phase, _refuse_unsafe_home
 from apothem.cli._common_flags import get_console
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
@@ -187,6 +187,8 @@ def _materialize(
         and not profile_path.exists()
         and not profile_path.is_symlink()
     )
+    if clean and not _refuse_unsafe_home(run):
+        return
     inputs = _load_run_inputs(run, project, first_run=first_run)
     if inputs is None:
         return

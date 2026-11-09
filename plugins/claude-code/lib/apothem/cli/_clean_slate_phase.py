@@ -27,6 +27,7 @@ from apothem.lib.clean_slate import (
     LinkLeavingHomeError,
     RemovalError,
     UnsafeHomeError,
+    check_home,
     run_clean_slate,
 )
 from apothem.lib.links import is_link
@@ -45,9 +46,10 @@ def _refused_error(exc: CleanSlateError) -> dict[str, object]:
         )
     elif isinstance(exc, UnsafeHomeError):
         fix = (
-            "Set your home directory (HOME, or USERPROFILE on Windows) to your "
-            "own folder, not the root of a drive or file system and not a link "
-            "that leads to one or cannot be followed, then run the command again."
+            "Set your home directory (HOME, or USERPROFILE on Windows) to the "
+            "full path of your own folder, not the root of a drive or file "
+            "system and not a link that leads to one or cannot be followed, "
+            "then run the command again."
         )
     else:
         fix = (
@@ -61,6 +63,21 @@ def _refused_error(exc: CleanSlateError) -> dict[str, object]:
         reason=str(exc),
         fix=fix,
     ).to_dict()
+
+
+def _refuse_unsafe_home(run: _RunContext) -> bool:
+    """Return False, once the refusal is emitted, when the home is unsafe to clean.
+
+    ``install --clean`` checks the home before anything else, so a home that
+    is, or leads to, a filesystem root is refused before the starter profile
+    is created under it.
+    """
+    try:
+        check_home(Path.home())
+    except UnsafeHomeError as exc:
+        run.fail(_refused_error(exc))
+        return False
+    return True
 
 
 def _profile_copy(

@@ -30,11 +30,8 @@ from functools import cached_property
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_shared import (
-    SKILL_MODES,
-    path_key,
-    spelling_key,
-)
+from apothem.harnesses._shared.install_driver_keys import same_folder
+from apothem.harnesses._shared.install_driver_shared import SKILL_MODES, path_key
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import (
     SHARED_ROOTS,
@@ -177,16 +174,32 @@ class LedgerView:
     def find(self, harness: str, root: Path) -> _Install | None:
         """Return the active install of *harness* at *root*, or ``None``.
 
-        The root is matched by its spelling, as the uninstall finds its own
-        install record and leaves it out of the holders: a record of the same
-        harness under another spelling of the root is another install, here
-        and in the uninstall, so the preview reports what the uninstall does.
+        The root is matched by exact text, never with the case folded, as the
+        ledger finds the uninstall's own install record. The same harness
+        recorded under another spelling of the folder is the same install to
+        an uninstall (see :meth:`others`), so the preview reports what the
+        uninstall does.
         """
-        wanted = spelling_key(root)
         for install in self.installs:
-            if install.harness == harness and spelling_key(install.root) == wanted:
+            if install.harness == harness and install.root == str(root):
                 return install
         return None
+
+    def others(self, own: _Install) -> list[_Install]:
+        """Return the installs other than *own*, oldest first.
+
+        A record of *own*'s harness under another spelling of its folder is
+        left out: the uninstall ends it with *own* (see
+        :func:`~apothem.harnesses._shared.install_driver_keys.same_folder_roots`).
+        """
+        return [
+            install
+            for install in self.installs
+            if install is not own
+            and not (
+                install.harness == own.harness and same_folder(install.root, own.root)
+            )
+        ]
 
 
 def ledger_holders() -> Callable[[Path], Sequence[str]] | None:
@@ -312,7 +325,7 @@ def preview_uninstall(harness_id: str, root: Path) -> UninstallPreview | None:
     own = view.find(harness_id, root)
     if own is None:
         return None
-    others = [install for install in view.installs if install is not own]
+    others = view.others(own)
     live_keys = frozenset().union(*(o.targets for o in others if o.live))
     uses: list[FolderUse] = []
     for folder in folders:

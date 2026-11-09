@@ -7,15 +7,23 @@ The install ledger counts which installs use ``~/.agents/skills/`` and
 ``/var/home``, a Windows profile moved behind a junction), one install can
 record the home spelled through the link and another the folder it leads to.
 Both name the same folders, so an uninstall of one must keep them for the
-other. Each test makes a real link: a symbolic link, or a junction where
+other. One tool recorded under both spellings is one install to an
+uninstall, which removes what either record shows Apothem wrote, and a
+rollback undoes only the record it is run under. A rollback also removes a
+shared folder its install found in place when an install that has let go of
+it made it, unless something removed it since. Each test
+that needs a link makes a real one: a symbolic link, or a junction where
 symbolic links need a privilege the host lacks; it is skipped when neither
 can be made.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -23,9 +31,10 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.cli._user_level_report import ledger_holders
+from apothem.cli._user_level_report import LedgerView, ledger_holders
+from apothem.harnesses._shared import install_driver_keys
 from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
-from apothem.lib import clean_slate, install_ledger
+from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import user_home
 
@@ -213,27 +222,45 @@ def test_holders_under_two_spellings_share_one_key(
 def test_the_exclude_matches_the_root_as_spelled(
     homes: tuple[Path, Path],
 ) -> None:
-    # The ledger finds an install's records by the root as spelled, so a
-    # record of the same harness under the other spelling is one the
-    # uninstall cannot reach: it still holds what it lists.
+    # The ledger finds an install's records by the root's exact text, so a
+    # record of the same harness under the other spelling stays a holder
+    # unless the caller names that spelling too, as an uninstall does.
     real, linked = homes
     skill = real / ".agents" / "skills" / "alpha"
     _record("codex", real / ".codex", skill)
 
     other = holder_index(exclude=("codex", linked / ".codex"))
     own = holder_index(exclude=("codex", real / ".codex"))
+    both = holder_index(
+        exclude=("codex", linked / ".codex"), also=(str(real / ".codex"),)
+    )
 
     through_link = linked / ".agents" / "skills" / "alpha"
     assert [h.harness for h in other.holders_of(through_link)] == ["codex"]
     assert not own.holders_of(skill)
+    assert not both.holders_of(through_link)
+
+
+def test_the_exclude_never_folds_the_case_of_the_root(tmp_path: Path) -> None:
+    # A rollback run with the home spelled in another case must not leave
+    # out the record under the first case: that record is still in place,
+    # and only the ledger's own exact match says which one is reversed.
+    skill = user_home() / ".agents" / "skills" / "alpha"
+    lower, upper = tmp_path / "home" / ".codex", tmp_path / "HOME" / ".codex"
+    _record("codex", lower, skill)
+
+    index = holder_index(exclude=("codex", upper))
+
+    assert [h.root for h in index.holders_of(skill)] == [str(lower)]
 
 
 def _install_codex_under_both_spellings(
-    real: Path, linked: Path, monkeypatch: pytest.MonkeyPatch
+    real: Path, linked: Path, monkeypatch: pytest.MonkeyPatch, *, first: str = "real"
 ) -> None:
-    """Install Codex with the home spelled as the real folder, then through the link."""
+    """Install Codex with the home spelled one way, then the other (*first* first)."""
     runner = CliRunner()
-    for home in (real, linked):
+    order = (real, linked) if first == "real" else (linked, real)
+    for home in order:
         _spell_home(monkeypatch, home)
         result = runner.invoke(main, ["install", "--harness", "codex", "--yes"])
         assert result.exit_code == 0, result.output
@@ -257,30 +284,352 @@ def test_a_rollback_keeps_folders_the_same_tool_holds_under_the_other_spelling(
     assert verified.exit_code == 0, verified.output
 
 
-def test_the_uninstall_note_matches_what_the_uninstall_does(
-    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    real, linked = homes
-    _install_codex_under_both_spellings(real, linked, monkeypatch)
-    before = {folder: _files(real / folder) for folder in _SHARED}
+def _ended(harness: str, *roots: Path) -> bool:
+    """Return True when no install of *harness* is in place under any of *roots*."""
+    return all(
+        install_ledger.current_install_record(harness, root=root) is None
+        for root in roots
+    )
 
-    _spell_home(monkeypatch, linked)
+
+def _gone(home: Path) -> bool:
+    """Return True when the shared folders under *home* hold nothing."""
+    return all(
+        not (home / folder).exists() or not _files(home / folder) for folder in _SHARED
+    )
+
+
+@pytest.mark.parametrize("first", ["real", "linked"])
+@pytest.mark.parametrize("spelling", ["linked", "real"])
+def test_one_tool_under_both_spellings_is_one_install_to_an_uninstall(
+    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, spelling: str, first: str
+) -> None:
+    # Codex recorded under both spellings of one home: uninstalling it under
+    # either spelling, whichever install came first, removes everything
+    # either record shows Apothem wrote and ends both records, so nothing is
+    # left that a record pins and no uninstall can remove.
+    real, linked = homes
+    _install_codex_under_both_spellings(real, linked, monkeypatch, first=first)
+    home = linked if spelling == "linked" else real
+
+    _spell_home(monkeypatch, home)
     result = CliRunner().invoke(
         main, ["uninstall", "--harness", "codex", "--yes", "--format", "json"]
     )
 
     assert result.exit_code == 0, result.output
     notes = _shared_notes(result.output)
-    folders = {Path(str(note["path"])).relative_to(linked) for note in notes}
-    assert folders == set(_SHARED)
+    assert {Path(str(note["path"])).relative_to(home) for note in notes} == set(_SHARED)
     for note in notes:
-        folder = Path(str(note["path"])).relative_to(linked)
-        # The record under the real spelling is another install the ledger
-        # still lists, so the note says kept and the files are there.
+        assert note["role"] == "released", note["message"]
+        assert note["holders"] == []
+    assert _gone(real)
+    assert not (real / ".codex").exists(), _files(real / ".codex")
+    assert not (real / ".agents").exists()
+    assert _ended("codex", real / ".codex", linked / ".codex")
+    assert not holder_index().by_path
+
+
+def test_an_uninstall_removes_what_only_the_other_spelling_lists(
+    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The two records can differ (two releases, a skill renamed between
+    # them). A skill only the record under the real spelling lists goes
+    # with an uninstall under the link, which ends that record.
+    real, linked = homes
+    _install_codex_under_both_spellings(real, linked, monkeypatch)
+    extra = real / ".agents" / "skills" / "zz-probe"
+    extra.mkdir()
+    body = b"# probe\n"
+    (extra / "SKILL.md").write_bytes(body)
+    current = install_ledger.current_install_record("codex", root=real / ".codex")
+    assert current is not None
+    probe = LedgerTarget(
+        path=str(extra),
+        mode="native_skills",
+        ownership_class="operator-owned",
+        outcome="created",
+        created=True,
+        files={"SKILL.md": hashlib.sha256(body).hexdigest()},
+    )
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex",
+            root=real / ".codex",
+            kind="install",
+            targets=(*current.targets, probe),
+        )
+    )
+
+    _spell_home(monkeypatch, linked)
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "codex", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert not extra.exists()
+    assert _gone(real)
+    assert _ended("codex", real / ".codex", linked / ".codex")
+
+
+def test_one_tool_under_both_spellings_keeps_the_folders_for_another_tool(
+    homes: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real, linked = homes
+    _install_codex_under_both_spellings(real, linked, monkeypatch)
+    project = tmp_path / "project"
+    project.mkdir()
+    windsurf = ["--harness", "windsurf", "--project", str(project), "--yes"]
+    result = CliRunner().invoke(main, ["install", *windsurf])
+    assert result.exit_code == 0, result.output
+    before = {folder: _files(real / folder) for folder in _SHARED}
+
+    result = CliRunner().invoke(
+        main, ["uninstall", "--harness", "codex", "--yes", "--format", "json"]
+    )
+
+    assert result.exit_code == 0, result.output
+    notes = _shared_notes(result.output)
+    assert notes
+    for note in notes:
         assert note["role"] == "retained", note["message"]
-        assert note["kept"] == note["total"]
-        assert note["holders"] == [f"codex ({real / '.codex'})"]
-        assert _files(real / folder) == before[folder]
+        assert note["holders"] == [f"windsurf ({project})"]
+    assert {folder: _files(real / folder) for folder in _SHARED} == before
+    assert _ended("codex", real / ".codex", linked / ".codex")
+
+    result = CliRunner().invoke(main, ["uninstall", *windsurf])
+
+    assert result.exit_code == 0, result.output
+    assert _gone(real)
+
+
+def _case_insensitive(folder: Path) -> bool:
+    return Path(str(folder).swapcase()).exists()
+
+
+def _install_codex_in_two_cases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path]:
+    """Install Codex with the home spelled ``home``, then ``HOME``; return both."""
+    home = tmp_path / "home"
+    home.mkdir()
+    if not _case_insensitive(home):
+        pytest.skip("this file system tells the case of a name apart")
+    upper = tmp_path / "HOME"
+    for spelled in (home, upper):
+        _spell_home(monkeypatch, spelled)
+        result = CliRunner().invoke(main, ["install", "--harness", "codex", "--yes"])
+        assert result.exit_code == 0, result.output
+    return home, upper
+
+
+def test_a_rollback_under_another_case_keeps_folders_the_first_case_holds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A rollback under HOME reverses only its own record, so the record
+    # under home, still in place, keeps the shared folders it lists.
+    home, _upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
+    before = {folder: _files(home / folder) for folder in _SHARED}
+    assert all(before.values())
+
+    result = CliRunner().invoke(main, ["rollback", "--harness", "codex", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert {folder: _files(home / folder) for folder in _SHARED} == before
+    _spell_home(monkeypatch, home)
+    verified = CliRunner().invoke(main, ["verify", "--harness", "codex"])
+    assert verified.exit_code == 0, verified.output
+
+
+def test_an_uninstall_under_another_case_ends_both_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home, upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "codex", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert _gone(home)
+    assert _ended("codex", home / ".codex", upper / ".codex")
+
+
+def test_the_preview_finds_its_own_install_by_exact_text(tmp_path: Path) -> None:
+    skill = user_home() / ".agents" / "skills" / "alpha"
+    lower, upper = tmp_path / "home" / ".codex", tmp_path / "HOME" / ".codex"
+    _record("codex", lower, skill)
+    _record("codex", upper, skill)
+
+    view = LedgerView.load()
+
+    assert view is not None
+    found = view.find("codex", upper)
+    assert found is not None
+    assert found.root == str(upper)
+    assert view.find("codex", tmp_path / "Home" / ".codex") is None
+
+
+def test_rolling_back_the_creator_then_the_last_holder_removes_the_folders(
+    tmp_path: Path,
+) -> None:
+    # Codex creates the shared folders and Windsurf finds them in place.
+    # Rolling back Codex keeps them for Windsurf; rolling back Windsurf then
+    # removes them, though Codex's install is no longer in place.
+    home = user_home()
+    project = tmp_path / "project"
+    project.mkdir()
+    runner = CliRunner()
+    windsurf = ["--harness", "windsurf", "--project", str(project), "--yes"]
+    for args in (["--harness", "codex", "--yes"], windsurf):
+        result = runner.invoke(main, ["install", *args])
+        assert result.exit_code == 0, result.output
+
+    first = runner.invoke(main, ["rollback", "--harness", "codex", "--yes"])
+    assert first.exit_code == 0, first.output
+    assert all(_files(home / folder) for folder in _SHARED)
+    last = runner.invoke(main, ["rollback", *windsurf])
+
+    assert last.exit_code == 0, last.output
+    assert _gone(home)
+
+
+def test_rolling_back_both_spellings_creator_first_removes_the_folders(
+    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real, linked = homes
+    runner = CliRunner()
+    for home in (linked, real):
+        _spell_home(monkeypatch, home)
+        result = runner.invoke(main, ["install", "--harness", "codex", "--yes"])
+        assert result.exit_code == 0, result.output
+    for home in (linked, real):
+        _spell_home(monkeypatch, home)
+        result = runner.invoke(main, ["rollback", "--harness", "codex", "--yes"])
+        assert result.exit_code == 0, result.output
+
+    assert _gone(real)
+
+
+def _windsurf(project: Path) -> list[str]:
+    project.mkdir(exist_ok=True)
+    return ["--harness", "windsurf", "--project", str(project), "--yes"]
+
+
+def _run(*args: str) -> None:
+    result = CliRunner().invoke(main, list(args))
+    assert result.exit_code == 0, result.output
+
+
+@pytest.mark.parametrize("both", [False, True], ids=["one-spelling", "both-spellings"])
+def test_a_rollback_keeps_folders_put_back_after_an_uninstall_removed_them(
+    homes: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    both: bool,
+) -> None:
+    # Codex makes the shared folders and its uninstall removes them. Folders
+    # put back by hand (from a backup, say) are not Apothem's: rolling back
+    # Windsurf, which found them in place, keeps them.
+    real, linked = homes
+    if both:
+        _install_codex_under_both_spellings(real, linked, monkeypatch)
+        _spell_home(monkeypatch, linked)
+    else:
+        _spell_home(monkeypatch, real)
+        _run("install", "--harness", "codex", "--yes")
+    saved = tmp_path / "saved"
+    for folder in _SHARED:
+        shutil.copytree(real / folder, saved / folder)
+    _run("uninstall", "--harness", "codex", "--yes")
+    assert _gone(real)
+    for folder in _SHARED:
+        shutil.copytree(saved / folder, real / folder, dirs_exist_ok=True)
+    before = {folder: _files(real / folder) for folder in _SHARED}
+    windsurf = _windsurf(tmp_path / "project")
+    _run("install", *windsurf)
+
+    _run("rollback", *windsurf)
+
+    assert {folder: _files(real / folder) for folder in _SHARED} == before
+
+
+@pytest.mark.parametrize("ending", ["rollback", "uninstall"])
+def test_the_last_holder_removes_the_folders_after_the_creator_is_reinstalled(
+    tmp_path: Path, ending: str
+) -> None:
+    # Codex makes the folders, Windsurf finds them, Codex is rolled back and
+    # installed again (finding them in place). Rolling back or uninstalling
+    # every holder still removes them: the first install's record is kept.
+    home = user_home()
+    windsurf = _windsurf(tmp_path / "project")
+    _run("install", "--harness", "codex", "--yes")
+    _run("install", *windsurf)
+    _run("rollback", "--harness", "codex", "--yes")
+    _run("install", "--harness", "codex", "--yes")
+    assert all(_files(home / folder) for folder in _SHARED)
+
+    if ending == "rollback":
+        _run("rollback", *windsurf)
+        _run("rollback", "--harness", "codex", "--yes")
+    else:
+        _run("uninstall", "--harness", "codex", "--yes")
+        _run("rollback", *windsurf)
+
+    assert _gone(home)
+
+
+def test_the_last_holder_removes_the_folders_after_retention_drops_the_creator(
+    tmp_path: Path,
+) -> None:
+    # Retention keeps the newest installs of a root; an install after it
+    # carries the word that the dropped one made the folders.
+    home = user_home()
+    windsurf = _windsurf(tmp_path / "project")
+    _run("install", "--harness", "codex", "--yes")
+    _run("install", *windsurf)
+    _run("install", "--harness", "codex", "--yes")
+    install_ledger.compact_records("codex", keep_installs=1)
+    kinds = [record.kind for record in install_ledger.read_records("codex")]
+    assert kinds == ["install"]
+
+    _run("uninstall", "--harness", "codex", "--yes")
+    assert all(_files(home / folder) for folder in _SHARED)
+    _run("rollback", *windsurf)
+
+    assert _gone(home)
+
+
+def test_one_folder_by_its_file_id_when_links_keep_the_case(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # On macOS following the links keeps the case as spelled, so two case
+    # spellings of one folder differ as text; their file ID is one.
+    home = tmp_path / "home"
+    home.mkdir()
+    if not _case_insensitive(home):
+        pytest.skip("this file system tells the case of a name apart")
+    (tmp_path / "other").mkdir()
+    monkeypatch.setattr(os.path, "realpath", lambda path, **_kw: os.fspath(path))
+
+    assert install_driver_keys.same_folder(home, tmp_path / "HOME")
+    assert not install_driver_keys.same_folder(home, tmp_path / "other")
+    assert not install_driver_keys.same_folder(home, tmp_path / "missing")
+
+
+def test_a_case_sensitive_folder_keeps_two_cases_apart(tmp_path: Path) -> None:
+    folder = tmp_path / "case-sensitive"
+    folder.mkdir()
+    if sys.platform != "win32":
+        pytest.skip("per-folder case sensitivity is a Windows setting")
+    try:
+        subprocess.run(
+            ["fsutil", "file", "setCaseSensitiveInfo", str(folder), "enable"],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("this host cannot make a case-sensitive folder")
+    (folder / "Proj").mkdir()
+    (folder / "proj").mkdir()
+
+    assert not install_driver_keys.same_folder(folder / "Proj", folder / "proj")
 
 
 def test_a_legacy_codex_record_still_folds_when_codex_is_a_link(
@@ -349,78 +698,162 @@ def test_only_a_path_in_a_user_level_folder_is_resolved(
         assert path_key(linked / prefix / "x") == path_key(real / prefix / "x")
 
 
-# --- clean slate ---------------------------------------------------------------
+# --- compaction keeps who created a shared folder ---------------------------------
 
 
-def _forbid_changes(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Make any backup or removal fail the test, so no run reaches a real root."""
+def _install_record(root: Path, outcome: str) -> LedgerRecord:
+    skill = user_home() / ".agents" / "skills" / "alpha"
+    record = LedgerRecord.create(
+        harness="codex",
+        root=root,
+        kind="install",
+        targets=(
+            LedgerTarget(
+                path=str(skill),
+                mode="native_skills",
+                ownership_class="apothem-owned",
+                outcome=outcome,
+            ),
+        ),
+    )
+    install_ledger.append_record(record)
+    return record
 
-    def refuse(*_args: object, **_kwargs: object) -> object:
-        pytest.fail("clean slate went past its home check")
 
-    monkeypatch.setattr(clean_slate, "_backup_targets", refuse)
-    monkeypatch.setattr(clean_slate, "_remove_path", refuse)
-
-
-def test_clean_slate_refuses_a_home_that_is_a_link_to_a_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # The real link is followed, but it leads to a folder in tmp_path that
-    # stands for the root: a link to a real root left behind by a killed run
-    # would lead whatever cleans the temp folder there.
-    _forbid_changes(monkeypatch)
-    home = tmp_path / "home"
-    stand_in = tmp_path / "drive-root"
-    _link(home, stand_in)
-    stand_in_resolved = stand_in.resolve()
-    real_resolve = Path.resolve
-
-    def resolve(self: Path, strict: bool = False) -> Path:
-        found = real_resolve(self, strict)
-        return Path(found.anchor) if found == stand_in_resolved else found
-
-    monkeypatch.setattr(Path, "resolve", resolve)
-
-    with pytest.raises(clean_slate.UnsafeHomeError, match="leads to"):
-        clean_slate.run_clean_slate(
-            home, assume_yes=True, backup_root=tmp_path / "backups"
+def _end(root: Path, kind: str, install_id: str | None = None) -> None:
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex", root=root, kind=kind, install_id=install_id
         )
+    )
 
 
-def test_clean_slate_refuses_a_home_that_resolves_to_a_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def _kinds_after_compaction(root: Path) -> list[tuple[str, str]]:
+    kept = install_ledger.compact_records("codex", keep_installs=1)
+    assert install_ledger.current_install_record("codex", root=root) is None
+    return [(record.kind, record.install_id) for record in kept]
+
+
+def test_compaction_keeps_the_rolled_back_creator(tmp_path: Path) -> None:
+    root = tmp_path / ".codex"
+    first = _install_record(root, "created")
+    _end(root, "rollback", first.install_id)
+
+    kept = _kinds_after_compaction(root)
+
+    assert kept == [("install", first.install_id), ("rollback", first.install_id)]
+
+
+def test_compaction_keeps_only_the_uninstalled_installs_that_created(
+    tmp_path: Path,
 ) -> None:
-    # Without a real link: the home's resolution alone decides.
-    _forbid_changes(monkeypatch)
-    home = tmp_path / "home"
-    home.mkdir()
-    real_resolve = Path.resolve
+    root = tmp_path / ".codex"
+    first = _install_record(root, "created")
+    _install_record(root, "unchanged")
+    _end(root, "uninstall")
 
-    def resolve(self: Path, strict: bool = False) -> Path:
-        return Path(self.anchor) if self == home else real_resolve(self, strict)
+    kept = _kinds_after_compaction(root)
 
-    monkeypatch.setattr(Path, "resolve", resolve)
+    assert [kind for kind, _ in kept] == ["install", "uninstall"]
+    assert kept[0][1] == first.install_id
 
-    with pytest.raises(clean_slate.UnsafeHomeError, match="leads to"):
-        clean_slate.run_clean_slate(
-            home, assume_yes=True, backup_root=tmp_path / "backups"
+
+def test_compaction_keeps_only_the_last_record_when_nothing_was_created(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / ".codex"
+    _install_record(root, "updated")
+    _end(root, "uninstall")
+
+    assert [kind for kind, _ in _kinds_after_compaction(root)] == ["uninstall"]
+
+
+def test_compaction_does_not_keep_an_install_an_earlier_uninstall_ended(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / ".codex"
+    _install_record(root, "created")
+    _end(root, "uninstall")
+    second = _install_record(root, "created")
+    _end(root, "rollback", second.install_id)
+
+    kept = _kinds_after_compaction(root)
+
+    assert kept == [("install", second.install_id), ("rollback", second.install_id)]
+
+
+def test_compaction_keeps_only_what_the_ending_record_left(tmp_path: Path) -> None:
+    # The uninstall removed alpha (it lists alpha's backup) and kept beta for
+    # another install: only beta is still known as made, and no kept record
+    # pins a backup set.
+    root = tmp_path / ".codex"
+    skills = user_home() / ".agents" / "skills"
+    made = [
+        LedgerTarget(
+            path=str(skills / name),
+            mode="native_skills",
+            ownership_class="apothem-owned",
+            outcome="created",
+            backup_ref=str(tmp_path / "backup" / name),
         )
+        for name in ("alpha", "beta")
+    ]
+    first = LedgerRecord.create(
+        harness="codex", root=root, kind="install", targets=tuple(made)
+    )
+    install_ledger.append_record(first)
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex",
+            root=root,
+            kind="uninstall",
+            install_id=first.install_id,
+            targets=(made[0],),
+        )
+    )
+
+    kept = install_ledger.compact_records("codex", keep_installs=1)
+
+    assert [record.kind for record in kept] == ["install", "uninstall"]
+    assert [target.path for target in kept[0].targets] == [made[1].path]
+    assert kept[0].targets[0].backup_ref is None
+    assert kept[1] == install_ledger.read_records("codex")[1]
 
 
-def test_clean_slate_refuses_a_home_whose_links_cannot_be_followed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_compaction_keeps_a_rolled_back_creator_before_a_reinstall(
+    tmp_path: Path,
 ) -> None:
-    _forbid_changes(monkeypatch)
-    home = tmp_path / "home"
-    home.mkdir()
-    real_resolve = Path.resolve
+    root = tmp_path / ".codex"
+    first = _install_record(root, "created")
+    _end(root, "rollback", first.install_id)
+    second = _install_record(root, "unchanged")
 
-    def resolve(self: Path, strict: bool = False) -> Path:
-        if self == home:
-            raise RuntimeError("Symlink loop")
-        return real_resolve(self, strict)
+    kept = install_ledger.compact_records("codex", keep_installs=1)
 
-    monkeypatch.setattr(Path, "resolve", resolve)
+    assert [(r.kind, r.install_id) for r in kept] == [
+        ("install", first.install_id),
+        ("rollback", first.install_id),
+        ("install", second.install_id),
+    ]
+    current = install_ledger.current_install_record("codex", root=root)
+    assert current is not None
+    assert current.install_id == second.install_id
 
-    with pytest.raises(clean_slate.UnsafeHomeError, match="cannot be followed"):
-        clean_slate.run_clean_slate(home, dry_run=True)
+
+def test_compaction_keeps_a_creator_a_rollback_of_an_earlier_install_ended(
+    tmp_path: Path,
+) -> None:
+    # A rollback of the first install ends the second one too; the second
+    # made alpha, so it is kept, with the first, which the rollback names.
+    root = tmp_path / ".codex"
+    first = _install_record(root, "unchanged")
+    second = _install_record(root, "created")
+    _end(root, "rollback", first.install_id)
+
+    kept = _kinds_after_compaction(root)
+
+    assert kept == [
+        ("install", first.install_id),
+        ("install", second.install_id),
+        ("rollback", first.install_id),
+    ]

@@ -764,14 +764,36 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   removed `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/`
   while the second install still used them. Apothem now compares the folder
   each path names, so the uninstall keeps them and names the other install,
-  and the install note `Installs using it now` counts both.
-- **`install --clean` refuses a home folder that leads to a drive root.** The
-  clean-slate step refused a home directory that is the root of a drive or
-  file system only as spelled, so a home that is a link or a junction to one
-  passed the check. It now follows the link first and stops before it backs up
-  or removes anything. It also stops when the home's links cannot be followed,
-  such as a link loop, and the error says to set the home directory to your
-  own folder.
+  and the install note `Installs using it now` counts both. One tool
+  installed both ways is one install: uninstalling it, with the home spelled
+  either way, removes what either install wrote and ends both of its install
+  records, so no record is left that keeps the folders.
+- **A rollback keeps the shared folders the same tool's other install uses.**
+  When one tool was installed twice with the home spelled in two cases
+  (`C:\Users\gad` and `C:\Users\Gad` on Windows), `apothem rollback` under
+  one spelling treated both installs as the one it rolled back. It removed
+  `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/` while
+  the other install still used them, and that install then failed
+  `apothem verify`. A rollback now reverses only the install recorded with the
+  home spelled exactly as it is for that run, and keeps the folders for the
+  other.
+- **Rolling back every tool that uses the shared folders removes them.** When
+  the tool that created `~/.agents/skills/` and the other shared folders was
+  rolled back or uninstalled first, they were kept for the tool that still
+  used them, but Apothem then dropped the record that showed it had created
+  them. Rolling back that second tool kept them too, and later uninstalls said
+  nothing was installed, so the folders stayed for good. Apothem now keeps
+  that record, also when the first tool is installed again or installed more
+  than ten times, and the last rollback removes them. A folder Apothem removed
+  and you put back yourself is kept.
+- **`install --clean` refuses a home folder that leads to the root of a drive
+  or file system.** The clean-slate step refused a home directory that is the
+  root of a drive or file system only as spelled, so a home that is a link or
+  a junction to one passed the check. It now follows the link first and stops
+  before it backs up or removes anything, and before it creates the starter
+  profile. It also stops when the home is reached through a link that loops,
+  and when the home is not a full path, and the error says to set the home
+  directory to the full path of your own folder.
 - **A refused uninstall is reported as failed.** When the write guard, a
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files

@@ -367,14 +367,18 @@ def record_uninstall(
     results: list[MaterializationResult],
     *,
     finished: bool,
+    same: Iterable[str] = (),
 ) -> None:
     """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
 
     Either record references every backup the pass took. A finished uninstall
-    ends the install and runs retention. An unfinished one keeps the install
-    active, so a second run is driven by the same record; it is written even
-    when the pass raised, and a failure to write it then does not hide the
-    pass's own error.
+    ends the install and runs retention. It also ends the install still in
+    place under each root in *same*, the harness's other spellings of this
+    folder, whose files this pass removed, so none of them holds the shared
+    folders afterwards. An unfinished one keeps the install active, so a
+    second run is driven by the same record; it is written even when the
+    pass raised, and a failure to write it then does not hide the pass's own
+    error.
     """
     entry = LedgerRecord.create(
         harness=harness_name,
@@ -388,4 +392,16 @@ def record_uninstall(
             install_ledger.append_record(entry)
         return
     install_ledger.append_record(entry)
+    for other in same:
+        current = install_ledger.current_install_record(harness_name, root=other)
+        if current is not None:
+            install_ledger.append_record(
+                LedgerRecord.create(
+                    harness=harness_name,
+                    root=other,
+                    kind="uninstall",
+                    targets=(),
+                    install_id=current.install_id,
+                )
+            )
     apply_retention(harness_name)
