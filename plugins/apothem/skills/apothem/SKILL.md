@@ -21,10 +21,12 @@ the `click` and `rich` packages, on the `PATH`):
 - `npx @ahmed-g-gad/apothem@1.5.0 install --harness codex` — materialize the profile into Codex.
 - `npx @ahmed-g-gad/apothem@1.5.0 verify --harness codex` — check the install (add `--profile PATH` to report drift, `--json` for structured JSON).
 - `npx @ahmed-g-gad/apothem@1.5.0 update --harness codex` — refresh to the current profile.
-- `npx @ahmed-g-gad/apothem@1.5.0 uninstall --harness codex` — reverse the install cleanly.
+- `npx @ahmed-g-gad/apothem@1.5.0 uninstall --harness codex` — remove the files the install wrote.
 
 Pass `--harness all` to sync every supported tool at once. Every install backs
-up existing targets first and is reversed cleanly by the matching uninstall.
+up existing targets first. The matching uninstall removes only the files
+Apothem wrote and reports anything it had to leave (exit 2), so a second run
+can finish.
 
 ## Engineering disciplines in force
 

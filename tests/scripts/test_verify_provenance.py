@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Final
@@ -224,6 +225,55 @@ def test_slsa_failure_fails_the_chain(tmp_path: Path) -> None:
     assert _run(assets, fake_bin, FAKE_SLSA_EXIT="1").returncode == 1
 
 
+_FULL_RUN = (
+    "verify-provenance: chain OK (3 of 3 layers verified: "
+    "SHA256SUMS manifest, cosign signatures, SLSA provenance)"
+)
+
+
+def test_a_full_run_names_every_layer(tmp_path: Path) -> None:
+    fake_bin, _ = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path)
+    result = _run(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.splitlines()[-1] == _FULL_RUN
+
+
+def test_a_missing_manifest_is_named_as_skipped(tmp_path: Path) -> None:
+    """A partial run must not read as a verified release."""
+    fake_bin, _ = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "SHA256SUMS").unlink()
+    (assets / "SHA256SUMS.cosign.bundle").unlink()
+    result = _run(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    last = result.stderr.splitlines()[-1]
+    assert "chain OK" not in last
+    assert last == (
+        "verify-provenance: partial check, 2 of 3 layers verified "
+        "(cosign signatures, SLSA provenance); skipped: SHA256SUMS manifest "
+        "(no SHA256SUMS file). The release is not verified until all three "
+        "layers run."
+    )
+
+
+def test_a_missing_tool_is_named_as_skipped(tmp_path: Path) -> None:
+    if shutil.which("slsa-verifier") is not None:
+        pytest.skip("a real slsa-verifier is on PATH")
+    fake_bin, _ = _fake_bin(tmp_path)
+    (fake_bin / "slsa-verifier").unlink()
+    assets = _release_dir(tmp_path)
+    result = _run(assets, fake_bin)
+    assert result.returncode == 0, result.stderr
+    assert "slsa-verifier absent; skipping layer 3" in result.stderr
+    assert result.stderr.splitlines()[-1] == (
+        "verify-provenance: partial check, 2 of 3 layers verified "
+        "(SHA256SUMS manifest, cosign signatures); skipped: SLSA provenance "
+        "(slsa-verifier not found). The release is not verified until all "
+        "three layers run."
+    )
+
+
 def test_checksum_mismatch_fails(tmp_path: Path) -> None:
     fake_bin, _ = _fake_bin(tmp_path)
     assets = _release_dir(tmp_path)
@@ -292,3 +342,7 @@ def test_ps1_sibling_matches_the_posix_contract() -> None:
     assert "provenance.intoto.jsonl" in text
     assert "--source-tag" in text
     assert "-Filter 'apothem.vsix'" in text, "the .vsix signature is checked"
+    assert "chain OK (3 of 3 layers verified: $($layersOk -join ', '))" in text
+    assert "partial check, $layersRun of 3 layers verified" in text
+    for name in ("SHA256SUMS manifest", "cosign signatures", "SLSA provenance"):
+        assert f"$layersOk.Add('{name}')" in text, name

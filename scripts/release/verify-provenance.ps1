@@ -22,7 +22,10 @@
     Signature bundles are <asset>.cosign.bundle. Releases up to v1.1.0 named
     the platform-archive and SHA256SUMS bundles <asset>.sig; both are accepted.
 
-    Throws on the first failure, naming the failing layer.
+    Throws on the first failure, naming the failing layer. A layer whose tool
+    (cosign, slsa-verifier) or file (SHA256SUMS) is missing is skipped. The
+    last line names the layers that ran and the ones skipped; only
+    "chain OK (3 of 3 layers verified: ...)" means the release was verified.
 
 .PARAMETER AssetsDir
     Directory holding the downloaded assets. Defaults to the current directory.
@@ -60,6 +63,8 @@ try {
     Write-Information "verify-provenance: $Tag, identity $Identity" -InformationAction Continue
 
     $layersRun = 0
+    $layersOk = [System.Collections.Generic.List[string]]::new()
+    $layersSkipped = [System.Collections.Generic.List[string]]::new()
 
     # Layer 1: sha256 manifest of the platform archives.
     if (Test-Path -LiteralPath 'SHA256SUMS') {
@@ -73,6 +78,10 @@ try {
             }
         }
         $layersRun++
+        $layersOk.Add('SHA256SUMS manifest')
+    } else {
+        Write-Information 'verify-provenance: no SHA256SUMS; skipping layer 1' -InformationAction Continue
+        $layersSkipped.Add('SHA256SUMS manifest (no SHA256SUMS file)')
     }
 
     # Layer 2: every release asset must carry a bundle that verifies.
@@ -101,8 +110,10 @@ try {
         }
         if ($signed -eq 0) { throw "verify-provenance: layer 2: no signed release asset found in $AssetsDir" }
         $layersRun++
+        $layersOk.Add('cosign signatures')
     } else {
         Write-Information 'verify-provenance: cosign absent; skipping layer 2' -InformationAction Continue
+        $layersSkipped.Add('cosign signatures (cosign not found)')
     }
 
     # Layer 3: SLSA build provenance for the wheel and sdist (the platform
@@ -127,14 +138,20 @@ try {
             @subjects
         if ($LASTEXITCODE -ne 0) { throw 'verify-provenance: layer 3: slsa-verifier failed' }
         $layersRun++
+        $layersOk.Add('SLSA provenance')
     } else {
         Write-Information 'verify-provenance: slsa-verifier absent; skipping layer 3' -InformationAction Continue
+        $layersSkipped.Add('SLSA provenance (slsa-verifier not found)')
     }
 
     if ($layersRun -eq 0) {
         throw 'verify-provenance: no verification performed — no SHA256SUMS manifest, no cosign, no slsa-verifier'
     }
-    Write-Information "verify-provenance: chain OK ($layersRun of 3 layers verified)" -InformationAction Continue
+    if ($layersRun -eq 3) {
+        Write-Information "verify-provenance: chain OK (3 of 3 layers verified: $($layersOk -join ', '))" -InformationAction Continue
+    } else {
+        Write-Information "verify-provenance: partial check, $layersRun of 3 layers verified ($($layersOk -join ', ')); skipped: $($layersSkipped -join ', '). The release is not verified until all three layers run." -InformationAction Continue
+    }
 } finally {
     Pop-Location
 }

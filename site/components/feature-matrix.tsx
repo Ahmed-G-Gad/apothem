@@ -61,7 +61,7 @@ const rows: Row[] = [
   },
   {
     capability: 'Reversible, verified lifecycle',
-    apothem: { kind: 'yes', note: 'backup, verify --json drift, zero-orphan uninstall' },
+    apothem: { kind: 'yes', note: 'backup, verify --json drift, uninstall of only Apothem files' },
     fileManagers: { kind: 'no', note: 'varies' },
     ruleSync: { kind: 'no', note: 'varies' },
   },

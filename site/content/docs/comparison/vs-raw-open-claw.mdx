@@ -5,16 +5,20 @@ description: "Hand-maintaining Open-Claw config versus managing it through Apoth
 {/* SPDX-License-Identifier: MIT */}
 
 Open-Claw reads `~/.openclaw/openclaw.json`. Apothem installs shared command and
-skill cohorts under `~/.openclaw/.apothem/support/skills/` and authors one key
-there, `skills.load.extraDirs`, which lists that directory so OpenClaw loads
-the skills. Its `agents.defaults.skills` is a name allowlist you own and MCP is a
-CLI surface, so Apothem authors neither.
+skill cohorts under `~/.openclaw/.apothem/support/skills/` and authors two
+entries there: its directory in `skills.load.extraDirs`, so OpenClaw loads the
+skills, and the path `apothem/AGENTS.md` in the
+`hooks.internal.entries.bootstrap-extra-files` hook entry, so OpenClaw loads
+the Apothem rules file it writes into each workspace. Its
+`agents.defaults.skills` is a name allowlist you own and MCP is a CLI surface,
+so Apothem authors neither.
 
 ## Status
 
-**Preview.** The Open-Claw adapter targets the current documented config file
-and extra skill-directory surface. Non-skill cohorts remain Apothem support
-material.
+**Preview.** The Open-Claw adapter targets the current documented config file,
+the extra skill-directory surface and the bundled `bootstrap-extra-files` hook.
+The rules load through the workspace file `apothem/AGENTS.md`; templates,
+agents and hook material remain Apothem support material.
 
 ## Effort comparison
 
