@@ -546,6 +546,21 @@ def left_unfinished(results: list[MaterializationResult]) -> bool:
     )
 
 
+def last_uninstall_finished(harness_name: str, root: Path) -> bool:
+    """Return True when *root*'s latest ledger record is a finished uninstall.
+
+    With no install in place, only then was what stays already reported
+    (``kept_reason`` ``no-active-install``); any other history (a rollback,
+    unfinished uninstalls only, none) leaves the uninstall unfinished. See
+    :func:`remove_written`.
+
+    Raises:
+        LedgerError: Propagated from the ledger read on a corrupted ledger.
+    """
+    latest = install_ledger.latest_record(harness_name, root=root, kind=None)
+    return latest is not None and latest.kind == "uninstall"
+
+
 def record_uninstall(
     harness_name: str,
     root: Path,

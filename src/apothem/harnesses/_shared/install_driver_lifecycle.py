@@ -65,6 +65,7 @@ from .install_driver_types import (
 )
 from .install_driver_written import (
     kept_file_warnings,
+    last_uninstall_finished,
     left_behind,
     left_unfinished,
     record_uninstall,
@@ -529,18 +530,10 @@ def _remove_installed(
         set(recorded_targets) if record is not None else None
     )
     handled: set[str] = set()
-    # With no install in place, only a finished uninstall as the root's latest
-    # record shows that what stays was already reported; any other history (a
-    # rollback, unfinished uninstalls only, none) leaves the uninstall unfinished.
-    latest = (
-        None
-        if record is not None
-        else install_ledger.latest_record(harness_name, root=root, kind=None)
-    )
     remove = functools.partial(
         remove_written,
         recorded=recorded_targets if record is not None else None,
-        installs_ended=latest is not None and latest.kind == "uninstall",
+        installs_ended=record is None and last_uninstall_finished(harness_name, root),
         install_root=root,
         harness_name=harness_name,
         expected=expected_lookup(
