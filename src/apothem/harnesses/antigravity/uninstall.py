@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.wrapper_factories import raise_on_uninstall_error
 
 _HARNESS_NAME: str = "antigravity"
 
@@ -49,6 +50,7 @@ def uninstall(output_path: Path) -> None:
             project_root=None,
         ),
     )
-    install_driver.run_uninstall(
+    results = install_driver.run_uninstall(
         _HARNESS_NAME, harness_root=harness_root, prior_results=tuple(legacy)
     )
+    raise_on_uninstall_error(_HARNESS_NAME, (*legacy, *results))

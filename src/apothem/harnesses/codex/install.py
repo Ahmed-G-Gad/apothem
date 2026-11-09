@@ -38,7 +38,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_pathsafety
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.wrapper_factories import (
     make_plan_harness_root,
@@ -63,8 +63,14 @@ def install(
     shared user-scope install with ``${PYTHON_BIN}`` substituted in every
     rendered template. With ``dry_run=True`` the preview shows the same resolved
     ``hooks.json`` and writes nothing. A resolution failure raises
-    :class:`RuntimeError` and leaves the harness root untouched.
+    :class:`RuntimeError` and leaves the harness root untouched. A
+    ``CODEX_HOME`` spelled inside the home that a link leads out of it is
+    refused first, wherever above it the link sits (see
+    :func:`~apothem.harnesses._shared.install_driver_pathsafety.refuse_link_leaving_home`).
     """
+    install_driver_pathsafety.refuse_link_leaving_home(
+        _HARNESS_NAME, output_path.parent, operation="codex_home", dry_run=dry_run
+    )
     python_bin = resolve_python_bin().as_posix()
     with install_driver.content_tokens(PYTHON_BIN=python_bin):
         return _base_install(output_path, profile, dry_run=dry_run)

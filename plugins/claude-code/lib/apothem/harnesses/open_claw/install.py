@@ -13,7 +13,6 @@ the hook alone is reported as a warning.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -66,19 +65,6 @@ class _Plan:
 _PLANS: dict[str, _Plan] = {}
 
 
-def _editable(config_path: Path) -> bool:
-    """Return False when ``openclaw.json`` parses only as JSON5.
-
-    Apothem rewrites the file as plain JSON, which would drop comments, so the
-    shared write path refuses any change to such a file.
-    """
-    try:
-        json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return rules_file.read_config(config_path) is None
-    return True
-
-
 def _plan(config_path: Path, profile: dict[str, Any]) -> _Plan:
     """Decide how this pass registers the rules file, from the files on disk."""
     config = rules_file.read_config(config_path)
@@ -88,7 +74,7 @@ def _plan(config_path: Path, profile: dict[str, Any]) -> _Plan:
         config,
         apothem_entry=apothem_created_entry(config_path),
         fits=fits,
-        editable=_editable(config_path),
+        editable=rules_file.editable(config_path),
     )
     return _Plan(registration, fits)
 

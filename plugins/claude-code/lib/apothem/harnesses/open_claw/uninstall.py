@@ -23,9 +23,11 @@ _HARNESS_NAME: str = "open_claw"
 # namespace is owned wholesale here, so ``apothem_keys`` stays at the driver
 # default (empty). Before that, every workspace rules file an install still in
 # effect wrote loses its managed block (rules_file.retire_all); a file that
-# cannot be cleaned is an error, which keeps the install record.
+# cannot be cleaned is an error, which keeps the install record; so is an
+# openclaw.json with comments that still holds Apothem's entries, which the
+# shared strip cannot rewrite (the error names what to remove by hand).
 uninstall = make_native_config_uninstall(
     _HARNESS_NAME,
     materialize_native_config,
-    before_fn=lambda output_path: tuple(rules_file.retire_all(output_path.parent)),
+    before_fn=rules_file.before_uninstall,
 )

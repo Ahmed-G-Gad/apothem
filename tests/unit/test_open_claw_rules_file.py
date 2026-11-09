@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from apothem.harnesses._shared.install_driver import (
+    MaterializationError,
     MaterializationResult,
     check_fidelity,
 )
@@ -591,18 +592,6 @@ def test_a_workspace_path_that_is_a_file_is_skipped(
     assert any("is not a folder" in message for message in _messages(run))
 
 
-def test_an_entry_id_that_is_not_a_folder_name_names_no_workspace(home: Path) -> None:
-    config = {"agents": {"entries": {"../../.ssh": {}, "ops": {}}}}
-
-    workspaces, notes = candidate_workspaces(config, home, env={})
-
-    assert [w.path for w in workspaces] == [
-        home / ".openclaw" / "workspace",
-        home / ".openclaw" / "workspace-ops",
-    ]
-    assert any("not a plain folder name" in note for note in notes)
-
-
 # --- workspaces that move, links, drift, commented configs ------------------------
 
 
@@ -851,7 +840,8 @@ def test_line_endings_and_bad_bytes_count_as_openclaw_counts(home: Path) -> None
 
     used = used_chars({}, workspace, Limits())
 
-    assert used == 6 + 3 + 2
+    marker = chars(f"[MISSING] Expected at: {workspace / 'BOOTSTRAP.md'}")
+    assert used == 6 + 3 + 2 + marker
 
 
 def test_a_missing_workspace_file_counts_its_placeholder(home: Path) -> None:
@@ -862,7 +852,7 @@ def test_a_missing_workspace_file_counts_its_placeholder(home: Path) -> None:
 
     assert used == sum(
         chars(f"[MISSING] Expected at: {workspace / name}")
-        for name in ("AGENTS.md", "SOUL.md", "IDENTITY.md")
+        for name in ("AGENTS.md", "SOUL.md", "IDENTITY.md", "BOOTSTRAP.md")
     )
 
 
@@ -891,7 +881,7 @@ def test_an_invalid_entry_limit_falls_back_as_openclaw_does() -> None:
     assert limits_for(config, ["b"]).file_max == 500
 
 
-def test_a_rules_file_that_is_not_utf8_does_not_break_update_or_uninstall(
+def test_a_rules_file_overwritten_with_non_utf8_bytes_is_left_alone(
     adapter: OpenClawAdapter, home: Path
 ) -> None:
     old = _workspace(home / "ws-a")
@@ -902,6 +892,7 @@ def test_a_rules_file_that_is_not_utf8_does_not_break_update_or_uninstall(
     _move_default_workspace(home, "~/ws-b")
 
     adapter.update({})
+    # It holds no Apothem block any more, so it is not Apothem's to remove.
     adapter.uninstall()
 
     assert (old / RULES_FILE_RELATIVE).read_bytes() == b"\xff\xfe not text"
@@ -1004,7 +995,7 @@ def test_nested_brace_groups_are_expanded(home: Path) -> None:
     assert sorted(path.parent.name for path in extras) == ["a", "b", "docs"]
 
 
-def test_an_uninstall_that_cannot_clean_a_file_keeps_the_install_record(
+def test_an_uninstall_that_cannot_clean_a_file_fails_and_keeps_the_record(
     adapter: OpenClawAdapter, home: Path
 ) -> None:
     old = _workspace(home / "ws-a")
@@ -1016,7 +1007,8 @@ def test_an_uninstall_that_cannot_clean_a_file_keeps_the_install_record(
     _link_folder(old / "apothem", moved)
     _move_default_workspace(home, "~/ws-b")
 
-    adapter.uninstall()
+    with pytest.raises(MaterializationError, match="uninstall failed"):
+        adapter.uninstall()
 
     assert (moved / "AGENTS.md").is_file()
     assert install_ledger.active_install_records("open_claw", root=home / ".openclaw")
@@ -1085,3 +1077,267 @@ def test_the_limit_message_names_the_operators_own_text(
     run = adapter.update({})
 
     assert any("text you keep beside the Apothem block" in m for m in _messages(run))
+
+
+# --- second review ----------------------------------------------------------------
+
+
+def test_the_uninstall_command_fails_when_a_rules_file_cannot_be_cleaned(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    moved = old / "apothem-real"
+    (old / "apothem").rename(moved)
+    _link_folder(old / "apothem", moved)
+    _move_default_workspace(home, "~/ws-b")
+
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "open-claw", "--yes"])
+
+    assert result.exit_code != 0
+    assert "Uninstalled" not in result.output
+    assert "through a link" in result.output
+
+
+def _commented(home: Path, doc: dict[str, object]) -> str:
+    text = "// mine\n" + json.dumps(doc, indent=2) + "\n"
+    _config_path(home).parent.mkdir(exist_ok=True)
+    _config_path(home).write_text(text, encoding="utf-8")
+    return text
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"agents": {"defaults": {"bootstrapMaxChars": 300}}},
+        {"internal-enabled": False},
+        {"entry-enabled": False},
+        {"internal-enabled": True},
+    ],
+    ids=["over-limit", "internal-hooks-off", "entry-off", "open-discovery"],
+)
+def test_a_commented_config_never_breaks_update_whatever_else_applies(
+    adapter: OpenClawAdapter, home: Path, change: dict[str, object]
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    config = _config(home)
+    internal = config["hooks"]["internal"]  # type: ignore[index]
+    if "internal-enabled" in change:
+        internal["enabled"] = change["internal-enabled"]  # type: ignore[index]
+    elif "entry-enabled" in change:
+        internal["entries"][HOOK_NAME]["enabled"] = change["entry-enabled"]  # type: ignore[index]
+    else:
+        config.update(change)
+    text = _commented(home, config)
+
+    run = adapter.update({})
+
+    assert _config_path(home).read_text(encoding="utf-8") == text
+    assert any("remove it there by hand" in m for m in _messages(run))
+    if "agents" in change:
+        assert not (workspace / RULES_FILE_RELATIVE).exists()
+
+
+def test_uninstall_names_entries_left_in_a_commented_config(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    text = _commented(home, _config(home))
+
+    with pytest.raises(MaterializationError, match="by hand"):
+        adapter.uninstall()
+
+    # Nothing else ran: the file, its comment and the support tree stay.
+    assert _config_path(home).read_text(encoding="utf-8") == text
+    assert (home / ".openclaw" / ".apothem" / "support").is_dir()
+    assert install_ledger.active_install_records("open_claw", root=home / ".openclaw")
+
+
+def test_entry_ids_are_normalized_as_openclaw_does(home: Path) -> None:
+    config = {"agents": {"entries": {"Bob Smith": {}, "../../.ssh": {}}}}
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [w.path for w in workspaces] == [
+        home / ".openclaw" / "workspace",
+        home / ".openclaw" / "workspace-bob-smith",
+        home / ".openclaw" / "workspace-ssh",
+    ]
+
+
+def test_the_older_agents_list_roster_is_read(home: Path) -> None:
+    config = {
+        "agents": {"list": [{"id": "ops", "workspace": "~/ops"}, {"id": "dev"}, "junk"]}
+    }
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [(w.path, w.agent_ids) for w in workspaces] == [
+        (home / ".openclaw" / "workspace", ()),
+        (home / "ops", ("ops",)),
+        (home / ".openclaw" / "workspace-dev", ("dev",)),
+    ]
+
+
+def test_an_entry_marked_default_owns_the_default_workspace(home: Path) -> None:
+    config = {
+        "agents": {
+            "entries": {
+                "main": {"default": True, "bootstrapMaxChars": 900},
+                "ops": {},
+            }
+        }
+    }
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [(w.path, w.agent_ids) for w in workspaces] == [
+        (home / ".openclaw" / "workspace", ("main",)),
+        (home / ".openclaw" / "workspace-ops", ("ops",)),
+    ]
+    assert limits_for(config, workspaces[0].agent_ids).file_max == 900
+
+
+def test_explicit_ownership_ignores_the_default_marker(home: Path) -> None:
+    config = {
+        "agents": {
+            "ownership": "explicit",
+            "entries": {"main": {"default": True}, "ops": {}},
+        }
+    }
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert workspaces[1].path == home / ".openclaw" / "workspace-main"
+
+
+def test_a_fractional_limit_is_floored_as_openclaw_does() -> None:
+    config = {"agents": {"defaults": {"bootstrapMaxChars": 0.5}}}
+
+    assert limits_for(config, []).file_max == 0
+
+
+def test_a_linked_rules_file_emptied_by_hand_no_longer_blocks_uninstall(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    moved = old / "apothem-real"
+    (old / "apothem").rename(moved)
+    _link_folder(old / "apothem", moved)
+    _move_default_workspace(home, "~/ws-b")
+    with pytest.raises(MaterializationError, match="through a link"):
+        adapter.uninstall()
+
+    (moved / "AGENTS.md").write_text("", encoding="utf-8")
+    adapter.uninstall()
+
+    assert not install_ledger.active_install_records(
+        "open_claw", root=home / ".openclaw"
+    )
+
+
+# --- third verification round -------------------------------------------------------
+
+
+def test_a_commented_config_stops_uninstall_before_any_rules_file_changes(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    rules = (workspace / RULES_FILE_RELATIVE).read_bytes()
+    _commented(home, _config(home))
+
+    with pytest.raises(MaterializationError, match="by hand"):
+        adapter.uninstall()
+
+    assert (workspace / RULES_FILE_RELATIVE).read_bytes() == rules
+
+
+def test_a_commented_file_apothem_created_keeps_its_comment_after_the_hand_fix(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    config = _config(home)
+    config["skills"]["load"]["extraDirs"] = []  # type: ignore[index]
+    config["hooks"]["internal"]["entries"] = {}  # type: ignore[index]
+    text = _commented(home, config)
+
+    adapter.uninstall()
+
+    assert _config_path(home).read_text(encoding="utf-8") == text
+
+
+def test_every_uninstall_blocker_is_named_at_once(home: Path) -> None:
+    from apothem.harnesses._shared.wrapper_factories import raise_on_uninstall_error
+
+    failures = [
+        MaterializationResult("error", "retire_anchor", "a", "first"),
+        MaterializationResult("error", "retire_anchor", "b", "second"),
+    ]
+
+    with pytest.raises(MaterializationError, match="first; also at b: second"):
+        raise_on_uninstall_error("open_claw", failures)
+
+
+def test_ids_that_normalize_alike_still_count_as_two_entries(home: Path) -> None:
+    config = {"agents": {"entries": {"Main": {}, "main": {}}}}
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [w.path for w in workspaces] == [
+        home / ".openclaw" / "workspace",
+        home / ".openclaw" / "workspace-main",
+    ]
+
+
+def test_a_list_item_without_an_id_is_the_default_id(home: Path) -> None:
+    config = {"agents": {"list": [{"workspace": "~/w"}, {"id": "ops"}]}}
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert ("main",) in [w.agent_ids for w in workspaces]
+
+
+def test_a_null_entries_key_is_an_empty_roster(home: Path) -> None:
+    config = {"agents": {"entries": None, "list": [{"id": "ops"}]}}
+
+    workspaces, _ = candidate_workspaces(config, home, env={})
+
+    assert [w.path for w in workspaces] == [home / ".openclaw" / "workspace"]
+
+
+def test_non_ascii_ids_are_normalized_like_openclaw() -> None:
+    from apothem.harnesses.open_claw.rules_file import normalize_agent_id
+
+    assert normalize_agent_id("équipe") == "quipe"
+    assert normalize_agent_id(chr(0x212A)) == "k"  # Kelvin sign lowercases to k
+
+
+def test_a_huge_whole_number_limit_does_not_crash() -> None:
+    config = {"agents": {"defaults": {"bootstrapMaxChars": 10**400}}}
+
+    assert limits_for(config, []).file_max == 10**400
+
+
+def test_the_warning_for_an_apothem_entry_without_the_path_does_not_say_add_entry(
+    home: Path,
+) -> None:
+    config = {"hooks": {"internal": {"entries": {HOOK_NAME: {"enabled": True}}}}}
+
+    registration = plan_registration(config, apothem_entry=True, editable=False)
+
+    assert registration.entry is None
+    assert "add this entry" not in (registration.reason or "")
+    assert "paths" in (registration.reason or "")

@@ -202,10 +202,21 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
   workspace the install no longer writes loses its managed block on the next
   install, update or uninstall (found through every install record still in
   effect); one reached through a link is left in place with a warning.
-- TODO(clarify): OpenClaw normalizes entry ids before it builds
-  `<agents.defaults.workspace>/<id>` and `workspace-<id>` paths; the
-  normalizing function was not read, so the adapter uses the id as written and
-  skips one that is not a plain folder name.
+- Entry ids: OpenClaw normalizes an id before it builds
+  `<agents.defaults.workspace>/<id>` and `workspace-<id>` paths: trimmed and
+  lowercased when valid (`^[a-z0-9][a-z0-9_-]{0,63}$`, case-insensitive);
+  otherwise characters outside `a-z0-9_-` become `-`, leading and trailing
+  dashes go, and it is cut to 64 characters, falling back to `main` (source
+  `packages/normalization-core/src/agent-id.ts:3-30`). The adapter normalizes
+  the same way.
+- Roster: `agents.entries` when that key is present, else the older
+  `agents.list` array of objects carrying `id`; values that are not objects
+  are not entries (source `src/agents/agent-roster.ts:89-126, 138-154`). The
+  adapter reads both: `agents.entries` counts as present even when `null`
+  (then empty), an `agents.list` item without `id` is `main`, and ids that
+  normalize alike still count as separate entries when the sole entry or the
+  `default: true` owner is decided. The id pattern is ASCII-only, as in
+  JavaScript.
 - Limits: 20,000 characters per file and 60,000 in total by default
   (`agents.defaults.bootstrapMaxChars`, `bootstrapTotalMaxChars`), `USER.md`
   4,000; extra files come after the six workspace files, and a file is skipped
@@ -215,13 +226,15 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
   (source `bootstrap.ts:125-156`; "Per-agent override:
   `agents.entries.*.bootstrapMaxChars`", workspace and bootstrap page, read
   2026-11-09); a set value that is not a positive number gives the built-in
-  default, not the `agents.defaults` value (`??` then the positive check). Lengths
+  default, not the `agents.defaults` value (`??` then the positive check), and
+  a positive one is floored (`0.5` gives `0`). Lengths
   are JavaScript string lengths, UTF-16 code units, of the file as read (line
   endings kept, bytes that are not UTF-8 decoded to U+FFFD). An absent
-  `AGENTS.md`, `SOUL.md` or `IDENTITY.md` is replaced by a `[MISSING] Expected
+  `AGENTS.md`, `SOUL.md`, `IDENTITY.md` or `BOOTSTRAP.md` is replaced by a `[MISSING] Expected
   at: <path>` marker that uses budget (`bootstrap.ts:406-412`). Hook paths are
   globs only when they contain `?`, `*`, `{` or `}`; square brackets stay
-  literal (`workspace-bootstrap-policy.ts:59-62`). The operator's own paths in
+  literal (`workspace-bootstrap-policy.ts:59-62`). Only a missing `USER.md`
+  or `MEMORY.md` gets no marker. The operator's own paths in
   the same hook entry load before Apothem's, which is appended last. The adapter does not write the rules file in a workspace where
   it would pass the per-file limit (OpenClaw keeps head and tail and drops the
   middle) or the room the six files and the operator's extra files leave in the
@@ -237,10 +250,15 @@ in the repository at commit `89ba6b0f12ff` (2026-11-08), where marked "source".
 - TODO(clarify): whether sandboxed sessions (`workspaceAccess` `none` or `ro`,
   which copy the canonical files into the sandbox) see the extra file; not
   checked.
-- TODO(clarify): in a roster of several entries, which one OpenClaw treats as
-  owning the default workspace (`tryResolveLegacyDataOwnerAgentId`) is not
-  replicated; the adapter always writes into the default workspace, which
-  covers it, but applies only the `agents.defaults` limits there.
+- Default-workspace owner: the one entry marked `default: true` unless
+  `agents.ownership` is `"explicit"`, else a sole entry (source
+  `agent-roster.ts:217-239`, used by `agent-scope-config.ts:511-535`). The
+  adapter writes the default workspace for it and applies its own limits
+  there.
+- Margin: the budget check leaves out the `personalUser` handling of `USER.md`
+  and files other hooks add on `agent:bootstrap`; it can only under-count
+  those, so a rules file it accepts may still be cut when other hooks add
+  large files.
 
 ## Vendor Sources
 

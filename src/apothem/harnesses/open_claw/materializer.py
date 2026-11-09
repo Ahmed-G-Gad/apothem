@@ -105,14 +105,72 @@ def plan_registration(
 ) -> Registration:
     """Return how to register the rules file in the operator's *existing* config.
 
+    See :func:`_plan_editable` for the rules. When *editable* is False (the
+    file holds comments or other JSON5 syntax, which a rewrite would lose),
+    nothing Apothem would add or take out may change, so an entry that already
+    names the path is rendered exactly as the file holds it, whatever else
+    applies, and any change the rules call for is left to the operator in the
+    warning; a missing entry is not added and the warning says what to add.
+    """
+    planned = _plan_editable(existing, apothem_entry=apothem_entry, fits=fits)
+    if editable:
+        return planned
+    current = _mapping(
+        _mapping(_mapping(existing, "hooks"), "internal"), "entries"
+    ).get(HOOK_NAME)
+    current_key = _listing_key(current)
+    if current_key is not None and isinstance(current, dict):
+        held = (
+            Registration(dict(current))
+            if apothem_entry
+            else Registration({current_key: [RULES_FILE_RELATIVE]})
+        )
+        if planned.entry is None:
+            return Registration(
+                held.entry,
+                f"{planned.reason} openclaw.json holds comments or other JSON5 "
+                "syntax, which Apothem cannot keep when it rewrites the file, so "
+                f'it leaves "{RULES_FILE_RELATIVE}" in the `{current_key}` list of '
+                f"hooks.internal.entries.{HOOK_NAME}; remove it there by hand.",
+            )
+        return held
+    if planned.entry is None:
+        return planned
+    existing_entry = current if isinstance(current, dict) else None
+    key = next(iter(planned.entry.keys() - {"enabled"}), "paths")
+    if existing_entry is not None and _operator_items(existing_entry, key):
+        how = (
+            f'add "{RULES_FILE_RELATIVE}" to the `{key}` list of '
+            f"hooks.internal.entries.{HOOK_NAME}"
+        )
+    elif existing_entry is not None:
+        how = (
+            f'add `paths: ["{RULES_FILE_RELATIVE}"]` to '
+            f"hooks.internal.entries.{HOOK_NAME}"
+        )
+    else:
+        how = (
+            f"add this entry, merging it into the hooks block if the file has one "
+            f"(a second hooks key would replace the first): {MANUAL_ENTRY}"
+        )
+    return Registration(
+        None,
+        "openclaw.json holds comments, a byte-order mark or other JSON5 syntax, which Apothem cannot "
+        "keep when it rewrites the file, so the Apothem rules file is written but "
+        f"not registered. In openclaw.json, {how}.",
+    )
+
+
+def _plan_editable(
+    existing: object, *, apothem_entry: bool, fits: bool
+) -> Registration:
+    """Return how to register the rules file in a config Apothem may rewrite.
+
     *existing* is the parsed ``openclaw.json`` (anything else reads as an empty
     config). *apothem_entry* is True when the install record says Apothem
     created the hook entry, so it counts as absent here. *fits* is False when
-    the rules file is over the per-file limit of every workspace, so no file
-    is written and nothing is registered. *editable* is False when the file
-    holds comments or other JSON5 syntax Apothem cannot keep on a rewrite: an
-    entry already listing the path is kept as it is, and a missing one is left
-    to the operator, with the entry to add in the warning. The rules, from
+    the rules file fits no workspace within OpenClaw's limits, so no file is
+    written and nothing is registered. The rules, from
     OpenClaw's hooks configuration page and ``src/hooks/configured.ts``:
 
     - ``hooks.internal.enabled: false`` turns every internal hook off. That is
@@ -192,38 +250,7 @@ def plan_registration(
             "paths",
         )
         registration = Registration({key: [RULES_FILE_RELATIVE]})
-    if editable:
-        return registration
-    # A file Apothem cannot rewrite: render exactly what it already lists, so
-    # the shared write sees no change, and otherwise ask for the entry.
-    current_key = _listing_key(current)
-    if current_key is not None:
-        if apothem_entry and isinstance(current, dict):
-            # The entry is Apothem's, operator edits included: render it as
-            # the file holds it so the merge changes nothing.
-            return Registration(dict(current))
-        return Registration({current_key: [RULES_FILE_RELATIVE]})
-    if operator_entry is not None and _operator_items(operator_entry, key):
-        how = (
-            f'add "{RULES_FILE_RELATIVE}" to the `{key}` list of '
-            f"hooks.internal.entries.{HOOK_NAME}"
-        )
-    elif operator_entry is not None:
-        how = (
-            f'add `paths: ["{RULES_FILE_RELATIVE}"]` to '
-            f"hooks.internal.entries.{HOOK_NAME}"
-        )
-    else:
-        how = (
-            f"add this entry, merging it into the hooks block if the file has one "
-            f"(a second hooks key would replace the first): {MANUAL_ENTRY}"
-        )
-    return Registration(
-        None,
-        "openclaw.json holds comments or other JSON5 syntax, which Apothem cannot "
-        "keep when it rewrites the file, so the Apothem rules file is written but "
-        f"not registered. In openclaw.json, {how}.",
-    )
+    return registration
 
 
 def _listing_key(entry: object) -> str | None:

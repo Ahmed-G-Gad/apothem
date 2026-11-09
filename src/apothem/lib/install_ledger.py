@@ -536,8 +536,12 @@ def current_install_record(
     return installs[-1] if installs else None
 
 
-def _active_ids(records: list[LedgerRecord]) -> set[str]:
-    """Return the install-ids still active in one root's *records* (replayed)."""
+def active_install_ids(records: list[LedgerRecord]) -> set[str]:
+    """Return the install-ids still active in one root's *records* (replayed).
+
+    *records* are one harness+root's records in ledger order, as
+    :func:`read_records` returns them grouped by ``root``.
+    """
     installs: list[str] = []
     for record in records:
         if record.kind == "install":
@@ -564,7 +568,7 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
         by_root.setdefault(record.root, []).append(index)
     kept: dict[int, LedgerRecord] = {}
     for indices in by_root.values():
-        active = _active_ids([records[index] for index in indices])
+        active = active_install_ids([records[index] for index in indices])
         active_positions = [
             index
             for index in indices
@@ -668,6 +672,7 @@ __all__ = [
     "OwnedEntry",
     "OwnedKind",
     "RecordKind",
+    "active_install_ids",
     "active_install_records",
     "append_record",
     "compact_records",

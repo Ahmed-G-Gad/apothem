@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 from apothem.lib.harness_materializer import (
+    extract_managed_block,
     remove_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
@@ -165,7 +166,11 @@ def _remove_apothem_values(
             result[key] = value
             continue
         template_value = template[key]
-        if key == "hooks" and is_handler_map(value):
+        if (
+            key == "hooks"
+            and isinstance(value, dict)
+            and is_handler_map(template_value)
+        ):
             stripped_hooks = _remove_apothem_hooks(
                 value,
                 template_value,
@@ -348,6 +353,7 @@ def _surgical_remove_from_target(
     retired: tuple[OwnedEntry, ...] = (),
     earlier_digests: tuple[str, ...] = (),
     project_scope: bool = False,
+    unrecorded: tuple[OwnedEntry, ...] = (),
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -376,6 +382,7 @@ def _surgical_remove_from_target(
     no longer uses. When *recorded* predates ownership recording, they are
     removed while they still hold that release's value, under the same rule an
     update over such an install applies (see :func:`strip_owned`).
+    *unrecorded* takes their place when there is no install record at all.
 
     Returns ``None`` when *target* does not exist (nothing to remove). The
     *template_text* is the rendered Apothem template (path tokens already
@@ -383,6 +390,10 @@ def _surgical_remove_from_target(
     when no ownership is recorded.
     """
     if not target.exists() or not target.is_file():
+        return None
+    if mode == "sentinel_merge" and not _holds_managed_block(target):
+        # Nothing of Apothem's is left in the anchor, so there is nothing to
+        # remove (and no reason to refuse a path reached through a link).
         return None
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="surgical_uninstall"
@@ -401,7 +412,8 @@ def _surgical_remove_from_target(
             "surgical_uninstall",
             target,
             "not UTF-8 text, so Apothem cannot tell its own content apart; left "
-            "in place",
+            "in place. Save it as UTF-8 or delete the Apothem block in it by "
+            "hand, then run the uninstall again",
         )
     backup = backup_existing(
         target,
@@ -440,7 +452,7 @@ def _surgical_remove_from_target(
             template_text,
             apothem_keys=apothem_keys,
             harness_root=install_root,
-            retired=retired if recorded is not None else (),
+            retired=retired if recorded is not None else unrecorded,
             project_scope=project_scope,
         )
     elif suffix in {".yaml", ".yml"}:
@@ -449,7 +461,7 @@ def _surgical_remove_from_target(
             template_text,
             apothem_keys=apothem_keys,
             harness_root=install_root,
-            retired=retired if recorded is not None else (),
+            retired=retired if recorded is not None else unrecorded,
             project_scope=project_scope,
         )
     else:
@@ -461,7 +473,17 @@ def _surgical_remove_from_target(
             earlier_digests=earlier_digests,
             recorded=recorded,
         )
-    if remainder is None:
+    if remainder is None and suffix == ".json" and not _is_plain_json(existing):
+        # Only Apothem's keys were left, but the file still carries the
+        # operator's comments or other JSON5 syntax: deleting it would lose them.
+        result = _result(
+            "skipped",
+            "surgical_uninstall",
+            target,
+            "holds only comments besides what Apothem removed; left in place",
+            backup_path=backup,
+        )
+    elif remainder is None:
         result = _guarded_unlink(
             target, allowed_root=allowed_root, operation="surgical_uninstall"
         )
@@ -513,14 +535,23 @@ def surgically_remove_materialized_config(
     recorded before ownership tracking has them removed while they still hold
     that release's value. *relocated* names where the harness may have moved
     the entries the install record says Apothem owns; those are removed too
-    while they hold the recorded value. Backs the target up before mutation.
-    Returns ``None`` when the target is absent. This is the surgical
-    replacement for the retired whole-file ``backup_file_to_sibling`` rename.
+    while they hold the recorded value. With no install record at this root,
+    *relocated* is asked with no owned entries, as an install over the same
+    target would be (see :func:`adjust_prior`), and what it returns is
+    removed the same way. Backs the target up before mutation. Returns
+    ``None`` when the target is absent. This is the surgical replacement for
+    the retired whole-file ``backup_file_to_sibling`` rename.
     """
     recorded = current_target(harness_name, install_root, target)
-    if relocated is not None and recorded is not None and recorded.owned:
+    # An install that recorded owning nothing here (``owned == ()``) is asked
+    # too, as :func:`adjust_prior` asks for it; only a record from before
+    # ownership tracking (``owned is None``) is not.
+    if relocated is not None and recorded is not None and recorded.owned is not None:
         moved = relocated(recorded.owned, _current_text(target))
         recorded = replace(recorded, owned=(*recorded.owned, *moved))
+    unrecorded: tuple[OwnedEntry, ...] = ()
+    if relocated is not None and recorded is None:
+        unrecorded = relocated((), _current_text(target))
     return _surgical_remove_from_target(
         target,
         template_text,
@@ -531,7 +562,31 @@ def surgically_remove_materialized_config(
         apothem_keys=apothem_keys,
         recorded=recorded,
         retired=retired,
+        unrecorded=unrecorded,
     )
+
+
+def _is_plain_json(text: str) -> bool:
+    """Return True when *text* parses as strict JSON (no comments, no JSON5)."""
+    try:
+        json.loads(text)
+    except ValueError:
+        return False
+    return True
+
+
+def _holds_managed_block(target: Path) -> bool:
+    """Return True when *target* still carries an Apothem managed block.
+
+    Bytes that are not UTF-8 are read as U+FFFD, so the sentinels are still
+    found in a file that has them; an unreadable file counts as holding one,
+    so the caller reports it rather than passing over it.
+    """
+    try:
+        text = target.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return True
+    return extract_managed_block(text) is not None
 
 
 def strip_managed_anchor(

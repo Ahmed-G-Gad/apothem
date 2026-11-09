@@ -28,7 +28,10 @@ fits) loses its managed block on the next install, update or uninstall.
 
 from __future__ import annotations
 
+import json
+import math
 import os
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -41,6 +44,7 @@ from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
     RULES_FILE_RELATIVE,
+    SKILLS_DIRECTORY,
 )
 from apothem.lib import install_ledger, lenient_json
 from apothem.lib.harness_materializer import extract_managed_block, merge_managed_block
@@ -68,10 +72,24 @@ CANONICAL_FILES: Final[tuple[str, ...]] = (
 )
 
 #: The canonical files OpenClaw replaces with a ``[MISSING] Expected at:
-#: <path>`` marker when absent (``bootstrap.ts:406-412``); a missing
-#: ``USER.md`` or ``MEMORY.md`` is left out and ``BOOTSTRAP.md`` drops once
-#: setup completes.
-_MARKED_WHEN_MISSING: Final[tuple[str, ...]] = ("AGENTS.md", "SOUL.md", "IDENTITY.md")
+#: <path>`` marker when absent (``bootstrap.ts:406-412``); only a missing
+#: ``USER.md`` or ``MEMORY.md`` is left out.
+_MARKED_WHEN_MISSING: Final[tuple[str, ...]] = (
+    "AGENTS.md",
+    "SOUL.md",
+    "IDENTITY.md",
+    "BOOTSTRAP.md",
+)
+
+#: OpenClaw's agent-id normalization (``packages/normalization-core/src/
+#: agent-id.ts:3-30``): lowercase; characters other than ``a-z0-9_-`` become
+#: ``-``; leading and trailing dashes go; at most 64 characters; an id with
+#: nothing left is the default id.
+_VALID_ID: Final[re.Pattern[str]] = re.compile(
+    r"^[a-z0-9][a-z0-9_-]{0,63}$", re.IGNORECASE | re.ASCII
+)
+_INVALID_ID_CHARS: Final[re.Pattern[str]] = re.compile(r"[^a-z0-9_-]+")
+_DEFAULT_AGENT_ID: Final[str] = "main"
 
 #: Characters that make OpenClaw treat a hook path as a glob
 #: (``hasGlobPattern``, ``workspace-bootstrap-policy.ts:59-62``); square
@@ -154,6 +172,62 @@ def read_config(config: Path) -> object:
         return None
 
 
+def editable(config: Path) -> bool:
+    """Return False when ``openclaw.json`` parses only as JSON5.
+
+    Apothem rewrites the file as plain JSON, which would drop comments, so the
+    shared write path refuses any change to such a file. A missing or
+    unparseable file counts as editable: the shared path reports it.
+    """
+    try:
+        json.loads(config.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return read_config(config) is None
+    return True
+
+
+def json5_leftovers(config: Path) -> tuple[MaterializationResult, ...]:
+    """Return an error naming Apothem's entries left in a JSON5 ``openclaw.json``.
+
+    Uninstall cannot take them out without losing the operator's comments, so
+    the shared strip leaves the file alone. Reporting it as an error keeps the
+    install record and tells the operator what to remove by hand before
+    running the uninstall again.
+    """
+    if not config.is_file() or editable(config):
+        return ()
+    parsed = read_config(config)
+    left: list[str] = []
+    dirs = _mapping(parsed, "skills", "load").get("extraDirs")
+    if isinstance(dirs, list) and SKILLS_DIRECTORY in dirs:
+        left.append(f'"{SKILLS_DIRECTORY}" from skills.load.extraDirs')
+    entry = _mapping(parsed, *ENTRY_PATH)
+    for key in PATTERN_KEYS:
+        items = entry.get(key)
+        if isinstance(items, list) and RULES_FILE_RELATIVE in items:
+            left.append(
+                f'"{RULES_FILE_RELATIVE}" from hooks.internal.entries.{ENTRY_PATH[-1]}'
+                f".{key} (and the entry, if nothing of yours is left in it)"
+            )
+    if not left:
+        return ()
+    return (
+        MaterializationResult(
+            outcome="error",
+            operation=_RETIRE,
+            path=str(config),
+            message=(
+                "openclaw.json holds comments, a byte-order mark or other JSON5 "
+                "syntax, which Apothem "
+                "cannot keep when it rewrites the file, so it leaves its "
+                "entries "
+                f"there. Remove {' and '.join(left)} by hand, then run the uninstall "
+                "again."
+            ),
+        ),
+    )
+
+
 def chars(text: str) -> int:
     """Return the length of *text* as OpenClaw counts it, in UTF-16 code units."""
     return len(text.encode("utf-16-le", errors="surrogatepass")) // 2
@@ -195,13 +269,73 @@ def _user_path(value: str, home: Path) -> Path | None:
     return path if path.is_absolute() else None
 
 
-def _plain_id(agent_id: str) -> bool:
-    """Return True when *agent_id* can name a folder without leaving its parent."""
-    return (
-        bool(agent_id.strip())
-        and agent_id not in {".", ".."}
-        and not any(separator in agent_id for separator in ("/", "\\", ":"))
-    )
+def normalize_agent_id(value: object) -> str:
+    """Return *value* as OpenClaw spells an agent id in folder names.
+
+    A value that is not a string (an ``agents.list`` item without ``id``) is
+    the default id, as ``normalizeAgentId(undefined)`` gives.
+    """
+    if not isinstance(value, str):
+        return _DEFAULT_AGENT_ID
+    trimmed = value.strip()
+    lowered = trimmed.lower()
+    if _VALID_ID.match(trimmed):
+        return lowered
+    cleaned = _INVALID_ID_CHARS.sub("-", lowered).strip("-")[:64]
+    return cleaned or _DEFAULT_AGENT_ID
+
+
+def roster_list(config: object) -> list[tuple[str, dict[str, Any]]]:
+    """Return the configured entries with normalized ids, as OpenClaw lists them.
+
+    ``agents.entries`` (a mapping keyed by id) when that key is present, even
+    as ``null``, else the older ``agents.list`` (an array of objects, each
+    named by its ``id``), which OpenClaw still reads (``agent-roster.ts:89-126,
+    138-154``). Values that are not mappings are not entries. Duplicates are
+    kept, as OpenClaw keeps them when it counts entries.
+    """
+    agents = _mapping(config, "agents")
+    if "entries" in agents:
+        return [
+            (normalize_agent_id(str(agent_id)), entry)
+            for agent_id, entry in _mapping(agents, "entries").items()
+            if isinstance(entry, dict)
+        ]
+    listed = agents.get("list")
+    if not isinstance(listed, list):
+        return []
+    return [
+        (normalize_agent_id(entry.get("id")), entry)
+        for entry in listed
+        if isinstance(entry, dict)
+    ]
+
+
+def roster(config: object) -> dict[str, dict[str, Any]]:
+    """Return the configured entries by normalized id; the first of a duplicate wins."""
+    found: dict[str, dict[str, Any]] = {}
+    for agent_id, entry in roster_list(config):
+        found.setdefault(agent_id, entry)
+    return found
+
+
+def default_owner(config: object) -> str | None:
+    """Return the entry that owns the default workspace, if any.
+
+    The one entry marked ``default: true`` (unless ``agents.ownership`` is
+    ``"explicit"``), else a sole entry (``agent-roster.ts:217-239``); entries
+    are counted as OpenClaw counts them, duplicates included.
+    """
+    listed = roster_list(config)
+    if _mapping(config, "agents").get("ownership") != "explicit":
+        marked = [
+            agent_id for agent_id, entry in listed if entry.get("default") is True
+        ]
+        if len(marked) == 1:
+            return marked[0]
+    if len(listed) == 1:
+        return listed[0][0]
+    return None
 
 
 def candidate_workspaces(
@@ -210,12 +344,12 @@ def candidate_workspaces(
     """Return every workspace *config* names, and notes on unusable ones.
 
     The default workspace is ``agents.defaults.workspace``, else
-    ``OPENCLAW_WORKSPACE_DIR``, else ``~/.openclaw/workspace``. An
-    ``agents.entries.<id>`` with its own ``workspace`` uses it. A sole entry
-    without one uses the default workspace directly; in a roster of several,
-    an entry without one uses ``<agents.defaults.workspace>/<id>``, else
-    ``~/.openclaw/workspace-<id>``. The default workspace is always a
-    candidate. Entries that are not mappings are not entries.
+    ``OPENCLAW_WORKSPACE_DIR``, else ``~/.openclaw/workspace``. An entry with
+    its own ``workspace`` uses it. The entry that owns the default workspace
+    (:func:`default_owner`) uses it directly when it has none; any other entry
+    without one uses ``<agents.defaults.workspace>/<id>``, else
+    ``~/.openclaw/workspace-<id>``, with the id normalized as OpenClaw does.
+    The default workspace is always a candidate.
     """
     environ = os.environ if env is None else env
     notes: list[str] = []
@@ -226,20 +360,15 @@ def candidate_workspaces(
         or _text(environ.get("OPENCLAW_WORKSPACE_DIR"))
         or "~/.openclaw/workspace"
     )
-    entries = {
-        agent_id: entry
-        for agent_id, entry in _mapping(config, "agents", "entries").items()
-        if isinstance(entry, dict)
-    }
+    entries = roster(config)
+    owner = default_owner(config)
     raw: list[tuple[str, str | None]] = [(default, None)]
     for agent_id, entry in entries.items():
         own = _text(entry.get("workspace"))
         if own is not None:
             raw.append((own, agent_id))
-        elif len(entries) == 1:
+        elif agent_id == owner:
             raw.append((default, agent_id))
-        elif not _plain_id(agent_id):
-            notes.append(f"entry id {agent_id!r} is not a plain folder name; skipped")
         elif defaults_workspace is not None:
             raw.append((f"{defaults_workspace.rstrip('/')}/{agent_id}", agent_id))
         else:
@@ -301,12 +430,18 @@ def find_workspaces(
 
 
 def _positive(value: object) -> int | None:
-    """Return *value* when it is a positive finite number, else ``None``."""
+    """Return *value* floored, as OpenClaw takes a limit, or ``None``.
+
+    A positive finite number is floored (``0.5`` gives ``0``, a limit no file
+    meets); anything else is ``None``, which means the built-in default.
+    """
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
-    if value != value or value in (float("inf"), float("-inf")) or value <= 0:
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if not math.isfinite(value) or value <= 0:
         return None
-    return int(value)
+    return math.floor(value)
 
 
 def limits_for(config: object, agent_ids: Iterable[str]) -> Limits:
@@ -319,15 +454,16 @@ def limits_for(config: object, agent_ids: Iterable[str]) -> Limits:
     fits every one of them.
     """
     defaults = _mapping(config, "agents", "defaults")
-    entries = _mapping(config, "agents", "entries")
+    entries = roster(config)
 
     def resolve(key: str, fallback: int) -> int:
         def one(raw: object) -> int:
-            return _positive(raw) or fallback
+            value = _positive(raw)
+            return fallback if value is None else value
 
         values = []
         for agent_id in agent_ids:
-            own = _mapping(entries, agent_id).get(key)
+            own = entries.get(agent_id, {}).get(key)
             values.append(one(defaults.get(key) if own is None else own))
         return min(values) if values else one(defaults.get(key))
 
@@ -645,6 +781,10 @@ def _retire_one(
     """
     home = harness_root.parent
     flag = _error if strict else _warning
+    if not _holds_block(path):
+        # Nothing of Apothem's is left in it (reading through a link changes
+        # nothing), so there is nothing to take out.
+        return []
     link = _unsafe_symlink(path, home)
     if link is not None:
         return [
@@ -652,11 +792,10 @@ def _retire_one(
                 path,
                 f"an earlier Apothem rules file is reached through a link ({link}); "
                 "Apothem changes nothing through a link, so it is left in place. "
-                "Delete the Apothem block in it by hand.",
+                "Delete the Apothem block in it, or the file, by hand, then run "
+                "the command again.",
             )
         ]
-    if not _holds_block(path):
-        return []
     if dry_run:
         return [
             MaterializationResult(
@@ -756,6 +895,20 @@ def apply(
         )
     results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
     return tuple(results)
+
+
+def before_uninstall(config_path: Path) -> tuple[MaterializationResult, ...]:
+    """Clear what the open-claw uninstall must handle before the shared steps.
+
+    A commented ``openclaw.json`` that still holds Apothem's entries stops the
+    uninstall first, before anything changes (:func:`json5_leftovers`).
+    Otherwise every rules file an install still in effect wrote loses its
+    managed block (:func:`retire_all`).
+    """
+    leftovers = json5_leftovers(config_path)
+    if leftovers:
+        return leftovers
+    return tuple(retire_all(config_path.parent))
 
 
 def retire_all(harness_root: Path) -> list[MaterializationResult]:

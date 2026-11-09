@@ -107,6 +107,21 @@ folder you run the command in. An empty `CODEX_HOME` counts as unset. Codex
 stops with an error when `CODEX_HOME` names a folder that does not exist; an
 install creates the folder, so Codex starts once the install has run.
 
+A `CODEX_HOME` below `~/.config` works when `~/.config` is a link into your
+home directory, as dotfile managers make it; on Windows a junction counts as a
+link. A `~/.config` link that leads outside your home directory stops every
+Codex install before it writes any file, wherever `CODEX_HOME` is, because the
+install also writes the shared rules and templates in `~/.config/apothem/`.
+Setting `CODEX_HOME` to the folder the link leads to does not help; make the
+link lead to a folder inside your home directory instead. A `CODEX_HOME`
+spelled inside your home directory that a link leads out of it, such as
+`~/work/codex` with `~/work` linked to another drive, stops the install, the
+uninstall and `apothem rollback`, wherever above `CODEX_HOME` the link sits. A
+`CODEX_HOME` spelled as a path outside your home directory is followed. A link
+on a path the install writes inside `CODEX_HOME` stops it too, with `target
+path crosses a symlink`, or with `target escapes the allowed materialization
+root` when that link leads out of the folder holding `CODEX_HOME`.
+
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills. Earlier releases

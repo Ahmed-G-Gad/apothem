@@ -96,10 +96,15 @@ gets its first-run files.
 
 Apothem writes the file into every workspace that exists in your home
 directory: `agents.defaults.workspace` (else `OPENCLAW_WORKSPACE_DIR`, else
-`~/.openclaw/workspace`), and the `workspace` of each `agents.entries` entry.
-A sole entry without its own `workspace` uses that default workspace directly;
-in a list of several entries, one without its own `workspace` uses
-`<agents.defaults.workspace>/<id>`, else `~/.openclaw/workspace-<id>`.
+`~/.openclaw/workspace`), and the `workspace` of each `agents.entries` entry
+(or of each item of the older `agents.list`, which OpenClaw still reads when
+`agents.entries` is absent). The entry that owns the default workspace uses it
+directly when it has no `workspace` of its own: the one marked `default: true`
+(unless `agents.ownership` is `"explicit"`), else a sole entry. Any other entry
+without its own `workspace` uses `<agents.defaults.workspace>/<id>`, else
+`~/.openclaw/workspace-<id>`, with the id spelled as OpenClaw spells it in
+folder names: lowercase, and characters other than letters, digits, `_` and
+`-` turned into `-` (so `Bob Smith` uses `workspace-bob-smith`).
 
 - A workspace that does not exist yet is skipped without a message: once
   OpenClaw creates it, `apothem verify --harness open-claw` fails until you run
@@ -199,8 +204,10 @@ syntax, Apothem never rewrites it:
   workspace rules files, and print a warning that says what to add (the path
   goes into the list your `bootstrap-extra-files` entry already uses, if it has
   one). Until you add it, `apothem verify` fails.
-- Entries Apothem wrote before you added comments stay as they are, and update
-  goes on.
+- Entries Apothem wrote before you added comments stay exactly as they are,
+  and update goes on. When the size limits or your hook settings call for
+  Apothem's path to come out of the hook entry, the warning asks you to remove
+  it by hand; a rules file that no longer fits is still taken out.
 
 Merge these entries into your file yourself, or convert the file to plain JSON,
 then run the install again:
@@ -263,7 +270,9 @@ Re-derives the profile document and each workspace's rules file from the
 current shared profile state and refreshes the support files; `openclaw.json`
 keeps the keys it already has, and the Apothem entries in
 `skills.load.extraDirs` and the hook entry stay listed once however often you
-update. Text you add to a rules file outside its managed block stays. Run after editing `~/.config/apothem/profile.yaml` or upgrading the
+update. Each update writes Apothem's path last in the hook entry's list, so it
+moves to the end if you put entries after it. Text you add to a rules file
+outside its managed block stays. Run after editing `~/.config/apothem/profile.yaml` or upgrading the
 installed Apothem package.
 
 ## Uninstalling
@@ -278,10 +287,15 @@ block in each workspace's `apothem/AGENTS.md` (the file and folder go when
 nothing else is left in them), the profile document, and the support tree. Your
 own keys in `openclaw.json` stay, including your own `extraDirs` entries and
 hook settings, the workspace's own files stay as they are, and `openclaw.json`
-is deleted only when Apothem created it and nothing of yours is left. A rules
-file Apothem cannot clean (reached through a link, or not UTF-8 text) is left
-in place and reported as an error, and Apothem keeps its install record, so
-`apothem status` still lists it and the next uninstall tries again. The shared profile YAML and
+is deleted only when Apothem created it and nothing of yours is left.
+
+Some leftovers need your hand: a rules file reached through a link that still
+holds the Apothem block, and Apothem's entries in an `openclaw.json` that holds
+comments or other JSON5 syntax. Uninstall then stops before it changes anything
+else, exits with an error that names the file and what to remove, and keeps its
+install record. Remove the Apothem block (or the file) or the named entries,
+then run the uninstall again; it then does the whole job. The shared profile
+YAML and
 Apothem engine are unaffected.
 
 ## Conformity gate

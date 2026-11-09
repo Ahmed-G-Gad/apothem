@@ -65,9 +65,11 @@ LEGACY_OWNERSHIP: Final[_LegacyOwnership] = _LegacyOwnership()
 #: What Apothem owned in a target before this pass.
 PriorOwnership = tuple[OwnedEntry, ...] | _LegacyOwnership
 
-#: Returns, for the owned entries and the target's current text (``None`` when
-#: it has none), the entries to strip where the operator moved Apothem's own
-#: (for example to OpenCode 2's ``mcp.servers``).
+#: Returns, for the owned entries (none for a target with no install record
+#: at this root yet) and the target's current text (``None`` when it has
+#: none), the entries to strip where the operator moved Apothem's own (for
+#: example to OpenCode 2's ``mcp.servers``) or where Apothem wrote them under
+#: another spelling of the same folder.
 RelocatedFn = Callable[[tuple[OwnedEntry, ...], str | None], tuple[OwnedEntry, ...]]
 
 
@@ -82,15 +84,16 @@ def adjust_prior(
 
     *retired* attaches to a legacy (pre-ownership) record: an earlier release
     wrote those entries at a location the adapter no longer uses. *relocated*
-    adds, to a recorded ownership, what it finds of Apothem's entries moved
-    elsewhere in *current* (the target's text); they are stripped under the
-    same exact-value rule.
+    adds, to a recorded ownership or to a target with no record at this root
+    yet, what it finds of Apothem's entries moved elsewhere in *current* (the
+    target's text); they are stripped under the same exact-value rule.
     """
     if isinstance(prior, _LegacyOwnership):
         return _LegacyOwnership(retired) if retired else prior
-    if relocated is None or not prior:
+    if relocated is None:
         return prior
-    return (*prior, *relocated(prior, current))
+    moved = relocated(prior, current)
+    return (*prior, *moved) if moved else prior
 
 
 _MISSING: Final[object] = object()
