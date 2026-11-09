@@ -456,20 +456,21 @@ def test_a_file_id_of_zero_does_not_join_two_folders(
         (folder / ".cursor").mkdir(parents=True)
         (folder / ".cursor" / "a.md").write_text("a", encoding="utf-8")
     install_ledger.append_record(_record_with_file(first, "a.md"))
-    real_stat = os.stat
+    real_stat = Path.stat
     folders = {str(first), str(second), str(first.resolve()), str(second.resolve())}
 
-    def stat(
-        path: str | os.PathLike[str], *, follow_symlinks: bool = True
-    ) -> os.stat_result:
-        found = real_stat(path, follow_symlinks=follow_symlinks)
-        if str(path) not in folders:
+    # Path.stat is patched, not os.stat: on Python 3.10, Path.stat calls the
+    # os.stat it bound when pathlib was imported, so patching os.stat there
+    # would not reach the code under test.
+    def stat(self: Path, *, follow_symlinks: bool = True) -> os.stat_result:
+        found = real_stat(self, follow_symlinks=follow_symlinks)
+        if str(self) not in folders:
             return found
         fields = list(found[:10])
         fields[1] = 0  # st_ino
         return os.stat_result(fields)
 
-    monkeypatch.setattr(os, "stat", stat)
+    monkeypatch.setattr(Path, "stat", stat)
 
     assert os.path.samestat(first.stat(), second.stat())
     assert install_ledger.recorded_root("cursor", second) == second.resolve()
