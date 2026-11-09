@@ -456,7 +456,7 @@ def run_uninstall(
     active: list[LedgerRecord] = []
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
-    finished = False
+    recorded = False
     try:
         active = install_ledger.active_install_records(harness_name, root=root)
         record = active[-1] if active else None
@@ -468,25 +468,26 @@ def run_uninstall(
             harness_root=harness_root,
             project_root=project_root,
         )
+        # The warnings are built before the record, so a failure here leaves
+        # the uninstall recorded as unfinished, as the CLI then reports it.
+        kept = _left_behind(results, active, floor=root_floor)
         finished = not left_unfinished([*prior_results, *results])
-    except Exception as exc:
+        recorded = True
+        record_uninstall(
+            harness_name, root, record, [*prior_results, *results], finished=finished
+        )
+    except BaseException as exc:
+        if not recorded:
+            record_uninstall(
+                harness_name, root, record, [*prior_results, *results], finished=False
+            )
+        if not isinstance(exc, Exception):
+            raise
         # Hand the caller what this pass removed before it stopped, so the CLI
         # can report the uninstall as partial instead of a bare failure.
         run = MaterializationRun(harness_name, False, tuple(results))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-    finally:
-        record_uninstall(
-            harness_name,
-            root,
-            record,
-            [*prior_results, *results],
-            finished=finished,
-        )
-    try:
-        return [*results, *_left_behind(results, active, floor=root_floor)]
-    except Exception as exc:
-        run = MaterializationRun(harness_name, False, tuple(results))
-        raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
+    return [*results, *kept]
 
 
 def _left_behind(

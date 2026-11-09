@@ -254,10 +254,10 @@ def remove_written(
 
 #: Why a target an earlier release recorded stays, and the next step.
 _EARLIER_RELEASE = (
-    "the install record (made by an earlier release) does not show which files "
-    "Apothem wrote, and it differs from what this release writes; move any file "
-    "of your own out of it (an update replaces it), then run apothem update, "
-    "then apothem uninstall again"
+    "the install record (made by an earlier release) cannot show it is "
+    "Apothem's, and it differs from what this release writes; apothem update "
+    "overwrites it (after a backup), so copy it first if you edited it, then "
+    "run apothem update, then apothem uninstall again"
 )
 
 

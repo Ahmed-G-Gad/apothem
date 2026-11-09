@@ -28,7 +28,7 @@ that install's ledger record, newest change first, it:
   restored exactly, without the files the install added to it);
 - removes every file and directory the install created, as long as it still
   has the content that install wrote: a file you made at that path since, or
-  one you edited, stays with a `Warning:` line, and so does a folder holding
+  one you edited, stays with a `Warning:` line (a `warnings` entry under `--json`), and so does a folder holding
   it. An install recorded by an earlier release does not say what it wrote,
   so what it created stays. It also puts back any
   legacy-layout path the install swept away. A path the current release no

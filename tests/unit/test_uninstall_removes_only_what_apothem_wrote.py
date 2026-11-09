@@ -782,3 +782,19 @@ def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
         assert result.outcome == "warning"
         assert "no longer exists" in result.message
         assert "apothem install" in result.message
+
+
+def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "_left_behind", broken)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["status"] == "partial"
+    assert _unfinished(claude) is not None

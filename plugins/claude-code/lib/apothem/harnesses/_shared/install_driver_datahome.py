@@ -126,9 +126,11 @@ def _other_harness_shares_home(
 def _holder(*, current_harness: str, shared_home: Path, current_root: Path) -> str:
     """Name an install, other than the one being removed, that uses *shared_home*.
 
-    Says when that install's folder no longer exists, so the operator learns
-    why the store stayed. Empty when none is found.
+    An install whose folder still exists is named first; only when every
+    holder's folder is gone does the name say so, so the operator learns why
+    the store stayed. Empty when none is found.
     """
+    gone: list[str] = []
     for package_key in SUPPORTED_PACKAGE_KEYS:
         roots = {record.root for record in install_ledger.read_records(package_key)}
         for raw_root in sorted(roots):
@@ -141,9 +143,12 @@ def _holder(*, current_harness: str, shared_home: Path, current_root: Path) -> s
                 _data_home_for(current, root=Path(raw_root)), shared_home
             ):
                 continue
-            gone = "" if Path(raw_root).exists() else " (that folder no longer exists)"
-            return f"{package_key} installed at {raw_root}{gone}"
-    return ""
+            if Path(raw_root).exists():
+                return f"{package_key} installed at {raw_root}"
+            gone.append(
+                f"{package_key} installed at {raw_root} (that folder no longer exists)"
+            )
+    return gone[0] if gone else ""
 
 
 def _remove_data_home(
@@ -211,8 +216,9 @@ def _remove_data_home(
                 "warning",
                 "remove_data_home",
                 home,
-                f"{home} was kept: {holder} still uses it; restore that folder "
-                "and uninstall there, or remove the store by hand",
+                f"{home} was kept: {holder} still uses it. To release it, "
+                "create that folder again, run apothem install for that tool "
+                "there, then apothem uninstall there; or remove the store by hand",
             )
         return _result(
             "unchanged",

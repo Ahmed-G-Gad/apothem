@@ -74,10 +74,11 @@ _KEPT_GROUP_LINES = {
     "unrecorded": "{count} paths were kept: the install record does not list them",
     "no-record": "{count} paths were kept: no install record shows Apothem wrote them",
     "no-digests": (
-        "{count} paths were kept: the install record does not show which files "
-        "Apothem wrote (it was made by an earlier release); move any file of "
-        "your own out of those folders (an update replaces them), then run "
-        "apothem update, then apothem uninstall again"
+        "{count} paths were kept: the install record (made by an earlier "
+        "release) cannot show they are Apothem's, and they differ from what "
+        "this release writes; apothem update overwrites them (after a backup), "
+        "so copy any you edited first, then run apothem update, then apothem "
+        "uninstall again"
     ),
     "changed": "{count} paths were kept: they are not what Apothem wrote (changed or yours)",
 }
@@ -202,10 +203,12 @@ def _report_run(
     ]
     if earlier:
         problems.append(
-            f"{earlier} path(s) an earlier release installed stay because its "
-            "install record does not show which files Apothem wrote and they "
-            "differ from what this release writes; move any file of your own "
-            "out of those folders (an update replaces them), then run apothem "
+            f"{earlier} path(s) an earlier release installed stay: its "
+            "install record cannot show they are Apothem's, and they differ "
+            "from what this release writes. apothem update overwrites them and "
+            "replaces each Apothem folder whole (backing both up first), so "
+            "copy any of them you edited, and move out of those folders each "
+            "file a warning lists as changed or yours; then run apothem "
             "update, then apothem uninstall again"
         )
     if fmt != "json":
