@@ -67,6 +67,13 @@ from typing import Any, Final, Protocol, cast
 # that import above this block reintroduces the ModuleNotFoundError the block
 # exists to prevent. The standalone-validator launcher reuses it by running this
 # file as a plain script before each validator.
+#
+# Run by a hook, this file imports its sibling modules from Apothem's installed
+# folder: a bytecode cache written there (``__pycache__``) is a file Apothem did
+# not write, which an uninstall then has to keep. So a run as a program writes
+# none (set before the first sibling import below).
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
 if __package__ in (None, ""):
     _PACKAGE_DIR: Final[Path] = Path(__file__).resolve().parents[1]
     if _PACKAGE_DIR.name == "apothem" and (_PACKAGE_DIR / "__init__.py").is_file():
