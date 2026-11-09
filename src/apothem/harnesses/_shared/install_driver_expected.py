@@ -56,23 +56,24 @@ _RENDERED: dict[str, tuple[Callable[[Path], str], str | None]] = {
 
 #: The interpreter's own file name, in any case (``PYTHON.EXE``, macOS's
 #: ``Python``): ``python`` with an optional ``w`` (``pythonw``), version
-#: (``3``, ``3.12``), free-threaded ``t``, build suffix (``-dbg``, ``_d``,
-#: ``-intel64``, ``-arm64``) and ``.exe``, or its Windows 8.3 short form
-#: (``PYTHON~1.EXE``).
+#: (``3``, ``3.12``), free-threaded ``t``, debug ``d`` (``python3.12d``), build
+#: suffix (``-dbg``, ``_d``, ``-intel64``, ``-arm64``) and ``.exe``, or its
+#: Windows 8.3 short form (``PYTHON~1.EXE``).
 _INTERPRETER_NAME = (
-    rb"(?i:pythonw?(?:[0-9]+(?:\.[0-9]+)*)?t?(?:-dbg|_d|-intel64|-arm64)?"
+    rb"(?i:pythonw?(?:[0-9]+(?:\.[0-9]+)*)?t?d?(?:-dbg|_d|-intel64|-arm64)?"
     rb"(?:\.exe)?|python~[0-9]+\.exe)"
 )
 
 #: One run of path characters: no whitespace, separator, colon, quote,
 #: backquote or shell metacharacter (``;&|<>#$``). An apostrophe
-#: (``O'Brien``), parentheses, ``~`` and non-ASCII letters are path characters.
+#: (``O'Brien``), parentheses, ``~``, ``-`` and non-ASCII letters are path
+#: characters.
 _PATH_WORD = rb"[^\s/\\:;&|<>#$`\"]+"
 
-#: A folder name: words joined by single spaces (``Program Files (x86)``). A
-#: word after a space may not start an option (``-I``) or a home path (``~``),
-#: so a second command written after the interpreter never reads as a folder.
-_PATH_SEGMENT = _PATH_WORD + rb"(?: (?![-~])" + _PATH_WORD + rb")*"
+#: A folder name: words joined by spaces (``Program Files (x86)``,
+#: ``OneDrive - Contoso``). A second command written after the interpreter
+#: can read as a folder here; :func:`_names_a_file` rules it out.
+_PATH_SEGMENT = _PATH_WORD + rb"(?: +" + _PATH_WORD + rb")*"
 
 #: A separator: ``/``, a doubled backslash (as JSON writes one), or a single
 #: backslash not followed by a letter JSON reads as an escape (``\n``).
@@ -83,15 +84,18 @@ _PATH_SEP = rb"(?:/|\\\\|\\(?![bfnrtu]))"
 #: home (``~/``) or the root (``/``).
 _PATH_ROOT = rb"(?:(?://\?/|\\\\\?\\)?[A-Za-z]:" + _PATH_SEP + rb"|//|\\\\|~/|/)"
 
-#: The bare launchers earlier releases wrote at these positions (v1.0.1's
-#: Codex hooks ran ``python3``, and ``py -3`` on Windows).
+#: The bare launchers v1.0.1 wrote for the interpreter, where today's templates
+#: hold ``${PYTHON_BIN}`` (its Codex hooks ran ``python3``, and ``py -3`` on
+#: Windows). They stand for themselves; no file check applies.
 _LAUNCHER = rb"(?:py(?: -3)?|python3?)"
 
 #: What an install writes for the interpreter: exactly one bare launcher, or
 #: an absolute path whose last component is an interpreter (see
-#: :data:`_INTERPRETER_NAME`), and nothing else. A path that holds ``&``,
-#: ``#`` or ``$`` (a Windows user name such as ``R&D``) never matches, so such
-#: a file is kept rather than removed: the check fails safe.
+#: :data:`_INTERPRETER_NAME`), and nothing else. A path must also name a file
+#: on this machine (see :func:`_names_a_file`). A path that holds ``&``, ``#``,
+#: ``$``, ``;``, a quote or a colon past the drive (a Windows user name such
+#: as ``R&D``), or one that no longer exists, never matches, so such a file is
+#: kept rather than removed: the check fails safe.
 _INTERPRETER = (
     rb"(?:"
     + _LAUNCHER
@@ -104,6 +108,9 @@ _INTERPRETER = (
     + _INTERPRETER_NAME
     + rb")"
 )
+
+#: The tokens that stand for the interpreter.
+_INTERPRETER_TOKENS = frozenset({b"${PYTHON_BIN}", b"${STATUSLINE_PYTHON_BIN}"})
 
 #: The install-time tokens an adapter fills in that the shipped source leaves
 #: unrendered, each with what it can stand for: the interpreter
@@ -121,21 +128,50 @@ _FILLED: dict[bytes, bytes] = {
 _TOKEN = re.compile(b"(" + b"|".join(re.escape(token) for token in _FILLED) + b")")
 
 
+def _names_a_file(value: bytes, *, json_text: bool) -> bool:
+    """Return True when *value*, an interpreter position's text, is an interpreter here.
+
+    A bare launcher an earlier release wrote stands for itself. A path must
+    name a file that exists on this machine: a wrapper command line (``uv.exe
+    run .venv/Scripts/python.exe``) matches the path pattern, but never names
+    a file. In a JSON file (*json_text*) a doubled backslash is one.
+    """
+    if re.fullmatch(_LAUNCHER, value):
+        return True
+    try:
+        text = value.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    if json_text:
+        text = text.replace("\\\\", "\\")
+    try:
+        return Path(text).expanduser().is_file()
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
 def _filled(expected: bytes, actual: Path) -> bool:
     """Return True when *actual* is *expected* with each filled token in place.
 
     Everything outside the tokens of :data:`_FILLED` must match byte for byte,
-    and each token only what it can stand for.
+    each token only what it can stand for, and each interpreter must name a
+    file on this machine (see :func:`_names_a_file`).
     """
     try:
         data = actual.read_bytes()
     except OSError:
         return False
     pattern = b"".join(
-        _FILLED[part] if part in _FILLED else re.escape(part)
+        (b"(" + _FILLED[part] + b")" if part in _INTERPRETER_TOKENS else _FILLED[part])
+        if part in _FILLED
+        else re.escape(part)
         for part in _TOKEN.split(expected)
     )
-    return re.fullmatch(pattern, data, flags=re.DOTALL) is not None
+    match = re.fullmatch(pattern, data, flags=re.DOTALL)
+    if match is None:
+        return False
+    json_text = actual.suffix.lower() == ".json"
+    return all(_names_a_file(value, json_text=json_text) for value in match.groups())
 
 
 def _digests(files: dict[str, bytes], target: Path) -> dict[str, str]:

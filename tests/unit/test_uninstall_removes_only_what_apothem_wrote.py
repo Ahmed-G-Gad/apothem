@@ -769,6 +769,8 @@ _INTERPRETER_VALUES = (
     "//server/share/Python312/python.exe",
     "//?/C:/Python312/python.exe",
     "/nix/store/abc123-python3-3.12.7/bin/python3.12",
+    "/usr/bin/python3.12d",
+    "D:/Users/jsmith/OneDrive - Contoso/proj - Copy/.venv/Scripts/python.exe",
     "C:" + _BS + "Python312" + _BS + "python.exe",
     _BS * 2 + "server" + _BS + "share" + _BS + "python.exe",
     _BS * 2 + "?" + _BS + "C:" + _BS + "Python312" + _BS + "python.exe",
@@ -789,9 +791,7 @@ _NOT_INTERPRETER_VALUES = (
     "C:/py/python.exe # mine",
     "C:/x/python.exe -X utf8 -I",
     "C:/x/python.exe -I C:/mine/python",
-    "C:/x/python.exe -I/mine/python",
     "C:/mine/node.exe C:/mine/python",
-    "C:/x/node ~/python",
     "cmd /c start C:/mine/python",
     "wsl.exe -e python",
     "powershell -c python",
@@ -816,15 +816,60 @@ _NOT_INTERPRETER_VALUES = (
     + [(value, False) for value in _NOT_INTERPRETER_VALUES],
 )
 def test_only_an_interpreter_path_fills_the_python_token(
-    tmp_path: Path, value: str, matches: bool
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str, matches: bool
 ) -> None:
-    from apothem.harnesses._shared.install_driver_expected import _filled
+    from apothem.harnesses._shared import install_driver_expected as expected_mod
 
+    # The shape alone: whether the path names a file here is checked below.
+    monkeypatch.setattr(expected_mod, "_names_a_file", lambda *a, **k: True)
     expected = b'"command": "${PYTHON_BIN} render.py"\n'
     actual = tmp_path / "conformity.json"
     actual.write_bytes(f'"command": "{value} render.py"\n'.encode())
 
-    assert _filled(expected, actual) is matches
+    assert expected_mod._filled(expected, actual) is matches
+
+
+def test_an_interpreter_path_must_name_a_file_here(tmp_path: Path) -> None:
+    from apothem.harnesses._shared.install_driver_expected import _filled
+
+    folder = tmp_path / "OneDrive - Contoso" / "proj - Copy"
+    folder.mkdir(parents=True)
+    (folder / "python.exe").write_bytes(b"")
+    (tmp_path / "uv.exe").write_bytes(b"")
+    venv = tmp_path / ".venv" / "Scripts"
+    venv.mkdir(parents=True)
+    (venv / "python.exe").write_bytes(b"")
+    expected = b'"command": "${PYTHON_BIN} render.py"\n'
+    actual = tmp_path / "conformity.json"
+    root = tmp_path.as_posix()
+
+    def fills(value: str) -> bool:
+        actual.write_bytes(f'"command": "{value} render.py"\n'.encode())
+        return _filled(expected, actual)
+
+    assert fills(f"{root}/OneDrive - Contoso/proj - Copy/python.exe")
+    assert fills("py -3")
+    assert not fills(f"{root}/uv.exe run .venv/Scripts/python.exe")
+    assert not fills(f"{root}/.venv/Scripts/python.exe -I/mine/python")
+    assert not fills(f"{root}/node ~/python")
+    assert not fills(f"{root}/gone/python.exe")
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="a backslash separates only on Windows"
+)
+def test_a_json_file_reads_a_doubled_backslash_as_one(tmp_path: Path) -> None:
+    from apothem.harnesses._shared.install_driver_expected import _filled
+
+    interpreter = tmp_path / "Python312" / "python.exe"
+    interpreter.parent.mkdir()
+    interpreter.write_bytes(b"")
+    doubled = str(interpreter).replace("\\", "\\\\")
+    expected = b'"command": "${PYTHON_BIN} render.py"\n'
+    actual = tmp_path / "conformity.json"
+    actual.write_bytes(f'"command": "{doubled} render.py"\n'.encode())
+
+    assert _filled(expected, actual)
 
 
 @pytest.mark.parametrize("live_holder", [False, True])
