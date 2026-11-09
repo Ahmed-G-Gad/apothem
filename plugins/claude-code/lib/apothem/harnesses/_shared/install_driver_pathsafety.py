@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import shutil
 import sys
 from collections.abc import Callable
@@ -35,6 +36,76 @@ def _is_relative_to(path: Path, root: Path) -> bool:
 def _normalized(path: Path) -> Path:
     """Return an absolute normalized path without requiring existence."""
     return path.expanduser().resolve(strict=False)
+
+
+def spelling_key(path: str | Path) -> str:
+    """Return *path* normalized and case-folded where the OS is, without following links.
+
+    The install ledger finds an install's records by the root as spelled, so
+    a root is compared this way; :func:`path_key` compares the paths an
+    install writes.
+    """
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
+#: The user-level folders as folded key endings. Only a path that is one of
+#: them, or lies inside one, can be shared between installs, so only such a
+#: path has its links followed; any other path is keyed by its spelling.
+_SHARED_TAILS: tuple[str, ...] = tuple(
+    os.sep + spelling_key(prefix) for prefix in sorted(USER_LEVEL_PREFIXES)
+)
+#: Matches a folded folder that is a user-level folder or lies inside one.
+_SHARED_FOLDER = re.compile(
+    "|".join(re.escape(tail) + f"(?:{re.escape(os.sep)}|$)" for tail in _SHARED_TAILS)
+)
+
+
+def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
+    """Return the comparison key of *path*: the place it names, case-folded where the OS is.
+
+    The spelling is folded lexically first. Ledger records written before
+    ``${USER_HOME}`` name Codex's skills as ``<root>/.codex/../.agents/skills/x``,
+    which keys as ``<home>/.agents/skills/x`` even when ``.codex`` is a link.
+    For a path that is a user-level folder (``.agents/skills``,
+    ``.config/apothem/rules``, ...) or lies inside one, the links in the folder
+    that holds it are then followed, so a home spelled through a link
+    (``/home`` leading to ``/var/home``, a profile moved behind a junction)
+    and the home's own path give one key. The test is on the folder names,
+    not on the current home, so a record made under the other spelling
+    qualifies too. The last part stays as spelled: a path that is itself a
+    link is keyed as that entry, not as the place it leads to. Any other path,
+    and a relative one, is only folded, which costs no filesystem call.
+
+    *memo* maps a holding folder, as spelled, to its key prefix, for a caller
+    that keys many paths in one pass, so each folder is tested and resolved
+    once. Nothing is kept between calls without it, since a link can be made
+    or removed at any time.
+    """
+    # Text, not Path objects: an index keys a few thousand paths per pass, so
+    # the folder test runs once per holding folder, not once per path.
+    lexical = os.path.normpath(str(path))
+    parent, leaf = os.path.split(lexical)
+    if not leaf:
+        return os.path.normcase(lexical)
+    prefix = memo.get(parent) if memo is not None else None
+    if prefix is None:
+        prefix = os.path.normcase(os.path.join(parent, ""))  # noqa: PTH118
+        if _SHARED_FOLDER.search(prefix) is not None:  # inside a user-level folder
+            prefix = _key_prefix(parent)
+        if memo is not None:
+            memo[parent] = prefix
+    key = prefix + os.path.normcase(leaf)
+    if key.endswith(_SHARED_TAILS):  # a user-level folder itself
+        key = _key_prefix(parent) + os.path.normcase(leaf)
+    return key
+
+
+def _key_prefix(folder: str) -> str:
+    """Return *folder*, its links followed when absolute, case-folded, ending in a separator."""
+    if os.path.isabs(folder):  # noqa: PTH117
+        with contextlib.suppress(OSError, ValueError):
+            folder = os.path.realpath(folder)
+    return os.path.normcase(os.path.join(folder, ""))  # noqa: PTH118
 
 
 #: The ``lstat`` the case probe reads, kept apart so a test can replace it

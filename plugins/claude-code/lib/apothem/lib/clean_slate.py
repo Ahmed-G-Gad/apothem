@@ -49,6 +49,7 @@ __all__ = [
     "LinkLeavingHomeError",
     "RemovalError",
     "TargetDisposition",
+    "UnsafeHomeError",
     "UnsafeRootError",
     "bounded_targets",
     "run_clean_slate",
@@ -87,6 +88,14 @@ class UnsafeRootError(CleanSlateError):
     The guard refuses the home directory itself, a filesystem or drive root,
     an empty or unset path, the entire ``~/.config`` directory, and any
     ``~/.config`` child other than ``apothem``.
+    """
+
+
+class UnsafeHomeError(UnsafeRootError):
+    """Raised when the home directory is empty, a filesystem root, or leads to one.
+
+    Every bounded target lies under the home, so such a home would put them
+    at the root. A home whose links cannot be followed is refused too.
     """
 
 
@@ -204,6 +213,30 @@ def _unsafe_reason(target: Path, home: Path) -> str | None:
         return f"refuses entire {config_dir} (would remove unrelated applications)"
     if resolved.parent == config_dir and resolved.name != _CONFIG_REMOVABLE_CHILD:
         return f"refuses non-apothem ~/.config entry: {resolved}"
+    return None
+
+
+def _is_root(path: Path) -> bool:
+    """Return True when *path* is a filesystem root, as spelled."""
+    return path == Path(path.anchor) or path.parent == path
+
+
+def _home_refusal(home: Path) -> str | None:
+    """Return a refusal reason when *home* is, or leads to, a filesystem root.
+
+    The home is checked as spelled and with its links followed: a home that
+    is a link or a junction to a drive root would put every bounded target
+    at that root. A home whose links cannot be followed (a link loop) is
+    refused too, since what it names cannot be known.
+    """
+    if _is_root(home):
+        return f"refuses filesystem root as home: {home}"
+    try:
+        resolved = home.resolve()
+    except (OSError, RuntimeError):
+        return f"refuses home directory whose links cannot be followed: {home}"
+    if _is_root(resolved):
+        return f"refuses filesystem root as home: {home} leads to {resolved}"
     return None
 
 
@@ -412,6 +445,9 @@ def run_clean_slate(
 
     Raises:
         UnsafeRootError: When the home directory or any target is unsafe.
+        UnsafeHomeError: When the home directory is empty, a filesystem root,
+            leads to one, or has links that cannot be followed (an
+            :class:`UnsafeRootError`).
         LinkLeavingHomeError: When a target is below a link that leads out
             of the home (an :class:`UnsafeRootError`).
         CleanSlateError: When the run is non-interactive without ``assume_yes``.
@@ -422,13 +458,11 @@ def run_clean_slate(
     tick: Clock = clock if clock is not None else _utcnow
 
     if not str(home).strip():
-        raise UnsafeRootError("refuses empty or unset home directory")
+        raise UnsafeHomeError("refuses empty or unset home directory")
     home_resolved = home.expanduser()
-    if (
-        home_resolved == Path(home_resolved.anchor)
-        or home_resolved.parent == home_resolved
-    ):
-        raise UnsafeRootError(f"refuses filesystem root as home: {home_resolved}")
+    refusal = _home_refusal(home_resolved)
+    if refusal is not None:
+        raise UnsafeHomeError(refusal)
 
     target_list = (
         [t.expanduser() for t in targets]

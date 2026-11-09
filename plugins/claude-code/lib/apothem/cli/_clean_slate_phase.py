@@ -26,6 +26,7 @@ from apothem.lib.clean_slate import (
     CleanSlateResult,
     LinkLeavingHomeError,
     RemovalError,
+    UnsafeHomeError,
     run_clean_slate,
 )
 from apothem.lib.links import is_link
@@ -41,6 +42,12 @@ def _refused_error(exc: CleanSlateError) -> dict[str, object]:
         fix = (
             f"Replace the link {exc.link} with a real folder, or make it lead "
             "to a folder inside your home directory, then run the command again."
+        )
+    elif isinstance(exc, UnsafeHomeError):
+        fix = (
+            "Set your home directory (HOME, or USERPROFILE on Windows) to your "
+            "own folder, not the root of a drive or file system and not a link "
+            "that leads to one or cannot be followed, then run the command again."
         )
     else:
         fix = (

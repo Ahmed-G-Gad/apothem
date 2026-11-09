@@ -25,11 +25,16 @@ callers keep the folder and say so.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_shared import SKILL_MODES, path_key
+from apothem.harnesses._shared.install_driver_shared import (
+    SKILL_MODES,
+    path_key,
+    spelling_key,
+)
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import (
     SHARED_ROOTS,
@@ -54,11 +59,6 @@ def _tilde(path: Path) -> str:
     except ValueError:
         return str(path)
     return f"~/{relative.as_posix()}/"
-
-
-def _parent_key(key: str) -> str:
-    """Return the comparison key of the folder that holds the path with *key*."""
-    return path_key(Path(key).parent)
 
 
 def _names(labels: Sequence[str]) -> str:
@@ -102,9 +102,18 @@ class _Install:
     harness: str
     root: str
     since: str
-    targets: frozenset[str]
-    parents: frozenset[str]
+    pairs: frozenset[tuple[str, str]]  # (target key, key of its folder)
     live: bool
+
+    @cached_property
+    def targets(self) -> frozenset[str]:
+        """Return the keys of the targets this install lists."""
+        return frozenset(key for key, _ in self.pairs)
+
+    @cached_property
+    def parents(self) -> frozenset[str]:
+        """Return the keys of the folders that hold those targets."""
+        return frozenset(parent for _, parent in self.pairs)
 
     @property
     def label(self) -> str:
@@ -121,11 +130,15 @@ class LedgerView:
     """Every active install, across all harnesses and roots, oldest first."""
 
     installs: tuple[_Install, ...]
+    #: The folders resolved while the view was read (see :func:`path_key`),
+    #: reused by its lookups; it lives as long as this view.
+    memo: dict[str, str] = field(default_factory=dict, compare=False, repr=False)
 
     @classmethod
     def load(cls) -> LedgerView | None:
         """Read the ledgers; ``None`` when one cannot be read."""
         found: list[_Install] = []
+        memo: dict[str, str] = {}  # one pass: each holding folder is resolved once
         try:
             for package_key in SUPPORTED_PACKAGE_KEYS:
                 roots = dict.fromkeys(
@@ -137,33 +150,41 @@ class LedgerView:
                     )
                     if record is None:
                         continue
-                    keys = frozenset(path_key(t.path) for t in record.targets)
+                    pairs = frozenset(
+                        (path_key(t.path, memo), path_key(Path(t.path).parent, memo))
+                        for t in record.targets
+                    )
                     found.append(
                         _Install(
                             harness=public_id_for_package_key(package_key),
                             root=root,
                             since=record.timestamp,
-                            targets=keys,
-                            parents=frozenset(_parent_key(k) for k in keys),
+                            pairs=pairs,
                             live=Path(root).is_dir(),
                         )
                     )
         except _LEDGER_ERRORS:
             return None
-        return cls(tuple(sorted(found, key=lambda install: install.since)))
+        return cls(tuple(sorted(found, key=lambda install: install.since)), memo)
 
     def users_of(
         self, location: Path, *, exclude: _Install | None = None
     ) -> list[_Install]:
         """Return the installs that list *location* or a child of it, oldest first."""
-        key = path_key(location)
+        key = path_key(location, self.memo)
         return [i for i in self.installs if i is not exclude and i.lists(key)]
 
     def find(self, harness: str, root: Path) -> _Install | None:
-        """Return the active install of *harness* at *root*, or ``None``."""
-        wanted = path_key(root)
+        """Return the active install of *harness* at *root*, or ``None``.
+
+        The root is matched by its spelling, as the uninstall finds its own
+        install record and leaves it out of the holders: a record of the same
+        harness under another spelling of the root is another install, here
+        and in the uninstall, so the preview reports what the uninstall does.
+        """
+        wanted = spelling_key(root)
         for install in self.installs:
-            if install.harness == harness and path_key(install.root) == wanted:
+            if install.harness == harness and spelling_key(install.root) == wanted:
                 return install
         return None
 
@@ -292,17 +313,14 @@ def preview_uninstall(harness_id: str, root: Path) -> UninstallPreview | None:
     if own is None:
         return None
     others = [install for install in view.installs if install is not own]
+    live_keys = frozenset().union(*(o.targets for o in others if o.live))
     uses: list[FolderUse] = []
     for folder in folders:
-        key = path_key(folder)
-        recorded = [t for t in own.targets if _parent_key(t) == key]
+        key = path_key(folder, view.memo)
+        recorded = [t for t, parent in own.pairs if parent == key]
         if not recorded:
             continue
-        kept = sum(
-            1
-            for target in recorded
-            if any(o.live and target in o.targets for o in others)
-        )
+        kept = sum(1 for target in recorded if target in live_keys)
         under = [o for o in others if key in o.parents]
         uses.append(
             FolderUse(
@@ -394,6 +412,7 @@ def verify_hint(harness_id: str) -> dict[str, object] | None:
     except (RuntimeError, KeyError):
         return None
     view = LedgerView.load()
+    memo = view.memo if view is not None else {}  # each folder resolved once
     missing: dict[str, Path] = {}
     unlisted: dict[str, Path] = {}
     for entry in rules.install:
@@ -402,7 +421,7 @@ def verify_hint(harness_id: str) -> dict[str, object] | None:
         for folder in install_driver.generated_targets_for_entry(
             entry, harness_root=None, project_root=None, exclude=rules.exclude
         ):
-            key = path_key(folder)
+            key = path_key(folder, memo)
             skill = entry.mode in SKILL_MODES
             if not (folder / "SKILL.md" if skill else folder).exists():
                 missing[key] = folder

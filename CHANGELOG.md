@@ -744,6 +744,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it, and the install now follows it. On Windows a home folder that is a
   junction, as moving a user profile to another drive makes it, is followed
   the same way.
+- **An uninstall keeps the shared folders another install still uses when the
+  home folder is a link.** When the home folder is a link (`/home` leading to
+  `/var/home` on Fedora Silverblue, or a Windows profile moved behind a
+  junction), one install could run with the home spelled through the link and
+  another with the folder it leads to. Apothem compared the two spellings as
+  text, so uninstalling the first said `no other Apothem install uses it` and
+  removed `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/`
+  while the second install still used them. Apothem now compares the folder
+  each path names, so the uninstall keeps them and names the other install,
+  and the install note `Installs using it now` counts both.
+- **`install --clean` refuses a home folder that leads to a drive root.** The
+  clean-slate step refused a home directory that is the root of a drive or
+  file system only as spelled, so a home that is a link or a junction to one
+  passed the check. It now follows the link first and stops before it backs up
+  or removes anything. It also stops when the home's links cannot be followed,
+  such as a link loop, and the error says to set the home directory to your
+  own folder.
 - **A refused uninstall is reported as failed.** When the write guard, a
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
