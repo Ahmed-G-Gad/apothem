@@ -1874,10 +1874,10 @@ def test_backup_existing_same_second_collision_resolves_distinct_files(
     assert second.read_text(encoding="utf-8") == "b"
 
 
-def test_run_uninstall_removes_generated_children_only(
+def test_run_uninstall_without_a_record_keeps_every_child(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Uninstall removes generated children and spares operator files."""
+    """With no install record, nothing shows which files Apothem wrote: all stay."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     rules = HarnessRules(
@@ -1902,14 +1902,12 @@ def test_run_uninstall_removes_generated_children_only(
     monkeypatch.setattr(install_driver, "APOTHEM_SRC", fake_package_root)
     monkeypatch.setattr(install_driver, "load_rules", lambda name: rules)
 
-    install_driver.run_uninstall("opencode", harness_root=tmp_path)
+    results = install_driver.run_uninstall("opencode", harness_root=tmp_path)
 
-    assert not (target / "sample-command.md").exists()
+    assert (target / "sample-command.md").read_text(encoding="utf-8") == "generated"
     assert (target / "operator-command.md").read_text(encoding="utf-8") == "operator"
-    assert (
-        next(backup_root.rglob("sample-command.md")).read_text(encoding="utf-8")
-        == "generated"
-    )
+    kept = [r for r in results if r.path == str(target / "sample-command.md")]
+    assert [r.detail.get("kept_reason") for r in kept] == ["no-record"]
 
 
 def test_plan_stages_materialize_as_first_class_skills(tmp_path: Path) -> None:

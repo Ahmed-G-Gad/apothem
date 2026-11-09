@@ -106,9 +106,9 @@ class ClaudeCodeAdapter:
         """Return the manifest-driven propagation plan without writing."""
         return _plan(output_path or self.output_path)
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun:
         """Remove the harness configuration file if present."""
-        _uninstall(self.output_path)
+        return _uninstall(self.output_path)
 
     def is_installed(self) -> bool:
         """Return True if this harness root carries an Apothem install.

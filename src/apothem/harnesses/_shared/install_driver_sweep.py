@@ -16,10 +16,13 @@ from pathlib import Path
 
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
+    KEPT_LINKS,
+    _existing_chain,
     _is_lexically_within,
     _is_link,
     _is_relative_to,
     _normalized,
+    _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
 )
@@ -65,6 +68,25 @@ def _link_kept(link: Path) -> MaterializationResult:
     )
 
 
+def _unreadable_kept(folder: Path) -> MaterializationResult:
+    return _result(
+        "warning",
+        "sweep_stale",
+        folder,
+        f"could not read {folder}, so it and what it holds were left in place",
+    )
+
+
+def _kept_notes(
+    links: list[Path], unreadable: list[Path]
+) -> list[MaterializationResult]:
+    """Return one warning per link and per unreadable folder a sweep left."""
+    return [
+        *(_link_kept(link) for link in links),
+        *(_unreadable_kept(folder) for folder in unreadable),
+    ]
+
+
 def stale_blocker(
     stale: Path, protect: frozenset[Path], allowed_root: Path
 ) -> MaterializationResult | None:
@@ -75,6 +97,24 @@ def stale_blocker(
     refused with an error, the same way in a dry run and a real run.
     """
     live = protected_by(stale, protect)
+    link = (
+        next((p for p in _existing_chain(stale, allowed_root) if _is_link(p)), None)
+        if live is not None
+        else None
+    )
+    if live is not None and link is not None:
+        # Kept on every run, and still there after an uninstall, when it points
+        # at a folder Apothem no longer fills: the operator removes it.
+        return _result(
+            "warning",
+            "sweep_stale",
+            stale,
+            f"{stale} reaches the current folder {_normalized(stale)} through "
+            f"the link {link}, "
+            "so it was left in place; the link stays after an uninstall, so "
+            "remove it yourself once nothing uses the old path",
+            detail={"live_target": _path_text(live), "link": _path_text(link)},
+        )
     if live is not None:
         return _result(
             "unchanged",
@@ -85,15 +125,94 @@ def stale_blocker(
         )
     if _is_link(stale):
         return _link_kept(stale)
-    return _validate_target_path(
+    refused = _validate_target_path(
         stale, allowed_root=allowed_root, operation="sweep_stale"
+    )
+    through = (
+        _unsafe_symlink(stale, _normalized(allowed_root))
+        if refused is not None
+        else None
+    )
+    if through is not None:
+        # A link above the leftover path (a dotfiles folder linked in, say):
+        # removing through it is what the write guard refuses, so the path is
+        # kept with a warning, the same way at install, update and uninstall.
+        return _result(
+            "warning",
+            "sweep_stale",
+            stale,
+            f"{stale} is reached through the link {through}, so it was left in "
+            "place: Apothem does not remove anything through a link. Delete it "
+            "yourself if nothing uses it",
+            detail={"symlink": _path_text(through)},
+        )
+    return refused
+
+
+def kept_link_warnings(
+    results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Return one warning per path a removal in *results* left in place.
+
+    A path is a link the removal kept, a folder it could not read, or a file it
+    could not remove.
+    """
+    return [
+        _kept_note(Path(kept))
+        for result in results
+        for kept in result.detail.get(KEPT_LINKS, "").splitlines()
+        if kept
+    ]
+
+
+def links_left_in(
+    folders: set[Path], *, known: list[MaterializationResult]
+) -> list[MaterializationResult]:
+    """Return a warning per link directly inside a folder an install created.
+
+    The folder stays after an uninstall because the link is in it, and the
+    link may point at a folder that is gone. Links *known* already carry a
+    warning and are skipped.
+    """
+    seen = {result.path for result in known}
+    notes = []
+    for folder in sorted(folders):
+        if not folder.is_dir() or _is_link(folder):
+            continue
+        try:
+            children = sorted(folder.iterdir())
+        except OSError:
+            continue
+        for child in children:
+            if _is_link(child) and _path_text(child) not in seen:
+                seen.add(_path_text(child))
+                notes.append(_link_kept(child))
+    return notes
+
+
+def _kept_note(path: Path) -> MaterializationResult:
+    if _is_link(path):
+        return _link_kept(path)
+    if path.is_dir():
+        return _unreadable_kept(path)
+    return _result(
+        "warning",
+        "sweep_stale",
+        path,
+        f"could not remove {path}, so it was left in place",
     )
 
 
-def _doomed_and_links(stale: Path, keep: set[Path]) -> tuple[list[Path], list[Path]]:
-    """Return the files a sweep of *stale* removes, and the links it keeps."""
-    files, _folders, links = _walk_without_links(stale)
-    return [path for path in files if _normalized(path) not in keep], links
+def _doomed_and_kept(
+    stale: Path, keep: set[Path]
+) -> tuple[list[Path], list[MaterializationResult]]:
+    """Return the files a sweep of *stale* removes, and a warning per link it keeps.
+
+    A folder the sweep cannot read is kept with a warning as well.
+    """
+    walk = _walk_without_links(stale)
+    doomed = [path for path in walk.files if _normalized(path) not in keep]
+    return doomed, _kept_notes(walk.links, walk.unreadable)
 
 
 def stale_needs_sweep(
@@ -112,7 +231,7 @@ def stale_needs_sweep(
         return False
     if not stale.is_dir():
         return True
-    return bool(_doomed_and_links(stale, _preserved_inside(stale, preserve))[0])
+    return bool(_doomed_and_kept(stale, _preserved_inside(stale, preserve))[0])
 
 
 def preview_stale_sweep(
@@ -127,22 +246,22 @@ def preview_stale_sweep(
     blocker = stale_blocker(stale, protect, allowed_root)
     if blocker is not None:
         return [blocker]
-    links = _walk_without_links(stale)[2] if stale.is_dir() else []
+    kept = (
+        _doomed_and_kept(stale, _preserved_inside(stale, preserve))[1]
+        if stale.is_dir()
+        else []
+    )
     outcome: MaterializationOutcome = (
         "skipped" if stale_needs_sweep(stale, preserve, protect) else "unchanged"
     )
-    return [
-        _result(outcome, "sweep_stale", stale, message),
-        *(_link_kept(link) for link in links),
-    ]
+    return [_result(outcome, "sweep_stale", stale, message), *kept]
 
 
 def _sweep_around(
     stale: Path, keep: set[Path], *, root: Path, harness_name: str, allowed_root: Path
 ) -> list[MaterializationResult]:
     """Sweep a stale directory except the current files (*keep*) and links it holds."""
-    doomed, links = _doomed_and_links(stale, keep)
-    kept = [_link_kept(link) for link in links]
+    doomed, kept = _doomed_and_kept(stale, keep)
     if not doomed:
         return [
             _result(
@@ -162,7 +281,9 @@ def _sweep_around(
             with contextlib.suppress(OSError):
                 path.unlink()
     folders = sorted(
-        _walk_without_links(stale)[1], key=lambda path: len(path.parts), reverse=True
+        _walk_without_links(stale).folders,
+        key=lambda path: len(path.parts),
+        reverse=True,
     )
     for folder in folders:
         # rmdir removes an empty folder only; a junction would be removed too,
@@ -217,7 +338,8 @@ def sweep_stale(
             continue
         if stale.is_dir():
             keep = _preserved_inside(stale, preserve)
-            if keep or _walk_without_links(stale)[2]:
+            walk = _walk_without_links(stale)
+            if keep or walk.links or walk.unreadable:
                 results.extend(
                     _sweep_around(
                         stale,

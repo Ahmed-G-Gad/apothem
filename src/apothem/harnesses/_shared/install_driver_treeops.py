@@ -16,7 +16,10 @@ from pathlib import Path
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
 from .install_driver_converters import _native_skill_emission
 from .install_driver_pathsafety import (
+    _remove_tree_keeping_links,
+    _skip_links_into,
     _validate_target_path,
+    kept_links_detail,
 )
 from .install_driver_types import (
     STAGING_SUFFIX,
@@ -104,6 +107,7 @@ def replace_tree(
         )
     existed = dst.exists()
     backup: Path | None = None
+    kept: list[Path] = []
     if existed:
         backup = backup_existing(
             dst,
@@ -111,16 +115,41 @@ def replace_tree(
             harness_name=harness_name,
             allowed_root=allowed_root or root,
         )
-        shutil.rmtree(dst, onerror=_handle_rm_error)
-    shutil.copytree(src, dst, ignore=ignore)
+        # A link inside the old tree is the operator's: it stays, and the copy
+        # goes around it.
+        kept = _remove_tree_keeping_links(dst)
+    shutil.copytree(
+        src, dst, ignore=_with_links_skipped(src, dst, kept, ignore), dirs_exist_ok=True
+    )
     return _result(
         "updated" if existed else "created",
         "replace_tree",
         dst,
-        "copied directory tree",
+        "copied directory tree"
+        + (
+            f"; left {len(kept)} path(s) in it in place and did not copy over them"
+            if kept
+            else ""
+        ),
+        detail=kept_links_detail(kept),
         source=src,
         backup_path=backup,
     )
+
+
+def _with_links_skipped(
+    src: Path,
+    dst: Path,
+    links: list[Path],
+    ignore: Callable[[str, list[str]], Iterable[str]] | None,
+) -> Callable[[str, list[str]], Iterable[str]] | None:
+    """Return *ignore* extended to skip each of *links* in *dst*."""
+    if not links:
+        return ignore
+    skip_links = _skip_links_into(src, dst, links)
+    if ignore is None:
+        return skip_links
+    return lambda folder, names: set(ignore(folder, names)) | skip_links(folder, names)
 
 
 def _single_file_directory_matches(
@@ -132,10 +161,9 @@ def _single_file_directory_matches(
     if not directory.is_dir():
         return False
     children = sorted(child.name for child in directory.iterdir())
-    return (
-        children == [filename]
-        and (directory / filename).read_text(encoding="utf-8") == content
-    )
+    return children == [filename] and (
+        directory / filename
+    ).read_bytes() == content.encode("utf-8")
 
 
 def _generated_directory_matches(

@@ -383,9 +383,10 @@ def test_the_other_spellings_are_read_before_the_uninstall(
     real_uninstall = opencode_uninstall._uninstall
     real_same = opencode_uninstall._names_same_folder
 
-    def _uninstall(output_path: Path) -> None:
-        real_uninstall(output_path)
+    def _uninstall(output_path: Path) -> install_driver.MaterializationRun:
+        run = real_uninstall(output_path)
         done.append(output_path)
+        return run
 
     def _same(first: Path, second: Path) -> bool:
         return not done and real_same(first, second)
@@ -418,8 +419,9 @@ def test_a_held_install_lock_fails_the_uninstall_cleanly(
 
     monkeypatch.setattr(atomic_io, "advisory_lock", held)
 
-    with pytest.raises(install_driver.MaterializationError, match="install lock"):
-        adapter.uninstall()
+    run = adapter.uninstall()
+
+    assert any("install lock" in error.message for error in run.errors)
 
 
 # -- the relocated entries of a record that owned nothing ---------------------
