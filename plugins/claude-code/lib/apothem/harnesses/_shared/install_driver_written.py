@@ -16,7 +16,7 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import extract_managed_block
+from apothem.lib.harness_materializer import complete_managed_block
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_backup import backup_existing
@@ -366,20 +366,36 @@ def still_written(entry: LedgerTarget) -> bool:
     proves nothing, unless the record predates digests. A managed-block file
     (``sentinel_merge``) is meant to hold the operator's text beside Apothem's
     block, so the block, not the whole file, is what Apothem wrote: it counts
-    while it carries the block, as install evidence does elsewhere.
+    while it carries the whole block, both markers. A BEGIN marker left without
+    its END does not count: the uninstall leaves that file as it is.
     """
     if entry.mode == "sentinel_merge":
         try:
             text = Path(entry.path).read_bytes().decode("utf-8", errors="replace")
         except OSError:
             return False
-        return extract_managed_block(text) is not None
+        return complete_managed_block(text) is not None
     proof = _proof(entry)
     if proof is None:
         # An earlier release recorded no digests: the path is the evidence,
         # and the removal that follows still checks each file's content.
         return os.path.lexists(entry.path)
     return bool(_written_now(Path(entry.path), proof))
+
+
+def install_may_be_open(harness_name: str, root: Path) -> bool:
+    """Return False only when the ledger shows the install at *root* was closed.
+
+    An install still in effect, and a root the ledger knows nothing about (an
+    install from before the ledger, a ledger lost or unreadable), may be open:
+    the evidence that depends on it keeps counting there.
+    """
+    try:
+        if install_ledger.current_install_record(harness_name, root=root):
+            return True
+        return install_ledger.latest_record(harness_name, root=root, kind=None) is None
+    except (OSError, install_ledger.LedgerError):
+        return True
 
 
 def left_unfinished(results: list[MaterializationResult]) -> bool:

@@ -48,7 +48,11 @@ from apothem.harnesses.open_claw.materializer import (
     SKILLS_DIRECTORY,
 )
 from apothem.lib import install_ledger, lenient_json
-from apothem.lib.harness_materializer import extract_managed_block, merge_managed_block
+from apothem.lib.harness_materializer import (
+    complete_managed_block,
+    extract_managed_block,
+    merge_managed_block,
+)
 
 #: OpenClaw's default limits on what it injects (``bootstrapMaxChars`` and
 #: ``bootstrapTotalMaxChars``; source
@@ -100,7 +104,7 @@ _GLOB_MARKS: Final[str] = "?*{}"
 _HARNESS_NAME: Final[str] = "open_claw"
 _HARNESS_ID: Final[str] = "open-claw"
 _OPERATION: Final[str] = "open_claw_rules_file"
-_RETIRE: Final[str] = "retire_anchor"
+RETIRE: Final[str] = "retire_anchor"
 _RULES_PARTS: Final[tuple[str, ...]] = tuple(RULES_FILE_RELATIVE.split("/"))
 
 
@@ -215,7 +219,7 @@ def json5_leftovers(config: Path) -> tuple[MaterializationResult, ...]:
     return (
         MaterializationResult(
             outcome="error",
-            operation=_RETIRE,
+            operation=RETIRE,
             path=str(config),
             message=(
                 "openclaw.json holds comments, a byte-order mark or other JSON5 "
@@ -625,7 +629,7 @@ def _warning(target: Path, message: str) -> MaterializationResult:
 def _error(target: Path, message: str) -> MaterializationResult:
     """Return an error result about *target*."""
     return MaterializationResult(
-        outcome="error", operation=_RETIRE, path=str(target), message=message
+        outcome="error", operation=RETIRE, path=str(target), message=message
     )
 
 
@@ -777,10 +781,16 @@ def _earlier_rules_files(harness_root: Path) -> tuple[list[Path], set[str]]:
     return files, created
 
 
-def _holds_block(path: Path) -> bool:
-    """Return True when *path* still carries an Apothem managed block."""
+def _holds_block(path: Path, *, whole: bool = False) -> bool:
+    """Return True when *path* still carries an Apothem managed block.
+
+    With *whole*, only a block with both markers counts.
+    """
     text = _raw_text(path)
-    return text is not None and extract_managed_block(text) is not None
+    if text is None:
+        return False
+    find = complete_managed_block if whole else extract_managed_block
+    return find(text) is not None
 
 
 def _retire_one(
@@ -795,8 +805,10 @@ def _retire_one(
 
     With *strict* (uninstall), a file reached through a link that still holds
     the block is a ``blocked`` warning, and a block the strip could not take
-    out is an ``error``; either way the uninstall is recorded unfinished and
-    the install stays active, so the file is not forgotten.
+    out is an ``error`` that names the file; either way the uninstall is
+    recorded unfinished and the install stays active, so the file is not
+    forgotten. A block with no END marker is a plain warning, in a preview
+    too: the file stays as it is, and it no longer counts as Apothem's.
     """
     home = harness_root.parent
     flag = _error if strict else _warning
@@ -804,25 +816,28 @@ def _retire_one(
         # Nothing of Apothem's is left in it (reading through a link changes
         # nothing), so there is nothing to take out.
         return []
+    endless = install_driver.endless_block_warning(path, RETIRE)
+    if endless is not None:
+        return [endless]
     link = _unsafe_symlink(path, home)
     if link is not None:
         detail = {"symlink": _path_text(link)}
         if strict:
             # Apothem's block stays in a file it wrote, so the uninstall is
-            # unfinished. OpenClaw no longer loads it: the uninstall removes
-            # the hook entry's path (``loaded: "0"`` lets the report say so).
+            # unfinished. Whether OpenClaw still loads it is settled after the
+            # uninstall changed openclaw.json (see uninstall.py).
             detail["blocked"] = "1"
-            detail["loaded"] = "0"
+        which = "the Apothem rules file" if strict else "an earlier Apothem rules file"
         return [
             MaterializationResult(
                 outcome="warning",
-                operation=_RETIRE,
+                operation=RETIRE,
                 path=str(path),
                 message=(
-                    f"an earlier Apothem rules file is reached through a link "
-                    f"({link}); Apothem changes nothing through a link, so it is "
-                    "left in place. Delete the Apothem block in it, or the file, "
-                    "by hand, then run the command again."
+                    f"{which} is reached through a link ({link}); Apothem changes "
+                    "nothing through a link, so it is left in place. Delete the "
+                    "Apothem block in it, or the file, by hand, then run the "
+                    "command again."
                 ),
                 detail=detail,
             )
@@ -831,7 +846,7 @@ def _retire_one(
         return [
             MaterializationResult(
                 outcome="updated",
-                operation=_RETIRE,
+                operation=RETIRE,
                 path=str(path),
                 message="would take the Apothem block out of this rules file",
             )
@@ -841,19 +856,36 @@ def _retire_one(
     )
     results = [] if result is None else [result]
     if result is not None and result.outcome == "error":
-        return [result if strict else replace(result, outcome="warning")]
-    if path.exists() and _holds_block(path):
+        named = (
+            result
+            if str(path) in result.message
+            else replace(result, message=f"{path}: {result.message}")
+        )
+        return [named if strict else replace(named, outcome="warning")]
+    if result is not None and result.outcome == "warning":
+        return [result]
+    if path.exists() and _holds_block(path, whole=True):
+        which, then = (
+            (
+                "the rules file",
+                "check that the file and its folder can be written, or delete "
+                "the block by hand, then run the uninstall again",
+            )
+            if strict
+            else (
+                "the earlier rules file",
+                "the next install, update or uninstall tries again",
+            )
+        )
         return [
             flag(
-                path,
-                "could not take the Apothem block out of this earlier rules file; "
-                "the next install, update or uninstall tries again",
+                path, f"could not take the Apothem block out of {which} {path}; {then}"
             )
         ]
     folder = path.parent
     if not path.exists() and _key(folder) in created:
         results.extend(
-            replace(removed, operation=_RETIRE)
+            replace(removed, operation=RETIRE)
             for removed in install_driver.remove_created_dirs(
                 [folder], allowed_root=home
             )
@@ -926,6 +958,38 @@ def apply(
         )
     results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
     return tuple(results)
+
+
+def still_loaded(config: object, path: Path, home: Path) -> bool:
+    """Return True when OpenClaw, reading *config*, would load the rules file *path*.
+
+    *path* is ``<workspace>/apothem/AGENTS.md``. It loads when internal hooks
+    and the hook entry are on, its workspace is one *config* names, the list
+    the hook reads names it (Apothem's path or a pattern of the operator's),
+    and it resolves inside that workspace, as :func:`operator_extras` models.
+    """
+    entry = _mapping(config, *ENTRY_PATH)
+    if entry.get("enabled") is False:
+        return False
+    if _mapping(config, "hooks", "internal").get("enabled") is False:
+        return False
+    workspace = path.parent.parent
+    configured, _ = candidate_workspaces(config, home)
+    if not _same(workspace, [found.path for found in configured]):
+        return False
+    try:
+        if not path.resolve().is_relative_to(workspace.resolve()):
+            return False
+    except OSError:
+        return False
+    for key in PATTERN_KEYS:
+        items = entry.get(key)
+        if isinstance(items, list) and items:
+            return any(
+                isinstance(item, str) and _same(path, _matches(workspace, item))
+                for item in items
+            )
+    return False
 
 
 def before_uninstall(config_path: Path) -> tuple[MaterializationResult, ...]:

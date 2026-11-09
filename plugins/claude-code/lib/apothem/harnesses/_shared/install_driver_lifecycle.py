@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import functools
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -15,6 +16,7 @@ import yaml
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
+    complete_managed_block,
     defuse_sentinels,
     extract_managed_block,
 )
@@ -63,6 +65,7 @@ from .install_driver_types import (
     skills_sharing_command_target,
 )
 from .install_driver_written import (
+    install_may_be_open,
     left_behind,
     left_unfinished,
     record_uninstall,
@@ -154,20 +157,25 @@ def verify_install(
     return True
 
 
-def _carries_managed_block(target: Path) -> bool:
+def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
     """Return True when *target* holds an Apothem sentinel-delimited block.
 
     The managed block is self-delimiting and Apothem-specific, so finding one
     inside an operator-owned anchor is positive proof of an install even though
-    the file itself is not Apothem's to own.
+    the file itself is not Apothem's to own. A BEGIN marker whose END is gone
+    counts unless the ledger shows the install was closed (*install_open*):
+    the uninstall then runs, leaves that file as it is and names it, and once
+    the install is closed the file no longer reads as installed.
     """
     if not target.is_file():
         return False
     try:
-        text = target.read_text(encoding="utf-8")
+        text = target.read_bytes().decode("utf-8", errors="replace")
     except OSError:
         return False
-    return extract_managed_block(text) is not None
+    if complete_managed_block(text) is not None:
+        return True
+    return extract_managed_block(text) is not None and install_open()
 
 
 def _entry_proves_install(
@@ -175,6 +183,7 @@ def _entry_proves_install(
     *,
     harness_root: Path | None,
     project_root: Path | None,
+    install_open: Callable[[], bool],
 ) -> bool:
     """Return True when *entry*'s on-disk state proves Apothem installed here.
 
@@ -195,7 +204,7 @@ def _entry_proves_install(
         entry.target, harness_root=harness_root, project_root=project_root
     )
     if entry.mode == "sentinel_merge":
-        return _carries_managed_block(target)
+        return _carries_managed_block(target, install_open)
     return _APOTHEM_SUBTREE in target.parts and _holds_content(target)
 
 
@@ -227,9 +236,13 @@ def detect_install(
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
+    install_open = functools.partial(install_may_be_open, harness_name, root)
     if any(
         _entry_proves_install(
-            entry, harness_root=harness_root, project_root=project_root
+            entry,
+            harness_root=harness_root,
+            project_root=project_root,
+            install_open=install_open,
         )
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):

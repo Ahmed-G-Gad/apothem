@@ -203,6 +203,7 @@ from .install_driver_removal import _strip_apothem_yaml as _strip_apothem_yaml
 from .install_driver_removal import (
     _surgical_remove_from_target as _surgical_remove_from_target,
 )
+from .install_driver_removal import endless_block_warning as endless_block_warning
 from .install_driver_removal import strip_managed_anchor as strip_managed_anchor
 from .install_driver_removal import (
     surgically_remove_materialized_config as surgically_remove_materialized_config,

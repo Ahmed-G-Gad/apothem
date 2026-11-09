@@ -148,16 +148,34 @@ When an uninstall does not finish (a step failed, it stopped with an
 exception, or Apothem's own files stay behind a link), it appends an
 `uninstall-incomplete` record to the install ledger instead of an `uninstall`
 record. The install stays recorded, so `apothem status`, `verify` and
-`rollback` still see it, and the harness reads as installed while a file the
-install wrote is still there unchanged, so running `uninstall` again finishes
-the job. An `install`, `update`, `rollback` or finished `uninstall` of that
-harness at that location replaces the state, and so does removing the
-remaining files by hand: with none of Apothem's files left as it wrote them,
-the harness reads as not installed, whatever else is in the folder. The first
-command that checks whether the harness is installed (`status`, `verify`,
-`uninstall`) then appends an `uninstall` record that closes the install.
-`backups prune` keeps the record, and the backups it references, while the
-install it belongs to is kept.
+`rollback` still see it, and the harness reads as installed while something
+the install wrote is still there as it wrote it (see below), so running
+`uninstall` again finishes the job. An `install`, `update`, `rollback` or
+finished `uninstall` of that harness at that location replaces the state, and
+so does removing the remaining files by hand: with none of Apothem's files left
+as it wrote them and nothing left in its `.apothem` folder, the harness reads
+as not installed, whatever else is in the folder. The first command that checks
+whether the harness is installed (`status`, `verify`, `uninstall`) then
+appends an `uninstall` record that closes the install. `backups prune` keeps
+the record, and the backups it references, while the install it belongs to is
+kept.
+
+What still counts: a whole file the install wrote, while it is unchanged;
+anything in Apothem's own `.apothem` folder; and a file where Apothem keeps a
+managed block beside your own text, while the block is still in it, whatever
+you have written around it. Those files are `CLAUDE.md`, the profile document
+the shared profile is projected into, the rules file in each OpenClaw
+workspace, and `AGENTS.md` and the other instruction files the install adds a
+block to.
+
+A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` line to an
+`<!-- END APOTHEM MANAGED BLOCK -->` line. If the END line is gone, nothing
+shows where Apothem's text stops and yours starts, so the uninstall leaves the
+file as it is, names it in a warning and finishes. Delete the rest of the
+block by hand. If that file is all Apothem left when you run `uninstall`
+again, the harness reads as not installed and the file is not named again.
+`install` and `update` replace such a block from its BEGIN line to the end of
+the file, so move your own text above the block before you run them.
 
 If a folder stays because of an install you cannot find, the note names it.
 When the project folder was deleted, the install is ignored and the folder goes

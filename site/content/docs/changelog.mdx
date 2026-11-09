@@ -63,6 +63,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
   rollback now puts back each missing file and keeps every file that is there.
 
+- **Releases 1.0.1 to 1.5.0 removed your text below a broken managed block.**
+  An `apothem uninstall` of a file where Apothem keeps a managed block
+  (`CLAUDE.md`, `AGENTS.md` and the like) whose END marker line was gone
+  removed everything from the BEGIN marker line to the end of the file, your
+  own text below it included. A BEGIN marker line left above a whole block
+  took the text between the two with it.
+
+  **To recover:** the uninstall copied the file first, to
+  `~/.apothem/backups/<timestamp>/<harness>/`, under the same rules as above.
+  Copy your text from that copy back into the file by hand.
+
 ### Added
 
 - **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
@@ -101,10 +112,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     commented `openclaw.json` stop it before anything changes, with an error
     naming what to remove; a rules file behind a link is left in place and the
     uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
-    stops it at that file, after the files already cleaned are recorded with
-    their backups. Either way the install record stays, so a second uninstall
-    after the hand fix finishes. `apothem verify` reports a missing file or
-    registration.
+    gets an error that names it, and the uninstall cleans the other
+    workspaces' rules files, records their backups and stops before
+    `openclaw.json` changes. In each case the install record stays, so a second
+    uninstall after the hand fix finishes. `apothem verify` reports a missing
+    file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -458,6 +470,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refused like a symbolic link, with a message that names the link and says
   to replace it with a real folder, and a leftover link no longer makes an
   uninstalled tool read as installed.
+- **Uninstall no longer removes your text below a broken managed block.** A
+  managed block that had lost its END marker was removed from its BEGIN marker
+  to the end of the file, with any text you had written below it (a backup
+  was kept), and a BEGIN marker left above a whole block took the text between
+  the two with it. The uninstall now leaves a block without its END marker as
+  it is, names the file in a warning and finishes; after that, the file no
+  longer makes the tool read as installed. A whole block is found from its END
+  marker back to the nearest BEGIN marker. Install and update still replace a
+  block without its END marker from the BEGIN marker to the end of the file.
 - **Uninstall removes only the files Apothem wrote.** Each install now
   records the SHA-256 of every file it copies into place (skills, commands,
   rules and the like),

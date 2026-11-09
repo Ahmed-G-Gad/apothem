@@ -28,7 +28,13 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
-from apothem.lib.harness_registry import HARNESS_REGISTRY, HarnessRegistryEntry
+from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import APOTHEM_BLOCK_END
+from apothem.lib.harness_registry import (
+    HARNESS_REGISTRY,
+    HarnessRegistryEntry,
+    package_key_for_public_id,
+)
 from apothem.schemas import profile_minimal_path
 
 _IDS = [entry.public_id for entry in HARNESS_REGISTRY]
@@ -171,3 +177,75 @@ def test_diff_is_empty_and_reinstall_is_a_noop_after_install(
     again = sandbox.install()
     assert again["files_written"] == []
     assert sorted(install_driver.BACKUP_ROOT.rglob("*")) == backups_before
+
+
+@pytest.mark.parametrize("harness_id", _IDS)
+def test_a_block_that_lost_its_end_marker_is_left_as_it_is(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """Uninstall never removes text below a BEGIN marker that has no END.
+
+    Each managed block the install wrote loses its END marker and gains a line
+    of the operator's; the uninstall leaves each file byte for byte, names it
+    in a warning, and the harness then reads as not installed.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    record = install_ledger.read_records(package_key_for_public_id(harness_id))[-1]
+    anchors = [
+        Path(target.path)
+        for target in record.targets
+        if target.mode == "sentinel_merge" and Path(target.path).is_file()
+    ]
+    if not anchors:
+        pytest.skip(f"{harness_id} writes no managed block on a clean install")
+    for anchor in anchors:
+        text = anchor.read_text(encoding="utf-8").replace(APOTHEM_BLOCK_END, "")
+        anchor.write_text(text + "my own line\n", encoding="utf-8")
+    before = {anchor: anchor.read_bytes() for anchor in anchors}
+
+    payload = box.run("uninstall", "--yes")
+    again = box.run("uninstall", "--yes")
+
+    assert {anchor: anchor.read_bytes() for anchor in anchors} == before
+    named = [
+        str(warning["message"])
+        for warning in payload["warnings"]
+        if APOTHEM_BLOCK_END in str(warning["message"])
+    ]
+    assert len(named) == len(anchors), payload["warnings"]
+    for anchor in anchors:
+        where = os.path.normcase(str(anchor))
+        assert any(where in os.path.normcase(m) for m in named), (where, named)
+    assert [result["outcome"] for result in again["results"]] == ["skipped"]
+
+
+def _codex_anchor(box: _Sandbox) -> Path:
+    box.install()
+    return box.home / ".codex" / "AGENTS.md"
+
+
+def test_a_block_without_its_end_counts_when_the_ledger_knows_nothing(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """With no record at all (an install from before the ledger, a lost ledger),
+    an END-less block still shows the install, so the uninstall runs and the
+    rest of Apothem's files do not stay behind."""
+    from apothem.harnesses.codex import CodexAdapter
+
+    anchor = _codex_anchor(sandbox_factory("codex"))
+    install_ledger.ledger_path("codex").unlink()
+    anchor.write_bytes(anchor.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b""))
+
+    assert CodexAdapter().is_installed() is True
+
+
+def test_a_non_utf8_byte_in_a_managed_anchor_does_not_break_is_installed(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    anchor = _codex_anchor(sandbox_factory("codex"))
+    anchor.write_bytes(anchor.read_bytes() + b"\nmine \xff\n")
+
+    assert CodexAdapter().is_installed() is True

@@ -25,6 +25,11 @@ from apothem.harnesses._shared import install_driver, install_driver_lifecycle
 from apothem.harnesses._shared import install_driver_written as written
 from apothem.harnesses.claude_code import ClaudeCodeAdapter
 from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    wrap_managed_block,
+)
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 
@@ -724,3 +729,124 @@ def test_a_rollback_names_the_files_it_kept(claude: Path) -> None:
     assert notes.read_text(encoding="utf-8") == "mine\n"
     messages = " ".join(str(w["message"]) for w in envelope["warnings"])
     assert "my-notes.md" in messages
+
+
+def _unreadable_claude_md(claude: Path) -> tuple[Path, str]:
+    """Install, save CLAUDE.md in another encoding, uninstall (partial)."""
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    installed = anchor.read_text(encoding="utf-8")
+    anchor.write_bytes(installed.encode("utf-8") + b"\nmy line \xff\n")
+    code, _ = _uninstall()
+    assert code == cli._EXIT_PARTIAL
+    return anchor, installed
+
+
+def test_a_claude_md_edited_beside_the_block_is_finished_by_the_retry(
+    claude: Path,
+) -> None:
+    # The block, not the whole file, is what Apothem wrote: text of your own
+    # beside it must not make the retry read as not installed.
+    anchor, installed = _unreadable_claude_md(claude)
+    anchor.write_text(installed + "\nmy own line\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    text = anchor.read_text(encoding="utf-8")
+    assert "my own line" in text
+    assert "BEGIN APOTHEM MANAGED BLOCK" not in text
+    assert _unfinished(claude) is None
+
+
+def test_a_retry_leaves_a_claude_md_whose_block_lost_its_end_marker(
+    claude: Path,
+) -> None:
+    # Nothing shows where the block ends, so the text below it may be yours:
+    # the file is not Apothem's any more, and the retry leaves it as it is.
+    anchor, installed = _unreadable_claude_md(claude)
+    broken = installed.replace(APOTHEM_BLOCK_END, "") + "my own line\n"
+    anchor.write_text(broken, encoding="utf-8")
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert [r["outcome"] for r in envelope["results"]] == ["skipped"]
+    assert anchor.read_bytes() == before
+    assert _unfinished(claude) is None
+
+
+def test_a_managed_block_counts_only_while_both_markers_are_there(
+    tmp_path: Path,
+) -> None:
+    anchor = tmp_path / "CLAUDE.md"
+    entry = LedgerTarget(
+        path=str(anchor), mode="sentinel_merge", ownership_class="operator-owned"
+    )
+    block = wrap_managed_block("rules")
+    anchor.write_text(f"mine\n\n{block}\nmore of mine\n", encoding="utf-8")
+    edited = written.still_written(entry)
+    cut = block.replace(APOTHEM_BLOCK_END, "")
+    anchor.write_text(f"mine\n\n{cut}more of mine\n", encoding="utf-8")
+
+    assert edited is True
+    assert written.still_written(entry) is False
+
+
+def test_an_uninstall_keeps_your_text_after_a_stray_begin_marker(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    stray = f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n\n"
+    anchor.write_bytes((stray + anchor.read_text(encoding="utf-8")).encode())
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert anchor.read_bytes() == f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n".encode()
+
+
+def _endless(text: str = "rules") -> bytes:
+    block = wrap_managed_block(text).replace(APOTHEM_BLOCK_END, "")
+    return f"{block}my own line\n".encode()
+
+
+def test_a_block_without_its_end_behind_a_link_is_left_with_a_warning(
+    claude: Path, tmp_path: Path
+) -> None:
+    # Nothing is changed, so the link does not stop the uninstall.
+    home = claude.parent
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    _link_folder(home / "linked", elsewhere)
+    (elsewhere / "AGENTS.md").write_bytes(_endless())
+
+    result = install_driver.strip_managed_anchor(
+        home / "linked" / "AGENTS.md",
+        install_root=home,
+        harness_name="claude_code",
+        allowed_root=home,
+    )
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert APOTHEM_BLOCK_END in result.message
+    assert (elsewhere / "AGENTS.md").read_bytes() == _endless()
+
+
+def test_a_block_without_its_end_in_a_non_utf8_file_is_left_with_a_warning(
+    claude: Path,
+) -> None:
+    home = claude.parent
+    target = home / "AGENTS.md"
+    target.write_bytes(_endless() + b"mine \xff\n")
+
+    result = install_driver.strip_managed_anchor(
+        target, install_root=home, harness_name="claude_code", allowed_root=home
+    )
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert target.read_bytes() == _endless() + b"mine \xff\n"
