@@ -853,7 +853,8 @@ pull.ff'
 # nothing. A two-part entry (user.name) matches only a name with no
 # subsection; a three-part entry matches only a name with one.
 unallowed_config_key() {
-    CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
+    # LC_ALL=C: bytes, as git compares (macOS awk collates in UTF-8).
+    LC_ALL=C CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
         function split_name(name, parts,    first, rest, i, last) {
             first = index(name, ".")
             if (first == 0) return 0
@@ -910,8 +911,8 @@ config_file_problem() {
         || die "Could not read the git config of $1 at ${2}."
     _cp_refuse=""
     if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
-        | tr '\000\n' '\n\001' \
-        | awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
+        | LC_ALL=C tr '\000\n' '\n\001' \
+        | LC_ALL=C awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
         _cp_refuse="extensions.refstorage"
     fi
     printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
@@ -943,7 +944,7 @@ check_clone_config() {
     # As git reads it: a line is a comment only where # follows nothing but
     # spaces, tabs and CR (not VT or FF, which [[:space:]] would take).
     _cc_blank="$(printf ' \t\r')"
-    if [ -f "$_cc_file" ] && tr -d '\000' 2>/dev/null < "$_cc_file" \
+    if [ -f "$_cc_file" ] && LC_ALL=C tr -d '\000' 2>/dev/null < "$_cc_file" \
         | LC_ALL=C grep -v "^[${_cc_blank}]*#" | LC_ALL=C grep -q 'filter='; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
@@ -969,7 +970,7 @@ check_clone_modules() {
 check_clone_gitlinks() {
     _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
-    _sm_path="$(printf '%s\n' "$_sm_list" | awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
+    _sm_path="$(printf '%s\n' "$_sm_list" | LC_ALL=C awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
     if [ -n "$_sm_path" ]; then
         die "$1 holds a submodule at ${_sm_path} (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
     fi
@@ -1002,7 +1003,7 @@ check_clone_setup() {
     check_clone_gitlinks "$1"
     _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
-    if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
+    if printf '%s\n' "$_cs_flags" | LC_ALL=C awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
         die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
 }
@@ -1156,7 +1157,7 @@ clone_has_local_work() {
     [ -z "$_lw_out" ] || return 0
     _lw_tracked="$(cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
     _lw_untracked="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain 2>/dev/null)" || return 0
-    _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" awk '
+    _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" LC_ALL=C awk '
         BEGIN { n = split(ENVIRON["LW_TRACKED"], names, "\n"); for (i = 1; i <= n; i++) top[names[i]] = 1 }
         substr($0, 1, 3) == "?? " {
             path = substr($0, 4)
@@ -1200,7 +1201,7 @@ _SW_KEEP_STAGING=0
 # inside a folder TO that appeared meanwhile (found by its inode), after
 # moving it back. MOVED_BACK=1 says FROM is where it was: moved back, or
 # never moved because mv failed (a file that appeared at TO, say).
-file_id() { ls -di -- "$1" 2>/dev/null | awk 'NR == 1 { print $1 }'; }
+file_id() { ls -di -- "$1" 2>/dev/null | LC_ALL=C awk 'NR == 1 { print $1 }'; }
 MOVED_BACK=0
 move_tree() {
     MOVED_BACK=0
@@ -1569,7 +1570,7 @@ is_extract_staging() {
 
 # join_names — read names, one per line, and print them joined with ", ".
 join_names() {
-    awk 'NR > 1 { printf ", " } { printf "%s", $0 } END { printf "\n" }'
+    LC_ALL=C awk 'NR > 1 { printf ", " } { printf "%s", $0 } END { printf "\n" }'
 }
 
 # leftover_line DIR OLDNAME — print one line saying what the leftover folder
@@ -1802,7 +1803,7 @@ ${_sw_new_names}"
 # a later swap can tell this archive install's source from the engine's data.
 record_source_entries() {
     { list_entries "$1" && printf '%s\n' "$SOURCE_MANIFEST"; } \
-        | sort -u > "$1/$SOURCE_MANIFEST" \
+        | LC_ALL=C sort -u > "$1/$SOURCE_MANIFEST" \
         || die "Could not record the source entries in $1"
 }
 
@@ -2258,7 +2259,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
             || die "Could not create a scratch repository to check the ${APOTHEM_REF} tag"
         git -c core.longpaths=true -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
             "+refs/tags/${APOTHEM_REF}:refs/tags/${APOTHEM_REF}" >"${_ck_tmp}/fetch.log" 2>&1 \
-            || die "Could not fetch the ${APOTHEM_REF} tag from ${APOTHEM_REPO}: $(tail -n 2 "${_ck_tmp}/fetch.log" | tr '\n' ' ')"
+            || die "Could not fetch the ${APOTHEM_REF} tag from ${APOTHEM_REPO}: $(tail -n 2 "${_ck_tmp}/fetch.log" | LC_ALL=C tr '\n' ' ')"
         check_release_tag "${_ck_tmp}/tag.git" "$APOTHEM_REF" 0
         _ck_tag_commit="$TAG_COMMIT"
     fi
@@ -2292,7 +2293,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
             "${_ck_tmp}/SHA256SUMS" >"${_ck_tmp}/cosign.log" 2>&1; then
             ok "cosign: SHA256SUMS is signed by the ${APOTHEM_REF} release workflow, in a run on the tag's commit ${_ck_tag_commit}"
         else
-            _ck_said="$(tail -n 3 "${_ck_tmp}/cosign.log" | tr '\n' ' ')"
+            _ck_said="$(tail -n 3 "${_ck_tmp}/cosign.log" | LC_ALL=C tr '\n' ' ')"
             die "cosign could not confirm that the ${APOTHEM_REF} release workflow (${_ck_identity}) signed SHA256SUMS in a run on the signed tag's commit ${_ck_tag_commit} (possible tampering). Aborting before anything is extracted. cosign said: ${_ck_said} If cosign could not reach Sigstore (offline or behind a proxy), set APOTHEM_VERIFY=signature to check the release tag alone."
         fi
     fi

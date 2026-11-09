@@ -526,7 +526,8 @@ pull.ff'
 # nothing. A two-part entry (user.name) matches only a name with no
 # subsection; a three-part entry matches only a name with one.
 unallowed_config_key() {
-    CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
+    # LC_ALL=C: bytes, as git compares (macOS awk collates in UTF-8).
+    LC_ALL=C CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
         function split_name(name, parts,    first, rest, i, last) {
             first = index(name, ".")
             if (first == 0) return 0
@@ -583,8 +584,8 @@ config_file_problem() {
         || die "Could not read the git config of $1 at ${2}."
     _cp_refuse=""
     if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
-        | tr '\000\n' '\n\001' \
-        | awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
+        | LC_ALL=C tr '\000\n' '\n\001' \
+        | LC_ALL=C awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
         _cp_refuse="extensions.refstorage"
     fi
     printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
@@ -616,7 +617,7 @@ check_clone_config() {
     # As git reads it: a line is a comment only where # follows nothing but
     # spaces, tabs and CR (not VT or FF, which [[:space:]] would take).
     _cc_blank="$(printf ' \t\r')"
-    if [ -f "$_cc_file" ] && tr -d '\000' 2>/dev/null < "$_cc_file" \
+    if [ -f "$_cc_file" ] && LC_ALL=C tr -d '\000' 2>/dev/null < "$_cc_file" \
         | LC_ALL=C grep -v "^[${_cc_blank}]*#" | LC_ALL=C grep -q 'filter='; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
@@ -642,7 +643,7 @@ check_clone_modules() {
 check_clone_gitlinks() {
     _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
-    _sm_path="$(printf '%s\n' "$_sm_list" | awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
+    _sm_path="$(printf '%s\n' "$_sm_list" | LC_ALL=C awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print; exit }')"
     if [ -n "$_sm_path" ]; then
         die "$1 holds a submodule at ${_sm_path} (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
     fi
@@ -675,7 +676,7 @@ check_clone_setup() {
     check_clone_gitlinks "$1"
     _cs_flags="$(cgit -C "$1" ls-files -v 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
-    if printf '%s\n' "$_cs_flags" | awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
+    if printf '%s\n' "$_cs_flags" | LC_ALL=C awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
         die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
 }
