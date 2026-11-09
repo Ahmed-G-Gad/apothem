@@ -22,6 +22,14 @@ advisories, including the `instruction_override` note when a file of yours keeps
 a tool from loading the Apothem block (see
 [`install`](/docs/cli-reference/install)).
 
+`update` writes each Apothem folder (a skill, a command's skill folder, the
+support files) whole. When a folder holds anything that differs from what this
+release writes there, the update backs the folder up under
+`~/.apothem/backups/` and replaces it, so a file you added inside it, or an
+Apothem file you edited, is gone from that folder afterwards: copy it from the
+backup set, or move it out before you update. Files beside Apothem's folders
+(your own skill folders, say) are not touched.
+
 For the project-scope adapters that write skills to your home directory (see
 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)),
 `update` also brings those folders up to date and prints the same `Note:` that
