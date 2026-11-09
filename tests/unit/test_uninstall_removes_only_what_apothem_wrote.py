@@ -902,3 +902,22 @@ def test_the_plain_output_names_every_file_its_advice_is_about(claude: Path) -> 
     assert code == cli._EXIT_PARTIAL
     listed = {path for w in envelope["warnings"] for path in w.get("files", [])}
     assert {str(mine), str(edited), *(str(agent) for agent in agents)} <= listed
+
+
+def test_a_failed_write_of_the_finished_record_leaves_a_retry(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    real = install_ledger.append_record
+
+    def refuse_finished(record: LedgerRecord, **kwargs: object) -> Path:
+        if record.kind == "uninstall":
+            raise OSError("disk full")
+        return real(record, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_ledger, "append_record", refuse_finished)
+    code, envelope = _uninstall()
+    monkeypatch.setattr(install_ledger, "append_record", real)
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert _unfinished(claude) is not None

@@ -51,6 +51,7 @@ from .install_driver_removal import (
     _remove_unlisted_anchors,
     _surgical_remove_from_target,
 )
+from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
 from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
@@ -472,10 +473,17 @@ def run_uninstall(
         # the uninstall recorded as unfinished, as the CLI then reports it.
         kept = _left_behind(results, active, floor=root_floor)
         finished = not left_unfinished([*prior_results, *results])
-        recorded = True
         record_uninstall(
             harness_name, root, record, [*prior_results, *results], finished=finished
         )
+        # Set only once the record is written: a write that fails or is
+        # interrupted falls back to an uninstall-incomplete record below.
+        recorded = True
+        if finished:
+            # Housekeeping: a failure here leaves older backup sets for the
+            # next pass or ``backups prune``, and does not undo the uninstall.
+            with contextlib.suppress(OSError, install_ledger.LedgerError):
+                apply_retention(harness_name)
     except BaseException as exc:
         if not recorded:
             record_uninstall(
