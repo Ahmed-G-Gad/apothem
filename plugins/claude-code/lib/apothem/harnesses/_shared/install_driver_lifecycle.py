@@ -65,6 +65,7 @@ from .install_driver_types import (
     skills_sharing_command_target,
 )
 from .install_driver_written import (
+    endless_block_left,
     install_may_be_open,
     left_behind,
     left_unfinished,
@@ -255,7 +256,8 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
 
     *root*'s latest record is ``uninstall-incomplete`` and a file the active
     install lists still has the content Apothem wrote (see
-    :func:`still_written`); an unreadable ledger reads as no evidence. With
+    :func:`still_written`), or a managed block lost its END marker (the retry
+    then names that file); an unreadable ledger reads as no evidence. With
     nothing Apothem wrote left, the install is closed by an ``uninstall``.
     """
     try:
@@ -265,7 +267,11 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
         active = install_ledger.active_install_records(harness_name, root=root)
     except install_ledger.LedgerError:
         return False
-    if any(still_written(target) for install in active for target in install.targets):
+    if any(
+        still_written(target) or endless_block_left(target)
+        for install in active
+        for target in install.targets
+    ):
         return True
     with contextlib.suppress(OSError, install_ledger.LedgerError):
         install_ledger.append_record(
@@ -362,7 +368,7 @@ def check_fidelity(
             results.append(FidelityResult(_path_text(target), "missing"))
             continue
         try:
-            text = target.read_text(encoding="utf-8")
+            text = target.read_bytes().decode("utf-8", errors="replace")
         except OSError:
             results.append(FidelityResult(_path_text(target), "missing"))
             continue

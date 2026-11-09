@@ -197,10 +197,15 @@ def remove_managed_block(existing: str, *, reclaim: bool = False) -> str:
     ending in a single newline, merged-then-removed, returns the original.
 
     For the frontmatter-first shape (Apothem's frontmatter directly followed by
-    the block), the frontmatter is removed together with the block.
+    the block), the frontmatter is removed together with the block. Without
+    *reclaim*, every whole block goes, so a block pasted in twice goes too.
     """
-    find = extract_managed_block if reclaim else complete_managed_block
-    return _remove_block(existing, find)
+    if reclaim:
+        return _remove_block(existing, extract_managed_block)
+    text = existing
+    while (rest := _remove_block(text, complete_managed_block)) != text:
+        text = rest
+    return text
 
 
 def _remove_block(existing: str, find: Callable[[str], str | None]) -> str:

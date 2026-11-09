@@ -772,8 +772,11 @@ def test_a_retry_leaves_a_claude_md_whose_block_lost_its_end_marker(
     code, envelope = _uninstall()
 
     assert code == 0, envelope
-    assert [r["outcome"] for r in envelope["results"]] == ["skipped"]
     assert anchor.read_bytes() == before
+    assert any(
+        "CLAUDE.md" in str(w["message"]) and APOTHEM_BLOCK_END in str(w["message"])
+        for w in envelope["warnings"]
+    ), envelope
     assert _unfinished(claude) is None
 
 
@@ -806,6 +809,13 @@ def test_an_uninstall_keeps_your_text_after_a_stray_begin_marker(
 
     assert code == 0, envelope
     assert anchor.read_bytes() == f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n".encode()
+    named = [
+        str(w["message"])
+        for w in envelope["warnings"]
+        if APOTHEM_BLOCK_END in str(w["message"])
+    ]
+    assert len(named) == 1, envelope["warnings"]
+    assert "CLAUDE.md" in named[0]
 
 
 def _endless(text: str = "rules") -> bytes:
@@ -850,3 +860,23 @@ def test_a_block_without_its_end_in_a_non_utf8_file_is_left_with_a_warning(
     assert result is not None
     assert result.outcome == "warning"
     assert target.read_bytes() == _endless() + b"mine \xff\n"
+
+
+def test_an_install_stays_possibly_open_until_an_uninstall_closes_it(
+    claude: Path,
+) -> None:
+    # A root the ledger knows nothing about, or whose only record is an
+    # unfinished uninstall, may still be installed; an uninstall closes it.
+    def record(kind: str) -> None:
+        install_ledger.append_record(
+            LedgerRecord.create(harness="claude_code", root=_root(claude), kind=kind)
+        )
+
+    unknown = written.install_may_be_open("claude_code", claude)
+    record("uninstall-incomplete")
+    unfinished = written.install_may_be_open("claude_code", claude)
+    record("uninstall")
+
+    assert unknown is True
+    assert unfinished is True
+    assert written.install_may_be_open("claude_code", claude) is False

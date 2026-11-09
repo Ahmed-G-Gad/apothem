@@ -16,7 +16,11 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import complete_managed_block
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_END,
+    complete_managed_block,
+    extract_managed_block,
+)
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_backup import backup_existing
@@ -355,6 +359,57 @@ def left_behind(
     return [
         *kept,
         *links_on_the_way(recorded, floor, known=[*prior, *results, *kept]),
+        *stray_begin_warnings([*prior, *results]),
+    ]
+
+
+def _endless(path: Path) -> bool:
+    """Return True when *path* holds a BEGIN marker with no END marker after it."""
+    try:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    return extract_managed_block(text) is not None and not complete_managed_block(text)
+
+
+def endless_block_left(entry: LedgerTarget) -> bool:
+    """Return True when *entry*, a managed-block file, lost its block's END marker.
+
+    After an unfinished uninstall such a file keeps the install open, so the
+    next uninstall runs, names the file and finishes (see :func:`still_written`,
+    which does not count it as Apothem's).
+    """
+    return entry.mode == "sentinel_merge" and _endless(Path(entry.path))
+
+
+def stray_begin_warnings(
+    results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Name each file the uninstall rewrote that still holds a BEGIN marker alone.
+
+    Taking Apothem's whole block out can leave such a line above where it was
+    (a stray line of the operator's, say). An install or update that writes
+    the file again replaces everything from that line to the end of the file.
+    """
+    rewritten = {
+        result.path: result.operation
+        for result in results
+        if result.outcome == "updated"
+        and result.operation in {"surgical_uninstall", "retire_anchor"}
+    }
+    return [
+        _result(
+            "warning",
+            operation,
+            Path(path),
+            f"{path} still holds a line that reads as the Apothem BEGIN marker, "
+            f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
+            "Apothem's block is out. Delete that line by hand: an install or "
+            "update that writes this file again replaces everything from it to "
+            "the end of the file.",
+        )
+        for path, operation in rewritten.items()
+        if _endless(Path(path))
     ]
 
 
@@ -386,6 +441,9 @@ def still_written(entry: LedgerTarget) -> bool:
 def install_may_be_open(harness_name: str, root: Path) -> bool:
     """Return False only when the ledger shows the install at *root* was closed.
 
+    Closed means the latest record there is an ``uninstall``, or a rollback of
+    a known install.
+
     An install still in effect, and a root the ledger knows nothing about (an
     install from before the ledger, a ledger lost or unreadable), may be open:
     the evidence that depends on it keeps counting there.
@@ -393,9 +451,17 @@ def install_may_be_open(harness_name: str, root: Path) -> bool:
     try:
         if install_ledger.current_install_record(harness_name, root=root):
             return True
-        return install_ledger.latest_record(harness_name, root=root, kind=None) is None
+        latest = install_ledger.latest_record(harness_name, root=root, kind=None)
     except (OSError, install_ledger.LedgerError):
         return True
+    if latest is None:
+        return True
+    # Closed: an uninstall, or a rollback of a known install. An unfinished
+    # uninstall or a rollback with no install leaves it possibly open.
+    return not (
+        latest.kind == "uninstall"
+        or (latest.kind == "rollback" and latest.install_id is not None)
+    )
 
 
 def left_unfinished(results: list[MaterializationResult]) -> bool:

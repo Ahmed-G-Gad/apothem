@@ -84,6 +84,12 @@ class TestManagedBlockMerge:
         text = f"{APOTHEM_BLOCK_END}\nmine\n\n{block}\n"
         assert complete_managed_block(text) == block
 
+    def test_remove_takes_out_every_whole_block(self):
+        # A block pasted in twice must not leave the file Apothem's.
+        block = wrap_managed_block("body")
+        text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
+        assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
+
     def test_reclaim_removes_a_block_without_end_as_the_install_does(self):
         assert remove_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nold\n", reclaim=True) == ""
 

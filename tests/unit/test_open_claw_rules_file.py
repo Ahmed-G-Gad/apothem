@@ -1829,3 +1829,41 @@ def test_a_config_that_cannot_be_read_keeps_the_still_loads_wording(
 
     assert "loaded" not in unreadable.results[0].detail
     assert gone.results[0].detail["loaded"] == "0"
+
+
+def test_a_retry_names_a_rules_file_whose_block_lost_its_end(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    moved = _linked_old_workspace(adapter, home)
+    first, _ = _uninstall_cli()
+    target = moved / "AGENTS.md"
+    cut = target.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b"")
+    target.write_bytes(cut + b"my own line\n")
+    before = target.read_bytes()
+
+    code, envelope = _uninstall_json()
+
+    assert first == 2
+    assert code == 0, envelope
+    assert target.read_bytes() == before
+    assert any(APOTHEM_BLOCK_END in m for m in _warning_messages(envelope)), envelope
+    assert _kinds()[-1] == "uninstall"
+
+
+def test_an_unreadable_ledger_keeps_the_hand_removal_error(
+    adapter: OpenClawAdapter, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A commented openclaw.json that still holds Apothem's entries stops the
+    # uninstall with what to remove; a ledger that cannot be read must not
+    # turn that into a crash.
+    _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    _commented(home, _config(home))
+
+    def unreadable(*args: object, **kwargs: object) -> list[object]:
+        raise PermissionError("the ledger is locked")
+
+    monkeypatch.setattr(install_ledger, "read_records", unreadable)
+    run = adapter.uninstall()
+
+    assert [r for r in run.results if r.outcome == "error"], run.results

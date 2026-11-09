@@ -72,8 +72,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   took the text between the two with it.
 
   **To recover:** the uninstall copied the file first, to
-  `~/.apothem/backups/<timestamp>/<harness>/`, under the same rules as above.
-  Copy your text from that copy back into the file by hand.
+  `~/.apothem/backups/<timestamp>/<harness>/`. That set is not kept for good:
+  releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and this
+  release does the same for it unless an install record it keeps refers to
+  it, so it may already be gone. Every install, update, uninstall and
+  rollback adds a set.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy your text from that copy back into the file by hand.
 
 ### Added
 
@@ -476,10 +482,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   to the end of the file, with any text you had written below it (a backup
   was kept), and a BEGIN marker left above a whole block took the text between
   the two with it. The uninstall now leaves a block without its END marker as
-  it is, names the file in a warning and finishes; after that, the file no
-  longer makes the tool read as installed. A whole block is found from its END
-  marker back to the nearest BEGIN marker. Install and update still replace a
-  block without its END marker from the BEGIN marker to the end of the file.
+  it is, names the file in a warning and finishes, a retry included; after
+  that, the file no longer makes the tool read as installed. A whole block is
+  found from its END marker back to the nearest BEGIN marker, and every whole
+  block in the file is taken out (a block pasted in twice used to leave one,
+  so the tool still read as installed). A BEGIN marker of yours left with no
+  END once Apothem's block is out is named too: an install or update that
+  writes such a file again still replaces everything from that marker to the
+  end of the file.
+- **An instruction file holding Apothem's block no longer breaks `status`,
+  `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
+  the check whether a tool is installed read such a file as strict UTF-8 and
+  stopped with a UnicodeDecodeError, and `status --profile` did the same.
 - **Uninstall removes only the files Apothem wrote.** Each install now
   records the SHA-256 of every file it copies into place (skills, commands,
   rules and the like),

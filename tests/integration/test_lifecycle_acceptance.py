@@ -229,8 +229,8 @@ def test_a_block_without_its_end_counts_when_the_ledger_knows_nothing(
     sandbox_factory: SandboxFactory,
 ) -> None:
     """With no record at all (an install from before the ledger, a lost ledger),
-    an END-less block still shows the install, so the uninstall runs and the
-    rest of Apothem's files do not stay behind."""
+    an END-less block still shows the install, so an uninstall runs instead of
+    reporting the tool as not installed."""
     from apothem.harnesses.codex import CodexAdapter
 
     anchor = _codex_anchor(sandbox_factory("codex"))
@@ -249,3 +249,54 @@ def test_a_non_utf8_byte_in_a_managed_anchor_does_not_break_is_installed(
     anchor.write_bytes(anchor.read_bytes() + b"\nmine \xff\n")
 
     assert CodexAdapter().is_installed() is True
+
+
+def test_a_block_without_its_end_counts_when_the_ledger_cannot_be_read(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    anchor = _codex_anchor(sandbox_factory("codex"))
+    install_ledger.ledger_path("codex").write_text("not json\n", encoding="utf-8")
+    anchor.write_bytes(anchor.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b""))
+
+    assert CodexAdapter().is_installed() is True
+
+
+def test_a_block_pasted_in_twice_is_taken_out_whole(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    box = sandbox_factory("codex")
+    anchor = _codex_anchor(box)
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + anchor.read_bytes())
+
+    box.run("uninstall", "--yes")
+
+    assert APOTHEM_BLOCK_END.encode() not in (
+        anchor.read_bytes() if anchor.exists() else b""
+    )
+    assert CodexAdapter().is_installed() is False
+
+
+def test_status_reads_a_profile_anchor_with_a_non_utf8_byte(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    anchor = _codex_anchor(sandbox_factory("codex"))
+    anchor.write_bytes(anchor.read_bytes() + b"\nmine \xff\n")
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "status",
+            "--harness",
+            "codex",
+            "--profile",
+            str(profile_minimal_path()),
+            "--json",
+        ],
+    )
+
+    json.loads(result.output)  # a usage error would not parse
+    assert "UnicodeDecodeError" not in result.output, result.output

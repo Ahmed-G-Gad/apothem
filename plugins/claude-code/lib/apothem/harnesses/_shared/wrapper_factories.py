@@ -650,7 +650,7 @@ def make_native_config_uninstall(
             # unfinished uninstall is recorded with those backups: retention
             # keeps them, and the next run continues from the same install.
             root = output_path.parent
-            with contextlib.suppress(install_ledger.LedgerError):
+            with contextlib.suppress(OSError, install_ledger.LedgerError):
                 record_uninstall(
                     harness_name,
                     root,

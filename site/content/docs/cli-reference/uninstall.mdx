@@ -160,22 +160,24 @@ appends an `uninstall` record that closes the install. `backups prune` keeps
 the record, and the backups it references, while the install it belongs to is
 kept.
 
-What still counts: a whole file the install wrote, while it is unchanged;
-anything in Apothem's own `.apothem` folder; and a file where Apothem keeps a
-managed block beside your own text, while the block is still in it, whatever
-you have written around it. Those files are `CLAUDE.md`, the profile document
-the shared profile is projected into, the rules file in each OpenClaw
-workspace, and `AGENTS.md` and the other instruction files the install adds a
-block to.
+What still counts: a whole file the install wrote, while it is unchanged (for
+an install an earlier release recorded, while it is there); anything in the
+folders Apothem installs into under `.apothem`; and a file where Apothem keeps
+a managed block beside your own text, while the block is still in it,
+whatever you have written around it. Those files are `CLAUDE.md`, the profile
+document the shared profile is projected into, the rules file in each
+OpenClaw workspace, and `AGENTS.md` and the other instruction files the
+install adds a block to.
 
-A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` line to an
-`<!-- END APOTHEM MANAGED BLOCK -->` line. If the END line is gone, nothing
-shows where Apothem's text stops and yours starts, so the uninstall leaves the
-file as it is, names it in a warning and finishes. Delete the rest of the
-block by hand. If that file is all Apothem left when you run `uninstall`
-again, the harness reads as not installed and the file is not named again.
-`install` and `update` replace such a block from its BEGIN line to the end of
-the file, so move your own text above the block before you run them.
+A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` marker to
+the next `<!-- END APOTHEM MANAGED BLOCK -->` marker. If the END marker is
+gone, nothing shows where Apothem's text stops and yours starts, so the
+uninstall leaves the file as it is, names it in a warning and finishes; so
+does a retry after an uninstall that did not finish. If a BEGIN marker of
+yours is left with no END after it once Apothem's block is out, the uninstall
+names that file too. Delete such a marker, or the rest of the block, by hand:
+an `install` or `update` that writes the file again replaces everything from
+that BEGIN marker to the end of the file.
 
 If a folder stays because of an install you cannot find, the note names it.
 When the project folder was deleted, the install is ignored and the folder goes
