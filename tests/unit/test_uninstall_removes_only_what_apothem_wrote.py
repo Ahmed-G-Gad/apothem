@@ -903,9 +903,11 @@ def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
     else:
         assert result.outcome == "warning"
         assert "no longer exists" in result.message
-        assert f"apothem install --harness cursor --project {gone}" in result.message
-        assert "--profile" in result.message
-        assert f"apothem uninstall --harness cursor --project {gone}" in result.message
+        assert f'apothem install --harness cursor --project "{gone}"' in result.message
+        assert "--profile <the profile it used>" in result.message
+        assert (
+            f'apothem uninstall --harness cursor --project "{gone}"' in result.message
+        )
 
 
 def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(
@@ -966,3 +968,29 @@ def test_a_failed_write_of_the_finished_record_leaves_a_retry(
 
     assert code == cli._EXIT_PARTIAL, envelope
     assert _unfinished(claude) is not None
+
+
+def test_a_user_scope_holder_gets_steps_not_a_command_for_the_default_folder(
+    claude: Path, tmp_path: Path
+) -> None:
+    from apothem.harnesses._shared import install_driver_datahome as datahome
+
+    home = Path.home() / ".apothem"
+    (home / "memory").mkdir(parents=True)
+    current = tmp_path / "project"
+    current.mkdir()
+    for harness, root in (("cursor", current), ("codex", tmp_path / "codex-gone")):
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness=harness, root=root, kind="install", data_home=str(home)
+            )
+        )
+
+    result = datahome._remove_data_home(
+        "cursor", root=current, allowed_root=Path.home(), home=home
+    )
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert "CODEX_HOME" in result.message
+    assert "apothem uninstall --harness codex" not in result.message

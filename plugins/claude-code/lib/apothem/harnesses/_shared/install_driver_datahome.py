@@ -149,27 +149,45 @@ def _holder(
             if Path(raw_root).exists():
                 return (package_key, raw_root, False)
             gone.append((package_key, raw_root, True))
+    # A project install's steps are plain commands; a user-scope one's folder
+    # may have come from a setting the steps cannot repeat, so it goes last.
+    gone.sort(key=lambda holder: get_harness_entry(holder[0]).scope != "project")
     return gone[0] if gone else None
 
 
 def _release_steps(home: Path, package_key: str, root: str) -> str:
-    """Say why *home* stayed and give the commands that release it.
+    """Say why the stores in *home* stayed and give the steps that release them.
 
-    The install at *root* keeps it, and *root* no longer exists. Uninstalling
-    in an empty recreated folder finds nothing installed, so the steps are to
-    install there again, with the profile that install used (a profile can
-    put the stores in the home folder; without it the new install would write
-    its own and leave *home* held), then uninstall there.
+    The install at *root* keeps them, and *root* no longer exists. Uninstalling
+    in an empty recreated folder finds nothing installed, so the steps install
+    there again, then uninstall there. The stores sit outside *root*, so that
+    install used a profile whose workspace puts them in *home*: the reinstall
+    needs that profile too, or it writes stores of its own and leaves these
+    with no install that uses them. A project install gets the exact commands,
+    paths quoted. A user-scope install's folder may have come from a setting
+    (``CODEX_HOME``, ``XDG_CONFIG_HOME``) the commands cannot repeat, so it
+    gets the steps in words: a bare command would act on the default folder.
     """
     entry = get_harness_entry(package_key)
-    where = f" --project {root}" if entry.scope == "project" else ""
-    create = f"create {root} again, then " if entry.scope == "project" else ""
+    stores = "its memory, contexts and learning folders"
+    if entry.scope == "project":
+        where = f' --project "{root}"'
+        steps = (
+            f'create "{root}" again, then run apothem install --harness '
+            f"{entry.public_id}{where} --profile <the profile it used>, then "
+            f"apothem uninstall --harness {entry.public_id}{where} --yes"
+        )
+    else:
+        steps = (
+            f"recreate {root} with the settings that install ran with (such as "
+            f"CODEX_HOME or XDG_CONFIG_HOME), install {entry.public_id} there "
+            "with the profile it used, then uninstall it there"
+        )
     return (
-        f"{home} was kept: {entry.public_id} installed at {root} still uses it, "
-        f"and that folder no longer exists. To release it, {create}run "
-        f"apothem install --harness {entry.public_id}{where} with the --profile "
-        f"that install used, if any, then apothem uninstall --harness "
-        f"{entry.public_id}{where} --yes; or remove the stores by hand"
+        f"{home} was kept: {entry.public_id} installed at {root} still uses "
+        f"{stores}, and that folder no longer exists. To release them, {steps}. "
+        f"The profile is the one whose workspace puts the stores in {home}. Or "
+        f"remove {stores} by hand"
     )
 
 
