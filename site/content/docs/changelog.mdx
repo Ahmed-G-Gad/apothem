@@ -392,15 +392,61 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   an install, update, uninstall or `--dry-run` never enters, removes or
   backs up through a symbolic link or junction at or below a leftover path:
   it leaves the link in place and prints a warning that names it, and a
-  backup leaves links out. A link directly at the leftover path is left in
-  place and warned about too, where before a junction there was backed up
-  and reported as removed although nothing was removed. A rollback leaves a
-  link at a restored folder in place, with a reason, and copies the rest of
-  the folder back around any link in it; before, rolling back such an
-  install failed with a "file already exists" error, and records written by
-  earlier releases still roll back this way. A junction above a write path
-  is now refused like a symbolic link, and a leftover link no longer makes
-  an uninstalled tool read as installed.
+  backup leaves links out. A folder it cannot read is left in place with a
+  warning too. A link directly at the leftover path is left in place and
+  warned about too, where before a junction there was backed up and reported
+  as removed although nothing was removed, and so is a leftover path reached
+  through a link above it. That includes a link from the
+  earlier Antigravity plugin folder to the current one: the warning says the
+  link stays after an uninstall, so you remove it when nothing uses the old
+  path. An uninstall that finds installed files reached through a link (a
+  dotfiles folder linked in, say) leaves them, says the tool still loads them,
+  keeps the install recorded and exits 2, so it can be run again once the link
+  is replaced. `apothem uninstall` now prints these warnings, grouped by link
+  (and lists them in `--format json`), and it reports a failure, not
+  "Uninstalled", when a step such as backing up a file fails, once per reason;
+  running it again removes what the failed run left.
+  Replacing or removing an installed folder, removing the shared data stores
+  and undoing a failed install also leave a link inside the folder in place,
+  with a warning. A
+  rollback leaves a link at a restored folder in place, with a reason, and
+  copies the backup into the folder around any link in it, keeping the files
+  the backup does not hold; before, rolling back such an install failed with
+  a "file already exists" error, and records written by earlier releases
+  still roll back this way. A junction above a path an install writes is now
+  refused like a symbolic link, with a message that names the link and says
+  to replace it with a real folder, and a leftover link no longer makes an
+  uninstalled tool read as installed.
+- **Uninstall removes only the files Apothem wrote.** Each install now
+  records the SHA-256 of every file it copies into place (skills, commands,
+  rules and the like),
+  and an uninstall removes a file only while it still has that content. A file
+  you added to an Apothem folder, an Apothem file you edited, and a file of
+  your own with an Apothem name stay, with a warning, and so does the folder
+  that holds them. Before, an uninstall removed the whole folder, and after a
+  partial uninstall followed by cleaning up by hand it could remove files you
+  had put there since. For an install recorded by an earlier release, which
+  does not say which files Apothem wrote, the uninstall removes the files that
+  have the same bytes as what this release writes there; a file that differs
+  leaves the uninstall unfinished (exit `2`) with the next step: move any file
+  of your own out of those folders, then run `apothem update` and `apothem
+  uninstall` again. An uninstall that does not finish
+  (a failed step, an error, or Apothem's own files reached through a link)
+  appends an `uninstall-incomplete` record to the install ledger, so running
+  it again finishes the job; an install, update, rollback or finished
+  uninstall replaces that state, and so does removing the files by hand. A
+  linked folder that holds only your own files no longer stops an uninstall:
+  it is left in place with a warning and the uninstall finishes. An uninstall
+  that removed files before a step failed now exits `2` with the status
+  `partial`, and the `--format json` warnings are grouped like the printed
+  ones, with `count` and `paths`. An uninstall that stops with an error after
+  removing files exits `2` too. `apothem rollback` now undoes the newest
+  install still in place, so a second rollback undoes the one before, refuses
+  an `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same tool
+  installed in another project still uses them.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
@@ -619,7 +665,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `apothem rollback` too, wherever above the folder the link sits; a refused
   rollback changes nothing, writes no `rollback` record and exits 1. A link
   on a path the install writes inside the harness folder still stops it, with
-  `target path crosses a symlink`, or with `target escapes the allowed
+  `target path crosses a link`, or with `target escapes the allowed
   materialization root` when that link leads out of the folder holding the
   harness folder.
 - **The profile is not written through a link that leaves your home
@@ -669,11 +715,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder it leads to, and say to replace the link with a real folder or make
   it lead inside your home directory. The `install --clean` error for a
   `~/.config` link that leaves your home directory gives the same fix instead
-  of asking you to re-run interactively. In `--format json` output, a result
-  refused at a link carries a new key, `detail.leads_to`, the folder the link
-  leads to. A result refused because a link leads a tool's folder out of your
-  home directory now also carries `detail.fix`, the fix, as other refused
-  results already do. No existing key changed.
+  of asking you to re-run interactively. A write refused at a link inside a
+  tool's folder also names the folder the link leads to. In `--format json`
+  output, a result refused at a link carries a new key, `detail.leads_to`,
+  the folder the link leads to. A result refused because a link leads a
+  tool's folder out of your home directory now also carries `detail.fix`,
+  the fix, as other refused results already do. No existing key changed.
 - **`install --clean` writes your profile back when a removal stops
   partway.** When the clean-slate step could not remove a folder, for example
   because another program held a file in it, the command stopped with a
@@ -751,7 +798,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   junction on a path an install writes counts as a link, as a symbolic link
   already did, so a junction at or inside a tool's folder, such as
   `~/.claude`, `~/.claude/skills`, or a project's `.cursor` or `.gemini`
-  folder, now stops the install with `target path crosses a symlink`, also
+  folder, now stops the install with `target path crosses a link`, also
   when it leads somewhere inside your home directory or project. Replace such
   a junction with the folder itself, or link `~/.config` or `~/.agents`
   instead, which are followed while they lead somewhere inside your home

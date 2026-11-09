@@ -19,7 +19,7 @@ in the same order, so no rendered install output changes.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -41,10 +41,10 @@ from .install_driver_shared import shared_scope
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
 _ProjectPlanFn = Callable[..., list[dict[str, str]]]
-_ProjectUninstallFn = Callable[..., None]
+_ProjectUninstallFn = Callable[..., MaterializationRun]
 _ProjectVerifyFn = Callable[..., bool]
 _NativeInstallFn = Callable[..., MaterializationRun]
-_NativeUninstallFn = Callable[[Path], None]
+_NativeUninstallFn = Callable[[Path], MaterializationRun]
 _NativeVerifyFn = Callable[[Path], bool]
 
 # Type aliases for the wrapper closure signatures.
@@ -152,21 +152,21 @@ _UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
 
     The shared driver strips only Apothem's managed block and keys, backing each
     target up under the Apothem backup root first, so operator-authored content
-    in a shared file survives. A step that reports an error raises
-    :class:`MaterializationError`, so the uninstall is not reported as done."""
+    in a shared file survives. Returns the run; a step that reports an error
+    is an ``error`` result in it, so the uninstall is not reported as done."""
 
 _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
 
     The project root passes through when the CLI supplied it; otherwise it is
-    derived from the adapter's declared relative target. A step that reports
-    an error raises :class:`MaterializationError`."""
+    derived from the adapter's declared relative target. Returns the run; a
+    step that reports an error is an ``error`` result in it."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 
     The materializer-rendered config is not a manifest entry, so Apothem's
     structural contribution is identified by re-rendering from an empty profile
     and removed surgically before the shared driver cleans the support tree.
-    A step that reports an error raises :class:`MaterializationError`."""
+    Returns the run; a step that reports an error is an ``error`` result in it."""
 
 
 def make_verify_harness_root(harness_name: str) -> _UserScopeVerify:
@@ -278,36 +278,19 @@ def make_uninstall(harness_name: str) -> _NativeUninstallFn:
     block / keys and backs each target up under the Apothem backup root.
     """
 
-    def uninstall(output_path: Path) -> None:
-        raise_on_uninstall_error(
-            harness_name,
-            install_driver.run_uninstall(harness_name, harness_root=output_path.parent),
+    def uninstall(output_path: Path) -> MaterializationRun:
+        return MaterializationRun(
+            harness=harness_name,
+            dry_run=False,
+            results=tuple(
+                install_driver.run_uninstall(
+                    harness_name, harness_root=output_path.parent
+                )
+            ),
         )
 
     uninstall.__doc__ = _UNINSTALL_DOC
     return uninstall
-
-
-def raise_on_uninstall_error(
-    harness_name: str, results: Sequence[install_driver.MaterializationResult]
-) -> None:
-    """Raise when an uninstall step reported an error.
-
-    ``run_uninstall`` returns its refusals (a path the write guard refuses, an
-    unreadable ledger, a failed backup) as ``error`` results instead of
-    raising; the CLI reports a run that raises as failed, so a refused
-    uninstall is not reported as done.
-
-    Raises:
-        MaterializationError: Naming the first ``error`` result.
-    """
-    failed = next((result for result in results if result.outcome == "error"), None)
-    if failed is None:
-        return
-    raise MaterializationError(
-        f"uninstall failed at {failed.path}: {failed.message}",
-        MaterializationRun(harness=harness_name, dry_run=False, results=tuple(results)),
-    )
 
 
 def make_user_scope_adapter(
@@ -377,9 +360,9 @@ def make_user_scope_adapter(
             """Return the manifest-driven propagation plan without writing."""
             return plan_fn(output_path or self.output_path)
 
-        def uninstall(self) -> None:
+        def uninstall(self) -> MaterializationRun:
             """Remove the harness configuration file if present."""
-            uninstall_fn(self.output_path)
+            return uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
             """Return True if this harness root carries an Apothem install."""
@@ -543,11 +526,16 @@ def make_project_scope_uninstall(
     """
     _depth = len(relative_target.parts) - 1
 
-    def uninstall(output_path: Path, *, project: Path | None = None) -> None:
+    def uninstall(
+        output_path: Path, *, project: Path | None = None
+    ) -> MaterializationRun:
         project_root = project if project is not None else output_path.parents[_depth]
-        raise_on_uninstall_error(
-            harness_name,
-            install_driver.run_uninstall(harness_name, project_root=project_root),
+        return MaterializationRun(
+            harness=harness_name,
+            dry_run=False,
+            results=tuple(
+                install_driver.run_uninstall(harness_name, project_root=project_root)
+            ),
         )
 
     uninstall.__doc__ = _UNINSTALL_DOC_PROJECT
@@ -617,7 +605,7 @@ def make_native_config_uninstall(
     """
 
     @install_driver.backup_session()
-    def uninstall(output_path: Path) -> None:
+    def uninstall(output_path: Path) -> MaterializationRun:
         native = install_driver.surgically_remove_materialized_config(
             output_path,
             materialize_fn({}),
@@ -629,10 +617,12 @@ def make_native_config_uninstall(
             relocated=relocated_fn,
         )
         prior = (native,) if native is not None else ()
-        results = install_driver.run_uninstall(
+        removed = install_driver.run_uninstall(
             harness_name, harness_root=output_path.parent, prior_results=prior
         )
-        raise_on_uninstall_error(harness_name, (*prior, *results))
+        return MaterializationRun(
+            harness=harness_name, dry_run=False, results=(*prior, *removed)
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC_NATIVE
     return uninstall
@@ -852,10 +842,10 @@ def make_project_scope_adapter(
             )
             return plan_fn(resolved, project=project)
 
-        def uninstall(self, *, project: Path | None = None) -> None:
+        def uninstall(self, *, project: Path | None = None) -> MaterializationRun:
             """Remove the harness configuration file if present."""
             output_path = self.resolve_output_path(project)
-            uninstall_fn(output_path, project=project)
+            return uninstall_fn(output_path, project=project)
 
         def is_installed(self, *, project: Path | None = None) -> bool:
             """Return True if this project root carries an Apothem install."""
@@ -938,9 +928,9 @@ def make_native_config_adapter(
             """Return what ``install`` would do, without writing anything."""
             return install_fn(self.output_path, profile, dry_run=True)
 
-        def uninstall(self) -> None:
+        def uninstall(self) -> MaterializationRun:
             """Remove the harness configuration file if present."""
-            uninstall_fn(self.output_path)
+            return uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
             """Return True if this harness root carries an Apothem install."""

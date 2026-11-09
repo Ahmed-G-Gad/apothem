@@ -26,8 +26,12 @@ SHIM = SHARED / "install_driver.py"
 EXPECTED_MODULES = {
     "install_driver_types",
     "install_driver_pathsafety",
+    "install_driver_homelink",
     "install_driver_backup",
     "install_driver_datahome",
+    "install_driver_digests",
+    "install_driver_written",
+    "install_driver_expected",
     "install_driver_converters",
     "install_driver_hookfile",
     "install_driver_layout",

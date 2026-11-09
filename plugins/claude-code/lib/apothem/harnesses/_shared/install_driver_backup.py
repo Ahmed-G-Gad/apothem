@@ -6,29 +6,38 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import os
 import shutil
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
-from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
 
+from .install_driver_digests import _LEDGER_OUTCOMES as _LEDGER_OUTCOMES
+from .install_driver_digests import _NON_LEDGER_OPERATIONS as _NON_LEDGER_OPERATIONS
+from .install_driver_digests import _ledger_targets as _ledger_targets
+from .install_driver_digests import backup_ledger_targets as backup_ledger_targets
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_link,
     _normalized,
+    _remove_tree_keeping_links,
     _root_for,
+    _skip_links_into,
+    _unsafe_symlink,
     _validate_target_path,
     _within_allowed_root,
     _write_boundary,
+    kept_links_detail,
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
-    _handle_rm_error,
+    _path_text,
     _result,
 )
 
@@ -100,13 +109,39 @@ def _replace_path(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
+    removing: bool = False,
 ) -> MaterializationResult | None:
-    """Backup and remove one existing target before writing its replacement."""
+    """Backup and remove one existing target before writing its replacement.
+
+    A link inside a folder target stays (see
+    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it. With
+    *removing* (an uninstall), a target reached through a link, or that is a
+    link, is left in place with a warning: removing through the link is what
+    the write guard refuses, and an error would keep the install recorded
+    while the files a retry looks for are already gone.
+    """
     target_error = _validate_target_path(
         target,
         allowed_root=_write_boundary(allowed_root, install_root),
         operation="remove_existing",
     )
+    # The link is looked up directly: one pointing out of the allowed root
+    # fails the escape check before the link check names it.
+    link = (
+        _unsafe_symlink(target, _write_boundary(allowed_root, install_root))
+        if removing and target_error is not None
+        else None
+    )
+    if link is not None:
+        return _result(
+            "warning",
+            "remove_existing",
+            target,
+            f"{target} is reached through the link {link}, so it was left in "
+            "place: Apothem does not remove anything through a link",
+            # "blocked": an installed file stays, so the uninstall is unfinished.
+            detail={"symlink": _path_text(link), "blocked": "1"},
+        )
     if target_error is not None:
         return target_error
     if not target.exists():
@@ -117,8 +152,9 @@ def _replace_path(
         harness_name=harness_name,
         allowed_root=_write_boundary(allowed_root, install_root),
     )
+    kept: list[Path] = []
     if target.is_dir():
-        shutil.rmtree(target, onerror=_handle_rm_error)
+        kept = _remove_tree_keeping_links(target)
     else:
         with contextlib.suppress(OSError):  # pragma: no cover
             target.unlink()
@@ -128,6 +164,7 @@ def _replace_path(
         target,
         "removed existing target before replacement",
         backup_path=backup,
+        detail=kept_links_detail(kept),
     )
 
 
@@ -173,7 +210,26 @@ def _skip_links(folder: str, names: list[str]) -> set[str]:
     Copying through a link (a junction on Windows) would copy files that are
     not the target's, and a rollback would bring them back as a real folder.
     """
-    return {name for name in names if _is_link(Path(folder) / name)}
+    return {
+        name
+        for name in names
+        if _is_link(Path(folder) / name) or _unreadable(Path(folder) / name)
+    }
+
+
+def _unreadable(path: Path) -> bool:
+    """Return True when *path* is a folder that cannot be listed.
+
+    The backup leaves it out rather than failing; the sweep keeps such a
+    folder in place with a warning, so nothing in it is lost.
+    """
+    if not path.is_dir():
+        return False
+    try:
+        with os.scandir(path):
+            return False
+    except OSError:
+        return True
 
 
 def backup_existing(
@@ -347,118 +403,30 @@ def _compensating_rollback(
         if result.outcome not in {"created", "updated"}:
             continue
         target = Path(result.path)
-        if not _within_allowed_root(_normalized(target), _normalized(allowed_root)):
+        if _is_link(target) or not _within_allowed_root(
+            _normalized(target), _normalized(allowed_root)
+        ):
             continue
+        # A link inside a folder being put back is the operator's: it stays,
+        # and the copy goes around it rather than through it.
         with contextlib.suppress(OSError):
             if result.backup_path:
                 backup = Path(result.backup_path)
                 if backup.is_dir():
-                    if target.exists():
-                        shutil.rmtree(target, onerror=_handle_rm_error)
-                    shutil.copytree(backup, target, dirs_exist_ok=True)
+                    kept = _remove_tree_keeping_links(target) if target.is_dir() else []
+                    shutil.copytree(
+                        backup,
+                        target,
+                        dirs_exist_ok=True,
+                        ignore=_skip_links_into(backup, target, kept),
+                    )
                 elif backup.is_file():
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(backup, target)
             elif target.is_dir():
-                shutil.rmtree(target, onerror=_handle_rm_error)
+                _remove_tree_keeping_links(target)
             elif target.exists():
                 target.unlink()
-
-
-# Result outcomes that represent a materialized on-disk file worth recording in
-# the install ledger (a created/updated/unchanged target). A clean install yields
-# only created/updated, so this set equals the run's ``files_written`` there while
-# also capturing the full managed set on an idempotent re-install.
-_LEDGER_OUTCOMES: frozenset[str] = frozenset({"created", "updated", "unchanged"})
-
-# Result operations that are NOT standalone installed ledger targets: the
-# per-surface data-home files (reversed wholesale by the data-home cleanup on
-# uninstall, not file-by-file) and the advisory capability-projection note. A
-# stale-sweep result is recorded only when it removed something (an ``updated``
-# result carrying its backup), so rollback can put the swept path back; the
-# ``unchanged`` result every absent legacy path emits is not a target.
-_NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
-    {"data_surface", "capability_projection"}
-)
-
-
-def _ledger_targets(
-    run: MaterializationRun, *, prior: LedgerRecord | None = None
-) -> tuple[LedgerTarget, ...]:
-    """Project a materialization run's written files to typed ledger targets.
-
-    One :class:`LedgerTarget` per created/updated/unchanged file result, carrying
-    the path, the install mode (the result ``operation`` — ``sentinel_merge`` /
-    ``write_text`` / a tree mode), the ownership class, the backup reference
-    captured during the write, the pass outcome, the entries Apothem owns in a
-    structured config, and whether Apothem created the file in this install
-    cycle (carried forward from *prior*, the record that was current before this
-    pass). Data-surface and advisory results are excluded; duplicate paths
-    collapse to the first occurrence.
-    """
-    earlier = {target.path: target for target in prior.targets} if prior else {}
-    targets: list[LedgerTarget] = []
-    seen: set[str] = set()
-    for result in run.results:
-        if result.outcome not in _LEDGER_OUTCOMES:
-            continue
-        if result.operation in _NON_LEDGER_OPERATIONS:
-            continue
-        if result.operation == "sweep_stale" and result.outcome != "updated":
-            continue
-        if result.path in seen:
-            continue
-        seen.add(result.path)
-        before = earlier.get(result.path)
-        created: bool | None
-        if result.outcome == "created":
-            created = True
-        elif before is not None:
-            created = before.created
-        else:
-            created = False
-        targets.append(
-            LedgerTarget(
-                path=result.path,
-                mode=result.operation,
-                ownership_class=result.detail.get("ownership_class", "operator-owned"),
-                backup_ref=result.backup_path,
-                outcome=result.outcome,
-                created=created,
-                owned=result.owned,
-            )
-        )
-    return tuple(targets)
-
-
-def backup_ledger_targets(
-    results: list[MaterializationResult],
-) -> tuple[LedgerTarget, ...]:
-    """Project the backups an uninstall or rollback relied on to ledger targets.
-
-    One :class:`LedgerTarget` per result that carries a backup, with the same
-    path, mode (the result ``operation``), ownership class and outcome
-    projection :func:`_ledger_targets` uses for install records. Recording them
-    keeps those backup sets referenced, so retention never deletes them while
-    the record itself is kept. Duplicate paths keep the first backup, the
-    state before the operation.
-    """
-    targets: list[LedgerTarget] = []
-    seen: set[str] = set()
-    for result in results:
-        if result.backup_path is None or result.path in seen:
-            continue
-        seen.add(result.path)
-        targets.append(
-            LedgerTarget(
-                path=result.path,
-                mode=result.operation,
-                ownership_class=result.detail.get("ownership_class", "operator-owned"),
-                backup_ref=result.backup_path,
-                outcome=result.outcome,
-            )
-        )
-    return tuple(targets)
 
 
 def _written_data_home(run: MaterializationRun) -> str | None:

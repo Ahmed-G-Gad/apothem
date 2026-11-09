@@ -42,10 +42,11 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
-from apothem.harnesses._shared.install_driver_pathsafety import (
+from apothem.harnesses._shared.install_driver_homelink import (
     link_leaving_home_refusal,
 )
 from apothem.harnesses._shared.install_driver_reversal import LEFT_IN_PLACE
+from apothem.harnesses._shared.install_driver_written import kept_file_warnings
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -394,22 +395,52 @@ def _rollback_harness(
     return True
 
 
+def _refuse_reversed(harness_id: str, install_id: str) -> None:
+    """Refuse to roll back an install a rollback or uninstall already reversed.
+
+    Raises:
+        _RollbackRefusedError: Always.
+    """
+    reason = f"install {install_id!r} was already rolled back or uninstalled"
+    reversed_already = _CliUserError(
+        code="rollback.already_reversed",
+        message="That install was already reversed.",
+        field="install-id",
+        reason=f"{harness_id}: {reason}.",
+        fix="Leave --install-id out to roll back the install now in place.",
+    )
+    raise _RollbackRefusedError(
+        reversed_already, f"[red]✗[/] {harness_id} rollback refused: {escape(reason)}."
+    )
+
+
 def _rollback_record(
     run: _RollbackRun, package_key: str, harness_id: str, install_root: Path
 ) -> LedgerRecord:
-    """Return the install record to reverse: ``--install-id``'s, else the latest.
+    """Return the install record to reverse: ``--install-id``'s, else the current.
+
+    The current install is the newest one still in place, so a second rollback
+    reverses the install before it rather than the one already reversed. An
+    ``--install-id`` naming an install a rollback or uninstall already
+    reversed is refused: reversing it again would remove what came after.
 
     Raises:
-        _RollbackRefusedError: When the ledger is corrupted or holds no such record.
+        _RollbackRefusedError: When the ledger is corrupted, holds no such
+            record, or the record was already reversed.
     """
     install_id = run.install_id
     try:
+        active = install_ledger.active_install_records(package_key, root=install_root)
         if install_id is not None:
             record = install_ledger.find_record(
                 package_key, install_id, root=install_root
             )
+            if record is not None and all(
+                live.install_id != install_id for live in active
+            ):
+                _refuse_reversed(harness_id, install_id)
         else:
-            record = install_ledger.latest_record(package_key, root=install_root)
+            record = active[-1] if active else None
     except install_ledger.LedgerError as exc:
         # The ledger is the source of truth for what to restore; a corrupted
         # record cannot be silently skipped without risking a wrong or
@@ -449,6 +480,23 @@ def _rollback_record(
     return record
 
 
+def _kept_by_rollback(
+    target_results: list[MaterializationResult],
+) -> list[MaterializationResult]:
+    """Return a warning for each path the rollback kept because it is not Apothem's.
+
+    A file the install created that has changed since, or a file of the
+    operator's in a folder it created, stays; each such target, and each
+    folder that keeps such files, gets one warning.
+    """
+    whole = [
+        result
+        for result in target_results
+        if result.outcome == "warning" and "kept_reason" in result.detail
+    ]
+    return [*whole, *kept_file_warnings(target_results)]
+
+
 def _record_rollback_results(
     run: _RollbackRun,
     tally: _RollbackTally,
@@ -484,6 +532,10 @@ def _record_rollback_results(
         if result.backup_path is not None:
             entry_dict["backup_path"] = result.backup_path
         tally.results.append(entry_dict)
+    kept_paths = _kept_by_rollback(target_results)
+    tally.warnings.extend(
+        {"harness": harness_id, **warning.to_dict()} for warning in kept_paths
+    )
     if run.fmt == "json":
         return
     # A restore failure is visible in plain mode, not only as a JSON
@@ -500,6 +552,10 @@ def _record_rollback_results(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
+        for warning in kept_paths:
+            run.con.print(
+                f"[yellow]Warning:[/] {harness_id} - {escape(warning.message)}"
+            )
         # A swept path is restored only where files are missing (see
         # ``rollback_install``); say what was kept and where the backup is.
         for kept in target_results:
@@ -522,13 +578,13 @@ def _record_rollback_results(
     metavar="ULID",
     help=(
         "Roll back the install pass with this ULID, taken from the harness "
-        "install ledger (default: the latest recorded install)."
+        "install ledger (default: the newest install still in place)."
     ),
 )
 @click.option(
     "--last",
     is_flag=True,
-    help="Roll back the latest recorded install (the default; explicit form).",
+    help="Roll back the newest install still in place (the default; explicit form).",
 )
 @click.option("--yes", is_flag=True, help="Skip confirmation prompt.")
 @_project_option

@@ -36,19 +36,20 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
 from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_datahome import _data_home_for
-from .install_driver_lifecycle import _remove_data_home
+from .install_driver_datahome import _data_home_for, _remove_data_home
+from .install_driver_homelink import link_leaving_home_refusal, link_refusal_text
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
     _is_link,
     _normalized,
+    _remove_tree_keeping_links,
     _root_for,
+    _skip_links_into,
     _validate_target_path,
     _walk_without_links,
     _within_allowed_root,
-    link_leaving_home_refusal,
-    link_refusal_text,
+    kept_links_detail,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -58,6 +59,7 @@ from .install_driver_types import (
     _result,
     backup_session,
 )
+from .install_driver_written import remove_written
 
 
 def _chain(path: Path, boundary: Path) -> list[Path]:
@@ -137,7 +139,7 @@ def _restore_directory(
     )
     if target_error is not None:
         return target_error
-    links = _walk_without_links(target)[2] if target.is_dir() else []
+    links = _walk_without_links(target).links if target.is_dir() else []
     if links:
         return _restore_around_links(
             target, backup, links, root, harness_name, allowed_root
@@ -177,23 +179,25 @@ def _restore_around_links(
     harness_name: str,
     allowed_root: Path,
 ) -> MaterializationResult:
-    """Copy *backup* into *target* without removing, entering or replacing a link."""
+    """Copy *backup* into *target* without removing, entering or replacing a link.
+
+    The copy merges: files in *target* that the backup does not hold stay.
+    """
     current = backup_existing(
         target, install_root=root, harness_name=harness_name, allowed_root=allowed_root
     )
-    kept = {_normalized(link) for link in links}
-
-    def skip(folder: str, names: list[str]) -> set[str]:
-        here = target / Path(folder).relative_to(backup)
-        return {name for name in names if _normalized(here / name) in kept}
-
-    shutil.copytree(backup, target, dirs_exist_ok=True, ignore=skip)
+    shutil.copytree(
+        backup,
+        target,
+        dirs_exist_ok=True,
+        ignore=_skip_links_into(backup, target, links),
+    )
     return _result(
         "updated",
         "restore_backup",
         target,
-        f"restored the directory the install replaced; left {len(links)} "
-        "link(s) in it in place",
+        f"copied the backup into the directory, around {len(links)} link(s) "
+        "left in place; files the backup does not hold were kept",
         source=backup,
         backup_path=current,
     )
@@ -242,9 +246,31 @@ def _restore_target(
 
 
 def _remove_created(
-    target: Path, *, root: Path, harness_name: str, allowed_root: Path
+    target: Path,
+    *,
+    root: Path,
+    harness_name: str,
+    allowed_root: Path,
+    recorded: LedgerTarget | None = None,
 ) -> MaterializationResult | None:
-    """Back up and remove a file or directory the install created."""
+    """Back up and remove a file or directory the install created.
+
+    With the *recorded* target of the install being reversed, only what still
+    has the content that install wrote goes (see :func:`remove_written`): a
+    file the operator made at the path since then stays, with a warning, and
+    so does everything when the record predates file digests.
+    """
+    if recorded is not None:
+        removal = remove_written(
+            target,
+            recorded={recorded.path: recorded},
+            install_root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+        if removal is None or removal.outcome != "updated":
+            return removal
+        return replace(removal, operation="remove_created")
     if not target.exists() and not target.is_symlink():
         return None
     target_error = _validate_target_path(
@@ -255,16 +281,19 @@ def _remove_created(
     backup = backup_existing(
         target, install_root=root, harness_name=harness_name, allowed_root=allowed_root
     )
-    if target.is_dir() and not target.is_symlink():
-        shutil.rmtree(target, onerror=_handle_rm_error)
+    kept: list[Path] = []
+    if target.is_dir() and not _is_link(target):
+        kept = _remove_tree_keeping_links(target)
     else:
         target.unlink()
     return _result(
         "updated",
         "remove_created",
         target,
-        "removed what the install created",
+        "removed what the install created"
+        + (f"; left {len(kept)} path(s) in it in place" if kept else ""),
         backup_path=backup,
+        detail=kept_links_detail(kept),
     )
 
 
@@ -441,7 +470,7 @@ def rollback_install(
     user-scope root spelled inside the home out of it (``CODEX_HOME=~/a/b/codex``
     after ``~/a`` became a link to a folder outside the home): the one result
     is a ``rollback_refused`` error naming the link (see
-    :func:`~.install_driver_pathsafety.link_leaving_home_refusal`).
+    :func:`~.install_driver_homelink.link_leaving_home_refusal`).
     The rollback holds the user-level lock (see ``shared_scope``).
     """
     if harness_root is not None:
@@ -503,6 +532,7 @@ def rollback_install(
                     root=root,
                     harness_name=harness_name,
                     allowed_root=target_root,
+                    recorded=recorded,
                 )
         if result is not None:
             results.append(result)

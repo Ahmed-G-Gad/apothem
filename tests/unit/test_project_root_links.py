@@ -96,7 +96,7 @@ def test_a_link_inside_the_project_root_is_refused(home: Path) -> None:
     error = _check_project(project, project / ".cursor" / "x.md")
 
     assert error is not None
-    assert error.message == "target path crosses a symlink"
+    assert error.message.startswith("target path crosses a link")
     assert error.detail["symlink"] == str(project / ".cursor")
 
 
@@ -112,7 +112,7 @@ def test_a_link_inside_the_project_root_leading_back_to_it_is_refused(
     error = _check_project(project, project / ".cursor" / "x.md")
 
     assert error is not None
-    assert error.message == "target path crosses a symlink"
+    assert error.message.startswith("target path crosses a link")
 
 
 def test_a_link_inside_a_linked_project_root_leading_out_is_refused(
@@ -142,7 +142,7 @@ def test_a_link_inside_a_linked_project_root_staying_inside_is_refused(
     error = _check_project(project, project / ".cursor" / "x.md")
 
     assert error is not None
-    assert error.message == "target path crosses a symlink"
+    assert error.message.startswith("target path crosses a link")
     assert error.detail["symlink"] == str(project / ".cursor")
 
 
@@ -168,7 +168,7 @@ def test_a_two_hop_link_back_to_the_project_root_is_refused(
     error = _check_project(project, project / target)
 
     assert error is not None
-    assert error.message == "target path crosses a symlink"
+    assert error.message.startswith("target path crosses a link")
     assert error.detail["symlink"] == str(project / first / second)
 
 
@@ -209,7 +209,7 @@ def test_a_boundary_built_from_a_project_floor_follows_no_link(home: Path) -> No
     )
 
     assert error is not None
-    assert error.message == "target path crosses a symlink"
+    assert error.message.startswith("target path crosses a link")
     assert error.detail["symlink"] == str(project / ".cursor")
 
 
@@ -300,6 +300,41 @@ def test_a_boundary_without_a_kind_refuses_a_linked_project_root(
     assert followed is None
 
 
+def test_the_link_lookups_read_the_project_floor_they_are_given(
+    home: Path, tmp_path: Path
+) -> None:
+    # The checks that tell a link refusal from another one (uninstall, the
+    # stale sweep) pass the boundary object: they follow the folder the
+    # operator named, as the write guard does, and still find a link inside.
+    _link(home / "proj", tmp_path / "outside" / "proj")
+    project = home / "proj"
+    floor = pathsafety._allowed_write_root(None, project)
+    target = project / ".cursor" / "x.md"
+    target.parent.mkdir(parents=True)
+
+    assert pathsafety._unsafe_symlink(target, floor) is None
+    assert pathsafety._link_on_path(target, floor) is None
+
+    _link(project / "inner", tmp_path / "elsewhere")
+    inner = project / "inner" / "x.md"
+    assert pathsafety._unsafe_symlink(inner, floor) == project / "inner"
+    assert pathsafety._link_on_path(inner, floor) == project / "inner"
+
+
+def test_a_boundary_derived_from_the_floor_does_not_follow_the_named_link(
+    home: Path, tmp_path: Path
+) -> None:
+    # A derived path keeps the stricter kind but not the spelling, which is
+    # why the callers pass the boundary object and not a resolved copy.
+    _link(home / "proj", tmp_path / "outside" / "proj")
+    project = home / "proj"
+    floor = pathsafety._allowed_write_root(None, project)
+    target = project / ".cursor" / "x.md"
+    target.parent.mkdir(parents=True)
+
+    assert pathsafety._unsafe_symlink(target, pathsafety._normalized(floor)) == project
+
+
 # -- the CLI ------------------------------------------------------------------
 
 
@@ -365,7 +400,7 @@ def test_install_refuses_a_two_hop_link_back_to_the_project_folder(
     result = _install_cursor(project, profile)
 
     assert result.exit_code != 0, result.output
-    assert "target path crosses a symlink" in result.output
+    assert "target path crosses a link" in result.output
     assert (project / "dispatch.py").read_text(encoding="utf-8") == "mine\n"
     assert sorted(item.name for item in project.iterdir()) == [
         ".apothem",

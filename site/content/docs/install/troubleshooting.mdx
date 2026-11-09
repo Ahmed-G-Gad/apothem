@@ -214,7 +214,7 @@ their changes from git: run `git update-index --no-assume-unchanged <file>`
 or `git update-index --no-skip-worktree <file>`, then commit or stash the
 change. "is not the work tree of its git clone" means `core.worktree` is set,
 or the `.git` file points at another clone: remove that setting so the clone
-checks out into `APOTHEM_HOME`. "own git config sets <key>, which the update
+checks out into `APOTHEM_HOME`. "own git config sets `<key>`, which the update
 would trust" names a setting in the clone's `.git/config` (`gpg.program`,
 `gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
 `includeIf.*`) that makes git run a program or read other config: remove it

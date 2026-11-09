@@ -21,7 +21,10 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.harnesses._shared import install_driver, install_driver_pathsafety
+from apothem.harnesses._shared import (
+    install_driver,
+    install_driver_homelink,
+)
 from apothem.harnesses.codex import CodexAdapter
 from apothem.harnesses.opencode import OpenCodeAdapter
 from apothem.lib import atomic_io, install_ledger
@@ -383,9 +386,10 @@ def test_the_other_spellings_are_read_before_the_uninstall(
     real_uninstall = opencode_uninstall._uninstall
     real_same = opencode_uninstall._names_same_folder
 
-    def _uninstall(output_path: Path) -> None:
-        real_uninstall(output_path)
+    def _uninstall(output_path: Path) -> install_driver.MaterializationRun:
+        run = real_uninstall(output_path)
         done.append(output_path)
+        return run
 
     def _same(first: Path, second: Path) -> bool:
         return not done and real_same(first, second)
@@ -418,8 +422,9 @@ def test_a_held_install_lock_fails_the_uninstall_cleanly(
 
     monkeypatch.setattr(atomic_io, "advisory_lock", held)
 
-    with pytest.raises(install_driver.MaterializationError, match="install lock"):
-        adapter.uninstall()
+    run = adapter.uninstall()
+
+    assert any("install lock" in error.message for error in run.errors)
 
 
 # -- the relocated entries of a record that owned nothing ---------------------
@@ -475,11 +480,11 @@ def test_a_link_loop_on_the_way_up_is_refused(
     def loop(root: Path) -> Path | None:
         raise RuntimeError(f"Symlink loop from {root!r}")
 
-    monkeypatch.setattr(install_driver_pathsafety, "_link_leaving_home", loop)
+    monkeypatch.setattr(install_driver_homelink, "_link_leaving_home", loop)
     root = home / ".config" / "opencode"
 
     with pytest.raises(install_driver.MaterializationError) as caught:
-        install_driver_pathsafety.refuse_link_leaving_home(
+        install_driver_homelink.refuse_link_leaving_home(
             "opencode", root, operation="opencode_config"
         )
 
@@ -527,8 +532,8 @@ def test_the_link_named_is_the_highest_leading_out_of_the_home(
         expected = home / "a" / "b"
     root = home / "a" / "b" / "codex"
 
-    assert install_driver_pathsafety._link_leaving_home(root) == expected
+    assert install_driver_homelink._link_leaving_home(root) == expected
     with pytest.raises(install_driver.MaterializationError, match="symlink"):
-        install_driver_pathsafety.refuse_link_leaving_home(
+        install_driver_homelink.refuse_link_leaving_home(
             "codex", root, operation="codex_home"
         )

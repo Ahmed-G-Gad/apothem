@@ -24,7 +24,10 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.harnesses._shared import install_driver, install_driver_pathsafety
+from apothem.harnesses._shared import (
+    install_driver,
+    install_driver_homelink,
+)
 from apothem.harnesses._shared.install_driver_pathsafety import (
     _is_link,
     _linkable_ancestors,
@@ -234,7 +237,7 @@ def test_a_link_at_or_below_the_opencode_folder_still_stops_the_install(
     target = home / ".config" / f"linked-{below.replace('/', '-')}"
     _link(home / ".config" / below, target)
 
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="link"):
         OpenCodeAdapter().install({})
 
     assert list(target.iterdir()) == []
@@ -588,10 +591,10 @@ def test_a_bind_mount_of_the_home_is_not_reported_as_a_link(
     # spelling seems to leave the home although no link is on it.
     root = home / "cfg" / "opencode"
     root.mkdir(parents=True)
-    monkeypatch.setattr(install_driver_pathsafety, "_within_allowed_root", _never)
+    monkeypatch.setattr(install_driver_homelink, "_within_allowed_root", _never)
 
-    assert install_driver_pathsafety._link_leaving_home(root) is None
-    install_driver_pathsafety.refuse_link_leaving_home(
+    assert install_driver_homelink._link_leaving_home(root) is None
+    install_driver_homelink.refuse_link_leaving_home(
         "opencode", root, operation="opencode_config"
     )
 

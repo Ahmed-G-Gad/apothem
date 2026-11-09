@@ -218,7 +218,10 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The full suite under coverage takes 11 to 18 minutes (November 2026), so
+    # 20 cancelled healthy runs. 30 is the workflow-concurrency validator's
+    # ceiling for a job without a matrix.
+    timeout-minutes: 30
     needs: [quality]
     permissions:
       contents: read

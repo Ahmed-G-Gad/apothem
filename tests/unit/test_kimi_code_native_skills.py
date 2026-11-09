@@ -300,19 +300,20 @@ def test_uninstall_removes_the_native_skills_and_keeps_operator_skills(
     assert not (project / "AGENTS.md").exists()
 
 
-def test_uninstall_removes_a_same_name_skill_with_its_operator_files_after_a_backup(
+def test_uninstall_keeps_the_operators_files_in_a_skill_folder(
     adapter: KimiCodeAdapter, project: Path
 ) -> None:
     adapter.install({}, project=project)
     skill_dir = project / _NATIVE_SKILLS / _source_skills()[0]
-    (skill_dir / _OPERATOR_FILE).write_text(_OPERATOR_FILE_TEXT, encoding="utf-8")
+    operator_file = skill_dir / _OPERATOR_FILE
+    operator_file.write_text(_OPERATOR_FILE_TEXT, encoding="utf-8")
 
     adapter.uninstall(project=project)
 
-    assert not skill_dir.exists()
+    assert operator_file.read_text(encoding="utf-8") == _OPERATOR_FILE_TEXT
+    assert [path.name for path in skill_dir.iterdir()] == [_OPERATOR_FILE]
     saved = _backed_up_operator_files()
-    assert saved, "the removed skill directory must be backed up first"
-    assert saved[0].read_text(encoding="utf-8") == _OPERATOR_FILE_TEXT
+    assert saved, "the skill directory is backed up before Apothem's files go"
 
 
 def test_uninstall_removes_an_empty_native_skills_directory_it_created(

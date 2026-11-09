@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from pathlib import Path
 
 import click
+from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
@@ -40,9 +42,10 @@ from apothem.cli._user_level_report import (
     uninstall_advisories,
 )
 
-# Import order matters here. ``install_driver_pathsafety`` imports
-# ``install_driver_types``, which imports ``install_driver``; that loads its
-# concern modules, and ``install_driver_backup`` among them imports names from
+# Import order matters here. ``install_driver_homelink`` imports
+# ``install_driver_pathsafety``, which imports ``install_driver_types``, which
+# imports ``install_driver``; that loads its concern modules, and
+# ``install_driver_backup`` among them imports names from
 # ``install_driver_pathsafety`` while it is still half loaded, which raises
 # ImportError. Importing ``install_driver`` first loads the whole cycle in the
 # order it expects. The one ``from`` statement keeps the order (names import
@@ -50,7 +53,11 @@ from apothem.cli._user_level_report import (
 # keeps the otherwise unused ``install_driver`` import.
 from apothem.harnesses._shared import (
     install_driver,  # noqa: F401
-    install_driver_pathsafety,
+    install_driver_homelink,
+)
+from apothem.harnesses._shared.install_driver import (
+    MaterializationResult,
+    MaterializationRun,
 )
 
 
@@ -83,7 +90,7 @@ def _refuse_or_confirm(
 
     Such an uninstall changes nothing, so it is refused before the question,
     as rollback is (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.refuse_link_leaving_home`).
+    :func:`~apothem.harnesses._shared.install_driver_homelink.refuse_link_leaving_home`).
     A project-scope install root is the ``--project`` folder, already
     resolved, so only a user-scope one is checked.
 
@@ -92,7 +99,7 @@ def _refuse_or_confirm(
         click.Abort: When the operator declines the confirmation.
     """
     if not is_project_scope(adapter):
-        install_driver_pathsafety.refuse_link_leaving_home(
+        install_driver_homelink.refuse_link_leaving_home(
             harness_id,
             output_path.parent,
             operation="uninstall_refused",
@@ -103,6 +110,266 @@ def _refuse_or_confirm(
             f"Remove {harness_id} configuration at {output_path}?",
             abort=True,
         )
+
+
+#: The grouped line for paths an uninstall kept, by ``kept_reason``.
+_KEPT_GROUP_LINES = {
+    "unrecorded": "{count} paths were kept: the install record does not list them",
+    "no-record": "{count} paths were kept: no install record shows Apothem wrote them",
+    "no-digests": (
+        "{count} paths were kept: the install record does not show which files "
+        "Apothem wrote (it was made by an earlier release); move any file of "
+        "your own out of those folders (an update replaces them), then run "
+        "apothem update, then apothem uninstall again"
+    ),
+    "changed": "{count} paths were kept: they are not what Apothem wrote (changed or yours)",
+}
+
+
+def _warning_groups(run: MaterializationRun) -> list[dict[str, object]]:
+    """Group a run's warnings the way they are reported.
+
+    Paths kept for the same link (all the files under a linked folder), and
+    paths kept for the same reason, form one group with their count; any
+    other warning is a group of one. Each group is the first warning's
+    dictionary with the grouped ``message``, ``count`` and ``paths``.
+    """
+    groups: dict[tuple[str, str], list[MaterializationResult]] = {}
+    for warning in run.warnings:
+        link = warning.detail.get("symlink")
+        reason = warning.detail.get("kept_reason", "")
+        if link:
+            key = ("blocked" if warning.detail.get("blocked") else "link", link)
+        elif reason in _KEPT_GROUP_LINES:
+            key = ("kept", reason)
+        else:
+            key = ("message", warning.message)
+        groups.setdefault(key, []).append(warning)
+    return [_group(key, members) for key, members in groups.items()]
+
+
+def _group(
+    key: tuple[str, str], members: list[MaterializationResult]
+) -> dict[str, object]:
+    """Return one reported warning for the *members* grouped under *key*."""
+    group = members[0].to_dict()
+    count = len(members)
+    kind, value = key
+    if count > 1 and kind in {"link", "blocked"}:
+        group["message"] = (
+            f"{count} paths reached through the link {value} were left in "
+            "place: Apothem does not remove anything through a link"
+        )
+    elif count > 1 and kind == "kept":
+        group["message"] = _KEPT_GROUP_LINES[value].format(count=count)
+    group["count"] = count
+    group["paths"] = [member.path for member in members]
+    return group
+
+
+def _warning_lines(run: MaterializationRun) -> list[str]:
+    """Return the warnings to print, one line per group (see :func:`_warning_groups`).
+
+    A link that keeps Apothem's own files is reported as a failure instead.
+    """
+    return [
+        str(group["message"])
+        for group in _warning_groups(run)
+        if not _is_blocked(group)
+    ]
+
+
+def _is_blocked(group: dict[str, object]) -> bool:
+    """Return True for a group of Apothem's files left behind a link."""
+    detail = group.get("detail")
+    return isinstance(detail, dict) and bool(detail.get("blocked"))
+
+
+def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
+    """Count the installed paths an uninstall left because a link leads to them."""
+    return Counter(
+        warning.detail.get("symlink", "")
+        for warning in run.warnings
+        if warning.detail.get("blocked")
+    )
+
+
+def _earlier_release_paths(run: MaterializationRun) -> int:
+    """Count the paths kept because an earlier release recorded them without digests."""
+    return sum(
+        1
+        for warning in run.warnings
+        if warning.detail.get("kept_reason") == "no-digests"
+    )
+
+
+def _report_run(
+    harness_id: str,
+    outcome: object,
+    output_path: Path,
+    warnings: list[dict[str, object]],
+    *,
+    fmt: str,
+    con: Console,
+    no_color: bool,
+) -> tuple[list[dict[str, object]], bool]:
+    """Report an adapter's uninstall results; return the failure rows and partial flag.
+
+    A link the uninstall left in place, or a step that failed (such as removing
+    a leftover folder), is reported rather than hidden behind the success line.
+    Each warning is added to *warnings*; the printed lines are grouped. A
+    failure returns one ``uninstall`` error row for the harness, then one row
+    per failed step. The uninstall is partial when it removed files before the
+    failure, or when installed files stay because they are reached through a
+    link: the tool still loads them.
+    """
+    run = outcome if isinstance(outcome, MaterializationRun) else None
+    if run is None:
+        return [], False
+    warnings.extend(
+        {"harness": harness_id, **group}
+        for group in _warning_groups(run)
+        if not _is_blocked(group)
+    )
+    counts = Counter(error.message for error in run.errors)
+    blocked = _blocked_by_link(run)
+    earlier = _earlier_release_paths(run)
+    problems = [
+        f"{count} installed path(s) stay because they are reached through the "
+        f"link {link}, and {harness_id} still loads them; replace the link with a "
+        "real folder that holds the same files, then run the command again"
+        for link, count in blocked.items()
+    ] + [
+        f"{message} ({count} paths)" if count > 1 else message
+        for message, count in counts.items()
+    ]
+    if earlier:
+        problems.append(
+            f"{earlier} path(s) an earlier release installed stay because its "
+            "install record does not show which files Apothem wrote and they "
+            "differ from what this release writes; move any file of your own "
+            "out of those folders (an update replaces them), then run apothem "
+            "update, then apothem uninstall again"
+        )
+    if fmt != "json":
+        for line in _warning_lines(run):
+            con.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+        for line in problems:
+            get_error_console(no_color=no_color).print(
+                f"[red]✗[/] {harness_id} uninstall did not finish: {escape(line)}"
+            )
+    if not problems:
+        return [], False
+    summary: dict[str, object] = {
+        "harness": harness_id,
+        "outcome": "error",
+        "operation": "uninstall",
+        "path": str(output_path),
+        "message": "; ".join(problems),
+    }
+    steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+    removed = any(result.outcome == "updated" for result in run.results)
+    return [summary, *steps], bool(blocked) or bool(earlier) or removed
+
+
+def _failed_adapter(
+    harness_id: str,
+    exc: Exception,
+    output_path: Path,
+    warnings: list[dict[str, object]],
+    *,
+    fmt: str,
+    no_color: bool,
+) -> tuple[list[dict[str, object]], bool]:
+    """Report an uninstall that raised; return its rows and whether it removed files.
+
+    An uninstall that stops after removing files carries the run so far (a
+    :class:`~apothem.harnesses._shared.install_driver.MaterializationError`
+    with ``run``): its warnings and failed steps are reported, and the files
+    it removed make the uninstall partial.
+    """
+    run = getattr(exc, "run", None)
+    run = run if isinstance(run, MaterializationRun) else None
+    removed = run is not None and any(
+        result.outcome == "updated" for result in run.results
+    )
+    if run is not None:
+        warnings.extend(
+            {"harness": harness_id, **group}
+            for group in _warning_groups(run)
+            if not _is_blocked(group)
+        )
+    if fmt != "json":
+        verb = "stopped after removing files" if removed else "failed"
+        get_error_console(no_color=no_color).print(
+            f"[red]✗[/] {harness_id} uninstall {verb}: {escape(str(exc))}"
+        )
+    steps = (
+        [{"harness": harness_id, **error.to_dict()} for error in run.errors]
+        if run is not None
+        else []
+    )
+    row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
+    return [row, *steps], removed
+
+
+def _finished_row(
+    harness_id: str, outcome: object, output_path: Path
+) -> dict[str, object]:
+    """Return the ``results`` row of an uninstall that finished.
+
+    ``updated`` when it removed files; ``unchanged`` when everything it found
+    stayed (each kept path is a warning), so a batch is not reported partial
+    on the strength of a harness that removed nothing.
+    """
+    run = outcome if isinstance(outcome, MaterializationRun) else None
+    removed = run is not None and any(
+        result.outcome == "updated" for result in run.results
+    )
+    return {
+        "harness": harness_id,
+        "outcome": "updated" if removed else "unchanged",
+        "operation": "uninstall",
+        "path": str(output_path),
+        "message": "managed files removed" if removed else "no files removed",
+    }
+
+
+def _settled(retention: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Return the retention notes as they stand after the uninstall ran.
+
+    A note is built before the uninstall (from the ledger it then replaces),
+    so a folder it says was removed may still be there, holding files Apothem
+    did not write; that note is reworded to say so.
+    """
+    settled = []
+    for advisory in retention:
+        path = Path(str(advisory.get("path", "")))
+        if advisory.get("role") == "released" and path.is_dir():
+            advisory = {
+                **advisory,
+                "message": (
+                    f"{advisory['path']} was kept: no other Apothem install uses "
+                    "it, but it holds files Apothem did not write."
+                ),
+            }
+        settled.append(advisory)
+    return settled
+
+
+def _print_removed(
+    harness_id: str,
+    retention: list[dict[str, object]],
+    *,
+    fmt: str,
+    con: Console,
+) -> None:
+    """Print the success line and each retention note (plain output only)."""
+    if fmt == "json":
+        return
+    con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
+    for advisory in retention:
+        con.print(f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}")
 
 
 def _uninstall_impl(
@@ -179,36 +446,38 @@ def _uninstall_impl(
             retention = _retention_advisories(
                 harness_id, adapter, project_root, output_path
             )
-            _invoke_with_project(adapter.uninstall, project=project_root)
+            outcome = _invoke_with_project(adapter.uninstall, project=project_root)
         except click.Abort:
             raise
         except Exception as exc:
             errored = True
-            results.append(
-                _adapter_failure_result(harness_id, "uninstall", output_path, exc)
+            rows, removed = _failed_adapter(
+                harness_id, exc, output_path, warnings, fmt=fmt, no_color=no_color
             )
-            if fmt != "json":
-                get_error_console(no_color=no_color).print(
-                    f"[red]✗[/] {harness_id} uninstall failed: {escape(str(exc))}"
-                )
+            results.extend(rows)
+            removed_any |= removed
             continue
-        removed_any = True
-        results.append(
-            {
-                "harness": harness_id,
-                "outcome": "updated",
-                "operation": "uninstall",
-                "path": str(output_path),
-                "message": "managed files removed",
-            }
+        failures, partial = _report_run(
+            harness_id,
+            outcome,
+            output_path,
+            warnings,
+            fmt=fmt,
+            con=con,
+            no_color=no_color,
         )
+        # A partial uninstall removed files, so a batch of one exits as partial.
+        removed_any |= partial
+        if failures:
+            errored = True
+            results.extend(failures)
+            continue
+        row = _finished_row(harness_id, outcome, output_path)
+        removed_any |= row["outcome"] == "updated"
+        results.append(row)
+        retention = _settled(retention)
         warnings.extend(retention)
-        if fmt != "json":
-            con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
-            for advisory in retention:
-                con.print(
-                    f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}"
-                )
+        _print_removed(harness_id, retention, fmt=fmt, con=con)
 
     exit_code = 0
     if errored:

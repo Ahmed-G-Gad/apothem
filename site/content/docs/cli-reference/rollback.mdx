@@ -16,14 +16,21 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 ```
 
 `rollback` returns each selected harness to the state it was in before the
-recorded install pass — the latest by default, or the one named by
-`--install-id`. Working through that install's ledger record, newest change
-first, it:
+recorded install pass — by default the newest install still in place, or the
+one named by `--install-id`. A second `rollback` therefore undoes the install
+before the one the first undid. An `--install-id` naming an install that a
+rollback or uninstall already reversed is refused with
+`rollback.already_reversed` (exit 1), and nothing changes. Working through
+that install's ledger record, newest change first, it:
 
 - restores every file and directory the install overwrote from the backup the
   install captured, at its recorded path (a directory the install replaced is
   restored exactly, without the files the install added to it);
-- removes every file and directory the install created, and puts back any
+- removes every file and directory the install created, as long as it still
+  has the content that install wrote: a file you made at that path since, or
+  one you edited, stays with a `Warning:` line, and so does a folder holding
+  it. An install recorded by an earlier release does not say what it wrote,
+  so what it created stays. It also puts back any
   legacy-layout path the install swept away. A path the current release no
   longer sweeps (a folder that may hold your own files) is restored only where
   files are missing: every file there now is kept, and the output names the
@@ -102,8 +109,8 @@ target was rolled back and a failure was also recorded.
 | Option | Description |
 |---|---|
 | `--harness NAME` | Harness adapter to roll back, or `all` for the registry-wide set (required). |
-| `--install-id ULID` | Roll back the named install pass. Defaults to the latest recorded install. |
-| `--last` | Roll back the latest recorded install (the default; the explicit form). Mutually exclusive with `--install-id`. |
+| `--install-id ULID` | Roll back the named install pass, if it is still in place. Defaults to the newest install still in place. |
+| `--last` | Roll back the newest install still in place (the default; the explicit form). Mutually exclusive with `--install-id`. |
 | `--yes` | Skip the per-harness confirmation prompt. |
 | `--project PATH` | Project root for project-scope harnesses. Required when the selected set includes project-scope adapters. |
 | `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
@@ -162,7 +169,10 @@ it leads to in `detail.leads_to`, as in
 
 When no matching install record exists for a single
 named harness, the command reports a `rollback.no_record` error with
-`"status": "error"`. Under `--harness all`, a harness with no matching record
+`"status": "error"`, and an `--install-id` of an install already rolled back
+or uninstalled reports `rollback.already_reversed`. Once the ledger has
+trimmed that record (see above), such an id reports `rollback.no_record`
+instead. Under `--harness all`, a harness with no matching record
 is an `"outcome": "error"` row in `results` instead.
 
 ## Examples

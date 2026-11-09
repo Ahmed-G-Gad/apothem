@@ -35,6 +35,7 @@ from apothem.cli._helpers import (
     _materialization_error,
     _refuse_profile_outside_home,
 )
+from apothem.harnesses._shared import install_driver_homelink as homelink
 from apothem.harnesses._shared import install_driver_pathsafety as pathsafety
 from apothem.harnesses._shared.install_driver import (
     MaterializationError,
@@ -541,7 +542,7 @@ def test_the_refusal_names_the_link_and_where_it_leads(
     _link(home / "a", outside)
 
     with pytest.raises(MaterializationError) as caught:
-        pathsafety.refuse_link_leaving_home(
+        homelink.refuse_link_leaving_home(
             "codex", home / "a" / "b" / "codex", operation="codex_home"
         )
 
@@ -605,7 +606,8 @@ def test_a_guard_link_error_names_the_link_in_the_cli_reason(
     )
 
     assert str(root / "skills") in str(error["reason"])
-    assert "is a link to" in str(error["reason"])
+    assert "which leads to" in str(error["reason"])
+    assert "To fix it" not in str(error["reason"])
     assert "Replace the link" in str(error["fix"])
 
 

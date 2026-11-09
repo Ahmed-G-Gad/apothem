@@ -44,7 +44,7 @@ from apothem.harnesses._shared.install_driver import (
     fidelity_is_faithful,
     write_bytes_safely,
 )
-from apothem.harnesses._shared.install_driver_pathsafety import (
+from apothem.harnesses._shared.install_driver_homelink import (
     link_leaving_home_refusal,
     link_refusal_reason_and_fix,
 )
@@ -164,8 +164,11 @@ class _Adapter(Protocol):
         """Re-materialize *profile* over an existing installation."""
         ...
 
-    def uninstall(self) -> None:
-        """Remove every artifact this adapter installed, leaving no orphans."""
+    def uninstall(self) -> MaterializationRun | None:
+        """Remove every artifact this adapter installed, leaving no orphans.
+
+        The run's warnings and errors are reported by ``apothem uninstall``.
+        """
         ...
 
     def is_installed(self) -> bool:
@@ -476,7 +479,7 @@ def _refuse_profile_outside_home(profile_path: Path) -> None:
     """Raise when a link leads a profile write at *profile_path* out of the home.
 
     The rule the harness installs apply to their folders (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.link_leaving_home_refusal`):
+    :func:`~apothem.harnesses._shared.install_driver_homelink.link_leaving_home_refusal`):
     a path spelled inside the home, such as the default
     ``~/.config/apothem/profile.yaml``, is refused when a link on it leads out
     of the home; a link that stays inside the home (a dotfiles folder) is

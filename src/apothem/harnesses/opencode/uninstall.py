@@ -9,12 +9,9 @@ from dataclasses import replace
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_pathsafety import _names_same_folder
+from apothem.harnesses._shared.install_driver_homelink import _names_same_folder
 from apothem.harnesses._shared.install_driver_sharedlock import shared_scope
-from apothem.harnesses._shared.wrapper_factories import (
-    make_native_config_uninstall,
-    raise_on_uninstall_error,
-)
+from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
 from apothem.harnesses.opencode.install import refuse_link_leaving_home
 from apothem.harnesses.opencode.materializer import (
     _default_spellings,
@@ -53,7 +50,7 @@ _uninstall = make_native_config_uninstall(
 
 
 @install_driver.backup_session()
-def uninstall(output_path: Path) -> None:
+def uninstall(output_path: Path) -> install_driver.MaterializationRun:
     """Remove the OpenCode install at *output_path*'s folder.
 
     Refused, before anything is removed, when a link leads that folder out of
@@ -63,10 +60,14 @@ def uninstall(output_path: Path) -> None:
     ``~/.config`` link leads to) is removed with it (see
     :func:`_finish_same_folder_install`).
 
+    Returns the run of every removal. A removal that fails, or another run
+    holding the install lock past its timeout, is an ``error`` result in it;
+    the installs at the other spelling then stay recorded and the uninstall
+    can be run again.
+
     Raises:
-        MaterializationError: When a removal fails, or when another run holds
-            the install lock past its timeout; the installs at the other
-            spelling then stay recorded and the uninstall can be run again.
+        MaterializationError: When a link leads the folder out of the home;
+            nothing was removed.
     """
     refuse_link_leaving_home(output_path, uninstall=True)
     root = output_path.parent
@@ -74,7 +75,7 @@ def uninstall(output_path: Path) -> None:
     # remove the folder, and the spellings are then compared by their resolved
     # paths, which do not fold case on a case-insensitive macOS volume.
     spellings = _same_folder_spellings(root)
-    _uninstall(output_path)
+    results = list(_uninstall(output_path).results)
     # The install lock is keyed by the resolved folder, so it is the one an
     # install at either spelling takes; the user-level lock goes outside it,
     # as an install takes them. The installs are re-read inside the locks.
@@ -88,15 +89,19 @@ def uninstall(output_path: Path) -> None:
             for spelling in spellings:
                 active = _active_installs(spelling)
                 if active:
-                    _finish_same_folder_install(spelling, active, root)
+                    results.extend(_finish_same_folder_install(spelling, active, root))
     except TimeoutError as exc:
-        failed = install_driver._result(
-            "error",
-            "opencode_uninstall",
-            root,
-            f"another Apothem run holds the install lock: {exc}",
+        results.append(
+            install_driver._result(
+                "error",
+                "opencode_uninstall",
+                root,
+                f"another Apothem run holds the install lock: {exc}",
+            )
         )
-        raise_on_uninstall_error(_HARNESS_NAME, [failed])
+    return install_driver.MaterializationRun(
+        harness=_HARNESS_NAME, dry_run=False, results=tuple(results)
+    )
 
 
 def _same_folder_spellings(root: Path) -> list[Path]:
@@ -118,7 +123,7 @@ def _active_installs(spelling: Path) -> list[LedgerRecord]:
 
 def _finish_same_folder_install(
     spelling: Path, active: list[LedgerRecord], root: Path
-) -> None:
+) -> list[install_driver.MaterializationResult]:
     """Remove what the installs recorded at *spelling* left in *root*, then close them.
 
     *spelling* names the folder *root* names, so the support files are gone
@@ -128,14 +133,12 @@ def _finish_same_folder_install(
     empty ``instructions`` list, and the folders the installs created. The
     file is backed up, then each goes through the write guard at *root*; a
     folder goes only once empty. An uninstall record that names the backups
-    closes the installs at *spelling*. The data stores need no step here:
+    closes the installs at *spelling*; when a removal fails it is an
+    ``uninstall-incomplete`` record instead, and the installs stay recorded. The data stores need no step here:
     with *spelling* naming this folder they are the ones the uninstall at
     *root* already handled. A folder the installs created at a user-level
-    path outside *root* is left (OpenCode writes none).
-
-    Raises:
-        MaterializationError: When a removal fails; the install at
-            *spelling* stays recorded.
+    path outside *root* is left (OpenCode writes none). Returns every
+    removal's result.
     """
     record = active[-1]
     allowed = install_driver._allowed_write_root(root, None)
@@ -164,16 +167,17 @@ def _finish_same_folder_install(
         if (here := _respelled(Path(path), spelling, root)) is not None
     }
     results.extend(install_driver.remove_created_dirs(created, allowed_root=allowed))
-    raise_on_uninstall_error(_HARNESS_NAME, results)
+    failed = any(result.outcome == "error" for result in results)
     install_ledger.append_record(
         LedgerRecord.create(
             harness=_HARNESS_NAME,
             root=spelling,
-            kind="uninstall",
+            kind="uninstall-incomplete" if failed else "uninstall",
             targets=install_driver.backup_ledger_targets(results),
             install_id=record.install_id,
         )
     )
+    return results
 
 
 def _respelled(path: Path, spelling: Path, root: Path) -> Path | None:

@@ -4,17 +4,20 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
+import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path, PosixPath, WindowsPath
+from typing import NamedTuple
 
 from apothem.lib.links import is_link
 from apothem.lib.propagation import USER_LEVEL_PREFIXES, user_home
 
 from .install_driver_types import (
-    MaterializationError,
     MaterializationResult,
-    MaterializationRun,
+    _handle_rm_error,
     _path_text,
     _result,
 )
@@ -131,14 +134,18 @@ def _existing_chain(path: Path, floor: Path, named: Path | None = None) -> list[
     the walk stops at the first component that resolves to *floor*.
     """
     expanded = path.expanduser()
-    probe = expanded if os.path.lexists(expanded) else expanded.parent
+    # ``lexists`` (an ``lstat``) also sees a link or junction whose target is
+    # gone; ``_is_link`` covers a junction ``lstat`` may not report.
+    probe = (
+        expanded if os.path.lexists(expanded) or _is_link(expanded) else expanded.parent
+    )
     named_key = None
     if named is not None and _is_lexically_within(_spelled(probe), named):
         named_key = _lexical_key(named)
     floor_resolved = _normalized(floor)
     chain: list[Path] = []
     while True:
-        if os.path.lexists(probe):
+        if os.path.lexists(probe) or _is_link(probe):
             chain.append(probe)
         if named_key is not None:
             if _lexical_key(_spelled(probe)) == named_key:
@@ -190,20 +197,35 @@ def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
 _is_link = is_link
 
 
-def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
+class _Walk(NamedTuple):
+    """What :func:`_walk_without_links` found below a folder."""
+
+    files: list[Path]
+    folders: list[Path]
+    links: list[Path]
+    unreadable: list[Path]
+
+
+def _walk_without_links(top: Path) -> _Walk:
     """Return the files, folders and links below *top*, never entering a link.
 
     ``Path.rglob`` enters a Windows junction (``is_symlink()`` is False for
-    one), so a walk that deletes what it finds would delete through it.
+    one), so a walk that deletes what it finds would delete through it. A
+    folder the walk cannot list (*top* included) is returned in
+    ``unreadable`` so the caller can report it.
     """
     files: list[Path] = []
     folders: list[Path] = []
     links: list[Path] = []
+    unreadable: list[Path] = []
     pending = [top]
     while pending:
+        folder = pending.pop()
         try:
-            entries = sorted(os.scandir(pending.pop()), key=lambda e: e.name)
+            with os.scandir(folder) as scan:
+                entries = sorted(scan, key=lambda e: e.name)
         except OSError:
+            unreadable.append(folder)
             continue
         for entry in entries:
             path = Path(entry.path)
@@ -214,7 +236,67 @@ def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
                 pending.append(path)
             else:
                 files.append(path)
-    return files, folders, links
+    return _Walk(files, folders, links, unreadable)
+
+
+def _lexical_set(paths: list[Path]) -> set[str]:
+    return {_lexical_key(path) for path in paths}
+
+
+def _skip_links_into(
+    source: Path, dest: Path, links: list[Path]
+) -> Callable[[str, list[str]], set[str]]:
+    """Return a ``copytree`` ignore hook that skips each of *links* in *dest*.
+
+    Copying a tree over a folder that still holds a link would write through
+    the link. Paths are compared by name, never resolved, so a link is matched
+    as the entry it is rather than the folder it points to.
+    """
+    kept = _lexical_set(links)
+
+    def skip(folder: str, names: list[str]) -> set[str]:
+        here = dest / Path(folder).relative_to(source)
+        return {name for name in names if _lexical_key(here / name) in kept}
+
+    return skip
+
+
+#: ``detail`` key naming the links a removal left in place, one per line.
+KEPT_LINKS = "kept_links"
+
+
+def kept_links_detail(links: list[Path]) -> dict[str, str]:
+    """Return the ``detail`` entry that records the paths a removal left in place."""
+    return {KEPT_LINKS: "\n".join(_path_text(link) for link in links)} if links else {}
+
+
+def _remove_tree_keeping_links(top: Path) -> list[Path]:
+    """Remove the folder *top* and what it holds, except links; return what stayed.
+
+    ``shutil.rmtree`` does not delete through a Windows junction, but it does
+    remove the junction itself, and a link below *top* is the operator's. Each
+    link stays, with the folders that hold it; everything else is removed. The
+    result lists each link, each file that could not be removed and each
+    folder that could not be read, so the caller can report them.
+    """
+    walk = _walk_without_links(top)
+    if not walk.links and not walk.unreadable:
+        shutil.rmtree(top, onerror=_handle_rm_error)
+        return [path for path in walk.files if path.exists()]
+    for path in walk.files:
+        # Checked again just before the removal: the walk ran earlier.
+        if not _is_link(path):
+            with contextlib.suppress(OSError):
+                path.unlink()
+    for folder in sorted(
+        [*walk.folders, top], key=lambda path: len(path.parts), reverse=True
+    ):
+        # rmdir removes only an empty folder, so one that holds a link stays.
+        if not _is_link(folder):
+            with contextlib.suppress(OSError):
+                folder.rmdir()
+    left = [path for path in walk.files if not _is_link(path) and path.exists()]
+    return [*walk.links, *left, *walk.unreadable]
 
 
 def _unsafe_symlink(
@@ -238,8 +320,13 @@ def _unsafe_symlink(
     refused. *named* is the project root as the operator spelled it: a link
     there, the folder the operator named, is followed wherever it leads, as
     the CLI follows ``--project``. Only that spelling is exempt; a link inside
-    the project that leads back to the floor is still refused.
+    the project that leads back to the floor is still refused. A *floor*
+    that is a :class:`_ProjectFloor` sets both itself, so a caller that
+    passes the boundary object gets the write guard's answer.
     """
+    if isinstance(floor, _ProjectFloor):
+        project_floor = True
+        named = _named_floor(floor) if named is None else named
     home = user_home()
     bases = [] if project_floor else _linkable_ancestors(path, floor)
     named_key = None if named is None else _lexical_key(named)
@@ -255,112 +342,21 @@ def _unsafe_symlink(
     return None
 
 
-def _names_same_folder(first: Path, second: Path) -> bool:
-    """Return True when *first* and *second* name one folder.
+def _link_on_path(path: Path, floor: Path) -> Path | None:
+    """Return the first link or junction from *path* up to *floor*, if any.
 
-    When both exist they are compared by file identity, which also matches a
-    change of case on a case-insensitive volume, a short (8.3) name, a bind
-    mount, a link or a junction. Otherwise, or when the filesystem reports no
-    inode numbers (some network and FUSE mounts do), their resolved paths are
-    compared.
+    No link is exempt, except a :class:`_ProjectFloor`'s project folder as
+    the operator spelled it, which is followed wherever it leads (see
+    :func:`_unsafe_symlink`).
     """
-    try:
-        stats = [first.stat(), second.stat()]
-    except OSError:
-        stats = []
-    if stats and all(item.st_ino for item in stats):
-        return os.path.samestat(stats[0], stats[1])
-    return _normalized(first) == _normalized(second)
-
-
-def _spelled_inside_home(path: Path) -> bool:
-    """Return True when *path*, as spelled, passes through the home folder.
-
-    One of its spelled ancestors (or *path* itself) is the home folder, by
-    file identity: the home as it is spelled, resolved, in another case or by
-    its short name.
-    """
-    home = user_home()
-    return any(_names_same_folder(folder, home) for folder in (path, *path.parents))
-
-
-def _link_leaving_home(root: Path) -> Path | None:
-    """Return the link that leads *root*, spelled inside the home, out of it.
-
-    ``None`` when *root* is spelled outside the home (the operator named that
-    folder, through ``XDG_CONFIG_HOME`` or ``CODEX_HOME``), when it stays
-    inside the home once resolved, or when no link sits between it and the
-    home (a bind mount or a macOS firmlink naming the home another way leads
-    nowhere else). The write guard stops its walk at the folder above the
-    install root, so a link higher up (``CODEX_HOME=~/a/b/codex`` with ``~/a``
-    leading out of the home) is found here. Of the links on the way up, the
-    one named is the highest that leads out of the home itself, not a link
-    below it that stays inside (``~/a`` leading to ``~/c`` while ``~/a/b``
-    leads out names ``~/a/b``).
-    """
-    home = user_home()
-    if not _spelled_inside_home(root) or _within_allowed_root(root, home):
-        return None
-    first: Path | None = None
-    leading_out: Path | None = None
-    for folder in (root, *root.parents):
-        if _names_same_folder(folder, home):
-            break
-        if not _is_link(folder):
+    named = _named_floor(floor)
+    named_key = None if named is None else _lexical_key(named)
+    for candidate in _existing_chain(path, floor, named):
+        if named_key is not None and _lexical_key(_spelled(candidate)) == named_key:
             continue
-        first = first or folder
-        if not _within_allowed_root(folder, home):
-            leading_out = folder
-    return leading_out or first
-
-
-def _first_link(root: Path) -> Path | None:
-    """Return the first link at or above *root*, read without resolving any."""
-    for folder in (root, *root.parents):
-        try:
-            if _is_link(folder):
-                return folder
-        except OSError:
-            return None
+        if _is_link(candidate):
+            return candidate
     return None
-
-
-def link_leaving_home_refusal(
-    root: Path, *, operation: str
-) -> MaterializationResult | None:
-    """Return the error result for a link that leads *root* out of the home.
-
-    ``None`` when there is no such link (see :func:`_link_leaving_home`) or a
-    folder on the way cannot be read; the result's ``detail["symlink"]``
-    names the link. A link loop counts as such a link where resolving it
-    raises :class:`RuntimeError` (Python 3.10 to 3.12): the first link found
-    is named. From Python 3.13 resolving a loop does not raise, so this check
-    names no link for it; the write that follows cannot pass through the loop
-    and stops there.
-    """
-    try:
-        link = _link_leaving_home(root)
-    except RuntimeError:
-        link = _first_link(root) or root
-    except (OSError, ValueError):
-        return None
-    if link is None:
-        return None
-    return _result(
-        "error",
-        operation,
-        root,
-        "target path crosses a symlink",
-        detail={
-            "symlink": _path_text(link),
-            "leads_to": _leads_to(link),
-            "fix": (
-                f"Replace the link {link} with a real folder, or make it lead "
-                "to a folder inside your home directory. A folder you name by "
-                "its own path outside your home directory is followed."
-            ),
-        },
-    )
 
 
 def _leads_to(link: Path) -> str:
@@ -369,81 +365,6 @@ def _leads_to(link: Path) -> str:
         return _path_text(_normalized(link))
     except (OSError, RuntimeError, ValueError):
         return _path_text(link)
-
-
-def link_refusal_text(refusal: MaterializationResult) -> str:
-    """Return ``(<link> leads outside the home folder, to <where>)`` for *refusal*.
-
-    *refusal* is a result from :func:`link_leaving_home_refusal`; the text
-    names the link and the folder it leads to, for an error message.
-    """
-    link = refusal.detail.get("symlink", refusal.path)
-    leads_to = refusal.detail.get("leads_to")
-    where = f", to {leads_to}" if leads_to and leads_to != link else ""
-    return f"({link} leads outside the home folder{where})"
-
-
-def link_refusal_reason_and_fix(
-    result: MaterializationResult,
-) -> tuple[str, str] | None:
-    """Return the CLI reason and fix for a *result* refused at a link.
-
-    ``None`` when *result* names no link (``detail["symlink"]``). The reason
-    names the link and where it leads; "target path crosses a symlink" alone
-    leaves the operator searching the path for it. A refusal from
-    :func:`link_leaving_home_refusal` carries its own fix and says the link
-    leads outside the home; any other link refusal is told to replace the
-    link with a real folder.
-    """
-    link = result.detail.get("symlink")
-    if not link:
-        return None
-    leads_to = result.detail.get("leads_to")
-    reason = f"{result.message}: {link} is a link"
-    if leads_to and leads_to != link:
-        reason += f" to {leads_to}"
-    own_fix = result.detail.get("fix")
-    if own_fix:
-        return f"{reason}, outside your home directory", own_fix
-    return (
-        reason,
-        f"Replace the link {link} with a real folder, then run the command again.",
-    )
-
-
-def refuse_link_leaving_home(
-    harness_name: str,
-    root: Path,
-    *,
-    operation: str,
-    uninstall: bool = False,
-    dry_run: bool = False,
-) -> None:
-    """Raise when a link leads the install root *root* out of the home.
-
-    Run before an install, update or uninstall of a harness whose root an
-    environment variable moves (see :func:`_link_leaving_home`); nothing is
-    written or removed. A link loop on the way up (Python 3.10 to 3.12 raise
-    :class:`RuntimeError` resolving one) is refused too, naming the first link
-    found. A folder that cannot be read is left to the write guard, which
-    still checks every target. Read-only commands never call this. An
-    uninstall's message also carries the fix, since the uninstall output shows
-    only the message.
-
-    Raises:
-        MaterializationError: When there is such a link, or a link loop.
-    """
-    refusal = link_leaving_home_refusal(root, operation=operation)
-    if refusal is None:
-        return
-    verb = "uninstall refused" if uninstall else "materialization write failed"
-    message = f"{verb}: {refusal.message} {link_refusal_text(refusal)}"
-    if uninstall:
-        message += f". {refusal.detail['fix']}"
-    raise MaterializationError(
-        message,
-        MaterializationRun(harness=harness_name, dry_run=dry_run, results=(refusal,)),
-    )
 
 
 def _ensure_directory(path: Path, *, operation: str) -> MaterializationResult | None:
@@ -567,6 +488,12 @@ def _allowed_write_root(harness_root: Path | None, project_root: Path | None) ->
     return _normalized(harness_root).parent
 
 
+#: Where the write guard's link refusal turns from what happened to what to
+#: do: the CLI shows the part before it as the reason and gives the fix on
+#: its own line (see :func:`.install_driver_homelink.link_refusal_reason_and_fix`).
+LINK_FIX_LEAD = ". To fix it, "
+
+
 def _validate_target_path(
     target: Path,
     *,
@@ -595,12 +522,21 @@ def _validate_target_path(
         target, normalized_root, project_floor=project_floor, named=named
     )
     if symlink is not None:
+        kind = (
+            "a symlink" if symlink.is_symlink() else "a junction or other reparse point"
+        )
+        leads_to = _leads_to(symlink)
+        where = (
+            f", which leads to {leads_to}" if leads_to != _path_text(symlink) else ""
+        )
         return _result(
             "error",
             operation,
             target,
-            "target path crosses a symlink",
-            detail={"symlink": _path_text(symlink), "leads_to": _leads_to(symlink)},
+            f"target path crosses a link ({kind}) at {symlink}{where}; Apothem does "
+            f"not write through a link{LINK_FIX_LEAD}replace the link with a real "
+            "folder that holds the same files, then run the command again",
+            detail={"symlink": _path_text(symlink), "leads_to": leads_to},
         )
     return None
 
@@ -628,7 +564,9 @@ def _holds_content(target: Path) -> bool:
         return True
     if not target.is_dir():
         return False
-    return bool(_walk_without_links(target)[0])
+    walk = _walk_without_links(target)
+    # A folder the walk cannot read may hold files, so it counts as content.
+    return bool(walk.files or walk.unreadable)
 
 
 def _stale_path_proves_install(stale: Path) -> bool:
