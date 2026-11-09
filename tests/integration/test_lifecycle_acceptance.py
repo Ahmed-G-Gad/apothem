@@ -257,7 +257,9 @@ def test_a_block_without_its_end_counts_when_the_ledger_cannot_be_read(
     from apothem.harnesses.codex import CodexAdapter
 
     anchor = _codex_anchor(sandbox_factory("codex"))
-    install_ledger.ledger_path("codex").write_text("not json\n", encoding="utf-8")
+    # Bytes that are not UTF-8 make the ledger raise (a line that is not
+    # JSON is only skipped).
+    install_ledger.ledger_path("codex").write_bytes(b"\xff\xfe not utf-8\n")
     anchor.write_bytes(anchor.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b""))
 
     assert CodexAdapter().is_installed() is True
@@ -290,13 +292,13 @@ def test_status_reads_a_profile_anchor_with_a_non_utf8_byte(
         main,
         [
             "status",
-            "--harness",
-            "codex",
             "--profile",
             str(profile_minimal_path()),
             "--json",
         ],
     )
 
-    json.loads(result.output)  # a usage error would not parse
-    assert "UnicodeDecodeError" not in result.output, result.output
+    payload = json.loads(result.output)
+    assert payload["error"] is None, payload["error"]
+    [row] = [r for r in payload["results"] if r.get("harness") == "codex"]
+    assert row["drift"] != "error", row
