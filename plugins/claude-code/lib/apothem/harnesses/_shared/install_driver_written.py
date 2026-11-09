@@ -49,7 +49,8 @@ STUCK_FILES = "stuck_files"
 #: show are Apothem's or not, under an install an earlier release recorded
 #: without digests (``no-digests``) or with no install record at all
 #: (``no-record``). ``apothem update`` records them; a second uninstall then
-#: finishes.
+#: finishes. A path kept because every install recorded here has ended
+#: (``no-active-install``) does not: no install is left to finish.
 UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests", "no-record"})
 
 #: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
@@ -253,16 +254,26 @@ def remove_written(
     harness_name: str,
     allowed_root: Path | None = None,
     expected: Callable[[Path], dict[str, str] | None] | None = None,
+    installs_ended: bool = False,
 ) -> MaterializationResult | None:
     """Remove *target* only as far as the install record shows Apothem wrote it.
 
     *recorded* maps each path of the install record to its target (``None``
-    when there is no record). A file goes only while its SHA-256 matches the
-    recorded ``digest``; in a folder only the recorded files whose content
+    when no install is in place). A file goes only while its SHA-256 matches
+    the recorded ``digest``; in a folder only the recorded files whose content
     still matches go, then each folder left empty. Everything else stays and
     is named in the result: a file the operator added or changed, a target
     the record does not list, and anything behind a link. The target is
     backed up before anything is removed.
+
+    With no install in place, *installs_ended* tells the two cases apart.
+    False: the ledger holds no record of an install here (it was deleted, or
+    never written), so nothing shows whether Apothem wrote what is there, and
+    the uninstall does not finish (``kept_reason`` ``no-record``). True: the
+    latest record here is a finished uninstall, which already reported what
+    it kept; what is still there stays with a warning, and the uninstall
+    finishes (``no-active-install``). Any other history (a rollback, or only
+    unfinished uninstalls) is the first case.
 
     A target an earlier release recorded without digests is compared with
     what this release writes there (*expected*, the digests of those files;
@@ -272,7 +283,8 @@ def remove_written(
     update`` records it, then a second uninstall finishes. The files kept in
     a folder are named in the result's ``detail`` (``kept_differing`` for
     those, ``kept_files`` for the rest); :func:`kept_file_warnings` reports
-    them.
+    them. Without *expected* (a rollback), such a target is compared with
+    nothing, so it stays with a warning that says only that.
     """
     allowed = allowed_root or install_root
     entry = None if recorded is None else recorded.get(_path_text(target))
@@ -291,22 +303,10 @@ def remove_written(
     if not target.exists():
         return None
     if proof is None:
-        if recorded is None:
-            return _kept_whole(
-                target,
-                "no-record",
-                "no install record shows Apothem wrote it",
-                files=_files_in(target),
-            )
-        if entry is None:
-            return _kept_whole(
-                target,
-                "unrecorded",
-                "the install record does not list it",
-                files=_files_in(target),
-            )
         return _kept_whole(
-            target, "no-digests", _EARLIER_RELEASE, files=_files_in(target)
+            target,
+            *_why_kept(recorded, entry, expected, ended=installs_ended),
+            files=_files_in(target),
         )
     written = _written_now(target, proof)
     if not written and target.is_file():
@@ -331,6 +331,13 @@ def remove_written(
     else:
         kept_files, kept_links = _remove_matching(target, written)
     stuck = [path for path in written if os.path.lexists(path)]
+    # A file Apothem wrote that would not go is named as stuck, never as a
+    # kept file of the operator's or one that differs.
+    kept = _kept_detail(
+        target,
+        [path for path in kept_files if path not in stuck],
+        proof if legacy else None,
+    )
     if stuck:
         return _result(
             "error",
@@ -340,24 +347,60 @@ def remove_written(
             "close what holds them or make them writable, then run the command "
             "again",
             backup_path=backup,
-            detail={
-                STUCK_FILES: "\n".join(_path_text(path) for path in stuck),
-                **_kept_detail(target, kept_files, proof if legacy else None),
-            },
+            detail={STUCK_FILES: "\n".join(map(_path_text, stuck)), **kept},
         )
-    detail = {
-        **kept_links_detail(kept_links),
-        **_kept_detail(target, kept_files, proof if legacy else None),
-    }
     return _result(
         "updated",
         "remove_existing",
         target,
         "removed the files Apothem wrote",
         backup_path=backup,
-        detail=detail,
+        detail={**kept_links_detail(kept_links), **kept},
     )
 
+
+def _why_kept(
+    recorded: Mapping[str, LedgerTarget] | None,
+    entry: LedgerTarget | None,
+    expected: Callable[[Path], dict[str, str] | None] | None,
+    *,
+    ended: bool,
+) -> tuple[str, str]:
+    """Return the ``kept_reason`` and message for a target nothing proves.
+
+    See :func:`remove_written` for each case.
+    """
+    if recorded is None and ended:
+        return "no-active-install", _NO_ACTIVE_INSTALL
+    if recorded is None:
+        return "no-record", "no install record shows whether Apothem wrote it"
+    if entry is None:
+        return "unrecorded", "the install record does not list it"
+    if expected is None:
+        return "no-digests", _ROLLBACK_UNCHECKED
+    return "no-digests", _EARLIER_RELEASE_UNSHIPPED
+
+
+#: Why a path stays after the uninstall before this one finished here.
+_NO_ACTIVE_INSTALL = (
+    "an earlier uninstall here finished and kept it, and no install record lists it"
+)
+
+#: Why a path an earlier release recorded stays when this release writes
+#: nothing there to compare it with.
+_EARLIER_RELEASE_UNSHIPPED = (
+    "the install record (made by an earlier release) cannot show it is "
+    "Apothem's, and this release writes nothing there to compare it with; "
+    "copy it first if you edited it, then run apothem update, then apothem "
+    "uninstall again"
+)
+
+#: Why a path an earlier release recorded stays after a rollback, which
+#: compares nothing with this release.
+_ROLLBACK_UNCHECKED = (
+    "an earlier release recorded it without digests, so rollback cannot tell "
+    "it is Apothem's, and it stays"
+)
 
 #: Why a file an earlier release recorded stays, and the next step.
 _EARLIER_RELEASE = (
@@ -376,14 +419,12 @@ _EARLIER_RELEASE_FILES = (
 )
 
 
-def _named_by(
-    target: Path, proof: dict[str, str], paths: list[Path] | None = None
-) -> bool:
-    """Return True when *proof* lists the name of a file at *target* or in *paths*."""
+def _named_by(target: Path, proof: dict[str, str]) -> bool:
+    """Return True when *proof* lists the name of a file at *target*."""
     if target.is_file():
         return "" in proof
-    found = _walk_without_links(target).files if paths is None else paths
-    return any(path.relative_to(target).as_posix() in proof for path in found)
+    files = _walk_without_links(target).files
+    return any(path.relative_to(target).as_posix() in proof for path in files)
 
 
 def kept_file_warnings(
@@ -491,10 +532,11 @@ def still_written(entry: LedgerTarget) -> bool:
 def left_unfinished(results: list[MaterializationResult]) -> bool:
     """Return True when Apothem's files stay where the uninstall could not finish.
 
-    A removal failed, Apothem's files stay behind a link, or files an earlier
-    release recorded without digests stay because this release cannot show
-    they are Apothem's (``apothem update`` records them, then a second
-    uninstall finishes).
+    A removal failed, Apothem's files stay behind a link, or files stay
+    because this release cannot show whether they are Apothem's: an earlier
+    release recorded them without digests, or no install record is left
+    (see :data:`UNFINISHED_REASONS`; ``apothem update`` records them, then a
+    second uninstall finishes).
     """
     return any(
         result.outcome == "error"

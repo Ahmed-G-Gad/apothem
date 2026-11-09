@@ -433,7 +433,8 @@ def run_uninstall(
     manifest is still cleaned). Tree/discovery surfaces are enumerated from the
     manifest and source, and a child the record does not list stays. A record
     written before file digests existed, or no record at all (a pre-ledger
-    install), proves nothing about the files, so those children stay too. The
+    install), proves nothing about the files, so those children stay too (see
+    :func:`remove_written` for when that leaves the uninstall unfinished). The
     shared data home (memory / contexts / learning) is backed up and removed
     only when last-referenced, at the home the latest install recorded (see
     :func:`_data_home_for`). The directories the installs since the last
@@ -528,9 +529,18 @@ def _remove_installed(
         set(recorded_targets) if record is not None else None
     )
     handled: set[str] = set()
+    # With no install in place, only a finished uninstall as the root's latest
+    # record shows that what stays was already reported; any other history (a
+    # rollback, unfinished uninstalls only, none) leaves the uninstall unfinished.
+    latest = (
+        None
+        if record is not None
+        else install_ledger.latest_record(harness_name, root=root, kind=None)
+    )
     remove = functools.partial(
         remove_written,
         recorded=recorded_targets if record is not None else None,
+        installs_ended=latest is not None and latest.kind == "uninstall",
         install_root=root,
         harness_name=harness_name,
         expected=expected_lookup(

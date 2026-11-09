@@ -34,6 +34,7 @@ from apothem.cli._helpers import (
     _lifecycle_envelope,
     _project_option,
     _resolve_project_root,
+    detail_paths,
     kept_listing,
     kept_paths,
 )
@@ -47,6 +48,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from apothem.harnesses._shared.install_driver_written import UNFINISHED_REASONS
 
 
 def _retention_advisories(
@@ -76,6 +78,10 @@ _KEPT_GROUP_LINES = {
     "unrecorded": "{count} paths were kept: the install record does not list them",
     "no-record": (
         "{count} paths were kept: no install record shows whether Apothem wrote them"
+    ),
+    "no-active-install": (
+        "{count} paths were kept: an earlier uninstall here finished and kept "
+        "them, and no install record lists them"
     ),
     "no-digests": (
         "{count} paths were kept: the install record (made by an earlier "
@@ -148,11 +154,16 @@ def _warning_lines(run: MaterializationRun) -> list[str]:
 
 
 def _with_files(group: dict[str, object]) -> str:
-    """Return *group*'s message, followed by the files it kept, one per line."""
+    """Return *group*'s message, followed by the paths it kept, one per line.
+
+    Only a group of one whose sole kept path is its own (which its message
+    names) prints no list.
+    """
     files = group.get("files")
     if not isinstance(files, list):
         return str(group["message"])
-    return kept_listing(str(group["message"]), files, str(group.get("path")))
+    own = str(group.get("path")) if group.get("count") == 1 else None
+    return kept_listing(str(group["message"]), files, own)
 
 
 def _is_blocked(group: dict[str, object]) -> bool:
@@ -174,13 +185,80 @@ def _earlier_release_paths(run: MaterializationRun) -> int:
     """Count the paths kept because no record shows whether Apothem wrote them.
 
     The install was recorded by an earlier release without digests, or not
-    recorded at all; either leaves the uninstall unfinished.
+    recorded at all; either leaves the uninstall unfinished, as its ledger
+    record says (the same kept reasons). Each kept path counts once, a folder
+    with its files listed under it included, as the grouped line counts them.
     """
     return sum(
-        len(kept_paths(warning))
+        1
         for warning in run.warnings
-        if warning.detail.get("kept_reason") in {"no-digests", "no-record"}
+        if warning.detail.get("kept_reason") in UNFINISHED_REASONS
     )
+
+
+#: The failure line for the paths :func:`_earlier_release_paths` counts.
+_UNPROVEN_PATHS = (
+    "{count} path(s) stay because no record shows whether Apothem wrote them "
+    "(the install was recorded by an earlier release, or not at all). apothem "
+    "update writes this release's files over them and replaces each Apothem "
+    "folder entry it writes whole (backing both up first), so first copy any "
+    "listed file you edited or added; then run apothem update, then apothem "
+    "uninstall again"
+)
+
+
+def _problems(
+    harness_id: str, run: MaterializationRun, blocked: Counter[str], earlier: int
+) -> dict[str, list[str]]:
+    """Return each reason an uninstall did not finish, with the paths it names.
+
+    A failed step that could not remove files Apothem wrote names them, so
+    the advice to close what holds them points at files the reader can see.
+    """
+    problems: dict[str, list[str]] = {
+        f"{count} installed path(s) stay because they are reached through the "
+        f"link {link}, and {harness_id} still loads them; replace the link with a "
+        "real folder that holds the same files, then run the command again": []
+        for link, count in blocked.items()
+    }
+    for message, count in Counter(error.message for error in run.errors).items():
+        problems[f"{message} ({count} paths)" if count > 1 else message] = [
+            path
+            for error in run.errors
+            if error.message == message
+            for path in detail_paths(error, "stuck_files")
+        ]
+    if earlier:
+        problems[_UNPROVEN_PATHS.format(count=earlier)] = []
+    return problems
+
+
+#: The ``detail`` keys that join the files a removal kept.
+_KEPT_KEYS = ("kept_files", "kept_differing")
+
+
+def _step_rows(
+    harness_id: str, run: MaterializationRun | None
+) -> list[dict[str, object]]:
+    """Return one ``results`` row per failed step of *run*.
+
+    The files a step kept are a ``files`` list, as in the warnings, in place
+    of the ``detail`` strings that join them.
+    """
+    rows = []
+    for error in run.errors if run is not None else ():
+        row: dict[str, object] = {"harness": harness_id, **error.to_dict()}
+        detail = row.get("detail")
+        if isinstance(detail, dict):
+            files = [path for key in _KEPT_KEYS for path in detail_paths(error, key)]
+            for key in _KEPT_KEYS:
+                detail.pop(key, None)
+            if files:
+                row["files"] = files
+            if not detail:
+                del row["detail"]
+        rows.append(row)
+    return rows
 
 
 def _report_run(
@@ -211,28 +289,9 @@ def _report_run(
         for group in _warning_groups(run)
         if not _is_blocked(group)
     )
-    counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
     earlier = _earlier_release_paths(run)
-    problems = [
-        f"{count} installed path(s) stay because they are reached through the "
-        f"link {link}, and {harness_id} still loads them; replace the link with a "
-        "real folder that holds the same files, then run the command again"
-        for link, count in blocked.items()
-    ] + [
-        f"{message} ({count} paths)" if count > 1 else message
-        for message, count in counts.items()
-    ]
-    if earlier:
-        problems.append(
-            f"{earlier} path(s) stay because no record shows whether Apothem "
-            "wrote them (the install was recorded by an earlier release, or not "
-            "at all). apothem update writes this release's files over them and "
-            "replaces each Apothem folder entry it writes whole (backing both "
-            "up first), so first copy any of those paths you edited, and move "
-            "out of Apothem's folders each file listed as changed or yours; "
-            "then run apothem update, then apothem uninstall again"
-        )
+    problems = _problems(harness_id, run, blocked, earlier)
     if fmt != "json":
         # Under --quiet the warnings are not printed, so an unfinished
         # uninstall prints the paths its advice is about with the failure.
@@ -241,9 +300,10 @@ def _report_run(
         )
         for line in _warning_lines(run):
             listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
-        for line in problems:
+        for line, paths in problems.items():
+            listed = kept_listing(line, paths, None)
             get_error_console(no_color=no_color).print(
-                f"[red]✗[/] {harness_id} uninstall did not finish: {escape(line)}"
+                f"[red]✗[/] {harness_id} uninstall did not finish: {escape(listed)}"
             )
     if not problems:
         return [], False
@@ -254,9 +314,9 @@ def _report_run(
         "path": str(output_path),
         "message": "; ".join(problems),
     }
-    steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
     removed = any(result.outcome == "updated" for result in run.results)
-    return [summary, *steps], bool(blocked) or bool(earlier) or removed
+    partial = bool(blocked) or bool(earlier) or removed
+    return [summary, *_step_rows(harness_id, run)], partial
 
 
 def _failed_adapter(
@@ -266,6 +326,7 @@ def _failed_adapter(
     warnings: list[dict[str, object]],
     *,
     fmt: str,
+    con: Console,
     no_color: bool,
 ) -> tuple[list[dict[str, object]], bool]:
     """Report an uninstall that raised; return its rows and whether it removed files.
@@ -273,7 +334,9 @@ def _failed_adapter(
     An uninstall that stops after removing files carries the run so far (a
     :class:`~apothem.harnesses._shared.install_driver.MaterializationError`
     with ``run``): its warnings and failed steps are reported, and the files
-    it removed make the uninstall partial.
+    it removed make the uninstall partial. The warnings print where
+    :func:`_report_run` prints them: on *con*, or with the failure on
+    standard error under ``--quiet``.
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
@@ -288,17 +351,21 @@ def _failed_adapter(
         )
     if fmt != "json":
         err = get_error_console(no_color=no_color)
+        listing = err if con.quiet else con
         for line in _warning_lines(run) if run is not None else []:
-            err.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+            listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
         verb = "stopped after removing files" if removed else "failed"
-        err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(str(exc))}")
-    steps = (
-        [{"harness": harness_id, **error.to_dict()} for error in run.errors]
-        if run is not None
-        else []
-    )
+        # Files Apothem wrote that it could not remove are named here, as in
+        # an uninstall that finished its steps (see _problems).
+        stuck = [
+            path
+            for error in (run.errors if run is not None else ())
+            for path in detail_paths(error, "stuck_files")
+        ]
+        message = kept_listing(str(exc), stuck, None)
+        err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(message)}")
     row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
-    return [row, *steps], removed
+    return [row, *_step_rows(harness_id, run)], removed
 
 
 def _finished_row(
@@ -444,7 +511,13 @@ def _uninstall_impl(
         except Exception as exc:
             errored = True
             rows, removed = _failed_adapter(
-                harness_id, exc, output_path, warnings, fmt=fmt, no_color=no_color
+                harness_id,
+                exc,
+                output_path,
+                warnings,
+                fmt=fmt,
+                con=con,
+                no_color=no_color,
             )
             results.extend(rows)
             removed_any |= removed

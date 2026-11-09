@@ -779,25 +779,31 @@ def _result_dicts(
     ]
 
 
+def detail_paths(result: MaterializationResult, key: str) -> list[str]:
+    """Return the paths *result*'s ``detail`` joins under *key*.
+
+    Only ``\n`` separates them, as a file name may hold other line breaks.
+    """
+    return [path for path in result.detail.get(key, "").split("\n") if path]
+
+
 def kept_paths(warning: MaterializationResult) -> list[str]:
     """Return what an uninstall or rollback *warning* kept.
 
     The paths its ``detail`` names (``kept_files``: the files kept in a
-    folder), or its own path. Only ``\n`` separates the named paths, as a file
-    name may hold other line breaks.
+    folder), or its own path when it names none (a file, or a folder that
+    holds nothing), so every kept path is listed and counted.
     """
-    if "kept_files" not in warning.detail:
-        return [warning.path]
-    return [path for path in warning.detail["kept_files"].split("\n") if path]
+    return detail_paths(warning, "kept_files") or [warning.path]
 
 
-def kept_listing(message: str, paths: list[str], own: str) -> str:
+def kept_listing(message: str, paths: list[str], own: str | None) -> str:
     """Return *message* with *paths* under it, one indented path per line.
 
-    A warning about one kept file already names it (*own*), so it is not
-    listed again.
+    A warning about one kept path already names it (*own*), so it is not
+    listed again; with *own* ``None`` every path is listed.
     """
-    if paths == [own]:
+    if own is not None and paths == [own]:
         return message
     return "\n".join([message, *(f"    {path}" for path in paths)])
 

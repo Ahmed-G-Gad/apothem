@@ -155,12 +155,14 @@ def kept_link_warnings(
     """Return one warning per path a removal in *results* left in place.
 
     A path is a link the removal kept, a folder it could not read, or a file it
-    could not remove.
+    could not remove. Only ``\n`` separates the paths: a name may hold other
+    line breaks (``U+2028``, ``\x85``), which :meth:`str.splitlines` would
+    split on.
     """
     return [
         _kept_note(Path(kept))
         for result in results
-        for kept in result.detail.get(KEPT_LINKS, "").splitlines()
+        for kept in result.detail.get(KEPT_LINKS, "").split("\n")
         if kept
     ]
 

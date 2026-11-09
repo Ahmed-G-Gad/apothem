@@ -81,15 +81,22 @@ _PATH_SEP = rb"(?:/|\\\\|\\(?![bfnrtu]))"
 
 #: Where an absolute path starts: a drive (``C:/``, ``C:\``, also after the
 #: long-path prefix ``//?/`` or ``\\?\``), a UNC share (``//``, ``\\``), the
-#: home (``~/``) or the root (``/``).
-_PATH_ROOT = rb"(?:(?://\?/|\\\\\?\\)?[A-Za-z]:" + _PATH_SEP + rb"|//|\\\\|~/|/)"
+#: home (``~/``) or the root (``/``). In a JSON file each backslash is doubled,
+#: so the share and the long-path prefix are spelled ``\\\\`` and ``\\\\?\\``
+#: there.
+_PATH_ROOT = (
+    rb"(?:(?://\?/|\\\\\?\\|\\\\\\\\\?\\\\)?[A-Za-z]:"
+    + _PATH_SEP
+    + rb"|//|\\\\\\\\|\\\\|~/|/)"
+)
 
-#: The bare launchers v1.0.1 wrote for the interpreter, where today's templates
-#: hold ``${PYTHON_BIN}`` (its Codex hooks ran ``python3``, and ``py -3`` on
-#: Windows). They stand for themselves; no file check applies.
-_LAUNCHER = rb"(?:py(?: -3)?|python3?)"
+#: The one bare launcher an earlier release wrote where this check reads the
+#: interpreter: ``py -3``, in the statusline's ``commandWindows`` (v1.0.1 to
+#: v1.1.0); later releases wrote the interpreter's full path there. It stands
+#: for itself; no file check applies.
+_LAUNCHER = rb"py -3"
 
-#: What an install writes for the interpreter: exactly one bare launcher, or
+#: What an install writes for the interpreter: exactly the bare launcher, or
 #: an absolute path whose last component is an interpreter (see
 #: :data:`_INTERPRETER_NAME`), and nothing else. A path must also name a file
 #: on this machine (see :func:`_names_a_file`). A path that holds ``&``, ``#``,
@@ -131,7 +138,7 @@ _TOKEN = re.compile(b"(" + b"|".join(re.escape(token) for token in _FILLED) + b"
 def _names_a_file(value: bytes, *, json_text: bool) -> bool:
     """Return True when *value*, an interpreter position's text, is an interpreter here.
 
-    A bare launcher an earlier release wrote stands for itself. A path must
+    The bare launcher an earlier release wrote stands for itself. A path must
     name a file that exists on this machine: a wrapper command line (``uv.exe
     run .venv/Scripts/python.exe``) matches the path pattern, but never names
     a file. In a JSON file (*json_text*) a doubled backslash is one.

@@ -553,21 +553,22 @@ def _record_rollback_results(
         return
     # A restore failure is visible in plain mode, not only as a JSON
     # result row — and never behind an unconditional success line.
-    if harness_failures:
-        err_con = get_error_console(no_color=run.no_color)
-        for failed in harness_failures:
-            err_con.print(
-                f"[red]✗[/] {harness_id} restore failed: "
-                f"{escape(str(failed.path))} — {escape(str(failed.message))}"
-            )
-    else:
+    err_con = get_error_console(no_color=run.no_color)
+    for failed in harness_failures:
+        err_con.print(
+            f"[red]✗[/] {harness_id} restore failed: "
+            f"{escape(str(failed.path))} — {escape(str(failed.message))}"
+        )
+    if not harness_failures:
         run.con.print(
             f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
             f"[dim]{escape(str(record.install_id))}[/]"
         )
-        for warning in kept_here:
-            listed = kept_listing(warning.message, kept_paths(warning), warning.path)
-            run.con.print(f"[yellow]Warning:[/] {harness_id} - {escape(listed)}")
+    # What the rollback kept is listed whether or not a restore failed.
+    for warning in kept_here:
+        listed = kept_listing(warning.message, kept_paths(warning), warning.path)
+        run.con.print(f"[yellow]Warning:[/] {harness_id} - {escape(listed)}")
+    if not harness_failures:
         # A swept path is restored only where files are missing (see
         # ``rollback_install``); say what was kept and where the backup is.
         for kept in target_results:

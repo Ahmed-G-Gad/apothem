@@ -9,6 +9,7 @@ recorded, so they reverse the stores where the install actually wrote them.
 from __future__ import annotations
 
 import os
+import shlex
 from pathlib import Path
 
 from apothem.lib import install_ledger
@@ -155,6 +156,19 @@ def _holder(
     return gone[0] if gone else None
 
 
+def _shell_quoted(path: str) -> str:
+    """Return *path* quoted for a command the operator pastes into a shell.
+
+    POSIX shells get :func:`shlex.quote`. On Windows the path goes in double
+    quotes, with each trailing backslash doubled so the closing quote stays a
+    quote (``C:\\`` becomes ``"C:\\\\"``).
+    """
+    if os.name != "nt":
+        return shlex.quote(path)
+    bare = path.rstrip("\\")
+    return '"' + bare + "\\" * (2 * (len(path) - len(bare))) + '"'
+
+
 def _release_steps(home: Path, package_key: str, root: str) -> str:
     """Say why the stores in *home* stayed and give the steps that release them.
 
@@ -164,24 +178,26 @@ def _release_steps(home: Path, package_key: str, root: str) -> str:
     install used a profile whose workspace puts them in *home*: the reinstall
     needs that profile too, or it writes stores of its own and leaves these
     with no install that uses them. A project install gets the exact commands,
-    paths quoted. A user-scope install's folder may have come from a setting
-    (``CODEX_HOME``, ``XDG_CONFIG_HOME``) the commands cannot repeat, so it
-    gets the steps in words: a bare command would act on the default folder.
+    paths quoted for the shell (see :func:`_shell_quoted`). A user-scope
+    install's folder may have come from a setting (``CODEX_HOME``,
+    ``XDG_CONFIG_HOME``) the commands cannot repeat, so it gets the steps in
+    words: a bare command would act on the default folder.
     """
     entry = get_harness_entry(package_key)
     stores = "its memory, contexts and learning folders"
     if entry.scope == "project":
-        where = f' --project "{root}"'
+        where = f" --project {_shell_quoted(root)}"
         steps = (
-            f'create "{root}" again, then run apothem install --harness '
-            f"{entry.public_id}{where} --profile <the profile it used>, then "
-            f"apothem uninstall --harness {entry.public_id}{where} --yes"
+            f"create {_shell_quoted(root)} again, then run apothem install "
+            f"--harness {entry.public_id}{where} --profile <the profile it "
+            f"used>, then apothem uninstall --harness {entry.public_id}{where} "
+            "--yes"
         )
     else:
         steps = (
-            f"recreate {root} with the settings that install ran with (such as "
-            f"CODEX_HOME or XDG_CONFIG_HOME), install {entry.public_id} there "
-            "with the profile it used, then uninstall it there"
+            f"recreate {root} with the settings that install ran with, if any "
+            f"(such as CODEX_HOME or XDG_CONFIG_HOME), install {entry.public_id} "
+            "there with the profile it used, then uninstall it there"
         )
     return (
         f"{home} was kept: {entry.public_id} installed at {root} still uses "
