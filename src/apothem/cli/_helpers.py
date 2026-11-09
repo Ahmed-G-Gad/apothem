@@ -46,6 +46,7 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.harnesses._shared.install_driver_pathsafety import (
     link_leaving_home_refusal,
+    link_refusal_reason_and_fix,
 )
 from apothem.lib.harness_registry import (
     SUPPORTED_HARNESS_IDS,
@@ -1075,19 +1076,25 @@ def _materialization_error(
 
     A result that carries its own structured ``code`` / ``fix`` in ``detail``
     (for example ``config.unparseable`` for an operator config the install
-    refuses to rewrite) surfaces those instead of the generic pair.
+    refuses to rewrite) surfaces those instead of the generic pair; a link
+    refusal names the link (see ``link_refusal_reason_and_fix``).
     """
     first = exc.run.errors[0] if exc.run.errors else None
     detail = first.detail if first is not None else {}
+    named = link_refusal_reason_and_fix(first) if first is not None else None
+    reason, fix = named or (
+        first.message if first is not None else str(exc),
+        detail.get(
+            "fix",
+            "Review the target path, permissions, and harness "
+            "support files before retrying.",
+        ),
+    )
     return _CliUserError(
         code=detail.get("code", "materialization.failed"),
         message="Apothem materialization failed.",
         field=first.operation if first is not None else "materialization",
-        reason=first.message if first is not None else str(exc),
-        fix=detail.get(
-            "fix",
-            "Review the target path, permissions, and harness support files "
-            "before retrying.",
-        ),
+        reason=reason,
+        fix=fix,
         files_written=tuple(files_written),
     ).to_dict()

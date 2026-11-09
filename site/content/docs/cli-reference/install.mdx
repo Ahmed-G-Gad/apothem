@@ -67,7 +67,18 @@ link, and a link inside a target is removed without being entered. When
 `~/.config` is a link that leads out of your home directory, the clean-slate
 step stops with `Clean-slate removal was refused` before it backs up or removes
 anything, since removing `~/.config/apothem` would delete the folder at the far
-end of that link.
+end of that link. The error names the link: replace it with a real folder, or
+make it lead to a folder inside your home directory.
+
+The clean-slate step removes the default profile,
+`~/.config/apothem/profile.yaml`, with `~/.config/apothem`, and writes it back
+afterwards. A profile it did not remove, such as one you pass with
+`--profile PATH` from another folder, is not written at all. The write back
+follows the same rule as every other profile write: it is refused when a link
+would lead it out of your home directory. When the profile cannot be written
+back, the error names the backup copy that holds it. When a removal stops
+partway, for example on a file another program holds open, the profile is
+written back first and the error names the backup folder.
 
 ## Folders in your home directory
 

@@ -48,6 +48,7 @@ from .install_driver_pathsafety import (
     _walk_without_links,
     _within_allowed_root,
     link_leaving_home_refusal,
+    link_refusal_text,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -446,10 +447,10 @@ def rollback_install(
     if harness_root is not None:
         refusal = link_leaving_home_refusal(harness_root, operation="rollback_refused")
         if refusal is not None:
-            link = refusal.detail["symlink"]
             message = (
-                f"rollback refused: {refusal.message} ({link} leads outside the "
-                "home folder); nothing was changed"
+                f"rollback refused: {refusal.message} "
+                f"{link_refusal_text(refusal)}; nothing was changed. "
+                f"{refusal.detail['fix']}"
             )
             return [replace(refusal, message=message)]
     root = _root_for(harness_root, project_root)

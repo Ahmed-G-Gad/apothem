@@ -651,6 +651,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
   and the install record stayed. It now prints the error and exits non-zero.
+- **An uninstall that a link refuses no longer asks first.** When a link
+  leads a tool's folder in your home directory out of it, `apothem uninstall`
+  asked `Remove ... configuration?` and only then refused. It now refuses
+  before the question, as `apothem rollback` does. The install, update,
+  uninstall and rollback errors for such a link now name the link and the
+  folder it leads to, and say to replace the link with a real folder or make
+  it lead inside your home directory. The `install --clean` error for a
+  `~/.config` link that leaves your home directory gives the same fix instead
+  of asking you to re-run interactively.
+- **`install --clean` writes your profile back when a removal stops
+  partway.** When the clean-slate step could not remove a folder, for example
+  because another program held a file in it, the command stopped with a
+  traceback, and a profile it had already removed was not written back. It now
+  writes the profile back first and names the backup folder.
 - **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
   shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
   `mcp.<name>` entries the install writes in place, without rewriting the file.
@@ -689,6 +703,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`install --clean` no longer rewrites a profile it did not remove.** After
+  the clean-slate step, the install wrote the profile back to the
+  `--profile PATH` it was given, whether or not the step had removed it, and
+  without the link check every other profile write has. With `--profile ~/ext/profile.yaml`
+  and `~/ext` a link or a junction leading out of your home directory, it
+  replaced the file at the far end of the link. The profile is now written
+  back only when the clean-slate step removed it, and that write is refused
+  when a link would lead it out of your home directory. A refused or failed
+  write back names the backup copy that holds your profile.
+- **A linked `~/.config` used as a project folder is refused.** A project
+  folder that is itself a link is refused, but a project folder at
+  `~/.config`, linked to a folder elsewhere in your home directory, was let
+  through, as if it were the folder above a tool's own folder. It is now
+  refused like any other linked project folder.
+- **Two folders whose names differ only in case are no longer taken for one
+  folder where the system keeps them apart.** On Linux, and in a Windows
+  folder set to keep case, a folder such as `/home/U` beside `/home/u` counted
+  as inside `/home/u`, so a write could land in the other folder. Apothem now
+  checks the case exactly first, and treats the names as one folder only when
+  both name the same folder on disk.
 - **A link no longer takes an install out of your home directory through
   `~/.config` or a moved tool folder.** A junction at `~/.config` leading out
   of your home directory let an OpenCode install, and the starter profile of a

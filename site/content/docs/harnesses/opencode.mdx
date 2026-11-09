@@ -68,6 +68,12 @@ by another spelling inside your home directory (`$HOME/.config` through a
 link, another case, or a short name), the install keeps using
 `~/.config/opencode`, so it stays one install.
 
+`XDG_CONFIG_HOME` does not have to come from your shell profile. A project's
+`.envrc` or a script you source can set it too. When it names a folder outside
+your home directory, install, update, uninstall and `apothem rollback` change
+files in that folder, because that is the folder it names. Check
+`XDG_CONFIG_HOME` before you run Apothem in a project folder that sets it.
+
 ## Profile-to-native-config mapping
 
 The adapter renders `opencode.json` with an `instructions` file list naming

@@ -50,6 +50,12 @@ demand, with your own bound:
   as `kept (holds a path an earlier release removed)`, and nothing is
   deleted.
 
+`prune` follows a link at `~/.apothem`. When `~/.apothem` is a link, it
+deletes the old backup sets at the far end of that link, also when the link
+leads out of your home directory. Automatic retention after each install,
+uninstall and rollback does the same. A link inside a backup set is removed as
+a link; `prune` does not enter it.
+
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so
 `prune` takes no `--project`; a project-scope harness is pruned across every
