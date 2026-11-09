@@ -253,7 +253,7 @@ def test_a_profile_file_that_is_a_link_out_of_the_home_is_named_as_the_link(
     text = " ".join(result.output.split())
     assert result.exit_code == 1, result.output
     assert "Apothem could not write the profile" in text
-    assert "is a link that leads outside your home directory" in text
+    assert f"is a link to {real.resolve()}, outside your home directory" in text
     assert "the path the link leads to" in text
     assert real.read_bytes() == before
 

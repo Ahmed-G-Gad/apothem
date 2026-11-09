@@ -152,6 +152,10 @@ envelope has `"status": "success"` and `"action": "uninstalled"`, and the result
 row has `"outcome": "skipped"` with the message `"not installed; no files
 removed"`. The `status` field is never `"not_installed"`.
 
+A result refused at a link names the link in `detail.symlink` and the folder
+it leads to in `detail.leads_to`, as in
+[`apothem install`](/docs/cli-reference/install#json-output).
+
 ## Examples
 
 ```bash

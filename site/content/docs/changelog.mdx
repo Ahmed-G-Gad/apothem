@@ -669,7 +669,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder it leads to, and say to replace the link with a real folder or make
   it lead inside your home directory. The `install --clean` error for a
   `~/.config` link that leaves your home directory gives the same fix instead
-  of asking you to re-run interactively.
+  of asking you to re-run interactively. In `--format json` output, a result
+  refused at a link carries a new key, `detail.leads_to`, the folder the link
+  leads to. A result refused because a link leads a tool's folder out of your
+  home directory now also carries `detail.fix`, the fix, as other refused
+  results already do. No existing key changed.
 - **`install --clean` writes your profile back when a removal stops
   partway.** When the clean-slate step could not remove a folder, for example
   because another program held a file in it, the command stopped with a
@@ -722,11 +726,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   back only when the clean-slate step removed it, and that write is refused
   when a link would lead it out of your home directory. A refused or failed
   write back names the backup copy that holds your profile.
-- **A linked `~/.config` used as a project folder is refused.** A project
-  folder that is itself a link is refused, but a project folder at
-  `~/.config`, linked to a folder elsewhere in your home directory, was let
-  through, as if it were the folder above a tool's own folder. It is now
-  refused like any other linked project folder.
+- **The folder you name with `--project` is followed wherever it leads.**
+  A project folder that is itself a link, `~/.config` among them, is the
+  folder you named, so Apothem writes in the folder the link leads to, also
+  outside your home directory. A link inside the project folder stops the
+  install, also when it leads back into the project folder. A tool that also
+  writes in `~/.config/apothem` still stops when `~/.config` leads out of your
+  home directory. The command line already followed the folder you name.
+  Python code that calls Apothem's install functions with a project folder now
+  follows the same rule; before, it refused a project folder that was a
+  symbolic link.
 - **Two folders whose names differ only in case are no longer taken for one
   folder where the system keeps them apart.** On Linux, and in a Windows
   folder set to keep case, a folder such as `/home/U` beside `/home/u` counted

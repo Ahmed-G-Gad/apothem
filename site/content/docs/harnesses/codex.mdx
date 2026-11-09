@@ -125,9 +125,9 @@ root` when that link leads out of the folder holding `CODEX_HOME`.
 `CODEX_HOME` does not have to come from your shell profile. A project's
 `.envrc` or a script you source can set it too. When it names a folder outside
 your home directory, install, update, uninstall and `apothem rollback` change
-files in that folder, because that is the folder it names, unless a
-`~/.config` link stops the install first. Check `CODEX_HOME` before you run
-Apothem in a project folder that sets it.
+files in that folder, because that is the folder it names. A link at
+`~/.config` that leads out of your home directory still stops the install.
+Check `CODEX_HOME` before you run Apothem in a project folder that sets it.
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`

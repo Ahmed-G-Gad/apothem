@@ -5,8 +5,7 @@
 - ``install --clean`` writes the profile back only when the clean-slate step
   removed it, and through the same link check as every other profile write;
   a removal that stops partway still writes it back.
-- A project root that is a linked ``~/.config`` gets no ``~/.config``
-  exemption; a harness root below a linked ``~/.config`` keeps it.
+- A linked project root follows the rule in ``test_project_root_links.py``.
 - The case-fold probe compares file identity, not mere existence, and the
   containment check keeps case until the probe says the folder folds it.
 - ``uninstall`` refuses before it asks for confirmation, and the refusals name
@@ -31,7 +30,11 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.cli._helpers import _CliUserError, _materialization_error
+from apothem.cli._helpers import (
+    _CliUserError,
+    _materialization_error,
+    _refuse_profile_outside_home,
+)
 from apothem.harnesses._shared import install_driver_pathsafety as pathsafety
 from apothem.harnesses._shared.install_driver import (
     MaterializationError,
@@ -286,69 +289,83 @@ def test_run_clean_slate_names_the_link(home: Path, tmp_path: Path) -> None:
     assert isinstance(caught.value, clean_slate.UnsafeRootError)
 
 
-# -- item 2: no ~/.config exemption for a project root -----------------------
+# -- the restore fix and the profile refusal name where a link leads --------
 
 
-def test_a_linked_config_as_project_root_is_refused(home: Path) -> None:
-    _link(home / ".config", home / "dots" / "config")
-    project = home / ".config"
-
-    error = pathsafety._validate_target_path(
-        project / "x.md",
-        allowed_root=pathsafety._allowed_write_root(None, project),
-        operation="t",
-    )
-
-    assert error is not None
-    assert error.message == "target path crosses a symlink"
-    assert error.detail["symlink"] == str(project)
-
-
-@pytest.mark.parametrize("name", ["opencode", "codex"])
-def test_a_harness_root_below_a_linked_config_is_still_followed(
-    home: Path, name: str
+def test_a_failed_restore_through_a_broken_link_says_it_is_broken(
+    home: Path,
 ) -> None:
-    _link(home / ".config", home / "dots" / "config")
-    root = home / ".config" / name
+    # --profile reaches ~/.config/apothem through ~/prof; the clean-slate step
+    # removes that folder, so the restore through ~/prof cannot be written.
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    profile.parent.mkdir(parents=True)
+    profile.write_bytes(_PROFILE)
+    _link(home / "prof", home / ".config" / "apothem")
+    alias = home / "prof" / "profile.yaml"
 
-    error = pathsafety._validate_target_path(
-        root / "x.md",
-        allowed_root=pathsafety._allowed_write_root(root, None),
-        operation="t",
+    result = _install_clean(alias, "--format", "json")
+
+    assert result.exit_code == 1, result.output
+    error = json.loads(result.output)["error"]
+    assert error["code"] == "clean_slate.profile_restore_failed"
+    assert f"The link {home / 'prof'} is broken" in error["fix"]
+    assert "which does not exist" in error["fix"]
+    assert f"Copy it back to {alias}" not in error["fix"]
+
+
+def test_the_copy_back_fix_names_the_file_a_link_leads_to(home: Path) -> None:
+    real = home / "dots" / "apothem"
+    _link(home / "prof", real)
+    copy = home / "backup" / "profile.yaml"
+
+    fix = _phase._copy_back_fix(copy, home / "prof" / "profile.yaml")
+
+    target = (real / "profile.yaml").resolve()
+    assert f"Copy it back to {target}, where the link {home / 'prof'} leads" in fix
+
+
+def test_the_copy_back_fix_names_a_missing_folder_below_a_working_link(
+    home: Path,
+) -> None:
+    # ~/prof leads to ~/.config, which exists; only ~/.config/apothem, below
+    # it, is gone. The link is not broken.
+    config = home / ".config"
+    config.mkdir()
+    _link(home / "prof", config)
+
+    fix = _phase._copy_back_fix(
+        home / "copy.yaml", home / "prof" / "apothem" / "x.yaml"
     )
 
-    assert error is None
+    real = config.resolve() / "apothem"
+    assert "is broken" not in fix
+    assert f"Create the folder {real}, then copy it back to {real / 'x.yaml'}" in fix
+    assert f"where the link {home / 'prof'} leads" in fix
 
 
-def test_the_exemption_does_not_depend_on_earlier_calls(home: Path) -> None:
-    # A project rooted at ~/.config earlier in the same process must not take
-    # the exemption away from a harness root below it.
-    _link(home / ".config", home / "dots" / "config")
-    project = home / ".config"
-    assert pathsafety._validate_target_path(
-        project / "x.md",
-        allowed_root=pathsafety._allowed_write_root(None, project),
-        operation="t",
-    )
-    root = home / ".config" / "opencode"
+def test_the_copy_back_fix_without_a_link_names_the_profile_path(
+    home: Path,
+) -> None:
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    profile.parent.mkdir(parents=True)
 
-    error = pathsafety._validate_target_path(
-        root / "x.md",
-        allowed_root=pathsafety._allowed_write_root(root, None),
-        operation="t",
-    )
+    fix = _phase._copy_back_fix(home / "copy.yaml", profile)
 
-    assert error is None
+    assert f"Copy it back to {profile}, or pass --profile PATH" in fix
 
 
-def test_a_project_floor_keeps_its_kind_through_resolve(home: Path) -> None:
-    floor = pathsafety._allowed_write_root(None, home / "proj")
+def test_the_profile_refusal_names_where_the_link_leads(
+    home: Path, tmp_path: Path
+) -> None:
+    outside = tmp_path / "outside" / "config"
+    _link(home / ".config", outside)
 
-    assert isinstance(floor, pathsafety._ProjectFloor)
-    assert isinstance(pathsafety._normalized(floor), pathsafety._ProjectFloor)
-    harness_floor = pathsafety._allowed_write_root(home / "proj", None)
-    assert not isinstance(harness_floor, pathsafety._ProjectFloor)
-    assert floor == (home / "proj").resolve()
+    with pytest.raises(_CliUserError) as caught:
+        _refuse_profile_outside_home(home / ".config" / "apothem" / "profile.yaml")
+
+    reason = caught.value.reason
+    assert f"{home / '.config'} is a link to {outside.resolve()}" in reason
+    assert "outside your home directory" in reason
 
 
 # -- item 3: the case-fold probe ---------------------------------------------

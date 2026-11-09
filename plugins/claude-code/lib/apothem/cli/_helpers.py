@@ -494,16 +494,18 @@ def _refuse_profile_outside_home(profile_path: Path) -> None:
     if refusal is None:
         return
     link = refusal.detail.get("symlink", str(profile_path))
+    leads_to = refusal.detail.get("leads_to")
+    where = f" to {leads_to}" if leads_to and leads_to != link else ""
     if link == str(profile_path):
-        reason = f"{refusal.message}: {profile_path} is a link that leads outside "
+        reason = f"{refusal.message}: {profile_path} is a link{where}, outside "
         reason += "your home directory"
         fix = (
             "Pass --profile PATH with the path the link leads to, or make the "
             "link lead to a file inside your home directory."
         )
     else:
-        reason = f"{refusal.message}: {link} leads {profile_path} outside your "
-        reason += "home directory"
+        reason = f"{refusal.message}: {link} is a link{where}, so it leads "
+        reason += f"{profile_path} outside your home directory"
         fix = (
             "Make the link lead to a folder inside your home directory, or "
             "pass --profile PATH with the profile's own path outside your home "

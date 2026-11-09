@@ -22,6 +22,7 @@ from .install_driver_pathsafety import (
     _normalized,
     _validate_target_path,
     _walk_without_links,
+    _write_boundary,
 )
 from .install_driver_types import (
     MaterializationOutcome,
@@ -208,7 +209,7 @@ def sweep_stale(
     warning.
     """
     results: list[MaterializationResult] = []
-    boundary = allowed_root or root
+    boundary = _write_boundary(allowed_root, root)
     for legacy in stale_sweep:
         stale = root / legacy
         blocker = stale_blocker(stale, protect, boundary)

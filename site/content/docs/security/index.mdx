@@ -47,11 +47,12 @@ and return structured diagnostics with `files_written: []`. A Windows junction
 counts as a symlink. The exceptions are a link at `~/.config`, or at or above a
 shared skill, rule or template folder, that stays inside your home directory,
 and a home folder that is itself a link. A link never takes a write to a
-harness folder or to the profile out of your home directory unless you name
-the folder outside it yourself, through `XDG_CONFIG_HOME` or `CODEX_HOME`
-spelled as a path outside your home directory, or through `--profile PATH`
-spelled the same way for the profile. Such a spelled path is followed wherever
-its links lead. The link rule holds for install, update, uninstall, `apothem
+tool's folder in your home directory, or to the profile, out of your home
+directory unless you name the folder outside it yourself, through
+`XDG_CONFIG_HOME` or `CODEX_HOME` spelled as a path outside your home
+directory, or through `--profile PATH` spelled the same way for the profile.
+Such a spelled path is followed wherever its links lead. A project folder
+follows its own rule, below. The link rule holds for install, update, uninstall, `apothem
 rollback` and the `apothem profile` commands, including `profile set` and
 `profile init --force` over an existing profile, and for the profile that
 `install --clean` writes back. `install --clean` stops before it backs up or
@@ -61,8 +62,16 @@ entering it. On Windows a junction at or inside a tool's folder therefore stops
 the install, also when it leads somewhere inside your home directory; replace
 it with the folder itself.
 
-A project folder you pass with `--project` is followed wherever links above it
-lead. Only a link at the project folder or inside it stops the install.
+The folder you name with `--project` is followed wherever it leads, and so
+are the links above it. That holds when the folder is itself a link,
+`~/.config` among them, and when the link leads out of your home directory,
+because you named that folder. A link inside the project folder, on a path the
+install writes there, stops the install. That holds also when the link leads
+back into the project folder, and when `--project` names your home directory.
+A tool that also writes in your home directory, such as in `~/.config/apothem`,
+checks those paths by the home rules above. So a `~/.config` link that leads
+out of your home directory stops that tool's install even when `--project`
+names `~/.config`.
 
 `XDG_CONFIG_HOME` and `CODEX_HOME` can come from a project's `.envrc` or a
 script you source, not only from your shell profile. When either names a

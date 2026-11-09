@@ -21,6 +21,7 @@ from .install_driver_pathsafety import (
     _root_for,
     _validate_target_path,
     _within_allowed_root,
+    _write_boundary,
 )
 from .install_driver_retention import apply_retention
 from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
@@ -103,7 +104,7 @@ def _replace_path(
     """Backup and remove one existing target before writing its replacement."""
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation="remove_existing",
     )
     if target_error is not None:
@@ -114,7 +115,7 @@ def _replace_path(
         target,
         install_root=install_root,
         harness_name=harness_name,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
     )
     if target.is_dir():
         shutil.rmtree(target, onerror=_handle_rm_error)
@@ -191,7 +192,7 @@ def backup_existing(
     """
     if not target.exists():
         return None
-    rel = _backup_relative_path(target, allowed_root or install_root)
+    rel = _backup_relative_path(target, _write_boundary(allowed_root, install_root))
     base = (
         install_driver.BACKUP_ROOT
         / install_driver._timestamp_slug()
@@ -230,7 +231,7 @@ def write_bytes_safely(
     """Write bytes with no-op detection, backup-before-replace, and atomic swap."""
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation=operation,
     )
     if target_error is not None:
@@ -265,7 +266,7 @@ def write_bytes_safely(
                 target,
                 install_root=install_root,
                 harness_name=harness_name,
-                allowed_root=allowed_root or install_root,
+                allowed_root=_write_boundary(allowed_root, install_root),
             )
         except OSError as exc:
             return _result(

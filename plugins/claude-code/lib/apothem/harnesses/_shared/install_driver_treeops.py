@@ -17,6 +17,7 @@ from .install_driver_backup import _replace_path, backup_existing, write_bytes_s
 from .install_driver_converters import _native_skill_emission
 from .install_driver_pathsafety import (
     _validate_target_path,
+    _write_boundary,
 )
 from .install_driver_types import (
     STAGING_SUFFIX,
@@ -89,7 +90,7 @@ def replace_tree(
     root = install_root or dst.parent
     target_error = _validate_target_path(
         dst,
-        allowed_root=allowed_root or root,
+        allowed_root=_write_boundary(allowed_root, root),
         operation="replace_tree",
     )
     if target_error is not None:
@@ -109,7 +110,7 @@ def replace_tree(
             dst,
             install_root=root,
             harness_name=harness_name,
-            allowed_root=allowed_root or root,
+            allowed_root=_write_boundary(allowed_root, root),
         )
         shutil.rmtree(dst, onerror=_handle_rm_error)
     shutil.copytree(src, dst, ignore=ignore)

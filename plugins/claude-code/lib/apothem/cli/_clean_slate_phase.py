@@ -28,6 +28,8 @@ from apothem.lib.clean_slate import (
     RemovalError,
     run_clean_slate,
 )
+from apothem.lib.links import is_link
+from apothem.lib.propagation import user_home
 
 if TYPE_CHECKING:
     from apothem.cli._materialize import _RunContext
@@ -82,6 +84,71 @@ def _profile_copy(
     return spare
 
 
+def _is_the_home(folder: Path, home: Path) -> bool:
+    """Return True when *folder* is the entry *home* names, links not followed.
+
+    The two are compared by file identity read with ``lstat``, which also
+    matches the home in another case or by its short (8.3) name; a link
+    elsewhere that leads to the home is not the home. Where the filesystem
+    reports no inode numbers, or a folder cannot be read, the spellings are
+    compared instead.
+    """
+    try:
+        stats = [os.lstat(folder), os.lstat(home)]
+    except OSError:
+        stats = []
+    if stats and all(item.st_ino for item in stats):
+        return os.path.samestat(stats[0], stats[1])
+    return os.path.normcase(str(folder)) == os.path.normcase(str(home))
+
+
+def _link_on_path(path: Path) -> Path | None:
+    """Return the nearest link at or above *path*, below the home folder.
+
+    The home is the one the path guards use (``user_home()``). The home
+    folder and the folders above it are not examined: a profile moved to
+    another drive behind a junction at the home is written there as before.
+    """
+    home = user_home()
+    for folder in (path, *path.parents):
+        if _is_the_home(folder, home):
+            return None
+        if is_link(folder):
+            return folder
+    return None
+
+
+def _copy_back_fix(copy: Path, profile_path: Path) -> str:
+    """Return the fix for a restore whose write failed: where to copy *copy*.
+
+    A path reached through a link names the file the link leads to, not the
+    path whose write just failed. The link is called broken only when the
+    folder it leads to is gone (the clean-slate step removed it); when that
+    folder exists and only a folder below it is missing, the fix names the
+    missing folder to create.
+    """
+    keep = "or pass --profile PATH with a copy you keep elsewhere."
+    saved = f"Your profile is saved at {copy}."
+    link = _link_on_path(profile_path)
+    if link is None:
+        return f"{saved} Copy it back to {profile_path}, {keep}"
+    leads_to = Path(os.path.realpath(link))
+    if not leads_to.exists():
+        return (
+            f"{saved} The link {link} is broken: it leads to {leads_to}, which "
+            "does not exist. Create that folder or replace the link with a real "
+            f"folder, then copy the file back to {profile_path}, {keep}"
+        )
+    real = Path(os.path.realpath(profile_path))
+    where = f"where the link {link} leads"
+    if real.parent.is_dir():
+        return f"{saved} Copy it back to {real}, {where}, {keep}"
+    return (
+        f"{saved} Create the folder {real.parent}, then copy it back to "
+        f"{real}, {where}, {keep}"
+    )
+
+
 def _restore_failed(
     run: _RunContext,
     clean_result: CleanSlateResult,
@@ -109,10 +176,7 @@ def _restore_failed(
             "and pass --profile PATH with that path."
         )
     else:
-        fix = (
-            f"Your profile is saved at {copy}. Copy it back to {run.profile_path}, "
-            "or pass --profile PATH with a copy you keep elsewhere."
-        )
+        fix = _copy_back_fix(copy, run.profile_path)
     run.fail(
         _CliUserError(
             code=code,

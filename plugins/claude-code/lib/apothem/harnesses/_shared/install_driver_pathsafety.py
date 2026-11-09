@@ -50,6 +50,11 @@ def _filesystem_is_case_insensitive(path: Path) -> bool:
     not fold case. Falls back to the platform default (Windows and macOS fold
     case by default; other POSIX volumes do not) when no letter-bearing
     ancestor exists, or when the volume reports no inode numbers.
+
+    Only that one folder is probed. A folder below it that sets its own case
+    rule (Windows ``fsutil file setCaseSensitiveInfo``, as WSL sets) or a
+    volume mounted below it can fold case differently, and the answer does
+    not cover it.
     """
     base = path
     while not base.exists() and base.parent != base:
@@ -100,24 +105,6 @@ def _within_allowed_root(target: Path, root: Path) -> bool:
     return _is_relative_to(folded_target, folded_root)
 
 
-def _existing_chain(path: Path, floor: Path) -> list[Path]:
-    """Return existing path components from *path* upward to *floor*."""
-    expanded = path.expanduser()
-    probe = expanded if os.path.lexists(expanded) else expanded.parent
-    floor_expanded = floor.expanduser()
-    chain: list[Path] = []
-    while True:
-        if os.path.lexists(probe):
-            chain.append(probe)
-        if _normalized(probe) == _normalized(floor_expanded):
-            break
-        parent = probe.parent
-        if parent == probe:
-            break
-        probe = parent
-    return chain
-
-
 def _lexical_key(path: Path) -> str:
     """Return *path* normalized without resolving symlinks, case-folded where the OS is."""
     return os.path.normcase(os.path.normpath(str(path)))
@@ -129,9 +116,43 @@ def _is_lexically_within(path: Path, parent: Path) -> bool:
     return key == base or key.startswith(base.rstrip(os.sep) + os.sep)
 
 
-def _linkable_ancestors(
-    path: Path, floor: Path, *, project_floor: bool = False
-) -> list[Path]:
+def _spelled(path: Path) -> Path:
+    """Return *path* absolute and expanded, ``..`` folded by name, links kept."""
+    return Path(os.path.normpath(path.expanduser().absolute()))
+
+
+def _existing_chain(path: Path, floor: Path, named: Path | None = None) -> list[Path]:
+    """Return existing path components from *path* upward to *floor*.
+
+    With *named* (a project root as the operator spelled it, see
+    :func:`_named_floor`) and *path* spelled inside it, the walk stops at
+    *named* by name, so every folder between them is returned even when a
+    link inside the project leads one of them back to the floor. Otherwise
+    the walk stops at the first component that resolves to *floor*.
+    """
+    expanded = path.expanduser()
+    probe = expanded if os.path.lexists(expanded) else expanded.parent
+    named_key = None
+    if named is not None and _is_lexically_within(_spelled(probe), named):
+        named_key = _lexical_key(named)
+    floor_resolved = _normalized(floor)
+    chain: list[Path] = []
+    while True:
+        if os.path.lexists(probe):
+            chain.append(probe)
+        if named_key is not None:
+            if _lexical_key(_spelled(probe)) == named_key:
+                break
+        elif _normalized(probe) == floor_resolved:
+            break
+        parent = probe.parent
+        if parent == probe:
+            break
+        probe = parent
+    return chain
+
+
+def _linkable_ancestors(path: Path, floor: Path) -> list[Path]:
     """Return the folders a link at or above which *path* may cross.
 
     Dotfile managers link ``~/.config`` or ``~/.agents`` into a dotfiles
@@ -144,11 +165,6 @@ def _linkable_ancestors(
     ``~/.config`` is allowed when that folder is inside the home. A link below
     either folder (a skill folder, the install root, a file in it) is still
     refused. The walk stops at *floor*, so a link above it is not examined.
-
-    A *project_floor* (the boundary is a project root, see
-    :func:`_allowed_write_root`) gets no ``~/.config`` exemption: there a link
-    at ``~/.config`` is the install root itself, which is refused like any
-    other linked project root.
     """
     home = user_home()
     bases: list[Path] = []
@@ -162,7 +178,6 @@ def _linkable_ancestors(
     config = home / ".config"
     if (
         _is_lexically_within(path, config)
-        and not project_floor
         and _is_relative_to(normalized_floor, _normalized(config))
         and _within_allowed_root(config, home)
     ):
@@ -203,7 +218,11 @@ def _walk_without_links(top: Path) -> tuple[list[Path], list[Path], list[Path]]:
 
 
 def _unsafe_symlink(
-    path: Path, floor: Path, *, project_floor: bool = False
+    path: Path,
+    floor: Path,
+    *,
+    project_floor: bool = False,
+    named: Path | None = None,
 ) -> Path | None:
     """Return the first symlink or junction in the write path, if any.
 
@@ -212,13 +231,22 @@ def _unsafe_symlink(
     the home folder itself or a folder above it, as the home is spelled (a
     profile moved to another drive behind a junction): the caller has already
     checked that the resolved path stays inside the resolved allowed root, so
-    such a link cannot lead the write out of the home. *project_floor* says
-    *floor* is a project root (see :func:`_linkable_ancestors`).
+    such a link cannot lead the write out of the home.
+
+    *project_floor* says *floor* is a project root (see :class:`_ProjectFloor`):
+    then neither exemption applies, and every link inside the project is
+    refused. *named* is the project root as the operator spelled it: a link
+    there, the folder the operator named, is followed wherever it leads, as
+    the CLI follows ``--project``. Only that spelling is exempt; a link inside
+    the project that leads back to the floor is still refused.
     """
     home = user_home()
-    bases = _linkable_ancestors(path, floor, project_floor=project_floor)
-    for candidate in _existing_chain(path, floor):
+    bases = [] if project_floor else _linkable_ancestors(path, floor)
+    named_key = None if named is None else _lexical_key(named)
+    for candidate in _existing_chain(path, floor, named):
         if _is_lexically_within(home, candidate):
+            continue
+        if named_key is not None and _lexical_key(_spelled(candidate)) == named_key:
             continue
         if _is_link(candidate) and not any(
             _is_lexically_within(base, candidate) for base in bases
@@ -477,24 +505,63 @@ else:
 class _ProjectFloor(_ConcretePath):
     """A write boundary that is a project root, not the folder above one.
 
-    A harness root's boundary is the folder above it, so a link at that
-    folder sits above the install root; a project root's boundary is the
-    project root itself, so a link there is the install root. The two cannot
-    be told apart by path, and a link at ``~/.config`` is allowed only above
-    an install root (see :func:`_linkable_ancestors`), so the boundary
-    carries its kind. It is an ordinary path everywhere else, and the paths
-    derived from it (``resolve()``, ``/``) keep the kind.
+    A harness root's boundary is the folder above it; a project root's
+    boundary is the project root itself, the folder the operator named with
+    ``--project``. The two cannot be told apart by path, so the boundary
+    carries its kind: inside a project floor every link is refused, with no
+    user-level or ``~/.config`` exemption (see :func:`_unsafe_symlink`).
+
+    The kind carries to the paths derived from the floor (``resolve()``,
+    ``/``, ``parent``), which only makes them stricter. The project root as
+    the operator spelled it, whose own link is followed, is kept only on the
+    object :func:`_allowed_write_root` returns (see :func:`_named_floor`), so
+    a boundary built from the floor (``floor / "sub"``) never follows a link
+    at the folder it was built for.
     """
+
+    #: Set on the instance by :func:`_allowed_write_root` only; read through
+    #: :func:`_named_floor`, since a derived path has no instance value.
+    _named: Path
+
+
+def _named_floor(allowed_root: Path) -> Path | None:
+    """Return the project root as spelled, for a floor from :func:`_allowed_write_root`.
+
+    ``None`` for any other boundary, a path derived from such a floor
+    included: a derived path is a new object and has no spelling of its own.
+    """
+    if not isinstance(allowed_root, _ProjectFloor):
+        return None
+    named = vars(allowed_root).get("_named")
+    return named if isinstance(named, Path) else None
+
+
+def _write_boundary(allowed_root: Path | None, install_root: Path) -> Path:
+    """Return the write boundary for a writer given *allowed_root* or not.
+
+    *allowed_root* when given, as the same object, so a :class:`_ProjectFloor`
+    keeps its kind and its spelling. Without one the boundary is
+    *install_root* as it was passed, checked as a harness boundary when it is
+    a plain path: a link at the boundary itself is refused, and the
+    user-level and ``~/.config`` exemptions apply. Every project-scope writer
+    passes the floor from :func:`_allowed_write_root` as *allowed_root*, so a
+    project write never takes this fallback.
+    """
+    return install_root if allowed_root is None else allowed_root
 
 
 def _allowed_write_root(harness_root: Path | None, project_root: Path | None) -> Path:
     """Return the filesystem boundary allowed for resolved install targets.
 
-    A project root's boundary is returned as a :class:`_ProjectFloor`, so the
-    write guard knows it is a project root (see :func:`_validate_target_path`).
+    A project root's boundary is returned as a :class:`_ProjectFloor` that
+    also keeps the project root as the operator spelled it, so the write
+    guard knows it is a project root and which folder was named (see
+    :func:`_validate_target_path`).
     """
     if project_root is not None:
-        return _ProjectFloor(_normalized(project_root))
+        floor = _ProjectFloor(_normalized(project_root))
+        floor._named = _spelled(project_root)
+        return floor
     if harness_root is None:
         raise ValueError("install driver requires either harness_root or project_root")
     return _normalized(harness_root).parent
@@ -509,9 +576,11 @@ def _validate_target_path(
     """Return an error result when a resolved target is unsafe.
 
     An *allowed_root* from :func:`_allowed_write_root` for a project root is
-    a :class:`_ProjectFloor`, which gets no ``~/.config`` link exemption.
+    a :class:`_ProjectFloor`: a link at the project root as the operator
+    spelled it is followed wherever it leads, and a link inside it is refused.
     """
     project_floor = isinstance(allowed_root, _ProjectFloor)
+    named = _named_floor(allowed_root)
     normalized_target = _normalized(target)
     normalized_root = _normalized(allowed_root)
     if not _within_allowed_root(normalized_target, normalized_root):
@@ -522,7 +591,9 @@ def _validate_target_path(
             "target escapes the allowed materialization root",
             detail={"allowed_root": _path_text(normalized_root)},
         )
-    symlink = _unsafe_symlink(target, normalized_root, project_floor=project_floor)
+    symlink = _unsafe_symlink(
+        target, normalized_root, project_floor=project_floor, named=named
+    )
     if symlink is not None:
         return _result(
             "error",
