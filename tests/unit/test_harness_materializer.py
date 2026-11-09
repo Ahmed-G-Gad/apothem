@@ -107,6 +107,17 @@ class TestManagedBlockMerge:
         text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
         assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
 
+    def test_frontmatter_merge_keeps_a_second_block_and_a_quoted_pair(self):
+        # Only Apothem's own block is replaced; a marker pair the operator
+        # quotes after it stays.
+        fm = "---\ndescription: x\n---\n"
+        first = merge_managed_block("", fm + "v1")
+        quoted = f"Mine: {APOTHEM_BLOCK_BEGIN} and {APOTHEM_BLOCK_END} mark it.\n"
+        merged = merge_managed_block(first + "\n" + quoted, fm + "v2")
+        assert quoted in merged
+        assert "v2" in merged
+        assert "v1" not in merged
+
     def test_install_merge_keeps_a_frontmatter_block_without_end(self):
         cut = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nold body\n"
         body = "---\ndescription: x\n---\nnew body"

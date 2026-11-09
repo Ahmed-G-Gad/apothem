@@ -10,7 +10,7 @@ keys instead of using the generic managed body.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Final
 
@@ -176,7 +176,7 @@ def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
     if owned is None and split_frontmatter(existing) is not None:
         return merge_managed_block(existing, body)
     remainder = owned[1] if owned is not None else existing
-    operator = remove_managed_block(remainder)
+    operator = _remove_block(remainder)
     head = frontmatter if frontmatter.endswith("\n") else f"{frontmatter}\n"
     emitted = head + wrap_managed_block(body)
     if operator.strip():
@@ -204,22 +204,24 @@ def remove_managed_block(existing: str) -> str:
     whole block goes, so a block pasted in twice goes too.
     """
     text = existing
-    while (rest := _remove_block(text, complete_managed_block)) != text:
+    while (rest := _remove_block(text)) != text:
         text = rest
     return text
 
 
-def _remove_block(existing: str, find: Callable[[str], str | None]) -> str:
+def _remove_block(existing: str) -> str:
     """Return *existing* without the block *find* locates in it.
 
-    See :func:`remove_managed_block`; *find* is :func:`complete_managed_block`.
+    Only the first whole block goes (see :func:`complete_managed_block`); the
+    frontmatter merge uses it so a second block, or a marker pair the
+    operator quotes, stays. See :func:`remove_managed_block`.
     """
     owned = _owned_frontmatter_split(existing)
     if owned is not None:
-        rest = _remove_block(owned[1], find)
+        rest = _remove_block(owned[1])
         # No block to take out after Apothem's frontmatter: keep the file whole.
         return existing if rest == owned[1] else rest
-    block = find(existing)
+    block = complete_managed_block(existing)
     if block is None:
         return existing
     index = existing.find(block)

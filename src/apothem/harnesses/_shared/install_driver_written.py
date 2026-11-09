@@ -389,13 +389,14 @@ def stray_begin_install_warnings(
     return [
         _result(
             "warning",
-            "sentinel_merge",
+            "stray_begin",
             Path(path),
-            f"{path} has an Apothem BEGIN marker with no END marker "
-            f"({APOTHEM_BLOCK_END}) after it. Apothem keeps that text as it is "
-            "and writes its own block apart from it; delete the old marker, and "
-            "any of its text you do not want, by hand. Until then, verify "
-            "reports the file as damaged.",
+            f"{path} has an Apothem BEGIN marker that starts no whole block of its "
+            f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
+            "yours). Apothem never cuts the text after it: install and update "
+            "keep that text as it is and write their block apart from it. Delete "
+            "that marker line by hand; apothem verify fails for this tool until "
+            "you do.",
         )
         for path in paths
         if stray_begin_at(Path(path))
@@ -435,7 +436,7 @@ def stray_begin_warnings(
             f"{path} still holds a line that reads as the Apothem BEGIN marker, "
             f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
             "Apothem's block is out. Delete that line by hand: an install keeps "
-            "it as it is, and verify reports the file as damaged.",
+            "it as it is, and apothem verify fails until you do.",
         )
         for path, operation in rewritten.items()
         if stray_begin_at(Path(path))

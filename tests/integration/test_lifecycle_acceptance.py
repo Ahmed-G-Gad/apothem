@@ -223,7 +223,12 @@ def test_an_install_keeps_your_text_after_a_begin_with_no_end(
     before = {anchor: anchor.read_bytes() for anchor in anchors}
 
     preview = box.install("--dry-run")
-    payload = box.install()
+    payload = box.run("update", "--profile", str(profile_minimal_path()))
+    again = box.install()
+    status = CliRunner().invoke(
+        main,
+        ["status", *box.scope(), "--profile", str(profile_minimal_path()), "--json"],
+    )
     damaged = _verify(box)
     after = {anchor: anchor.read_bytes() for anchor in anchors}
     for anchor in anchors:
@@ -249,6 +254,10 @@ def test_an_install_keeps_your_text_after_a_begin_with_no_end(
             if APOTHEM_BLOCK_END in str(w["message"])
         ]
         assert len(named) == len(anchors), envelope["warnings"]
+    assert again["files_written"] == []
+    names = {harness_id, package_key_for_public_id(harness_id)}
+    [row] = [r for r in json.loads(status.output)["results"] if r["harness"] in names]
+    assert row["drift"] == "drift", row
     assert damaged != 0
     assert repaired == 0
 

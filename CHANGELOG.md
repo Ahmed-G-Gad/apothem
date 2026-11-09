@@ -482,7 +482,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with any text you had written below it (a backup was kept). They now keep
   that text as it is, write Apothem's block apart from it, and print a warning
   that names the file; `verify` fails, and `status --profile` shows drift,
-  until the stray marker is gone. This covers every file where Apothem keeps a
+  until the stray marker is gone, including a BEGIN marker of yours above or
+  below a whole block. This covers every file where Apothem keeps a
   managed block: `CLAUDE.md`, the profile documents, `AGENTS.md` and the other
   instruction files, and the rules file in each OpenClaw workspace.
 - **An instruction file holding Apothem's block no longer breaks `status`,
