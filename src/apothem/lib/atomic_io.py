@@ -121,11 +121,29 @@ def append_line_durably(path: Path, line: str) -> None:
     # profile-derived content; a new file must not be created world-readable.
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     try:
-        os.write(fd, record.encode("utf-8"))
+        _write_all(fd, record.encode("utf-8"), path)
         os.fsync(fd)
     finally:
         os.close(fd)
     _fsync_dir(path.parent)
+
+
+def _write_all(fd: int, data: bytes, path: Path) -> None:
+    """Write every byte of *data* to *fd*, or raise.
+
+    ``os.write`` may write fewer bytes than given (a disk that fills part way);
+    the rest is written in turn, so a record is never left torn while the
+    caller reads the append as done.
+
+    Raises:
+        OSError: When a write makes no progress.
+    """
+    view = memoryview(data)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:
+            raise OSError(f"could not write the rest of the record to {path}")
+        view = view[written:]
 
 
 def _fsync_dir(directory: Path) -> None:

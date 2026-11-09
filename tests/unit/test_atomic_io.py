@@ -309,3 +309,28 @@ def test_advisory_lock_killed_holder_does_not_deadlock(tmp_path: Path) -> None:
         if proc.poll() is None:
             proc.kill()
             proc.wait(timeout=10)
+
+
+def test_append_line_durably_writes_the_rest_after_a_short_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_write = atomic_io.os.write
+
+    def short_first(fd: int, data: bytes) -> int:
+        return real_write(fd, bytes(data[:3]))
+
+    monkeypatch.setattr(atomic_io.os, "write", short_first)
+    target = tmp_path / "ledger.jsonl"
+
+    atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert target.read_text(encoding="utf-8") == '{"kind": "uninstall"}\n'
+
+
+def test_append_line_durably_raises_when_a_write_makes_no_progress(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(atomic_io.os, "write", lambda fd, data: 0)
+
+    with pytest.raises(OSError, match="could not write"):
+        atomic_io.append_line_durably(tmp_path / "ledger.jsonl", "{}")
