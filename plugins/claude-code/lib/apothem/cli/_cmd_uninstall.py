@@ -150,6 +150,15 @@ def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
     )
 
 
+def _earlier_release_paths(run: MaterializationRun) -> int:
+    """Count the paths kept because an earlier release recorded them without digests."""
+    return sum(
+        1
+        for warning in run.warnings
+        if warning.detail.get("kept_reason") == "no-digests"
+    )
+
+
 def _report_run(
     harness_id: str,
     outcome: object,
@@ -180,6 +189,7 @@ def _report_run(
     )
     counts = Counter(error.message for error in run.errors)
     blocked = _blocked_by_link(run)
+    earlier = _earlier_release_paths(run)
     problems = [
         f"{count} installed path(s) stay because they are reached through the "
         f"link {link}, and {harness_id} still loads them; replace the link with a "
@@ -189,6 +199,13 @@ def _report_run(
         f"{message} ({count} paths)" if count > 1 else message
         for message, count in counts.items()
     ]
+    if earlier:
+        problems.append(
+            f"{earlier} path(s) an earlier release installed stay because its "
+            "install record does not show which files Apothem wrote and they "
+            "differ from what this release writes; run apothem update, then "
+            "apothem uninstall again"
+        )
     if fmt != "json":
         for line in _warning_lines(run):
             con.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
@@ -207,7 +224,7 @@ def _report_run(
     }
     steps = [{"harness": harness_id, **error.to_dict()} for error in run.errors]
     removed = any(result.outcome == "updated" for result in run.results)
-    return [summary, *steps], bool(blocked) or removed
+    return [summary, *steps], bool(blocked) or bool(earlier) or removed
 
 
 def _failed_adapter(
@@ -271,6 +288,28 @@ def _finished_row(
         "path": str(output_path),
         "message": "managed files removed" if removed else "no files removed",
     }
+
+
+def _settled(retention: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Return the retention notes as they stand after the uninstall ran.
+
+    A note is built before the uninstall (from the ledger it then replaces),
+    so a folder it says was removed may still be there, holding files Apothem
+    did not write; that note is reworded to say so.
+    """
+    settled = []
+    for advisory in retention:
+        path = Path(str(advisory.get("path", "")))
+        if advisory.get("role") == "released" and path.is_dir():
+            advisory = {
+                **advisory,
+                "message": (
+                    f"{advisory['path']} was kept: no other Apothem install uses "
+                    "it, but it holds files Apothem did not write."
+                ),
+            }
+        settled.append(advisory)
+    return settled
 
 
 def _print_removed(
@@ -395,6 +434,7 @@ def _uninstall_impl(
         row = _finished_row(harness_id, outcome, output_path)
         removed_any |= row["outcome"] == "updated"
         results.append(row)
+        retention = _settled(retention)
         warnings.extend(retention)
         _print_removed(harness_id, retention, fmt=fmt, con=con)
 

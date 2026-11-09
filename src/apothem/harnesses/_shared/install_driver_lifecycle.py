@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,7 @@ from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
 )
+from .install_driver_expected import expected_lookup
 from .install_driver_hookfile import (
     HOOK_FILE_MODE,
     registration_present,
@@ -59,6 +61,7 @@ from .install_driver_types import (
     _path_text,
     backup_session,
     resolve_source,
+    skills_sharing_command_target,
 )
 from .install_driver_written import (
     kept_file_warnings,
@@ -241,17 +244,28 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
 
     *root*'s latest record is ``uninstall-incomplete`` and a file the active
     install lists still has the content Apothem wrote (see
-    :func:`still_written`); an unreadable ledger reads as no evidence.
+    :func:`still_written`); an unreadable ledger reads as no evidence. With
+    nothing Apothem wrote left, the install is closed by an ``uninstall``.
     """
     try:
-        if install_ledger.unfinished_uninstall(harness_name, root=root) is None:
+        unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
+        if unfinished is None:
             return False
         active = install_ledger.active_install_records(harness_name, root=root)
     except install_ledger.LedgerError:
         return False
-    return any(
-        still_written(target) for install in active for target in install.targets
-    )
+    if any(still_written(target) for install in active for target in install.targets):
+        return True
+    with contextlib.suppress(OSError, install_ledger.LedgerError):
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness=harness_name,
+                root=root,
+                kind="uninstall",
+                install_id=unfinished.install_id,
+            )
+        )
+    return False
 
 
 @dataclass(frozen=True)
@@ -518,6 +532,12 @@ def _remove_installed(
         recorded=recorded_targets if record is not None else None,
         install_root=root,
         harness_name=harness_name,
+        expected=expected_lookup(
+            rules,
+            harness_name=harness_name,
+            harness_root=harness_root,
+            project_root=project_root,
+        ),
     )
     gate = UserLevelGate.build(
         rules,
@@ -589,6 +609,10 @@ def _remove_installed(
         filtered = set(
             rules.per_directory_filters.get(Path(entry.source.rstrip("/")).name, [])
         )
+        if entry.mode == "command_skills":
+            # A command that shares its name with a skill is left out of the
+            # install (the skill is the sole writer), so it is not this entry's.
+            filtered |= skills_sharing_command_target(entry, rules)
         for target in _generated_targets_for_entry(
             entry,
             harness_root=harness_root,

@@ -161,10 +161,9 @@ def _single_file_directory_matches(
     if not directory.is_dir():
         return False
     children = sorted(child.name for child in directory.iterdir())
-    return (
-        children == [filename]
-        and (directory / filename).read_text(encoding="utf-8") == content
-    )
+    return children == [filename] and (
+        directory / filename
+    ).read_bytes() == content.encode("utf-8")
 
 
 def _generated_directory_matches(

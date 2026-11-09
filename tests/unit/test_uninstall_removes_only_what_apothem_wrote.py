@@ -544,3 +544,119 @@ def test_a_rollback_after_a_hand_cleaned_partial_uninstall_keeps_the_users_files
     assert code in (0, cli._EXIT_PARTIAL, cli._EXIT_EXPECTED), envelope
     assert all(path.read_text(encoding="utf-8") == "mine\n" for path in mine)
     assert (claude / "CLAUDE.md").read_text(encoding="utf-8") == "my own CLAUDE.md\n"
+
+
+def _strip_digests(claude: Path) -> None:
+    """Rewrite the ledger as an earlier release wrote it: no file digests."""
+    path = install_ledger.ledger_path("claude_code")
+    lines = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        record = json.loads(line)
+        for target in record.get("targets", []):
+            target.pop("digest", None)
+            target.pop("files", None)
+        lines.append(json.dumps(record))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_an_earlier_release_install_is_removed_where_the_bytes_match(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    agent = claude / "agents" / "citation-auditor.md"
+    skill = claude / "skills" / _skill_name()
+    notes = skill / "my-notes.md"
+    notes.write_text("mine\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert not agent.exists()
+    assert sorted(path.name for path in skill.iterdir()) == ["my-notes.md"]
+    assert ClaudeCodeAdapter().is_installed() is False
+
+
+def test_an_earlier_release_file_that_differs_leaves_the_uninstall_unfinished(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    agent = claude / "agents" / "citation-auditor.md"
+    agent.write_text("an earlier release wrote this\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+    unfinished = _unfinished(claude)
+    installed = ClaudeCodeAdapter().is_installed()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["status"] == "partial"
+    assert agent.read_text(encoding="utf-8") == "an earlier release wrote this\n"
+    assert unfinished is not None
+    assert installed is True
+    messages = " ".join(str(w["message"]) for w in envelope["warnings"])
+    assert "apothem update" in messages
+
+
+def test_a_hand_cleaned_unfinished_uninstall_is_closed(
+    claude: Path, tmp_path: Path
+) -> None:
+    rules, dotfiles = _partial_uninstall(claude, tmp_path)
+    _unlink_folder(rules)
+    shutil.rmtree(dotfiles)
+    shutil.rmtree(claude)
+
+    installed = ClaudeCodeAdapter().is_installed()
+
+    assert installed is False
+    assert _unfinished(claude) is None
+    assert (
+        install_ledger.current_install_record("claude_code", root=_root(claude)) is None
+    )
+
+
+def test_an_empty_folder_of_the_users_inside_a_skill_stays(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    mine = claude / "skills" / _skill_name() / "my-drafts"
+    mine.mkdir()
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert mine.is_dir()
+
+
+def test_kept_files_are_named_in_the_plain_output(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    notes = claude / "skills" / _skill_name() / "my-notes.md"
+    notes.write_text("mine\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "my-notes.md" in result.output
+
+
+def test_an_earlier_release_install_of_shared_skills_is_removed(claude: Path) -> None:
+    from apothem.harnesses.codex import CodexAdapter
+
+    CodexAdapter().install({})
+    path = install_ledger.ledger_path("codex")
+    records = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    for record in records:
+        for target in record.get("targets", []):
+            target.pop("digest", None)
+            target.pop("files", None)
+    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    skills = Path.home() / ".agents" / "skills"
+
+    result = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "codex", "--yes", "--format", "json"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert not skills.exists() or not any(skills.rglob("SKILL.md"))

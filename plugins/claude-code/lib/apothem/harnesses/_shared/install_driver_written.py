@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import os
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from apothem.lib import install_ledger
@@ -126,17 +126,22 @@ def _remove_matching(
 ) -> tuple[list[Path], list[Path]]:
     """Remove *written* under the folder *target*; return the files and links kept.
 
-    Each emptied folder goes, deepest first; a folder that still holds
-    something stays.
+    Each folder that held a removed file goes once empty, deepest first; a
+    folder that still holds something stays, and so does an empty folder the
+    operator made, which held nothing Apothem wrote.
     """
     for path in written:
         if not _is_link(path):
             with contextlib.suppress(OSError):
                 path.unlink()
-    walk = _walk_without_links(target)
-    for folder in sorted(
-        [*walk.folders, target], key=lambda path: len(path.parts), reverse=True
-    ):
+    emptied = {target}
+    for path in written:
+        emptied.update(
+            parent
+            for parent in path.parents
+            if parent == target or target in parent.parents
+        )
+    for folder in sorted(emptied, key=lambda path: len(path.parts), reverse=True):
         if not _is_link(folder):
             with contextlib.suppress(OSError):
                 folder.rmdir()
@@ -153,6 +158,7 @@ def remove_written(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
+    expected: Callable[[Path], dict[str, str] | None] | None = None,
 ) -> MaterializationResult | None:
     """Remove *target* only as far as the install record shows Apothem wrote it.
 
@@ -161,13 +167,22 @@ def remove_written(
     recorded ``digest``; in a folder only the recorded files whose content
     still matches go, then each folder left empty. Everything else stays and
     is named in the result: a file the operator added or changed, a target
-    the record does not list, a record written before digests existed (run
-    ``apothem update``, then uninstall again), and anything behind a link.
-    The target is backed up before anything is removed.
+    the record does not list, and anything behind a link. The target is
+    backed up before anything is removed.
+
+    A target an earlier release recorded without digests is compared with
+    what this release writes there (*expected*, the digests of those files;
+    see :func:`install_driver_expected.expected_digests`): a file with those
+    bytes goes. A file at a name Apothem writes that differs stays and leaves
+    the uninstall unfinished (``kept_reason`` ``no-digests``), since run
+    ``apothem update`` records it, then a second uninstall finishes.
     """
     allowed = allowed_root or install_root
     entry = None if recorded is None else recorded.get(_path_text(target))
     proof = _proof(entry)
+    legacy = proof is None and entry is not None and expected is not None
+    if legacy and expected is not None:
+        proof = expected(target)
     target_error = _validate_target_path(
         target, allowed_root=allowed, operation="remove_existing"
     )
@@ -194,6 +209,8 @@ def remove_written(
         )
     written = _written_now(target, proof)
     if not written:
+        if legacy and _named_by(target, proof):
+            return _kept_whole(target, "no-digests", _EARLIER_RELEASE)
         return _kept_whole(
             target, "changed", "it is not what Apothem wrote (changed or yours)"
         )
@@ -225,6 +242,8 @@ def remove_written(
     detail = kept_links_detail(kept_links)
     if kept_files:
         detail[KEPT_FILES] = "\n".join(_path_text(path) for path in kept_files)
+    if legacy and _named_by(target, proof, kept_files):
+        detail[KEPT_REASON] = "no-digests"
     return _result(
         "updated",
         "remove_existing",
@@ -233,6 +252,24 @@ def remove_written(
         backup_path=backup,
         detail=detail,
     )
+
+
+#: Why a target an earlier release recorded stays, and the next step.
+_EARLIER_RELEASE = (
+    "the install record (made by an earlier release) does not show which files "
+    "Apothem wrote, and it differs from what this release writes; run apothem "
+    "update, then uninstall again"
+)
+
+
+def _named_by(
+    target: Path, proof: dict[str, str], paths: list[Path] | None = None
+) -> bool:
+    """Return True when a file at *target* (or among *paths*) has a name *proof* lists."""
+    if target.is_file():
+        return "" in proof
+    found = _walk_without_links(target).files if paths is None else paths
+    return any(path.relative_to(target).as_posix() in proof for path in found)
 
 
 def kept_file_warnings(
@@ -249,12 +286,19 @@ def kept_file_warnings(
         if not kept:
             continue
         folder = Path(result.path)
+        if result.detail.get(KEPT_REASON) == "no-digests":
+            warnings.append(_kept_whole(folder, "no-digests", _EARLIER_RELEASE))
+            continue
+        names = [Path(path).relative_to(folder).as_posix() for path in kept]
+        shown = ", ".join(names[:5]) + (
+            f" and {len(names) - 5} more" if len(names) > 5 else ""
+        )
         warnings.append(
             _kept_whole(
                 folder,
                 "changed",
                 f"{len(kept)} file(s) in it are not what Apothem wrote "
-                "(changed or yours)",
+                f"(changed or yours): {shown}",
             )
         )
     return warnings
@@ -291,10 +335,14 @@ def still_written(entry: LedgerTarget) -> bool:
 
     Used as install evidence after an unfinished uninstall: a path that merely
     exists (a settings file the tool recreated, a folder of the operator's)
-    proves nothing.
+    proves nothing, unless the record predates digests.
     """
     proof = _proof(entry)
-    return proof is not None and bool(_written_now(Path(entry.path), proof))
+    if proof is None:
+        # An earlier release recorded no digests: the path is the evidence,
+        # and the removal that follows still checks each file's content.
+        return os.path.lexists(entry.path)
+    return bool(_written_now(Path(entry.path), proof))
 
 
 def left_unfinished(results: list[MaterializationResult]) -> bool:

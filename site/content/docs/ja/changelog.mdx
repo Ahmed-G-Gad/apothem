@@ -427,9 +427,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   your own with an Apothem name stay, with a warning, and so does the folder
   that holds them. Before, an uninstall removed the whole folder, and after a
   partial uninstall followed by cleaning up by hand it could remove files you
-  had put there since. An install recorded by an earlier release does not say
-  which files Apothem wrote, so its folders stay too; run `apothem update`
-  before `apothem uninstall` to remove them. An uninstall that does not finish
+  had put there since. For an install recorded by an earlier release, which
+  does not say which files Apothem wrote, the uninstall removes the files that
+  have the same bytes as what this release writes there; a file that differs
+  leaves the uninstall unfinished (exit `2`) with the next step: run `apothem
+  update`, then `apothem uninstall` again. An uninstall that does not finish
   (a failed step, an error, or Apothem's own files reached through a link)
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished
@@ -438,7 +440,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it is left in place with a warning and the uninstall finishes. An uninstall
   that removed files before a step failed now exits `2` with the status
   `partial`, and the `--format json` warnings are grouped like the printed
-  ones, with `count` and `paths`.
+  ones, with `count` and `paths`. An uninstall that stops with an error after
+  removing files exits `2` too. `apothem rollback` now undoes the newest
+  install still in place, so a second rollback undoes the one before, refuses
+  an `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same tool
+  installed in another project still uses them.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
