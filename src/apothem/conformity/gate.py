@@ -37,6 +37,7 @@ import contextlib
 import functools
 import importlib.util
 import json
+import ntpath
 import os
 import subprocess
 import sys
@@ -1050,13 +1051,53 @@ def _list_validators() -> str:
 # arguments. A child process therefore resolves its imports without relying on
 # the parent's ``PYTHONPATH`` or on an installed package.
 _STANDALONE_LAUNCHER: Final[str] = (
-    "import runpy, sys\n"
+    "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]\n"
+    "import runpy\n"
     "gate_path, module = sys.argv[1], sys.argv[2]\n"
     "sys.argv = [module, *sys.argv[3:]]\n"
     "runpy.run_path(gate_path, run_name='apothem_conformity_bootstrap')\n"
     "runpy.run_module('apothem.conformity.' + module, run_name='__main__',"
     " alter_sys=True)\n"
 )
+
+
+def _is_full_path_entry(entry: str, *, windows: bool = os.name == "nt") -> bool:
+    r"""Return True when a ``PYTHONPATH`` entry is a full path on its own.
+
+    On Windows an entry qualifies only when it starts with a drive letter and a
+    separator (``C:\`` or ``C:/``) or with two separators (a network path). A
+    rooted ``\lib`` or a drive-relative ``C:lib`` still depends on the current
+    folder or drive, so it does not. Elsewhere the entry must start with ``/``.
+    The network-path test comes first because ``splitdrive`` reports a network
+    share as the drive.
+    """
+    if not windows:
+        return entry.startswith("/")
+    if entry[:2] in ("\\\\", "//"):
+        return True
+    return bool(ntpath.splitdrive(entry)[0]) and entry[2:3] in ("\\", "/")
+
+
+def _standalone_env() -> dict[str, str]:
+    """Return the environment for a standalone-validator child process.
+
+    ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the working directory to
+    ``sys.path``. A user ``PYTHONPATH`` keeps only its full-path entries (see
+    :func:`_is_full_path_entry`), because an empty, relative, rooted or
+    drive-relative entry depends on the working directory or drive; the
+    variable is dropped when none remain.
+    """
+    env = {**os.environ, "PYTHONSAFEPATH": "1"}
+    kept = [
+        entry
+        for entry in env.get("PYTHONPATH", "").split(os.pathsep)
+        if entry and _is_full_path_entry(entry)
+    ]
+    if kept:
+        env["PYTHONPATH"] = os.pathsep.join(kept)
+    else:
+        env.pop("PYTHONPATH", None)
+    return env
 
 
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
@@ -1088,6 +1129,7 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
             text=True,
             check=False,
             encoding="utf-8",
+            env=_standalone_env(),
         )
     except OSError as exc:
         return False, f"{name}: invocation failed: {exc}"

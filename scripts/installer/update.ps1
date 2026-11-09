@@ -57,6 +57,28 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
+# A relative APOTHEM_HOME is resolved once, here, against the current
+# file-system folder (never a registry or other location the session sits
+# in), so every path built from it (the engine paths in PYTHONPATH and in
+# the shim among them) is a full path, never one Python would read against
+# whatever folder it starts in. A value that names no file-system path
+# stops the run.
+$ApothemHomeValue = $ApothemHome
+$HomeProvider = $null
+try {
+    Push-Location -LiteralPath (Get-Location -PSProvider FileSystem).ProviderPath
+    try {
+        $HomeDrive = $null
+        $ApothemHome = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ApothemHomeValue, [ref]$HomeProvider, [ref]$HomeDrive)
+    } finally {
+        Pop-Location
+    }
+} catch {
+    $HomeProvider = $null
+}
+if (-not $HomeProvider -or $HomeProvider.Name -ne 'FileSystem') {
+    Write-Error "  x APOTHEM_HOME is not a usable folder path: $ApothemHomeValue"
+}
 $ApothemRepo = if ($env:APOTHEM_REPO) { $env:APOTHEM_REPO } else { 'https://github.com/ahmed-g-gad/apothem' }
 # Empty default sentinel: an unset APOTHEM_REF means "resolve the latest
 # released tag" (verified-by-default trust model); an explicit value pins a tag
@@ -102,11 +124,82 @@ $env:GIT_NO_REPLACE_OBJECTS = '1'
 if ($ApothemRepo.StartsWith('-')) {
     Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
 }
+# git runs ls-remote from an empty folder (Invoke-GitOutsideRepository),
+# so a repository given as a relative path is made a full path first.
+if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -LiteralPath $ApothemRepo)) {
+    $ApothemRepo = (Resolve-Path -LiteralPath $ApothemRepo).ProviderPath
+}
 
 # The git calls that run in an existing clone (fetch, verify-tag, cat-file,
 # checkout) take these arguments, which point core.hooksPath at an empty
 # folder made for the run, so none of the clone's hooks runs.
 $GitSafe = @()
+
+# The current folder must never shadow the engine's modules (mirrors
+# update.sh). Python puts '' (the working directory) first on sys.path for
+# `-c`, and `-m` puts the working directory there, so a click.py, rich\ or
+# apothem\ in the folder the updater runs from would run
+# instead of the real package. `-P` / PYTHONSAFEPATH does not exist on
+# Python 3.10, and `-I` would also drop PYTHONPATH and the user site (where
+# click and rich may be installed). So every such start sets
+# PYTHONSAFEPATH=1 (3.11+ then adds nothing) and runs a `-c` program whose
+# first statement drops a leading ''. Only sys.path changes; the working
+# directory and the arguments do not. The programs hold no double quote,
+# which Windows PowerShell 5.1 strips from a native command's argument.
+$DropCwdFromPath = "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
+$EngineProgram = "$DropCwdFromPath; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
+$PipProgram = "$DropCwdFromPath; import runpy; runpy.run_module('pip', run_name='__main__', alter_sys=True)"
+
+# Test-AbsolutePath PATH - $true when PATH is a full path. On Windows that is
+# a drive letter and a separator (X:\ or X:/) or two separators (a \\server
+# or //server share); elsewhere a leading /. A drive-relative C:x or a
+# rooted \x is not. Every launcher uses this one rule.
+function Test-AbsolutePath {
+    param([string]$Path)
+    if (-not $Path) { return $false }
+    if ([System.IO.Path]::PathSeparator -eq ';') { return ($Path -match '^([A-Za-z]:[\\/]|[\\/]{2})') }
+    return $Path.StartsWith('/')
+}
+
+# Get-SafePythonPath LEAD USER - the PYTHONPATH a Python start gets: LEAD
+# (the engine's paths, or nothing) followed by the entries of USER (the
+# caller's PYTHONPATH) that are full paths. Python reads an empty entry, or a
+# relative one such as `.`, as the current folder before any -c program runs
+# and whatever PYTHONSAFEPATH says, so a sitecustomize.py there would run;
+# those entries are dropped (mirrors update.sh). $null when nothing is left.
+function Get-SafePythonPath {
+    param([string]$Lead, [string]$UserPath)
+    $Sep = [System.IO.Path]::PathSeparator
+    $Kept = @()
+    if ($Lead) { $Kept += $Lead }
+    if ($UserPath) { $Kept += @($UserPath.Split($Sep) | Where-Object { Test-AbsolutePath $_ }) }
+    if ($Kept.Count -eq 0) { return $null }
+    return ($Kept -join $Sep)
+}
+
+# Invoke-GitOutsideRepository BLOCK - run BLOCK, whose git commands work on
+# no repository of their own (ls-remote, clone, init, config lookups), from
+# an empty folder made for the call, with GIT_CEILING_DIRECTORIES set to that
+# folder's parent. git then finds no repository in the current folder or its
+# parents, whose .git\config could otherwise run a command (an ext:: URL
+# rewrite, core.sshCommand). The location and the variable are restored and
+# the folder removed afterwards (mirrors update.sh). Paths BLOCK passes to
+# git must be full paths. BLOCKARGS are passed to BLOCK.
+function Invoke-GitOutsideRepository {
+    param([scriptblock]$Block, [object[]]$BlockArgs = @())
+    $GoEmpty = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-git-" + [System.Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $GoEmpty -ErrorAction Stop | Out-Null
+    $GoCeiling = $env:GIT_CEILING_DIRECTORIES
+    Push-Location -LiteralPath $GoEmpty
+    try {
+        $env:GIT_CEILING_DIRECTORIES = Split-Path -Parent $GoEmpty
+        & $Block @BlockArgs
+    } finally {
+        $env:GIT_CEILING_DIRECTORIES = $GoCeiling
+        Pop-Location
+        Remove-Item -LiteralPath $GoEmpty -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 # Test-PythonImport INTERPRETER MODULE - return $true when MODULE imports under
 # INTERPRETER, $false otherwise. Localizes $ErrorActionPreference to 'Continue'
@@ -117,10 +210,13 @@ function Test-PythonImport {
     param([string]$Interpreter, [string]$Module)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $priorSafePath = $env:PYTHONSAFEPATH
+    $env:PYTHONSAFEPATH = '1'
     try {
-        & $Interpreter -c "import $Module" *> $null
+        & $Interpreter -c "$DropCwdFromPath; import $Module" *> $null
         return ($LASTEXITCODE -eq 0)
     } finally {
+        $env:PYTHONSAFEPATH = $priorSafePath
         $ErrorActionPreference = $prior
     }
 }
@@ -142,16 +238,21 @@ function Install-RuntimeDependency {
     param([string]$Interpreter, [string[]]$Deps)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    # pip starts through the same guarded -c program as the engine, so a
+    # pip\ in the current folder never runs in its place.
+    $priorSafePath = $env:PYTHONSAFEPATH
+    $env:PYTHONSAFEPATH = '1'
     try {
-        & $Interpreter -m pip --version *> $null
+        & $Interpreter -c $PipProgram --version *> $null
         if ($LASTEXITCODE -ne 0) {
             Write-Warn "pip is unavailable under $Interpreter - install $($Deps -join ', ') manually."
             return $false
         }
         Write-Info "Installing $($Deps -join ', ') under $Interpreter (pip)"
-        & $Interpreter -m pip install @Deps
+        & $Interpreter -c $PipProgram install @Deps
         $code = $LASTEXITCODE
     } finally {
+        $env:PYTHONSAFEPATH = $priorSafePath
         $ErrorActionPreference = $prior
     }
     if ($code -eq 0) { Write-Ok "Installed $($Deps -join ', ')"; return $true }
@@ -166,7 +267,7 @@ function Install-RuntimeDependency {
 # components via a [version] cast on the stripped "v" prefix.
 function Resolve-LatestTag {
     param([string]$Repo)
-    $raw = & git ls-remote --tags $Repo 2>$null
+    $raw = Invoke-GitOutsideRepository { param($LsRepo) & git ls-remote --tags $LsRepo 2>$null } @($Repo)
     if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
     $tags = @()
     foreach ($line in $raw) {
@@ -310,6 +411,12 @@ function Test-ApothemSource {
            (Test-Path -LiteralPath (Join-Path $Dir '.claude-plugin'))
 }
 
+# Every Python start from here to the prerequisite check gets the caller's
+# PYTHONPATH without its empty and relative entries (Get-SafePythonPath); the
+# caller's value is restored afterwards.
+$PriorProbePyPath = $env:PYTHONPATH
+$env:PYTHONPATH = Get-SafePythonPath '' $PriorProbePyPath
+try {
 # Resolve a Python interpreter >= 3.10.
 $PY = $null
 foreach ($Cmd in @('python3', 'python', 'python3.14', 'python3.13', 'python3.12', 'python3.11', 'python3.10')) {
@@ -333,6 +440,9 @@ if ($MissingDeps.Count -gt 0) {
 }
 if ($MissingDeps.Count -gt 0) {
     Write-Fail "Missing prerequisites under ${PY}: $($MissingDeps -join ', '). Install them with: '${PY}' -m pip install $($MissingDeps -join ' ') - or set APOTHEM_AUTO_INSTALL_DEPS=1 to install automatically. See $PrereqDoc for help."
+}
+} finally {
+    $env:PYTHONPATH = $PriorProbePyPath
 }
 
 # Locate or fetch the source.
@@ -370,8 +480,8 @@ if ($env:APOTHEM_SOURCE) {
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                $GpgProg = & git config --get gpg.openpgp.program 2>$null
-                if (-not $GpgProg) { $GpgProg = & git config --get gpg.program 2>$null }
+                $GpgProg = Invoke-GitOutsideRepository { & git config --get gpg.openpgp.program 2>$null }
+                if (-not $GpgProg) { $GpgProg = Invoke-GitOutsideRepository { & git config --get gpg.program 2>$null } }
                 $GitExecPath = & git --exec-path 2>$null
             } finally {
                 $ErrorActionPreference = $prior
@@ -538,14 +648,17 @@ $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 Write-Bold "Re-materializing harness: $Harness"
 if (-not (Test-Path $ApothemProfile)) { Write-Fail "Profile not found at $ApothemProfile" }
 $PriorPyPath = $env:PYTHONPATH
-$env:PYTHONPATH = if ($PriorPyPath) { "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" } else { $EnginePyPath }
+$PriorSafePath = $env:PYTHONSAFEPATH
+$env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
+$env:PYTHONSAFEPATH = '1'
 try {
-    & $PY -m apothem update --harness $Harness --profile $ApothemProfile
+    & $PY -c $EngineProgram update --harness $Harness --profile $ApothemProfile
     if ($LASTEXITCODE -ne 0) { Write-Fail "Harness re-materialization failed for $Harness" }
     Write-Ok "Harness $Harness updated"
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
+    $env:PYTHONSAFEPATH = $PriorSafePath
 }
 
 Write-Bold "Update complete."

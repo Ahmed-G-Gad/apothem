@@ -780,6 +780,51 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   as inside `/home/u`, so a write could land in the other folder. Apothem now
   checks the case exactly first, and treats the names as one folder only when
   both name the same folder on disk.
+- **A piped install no longer adopts a source tree from the current folder
+  (GHSA-799g-h543-w5gg).** In releases 1.0.1 to 1.5.0, `curl ... | sh` and
+  `irm ... | iex` fell back to the folder they were started in, and to its
+  parent folders, looking for a source tree that has the shape of Apothem. They
+  then ran its interpreter locator and installed that tree without checking it.
+  On Windows, any local user can create a folder such as `C:\src\apothem`, so
+  an administrator who ran the one-liner below `C:\` could run code that the
+  user planted. The installers (`install.sh`, `install.ps1`) now use a local
+  tree only when `APOTHEM_SOURCE` names it, or when the script runs by path from
+  inside its own checkout, where the tree is found from the script's own path.
+  A piped run reads nothing from the current folder or its parents, and takes
+  the normal fetched and verified path. The installers' `git` commands that do
+  not work on a clone also no longer read a repository in the current folder: an
+  installer started from inside a folder that has its own `.git` no longer reads
+  that folder's git configuration. To install from a checkout, run that
+  checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
+  from any folder, or set `APOTHEM_SOURCE`.
+- **The current folder no longer shadows the engine's Python modules
+  (GHSA-4rh9-7m5x-94j9).** In releases 1.0.1 to 1.5.0, Python put the current
+  folder first on its module search path when the installers checked for
+  `click` and `rich`, when they and the `apothem` command shim started the
+  engine, and when `npx @ahmed-g-gad/apothem` did. A file such as `click.py`,
+  or a folder named `rich` or `apothem`, in the folder you ran the command from
+  ran instead of the real package. Every one of these starts (the installers,
+  the updaters, the uninstallers, the start of `pip` for the dependency
+  install, the `apothem` shims they write for POSIX and Windows, and the npm
+  launcher) now keeps the current folder off the module search path on
+  Python 3.10 to 3.14. Empty and relative entries in your own `PYTHONPATH`,
+  which Python reads as the current folder, are no longer passed on by any of
+  these launchers: the POSIX shim, the Windows `apothem.cmd` shim, the
+  installers, the updaters, the uninstallers and the npm launcher. A kept
+  entry must be a full path: on Windows a drive path such as `C:\lib` or a
+  network path, elsewhere a path that starts with `/`. A rooted `\lib` or a
+  drive-relative `C:lib` is dropped. The sh scripts ask the Python they run
+  which form it reads, and the `apothem` shim they write keeps that form. A
+  Windows Python (the usual one under Git Bash) gets the engine paths in
+  Windows form, joined with `;`, and keeps only the drive and network paths
+  of your `PYTHONPATH`. A POSIX Python, including Cygwin's and MSYS2's own
+  `python3`, gets POSIX paths joined with `:` and keeps only entries that
+  start with `/`. The conformity gate starts its validators the same way.
+  Your working directory and the arguments you pass are not changed, and your
+  full-path `PYTHONPATH` entries and user-installed packages still work. The
+  updaters do not rewrite an existing shim: to replace a shim written by an
+  earlier release, run the installer (`install.sh` or `install.ps1`) again.
+  Updating alone does not.
 - **A link no longer takes an install out of your home directory through
   `~/.config` or a moved tool folder.** A junction at `~/.config` leading out
   of your home directory let an OpenCode install, and the starter profile of a

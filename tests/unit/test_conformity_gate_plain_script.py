@@ -22,6 +22,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _GATE_SCRIPT = _REPO_ROOT / "src" / "apothem" / "conformity" / "gate.py"
 
@@ -78,3 +80,108 @@ def test_plain_script_hook_matches_package_invocation_findings(
     assert "file_header_grep" in finding_greps
     assert "bare_except_grep" in finding_greps
     assert report["passed"] is False
+
+
+def _run_standalone_from(
+    tmp_path: Path, work: Path, pythonpath: str | None
+) -> tuple[bool, str]:
+    """Run the naming-grep validator through the gate from the folder *work*.
+
+    The helper process starts in a clean folder and changes into *work* only
+    after its own imports, so the planted modules reach the validator child
+    alone.
+    """
+    code = (
+        "import sys; sys.path[:1] = []; sys.path.insert(0, "
+        + repr(str(_REPO_ROOT / "src"))
+        + ")\n"
+        "import json\n"
+        "from pathlib import Path\n"
+        "from apothem.conformity import gate\n"
+        "print(json.dumps(gate._run_standalone('naming-grep', Path(sys.argv[1]))))\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    if pythonpath is not None:
+        env["PYTHONPATH"] = pythonpath
+    completed = subprocess.run(
+        [sys.executable, "-c", code, str(tmp_path), str(work)],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stderr
+    passed, output = json.loads(completed.stdout.strip().splitlines()[-1])
+    return passed, output
+
+
+@pytest.mark.parametrize(
+    "pythonpath",
+    [None, os.pathsep + "/nonexistent", "/nonexistent" + os.pathsep, "."],
+    ids=["unset", "leading-empty", "trailing-empty", "relative"],
+)
+def test_standalone_validators_ignore_modules_in_the_current_folder(
+    tmp_path: Path, pythonpath: str | None
+) -> None:
+    """A planted ``json.py`` / ``runpy.py`` in the cwd never runs in the launcher.
+
+    Guards GHSA-4rh9-7m5x-94j9: the standalone-validator subprocess starts with
+    ``-c``, which puts the working directory first on ``sys.path``; an empty or
+    relative entry in the user's ``PYTHONPATH`` does the same, so those are
+    dropped from the child's environment. The validator must also really run.
+    """
+    marker = tmp_path / "marker"
+    work = tmp_path / "work"
+    work.mkdir()
+    body = f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\n"
+    for name in ("json.py", "runpy.py", "sitecustomize.py"):
+        (work / name).write_text(body, encoding="utf-8")
+    passed, output = _run_standalone_from(tmp_path, work, pythonpath)
+    assert not marker.exists(), "a module from the current folder ran"
+    assert "Traceback" not in output, output
+    assert "naming-grep" in output or "naming_grep" in output, output
+    assert isinstance(passed, bool)
+
+
+def test_standalone_env_keeps_only_absolute_pythonpath_entries(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The child's PYTHONPATH holds the absolute entries only, or is absent."""
+    from apothem.conformity import gate
+
+    absolute = str(tmp_path)
+    monkeypatch.setenv(
+        "PYTHONPATH", os.pathsep.join(["", "rel", absolute, ".", "", absolute + "x"])
+    )
+    env = gate._standalone_env()
+    assert env["PYTHONPATH"] == os.pathsep.join([absolute, absolute + "x"])
+    assert env["PYTHONSAFEPATH"] == "1"
+    monkeypatch.setenv("PYTHONPATH", os.pathsep + "rel")
+    assert "PYTHONPATH" not in gate._standalone_env()
+
+
+@pytest.mark.parametrize(
+    ("entry", "windows", "kept"),
+    [
+        ("C:\\lib", True, True),
+        ("c:/lib", True, True),
+        ("\\\\server\\share\\lib", True, True),
+        ("//server/share/lib", True, True),
+        ("\\lib", True, False),
+        ("/lib", True, False),
+        ("C:rel", True, False),
+        ("C:", True, False),
+        ("rel", True, False),
+        (".", True, False),
+        ("/lib", False, True),
+        ("rel", False, False),
+        ("C:\\lib", False, False),
+    ],
+)
+def test_full_path_entry_rule(entry: str, windows: bool, kept: bool) -> None:
+    """One rule: a drive path or network path on Windows, a leading ``/`` elsewhere."""
+    from apothem.conformity import gate
+
+    assert gate._is_full_path_entry(entry, windows=windows) is kept
