@@ -748,3 +748,37 @@ def test_only_an_interpreter_path_fills_the_python_token(
     actual.write_bytes(f'"command": "{value} render.py"\n'.encode())
 
     assert _filled(expected, actual) is matches
+
+
+@pytest.mark.parametrize("live_holder", [False, True])
+def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
+    claude: Path, tmp_path: Path, live_holder: bool
+) -> None:
+    from apothem.harnesses._shared import install_driver_datahome as datahome
+
+    home = Path.home() / ".apothem"
+    (home / "memory").mkdir(parents=True)
+    (home / "memory" / "note.md").write_text("kept\n", encoding="utf-8")
+    current, gone, live = tmp_path / "a", tmp_path / "gone", tmp_path / "live"
+    current.mkdir()
+    live.mkdir()
+    for root in (current, gone, *((live,) if live_holder else ())):
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness="cursor", root=root, kind="install", data_home=str(home)
+            )
+        )
+
+    result = datahome._remove_data_home(
+        "cursor", root=current, allowed_root=Path.home(), home=home
+    )
+
+    assert (home / "memory" / "note.md").read_text(encoding="utf-8") == "kept\n"
+    assert result is not None
+    if live_holder:
+        assert result.outcome == "unchanged"
+        assert str(live) in result.message
+    else:
+        assert result.outcome == "warning"
+        assert "no longer exists" in result.message
+        assert "apothem install" in result.message
