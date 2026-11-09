@@ -30,9 +30,11 @@ that install's ledger record, newest change first, it:
   has the content that install wrote: a file you made at that path since, or
   one you edited, stays with a `Warning:` line (a `warnings` entry under `--json`), and so does a folder holding
   it. The line lists each file it kept, the files inside a kept folder
-  included, and the `warnings` entry lists them as `files`. An install
-  recorded by an earlier release does not say what it wrote,
-  so what it created stays. It also puts back any
+  included, whether or not a restore failed, and the `warnings` entry lists
+  them as `files`. An install recorded by an earlier release does not say
+  what it wrote, and rollback compares nothing with this release, so what it
+  created stays: each such path gets a `Warning:` line saying that rollback
+  cannot tell it is Apothem's. It also puts back any
   legacy-layout path the install swept away. A path the current release no
   longer sweeps (a folder that may hold your own files) is restored only where
   files are missing: every file there now is kept, and the output names the

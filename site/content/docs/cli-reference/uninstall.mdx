@@ -30,26 +30,43 @@ keep keeps its folder.
 
 An install recorded by an earlier release does not say which files Apothem
 wrote. For it, the uninstall compares each file with what this release writes
-at that path and removes the ones with the same bytes. Where a file holds the
-Python interpreter the install found (a hook command, the statusline), that
-spot compares as the same only when it holds a launcher an earlier release
-wrote (`py -3`, `python3`) or the full path of an interpreter file on this
-machine, and nothing else. A path there that holds `&`, `#` or `$` (a Windows
-user name such as `R&D`), or that names no file here, never compares as the
-same, so that file is kept. A file at a name Apothem writes that differs
-(written by that earlier release, or edited by you) stays, and the uninstall
-does not finish: it prints `✗ <harness> uninstall did not finish:` with the
-number of such paths and exits `2`. An install with no record at all (its
-ledger was deleted) ends the same way, because nothing shows which of its
-files Apothem wrote.
+at that path and removes the ones with the same bytes. Two spots hold the
+Python interpreter the install found: the statusline's command and a comment
+in the conformity gate. Such a spot compares as the same only when it holds
+`py -3`, the one launcher an earlier release wrote there, or the full path of
+an interpreter file on this machine, and nothing else. A path there that holds
+`&`, `#` or `$` (a Windows user name such as `R&D`), or that names no file
+here, never compares as the same, so that file is kept. A path to an
+interpreter you have since upgraded or removed names no file here either, so
+that file is kept too: run `apothem update`, then uninstall again. Apothem's
+hook entries in a settings or hooks file are not compared this way: they are
+recognized by the dispatcher script they run, whatever interpreter comes
+before it, and removed after the file is backed up.
+
+A file at a name Apothem writes that differs (written by that earlier
+release, or edited by you) stays, and the uninstall does not finish: it
+prints `✗ <harness> uninstall did not finish:` with the number of such paths
+(a folder counts once, and its files are listed under its `Warning:` line)
+and exits `2`. So does a path that release recorded and this release no
+longer writes, since there is nothing to compare it with. An install with no
+record at all (its ledger was deleted) ends the same way, because nothing
+shows which of its files Apothem wrote; every path it keeps outside a link is
+listed under one `Warning:` line, the files you added included, since nothing
+tells them apart.
 `apothem update` writes this release's files and records them, so running it
-and then `apothem uninstall` again finishes the job. Before you do, two kinds
-of file need moving, because the update overwrites the paths it writes and
-replaces each Apothem folder entry it writes whole (it backs both up first,
-under `~/.apothem/backups/`, but nothing puts them back): copy any of the
-differing paths you edited, and move out of Apothem's folders each file a
-`Warning:` line lists as changed or yours. A file at a name Apothem never
-writes is yours: it stays, and the uninstall still finishes.
+and then `apothem uninstall` again finishes the job. Before you do, copy any
+listed file you edited or added: the update overwrites the paths it writes
+and replaces each Apothem folder entry it writes whole (it backs both up
+first, under `~/.apothem/backups/`, but nothing puts them back). For an
+install an earlier release recorded, a file in an Apothem folder at a name
+Apothem never writes is yours: it is listed under the `Warning:` line for
+files that are changed or yours, it stays, and the uninstall still finishes.
+
+When the latest record at that location is an uninstall that finished, a
+path still left in an Apothem folder (a file of yours, say) stays with a
+`Warning:` line, and the uninstall finishes: that uninstall already reported
+it. After a rollback, or only uninstalls that did not finish, such a path
+stops the uninstall as it does when there is no record.
 
 The shared working directory's memory, contexts, and learning stores are
 backed up and removed only when this is the last harness installed at that
@@ -140,9 +157,11 @@ purpose. Apothem does not remove anything through a symbolic link or a Windows
 junction, so a link in a folder it removes stays, and so does a leftover folder
 from an earlier release that is reached through a link. Paths kept for the same
 link, or for the same reason (not what Apothem wrote, not in the install
-record), print as one line with their count; a file it could not remove is
-named too. Under a line for kept paths, each file it kept is listed, the
-files inside a kept folder included. With `--quiet` these lines print only
+record), print as one line with their count. Under a line for kept paths,
+each file it kept is listed, the files inside a kept folder included (a kept
+folder that holds nothing is listed itself). A file Apothem wrote that it
+could not remove is listed under the `✗` line that reports it, not as a kept
+file. With `--quiet` these lines print only
 when the uninstall does not finish, and then on standard error with the `✗`
 line, so the paths its advice is about stay in view. In the `--format json`
 envelope each such line is one `warnings` entry with `"outcome": "warning"`,
@@ -159,9 +178,14 @@ junction to a dotfiles folder that still holds the rules Apothem wrote: the
 command prints `✗ <harness> uninstall did not finish:` with the link and the
 number of paths it left, keeps the install recorded, and exits `2`. Replace
 the link with a real folder that holds the same files, then run the command
-again. A linked folder that holds only your own files, or Apothem files you
-have edited, does not stop the uninstall: the link stays with a warning and
-the uninstall finishes.
+again. For an install whose record lists the files it wrote, a linked folder
+that holds only your own files, or Apothem files you have edited, does not
+stop the uninstall: the link stays with a warning and the uninstall finishes.
+For an install an earlier release recorded, any file behind the link at a
+name this release writes stops the uninstall, edited or not, because nothing
+tells it apart from what that release wrote. Replace the link with a real
+folder that holds the same files, then follow the steps for such an install
+above: copy any file you edited, run `apothem update`, then uninstall again.
 
 When a removal step reports an error (an installed file whose path leads out
 of your home folder, say), the command prints `✗ <harness> uninstall did not
@@ -184,13 +208,20 @@ your home directory, say) removes nothing and exits `1`.
 
 ### An uninstall that did not finish
 
-When an uninstall does not finish (a step failed, it stopped with an
-exception, or Apothem's own files stay behind a link), it appends an
-`uninstall-incomplete` record to the install ledger instead of an `uninstall`
-record. The install stays recorded, so `apothem status`, `verify` and
+When an uninstall does not finish, it appends an `uninstall-incomplete` record
+to the install ledger instead of an `uninstall` record. That happens when a
+step failed, when it stopped with an exception, when Apothem's own files stay
+behind a link, when files of an install an earlier release recorded differ
+from what this release writes, and when the install has no record. The last
+two exit `2` with `status` `"partial"` even when nothing was removed, and
+finish only after `apothem update` (see
+[What an uninstall removes](#what-an-uninstall-removes)). The
+install stays recorded, so `apothem status`, `verify` and
 `rollback` still see it, and the harness reads as installed while a file the
 install wrote is still there unchanged, so running `uninstall` again finishes
-the job. An `install`, `update`, `rollback` or finished `uninstall` of that
+the job. An install with no record has none to keep: only its files on disk
+make the harness read as installed, and `rollback` has nothing to roll back.
+An `install`, `update`, `rollback` or finished `uninstall` of that
 harness at that location replaces the state, and so does removing the
 remaining files by hand: with none of Apothem's files left as it wrote them,
 the harness reads as not installed, whatever else is in the folder. The first
@@ -222,7 +253,7 @@ The continuous-form alias `apothem uninstalling` (also accepted as
 | `--harness NAME` | Harness adapter to remove, or `all` for the registry-wide set (required). |
 | `--yes` | Skip confirmation prompt. |
 | `--project PATH` | Project root for project-scope harnesses. |
-| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. An uninstall that does not finish still prints its `Warning:` lines, which list what it kept, on standard error. |
 | `--verbose`, `-v` | Accepted for consistency with other commands; this command prints no extra output. |
 | `--format plain\|json` | Output format (default: `plain`). |
 | `--json` | Shorthand for `--format json`. |
