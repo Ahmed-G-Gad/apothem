@@ -101,6 +101,7 @@ from .install_driver_converters import _toml_multiline_string as _toml_multiline
 from .install_driver_converters import _toml_string as _toml_string
 from .install_driver_converters import _yaml_list as _yaml_list
 from .install_driver_converters import _yaml_scalar as _yaml_scalar
+from .install_driver_datahome import _remove_data_home as _remove_data_home
 from .install_driver_jsonmerge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
 from .install_driver_jsonmerge import (
     CONFIG_UNPARSEABLE_CODE as CONFIG_UNPARSEABLE_CODE,
@@ -116,7 +117,6 @@ from .install_driver_jsonmerge import is_apothem_hook as is_apothem_hook
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
 from .install_driver_lifecycle import _profile_anchor_targets as _profile_anchor_targets
-from .install_driver_lifecycle import _remove_data_home as _remove_data_home
 from .install_driver_lifecycle import _rendered_template_text as _rendered_template_text
 from .install_driver_lifecycle import build_plan as build_plan
 from .install_driver_lifecycle import check_fidelity as check_fidelity

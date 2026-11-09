@@ -18,7 +18,6 @@ from pathlib import Path
 import pytest
 
 from apothem.harnesses._shared.install_driver import (
-    MaterializationError,
     MaterializationResult,
     check_fidelity,
 )
@@ -1007,9 +1006,9 @@ def test_an_uninstall_that_cannot_clean_a_file_fails_and_keeps_the_record(
     _link_folder(old / "apothem", moved)
     _move_default_workspace(home, "~/ws-b")
 
-    with pytest.raises(MaterializationError, match="uninstall failed"):
-        adapter.uninstall()
+    run = adapter.uninstall()
 
+    assert any(r.detail.get("blocked") for r in run.results)
     assert (moved / "AGENTS.md").is_file()
     assert install_ledger.active_install_records("open_claw", root=home / ".openclaw")
 
@@ -1100,9 +1099,9 @@ def test_the_uninstall_command_fails_when_a_rules_file_cannot_be_cleaned(
 
     result = CliRunner().invoke(main, ["uninstall", "--harness", "open-claw", "--yes"])
 
-    assert result.exit_code != 0
-    assert "Uninstalled" not in result.output
-    assert "through a link" in result.output
+    assert result.exit_code == 2, result.output
+    assert "through" in result.output
+    assert "link" in result.output
 
 
 def _commented(home: Path, doc: dict[str, object]) -> str:
@@ -1152,9 +1151,10 @@ def test_uninstall_names_entries_left_in_a_commented_config(
     adapter.install({})
     text = _commented(home, _config(home))
 
-    with pytest.raises(MaterializationError, match="by hand"):
-        adapter.uninstall()
+    run = adapter.uninstall()
 
+    assert [r.outcome for r in run.results] == ["error"]
+    assert "by hand" in run.results[0].message
     # Nothing else ran: the file, its comment and the support tree stay.
     assert _config_path(home).read_text(encoding="utf-8") == text
     assert (home / ".openclaw" / ".apothem" / "support").is_dir()
@@ -1236,8 +1236,10 @@ def test_a_linked_rules_file_emptied_by_hand_no_longer_blocks_uninstall(
     (old / "apothem").rename(moved)
     _link_folder(old / "apothem", moved)
     _move_default_workspace(home, "~/ws-b")
-    with pytest.raises(MaterializationError, match="through a link"):
-        adapter.uninstall()
+    first = adapter.uninstall()
+    assert any(
+        r.detail.get("blocked") and "through a link" in r.message for r in first.results
+    )
 
     (moved / "AGENTS.md").write_text("", encoding="utf-8")
     adapter.uninstall()
@@ -1258,9 +1260,9 @@ def test_a_commented_config_stops_uninstall_before_any_rules_file_changes(
     rules = (workspace / RULES_FILE_RELATIVE).read_bytes()
     _commented(home, _config(home))
 
-    with pytest.raises(MaterializationError, match="by hand"):
-        adapter.uninstall()
+    run = adapter.uninstall()
 
+    assert any(r.outcome == "error" and "by hand" in r.message for r in run.results)
     assert (workspace / RULES_FILE_RELATIVE).read_bytes() == rules
 
 
@@ -1277,18 +1279,6 @@ def test_a_commented_file_apothem_created_keeps_its_comment_after_the_hand_fix(
     adapter.uninstall()
 
     assert _config_path(home).read_text(encoding="utf-8") == text
-
-
-def test_every_uninstall_blocker_is_named_at_once(home: Path) -> None:
-    from apothem.harnesses._shared.wrapper_factories import raise_on_uninstall_error
-
-    failures = [
-        MaterializationResult("error", "retire_anchor", "a", "first"),
-        MaterializationResult("error", "retire_anchor", "b", "second"),
-    ]
-
-    with pytest.raises(MaterializationError, match="first; also at b: second"):
-        raise_on_uninstall_error("open_claw", failures)
 
 
 def test_ids_that_normalize_alike_still_count_as_two_entries(home: Path) -> None:
@@ -1361,3 +1351,21 @@ def test_a_relative_workspace_variable_is_not_expanded(home: Path) -> None:
 
     assert workspaces == []
     assert any("not an absolute path" in note for note in notes)
+
+
+def test_a_retired_rules_file_is_not_listed_in_the_new_record(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    old = _workspace(home / "ws-a")
+    new = _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    _move_default_workspace(home, "~/ws-b")
+
+    adapter.update({})
+
+    record = install_ledger.current_install_record("open_claw", root=home / ".openclaw")
+    assert record is not None
+    listed = {Path(target.path) for target in record.targets}
+    assert old / RULES_FILE_RELATIVE not in listed
+    assert new / RULES_FILE_RELATIVE in listed

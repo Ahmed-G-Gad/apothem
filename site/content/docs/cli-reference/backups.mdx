@@ -38,7 +38,10 @@ demand, with your own bound:
   install record of any install root, still references. `apothem rollback` of
   the latest install therefore still restores after any prune. Uninstall and
   rollback records reference the backups those passes took, so they stay
-  while the record is kept. A root with nothing installed keeps its last
+  while the record is kept. So does the `uninstall-incomplete` record an
+  unfinished uninstall leaves (see
+  [uninstall](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)),
+  which is kept with the install it belongs to. A root with nothing installed keeps its last
   record, so the backups of its last uninstall or rollback stay until that
   root sees another install, uninstall or rollback.
 - It never deletes a backup set holding a path that earlier releases

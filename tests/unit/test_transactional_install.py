@@ -232,7 +232,7 @@ def test_failed_native_config_install_restores_the_operator_config(
     assert all(t.backup_ref for t in marker.targets)
 
 
-def test_uninstall_withholds_its_marker_when_a_prior_removal_failed(
+def test_uninstall_is_unfinished_when_a_prior_removal_failed(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / ".claude"
@@ -249,4 +249,5 @@ def test_uninstall_withholds_its_marker_when_a_prior_removal_failed(
 
     marker = install_ledger.latest_record("claude_code", kind=None)
     assert marker is not None
-    assert marker.kind == "install"
+    assert marker.kind == "uninstall-incomplete"
+    assert install_ledger.current_install_record("claude_code", root=root) is not None

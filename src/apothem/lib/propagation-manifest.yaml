@@ -70,7 +70,8 @@
 #                      Matched against entry basenames within each
 #                      directory the adapter walks.
 #       stale-sweep:   Harness-root-relative paths swept on every install:
-#                      each is backed up, then removed whole. List only a
+#                      each is backed up, then removed (a link in it is
+#                      left in place with a warning). List only a
 #                      path in Apothem's own namespace that a release
 #                      installed into, never a folder a user or the tool
 #                      also writes (~/.claude/commands, ~/.codex/rules).

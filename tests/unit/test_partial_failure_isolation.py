@@ -18,6 +18,8 @@ import pytest
 from click.testing import CliRunner
 
 from apothem import cli
+from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver_types import _result
 
 
 class _GoodAdapter:
@@ -39,8 +41,9 @@ class _GoodAdapter:
     def verify(self) -> bool:
         return True
 
-    def uninstall(self) -> None:
-        return None
+    def uninstall(self) -> MaterializationRun:
+        removed = _result("updated", "remove_existing", self.output_path, "removed")
+        return MaterializationRun(harness="alpha", dry_run=False, results=(removed,))
 
 
 def _make_faulty(fault: str) -> object:

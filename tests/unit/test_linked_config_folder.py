@@ -234,7 +234,7 @@ def test_a_link_at_or_below_the_opencode_folder_still_stops_the_install(
     target = home / ".config" / f"linked-{below.replace('/', '-')}"
     _link(home / ".config" / below, target)
 
-    with pytest.raises(install_driver.MaterializationError, match="symlink"):
+    with pytest.raises(install_driver.MaterializationError, match="link"):
         OpenCodeAdapter().install({})
 
     assert list(target.iterdir()) == []

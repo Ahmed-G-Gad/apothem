@@ -46,7 +46,7 @@ from .install_driver_planvalidation import (
     make_ignore,
 )
 from .install_driver_shared import _protected_targets, entry_scope
-from .install_driver_sweep import sweep_stale
+from .install_driver_sweep import kept_link_warnings, sweep_stale
 from .install_driver_types import (
     AuthorizeFn,
     IgnoreFn,
@@ -414,5 +414,5 @@ def run_install(
     return MaterializationRun(
         harness=harness_name,
         dry_run=False,
-        results=tuple(results),
+        results=(*results, *kept_link_warnings(results)),
     )

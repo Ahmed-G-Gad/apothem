@@ -225,7 +225,9 @@ def test_reinstall_and_dry_run_report_unchanged(tmp_path: Path) -> None:
 
 def test_uninstall_removes_the_installed_skills(tmp_path: Path) -> None:
     root = tmp_path / ".qwen"
-    install_driver.run_install("qwen_code", harness_root=root)
+    install_driver.finalize_install(
+        install_driver.run_install("qwen_code", harness_root=root), root=root
+    )
     assert list((root / "skills").glob("*/SKILL.md"))
     install_driver.run_uninstall("qwen_code", harness_root=root)
     assert not list((root / "skills").glob("*/SKILL.md"))

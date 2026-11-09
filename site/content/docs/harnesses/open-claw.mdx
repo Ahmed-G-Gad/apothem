@@ -289,12 +289,17 @@ own keys in `openclaw.json` stay, including your own `extraDirs` entries and
 hook settings, the workspace's own files stay as they are, and `openclaw.json`
 is deleted only when Apothem created it and nothing of yours is left.
 
-Some leftovers need your hand: a rules file reached through a link that still
-holds the Apothem block, and Apothem's entries in an `openclaw.json` that holds
-comments or other JSON5 syntax. Uninstall then stops before it changes anything
-else, exits with an error that names the file and what to remove, and keeps its
-install record. Remove the Apothem block (or the file) or the named entries,
-then run the uninstall again; it then does the whole job. The shared profile
+Some leftovers need your hand:
+
+- **Apothem's entries in an `openclaw.json` that holds comments or other JSON5
+  syntax.** Uninstall stops before it changes anything and exits with an error
+  that names the entries to remove.
+- **A rules file reached through a link that still holds the Apothem block.**
+  Uninstall removes everything else, leaves that file in place, and reports the
+  uninstall as unfinished (exit code 2), naming the file.
+
+In both cases Apothem keeps its install record. Remove the named entries, or
+the Apothem block (or the file), then run the uninstall again to finish. The shared profile
 YAML and
 Apothem engine are unaffected.
 

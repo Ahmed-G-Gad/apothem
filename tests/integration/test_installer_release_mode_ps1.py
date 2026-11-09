@@ -28,7 +28,7 @@ import subprocess
 import sys
 import threading
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -304,9 +304,12 @@ def _run(
     dry_run: bool = False,
     gpg_status: str | None = None,
     extra_env: dict[str, str] | None = None,
+    patch: Callable[[str], str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run install.ps1 against the fixture release; the tag check reads
-    GPG_STATUS from a stub gpg (a good maintainer signature by default)."""
+    GPG_STATUS from a stub gpg (a good maintainer signature by default).
+    PATCH, when given, rewrites the copy of the script that runs (fault
+    injection)."""
     env = _env(tmp_path, gpg_status=gpg_status, extra_env=extra_env)
     env["APOTHEM_RELEASE_BASE"] = base_url
     if mode is not None:
@@ -318,6 +321,9 @@ def _run(
     staging.mkdir(exist_ok=True)
     installer = staging / "install.ps1"
     shutil.copy2(INSTALLER, installer)
+    if patch is not None:
+        text = installer.read_bytes().decode("ascii")
+        installer.write_bytes(patch(text).encode("ascii"))
     assert _PWSH is not None
     args = [_PWSH, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(installer)]
     args += (["-DryRun"] if dry_run else []) + (["-Yes"] if yes else [])
@@ -1645,13 +1651,29 @@ def test_a_repository_that_reads_as_an_option_is_refused(
     assert "Cloning" not in plain, plain
 
 
-def _whoami() -> str:
-    return subprocess.run(
-        ["whoami"], capture_output=True, text=True, check=True, timeout=30
-    ).stdout.strip()
+# Fault injected into the copy of install.ps1 under test: Move-Entry fails
+# when it moves APOTHEM_HOME itself, or moves anything into APOTHEM_HOME.
+# The engine's data still moves out into the new tree, the earlier tree then
+# cannot move aside, and the rollback cannot move the data back.
+_MOVE_ENTRY_HEAD = (
+    "    $ToFull = $ExecutionContext.SessionState.Path"
+    ".GetUnresolvedProviderPathFromPSPath($To)\r\n"
+)
+_MOVE_ENTRY_FAULT = (
+    "    $HomeFull = $ExecutionContext.SessionState.Path"
+    ".GetUnresolvedProviderPathFromPSPath($ApothemHome)\r\n"
+    "    if ($FromFull -eq $HomeFull -or "
+    "[System.IO.Path]::GetDirectoryName($ToFull) -eq $HomeFull) "
+    "{ throw 'injected fault' }\r\n"
+)
 
 
-@requires_windows
+def _fail_moves_at_home(script: str) -> str:
+    """Make the script's Move-Entry fail at APOTHEM_HOME (see above)."""
+    assert script.count(_MOVE_ENTRY_HEAD) == 1, "Move-Entry changed shape"
+    return script.replace(_MOVE_ENTRY_HEAD, _MOVE_ENTRY_HEAD + _MOVE_ENTRY_FAULT)
+
+
 def test_a_failed_rollback_keeps_the_staging_folder_and_names_it(
     tmp_path: Path, release: tuple[Path, str]
 ) -> None:
@@ -1659,32 +1681,20 @@ def test_a_failed_rollback_keeps_the_staging_folder_and_names_it(
     the earlier tree and the moved data are, and keeps the staging folder,
     which holds the only copy of the data it carried.
 
-    The engine's data moves into the new tree first; a file held open in the
-    earlier tree then stops it moving aside, and an access rule that denies
-    adding a folder to APOTHEM_HOME stops the data moving back."""
+    The engine's data moves into the new tree first; the injected fault then
+    stops the earlier tree moving aside and stops the data moving back."""
     folder, base_url = release
     _publish(folder)
     home = tmp_path / "apothem-home"
     _seed_earlier_install(home)
-    user = _whoami()
-    subprocess.run(
-        ["icacls", str(home), "/deny", f"{user}:(AD)"],
-        check=True,
-        capture_output=True,
-        timeout=60,
+
+    result = _run(
+        tmp_path,
+        base_url,
+        cosign_dir=_stub_cosign(tmp_path),
+        yes=False,
+        patch=_fail_moves_at_home,
     )
-    try:
-        with (home / "pyproject.toml").open("rb"):
-            result = _run(
-                tmp_path, base_url, cosign_dir=_stub_cosign(tmp_path), yes=False
-            )
-    finally:
-        subprocess.run(
-            ["icacls", str(home), "/remove:d", user],
-            check=True,
-            capture_output=True,
-            timeout=60,
-        )
 
     plain = _plain(result.stdout + result.stderr)
     assert result.returncode != 0, plain

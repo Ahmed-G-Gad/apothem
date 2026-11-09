@@ -803,13 +803,22 @@ def _retire_one(
         return []
     link = _unsafe_symlink(path, home)
     if link is not None:
+        detail = {"symlink": str(link)}
+        if strict:
+            # The tool still loads it, so the uninstall is unfinished.
+            detail["blocked"] = "1"
         return [
-            flag(
-                path,
-                f"an earlier Apothem rules file is reached through a link ({link}); "
-                "Apothem changes nothing through a link, so it is left in place. "
-                "Delete the Apothem block in it, or the file, by hand, then run "
-                "the command again.",
+            MaterializationResult(
+                outcome="warning",
+                operation=_RETIRE,
+                path=str(path),
+                message=(
+                    f"an earlier Apothem rules file is reached through a link "
+                    f"({link}); Apothem changes nothing through a link, so it is "
+                    "left in place. Delete the Apothem block in it, or the file, "
+                    "by hand, then run the command again."
+                ),
+                detail=detail,
             )
         ]
     if dry_run:

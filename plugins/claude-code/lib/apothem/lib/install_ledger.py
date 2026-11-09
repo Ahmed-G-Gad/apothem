@@ -68,11 +68,18 @@ class LedgerError(ValueError):
     """
 
 
-#: A ledger record's lifecycle kind.
-RecordKind = Literal["install", "uninstall", "rollback"]
+#: A ledger record's lifecycle kind. ``uninstall-incomplete`` records an
+#: uninstall that did not finish: it leaves the install active (a reader that
+#: does not know the kind skips it the same way), so a second run can finish.
+RecordKind = Literal["install", "uninstall", "rollback", "uninstall-incomplete"]
 
 #: The accepted record kinds, validated on construction.
-RECORD_KINDS: tuple[RecordKind, ...] = ("install", "uninstall", "rollback")
+RECORD_KINDS: tuple[RecordKind, ...] = (
+    "install",
+    "uninstall",
+    "rollback",
+    "uninstall-incomplete",
+)
 
 
 def generate_ulid() -> str:
@@ -196,6 +203,14 @@ class LedgerTarget:
             :class:`OwnedEntry`), carried forward from record to record;
             ``None`` when not recorded (a non-structured target, or an older
             record).
+        digest: The SHA-256 of the file as this pass left it, for a target
+            that is a file; ``None`` for a folder and in older records.
+            Uninstall removes the file only while it still has this content.
+        files: For a target that is a folder, each file in it as this pass
+            left it (a ``/``-separated path relative to the folder, mapped to
+            its SHA-256; links are not followed). ``None`` for a file and in
+            older records. Uninstall removes only the listed files whose
+            content still matches.
     """
 
     path: str
@@ -205,6 +220,8 @@ class LedgerTarget:
     outcome: str | None = None
     created: bool | None = None
     owned: tuple[OwnedEntry, ...] | None = field(default=None)
+    digest: str | None = None
+    files: dict[str, str] | None = field(default=None, hash=False)
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable representation, omitting absent fields."""
@@ -221,6 +238,10 @@ class LedgerTarget:
             payload["created"] = self.created
         if self.owned is not None:
             payload["owned"] = [entry.to_dict() for entry in self.owned]
+        if self.digest is not None:
+            payload["digest"] = self.digest
+        if self.files is not None:
+            payload["files"] = dict(sorted(self.files.items()))
         return payload
 
     @classmethod
@@ -251,7 +272,23 @@ class LedgerTarget:
             outcome=None if outcome is None else str(outcome),
             created=created if isinstance(created, bool) else None,
             owned=owned,
+            digest=_text_or_none(data.get("digest")),
+            files=_digest_map(data.get("files")),
         )
+
+
+def _text_or_none(value: object) -> str | None:
+    """Return *value* when it is a non-empty string, else ``None``."""
+    return value if isinstance(value, str) and value else None
+
+
+def _digest_map(value: object) -> dict[str, str] | None:
+    """Return a recorded ``files`` map, keeping only string-to-string entries."""
+    if not isinstance(value, dict):
+        return None
+    return {
+        str(path): digest for path, digest in value.items() if isinstance(digest, str)
+    }
 
 
 @dataclass(frozen=True)
@@ -536,6 +573,38 @@ def current_install_record(
     return installs[-1] if installs else None
 
 
+def unfinished_uninstall(
+    harness: str,
+    *,
+    root: Path | str,
+    state_root: Path | None = None,
+) -> LedgerRecord | None:
+    """Return the ``uninstall-incomplete`` record when it is *root*'s latest.
+
+    An install, update, rollback or finished uninstall appended after it
+    supersedes it, so ``None`` then, and when *root* has no record. The
+    rollback a failed install appends to undo itself (its id matches no
+    install) changed nothing and supersedes nothing.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    root_str = str(root)
+    records = [
+        record
+        for record in read_records(harness, state_root=state_root)
+        if record.root == root_str
+    ]
+    installed = {record.install_id for record in records if record.kind == "install"}
+    for record in reversed(records):
+        # A failed install that undid itself appends a rollback of an id no
+        # install has; it changed nothing, so it supersedes nothing.
+        if record.kind == "rollback" and record.install_id not in installed:
+            continue
+        return record if record.kind == "uninstall-incomplete" else None
+    return None
+
+
 def active_install_ids(records: list[LedgerRecord]) -> set[str]:
     """Return the install-ids still active in one root's *records* (replayed).
 
@@ -682,4 +751,5 @@ __all__ = [
     "latest_record",
     "ledger_path",
     "read_records",
+    "unfinished_uninstall",
 ]

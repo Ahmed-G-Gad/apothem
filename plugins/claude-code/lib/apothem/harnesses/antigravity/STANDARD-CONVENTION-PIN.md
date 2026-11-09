@@ -64,8 +64,9 @@
   CLI version named in a version field is 1.1.8 (issue 1155).
 - Earlier installs: an install or update over an install that holds the earlier
   folder backs `~/.gemini/antigravity-cli/plugins/apothem/` up under the Apothem
-  backup root and removes it whole, then writes the new folder; an uninstall
-  removes the earlier folder whole and Apothem's files from the current one.
+  backup root and removes it, then writes the new folder; an uninstall
+  removes the earlier folder and Apothem's files from the current one. A link
+  in the earlier folder, or at its path, is left in place with a warning.
   Other files under `~/.gemini/antigravity-cli/` are not touched.
 - Shared folder: the App and IDE load the same folder as the CLI (the plugins
   page lists manual placement in `~/.gemini/config/plugins/` for the App and
