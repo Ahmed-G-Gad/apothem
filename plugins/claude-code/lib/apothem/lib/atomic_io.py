@@ -21,6 +21,7 @@ install driver share:
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import json
 import os
@@ -120,32 +121,37 @@ def append_line_durably(path: Path, line: str) -> None:
 
     The caller holds the advisory lock that serializes appends to *path*
     (the install ledger and the learning store both do), so this append is
-    the only writer. A write that fails part way is cut back off, so the file
-    ends where it did; the error still propagates. A final line a crash left
+    the only writer. A write or an fsync that fails (or is interrupted) is
+    cut back off, so the file ends where it did and keeps the record only
+    once it is durable; the error still propagates. A final line a crash left
     without its newline is settled first (see :func:`_settle_torn_tail`), so
-    the new record never lands on the same line as a torn one.
+    the new record never lands on the same line as a torn one; a tail that
+    cannot be settled refuses the append (its error propagates, nothing is
+    written). The fd is binary (``O_BINARY`` where the platform has it), so
+    the bytes written are the record's own and the count is exact.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     record = line if line.endswith("\n") else f"{line}\n"
-    # Best effort: when the tail cannot be settled, the append goes ahead as
-    # it always did.
-    with contextlib.suppress(OSError):
-        _settle_torn_tail(path)
+    _settle_torn_tail(path)
     # Owner-only (0o600): append records are per-user state and may carry
     # profile-derived content; a new file must not be created world-readable.
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_BINARY", 0)
+    fd = os.open(path, flags, 0o600)
     try:
         start = os.lseek(fd, 0, os.SEEK_END)
         try:
             _write_all(fd, record.encode("utf-8"), path)
+            os.fsync(fd)
         except BaseException:
             # Never mask the write's own error with the cleanup's.
             with contextlib.suppress(OSError):
                 os.ftruncate(fd, start)
             raise
-        os.fsync(fd)
     finally:
-        os.close(fd)
+        # The record is durable or cut back by now, so a failed close changes
+        # nothing about it, and never masks the write's own error.
+        with contextlib.suppress(OSError):
+            os.close(fd)
     _fsync_dir(path.parent)
 
 
@@ -157,11 +163,12 @@ def _settle_torn_tail(path: Path) -> None:
     """End *path* at a line break before a record is appended to it.
 
     Every line :func:`append_line_durably` writes ends in ``\n``, so a final
-    line without one was torn by a crash mid-append. When it does not parse as
-    JSON, it is cut off: the readers of both stores that append here drop such
-    a final line anyway. When it parses, only its newline was lost, and the
-    readers return it, so it is ended instead. Either way the readers return
-    what they did before.
+    line without one was torn by a crash mid-append. A torn record (see
+    :func:`_torn`) is cut off: the readers of both stores that append here
+    drop such a final line anyway. Any other final line is ended instead: a
+    record that lost only its newline, which the readers return, or bytes
+    that are not UTF-8, which are damage the readers report, so it is kept
+    for the operator to see.
     """
     if not path.is_file():
         return
@@ -174,11 +181,11 @@ def _settle_torn_tail(path: Path) -> None:
             return
         start = _line_start(handle, end)
         handle.seek(start)
-        if _parses(handle.read()):
+        if _torn(handle.read()):
+            handle.truncate(start)
+        else:
             handle.seek(0, os.SEEK_END)
             handle.write(b"\n")
-        else:
-            handle.truncate(start)
         handle.flush()
         os.fsync(handle.fileno())
 
@@ -196,13 +203,23 @@ def _line_start(handle: BinaryIO, end: int) -> int:
     return 0
 
 
-def _parses(data: bytes) -> bool:
-    """Return True when *data* is one JSON document (surrounding blanks allowed)."""
+def _torn(data: bytes) -> bool:
+    """Return True when the final line *data* is a record a crash cut short.
+
+    It is UTF-8 text, perhaps cut inside a character, and not one JSON
+    document (surrounding blanks allowed). Bytes that are not UTF-8 are
+    damage, not a tear.
+    """
     try:
-        json.loads(data)
-    except (ValueError, RecursionError):
+        codecs.getincrementaldecoder("utf-8")().decode(data)
+    except UnicodeDecodeError:
         return False
-    return True
+    try:
+        # A character cut short fails to decode here: that line is torn too.
+        json.loads(data.decode("utf-8"))
+    except (ValueError, RecursionError):
+        return True
+    return False
 
 
 def _write_all(fd: int, data: bytes, path: Path) -> None:

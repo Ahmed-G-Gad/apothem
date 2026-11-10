@@ -398,3 +398,74 @@ def test_a_torn_only_line_is_cut_before_the_next_append(tmp_path: Path) -> None:
     atomic_io.append_line_durably(target, '{"kind": "install"}')
 
     assert target.read_text(encoding="utf-8").splitlines() == ['{"kind": "install"}']
+
+
+def test_a_record_is_written_as_its_own_bytes(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    # A bare newline on every platform: no text-mode CR is added.
+    assert target.read_bytes() == b'{"kind": "install"}\n'
+
+
+@pytest.mark.parametrize(
+    "error", [OSError(errno.EIO, "I/O error"), KeyboardInterrupt()]
+)
+def test_an_append_whose_sync_fails_is_cut_back_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+
+    def fails(fd: int) -> None:
+        raise error
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails)
+    with pytest.raises(type(error)):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert target.read_bytes() == before
+
+
+def test_a_tail_that_cannot_be_settled_refuses_the_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "uninstall"}')
+    before = target.read_bytes()
+
+    def unreadable(path: Path) -> None:
+        raise PermissionError("no read access")
+
+    monkeypatch.setattr(atomic_io, "_settle_torn_tail", unreadable)
+    with pytest.raises(PermissionError):
+        atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    # Never glued onto the record that lost its newline.
+    assert target.read_bytes() == before
+
+
+def test_a_last_line_that_is_not_utf8_is_kept_on_a_line_of_its_own(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"a": 1}\n{"a": "\xff\xfe')
+
+    atomic_io.append_line_durably(target, '{"a": 3}')
+
+    # Damage, not a tear: it stays for the reader to report.
+    assert target.read_bytes() == b'{"a": 1}\n{"a": "\xff\xfe\n{"a": 3}\n'
+
+
+@pytest.mark.parametrize(
+    "tail", [b'{"a": "caf\xc3', b'{"a": "caf\xc3\xa9', b"\x00\x00"]
+)
+def test_a_torn_utf8_last_line_is_cut(tmp_path: Path, tail: bytes) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"a": 1}\n' + tail)
+
+    atomic_io.append_line_durably(target, '{"a": 3}')
+
+    assert target.read_bytes() == b'{"a": 1}\n{"a": 3}\n'
