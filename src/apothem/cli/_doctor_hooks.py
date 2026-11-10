@@ -100,6 +100,29 @@ def registered_hook_argvs(
     return argvs
 
 
+def _same_folder(spelling: str, root: Path) -> bool:
+    """Return True when the recorded root *spelling* names *root*'s folder.
+
+    :func:`same_location` folds letter case only where the OS does (Windows).
+    On a volume that ignores case but keeps it, as macOS does by default, two
+    spellings that differ only in case are one folder when both exist with one
+    file ID (``st_dev`` and ``st_ino``, neither 0). Names that differ otherwise
+    are never joined by file ID, since some network drives give every folder
+    the same one, and a case-sensitive folder holds ``Proj`` and ``proj`` as
+    two IDs.
+    """
+    if same_location(spelling, root):
+        return True
+    left, right = os.path.normpath(spelling), os.path.normpath(str(root))
+    if left == right or left.lower() != right.lower():
+        return False
+    try:
+        first, second = Path(left).stat(), Path(right).stat()
+    except (OSError, ValueError):
+        return False
+    return bool(first.st_ino and first.st_dev) and os.path.samestat(first, second)
+
+
 def _install_record(package_key: str, root: Path) -> install_ledger.LedgerRecord | None:
     """Return the current install record at *root*, under any spelling of *root*.
 
@@ -120,7 +143,7 @@ def _install_record(package_key: str, root: Path) -> install_ledger.LedgerRecord
     spellings = dict.fromkeys(earlier.root for earlier in reversed(records))
     spellings.pop(str(root), None)
     for spelling in spellings:
-        if not same_location(spelling, root):
+        if not _same_folder(spelling, root):
             continue
         record = install_ledger.current_install_record(package_key, root=spelling)
         if record is not None:

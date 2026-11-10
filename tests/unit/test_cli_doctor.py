@@ -238,6 +238,37 @@ def test_doctor_finds_the_install_under_another_letter_case_of_its_folder(
     assert not [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
 
 
+def test_a_spelling_in_another_letter_case_is_matched_by_file_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Where the OS does not fold case (macOS), the file ID joins the spellings.
+
+    ``same_location`` is made to answer no, as it does on macOS, so this runs
+    the file-ID branch on every case-insensitive file system.
+    """
+    (tmp_path / "cx").mkdir()
+    (tmp_path / "other").mkdir()
+    if not (tmp_path / "CX").is_dir():
+        pytest.skip("this file system tells letter cases apart")
+    monkeypatch.setattr(_doctor_hooks, "same_location", lambda left, right: False)
+
+    assert _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "CX")
+    assert not _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "other")
+
+
+def test_two_folders_that_differ_only_in_letter_case_stay_apart(
+    tmp_path: Path,
+) -> None:
+    """On a case-sensitive file system ``cx`` and ``CX`` are two folders."""
+    (tmp_path / "cx").mkdir()
+    try:
+        (tmp_path / "CX").mkdir()
+    except FileExistsError:
+        pytest.skip("this file system folds letter case")
+
+    assert not _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "CX")
+
+
 @pytest.mark.parametrize(
     ("name", "os_name", "quoted"),
     [
