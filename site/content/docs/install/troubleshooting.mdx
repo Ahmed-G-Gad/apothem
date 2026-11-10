@@ -322,9 +322,14 @@ the `instructions` list Apothem writes in `opencode.json`:
   read, and a folder with one of those names. Correct the file so it is one
   JSON object with only comments and trailing commas added, with `instructions`
   as a list of text, or move it out of the folder. When the note says the file
-  breaks only once OpenCode 1 puts in its `{env:NAME}` values, change that
-  variable so its value holds no backslash, double quote or control character,
-  for example a Windows path written with forward slashes.
+  breaks once OpenCode 1 puts in its `{env:NAME}` values, change that variable
+  so its value holds no backslash, double quote or control character, for
+  example a Windows path written with forward slashes. When the note says
+  Apothem writes that `{env:NAME}` for an MCP server in your profile, an update
+  writes back a reference removed from the file, so change the variable or, to
+  keep it as it is, restate that server under
+  `harnesses.opencode.mcp_servers.<name>` with the value saved in a file and
+  written as a `{file:path}` that names it. When the note names a second problem with the file, fix that too.
 
 These notes are about OpenCode 1. OpenCode 2 reads both lists and reads no
 `config.json`. It skips a file it cannot parse or whose top level is not an

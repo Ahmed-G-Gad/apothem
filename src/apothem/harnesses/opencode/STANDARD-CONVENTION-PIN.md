@@ -5,7 +5,7 @@
 ## Snapshot
 
 - Snapshot date: 2026-11-09
-- Snapshot note (`opencode.jsonc`): the v1.19.5, v2.2.5 and v2.2.6 source were read on 2026-11-09, with the global configuration fold checked back to v1.0.0 (see the 2026-11-09 source bullet under Vendor Sources). OpenCode 1 lets an `instructions` list in `opencode.jsonc` replace the one in the `opencode.json` the install writes, and OpenCode 2 joins the two, so install, update and verify print a note for such a file. A `config.json`, `opencode.json` or `opencode.jsonc` in that folder that OpenCode 1 cannot parse, whose top level is not an object, whose `instructions` is not a list of strings, whose `{file:path}` names a file it cannot read, or that it cannot read for a reason it does not skip, stops it with an error before it loads any configuration, so each such file gets a note too. OpenCode 2 reads no `config.json`, skips a file it cannot parse or whose top level is not an object, escapes `{env:NAME}` values the text would not parse with, puts in empty text for a `{file:path}` it cannot read, and drops what in `instructions` is not a string; each note says which applies. Previous 2026-11-03.
+- Snapshot note (`opencode.jsonc`): the v1.19.5, v2.2.5 and v2.2.6 source were read on 2026-11-09, with the global configuration fold checked back to v1.0.0 (see the 2026-11-09 source bullet under Vendor Sources). OpenCode 1 lets an `instructions` list in `opencode.jsonc` replace the one in the `opencode.json` the install writes, and OpenCode 2 joins the two, so install, update and verify print a note for such a file. A `config.json`, `opencode.json` or `opencode.jsonc` in that folder that OpenCode 1 cannot parse, whose top level is not an object, whose `instructions` is not a list of strings, whose `{file:path}` names a file it cannot read, or that it cannot read for a reason it does not skip, stops it with an error before it loads any configuration, so each such file gets a note too. OpenCode 2 reads no `config.json`, skips a file it cannot parse or whose top level is not an object, escapes `{env:NAME}` values the text would not parse with, puts in empty text for a `{file:path}` it cannot read, ignores an `instructions` value that is not a list and drops the items of a list that are not strings; each note says which applies. Previous 2026-11-03.
 - Snapshot note (OpenCode 2): the OpenCode 2 docs and the v1.19.5 and v2.2.5 source were read on 2026-11-03 (see OpenCode 2 below). The install now writes only `deny` helper rules, writes each MCP `${NAME}` as `{env:NAME}`, installs into `$XDG_CONFIG_HOME/opencode` when that names an absolute folder, warns when `OPENCODE_CONFIG_DIR` names another folder, and finds an MCP server an operator converted to OpenCode 2's `mcp.servers` shape. Previous 2026-10-14.
 - Snapshot note (CLAUDE.md fallback): the rules page and the OpenCode 2 Instructions page were read on 2026-11-03, with the instruction loaders in the v1.19.5 and v2.2.5 source. OpenCode 1 loads `~/.claude/CLAUDE.md` only when no `<config dir>/AGENTS.md` exists; the config dir is `OPENCODE_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/opencode`, so `~/.config/opencode` by default. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` or `OPENCODE_DISABLE_CLAUDE_CODE=1` turns that read off. OpenCode 2, first published as a GitHub Release with v2.2.0 on 2026-10-27 (npm `@opencode/cli` has carried 2.x since 2.0.0 on 2026-09-11), reads the same `~/.config/opencode/` configuration but discovers only `AGENTS.md` files, with no `CLAUDE.md` fallback. The installer at `opencode.ai/install` and the `opencode-ai` npm package still install OpenCode 1. Previous 2026-10-14.
 - Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools), and the `instructions` path semantics re-observed at opencode-ai 1.19.0 (see Vendor Sources). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
@@ -166,18 +166,44 @@ Retrieved 2026-10-03 unless marked.
   LineTerminator, which holds U+FEFF but not U+0085 or U+001C-U+001F, unlike
   Python's `str.strip()`). OpenCode 1 resolves a relative `{file:path}` with
   Node's `path.resolve(configDir, ...)` and a `~/` one with
-  `path.join(os.homedir(), ...)` (`variable.ts:62-66`), which drop `.` and `..`
+  `path.join(os.homedir(), ...)` (`variable.ts:61-66`), which drop `.` and `..`
   from the text before the system sees it, so on Linux and macOS the check
-  normalizes those paths the same way (Windows does already); an absolute path
-  is used as written. OpenCode 2 (v2.2.6) also puts the `{env:NAME}` values in
+  normalizes those paths the same way (Windows does already); `path.join` keeps
+  a trailing `/`, and the check keeps it too. An absolute path is used exactly
+  as written (`variable.ts:66`), and the check opens it that way, not through
+  `pathlib`, which drops a trailing `/` or `/.`: on Linux and macOS the system
+  refuses a regular file named with either (`ENOTDIR`), which
+  `Filesystem.readText` (`packages/opencode/src/util/filesystem.ts:40-41`,
+  `fs/promises` `readFile`) passes on, so OpenCode 1 stops with a `bad file
+  reference`. On Windows a `{file:path}` rooted without a drive letter is read
+  on the drive OpenCode 1 runs from (`path.isAbsolute` is true for it), which
+  the check cannot know, so the check does not read it. OpenCode 2 (v2.2.6)
+  also puts the `{env:NAME}` values in
   unescaped, but when that text holds `{env:` and fails jsonc-parser it
   substitutes again with each value escaped by
   `JSON.stringify(value).slice(1, -1)`
   (`packages/core/src/config/variable.ts:27-37`). So a value with a
   backslash (a Windows path), a double quote or a control character can stop
   OpenCode 1 alone; the check runs the same escaped parse, and when it succeeds
-  the note says the `{env:NAME}` values break the file and that OpenCode 2
-  parses it. OpenCode 1 also takes `{env:NAME}` values from the well-known
+  the note says the `{env:NAME}` values break the file and checks the shape of
+  the escaped document: a top level that is not an object is refused by
+  OpenCode 1 once the values change and skipped by OpenCode 2
+  (`normalize.ts:57-64`), and an `instructions` value that is not a list of
+  strings is refused by OpenCode 1 and ignored or trimmed by OpenCode 2, so
+  the note says so instead of offering the value change alone. Apothem writes
+  an `{env:NAME}` into the `mcp` block of `opencode.json` for each `${NAME}`
+  in a profile MCP server's environment, headers or URL, and an update writes
+  it back when it is removed, so for such a reference, found in what the
+  install record says Apothem owns there, the note names the server and the
+  `harnesses.opencode.mcp_servers.<name>` override with the value as
+  `{file:path}`, as the install's MCP note does. With a Windows folder such as
+  `C:\Users\name\AppData\Roaming` in the variable, OpenCode 1 cannot parse the
+  `opencode.json` Apothem writes: jsonc-parser 3.3.1 reports
+  `InvalidEscapeCharacter` for `\U` (`lib/esm/impl/scanner.js:145`,
+  `lib/esm/impl/parser.js:400-401`; run 2026-11-10 with Node 26.7.0 over an
+  `opencode.json` an isolated install rendered), while a value whose
+  backslashes all start JSON escapes, such as `C:\new\tmp`, parses into other
+  text. OpenCode 1 also takes `{env:NAME}` values from the well-known
   `opencode auth` entries (`variable.ts:37`, `config.ts:370-374` and `:412`),
   which Apothem cannot see. A `{file:path}` naming a file it cannot read, inside
   a `/* */` comment too, throws `InvalidError` (`bad file reference`,
@@ -192,7 +218,7 @@ Retrieved 2026-10-03 unless marked.
   (`packages/opencode/test/config/config.test.ts:799-805`) expects a parse
   failure for a project file. The CLI commands that format the error with
   `FormatError` report it as `Config file at <path> is not valid JSON(C)`
-  followed by the file and the errors (`packages/opencode/src/cli/ error.ts:82`;
+  followed by the file and the errors (`packages/opencode/src/cli/error.ts:82`;
   the same text in v1.0.0 `cli/error.ts:11`), and a schema error or a bad file
   reference as `Configuration is invalid at <path>` (`error.ts:109-118`); the
   TUI was not checked, so the note names each error without quoting it. v1.0.0
@@ -211,7 +237,7 @@ Retrieved 2026-10-03 unless marked.
   with `Bun.file().text()` (v1.1.4 `config.ts:1006-1016`), and whether that
   drops it was not checked, so the docs say this of current releases only.
   Reading: v1.19.5 `readFileStringSafe` skips only `NotFound` and
-  `PermissionDenied` (`packages/core/src/fs-util.ts:62-66`); the
+  `PermissionDenied` (`packages/core/src/fs-util.ts:62-67`); the
   `PermissionDenied` skip first appears in v1.17.15 (commit `5fb0d1cd`,
   `fs-util.ts:64-65`), and v1.17.14 (commit `0ed10fbd`, `fs-util.ts:65`) skips
   only `NotFound`; `readConfigFile` applies `Effect.orDie` to every other read
@@ -220,7 +246,7 @@ Retrieved 2026-10-03 unless marked.
   `package.json` pins) maps only `ENOENT` to `NotFound` and `EACCES` to
   `PermissionDenied`; `EISDIR`, `ENOTDIR` and `ELOOP` become `BadResource`,
   `EBUSY` becomes `Busy`, and every other code, `EPERM` included, becomes
-  `Unknown` (`src/internal/utils.ts:13-40`; a later release adds `EPERM`). So a
+  `Unknown` (`src/internal/utils.ts:13-41`; a later release adds `EPERM`). So a
   folder named `opencode.jsonc`, a symbolic link loop, or a file another program
   holds stops the configuration the same way, and the install notes each, except
   a path through a file instead of a folder (`ENOTDIR`, which OpenCode 1 does
@@ -254,11 +280,36 @@ Retrieved 2026-10-03 unless marked.
   its runtime's stack depth (under Node 26.7.0, jsonc-parser 3.3.1 parsed arrays
   nested 8000 deep and threw `RangeError` at 12000, run 2026-11-09), so such a
   file can stop OpenCode 1 without a note. The check reads nothing but a regular
-  file or a folder, and no file larger than 16 MiB, so a named pipe or a device,
-  which could block the read, and a very large file get no note either. Names
-  among the three that lead to one file through a symbolic link share one note,
+  file or a folder, and no file larger than 16 MiB, so a configuration file that
+  is a named pipe or a device, which could block the read, or a very large one,
+  gets no note either. A `{file:path}` naming a very large file is checked as
+  empty text while it sits inside a string value and not within an escape
+  sequence, where text escaped as a string's inside cannot change the outcome;
+  in a key (a string followed by `:` after spaces and comments, the only
+  separators jsonc-parser 3.3.1 skips, `lib/esm/impl/scanner.js:352-357`),
+  after an odd backslash, inside a `\u` escape, or outside a string, the file
+  gets no note, since that text decides it. OpenCode 1 reads `/dev/null` as
+  empty text and goes on (`readFile`), so the check puts in empty text for it
+  anywhere. The system refuses to open a socket (`ENXIO` on Linux, run under
+  WSL 2026-11-10; macOS was not run), for `readFile` too, so OpenCode 1 stops
+  with a `bad file reference`. A named pipe or another device can keep `readFile` waiting
+  forever, and OpenCode 1 reads the references in order (`variable.ts:48-87`),
+  so such a reference leaves the file without a note, and no reference after
+  it counts. On Windows a `{file:path}` naming anything but a file or a folder,
+  or a path with a part that ends in a dot or a space, leaves the file without
+  a note: Python reads `NUL` in any folder as the device and drops such a dot
+  or space, while Node 26.7.0 opens `<folder>\NUL` and `f.txt.` beside `f.txt`
+  as missing files (`ENOENT`) and reads a folder named `sub.` by that name (run
+  2026-11-10), and the Bun runtime was not checked; another reference there
+  that OpenCode 1 cannot read still gets its note. When the text with its
+  `{env:NAME}` values escaped depends on such a reference, the note says
+  OpenCode 1 cannot parse the file and nothing of OpenCode 2. Names among
+  the three that lead to one file through a symbolic link share one note,
   given to `opencode.json` when it is one of them, else to the name that is not
-  a link, else to the first one read. OpenCode 2: v2.2.6 `Config.parseInfo` logs
+  a link, else to the first one read; when that is `config.json` and
+  `opencode.jsonc` leads to it, the note says OpenCode 2 reads the file as
+  `opencode.jsonc`. Names in a loop of links lead to no file and get a note
+  each. OpenCode 2: v2.2.6 `Config.parseInfo` logs
   `rejected malformed JSON or JSONC document` and skips the file
   (`packages/core/src/config.ts:136-147`, then `loadFile` returns nothing for
   it, `:168-174`), and `loadDirectory` keeps the other files
@@ -271,10 +322,12 @@ Retrieved 2026-10-03 unless marked.
   rejects a top level that is not an object
   (`packages/core/src/config/normalize.ts:57-64`), after which `parseInfo`
   returns nothing and the file is skipped (`config.ts:148-157`); it drops an
-  `instructions` value that is not an array, and each item that is not a string,
-  as a `skipped malformed recognized value` (`normalize.ts:228-229`, `:690-706`
-  and `:813-815`); and a document that fails the final validation is skipped
-  too, with `rejected canonical configuration after final validation`
+  `instructions` value that is not an array, a string included (`decodeList`
+  returns `[]` for it at `normalize.ts:698-701`, and `:229` keeps
+  `instructions` only for an array or a non-empty list), and each item that is
+  not a string, as a `skipped malformed recognized value`
+  (`normalize.ts:228-229`, `:690-706` and `:813-815`); and a document that
+  fails the final validation is skipped too, with `rejected canonical configuration after final validation`
   (`config.ts:158-166`). The notes say what OpenCode 2 does in each of those
   cases. They do not describe OpenCode 2 for a folder or a read error: the
   source suggests the config layer dies for a folder (`config.ts:330` and
@@ -312,7 +365,7 @@ published 2026-11-06):
 | `opencode.json` in `$XDG_CONFIG_HOME/opencode`, else `~/.config/opencode` | read | read; `OPENCODE_CONFIG_DIR` replaces that folder (OpenCode 1 adds it), so the install warns when it names another folder |
 | `$schema` and `instructions` (`~/`-anchored or absolute paths) | read | read the same way |
 | `instructions` beside an `opencode.jsonc` that holds its own `instructions` list | replaced by that list, an empty list too; install, update and verify print a note | joined with that list (v2.2.5 and v2.2.6) |
-| `instructions` in or beside a `config.json`, `opencode.json` or `opencode.jsonc` that is not JSONC once its `{env:...}` and `{file:...}` tokens are put in, holds only whitespace or comments, has a top level that is not an object or an `instructions` that is not a list of strings, has a `{file:...}` naming a file it cannot read, or cannot be read for a reason OpenCode 1 does not skip | not loaded: OpenCode 1 stops with an error and loads none of its configuration; install, update and verify print a note | `config.json` is not read; a file that cannot be parsed or whose top level is not an object is skipped with a warning, so the written list is lost only when that file is `opencode.json`; a file that parses once its `{env:...}` values are escaped is loaded; an unreadable `{file:...}` puts in empty text; items of `instructions` that are not strings are dropped; a folder or a read error was not checked (v2.2.6) |
+| `instructions` in or beside a `config.json`, `opencode.json` or `opencode.jsonc` that is not JSONC once its `{env:...}` and `{file:...}` tokens are put in, holds only whitespace or comments, has a top level that is not an object or an `instructions` that is not a list of strings, has a `{file:...}` naming a file it cannot read, or cannot be read for a reason OpenCode 1 does not skip | not loaded: OpenCode 1 stops with an error and loads none of its configuration; install, update and verify print a note | `config.json` is not read; a file that cannot be parsed or whose top level is not an object is skipped with a warning, so the written list is lost only when that file is `opencode.json`; a file that parses once its `{env:...}` values are escaped is loaded; an unreadable `{file:...}` puts in empty text; an `instructions` value that is not a list is ignored, and items of a list that are not strings are dropped; a folder or a read error was not checked (v2.2.6) |
 | `mcp.<name>` (`type`, `command`, `environment`, `url`, `headers`, `enabled`) | read | read in place and converted in memory, `enabled` to `disabled` (`packages/core/src/v1/config/migrate.ts`); the file is never rewritten, but an operator may convert it to the `mcp.servers` shape (migrate-v1 page), and update and uninstall remove a converted entry there only when its `mcp.<name>` is gone and it matches what the install wrote as a whole. OpenCode 1.19.5 also lowers `mcp.servers.<name>` to a flat entry; on a name clash the flat entry wins in OpenCode 1 and the `mcp.servers` one in OpenCode 2 |
 | `${NAME}` in an MCP value | not expanded | not expanded; the install writes `{env:NAME}` in environment, headers and URL values, which both lines substitute. Both insert the value into the config text unescaped (OpenCode 2 escapes it only when that text would not parse otherwise), so a backslash, double quote or control character can stop OpenCode 1 from reading the file, and a `\t` or `\n` reaches the server as a control character in both lines; the install warns about such a value |
 | helper `permission` map | read | translated in memory (`bash` becomes `shell`); the install writes only `deny` rules, so the default ask before reading `.env` and `.env.*` files and the operator's stricter rules apply |

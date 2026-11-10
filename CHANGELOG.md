@@ -313,29 +313,46 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     in. JSON5 syntax, `NaN`, a comment never closed, only spaces or comments,
     and a file that is one token that puts in nothing all count. So does an
     `{env:NAME}` value with a backslash, a double quote or a control character
-    in it, such as a Windows path, since OpenCode 1 does not escape it.
+    in it, such as a Windows path, since OpenCode 1 does not escape it. That
+    note also says when fixing the value is not enough, and, for an
+    `{env:NAME}` Apothem writes for a profile MCP server, which an update
+    writes back, names the server to restate with the value saved in a file
+    and written as a `{file:path}` that names it.
   - has a top level that is not an object, or an `instructions` value that is
     not a list of text.
-  - has a `{file:path}` naming a file it cannot read.
+  - has a `{file:path}` naming a file it cannot read, such as a socket, or, on
+    Linux and macOS, a path to a file written with a trailing `/`.
   - is a folder, or a file it cannot read, such as a link that leads back to
     itself.
 
   Each such file gets a note too, even while `OPENCODE_CONFIG_DIR` or
   `OPENCODE_CONFIG` is set, and two names that lead to one file through a
   symbolic link share one note. Only those shapes are checked, not every
-  setting, and a file that is not a regular file, such as a named pipe, or is
-  very large is not read. Install and update still refuse an `opencode.json`
+  setting, and a configuration file that is not a regular file, such as a
+  named pipe, or is very large is not read. The check treats a `{file:path}`
+  naming a very large file, or on Windows one rooted without a drive letter,
+  as empty text while it sits inside a string value, where its text cannot
+  change the outcome, so the rest of the file is still checked; in a key,
+  outside quotes, or within an escape sequence, the file gets no note. A
+  `{file:path}` naming the null device reads as empty text anywhere. One
+  naming a named pipe or another device, or on Windows anything but a file or
+  a folder or a path with a part that ends in a dot or a space, leaves the
+  file without a note, though on Windows another `{file:path}` there that
+  OpenCode 1 cannot read still gets its note. Install and update still refuse an `opencode.json`
   they cannot parse even as JSON5 with `config.unparseable`, so that file gets
   the error and not a note there; verify gives the note for `opencode.json`
   while the profile document holds the Apothem block. Each note says what
-  OpenCode 2 does with the file when that is known: it reads no `config.json`,
-  skips a file it cannot parse or whose top level is not an object, escapes
-  an `{env:NAME}` value the file would not parse with, puts in empty text for
-  a `{file:path}` it cannot read, and drops what in `instructions` is not
-  text. In current OpenCode 1 releases, a file with no bytes, or only a byte
-  order mark, reads as empty and gets no note, and a file they may not read
-  (`Permission denied`) is skipped and gets no note, except on Windows, where
-  they stop for it. The notes change no file and no exit code.
+  OpenCode 2 does with the file when that is known: it reads no `config.json`
+  (when `opencode.jsonc` leads to a `config.json` through a symbolic link,
+  the note says OpenCode 2 reads it under that name), skips a file it cannot
+  parse or whose top level is not an object, escapes an `{env:NAME}` value
+  the file would not parse with, puts in empty text for a `{file:path}` it
+  cannot read, ignores an `instructions` value that is not a list, and drops
+  the items of a list that are not text. In current OpenCode 1 releases, a
+  file with no bytes, or only a byte order mark, reads as empty and gets no
+  note, and a file they may not read (`Permission denied`) is skipped and gets
+  no note, except on Windows, where they stop for it. The notes change no file
+  and no exit code.
 - **The JSONC / JSON5 config reader accepts LINE SEPARATOR and PARAGRAPH
   SEPARATOR inside strings.** JSON and JSON5 allow U+2028 and U+2029 unescaped
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config

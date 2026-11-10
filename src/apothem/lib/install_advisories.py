@@ -58,7 +58,7 @@ import stat
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from urllib.parse import urlsplit
 
 import apothem
@@ -660,10 +660,11 @@ def instruction_override_advisories(
 # the same way (config.ts:186, Effect.orDie). OpenCode 2 (v2.2.6) reads no
 # config.json (packages/core/src/config/discovery.ts:12); it skips a file it
 # cannot parse or whose top level is not an object (packages/core/src/config.ts
-# :136-166 and 168-174, config/normalize.ts:57-64), drops what in instructions
-# is not a string (normalize.ts:228-229 and 690-706), puts in empty text for a
-# {file:path} it cannot read (config/variable.ts:63-73), and escapes the
-# {env:NAME} values when the text would not parse otherwise (variable.ts:27-37).
+# :136-166 and 168-174, config/normalize.ts:57-64), ignores an instructions
+# value that is not a list and drops the items of a list that are not strings
+# (normalize.ts:228-229 and 690-706), puts in empty text for a {file:path} it
+# cannot read (config/variable.ts:63-73), and escapes the {env:NAME} values
+# when the text would not parse otherwise (variable.ts:27-37).
 _OPENCODE_WRITTEN = "opencode.json"
 _OPENCODE_LATER = "opencode.jsonc"
 _OPENCODE_FOLDED = ("config.json", _OPENCODE_WRITTEN, _OPENCODE_LATER)
@@ -781,6 +782,13 @@ _WINDOWS = os.name == "nt"
 # a folder: a named pipe or a device could block the read or never end.
 _READ_LIMIT = 16 * 1024 * 1024
 
+# What jsonc-parser 3.3.1 skips between tokens: space, tab, line feed and
+# carriage return (lib/esm/impl/scanner.js:352-357), and comments. A string
+# followed by ":" is a key.
+_JSONC_GAP = re.compile(r"(?:[ \t\n\r]|//[^\n\r]*|/\*.*?\*/)*", re.DOTALL)
+# The inside of a string up to a point that is not within an escape sequence.
+_STRING_PREFIX = re.compile(r"(?:[^\\]|\\u[0-9A-Fa-f]{4}|\\[^u])*", re.DOTALL)
+
 
 @dataclass(frozen=True)
 class _OpencodeFile:
@@ -792,12 +800,20 @@ class _OpencodeFile:
     ``{file:path}`` token whose file cannot be read), ``"parse"``, ``"env"``
     (the text parses only once its ``{env:NAME}`` values are escaped),
     ``"top-level"`` or ``"instructions"``. *document* is the parsed document
-    when there is one.
+    when there is one; for ``"env"``, the document with the values escaped.
+    For ``"env"``, *escaped* is the refusal that document still gets
+    (``"top-level"``, ``"instructions"`` or ``None``), and *variables* names
+    each variable whose value holds what JSON escapes. *unsure* is True for
+    a ``"parse"`` whose escaped text depends on a ``{file:path}`` the check
+    does not read, so what OpenCode 2 makes of the file is not known.
     """
 
     refusal: str | None = None
     detail: str = ""
     document: object = None
+    escaped: str | None = None
+    variables: tuple[str, ...] = ()
+    unsure: bool = False
 
 
 class _UnreadableReferenceError(Exception):
@@ -810,11 +826,23 @@ class _UnreadableReferenceError(Exception):
 
 
 class _UncheckedError(Exception):
-    """A ``{file:path}`` names something the check does not read.
+    """The outcome depends on the text of a ``{file:path}`` the check does not read.
 
-    That is anything but a regular file or a folder, or a file larger than
-    ``_READ_LIMIT``.
+    The check reads no file larger than ``_READ_LIMIT`` and, on Windows, no
+    path rooted without a drive (see :func:`_referenced_text`). Such a
+    reference is checked as empty text while it sits inside a string value
+    and not within an escape sequence, where no text it puts in changes the
+    outcome (see :func:`_inside_strings`); anywhere else its text decides,
+    so the file is not checked. A reference whose file the check cannot
+    tell OpenCode 1 reads is not checked wherever it sits. *stop* is True
+    for a file OpenCode 1 may wait on forever, such as a named pipe: it
+    reads the references in order, so none after it counts either.
     """
+
+    def __init__(self, *, stop: bool = False) -> None:
+        """Record whether OpenCode 1 may never get past this reference."""
+        super().__init__()
+        self.stop = stop
 
 
 def _env_value(match: re.Match[str], *, escape: bool) -> str:
@@ -844,19 +872,25 @@ def _opencode_substitute(text: str, folder: Path, *, escape: bool = False) -> st
         _UnreadableReferenceError: Without *escape*, when a ``{file:path}``
             names a file that cannot be read, for which OpenCode 1 stops with
             a ``bad file reference`` error (v1.19.5 ``variable.ts:67-82``).
-        _UncheckedError: When a ``{file:path}`` names a file the check does
-            not read.
+        _UncheckedError: When the outcome depends on the text of a
+            ``{file:path}`` the check does not read (see
+            :class:`_UncheckedError`).
     """
     text = _OPENCODE_ENV_TOKEN.sub(lambda m: _env_value(m, escape=escape), text)
     pieces: list[str] = []
+    unread: list[int] = []
+    unchecked = False
+    size = 0
     cursor = 0
     for match in _OPENCODE_FILE_TOKEN.finditer(text):
         start = match.start()
         pieces.append(text[cursor:start])
+        size += start - cursor
         cursor = match.end()
         line = text[text.rfind("\n", 0, start) + 1 : start]
         if line.lstrip(_JS_SPACE).startswith("//"):
             pieces.append(match.group())
+            size += len(match.group())
             continue
         try:
             content = _referenced_text(match, folder)
@@ -864,57 +898,164 @@ def _opencode_substitute(text: str, folder: Path, *, escape: bool = False) -> st
             if not escape:
                 raise
             content = ""
-        pieces.append(json.dumps(content, ensure_ascii=False)[1:-1])
+        except _UncheckedError as error:
+            if error.stop:
+                raise
+            # A later reference OpenCode 1 cannot read still stops it.
+            unchecked = True
+            continue
+        if content is None:
+            unread.append(size)
+            continue
+        piece = json.dumps(content, ensure_ascii=False)[1:-1]
+        pieces.append(piece)
+        size += len(piece)
     pieces.append(text[cursor:])
-    return "".join(pieces)
+    result = "".join(pieces)
+    if unchecked or (unread and not _inside_strings(result, unread)):
+        raise _UncheckedError
+    return result
 
 
-def _reference_path(name: str, folder: Path) -> Path:
-    """Return the file OpenCode 1 reads for the ``{file:path}`` path *name*.
+def _inside_strings(text: str, offsets: list[int]) -> bool:
+    """Return whether each of *offsets* in *text* falls inside a string value.
+
+    Text put in at such an offset is escaped as the inside of a string, so it
+    cannot change where any string, comment or value of *text* begins or ends.
+    That holds only where the offset is not within an escape sequence, whose
+    end the text would supply, and the string is a value: the text of a key
+    decides which key it is, ``instructions`` among them.
+    """
+    spans = [
+        (found.start(), found.end())
+        for found in _JSONC_COMMENT.finditer(text)
+        if found.group().startswith('"')
+    ]
+
+    def safe(at: int) -> bool:
+        for start, end in spans:
+            if start < at < end:
+                after = _JSONC_GAP.match(text, end)
+                key = after is not None and text.startswith(":", after.end())
+                whole = _STRING_PREFIX.fullmatch(text, start + 1, at) is not None
+                return whole and not key
+        return False
+
+    return all(safe(at) for at in offsets)
+
+
+def _reference_path(name: str, folder: Path) -> str:
+    """Return the path OpenCode 1 reads for the ``{file:path}`` path *name*.
 
     A ``~/`` path is read from the home folder and a relative one from
-    *folder*. OpenCode 1 builds both with Node's ``path.join`` and
-    ``path.resolve`` (v1.19.5 ``variable.ts:62-66``), which drop ``.`` and
-    ``..`` from the text before the system sees it, so a ``..`` after a
-    missing folder or a symbolic link counts the way it is written. Windows
-    reads every path that way already; elsewhere the path is normalized here,
-    with a leading ``//`` made one ``/`` as ``path.resolve`` does. An absolute
-    path is used as it is written, as OpenCode 1 uses it.
+    *folder*. OpenCode 1 builds the first with Node's ``path.join`` and the
+    second with ``path.resolve``, and uses an absolute path as it is written
+    (v1.19.5 ``variable.ts:61-66``). ``path.join`` and ``path.resolve`` drop
+    ``.`` and ``..`` from the text before the system sees it, so a ``..``
+    after a missing folder or a symbolic link counts the way it is written;
+    ``path.join`` keeps a trailing ``/`` and ``path.resolve`` drops it.
+    On Windows the system folds ``.`` and ``..`` by the text as well, and a
+    trailing separator after a file reads in both; a part ending in a dot or
+    a space is left to :func:`_referenced_text`. Elsewhere the path is built
+    here the way Node builds it, a leading ``//`` made one ``/``, and an
+    absolute path is returned exactly as written: Python's ``pathlib`` and
+    ``os.path.normpath`` drop a trailing ``/`` or ``/.``, after which a file
+    that the system refuses to open as written (``ENOTDIR``) would read.
     """
     if _WINDOWS:
-        return Path.home() / name[2:] if name.startswith("~/") else folder / name
-    if name.startswith("~/"):
-        joined = f"{Path.home()}/{name[2:]}"
-    elif name.startswith("/"):
-        return Path(name)
-    else:
-        joined = f"{folder}/{name}"
+        if name.startswith("~/"):
+            return str(Path.home() / name[2:])
+        return str(folder / name)
+    if name.startswith("/"):
+        return name
+    home = name.startswith("~/")
+    joined = f"{Path.home()}/{name[2:]}" if home else f"{folder}/{name}"
     normal = os.path.normpath(joined)
     if normal.startswith("//"):
         normal = "/" + normal.lstrip("/")
-    return Path(normal)
+    if home and joined.endswith("/") and not normal.endswith("/"):
+        normal += "/"
+    return normal
 
 
-def _referenced_text(match: re.Match[str], folder: Path) -> str:
-    """Return the trimmed text of the file a ``{file:path}`` *match* names."""
-    source = _reference_path(match.group(1), folder)
-    try:
-        mode = source.stat()
-        if not stat.S_ISDIR(mode.st_mode) and (
-            not stat.S_ISREG(mode.st_mode) or mode.st_size > _READ_LIMIT
+def _referenced_text(match: re.Match[str], folder: Path) -> str | None:
+    """Return the trimmed text of the file a ``{file:path}`` *match* names.
+
+    ``None`` when the check does not read it: a file larger than
+    ``_READ_LIMIT``, and on Windows a path rooted without a drive, which
+    OpenCode 1 reads on the drive of the folder it was started in. The null
+    device reads as empty text, as it does for OpenCode 1 (``readFile``), and
+    a socket cannot be opened, by OpenCode 1 either.
+
+    Raises:
+        _UnreadableReferenceError: When OpenCode 1 cannot read the file.
+        _UncheckedError: On Linux and macOS, with *stop*, for a named pipe or
+            a device other than the null device, which OpenCode 1 may wait on
+            forever. On Windows, for anything but a regular file or a folder,
+            and for a path with a part that ends in a dot or a space: Python
+            reads a name such as ``NUL`` in any folder as the device and drops
+            such a dot or space, but Node 26.7.0 opens the path as written and
+            finds no file (``ENOENT`` for ``<folder>\\NUL`` and for
+            ``f.txt.`` beside ``f.txt``, and a folder named ``sub.`` reads,
+            run 2026-11-10), and the Bun runtime OpenCode 1 ships with was not
+            checked, so whether OpenCode 1 can read it is not known here.
+    """
+    name = match.group(1)
+    if _WINDOWS:
+        if _rooted_without_drive(name):
+            return None
+        if any(
+            part.endswith((".", " ")) and part not in (".", "..")
+            for part in re.split(r"[\\/]", name)
         ):
-            raise _UncheckedError(match.group())
-        data = source.read_bytes()
+            raise _UncheckedError
+    source = _reference_path(name, folder)
+    # The path is used as a string: pathlib would drop a trailing "/" or "/.".
+    try:
+        mode = os.stat(source)  # noqa: PTH116 - the path exactly as spelled
+        if stat.S_ISREG(mode.st_mode) and mode.st_size > _READ_LIMIT:
+            return None
+        if not stat.S_ISREG(mode.st_mode) and not stat.S_ISDIR(mode.st_mode):
+            return _special_text(mode, match.group())
+        with open(source, "rb") as handle:  # noqa: PTH123 - as spelled, too
+            data = handle.read()
     except (OSError, ValueError) as error:
         raise _UnreadableReferenceError(match.group()) from error
     return data.decode("utf-8", errors="replace").strip(_JS_SPACE)
+
+
+def _special_text(mode: os.stat_result, token: str) -> str:
+    """Return the text OpenCode 1 reads from a file that is not a regular file.
+
+    Only the null device gives known text, none. See :func:`_referenced_text`
+    for what this raises for the others.
+    """
+    if _WINDOWS:
+        raise _UncheckedError
+    if stat.S_ISSOCK(mode.st_mode):
+        raise _UnreadableReferenceError(token)
+    if stat.S_ISCHR(mode.st_mode):
+        try:
+            null = os.stat(os.devnull)  # noqa: PTH116 - a device, not a path
+        except OSError:
+            null = None
+        rdev = getattr(mode, "st_rdev", None)
+        if rdev is not None and rdev == getattr(null, "st_rdev", None):
+            return ""
+    raise _UncheckedError(stop=True)
+
+
+def _rooted_without_drive(name: str) -> bool:
+    """Return whether the Windows path *name* starts at a root but names no drive."""
+    path = PureWindowsPath(name)
+    return bool(path.root) and not path.drive
 
 
 def _read_error_refusal(error: OSError) -> str | None:
     """Return the text of a read *error* OpenCode 1 stops for, or ``None``.
 
     OpenCode 1 releases from v1.17.15 on skip a missing file and a file they
-    may not read (v1.19.5 ``packages/core/src/fs-util.ts:62-66``), but only
+    may not read (v1.19.5 ``packages/core/src/fs-util.ts:62-67``), but only
     ``EACCES`` counts as one they may not read: ``@effect/platform-node-shared``
     4.0.0-beta.83 maps ``EPERM`` to ``Unknown`` (``src/internal/utils.ts:13-41``),
     and Windows reports every denied read as ``EPERM``. Any other read error
@@ -942,11 +1083,13 @@ def _read_opencode_file(path: Path) -> _OpencodeFile:
     strings (``config.ts:188-199``, ``parse.ts:35-61``), a ``{file:path}`` it
     cannot read, a folder at *path*, and a read error other than those
     :func:`_read_error_refusal` lets through. A parse failure that goes away
-    once the ``{env:NAME}`` values are escaped is ``"env"``: OpenCode 2 escapes
-    them then (v2.2.6 ``variable.ts:27-37``). No other key is checked. Text
-    nested deeper than Python's parser goes (about 1000 levels on Python
-    3.10), and a file, or a ``{file:path}`` file, that is not a regular file or
-    is larger than ``_READ_LIMIT``, are not checked and get no note.
+    once the ``{env:NAME}`` values are escaped is ``"env"`` (see
+    :func:`_escaped_read`). No other key is checked. Text nested deeper than
+    Python's parser goes (about 1000 levels on Python 3.10), and a file that
+    is not a regular file or is larger than ``_READ_LIMIT``, are not checked
+    and get no note. A ``{file:path}`` the check does not read is checked as
+    empty text inside a string value; anywhere else the file is not checked
+    (see :class:`_UncheckedError`).
     """
     try:
         mode = path.stat()
@@ -968,25 +1111,47 @@ def _read_opencode_file(path: Path) -> _OpencodeFile:
     except _UncheckedError:
         return _OpencodeFile()
     except ValueError:
-        return _OpencodeFile(_escaped_refusal(text, path.parent))
+        return _escaped_read(text, path.parent)
     except RecursionError:
         return _OpencodeFile()
     return _OpencodeFile(_shape_refusal(document), document=document)
 
 
-def _escaped_refusal(text: str, folder: Path) -> str:
+def _escaped_read(text: str, folder: Path) -> _OpencodeFile:
     """Return ``"env"`` when *text* parses with its ``{env:NAME}`` values escaped.
 
     Else ``"parse"``. OpenCode 2 tries that second parse only when the text
-    holds an ``{env:`` token (v2.2.6 ``variable.ts:35``).
+    holds an ``{env:`` token (v2.2.6 ``variable.ts:27-37``). The escaped
+    document is checked for its shape too: OpenCode 1 refuses it for that
+    once the values change, and OpenCode 2 skips it or ignores the value.
+    When the escaped text depends on a ``{file:path}`` the check does not
+    read, OpenCode 1 still cannot parse the text, but what OpenCode 2 makes
+    of it is not known, so the result is ``"parse"`` and *unsure*.
     """
+    # What JSON.stringify escapes, as the install's MCP note checks it.
+    from apothem.harnesses.opencode.materializer import _UNSAFE
+
     if "{env:" not in text:
-        return "parse"
+        return _OpencodeFile("parse")
     try:
-        _parse_jsonc(_opencode_substitute(text, folder, escape=True))
-    except (ValueError, RecursionError, _UncheckedError):
-        return "parse"
-    return "env"
+        document = _parse_jsonc(_opencode_substitute(text, folder, escape=True))
+    except _UncheckedError:
+        return _OpencodeFile("parse", unsure=True)
+    except (ValueError, RecursionError):
+        return _OpencodeFile("parse")
+    variables = sorted(
+        {
+            name
+            for name in _OPENCODE_ENV_TOKEN.findall(text)
+            if _UNSAFE.search(os.environ.get(name) or "")
+        }
+    )
+    return _OpencodeFile(
+        "env",
+        document=document,
+        escaped=_shape_refusal(document),
+        variables=tuple(variables),
+    )
 
 
 def _shape_refusal(document: object) -> str | None:
@@ -1048,7 +1213,7 @@ def _opencode_override_advisories(*, require_block: bool) -> list[dict[str, obje
     OpenCode 1 folds ``config.json``, ``opencode.json`` and ``opencode.jsonc``
     there, in that order. Each of them that stops OpenCode 1 from loading its
     config (see :func:`_read_opencode_file`) gets a note; names that lead to
-    one file through a symbolic link share one (see :func:`_carries_note`). An
+    one file through a symbolic link share one (see :func:`_note_names`). An
     ``opencode.jsonc`` that holds a top-level ``instructions`` list of strings,
     empty or not, gets a note too: OpenCode 1 reads that list in place of the
     one in ``opencode.json`` (see :func:`_opencode_replacing`). A missing file
@@ -1097,8 +1262,10 @@ def _opencode_notes(
     notes: list[tuple[Path, str]] = []
     for path, read in reads:
         if read.refusal is not None:
-            if _carries_note(path, refused, target):
-                notes.append((path, _opencode_refused_message(path, target, read)))
+            names = _note_names(path, refused, target)
+            if names:
+                message = _opencode_refused_message(path, target, read, names)
+                notes.append((path, message))
         elif path.name == _OPENCODE_LATER:
             replacing = _opencode_replacing(read, path, target)
             if replacing is not None:
@@ -1107,8 +1274,8 @@ def _opencode_notes(
     return notes
 
 
-def _carries_note(path: Path, refused: list[Path], target: Path) -> bool:
-    """Return whether *path* carries the note for the file it leads to.
+def _note_names(path: Path, refused: list[Path], target: Path) -> list[Path]:
+    """Return the names in *refused* whose note *path* carries; none if another does.
 
     Names in *refused* that lead to one file through a symbolic link share one
     note, given to *target* when it is one of them, else to the name that is
@@ -1123,7 +1290,7 @@ def _carries_note(path: Path, refused: list[Path], target: Path) -> bool:
         for other in refused
         if other == path or _links_to(path, other) or _links_to(other, path)
     ]
-    return min(same, key=rank) == path
+    return same if min(same, key=rank) == path else []
 
 
 def _installed_notes(
@@ -1166,7 +1333,9 @@ def _opencode_replacing(
     return _string_list(document if isinstance(document, dict) else None)
 
 
-def _opencode_refused_message(path: Path, target: Path, read: _OpencodeFile) -> str:
+def _opencode_refused_message(
+    path: Path, target: Path, read: _OpencodeFile, names: list[Path]
+) -> str:
     """Return the note's text for a global file OpenCode 1 cannot load.
 
     OpenCode 1 turns the error into one that stops the config (v1.19.5
@@ -1175,8 +1344,9 @@ def _opencode_refused_message(path: Path, target: Path, read: _OpencodeFile) -> 
     and a schema error or a ``{file:path}`` it cannot read as ``Configuration
     is invalid at <path>`` (``packages/opencode/src/cli/error.ts:82`` and
     ``:109-118``); the note names each error without quoting it, since other
-    entry points may show it another way. See :func:`_opencode_2_sentence`
-    for what the note says of OpenCode 2.
+    entry points may show it another way. *names* are the names that share
+    the note (see :func:`_note_names`). See :func:`_opencode_2_note` for what
+    the note says of OpenCode 2.
     """
     detail = read.detail
     reasons = {
@@ -1215,50 +1385,182 @@ def _opencode_refused_message(path: Path, target: Path, read: _OpencodeFile) -> 
         "folder": "until the folder is moved or renamed",
         "read": "until the file can be read or is removed",
         "reference": "until that file can be read or the reference is removed",
-        "env": "until those values change or their references are removed",
         "instructions": "until that value is a list of text or is removed",
     }
     refusal = read.refusal or "parse"
     remedy = remedies.get(refusal, "until the file is fixed or removed")
+    extra = ""
+    if refusal == "env":
+        remedy, extra = _env_remedy(path, target, read)
     return (
         f"{reasons[refusal]} and loads none of its configuration, the Apothem "
-        f"profile document and rules included, {remedy}."
-        f"{_opencode_2_sentence(path, target, refusal)}"
+        f"profile document and rules included, {remedy}.{extra}"
+        f"{_opencode_2_note(path, target, read, names)}"
     )
 
 
-def _opencode_2_sentence(path: Path, target: Path, refusal: str) -> str:
+def _env_remedy(path: Path, target: Path, read: _OpencodeFile) -> tuple[str, str]:
+    """Return the remedy of an ``"env"`` note, and any sentence that follows it.
+
+    Changing the values is enough only when the document they leave behind
+    has the shape OpenCode 1 needs (see :func:`_shape_refusal`). An
+    ``{env:NAME}`` that Apothem writes into the ``mcp`` block of *target* for
+    a profile MCP server comes back on the next update when it is removed by
+    hand, so the note names that server and the profile override that keeps
+    the variable as it is, as the install's MCP note does (see
+    ``materializer._mcp_reference_notes``).
+    """
+    if read.escaped == "top-level":
+        return (
+            "until the file is fixed or removed",
+            " Changing those values is not enough: the top level of that file "
+            "is not an object either, which OpenCode 1 also refuses.",
+        )
+    written = _written_variables(path.parent, target) if path == target else {}
+    ours = [name for name in read.variables if name in written]
+    if ours and len(ours) == len(read.variables):
+        remedy = "until those values change"
+    else:
+        remedy = "until those values change or their references are removed"
+    if read.escaped == "instructions":
+        remedy += " and its instructions value is a list of text or is removed"
+    if not ours:
+        return remedy, ""
+    servers = sorted({server for name in ours for server in written[name]})
+    references = _joined([f"{{env:{name}}}" for name in ours])
+    if len(servers) == 1:
+        named = f"the MCP server {servers[0]}"
+        restate = f"that server under harnesses.opencode.mcp_servers.{servers[0]}"
+    else:
+        named = f"the MCP servers {_joined(servers)}"
+        restate = "each of those servers under harnesses.opencode.mcp_servers.<name>"
+    return remedy, (
+        f" Apothem writes {references} there for {named} in the profile, and an "
+        f"update writes back a reference removed from {path.name}: to keep the "
+        f"variable as it is, restate {restate} (an override replaces the whole "
+        f"server) with the value saved in a file and written as a {{file:path}} "
+        f"that names it."
+    )
+
+
+def _joined(names: list[str]) -> str:
+    """Return *names* as a list in prose: ``a``, ``a and b``, ``a, b and c``."""
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def _written_variables(root: Path, target: Path) -> dict[str, list[str]]:
+    """Return each variable an ``{env:NAME}`` Apothem wrote in *target* names.
+
+    Each maps to the MCP servers it was written for, read from what the
+    current install record says Apothem owns in *target*: a server under
+    ``mcp.<name>``, or one an operator moved to ``mcp.servers.<name>`` (see
+    ``materializer.relocated_entries``).
+    """
+    from apothem.harnesses._shared.install_driver_ownership import prior_ownership
+
+    owned = prior_ownership("opencode", root, target)
+    found: dict[str, list[str]] = {}
+    for entry in owned if isinstance(owned, tuple) else ():
+        where = entry.path
+        if len(where) < 2 or where[0] != "mcp":
+            continue
+        server = where[2] if where[1] == "servers" and len(where) > 2 else where[1]
+        for text in _strings_in(entry.value):
+            for name in _OPENCODE_ENV_TOKEN.findall(text):
+                servers = found.setdefault(name, [])
+                if server not in servers:
+                    servers.append(server)
+    return found
+
+
+def _strings_in(value: object) -> list[str]:
+    """Return every string in *value*, a string, list or mapping at any depth."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, Mapping):
+        value = list(value.values())
+    if isinstance(value, list):
+        return [text for item in value for text in _strings_in(item)]
+    return []
+
+
+def _opencode_2_note(
+    path: Path, target: Path, read: _OpencodeFile, names: list[Path]
+) -> str:
     """Return what the note says of OpenCode 2 for *path*, with a leading space.
 
     OpenCode 2 (v2.2.6) reads no ``config.json``
-    (``packages/core/src/config/discovery.ts:12``). It skips a file it cannot
-    parse or whose top level is not an object, and loads the others
-    (``packages/core/src/config.ts:136-174`` and ``:266-270``,
-    ``config/normalize.ts:57-64``). It escapes the ``{env:NAME}`` values when
-    the text would not parse otherwise (``config/variable.ts:27-37``), puts in
-    empty text for a ``{file:path}`` it cannot read (``variable.ts:63-73``),
-    and drops what in ``instructions`` is not a string
-    (``normalize.ts:228-229`` and ``:690-706``). The note says nothing of
-    OpenCode 2 for a folder or a read error, which were not checked.
+    (``packages/core/src/config/discovery.ts:12``), but reads the file a
+    ``config.json`` leads to through a symbolic link when one of *names*, the
+    names that share the note, is ``opencode.json`` or ``opencode.jsonc``.
     """
-    if path.name == _OPENCODE_FOLDED[0]:
+    if path.name != _OPENCODE_FOLDED[0]:
+        return _opencode_2_sentence(path, target, read)
+    alias = next((name for name in names if name.name != path.name), None)
+    if alias is None:
         return f" OpenCode 2 does not read {path.name}."
-    others = {
-        "env": " OpenCode 2 escapes those values when the file would not parse "
-        "otherwise, so it parses that file.",
-        "reference": " OpenCode 2 puts in empty text for that reference instead.",
-        "instructions": " OpenCode 2 instead drops what in that value is not text.",
-    }
-    if refusal in others:
-        return others[refusal]
+    return (
+        f" OpenCode 2 reads that file as {alias.name}, not as {path.name}."
+        f"{_opencode_2_sentence(alias, target, read)}"
+    )
+
+
+def _opencode_2_sentence(path: Path, target: Path, read: _OpencodeFile) -> str:
+    """Return what OpenCode 2 does with the file it reads as *path*.
+
+    It skips a file it cannot parse or whose top level is not an object, and
+    loads the others (v2.2.6 ``packages/core/src/config.ts:136-174`` and
+    ``:266-270``, ``config/normalize.ts:57-64``). It escapes the
+    ``{env:NAME}`` values when the text would not parse otherwise
+    (``config/variable.ts:27-37``) and puts in empty text for a
+    ``{file:path}`` it cannot read (``variable.ts:63-73``). It ignores an
+    ``instructions`` value that is not a list, a string included, and drops
+    the items of a list that are not strings (``normalize.ts:228-229``, where
+    ``decodeList`` at ``:690-706`` gives ``[]`` for a value that is not an
+    array, and ``instructions`` is kept only for an array). The note says
+    nothing of OpenCode 2 for a folder or a read error, which were not
+    checked, or when the escaped text depends on a ``{file:path}`` the check
+    does not read. Starts with a space.
+    """
+    refusal = read.refusal
+    if read.unsure:
+        return ""
+    if refusal == "reference":
+        return " OpenCode 2 puts in empty text for that reference instead."
+    if refusal == "instructions":
+        return f" OpenCode 2 instead {_dropped(read.document)}."
+    skipped = (
+        " so the entries Apothem lists there do not reach it either."
+        if path == target
+        else f" and still loads {target.name}."
+    )
+    if refusal == "env":
+        escapes = (
+            " OpenCode 2 escapes those values when the file would not parse otherwise"
+        )
+        if read.escaped == "top-level":
+            return (
+                f"{escapes}, but then skips that file, whose top level is not an "
+                f"object,{skipped}"
+            )
+        if read.escaped == "instructions":
+            return f"{escapes}, so it loads that file, but {_dropped(read.document)}."
+        return f"{escapes}, so it parses that file."
     if refusal not in ("parse", "top-level"):
         return ""
     if path == target:
-        return (
-            " OpenCode 2 skips that file too, so the entries Apothem lists there "
-            "do not reach it either."
-        )
-    return f" OpenCode 2 skips that file and still loads {target.name}."
+        return f" OpenCode 2 skips that file too,{skipped}"
+    return f" OpenCode 2 skips that file{skipped}"
+
+
+def _dropped(document: object) -> str:
+    """Return what OpenCode 2 does with the ``instructions`` value of *document*."""
+    value = document.get("instructions") if isinstance(document, dict) else None
+    if isinstance(value, list):
+        return "drops what in that list is not text"
+    return "ignores that value, which is not a list"
 
 
 def _opencode_message(path: Path, target: Path, *, copy: bool) -> str:

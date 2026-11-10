@@ -211,7 +211,8 @@ replaces the list Apothem writes to `opencode.json` in the same folder. A
 `config.json`, `opencode.json` or `opencode.jsonc` there that it cannot read or
 parse, whose top level is not an object, whose `instructions` value is not a
 list of text, or with a `{file:path}` naming a file it cannot read stops it from
-loading any of its configuration. Install and update print an
+loading any of its configuration, and so does a folder with one of those
+names. Install and update print an
 `instruction_override` note for each such file too, except an `opencode.json`
 they cannot parse even as JSON5, which they refuse with a `config.unparseable`
 error
