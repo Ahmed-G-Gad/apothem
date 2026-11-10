@@ -1116,7 +1116,9 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     before resolving the script path so ``--all`` and ``--check`` both
     locate the script regardless of which form the caller supplied. The
     validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
-    which the caller has already resolved to an absolute directory.
+    which the caller has already resolved to an absolute directory. The child
+    writes no bytecode cache (``-B``), as this file run as a program writes
+    none (see the bootstrap at the top of this file).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
@@ -1126,6 +1128,7 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
         completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
             [
                 sys.executable,
+                "-B",
                 "-c",
                 _STANDALONE_LAUNCHER,
                 str(Path(__file__).resolve()),
