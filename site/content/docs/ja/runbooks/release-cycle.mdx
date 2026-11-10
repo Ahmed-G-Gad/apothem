@@ -92,13 +92,20 @@ YYYY-MM-DD`（デフォルト: UTC での今日）を、再生成をスキップ
 差分をレビューしてから、コミットします。
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-`-S` フラグは GPG キーでコミットに署名します。
-プッシュは標準の CI マトリクス（lint、test、build）をトリガーします。タグ付けの前に、グリーンになるのを待ってください。
+`-s` フラグは、必須チェック `Require Signed-off-by` が確認する `Signed-off-by` 行を追加します。リリースコミットは、このプルリクエストのスカッシュマージとして `main` に入ります。GitHub はそのコミットに自身の鍵で署名し、リリースに対するあなたの署名はタグ（§2.2）にあります。
+マージは `main` で標準の CI マトリクス（lint、test、build）をトリガーします。タグ付けの前に、グリーンになるのを待ってください。
 
 §2.4 の準備状態チェックには、リリースコミットで CodeQL とコンフォーミティがグリーンであることも必要です。どちらも、自身のパスが変更されたときにだけ実行されます。リリースコミットは通常どちらのパスも変更しないため、リリースコミットが `main` の先頭になったら両方を開始し、その後、各実行がそのコミットを対象にしていることを確認してください:
 
@@ -357,11 +364,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 期待される結果: `Verified OK`、`PASSED: SLSA verification passed`、そして
-`verify-provenance: chain OK (3 of 3 layers verified)`。
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`。
 スクリプトは `SHA256SUMS`、すべての署名バンドル、来歴を 1 回の実行でチェックします。タグは wheel の名前から導出します（`--tag vX.Y.Z` で上書きできます）。
 
 スモークテストは面ごとに 1 行の PASS / FAIL を生成します。それらの行をメンテナーのリリースログに記録してください。
