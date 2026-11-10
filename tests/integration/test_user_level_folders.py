@@ -442,7 +442,7 @@ def test_a_deleted_project_does_not_vouch_for_a_folder_put_there_since(
     run = _install("cursor", project)
     conflicts = [r for r in run.results if r.operation == "skill_conflict"]
     assert [Path(r.path) for r in conflicts] == [mine]
-    assert "no longer exists" in conflicts[0].message
+    assert "folders that are gone, hold no Apothem files" in conflicts[0].message
     assert _tree(mine) == before
     # The skipped folder is not this install's, so verify says so.
     assert _adapter("cursor").verify(project=project) is False
@@ -503,6 +503,7 @@ def test_one_matching_deleted_holder_is_enough(world: Path, tmp_path: Path) -> N
 def test_a_deleted_project_still_vouches_for_a_folder_as_it_wrote_it(
     world: Path, tmp_path: Path
 ) -> None:
+    """An unchanged folder is still Apothem's, so a new release updates it."""
     gone = _project(tmp_path, "gone")
     _install("cursor", gone)
     shutil.rmtree(gone)
@@ -518,6 +519,7 @@ def test_a_deleted_project_still_vouches_for_a_folder_as_it_wrote_it(
 def test_a_deleted_root_whose_record_has_no_digests_vouches_for_nothing(
     world: Path, tmp_path: Path
 ) -> None:
+    """A record from an earlier release, with no file digests, proves nothing."""
     folder = _skills() / "alpha"
     folder.mkdir(parents=True)
     (folder / "SKILL.md").write_text("old copy\n", "utf-8")

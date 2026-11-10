@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from apothem.harnesses._shared.install_driver import is_apothem_hook
+from apothem.harnesses._shared.install_driver_shared import same_location
 from apothem.lib import install_ledger
 
 #: Script names that identify an Apothem hook entry point inside an argv.
@@ -66,8 +67,10 @@ def registered_hook_argvs(
 
     *root* is the install root being checked: the harness folder of a
     user-scope harness, the project root of a project-scope one. Only that
-    root's current install record is read, so a newer install at another root
-    (a ``CODEX_HOME`` or project since deleted, say) never stands in for it.
+    root's current install record is read (under whichever spelling of the
+    folder the ledger holds, see :func:`_install_record`), so a newer install
+    at another root (a ``CODEX_HOME`` or project since deleted, say) never
+    stands in for it.
     Returns ``None`` when *root* has no install record (installed before the
     ledger existed, or by other means), so the caller can report the hook
     check as not run rather than as passed. *within* limits the scan to files
@@ -76,7 +79,7 @@ def registered_hook_argvs(
     Raises:
         install_ledger.LedgerError: The ledger exists but cannot be read.
     """
-    record = install_ledger.current_install_record(package_key, root=root)
+    record = _install_record(package_key, root)
     if record is None:
         return None
     argvs: list[list[str]] = []
@@ -95,6 +98,34 @@ def registered_hook_argvs(
             if argv is not None and argv not in argvs:
                 argvs.append(argv)
     return argvs
+
+
+def _install_record(package_key: str, root: Path) -> install_ledger.LedgerRecord | None:
+    """Return the current install record at *root*, under any spelling of *root*.
+
+    The ledger keys a record by the root text the install was given, and one
+    folder has several spellings (another letter case on Windows, a ``..``
+    step, a path through a link: ``CODEX_HOME`` is taken as written). The exact
+    spelling is tried first, then each spelling the ledger holds for the same
+    folder, newest first, so the check reads the install that is there rather
+    than reporting it as not checked.
+
+    Raises:
+        install_ledger.LedgerError: The ledger exists but cannot be read.
+    """
+    record = install_ledger.current_install_record(package_key, root=root)
+    if record is not None:
+        return record
+    records = install_ledger.read_records(package_key)
+    spellings = dict.fromkeys(earlier.root for earlier in reversed(records))
+    spellings.pop(str(root), None)
+    for spelling in spellings:
+        if not same_location(spelling, root):
+            continue
+        record = install_ledger.current_install_record(package_key, root=spelling)
+        if record is not None:
+            return record
+    return None
 
 
 def probe_hooks(argvs: list[list[str]]) -> list[HookProbe]:

@@ -28,8 +28,17 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from apothem.cli._shell_args import quoted_path
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_planvalidation import (
+    user_level_entry_ok,
+)
 from apothem.harnesses._shared.install_driver_shared import SKILL_MODES, path_key
+from apothem.harnesses._shared.install_driver_skillguard import (
+    UNLISTED,
+    UNPROVEN,
+    SkillGuard,
+)
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import (
     SHARED_ROOTS,
@@ -380,35 +389,61 @@ def uninstall_advisories(
 # --- verify ------------------------------------------------------------------
 
 
-def verify_hint(harness_id: str) -> dict[str, object] | None:
+def verify_hint(
+    harness_id: str,
+    project_root: Path | None = None,
+    harness_root: Path | None = None,
+) -> dict[str, object] | None:
     """Return why ``verify`` failed for the user-level folders of *harness_id*, or ``None``.
 
-    Looks for the two causes an operator can act on: an expected folder that is
-    missing (or holds no ``SKILL.md``), which ``apothem install`` restores, and a
-    folder no Apothem install record lists, which belongs to someone else until
-    it is renamed or moved. The result has ``missing`` and ``unlisted`` path
-    lists and a ``message``; ``None`` when neither applies.
+    Looks for the causes an operator can act on: an expected folder that is
+    missing (or holds no ``SKILL.md``), which ``apothem install`` restores; a
+    skill folder no Apothem install record lists, which belongs to someone else
+    until it is renamed or moved; and one that only installs whose folders are
+    gone list, which Apothem cannot prove it wrote. The last two come from the
+    same pass ``verify`` runs (:func:`user_level_entry_ok` with
+    :class:`SkillGuard`), so a folder that already holds what this release
+    writes is never named; that pass needs the install root (*project_root*
+    for a project-scope harness, *harness_root* for a user-scope one) and runs
+    for an entry only once none of its folders is missing. The result has
+    ``missing``, ``unlisted`` and ``unproven`` path lists and a ``message``;
+    ``None`` when none applies.
     """
     try:
-        rules = install_driver.load_rules(get_harness_entry(harness_id).package_key)
+        package_key = get_harness_entry(harness_id).package_key
+        rules = install_driver.load_rules(package_key)
     except (RuntimeError, KeyError):
         return None
-    view = LedgerView.load()
+    root = harness_root if harness_root is not None else project_root
+    guard = SkillGuard.load()
     missing: dict[str, Path] = {}
-    unlisted: dict[str, Path] = {}
     for entry in rules.install:
         if not entry.user_level:
             continue
+        skill = entry.mode in SKILL_MODES
         for folder in install_driver.generated_targets_for_entry(
             entry, harness_root=None, project_root=None, exclude=rules.exclude
         ):
-            key = path_key(folder)
-            skill = entry.mode in SKILL_MODES
             if not (folder / "SKILL.md" if skill else folder).exists():
-                missing[key] = folder
-            elif skill and view is not None and not view.users_of(folder):
-                unlisted[key] = folder
-    if not missing and not unlisted:
+                missing[path_key(folder)] = folder
+        if root is not None and skill:
+            user_level_entry_ok(
+                entry,
+                rules,
+                root=root,
+                harness_root=harness_root,
+                project_root=None if harness_root is not None else project_root,
+                harness_name=package_key,
+                guard=guard,
+            )
+    found: dict[str, dict[str, Path]] = {UNLISTED: {}, UNPROVEN: {}}
+    for conflict in guard.conflicts if guard.readable else ():
+        folder = Path(conflict.path)
+        verdict = guard.verdict(folder)
+        if verdict is not None:
+            found[verdict][path_key(folder)] = folder
+    unlisted, unproven = found[UNLISTED], found[UNPROVEN]
+    if not missing and not unlisted and not unproven:
         return None
     parts: list[str] = []
     if missing:
@@ -422,11 +457,31 @@ def verify_hint(harness_id: str) -> dict[str, object] | None:
             "are not listed by any Apothem install and may belong to another "
             "tool; rename or move them, then run apothem update"
         )
+    if unproven:
+        parts.append(_unproven_message(harness_id, unproven.values(), project_root))
     return {
         "missing": [str(p) for p in missing.values()],
         "unlisted": [str(p) for p in unlisted.values()],
+        "unproven": [str(p) for p in unproven.values()],
         "message": "; ".join(parts),
     }
+
+
+def _unproven_message(
+    harness_id: str, folders: Iterable[Path], project_root: Path | None
+) -> str:
+    """Return the hint for skill folders only gone installs list, naming every one."""
+    shown = list(folders)
+    where = _parents(shown)
+    project = "" if project_root is None else f" --project {quoted_path(project_root)}"
+    return (
+        f"Apothem cannot prove it wrote {len(shown)} skill folder(s) under {where} "
+        f"({', '.join(folder.name for folder in shown)}): the only Apothem installs "
+        "that list them are in folders that are gone, hold no Apothem files or "
+        "cannot be read, and each folder was edited since or written by an "
+        "earlier release that did not record its files; move each one out of "
+        f"{where}, then run apothem update --harness {harness_id}{project}"
+    )
 
 
 def _parents(folders: Iterable[Path]) -> str:

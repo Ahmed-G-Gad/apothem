@@ -26,7 +26,8 @@
 | `_cmd_harnesses.py` | The `harnesses` command group. |
 | `_cmd_profile.py` | The `profile` command group. |
 | `_cmd_doctor.py` | The `doctor` command. |
-| `_doctor_hooks.py` | Harness-neutral hook probe for `doctor`: reads the files the install at the root doctor checks wrote (that root's install ledger record: the harness folder, or the `--project` root), collects the Apothem hook commands registered there in JSON (`command` plus optional `args`; a leading PowerShell `&` is dropped), and starts each interpreter and script pair once with a no-op payload. |
+| `_shell_args.py` | Quotes a path for a command line printed in a fix or a hint (`--project`): POSIX shell quoting, or on Windows double quotes, or PowerShell single quotes for a path with `$` or a backtick. |
+| `_doctor_hooks.py` | Harness-neutral hook probe for `doctor`: reads the files the install at the root doctor checks wrote (that root's install ledger record, under any spelling of that folder: the harness folder, or the `--project` root), collects the Apothem hook commands registered there in JSON (`command` plus optional `args`; a leading PowerShell `&` is dropped), and starts each interpreter and script pair once with a no-op payload. |
 | `_cmd_migrate_workspace.py` | The `migrate-workspace` command. |
 | `_cmd_completion.py` | The `completion` command (shell-completion script emission). |
 | `_cmd_backups.py` | The `backups` command group (`backups prune`: on-demand retention of the install backups and ledger). |

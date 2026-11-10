@@ -43,6 +43,7 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._shell_args import quoted_path
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
@@ -76,9 +77,13 @@ def _check(
 
 
 def _update_command(harness: str, project: Path | None = None) -> str:
-    """Return the ``update`` command line; a project-scope harness names its root."""
-    flag = f' --project "{project}"' if project is not None else ""
-    return f"update --harness {harness}{flag}"
+    """Return the ``update`` command line; a project-scope harness names its root.
+
+    The root is quoted for the operator's shell (:func:`quoted_path`).
+    """
+    if project is None:
+        return f"update --harness {harness}"
+    return f"update --harness {harness} --project {quoted_path(project)}"
 
 
 def _update_fix(
@@ -350,16 +355,33 @@ def doctor(
 
     _render_doctor_report(con, profile, harness_rows, checks)
     if all_ok:
-        installed_count = sum(1 for row in harness_rows if row["installed"])
-        if installed_count:
-            con.print(f"[green]All checks passed[/] ({installed_count} installed).")
-        else:
-            con.print(
-                "[green]All checks passed.[/] No harness is installed yet; "
-                "install one with 'install --harness <name>'."
-            )
+        _print_summary(con, harness_rows, checks)
         return
     sys.exit(_EXIT_EXPECTED)
+
+
+def _print_summary(
+    con: Console, harness_rows: list[dict[str, object]], checks: list[dict[str, object]]
+) -> None:
+    """Print the last line of a plain report in which no check failed.
+
+    A hook check that was not run is named there, so the line never says
+    every check passed when one did not run.
+    """
+    installed_count = sum(1 for row in harness_rows if row["installed"])
+    unchecked = [str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"]
+    if unchecked:
+        con.print(
+            f"[yellow]No check failed[/] ({installed_count} installed), but the "
+            f"hook commands of {', '.join(unchecked)} were not checked."
+        )
+    elif installed_count:
+        con.print(f"[green]All checks passed[/] ({installed_count} installed).")
+    else:
+        con.print(
+            "[green]All checks passed.[/] No harness is installed yet; "
+            "install one with 'install --harness <name>'."
+        )
 
 
 def _render_doctor_report(

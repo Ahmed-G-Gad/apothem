@@ -27,9 +27,15 @@ wrote it, so a machine where only one of the tools that share a folder is instal
 folder is missing, and when a folder with an Apothem skill's name belongs to
 something Apothem did not write. A failed row says which: in plain mode a
 `Note:` line follows it, and in the JSON row a `user_level` object lists
-`missing` and `unlisted` paths and a `message`. Run
+`missing`, `unlisted` and `unproven` paths and a `message`. Run
 [`install`](/docs/cli-reference/install) to restore a missing folder; rename or
-move a foreign one, then run [`update`](/docs/cli-reference/update).
+move a foreign one, then run [`update`](/docs/cli-reference/update). An
+`unproven` folder is one that only installs whose folders are gone list, and
+that Apothem cannot prove it wrote (see
+[`install`](/docs/cli-reference/install)); the note names each one, and the
+fix is to move it out of the skills folder, then run `update` for that harness.
+A folder that already holds what this release writes is never named, because
+an install keeps it.
 
 A row, verified or not, can be followed by a note. When the Apothem block is in
 place but a

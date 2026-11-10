@@ -41,7 +41,7 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
-from apothem.cli._user_level_report import verify_hint
+from apothem.cli._user_level_report import is_project_scope, verify_hint
 from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
 from apothem.lib.propagation import user_home
@@ -237,7 +237,11 @@ def _verify_row(
     verified = verified_struct and drift != "drift"
     # A failed structural check on a harness that writes user-home folders says
     # which of them is missing or not Apothem's, so the fix is not a guess.
-    hint = None if verified_struct else _user_level_hint(harness_id)
+    hint = (
+        None
+        if verified_struct
+        else _user_level_hint(harness_id, adapter, project_root, output_path)
+    )
     row: dict[str, object] = {
         "harness": harness_id,
         "outcome": "unchanged" if verified else "error",
@@ -278,10 +282,19 @@ def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, obje
     return notes
 
 
-def _user_level_hint(harness_id: str) -> dict[str, object] | None:
-    """Return why a failed verify points at the user-home folders, or ``None``."""
+def _user_level_hint(
+    harness_id: str, adapter: _Adapter, project_root: Path | None, output_path: Path
+) -> dict[str, object] | None:
+    """Return why a failed verify points at the user-home folders, or ``None``.
+
+    The install root is the one the adapter's ``verify`` checks: the
+    ``--project`` root of a project-scope harness, the folder that holds the
+    output path of a user-scope one.
+    """
     try:
-        return verify_hint(harness_id)
+        if is_project_scope(adapter):
+            return verify_hint(harness_id, project_root=project_root)
+        return verify_hint(harness_id, harness_root=output_path.parent)
     except OSError:
         return None
 

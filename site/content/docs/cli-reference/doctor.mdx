@@ -37,10 +37,13 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   arguments plus `--help`, `{}` on stdin, a scratch working directory, and
   `PYTHONPATH` removed). Nothing is written. A missing interpreter, a missing
   script, or a crash at import time fails the check. A hook registered another
-  way (outside a JSON file, or under keys other than `command`) is not
-  started, and the harness shows `0 started`. When the install ledger has no record for that folder, the check
-  is not run: the report shows `not checked`, and the JSON output carries a
-  `hook.unchecked` check.
+  way (outside a JSON file, or under keys other than `command`) is not started
+  and is not counted in `N started`. The install record is found under any
+  spelling of that folder, such as another letter case on Windows. When the
+  install ledger has no record for that folder, the check is not run: the
+  report shows `not checked`, its last line names the harnesses whose hook
+  commands were not checked instead of `All checks passed`, and the JSON
+  output carries a `hook.unchecked` check.
 
 Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
 

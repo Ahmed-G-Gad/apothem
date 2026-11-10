@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -189,6 +190,88 @@ def test_doctor_reports_the_hook_check_not_run_for_a_root_with_no_record(
     assert plain.exit_code == 0, plain.output
     assert "not checked" in plain.output
     assert "no install record for" in plain.output
+    # The last line says what was not checked rather than that all passed.
+    flat = " ".join(plain.output.split())
+    assert "All checks passed" not in flat
+    assert "the hook commands of codex were not checked" in flat
+
+
+def test_doctor_finds_the_install_under_another_spelling_of_its_folder(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``CODEX_HOME`` spelled another way still names the folder installed to."""
+    codex_home = tmp_path / "cx"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _install(runner, "codex")
+    (codex_home / "hooks" / "dispatch.py").write_text(
+        "raise SystemExit(3)\n", encoding="utf-8"
+    )
+    (tmp_path / "step").mkdir()
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "step" / ".." / "cx"))
+
+    code, payload = _doctor(runner)
+
+    assert code == 1, payload
+    codex = _row(payload, "codex")
+    assert codex["status"] == "hook_failed"
+    assert not [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+
+
+def test_doctor_finds_the_install_under_another_letter_case_of_its_folder(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On a case-insensitive file system, ``CODEX_HOME`` may change its case."""
+    codex_home = tmp_path / "cx"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _install(runner, "codex")
+    if not (tmp_path / "CX").is_dir():
+        pytest.skip("this file system tells letter cases apart")
+    (codex_home / "hooks" / "dispatch.py").write_text(
+        "raise SystemExit(3)\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "CX"))
+
+    code, payload = _doctor(runner)
+
+    assert code == 1, payload
+    assert _row(payload, "codex")["status"] == "hook_failed"
+    assert not [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+
+
+@pytest.mark.parametrize(
+    ("name", "os_name", "quoted"),
+    [
+        ("plain dir", "nt", '"{}"'),
+        ("a $HOME `x` it's", "nt", "'{}'"),
+        ("plain dir", "posix", None),
+        ("a $HOME `x` it's", "posix", None),
+    ],
+)
+def test_the_project_in_a_fix_is_quoted_for_the_shell(
+    name: str,
+    os_name: str,
+    quoted: str | None,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Nothing in the path expands in the shell the command is pasted into.
+
+    On Windows double quotes suit PowerShell and cmd alike, except for a path
+    with ``$`` or a backtick, which PowerShell expands there: that one goes in
+    PowerShell single quotes, each ``'`` doubled. Elsewhere, POSIX quoting.
+    """
+    from apothem.cli import _cmd_doctor, _shell_args
+
+    project = tmp_path / name
+    with monkeypatch.context() as patch:
+        patch.setattr(_shell_args.os, "name", os_name)
+        command = _cmd_doctor._update_command("cursor", project)
+    prefix = "update --harness cursor --project "
+    if quoted is None:
+        assert command == prefix + shlex.quote(str(project))
+        assert shlex.split(command)[-1] == str(project)
+    else:
+        assert command == prefix + quoted.format(str(project).replace("'", "''"))
 
 
 def test_doctor_names_the_project_in_a_project_harness_fix(
@@ -211,7 +294,8 @@ def test_doctor_names_the_project_in_a_project_harness_fix(
     payload = json.loads(result.stdout)
     unchecked = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
     assert [c["harness"] for c in unchecked] == ["cursor"]
-    assert f'update --harness cursor --project "{project}"' in unchecked[0]["fix"]
+    quoted = f'"{project}"' if os.name == "nt" else shlex.quote(str(project))
+    assert f"update --harness cursor --project {quoted}" in unchecked[0]["fix"]
 
 
 @pytest.mark.parametrize(
