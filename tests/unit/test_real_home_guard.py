@@ -325,7 +325,17 @@ def case_a_star_import_without_isolation_stops_both_bodies(
     result.assert_outcomes(failed=2)
     assert _bodies_that_ran(pytester) == []
     output = result.stdout.str()
-    assert output.count("real-home guard: stopped before the test body ran") == 2
+    # Each test's own failure section holds the guard's message. The short
+    # summary repeats the message whole or cut to the terminal width, which
+    # differs between hosts, so the lines are matched in order, not counted.
+    result.stdout.fnmatch_lines(
+        [
+            "*_ test_fixture_free _*",
+            "real-home guard: stopped before the test body ran*",
+            "*_ test_with_tmp_path _*",
+            "real-home guard: stopped before the test body ran*",
+        ]
+    )
     assert _flagged(result) == _HOME_NAMES | _FOLDER_NAMES | _ROOT_NAMES, output
     assert f"{fake_real_home} is the real home" in output, output
 
