@@ -63,12 +63,55 @@ pytest with ``HOME`` and ``USERPROFILE`` pointing at an empty folder and confirm
 nothing appears in it afterwards. The ``home-isolation`` job in
 ``.github/workflows/ci.yml`` does that for the whole suite, with the XDG base
 directories on empty folders too.
+
+The isolation fixtures above are all named with a leading underscore, and a
+``from <this module> import *`` skips such names. A probe folder whose conftest
+star-imports this file therefore gets none of them, and its tests run Apothem
+against the developer's real home: that once deleted a real install ledger and
+overwrote a file under ``~/.config/apothem``. The real-home guard at the end of
+this file stops such a test before its body runs.
+
+The guard is ``pytest_real_home_guard``, a ``pytest_runtest_call`` hook wrapper.
+Its name has no leading underscore, so a star import carries it, and pytest
+registers the hooks of every conftest it loads, under whatever name the conftest
+got them, so the guard runs wherever this file's names land. Its ``specname``
+ties it to ``pytest_runtest_call`` under a name of its own, so a
+``pytest_runtest_call`` that a star-importing conftest defines, or that this file
+gains later, does not replace it. It is a hook, not an autouse fixture: a fixture
+runs at a point in the setup that depends on its scope, its name and the order
+the conftests were registered, and a fixture the test requests can still move
+the home after it. A ``pytest_runtest_call`` wrapper starts once every fixture of
+the test is set up, and this one is the last wrapper to start (``trylast``), so
+it sees the environment the body will see. It fails the test before it yields,
+so the body never starts.
+
+The guard captures the real home once, when this file is imported and before
+any fixture runs: ``HOME``, ``USERPROFILE``, ``HOMEDRIVE`` with ``HOMEPATH``, ``~``
+and, on POSIX, the account's home from ``pwd``. When a job points ``HOME`` at a
+temporary folder for the whole run, that folder is the real home. Before each
+test body it fails the test when ``HOME``, ``USERPROFILE``, ``Path.home()``,
+``propagation.user_home()``, the data home, the ``~/.config/apothem`` folder, the
+install ledger root or the backup root, as Apothem computes them at that moment,
+resolves to one of those homes, or into the ``.apothem`` or ``.config/apothem``
+folder of one. A folder that only sits somewhere below a real home stays allowed:
+the Windows temporary folder is under ``C:\\Users\\<name>``, and every test's
+temporary home is in it. The guard uses ``os.path`` rather than
+``Path.resolve()``, which on Python 3.10 to 3.12 calls ``Path.stat``, a method
+some tests patch.
+
+The guard cannot see what a test body changes after it starts, what a fixture
+writes while it is set up or torn down, the environment a test builds for a
+child process, or code that runs outside pytest.
+``tests/unit/test_real_home_guard.py`` runs it in a pytester session, with this
+file loaded as a plugin and with a probe conftest that star-imports it.
 """
 
 from __future__ import annotations
 
+import contextlib
+import os
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
@@ -77,7 +120,9 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 import pytest
 
 from apothem.harnesses._shared import install_driver, install_driver_types
-from apothem.lib import install_ledger
+from apothem.lib import install_ledger, propagation
+from apothem.lib.data_home import resolve_shared_data_home
+from apothem.lib.profile import DEFAULT_PROFILE_PATH
 
 _XDG_BASE_DIRECTORIES = (
     "XDG_CONFIG_HOME",
@@ -249,3 +294,275 @@ def _isolate_hook_state(
     monkeypatch.setenv(
         "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("hook-state"))
     )
+
+
+# --- Real-home guard --------------------------------------------------------
+#
+# pytest calls ``pytest_real_home_guard``, the one name in this section a star
+# import carries. The helpers keep their leading underscore: the hook reaches
+# them through this module's globals, wherever the hook itself was imported to.
+
+#: The harness name the guard asks ``install_ledger.ledger_path`` about. Any name
+#: gives the same root; this one is not a real harness, so it cannot be mistaken
+#: for a ledger the test made.
+_GUARD_HARNESS = "real-home-guard"
+
+
+def _resolved(path: str, known: dict[str, str] | None = None) -> str:
+    """Return *path* with its links resolved and its case normalized.
+
+    *known* maps each absolute path one check has resolved to its result. A path
+    below one of them that does not exist is not passed to ``os.path.realpath``,
+    which costs a few hundred microseconds on Windows: a missing folder holds no
+    link, so the path resolves to its folder's result plus its own name, and one
+    ``lstat`` call settles that. The data home and the ``~/.config/apothem``
+    folder below a test's own home cost one or two such calls instead of a
+    ``realpath`` each.
+
+    ``os.path.realpath`` and ``os.path.lexists`` read the disk through
+    ``os.lstat``; a fixture can patch that, so a failure falls back to a full
+    ``realpath`` and then to the absolute path, instead of failing the test for a
+    reason of its own. ``Path.resolve()`` is not used: on Python 3.10 to 3.12 it
+    calls ``Path.stat``, which some tests patch.
+    """
+    path = os.path.abspath(path)  # noqa: PTH100 - text only, no Path.stat
+    if known is None:
+        return _realpath_key(path)
+    if path not in known:
+        folder, name = os.path.split(path)
+        if name and _at_or_below(folder, known) and not _lexists(path):
+            above = _resolved(folder, known).rstrip(os.sep)
+            known[path] = above + os.sep + os.path.normcase(name)
+        else:
+            known[path] = _realpath_key(path)
+    return known[path]
+
+
+def _realpath_key(path: str) -> str:
+    try:
+        resolved = os.path.realpath(path)
+    except Exception:
+        resolved = path
+    return os.path.normcase(resolved)
+
+
+def _at_or_below(folder: str, known: dict[str, str]) -> bool:
+    """Return whether *folder* or a folder above it is in *known*."""
+    while folder not in known:
+        folder, name = os.path.split(folder)
+        if not name:
+            return False
+    return True
+
+
+def _lexists(path: str) -> bool:
+    try:
+        return os.path.lexists(path)
+    except Exception:
+        return True  # unsure: let realpath decide
+
+
+def _startup_homes() -> dict[str, str]:
+    """Map each spelling of the home this process started with to how it reads.
+
+    The keys are resolved and case-normalized for comparing; the values keep the
+    resolved path's own case for the failure message.
+    """
+    candidates = [os.environ.get("HOME"), os.environ.get("USERPROFILE")]
+    # Windows falls back to these two when USERPROFILE is unset.
+    drive, path = os.environ.get("HOMEDRIVE"), os.environ.get("HOMEPATH")
+    if drive and path:
+        candidates.append(drive + path)
+    # Path.expanduser raises RuntimeError when no home can be determined.
+    with contextlib.suppress(RuntimeError):
+        candidates.append(str(Path("~").expanduser()))
+    if sys.platform != "win32":
+        import pwd
+
+        # POSIX falls back to the account's home when HOME is unset. KeyError:
+        # the uid has no passwd entry, as in some containers.
+        with contextlib.suppress(KeyError):
+            candidates.append(pwd.getpwuid(os.getuid()).pw_dir)
+    homes: dict[str, str] = {}
+    for home in candidates:
+        if home and not home.startswith("~"):
+            homes.setdefault(_resolved(home), _shown(home))
+    return homes
+
+
+def _shown(path: str) -> str:
+    """Return *path* resolved, in its own case, for a failure message."""
+    try:
+        return os.path.realpath(path)
+    except Exception:
+        return path
+
+
+def _startup_apothem_folders(
+    homes: Iterable[str],
+) -> tuple[tuple[str, str, str], ...]:
+    """Return ``(key, key prefix, shown)`` for each folder Apothem writes in a home.
+
+    Each home's ``.apothem`` (the data home, which holds the ledgers and the
+    backups) and ``.config/apothem`` (the support folder the install manifest
+    names, and the default profile's folder) are listed as spelled and as
+    resolved, in case the real folder is a link. The ledger and backup roots as
+    the product bound them at import are listed too: they come from
+    ``Path.home()`` at that moment, which is the real home unless something
+    imported them earlier under a different one. The key prefix is the key with
+    one trailing separator, for the "inside" test.
+    """
+    folders: dict[str, str] = {}
+    spelled = [
+        str(folder)
+        for home in homes
+        for folder in (
+            resolve_shared_data_home(base=Path(home)).root,
+            Path(home, ".config", "apothem"),
+        )
+    ]
+    for folder in spelled:
+        folders.setdefault(os.path.normcase(folder), folder)
+    for folder in [
+        *spelled,
+        str(install_ledger.ledger_path(_GUARD_HARNESS).parent.parent),
+        str(install_driver.BACKUP_ROOT),
+    ]:
+        folders.setdefault(_resolved(folder), _shown(folder))
+    return tuple(
+        (key, key.rstrip(os.sep) + os.sep, shown) for key, shown in folders.items()
+    )
+
+
+_REAL_HOMES = _startup_homes()
+_REAL_APOTHEM_FOLDERS = _startup_apothem_folders(_REAL_HOMES.values())
+# Bound now, so a test that patches the module attribute with a mock neither sees
+# an extra call nor changes what the guard computes.
+_ledger_path = install_ledger.ledger_path
+
+
+def _real_location(path: str, resolved: str) -> str | None:
+    """Say which real home or Apothem folder *path* names, else ``None``.
+
+    *resolved* is *path* as ``_resolved`` returns it. Only an exact home counts,
+    and an Apothem folder in one or anything inside it. A folder elsewhere below
+    a real home, such as the Windows temporary folder, does not.
+    """
+    shown = _REAL_HOMES.get(resolved)
+    if shown is not None:
+        return _naming("the real home", shown, path)
+    for folder, prefix, shown in _REAL_APOTHEM_FOLDERS:
+        if resolved == folder:
+            return _naming("the real Apothem folder", shown, path)
+        if resolved.startswith(prefix):
+            return f"inside the real Apothem folder {shown}"
+    return None
+
+
+def _naming(what: str, shown: str, path: str) -> str:
+    """Return *what*, followed by *shown* unless *path* already reads the same."""
+    spelled = os.path.abspath(path)  # noqa: PTH100 - text only, no Path.stat
+    if os.path.normcase(spelled) == os.path.normcase(shown):
+        return what
+    return f"{what} {shown}"
+
+
+def _called(function: Callable[[], object]) -> str | None:
+    """Return the path *function* gives, as text, or ``None`` when it gives none."""
+    try:
+        return str(os.fspath(function()))
+    except Exception:  # a test patched it to fail, or removed every home variable
+        return None
+
+
+def _current_locations() -> list[tuple[str, str | None]]:
+    """Return ``(name, path)`` for each place Apothem would use right now.
+
+    Each comes from the function or attribute the product reads at call time:
+    ``Path.home()`` for the data home (``resolve_install_data_home``),
+    ``propagation.user_home()`` for every ``${USER_HOME}`` target the install
+    manifest names, such as ``~/.config/apothem/rules``, ``ledger_path()`` for
+    the install ledgers and lock files, and ``install_driver.BACKUP_ROOT`` for
+    the backups.
+    """
+    home = _called(Path.home)
+    user_home = _called(propagation.user_home)
+    return [
+        ("HOME", os.environ.get("HOME")),
+        ("USERPROFILE", os.environ.get("USERPROFILE")),
+        ("Path.home()", home),
+        ("propagation.user_home()", user_home),
+        (
+            "the data home",
+            home and _called(lambda: resolve_shared_data_home(base=Path(home)).root),
+        ),
+        (
+            "the support folder ~/.config/apothem",
+            user_home and str(Path(user_home, ".config", "apothem")),
+        ),
+        (
+            "the default profile's folder",
+            _called(lambda: DEFAULT_PROFILE_PATH.expanduser().parent),
+        ),
+        (
+            "the install ledger root (install_ledger.STATE_ROOT)",
+            _called(lambda: _ledger_path(_GUARD_HARNESS).parent.parent),
+        ),
+        (
+            "the backup root (install_driver.BACKUP_ROOT)",
+            _called(lambda: install_driver.BACKUP_ROOT),
+        ),
+    ]
+
+
+def _real_home_findings(locations: Iterable[tuple[str, str | None]]) -> list[str]:
+    """Return one line per path that names a real home or an Apothem folder in one.
+
+    Names that share a path share a line, and each path is resolved once. In a
+    test with its own home that is five paths: the home, two folders below it
+    (settled with ``lstat`` while they do not exist), the ledger root and the
+    backup root, so three ``realpath`` calls.
+    """
+    names_by_path: dict[str, list[str]] = {}
+    for name, path in locations:
+        if path and not path.startswith("~"):
+            names_by_path.setdefault(path, []).append(name)
+    known: dict[str, str] = {}
+    findings = []
+    for path, names in names_by_path.items():
+        real = _real_location(path, _resolved(path, known))
+        if real is not None:
+            findings.append(f"{', '.join(names)}: {path} is {real}")
+    return findings
+
+
+def _guard_message(findings: list[str]) -> str:
+    lines = "\n".join(f"  - {finding}" for finding in findings)
+    return (
+        "real-home guard: stopped before the test body ran, because Apothem "
+        "would use the real home.\n"
+        f"{lines}\n"
+        "The real home is the one this process had when tests/conftest.py was "
+        "imported. Tests under tests/ get a temporary home from the isolation "
+        "fixtures in tests/conftest.py, unless a fixture undoes them. A conftest "
+        "that star-imports tests/conftest.py does not get those fixtures, "
+        "because a star import skips names that start with '_'. Never "
+        "star-import a conftest: put the probe under tests/. A test that has to "
+        "live elsewhere points HOME and USERPROFILE at a temporary folder and "
+        "re-points install_ledger.STATE_ROOT and install_driver.BACKUP_ROOT in a "
+        "fixture of its own. See tests/README.md."
+    )
+
+
+@pytest.hookimpl(wrapper=True, trylast=True, specname="pytest_runtest_call")
+def pytest_real_home_guard() -> Generator[None, object, object]:
+    """Fail the test before its body runs when Apothem would use the real home.
+
+    pytest runs this ``pytest_runtest_call`` wrapper once every fixture of the
+    test is set up, as the last wrapper to start, right before it calls the
+    test. Failing before ``yield`` means the body never starts.
+    """
+    findings = _real_home_findings(_current_locations())
+    if findings:
+        pytest.fail(_guard_message(findings), pytrace=False)
+    return (yield)

@@ -52,6 +52,27 @@ The `conformity-scenarios/` subtree is **not** collected by `pytest` (it carries
 - A test that runs a script or command naming `python3` SHOULD put a `write_python_shim()` shim from `_shared/python_shim.py` first on the subprocess PATH, so the host's `python3` cannot change the outcome.
 - The root `tests/conftest.py` owns the suite-wide bootstrap: two `sys.path` inserts (`src/`, so `apothem` imports from a plain checkout with no editable install; and the repo root, so the helpers under `_shared/` resolve as `tests._shared` however pytest is invoked) plus the isolation of what an install or a hook writes outside the test's temporary folders: the user home itself (`HOME` and `USERPROFILE`), the install ledger (`install_ledger.STATE_ROOT`), the backup root (`install_driver.BACKUP_ROOT`), the Codex root (`CODEX_HOME`, cleared), the hook state folder (`APOTHEM_HOOK_STATE_DIR`, pointed at a temporary folder) and the XDG base directories (`XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, cleared, so the code and the tools a test launches, such as `pwsh`, fall back to the temporary home). The ledger and backup roots are bound from `Path.home()` when their modules are imported, before any fixture runs, so redirecting `HOME` does not move them; the two variables place a write whatever `HOME` says. Each of these is therefore redirected twice: for the whole session, which covers module-, class- and package-scoped fixtures that run an install (pytest builds higher-scoped fixtures first), and again for every test. A session-scoped fixture that runs an install MUST request `_isolate_session_home` as a parameter, because pytest sets up session-scoped autouse fixtures in the order they were registered (a plugin's first, then a conftest's by name), not by intent. `unit/test_suite_state_isolation.py` pins the session-level redirect and fails on any other module-level path that still names the real home. The writes no fixture can catch (collection-time code, a plugin's session-scoped fixture) are audited by running pytest with `HOME` and `USERPROFILE` set to an empty folder and checking that nothing appears in it; the `home-isolation` job in `.github/workflows/ci.yml` does that for the whole suite whenever that workflow runs, with the XDG base directories on empty folders too. Per-subtree conftests carry only subtree-specific fixtures.
 
+## Real-home guard
+
+A test must never run Apothem against your real home folder. The isolation fixtures in `tests/conftest.py` move the home and Apothem's state folders into temporary folders, but their names start with `_`, and `from tests.conftest import *` skips such names. A probe folder whose conftest star-imported `tests/conftest.py` once ran an install and an uninstall against a developer's real home: it deleted a real install ledger and overwrote a file in `~/.config/apothem`.
+
+`tests/conftest.py` therefore also holds a guard, the pytest hook `pytest_real_home_guard`. Its name has no leading `_`, so a star import carries it, and it runs wherever the conftest's names land. It wraps pytest's call of each test: it runs after every fixture of the test has been set up, and it fails the test before the body starts if any of these points at the real home or into its Apothem folders:
+
+- the `HOME` and `USERPROFILE` variables and `Path.home()`;
+- the user home the install manifest uses (`propagation.user_home()`);
+- the data home (`~/.apothem`) and the profile and support folder (`~/.config/apothem`);
+- the install ledger root (`install_ledger.STATE_ROOT`) and the backup root (`install_driver.BACKUP_ROOT`).
+
+The real home is read once, when pytest imports `tests/conftest.py` and before any fixture changes it: `HOME`, `USERPROFILE`, `HOMEDRIVE` with `HOMEPATH`, `~` and, on Linux and macOS, the account's home. If a job points `HOME` at a temporary folder for the whole run, that folder is the real home. Other folders below the real home are allowed, because the Windows temporary folder, where every test's temporary home lives, is one of them. The failure message names each variable or path and the real location it reaches.
+
+The guard does not see what a test body changes after it starts, what a fixture writes while it is set up or torn down, the environment a test builds for a child process, or a script that imports Apothem outside pytest. So:
+
+- Never star-import a conftest.
+- Put probes and experiments under `tests/`, so `tests/conftest.py` applies to them.
+- Outside pytest, point `HOME` and `USERPROFILE` at a temporary folder before you import Apothem. Apothem sets its ledger and backup roots from the home when it is imported, so changing the home later does not move them.
+
+`unit/test_real_home_guard.py` checks the guard. Its in-suite tests confirm that the guard wraps the call of a suite test and finds nothing there. It also runs a separate pytest session with the `pytester` plugin, in which each case writes a probe folder, points the home at a fresh folder that the probe session takes as the real home, and runs two probe tests, one with no fixture and one with `tmp_path`. A probe conftest that star-imports `tests/conftest.py` gets both tests stopped, and the file each test body writes first is never created. The same probes pass once their conftest gives them their own home and roots, or when `tests/conftest.py` is loaded as a plugin.
+
 ## Conformity corpus layout
 
 The `conformity/` subtree holds two kinds of module. Per-matcher tests live in a
