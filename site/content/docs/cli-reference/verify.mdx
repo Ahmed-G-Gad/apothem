@@ -23,6 +23,12 @@ profile faithfully installed?" rather than merely "does it exist?". Either way,
 a file where Apothem keeps a managed block fails verify while it holds a BEGIN
 marker that starts no whole block, such as one whose END marker is gone (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+The files checked are the ones the harness's install writes a block into and
+the ones its install record lists, so a marker in a file of your own, such as a
+project's notes file, does not fail it. The failed row names each such file and
+says to delete the marker line: in plain mode a `Note:` line follows the row,
+which then leaves out the expected path, and the JSON row gains a `stray_begin`
+object with the `files` and a `message`.
 
 For an adapter that writes skills to your home directory, verify also checks
 that every skill folder it expects exists with a `SKILL.md`, whichever install

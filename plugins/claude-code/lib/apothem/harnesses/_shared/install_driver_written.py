@@ -15,6 +15,7 @@ import os
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
+from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
@@ -24,18 +25,21 @@ from apothem.lib.harness_materializer import (
     remove_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.propagation import resolve_target
 
 from .install_driver_backup import backup_existing
 from .install_driver_digests import backup_ledger_targets, file_digest
 from .install_driver_pathsafety import (
     _is_link,
     _normalized,
+    _root_for,
     _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
     kept_links_detail,
 )
 from .install_driver_retention import apply_retention
+from .install_driver_shared import path_key
 from .install_driver_sweep import _link_kept as link_kept
 from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_types import MaterializationResult, _path_text, _result
@@ -374,14 +378,59 @@ def stray_begin_at(path: Path) -> bool:
     return has_stray_begin(text)
 
 
+def stray_begin_files(
+    harness_name: str,
+    *,
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> list[Path]:
+    """Return the managed-block files of *harness_name* that hold a stray BEGIN.
+
+    The files looked at are the ones this tool's install keeps a managed block
+    in: the manifest's ``sentinel_merge`` targets, resolved against the root as
+    ``verify_install`` resolves them, and the ``sentinel_merge`` targets of the
+    current install record at that root (the anchors written outside the
+    manifest, such as a profile document or an OpenClaw workspace's rules file).
+    Without a readable record only the manifest targets count: nothing then
+    shows which other file the install wrote, and a file of the project's own,
+    such as its ``CLAUDE.md``, must not fail this tool's verify. Each existing
+    file :func:`stray_begin_at` flags is returned once, manifest targets first,
+    then the record's, in their own order.
+    """
+    rules = install_driver.load_rules(harness_name)
+    candidates = [
+        resolve_target(
+            entry.target, harness_root=harness_root, project_root=project_root
+        )
+        for entry in rules.install
+        if entry.mode == "sentinel_merge"
+    ]
+    root = _root_for(harness_root, project_root)
+    try:
+        record = install_ledger.current_install_record(harness_name, root=root)
+    except (OSError, install_ledger.LedgerError):
+        record = None
+    if record is not None:
+        candidates.extend(
+            Path(target.path)
+            for target in record.targets
+            if target.mode == "sentinel_merge"
+        )
+    unique: dict[str, Path] = {}
+    for path in candidates:
+        unique.setdefault(path_key(path), path)
+    return [path for path in unique.values() if path.is_file() and stray_begin_at(path)]
+
+
 def stray_begin_install_warnings(
     results: list[MaterializationResult],
 ) -> list[MaterializationResult]:
     """Name each managed-block file an install or update keeps a stray BEGIN in.
 
     The text after a BEGIN marker with no END is kept as it is, and Apothem's
-    own block is written apart from it, so the marker stays until the operator
-    deletes it; verify reports the file until then.
+    own block is written apart from it, so the text an old block left below
+    the marker repeats Apothem's rules. The marker stays until the operator
+    deletes it, with that old text; verify reports the file until then.
     """
     paths = dict.fromkeys(
         result.path
@@ -396,9 +445,10 @@ def stray_begin_install_warnings(
             f"{path} has an Apothem BEGIN marker that starts no whole block of its "
             f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
             "yours). Apothem never cuts the text after it: install and update "
-            "keep that text as it is and write their block apart from it. Delete "
-            "that marker line by hand; apothem verify fails for this tool until "
-            "you do.",
+            "keep that text as it is and write a whole block of their own apart "
+            "from it. Delete that marker line by hand, with the old Apothem text "
+            "below it that repeats the rules in Apothem's whole block, and keep "
+            "your own lines; apothem verify fails for this tool until you do.",
         )
         for path in paths
         if stray_begin_at(Path(path))
@@ -500,6 +550,26 @@ def install_may_be_open(harness_name: str, root: Path) -> bool:
         latest.kind == "uninstall"
         or (latest.kind == "rollback" and latest.install_id in installs)
     )
+
+
+def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
+    """Return True when *target* holds an Apothem sentinel-delimited block.
+
+    The managed block is self-delimiting and Apothem-specific, so finding one
+    inside an operator-owned anchor is positive proof of an install even though
+    the file itself is not Apothem's to own. A BEGIN marker whose END is gone
+    counts until the ledger shows the install closed (*install_open*), so an
+    uninstall still runs, names that file and closes the install.
+    """
+    if not target.is_file():
+        return False
+    try:
+        text = target.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    if complete_managed_block(text) is not None:
+        return True
+    return extract_managed_block(text) is not None and install_open()
 
 
 def endless_block_warning(target: Path, operation: str) -> MaterializationResult | None:

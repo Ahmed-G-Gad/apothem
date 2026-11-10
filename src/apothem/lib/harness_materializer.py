@@ -57,38 +57,101 @@ def wrap_managed_block(body: str) -> str:
     return f"{APOTHEM_BLOCK_BEGIN}\n{safe}\n{APOTHEM_BLOCK_END}\n"
 
 
+_FENCES: Final[tuple[str, ...]] = ("```", "~~~")
+
+
+def _scan_markers(
+    text: str, *, fences: bool
+) -> tuple[list[tuple[str, int, int]], bool]:
+    """Return the marker lines in *text* and whether a fence stays open at the end.
+
+    Each marker is ``(marker, start, end)``; see :func:`_marker_lines`.
+    """
+    found: list[tuple[str, int, int]] = []
+    fence = ""
+    offset = 0
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        lead = body.lstrip(" ")
+        indent = len(body) - len(lead)
+        if fence:
+            if indent <= 3 and lead.startswith(fence):
+                fence = ""
+        elif fences and indent <= 3 and lead.startswith(_FENCES):
+            fence = lead[:3]
+        elif (token := body.strip()) in (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END):
+            start = offset + body.index(token)
+            found.append((token, start, start + len(token)))
+        offset += len(line)
+    return found, bool(fence)
+
+
+def _marker_lines(text: str) -> list[tuple[str, int, int]]:
+    """Return the markers in *text* that Apothem could have written.
+
+    A marker counts only as a whole line of its own (spaces aside) outside a
+    fenced code block, which is how Apothem writes it: a marker an operator
+    quotes in a sentence or in a code example is their text. A fence left open
+    at the end of the text marks nothing for certain, so then fences are not
+    taken into account at all.
+    """
+    found, unclosed = _scan_markers(text, fences=True)
+    if unclosed:
+        found, _ = _scan_markers(text, fences=False)
+    return found
+
+
+def _block_span(text: str) -> tuple[int, int] | None:
+    """Return where the first whole managed block in *text* starts and ends.
+
+    The block is the first END marker together with the nearest BEGIN marker
+    before it (see :func:`_marker_lines` for what counts as a marker).
+    """
+    begin: int | None = None
+    for marker, start, end in _marker_lines(text):
+        if marker == APOTHEM_BLOCK_BEGIN:
+            begin = start
+        elif begin is not None:
+            return begin, end
+    return None
+
+
 def complete_managed_block(text: str) -> str | None:
     """Return the managed block in *text* only when it has both sentinels.
 
     The block is the first end sentinel together with the nearest begin
-    sentinel before it, returned with both, exactly as in *text*. So a begin
-    sentinel left without its end above a whole block (or one the operator
-    quotes there) is not taken as the start of the block, and the text after
-    it stays. A begin sentinel with no end sentinel after it (a block cut short
-    or edited by hand) returns ``None``: nothing shows where Apothem's text
-    stops and the operator's starts, so no install, update or uninstall cuts
-    the text after it (see :func:`has_stray_begin`).
+    sentinel before it, returned with both, exactly as in *text*. A sentinel
+    counts only as a whole line of its own outside a fenced code block (see
+    :func:`_marker_lines`), so one an operator quotes is their text. So a begin
+    sentinel left without its end above a whole block is not taken as the start
+    of the block, and the text after it stays. A begin sentinel with no end
+    sentinel after it (a block cut short or edited by hand) returns ``None``:
+    nothing shows where Apothem's text stops and the operator's starts, so no
+    install, update or uninstall cuts the text after it (see
+    :func:`has_stray_begin`).
     """
-    start = 0
-    while (end := text.find(APOTHEM_BLOCK_END, start)) != -1:
-        begin = text.rfind(APOTHEM_BLOCK_BEGIN, 0, end)
-        if begin != -1:
-            return text[begin : end + len(APOTHEM_BLOCK_END)]
-        start = end + len(APOTHEM_BLOCK_END)
-    return None
+    span = _block_span(text)
+    return None if span is None else text[span[0] : span[1]]
 
 
 def has_stray_begin(text: str) -> bool:
     """Return True when *text* holds a begin sentinel that starts no whole block.
 
-    Every whole block (see :func:`complete_managed_block`) is set aside first;
-    a begin sentinel still left is stray: a block that lost its end sentinel,
-    or a marker the operator wrote. Install and update keep the text after it
-    and write a block of their own apart from it, and verify reports the file.
+    Each end sentinel closes the nearest begin sentinel before it; a begin
+    sentinel left open is stray: a block that lost its end sentinel, or a
+    marker line the operator wrote (see :func:`_marker_lines`). Install and
+    update keep the text after it and write a block of their own apart from it,
+    and verify reports the file.
     """
-    while (block := complete_managed_block(text)) is not None:
-        text = text.replace(block, "", 1)
-    return APOTHEM_BLOCK_BEGIN in text
+    open_begin = False
+    for marker, _start, _end in _marker_lines(text):
+        if marker == APOTHEM_BLOCK_BEGIN:
+            if open_begin:
+                return True
+            open_begin = True
+        else:
+            open_begin = False
+    return open_begin
 
 
 def extract_managed_block(text: str) -> str | None:
@@ -100,11 +163,15 @@ def extract_managed_block(text: str) -> str | None:
     (an uninstall names the file; an install keeps the text). Nothing removes
     or replaces that region. ``None`` only when no begin sentinel is present.
     """
-    block = complete_managed_block(text)
-    if block is not None:
-        return block
-    begin = text.find(APOTHEM_BLOCK_BEGIN)
-    return None if begin == -1 else text[begin:]
+    span = _block_span(text)
+    if span is not None:
+        return text[span[0] : span[1]]
+    begins = [
+        start
+        for marker, start, _ in _marker_lines(text)
+        if marker == APOTHEM_BLOCK_BEGIN
+    ]
+    return text[begins[0] :] if begins else None
 
 
 def merge_managed_block(existing: str, body: str) -> str:
@@ -133,9 +200,11 @@ def merge_managed_block(existing: str, body: str) -> str:
     wrapped = wrap_managed_block(body)
     if not existing.strip():
         return wrapped
-    current_block = complete_managed_block(existing)
-    if current_block is not None:
-        return existing.replace(current_block, wrapped.rstrip("\n"), 1)
+    span = _block_span(existing)
+    if span is not None:
+        # Spliced by position: a copy of the block the operator quotes in a
+        # code example above it must stay as it is.
+        return existing[: span[0]] + wrapped.rstrip("\n") + existing[span[1] :]
     separator = "" if existing.endswith("\n") else "\n"
     return f"{existing}{separator}\n{wrapped}"
 
@@ -151,7 +220,7 @@ def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
     never matches.
     """
     parts = split_frontmatter(text)
-    if parts is None or not parts[1].startswith(APOTHEM_BLOCK_BEGIN):
+    if parts is None or parts[1].split("\n", 1)[0].strip() != APOTHEM_BLOCK_BEGIN:
         return None
     return parts
 
@@ -224,12 +293,11 @@ def _remove_block(existing: str) -> str:
         rest = _remove_block(owned[1])
         # No block to take out after Apothem's frontmatter: keep the file whole.
         return existing if rest == owned[1] else rest
-    block = complete_managed_block(existing)
-    if block is None:
+    span = _block_span(existing)
+    if span is None:
         return existing
-    index = existing.find(block)
-    before = existing[:index].rstrip("\n")
-    after = existing[index + len(block) :].lstrip("\n")
+    before = existing[: span[0]].rstrip("\n")
+    after = existing[span[1] :].lstrip("\n")
     if before and after:
         remainder = f"{before}\n\n{after}"
     elif before:

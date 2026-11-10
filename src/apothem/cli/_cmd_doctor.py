@@ -34,6 +34,7 @@ from apothem.cli._doctor_hooks import probe_hooks, registered_hook_argvs
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
+    _Adapter,
     _CliUserError,
     _emit_expected_error,
     _invoke_with_project,
@@ -42,6 +43,7 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._stray_begin_report import stray_begin_note, stray_begin_paths
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
@@ -129,7 +131,33 @@ def _probe_harness(
         return row
     row["verified"] = verified
     if not verified:
-        row["status"] = "verify_failed"
+        _report_verify_failure(entry, adapter, project_root, row, checks)
+        return row
+    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
+    row["status"] = "ok"
+    _probe_registered_hooks(entry, project_root, row, checks)
+    return row
+
+
+def _report_verify_failure(
+    entry: HarnessRegistryEntry,
+    adapter: _Adapter,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Record why an installed harness does not verify, with the fix.
+
+    A file that holds a BEGIN marker with no END marker gets its own check,
+    whose fix names each such file: an update keeps that marker, so the generic
+    "run update" fix would not clear it. That marker leaves the rest of the
+    install in place, so the harness's hooks are still started; its status stays
+    ``verify_failed``, and the Hooks column shows how they did.
+    """
+    name = entry.public_id
+    row["status"] = "verify_failed"
+    stray = stray_begin_paths(entry, adapter, project_root)
+    if not stray:
         checks.append(
             _check(
                 "harness.verify_failed",
@@ -140,11 +168,24 @@ def _probe_harness(
                 fix=_update_fix(name),
             )
         )
-        return row
-    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
-    row["status"] = "ok"
+        return
+    held = "a file holds" if len(stray) == 1 else f"{len(stray)} files hold"
+    checks.append(
+        _check(
+            "harness.stray_begin",
+            "fail",
+            f"{name} is installed but does not verify: {held} an Apothem BEGIN "
+            "marker with no END marker.",
+            harness=name,
+            fix=stray_begin_note(
+                stray,
+                then=f"run 'update --harness {name}' with the same command prefix "
+                "you installed with, then run doctor again.",
+            ),
+        )
+    )
     _probe_registered_hooks(entry, project_root, row, checks)
-    return row
+    row["status"] = "verify_failed"
 
 
 def _probe_registered_hooks(
@@ -153,7 +194,11 @@ def _probe_registered_hooks(
     row: dict[str, object],
     checks: list[dict[str, object]],
 ) -> None:
-    """Start the hooks a verified harness registered; record the outcome on *row*."""
+    """Start the hooks a harness registered; record the outcome on *row*.
+
+    Runs for a harness that verifies, and for one a stray BEGIN marker fails
+    (see :func:`_report_verify_failure`).
+    """
     name = entry.public_id
     try:
         argvs = registered_hook_argvs(

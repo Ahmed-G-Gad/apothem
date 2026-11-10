@@ -300,7 +300,8 @@ checks only when you pass `--project <path>`. If doctor reports
 
 Re-run apothem install to re-materialize the adapter. If the issue persists, check the
 adapter-specific page under [Harness Adapters](/docs/harnesses). If the install
-warned about a BEGIN marker with no END, re-running it does not help; see
+warned about a BEGIN marker with no END, or the failed row names a file that
+holds one, re-running it does not help; see
 [A file has an Apothem BEGIN marker with no END marker](#a-file-has-an-apothem-begin-marker-with-no-end-marker).
 
 ### A file has an Apothem BEGIN marker with no END marker
@@ -316,14 +317,18 @@ starts. So Apothem never cuts the text after that marker:
   apart from it, and print a warning that names the file.
 - `apothem uninstall` takes out Apothem's whole block, leaves the rest as it is,
   and names the file.
-- `apothem verify` fails, and `apothem status --profile` shows drift, until the
-  stray marker is gone. Running `apothem install` again does not clear it.
+- `apothem verify` and `apothem doctor` fail and name the file, and
+  `apothem status --profile` shows drift, until the stray marker is gone.
+  Running `apothem install` again does not clear it. Only the files Apothem
+  keeps a block in for that harness count, so a marker in a file of your own
+  does not fail them.
 
 To fix it, open the named file and find the stray BEGIN marker: the one with no
-END marker before the next BEGIN marker, or none at all. Delete that line, and
-any leftover text of the old block you do not want, and keep your own lines.
-Keep the BEGIN line that opens Apothem's current block. Then run
-`apothem verify` again.
+END marker before the next BEGIN marker, or none at all. Delete that line and
+any old Apothem text below it, which repeats Apothem's rules, and keep your own
+lines. Keep the BEGIN line that opens Apothem's current block, if the file has
+one. Then run `apothem update`, which writes Apothem's block back if the file
+no longer holds one, and run `apothem verify` again.
 
 ### Hooks not firing in Claude Code
 

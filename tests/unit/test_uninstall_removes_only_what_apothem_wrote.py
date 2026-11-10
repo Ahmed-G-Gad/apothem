@@ -883,11 +883,11 @@ def test_an_install_stays_possibly_open_until_an_uninstall_closes_it(
 
 
 def test_an_uninstall_leaves_a_file_with_another_marked_block(claude: Path) -> None:
-    # A marker pair the user quotes is not Apothem's block: the file stays as it
-    # is, the warning names it, and the install stays open for a retry.
+    # A second marked block that is not a copy of Apothem's may be the user's:
+    # the file stays as it is, the warning names it, and the install stays open.
     ClaudeCodeAdapter().install({})
     anchor = claude / "CLAUDE.md"
-    quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    quoted = f"{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
     anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
     before = anchor.read_bytes()
 
@@ -918,3 +918,17 @@ def test_a_rollback_of_a_recorded_install_closes_it(claude: Path) -> None:
 
     assert closed is False
     assert orphan is True
+
+
+def test_an_uninstall_keeps_a_fenced_marker_pair_and_finishes(claude: Path) -> None:
+    # Markers inside a fenced code example are the user's text, not a block.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    fenced = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + fenced.encode())
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert anchor.read_bytes() == fenced.encode()
+    assert _unfinished(claude) is None

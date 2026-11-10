@@ -62,6 +62,30 @@ class TestManagedBlockMerge:
         merged = merge_managed_block(text, "v2")
         assert merged == text.replace(block, wrap_managed_block("v2").rstrip("\n"))
 
+    def test_a_marker_counts_only_as_a_whole_line_outside_fenced_code(self):
+        block = wrap_managed_block("body")
+        fenced = f"```\n{APOTHEM_BLOCK_BEGIN}\nexample\n{APOTHEM_BLOCK_END}\n```\n"
+        inline = f"Apothem writes `{APOTHEM_BLOCK_BEGIN}` first.\n"
+        assert complete_managed_block(fenced) is None
+        assert not has_stray_begin(fenced)
+        assert not has_stray_begin(inline)
+        assert complete_managed_block(f"{fenced}\n{block}") == block.rstrip("\n")
+        assert (
+            merge_managed_block(inline, "v1") == f"{inline}\n{wrap_managed_block('v1')}"
+        )
+
+    def test_merge_and_remove_leave_a_fenced_copy_above_the_block(self):
+        block = wrap_managed_block("v1")
+        fenced = f"```\n{block}```\n"
+        text = f"{fenced}\n{block}"
+        assert merge_managed_block(text, "v2").startswith(fenced)
+        assert remove_managed_block(text) == fenced
+
+    def test_an_unclosed_fence_does_not_hide_the_block(self):
+        block = wrap_managed_block("v1")
+        text = f"```\nnot closed\n\n{block}"
+        assert complete_managed_block(text) == block.rstrip("\n")
+
     def test_has_stray_begin(self):
         block = wrap_managed_block("body")
         assert not has_stray_begin(f"mine\n\n{block}")

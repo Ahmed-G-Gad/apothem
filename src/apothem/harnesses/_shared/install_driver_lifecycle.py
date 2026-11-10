@@ -16,7 +16,6 @@ import yaml
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
-    complete_managed_block,
     defuse_sentinels,
     extract_managed_block,
 )
@@ -65,6 +64,7 @@ from .install_driver_types import (
     skills_sharing_command_target,
 )
 from .install_driver_written import (
+    _carries_managed_block,
     endless_block_left,
     install_may_be_open,
     left_behind,
@@ -73,6 +73,7 @@ from .install_driver_written import (
     remove_written,
     still_written,
     stray_begin_at,
+    stray_begin_files,
 )
 
 
@@ -121,7 +122,10 @@ def verify_install(
     not-installed. *native_config* (the adapter's dynamically-rendered config
     file, which is not a manifest entry) is checked the same way when supplied.
     A user-level entry passes when its folders are in place whichever harness
-    wrote them (see :func:`user_level_entry_ok`). Returns False on the first
+    wrote them (see :func:`user_level_entry_ok`). A file this install keeps a
+    managed block in fails it while it holds a BEGIN marker that starts no
+    whole block (see :func:`stray_begin_files`): install and update keep such a
+    marker, so only the operator can clear it. Returns False on the first
     unsatisfied target.
     """
     rules = install_driver.load_rules(harness_name)
@@ -156,30 +160,9 @@ def verify_install(
                 return False
         elif not target.exists():
             return False
-    anchors = _profile_anchor_targets(
+    return not stray_begin_files(
         harness_name, harness_root=harness_root, project_root=project_root
     )
-    return not any(stray_begin_at(anchor) for anchor in anchors)
-
-
-def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
-    """Return True when *target* holds an Apothem sentinel-delimited block.
-
-    The managed block is self-delimiting and Apothem-specific, so finding one
-    inside an operator-owned anchor is positive proof of an install even though
-    the file itself is not Apothem's to own. A BEGIN marker whose END is gone
-    counts until the ledger shows the install closed (*install_open*), so an
-    uninstall still runs, names that file and closes the install.
-    """
-    if not target.is_file():
-        return False
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return False
-    if complete_managed_block(text) is not None:
-        return True
-    return extract_managed_block(text) is not None and install_open()
 
 
 def _entry_proves_install(

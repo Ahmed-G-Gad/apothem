@@ -170,7 +170,9 @@ OpenClaw workspace, and `AGENTS.md` and the other instruction files the
 install adds a block to.
 
 A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` marker to
-the next `<!-- END APOTHEM MANAGED BLOCK -->` marker. If the END marker is
+the next `<!-- END APOTHEM MANAGED BLOCK -->` marker, each on a line of its own;
+Apothem reads a marker only that way and outside a fenced code block, so a
+marker you quote in a sentence or a code example is your text. If the END marker is
 gone, nothing shows where Apothem's text stops and yours starts, so the
 uninstall leaves the file as it is, names it in a warning and finishes; so
 does a retry after an uninstall that did not finish. If a BEGIN marker of
