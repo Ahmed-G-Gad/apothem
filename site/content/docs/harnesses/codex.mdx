@@ -119,8 +119,15 @@ spelled inside your home directory that a link leads out of it, such as
 uninstall and `apothem rollback`, wherever above `CODEX_HOME` the link sits. A
 `CODEX_HOME` spelled as a path outside your home directory is followed. A link
 on a path the install writes inside `CODEX_HOME` stops it too, with `target
-path crosses a symlink`, or with `target escapes the allowed materialization
+path crosses a link`, or with `target escapes the allowed materialization
 root` when that link leads out of the folder holding `CODEX_HOME`.
+
+`CODEX_HOME` does not have to come from your shell profile. A project's
+`.envrc` or a script you source can set it too. When it names a folder outside
+your home directory, install, update, uninstall and `apothem rollback` change
+files in that folder, because that is the folder it names. A link at
+`~/.config` that leads out of your home directory still stops the install.
+Check `CODEX_HOME` before you run Apothem in a project folder that sets it.
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`

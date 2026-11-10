@@ -32,11 +32,12 @@ from __future__ import annotations
 import os
 import shutil
 import stat
-import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from apothem.lib.links import is_link
 
 __all__ = [
     "BackupError",
@@ -45,6 +46,8 @@ __all__ = [
     "Clock",
     "ConfirmFn",
     "EchoFn",
+    "LinkLeavingHomeError",
+    "RemovalError",
     "TargetDisposition",
     "UnsafeRootError",
     "bounded_targets",
@@ -66,9 +69,6 @@ _BOUNDED_TARGET_RELPATHS: tuple[tuple[str, ...], ...] = (
 _CONFIG_DIRNAME = ".config"
 _CONFIG_REMOVABLE_CHILD = "apothem"
 
-# The bit in a reparse tag that marks a reparse point naming another location.
-_NAME_SURROGATE_BIT = 0x20000000
-
 #: A predicate that decides whether a single target should be removed.
 ConfirmFn = Callable[[Path], bool]
 #: A source of the current time, injected so backups are deterministic in tests.
@@ -88,6 +88,32 @@ class UnsafeRootError(CleanSlateError):
     an empty or unset path, the entire ``~/.config`` directory, and any
     ``~/.config`` child other than ``apothem``.
     """
+
+
+class LinkLeavingHomeError(UnsafeRootError):
+    """Raised when a link between the home and a target leads out of the home.
+
+    Removing the target would delete the folder at the far end of the link.
+    :attr:`link` names that link.
+    """
+
+    def __init__(self, message: str, *, link: Path) -> None:
+        """Record *message* and the *link* that leads out of the home."""
+        super().__init__(message)
+        self.link = link
+
+
+class RemovalError(CleanSlateError):
+    """Raised when a target cannot be removed once the backup is written.
+
+    Targets before it may already be gone. :attr:`backup_dir` holds a copy of
+    every present target, taken before the first removal.
+    """
+
+    def __init__(self, message: str, *, backup_dir: Path | None) -> None:
+        """Record *message* and the *backup_dir* that holds the targets."""
+        super().__init__(message)
+        self.backup_dir = backup_dir
 
 
 class BackupError(CleanSlateError):
@@ -181,23 +207,6 @@ def _unsafe_reason(target: Path, home: Path) -> str | None:
     return None
 
 
-def _is_link(path: Path) -> bool:
-    """Return True when *path* itself is a symbolic link or a Windows junction.
-
-    ``is_symlink()`` is False for a junction, and ``Path.is_junction`` exists
-    only from Python 3.12, so the reparse tag is read from ``lstat``.
-    """
-    if path.is_symlink():
-        return True
-    if sys.platform != "win32":
-        return False
-    try:
-        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
-    except OSError:
-        return False
-    return bool(tag & _NAME_SURROGATE_BIT) or tag == stat.IO_REPARSE_TAG_MOUNT_POINT
-
-
 def _is_within(path: Path, folder: Path) -> bool:
     """Return True when *path* is *folder* or below it, ignoring case on Windows."""
     path_key = os.path.normcase(str(path))
@@ -222,7 +231,7 @@ def _link_leading_out(target: Path, home: Path) -> Path | None:
     folder = home
     for part in relative.parts[:-1]:
         folder = folder / part
-        if not _is_link(folder):
+        if not is_link(folder):
             continue
         try:
             leads_to = folder.resolve()
@@ -304,7 +313,7 @@ def _entries_without_links(top: Path) -> list[Path]:
             continue
         for child in children:
             found.append(child)
-            if not _is_link(child) and child.is_dir():
+            if not is_link(child) and child.is_dir():
                 pending.append(child)
     return sorted(found, key=lambda item: len(item.parts), reverse=True)
 
@@ -322,7 +331,7 @@ def _remove_tree(path: Path) -> None:
     except OSError:
         for child in _entries_without_links(path):
             try:
-                if _is_link(child):
+                if is_link(child):
                     child.unlink(missing_ok=True)
                     continue
                 child.chmod(stat.S_IWRITE)
@@ -344,7 +353,7 @@ def _remove_path(path: Path) -> None:
     A link, a Windows junction included, is removed as a link: what it leads
     to is left in place.
     """
-    if _is_link(path):
+    if is_link(path):
         path.unlink(missing_ok=True)
     elif path.is_dir():
         _remove_tree(path)
@@ -402,10 +411,12 @@ def run_clean_slate(
         A :class:`CleanSlateResult` describing the disposition of every target.
 
     Raises:
-        UnsafeRootError: When the home directory or any target is unsafe,
-            including a target below a link that leads out of the home.
+        UnsafeRootError: When the home directory or any target is unsafe.
+        LinkLeavingHomeError: When a target is below a link that leads out
+            of the home (an :class:`UnsafeRootError`).
         CleanSlateError: When the run is non-interactive without ``assume_yes``.
         BackupError: When the pre-removal backup cannot be written.
+        RemovalError: When a target cannot be removed after the backup.
     """
     emit: EchoFn = echo if echo is not None else (lambda _message: None)
     tick: Clock = clock if clock is not None else _utcnow
@@ -432,9 +443,10 @@ def run_clean_slate(
             raise UnsafeRootError(reason)
         link = _link_leading_out(target, home_resolved)
         if link is not None:
-            raise UnsafeRootError(
+            raise LinkLeavingHomeError(
                 f"refuses {target}: {link} is a link that leads outside the "
-                "home directory, so removing it would delete the folder there"
+                "home directory, so removing it would delete the folder there",
+                link=link,
             )
 
     if dry_run:
@@ -485,7 +497,12 @@ def run_clean_slate(
             )
             emit(f"  skipped (declined): {target}")
             continue
-        _remove_path(target)
+        try:
+            _remove_path(target)
+        except OSError as exc:
+            raise RemovalError(
+                f"could not remove {target}: {exc}", backup_dir=backup_dir
+            ) from exc
         dispositions_built.append(
             TargetDisposition(path=target, present=True, removed=True)
         )

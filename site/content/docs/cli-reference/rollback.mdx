@@ -65,10 +65,11 @@ record, when a link leads the tool's folder out of your home directory: a
 `CODEX_HOME` or `XDG_CONFIG_HOME` spelled inside your home directory, such as
 `~/work/tool`, where `~/work` became a link to another drive after the
 install. On Windows a junction counts as a link. The error reads `rollback
-refused: target path crosses a symlink` and names the link, and the command
-exits 1 without asking for confirmation first. Make the link lead to a folder inside your home directory, or replace
-it with the folder itself, and run the rollback again. A folder you spell as a
-path outside your home directory is followed.
+refused: target path crosses a link` and names the link and the folder it
+leads to, and the command exits 1 without asking for confirmation first. Make
+the link lead to a folder inside your home directory, or replace it with the
+folder itself, and run the rollback again. A folder you spell as a path
+outside your home directory is followed.
 
 Everything rollback removes or replaces is first copied into the Apothem backup
 root (`~/.apothem/backups/`), so a rollback can itself be undone by hand.
@@ -161,6 +162,10 @@ its backup is gone) is a `skipped` row in `results` and also an entry in
   "message": "left in place: C:\Users\Example\.claude\commands is now a link, so nothing was restored there; copy what you need from C:\Users\Example\.apothem\backups\20261001T000000Z\claude_code\.claude\commands"
 }
 ```
+
+A result refused at a link names the link in `detail.symlink` and the folder
+it leads to in `detail.leads_to`, as in
+[`apothem install`](/docs/cli-reference/install#json-output).
 
 When no matching install record exists for a single
 named harness, the command reports a `rollback.no_record` error with

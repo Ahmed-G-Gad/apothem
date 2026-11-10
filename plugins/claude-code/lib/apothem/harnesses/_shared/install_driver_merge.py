@@ -51,6 +51,7 @@ from .install_driver_pathsafety import (
     _allowed_write_root,
     _root_for,
     _validate_target_path,
+    _write_boundary,
 )
 from .install_driver_preview import prospective_result
 from .install_driver_types import (
@@ -190,7 +191,7 @@ def write_text_safely(
     """Write text with backup-before-replace and JSON-preserving merge."""
     target_error = _validate_target_path(
         target,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         operation="write_text",
     )
     if target_error is not None:
@@ -242,7 +243,7 @@ def apply_operator_owned_content(
     written: the prospective result (with its diff) is returned, or the
     refusal the write would raise.
     """
-    write_allowed = allowed_root or install_root
+    write_allowed = _write_boundary(allowed_root, install_root)
     target_error = _validate_target_path(
         target, allowed_root=write_allowed, operation="write_text"
     )

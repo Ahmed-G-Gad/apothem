@@ -31,7 +31,7 @@ from .install_driver_ownership import (
     remove_owned_text,
     strip_owned,
 )
-from .install_driver_pathsafety import _validate_target_path
+from .install_driver_pathsafety import _validate_target_path, _write_boundary
 from .install_driver_types import (
     _REMOVE_KEY,
     MaterializationResult,
@@ -563,7 +563,7 @@ def surgically_remove_materialized_config(
         mode="write_text",
         install_root=install_root,
         harness_name=harness_name,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         apothem_keys=apothem_keys,
         recorded=recorded,
         retired=retired,

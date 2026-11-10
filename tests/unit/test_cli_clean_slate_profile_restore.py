@@ -27,9 +27,8 @@ from click.testing import CliRunner
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 
-# `from apothem.cli import _materialize` binds the re-exported *function* of
-# that name, not the module, so patch the module fetched by import_module.
-_materialize = importlib.import_module("apothem.cli._materialize")
+# The restore lives in its own module; patch the name that module looks up.
+_phase = importlib.import_module("apothem.cli._clean_slate_phase")
 
 _PROFILE = (
     "identity:\n"
@@ -53,9 +52,10 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
-def profile(tmp_path: Path) -> Path:
-    """A real profile file for the run to capture and restore."""
-    path = tmp_path / "profile.yaml"
+def profile(home: Path) -> Path:
+    """A real profile file in ``~/.config/apothem``, which the sweep removes."""
+    path = home / ".config" / "apothem" / "profile.yaml"
+    path.parent.mkdir(parents=True)
     # Bytes, not write_text: on Windows the text path translates \n to \r\n,
     # and the restore is a byte-for-byte round-trip this test asserts exactly.
     path.write_bytes(_PROFILE.encode("utf-8"))
@@ -87,13 +87,13 @@ def test_restore_goes_through_the_atomic_writer(
     interruption leaves an empty profile where the operator's identity was.
     """
     seen: list[tuple[Path, bytes]] = []
-    real = _materialize.write_bytes_atomically
+    real = _phase.write_bytes_atomically
 
     def _record(path: Path, data: bytes) -> None:
         seen.append((path, data))
         real(path, data)
 
-    monkeypatch.setattr(_materialize, "write_bytes_atomically", _record)
+    monkeypatch.setattr(_phase, "write_bytes_atomically", _record)
 
     result = _install_clean(runner, profile)
 
@@ -115,7 +115,7 @@ def test_restore_failure_emits_the_operator_envelope(
     def _fail(path: Path, data: bytes) -> None:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr(_materialize, "write_bytes_atomically", _fail)
+    monkeypatch.setattr(_phase, "write_bytes_atomically", _fail)
 
     result = _install_clean(runner, profile, "--format", "json")
 
@@ -139,7 +139,7 @@ def test_restore_failure_stops_the_run(
     def _fail(path: Path, data: bytes) -> None:
         raise PermissionError("read-only")
 
-    monkeypatch.setattr(_materialize, "write_bytes_atomically", _fail)
+    monkeypatch.setattr(_phase, "write_bytes_atomically", _fail)
 
     result = _install_clean(runner, profile)
 

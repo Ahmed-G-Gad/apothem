@@ -8,7 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver_pathsafety
+from apothem.harnesses._shared import install_driver_homelink
 from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
@@ -41,13 +41,13 @@ def refuse_link_leaving_home(
     The write guard walks up only to the folder above the install root, so a
     link higher up (``XDG_CONFIG_HOME=~/a/b`` with ``~/a`` leading out of the
     home) is found here instead (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.refuse_link_leaving_home`).
+    :func:`~apothem.harnesses._shared.install_driver_homelink.refuse_link_leaving_home`).
 
     Raises:
         MaterializationError: When there is such a link; nothing is written
             or removed.
     """
-    install_driver_pathsafety.refuse_link_leaving_home(
+    install_driver_homelink.refuse_link_leaving_home(
         _HARNESS_NAME,
         output_path.parent,
         operation="opencode_config",

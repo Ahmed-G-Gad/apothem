@@ -36,7 +36,7 @@ from string import Template
 from typing import Any, Final
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_pathsafety import (
+from apothem.harnesses._shared.install_driver_homelink import (
     _link_leaving_home,
     _names_same_folder,
     _spelled_inside_home,

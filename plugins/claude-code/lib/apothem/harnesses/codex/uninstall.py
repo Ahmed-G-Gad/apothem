@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver, install_driver_pathsafety
+from apothem.harnesses._shared import install_driver, install_driver_homelink
 from apothem.harnesses._shared.wrapper_factories import make_uninstall
 
 # AGENTS.md is a ``sentinel_merge`` anchor and hooks.json an operator-owned
@@ -24,9 +24,9 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
 
     Refused, before anything is removed, when ``CODEX_HOME`` is spelled
     inside the home and a link leads it out (see
-    :func:`~apothem.harnesses._shared.install_driver_pathsafety.refuse_link_leaving_home`).
+    :func:`~apothem.harnesses._shared.install_driver_homelink.refuse_link_leaving_home`).
     """
-    install_driver_pathsafety.refuse_link_leaving_home(
+    install_driver_homelink.refuse_link_leaving_home(
         _HARNESS_NAME, output_path.parent, operation="codex_home", uninstall=True
     )
     return _uninstall(output_path)
