@@ -12,9 +12,9 @@ run, an install, an update or a rollback supersedes.
 
 from __future__ import annotations
 
+import errno
 import json
 import os
-import shlex
 import shutil
 import subprocess
 import sys
@@ -618,15 +618,36 @@ def test_a_hand_cleaned_unfinished_uninstall_is_closed(
     )
 
 
-def test_an_empty_folder_of_the_users_inside_a_skill_stays(claude: Path) -> None:
+def test_an_empty_folder_of_the_users_inside_a_skill_goes_with_it(
+    claude: Path,
+) -> None:
     ClaudeCodeAdapter().install({})
-    mine = claude / "skills" / _skill_name() / "my-drafts"
-    mine.mkdir()
+    skill = claude / "skills" / _skill_name()
+    (skill / "my-drafts" / "deeper").mkdir(parents=True)
 
     code, envelope = _uninstall()
 
     assert code == 0, envelope
-    assert mine.is_dir()
+    assert not skill.exists()
+    assert all(str(skill) not in str(w["message"]) for w in envelope["warnings"])
+
+
+def test_emptying_a_folder_never_removes_through_a_link(tmp_path: Path) -> None:
+    folder = tmp_path / "skill"
+    (folder / "empty").mkdir(parents=True)
+    ours = folder / "SKILL.md"
+    ours.write_bytes(b"ours\n")
+    outside = tmp_path / "outside"
+    (outside / "empty-too").mkdir(parents=True)
+    _link_folder(folder / "linked", outside)
+
+    kept_files, kept_links = written._remove_matching(folder, [ours])
+
+    assert kept_files == []
+    assert kept_links == [folder / "linked"]
+    assert not ours.exists()
+    assert not (folder / "empty").exists()
+    assert (outside / "empty-too").is_dir()
 
 
 def test_kept_files_are_named_in_the_plain_output(claude: Path) -> None:
@@ -931,7 +952,7 @@ def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
     assert result is not None
     # Quoted as the shell the command is pasted into reads it: a temporary
     # folder never ends in a backslash.
-    quoted = f'"{gone}"' if os.name == "nt" else shlex.quote(str(gone))
+    quoted = f'"{gone}"' if os.name == "nt" else f"'{gone}'"
     if live_holder:
         assert result.outcome == "unchanged"
         assert str(live) in result.message
@@ -946,17 +967,66 @@ def test_a_store_held_by_a_deleted_project_says_how_to_release_it(
         )
 
 
-def test_a_printed_folder_is_quoted_for_the_shell() -> None:
+_SHARE = _BS * 2 + "server" + _BS + "my share" + _BS
+
+#: Folders and how each shell quotes them in a printed command (``None``: the
+#: quotes cannot carry it, so the steps are given in words).
+_QUOTED = (
+    (True, "C:" + _BS, '"C:' + _BS * 2 + '"'),
+    (True, "C:" + _BS + "my work" + _BS, '"C:' + _BS + "my work" + _BS * 2 + '"'),
+    # Git Bash reads a share's two leading backslashes as one inside double
+    # quotes, so the command would name \server\my share.
+    (True, _SHARE, None),
+    (True, _SHARE.rstrip(_BS), None),
+    (True, "C:" + _BS + "O'Brien & Co (x)", '"C:' + _BS + "O'Brien & Co (x)" + '"'),
+    (True, "C:" + _BS + "work" + _BS + "$site", None),
+    (True, "C:" + _BS + "tick`n", None),
+    (True, "C:" + _BS + "100%PATH%", None),
+    (True, "C:" + _BS + "wow!", None),
+    (True, "C:" + _BS + 'a"b', None),
+    (True, "C:" + _BS + chr(0x201C) + "draft" + chr(0x201D), None),
+    (True, "C:" + _BS + "a\tb", None),
+    # Double quotes carry the curly single quotes.
+    (
+        True,
+        "C:" + _BS + "O" + chr(0x2019) + "Brien",
+        '"C:' + _BS + "O" + chr(0x2019) + "Brien" + '"',
+    ),
+    (False, "/home/u/my $proj", "'/home/u/my $proj'"),
+    (False, "/home/u/proj", "'/home/u/proj'"),
+    (False, '/home/u/`x` %y% !z "q"', "'/home/u/`x` %y% !z \"q\"'"),
+    (False, "/home/u/O'Brien x", None),
+    (False, "/home/u/a\nb", None),
+    # PowerShell also ends a single-quoted string at each curly single quote.
+    (False, "/home/u/O" + chr(0x2018) + "Brien", None),
+    (False, "/home/u/O" + chr(0x2019) + "Brien", None),
+    (False, "/home/u/" + chr(0x201A) + "low", None),
+    (False, "/home/u/" + chr(0x201B) + "high", None),
+)
+
+
+@pytest.mark.parametrize(("windows", "path", "quoted"), _QUOTED)
+def test_a_printed_folder_is_quoted_for_the_shell(
+    windows: bool, path: str, quoted: str | None
+) -> None:
     from apothem.harnesses._shared import install_driver_datahome as datahome
 
-    if os.name == "nt":
-        assert datahome._shell_quoted("C:" + _BS) == '"C:' + _BS * 2 + '"'
-        share = _BS * 2 + "server" + _BS + "my share" + _BS
-        assert datahome._shell_quoted(share) == '"' + share + _BS + '"'
-        assert datahome._shell_quoted("C:" + _BS + "my proj") == '"C:\\my proj"'
-    else:
-        assert datahome._shell_quoted("/home/u/my $proj") == "'/home/u/my $proj'"
-        assert datahome._shell_quoted("/home/u/proj") == "/home/u/proj"
+    assert datahome._shell_quoted(path, windows=windows) == quoted
+
+
+def test_a_folder_the_quotes_cannot_carry_gets_the_steps_in_words() -> None:
+    from apothem.harnesses._shared import install_driver_datahome as datahome
+
+    # The apostrophe ends single quotes; the $ expands inside double quotes.
+    gone = "/work/it's $site"
+
+    message = datahome._release_steps(Path("/x/.apothem"), "cursor", gone)
+
+    assert f"recreate {gone}, run apothem install --harness cursor with" in message
+    assert "--project set to that folder and --profile set to the profile" in message
+    assert "apothem uninstall with the same --harness and --project" in message
+    assert "--project '" not in message
+    assert '--project "' not in message
 
 
 def test_a_failure_while_listing_what_stayed_records_the_uninstall_unfinished(
@@ -1216,10 +1286,12 @@ def test_a_second_uninstall_with_no_record_still_does_not_finish(
     assert (claude / "agents" / "citation-auditor.md").exists()
 
 
-@pytest.mark.parametrize("script", ["hooks/dispatch.py", "conformity/gate.py"])
-def test_a_hook_entry_script_writes_no_bytecode_cache(
-    tmp_path: Path, script: str
-) -> None:
+def _installed_support(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    """Copy the hook and gate scripts as an install lays them out.
+
+    Returns the support folder and an environment that lets Python write
+    bytecode caches next to the scripts it imports.
+    """
     support = tmp_path / "support"
     for folder in ("hooks", "conformity"):
         shutil.copytree(
@@ -1232,6 +1304,14 @@ def test_a_hook_entry_script_writes_no_bytecode_cache(
         for name, value in os.environ.items()
         if name not in {"PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX"}
     }
+    return support, env
+
+
+@pytest.mark.parametrize("script", ["hooks/dispatch.py", "conformity/gate.py"])
+def test_a_hook_entry_script_writes_no_bytecode_cache(
+    tmp_path: Path, script: str
+) -> None:
+    support, env = _installed_support(tmp_path)
     # Switched off, each script still imports its sibling modules first.
     env["APOTHEM_HOOKS_DISABLE"] = "1"
     arguments = ["--event-name", "Stop"] if script.startswith("hooks") else ["--hook"]
@@ -1246,6 +1326,32 @@ def test_a_hook_entry_script_writes_no_bytecode_cache(
         check=True,
     )
 
+    assert not list(support.rglob("__pycache__"))
+
+
+def test_a_standalone_validator_of_the_installed_gate_writes_no_bytecode_cache(
+    tmp_path: Path,
+) -> None:
+    support, env = _installed_support(tmp_path)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    done = subprocess.run(
+        [
+            sys.executable,
+            str(support / "conformity" / "gate.py"),
+            "--check",
+            "naming-grep",
+            str(project),
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+
+    assert "naming" in done.stdout, done.stderr
     assert not list(support.rglob("__pycache__"))
 
 
@@ -1279,7 +1385,8 @@ def test_a_file_that_cannot_be_removed_is_named_as_stuck_not_as_kept(
     assert str(stuck) not in listed
     assert "no record shows" not in envelope["results"][0]["message"]
     step = next(row for row in envelope["results"][1:] if row["path"] == str(skill))
-    assert step["detail"] == {"stuck_files": str(stuck)}
+    assert "stuck_files" not in step.get("detail", {})
+    assert step["stuck"] == [str(stuck)]
     assert step["files"] == [str(mine)]
     assert plain.exit_code != 0, plain.output
     assert "could not remove 1 file(s) Apothem wrote" in plain.stderr
@@ -1521,3 +1628,534 @@ def test_an_earlier_release_path_this_release_does_not_write_claims_no_compare()
     assert "differs" not in message
     assert "writes nothing there to compare it with" in message
     assert "then run apothem update, then apothem uninstall again" in message
+
+
+def _unrecorded_install(claude: Path) -> None:
+    """Uninstall, then install again with no record of that install left.
+
+    The install wrote its files, but its record never reached the ledger (it
+    stopped before it recorded itself, say), so the latest record here is the
+    finished uninstall.
+    """
+    ClaudeCodeAdapter().install({})
+    first, _ = _uninstall()
+    assert first == 0
+    ledger = install_ledger.ledger_path("claude_code")
+    finished = ledger.read_bytes()
+    ClaudeCodeAdapter().install({})
+    ledger.write_bytes(finished)
+
+
+def test_apothems_files_left_after_a_finished_uninstall_are_removed(
+    claude: Path,
+) -> None:
+    _unrecorded_install(claude)
+    agent = claude / "agents" / "citation-auditor.md"
+    skill = claude / "skills" / _skill_name()
+    present = agent.is_file() and skill.is_dir()
+
+    code, envelope = _uninstall()
+
+    assert present
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    assert not agent.exists()
+    assert not skill.exists()
+    assert _unfinished(claude) is None
+    # Only the two files that hold the interpreter's path stay: with no record,
+    # nothing shows which interpreter the install wrote there.
+    kept = {path for w in envelope["warnings"] for path in w.get("files", [])}
+    assert kept == {
+        str(claude / ".apothem" / "support" / "conformity" / "gate.py"),
+        str(claude / "statuslines" / "conformity.json"),
+    }
+
+
+def test_what_differs_after_a_finished_uninstall_stays_and_it_finishes(
+    claude: Path,
+) -> None:
+    _unrecorded_install(claude)
+    agent = claude / "agents" / "citation-auditor.md"
+    agent.write_text("my edits\n", encoding="utf-8")
+    skill = claude / "skills" / _skill_name()
+    notes = skill / "my-notes.md"
+    notes.write_text("mine\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    assert agent.read_text(encoding="utf-8") == "my edits\n"
+    assert notes.read_text(encoding="utf-8") == "mine\n"
+    assert not (skill / "SKILL.md").exists()
+    assert _unfinished(claude) is None
+    reasons = {
+        path: warning["detail"]["kept_reason"]
+        for warning in envelope["warnings"]
+        for path in warning.get("files", [])
+    }
+    assert reasons[str(agent)] == "no-active-install"
+    assert str(notes) in reasons
+    messages = " ".join(str(w["message"]) for w in envelope["warnings"])
+    assert "no install record lists them, and they do not match what" in messages
+    assert "earlier uninstall" not in messages
+    assert "last uninstall" not in messages
+
+
+def test_an_interpreter_you_repointed_stays_after_a_finished_uninstall(
+    claude: Path, tmp_path: Path
+) -> None:
+    ClaudeCodeAdapter().install({})
+    statusline = claude / "statuslines" / "conformity.json"
+    data = statusline.read_bytes()
+    ours = json.loads(data)["commandWindows"].split(" ", 1)[0]
+    other = tmp_path / "other-python" / "python.exe"
+    other.parent.mkdir()
+    other.write_bytes(b"")
+    repointed = data.replace(ours.encode("utf-8"), other.as_posix().encode("utf-8"))
+    statusline.write_bytes(repointed)
+    cache = claude / ".apothem" / "support" / "conformity" / "__pycache__"
+    cache.mkdir()
+    (cache / "gate.pyc").write_bytes(b"cache")
+    first, _ = _uninstall()
+    installed = ClaudeCodeAdapter().is_installed()
+
+    code, envelope = _uninstall()
+
+    assert repointed != data
+    assert first == 0
+    assert installed is True
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    assert statusline.read_bytes() == repointed
+    assert _unfinished(claude) is None
+
+
+def test_an_empty_folder_left_after_a_finished_uninstall_goes(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    cache = claude / ".apothem" / "support" / "hooks" / "lib" / "__pycache__"
+    cache.mkdir()
+    (cache / "x.pyc").write_bytes(b"cache")
+    first, _ = _uninstall()
+    skill = claude / "skills" / _skill_name()
+    (skill / "references").mkdir(parents=True)
+
+    code, envelope = _uninstall()
+
+    assert first == 0
+    assert code == 0, envelope
+    assert not skill.exists()
+    assert all(str(skill) not in str(w["message"]) for w in envelope["warnings"])
+    assert (cache / "x.pyc").read_bytes() == b"cache"
+
+
+def test_a_folder_left_holding_only_empty_folders_goes(claude: Path) -> None:
+    ClaudeCodeAdapter().install({})
+    skill = claude / "skills" / _skill_name()
+    for path in [path for path in skill.rglob("*") if path.is_file()]:
+        path.unlink()
+    (skill / "mine-empty" / "deeper").mkdir(parents=True)
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert not skill.exists()
+    assert all(str(skill) not in str(w["message"]) for w in envelope["warnings"])
+
+
+def test_a_folder_holding_no_file_that_does_not_go_is_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = tmp_path / "skill"
+    (folder / "empty").mkdir(parents=True)
+    real_rmdir = Path.rmdir
+
+    def refuse(self: Path) -> None:
+        if self == folder:
+            raise PermissionError("in use")
+        real_rmdir(self)
+
+    monkeypatch.setattr(Path, "rmdir", refuse)
+    result = written._kept_folder(folder, None)
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert result.message == f"{folder} was kept: it could not be removed"
+    assert not (folder / "empty").exists()
+
+
+def _fail_while_recording(
+    monkeypatch: pytest.MonkeyPatch, **failures: BaseException
+) -> None:
+    """Make the named calls raise while the finished uninstall record is appended.
+
+    *failures* maps an ``os`` function (``fsync``, ``ftruncate``) or the
+    ledger's directory sync (``fsync_dir``) to what it raises.
+    """
+    from apothem.lib import atomic_io
+
+    armed = {"on": False}
+    real_append = install_ledger.append_record
+
+    def append(record: LedgerRecord, **kwargs: object) -> Path:
+        armed["on"] = record.kind == "uninstall"
+        try:
+            return real_append(record, **kwargs)  # type: ignore[arg-type]
+        finally:
+            armed["on"] = False
+
+    for name, error in failures.items():
+        owner, attribute = (
+            (atomic_io, "_fsync_dir") if name == "fsync_dir" else (os, name)
+        )
+        real = getattr(owner, attribute)
+
+        def failing(
+            *args: object, _real: object = real, _error: BaseException = error
+        ) -> object:
+            if armed["on"]:
+                raise _error
+            return _real(*args)  # type: ignore[operator]
+
+        monkeypatch.setattr(owner, attribute, failing)
+    monkeypatch.setattr(install_ledger, "append_record", append)
+
+
+def _kinds(claude: Path) -> list[str]:
+    return [
+        record.kind
+        for record in install_ledger.read_records("claude_code")
+        if record.root == _root(claude)
+    ]
+
+
+def test_a_record_whose_sync_fails_is_taken_back_and_the_uninstall_unfinished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _fail_while_recording(monkeypatch, fsync=OSError(errno.EIO, "I/O error"))
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert _kinds(claude) == ["install", "uninstall-incomplete"]
+
+
+def test_an_interrupt_while_the_record_is_saved_leaves_the_uninstall_unfinished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _fail_while_recording(monkeypatch, fsync=KeyboardInterrupt())
+
+    with pytest.raises(KeyboardInterrupt):
+        ClaudeCodeAdapter().uninstall()
+
+    assert _kinds(claude) == ["install", "uninstall-incomplete"]
+
+
+def test_an_interrupt_after_the_record_is_saved_keeps_the_uninstall_finished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _fail_while_recording(monkeypatch, fsync_dir=KeyboardInterrupt())
+
+    with pytest.raises(KeyboardInterrupt):
+        ClaudeCodeAdapter().uninstall()
+
+    assert _kinds(claude) == ["install", "uninstall"]
+    assert ClaudeCodeAdapter().is_installed() is False
+
+
+def test_a_record_left_in_after_its_sync_fails_stands_with_a_warning(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+    _fail_while_recording(
+        monkeypatch,
+        fsync=OSError(errno.EIO, "I/O error"),
+        ftruncate=OSError(errno.EIO, "I/O error"),
+    )
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    # Retention ran after the finished record, so only that record is left.
+    assert _kinds(claude) == ["uninstall"]
+    ledger = str(install_ledger.ledger_path("claude_code"))
+    (note,) = [w for w in envelope["warnings"] if w["path"] == ledger]
+    assert "the uninstall finished, but its record may not have been" in note["message"]
+
+
+def test_a_record_lost_after_a_finished_uninstall_leaves_it_finished(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _unrecorded_install(claude)
+    real_append = install_ledger.append_record
+
+    def full(record: LedgerRecord, **kwargs: object) -> Path:
+        if record.kind == "uninstall":
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_append(record, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_ledger, "append_record", full)
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    assert _kinds(claude) == ["uninstall"]
+    ledger = str(install_ledger.ledger_path("claude_code"))
+    (note,) = [w for w in envelope["warnings"] if w["path"] == ledger]
+    assert "the uninstall finished, but its record may not have been" in note["message"]
+
+
+def test_an_uninstall_record_the_ledger_cannot_take_names_the_ledger(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ClaudeCodeAdapter().install({})
+
+    def full(record: LedgerRecord, **kwargs: object) -> Path:
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    monkeypatch.setattr(install_ledger, "append_record", full)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert _kinds(claude) == ["install"]
+    ledger = str(install_ledger.ledger_path("claude_code"))
+    (note,) = [w for w in envelope["warnings"] if w["path"] == ledger]
+    assert "did not finish, and that could not be recorded" in note["message"]
+    assert "Copy the backups it took" in note["message"]
+
+
+def _stuck_after_a_finished_uninstall(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, int, dict]:  # type: ignore[type-arg]
+    """Uninstall after a finished one while an agent file cannot be removed.
+
+    Returns that file, and the uninstall's exit code and envelope.
+    """
+    _unrecorded_install(claude)
+    stuck = claude / "agents" / "citation-auditor.md"
+    real_unlink = Path.unlink
+
+    def refuse(self: Path, missing_ok: bool = False) -> None:
+        if self == stuck:
+            raise PermissionError("in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", refuse)
+    code, envelope = _uninstall()
+    monkeypatch.setattr(Path, "unlink", real_unlink)
+    return stuck, code, envelope
+
+
+def test_a_retry_after_a_finished_uninstall_removes_what_could_not_go(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stuck, code, envelope = _stuck_after_a_finished_uninstall(claude, monkeypatch)
+    kinds = _kinds(claude)
+    # Only the unfinished record is left to show the install: the files the
+    # first pass kept under .apothem are gone as well.
+    shutil.rmtree(claude / ".apothem")
+    installed = ClaudeCodeAdapter().is_installed()
+    retry_code, retry = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert kinds == ["uninstall", "uninstall-incomplete"]
+    assert installed is True
+    assert retry_code == 0, retry
+    assert retry["status"] == "success"
+    assert not stuck.exists()
+    assert _kinds(claude) == ["uninstall"]
+    assert ClaudeCodeAdapter().is_installed() is False
+
+
+@pytest.mark.parametrize("gate_removed", [False, True])
+def test_a_retry_after_a_prune_still_removes_what_could_not_go(
+    claude: Path, monkeypatch: pytest.MonkeyPatch, gate_removed: bool
+) -> None:
+    """Retention keeps the finished uninstall that unfinished ones follow.
+
+    Cut back to the unfinished record alone, the ledger shows no finished
+    uninstall: the retry then stops at "not installed" once the conformity
+    gate is removed by hand, and otherwise ends as if there were no record.
+    """
+    stuck, code, envelope = _stuck_after_a_finished_uninstall(claude, monkeypatch)
+    install_driver.prune_history("claude_code")
+    kinds = _kinds(claude)
+    if gate_removed:
+        (claude / ".apothem" / "support" / "conformity" / "gate.py").unlink()
+    retry_code, retry = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert kinds == ["uninstall", "uninstall-incomplete"]
+    assert retry_code == 0, retry
+    assert retry["status"] == "success"
+    assert not stuck.exists()
+    assert _kinds(claude) == ["uninstall"]
+
+
+def test_apothems_files_behind_a_link_after_a_finished_uninstall_stop_it(
+    claude: Path, tmp_path: Path
+) -> None:
+    _unrecorded_install(claude)
+    rules = claude / "rules"
+    dotfiles = tmp_path / "dotfiles" / "rules"
+    dotfiles.parent.mkdir(parents=True)
+    shutil.move(str(rules), str(dotfiles))
+    _link_folder(rules, dotfiles)
+    before = sorted(path.name for path in dotfiles.iterdir())
+
+    code, envelope = _uninstall()
+    after = sorted(path.name for path in dotfiles.iterdir())
+    kinds = _kinds(claude)
+    _restore_link(rules, dotfiles)
+    retry_code, retry = _uninstall()
+
+    assert before
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert "still loads them" in envelope["results"][0]["message"]
+    assert after == before
+    assert kinds == ["uninstall", "uninstall-incomplete"]
+    assert retry_code == 0, retry
+    assert not list(rules.glob("*.md"))
+
+
+@pytest.mark.parametrize(
+    ("raised", "seen"),
+    [
+        (OSError("listing failed"), install_driver.MaterializationError),
+        (KeyboardInterrupt(), KeyboardInterrupt),
+    ],
+)
+def test_a_pass_that_stops_after_a_finished_uninstall_records_itself_unfinished(
+    claude: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    raised: BaseException,
+    seen: type[BaseException],
+) -> None:
+    _unrecorded_install(claude)
+
+    def stop(*args: object, **kwargs: object) -> list[object]:
+        raise raised
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", stop)
+    with pytest.raises(seen):
+        ClaudeCodeAdapter().uninstall()
+
+    assert _kinds(claude) == ["uninstall", "uninstall-incomplete"]
+
+
+def _fail_an_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run an install that fails at its first entry, so it undoes itself.
+
+    It appends a rollback of an id no install record has.
+    """
+
+    def fail(*args: object, **kwargs: object) -> object:
+        raise OSError(errno.EIO, "I/O error")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(install_driver, "_dispatch_install_entry", fail)
+        with pytest.raises(OSError, match="I/O error"):
+            ClaudeCodeAdapter().install({})
+
+
+def test_a_failed_installs_own_rollback_keeps_the_retry_after_a_stuck_pass(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stuck, code, envelope = _stuck_after_a_finished_uninstall(claude, monkeypatch)
+    _fail_an_install(monkeypatch)
+    kinds = _kinds(claude)
+    # Only the ledger is left to show the install, as in the retry above.
+    shutil.rmtree(claude / ".apothem")
+    installed = ClaudeCodeAdapter().is_installed()
+    retry_code, retry = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert kinds == ["uninstall", "uninstall-incomplete", "rollback"]
+    assert installed is True
+    assert retry_code == 0, retry
+    assert retry["status"] == "success"
+    assert not stuck.exists()
+    assert _kinds(claude) == ["uninstall"]
+
+
+def test_a_failed_installs_own_rollback_after_a_finished_uninstall_changes_nothing(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _unrecorded_install(claude)
+    _fail_an_install(monkeypatch)
+    agent = claude / "agents" / "citation-auditor.md"
+    present = agent.is_file()
+
+    code, envelope = _uninstall()
+
+    assert present
+    assert code == 0, envelope
+    assert envelope["status"] == "success"
+    assert not agent.exists()
+    assert _kinds(claude) == ["uninstall"]
+
+
+@pytest.mark.parametrize("finished_before", [True, False])
+def test_a_managed_block_no_install_record_lists_stays_and_is_named(
+    claude: Path, finished_before: bool
+) -> None:
+    if finished_before:
+        _unrecorded_install(claude)
+    else:
+        ClaudeCodeAdapter().install({})
+        shutil.rmtree(install_ledger.ledger_path("claude_code").parent)
+    anchor = claude / "CLAUDE.md"
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code == (0 if finished_before else cli._EXIT_PARTIAL), envelope
+    assert anchor.read_bytes() == before
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    assert note["message"].startswith(f"{anchor} still holds Apothem's managed block")
+    assert note["message"].endswith("by hand if you no longer want them")
+    assert "detail" not in note
+
+
+def test_each_bolt_on_anchor_with_a_block_is_named(tmp_path: Path) -> None:
+    from apothem.harnesses._shared import install_driver_retention as retention
+    from apothem.lib.harness_materializer import merge_managed_block
+
+    block = merge_managed_block("", "rules")
+    claude_md = tmp_path / "CLAUDE.md"
+    claude_md.write_text(f"mine\n\n{block}", encoding="utf-8")
+    profile = tmp_path / install_driver.PROFILE_DOCUMENT_RELATIVE
+    profile.parent.mkdir(parents=True)
+    profile.write_text(block, encoding="utf-8")
+
+    named = [w.path for w in retention.unlisted_block_warnings(tmp_path)]
+    skipped = retention.unlisted_block_warnings(tmp_path, skip={str(claude_md)})
+
+    assert named == [str(claude_md), str(profile)]
+    assert [w.path for w in skipped] == [str(profile)]
+
+
+def test_a_path_kept_after_a_finished_uninstall_says_how_to_remove_it(
+    claude: Path,
+) -> None:
+    _unrecorded_install(claude)
+    gate = claude / ".apothem" / "support" / "conformity" / "gate.py"
+
+    plain = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    assert plain.exit_code == 0, plain.output
+    assert "remove them by hand if you no longer want them" in plain.stdout
+    assert f"\n    {gate}" in plain.stdout
+
+
+def test_one_path_kept_after_a_finished_uninstall_says_how_to_remove_it() -> None:
+    reason, message = written._why_kept(None, None, None, ended=True)
+
+    assert reason == "no-active-install"
+    assert message.endswith("remove it by hand if you no longer want it")

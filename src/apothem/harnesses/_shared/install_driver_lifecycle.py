@@ -51,7 +51,7 @@ from .install_driver_removal import (
     _remove_unlisted_anchors,
     _surgical_remove_from_target,
 )
-from .install_driver_retention import apply_retention
+from .install_driver_retention import BOLT_ON_ANCHORS, apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
@@ -245,8 +245,10 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
 
     *root*'s latest record is ``uninstall-incomplete`` and a file the active
     install lists still has the content Apothem wrote (see
-    :func:`still_written`); an unreadable ledger reads as no evidence. With
-    nothing Apothem wrote left, the install is closed by an ``uninstall``.
+    :func:`still_written`), or no install is left since a finished uninstall
+    (only a second run, which compares each path with what this release
+    writes, can tell); an unreadable ledger reads as no evidence. With nothing
+    Apothem wrote left, the install is closed by an ``uninstall``.
     """
     try:
         unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
@@ -255,6 +257,8 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
         active = install_ledger.active_install_records(harness_name, root=root)
     except install_ledger.LedgerError:
         return False
+    if not active and last_uninstall_finished(harness_name, root):
+        return True
     if any(still_written(target) for install in active for target in install.targets):
         return True
     with contextlib.suppress(OSError, install_ledger.LedgerError):
@@ -314,7 +318,7 @@ def _profile_anchor_targets(
             if recorded.mode == "sentinel_merge" and recorded.path not in listed
         )
         return targets
-    for relative in ("CLAUDE.md", "apothem/rules/00-apothem-profile.md"):
+    for relative in BOLT_ON_ANCHORS:
         bolt_on = root / relative
         if bolt_on.is_file():
             targets.append(bolt_on)
@@ -458,7 +462,10 @@ def run_uninstall(
     active: list[LedgerRecord] = []
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
-    recorded = False
+    # The records this pass builds, each kept before it is appended, so the
+    # fallback below never contradicts one that landed (see record_uninstall).
+    own: list[LedgerRecord] = []
+    record_pass = functools.partial(record_uninstall, harness_name, root, own=own)
     try:
         active = install_ledger.active_install_records(harness_name, root=root)
         record = active[-1] if active else None
@@ -474,12 +481,7 @@ def run_uninstall(
         # the uninstall recorded as unfinished, as the CLI then reports it.
         kept = left_behind(results, active, floor=root_floor)
         finished = not left_unfinished([*prior_results, *results])
-        record_uninstall(
-            harness_name, root, record, [*prior_results, *results], finished=finished
-        )
-        # Set only once the record is written: a write that fails or is
-        # interrupted falls back to an uninstall-incomplete record below.
-        recorded = True
+        kept += record_pass(record, [*prior_results, *results], finished=finished)
         if finished:
             # Housekeeping after the final record: any failure here leaves
             # older backup sets for the next pass or ``backups prune``, and the
@@ -487,10 +489,7 @@ def run_uninstall(
             with contextlib.suppress(Exception):
                 apply_retention(harness_name)
     except BaseException as exc:
-        if not recorded:
-            record_uninstall(
-                harness_name, root, record, [*prior_results, *results], finished=False
-            )
+        results += record_pass(record, [*prior_results, *results], finished=False)
         if not isinstance(exc, Exception):
             raise
         # Hand the caller what this pass removed before it stopped, so the CLI
@@ -541,6 +540,7 @@ def _remove_installed(
             harness_name=harness_name,
             harness_root=harness_root,
             project_root=project_root,
+            strict=record is None,
         ),
     )
     gate = UserLevelGate.build(

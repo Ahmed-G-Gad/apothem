@@ -181,17 +181,20 @@ def _filled(expected: bytes, actual: Path) -> bool:
     return all(_names_a_file(value, json_text=json_text) for value in match.groups())
 
 
-def _digests(files: dict[str, bytes], target: Path) -> dict[str, str]:
+def _digests(
+    files: dict[str, bytes], target: Path, *, strict: bool = False
+) -> dict[str, str]:
     """Return *files* (relative path to bytes) mapped to their SHA-256.
 
     A file whose expected bytes still hold an install-time token gets the
     on-disk file's digest when that file is the expected text with the token
-    filled, so it compares as Apothem's.
+    filled, so it compares as Apothem's. With *strict* no token is filled: a
+    file compares as Apothem's only with the bytes this release ships.
     """
     digests = {}
     for path, data in files.items():
         on_disk = target / path if path else target
-        if _TOKEN.search(data) and _filled(data, on_disk):
+        if not strict and _TOKEN.search(data) and _filled(data, on_disk):
             data = on_disk.read_bytes()
         digests[path] = hashlib.sha256(data).hexdigest()
     return digests
@@ -296,11 +299,13 @@ def expected_digests(
     harness_root: Path | None,
     project_root: Path | None,
     ignore: IgnoreFn | None,
+    strict: bool = False,
 ) -> dict[str, str] | None:
     """Return the SHA-256 of each file this release writes at *target*.
 
     Keyed like a recorded ``files`` map (``""`` for a file target). ``None``
     when *target* is not one *entry* writes, or its source cannot be read.
+    With *strict*, no install-time token is filled (see :func:`_digests`).
     """
     try:
         files = _expected_bytes(
@@ -313,7 +318,7 @@ def expected_digests(
         )
     except (OSError, UnicodeDecodeError, ValueError):
         return None
-    return None if files is None else _digests(files, target)
+    return None if files is None else _digests(files, target, strict=strict)
 
 
 def expected_lookup(
@@ -322,12 +327,16 @@ def expected_lookup(
     harness_name: str,
     harness_root: Path | None,
     project_root: Path | None,
+    strict: bool = False,
 ) -> Callable[[Path], dict[str, str] | None]:
     """Return a function giving this release's digests at any target *rules* write.
 
     The target belongs to the last entry that writes it (the one whose content
     the install left); a command that shares its name with a skill is left
     out, as the install leaves it out. The map is built on the first call.
+    *strict* fills no install-time token, for a root with no install record
+    after a finished uninstall: nothing there shows which interpreter an
+    install wrote, so a file that holds one is never taken for Apothem's.
     """
     ignore = make_ignore(
         list(rules.exclude), dict(getattr(rules, "per_directory_filters", {}))
@@ -362,6 +371,7 @@ def expected_lookup(
             harness_root=harness_root,
             project_root=project_root,
             ignore=ignore,
+            strict=strict,
         )
 
     return lookup

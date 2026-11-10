@@ -110,8 +110,9 @@ _KEPT_GROUP_LINES = {
         "{count} paths were kept: no install record shows whether Apothem wrote them"
     ),
     "no-active-install": (
-        "{count} paths were kept: an earlier uninstall here finished and kept "
-        "them, and no install record lists them"
+        "{count} paths were kept: no install record lists them, and they do not "
+        "match what this release writes; remove them by hand if you no longer "
+        "want them"
     ),
     "no-digests": (
         "{count} paths were kept: the install record (made by an earlier "
@@ -272,8 +273,9 @@ def _step_rows(
 ) -> list[dict[str, object]]:
     """Return one ``results`` row per failed step of *run*.
 
-    The files a step kept are a ``files`` list, as in the warnings, in place
-    of the ``detail`` strings that join them.
+    The files a step kept are a ``files`` list, as in the warnings, and the
+    files Apothem wrote that it could not remove a ``stuck`` list, in place of
+    the ``detail`` strings that join them.
     """
     rows = []
     for error in run.errors if run is not None else ():
@@ -281,10 +283,13 @@ def _step_rows(
         detail = row.get("detail")
         if isinstance(detail, dict):
             files = [path for key in _KEPT_KEYS for path in detail_paths(error, key)]
-            for key in _KEPT_KEYS:
+            stuck = detail_paths(error, "stuck_files")
+            for key in (*_KEPT_KEYS, "stuck_files"):
                 detail.pop(key, None)
             if files:
                 row["files"] = files
+            if stuck:
+                row["stuck"] = stuck
             if not detail:
                 del row["detail"]
         rows.append(row)

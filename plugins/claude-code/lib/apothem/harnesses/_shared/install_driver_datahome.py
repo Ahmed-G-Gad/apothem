@@ -9,7 +9,7 @@ recorded, so they reverse the stores where the install actually wrote them.
 from __future__ import annotations
 
 import os
-import shlex
+import unicodedata
 from pathlib import Path
 
 from apothem.lib import install_ledger
@@ -156,16 +156,39 @@ def _holder(
     return gone[0] if gone else None
 
 
-def _shell_quoted(path: str) -> str:
+#: What the quotes around a printed folder cannot carry, besides a control
+#: character. Windows prints double quotes, inside which PowerShell expands
+#: ``$`` and the backquote (and also reads the curly double quotes as quotes)
+#: and cmd expands ``%`` and ``!``. Elsewhere single quotes, which a single
+#: quote ends, and in PowerShell also the curly single quotes.
+_UNQUOTABLE = {
+    True: frozenset('$`%!"' + "".join(map(chr, (0x201C, 0x201D, 0x201E)))),
+    False: frozenset("'" + "".join(map(chr, (0x2018, 0x2019, 0x201A, 0x201B)))),
+}
+
+
+def _shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
     """Return *path* quoted for a command the operator pastes into a shell.
 
-    POSIX shells get :func:`shlex.quote`. On Windows the path goes in double
+    On Windows (*windows*, by default this host) the path goes in double
     quotes, with each trailing backslash doubled so the closing quote stays a
-    quote (``C:\\`` becomes ``"C:\\\\"``).
+    quote (``C:\\`` becomes ``"C:\\\\"``); elsewhere in single quotes. ``None``
+    when those quotes cannot carry the path (see :data:`_UNQUOTABLE`), and on
+    Windows also when two backslashes stand together before its end, as at
+    the start of a network share (``\\\\server\\share``): Git Bash reads them
+    as one inside double quotes.
     """
-    if os.name != "nt":
-        return shlex.quote(path)
+    windows = os.name == "nt" if windows is None else windows
+    if any(
+        char in _UNQUOTABLE[windows] or unicodedata.category(char) == "Cc"
+        for char in path
+    ):
+        return None
+    if not windows:
+        return f"'{path}'"
     bare = path.rstrip("\\")
+    if "\\\\" in bare:
+        return None
     return '"' + bare + "\\" * (2 * (len(path) - len(bare))) + '"'
 
 
@@ -178,20 +201,29 @@ def _release_steps(home: Path, package_key: str, root: str) -> str:
     install used a profile whose workspace puts them in *home*: the reinstall
     needs that profile too, or it writes stores of its own and leaves these
     with no install that uses them. A project install gets the exact commands,
-    paths quoted for the shell (see :func:`_shell_quoted`). A user-scope
-    install's folder may have come from a setting (``CODEX_HOME``,
+    the folder quoted for the shell (see :func:`_shell_quoted`), or the steps
+    in words, naming the folder as it is, when the quotes cannot carry it. A
+    user-scope install's folder may have come from a setting (``CODEX_HOME``,
     ``XDG_CONFIG_HOME``) the commands cannot repeat, so it gets the steps in
     words: a bare command would act on the default folder.
     """
     entry = get_harness_entry(package_key)
     stores = "its memory, contexts and learning folders"
-    if entry.scope == "project":
-        where = f" --project {_shell_quoted(root)}"
+    quoted = _shell_quoted(root) if entry.scope == "project" else None
+    if quoted is not None:
+        where = f" --project {quoted}"
         steps = (
-            f"create {_shell_quoted(root)} again, then run apothem install "
+            f"create {quoted} again, then run apothem install "
             f"--harness {entry.public_id}{where} --profile <the profile it "
             f"used>, then apothem uninstall --harness {entry.public_id}{where} "
             "--yes"
+        )
+    elif entry.scope == "project":
+        steps = (
+            f"recreate {root}, run apothem install --harness {entry.public_id} "
+            "with --project set to that folder and --profile set to the "
+            "profile it used, then apothem uninstall with the same --harness "
+            "and --project"
         )
     else:
         steps = (
