@@ -356,6 +356,44 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     ]
 
 
+def test_a_plain_script_that_imports_the_conftest_registers_nothing(
+    tmp_path: Path,
+) -> None:
+    """Outside pytest the import finds no plugin manager and changes nothing.
+
+    The import-time walk registers the guard only when a pytest session is on
+    the stack (case ``a_conftest_that_imports_some_isolation_fixtures`` pins
+    that it does then). A plain script gets ``None`` back, the import still
+    succeeds, and nothing is written to the home it runs with.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    script = (
+        "import tests.conftest as conftest\n"
+        "print(conftest._importing_plugin_manager() is None)\n"
+    )
+    env = {
+        **os.environ,
+        "HOME": str(home),
+        "USERPROFILE": str(home),
+        "PYTHONPATH": os.pathsep.join([str(_REPO_ROOT / "src"), str(_REPO_ROOT)]),
+    }
+    done = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=300,
+        check=False,
+    )
+
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "True", done.stdout + done.stderr
+    assert list(home.iterdir()) == []
+
+
 def test_the_setup_hook_runs_before_any_fixture_is_set_up(
     request: pytest.FixtureRequest,
 ) -> None:
