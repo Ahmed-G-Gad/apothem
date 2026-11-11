@@ -44,6 +44,7 @@ from apothem.cli._helpers import (
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._stray_begin_report import stray_begin_note, stray_begin_paths
+from apothem.harnesses._shared.install_driver_blocks import unclear_block_at
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
@@ -170,12 +171,16 @@ def _report_verify_failure(
         )
         return
     held = "a file holds" if len(stray) == 1 else f"{len(stray)} files hold"
+    what = (
+        "Apothem markers to fix by hand"
+        if any(unclear_block_at(path) for path in stray)
+        else "an Apothem BEGIN marker with no END marker"
+    )
     checks.append(
         _check(
             "harness.stray_begin",
             "fail",
-            f"{name} is installed but does not verify: {held} an Apothem BEGIN "
-            "marker with no END marker.",
+            f"{name} is installed but does not verify: {held} {what}.",
             harness=name,
             fix=stray_begin_note(
                 stray,

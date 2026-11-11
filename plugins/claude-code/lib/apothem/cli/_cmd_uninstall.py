@@ -49,7 +49,11 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
-from apothem.harnesses._shared.install_driver_blocks import ANOTHER_BLOCK, MARKER_LEFT
+from apothem.harnesses._shared.install_driver_blocks import (
+    ANOTHER_BLOCK,
+    MARKER_LEFT,
+    UNCLEAR_BLOCK,
+)
 from apothem.harnesses._shared.install_driver_written import UNPROVEN_REASONS
 
 
@@ -318,20 +322,32 @@ _FIX_ANOTHER = (
     "over the first whole block in a file, which can be yours"
 )
 
+#: What to do first with each file whose marker pair Apothem cannot place
+#: (``kept_reason`` ``unclear-block``): an update leaves such a file as it is,
+#: and verify fails until the operator fixes the lines its warning names.
+_FIX_UNCLEAR = (
+    "fix the lines the warnings name in the {count} file(s) whose Apothem "
+    "markers sit in or around a code block: an update leaves those files as "
+    "they are, and apothem verify fails until you fix them"
+)
+
 
 def _marker_fix(run: MaterializationRun) -> str:
     """Return what to fix before apothem update in the files a warning names.
 
     ``""`` when no warning names an Apothem marker the uninstall left. A BEGIN
-    marker with no END (:data:`_FIX_STRAY`) and two different blocks
-    (:data:`_FIX_ANOTHER`) each get their own advice, since an update keeps
-    the first and writes over the second.
+    marker with no END (:data:`_FIX_STRAY`), two different blocks
+    (:data:`_FIX_ANOTHER`) and a marker pair Apothem cannot place
+    (:data:`_FIX_UNCLEAR`) each get their own advice, since an update keeps
+    the first, writes over the second and leaves the third as it is.
     """
     another = _another_block_paths(run)
-    stray = [path for path in _marked_files(run) if path not in another]
+    unclear = _kept_paths(run, UNCLEAR_BLOCK)
+    stray = [path for path in _marked_files(run) if path not in another + unclear]
     parts = [
         *([_FIX_STRAY.format(count=len(stray))] if stray else []),
         *([_FIX_ANOTHER.format(count=len(another))] if another else []),
+        *([_FIX_UNCLEAR.format(count=len(unclear))] if unclear else []),
     ]
     return ", and ".join(parts)
 
@@ -349,9 +365,12 @@ _ANOTHER_BLOCK_LINE = (
 
 def _another_block_paths(run: MaterializationRun) -> list[str]:
     """Return each file left because it holds two different marked blocks."""
-    held = (
-        w.path for w in run.warnings if w.detail.get("kept_reason") == ANOTHER_BLOCK
-    )
+    return _kept_paths(run, ANOTHER_BLOCK)
+
+
+def _kept_paths(run: MaterializationRun, reason: str) -> list[str]:
+    """Return each file a warning of *run* says was kept for *reason*."""
+    held = (w.path for w in run.warnings if w.detail.get("kept_reason") == reason)
     return list(dict.fromkeys(held))
 
 

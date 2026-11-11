@@ -124,8 +124,9 @@ def verify_install(
     A user-level entry passes when its folders are in place whichever harness
     wrote them (see :func:`user_level_entry_ok`). A file this install keeps a
     managed block in fails it while it holds a BEGIN marker that starts no
-    whole block (see :func:`stray_begin_files`): install and update keep such a
-    marker, so only the operator can clear it. Returns False on the first
+    whole block, or a marker pair no rule can place (see
+    :func:`stray_begin_files`): install and update keep such a marker, so only
+    the operator can clear it. Returns False on the first
     unsatisfied target.
     """
     rules = install_driver.load_rules(harness_name)
@@ -280,8 +281,9 @@ def check_fidelity(
     on disk (so the freshly-projected body is no longer a substring) reads as
     ``drifted``; an absent anchor or one with no managed block reads as
     ``missing``; an exact carry reads as ``faithful``. Line endings do not count:
-    an anchor saved with CRLF endings carries the body as well as one with LF
-    endings, and an update leaves such a file as it is. This is what makes the CLI
+    an anchor saved with CRLF or CR endings carries the body as well as one with
+    LF endings, and an update that leaves the block as it is keeps those
+    endings. This is what makes the CLI
     ``verify`` answer "is the profile faithfully installed?" rather than merely
     "does a file exist".
     """
@@ -307,7 +309,7 @@ def check_fidelity(
             results.append(FidelityResult(_path_text(target), "missing"))
         elif (
             expected
-            and expected in block.replace("\r\n", "\n")
+            and expected in block.replace("\r\n", "\n").replace("\r", "\n")
             and not stray_begin_at(target)
         ):
             results.append(FidelityResult(_path_text(target), "faithful"))

@@ -2675,8 +2675,12 @@ def test_an_update_leaves_a_quoted_marker_pair_above_the_block_as_it_is(
     claude: Path,
 ) -> None:
     # An earlier release's install, a marker pair you quote in a fenced code
-    # example above Apothem's block: the uninstall stops, and the update it
-    # asks for writes Apothem's block apart from your example, never over it.
+    # example above Apothem's block: the uninstall stops after taking Apothem's
+    # block out. The install record still lists CLAUDE.md, so the update it
+    # asks for cannot tell your quoted pair from a block of Apothem's inside
+    # your code block: it changes nothing there (never writing over your
+    # example) and names the file and the code block's line. The next
+    # uninstall finishes and leaves the file as it is.
     profile = str(profile_minimal_path())
     code, envelope = _run("install", "--harness", "claude-code", "--profile", profile)
     assert code == 0, envelope
@@ -2691,17 +2695,24 @@ def test_an_update_leaves_a_quoted_marker_pair_above_the_block_as_it_is(
     anchor.write_bytes(quoted + anchor.read_bytes())
 
     first, _ = _uninstall()
+    before_update = anchor.read_bytes()
     code, envelope = _run("update", "--harness", "claude-code", "--profile", profile)
     after_update = anchor.read_bytes()
     last, _ = _uninstall()
 
     assert first == cli._EXIT_PARTIAL
+    assert before_update.startswith(quoted.rstrip(b"\n")), before_update[:200]
     assert code == 0, envelope
-    assert after_update.startswith(quoted), after_update[:200]
-    assert after_update.count(APOTHEM_BLOCK_BEGIN.encode()) == 2
+    assert after_update == before_update
+    named = [
+        str(w["message"])
+        for w in envelope["warnings"]
+        if "CLAUDE.md" in str(w["message"])
+        and "code block that opens at line 3" in str(w["message"])
+    ]
+    assert named, envelope["warnings"]
     assert last == 0
-    assert anchor.read_bytes().startswith(quoted.rstrip(b"\n"))
-    assert anchor.read_bytes().count(APOTHEM_BLOCK_BEGIN.encode()) == 1
+    assert anchor.read_bytes() == before_update
 
 
 def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(

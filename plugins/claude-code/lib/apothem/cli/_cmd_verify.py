@@ -279,7 +279,8 @@ def _failure_notes(
     Says it where the cause is one the operator can act on, so the fix is not a
     guess: ``user_level`` names the user-home folders that are missing or not
     Apothem's, and ``stray_begin`` names each file that holds a BEGIN marker
-    with no END marker (install and update keep such a marker). Each note is
+    with no END marker, or a marker pair inside a code block (install and
+    update keep such a marker). Each note is
     also appended to the row's message.
     """
     notes: list[str] = []

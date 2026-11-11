@@ -365,7 +365,8 @@ def _surgical_remove_from_target(
     - ``sentinel_merge`` anchors: strip the managed block via
       :func:`remove_managed_block`; delete when the remainder is whitespace-only,
       else atomic-rewrite the operator prose. A BEGIN marker with no END after
-      it is a warning, and the file is left as it is.
+      it is a warning, and the file is left as it is. So is a recorded file
+      whose marker pair no rule can place (see :func:`unclear_block_warning`).
     - ``.json`` / ``.yaml`` / ``.yml`` targets: remove only Apothem's keys/hooks
       via the recursive structured stripper (operator-added/overridden keys
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;
@@ -394,13 +395,15 @@ def _surgical_remove_from_target(
     """
     if not target.exists() or not target.is_file():
         return None
+    if mode == "sentinel_merge" and (
+        refusal := sentinel_refusal(target, recorded=recorded is not None)
+    ):
+        # Nothing is changed, so a link or a non-UTF-8 byte does not matter.
+        return refusal
     if mode == "sentinel_merge" and not _holds_managed_block(target):
         # Nothing of Apothem's is left in the anchor, so there is nothing to
         # remove (and no reason to refuse a path reached through a link).
         return None
-    if mode == "sentinel_merge" and (refusal := sentinel_refusal(target)):
-        # Nothing is changed, so a link or a non-UTF-8 byte does not matter.
-        return refusal
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="surgical_uninstall"
     )
@@ -657,6 +660,7 @@ def _remove_unlisted_anchors(
             install_root=root,
             harness_name=harness_name,
             allowed_root=allowed_root,
+            recorded=recorded,
         )
         if removal is not None:
             results.append(removal)

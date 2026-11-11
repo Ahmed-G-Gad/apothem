@@ -30,6 +30,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   fix names each such file and says to delete the marker line: an update alone
   does not clear it (see
   [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  A file whose Apothem markers sit inside a code block fails the same check;
+  its fix names the lines of the BEGIN marker and of the code block (see
+  [Apothem's markers sit inside a code block](/docs/install/troubleshooting#apothems-markers-sit-inside-a-code-block)).
 - **Hook runtime.** For each verified harness, and for each one that such a
   marker fails, doctor reads the files its latest
   install wrote, finds the hook commands Apothem registered there, and starts

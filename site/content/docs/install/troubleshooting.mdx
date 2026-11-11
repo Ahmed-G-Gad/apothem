@@ -303,6 +303,8 @@ adapter-specific page under [Harness Adapters](/docs/harnesses). If the install
 warned about a BEGIN marker with no END, or the failed row names a file that
 holds one, re-running it does not help; see
 [A file has an Apothem BEGIN marker with no END marker](#a-file-has-an-apothem-begin-marker-with-no-end-marker).
+If the warning or the row says Apothem's markers sit inside a code block, see
+[Apothem's markers sit inside a code block](#apothems-markers-sit-inside-a-code-block).
 
 ### A file has an Apothem BEGIN marker with no END marker
 
@@ -324,9 +326,12 @@ starts. So Apothem never cuts the text after that marker:
   does not fail them.
 
 Apothem reads a marker only as a line of its own outside code, as a Markdown
-viewer would, so a marker you quote in a sentence, a fenced code block or a
-block indented four spaces is never taken for one. A code fence you leave open
-anywhere in the file is read as text.
+viewer would, so a marker you quote in a sentence, in a fenced code block, or
+in code indented four columns past its list item (or the margin) after a blank
+line is not taken for one, and neither is a BEGIN and an END marker you quote
+in two separate code blocks. A code fence you leave open to the end of the file
+is read as text, up to eight of them. Markers inside an HTML block or a block
+quote can still be read differently from a Markdown viewer.
 
 To fix it, open the named file and find the stray BEGIN marker: the one with no
 END marker before the next BEGIN marker, or none at all. Delete that line and
@@ -334,6 +339,33 @@ any old Apothem text below it, which repeats Apothem's rules, and keep your own
 lines. Keep the BEGIN line that opens Apothem's current block, if the file has
 one. Then run `apothem update`, which writes Apothem's block back if the file
 no longer holds one, and run `apothem verify` again.
+
+### Apothem's markers sit inside a code block
+
+The warning reads "the Apothem BEGIN marker at line N and the END marker after
+it sit inside a code block that opens at line M". A code fence above Apothem's
+block was left open and a fence you added further down closed it, so the block
+now sits inside your code block. The warning also names a code block, opened
+between a BEGIN marker and its END marker, that hides that END marker while
+another marker pair follows. A Markdown viewer shows those lines as code, and
+the same lines could be a marker pair you quote as an example, so Apothem
+cannot tell whether they are its block or your text.
+
+When an earlier install wrote the file, `apothem install` and `apothem update`
+change nothing in it and print that warning, `apothem verify` fails, and
+`apothem doctor` reports the file (as `harness.stray_begin`) until you fix it.
+`apothem uninstall` leaves the file as it is, names it, and finishes. Your text
+is never cut.
+
+To fix it, open the named file at the line the warning gives for the code
+block:
+
+1. If the lines from the BEGIN marker to the END marker are Apothem's block,
+   close that code block above the BEGIN marker (add the closing fence, such
+   as a line of three backticks, where your example ends), or above the END
+   marker when the warning says a code block splits the pair.
+2. If they are an example of yours, change or delete those marker lines.
+3. Run `apothem update`, then `apothem verify` again.
 
 ### Hooks not firing in Claude Code
 
