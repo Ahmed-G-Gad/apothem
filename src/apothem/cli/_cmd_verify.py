@@ -240,7 +240,9 @@ def _verify_row(
     hint = (
         None
         if verified_struct
-        else _user_level_hint(harness_id, adapter, project_root, output_path)
+        else _user_level_hint(
+            harness_id, adapter, project_root, output_path, installed=installed
+        )
     )
     row: dict[str, object] = {
         "harness": harness_id,
@@ -283,15 +285,25 @@ def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, obje
 
 
 def _user_level_hint(
-    harness_id: str, adapter: _Adapter, project_root: Path | None, output_path: Path
+    harness_id: str,
+    adapter: _Adapter,
+    project_root: Path | None,
+    output_path: Path,
+    *,
+    installed: bool,
 ) -> dict[str, object] | None:
     """Return why a failed verify points at the user-home folders, or ``None``.
 
     The install root is the one the adapter's ``verify`` checks: the
     ``--project`` root of a project-scope harness, the folder that holds the
-    output path of a user-scope one.
+    output path of a user-scope one. For a harness that is not installed
+    there, the unproven and unlisted pass is skipped (its update would install
+    a harness the operator did not choose); the missing-folder note stays as
+    it was.
     """
     try:
+        if not installed:
+            return verify_hint(harness_id)
         if is_project_scope(adapter):
             return verify_hint(harness_id, project_root=project_root)
         return verify_hint(harness_id, harness_root=output_path.parent)

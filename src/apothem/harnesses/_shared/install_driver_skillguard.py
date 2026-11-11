@@ -17,7 +17,11 @@ from pathlib import Path
 
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import extract_managed_block
-from apothem.lib.propagation import InstallEntry
+from apothem.lib.harness_registry import (
+    SUPPORTED_PACKAGE_KEYS,
+    public_id_for_package_key,
+)
+from apothem.lib.propagation import InstallEntry, resolve_target, user_home
 
 from .install_driver_digests import file_digest
 from .install_driver_pathsafety import _is_link, _walk_without_links
@@ -28,23 +32,70 @@ from .install_driver_shared import (
     holder_index,
     path_key,
 )
+from .install_driver_sharedlock import rules_for, writes_user_level
 from .install_driver_types import MaterializationResult, _result
 
 #: :meth:`SkillGuard.verdict` for a folder no install record lists.
 UNLISTED = "unlisted"
-#: :meth:`SkillGuard.verdict` for a folder only gone installs list, unproven.
+#: :meth:`SkillGuard.verdict` for a folder Apothem installs listed, unproven.
 UNPROVEN = "unproven"
 
 _PRESENT, _GONE, _UNKNOWN = "present", "gone", "unknown"
 
-_REASONS = {
-    UNLISTED: "a skill folder with this name is not one Apothem wrote",
-    UNPROVEN: (
-        "the Apothem installs that list it are in folders that are gone, hold "
-        "no Apothem files or cannot be read, and this folder has changed since "
-        "they wrote it, or they (from an earlier release) did not record its files"
-    ),
-}
+_UNLISTED_REASON = "a skill folder with this name is not one Apothem wrote"
+_ANY_UPDATE = "apothem update for this harness"
+
+
+def unproven_advice(where: str, command: str) -> str:
+    """Return why a skill folder is unproven and the two ways on.
+
+    The install warning and ``verify`` both print it, so they never disagree.
+    *where* names the skills folder, *command* the update that writes
+    Apothem's version once the folder is moved out of it.
+    """
+    return (
+        "the Apothem installs that listed it are in folders that are gone, "
+        "hold no Apothem files or cannot be read, or they no longer list it. "
+        "It does not hold exactly the files they recorded. Either you made or "
+        "edited it (your own skill), or an earlier release wrote it without "
+        "recording its files. To keep it, leave it where it is: Apothem does "
+        "not change it, and the harness stays not verified. To use Apothem's "
+        f"version, move it out of {where}, then run {command}"
+    )
+
+
+def update_command(harness: str, project: str | None) -> str:
+    """Return ``apothem update --harness <harness>``, with ``--project <project>``."""
+    scope = "" if project is None else f" --project {project}"
+    return f"apothem update --harness {harness}{scope}"
+
+
+def _install_command(harness_name: str | None, project_root: Path | None) -> str:
+    """Return the update an install or update warning names for *harness_name*.
+
+    The project is named in words: the operator gave it to this run, and only
+    the CLI quotes a path for a shell.
+    """
+    try:
+        command = update_command(public_id_for_package_key(harness_name or ""), None)
+    except KeyError:
+        return _ANY_UPDATE
+    if project_root is None:
+        return command
+    return f"{command} with the same --project as this run"
+
+
+def home_text(folder: Path) -> str:
+    """Return *folder* as ``~/.../`` when it is under the home, else as written.
+
+    ``verify`` names a user-home folder the same way, and a copied message
+    then holds no username.
+    """
+    try:
+        relative = folder.relative_to(user_home())
+    except ValueError:
+        return str(folder)
+    return f"~/{relative.as_posix()}/"
 
 
 def root_state(root: Path) -> str:
@@ -85,13 +136,43 @@ def holds_apothem_files(root: Path, record: install_ledger.LedgerRecord) -> bool
     *root* itself may be one, a project kept behind a junction) and it still
     shows Apothem's content (:func:`_still_apothems`). A record with no
     root-local target leaves only the folder to go by, so it counts as holding
-    them. A file that cannot be read shows nothing.
+    them. A file that cannot be read shows nothing, and the next target is
+    read.
     """
     base = Path(os.path.normpath(root))
     prefix = path_key(base).rstrip(os.sep) + os.sep
-    local = [t for t in record.targets if path_key(t.path).startswith(prefix)]
+    shared = _user_level_prefixes()
+    local = [
+        target
+        for target in record.targets
+        if path_key(target.path).startswith(prefix)
+        and not path_key(target.path).startswith(shared)
+    ]
+    return not local or any(_shows_apothems(base, target) for target in local)
+
+
+def _user_level_prefixes() -> tuple[str, ...]:
+    """Return the comparison keys, each ending in a separator, of the user-level folders.
+
+    Every folder a user-level manifest entry writes (the shared skills
+    folders, ``~/.config/apothem/rules/`` and ``templates/``) is shared by
+    installs in many roots, so none of its targets says a root is still
+    installed, not even for a project kept at the home folder itself.
+    """
+    folders: dict[str, None] = {}
+    for package_key in SUPPORTED_PACKAGE_KEYS:
+        rules = rules_for(package_key)
+        for entry in rules.install if rules is not None else ():
+            if entry.user_level:
+                key = path_key(resolve_target(entry.target)).rstrip(os.sep)
+                folders[key + os.sep] = None
+    return tuple(folders)
+
+
+def _shows_apothems(base: Path, target: install_ledger.LedgerTarget) -> bool:
+    """Return :func:`_still_apothems`; a target that cannot be read shows nothing."""
     try:
-        return not local or any(_still_apothems(base, target) for target in local)
+        return _still_apothems(base, target)
     except OSError:
         return False
 
@@ -159,15 +240,24 @@ class SkillGuard:
     it recorded, and no other file and no link. A record from an earlier
     release, with no file digests, cannot show that, so it does not count. A
     folder only such records list is left alone too, with a warning that says
-    so and names the way out (move it aside, then update).
+    so and names the way out (move it out of the skills folder, then update).
+    So is a folder that no current record lists but an earlier install
+    record did: an install that ran again in the same folder after skipping
+    it does not list it, and the folder is no more proven than before, unless
+    it holds exactly what one of those earlier records lists.
     """
 
-    def __init__(self, evidence: HolderIndex | None) -> None:
-        """Bind the ledger *evidence*; ``None`` means it could not be read."""
+    def __init__(self, evidence: HolderIndex | None, command: str = "") -> None:
+        """Bind the ledger *evidence*; ``None`` means it could not be read.
+
+        *command* is the update an unproven folder's warning names.
+        """
         self._evidence = evidence
+        self._command = command or _ANY_UPDATE
         self.conflicts: list[MaterializationResult] = []
         self._records: dict[Holder, install_ledger.LedgerRecord | None] = {}
         self._lives: dict[Holder, bool] = {}
+        self._listed_before: dict[str, list[dict[str, str] | None]] | None = None
 
     @property
     def readable(self) -> bool:
@@ -175,12 +265,26 @@ class SkillGuard:
         return self._evidence is not None
 
     @classmethod
-    def load(cls) -> SkillGuard:
-        """Read the ledger evidence; an unreadable ledger proves nothing."""
+    def for_entry(
+        cls, entry: InstallEntry, harness_name: str, project_root: Path | None
+    ) -> SkillGuard | None:
+        """Return :meth:`load` for a user-level *entry*, ``None`` for any other."""
+        return cls.load(harness_name, project_root) if entry.user_level else None
+
+    @classmethod
+    def load(
+        cls, harness_name: str | None = None, project_root: Path | None = None
+    ) -> SkillGuard:
+        """Read the ledger evidence; an unreadable ledger proves nothing.
+
+        *harness_name* (a package key) and *project_root* name the install
+        whose warnings this guard writes, for the update they name.
+        """
+        command = _install_command(harness_name, project_root)
         try:
-            return cls(holder_index())
+            return cls(holder_index(), command)
         except (install_ledger.LedgerError, OSError, ValueError):
-            return cls(None)
+            return cls(None, command)
 
     def check(self, directory: Path, matches: bool) -> MaterializationResult | None:
         """Return a ``warning`` result when *directory* must be left alone, else ``None``.
@@ -192,12 +296,17 @@ class SkillGuard:
         verdict = self.verdict(directory)
         if verdict is None:
             return None
+        if verdict == UNPROVEN:
+            message = f"skipped {directory}, which Apothem cannot prove it wrote: "
+            message += unproven_advice(home_text(directory.parent), self._command)
+        else:
+            message = f"skipped {directory}: {_UNLISTED_REASON}; rename or move "
+            message += "it, then run apothem update"
         conflict = _result(
             "warning",
             "skill_conflict",
             directory,
-            f"skipped {directory}: {_REASONS[verdict]}; rename or move it, then "
-            "run apothem update",
+            message,
             detail={"code": "skill_conflict"},
         )
         self.conflicts.append(conflict)
@@ -206,14 +315,21 @@ class SkillGuard:
     def verdict(self, directory: Path) -> str | None:
         """Return why *directory* is not provably Apothem's, or ``None`` when it is.
 
-        :data:`UNLISTED` when no install record lists it (or the ledger cannot
-        be read), :data:`UNPROVEN` when no install that lists it is live and
-        none of their records shows it as written. Whether the folder already
-        matches the emission is the caller's test.
+        :data:`UNLISTED` when no install record lists it now or listed it
+        before (or the ledger cannot be read), :data:`UNPROVEN` when no install
+        that lists it is live and none of their records shows it as written,
+        or when only earlier install records listed it and none of them shows
+        it as written. Whether the folder already matches the emission is the
+        caller's test.
         """
         holders = self._holders(directory)
         if not holders:
-            return UNLISTED
+            earlier = self._earlier_listings(directory)
+            if not earlier:
+                return UNLISTED
+            if any(_holds_exactly(directory, files) for files in earlier):
+                return None
+            return UNPROVEN
         if any(
             self._live(holder) or self._still_as_recorded(holder, directory)
             for holder in holders
@@ -226,6 +342,31 @@ class SkillGuard:
         if self._evidence is None:
             return ()
         return self._evidence.holders_of(directory, live_only=False)
+
+    def _earlier_listings(self, directory: Path) -> list[dict[str, str] | None]:
+        """Return the ``files`` map of each install record that listed *directory*.
+
+        Every record still in the ledger counts, not only the current ones;
+        an empty list means none listed it (or the ledger cannot be read).
+        """
+        if self._evidence is None:
+            return []
+        if self._listed_before is None:
+            listed: dict[str, list[dict[str, str] | None]] = {}
+            try:
+                for package_key in SUPPORTED_PACKAGE_KEYS:
+                    if not writes_user_level(package_key):
+                        continue
+                    for record in install_ledger.read_records(package_key):
+                        if record.kind != "install":
+                            continue
+                        for target in record.targets:
+                            key = path_key(target.path)
+                            listed.setdefault(key, []).append(target.files)
+            except (install_ledger.LedgerError, OSError, ValueError):
+                listed = {}
+            self._listed_before = listed
+        return self._listed_before.get(path_key(directory), [])
 
     def _live(self, holder: Holder) -> bool:
         """Return True when *holder*'s install folder is there and holds Apothem files.
@@ -253,21 +394,11 @@ class SkillGuard:
         digests and a record that cannot be read show nothing.
         """
         record = self._record_of(holder)
-        if record is None or _is_link(directory):
+        if record is None:
             return False
         wanted = path_key(directory)
         target = next((t for t in record.targets if path_key(t.path) == wanted), None)
-        if target is None or not target.files:
-            return False
-        walk = _walk_without_links(directory)
-        if walk.links or walk.unreadable:
-            return False
-        found = {path.relative_to(directory).as_posix(): path for path in walk.files}
-        if found.keys() != target.files.keys():
-            return False
-        return all(
-            file_digest(found[name]) == digest for name, digest in target.files.items()
-        )
+        return target is not None and _holds_exactly(directory, target.files)
 
     def _record_of(self, holder: Holder) -> install_ledger.LedgerRecord | None:
         """Return *holder*'s current install record, read once per guard."""
@@ -280,6 +411,24 @@ class SkillGuard:
                 record = None
             self._records[holder] = record
         return self._records[holder]
+
+
+def _holds_exactly(directory: Path, files: dict[str, str] | None) -> bool:
+    """Return True when *directory* holds exactly *files* (name to SHA-256).
+
+    No listed file may be missing or differ, and no other file may be there.
+    A link anywhere in it, a folder that cannot be read and an empty or
+    missing *files* map show nothing.
+    """
+    if not files or _is_link(directory):
+        return False
+    walk = _walk_without_links(directory)
+    if walk.links or walk.unreadable:
+        return False
+    found = {path.relative_to(directory).as_posix(): path for path in walk.files}
+    if found.keys() != files.keys():
+        return False
+    return all(file_digest(found[name]) == digest for name, digest in files.items())
 
 
 def user_level_folders_ok(entry: InstallEntry, folders: Iterable[Path]) -> bool:
@@ -300,6 +449,9 @@ __all__ = [
     "UNPROVEN",
     "SkillGuard",
     "holds_apothem_files",
+    "home_text",
     "root_state",
+    "unproven_advice",
+    "update_command",
     "user_level_folders_ok",
 ]

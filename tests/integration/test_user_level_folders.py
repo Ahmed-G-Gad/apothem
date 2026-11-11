@@ -118,7 +118,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         source, "${HARNESS_ROOT}/AGENTS.md", "sentinel_merge", "operator-owned"
     )
     custom["codex"] = HarnessRules(
-        install=[codex_anchor, *_user_entries()], exclude=_EXCLUDE, stale_sweep=[]
+        install=[*_user_entries(), codex_anchor], exclude=_EXCLUDE, stale_sweep=[]
     )
 
     original = install_driver.load_rules
@@ -463,7 +463,7 @@ def test_a_deleted_project_does_not_vouch_for_a_folder_edited_since(
     run = _install("cursor", _project(tmp_path, "b"))
     conflicts = [r for r in run.results if r.operation == "skill_conflict"]
     assert [Path(r.path) for r in conflicts] == [skill.parent]
-    assert "has changed since" in conflicts[0].message
+    assert "you made or edited it" in conflicts[0].message
     assert conflicts[0].backup_path is None
     assert _tree(skill.parent) == before
 
@@ -538,7 +538,7 @@ def test_a_deleted_root_whose_record_has_no_digests_vouches_for_nothing(
     run = _install("cursor", _project(tmp_path, "b"))
     conflicts = [r for r in run.results if r.operation == "skill_conflict"]
     assert [Path(r.path) for r in conflicts] == [folder]
-    assert "did not record its files" in conflicts[0].message
+    assert "without recording its files" in conflicts[0].message
     assert (folder / "SKILL.md").read_text("utf-8") == "old copy\n"
 
 

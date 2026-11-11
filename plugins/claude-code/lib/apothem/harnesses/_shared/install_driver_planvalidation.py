@@ -663,7 +663,7 @@ def _dry_run_results(
                     if preview.gate_required:
                         detail["destructive_gate"] = "required"
         else:
-            skill_guard = SkillGuard.load() if entry.user_level else None
+            skill_guard = SkillGuard.for_entry(entry, harness_name, project_root)
             outcome = _prospective_entry_outcome(
                 entry,
                 target=target,

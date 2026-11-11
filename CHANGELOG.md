@@ -299,14 +299,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   its own instruction file, say) counts as deleted too, and so does one on a
   drive or network share that does not answer. The deleted install still
   counts while the skill folder holds exactly the files it recorded,
-  unchanged, so an update still refreshes a folder Apothem wrote. When only
-  deleted installs list a skill folder, the
-  install skips it and leaves it untouched if you edited it since (changed,
-  added or removed a file) or if an earlier release wrote it without recording
-  its files and this release writes something different. A folder that already
-  holds what this release writes is kept as it is. `apothem verify` then
-  reports the harness as not verified and names the folders: move each one out
-  of the skills folder, then run `apothem update` for that harness.
+  unchanged, so an update still refreshes a folder Apothem wrote. A folder
+  that already holds what this release writes is kept as it is. Otherwise,
+  when only deleted installs list a skill folder, or only an earlier install
+  in the same folder did, the install skips it and leaves it untouched unless
+  it holds exactly the files one of them recorded: you made it or edited it
+  (changed, added or removed a file), or an earlier release wrote it without
+  recording its files. For a skipped folder, the install, update and dry-run
+  warning and `apothem verify` give the same cause and fix: keep it there and
+  the harness stays not verified, or move it out of the skills folder, then
+  run `apothem update` for that harness (with `--project` for a project
+  install). `apothem verify` looks for these folders only for a harness that
+  is installed. A project installed at the home folder itself no longer counts
+  as present through the shared folders it writes there. A Codex install into
+  a removed or emptied `~/.codex` skips such a folder too: the files it had
+  just written there no longer make its old install count as present.
 - **`apothem doctor` checks the hooks of the install it is looking at.** It
   read the newest install record of a harness from any folder. When that
   record came from another folder (another project, a `CODEX_HOME`, or one you

@@ -196,8 +196,27 @@ def test_parser_puts_user_level_entries_first_in_a_project_block() -> None:
         + anchor
         + _entry(_SKILLS, "native_skills", "skills/")
     )
-    with pytest.raises(ValueError, match="before the project entries"):
+    with pytest.raises(ValueError, match="before the block's other install entries"):
         _parse_manifest_text(text)
+
+
+def test_parser_puts_user_level_entries_first_in_a_user_scope_block() -> None:
+    # An entry written earlier in the run would make the install's own old
+    # record look live to the skill guard (a Codex install after ~/.codex went).
+    anchor = _block(project=True).split("install:\n", 1)[1]
+    text = (
+        "version: 1\nharnesses:\n  demo:\n    install:\n"
+        + anchor.replace("${PROJECT_ROOT}", "${HARNESS_ROOT}")
+        + _entry(_SKILLS, "native_skills", "skills/")
+    )
+    with pytest.raises(ValueError, match="before the block's other install entries"):
+        _parse_manifest_text(text)
+
+
+def test_every_shipped_block_lists_its_user_level_entries_first() -> None:
+    for name, rules in load_manifest().items():
+        flags = [entry.user_level for entry in rules.install]
+        assert flags == sorted(flags, reverse=True), name
 
 
 def test_codex_skills_and_corpus_are_user_level() -> None:

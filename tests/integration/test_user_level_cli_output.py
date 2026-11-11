@@ -26,7 +26,12 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
+from apothem.cli._shell_args import quoted_path
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_skillguard import (
+    unproven_advice,
+    update_command,
+)
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
@@ -387,7 +392,7 @@ def test_verify_names_a_folder_only_a_gone_install_lists(
         in (message)
     )
     assert "folders that are gone, hold no Apothem files or cannot be read" in message
-    assert "move each one out of ~/.agents/skills/" in message
+    assert "move it out of ~/.agents/skills/" in message
     assert "apothem update --harness cursor --project" in message
     assert str(project) in message
 
@@ -459,6 +464,133 @@ def test_verify_never_names_a_folder_that_holds_what_this_release_writes(
         "install", "--harness", "cursor", "--project", str(project), "--dry-run"
     )
     assert not _advisories(dry[1], "skill_conflict")
+
+
+def _gone_then_edited(profile: Path, tmp_path: Path) -> tuple[Path, Path]:
+    """Install cursor in a project, delete it, edit alpha; return (alpha, project b)."""
+    gone = _project(tmp_path, "gone")
+    _install(profile, "cursor", gone)
+    shutil.rmtree(gone)
+    edited = _skills() / "alpha" / "SKILL.md"
+    edited.write_text(edited.read_text("utf-8") + "My note.\n", encoding="utf-8")
+    return edited.parent, _project(tmp_path, "b")
+
+
+def test_verify_names_both_causes_of_an_unproven_folder(
+    profile: Path, tmp_path: Path
+) -> None:
+    """The operator's own skill is one cause, an earlier release the other."""
+    alpha, project = _gone_then_edited(profile, tmp_path)
+    _install(profile, "cursor", project)
+    code, payload = _json("verify", "--harness", "cursor", "--project", str(project))
+    assert code != 0
+    [row] = payload["results"]  # type: ignore[misc]
+    message = " ".join(str(row["user_level"]["message"]).split())
+    assert "Either you made or edited it (your own skill)" in message
+    assert "or an earlier release wrote it without recording its files" in message
+    assert "To keep it, leave it where it is" in message
+    assert "the harness stays not verified" in message
+    assert alpha.is_dir()
+
+
+def test_the_install_warning_and_verify_give_the_same_cause_and_fix(
+    profile: Path, tmp_path: Path
+) -> None:
+    """All say: move it out of the skills folder, then update the named harness.
+
+    The dry run's warning is the install's.
+    """
+    alpha, project = _gone_then_edited(profile, tmp_path)
+    command = "apothem update --harness cursor with the same --project as this run"
+    expected = f"skipped {alpha}, which Apothem cannot prove it wrote: " + (
+        unproven_advice("~/.agents/skills/", command)
+    )
+    for dry in (["--dry-run"], []):
+        code, payload = _json(
+            "install", "--harness", "cursor", "--profile", str(profile),
+            "--project", str(project), *dry,
+        )  # fmt: skip
+        assert code == 0, payload
+        [conflict] = _advisories(payload, "skill_conflict", outcome="warning")
+        assert str(conflict["message"]) == expected, dry
+        assert "rename" not in str(conflict["message"])
+    code, payload = _json("verify", "--harness", "cursor", "--project", str(project))
+    assert code != 0
+    [row] = payload["results"]  # type: ignore[misc]
+    command = update_command("cursor", quoted_path(project))
+    assert str(row["user_level"]["message"]).endswith(
+        "(alpha). For each one, " + unproven_advice("~/.agents/skills/", command)
+    )
+
+
+def test_a_user_scope_install_warning_names_the_harness_alone(
+    profile: Path, tmp_path: Path
+) -> None:
+    """A Codex install has no --project, so its update names none."""
+    alpha, _ = _gone_then_edited(profile, tmp_path)
+    code, payload = _json("install", "--harness", "codex", "--profile", str(profile))
+    assert code == 0, payload
+    [conflict] = _advisories(payload, "skill_conflict", outcome="warning")
+    assert str(conflict["path"]) == str(alpha)
+    assert str(conflict["message"]).endswith(
+        "move it out of ~/.agents/skills/, then run apothem update --harness codex"
+    )
+
+
+def test_verify_all_names_unproven_folders_only_under_installed_harnesses(
+    profile: Path, tmp_path: Path
+) -> None:
+    """A harness that is not installed gets no unproven note and no update."""
+    alpha, project = _gone_then_edited(profile, tmp_path)
+    _install(profile, "cursor", project)
+    args = ["verify", "--harness", "all", "--project", str(project)]
+    code, payload = _json(*args)
+    assert code != 0
+    rows = {str(row["harness"]): row for row in payload["results"]}  # type: ignore[union-attr]
+    assert rows["cursor"]["user_level"]["unproven"] == [str(alpha)]
+    for harness, row in rows.items():
+        if harness == "cursor":
+            continue
+        assert not (row.get("user_level") or {}).get("unproven"), harness
+        assert f"--harness {harness}" not in str(row["message"]), harness
+    flat = " ".join(_invoke(*args).output.split())
+    assert flat.count("cannot prove it wrote") == 1
+    assert "apothem update --harness cursor --project" in flat
+    for harness in ("codex", "github-copilot", "zed"):
+        assert f"apothem update --harness {harness}" not in flat
+    for harness in ("codebuddy", "kiro", "trae"):  # not installed: main's note stays
+        hint = rows[harness]["user_level"]
+        assert hint["missing"], harness
+        assert "expected folder(s) are missing" in str(hint["message"]), harness
+
+
+def test_an_install_again_in_the_same_emptied_project_keeps_the_fix(
+    profile: Path, tmp_path: Path
+) -> None:
+    """Install and update in that folder again; verify still says unproven."""
+    project = _project(tmp_path, "p1")
+    _install(profile, "cursor", project)
+    for child in project.iterdir():
+        shutil.rmtree(child)
+    edited = _skills() / "alpha" / "SKILL.md"
+    edited.write_text(edited.read_text("utf-8") + "My note.\n", encoding="utf-8")
+    _install(profile, "cursor", project)  # skips alpha with a warning
+    update = _invoke(
+        "update", "--harness", "cursor", "--project", str(project),
+        "--profile", str(profile),
+    )  # fmt: skip
+    flat = " ".join(update.output.split())
+    assert "which Apothem cannot prove it wrote" in flat
+    assert "--harness cursor with the same --project as this run" in flat
+    code, payload = _json("verify", "--harness", "cursor", "--project", str(project))
+    assert code != 0
+    [row] = payload["results"]  # type: ignore[misc]
+    hint = row["user_level"]
+    assert hint["unproven"] == [str(edited.parent)]
+    assert hint["unlisted"] == []
+    message = " ".join(str(hint["message"]).split())
+    assert "move it out of ~/.agents/skills/" in message
+    assert update_command("cursor", quoted_path(project)) in message
 
 
 def test_a_failed_verify_without_a_user_home_cause_adds_nothing(

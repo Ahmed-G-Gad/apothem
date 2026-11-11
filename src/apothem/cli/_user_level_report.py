@@ -38,6 +38,8 @@ from apothem.harnesses._shared.install_driver_skillguard import (
     UNLISTED,
     UNPROVEN,
     SkillGuard,
+    unproven_advice,
+    update_command,
 )
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import (
@@ -470,17 +472,17 @@ def verify_hint(
 def _unproven_message(
     harness_id: str, folders: Iterable[Path], project_root: Path | None
 ) -> str:
-    """Return the hint for skill folders only gone installs list, naming every one."""
+    """Return the hint for unproven skill folders, naming every one.
+
+    The cause and the fix are the install warning's (:func:`unproven_advice`).
+    """
     shown = list(folders)
     where = _parents(shown)
-    project = "" if project_root is None else f" --project {quoted_path(project_root)}"
+    project = None if project_root is None else quoted_path(project_root)
     return (
         f"Apothem cannot prove it wrote {len(shown)} skill folder(s) under {where} "
-        f"({', '.join(folder.name for folder in shown)}): the only Apothem installs "
-        "that list them are in folders that are gone, hold no Apothem files or "
-        "cannot be read, and each folder was edited since or written by an "
-        "earlier release that did not record its files; move each one out of "
-        f"{where}, then run apothem update --harness {harness_id}{project}"
+        f"({', '.join(folder.name for folder in shown)}). For each one, "
+        + unproven_advice(where, update_command(harness_id, project))
     )
 
 

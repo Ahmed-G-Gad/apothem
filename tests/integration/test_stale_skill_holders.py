@@ -29,7 +29,9 @@ from apothem.lib.propagation import user_home
 from tests.integration.test_user_level_folders import (
     _SKILL_ALPHA,
     _adapter,
+    _codex_root,
     _install,
+    _install_codex,
     _project,
     _skills,
     _tree,
@@ -395,3 +397,111 @@ def test_a_link_inside_the_skill_folder_makes_it_unproven(
     assert _conflicts(run) == [folder]
     assert (folder / "linked").exists()
     assert "Body of alpha." in (folder / "SKILL.md").read_text("utf-8")
+
+
+# --- a project at the home folder, and one installed again in place ----------
+
+
+def test_a_project_at_the_home_folder_does_not_stay_live_through_shared_folders(
+    tmp_path: Path,
+) -> None:
+    """The shared skills and support folders under the home are not its files."""
+    home = user_home()
+    _install("cursor", home)
+    record = install_ledger.current_install_record("cursor", root=home)
+    assert record is not None
+    assert skillguard.holds_apothem_files(home, record)
+    shutil.rmtree(home / ".cursor")  # the project's own files are gone
+    assert not skillguard.holds_apothem_files(home, record)
+    before = _own_skill(_skills() / "alpha")
+    run = _install("cursor", _project(tmp_path, "b"))
+    assert _conflicts(run) == [_skills() / "alpha"]
+    assert _tree(_skills() / "alpha") == before
+
+
+def test_an_install_again_in_the_same_emptied_project_keeps_it_unproven(
+    tmp_path: Path,
+) -> None:
+    """The new record does not list a skipped folder; the verdict stays unproven."""
+    project = _project(tmp_path, "p1")
+    _install("cursor", project)
+    _empty(project)
+    before = _own_skill(_skills() / "alpha")
+    guard = skillguard.SkillGuard.load()
+    assert guard.verdict(_skills() / "alpha") == skillguard.UNPROVEN
+    for _ in range(2):  # the install, then an update in the same folder
+        run = _install("cursor", project)
+        assert _conflicts(run) == [_skills() / "alpha"]
+        [conflict] = [r for r in run.results if r.operation == "skill_conflict"]
+        assert "which Apothem cannot prove it wrote" in conflict.message
+        guard = skillguard.SkillGuard.load()
+        assert guard.verdict(_skills() / "alpha") == skillguard.UNPROVEN
+    assert _tree(_skills() / "alpha") == before
+
+
+def test_a_codex_install_after_its_folder_is_gone_keeps_the_operator_skill() -> None:
+    """Codex's own writes in this run do not make its old record live again.
+
+    The dry run and the install both judge ``~/.codex`` as it was before the
+    install wrote into it, so both skip the folder.
+    """
+    _install_codex()
+    shutil.rmtree(_codex_root())
+    folder = _skills() / "alpha"
+    before = _own_skill(folder)
+    dry = install_driver.run_install("codex", harness_root=_codex_root(), dry_run=True)
+    assert _conflicts(dry) == [folder]
+    run = _install_codex()
+    assert _conflicts(run) == [folder]
+    assert _tree(folder) == before
+    assert (_codex_root() / "AGENTS.md").is_file()
+
+
+def test_an_earlier_record_that_proves_the_folder_lets_it_be_updated(
+    tmp_path: Path,
+) -> None:
+    """A skipped folder put back as an earlier install wrote it is Apothem's again."""
+    project = _project(tmp_path, "p1")
+    _install("cursor", project)
+    folder = _skills() / "alpha"
+    written = {p.name: p.read_bytes() for p in folder.iterdir()}
+    _empty(project)
+    (folder / "SKILL.md").write_text("edited\n", "utf-8")
+    run = _install("cursor", project)  # skipped: the new record does not list it
+    assert _conflicts(run) == [folder]
+    for name, data in written.items():
+        (folder / name).write_bytes(data)
+    assert skillguard.SkillGuard.load().verdict(folder) is None
+    _new_release()
+    run = _install("cursor", project)
+    assert _conflicts(run) == []
+    assert "New body." in (folder / "SKILL.md").read_text("utf-8")
+
+
+def test_a_target_that_cannot_be_read_does_not_hide_the_next_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Whatever order the record lists them in, a readable Apothem file counts."""
+    root = tmp_path / "root"
+    root.mkdir()
+    locked = root / "rules.md"
+    locked.write_text("text\n", "utf-8")
+    owned = root / "owned.md"
+    owned.write_text("apothem\n", "utf-8")
+    targets = (
+        LedgerTarget(str(locked), "sentinel_merge", "operator-owned"),
+        LedgerTarget(str(owned), "write_text", "apothem-owned"),
+    )
+    real = Path.read_text
+
+    def read_text(self: Path, *args: object, **kwargs: object) -> str:
+        if self == locked:
+            raise PermissionError(13, "access denied", str(self))
+        return real(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    for order in (targets, targets[::-1]):
+        record = LedgerRecord.create(
+            harness="cursor", root=root, kind="install", targets=order
+        )
+        assert skillguard.holds_apothem_files(root, record)

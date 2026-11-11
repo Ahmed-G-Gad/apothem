@@ -168,16 +168,23 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   and no link inside. A folder that already holds what this release writes is
   kept as it is, so an unedited folder written by an earlier release is not
   affected while it still matches what this release writes.
+- The shared folders themselves never count as an install folder's files,
+  so a project installed at the home folder is not live just because
+  `~/.agents/skills/` or `~/.config/apothem/` is there.
 - So when only such records list a skill folder, the install skips it and
   leaves it untouched in three cases: you put your own skill there, you
   edited it (changed, added or removed a file), or an earlier release that did
   not record its files wrote it and this release writes something different.
-  The warning says that the installs that list the folder are in folders that
-  are gone, hold no Apothem files or cannot be read.
-  [`verify`](/docs/cli-reference/verify) then reports the harness as not
-  verified and names those folders. Move each folder out of the skills folder,
-  then run [`update`](/docs/cli-reference/update) for that harness (with
-  `--project` for a project-scope one).
+  The same holds when only an earlier install in the same folder listed it: an
+  install that skipped the folder does not list it, and it is still not proven
+  unless it holds exactly the files that earlier install recorded.
+  The install, update and dry-run warning gives the cause and the two ways on,
+  in the same words as [`verify`](/docs/cli-reference/verify), which reports
+  the harness as not
+  verified and names those folders. To keep your skill, leave it there. To use
+  Apothem's version, move the folder out of the skills folder, then run
+  [`update`](/docs/cli-reference/update) for that harness (with `--project`
+  for a project-scope one).
 - Every such install, update, and dry run prints a `Note:` that names the
   folders it writes outside `--project`. In the JSON envelope it is a `warnings`
   entry with `"operation": "user_level_write"` and a `paths` list.
