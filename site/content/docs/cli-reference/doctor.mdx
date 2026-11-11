@@ -45,7 +45,12 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   commands were not checked instead of `All checks passed`, and the JSON
   output carries a `hook.unchecked` check.
 
-Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
+Every failed check names a fix. A fix that runs `update` ends with the
+command, after a colon. For a project-scope harness the command names
+`--project` with the folder quoted for the shell, as
+[`uninstall`](/docs/cli-reference/uninstall) quotes its steps. When those
+quotes cannot carry the folder, the fix gives `--project` in words and ends
+with the folder as it is. Exits 0 when no check fails and 1 otherwise.
 
 ## JSON output
 

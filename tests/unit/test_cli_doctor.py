@@ -270,39 +270,90 @@ def test_two_folders_that_differ_only_in_letter_case_stay_apart(
 
 
 @pytest.mark.parametrize(
-    ("name", "os_name", "quoted"),
+    ("windows", "name", "quotes"),
     [
-        ("plain dir", "nt", '"{}"'),
-        ("a $HOME `x` it's", "nt", "'{}'"),
-        ("plain dir", "posix", None),
-        ("a $HOME `x` it's", "posix", None),
+        (True, "plain dir", '"{}"'),
+        (True, "a $HOME", None),
+        (True, "100%PATH%", None),
+        (True, "trailing, comma,", '"{}"'),
+        (False, "plain dir", "'{}'"),
+        (False, "it's", None),
     ],
 )
-def test_the_project_in_a_fix_is_quoted_for_the_shell(
+def test_the_project_in_a_fix_is_quoted_or_given_in_words(
+    windows: bool,
     name: str,
-    os_name: str,
-    quoted: str | None,
+    quotes: str | None,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Nothing in the path expands in the shell the command is pasted into.
+    """Doctor quotes the root with the helper every printed command uses.
 
-    On Windows double quotes suit PowerShell and cmd alike, except for a path
-    with ``$`` or a backtick, which PowerShell expands there: that one goes in
-    PowerShell single quotes, each ``'`` doubled. Elsewhere, POSIX quoting.
+    The command ends the fix, after a colon, so nothing follows the root. Where
+    those quotes cannot carry the root (``$`` or ``%`` on Windows, ``'``
+    elsewhere), the fix names ``--project`` in words and ends with the root as
+    it is. The fix puts no quotes of its own around the command.
     """
-    from apothem.cli import _cmd_doctor, _shell_args
+    from functools import partial
+
+    from apothem.cli import _cmd_doctor
+    from apothem.lib.shell_quote import shell_quoted
 
     project = tmp_path / name
-    with monkeypatch.context() as patch:
-        patch.setattr(_shell_args.os, "name", os_name)
-        command = _cmd_doctor._update_command("cursor", project)
-    prefix = "update --harness cursor --project "
-    if quoted is None:
-        assert command == prefix + shlex.quote(str(project))
-        assert shlex.split(command)[-1] == str(project)
-    else:
-        assert command == prefix + quoted.format(str(project).replace("'", "''"))
+    monkeypatch.setattr(
+        _cmd_doctor, "shell_quoted", partial(shell_quoted, windows=windows)
+    )
+    fix = _cmd_doctor._update_fix("cursor", project)
+    assert "'update" not in fix
+    if quotes is None:
+        assert _cmd_doctor._update_command("cursor", project) is None
+        assert fix == (
+            "Run update --harness cursor with the same command prefix you "
+            "installed with and this folder as --project, then run doctor again: "
+            f"{project}"
+        )
+        return
+    expected = "update --harness cursor --project " + quotes.format(project)
+    assert _cmd_doctor._update_command("cursor", project) == expected
+    assert fix == (
+        "Run this command with the same command prefix you installed with, "
+        f"then run doctor again: {expected}"
+    )
+    if not windows:
+        assert shlex.split(expected)[-1] == str(project)
+
+
+def test_an_unreadable_ledger_fix_ends_with_the_update_command(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``ledger.unreadable`` fix moves the ledger aside, then names update."""
+    from apothem.cli import _cmd_doctor
+    from apothem.lib.install_ledger import LedgerError
+    from apothem.lib.shell_quote import shell_quoted
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+
+    def unreadable(*args: object, **kwargs: object) -> None:
+        raise LedgerError("damaged line 3")
+
+    monkeypatch.setattr(_cmd_doctor, "registered_hook_argvs", unreadable)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    failed = [c for c in payload["checks"] if c["code"] == "ledger.unreadable"]
+    assert [c["harness"] for c in failed] == ["cursor"]
+    quoted = shell_quoted(str(project))
+    assert quoted is not None
+    assert failed[0]["fix"] == (
+        "Move the damaged ledger file aside, then run this command with the "
+        "same command prefix you installed with, to record a fresh install: "
+        f"update --harness cursor --project {quoted}"
+    )
 
 
 def test_doctor_names_the_project_in_a_project_harness_fix(
@@ -325,8 +376,9 @@ def test_doctor_names_the_project_in_a_project_harness_fix(
     payload = json.loads(result.stdout)
     unchecked = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
     assert [c["harness"] for c in unchecked] == ["cursor"]
-    quoted = f'"{project}"' if os.name == "nt" else shlex.quote(str(project))
-    assert f"update --harness cursor --project {quoted}" in unchecked[0]["fix"]
+    quoted = f'"{project}"' if os.name == "nt" else f"'{project}'"
+    command = f"update --harness cursor --project {quoted}"
+    assert unchecked[0]["fix"].endswith(f"to record the install: {command}")
 
 
 @pytest.mark.parametrize(

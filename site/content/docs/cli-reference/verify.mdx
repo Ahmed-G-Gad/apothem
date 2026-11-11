@@ -37,10 +37,12 @@ recorded (see [`install`](/docs/cli-reference/install)). You made it or edited
 it, or an earlier release wrote it without recording its files. The note names
 each one and gives the install warning's two ways on. To keep it, leave it
 where it is. To use Apothem's version, move it out of the skills folder, then
-run `update` for that harness. A folder that already holds what this release
-writes is never named, because an install keeps it. Verify looks for unproven
-and unlisted folders only for a harness that is installed, so
-`verify --harness all` names them only under the installed harnesses.
+run `update` for that harness; for a project-scope harness the note names
+`--project`, quoted for the shell as doctor quotes it, or in words. A folder
+that already holds what this release writes is never named, because an
+install keeps it. Verify looks for unproven and unlisted folders only for a
+harness that is installed, so `verify --harness all` names them only under
+the installed harnesses.
 
 A row, verified or not, can be followed by a note. When the Apothem block is in
 place but a

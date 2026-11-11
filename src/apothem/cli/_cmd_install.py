@@ -36,6 +36,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
 from apothem.lib.harness_registry import SUPPORTED_HARNESS_IDS
 from apothem.lib.profile import ProfileValidationError
+from apothem.lib.shell_quote import shell_quoted
 
 
 @main.command(epilog=_EP_INSTALL)
@@ -239,20 +240,11 @@ def quickstart(
         }
     )
 
-    # The recommended follow-up must actually run: a project-scope selection
-    # (a named project-scope harness as much as ``all``) needs --project, and
-    # it should name the root the operator just installed into.
-    verify_cmd = f"apothem verify --harness {harness}"
-    requested = harness.strip().lower()
-    try:
-        needs_project = (
-            requested == "all" or _pkg.get_harness_entry(requested).scope == "project"
-        )
-    except KeyError:
-        needs_project = False
-    if needs_project:
-        verify_cmd += f" --project {project}" if project else " --project ."
-    recommended = [verify_cmd, "apothem doctor"]
+    verify_cmd, verify_words = _verify_next(harness, project)
+    recommended = [
+        f"Run {verify_cmd}{verify_words}" if verify_words else verify_cmd,
+        "apothem doctor",
+    ]
 
     # Steps 2-4 — preview + confirm + install, composed from the install path
     # (blast-radius preview/confirm, placeholder advisory, and grouped notes all
@@ -315,8 +307,37 @@ def quickstart(
     )
     if not quiet:
         con.print("\n[bold]Recommended next step:[/]")
-        con.print(f"  Confirm the install:  [cyan]{escape(recommended[0])}[/]")
+        confirm = f"[cyan]{escape(verify_cmd)}[/]"
+        if verify_words:
+            confirm = f"run {confirm}{escape(verify_words)}"
+        con.print(f"  Confirm the install:  {confirm}")
         con.print(f"  Check system health:  [cyan]{escape(recommended[1])}[/]")
+
+
+def _verify_next(harness: str, project: str | None) -> tuple[str, str]:
+    """Return the ``verify`` command quickstart recommends, and any words after it.
+
+    The follow-up must actually run: a project-scope selection (a named
+    project-scope harness as much as ``all``) needs ``--project``, naming the
+    root the operator just installed into, quoted for the shell as every
+    printed command is (:func:`shell_quoted`). When those quotes cannot carry
+    the root, the command stops before ``--project`` and the words name it, so
+    nothing printed as a command holds prose.
+    """
+    command = f"apothem verify --harness {harness}"
+    requested = harness.strip().lower()
+    try:
+        needs_project = (
+            requested == "all" or _pkg.get_harness_entry(requested).scope == "project"
+        )
+    except KeyError:
+        needs_project = False
+    if not needs_project:
+        return command, ""
+    quoted = shell_quoted(project) if project else "."
+    if quoted is None:
+        return command, f" with --project set to {project}"
+    return f"{command} --project {quoted}", ""
 
 
 def _ask_for_harness(*, can_ask: bool) -> str:

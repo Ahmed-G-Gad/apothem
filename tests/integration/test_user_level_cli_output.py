@@ -26,7 +26,6 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
-from apothem.cli._shell_args import quoted_path
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver_skillguard import (
     unproven_advice,
@@ -35,6 +34,7 @@ from apothem.harnesses._shared.install_driver_skillguard import (
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
+from apothem.lib.shell_quote import shell_quoted
 from tests.integration.test_user_level_folders import world  # noqa: F401  # fixture
 
 # The fake corpus and the rules that give four harnesses user-level entries.
@@ -517,7 +517,7 @@ def test_the_install_warning_and_verify_give_the_same_cause_and_fix(
     code, payload = _json("verify", "--harness", "cursor", "--project", str(project))
     assert code != 0
     [row] = payload["results"]  # type: ignore[misc]
-    command = update_command("cursor", quoted_path(project))
+    command = update_command("cursor", shell_quoted(str(project)))
     assert str(row["user_level"]["message"]).endswith(
         "(alpha). For each one, " + unproven_advice("~/.agents/skills/", command)
     )
@@ -590,7 +590,38 @@ def test_an_install_again_in_the_same_emptied_project_keeps_the_fix(
     assert hint["unlisted"] == []
     message = " ".join(str(hint["message"]).split())
     assert "move it out of ~/.agents/skills/" in message
-    assert update_command("cursor", quoted_path(project)) in message
+    assert update_command("cursor", shell_quoted(str(project))) in message
+
+
+@pytest.mark.parametrize(
+    ("windows", "name", "words"),
+    [(True, "a $site", True), (True, "plain", False), (False, "it's", True)],
+)
+def test_verify_names_a_project_the_quotes_cannot_carry_in_words(
+    windows: bool,
+    name: str,
+    words: bool,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The unproven note quotes the project as doctor does, or names it in words."""
+    from functools import partial
+
+    from apothem.cli import _user_level_report
+
+    monkeypatch.setattr(
+        _user_level_report, "shell_quoted", partial(shell_quoted, windows=windows)
+    )
+    project = tmp_path / name
+    folder = user_home() / ".agents" / "skills" / "alpha"
+    message = _user_level_report._unproven_message("cursor", [folder], project)
+    quoted = shell_quoted(str(project), windows=windows)
+    if words:
+        assert quoted is None
+        command = update_command("cursor", None) + f" with --project set to {project}"
+    else:
+        command = update_command("cursor", quoted)
+    assert message.endswith(unproven_advice("~/.agents/skills/", command))
 
 
 def test_a_failed_verify_without_a_user_home_cause_adds_nothing(

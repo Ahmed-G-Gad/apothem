@@ -43,10 +43,10 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
-from apothem.cli._shell_args import quoted_path
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
+from apothem.lib.shell_quote import shell_quoted
 
 _STATUS_STYLE = {
     "ok": "[green]ok[/]",
@@ -76,26 +76,41 @@ def _check(
     }
 
 
-def _update_command(harness: str, project: Path | None = None) -> str:
+def _update_command(harness: str, project: Path | None = None) -> str | None:
     """Return the ``update`` command line; a project-scope harness names its root.
 
-    The root is quoted for the operator's shell (:func:`quoted_path`).
+    The root is quoted for the operator's shell (:func:`shell_quoted`, the
+    helper every printed command uses). ``None`` when those quotes cannot
+    carry it.
     """
+    command = f"update --harness {harness}"
     if project is None:
-        return f"update --harness {harness}"
-    return f"update --harness {harness} --project {quoted_path(project)}"
+        return command
+    quoted = shell_quoted(str(project))
+    return None if quoted is None else f"{command} --project {quoted}"
 
 
 def _update_fix(
     harness: str,
     project: Path | None = None,
     *,
-    then: str = "then run doctor again.",
+    lead: str = "Run",
+    then: str = "then run doctor again",
 ) -> str:
-    return (
-        f"Run '{_update_command(harness, project)}' with the same command prefix "
-        f"you installed with, {then}"
-    )
+    """Return the fix that runs :func:`_update_command`: *lead*, then *then*.
+
+    The command ends the fix, after a colon, with no quotes or punctuation of
+    its own around it, so a quoted root ends where the line does. A root the
+    quotes cannot carry ends the fix in its place, named as it is.
+    """
+    prefix = "with the same command prefix you installed with"
+    command = _update_command(harness, project)
+    if command is None:
+        return (
+            f"{lead} update --harness {harness} {prefix} and this folder as "
+            f"--project, {then}: {project}"
+        )
+    return f"{lead} this command {prefix}, {then}: {command}"
 
 
 def _probe_harness(
@@ -197,8 +212,12 @@ def _probe_registered_hooks(
                 "fail",
                 f"{name}: the install ledger cannot be read ({exc}).",
                 harness=name,
-                fix="Move the damaged ledger file aside, then re-run "
-                f"'{_update_command(name, project)}' to record a fresh install.",
+                fix=_update_fix(
+                    name,
+                    project,
+                    lead="Move the damaged ledger file aside, then run",
+                    then="to record a fresh install",
+                ),
             )
         )
         return
@@ -211,7 +230,7 @@ def _probe_registered_hooks(
                 f"{name}: no install record for {install_root}, so its hook "
                 "commands were not checked.",
                 harness=name,
-                fix=_update_fix(name, project, then="to record the install."),
+                fix=_update_fix(name, project, then="to record the install"),
             )
         )
         return

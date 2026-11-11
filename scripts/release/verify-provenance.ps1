@@ -12,8 +12,9 @@
                            identity of the release workflow at this tag and the
                            GitHub Actions OIDC issuer
         3. slsa-verifier   the SLSA build provenance (provenance.intoto.jsonl)
-                           for the wheel and sdist, bound to the source repo
-                           and tag
+                           for the wheel, the sdist and, when present,
+                           apothem.vsix and the signed SBOM, bound to the
+                           source repo and tag
 
     Identity checks are case-sensitive and the certificates carry the owner as
     GitHub reports it, Ahmed-G-Gad, so the default repository uses that
@@ -22,19 +23,28 @@
     Signature bundles are <asset>.cosign.bundle. Releases up to v1.1.0 named
     the platform-archive and SHA256SUMS bundles <asset>.sig; both are accepted.
 
-    Throws on the first failure, naming the failing layer.
+    Throws on the first failure, naming the failing layer. A layer whose tool
+    (cosign, slsa-verifier) or file (SHA256SUMS) is missing is skipped. The
+    last line names the layers that ran and the ones skipped; only
+    "chain OK (3 of 3 layers verified: ...)" means the release was verified.
+    A partial check exits 0 unless -RequireAll is given; with it, any skipped
+    layer fails the run, so a caller can rely on the exit status alone.
 
 .PARAMETER AssetsDir
     Directory holding the downloaded assets. Defaults to the current directory.
 
 .PARAMETER Tag
     Release tag (vX.Y.Z). Defaults to the tag the wheel file name carries.
+
+.PARAMETER RequireAll
+    Fail unless all three layers ran.
 #>
 
 [CmdletBinding()]
 param(
     [string] $AssetsDir = '.',
-    [string] $Tag = $env:APOTHEM_RELEASE_TAG
+    [string] $Tag = $env:APOTHEM_RELEASE_TAG,
+    [switch] $RequireAll
 )
 
 Set-StrictMode -Version Latest
@@ -60,6 +70,8 @@ try {
     Write-Information "verify-provenance: $Tag, identity $Identity" -InformationAction Continue
 
     $layersRun = 0
+    $layersOk = [System.Collections.Generic.List[string]]::new()
+    $layersSkipped = [System.Collections.Generic.List[string]]::new()
 
     # Layer 1: sha256 manifest of the platform archives.
     if (Test-Path -LiteralPath 'SHA256SUMS') {
@@ -73,6 +85,10 @@ try {
             }
         }
         $layersRun++
+        $layersOk.Add('SHA256SUMS manifest')
+    } else {
+        Write-Information 'verify-provenance: no SHA256SUMS; skipping layer 1' -InformationAction Continue
+        $layersSkipped.Add('SHA256SUMS manifest (no SHA256SUMS file)')
     }
 
     # Layer 2: every release asset must carry a bundle that verifies.
@@ -101,12 +117,15 @@ try {
         }
         if ($signed -eq 0) { throw "verify-provenance: layer 2: no signed release asset found in $AssetsDir" }
         $layersRun++
+        $layersOk.Add('cosign signatures')
     } else {
         Write-Information 'verify-provenance: cosign absent; skipping layer 2' -InformationAction Continue
+        $layersSkipped.Add('cosign signatures (cosign not found)')
     }
 
-    # Layer 3: SLSA build provenance for the wheel and sdist (the platform
-    # archives are not its subjects).
+    # Layer 3: SLSA build provenance for the wheel, the sdist, apothem.vsix (in
+    # every release that ships it) and the signed SBOM. The platform archives
+    # are not its subjects.
     if (Get-Command -Name slsa-verifier -ErrorAction SilentlyContinue) {
         Write-Information 'verify-provenance: layer 3 — slsa-verifier' -InformationAction Continue
         if (-not (Test-Path -LiteralPath 'provenance.intoto.jsonl')) {
@@ -116,6 +135,9 @@ try {
                 $_.Name -match '^apothem-\d[^/]*-py3-none-any\.whl$' -or $_.Name -match '^apothem-\d[^/]*\.tar\.gz$'
             } | ForEach-Object { $_.Name })
         if ($subjects.Count -eq 0) { throw 'verify-provenance: layer 3: no wheel or sdist to verify' }
+        if (Test-Path -LiteralPath 'apothem.vsix') {
+            $subjects += 'apothem.vsix'
+        }
         # From the release that started signing the SBOM, it is a subject too.
         if ((Test-Path -LiteralPath 'sbom.cdx.json') -and (Test-Path -LiteralPath 'sbom.cdx.json.cosign.bundle')) {
             $subjects += 'sbom.cdx.json'
@@ -127,14 +149,21 @@ try {
             @subjects
         if ($LASTEXITCODE -ne 0) { throw 'verify-provenance: layer 3: slsa-verifier failed' }
         $layersRun++
+        $layersOk.Add('SLSA provenance')
     } else {
         Write-Information 'verify-provenance: slsa-verifier absent; skipping layer 3' -InformationAction Continue
+        $layersSkipped.Add('SLSA provenance (slsa-verifier not found)')
     }
 
     if ($layersRun -eq 0) {
         throw 'verify-provenance: no verification performed — no SHA256SUMS manifest, no cosign, no slsa-verifier'
     }
-    Write-Information "verify-provenance: chain OK ($layersRun of 3 layers verified)" -InformationAction Continue
+    if ($layersRun -eq 3) {
+        Write-Information "verify-provenance: chain OK (3 of 3 layers verified: $($layersOk -join ', '))" -InformationAction Continue
+    } else {
+        Write-Information "verify-provenance: partial check, $layersRun of 3 layers verified ($($layersOk -join ', ')); skipped: $($layersSkipped -join ', '). The release is not verified until all three layers run." -InformationAction Continue
+        if ($RequireAll) { throw "verify-provenance: -RequireAll: $layersRun of 3 layers ran" }
+    }
 } finally {
     Pop-Location
 }

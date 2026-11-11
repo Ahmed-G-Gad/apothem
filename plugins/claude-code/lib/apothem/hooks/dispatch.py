@@ -30,6 +30,12 @@ from typing import TYPE_CHECKING, Final
 if TYPE_CHECKING:
     import argparse
 
+# Run by a tool, this script imports its sibling modules from Apothem's
+# installed folder; a bytecode cache written there (``__pycache__``) is a file
+# Apothem did not write, which an uninstall then has to keep.
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
+
 _HOOK_DIR: Final[Path] = Path(__file__).resolve().parent
 _LIB_DIR: Final[Path] = _HOOK_DIR / "lib"
 for _path in (_HOOK_DIR, _LIB_DIR):

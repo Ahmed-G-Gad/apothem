@@ -28,8 +28,10 @@ under `~/.qwen/` — the `QWEN.md` context file, `settings.json`, and the
 `commands`, `skills`, and `agents` directories; pass `--harness all` to sync
 every supported tool at once. `verify` checks that the managed files are
 present and valid; add `--profile PATH` to report drift from the profile and
-`--json` for structured JSON. Every install backs up existing targets first and
-is reversed cleanly by the matching `uninstall`.
+`--json` for structured JSON. Every install backs up existing targets first.
+The matching `uninstall` removes only the files Apothem wrote and lists any
+file of yours it kept; when it cannot finish, it says why and exits non-zero,
+so a second run can finish.
 
 ## Engineering disciplines in force
 

@@ -28,7 +28,6 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from apothem.cli._shell_args import quoted_path
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver_planvalidation import (
     user_level_entry_ok,
@@ -49,6 +48,7 @@ from apothem.lib.harness_registry import (
     public_id_for_package_key,
 )
 from apothem.lib.propagation import resolve_target, user_home
+from apothem.lib.shell_quote import shell_quoted
 
 _SHOWN = 3  # Installs named in one message before "and N more".
 _LEDGER_ERRORS = (install_ledger.LedgerError, OSError, ValueError)
@@ -475,14 +475,22 @@ def _unproven_message(
     """Return the hint for unproven skill folders, naming every one.
 
     The cause and the fix are the install warning's (:func:`unproven_advice`).
+    The update names *project_root* quoted for the shell (:func:`shell_quoted`),
+    or in words, as it is, when those quotes cannot carry it.
     """
     shown = list(folders)
     where = _parents(shown)
-    project = None if project_root is None else quoted_path(project_root)
+    command = update_command(harness_id, None)
+    if project_root is not None:
+        quoted = shell_quoted(str(project_root))
+        if quoted is None:
+            command += f" with --project set to {project_root}"
+        else:
+            command = update_command(harness_id, quoted)
     return (
         f"Apothem cannot prove it wrote {len(shown)} skill folder(s) under {where} "
         f"({', '.join(folder.name for folder in shown)}). For each one, "
-        + unproven_advice(where, update_command(harness_id, project))
+        + unproven_advice(where, command)
     )
 
 

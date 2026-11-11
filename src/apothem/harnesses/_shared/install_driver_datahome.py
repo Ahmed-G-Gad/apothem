@@ -13,7 +13,8 @@ from pathlib import Path
 
 from apothem.lib import install_ledger
 from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
-from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS
+from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS, get_harness_entry
+from apothem.lib.shell_quote import shell_quoted
 
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
@@ -123,12 +124,17 @@ def _other_harness_shares_home(
     return False
 
 
-def _holder(*, current_harness: str, shared_home: Path, current_root: Path) -> str:
-    """Name an install, other than the one being removed, that uses *shared_home*.
+def _holder(
+    *, current_harness: str, shared_home: Path, current_root: Path
+) -> tuple[str, str, bool] | None:
+    """Return an install, other than the one being removed, that uses *shared_home*.
 
-    Says when that install's folder no longer exists, so the operator learns
-    why the store stayed. Empty when none is found.
+    The result is ``(package key, install root, whether that root is gone)``.
+    An install whose folder still exists is returned first, so a gone one is
+    returned only when every holder's folder is gone. ``None`` when none is
+    found.
     """
+    gone: list[tuple[str, str, bool]] = []
     for package_key in SUPPORTED_PACKAGE_KEYS:
         roots = {record.root for record in install_ledger.read_records(package_key)}
         for raw_root in sorted(roots):
@@ -141,9 +147,60 @@ def _holder(*, current_harness: str, shared_home: Path, current_root: Path) -> s
                 _data_home_for(current, root=Path(raw_root)), shared_home
             ):
                 continue
-            gone = "" if Path(raw_root).exists() else " (that folder no longer exists)"
-            return f"{package_key} installed at {raw_root}{gone}"
-    return ""
+            if Path(raw_root).exists():
+                return (package_key, raw_root, False)
+            gone.append((package_key, raw_root, True))
+    # A project install's steps are plain commands; a user-scope one's folder
+    # may have come from a setting the steps cannot repeat, so it goes last.
+    gone.sort(key=lambda holder: get_harness_entry(holder[0]).scope != "project")
+    return gone[0] if gone else None
+
+
+def _release_steps(home: Path, package_key: str, root: str) -> str:
+    """Say why the stores in *home* stayed and give the steps that release them.
+
+    The install at *root* keeps them, and *root* no longer exists. Uninstalling
+    in an empty recreated folder finds nothing installed, so the steps install
+    there again, then uninstall there. The stores sit outside *root*, so that
+    install used a profile whose workspace puts them in *home*: the reinstall
+    needs that profile too, or it writes stores of its own and leaves these
+    with no install that uses them. A project install gets the exact commands,
+    the folder quoted for the shell (see :func:`shell_quoted`), or the steps
+    in words, naming the folder as it is, when the quotes cannot carry it. A
+    user-scope install's folder may have come from a setting (``CODEX_HOME``,
+    ``XDG_CONFIG_HOME``) the commands cannot repeat, so it gets the steps in
+    words: a bare command would act on the default folder.
+    """
+    entry = get_harness_entry(package_key)
+    stores = "its memory, contexts and learning folders"
+    quoted = shell_quoted(root) if entry.scope == "project" else None
+    if quoted is not None:
+        where = f" --project {quoted}"
+        steps = (
+            f"create {quoted} again, then run apothem install "
+            f"--harness {entry.public_id}{where} --profile <the profile it "
+            f"used>, then apothem uninstall --harness {entry.public_id}{where} "
+            "--yes"
+        )
+    elif entry.scope == "project":
+        steps = (
+            f"recreate {root}, run apothem install --harness {entry.public_id} "
+            "with --project set to that folder and --profile set to the "
+            "profile it used, then apothem uninstall with the same --harness "
+            "and --project"
+        )
+    else:
+        steps = (
+            f"recreate {root} with the settings that install ran with, if any "
+            f"(such as CODEX_HOME or XDG_CONFIG_HOME), install {entry.public_id} "
+            "there with the profile it used, then uninstall it there"
+        )
+    return (
+        f"{home} was kept: {entry.public_id} installed at {root} still uses "
+        f"{stores}, and that folder no longer exists. To release them, {steps}. "
+        f"The profile is the one whose workspace puts the stores in {home}. Or "
+        f"remove {stores} by hand"
+    )
 
 
 def _remove_data_home(
@@ -203,23 +260,22 @@ def _remove_data_home(
                 current_harness=harness_name, shared_home=home, current_root=root
             )
         except Exception:  # pragma: no cover - defensive: ledger read is robust
-            holder = ""
-        if holder.endswith("(that folder no longer exists)"):
+            holder = None
+        if holder is not None and holder[2]:
             # The install that keeps the store cannot be uninstalled where it
             # was, so say why the store stayed and what removes it.
             return _result(
                 "warning",
                 "remove_data_home",
                 home,
-                f"{home} was kept: {holder} still uses it; restore that folder "
-                "and uninstall there, or remove the store by hand",
+                _release_steps(home, holder[0], holder[1]),
             )
         return _result(
             "unchanged",
             "remove_data_home",
             home,
             "shared data home retained — another harness is still installed"
-            + (f" ({holder})" if holder else ""),
+            + (f" ({holder[0]} installed at {holder[1]})" if holder else ""),
         )
 
     spec = DataHome.from_root(home)

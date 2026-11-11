@@ -71,12 +71,19 @@ python scripts/release/bump_version.py X.Y.Z
 审查差异，然后提交：
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-`-S` 标志使用 GPG 密钥对提交进行签名。该推送会触发标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
+`-s` 标志会添加必需检查 `Require Signed-off-by` 所查找的 `Signed-off-by` 行。发布提交作为该拉取请求的压缩合并（squash merge）进入 `main`；GitHub 使用自己的密钥对该提交签名，而你对发布的签名在标签上（§2.2）。合并会在 `main` 上触发标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
 
 §2.4 中的就绪检查还要求 CodeQL 和合规工作流在发布提交上均为绿色。这两个工作流都只在各自的路径发生变化时才会运行，而发布提交通常不会改动这些路径，因此请在发布提交成为 `main` 的最新提交之后启动它们，然后确认每次运行都对应该提交：
 
@@ -323,10 +330,10 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
-预期：`Verified OK`、`PASSED: SLSA verification passed` 以及 `verify-provenance: chain OK (3 of 3 layers verified)`。该脚本在一次运行中检查 `SHA256SUMS`、每个签名包和出处溯源；它从 wheel 文件名推导出标签（`--tag vX.Y.Z` 可覆盖该值）。
+预期：`Verified OK`、`PASSED: SLSA verification passed` 以及 `verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`。该脚本在一次运行中检查 `SHA256SUMS`、每个签名包和出处溯源；它从 wheel 文件名推导出标签（`--tag vX.Y.Z` 可覆盖该值）。
 
 冒烟测试为每个表面产出一行 PASS / FAIL 记录；将这些记录写入维护者的发布日志。
 

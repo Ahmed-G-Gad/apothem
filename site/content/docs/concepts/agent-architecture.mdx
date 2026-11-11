@@ -38,7 +38,7 @@ whether the adapter renders a native config via a materializer.
 | hermes | Support material only | `config.yaml` plus external skill directory | Class II-B | `config.yaml` |
 | kimi-code | Support material only | `AGENTS.md` plus support rules under `.kimi-code/.apothem/support/` | Class I | none |
 | kiro | Native SessionStart in `.kiro/hooks/apothem.json`; no tool-event hook (the vendor ignores their output) | `.kiro/steering/apothem-rules.md` steering file | Class I | none |
-| open-claw | Support material only | `openclaw.json` plus extra skill directory | Class II-B | `openclaw.json` |
+| open-claw | Support material only | `openclaw.json` plus extra skill directory, and a workspace rules file `apothem/AGENTS.md` loaded by the `bootstrap-extra-files` hook | Class II-B | `openclaw.json` |
 | opencode | Support material only | Profile-rendered JSON plus native commands, skills, and agents | Class II-B | `opencode.json` |
 | qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus native commands, skills, and agents | Class II-B | `settings.json` / `QWEN.md` |
 | trae | None | `.trae/rules/apothem-rules.md` project rules file | Class I | none |
@@ -137,7 +137,7 @@ in the matrix reduces to one of these.
 | Axis | Range observed across the seventeen harnesses |
 |------|---------------------------------------------|
 | Hook surface | Native multi-event (claude-code, codex, qwen-code) → native on the events the vendor delivers to the model (codebuddy: SessionStart and PostToolUse; cursor: sessionStart; github-copilot: sessionStart and postToolUse; kiro: SessionStart; windsurf: SessionStart and PostToolUse) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → no hook registered by the adapter (glm, trae, zed) |
-| Rule-activation format | Flat `.md` (claude-code) → plugin rules (antigravity) → `.mdc` workspace (cursor) → directory rules (codebuddy, trae, windsurf) → steering file (kiro) → project-root flat file (zed) → single embedded file (codex, gemini-cli, github-copilot, kimi-code) → config-referenced support material (hermes, open-claw, opencode, qwen-code) → backend provider config (glm) |
+| Rule-activation format | Flat `.md` (claude-code) → plugin rules (antigravity) → `.mdc` workspace (cursor) → directory rules (codebuddy, trae, windsurf) → steering file (kiro) → project-root flat file (zed) → single embedded file (codex, gemini-cli, github-copilot, kimi-code) → hook-loaded workspace rules file (open-claw) → config-referenced support material (hermes, opencode, qwen-code) → backend provider config (glm) |
 | Adapter class | Class I raw-propagation → Class II-A raw + vendor settings → Class II-B profile-rendered single-surface |
 
 

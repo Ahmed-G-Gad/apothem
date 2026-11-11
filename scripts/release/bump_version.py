@@ -4,9 +4,9 @@
 
 Why this script exists. The release version lives in more than a dozen
 hand-maintained places: the Python packaging manifest, the npm, site and VS
-Code package manifests, the Gemini, Qwen, Codex and Antigravity extension
-manifests, the Claude Code marketplace, the citation file, the security
-support table and the CHANGELOG. The parity tests catch a missed file, but
+Code package manifests, the Gemini, Qwen and Codex extension manifests, the
+Claude Code marketplace, the citation file, the security support table and
+the CHANGELOG. The parity tests catch a missed file, but
 nothing performed the bump, so every release was a manual multi-file edit and
 a runbook-faithful maintainer hit red CI.
 
