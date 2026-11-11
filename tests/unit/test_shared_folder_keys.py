@@ -32,7 +32,11 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.cli._user_level_report import LedgerView, ledger_holders
-from apothem.harnesses._shared import install_driver_keys, install_driver_written
+from apothem.harnesses._shared import (
+    install_driver,
+    install_driver_keys,
+    install_driver_outcome,
+)
 from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
@@ -368,6 +372,53 @@ def test_an_uninstall_removes_what_only_the_other_spelling_lists(
     assert not extra.exists()
     assert _gone(real)
     assert _ended("codex", real / ".codex", linked / ".codex")
+
+
+def test_closing_an_unfinished_uninstall_ends_the_other_spelling_too(
+    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An uninstall under the link stops unfinished on a file only the record
+    # under the real spelling lists (an earlier release recorded it without
+    # digests), so it ends neither record, and that file still counts as the
+    # install. Once the file is gone, the check that closes the unfinished
+    # uninstall ends the record under the real spelling too, so no record is
+    # left holding the shared folders.
+    real, linked = homes
+    _install_codex_under_both_spellings(real, linked, monkeypatch)
+    extra = real / ".agents" / "skills" / "zz-probe"
+    extra.mkdir()
+    (extra / "SKILL.md").write_bytes(b"# probe\n")
+    current = install_ledger.current_install_record("codex", root=real / ".codex")
+    assert current is not None
+    probe = LedgerTarget(
+        path=str(extra),
+        mode="native_skills",
+        ownership_class="apothem-owned",
+        outcome="created",
+    )
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex",
+            root=real / ".codex",
+            kind="install",
+            targets=(*current.targets, probe),
+        )
+    )
+    _spell_home(monkeypatch, linked)
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "codex", "--yes"])
+    assert result.exit_code == 2, result.output
+    unfinished = install_ledger.unfinished_uninstall("codex", root=linked / ".codex")
+    assert unfinished is not None, result.output
+    assert install_ledger.current_install_record("codex", root=real / ".codex")
+    assert extra.exists()
+    assert install_driver.detect_install("codex", harness_root=linked / ".codex")
+    assert not _ended("codex", real / ".codex")
+
+    shutil.rmtree(extra)
+
+    assert not install_driver.detect_install("codex", harness_root=linked / ".codex")
+    assert _ended("codex", real / ".codex", linked / ".codex")
+    assert not holder_index().by_path
 
 
 def test_one_tool_under_both_spellings_keeps_the_folders_for_another_tool(
@@ -866,7 +917,7 @@ def test_ending_the_other_spelling_ends_its_install(tmp_path: Path) -> None:
     other = tmp_path / "other" / ".codex"
     record = _install_record(other, "created")
 
-    warnings = install_driver_written.end_other_spellings("codex", [str(other)])
+    warnings = install_driver_outcome.end_other_spellings("codex", [str(other)])
 
     assert warnings == []
     assert install_ledger.current_install_record("codex", root=other) is None
@@ -893,7 +944,7 @@ def test_an_ending_the_ledger_refuses_is_a_warning_not_an_error(
 
     monkeypatch.setattr(install_ledger, "append_record", refuse_first)
 
-    warnings = install_driver_written.end_other_spellings(
+    warnings = install_driver_outcome.end_other_spellings(
         "codex", [str(first), str(second)]
     )
 
@@ -918,7 +969,7 @@ def test_an_ending_that_fails_any_other_way_is_a_warning_too(
 
     monkeypatch.setattr(install_ledger, "append_record", broken)
 
-    warnings = install_driver_written.end_other_spellings("codex", [str(other)])
+    warnings = install_driver_outcome.end_other_spellings("codex", [str(other)])
 
     assert [warning.outcome for warning in warnings] == ["warning"]
     assert "unexpected" in warnings[0].message

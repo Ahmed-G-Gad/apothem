@@ -15,6 +15,7 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     MarkdownProfileFields,
     build_yaml_managed_config,
+    complete_managed_block,
     extract_managed_block,
     extract_markdown_fields,
     merge_managed_block,
@@ -51,6 +52,60 @@ class TestManagedBlockMerge:
         assert once.count(APOTHEM_BLOCK_BEGIN) == 1
         assert "# My notes" in once  # prose before the orphan begin preserved
         assert "body" in once
+
+    def test_complete_block_needs_both_sentinels(self):
+        block = wrap_managed_block("body").rstrip("\n")
+        assert complete_managed_block(f"mine\n{block}\nmore\n") == block
+        assert complete_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nbody") is None
+        assert complete_managed_block("plain operator prose") is None
+
+    def test_remove_leaves_a_block_without_its_end_sentinel(self):
+        # The text below a begin sentinel with no end may be the operator's.
+        text = f"Before.\n\n{APOTHEM_BLOCK_BEGIN}\nbody\nmy own line\n"
+        assert remove_managed_block(text) == text
+
+    def test_remove_keeps_frontmatter_first_file_whose_block_has_no_end(self):
+        text = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nbody\nmine\n"
+        assert remove_managed_block(text) == text
+
+    def test_complete_block_starts_at_the_nearest_begin_before_its_end(self):
+        # A BEGIN marker left without its END above a whole block is not the
+        # start of the block: the text after it is the operator's.
+        block = wrap_managed_block("body").rstrip("\n")
+        text = f"{APOTHEM_BLOCK_BEGIN}\nmine, below a stray marker\n{block}\n"
+        assert complete_managed_block(text) == block
+        assert (
+            remove_managed_block(text)
+            == f"{APOTHEM_BLOCK_BEGIN}\nmine, below a stray marker\n"
+        )
+
+    def test_a_stray_end_marker_above_the_block_is_skipped(self):
+        block = wrap_managed_block("body").rstrip("\n")
+        text = f"{APOTHEM_BLOCK_END}\nmine\n\n{block}\n"
+        assert complete_managed_block(text) == block
+
+    def test_remove_takes_out_every_whole_block(self):
+        # A block pasted in twice must not leave the file Apothem's.
+        block = wrap_managed_block("body")
+        text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
+        assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
+
+    def test_remove_keeps_a_quoted_marker_pair_after_the_block(self):
+        # Only Apothem's block and its exact copies go: a marker pair the
+        # operator quotes stays, with the text between the markers.
+        block = wrap_managed_block("body")
+        quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+        assert remove_managed_block(f"{block}\n{quoted}") == quoted
+
+    def test_reclaim_removes_a_block_without_end_as_the_install_does(self):
+        assert remove_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nold\n", reclaim=True) == ""
+
+    def test_install_merge_still_reclaims_a_frontmatter_block_without_end(self):
+        cut = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nold body\n"
+        merged = merge_managed_block(cut, "---\ndescription: x\n---\nnew body")
+        assert merged.count(APOTHEM_BLOCK_BEGIN) == 1
+        assert "old body" not in merged
+        assert "new body" in merged
 
     def test_merge_into_empty_returns_wrapped_block(self):
         assert merge_managed_block("", "body") == wrap_managed_block("body")

@@ -63,6 +63,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
   rollback now puts back each missing file and keeps every file that is there.
 
+- **Releases 1.0.1 to 1.5.0 removed your text below a broken managed block.**
+  An `apothem uninstall` of a file where Apothem keeps a managed block
+  (`CLAUDE.md`, `AGENTS.md` and the like) whose END marker line was gone
+  removed everything from the BEGIN marker line to the end of the file, your
+  own text below it included. A BEGIN marker line left above a whole block
+  took the text between the two with it.
+
+  **To recover:** the uninstall copied the file first, to
+  `~/.apothem/backups/<timestamp>/<harness>/`. That set is not kept for good:
+  releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and this
+  release does the same for it unless an install record it keeps refers to
+  it, so it may already be gone. Every install, update, uninstall and
+  rollback adds a set.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy your text from that copy back into the file by hand.
+
 ### Added
 
 - **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
@@ -100,9 +117,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     empty, and only the hook entries Apothem added. Apothem's entries in a
     commented `openclaw.json` stop it before anything changes, with an error
     naming what to remove; a rules file behind a link is left in place and the
-    uninstall reported unfinished (exit 2). Either way the install record
-    stays, so a second uninstall after the hand fix finishes. `apothem verify`
-    reports a missing file or registration.
+    uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
+    gets an error that names it, and the uninstall cleans the other
+    workspaces' rules files, records their backups and stops before
+    `openclaw.json` changes. In each case the install record stays, so a second
+    uninstall after the hand fix finishes. `apothem verify` reports a missing
+    file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -468,6 +488,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refused like a symbolic link, with a message that names the link and says
   to replace it with a real folder, and a leftover link no longer makes an
   uninstalled tool read as installed.
+- **Uninstall no longer removes your text below a broken managed block.** A
+  managed block that had lost its END marker was removed from its BEGIN marker
+  to the end of the file, with any text you had written below it (a backup
+  was kept), and a BEGIN marker left above a whole block took the text between
+  the two with it. The uninstall now leaves a block without its END marker as
+  it is, names the file in a warning and finishes, a retry included; after
+  that, the file no longer makes the tool read as installed. A whole block is
+  found from its END marker back to the nearest BEGIN marker, and each exact
+  copy of it is taken out too (a block pasted in twice used to leave one, so
+  the tool still read as installed); another block between the markers, such
+  as a pair you quote, is left with the file and named, and the uninstall
+  stays unfinished until you remove it. A BEGIN marker of yours left with no
+  END once Apothem's block is out is named too: an install or update that
+  writes such a file again still replaces everything from that marker to the
+  end of the file. When the uninstall's next step is to run `apothem update`
+  and a warning names such a file, that step says to fix the file first.
+- **An instruction file holding Apothem's block no longer breaks `status`,
+  `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
+  the check whether a tool is installed read such a file as strict UTF-8 and
+  stopped with a UnicodeDecodeError, and `status --profile` did the same.
 - **Uninstall removes only the files Apothem wrote.** Each install now
   records the SHA-256 of every file it copies into place (skills, commands,
   rules and the like),
@@ -487,6 +527,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished
   uninstall replaces that state, and so does removing the files by hand. A
+  file where Apothem keeps a managed block (such as `CLAUDE.md`) counts as
+  Apothem's while the block is there, even after you add text of your own
+  beside it, so the second run still finishes the job. A
   linked folder that holds only your own files no longer stops an uninstall:
   it is left in place with a warning and the uninstall finishes. An uninstall
   that removed files before a step failed now exits `2` with the status
@@ -834,9 +877,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and the install note `Installs using it now` counts both. One tool
   installed both ways is one install: uninstalling it, with the home spelled
   either way, removes what either install wrote and ends both of its install
-  records, so no record is left that keeps the folders. When the ledger cannot
-  take the second ending, the uninstall still finishes and warns, naming the
-  record left active; uninstalling with the home spelled that way ends it.
+  records, so no record is left that keeps the folders. An uninstall that
+  stops unfinished ends neither record; once you fix what stopped it, the next
+  uninstall ends both, and so does `apothem status` or `apothem verify` when
+  it finds nothing of Apothem's left. When the ledger cannot take the second
+  ending, the uninstall still finishes and warns, naming the record left
+  active; uninstalling with the home spelled that way ends it.
 - **A rollback keeps the shared folders the same tool's other install uses.**
   When one tool was installed twice with the home spelled in two cases
   (`C:\Users\gad` and `C:\Users\Gad` on Windows), `apothem rollback` under
