@@ -217,8 +217,10 @@ class McpServer:
     environment-variable references (``${VAR}`` — e.g. ``${GITHUB_TOKEN}``).
     Such a reference passes through to native config verbatim, except in the
     OpenCode config, which substitutes only ``{env:VAR}``: its renderer writes
-    each ``${VAR}`` in that form. Apothem never resolves a reference at render
-    time, so no raw secret literal is materialized into a committable scope.
+    each ``${VAR}`` in that form, and leaves out an ``env`` entry such as
+    ``FOO: ${FOO}``, which the server inherits. Apothem never resolves a
+    reference at render time, so no raw secret literal is materialized into a
+    committable scope.
     ``sse`` is accepted for back-compat but deprecated; prefer
     ``streamable-http`` (see ``MCP_TRANSPORTS``).
     """

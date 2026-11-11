@@ -858,7 +858,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   OpenCode substitutes `{env:NAME}` in its config, not `${NAME}`, so a
   `${NAME}` the shared profile used for a secret reached the MCP server as
   literal text. The install now writes each one as `{env:NAME}` in a server's
-  environment, headers and URL; command arguments are copied as written, for
+  environment, headers and URL, except an environment entry that passes a
+  variable on under its own name (`FOO: ${FOO}`), which it leaves out because
+  OpenCode starts the server with its own environment; command arguments are
+  copied as written, for
   the server or a shell it runs to expand. It warns about a `$NAME` in an
   environment or header value and about any other `${...}` form, a plain
   `${NAME}` in a command argument included, which OpenCode does not expand
