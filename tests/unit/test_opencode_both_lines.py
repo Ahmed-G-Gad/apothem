@@ -540,6 +540,88 @@ def test_install_notes_skip_a_pass_through_entry(
     assert notes[0].startswith("MCP server fs: FS_TOKEN holds a backslash")
 
 
+@pytest.mark.parametrize(
+    "written",
+    [
+        pytest.param("${FOO}", id="copied-as-written"),
+        pytest.param("{env:FOO}", id="written-as-env"),
+    ],
+)
+def test_update_removes_the_pass_through_entry_an_earlier_release_wrote(
+    adapter: OpenCodeAdapter,
+    isolated_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    written: str,
+) -> None:
+    # Install through an earlier renderer, so the config and its install
+    # record hold FOO as that release wrote and recorded it: v1.5.0 copied the
+    # value as written, a later one wrote it as {env:FOO}.
+    from apothem.lib import profile_projection
+
+    with monkeypatch.context() as patch:
+        patch.setattr(profile_projection, "_without_pass_through", dict)
+        if written == "${FOO}":
+            patch.setattr(profile_projection, "_env_references", dict)
+        adapter.install(_PASS_THROUGH_PROFILE)
+    target = adapter.output_path
+    assert _read(target)["mcp"]["bare"]["environment"] == {"FOO": written}
+
+    adapter.update(_PASS_THROUGH_PROFILE)
+
+    assert target.read_text(encoding="utf-8") == (
+        opencode_materializer.materialize_native_config(_PASS_THROUGH_PROFILE)
+    )
+    assert "environment" not in _read(target)["mcp"]["bare"]
+    adapter.uninstall()
+    assert not target.exists()
+
+
+def test_update_keeps_the_operators_own_pass_through_entry(
+    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apothem.lib import profile_projection
+
+    # An earlier release wrote and recorded FOO in fs, and bare then had no
+    # env. Before the upgrade the operator changed fs's FOO and added
+    # FOO: {env:FOO} to bare, so both entries are the operator's and stay.
+    earlier: dict[str, object] = {
+        "mcp_servers": {
+            "fs": {
+                "transport": "stdio",
+                "command": "npx",
+                "args": ["srv"],
+                "env": {"FOO": "${FOO}", "TOKEN": "${FS_TOKEN}"},
+            },
+            "bare": {"transport": "stdio", "command": "npx"},
+        }
+    }
+    with monkeypatch.context() as patch:
+        patch.setattr(profile_projection, "_without_pass_through", dict)
+        adapter.install(earlier)
+    target = adapter.output_path
+    config = _read(target)
+    assert config["mcp"]["fs"]["environment"]["FOO"] == "{env:FOO}"
+    assert "environment" not in config["mcp"]["bare"]
+    config["mcp"]["fs"]["environment"]["FOO"] = "mine"
+    config["mcp"]["bare"]["environment"] = {"FOO": "{env:FOO}"}
+    target.write_bytes(json.dumps(config, indent=2).encode("utf-8"))
+
+    adapter.update(_PASS_THROUGH_PROFILE)
+    adapter.update(_PASS_THROUGH_PROFILE)
+
+    mcp = _read(target)["mcp"]
+    assert mcp["fs"]["environment"] == {"FOO": "mine", "TOKEN": "{env:FS_TOKEN}"}
+    assert mcp["bare"]["environment"] == {"FOO": "{env:FOO}"}
+    adapter.uninstall()
+    # Uninstall keeps each server holding only the operator's entries, with no
+    # `type`, which OpenCode 1's schema rejects. That predates this change and
+    # is tracked as a follow-up; the test pins only that the entries survive.
+    assert _read(target)["mcp"] == {
+        "fs": {"environment": {"FOO": "mine"}},
+        "bare": {"environment": {"FOO": "{env:FOO}"}},
+    }
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="needs case-insensitive paths")
 def test_a_change_of_case_in_xdg_config_home_names_the_same_install(
     adapter: OpenCodeAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

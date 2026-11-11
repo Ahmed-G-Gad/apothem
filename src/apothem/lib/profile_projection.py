@@ -234,19 +234,39 @@ def render_mcp_opencode(
     (v2.2.6 ``packages/core/src/config/variable.ts:26-38`` escapes only when
     the raw text fails to parse).
 
-    Leaving the entry out differs from writing it in four narrow cases:
-    an unset ``FOO`` stays unset rather than becoming ``""``; a name
-    OpenCode 1 itself sets after the config loads, such as
-    ``AWS_BEARER_TOKEN_BEDROCK`` or ``OPENCODE_CONSOLE_TOKEN``, reaches the
-    server with its spawn-time value (v1.19.5
-    ``packages/opencode/src/provider/provider.ts:360``,
-    ``packages/opencode/src/config/config.ts:505``); on OpenCode 1 a name filled from an ``opencode auth login <url>``
-    org login, which ``{env:}`` reads before ``process.env`` but which is
-    never put in OpenCode's environment, no longer reaches the server
-    (v1.19.5 ``packages/opencode/src/config/config.ts:373,412``); and on
-    OpenCode 2 a server an SDK embedder runs in a workspace sandbox gets the
-    sandbox's environment, not the host's (v2.2.6
-    ``packages/core/src/mcp/stdio.ts:27-35``).
+    Leaving the entry out differs from writing it in the narrow cases the
+    OpenCode harness page lists, in the same order:
+
+    - an unset ``FOO`` stays unset rather than becoming ``""``;
+    - a name OpenCode 1 itself sets after the config loads,
+      ``AWS_BEARER_TOKEN_BEDROCK``, ``AICORE_SERVICE_KEY`` or
+      ``OPENCODE_CONSOLE_TOKEN``, reaches the server with its spawn-time value
+      rather than its config-load value (v1.19.5
+      ``packages/opencode/src/provider/provider.ts:360,623``,
+      ``packages/opencode/src/config/config.ts:505``), and so does
+      ``AICORE_SERVICE_KEY`` on OpenCode 2, which copies it from the SAP AI
+      Core provider's ``serviceKey`` setting (v2.2.6
+      ``packages/core/src/plugin/provider/sap-ai-core.ts:11-17``);
+    - on OpenCode 1, a name an ``opencode auth login <url>`` org login fills,
+      which ``{env:}`` reads before ``process.env`` but which is never put in
+      OpenCode's environment, reaches the server with OpenCode's environment
+      value when both set it, and not at all when only the login does
+      (v1.19.5 ``packages/opencode/src/config/config.ts:373,412`` and
+      ``packages/opencode/src/config/variable.ts:36-38``);
+    - on OpenCode 2, a server an SDK embedder runs in a workspace sandbox gets
+      the sandbox's environment, not the host's (v2.2.6
+      ``packages/core/src/mcp/stdio.ts:27-35``);
+    - on Windows, when OpenCode's environment holds the name in another case
+      than the key (``Github_Token`` for ``GITHUB_TOKEN``), the server sees it
+      in that case, where the entry passed it as declared, which a
+      case-sensitive reader such as a Git Bash shell needs;
+    - a value that itself holds ``{file:path}`` text is passed as it is rather
+      than replaced by that file (v1.19.5
+      ``packages/opencode/src/config/variable.ts:36-41``; v2.2.6
+      ``packages/core/src/config/variable.ts:33``), and the ``BUN_BE_BUN=1``
+      OpenCode sets for an ``opencode`` command stays rather than the entry's
+      value (v1.19.5 ``packages/opencode/src/mcp/index.ts:354``; v2.2.6
+      ``packages/core/src/mcp/client.ts:334-337``).
     """
     rendered: dict[str, dict[str, Any]] = {}
     for name, spec in servers.items():

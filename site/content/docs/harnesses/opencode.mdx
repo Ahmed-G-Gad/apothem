@@ -118,24 +118,45 @@ under its own name, such as `GITHUB_TOKEN: ${GITHUB_TOKEN}`, and writes no
 `environment` for a server left with none. OpenCode 1 and OpenCode 2 start a
 local server with OpenCode's own environment and add the server's
 `environment` on top, so the server still receives the `GITHUB_TOKEN` OpenCode
-runs with. Three things differ from writing the entry:
+runs with. Leaving the entry out differs from writing it as
+`{env:GITHUB_TOKEN}` in these ways:
 
 - When the variable is not set, the server sees it unset. Written as
   `{env:GITHUB_TOKEN}`, it would be set to an empty string.
+- OpenCode 1 sets some variables itself after it reads its config:
+  `AWS_BEARER_TOKEN_BEDROCK` and `AICORE_SERVICE_KEY` from a provider login it
+  stores, and `OPENCODE_CONSOLE_TOKEN`. OpenCode 2 sets `AICORE_SERVICE_KEY`
+  from the `serviceKey` setting of the provider that uses it, when it first
+  uses that provider. The server gets the value such a variable has when the
+  server starts; written as `{env:NAME}`, it would hold the value from when
+  the config was read, which is often an empty string.
 - OpenCode 1 also fills `{env:NAME}` from an organization login made with
-  `opencode auth login <url>`, whose token it does not put in its own
-  environment. A variable that comes only from such a login reaches the server
-  only through an entry.
+  `opencode auth login <url>`, and reads that login's token before its own
+  environment, but does not put the token in its environment. When only the
+  login sets a variable, the server does not get it; when both set it, the
+  server gets the environment's value. Written as `{env:NAME}`, it would get
+  the login's in both cases.
 - An application built on the OpenCode SDK can register a workspace provider
   that runs a server inside a sandbox; the `opencode` CLI and desktop app
   register none. According to OpenCode's source, such a server gets the
   sandbox's environment, not the one OpenCode runs in, so a variable set only
   where OpenCode runs does not reach it.
+- On Windows, where variable names ignore case, when OpenCode's environment
+  holds the name in another case than the entry's key, such as `Github_Token`
+  for `GITHUB_TOKEN`, the server gets it in that case; written as
+  `{env:GITHUB_TOKEN}`, the entry would pass it as `GITHUB_TOKEN`. A program
+  that reads names with their case, such as a Git Bash or Cygwin shell, may
+  then not find it.
+- Written as `{env:NAME}`, a value that itself holds `{file:path}` text would
+  have that file's content put in its place, and a `BUN_BE_BUN` entry on a
+  server whose command is `opencode` would replace the `1` OpenCode sets
+  there. Left out, the value reaches the server as it is, and OpenCode's `1`
+  stays.
 
-In either of the last two cases, restate that server under
+When a server needs what the entry gave it, restate that server under
 `harnesses.opencode.mcp_servers.<name>` with the value written as
 `{env:NAME}`, which the install copies as it is. That brings back the
-OpenCode 1 risk the next paragraph describes.
+OpenCode 1 risk described below.
 
 An entry that renames a variable (`TOKEN: ${FS_TOKEN}`), a reference inside a
 longer value, every header and URL reference, and an `{env:NAME}` written in an
@@ -146,12 +167,13 @@ OpenCode inserts an `{env:NAME}` value into the config text it reads without
 escaping it; OpenCode 2 escapes it only when that text would not parse
 otherwise. So a value with a backslash (such as a Windows path), a double
 quote or a control character can stop OpenCode 1 from reading the file, and
-in both lines a `\t` or `\n` in it reaches the server as a control character.
-The install checks each such variable when it runs and warns about one that
-holds those characters. Restate that whole server under
-`harnesses.opencode.mcp_servers.<name>`, since an override replaces the whole
-server, and write the value there as `{file:path}`; the other tools keep the
-`${NAME}` reference.
+OpenCode 1's error then prints the config text with each value filled in,
+secrets included. In both lines a `\t` or `\n` in such a value reaches the
+server as a control character. The install checks each such variable when it
+runs and warns about one that holds those characters. Restate that whole
+server under `harnesses.opencode.mcp_servers.<name>`, since an override
+replaces the whole server, and write the value there as `{file:path}`; the
+other tools keep the `${NAME}` reference.
 
 OpenCode combines every file the `instructions` list names into every session
 ([OpenCode rules](https://opencode.ai/docs/rules/)). The list therefore names
