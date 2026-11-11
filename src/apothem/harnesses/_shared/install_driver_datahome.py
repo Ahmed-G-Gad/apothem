@@ -159,10 +159,13 @@ def _holder(
 #: What the quotes around a printed folder cannot carry, besides a control
 #: character. Windows prints double quotes, inside which PowerShell expands
 #: ``$`` and the backquote (and also reads the curly double quotes as quotes)
-#: and cmd expands ``%`` and ``!``. Elsewhere single quotes, which a single
-#: quote ends, and in PowerShell also the curly single quotes.
+#: and cmd expands ``%`` and ``!``. A folder with no space also reaches the
+#: installer's ``apothem.cmd`` shim without its quotes from PowerShell and Git
+#: Bash, and the shim's ``%*`` hands it to cmd, which acts on ``& ^ | < >``
+#: (parentheses are kept out too, for safety). Elsewhere single quotes, which
+#: a single quote ends, and in PowerShell also the curly single quotes.
 _UNQUOTABLE = {
-    True: frozenset('$`%!"' + "".join(map(chr, (0x201C, 0x201D, 0x201E)))),
+    True: frozenset('$`%!"&^|<>()' + "".join(map(chr, (0x201C, 0x201D, 0x201E)))),
     False: frozenset("'" + "".join(map(chr, (0x2018, 0x2019, 0x201A, 0x201B)))),
 }
 

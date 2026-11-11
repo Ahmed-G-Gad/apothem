@@ -978,7 +978,16 @@ _QUOTED = (
     # quotes, so the command would name \server\my share.
     (True, _SHARE, None),
     (True, _SHARE.rstrip(_BS), None),
-    (True, "C:" + _BS + "O'Brien & Co (x)", '"C:' + _BS + "O'Brien & Co (x)" + '"'),
+    (True, "C:" + _BS + "O'Brien x", '"C:' + _BS + "O'Brien x" + '"'),
+    # Without a space, PowerShell and Git Bash hand the folder to the
+    # installer's apothem.cmd shim unquoted, and cmd acts on these characters.
+    (True, "C:" + _BS + "work" + _BS + "R&D", None),
+    (True, "C:" + _BS + "a^b", None),
+    (True, "C:" + _BS + "a|b", None),
+    (True, "C:" + _BS + "a<b", None),
+    (True, "C:" + _BS + "a>b", None),
+    (True, "C:" + _BS + "O'Brien & Co (x)", None),
+    (True, "C:" + _BS + "proj (old)", None),
     (True, "C:" + _BS + "work" + _BS + "$site", None),
     (True, "C:" + _BS + "tick`n", None),
     (True, "C:" + _BS + "100%PATH%", None),
