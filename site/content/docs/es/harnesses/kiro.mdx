@@ -179,7 +179,7 @@ El comando del archivo de hooks tiene este aspecto, con tu intérprete y la ruta
 tu proyecto en lugar de las dos rutas:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` hace que el despachador imprima el contexto como texto plano,

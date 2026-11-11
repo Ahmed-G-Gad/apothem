@@ -160,7 +160,7 @@ apothem install --harness github-copilot --project /path/to/project
 ويبدو أمر <bdi>`bash`</bdi> هكذا، مع المُفسِّر ومسار المشروع لديك في موضع المسارين:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 يجعل <bdi>`--contract copilot`</bdi> المُوزِّعَ يقرأ مُدخَل <bdi>Copilot</bdi> بصيغة <bdi>camelCase</bdi> ويطبع

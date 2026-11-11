@@ -66,16 +66,22 @@ plan suite under `<project-root>/.apothem/plans/{suite}/`. See the
 
 ## Conformity gate
 
-From an Apothem checkout, run:
+From an Apothem checkout, run it from the checkout root (`python -m` reads
+modules from the current folder first, so use a folder you trust):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-After a script install, run:
+After a script install, run the gate by its script path with `-E -s`, from
+the project you want to check. On Windows, use `python` in place of
+`python3`, and `$HOME\.apothem\...` in PowerShell or
+`%USERPROFILE%\.apothem\...` in cmd in place of `~/.apothem/...`, since
+Windows PowerShell and cmd do not expand `~`;
+[Conformity gate](/docs/conformity-gate) explains the flags:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Runs all mechanical conformity checks and reports pass/fail per bar.

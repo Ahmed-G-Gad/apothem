@@ -41,8 +41,13 @@ _END = "{/* apothem:generated-reference:end */}"
 _GATE_FLAGS = frozenset(
     {"--all", "--all-perwrite", "--strict", "--check", "--list", "--hook", "--help"}
 )
+# Both forms count: ``python -m apothem.conformity.gate`` from a checkout, and
+# the by-path ``python3 -E -s <...>/conformity/gate.py`` the pages give for
+# checking a project folder.
 _GATE_INVOCATION = re.compile(
-    r"python3? -m apothem\.conformity\.gate\b(?P<args>[^\n]*)"
+    r"python3? (?:-E -s )?"
+    r'(?:-m apothem\.conformity\.gate\b|"?[^\s"]*conformity[/\\]gate\.py"?)'
+    r"(?P<args>[^\n]*)"
 )
 _FENCE = re.compile(r"^[ \t]*```")
 _LOCALES = frozenset(

@@ -52,7 +52,7 @@ sourceHash: "df04c51efc417e4a"
 | السطح | الاستدعاء | السياق |
 | ------- | ---------- | ------- |
 | واجهة سطر أوامر المحرّك | <bdi>`python -m apothem <command>`</bdi> | شجرة مصدر يكون فيها <bdi>`src/`</bdi> على <bdi>`PYTHONPATH`</bdi> (نسخة مسحوبة، أو ذاكرة <bdi>npx</bdi> المؤقتة، أو شجرة الإضافة) |
-| زمن تشغيل الخطّافات | <bdi>`<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>`</bdi> | التجسيد الخاص بـ <bdi>Claude Code</bdi>: النسخة الموجودة تحت الشجرة المشتركة <bdi>`.apothem/support/`</bdi> في جذر إطار العمل، بالمسار المطلق |
+| زمن تشغيل الخطّافات | <bdi>`<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>`</bdi> | التجسيد الخاص بـ <bdi>Claude Code</bdi>: النسخة الموجودة تحت الشجرة المشتركة <bdi>`.apothem/support/`</bdi> في جذر إطار العمل، بالمسار المطلق |
 
 - يُشغِّل <bdi>`python -m apothem`</bdi> الملف <bdi>`src/apothem/__main__.py`</bdi>، الذي
   يضع <bdi>`src/apothem/_vendor`</bdi> في <bdi>`sys.path`</bdi>، ويتحقّق من أن
@@ -75,7 +75,7 @@ sourceHash: "df04c51efc417e4a"
 إلى مقدّمة <bdi>`PYTHONPATH`</bdi>:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع <bdi>`install.sh`</bdi> هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حلّه المُثبِّت بدلًا من <bdi>`python`</bdi>. ويطبع <bdi>`install.ps1`</bdi> الإعدادين نفسيهما بصيغة <bdi>PowerShell</bdi>: إسنادٌ إلى <bdi>`$env:PYTHONPATH`</bdi> يصل الدليل المُضمَّن ودليل <bdi>`src/`</bdi> بالفاصلة المنقوطة <bdi>`;`</bdi>، ثم <bdi>`& '<CPython>' -m apothem <command>`</bdi>.

@@ -1056,9 +1056,19 @@ def _list_validators() -> str:
 # makes the ``apothem`` package importable the same way it does for the gate
 # itself, then runs the validator module as ``__main__`` with the remaining
 # arguments. A child process therefore resolves its imports without relying on
-# the parent's ``PYTHONPATH`` or on an installed package.
+# the parent's ``PYTHONPATH`` or on an installed package. The child starts with
+# ``-E -s`` (see :func:`_run_standalone`), which also ignores
+# ``PYTHONSAFEPATH``, so the launcher drops the ``''`` entry ``-c`` puts first
+# on ``sys.path`` itself. ``-E`` ignores ``PYTHONIOENCODING`` and
+# ``PYTHONUTF8`` too, so the child also starts with ``-X utf8``: a validator
+# then reads git output and files as UTF-8 under any locale code page. The
+# launcher still sets the child's output streams to UTF-8, which is how the
+# gate reads them.
 _STANDALONE_LAUNCHER: Final[str] = (
     "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]\n"
+    "for _stream in (sys.stdout, sys.stderr):\n"
+    "    if hasattr(_stream, 'reconfigure'):\n"
+    "        _stream.reconfigure(encoding='utf-8')\n"
     "import runpy\n"
     "gate_path, module = sys.argv[1], sys.argv[2]\n"
     "sys.argv = [module, *sys.argv[3:]]\n"
@@ -1088,11 +1098,13 @@ def _is_full_path_entry(entry: str, *, windows: bool = os.name == "nt") -> bool:
 def _standalone_env() -> dict[str, str]:
     """Return the environment for a standalone-validator child process.
 
-    ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the working directory to
-    ``sys.path``. A user ``PYTHONPATH`` keeps only its full-path entries (see
-    :func:`_is_full_path_entry`), because an empty, relative, rooted or
-    drive-relative entry depends on the working directory or drive; the
-    variable is dropped when none remain.
+    The child itself starts with ``-E -s`` and reads none of these variables.
+    The environment still reaches any process a validator starts, so it is
+    narrowed here too: ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the
+    working directory to ``sys.path``, and a user ``PYTHONPATH`` keeps only its
+    full-path entries (see :func:`_is_full_path_entry`), because an empty,
+    relative, rooted or drive-relative entry depends on the working directory
+    or drive; the variable is dropped when none remain.
     """
     env = {**os.environ, "PYTHONSAFEPATH": "1"}
     kept = [
@@ -1116,9 +1128,14 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     before resolving the script path so ``--all`` and ``--check`` both
     locate the script regardless of which form the caller supplied. The
     validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
-    which the caller has already resolved to an absolute directory. The child
-    writes no bytecode cache (``-B``), as this file run as a program writes
-    none (see the bootstrap at the top of this file).
+    which the caller has already resolved to an absolute directory. The
+    child starts with ``-E -s``: no ``PYTHON*`` variable (so no
+    ``PYTHONPATH`` entry) and no user site-packages folder can load code into
+    it. ``-X utf8`` puts back the UTF-8 text default that an ignored
+    ``PYTHONUTF8`` would have given, so git output and file text decode the
+    same way under every locale code page. The child writes no bytecode cache
+    (``-B``), as this file run as a program writes none (see the bootstrap at
+    the top of this file).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
@@ -1129,6 +1146,10 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
             [
                 sys.executable,
                 "-B",
+                "-E",
+                "-s",
+                "-X",
+                "utf8",
                 "-c",
                 _STANDALONE_LAUNCHER,
                 str(Path(__file__).resolve()),
@@ -1692,7 +1713,7 @@ def _dispatch(
 
 
 def _force_utf8_streams() -> None:
-    """Pin stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
+    """Pin stdin/stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
 
     The gate emits a machine-facing JSON report on stdout and a human-facing
     findings summary on stderr; the summary carries em-dashes and other
@@ -1700,14 +1721,22 @@ def _force_utf8_streams() -> None:
     console code page (cp1252), so an em-dash leaves the process as byte 0x97
     rather than its UTF-8 encoding — a UTF-8-reading consumer (the harness that
     surfaces the hook's stderr to the operator, or a test that captures it) then
-    fails to decode it. Every *file* the gate touches is already opened
-    ``encoding="utf-8"``; this closes the one remaining gap, the process's own
-    standard streams. Scoped to the ``__main__`` entry so an in-process
-    ``main()`` call (the package-invocation tests) leaves the interpreter's
-    streams — and any pytest capture wrapper standing in for them — untouched.
-    Guarded and idempotent: a stream without ``reconfigure`` is skipped, and a
-    detached stream is best-effort only.
+    fails to decode it. The harness writes its payload to stdin as UTF-8 JSON,
+    and the hook command starts Python with ``-E``, which ignores
+    ``PYTHONUTF8`` and ``PYTHONIOENCODING``, so stdin is read as UTF-8 here too
+    (``utf-8-sig`` drops a leading byte-order mark; a byte that is not UTF-8
+    reads as U+FFFD instead of failing the read). Every *file* the gate touches
+    is already opened ``encoding="utf-8"``; this closes the one remaining gap,
+    the process's own standard streams. Scoped to the ``__main__`` entry so an
+    in-process ``main()`` call (the package-invocation tests) leaves the
+    interpreter's streams — and any pytest capture wrapper standing in for
+    them — untouched. Guarded and idempotent: a stream without ``reconfigure``
+    is skipped, and a detached stream is best-effort only.
     """
+    stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if stdin_reconfigure is not None:
+        with contextlib.suppress(ValueError, OSError):
+            stdin_reconfigure(encoding="utf-8-sig", errors="replace")
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:

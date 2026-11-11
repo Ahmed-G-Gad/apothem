@@ -47,6 +47,7 @@ the harness's statusline rendering never breaks.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -360,4 +361,11 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # The configured command starts Python with -E, which ignores PYTHONUTF8
+    # and PYTHONIOENCODING, so the harness's UTF-8 payload is read as UTF-8
+    # here rather than in the locale's code page. Output is ASCII already.
+    _reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if _reconfigure is not None:
+        with contextlib.suppress(OSError, ValueError):
+            _reconfigure(encoding="utf-8-sig", errors="replace")
     sys.exit(main())

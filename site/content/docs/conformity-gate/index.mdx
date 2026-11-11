@@ -37,7 +37,7 @@ Each validator runs in one of three ways:
 
 - **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`.
 - **standalone**: across the whole repository with `--all`, or one at a time with `--check <name>`.
-- **change-set**: against a staged diff, run directly as `python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
+- **change-set**: against a staged diff, run directly from the checkout root as `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
 
 The table below is generated from the validator modules.
 
@@ -108,36 +108,57 @@ The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 ch
 
 On an installed harness the gate runs automatically: Claude Code's
 `settings.json` wires it as a `PreToolUse` hook that invokes the
-materialized copy at `~/.claude/.apothem/support/conformity/gate.py` before every
-Write/Edit. The gate then checks only writes under its hook scope, and a write
-outside the scope passes silently; [Running the conformity gate](/docs/usage/conformity-gate)
-lists the scope. From a source checkout, the module form drives the same code;
-prefix each `python` command below with `PYTHONPATH=src`. The
-gate is advisory by default: it reports findings and exits `0`. Add `--strict`
-to exit `2` on a blocking finding. An unknown validator name exits `3`.
+materialized copy at `~/.claude/.apothem/support/conformity/gate.py` before
+every Write/Edit. The gate then checks only writes under its hook scope, and
+a write outside the scope passes silently;
+[Running the conformity gate](/docs/usage/conformity-gate) lists the scope.
+
+Run the gate by its script path with `-E -s`, as the examples below do, and
+not as `python -m apothem.conformity.gate`. The project you check may hold a
+file named like one of the gate's modules, and Python must not load it. `-m`
+puts the current folder first on Python's module search path; a script start
+puts the script's own folder there instead. That alone is not enough: an empty
+or relative entry in `PYTHONPATH` also names the current folder. `-E` makes
+Python ignore `PYTHONPATH` and the other `PYTHON*` variables, and `-s` leaves
+out your user site-packages. The gate needs nothing from either. These
+flags keep the project's files out of the gate's own Python code only:
+`--all`, `--all-perwrite` and a few single validators also run `git` in the
+project folder, and git reads that repository's own `.git/config`, which
+can make git run a program. Run them only on a repository whose `.git`
+folder you made yourself with `git clone` or `git init`. After a
+script install the script is `~/.apothem/src/apothem/conformity/gate.py` (on
+Windows, `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`, run with
+`python` in place of `python3`); in a checkout it is
+`src/apothem/conformity/gate.py`. The gate starts each standalone validator in
+its own process, also with `-E -s` and with the current folder kept off the
+search path. The gate is advisory by default: it reports findings and exits
+`0`. Add `--strict` to exit `2` on a blocking finding. An unknown validator
+name exits `3`.
 
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` prints the usage summary.
+`python3 -E -s "$gate" --help` prints the usage summary.
 See [Running the conformity gate](/docs/usage/conformity-gate) for the full procedure.
 
 ## Reference

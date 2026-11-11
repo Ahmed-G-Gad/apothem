@@ -173,7 +173,7 @@ Apothem не регистрирует в Copilot защиту `preToolUse`. Дл
 выглядит так, с вашим интерпретатором и путём проекта на месте двух путей:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` заставляет диспетчер читать ввод Copilot в camelCase и

@@ -58,7 +58,7 @@ gantinya, mesin memiliki dua permukaan invokasi:
 | Permukaan | Invokasi | Konteks |
 | ------- | ---------- | ------- |
 | CLI mesin | `python -m apothem <command>` | Pohon sumber dengan `src/` di `PYTHONPATH` (checkout, cache npx, pohon plugin) |
-| Runtime hook | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Materialisasi Claude Code: salinan di bawah pohon `.apothem/support/` bersama milik akar harness, melalui jalur absolut |
+| Runtime hook | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Materialisasi Claude Code: salinan di bawah pohon `.apothem/support/` bersama milik akar harness, melalui jalur absolut |
 
 - `python -m apothem` menjalankan `src/apothem/__main__.py`, yang menempatkan
   `src/apothem/_vendor` di `sys.path`, memeriksa bahwa `click` dan `rich` dapat
@@ -81,7 +81,7 @@ Direktori paket menjadi dapat diimpor dengan menambahkan direktori `src/` milik
 checkout di awal `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Ketika peluncur `apothem` tidak ada di PATH, `install.sh` mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`. `install.ps1` mencetak dua pengaturan yang sama dalam bentuk PowerShell: penugasan `$env:PYTHONPATH` yang menggabungkan direktori vendor dan `src/` dengan `;`, lalu `& '<CPython>' -m apothem <command>`.

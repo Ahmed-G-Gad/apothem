@@ -27,7 +27,7 @@ Setiap hook yang dikonfigurasi menggunakan bentuk perintah exec Claude Code. Tem
 {
   "type": "command",
   "command": "${PYTHON_BIN}",
-  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 

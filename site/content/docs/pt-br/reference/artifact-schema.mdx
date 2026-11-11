@@ -293,7 +293,7 @@ A chave de nível superior `hooks` mapeia nomes de eventos para arrays de blocos
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -310,7 +310,7 @@ A forma `-m apothem.hooks.dispatch` serve ao desenvolvimento a partir de um chec
 | `matcher` | string | Padrão de nome de ferramenta (ou `"*"` para eventos independentes de ferramenta) | `"Write"` |
 | `hooks[].type` | literal `"command"` | O único tipo de manipulador de hook suportado atualmente | `"command"` |
 | `hooks[].command` | string | Comando executável; o Apothem usa o marcador de posição `${PYTHON_BIN}`, resolvido na instalação | `"${PYTHON_BIN}"` |
-| `hooks[].args` | array de strings | Argumentos em forma exec: um caminho de script em `${HARNESS_ROOT}/.apothem/support/`, seguido dos seus argumentos | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | array de strings | Argumentos em forma exec: um caminho de script em `${HARNESS_ROOT}/.apothem/support/`, seguido dos seus argumentos | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | inteiro em segundos | Tempo máximo de execução antes de o host encerrar o hook | `30` |
 | `hooks[].statusMessage` | string | Rótulo curto exibido na interface do host | `"Session start"` |
 

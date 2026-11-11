@@ -1032,28 +1032,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   clone at `APOTHEM_HOME` on the tag check; `signature` and `checksum` stay
   available. The checks pass under cosign v2 and v3, and a CI job runs them
   against the real cosign binaries.
-- **An existing clone is no longer checked out before its tag is checked.**
-  In releases up to 1.5.0, `install.sh`, `install.ps1`, `update.sh` and
+- **An existing clone is no longer checked out before its tag is checked.** In
+  releases up to 1.5.0, `install.sh`, `install.ps1`, `update.sh` and
   `update.ps1` fetched into an existing clone at `APOTHEM_HOME`, checked out
-  the new tag, and only then checked its signature. When the check failed,
-  the clone stayed at that tag, and the `apothem` command runs its code from
+  the new tag, and only then checked its signature. When the check failed, the
+  clone stayed at that tag, and the `apothem` command runs its code from
   there. They now fetch, check the tag, and check it out only when the check
   passes, so a failed check leaves the clone as it was. The checkout also no
-  longer forces: a clone with changes to tracked files stops the update,
-  with a message to commit or stash them, instead of losing them. A failed
+  longer forces: a clone with changes to tracked files stops the update, with
+  a message to commit or stash them, instead of losing them. A failed
   `git fetch` now stops the run. A non-release ref such as `main` on an
   existing clone follows origin's copy of the branch, and a `.git` file (a
   linked worktree) counts as a clone. Before the fetch, the update in place
   also stops when files are marked assume-unchanged or skip-worktree, which
   hides their changes from git, when the clone's work tree is not
-  `APOTHEM_HOME`, or when the clone's own `.git/config` sets `gpg.program`,
-  `gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
-  `includeIf.*`, any of which makes git run a program or read other config
-  during the update. Every git command on the clone runs with its hooks
-  turned off, and a git clone of anything other than Apothem is no longer
-  treated as an Apothem clone. The installers also ignore git's redirecting
-  and config environment variables (`GIT_DIR`, `GIT_CONFIG_PARAMETERS` and
-  similar) and refuse an `APOTHEM_REPO` that starts with `-`.
+  `APOTHEM_HOME`, or when the clone's own git config holds a setting that
+  could make git run a program or read other config during the update (see the
+  entry on the clone's own setup below). Every git command on the clone runs
+  with its hooks turned off, and a git clone of anything other than Apothem is
+  no longer treated as an Apothem clone. The installers also ignore git's
+  redirecting and config environment variables (`GIT_DIR`,
+  `GIT_CONFIG_PARAMETERS` and similar) and refuse an `APOTHEM_REPO` that
+  starts with `-`.
 - **`APOTHEM_VERIFY=checksum` now needs `APOTHEM_ALLOW_UNVERIFIED=1`.**
   This is a behaviour change for anyone who sets `APOTHEM_VERIFY=checksum`:
   add `APOTHEM_ALLOW_UNVERIFIED=1`, or the installer stops and says so.
@@ -1069,26 +1069,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   source is now checked in a staging folder beside `APOTHEM_HOME`, swapped in
   only after every check passes, and everything in the earlier Apothem install
   that is not part of its source tree is kept. If a step fails or the run is
-  interrupted, the earlier install is put back unchanged, or the message says
-  where it was left. `--yes` on a folder that holds no Apothem install no
-  longer merges the new files into it: the folder moves, unchanged, to
-  `<APOTHEM_HOME>.before-apothem-<time>` and the install starts fresh. A
-  symbolic link at `APOTHEM_HOME` (on Windows, a symbolic link or a junction)
-  is refused when the install would replace it, since replacing it would
-  replace the link and not the folder it leads to; an existing clone behind a
-  link is still updated in place. `--yes` no longer replaces a git clone with
-  a release archive while the clone holds local work (changes, stashes,
-  unpushed commits, or untracked files in its source tree), also in a dry run,
-  and when it replaces a clone, the clone's own tree moves to
-  `<APOTHEM_HOME>.before-apothem-<time>` instead of being deleted.
-  A folder that holds only the engine's data (`backups`, `state`, `plans`,
-  `memory`, `contexts`, `learning`, `providers`) is updated without `--yes`.
-  On Linux and macOS, a file or folder to carry over whose name has a space
-  or another special character stops the install. A re-run in an archive
-  mode updates an earlier archive install without `--yes`, and the update
-  scripts tell an archive install to re-run the installer. `--dry-run`
-  (`-DryRun`) now checks the release in a temporary folder, applies the same
-  refusals as a real run, and leaves `APOTHEM_HOME` unchanged. The
+  stopped by Ctrl+C or a termination signal, the earlier install is put back
+  unchanged, or the message says where it was left; a forced kill or a power
+  loss can leave folders that the next fetched install reports (see below).
+  `--yes` on a folder that holds no Apothem install no longer merges the new
+  files into it: the folder moves, unchanged, into a new
+  `<APOTHEM_HOME>.before-apothem-<time>` folder, under its own name, and the
+  install starts fresh. A symbolic link at `APOTHEM_HOME` (on Windows, a
+  symbolic link or a junction) is refused when the install would replace it,
+  since replacing it would replace the link and not the folder it leads to; an
+  existing clone behind a link is still updated in place. `--yes` no longer
+  replaces a git clone with a release archive while the clone holds local work
+  (changes, stashes, unpushed commits, or untracked files in its source tree),
+  also in a dry run, and when it replaces a clone, the clone's own tree moves
+  into a new `<APOTHEM_HOME>.before-apothem-<time>` folder, under its own
+  name, instead of being deleted. A folder that holds only the engine's data
+  (`backups`, `state`, `plans`, `memory`, `contexts`, `learning`, `providers`)
+  is updated without `--yes`. On Linux and macOS, a file or folder to carry
+  over whose name has a space or another special character stops the install.
+  A re-run in an archive mode updates an earlier archive install without
+  `--yes`, and the update scripts tell an archive install to re-run the
+  installer. `--dry-run` (`-DryRun`) now checks the release in a temporary
+  folder and leaves `APOTHEM_HOME` unchanged. It makes the same checks as a
+  real run, except that it does not fetch into an existing clone, and so does
+  not check it for changes to tracked files. The
   [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
   explains each mode.
 - **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
@@ -1110,6 +1114,150 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **Hooks no longer read your `PYTHON*` variables or your user site-packages.**
+  A hook runs in whatever folder the assistant opened, on every tool call, and
+  an empty entry in `PYTHONPATH` stands for that folder, so a file such as
+  `sitecustomize.py` placed there could run inside the hook. Every hook command
+  now starts Python with `-E -s`: `-E` makes Python ignore `PYTHONPATH` and the
+  other `PYTHON*` variables, and `-s` leaves out the user site-packages. The
+  same flags apply to the Claude Code plugin's bootstrap script and its
+  interpreter probe, and to the commands the Claude Code, Codex, CodeBuddy,
+  Cursor, GitHub Copilot, Kiro, Qwen Code and Windsurf adapters write. The hooks
+  use only the standard library and their own files, so nothing they need is
+  lost. Because `-E` also turns off `PYTHONUTF8` and `PYTHONIOENCODING`, the
+  dispatcher and the conformity gate now read their input as UTF-8 themselves,
+  which also fixes non-ASCII hook payloads on Windows. `-E` also ignores
+  `PYTHONDONTWRITEBYTECODE`, so the hooks can write `__pycache__` folders into
+  the support folder. When an uninstall removes a Python module that Apothem
+  wrote (a hook, the statusline renderer or a part of the conformity gate), it
+  also removes that module's bytecode (`__pycache__/<module>.*.pyc` beside it),
+  then the `__pycache__` folder if it is left empty; it removes no other cache
+  file. The conformity gate now starts each of its standalone validators with
+  `-E -s` too, plus `-X utf8`, so a validator still reads git output and files
+  as UTF-8 under any Windows code page; the docs run the gate by its script
+  path with `-E -s`, which keeps the checked project's Python files and your
+  `PYTHONPATH` out of the gate. `--all`, `--all-perwrite` and a few single
+  validators still run `git` in that project, and git reads the project's own
+  `.git/config`, so the docs say to run them only on a repository whose `.git`
+  folder you made yourself. An install made by an earlier release keeps its old
+  hook commands until you run `apothem install` or `apothem update`; an update
+  replaces them without touching your own hooks, and an uninstall removes the
+  old and the new form. The Claude Code statusline snippet in
+  `~/.claude/statuslines/conformity.json` also starts Python with `-E -s`, and
+  its renderer reads its input as UTF-8. No install or update writes the
+  `statusLine` setting, so if you copied an earlier snippet's command into your
+  `settings.json`, add `-E -s` after the interpreter yourself.
+- **An update in place checks more of the clone's own setup, and sooner.**
+  `install.sh`, `install.ps1`, `update.sh` and `update.ps1` now read both
+  `.git/config` and `.git/config.worktree` of an existing clone and accept only
+  the settings `git clone` and `git init` write there for a full clone, branch
+  settings, `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` and `pull.ff`; `extensions.refStorage`
+  must be `files` or `reftable`, and a branch's `remote` and `pushRemote` must
+  be `origin`. Any other setting stops the run, since it could make git run a
+  program, read settings, hooks, attributes or objects from another place, or
+  connect somewhere else. A partial clone, made with `--filter`, stops the run
+  too: clone again without `--filter`. The message names the setting and the
+  file, and the [troubleshooting
+  page](https://apothem.ahmedgad.com/docs/install/troubleshooting) of the
+  install guide lists the accepted settings. A setting whose name holds a line
+  break stops the run with its own message, since a reader could take it for
+  two settings. The run also stops on a `filter=` line in
+  `.git/info/attributes`, which every script reads byte by byte as git does, so
+  a UTF-16 byte-order mark hides nothing; on that file or a config file that
+  is not a plain file, such as a named pipe that could hand git other text
+  than the check read; on a clone that borrows objects from
+  another repository (`objects/info/alternates` or `http-alternates`, as
+  `--reference` and `--shared` write), where git would read objects under
+  settings nothing checks; and on a clone that holds a submodule, recorded in
+  its index or kept in `.git/modules`: a release tree has none, and git would
+  run inside it under settings nothing checks. The settings, attributes and
+  object checks run before any git command that reads the clone's index or
+  objects, so a configured file-system monitor cannot run first, and they run,
+  with the submodule check, before `--yes` replaces a clone, so `git status`
+  never runs inside a submodule there. Before any git command that applies the
+  work tree's `.gitattributes` files, the run stops on one that git does not
+  track or that differs from the committed copy, in any folder of the clone, or
+  whose committed copy sets a filter. Before the fetch, it stops on files under
+  `src` (spelled in any case, since a file system that ignores case reads `Src`
+  as `src`) that git does not track, ignored files included, and lists them,
+  since the engine could load them; after the checkout, it removes the Python
+  cache folders (`__pycache__`) under `src` before the engine first runs from
+  the clone, so no bytecode from before the update loads. A dry run of the
+  installers makes all of these checks. Every git command on the clone now runs
+  with no pager, no automatic maintenance, the file-system monitor off and no
+  submodule recursion, and `git diff` and `git status` skip submodules. For the
+  whole run, the installers and updaters set `GIT_NO_LAZY_FETCH=1`, so git never
+  fetches a missing object from the remote on its own, and `GIT_ALLOW_PROTOCOL`
+  to the file, git, http, https and ssh transports, so neither a value in your
+  environment nor an address in the clone's config can widen that list or make
+  git run a helper program such as `ext::`; `APOTHEM_REPO` must use one of those
+  transports. On Windows, a fresh clone, the fetch of the release tag and a
+  checkout also write paths longer than the usual limit, so a long profile
+  folder no longer stops the clone or leaves files out of it. The installers and
+  updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`,
+  so a value inherited from your environment can no longer point git at another
+  config file; the PowerShell scripts put them, and the two variables they set,
+  back when the run ends, so an `irm ... | iex` run leaves your session as it
+  was. `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL`
+  for the installer, it is now ignored; git still reads your own global and
+  system config from the usual places, and `git`, `gpg` and `cosign` are the
+  ones your `PATH` finds. A clone that another user owns now stops the run with
+  an explanation and what to do, in place of git's raw "dubious ownership"
+  error. The install guide now says that `APOTHEM_HOME` must be a folder only
+  you can write: on Windows, a folder made at the root of a drive, such as
+  `C:\apothem`, can be changed by every user who signs in, under Windows'
+  default permissions. The installers now warn, without stopping, when users
+  other than you can write to `APOTHEM_HOME` or the folder holding it, since
+  they can then change the code Apothem runs as you. Linux and macOS read the
+  permission bits; Windows reads Everyone, Authenticated Users, Users and
+  INTERACTIVE, and names a folder made at a drive's root, such as `C:\apothem`.
+  Git Bash runs skip the check.
+- **A second install, update or uninstall script can no longer run on the same
+  `APOTHEM_HOME`, and a stopped run is reported.** Each run of `install.sh`,
+  `update.sh`, `uninstall.sh` and their PowerShell versions now holds a lock,
+  `<APOTHEM_HOME>.lock`, for its whole length and gives it up on success,
+  failure, Ctrl+C and a termination signal. A second run stops and says so. On
+  POSIX the lock is a folder that holds the process ID and the environment of
+  the run; a lock left by a run that was killed is reported with how to remove
+  it, and never taken over, and a lock made in another environment (WSL and Git
+  Bash on one machine, or another container) is reported as one whose process
+  cannot be checked from there. On Windows PowerShell the lock is a file that
+  Windows closes and deletes when the process ends; a POSIX script that finds
+  such a file under Git Bash, MSYS2, Cygwin or WSL says that a PowerShell run
+  holds it. When `APOTHEM_HOME` is a symbolic link or a junction, every script
+  takes the lock beside the folder it leads to, so a Git Bash run and a
+  PowerShell run on the same folder stop each other. Because the lock sits
+  beside `APOTHEM_HOME`, every run, an update in place, an uninstall and a dry
+  run included, now needs write access to the folder that holds `APOTHEM_HOME`.
+  The folder that receives an earlier install when `--yes` replaces it is now
+  created by the run itself, and the earlier tree moves inside it, to
+  `<APOTHEM_HOME>.before-apothem-<time>/<name>`, where `<name>` is the last part
+  of `APOTHEM_HOME`. A forced kill or a power loss during a swap can still leave
+  the earlier install or other entries of `APOTHEM_HOME` in the staging folders
+  beside it, which are now named `.apothem-old.<name>.*`,
+  `.apothem-extract.<name>.*` and `.apothem-clone.<name>.*`. The next fetched
+  install for that `APOTHEM_HOME`, a dry run included, now stops before it
+  changes anything, names each folder and the entries that were moved into it,
+  and says how to move them back. It deletes nothing. The staging folders of
+  another `APOTHEM_HOME` in the same parent folder are left out (on Windows and
+  macOS, a name that differs only in capital letters counts as the same home,
+  whatever the file system), and a staging folder whose name does not say which
+  home it belongs to is listed with a note to check what it holds. The POSIX
+  installer also checks, after each move in a swap, that the tree landed where
+  it was going and not inside a folder of that name that appeared meanwhile; if
+  it did not, the tree moves back and the run stops.
+- **The commit that is checked out is the commit that was verified.** The
+  installers and updaters read the release tag once, record the commit it
+  names, verify the tag, check that commit out by ID, and require `HEAD` to be
+  that commit, in place, on a fresh clone and in the update scripts. A tag
+  that moves between the check and the checkout no longer changes what is
+  installed. The message for a tag signed by another key now names the key
+  that signed it and the one that is required. On Windows PowerShell 5.1 and
+  7, a download that is redirected through any address that is not https is
+  refused, at every step of the redirect, as the POSIX installers' `curl`
+  already did; on 5.1 the message names that address, and on 7 it says the
+  download was redirected to an http:// address.
 
 ## [1.5.0] - 2026-10-28
 

@@ -29,12 +29,33 @@
 #   trusts is not enough. A signed git tag names its commit by SHA-1; the
 #   release path adds the SHA-256 digest that cosign checks.
 #   A failed check ABORTS the install before any config is written.
-#   An existing clone is checked before it is fetched: no tracked file may
-#   be marked assume-unchanged or skip-worktree, its work tree must be
-#   APOTHEM_HOME itself, and its own git config may not set a gpg program,
-#   fsmonitor, hooks path or include. Its hooks do not run during the
-#   update. A git clone of something other than Apothem counts as a folder
-#   that holds no Apothem install.
+#   Before an existing clone is fetched (or replaced), the run stops when
+#   git will not work in it because another user owns it, when its own git
+#   config (its config or config.worktree file) sets a key that is not on
+#   $CloneConfigAllow (the keys git clone and git init write, and a few
+#   that name no program, file or address), or when its info\attributes
+#   sets a filter, when it borrows objects from another repository, or
+#   when a .gitattributes file in its work tree is untracked or differs
+#   from the index. An update in place, and a dry run, also stop when the
+#   clone holds submodules, hides changes from git (assume-unchanged or
+#   skip-worktree files), has a work tree that is not APOTHEM_HOME, or
+#   holds files under src that git does not track. After the checkout,
+#   an update in place removes the Python cache folders under src.
+#   Every git command on the clone runs with its hooks, its fsmonitor, the
+#   pager and automatic maintenance off, with only the file, git, http,
+#   https and ssh transports, with no fetch of a missing object, and
+#   without going into submodules. A git clone of something other than
+#   Apothem counts as a folder that holds no Apothem install.
+#   A failure or an interrupt puts the earlier install back unchanged. A
+#   forced kill or a power loss can leave folders beside APOTHEM_HOME
+#   (.apothem-extract.<name>.*, .apothem-clone.<name>.*,
+#   .apothem-old.<name>.*, <name> being APOTHEM_HOME's own folder name):
+#   the next fetched install for that APOTHEM_HOME stops, names each one
+#   and what it holds, and changes nothing.
+#   One install, update or uninstall runs at a time: each holds
+#   <APOTHEM_HOME>.lock while it runs, and a second run stops.
+#   git, gpg and cosign are the ones found on PATH; they, and the user's own
+#   global and system git config, are trusted as found.
 #   APOTHEM_ALLOW_UNVERIFIED=1 is the one opt-out, and it does two things:
 #     - On the clone path it turns a tag that is unsigned, whose signature
 #       does not verify, or that another key signed into a loud warning, and
@@ -78,15 +99,17 @@
 #   -Yes             Non-interactive; skip per-target prompts (engine `--yes`).
 #                    Also lets the installer replace what is at APOTHEM_HOME
 #                    when that needs consent: an Apothem git clone replaced
-#                    by the release archive, whose tree is then kept at
-#                    <APOTHEM_HOME>.before-apothem-<time> (refused while the
+#                    by the release archive, whose tree is then kept in a
+#                    new folder <APOTHEM_HOME>.before-apothem-<time>
+#                    (refused while the
 #                    clone holds local work: changes, stashes, unpushed
 #                    commits, or untracked files in its source tree), an
 #                    archive install switched to a clone (the engine's
 #                    backups\, state\ and other data the source tree does
 #                    not hold are kept either way), or a folder that holds
 #                    no Apothem install (a git clone of something else
-#                    included), which is moved, unchanged, to
+#                    included), which is moved, unchanged and under its
+#                    own name, into a new folder
 #                    <APOTHEM_HOME>.before-apothem-<time>. A folder that
 #                    holds only the engine's data folders (backups\, state\,
 #                    plans\ and the like) is installed into without -Yes,
@@ -227,15 +250,20 @@ function Write-Fail  { param([string]$Msg) Write-Error "  x $Msg" }
 
 # A git variable set in the calling shell would point every git command
 # below at another repository, work tree, index or object store, add
-# settings or another git program, or swap objects through replace refs,
-# so they are cleared first; GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM stay
-# (mirrors
-# install.sh). An APOTHEM_REPO that starts with - would reach git as an
-# option.
-foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR')) {
-    if (Test-Path -LiteralPath "Env:$GitVar") { Remove-Item -LiteralPath "Env:$GitVar" }
-}
-$env:GIT_NO_REPLACE_OBJECTS = '1'
+# settings, read its configuration from other files, use another git
+# program, or swap objects through replace refs, so the run clears them
+# once it holds the install lock (see the start of the run, below;
+# mirrors install.sh). It also sets GIT_NO_LAZY_FETCH=1, so git never starts
+# a fetch of its own for an object the clone lacks (the clone's settings
+# would shape that fetch), and GIT_ALLOW_PROTOCOL to the five transports
+# $GitNoProgram allows, since a value from the calling shell would win
+# over those settings. Run by irm | iex, the script shares the caller's
+# session, so the caller's values are put back as the run ends, however
+# it ends. GIT_CONFIG_NOSYSTEM is left as the caller set it: it only
+# stops git reading the system configuration. git still reads the user's
+# own global and system configuration from the places it always looks,
+# and git, gpg and cosign are the ones PATH finds. An APOTHEM_REPO that
+# starts with - would reach git as an option.
 if ($ApothemRepo.StartsWith('-')) {
     Write-Fail "APOTHEM_REPO must be a repository URL or path, not an option: $ApothemRepo"
 }
@@ -245,9 +273,26 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
     $ApothemRepo = (Resolve-Path -LiteralPath $ApothemRepo).ProviderPath
 }
 
-# The git calls that run in an existing clone (fetch, verify-tag, cat-file,
-# checkout) take these arguments, which point core.hooksPath at an empty
-# folder made for the run, so none of the clone's hooks runs.
+# Every git command on a clone takes $GitNoProgram: git never runs the
+# clone's fsmonitor program (core.fsmonitor is emptied) or a pager
+# (--no-pager), never starts automatic maintenance (gc.auto=0,
+# maintenance.auto=false), uses only the file, git, http, https and ssh
+# transports (protocol.allow=never with those five allowed), so an
+# address in the clone's config cannot make git run a program (ext::,
+# or <name>:: for a git-remote-<name> found on PATH), writes a path
+# longer than Windows' usual limit at checkout (core.longpaths=true)
+# instead of leaving the file out, and does not go into submodules:
+# fetch and checkout leave
+# them alone, and diff and status skip them (diff.ignoreSubmodules=all),
+# so the settings of a repository nested in the clone, which nothing
+# here checks, are never read. An update in place refuses a clone that
+# holds submodules anyway (Assert-CleanClone). The calls of an update
+# (fetch, verify-tag, cat-file, checkout and the rest) take $GitSafe,
+# which adds core.hooksPath pointing at an empty folder made for the
+# run, so none of the clone's hooks runs either. core.sshCommand is left
+# alone: setting it would also override the user's own GIT_SSH (mirrors
+# install.sh's cgit).
+$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true')
 $GitSafe = @()
 
 # The current folder must never shadow the engine's modules (mirrors
@@ -334,6 +379,72 @@ function Invoke-GitOutsideRepository {
         $env:GIT_CEILING_DIRECTORIES = $GoCeiling
         Pop-Location
         Remove-Item -LiteralPath $GoEmpty -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Save-Download URI FILE - download URI to FILE. A download from an https://
+# address may only be redirected to another https:// one, at every step,
+# as install.sh's curl --proto-redir =https allows. PowerShell 7 does not
+# follow a redirect from https to plain http, and the address the response
+# finally came from is checked as well. Windows PowerShell 5.1 does follow
+# one, and would accept a chain that goes through http and back to https,
+# so there each redirect is followed by hand (at most 10) and the first
+# one to an address that is not https:// stops the download. A file that
+# came from anywhere else is removed and the download fails, with the
+# reason in the error; PowerShell 7's own refusal is given the same words.
+# A base of another scheme (an http:// mirror on the local network) is used
+# as given, as in install.sh.
+function Save-Download {
+    param([string]$Uri, [string]$OutFile)
+    $FromHttps = $Uri.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)
+    if ($FromHttps -and $PSVersionTable.PSVersion.Major -lt 6) {
+        $DlAt = [uri]$Uri
+        foreach ($DlHop in 0..10) {
+            # 5.1 returns a redirect's response, with its Location, only when
+            # its own error for it is silenced; a failed request still throws.
+            $DlError = $null
+            $DlResponse = Invoke-WebRequest -UseBasicParsing -Uri $DlAt -OutFile $OutFile -PassThru -MaximumRedirection 0 -ErrorAction SilentlyContinue -ErrorVariable DlError
+            if (-not $DlResponse) {
+                Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+                throw "$DlAt gave no response ($(@($DlError | ForEach-Object { $_.ToString() }) -join ' '))"
+            }
+            $DlCode = [int]$DlResponse.StatusCode
+            if ($DlCode -lt 300 -or $DlCode -ge 400) { return }
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            $DlLocation = [string]$DlResponse.Headers['Location']
+            if (@(301, 302, 303, 307, 308) -notcontains $DlCode -or -not $DlLocation) {
+                throw "$DlAt answered $DlCode with no address to go to"
+            }
+            $DlNext = New-Object System.Uri -ArgumentList $DlAt, $DlLocation
+            if ($DlNext.Scheme -ne 'https') {
+                throw "$Uri was redirected to $DlNext, which is not an https:// address"
+            }
+            $DlAt = $DlNext
+        }
+        throw "$Uri was redirected more than 10 times"
+    }
+    try {
+        $Response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile -PassThru
+    } catch {
+        # PowerShell 7 refuses a redirect from https to http itself, with a
+        # message that does not say what happened, and no address.
+        if ([string]$_.FullyQualifiedErrorId -like 'InsecureRedirection*') {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            throw "$Uri was redirected to a plain http:// address; a download from an https:// address follows only https:// redirects"
+        }
+        throw
+    }
+    if (-not $FromHttps) { return }
+    $Base = $Response.BaseResponse
+    $Final = $null
+    if ($Base -and $Base.PSObject.Properties['ResponseUri']) {
+        $Final = $Base.ResponseUri
+    } elseif ($Base -and $Base.PSObject.Properties['RequestMessage'] -and $Base.RequestMessage) {
+        $Final = $Base.RequestMessage.RequestUri
+    }
+    if (-not $Final -or $Final.Scheme -ne 'https') {
+        Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+        throw "$Uri was redirected to $Final, which is not an https:// address"
     }
 }
 
@@ -496,6 +607,25 @@ function Test-TagSignedByOtherKey {
     return (-not (Test-TagSignedByMaintainer))
 }
 
+# Get-TagSigner - the primary-key fingerprints, other than
+# $MaintainerFingerprint, of the valid signatures in the captured status
+# lines, each once and upper-case, as the message names them: "the key X",
+# or "the keys X, Y" (mirrors install.sh's verify_tag_other_keys and
+# other_key_message).
+function Get-TagSigner {
+    $Signers = @()
+    foreach ($Line in ($script:VerifyTagOutput -split "`n")) {
+        $Fields = @($Line.Trim() -split '\s+')
+        if ($Fields.Count -ge 3 -and $Fields[0] -ceq '[GNUPG:]' -and $Fields[1] -ceq 'VALIDSIG') {
+            $Fpr = if ($Fields.Count -ge 12) { $Fields[11] } else { $Fields[2] }
+            $Fpr = $Fpr.ToUpperInvariant()
+            if ($Fpr -ne $MaintainerFingerprint -and $Signers -cnotcontains $Fpr) { $Signers += $Fpr }
+        }
+    }
+    if ($Signers.Count -gt 1) { return "the keys $($Signers -join ', ')" }
+    return "the key $($Signers -join ', ')"
+}
+
 # Test-VerifyTagMissingKey - $true when the captured status lines show the
 # signature could not be checked because the signing public key is absent
 # from the local keyring (GnuPG's NO_PUBKEY status), $false for any other
@@ -548,20 +678,32 @@ function Assert-GpgAvailable {
 # Test-MaintainerTag DIR REF ALLOW - the key-pinned tag gate (mirrors
 # install.sh's check_release_tag). Checks the tag refs/tags/REF in the
 # repository at DIR, before anything is checked out, and prints the result.
-# The tag passes when the maintainer key signed it and the signed tag object
-# names itself REF and points at a commit: a signed tag for another release,
-# re-pointed at refs/tags/REF, would otherwise roll an install back to that
-# release. A pass returns the commit the tag points at. Any other outcome
-# aborts with the reason, unless ALLOW is $true, which downgrades a missing or
-# unverifiable signature to a warning and returns $null; a re-pointed tag
-# aborts either way.
+# The tag ref is read once: the signature, the signed tag object's own name
+# and the commit are all read from that one tag object, and the commit it
+# returns is checked out by its ID (Invoke-CheckoutRef), so a tag ref moved
+# after the check cannot change what is installed. The tag passes when the
+# maintainer key signed it and the signed tag object names itself REF and
+# points at a commit: a signed tag for another release, re-pointed at
+# refs/tags/REF, would otherwise roll an install back to that release. A
+# pass returns that commit. Any other outcome aborts with the reason, unless
+# ALLOW is $true, which downgrades a missing or unverifiable signature to a
+# warning and returns the commit the tag pointed at when it was read ($null
+# when there is none); a re-pointed tag aborts either way.
 function Test-MaintainerTag {
     param([string]$Dir, [string]$Ref, [bool]$Allow)
-    if ((Test-TagSignature $Dir "refs/tags/$Ref") -and (Test-TagSignedByMaintainer)) {
-        $prior = $ErrorActionPreference
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $TagObject = "$(& git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref" 2>$null)".Trim()
+        if ($LASTEXITCODE -ne 0) { $TagObject = '' }
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    $script:VerifyTagOutput = ''
+    if ($TagObject -and (Test-TagSignature $Dir $TagObject) -and (Test-TagSignedByMaintainer)) {
         $ErrorActionPreference = 'Continue'
         try {
-            $TagLines = @(& git @GitSafe -C $Dir cat-file tag "refs/tags/$Ref" 2>$null)
+            $TagLines = @(& git @GitSafe -C $Dir cat-file tag $TagObject 2>$null)
         } finally {
             $ErrorActionPreference = $prior
         }
@@ -580,17 +722,29 @@ function Test-MaintainerTag {
         if (-not ($TagType -ceq 'type commit' -and $TagName -ceq "tag $Ref")) {
             Write-Fail "Tag $Ref carries the maintainer key's signature, but the signed tag object is not the $Ref release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or materialized."
         }
-        $Commit = & git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref^{commit}"
+        $Commit = & git @GitSafe -C $Dir rev-parse --verify --quiet "$TagObject^{commit}"
         if ($LASTEXITCODE -ne 0 -or -not $Commit) { Write-Fail "Could not read the commit the $Ref tag points at" }
         Write-Ok "Tag $Ref carries a valid signature from the maintainer key $MaintainerFingerprint"
         return ([string]$Commit).Trim()
     }
     if ($Allow) {
+        $Commit = ''
+        if ($TagObject) {
+            $ErrorActionPreference = 'Continue'
+            try {
+                $Commit = "$(& git @GitSafe -C $Dir rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
+                if ($LASTEXITCODE -ne 0) { $Commit = '' }
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+        }
         Write-Warn "Tag $Ref is unsigned, its signature did not verify, or the maintainer key did not make it - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
-        return $null
+        if (-not $Commit) { return $null }
+        return $Commit
     }
     if (Test-TagSignedByOtherKey) {
-        Write-Fail "Tag $Ref carries a valid signature, but not from the maintainer key $MaintainerFingerprint that SECURITY.md publishes (possible tampering). Aborting before anything is checked out or materialized."
+        $Signers = Get-TagSigner
+        Write-Fail "Tag $Ref is signed by $Signers. A release tag must be signed by the maintainer key $MaintainerFingerprint that SECURITY.md publishes, and by no other key (possible tampering). Aborting before anything is checked out or materialized."
     }
     if (Test-VerifyTagMissingKey) {
         Write-Fail "Tag $Ref is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run & `"$env:ProgramFiles\Git\bin\bash.exe`" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163' (the gpg that ships with Git for Windows, which git verify-tag uses), check that the fingerprint matches the one published in SECURITY.md, then re-run this installer."
@@ -600,13 +754,16 @@ function Test-MaintainerTag {
 
 # Assert-FetchedRef DIR - the gate for APOTHEM_REF in the repository at DIR,
 # run before it is checked out (mirrors install.sh's check_fetched_ref). A
-# release tag goes through Test-MaintainerTag; any other ref (main, a SHA, a
-# pre-release tag) cannot be verified, so it is refused unless
+# release tag goes through Test-MaintainerTag, and the commit it returns is
+# kept in $script:TagCommit for Invoke-CheckoutRef; any other ref (main, a
+# SHA, a pre-release tag) cannot be verified, so it is refused unless
 # APOTHEM_ALLOW_UNVERIFIED=1.
+$script:TagCommit = $null
 function Assert-FetchedRef {
     param([string]$Dir)
+    $script:TagCommit = $null
     if (Test-ReleaseTag $ApothemRef) {
-        $null = Test-MaintainerTag $Dir $ApothemRef ($ApothemAllowUnverified -eq '1')
+        $script:TagCommit = Test-MaintainerTag $Dir $ApothemRef ($ApothemAllowUnverified -eq '1')
     } elseif ($ApothemAllowUnverified -eq '1') {
         Write-Warn "Ref $ApothemRef is not a signed release tag - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
     } else {
@@ -616,18 +773,20 @@ function Assert-FetchedRef {
 
 # Invoke-CheckoutRef DIR [-InPlace] - check out APOTHEM_REF in the clone at
 # DIR, after Assert-FetchedRef has passed (mirrors install.sh's
-# checkout_ref). A release tag is checked out detached, as the commit
-# refs/tags/<tag>^{commit} names, so neither a branch that shares the tag's
-# name nor one named refs/tags/<tag> can stand in for it, and HEAD must then
-# be the tag's commit. Any other ref follows origin's branch of that name
-# when there is one (a local branch may be stale), and otherwise resolves
-# directly, after --end-of-options so a ref cannot pass for an option. No
-# --force: a clone with local changes that the checkout would overwrite
-# stops instead of losing them. -InPlace marks the clone at APOTHEM_HOME: a
-# change to a tracked file stops the update before the checkout, and the
-# tracked files must match the ref after it. git reports a refused checkout
-# on stderr, which PowerShell before 7.2 turns into a terminating error
-# under 'Stop', so the preference is localized as in Test-TagSignature.
+# checkout_ref). A release tag is checked out, detached, by the commit ID
+# Assert-FetchedRef recorded when it checked the tag ($script:TagCommit),
+# never by its name again: a tag ref moved since, or a branch that shares
+# the tag's name, cannot change what is checked out, and HEAD must then be
+# that commit. Any other ref follows origin's branch of that name when there
+# is one (a local branch may be stale), and otherwise resolves directly,
+# after --end-of-options so a ref cannot pass for an option. No --force: a
+# clone with local changes that the checkout would overwrite stops instead
+# of losing them. Submodules are left alone. -InPlace marks the clone at
+# APOTHEM_HOME: a change to a tracked file stops the update before the
+# checkout, and the tracked files must match the ref after it. git reports
+# a refused checkout on stderr, which PowerShell before 7.2 turns into a
+# terminating error under 'Stop', so the preference is localized as in
+# Test-TagSignature.
 function Invoke-CheckoutRef {
     param([string]$Dir, [switch]$InPlace)
     $prior = $ErrorActionPreference
@@ -645,10 +804,13 @@ function Invoke-CheckoutRef {
             Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
         }
     }
+    if ((Test-ReleaseTag $ApothemRef) -and -not $script:TagCommit) {
+        Write-Fail "Could not check out the $ApothemRef tag in $Dir. If it has local changes, commit or stash them, then re-run."
+    }
     $ErrorActionPreference = 'Continue'
     try {
         if (Test-ReleaseTag $ApothemRef) {
-            & git @GitSafe -C $Dir checkout --quiet --detach "refs/tags/$ApothemRef^{commit}"
+            & git @GitSafe -C $Dir checkout --quiet --detach $script:TagCommit
             $CoCode = $LASTEXITCODE
         } else {
             & git @GitSafe -C $Dir show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
@@ -665,8 +827,8 @@ function Invoke-CheckoutRef {
     if (Test-ReleaseTag $ApothemRef) {
         if ($CoCode -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $Dir. If it has local changes, commit or stash them, then re-run." }
         $CoHead = & git @GitSafe -C $Dir rev-parse --verify --quiet HEAD
-        $CoTag = & git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
-        if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
+        $CoTag = $script:TagCommit
+        if ("$CoHead" -ne "$CoTag") {
             Write-Fail "The checkout in $Dir is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before anything is materialized."
         }
     } elseif ($CoCode -ne 0) {
@@ -729,6 +891,11 @@ function Move-Entry {
 # clone as a .git folder does. The engine's data folders ($EngineDataNames)
 # are never source, whatever a manifest or the clone says.
 $SourceManifest = '.apothem-source-entries'
+# The file a keep or clone swap writes into its staging folder, beside the
+# new tree, before it moves anything: the names it is about to move from
+# APOTHEM_HOME into that tree, one per line, so the leftover report can
+# name them after a forced kill (see Get-CarriedEntry).
+$CarryList = '.apothem-carried-entries'
 $EngineDataNames = @('backups', 'state', 'plans', 'memory', 'contexts', 'learning', 'providers')
 function Get-SourceEntry {
     param([string]$Dir)
@@ -737,7 +904,7 @@ function Get-SourceEntry {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            $Tracked = @(& git -C $Dir ls-tree --name-only HEAD 2>$null)
+            $Tracked = @(& git @GitNoProgram -C $Dir ls-tree --name-only HEAD 2>$null)
             if ($LASTEXITCODE -eq 0) { $Names += @($Tracked | ForEach-Object { [string]$_ }) }
         } finally {
             $ErrorActionPreference = $prior
@@ -812,6 +979,37 @@ function Get-AsidePath {
     Write-Fail "Could not move the existing $ApothemHome aside; nothing was changed"
 }
 
+# New-AsideFolder STAGE - make the new folder an earlier tree is moved into,
+# and return its path: <APOTHEM_HOME>.before-apothem-<time>, or
+# <time>-<pid> when that name is taken (mirrors install.sh's claim_aside).
+# A fresh folder with a name no one can guess is made inside STAGE, the
+# run's own staging folder beside APOTHEM_HOME, and renamed to that name;
+# the rename fails when the name is already there, so the folder is always
+# an empty one this run made. The earlier tree then moves inside it under
+# its own name: it is never moved into a folder someone else made, or to a
+# name checked first and used later. $null, having made nothing, when both
+# names are taken.
+function New-AsideFolder {
+    param([string]$Stage)
+    $AfName = "$ApothemHome.before-apothem-" + (Get-Date -Format 'yyyyMMddHHmmss')
+    try {
+        $AfTemp = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Join-Path $Stage ('aside.' + [System.Guid]::NewGuid().ToString('N'))))
+        $null = [System.IO.Directory]::CreateDirectory($AfTemp)
+    } catch {
+        return $null
+    }
+    foreach ($AfTry in @($AfName, "$AfName-$PID")) {
+        try {
+            [System.IO.Directory]::Move($AfTemp, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($AfTry))
+            return $AfTry
+        } catch {
+            $null = $_
+        }
+    }
+    try { [System.IO.Directory]::Delete($AfTemp, $false) } catch { $null = $_ }
+    return $null
+}
+
 # Invoke-SwapIn NEW MODE - put the checked tree at NEW in place of
 # APOTHEM_HOME (mirrors install.sh's swap_in). NEW sits beside APOTHEM_HOME,
 # so every move is a rename on one drive.
@@ -822,11 +1020,13 @@ function Get-AsidePath {
 #               moves in, and the earlier source is removed.
 #   MODE clone: as keep, for an Apothem git clone that -Yes allowed
 #               replacing with the archive: what is left of the clone's
-#               tree once its data has moved is not removed but moved to
-#               a sibling <APOTHEM_HOME>.before-apothem-<time> folder.
+#               tree once its data has moved is not removed but moved into
+#               a new sibling <APOTHEM_HOME>.before-apothem-<time> folder
+#               (see New-AsideFolder).
 #   MODE aside: APOTHEM_HOME holds something else, and -Yes allowed
-#               replacing it. It moves, untouched, to a sibling
-#               <APOTHEM_HOME>.before-apothem-<time> folder, and NEW moves in.
+#               replacing it. It moves, untouched and under its own name,
+#               into a new sibling <APOTHEM_HOME>.before-apothem-<time>
+#               folder (see New-AsideFolder), and NEW moves in.
 # A failure or an interrupt (Ctrl+C) at any step puts everything back where
 # it was and says so, or, when that also fails, names where the earlier tree
 # was left and keeps the staging folder ($script:SwapKeepStaging), which may
@@ -839,16 +1039,22 @@ function Invoke-SwapIn {
         catch { Write-Fail "Could not move the new source to $ApothemHome" }
         return
     }
+    $SwLeaf = Split-Path -Leaf $ApothemHome
+    $SwStage = Split-Path -Parent $New
     if ($Mode -eq 'aside') {
-        $Aside = Get-AsidePath
-        # Both moves run inside try, so an interrupt after either one is
-        # undone too, from what is where.
+        $Aside = $null
+        $AsideItem = $null
+        # The folder is made and both moves run inside try, so an interrupt
+        # after any of them is undone too, from what is where.
         $SwDone = $false
         $SwFailed = $false
         $SwUntouched = $false
         $SwReason = "Interrupted while replacing $ApothemHome"
         try {
-            try { Move-Entry $ApothemHome $Aside }
+            $Aside = New-AsideFolder $SwStage
+            if (-not $Aside) { $SwFailed = $true; $SwUntouched = $true; $SwReason = "Could not move the existing $ApothemHome aside"; throw $SwReason }
+            $AsideItem = Join-Path $Aside $SwLeaf
+            try { Move-Entry $ApothemHome $AsideItem }
             catch { $SwFailed = $true; $SwUntouched = $true; $SwReason = "Could not move the existing $ApothemHome aside"; throw }
             try { Move-Entry $New $ApothemHome }
             catch { $SwFailed = $true; $SwReason = "Could not move the new source to $ApothemHome"; throw }
@@ -857,40 +1063,51 @@ function Invoke-SwapIn {
             if (-not $SwDone) {
                 $SwBack = $false
                 try {
-                    if (Test-Entry $Aside) {
+                    if ($AsideItem -and (Test-Entry $AsideItem)) {
                         if ((Test-Entry $ApothemHome) -and -not (Test-Entry $New)) { Move-Entry $ApothemHome $New }
-                        if (-not (Test-Entry $ApothemHome)) { Move-Entry $Aside $ApothemHome }
+                        if (-not (Test-Entry $ApothemHome)) { Move-Entry $AsideItem $ApothemHome }
                     }
-                    $SwBack = (Test-Entry $ApothemHome) -and -not (Test-Entry $Aside)
+                    $SwBack = (Test-Entry $ApothemHome) -and -not ($AsideItem -and (Test-Entry $AsideItem))
                 } catch { $SwBack = $false }
+                # The folder it was moved into is then empty, and goes.
+                if ($SwBack -and $Aside) {
+                    try { [System.IO.Directory]::Delete($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Aside), $false) } catch { $null = $_ }
+                }
                 if ($SwBack -and $SwUntouched) {
                     $SwMessage = "$SwReason; nothing was changed"
                 } elseif ($SwBack) {
                     $SwMessage = "$SwReason; the earlier folder is back in place and unchanged"
                 } else {
-                    $SwMessage = "$SwReason, and moving the earlier folder back also failed: it is at $Aside"
+                    $SwMessage = "$SwReason, and moving the earlier folder back also failed: it is at $AsideItem"
                 }
                 # See the keep branch below for why an interrupt prints first.
                 if (-not $SwFailed) { Write-Host "  x $SwMessage" }
                 Write-Fail $SwMessage
             }
         }
-        Write-Warn "The earlier contents of $ApothemHome were moved, unchanged, to $Aside"
+        Write-Warn "The earlier contents of $ApothemHome were moved, unchanged, to $AsideItem"
         return
     }
-    # keep and clone: name the folder the clone's tree goes to and list the
-    # entries to carry over before anything moves.
-    $SwTreeAside = $null
-    if ($Mode -eq 'clone') { $SwTreeAside = Get-AsidePath }
+    # keep and clone: list the entries to carry over before anything moves.
     $SourceNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
     foreach ($Name in (Get-SourceEntry $ApothemHome)) { $null = $SourceNames.Add($Name) }
     foreach ($Entry in @(Get-ChildItem -LiteralPath $New -Force)) {
         if ($EngineDataNames -cnotcontains $Entry.Name) { $null = $SourceNames.Add($Entry.Name) }
     }
     $SwKeep = @(@(Get-ChildItem -LiteralPath $ApothemHome -Force) | Where-Object { -not $SourceNames.Contains($_.Name) } | ForEach-Object { $_.Name })
+    # The names about to move, sorted by their bytes, go into the staging
+    # folder first ($CarryList), so a forced kill during the moves leaves a
+    # record of what came from APOTHEM_HOME.
+    $SwCarry = Get-SortedName $SwKeep
+    try {
+        $SwCarryPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Join-Path $SwStage $CarryList))
+        [System.IO.File]::WriteAllText($SwCarryPath, (@($SwCarry | ForEach-Object { "$_`n" }) -join ''), (New-Object System.Text.UTF8Encoding $false))
+    } catch {
+        Write-Fail "Could not make room beside $ApothemHome; nothing was changed"
+    }
     $SwParent = Split-Path -Parent $ApothemHome
     if (-not $SwParent) { $SwParent = (Get-Location).Path }
-    $SwOld = Join-Path $SwParent (".apothem-old." + [System.Guid]::NewGuid().ToString('N'))
+    $SwOld = Join-Path $SwParent (".apothem-old.$SwLeaf." + [System.Guid]::NewGuid().ToString('N'))
     try { New-Item -ItemType Directory -Path $SwOld | Out-Null }
     catch { Write-Fail "Could not make room beside $ApothemHome; nothing was changed" }
     $SwOldHome = Join-Path $SwOld 'home'
@@ -929,10 +1146,21 @@ function Invoke-SwapIn {
             Write-Fail $SwMessage
         }
     }
-    if ($SwTreeAside) {
-        $SwTreeAt = $SwTreeAside
-        try { Move-Entry $SwOldHome $SwTreeAside } catch { $SwTreeAt = $SwOldHome }
-        if ($SwTreeAt -eq $SwTreeAside) {
+    if ($Mode -eq 'clone') {
+        # The clone's tree (history and source, the carried entries aside) is
+        # kept in a new <APOTHEM_HOME>.before-apothem-<time> folder, not
+        # deleted; when no such folder can be made, it stays where it is.
+        $SwTreeAt = $SwOldHome
+        $SwClaim = New-AsideFolder $SwStage
+        if ($SwClaim) {
+            try {
+                Move-Entry $SwOldHome (Join-Path $SwClaim $SwLeaf)
+                $SwTreeAt = Join-Path $SwClaim $SwLeaf
+            } catch {
+                try { [System.IO.Directory]::Delete($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SwClaim), $false) } catch { $null = $_ }
+            }
+        }
+        if ($SwTreeAt -ne $SwOldHome) {
             try { [System.IO.Directory]::Delete($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SwOld), $false) } catch { $null = $_ }
         }
         Write-Warn "The earlier clone's tree is kept at $SwTreeAt; delete it once you no longer need it."
@@ -942,7 +1170,518 @@ function Invoke-SwapIn {
     catch { Write-Warn "Could not remove the earlier source at $SwOld; delete it by hand" }
 }
 
+# Get-LockHome - the path the install lock is named after: APOTHEM_HOME, or,
+# when APOTHEM_HOME is a symbolic link or a junction to a folder, that
+# folder's own path with every link on the way followed, as install.sh's
+# take_lock gets it with cd -P. A run through the link, a run through the
+# folder's own path, and a Git Bash run on either then take the same lock.
+# The messages still name APOTHEM_HOME as given.
+function Get-LockHome {
+    $LhKinds = @('SymbolicLink', 'Junction')
+    $LhItem = Get-Item -LiteralPath $ApothemHome -Force -ErrorAction SilentlyContinue
+    if (-not $LhItem -or $LhKinds -notcontains [string]$LhItem.LinkType) { return $ApothemHome }
+    $LhPath = $ApothemHome
+    # Each turn follows the first link on the path, from its root; 64 turns
+    # stop a loop of links.
+    for ($LhTurn = 0; $LhTurn -lt 64; $LhTurn++) {
+        $LhRoot = [System.IO.Path]::GetPathRoot($LhPath)
+        $LhParts = @($LhPath.Substring($LhRoot.Length).Split([char[]]@([char]'\', [char]'/'), [System.StringSplitOptions]::RemoveEmptyEntries))
+        $LhAt = $LhRoot
+        $LhFollowed = $false
+        for ($LhIndex = 0; $LhIndex -lt $LhParts.Count; $LhIndex++) {
+            $LhNext = [System.IO.Path]::Combine($LhAt, $LhParts[$LhIndex])
+            $LhStep = Get-Item -LiteralPath $LhNext -Force -ErrorAction SilentlyContinue
+            if (-not $LhStep) { return $ApothemHome }
+            if ($LhKinds -contains [string]$LhStep.LinkType) {
+                $LhTarget = [string]@($LhStep.Target)[0]
+                if (-not $LhTarget) { return $ApothemHome }
+                if ($LhTarget.StartsWith('\??\', [System.StringComparison]::Ordinal)) { $LhTarget = $LhTarget.Substring(4) }
+                # A relative target is read from the folder the link is in.
+                $LhJoin = [string[]](@($LhAt, $LhTarget) + @($LhParts | Select-Object -Skip ($LhIndex + 1)))
+                $LhPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($LhJoin))
+                $LhFollowed = $true
+                break
+            }
+            $LhAt = $LhNext
+        }
+        if (-not $LhFollowed) {
+            if (Test-Path -LiteralPath $LhPath -PathType Container) { return $LhPath.TrimEnd('\', '/') }
+            return $ApothemHome
+        }
+    }
+    return $ApothemHome
+}
+
+# Resolve-FolderLink PATH - the folder PATH leads to, with every symbolic
+# link and junction on the way followed (as cd -P does in the sh scripts);
+# for a path that does not exist yet, the part that exists is followed and
+# the rest kept. Get-LockHome follows links the same way.
+function Resolve-FolderLink {
+    param([string]$Path)
+    $RlKinds = @('SymbolicLink', 'Junction')
+    $RlPath = $Path
+    for ($RlTurn = 0; $RlTurn -lt 64; $RlTurn++) {
+        $RlRoot = [System.IO.Path]::GetPathRoot($RlPath)
+        $RlParts = @($RlPath.Substring($RlRoot.Length).Split([char[]]@([char]'\', [char]'/'), [System.StringSplitOptions]::RemoveEmptyEntries))
+        $RlAt = $RlRoot
+        $RlFollowed = $false
+        for ($RlIndex = 0; $RlIndex -lt $RlParts.Count; $RlIndex++) {
+            $RlNext = [System.IO.Path]::Combine($RlAt, $RlParts[$RlIndex])
+            $RlStep = Get-Item -LiteralPath $RlNext -Force -ErrorAction SilentlyContinue
+            if (-not $RlStep) { return $RlPath }
+            if ($RlKinds -contains [string]$RlStep.LinkType) {
+                $RlTarget = [string]@($RlStep.Target)[0]
+                if (-not $RlTarget) { return $RlPath }
+                if ($RlTarget.StartsWith('\??\', [System.StringComparison]::Ordinal)) { $RlTarget = $RlTarget.Substring(4) }
+                $RlJoin = [string[]](@($RlAt, $RlTarget) + @($RlParts | Select-Object -Skip ($RlIndex + 1)))
+                $RlPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($RlJoin))
+                $RlFollowed = $true
+                break
+            }
+            $RlAt = $RlNext
+        }
+        if (-not $RlFollowed) { return $RlPath }
+    }
+    return $Path
+}
+
+# Get-FolderWriter PATH KIND - who other than you can change PATH, as
+# Names: on Windows, Everyone, Authenticated Users, Users and INTERACTIVE
+# when an allow entry gives them write access (Deny entries are not read, so
+# a warning can be extra but is never missed), and Inherited, true when each
+# such entry comes from the folder above; elsewhere, 'all users' or 'the
+# group G' from the mode bits ls prints and the group stat names (a group
+# named after you is your own). KIND: 'home' (PATH and what it holds),
+# 'parent' (others can rename or remove what PATH holds; a sticky folder
+# stops that) or 'new' (a new folder made in PATH; outside Windows, by the
+# umask, given as Umask, and the group of PATH when PATH is setgid or the
+# system is macOS or a BSD). Windows only: 'link' (others can delete the
+# link PATH, whose own entries are read) and 'make' (others can make
+# folders in PATH). A failed read names no one.
+function Get-FolderWriter {
+    # Outside Windows, where this calls ls, PowerShell has no ls alias.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', '')]
+    param([string]$Path, [string]$Kind)
+    $FwNames = @()
+    $FwInherited = $true
+    $FwMask = ''
+    try {
+        if ((Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false) {
+            $FwSids = [ordered]@{ 'S-1-1-0' = 'Everyone'; 'S-1-5-11' = 'Authenticated Users'; 'S-1-5-32-545' = 'Users'; 'S-1-5-4' = 'INTERACTIVE' }
+            # Parent: delete children, change permissions, take ownership,
+            # generic all. Home and new: also create files or folders,
+            # delete, generic write. Link: delete, change permissions, take
+            # ownership, generic all. Make: create folders, generic write
+            # or all.
+            $FwRights = switch ($Kind) { 'parent' { 0x100C0040 } 'link' { 0x100D0000 } 'make' { 0x50000004 } default { 0x500D0046 } }
+            # Read as Get-Acl does, without Get-Acl: Windows PowerShell
+            # cannot load it when it inherits PowerShell 7's module path.
+            $FwAcl = [System.Security.AccessControl.DirectorySecurity]::new($Path, [System.Security.AccessControl.AccessControlSections]::Access)
+            foreach ($FwRule in $FwAcl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+                $FwName = $FwSids[[string]$FwRule.IdentityReference.Value]
+                if (-not $FwName -or $FwRule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
+                if (([int]$FwRule.FileSystemRights -band $FwRights) -eq 0) { continue }
+                $FwInheritOnly = ($FwRule.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0
+                $FwToFolders = ($FwRule.InheritanceFlags -band [System.Security.AccessControl.InheritanceFlags]::ContainerInherit) -ne 0
+                if (($Kind -notmatch '^(home|new)$' -and $FwInheritOnly) -or ($Kind -eq 'new' -and -not $FwToFolders)) { continue }
+                $FwNames += $FwName
+                if (-not $FwRule.IsInherited) { $FwInherited = $false }
+            }
+            $FwNames = @($FwSids.Values | Where-Object { $FwNames -contains $_ })
+        } else {
+            $FwMe = [string](& id -un)
+            $FwField = @('', '', '', '')
+            $FwOs = ''
+            if ($Kind -ne 'new' -or (Test-Path -LiteralPath $Path -PathType Container)) {
+                $FwLine = @(& ls -ldL $Path)
+                if ($LASTEXITCODE -eq 0 -and $FwLine.Count) { $FwField = @(-split [string]$FwLine[0]) + $FwField }
+                # ls splits a group name that holds a space; stat does not.
+                try {
+                    $FwOs = [string](& uname -s)
+                    $FwOut = @(if ($FwOs -match 'Darwin|BSD') { & stat -Lf '%Sg' $Path } else { & stat -Lc '%G' $Path })
+                    if ($LASTEXITCODE -eq 0 -and $FwOut.Count) { $FwField[3] = [string]$FwOut[0] }
+                } catch {
+                    $FwOs = ''
+                }
+            }
+            $FwMode = $FwField[0]
+            $FwGroup = $FwField[3]
+            if ($Kind -eq 'new') {
+                if (-not $FwGroup -or -not ($FwOs -match 'Darwin|BSD' -or $FwMode -cmatch '^.{6}[sS]')) { $FwGroup = [string](& id -gn) }
+                $FwMask = [string](& sh -c umask)
+                $FwMode = 'd----' + $(if ($FwMask -match '[0145].$') { 'w' } else { '-' }) + '--' + $(if ($FwMask -match '[0145]$') { 'w' } else { '-' }) + '-'
+            }
+            if ($Kind -eq 'parent' -and $FwMode -cmatch '^.{9}[tT]') { $FwMode = '' }
+            if ($FwMode -cmatch '^.{8}w') { $FwNames = @('all users') }
+            elseif ($FwMode -cmatch '^.{5}w' -and $FwGroup -cne $FwMe) { $FwNames = @("the group $FwGroup") }
+        }
+    } catch {
+        $FwNames = @()
+    }
+    return @{ Names = ($FwNames -join ', '); Inherited = $FwInherited; Umask = $FwMask }
+}
+
+# Write-HomeAccessWarning - warn, never stop, when users other than you can
+# change the code a run starts as you: they can write to APOTHEM_HOME (a
+# new one: by what it would inherit, or the umask), or rename what the
+# folder holding it holds, or the folder holding APOTHEM_HOME's link (as
+# install.sh's warn_home_access). The messages name the folder a link leads
+# to, as a junction's entries cover only the junction itself.
+function Write-HomeAccessWarning {
+    try {
+        $HaWindows = (Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false
+        $HaRoot = ", access that folders made at the root of a drive inherit from the drive's default permissions"
+        $HaParent = {
+            param([string]$Folder, [string]$Child, [bool]$Link)
+            if (-not $Folder -or -not (Test-Path -LiteralPath $Folder -PathType Container)) { return }
+            $HpWho = (Get-FolderWriter $Folder 'parent').Names
+            # A link others may delete, in a folder they may make folders
+            # in, can be swapped for one of theirs as well.
+            if (-not $HpWho -and $Link -and $HaWindows -and (Get-FolderWriter $Folder 'make').Names) { $HpWho = (Get-FolderWriter $Child 'link').Names }
+            if (-not $HpWho) { return }
+            if ($HaWindows) {
+                Write-Warn "Other users can replace ${Child}: $HpWho can delete or rename what is in $Folder, the folder that holds it. To fix it, remove $HpWho from that folder's Security tab, or move APOTHEM_HOME into your user folder."
+            } else {
+                Write-Warn "Other users can replace ${Child}: $HpWho can write to $Folder, the folder that holds it. To fix it, run chmod go-w `"$Folder`", or move APOTHEM_HOME."
+            }
+        }
+        $HaItem = Get-Item -LiteralPath $ApothemHome -Force -ErrorAction SilentlyContinue
+        if ($HaItem -and @('SymbolicLink', 'Junction') -contains [string]$HaItem.LinkType) {
+            & $HaParent (Split-Path -Parent $ApothemHome) $ApothemHome $true
+        }
+        $HaDir = Resolve-FolderLink $ApothemHome
+        $HaUp = Split-Path -Parent $HaDir
+        if (Test-Path -LiteralPath $HaDir -PathType Container) {
+            $HaWho = Get-FolderWriter $HaDir 'home'
+            if ($HaWho.Names -and $HaWindows) {
+                $HaWhy = ''
+                if ($HaWho.Inherited -and $HaUp -match '^[A-Za-z]:\\$') { $HaWhy = $HaRoot }
+                Write-Warn "Other users can change the code Apothem runs as you: $($HaWho.Names) can write to $HaDir$HaWhy. To fix it, turn off inheritance for that folder and remove $($HaWho.Names) (Properties > Security > Advanced), or move APOTHEM_HOME into your user folder."
+            } elseif ($HaWho.Names) {
+                Write-Warn "Other users can change the code Apothem runs as you: $($HaWho.Names) can write to $HaDir. To fix it, run chmod go-w `"$HaDir`", or move APOTHEM_HOME."
+            }
+        } else {
+            # Windows reads what the nearest folder that exists passes on.
+            $HaFrom = $HaUp
+            while ($HaWindows -and $HaFrom -and -not (Test-Path -LiteralPath $HaFrom -PathType Container)) { $HaFrom = Split-Path -Parent $HaFrom }
+            $HaWho = Get-FolderWriter $HaFrom 'new'
+            if ($HaWho.Names -and $HaWindows) {
+                $HaWhy = ", from the permissions of $HaFrom"
+                if ($HaFrom -match '^[A-Za-z]:\\$') { $HaWhy = $HaRoot }
+                Write-Warn "A new $HaDir would let $($HaWho.Names) change the code Apothem runs as you$HaWhy. To fix it, set APOTHEM_HOME to a folder inside your user folder."
+            } elseif ($HaWho.Names) {
+                Write-Warn "A new $HaDir would let $($HaWho.Names) change the code Apothem runs as you (umask $($HaWho.Umask)). To fix it, run umask 022, then run the installer again."
+            }
+        }
+        & $HaParent $HaUp $HaDir
+    } catch {
+        return
+    }
+}
+
+# Lock-ApothemHome - take the install lock: an install, update or uninstall
+# holds <APOTHEM_HOME>.lock for its whole run, so two runs never change
+# APOTHEM_HOME, or the folders beside it, at the same time (mirrors
+# install.sh's take_lock). The lock is a file opened with no sharing, so a
+# second open fails while this run holds it; Windows closes it when the run
+# ends, a forced kill included, which frees the lock and deletes the file.
+# install.sh, update.sh and uninstall.sh use a folder of the same name that
+# holds the process ID of the run that made it. That ID cannot be checked
+# from here (under Git Bash it is not a Windows process ID), so such a
+# folder is reported, with how to remove it, and never taken over. When
+# APOTHEM_HOME is a link, the lock sits beside the folder it leads to (see
+# Get-LockHome).
+$script:HomeLock = $null
+$HomeLockPath = "$(Get-LockHome).lock"
+function Lock-ApothemHome {
+    $LkParent = Split-Path -Parent $HomeLockPath
+    if (-not $LkParent) { return }
+    if (-not (Test-Path -LiteralPath $LkParent -PathType Container)) {
+        # Nothing is at APOTHEM_HOME or beside it yet. A dry run writes
+        # nothing, so it goes on without the lock; a real run makes the
+        # parent folder it would make anyway.
+        if ($DryRun) { return }
+        try { New-Item -ItemType Directory -Force -Path $LkParent | Out-Null }
+        catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
+        if (-not (Test-Path -LiteralPath $LkParent -PathType Container)) {
+            Write-Fail "Could not create the parent directory of $ApothemHome"
+        }
+    }
+    $LkItem = Get-Item -LiteralPath $HomeLockPath -Force -ErrorAction SilentlyContinue
+    if ($LkItem -and ($LkItem.LinkType -or $LkItem.PSIsContainer)) {
+        $LkPid = ''
+        if ($LkItem.PSIsContainer -and -not $LkItem.LinkType) {
+            try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+            if ($LkPid -notmatch '^[0-9]+$') {
+                # A POSIX run that has just made the lock folder writes
+                # its process ID a moment later; look again before
+                # calling the lock stale.
+                Start-Sleep -Seconds 1
+                try { $LkPid = ([System.IO.File]::ReadAllText((Join-Path $LkItem.FullName 'pid'))).Trim() } catch { $LkPid = '' }
+            }
+        }
+        if ($LkPid -notmatch '^[0-9]+$') {
+            Write-Fail "$HomeLockPath exists but names no running process; an Apothem run may have left it when it was stopped. Check that no Apothem install, update or uninstall is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+    }
+    try {
+        $script:HomeLock = New-Object System.IO.FileStream -ArgumentList $HomeLockPath, ([System.IO.FileMode]::OpenOrCreate), ([System.IO.FileAccess]::ReadWrite), ([System.IO.FileShare]::None), 4096, ([System.IO.FileOptions]::DeleteOnClose)
+    } catch {
+        # A sharing violation means another run holds the file; a folder
+        # that cannot be written to is a failure of its own.
+        $LkError = $_.Exception.GetBaseException()
+        if ($LkError -is [System.IO.IOException] -and $LkError -isnot [System.IO.DirectoryNotFoundException] -and $LkError -isnot [System.IO.FileNotFoundException] -and $LkError -isnot [System.IO.PathTooLongException]) {
+            Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+        }
+        # A folder or link made there since the look above (a Git Bash run
+        # taking its lock) makes the open fail as a folder does.
+        $LkItem = Get-Item -LiteralPath $HomeLockPath -Force -ErrorAction SilentlyContinue
+        if ($LkItem -and ($LkItem.LinkType -or $LkItem.PSIsContainer)) {
+            Write-Fail "Another Apothem install, update or uninstall is running on $ApothemHome. Wait for it to finish, then re-run. If none is running, remove $HomeLockPath, then re-run."
+        }
+        Write-Fail "Could not create the lock $HomeLockPath. Check that you can write to $LkParent, then re-run."
+    }
+}
+
+# Unlock-ApothemHome - let the install lock go: closing the file frees it
+# and deletes it.
+function Unlock-ApothemHome {
+    if ($script:HomeLock) {
+        $script:HomeLock.Dispose()
+        $script:HomeLock = $null
+    }
+}
+
+# Test-RealFolder ITEM - $true when ITEM (from Get-Item or Get-ChildItem) is
+# a folder, not a symbolic link or junction to one; Test-RealFolderPath PATH
+# says the same of what is at PATH.
+function Test-RealFolder {
+    param($Item)
+    return [bool]($Item -and $Item.PSIsContainer -and -not $Item.LinkType)
+}
+function Test-RealFolderPath {
+    param([string]$Path)
+    return (Test-RealFolder (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue))
+}
+
+# Get-SortedName NAMES - NAMES sorted by their UTF-8 bytes, the order
+# install.sh gets from LC_ALL=C sort. An ordinal sort of .NET strings
+# compares UTF-16 code units instead, which puts a character above U+FFFF
+# (an emoji) before one from U+E000 to U+FFFF.
+function Get-SortedName {
+    param([string[]]$Names)
+    $SnNames = [string[]]@($Names | Where-Object { $null -ne $_ })
+    $SnKeys = [string[]]@($SnNames | ForEach-Object { [System.BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes($_)) })
+    [Array]::Sort($SnKeys, $SnNames, [System.StringComparer]::Ordinal)
+    return , $SnNames
+}
+
+# Test-SameLeaf NAME LEAF - $true when NAME, the home part of a folder's
+# name, names APOTHEM_HOME's own folder LEAF: the same text, or, where file
+# names ignore case (Windows and macOS: everywhere but Linux), the same
+# text but for ASCII case (mirrors install.sh's same_leaf).
+function Test-SameLeaf {
+    param([string]$Name, [string]$Leaf)
+    if ([string]::Equals($Name, $Leaf, [System.StringComparison]::Ordinal)) { return $true }
+    if ((Get-Variable -Name IsLinux -ValueOnly -ErrorAction SilentlyContinue) -eq $true) { return $false }
+    return [string]::Equals((ConvertTo-AsciiLower $Name), (ConvertTo-AsciiLower $Leaf), [System.StringComparison]::Ordinal)
+}
+
+# ConvertTo-AsciiLower TEXT - TEXT with A to Z made a to z, and nothing else
+# changed.
+function ConvertTo-AsciiLower {
+    param([string]$Text)
+    $AlChars = $Text.ToCharArray()
+    for ($AlAt = 0; $AlAt -lt $AlChars.Length; $AlAt++) {
+        $AlCode = [int]$AlChars[$AlAt]
+        if ($AlCode -ge 65 -and $AlCode -le 90) { $AlChars[$AlAt] = [char]($AlCode + 32) }
+    }
+    return (-join $AlChars)
+}
+
+# Get-LeftoverEntry DIR - the names in the leftover folder DIR, sorted
+# by their bytes, or $null when DIR cannot be listed. An empty folder named
+# aside.<32 hex digits> is left out: it is New-AsideFolder's temporary
+# folder, left by a kill between its creation and its rename.
+function Get-LeftoverEntry {
+    param([string]$Dir)
+    try {
+        $LeItems = @(Get-ChildItem -LiteralPath $Dir -Force -ErrorAction Stop)
+    } catch {
+        return $null
+    }
+    $LeNames = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LeItem in $LeItems) {
+        if ($LeItem.Name -cmatch '^aside\.[0-9a-f]{32}\z' -and (Test-RealFolder $LeItem) -and @(Get-ChildItem -LiteralPath $LeItem.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0) { continue }
+        $LeNames.Add($LeItem.Name)
+    }
+    return , (Get-SortedName $LeNames.ToArray())
+}
+
+# Get-CarriedEntry DIR TREE - the entries a swap moved from APOTHEM_HOME
+# into TREE, the new tree in the staging folder DIR. The run that made DIR
+# listed them in DIR's $CarryList before its first move; those still in
+# TREE are named, in the list's order. With no list (a folder an earlier
+# installer made, or a kill before the list was written), an archive's tree
+# names what its .apothem-source-entries manifest does not list, and any
+# other tree names the engine's data folders it holds, sorted by their
+# bytes.
+function Get-CarriedEntry {
+    param([string]$Dir, [string]$Tree)
+    $CeListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
+    if ($CeListItem -and -not $CeListItem.PSIsContainer -and -not $CeListItem.LinkType) {
+        try { $CeLines = @([System.IO.File]::ReadAllText($CeListItem.FullName).Split("`n")) } catch { $CeLines = @() }
+        return , @($CeLines | Where-Object { $_ -and (Test-Entry (Join-Path $Tree $_)) })
+    }
+    $CeManifest = Join-Path $Tree $SourceManifest
+    if ((Split-Path -Leaf $Dir).StartsWith('.apothem-extract.', [System.StringComparison]::Ordinal) -and (Test-Path -LiteralPath $CeManifest -PathType Leaf)) {
+        $CeListed = @(Get-Content -LiteralPath $CeManifest | ForEach-Object { ([string]$_).TrimEnd("`r") })
+        $CeNames = [string[]]@(Get-ChildItem -LiteralPath $Tree -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.Name } | Where-Object { $CeListed -cnotcontains $_ })
+    } else {
+        $CeNames = [string[]]@($EngineDataNames | Where-Object { Test-Entry (Join-Path $Tree $_) })
+    }
+    return , (Get-SortedName $CeNames)
+}
+
+# Get-LeftoverLine DIR OLDNAME - one line saying what the leftover folder DIR
+# holds (see Assert-NoLeftover; mirrors install.sh's leftover_line). Names
+# are sorted by their bytes and joined with ", ". OLDNAME marks a folder
+# whose name does not say which APOTHEM_HOME it was made for, whose
+# entries came from that home, not necessarily from this one. A clone's
+# tree in DIR\home while APOTHEM_HOME is in place is one a clone swap was
+# keeping (APOTHEM_HOME being there is taken to mean that the new install
+# had moved in). A DIR\home that holds no Apothem install while
+# APOTHEM_HOME is in place is a folder that appeared there, which the run
+# left alone.
+function Get-LeftoverLine {
+    param([string]$Dir, [bool]$OldName)
+    $LlNames = Get-LeftoverEntry $Dir
+    if ($null -eq $LlNames) {
+        $LlText = "${Dir}: could not be read (check its owner and permissions)"
+    } elseif ($LlNames.Count -eq 0) {
+        $LlText = "${Dir}: empty"
+    } else {
+        $LlText = "${Dir}: files from that run ($($LlNames -join ', '))"
+        if ((Split-Path -Leaf $Dir).StartsWith('.apothem-old.', [System.StringComparison]::Ordinal)) {
+            if ($LlNames.Count -eq 1 -and $LlNames[0] -ceq 'home' -and (Test-RealFolderPath (Join-Path $Dir 'home'))) {
+                if ((Test-Entry (Join-Path (Join-Path $Dir 'home') '.git')) -and (Test-Entry $ApothemHome)) {
+                    $LlText = "${Dir}: the earlier clone's tree, which that run was keeping, in $(Join-Path $Dir 'home'): move it to a folder of your own if you still need it"
+                } elseif ((Test-Entry $ApothemHome) -and -not (Test-Entry (Join-Path (Join-Path (Join-Path $Dir 'home') 'src') 'apothem')) -and -not (Test-Entry (Join-Path (Join-Path $Dir 'home') $SourceManifest)) -and @(Get-ChildItem -LiteralPath (Join-Path $Dir 'home') -Force -ErrorAction SilentlyContinue).Count -gt 0) {
+                    $LlText = "${Dir}: a folder that holds no Apothem install, in $(Join-Path $Dir 'home'): check what it holds before you remove it"
+                } else {
+                    $LlText = "${Dir}: the earlier install that was being replaced, in $(Join-Path $Dir 'home')"
+                }
+            }
+        } else {
+            $LlListItem = Get-Item -LiteralPath (Join-Path $Dir $CarryList) -Force -ErrorAction SilentlyContinue
+            $LlListIsFile = [bool]($LlListItem -and -not $LlListItem.PSIsContainer -and -not $LlListItem.LinkType)
+            $LlTreeNames = @($LlNames | Where-Object { -not ($LlListIsFile -and $_ -ceq $CarryList) })
+            if ($LlTreeNames.Count -eq 1 -and (Test-RealFolderPath (Join-Path $Dir $LlTreeNames[0]))) {
+                $LlTree = Join-Path $Dir $LlTreeNames[0]
+                $LlText = "${Dir}: the new source that was being installed, in $LlTree"
+                $LlCarried = Get-CarriedEntry $Dir $LlTree
+                if ($LlCarried.Count -gt 0) {
+                    $LlFrom = if ($OldName) { 'the Apothem home it was made for' } else { $ApothemHome }
+                    $LlText += ", with these entries moved into it from ${LlFrom}: $($LlCarried -join ', ')"
+                }
+            }
+        }
+    }
+    if ($OldName) {
+        $LlText += " (made by an earlier installer that did not record which home it was for, so it may belong to any Apothem home in $(Split-Path -Parent $ApothemHome): check what it holds before you move or remove it)"
+    }
+    return $LlText
+}
+
+# Assert-NoLeftover - stop, before anything is fetched or swapped, when a run
+# that was stopped part-way left folders beside APOTHEM_HOME (mirrors
+# install.sh's check_leftovers): .apothem-extract.<name>.* and
+# .apothem-clone.<name>.* (a new source being installed, perhaps with
+# entries of APOTHEM_HOME already moved into it) or .apothem-old.<name>.*
+# (the earlier install being replaced), <name> being APOTHEM_HOME's own
+# folder name. Every other way out of a run puts things back and removes
+# them, so they are there only after a forced kill or a power loss. Only
+# real folders count, only this APOTHEM_HOME's (the install lock keeps any
+# other run on it from using them now; another APOTHEM_HOME's run may be
+# using its own), and folders an earlier installer made, whose names hold
+# no <name>, which are reported with a note that they may belong to any
+# Apothem home in that folder. They may hold the earlier install or its
+# data, so nothing is moved or removed here: the folder lines go to the
+# error stream, one per line, this home's first, then the older ones, each
+# group sorted by the names' bytes, and the run stops with what to do.
+# When APOTHEM_HOME itself is missing, the folders it may have been moved
+# into (<APOTHEM_HOME>.before-apothem-<time>) are named too. Where file
+# names ignore case, a folder made for the same home spelled with other
+# capitals counts as this home's (see Test-SameLeaf).
+function Assert-NoLeftover {
+    $LoParent = Split-Path -Parent $ApothemHome
+    if (-not $LoParent -or -not (Test-Path -LiteralPath $LoParent -PathType Container)) { return }
+    $LoLeaf = Split-Path -Leaf $ApothemHome
+    $LoAside = '^(.*)\.before-apothem-[0-9]{14}(-[0-9]+)?\z'
+    $LoMine = New-Object 'System.Collections.Generic.List[string]'
+    $LoOld = New-Object 'System.Collections.Generic.List[string]'
+    $LoAsides = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LoItem in @(Get-ChildItem -LiteralPath $LoParent -Force -ErrorAction SilentlyContinue)) {
+        if (-not (Test-RealFolder $LoItem)) { continue }
+        $LoName = $LoItem.Name
+        foreach ($LoPrefix in @('.apothem-old.', '.apothem-extract.', '.apothem-clone.')) {
+            if (-not $LoName.StartsWith($LoPrefix, [System.StringComparison]::Ordinal)) { continue }
+            # The suffix after the last dot holds no dot, so the part before
+            # it is the home's folder name, dots and all.
+            $LoRest = $LoName.Substring($LoPrefix.Length)
+            $LoDot = $LoRest.LastIndexOf('.')
+            if ($LoDot -lt 0) {
+                $LoOld.Add($LoName)
+            } elseif ($LoDot -lt $LoRest.Length - 1 -and (Test-SameLeaf $LoRest.Substring(0, $LoDot) $LoLeaf)) {
+                $LoMine.Add($LoName)
+            }
+        }
+        if ($LoName -cmatch $LoAside) {
+            if (Test-SameLeaf $Matches[1] $LoLeaf) { $LoAsides.Add($LoName) }
+        }
+    }
+    if ($LoMine.Count + $LoOld.Count -eq 0) { return }
+    $LoLines = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($LoGroup in @(@($LoMine.ToArray(), $false), @($LoOld.ToArray(), $true))) {
+        $LoNames = Get-SortedName ([string[]]$LoGroup[0])
+        foreach ($LoName in $LoNames) { $LoLines.Add((Get-LeftoverLine (Join-Path $LoParent $LoName) $LoGroup[1])) }
+    }
+    if (-not (Test-Entry $ApothemHome)) {
+        $LoAsideNames = Get-SortedName $LoAsides.ToArray()
+        foreach ($LoName in $LoAsideNames) {
+            $LoAt = Join-Path $LoParent $LoName
+            $LoIn = Join-Path $LoAt $LoLeaf
+            if (-not (Test-RealFolderPath $LoIn)) { $LoIn = $LoAt }
+            $LoLines.Add("${LoAt}: the earlier contents of $ApothemHome, moved aside, in $LoIn")
+        }
+    }
+    [Console]::Error.WriteLine("  x An earlier run was stopped part-way and left these folders beside ${ApothemHome}:")
+    foreach ($LoLine in $LoLines) { [Console]::Error.WriteLine("    $LoLine") }
+    Write-Fail "Nothing was changed. If $ApothemHome is missing, move the earlier install back to it first. Then move every entry listed above as moved into a new source back into the home it came from, remove the folders listed above, and re-run."
+}
+
 Write-Bold "Apothem installer"
+
+# One install, update or uninstall at a time on APOTHEM_HOME (see
+# Lock-ApothemHome); the finally block at the end lets the lock go.
+Lock-ApothemHome
+try {
+# The git variables described at the top are cleared or set for the run:
+# each one set now is kept in $SavedGitEnv, with GIT_NO_REPLACE_OBJECTS,
+# GIT_NO_LAZY_FETCH and GIT_ALLOW_PROTOCOL as they were, and the finally
+# block at the end puts them all back.
+$SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS; GIT_NO_LAZY_FETCH = $env:GIT_NO_LAZY_FETCH; GIT_ALLOW_PROTOCOL = $env:GIT_ALLOW_PROTOCOL }
+try {
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM')) {
+    if (Test-Path -LiteralPath "Env:$GitVar") {
+        $SavedGitEnv[$GitVar] = [string](Get-Item -LiteralPath "Env:$GitVar").Value
+        Remove-Item -LiteralPath "Env:$GitVar"
+    }
+}
+$env:GIT_NO_REPLACE_OBJECTS = '1'
+$env:GIT_NO_LAZY_FETCH = '1'
+$env:GIT_ALLOW_PROTOCOL = 'file:git:http:https:ssh'
 
 # Prerequisite: Python >= 3.10 ------------------------------------------------
 #
@@ -1006,6 +1745,11 @@ if ($env:APOTHEM_SOURCE) {
     $LocalTree = Get-OwnCheckout
     if ($LocalTree) { $LocalKind = 'checkout' }
 }
+
+# A fetched install swaps folders beside APOTHEM_HOME, so it stops first on
+# any that a run stopped part-way left there (see Assert-NoLeftover). A local
+# tree is run where it is and leaves APOTHEM_HOME alone.
+if (-not $LocalKind) { Assert-NoLeftover }
 
 # Every Python start from here to the prerequisite check gets the caller's
 # PYTHONPATH without its empty and relative entries (Get-SafePythonPath); the
@@ -1140,29 +1884,494 @@ if (-not $Source -and $VerifyMode -eq 'checksum') {
     Write-Warn "$ChecksumCaveat Proceeding because APOTHEM_ALLOW_UNVERIFIED=1."
 }
 
+# $CloneConfigAllow - the only keys a clone's own git config (its config
+# and config.worktree files) may set for an update to go on: the keys
+# git clone and git init write on any git 2.x and system, the branch
+# keys checkout and editors write, the user's name and email, and the
+# keys git maintenance and git pull's own advice write. None of them
+# names a program, a file or folder git reads settings, hooks,
+# attributes or objects from, a URL rewrite, or another work tree. No
+# partial-clone key is on it: an installer clone is a full clone, and git
+# fetches an object a partial clone lacks through a fetch the clone's
+# settings shape (the run also sets GIT_NO_LAZY_FETCH). The value of
+# branch.*.remote and branch.*.pushremote must be origin
+# (Assert-CloneConfig).
+# remote.origin.url names the address the fetch needs (a file in the
+# git folder's remotes or branches folder can name an address too,
+# which gives no more than that key does). An address can name a
+# transport whose helper git runs (<name>::...), so $GitNoProgram
+# allows only the file, git, http, https and ssh transports, and the
+# tag check decides what is checked out. Any other key, whatever
+# program or file it would
+# name, stops the run (Test-AllowedConfigKey; the user's global and
+# system settings are not read here and stay trusted). install.sh,
+# update.sh, install.ps1 and update.ps1 each hold this same list.
+# clone-config-allow-list begin
+$CloneConfigAllow = @(
+    'core.repositoryformatversion'
+    'core.filemode'
+    'core.bare'
+    'core.logallrefupdates'
+    'core.symlinks'
+    'core.ignorecase'
+    'core.precomposeunicode'
+    'core.longpaths'
+    'extensions.objectformat'
+    'extensions.refstorage'
+    'extensions.worktreeconfig'
+    'remote.origin.url'
+    'remote.origin.fetch'
+    'remote.origin.tagopt'
+    'branch.*.*'
+    'user.name'
+    'user.email'
+    'maintenance.auto'
+    'maintenance.strategy'
+    'pull.rebase'
+    'pull.ff'
+)
+# clone-config-allow-list end
+
+# Test-AllowedConfigKey KEY - $true when KEY, a name as git config
+# --name-only prints it, matches an entry of $CloneConfigAllow. The
+# section is the text before the first dot and the key the text after
+# the last; both compare without regard to case. The subsection, the
+# text between them, compares exactly, character by character: -ceq
+# can treat an invisible character such as a soft hyphen as absent
+# and pass "ori<soft hyphen>gin" as origin. A two-part entry matches only a
+# name with no subsection, a three-part entry only one with a
+# subsection, where * stands for any non-empty subsection or any key
+# (mirrors install.sh).
+function Test-AllowedConfigKey {
+    param([string]$Key)
+    $AkFirst = $Key.IndexOf('.')
+    $AkLast = $Key.LastIndexOf('.')
+    if ($AkFirst -lt 1 -or $AkLast -ge $Key.Length - 1) { return $false }
+    $AkSection = $Key.Substring(0, $AkFirst).ToLowerInvariant()
+    $AkName = $Key.Substring($AkLast + 1).ToLowerInvariant()
+    $AkSub = $null
+    if ($AkLast -gt $AkFirst) { $AkSub = $Key.Substring($AkFirst + 1, $AkLast - $AkFirst - 1) }
+    $AkOrdinal = [System.StringComparison]::Ordinal
+    foreach ($AkEntry in $CloneConfigAllow) {
+        $AkParts = $AkEntry.Split('.')
+        if (-not [string]::Equals($AkParts[0], $AkSection, $AkOrdinal)) { continue }
+        if ($AkParts.Count -eq 2) {
+            if ($null -eq $AkSub -and [string]::Equals($AkParts[1], $AkName, $AkOrdinal)) { return $true }
+        } elseif ($AkSub) {
+            $AkSubOk = [string]::Equals($AkParts[1], '*', $AkOrdinal) -or [string]::Equals($AkParts[1], $AkSub, $AkOrdinal)
+            $AkNameOk = [string]::Equals($AkParts[2], '*', $AkOrdinal) -or [string]::Equals($AkParts[2], $AkName, $AkOrdinal)
+            if ($AkSubOk -and $AkNameOk) { return $true }
+        }
+    }
+    return $false
+}
+
+# Assert-CloneGit DIR - stop, saying what to do, when git will not work in
+# the clone at DIR (mirrors install.sh's clone_git_ok). git refuses a
+# repository another user owns ("dubious ownership"), and its own advice, to
+# mark the folder safe, would trust whatever that user put in its git
+# config, so the message gives the safer ways out. git runs in the C
+# locale here, so its message reads the same in every language.
+function Assert-CloneGit {
+    param([string]$Dir)
+    $prior = $ErrorActionPreference
+    $priorLcAll = $env:LC_ALL
+    $ErrorActionPreference = 'Continue'
+    $env:LC_ALL = 'C'
+    try {
+        $CgOut = @(& git @GitNoProgram -C $Dir rev-parse --git-dir 2>&1)
+        $CgCode = $LASTEXITCODE
+    } finally {
+        $env:LC_ALL = $priorLcAll
+        $ErrorActionPreference = $prior
+    }
+    if ($CgCode -eq 0) { return }
+    $CgErr = @($CgOut | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { $_.ToString() })
+    if (($CgErr -join "`n").Contains('dubious ownership')) {
+        Write-Fail "$Dir is owned by someone else, so git refuses to work in it (git reports `"dubious ownership`"). Run this as the user who owns $Dir, take ownership of it, or point APOTHEM_HOME at a folder you own, then re-run."
+    }
+    $CgFirst = if ($CgErr.Count -gt 0) { $CgErr[0] } else { '' }
+    Write-Fail "git could not read the clone at $Dir ($CgFirst). Repair it or move it aside, then re-run."
+}
+
+# Get-ClonePath DIR NAME - where the clone at DIR keeps NAME, as a full
+# path, or $null when git cannot say: config and info\ sit in the git folder
+# all its worktrees share, config.worktree in the worktree's own (mirrors
+# install.sh's git_path).
+function Get-ClonePath {
+    param([string]$Dir, [string]$Name)
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $GpPath = "$(& git @GitNoProgram -C $Dir rev-parse --git-path $Name 2>$null)"
+        $GpCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    if ($GpCode -ne 0 -or -not $GpPath) { return $null }
+    if ($GpPath -match '^(/|[A-Za-z]:[\\/])') { return $GpPath }
+    return "$Dir/$GpPath"
+}
+
+# Assert-ClonePlainFile DIR FILE - stop when FILE, in the git folder of
+# the clone at DIR, exists or is a link but is not a plain file: from a
+# pipe git could read other text than the check read (mirrors install.sh's
+# need_plain_file). On Windows a link counts as not plain; elsewhere test -f
+# decides, following links as install.sh does.
+function Assert-ClonePlainFile {
+    param([string]$Dir, [string]$File)
+    $PfItem = Get-Item -LiteralPath $File -Force -ErrorAction SilentlyContinue
+    if (-not $PfItem) { return }
+    if ((Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false) {
+        $PfPlain = $PfItem -is [System.IO.FileInfo] -and ($PfItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0
+    } else {
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & test -f $File
+            $PfPlain = $LASTEXITCODE -eq 0
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+    }
+    if (-not $PfPlain) {
+        Write-Fail "$Dir's git folder holds $File, which is not a plain file, so git could read other text from it than this check reads. Make it a plain file or remove it, then re-run."
+    }
+}
+
+# Test-AttributeFilter LINES - $true when git attributes text, given as
+# lines, sets a filter (filter=) outside comments. NUL characters are
+# dropped (as install.sh's sets_filter does), and a line is a comment only
+# where # follows nothing but spaces, tabs or CR.
+function Test-AttributeFilter {
+    param([string[]]$Lines)
+    foreach ($TfLine in $Lines) {
+        $TfText = $TfLine.Replace([string][char]0, '')
+        if ($TfText -cnotmatch '^[ \t\r]*#' -and $TfText.Contains('filter=')) { return $true }
+    }
+    return $false
+}
+
+# Assert-CloneConfig DIR - stop when the clone's own git config at DIR (its
+# config file or, for a worktree, its config.worktree) has a key whose
+# name holds a line break, sets a key that is not on $CloneConfigAllow
+# (Test-AllowedConfigKey), sets extensions.refStorage to anything but
+# files or reftable (a value of another form names a folder git reads
+# refs from), or sets branch.<name>.remote or branch.<name>.pushremote to
+# anything but origin; when the clone borrows objects from another
+# repository (objects\info\alternates or http-alternates); or when its
+# info\attributes sets a filter, whose program checkout and diff run
+# (mirrors install.sh's check_clone_config). Each file is listed alone, so
+# its include lines are not followed (include is not on the list), and
+# each name and value is read up to the NUL byte that ends it:
+# PowerShell ends a line of a program's output at CR as well as LF, and
+# git keeps a CR inside a quoted subsection, so a name read line by line
+# could pass as two allowed ones. The first name in file order that fails
+# stops the run, config first, and the message names it and its file.
+# This runs before any git command that reads the clone's index or
+# objects or could run one of its programs.
+function Assert-CloneConfig {
+    param([string]$Dir)
+    foreach ($CfName in @('config', 'config.worktree')) {
+        $CfFile = Get-ClonePath $Dir $CfName
+        if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
+        Assert-ClonePlainFile $Dir $CfFile
+        if (-not (Test-Path -LiteralPath $CfFile)) { continue }
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $CfNames = (@(& git @GitNoProgram -C $Dir config --file $CfFile --null --name-only --list 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+            $CfCode = $LASTEXITCODE
+            $CfRecords = (@(& git @GitNoProgram -C $Dir config --file $CfFile --null --list 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+            $CfRecordCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        $CfKeys = $CfNames.Split([char]0)
+        $CfRecordParts = $CfRecords.Split([char]0)
+        if ($CfCode -ne 0 -or $CfRecordCode -ne 0 -or $CfKeys[-1] -ne '' -or $CfRecordParts[-1] -ne '') {
+            Write-Fail "Could not read the git config of $Dir at $CfFile."
+        }
+        $CfKeys = @($CfKeys | Select-Object -First ($CfKeys.Count - 1))
+        # git never puts a line feed in a name, so a line break in one was
+        # a CR. The name is not printed.
+        foreach ($CfKey in $CfKeys) {
+            if ($CfKey.Contains("`n") -or $CfKey.Contains("`r")) {
+                Write-Fail "$Dir's own git config has a setting whose name holds a line break, which an update in place does not accept. Remove it from $CfFile, then re-run."
+            }
+        }
+        # Each record is a name, then a line break and its value (none for
+        # a key with no value). Every value of a branch's remote and
+        # pushremote must read exactly origin: another, such as . for the
+        # clone itself, would point a fetch git starts on its own elsewhere.
+        $CfBadValue = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+        foreach ($CfRecord in @($CfRecordParts | Select-Object -First ($CfRecordParts.Count - 1))) {
+            $CfBreak = $CfRecord.IndexOf("`n")
+            $CfRecordKey = if ($CfBreak -ge 0) { $CfRecord.Substring(0, $CfBreak) } else { $CfRecord }
+            $CfFirst = $CfRecordKey.IndexOf('.')
+            $CfLast = $CfRecordKey.LastIndexOf('.')
+            if ($CfFirst -lt 1 -or $CfLast -le $CfFirst + 1) { continue }
+            if ($CfRecordKey.Substring(0, $CfFirst).ToLowerInvariant() -cne 'branch') { continue }
+            if (@('remote', 'pushremote') -cnotcontains $CfRecordKey.Substring($CfLast + 1).ToLowerInvariant()) { continue }
+            if ($CfBreak -lt 0 -or -not [string]::Equals($CfRecord.Substring($CfBreak + 1), 'origin', [System.StringComparison]::Ordinal)) {
+                [void]$CfBadValue.Add($CfRecordKey)
+            }
+        }
+        foreach ($CfKey in $CfKeys) {
+            $CfBad = (-not (Test-AllowedConfigKey $CfKey)) -or $CfBadValue.Contains($CfKey)
+            if (-not $CfBad -and $CfKey.ToLowerInvariant() -ceq 'extensions.refstorage') {
+                # Every value, each ended by a NUL byte (a value may hold a
+                # line break), must read exactly files or reftable.
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $CfValues = (@(& git @GitNoProgram -C $Dir config --file $CfFile --null --get-all extensions.refstorage 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+                    $CfValueCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $prior
+                }
+                $CfParts = @($CfValues.Split([char]0))
+                $CfBad = $CfValueCode -ne 0 -or $CfParts.Count -lt 2 -or $CfParts[-1] -ne ''
+                if (-not $CfBad) {
+                    foreach ($CfValue in $CfParts[0..($CfParts.Count - 2)]) {
+                        if ($CfValue -cne 'files' -and $CfValue -cne 'reftable') { $CfBad = $true }
+                    }
+                }
+            }
+            if ($CfBad) {
+                Write-Fail "$Dir's own git config sets $CfKey, which an update in place does not accept in a clone's own config. Remove it from $CfFile, then re-run."
+            }
+        }
+    }
+    foreach ($CfName in @('objects/info/alternates', 'objects/info/http-alternates')) {
+        $CfFile = Get-ClonePath $Dir $CfName
+        if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
+        if (Test-Path -LiteralPath $CfFile) {
+            Write-Fail "$Dir borrows objects from another repository ($CfFile names it). A release clone does not, and the update would run git in that repository under settings nothing here checks. Run 'git -C $Dir repack -a -d' to copy the objects in, remove $CfFile, then re-run."
+        }
+    }
+    $CfFile = Get-ClonePath $Dir 'info/attributes'
+    if (-not $CfFile) { Write-Fail "Could not read the git config of $Dir." }
+    Assert-ClonePlainFile $Dir $CfFile
+    if (Test-Path -LiteralPath $CfFile -PathType Leaf) {
+        # Read as git reads it, byte by byte, lines ended by LF only. Read
+        # as text, a UTF-16 byte-order mark would turn every line into
+        # other characters while git still applies them.
+        try {
+            $CfBytes = [System.IO.File]::ReadAllBytes($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CfFile))
+            $CfLines = @([System.Text.Encoding]::GetEncoding(28591).GetString($CfBytes).Split([char]10))
+        } catch {
+            $CfLines = @()
+        }
+        if (Test-AttributeFilter $CfLines) {
+            Write-Fail "$Dir's own git attributes set a filter (filter=), which the update would trust. Remove it from $CfFile, then re-run."
+        }
+    }
+}
+
+# Get-CloneRecord DIR ARGS - run git ARGS (a listing with -z) in the clone
+# at DIR and return its records, each ended by a NUL byte, in git's order;
+# a line break inside one reads as LF. A failed git command stops the run
+# (mirrors install.sh's git_z).
+function Get-CloneRecord {
+    param([string]$Dir, [string[]]$GitArgs)
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $GrText = (@(& git @GitNoProgram -C $Dir @GitArgs 2>$null | ForEach-Object { [string]$_ }) -join "`n")
+        $GrCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    $GrParts = $GrText.Split([char]0)
+    if ($GrCode -ne 0 -or $GrParts[-1] -ne '') {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
+    }
+    if ($GrParts.Count -gt 1) { return $GrParts[0..($GrParts.Count - 2)] }
+}
+
+# Assert-CloneAttributeFile DIR - stop when the work tree of the clone at DIR
+# holds a .gitattributes file (in any ASCII case) that git does not
+# track, or a tracked one that differs from HEAD or the index, is not a
+# plain file, or whose index copy sets a filter (read with git cat-file,
+# which runs none): git status, diff and checkout would apply it, and it can
+# name a filter the user's own config defines. Tracked files come
+# first, in index order, then untracked ones, ignored files and files
+# in untracked folders included. A tracked file missing from the work tree is left to the
+# check for changes (git then reads the index copy). Files are compared
+# without filters (git hash-object --no-filters), so nothing here runs
+# one (mirrors install.sh's check_clone_attributes).
+function Assert-CloneAttributeFile {
+    param([string]$Dir)
+    $CaIndex = @(Get-CloneRecord $Dir @('ls-files', '-s', '-z'))
+    $CaHead = @(Get-CloneRecord $Dir @('ls-tree', '-r', '-z', 'HEAD'))
+    $CaOther = @(Get-CloneRecord $Dir @('ls-files', '-o', '-z'))
+    $CaIsAttributes = { param([string]$Path) $Path.Substring($Path.LastIndexOf('/') + 1) -cmatch '^\.[Gg][Ii][Tt][Aa][Tt][Tt][Rr][Ii][Bb][Uu][Tt][Ee][Ss]\z' }
+    $CaChanged = { param([string]$Path) Write-Fail "$Dir has a changed .gitattributes file at $Dir/$Path. git would apply it while it reads the clone. Undo the change, then re-run." }
+    # HEAD's entries read <mode> <type> <id><TAB><path>, the index's
+    # <mode> <id> <stage><TAB><path>.
+    $CaHeadEntry = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::Ordinal)
+    foreach ($CaRecord in $CaHead) {
+        $CaTab = $CaRecord.IndexOf("`t")
+        if ($CaTab -lt 0 -or -not (& $CaIsAttributes $CaRecord.Substring($CaTab + 1))) { continue }
+        $CaField = $CaRecord.Substring(0, $CaTab).Split(' ')
+        $CaHeadEntry[$CaRecord.Substring($CaTab + 1)] = "$($CaField[0]) $($CaField[-1])"
+    }
+    $CaSeen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($CaRecord in $CaIndex) {
+        $CaTab = $CaRecord.IndexOf("`t")
+        if ($CaTab -lt 0) { continue }
+        $CaPath = $CaRecord.Substring($CaTab + 1)
+        if (-not (& $CaIsAttributes $CaPath) -or -not $CaSeen.Add($CaPath)) { continue }
+        $CaField = $CaRecord.Substring(0, $CaTab).Split(' ')
+        $CaWant = $null
+        [void]$CaHeadEntry.TryGetValue($CaPath, [ref]$CaWant)
+        if ($CaField[-1] -cne '0' -or $CaWant -cne "$($CaField[0]) $($CaField[1])" -or $CaPath.Contains("`n")) { & $CaChanged $CaPath }
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $CaBlob = @(& git @GitNoProgram -C $Dir cat-file blob $CaField[1] 2>$null | ForEach-Object { [string]$_ })
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if (Test-AttributeFilter $CaBlob) {
+            Write-Fail "$Dir has a .gitattributes file at $Dir/$CaPath that sets a filter (filter=). git would apply it while it reads the clone. Remove the filter and commit that change, then re-run."
+        }
+        try {
+            $CaAttr = [System.IO.File]::GetAttributes("$Dir/$CaPath")
+        } catch [System.IO.FileNotFoundException], [System.IO.DirectoryNotFoundException] {
+            continue
+        } catch {
+            & $CaChanged $CaPath
+        }
+        if (($CaAttr -band ([System.IO.FileAttributes]::ReparsePoint -bor [System.IO.FileAttributes]::Directory)) -ne 0) { & $CaChanged $CaPath }
+        $prior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $CaId = "$(& git @GitNoProgram -C $Dir hash-object --no-filters -- $CaPath 2>$null)".Trim()
+            $CaIdCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prior
+        }
+        if ($CaIdCode -ne 0 -or $CaId -cne $CaField[1]) { & $CaChanged $CaPath }
+    }
+    foreach ($CaPath in $CaHeadEntry.Keys) {
+        if (-not $CaSeen.Contains($CaPath)) { & $CaChanged $CaPath }
+    }
+    foreach ($CaPath in $CaOther) {
+        if (& $CaIsAttributes $CaPath) {
+            Write-Fail "$Dir has a .gitattributes file that git does not track, at $Dir/$CaPath. git would apply it while it reads the clone. Remove it, then re-run."
+        }
+    }
+}
+
+# Assert-SourceTracked DIR - stop, listing them, when the clone at DIR
+# holds paths under src (in any ASCII case: a file system that ignores
+# case finds Src as src) that git does not track (ignored files and a
+# nested repository included), other than files inside a __pycache__
+# folder, which Remove-SourceCache removes: the engine runs with src on
+# its path and could load them. Before the fetch these are the files the
+# engine would find after the checkout, which writes only tracked files,
+# so a refusal here leaves the clone as it was (mirrors install.sh's
+# check_clone_src).
+function Assert-SourceTracked {
+    param([string]$Dir)
+    $StFound = [System.Collections.Generic.List[string]]::new()
+    foreach ($StPath in @(Get-CloneRecord $Dir @('ls-files', '-o', '-z'))) {
+        if ($StPath -cnotmatch '^[Ss][Rr][Cc]/') { continue }
+        $StParts = $StPath.TrimEnd('/').Split('/')
+        if (@($StParts[0..($StParts.Count - 2)] | Where-Object { $_ -ceq '__pycache__' }).Count -gt 0) { continue }
+        $StFound.Add($StPath)
+    }
+    if ($StFound.Count -eq 0) { return }
+    [Console]::Error.WriteLine("  x $Dir has files under src that git does not track, and the engine could load them:")
+    foreach ($StPath in @($StFound | Select-Object -First 20)) { [Console]::Error.WriteLine("    $Dir/$StPath") }
+    if ($StFound.Count -gt 20) { [Console]::Error.WriteLine("    and $($StFound.Count - 20) more") }
+    Write-Fail "Nothing was changed. Move these files out of $Dir/src, then re-run."
+}
+
+# Remove-SourceCache DIR - remove every __pycache__ folder under DIR\src
+# after the checkout, before the engine first runs, so no bytecode the
+# release did not make loads (mirrors install.sh's remove_source_caches).
+# The walk enters no link or junction: a __pycache__ that is one loses the
+# link only, and so does one inside a cache folder, so nothing it leads to
+# is removed. Each entry is removed on its own, deepest first: Windows
+# PowerShell 5.1's Remove-Item -Recurse follows a junction inside the
+# folder, and .NET's recursive Directory.Delete stops at one.
+function Remove-SourceCache {
+    param([string]$Dir)
+    $RsLink = [System.IO.FileAttributes]::ReparsePoint
+    $RsRoot = [System.IO.Path]::Combine($Dir, 'src')
+    try {
+        # Folders still to read, each marked as inside a cache folder or
+        # not, and what to remove, every entry after the folder holding it.
+        $RsWalk = [System.Collections.Generic.Stack[object]]::new()
+        $RsGone = [System.Collections.Generic.List[System.IO.FileSystemInfo]]::new()
+        if ([System.IO.Directory]::Exists($RsRoot)) { $RsWalk.Push(@([System.IO.DirectoryInfo]::new($RsRoot), $false)) }
+        while ($RsWalk.Count -gt 0) {
+            $RsFolder, $RsInCache = $RsWalk.Pop()
+            if ($RsInCache) {
+                foreach ($RsChild in $RsFolder.GetFileSystemInfos()) {
+                    $RsGone.Add($RsChild)
+                    if ($RsChild -is [System.IO.DirectoryInfo] -and ($RsChild.Attributes -band $RsLink) -eq 0) { $RsWalk.Push(@($RsChild, $true)) }
+                }
+                continue
+            }
+            foreach ($RsChild in $RsFolder.GetDirectories()) {
+                $RsIsLink = ($RsChild.Attributes -band $RsLink) -ne 0
+                if ([string]::Equals($RsChild.Name, '__pycache__', [System.StringComparison]::Ordinal)) {
+                    $RsGone.Add($RsChild)
+                    if (-not $RsIsLink) { $RsWalk.Push(@($RsChild, $true)) }
+                } elseif (-not $RsIsLink) {
+                    $RsWalk.Push(@($RsChild, $false))
+                }
+            }
+        }
+        # A folder is empty by its turn; a link (to a folder or a file) is
+        # removed as a link.
+        for ($RsAt = $RsGone.Count - 1; $RsAt -ge 0; $RsAt--) {
+            $RsEntry = $RsGone[$RsAt]
+            if ($RsEntry -is [System.IO.DirectoryInfo]) {
+                [System.IO.Directory]::Delete($RsEntry.FullName)
+            } else {
+                if (($RsEntry.Attributes -band $RsLink) -eq 0) { $RsEntry.Attributes = $RsEntry.Attributes -band -bnot [System.IO.FileAttributes]::ReadOnly }
+                [System.IO.File]::Delete($RsEntry.FullName)
+            }
+        }
+    } catch {
+        Write-Fail "Could not remove the Python cache folders (__pycache__) under $Dir/src. Remove them, then re-run."
+    }
+}
+
 # Test-CloneHasLocalWork DIR - $true when the git clone at DIR holds work
 # that replacing it with an archive would lose: a change to a tracked file, a
 # stash, a commit on a branch that no remote has, or an untracked path inside
 # a top-level name the clone tracks (its source tree). A git command that
 # fails counts as local work, so a clone git cannot read is not replaced.
 # Untracked top-level entries (the engine's backups\ and state\) are carried
-# over by the swap, so they do not count (mirrors install.sh).
+# over by the swap, so they do not count (mirrors install.sh). The caller
+# has run Assert-CloneConfig first, git runs here with $GitNoProgram (no
+# fsmonitor program), git status takes --ignore-submodules=all (a
+# .gitmodules setting overrides $GitNoProgram's) and none of its optional
+# locks.
 function Test-CloneHasLocalWork {
     param([string]$Dir)
     $prior = $ErrorActionPreference
+    $priorLocks = $env:GIT_OPTIONAL_LOCKS
     $ErrorActionPreference = 'Continue'
+    $env:GIT_OPTIONAL_LOCKS = '0'
     try {
-        $LwChanged = @(& git -C $Dir status --porcelain --untracked-files=no 2>$null)
+        $LwChanged = @(& git @GitNoProgram -C $Dir status --porcelain --ignore-submodules=all --untracked-files=no 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwChanged.Count -gt 0) { return $true }
-        $LwStashes = @(& git -C $Dir stash list 2>$null)
+        $LwStashes = @(& git @GitNoProgram -C $Dir stash list 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwStashes.Count -gt 0) { return $true }
-        $LwUnpushed = @(& git -C $Dir log --branches --not --remotes --oneline 2>$null)
+        $LwUnpushed = @(& git @GitNoProgram -C $Dir log --branches --not --remotes --oneline 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwUnpushed.Count -gt 0) { return $true }
-        $LwTracked = @(& git -C $Dir -c core.quotePath=false ls-tree --name-only HEAD 2>$null | ForEach-Object { [string]$_ })
+        $LwTracked = @(& git @GitNoProgram -C $Dir -c core.quotePath=false ls-tree --name-only HEAD 2>$null | ForEach-Object { [string]$_ })
         if ($LASTEXITCODE -ne 0) { return $true }
-        $LwStatus = @(& git -C $Dir -c core.quotePath=false status --porcelain 2>$null)
+        $LwStatus = @(& git @GitNoProgram -C $Dir -c core.quotePath=false status --porcelain --ignore-submodules=all 2>$null)
         if ($LASTEXITCODE -ne 0) { return $true }
     } finally {
+        $env:GIT_OPTIONAL_LOCKS = $priorLocks
         $ErrorActionPreference = $prior
     }
     foreach ($LwLine in $LwStatus) {
@@ -1174,49 +2383,93 @@ function Test-CloneHasLocalWork {
     return $false
 }
 
-# Assert-CleanClone DIR - refuse, before anything is fetched, an existing
-# clone at DIR whose check the update could not trust (mirrors install.sh's
-# require_clean_clone). Its own git config may not set a program or file the
-# update's git calls would run or read (gpg.program, gpg.openpgp.program,
-# core.fsmonitor, core.hooksPath, include. and includeIf. entries); this is
-# read first, as the other checks run git in the clone. Its work tree must
-# be DIR itself, not one core.worktree or a .git file names: git must place
-# DIR inside the work tree, at its top. And no tracked file may be marked
-# assume-unchanged or skip-worktree (git ls-files -v prints a lower-case
-# letter or S for one), since git then hides a change to it.
-function Assert-CleanClone {
+# Assert-CloneModuleFolder DIR - stop when the clone at DIR keeps
+# submodule repositories (.git\modules, or wherever git rev-parse
+# --git-path modules points), where git would run under settings nothing
+# here checks (mirrors install.sh's check_clone_modules). Reads no index.
+function Assert-CloneModuleFolder {
+    param([string]$Dir)
+    $CmModules = Get-ClonePath $Dir 'modules'
+    if ($CmModules -and (Test-Path -LiteralPath $CmModules -PathType Container)) {
+        Write-Fail "$Dir keeps submodule repositories in $CmModules. A release tree has no submodules, and the update would run git inside them. Remove the submodules and $CmModules, then re-run."
+    }
+}
+
+# Assert-CloneGitlink DIR - stop when the index of the clone at DIR records
+# a git repository in its tree (a gitlink, git ls-files -s mode 160000),
+# which git status and diff would run git inside (mirrors install.sh's
+# check_clone_gitlinks). An index git cannot read stops the run here too,
+# not only at the checkout after the fetch, so a dry run stops where the
+# real run would.
+function Assert-CloneGitlink {
     param([string]$Dir)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $CcConfig = @(& git -C $Dir config --local --name-only --get-regexp . 2>$null | ForEach-Object { [string]$_ })
+        $GlStages = @(& git @GitNoProgram -C $Dir ls-files -s 2>$null | ForEach-Object { [string]$_ })
+        $GlCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
     }
-    foreach ($CcKey in $CcConfig) {
-        $CcLower = $CcKey.ToLowerInvariant()
-        if ((@('gpg.program', 'gpg.openpgp.program', 'core.fsmonitor', 'core.hookspath') -ccontains $CcLower) -or $CcLower.StartsWith('include.', [System.StringComparison]::Ordinal) -or $CcLower.StartsWith('includeif.', [System.StringComparison]::Ordinal)) {
-            Write-Fail "$Dir's own git config sets $CcKey, which the update would trust. Remove it from $Dir/.git/config, then re-run."
+    if ($GlCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
+    }
+    foreach ($GlLine in $GlStages) {
+        if ($GlLine.StartsWith('160000 ', [System.StringComparison]::Ordinal)) {
+            $GlPath = @($GlLine -split "`t", 2)[-1]
+            Write-Fail "$Dir holds a submodule at $GlPath (its index records a git repository there). A release tree has none, and the update would run git inside it. Remove the submodule from the clone, then re-run."
         }
     }
+}
+
+# Assert-CleanClone DIR - refuse, before anything is fetched, an existing
+# clone at DIR whose check the update could not trust (mirrors install.sh's
+# check_clone_setup). git must work in it (Assert-CloneGit), and its own
+# settings and attributes must pass Assert-CloneConfig; both run first,
+# before any git command that reads the clone's index. It may hold no
+# submodules: no folder where git keeps their repositories (.git\modules,
+# or wherever git rev-parse --git-path modules points) and no gitlink in
+# its index (git ls-files -s mode 160000). A release tree has none, and
+# the settings and attributes of a repository inside the clone are not
+# checked. Its work tree must be DIR itself, not one core.worktree or a
+# .git file names: git must place DIR inside the work tree, at its top.
+# And no tracked file may be marked assume-unchanged or skip-worktree (git
+# ls-files -v prints a lower-case letter or S for one), since git then
+# hides a change to it. Last, no .gitattributes file in its work tree
+# may be untracked or differ from the index (Assert-CloneAttributeFile),
+# and no file under src may be untracked (Assert-SourceTracked).
+# Nothing here writes, so a dry run runs it too.
+function Assert-CleanClone {
+    param([string]$Dir)
+    Assert-CloneGit $Dir
+    Assert-CloneConfig $Dir
+    Assert-CloneModuleFolder $Dir
+    $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $CcInside = [string](& git -C $Dir rev-parse --is-inside-work-tree 2>$null)
+        $CcInside = "$(& git @GitNoProgram -C $Dir rev-parse --is-inside-work-tree 2>$null)"
         $CcInsideCode = $LASTEXITCODE
-        $CcPrefix = [string](& git -C $Dir rev-parse --show-prefix 2>$null)
+        $CcPrefix = "$(& git @GitNoProgram -C $Dir rev-parse --show-prefix 2>$null)"
         $CcPrefixCode = $LASTEXITCODE
-        $CcFlags = @(& git -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlags = @(& git @GitNoProgram -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlagsCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
     }
     if ($CcInsideCode -ne 0 -or $CcInside.Trim() -cne 'true' -or $CcPrefixCode -ne 0 -or $CcPrefix.Trim() -ne '') {
-        Write-Fail "$Dir is not the work tree of its git clone (core.worktree is set, or its .git points elsewhere). Remove that setting, then re-run."
+        Write-Fail "$Dir is not the work tree of its git clone (git finds no work tree there, as when its git config sets core.bare to true). Set core.bare to false, then re-run."
+    }
+    Assert-CloneGitlink $Dir
+    if ($CcFlagsCode -ne 0) {
+        Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
     }
     foreach ($CcLine in $CcFlags) {
         if ($CcLine.Length -gt 0 -and ([char]::IsLower($CcLine[0]) -or $CcLine[0] -ceq 'S')) {
             Write-Fail "$Dir has changes to tracked files. Commit or stash them, then re-run."
         }
     }
+    Assert-CloneAttributeFile $Dir
+    Assert-SourceTracked $Dir
 }
 
 # Get-HomeMode WHAT - decide what a swap into APOTHEM_HOME may do with what
@@ -1241,6 +2494,14 @@ function Get-HomeMode {
         if (-not $Yes) {
             Write-Fail "Destination $ApothemHome is a git clone; refusing to replace it with $What, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with -Yes."
         }
+        # git status reads the clone's index and applies its work tree's
+        # .gitattributes files, so the clone's own settings, submodules and
+        # those files are checked first, as for an update in place.
+        Assert-CloneGit $ApothemHome
+        Assert-CloneConfig $ApothemHome
+        Assert-CloneModuleFolder $ApothemHome
+        Assert-CloneGitlink $ApothemHome
+        Assert-CloneAttributeFile $ApothemHome
         if (Test-CloneHasLocalWork $ApothemHome) {
             Write-Fail "$ApothemHome is a git clone with local work that replacing it would lose (changes, stashes, unpushed commits, or untracked files in its source tree). Commit and push that work, or move it elsewhere, then re-run."
         }
@@ -1350,7 +2611,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                $CkFetchOut = & git -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
+                $CkFetchOut = & git -c core.longpaths=true -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
                 $CkFetchCode = $LASTEXITCODE
             } finally {
                 $ErrorActionPreference = $prior
@@ -1364,10 +2625,10 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
         $CkArchive = Join-Path $CkTmp $CkName
         $CkSums = Join-Path $CkTmp 'SHA256SUMS'
         Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
-        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/$CkName" -OutFile $CkArchive }
-        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef" }
-        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" -OutFile $CkSums }
-        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef" }
+        try { Save-Download "$ApothemReleaseBase/$ApothemRef/$CkName" $CkArchive }
+        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message))" }
+        try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" $CkSums }
+        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message))" }
         if ($VerifyMode -eq 'release') {
             # The certificate identity is exact, never a pattern: a regular
             # expression would also match a forged subject that merely
@@ -1380,10 +2641,10 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             $CkBundle = Join-Path $CkTmp 'SHA256SUMS.cosign.bundle'
             # Early releases published the same Sigstore bundle as
             # SHA256SUMS.sig (scripts/release/verify-provenance.sh accepts both).
-            try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.cosign.bundle" -OutFile $CkBundle }
+            try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.cosign.bundle" $CkBundle }
             catch {
-                try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.sig" -OutFile $CkBundle }
-                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef. Set APOTHEM_VERIFY=signature to check the release tag alone." }
+                try { Save-Download "$ApothemReleaseBase/$ApothemRef/SHA256SUMS.sig" $CkBundle }
+                catch { Write-Fail "Could not download SHA256SUMS.cosign.bundle, or SHA256SUMS.sig as early releases name it, from $ApothemReleaseBase/$ApothemRef ($($_.Exception.Message)). Set APOTHEM_VERIFY=signature to check the release tag alone." }
             }
             # cosign reports on stderr, which PowerShell before 7.2 turns into
             # a terminating error under 'Stop' once redirected, so the
@@ -1433,7 +2694,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
                 Write-Fail "Could not create the parent directory of $ApothemHome"
             }
-            $CkExtract = Join-Path $CkParent (".apothem-extract." + [System.Guid]::NewGuid().ToString('N'))
+            $CkExtract = Join-Path $CkParent (".apothem-extract.$(Split-Path -Leaf $ApothemHome)." + [System.Guid]::NewGuid().ToString('N'))
         }
         try { Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force }
         catch { Write-Fail "Could not extract $CkName" }
@@ -1502,7 +2763,7 @@ if (-not $Source) {
             if (-not $ClParent) { $ClParent = (Get-Location).Path }
             try { New-Item -ItemType Directory -Force -Path $ClParent | Out-Null }
             catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
-            $ClStage = Join-Path $ClParent (".apothem-clone." + [System.Guid]::NewGuid().ToString('N'))
+            $ClStage = Join-Path $ClParent (".apothem-clone.$(Split-Path -Leaf $ApothemHome)." + [System.Guid]::NewGuid().ToString('N'))
         }
         try { New-Item -ItemType Directory -Path $ClStage | Out-Null }
         catch { Write-Fail "Could not create a staging directory beside $ApothemHome" }
@@ -1515,7 +2776,7 @@ if (-not $Source) {
     $NoHooksDir = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-nohooks-" + [System.Guid]::NewGuid().ToString('N'))
     try {
         New-Item -ItemType Directory -Path $NoHooksDir | Out-Null
-        $GitSafe = @('-c', "core.hooksPath=$NoHooksDir")
+        $GitSafe = @($GitNoProgram + @('-c', "core.hooksPath=$NoHooksDir"))
         if (-not $ClStage) {
             Write-Info "Updating existing clone at $ApothemHome (ref: $ApothemRef)"
             # git reports a failed fetch on stderr; see Invoke-CheckoutRef.
@@ -1533,12 +2794,15 @@ if (-not $Source) {
             Write-Bold "Verifying source signature"
             Assert-FetchedRef $ApothemHome
             Invoke-CheckoutRef $ApothemHome -InPlace
+            Remove-SourceCache $ApothemHome
         } else {
             Write-Info "Cloning $ApothemRepo"
             # Full clone (no --single-branch) so both tags and branches are
             # checkout-able, with nothing checked out until the gate passes.
+            # core.longpaths lets the clone write its pack files under a
+            # long staging folder.
             $ClTree = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ClTree)
-            Invoke-GitOutsideRepository { & git clone --quiet --no-checkout $ApothemRepo $ClTree }
+            Invoke-GitOutsideRepository { & git -c core.longpaths=true clone --quiet --no-checkout $ApothemRepo $ClTree }
             if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
             Write-Bold "Verifying source signature"
             Assert-FetchedRef $ClTree
@@ -1563,6 +2827,9 @@ if (-not $Source) {
         if ($ClStage -and (-not $DryRun -or -not $ClOk) -and -not $script:SwapKeepStaging -and (Test-Path -LiteralPath $ClStage)) { Remove-Item -LiteralPath $ClStage -Recurse -Force }
     }
 }
+# Warn when users other than you can change the code this run starts
+# (a local tree's code is not in APOTHEM_HOME).
+if (-not $LocalKind) { Write-HomeAccessWarning }
 $SrcPath = Join-Path $Source 'src'
 # Vendored runtime dependencies resolve ahead of the host's site-packages,
 # mirroring the plugin runtime's vendor-first precedence.
@@ -1761,4 +3028,17 @@ completion (opt-in; appends to your profile):
   apothem completion powershell >> `$PROFILE   # or bash / zsh / fish
 
 "@
+}
+} finally {
+    # The caller's git variables, as they were before the run.
+    foreach ($GitVar in @($SavedGitEnv.Keys)) {
+        if ($null -eq $SavedGitEnv[$GitVar]) {
+            Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -LiteralPath "Env:$GitVar" -Value $SavedGitEnv[$GitVar]
+        }
+    }
+}
+} finally {
+    Unlock-ApothemHome
 }

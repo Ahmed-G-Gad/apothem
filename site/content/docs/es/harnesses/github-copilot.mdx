@@ -175,7 +175,7 @@ PowerShell necesita antes de una ruta de programa entre comillas. Un comando
 las dos rutas:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` hace que el despachador lea la entrada en camelCase de

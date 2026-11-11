@@ -122,8 +122,8 @@ def test_each_command_runs_the_installed_dispatcher_under_the_contract(
     python = python_bin_tokens()["PYTHON_BIN"]
     dispatcher = (project.resolve() / ".apothem/support/hooks/dispatch.py").as_posix()
     assert commands == [
-        f'"{python}" "{dispatcher}" --contract codebuddy SessionStart',
-        f'"{python}" "{dispatcher}" --contract codebuddy PostToolUse '
+        f'"{python}" -E -s "{dispatcher}" --contract codebuddy SessionStart',
+        f'"{python}" -E -s "{dispatcher}" --contract codebuddy PostToolUse '
         "posttooluse-proactive-compaction",
     ]
     assert Path(dispatcher).is_file()

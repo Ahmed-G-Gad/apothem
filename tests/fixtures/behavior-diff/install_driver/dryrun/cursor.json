@@ -112,7 +112,7 @@
   },
   {
     "detail": {
-      "diff": "--- a/hooks.json\n+++ b/hooks.json\n@@ -0,0 +1,12 @@\n+{\n+  \"version\": 1,\n+  \"hooks\": {\n+    \"sessionStart\": [\n+      {\n+        \"type\": \"command\",\n+        \"command\": \"${CALL_OP}\\\"${PYTHON_BIN}\\\" \\\"<ROOT>/.apothem/support/cursor/hooks/dispatch.py\\\" --contract cursor sessionStart\",\n+        \"timeout\": 30\n+      }\n+    ]\n+  }\n+}\n",
+      "diff": "--- a/hooks.json\n+++ b/hooks.json\n@@ -0,0 +1,12 @@\n+{\n+  \"version\": 1,\n+  \"hooks\": {\n+    \"sessionStart\": [\n+      {\n+        \"type\": \"command\",\n+        \"command\": \"${CALL_OP}\\\"${PYTHON_BIN}\\\" -E -s \\\"<ROOT>/.apothem/support/cursor/hooks/dispatch.py\\\" --contract cursor sessionStart\",\n+        \"timeout\": 30\n+      }\n+    ]\n+  }\n+}\n",
       "ownership_class": "operator-owned"
     },
     "message": "dry run: no filesystem changes made",

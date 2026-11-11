@@ -272,7 +272,10 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
                 "--no-renames",
             ],
             capture_output=True,
-            text=True,
+            # git writes path names as UTF-8 (raw when core.quotepath is
+            # false). Decode them as UTF-8 whatever the locale code page is.
+            encoding="utf-8",
+            errors="replace",
             timeout=GIT_TIMEOUT_SECONDS,
             check=False,
         )

@@ -81,11 +81,9 @@ LOCAL_WORK_MARKER = (
     "stashes, unpushed commits, or untracked files in its source tree). Commit "
     "and push that work, or move it elsewhere, then re-run."
 )
-WORK_TREE_MARKER = (
-    "is not the work tree of its git clone (core.worktree is set, or its .git "
-    "points elsewhere). Remove that setting, then re-run."
+TRUSTED_CONFIG_MARKER = (
+    ", which an update in place does not accept in a clone's own config. Remove it from"
 )
-TRUSTED_CONFIG_MARKER = ", which the update would trust. Remove it from"
 KEPT_TREE_MARKER = "The earlier clone's tree is kept at"
 NO_HOME_MARKER = "holds no Apothem install; refusing to replace it"
 ROLLBACK_FAILED_MARKER = "and putting the earlier install back also failed: it is at"
@@ -255,10 +253,16 @@ def _env(
     *,
     gpg_status: str | None = None,
     extra_env: dict[str, str] | None = None,
+    gitconfig_extra: str = "",
 ) -> dict[str, str]:
     """The scripts' environment: an isolated HOME and temp folder, the
     fixture repository as the remote, and a stub gpg that replays GPG_STATUS
-    (a good maintainer signature by default)."""
+    (a good maintainer signature by default), named in the global git config
+    with GITCONFIG_EXTRA after it.
+
+    The scripts clear GIT_CONFIG_GLOBAL, so git reads the global config from
+    HOME (and XDG_CONFIG_HOME, pointed into HOME); GIT_CONFIG_GLOBAL names
+    the same text, for a script that does not clear it."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     temp = tmp_path / "temp"
@@ -289,9 +293,21 @@ def _env(
     status = gpg_status
     if status is None:
         status = good_signature_status(MAINTAINER_FINGERPRINT)
-    env["GIT_CONFIG_GLOBAL"] = str(write_stub_gpg(tmp_path / "stub-gpg", status))
+    stub_config = write_stub_gpg(tmp_path / "stub-gpg", status)
+    env["GIT_CONFIG_GLOBAL"] = str(global_gitconfig(home, stub_config, gitconfig_extra))
+    env["XDG_CONFIG_HOME"] = str(home / ".config")
     env.update(extra_env or {})
     return env
+
+
+def global_gitconfig(home: Path, stub_config: Path, extra: str = "") -> Path:
+    """Write STUB_CONFIG's text and then EXTRA to HOME/.gitconfig, where git
+    looks for the global config once the scripts clear GIT_CONFIG_GLOBAL,
+    and to STUB_CONFIG itself; return STUB_CONFIG."""
+    text = stub_config.read_text(encoding="utf-8") + extra
+    for target in (home / ".gitconfig", stub_config):
+        target.write_text(text, encoding="utf-8", newline="\n")
+    return stub_config
 
 
 def _run(
@@ -305,12 +321,18 @@ def _run(
     gpg_status: str | None = None,
     extra_env: dict[str, str] | None = None,
     patch: Callable[[str], str] | None = None,
+    gitconfig_extra: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run install.ps1 against the fixture release; the tag check reads
     GPG_STATUS from a stub gpg (a good maintainer signature by default).
     PATCH, when given, rewrites the copy of the script that runs (fault
     injection)."""
-    env = _env(tmp_path, gpg_status=gpg_status, extra_env=extra_env)
+    env = _env(
+        tmp_path,
+        gpg_status=gpg_status,
+        extra_env=extra_env,
+        gitconfig_extra=gitconfig_extra,
+    )
     env["APOTHEM_RELEASE_BASE"] = base_url
     if mode is not None:
         env["APOTHEM_VERIFY"] = mode
@@ -344,9 +366,15 @@ def _run_updater(
     *,
     gpg_status: str | None = None,
     extra_env: dict[str, str] | None = None,
+    gitconfig_extra: str = "",
 ) -> subprocess.CompletedProcess[str]:
     """Run update.ps1 against the clone at APOTHEM_HOME."""
-    env = _env(tmp_path, gpg_status=gpg_status, extra_env=extra_env)
+    env = _env(
+        tmp_path,
+        gpg_status=gpg_status,
+        extra_env=extra_env,
+        gitconfig_extra=gitconfig_extra,
+    )
     assert _PWSH is not None
     return subprocess.run(
         [_PWSH, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(UPDATER)],
@@ -553,7 +581,8 @@ def test_release_mode_without_cosign_fails_before_downloading(
     [
         pytest.param(
             good_signature_status(OTHER_FINGERPRINT),
-            "not from the maintainer key",
+            f"Tag {TAG} is signed by the key {OTHER_FINGERPRINT}. A release tag must "
+            f"be signed by the maintainer key {MAINTAINER_FINGERPRINT}",
             id="another-key",
         ),
         pytest.param("", BAD_SIGNATURE_MARKER, id="unsigned"),
@@ -748,14 +777,16 @@ def test_yes_switches_a_clone_to_the_archive_and_keeps_only_untracked_data(
     assert (home / "src" / "apothem" / "__init__.py").is_file(), plain
     assert (home / SOURCE_MANIFEST).is_file(), plain
     _assert_engine_data_kept(home)
-    # The clone's tree is not deleted: it is kept beside APOTHEM_HOME, its
-    # data aside, and the run says where.
-    kept = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
-    assert len(kept) == 1, plain
-    assert (kept[0] / ".git").is_dir(), plain
-    assert (kept[0] / "tracked-only.md").is_file(), plain
-    assert not (kept[0] / "state").exists(), plain
-    message = f"{KEPT_TREE_MARKER} {kept[0]}; delete it once you no longer need it."
+    # The clone's tree is not deleted: it is kept, under its own name, in a
+    # new folder beside APOTHEM_HOME, its data aside, and the run says where.
+    asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
+    assert len(asides) == 1, plain
+    assert [p.name for p in asides[0].iterdir()] == ["apothem-home"], plain
+    kept = asides[0] / "apothem-home"
+    assert (kept / ".git").is_dir(), plain
+    assert (kept / "tracked-only.md").is_file(), plain
+    assert not (kept / "state").exists(), plain
+    message = f"{KEPT_TREE_MARKER} {kept}; delete it once you no longer need it."
     assert _squashed(message) in _squashed(plain), plain
     assert _leftovers(tmp_path) == []
 
@@ -802,8 +833,9 @@ def test_yes_moves_other_content_aside_unchanged(
     tmp_path: Path, release: tuple[Path, str], mode: str
 ) -> None:
     """-Yes on a folder that holds no Apothem install moves the whole folder,
-    unchanged, to a sibling <home>.before-apothem-<time>, says where, and
-    installs fresh, from the archive or a clone."""
+    unchanged and under its own name, into a new sibling
+    <home>.before-apothem-<time> folder, says where, and installs fresh,
+    from the archive or a clone."""
     folder, base_url = release
     _publish(folder)
     home = tmp_path / "apothem-home"
@@ -819,10 +851,11 @@ def test_yes_moves_other_content_aside_unchanged(
     plain = _plain(result.stdout + result.stderr)
     asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
     assert len(asides) == 1, plain
-    aside = asides[0]
-    assert re.fullmatch(r"apothem-home\.before-apothem-\d{14}", aside.name), aside
+    assert re.fullmatch(r"apothem-home\.before-apothem-\d{14}", asides[0].name)
+    assert [p.name for p in asides[0].iterdir()] == ["apothem-home"], plain
+    aside = asides[0] / "apothem-home"
     assert _snapshot(aside) == before, plain
-    assert f"{ASIDE_MARKER} {aside}" in plain, plain
+    assert _squashed(f"{ASIDE_MARKER} {aside}") in _squashed(plain), plain
     assert (home / "src" / "apothem" / "__init__.py").is_file(), plain
     assert not (home / "keep.txt").exists(), plain
     assert _leftovers(tmp_path) == []
@@ -1215,27 +1248,26 @@ def test_a_checkout_that_does_not_match_the_ref_aborts(
     """After the checkout the tracked files must match the ref. A smudge
     filter that, while git writes one file, changes another tracked file
     leaves the work tree off the ref, and the scripts stop before anything
-    materializes."""
+    materializes. The clone's own config and info/attributes may not name a
+    filter, so the filter here is the user's own (global config) and the
+    release's .gitattributes assigns it."""
     repo, home, _ = _clone_at_old_tag(tmp_path)
-    repoint_tag(repo, TAG, TAG)
-    (home / ".git" / "info").mkdir(exist_ok=True)
-    (home / ".git" / "info" / "attributes").write_text(
+    (repo / ".gitattributes").write_text(
         "pyproject.toml filter=tamper\n", encoding="utf-8", newline="\n"
     )
-    git(["config", "filter.tamper.clean", "cat"], home)
-    git(
-        [
-            "config",
-            "filter.tamper.smudge",
-            "cat; echo tampered >> src/apothem/__init__.py",
-        ],
-        home,
+    git(["add", ".gitattributes"], repo)
+    _commit_in(repo, "assign the filter")
+    repoint_tag(repo, TAG, TAG)
+    tamper = (
+        '[filter "tamper"]\n'
+        "\tclean = cat\n"
+        '\tsmudge = "cat; echo tampered >> src/apothem/__init__.py"\n'
     )
 
     if script == "install.ps1":
-        result = _run(tmp_path, UNUSED_BASE, mode="signature")
+        result = _run(tmp_path, UNUSED_BASE, mode="signature", gitconfig_extra=tamper)
     else:
-        result = _run_updater(tmp_path)
+        result = _run_updater(tmp_path, gitconfig_extra=tamper)
 
     plain = _plain(result.stdout + result.stderr)
     assert result.returncode != 0, plain
@@ -1762,8 +1794,9 @@ def test_yes_moves_a_clone_of_something_else_aside(
     plain = _plain(result.stdout + result.stderr)
     asides = sorted(tmp_path.glob("apothem-home.before-apothem-*"))
     assert len(asides) == 1, plain
-    assert (asides[0] / ".git").is_dir(), plain
-    assert _worktree_snapshot(asides[0]) == before, plain
+    aside = asides[0] / "apothem-home"
+    assert (aside / ".git").is_dir(), plain
+    assert _worktree_snapshot(aside) == before, plain
     assert (home / "src" / "apothem" / "__init__.py").is_file(), plain
     assert not (home / "notes.txt").exists(), plain
 
@@ -1793,11 +1826,24 @@ def _prepare_unclean_clone(tmp_path: Path, case: str) -> tuple[Path, str, str]:
         git(["update-index", f"--{case}", "pyproject.toml"], home)
         assert git(["status", "--porcelain"], home) == ""
         return home, old_commit, TRACKED_CHANGES_MARKER
+    if case == "core.bare":
+        git(["config", "core.bare", "true"], home)
+        return (
+            home,
+            old_commit,
+            " is not the work tree of its git clone (git finds no work tree there, "
+            "as when its git config sets core.bare to true). Set core.bare to "
+            "false, then re-run.",
+        )
     if case == "core.worktree":
         decoy = tmp_path / "decoy"
         shutil.copytree(home, decoy, ignore=shutil.ignore_patterns(".git"))
         git(["config", "core.worktree", decoy.as_posix()], home)
-        return home, old_commit, WORK_TREE_MARKER
+        return (
+            home,
+            old_commit,
+            f"'s own git config sets core.worktree{TRUSTED_CONFIG_MARKER}",
+        )
     key, value = {
         "gpg.program": ("gpg.program", "C:/elsewhere/gpg"),
         "gpg.openpgp.program": ("gpg.openpgp.program", "C:/elsewhere/gpg"),
@@ -1817,6 +1863,7 @@ def _prepare_unclean_clone(tmp_path: Path, case: str) -> tuple[Path, str, str]:
     [
         "assume-unchanged",
         "skip-worktree",
+        "core.bare",
         "core.worktree",
         "gpg.program",
         "gpg.openpgp.program",

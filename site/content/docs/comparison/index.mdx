@@ -33,7 +33,7 @@ deterministic pipelines, an audit fortress, and a reversible verified lifecycle.
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | One source to many tools' native schemas | Yes — seventeen harness adapters | No — copy, symlink or template, no translation | Yes — 60 tools plus the AGENTS.md and Agent Skills standards | Partly — rules concatenated into each tool's instruction file; MCP, skills and subagents written in native form |
 | Synced unit | rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template | arbitrary files | rules, ignore, MCP, commands, subagents, skills, hooks, permissions, checks (code-review check instructions) | rules, MCP, skills, subagents |
-| Governance corpus (behavioral rules plus a mechanical conformity gate) | Yes — `python -m apothem.conformity.gate` | No | No — its `checks` feature syncs code-review checks to tools; no conformity gate over the rules | No |
+| Governance corpus (behavioral rules plus a mechanical conformity gate) | Yes — the `conformity/gate.py` script | No | No — its `checks` feature syncs code-review checks to tools; no conformity gate over the rules | No |
 | Deterministic plan and research pipelines | Yes — `/plan-spec` to `/plan-execute`, thirteen-stage `/research` | No | No | No |
 | Audit fortress that detects and remediates | Yes — eleven-command sweep, `/fortress` re-audit loop | No | No | No |
 | Durable memory across sessions | Yes — `memory/records.json` store under the Apothem data home, created at install | Not compared | Not stated in its README | Not stated in its README |

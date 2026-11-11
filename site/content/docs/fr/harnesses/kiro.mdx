@@ -183,7 +183,7 @@ La commande du fichier de hooks ressemble à ceci, avec votre interpréteur et l
 chemin de votre projet à la place des deux chemins :
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` fait afficher au répartiteur le contexte en texte brut, ce que

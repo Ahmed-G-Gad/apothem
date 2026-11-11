@@ -62,7 +62,7 @@ tests/unit/test_<slug>_adapter.py
 ```bash
 apothem install --harness <slug>
 apothem verify --harness <slug>
-python -m apothem.conformity.gate --all .
+python3 -E -s src/apothem/conformity/gate.py --all .
 ```
 
 ### 5. 풀 리퀘스트 제출

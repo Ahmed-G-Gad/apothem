@@ -179,7 +179,7 @@ davor, den PowerShell vor einem angeführten Programmpfad braucht. Ein
 beiden Pfade:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` lässt den Dispatcher Copilots Eingabe in camelCase lesen und

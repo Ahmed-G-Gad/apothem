@@ -121,7 +121,7 @@ Apothem は、ドキュメントまたはプローブによってそれがモデ
 コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
 `--contract codebuddy` は出力に対しては何もしません。CodeBuddy は Claude Code と同じエンベロープを読むためです。

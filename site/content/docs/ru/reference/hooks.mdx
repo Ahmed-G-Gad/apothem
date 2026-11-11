@@ -67,7 +67,7 @@ exec-форме оболочка не нужна. Диспетчер — это 
 
 Окружение, отличное от Claude Code, запускает тот же диспетчер с
 `--contract <id>` после скрипта, например
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 Контракт (`hooks/lib/vendor_contract.py`) переводит написание событий и имён
 инструментов вендора и ключи полезной нагрузки в форму Claude, которую читают
 обработчики, переписывает конверт в форму, которую читает вендор, и отбрасывает

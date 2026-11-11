@@ -56,7 +56,7 @@ Apothem намеренно не объявляет консольных скри
 | Поверхность | Вызов | Контекст |
 | ------- | ---------- | ------- |
 | CLI движка | `python -m apothem <command>` | Дерево исходного кода с `src/` в `PYTHONPATH` (чекаут, кэш npx, дерево плагина) |
-| Среда выполнения хуков | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Материализация Claude Code: копия в общем дереве `.apothem/support/` корня окружения, по абсолютному пути |
+| Среда выполнения хуков | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Материализация Claude Code: копия в общем дереве `.apothem/support/` корня окружения, по абсолютному пути |
 
 - `python -m apothem` запускает `src/apothem/__main__.py`, который помещает
   `src/apothem/_vendor` в `sys.path`, проверяет, что `click` и `rich`
@@ -78,7 +78,7 @@ Apothem намеренно не объявляет консольных скри
 чекаута в начало `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Когда лаунчер `apothem` не находится в PATH, `install.sh` по завершении выводит эту форму: каталог с вендорными библиотеками стоит перед `src/`, а вместо `python` указан найденный им CPython. `install.ps1` выводит те же два параметра в форме PowerShell: присваивание `$env:PYTHONPATH`, которое объединяет каталоги вендорных библиотек и `src/` через `;`, затем `& '<CPython>' -m apothem <command>`.

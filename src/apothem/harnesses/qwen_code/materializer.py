@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import re
 import shlex
-from typing import Any
+from typing import Any, Final
 
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import mcp_servers_for, render_mcp_standard
@@ -34,6 +34,11 @@ from apothem.lib.python_resolver import resolve_python_bin
 _PRETOOLUSE_TIMEOUT_S = 10
 _SESSION_TIMEOUT_S = 30
 _STOP_TIMEOUT_S = 60
+
+#: Interpreter flags every hook command passes before the dispatcher path:
+#: ``-E`` ignores the ``PYTHON*`` environment variables (``PYTHONPATH`` among
+#: them) and ``-s`` leaves out the user's site-packages.
+HOOK_PYTHON_FLAGS: Final[tuple[str, ...]] = ("-E", "-s")
 
 # Characters that never need shell quoting in the interpreter token. A path made
 # only of these renders bare; any other path (a space in ``C:/Program Files/``
@@ -74,6 +79,11 @@ def _dispatch(python_bin: str, event_name: str, *message_names: str) -> str:
     Each name in *message_names* is a guard message the dispatcher evaluates
     against the one stdin payload; several names yield one merged envelope.
 
+    The interpreter runs with ``-E -s`` (:data:`HOOK_PYTHON_FLAGS`): it reads
+    no ``PYTHON*`` environment variable and no user site-packages, so an empty
+    ``PYTHONPATH`` entry, which stands for the folder Qwen opened, cannot load a
+    ``sitecustomize.py`` or ``json.py`` from that folder into the hook.
+
     Qwen runs ``command`` as a shell command, and Apothem sets no ``shell``
     field, so an interpreter path that contains a space is wrapped in double
     quotes, the same quoting the script path already uses. A path that also
@@ -88,6 +98,7 @@ def _dispatch(python_bin: str, event_name: str, *message_names: str) -> str:
             interpreter = f'"{interpreter}"'
     parts = [
         interpreter,
+        *HOOK_PYTHON_FLAGS,
         '"${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py"',
         event_name,
     ]

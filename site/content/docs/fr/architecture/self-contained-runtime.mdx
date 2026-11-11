@@ -59,7 +59,7 @@ un. Le moteur dispose plutôt de deux surfaces d'invocation :
 | Surface | Invocation | Contexte |
 | ------- | ---------- | ------- |
 | CLI du moteur | `python -m apothem <command>` | Un arbre de code source avec `src/` sur le `PYTHONPATH` (checkout, cache npx, arbre du plugin) |
-| Runtime des hooks | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Matérialisation Claude Code : la copie située sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
+| Runtime des hooks | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Matérialisation Claude Code : la copie située sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
 
 - `python -m apothem` exécute `src/apothem/__main__.py`, qui place
   `src/apothem/_vendor` dans `sys.path`, vérifie que `click` et `rich` sont
@@ -83,7 +83,7 @@ Le répertoire du paquet devient importable en plaçant le répertoire `src/` du
 checkout en tête de `PYTHONPATH` :
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Lorsque le lanceur `apothem` ne figure pas dans le PATH, `install.sh` affiche cette forme

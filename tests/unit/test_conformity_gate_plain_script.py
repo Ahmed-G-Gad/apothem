@@ -145,6 +145,161 @@ def test_standalone_validators_ignore_modules_in_the_current_folder(
     assert isinstance(passed, bool)
 
 
+def _user_site(userbase: Path) -> Path | None:
+    """Return the user site-packages folder under *userbase*, or ``None`` when off."""
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import site; print(site.ENABLE_USER_SITE); print(site.getusersitepackages())",
+        ],
+        env={**os.environ, "PYTHONUSERBASE": str(userbase)},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    enabled, folder = probe.stdout.strip().splitlines()[-2:]
+    return Path(folder) if enabled == "True" else None
+
+
+def test_standalone_validators_start_with_e_and_s(tmp_path: Path) -> None:
+    """No ``PYTHONPATH`` entry and no user site-packages folder runs in a child.
+
+    The gate runs by path with ``-E -s``, so the parent reads neither; a marker
+    can only come from a validator child. A full-path ``PYTHONPATH`` entry
+    holding ``sitecustomize.py`` and a user site holding ``usercustomize.py``
+    must not run there, and the validator must still run.
+    """
+    marks = tmp_path / "marks"
+    marks.mkdir()
+    body = (
+        "import os, pathlib\n"
+        f"pathlib.Path({str(marks)!r}, __name__ + str(os.getpid())).write_text('ran')\n"
+    )
+    plant = tmp_path / "plant"
+    plant.mkdir()
+    (plant / "sitecustomize.py").write_text(body, encoding="utf-8")
+    userbase = tmp_path / "userbase"
+    user_site = _user_site(userbase)
+    if user_site is not None:
+        user_site.mkdir(parents=True)
+        (user_site / "usercustomize.py").write_text(body, encoding="utf-8")
+    project = tmp_path / "project"
+    project.mkdir()
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(plant),
+        "PYTHONUSERBASE": str(userbase),
+    }
+    env.pop("PYTHONSAFEPATH", None)
+    completed = subprocess.run(
+        [sys.executable, "-E", "-s", str(_GATE_SCRIPT), "--check", "naming-grep", "."],
+        cwd=project,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        encoding="utf-8",
+        timeout=120,
+    )
+    assert sorted(path.name for path in marks.iterdir()) == []
+    assert "Traceback" not in completed.stdout + completed.stderr, completed.stderr
+    assert "naming" in completed.stdout, completed.stdout
+
+
+def _launcher_with(extra: str) -> str:
+    """Return the gate's launcher with *extra* run right after its first line.
+
+    The first line drops the ``''`` entry from ``sys.path``, so *extra* runs
+    in the real validator child before any validator code.
+    """
+    from apothem.conformity import gate
+
+    first, rest = gate._STANDALONE_LAUNCHER.split("\n", 1)
+    return f"{first}\n{extra}\n{rest}"
+
+
+def test_standalone_validators_run_in_utf8_mode(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A validator child runs in UTF-8 mode, which ``-E`` alone would turn off.
+
+    ``-E`` ignores ``PYTHONUTF8``, so without ``-X utf8`` a validator reads
+    git output and files in the locale code page.
+    """
+    from apothem.conformity import gate
+
+    report = tmp_path / "utf8-mode"
+    monkeypatch.setattr(
+        gate,
+        "_STANDALONE_LAUNCHER",
+        _launcher_with(
+            f"import pathlib; pathlib.Path({str(report)!r})"
+            ".write_text(str(sys.flags.utf8_mode))"
+        ),
+    )
+    project = tmp_path / "project"
+    project.mkdir()
+
+    gate._run_standalone("naming-grep", project)
+
+    assert report.read_text(encoding="utf-8") == "1"
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="subprocess asks locale.getencoding() for its text default from 3.11",
+)
+def test_agents_md_coverage_child_reads_non_ascii_git_paths_under_cp1252(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The coverage validator reads a raw UTF-8 path from ``git log``.
+
+    The child reports cp1252 as its locale encoding, the default on many
+    Windows hosts. ``core.quotepath=false`` makes git print the path as raw
+    UTF-8, and byte 0x81 in it has no character in cp1252. Decoded in that
+    code page, the read fails: on POSIX with a traceback, on Windows silently
+    (subprocess decodes in a reader thread), so the freshness check is skipped.
+    """
+    from apothem.conformity import gate
+
+    monkeypatch.setattr(
+        gate,
+        "_STANDALONE_LAUNCHER",
+        _launcher_with("import locale; locale.getencoding = lambda: 'cp1252'"),
+    )
+    git_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    for name in list(os.environ):
+        if name.startswith("GIT_"):
+            monkeypatch.delenv(name)
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "docs" / "Ábaco.md").write_text("x\n", encoding="utf-8")
+    for args in (
+        ["init", "-q"],
+        ["config", "core.quotepath", "false"],
+        ["add", "-A"],
+        [
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "-m",
+            "add",
+        ],
+    ):
+        subprocess.run(["git", "-C", str(repo), *args], check=True, env=git_env)
+
+    _passed, output = gate._run_standalone("agents-md-coverage-grep", repo)
+
+    assert "Traceback" not in output, output
+    assert json.loads(output)["freshness_checked"] is True, output
+
+
 def test_standalone_env_keeps_only_absolute_pythonpath_entries(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

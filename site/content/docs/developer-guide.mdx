@@ -125,7 +125,9 @@ Pattern: lowercase, hyphens between words, no spaces or underscores.
 - **Hooks:** Inside folder `src/apothem/hooks/`. All event handlers are Python. Every
   hook command in the Claude Code `settings.json` template uses exec form: `command`
   is the interpreter placeholder `${PYTHON_BIN}`, resolved at install time, and
-  `args` holds the script path and its arguments. That template runs
+  `args` holds `-E`, `-s`, the script path and its arguments. The two flags keep
+  `PYTHONPATH`, the other `PYTHON*` variables and the user's site-packages out
+  of every hook; keep them on any hook you add. That template runs
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` and
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` by absolute path, so
   the installed copy needs no importable `apothem` package. The Claude Code plugin

@@ -30,7 +30,7 @@ Apothem 有意不在 `pyproject.toml` 中声明任何控制台脚本——控制
 | 表面 | 调用方式 | 上下文 |
 | ------- | ---------- | ------- |
 | 引擎 CLI | `python -m apothem <command>` | 一棵将 `src/` 置于 `PYTHONPATH` 上的源码树（检出、npx 缓存、插件树） |
-| 钩子运行时 | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code 的物化形态：位于工具根目录共享 `.apothem/support/` 树下的副本，按绝对路径调用 |
+| 钩子运行时 | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code 的物化形态：位于工具根目录共享 `.apothem/support/` 树下的副本，按绝对路径调用 |
 
 - `python -m apothem` 运行 `src/apothem/__main__.py`，后者将 `src/apothem/_vendor` 放到 `sys.path` 上，检查 `click` 和 `rich` 是否可导入，然后调用 `apothem.cli:main`——即 Click 命令组。
 - 物化后的 `settings.json` / `hooks.json` 中的钩子条目按绝对脚本路径调用分派器（对于 Claude Code，还会调用位于 `<harness-root>/.apothem/support/conformity/gate.py` 的合规闸门）。两者都是独立的标准库脚本，会自行引导各自的 `sys.path`，而闸门的 schema 夹具就放在它旁边的 `<harness-root>/.apothem/support/schemas/` 中，因此钩子在**宿主上没有可导入的 `apothem` 包**的情况下也能运行。模板携带一个 `${HARNESS_ROOT}` 令牌，`apothem install` 会将其渲染为正斜杠形式的真实工具根路径。
@@ -39,7 +39,7 @@ Apothem 有意不在 `pyproject.toml` 中声明任何控制台脚本——控制
 将检出的 `src/` 目录前置到 `PYTHONPATH`，即可使包目录可导入：
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 当 `apothem` 启动器不在 PATH 上时，`install.sh` 会在安装完成时打印这一形式：vendored 目录排在 `src/` 之前，并以其所解析到的 CPython 代替 `python`。`install.ps1` 以 PowerShell 形式打印同样的两项设置：一条 `$env:PYTHONPATH` 赋值，它用 `;` 连接 vendored 目录与 `src/` 目录，随后是 `& '<CPython>' -m apothem <command>`。

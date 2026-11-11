@@ -649,6 +649,8 @@ def test_apply_write_text_renders_dispatch_paths_into_settings(
     root_posix = harness_root.resolve().as_posix()
     session_args = settings["hooks"]["SessionStart"][0]["hooks"][0]["args"]
     assert session_args == [
+        "-E",
+        "-s",
         f"{root_posix}/.apothem/support/hooks/dispatch.py",
         "SessionStart",
     ]
@@ -663,7 +665,7 @@ def test_apply_write_text_renders_dispatch_paths_into_settings(
         if any("gate.py" in str(arg) for arg in hook["args"])
     ]
     assert gate_args == [
-        [f"{root_posix}/.apothem/support/conformity/gate.py", "--hook"]
+        ["-E", "-s", f"{root_posix}/.apothem/support/conformity/gate.py", "--hook"]
     ]
 
 
@@ -732,7 +734,7 @@ def test_apply_write_text_overlay_updates_stale_hooks_preserving_operator_keys(
     args_sets = [tuple(hook.get("args", [])) for hook in session_hooks]
     # The stale module-form Apothem handler is replaced by the rendered form.
     assert ("-m", "apothem.hooks.dispatch", "SessionStart") not in args_sets
-    assert (rendered_dispatch, "SessionStart") in args_sets
+    assert ("-E", "-s", rendered_dispatch, "SessionStart") in args_sets
     # The operator's own handler under the same matcher is preserved.
     commands = [hook.get("command") for hook in session_hooks]
     assert "python -m operator_tools.session" in commands

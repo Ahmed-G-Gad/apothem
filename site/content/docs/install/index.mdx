@@ -184,8 +184,11 @@ ignore the folder you run them from and its parent folders, and fetch and
 verify the release. The installer uses a local tree only when you run the
 checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
 from any folder (for example `sh ~/src/apothem/scripts/installer/install.sh`),
-or when `APOTHEM_SOURCE` names that tree. The engine and the `apothem` command
-never import `click`, `rich` or `apothem` modules from the current folder.
+or when `APOTHEM_SOURCE` names that tree. The installers, updaters and
+uninstallers, the `apothem` shims, the npm launcher, the hooks and the
+conformity gate's validator processes keep the current folder off Python's
+module search path. A `python -m apothem` command you type yourself does not:
+`-m` reads modules from the current folder first.
 
 Empty and relative entries in your own `PYTHONPATH` are not passed on to the
 engine by any launcher (the installers, updaters, uninstallers, the POSIX and
@@ -234,8 +237,31 @@ the check depends on whether `cosign` is on your `PATH`:
   existing clone follows origin's copy of that branch.
 
 The installer ignores the git environment variables that redirect git
-(`GIT_DIR`, `GIT_WORK_TREE` and similar) and stops when `APOTHEM_REPO` starts
-with `-`.
+(`GIT_DIR`, `GIT_WORK_TREE` and similar) and the ones that point git at another
+config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`), and
+stops when `APOTHEM_REPO` starts with `-`. `GIT_CONFIG_NOSYSTEM` stays as you
+set it; it only stops git reading the system config. git still reads your own
+global config and, unless you set `GIT_CONFIG_NOSYSTEM`, the system config
+from the places it always looks, and `git`, `gpg` and `cosign` are the
+programs your `PATH` finds: the installer trusts them as found. For the whole
+run the installer sets `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing
+object from the remote on its own, and `GIT_ALLOW_PROTOCOL` to the file, git,
+http, https and ssh transports, so a value in your environment cannot widen
+that list; the PowerShell script puts both back when the run ends. The installer
+reads the release tag once, records the commit it names, verifies the tag,
+checks that commit out by ID, and requires `HEAD` to be that commit, so a tag
+moved after the check changes nothing. On Windows PowerShell 5.1 and 7, a
+download that redirects to an address that is not https is refused, as the
+POSIX installers' `curl` does.
+
+`APOTHEM_HOME` must be a folder that only you can write, since anyone who can
+write to it can change the code the `apothem` command runs. On Windows, a
+folder made at the root of a drive, such as `C:\apothem`, can be changed by
+every user who signs in to the computer, under Windows' default permissions.
+The default, `~/.apothem`, is in your own user folder. Each install, update
+and dry run warns, without stopping, when that is not so, naming the folder,
+who can write to it, and the fix (see
+[Troubleshooting](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)).
 
 A failed check aborts the install before any configuration is written and
 before the installer replaces `APOTHEM_HOME`. A
@@ -248,35 +274,62 @@ source is checked and unpacked in a folder beside `~/.apothem` first, then
 swapped in. Everything in `~/.apothem` that is not part of the source tree
 carries over to the new install: the engine's rollback backups (`backups/`),
 install ledgers (`state/`), plans, memory and its other data. If a step fails
-or you interrupt the run, the earlier install is put back unchanged; if even
-that fails, the message names where the earlier files are. These rules apply
-when the installer replaces `~/.apothem`:
+or you stop the run with Ctrl+C or a termination signal, the earlier install is
+put back unchanged; if even that fails, the message names where the earlier
+files are. A forced kill or a power loss during the swap cannot be caught: it
+can leave folders beside `~/.apothem`, and the next fetched install reports
+them (see below). These rules apply when the installer replaces `~/.apothem`:
 
 - A git clone is not replaced by a release archive without `--yes`. The files
   the clone does not track move into the new install, and the clone's own tree
-  (its history and source) moves to `~/.apothem.before-apothem-<time>`; the
-  installer says where, and you delete it once you no longer need it. Even
-  with `--yes`, the installer refuses while the clone holds local
-  work it would lose: changes, stashes, unpushed commits, or untracked files
-  in its source tree. Commit and push that work, or move it elsewhere, then
-  re-run. This check also runs with `--dry-run`. A `.git` file (a linked
-  worktree) counts as a clone, and so does a `.git` folder.
+  (its history and source) moves into a new folder,
+  `~/.apothem.before-apothem-<time>`, under its own name (`.apothem`); the
+  installer says where, and you delete it once you no longer need it. Even with
+  `--yes`, the installer refuses while the clone holds local work it would lose:
+  changes, stashes, unpushed commits, or untracked files in its source tree.
+  Commit and push that work, or move it elsewhere, then re-run. This check also
+  runs with `--dry-run`. A `.git` file (a linked worktree) counts as a clone,
+  and so does a `.git` folder.
 - A git clone of anything other than Apothem is treated like any folder that
   holds no Apothem install (see below), never updated or replaced as a clone.
-- An existing clone is updated in place only when git can see every change in
-  it and nothing in its own setup runs code during the update. Before the
-  fetch, the installer stops when files are marked assume-unchanged or
-  skip-worktree, when the clone's work tree is not `APOTHEM_HOME`
-  (`core.worktree`, or a `.git` file pointing at another clone), or when the
-  clone's `.git/config` sets `gpg.program`, `gpg.openpgp.program`,
-  `core.fsmonitor`, `core.hooksPath`, `include.*` or `includeIf.*`. The
-  clone's git hooks never run during the update.
+- An existing clone is updated in place only when git can see every change in it
+  and nothing in its own setup runs code during the update. Before the fetch,
+  the installer stops when files are marked assume-unchanged or skip-worktree,
+  when git finds no work tree in `APOTHEM_HOME` (as when the clone's config
+  sets `core.bare` to `true`), when the clone holds a submodule (recorded in its
+  index, or kept in `.git/modules`), when `.git/info/attributes` sets a
+  `filter=` (or it or a config file is not a plain file), or when the clone borrows objects from another repository
+  (`objects/info/alternates`). It also stops on any setting in the clone's own
+  `.git/config` or `.git/config.worktree` other than the ones `git clone` and
+  `git init` write there for a full clone, branch settings (a branch's `remote`
+  and `pushremote` must be `origin`), `user.name`, `user.email`,
+  `maintenance.auto`, `maintenance.strategy`, `pull.rebase` and `pull.ff`, so a
+  partial clone made with `--filter` stops too;
+  [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  lists them. The message names the setting and the file it is in. The settings,
+  attributes and object checks run before any git command that reads the
+  clone's index or objects, and also, with the submodule check, when `--yes` is
+  about to replace the clone.
+  Before any git command that applies the work tree's `.gitattributes` files,
+  the installer stops on one that git does not track or that differs from the
+  committed copy or whose committed copy sets a filter, and before the fetch it
+  stops on files under `src` (spelled in any case) that git does not track, since the engine could load them. After the checkout, it
+  removes the Python cache folders (`__pycache__`) under `src` before the engine
+  runs from the clone. The clone's git hooks
+  never run during the update, and every git command on the clone runs with no
+  pager, no automatic maintenance, its file-system monitor off, only the file,
+  git, http, https and ssh transports allowed (so an address in the clone's
+  config cannot make git run a helper program such as `ext::`) and no
+  submodule recursion; `git diff` and `git status` skip submodules. A clone
+  that another user owns stops the run with an explanation (see
+  Troubleshooting).
 - A folder that holds only the engine's own data (`backups`, `state`, `plans`,
   `memory`, `contexts`, `learning`, `providers`) is updated without `--yes`,
   and that data is kept.
 - A folder that holds no Apothem install is not touched without `--yes`. With
-  `--yes`, the installer moves the whole folder, unchanged, to
-  `~/.apothem.before-apothem-<time>`, says where, and installs fresh.
+  `--yes`, the installer moves the whole folder, unchanged, into a new folder,
+  `~/.apothem.before-apothem-<time>` (it keeps its own name inside), says
+  where, and installs fresh.
 - A symbolic link at `APOTHEM_HOME` (on Windows, a symbolic link or a
   junction) is refused, because replacing it would replace the link and not
   the folder it leads to. Point `APOTHEM_HOME` at that folder and re-run. The
@@ -285,9 +338,41 @@ when the installer replaces `~/.apothem`:
   another special character stops the install. Move it out of `APOTHEM_HOME`
   first.
 
+**One run at a time, and runs that were stopped.** Each run of the install,
+update and uninstall scripts takes a lock beside `APOTHEM_HOME`,
+`~/.apothem.lock` by default, for the whole run, and gives it up when the run
+ends by success, failure, Ctrl+C or a termination signal. The `apothem`
+commands themselves do not take it. A second run stops with "Another Apothem
+install, update or uninstall is running". On POSIX the lock is a folder that
+holds the process ID of the run. A lock left by a run that was killed is
+reported with how to remove it and never taken over, and a lock made in
+another environment (WSL and Git Bash on one machine, say) is reported as one
+whose process cannot be checked from there. On Windows PowerShell the lock is
+a file that Windows closes and deletes when the process ends. When
+`APOTHEM_HOME` is a link, every script takes the lock beside the folder it
+leads to. A dry run takes the lock too, unless the folder that holds
+`APOTHEM_HOME` does not exist yet. So every run, an update in place, an
+uninstall and a dry run included, needs write access to the folder that holds
+`APOTHEM_HOME`; without it the run stops before it changes anything.
+
+A forced kill or a power loss during a swap can leave the earlier install or
+other entries of `APOTHEM_HOME` in `.apothem-old.<name>.*`,
+`.apothem-extract.<name>.*` or `.apothem-clone.<name>.*` beside it, where
+`<name>` is the last part of `APOTHEM_HOME`, or in an
+`APOTHEM_HOME.before-apothem-<time>` folder. The next fetched install for that
+`APOTHEM_HOME`, a dry run included, stops before it changes anything, names
+each folder and the entries that were moved into it, and says how to move them
+back. For a folder an earlier installer made, which does not say which home it
+belongs to, the line may name only the engine data: look inside it. It
+deletes nothing. See
+[Troubleshooting](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home).
+
 `--dry-run` (`-DryRun` on Windows) fetches and checks the release in a
-temporary folder, applies the same refusals as a real run, and leaves
-`~/.apothem` unchanged. Pin a specific release with `APOTHEM_REF`:
+temporary folder and leaves `~/.apothem` unchanged. It makes the same checks
+as a real run, with one exception for an existing clone: it checks the clone's
+own setup, as listed above, but does not fetch into the clone, and so does not
+check it for changes to tracked files, which a real update does after its
+fetch. Pin a specific release with `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -357,8 +442,8 @@ with no manual `PYTHONPATH`.
 ```bash title="Verify"
 apothem verify --harness claude-code
 
-# or, before the shim is on PATH, from the bundled source:
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+# or, before the shim is on PATH, by the shim's full path:
+~/.local/bin/apothem verify --harness claude-code
 ```
 
 ## 4. VS Code family extension
@@ -499,6 +584,12 @@ cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
 
+`python -m` puts the current folder first on Python's module search path, so a
+file there such as `click.py`, or a folder named `apothem`, would run in
+place of the real module. Run these commands from the checkout root, or from
+another folder you trust. The installed `apothem` command does not read the
+current folder.
+
 As with the npm shim, a first `install` on a machine with no profile creates the
 starter profile at `~/.config/apothem/profile.yaml` and continues.
 
@@ -514,7 +605,7 @@ Every channel above names its own verification command. The two general forms
 are:
 
 ```bash title="Installer path"
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+apothem verify --harness claude-code
 ```
 
 ```bash title="npx path"
@@ -525,7 +616,8 @@ Replace the harness name with whichever adapter you installed; see the
 [harness list](/docs/harnesses) for all supported names. To check every
 installed adapter at once (its verify and its hook commands), run `doctor`
 in place of `verify --harness NAME`, in whichever form you used above:
-`apothem doctor`, `PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`, or
+`apothem doctor` (or the shim's full path, or the command the installer
+printed, when its folder is not on `PATH`), or
 `npx @ahmed-g-gad/apothem doctor`. For the plugin path, run
 `/plugin` inside Claude Code and confirm **apothem** is listed as installed.
 
