@@ -223,34 +223,105 @@ clone's own config" names a setting in the clone's `.git/config`, or in
 `.git/config.worktree` when the clone has one. An update in place accepts only
 these settings there (the section and the key compare without regard to case):
 
-- the settings `git clone` and `git init` write: `core.repositoryformatversion`,
-  `core.filemode`, `core.bare`, `core.logallrefupdates`, `core.symlinks`,
-  `core.ignorecase`, `core.precomposeunicode`, `core.longpaths`,
-  `core.partialclonefilter`, `extensions.objectformat`,
+- the settings `git clone` and `git init` write for a full clone:
+  `core.repositoryformatversion`, `core.filemode`, `core.bare`,
+  `core.logallrefupdates`, `core.symlinks`, `core.ignorecase`,
+  `core.precomposeunicode`, `core.longpaths`, `extensions.objectformat`,
   `extensions.refstorage` (only with the value `files` or `reftable`),
-  `extensions.partialclone`, `extensions.worktreeconfig`,
-  `remote.origin.url`, `remote.origin.fetch`, `remote.origin.tagopt`,
-  `remote.origin.promisor` and `remote.origin.partialclonefilter`;
-- branch settings, `branch.<name>.<key>`, which git and editors add;
+  `extensions.worktreeconfig`, `remote.origin.url`, `remote.origin.fetch` and
+  `remote.origin.tagopt`;
+- branch settings, `branch.<name>.<key>`, which git and editors add, except
+  that `branch.<name>.remote` and `branch.<name>.pushremote` must be exactly
+  `origin`;
 - `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
   `pull.rebase` and `pull.ff`.
 
 Any other setting stops the update, because it could make git run a program,
-read settings, hooks or attributes from another place, or connect somewhere
-else. A clone made with `--mirror`, `--sparse`, `--recurse-submodules` or a
-remote not named `origin` stops here too. Remove the setting from the file the
-message names, for example
+read settings, hooks, attributes or objects from another place, or connect
+somewhere else. A clone made with `--mirror`, `--sparse`,
+`--recurse-submodules` or a remote not named `origin` stops here too, and so
+does a partial clone, made with `--filter`: the message names
+`remote.origin.promisor`, because git would fetch missing objects from the
+remote on its own while it reads the clone. Clone again without `--filter`.
+Remove the setting from the file the message names, for example
 `git config --file ~/.apothem/.git/config --unset-all <key>`, then re-run.
-`--unset-all` also removes a setting that is there more than once. "own git
+`--unset-all` also removes a setting that is there more than once. For a
+branch's `remote` or `pushremote`, set it to `origin` instead, for example
+`git config --file ~/.apothem/.git/config branch.main.remote origin`. "own git
 attributes set a filter" names `.git/info/attributes`: remove the `filter=`
 line.
+
+"which is not a plain file" names `.git/info/attributes`, `.git/config` or
+`.git/config.worktree` when it is a folder, a named pipe or another special
+file, or, on Windows, a link. git could read other text from such a file than
+the check reads. Replace it with a plain file, or remove it, then re-run.
+
+"has a setting whose name holds a line break" means a section name in the file
+the message names holds a carriage return. git never writes one, and a reader
+could take that name for two settings. Open the file in a text editor, remove
+that section, then re-run.
+
+"borrows objects from another repository" means the clone has an
+`objects/info/alternates` or `objects/info/http-alternates` file, as a clone
+made with `--reference` or `--shared` does. git would then read objects from
+that other repository, under settings the installer does not check. Run
+`git -C ~/.apothem repack -a -d` to copy the objects into the clone, remove the
+file the message names, then re-run.
 
 "keeps submodule repositories in ..." and "holds a submodule at ..." mean the
 clone has a submodule, kept in the folder the first message names or recorded
 in its index at the path the second one names. A release tree has none, and
 git would run inside the submodule, whose own settings the installer does not
 check. Remove the submodule and that folder from the clone, or move the clone
-aside, then re-run. The clone's git hooks never run during an update.
+aside, then re-run. Replacing the clone with `--yes` makes this check too,
+before `git status` looks for local work. The clone's git hooks never run
+during an update.
+
+### The installer stops: a .gitattributes file in the clone is untracked or changed
+
+git applies the `.gitattributes` files in the work tree while it compares and
+checks out files, and such a file can make git run a program. Before any of
+those commands, the installer and the update script stop on a `.gitattributes`
+file that is not the committed one, in any folder of the clone and with any
+mix of capital letters in its name. `--dry-run` and `--yes` make this check
+too.
+
+- "has a .gitattributes file that git does not track, at ..." names a file git
+  does not track, ignored files and files in untracked folders included.
+  Remove it, then re-run.
+- "has a changed .gitattributes file at ..." names a tracked file whose content
+  differs from the committed copy, whose change is staged, or which is a link
+  or a folder. If you made the change, put back the committed copy, for
+  example with `git -C ~/.apothem checkout HEAD -- <path>`, then re-run.
+- "has a .gitattributes file at ... that sets a filter (filter=)" names a
+  committed file that names a filter outside a comment. git would run that
+  filter, which your own git config may define, while it reads the clone.
+  Remove the filter, commit that change, then re-run.
+
+If you did not make the file or the change, someone else could write to the
+clone: move it aside, install fresh, and make sure `APOTHEM_HOME` is a folder
+only you can write.
+
+### The installer stops: files under src that git does not track
+
+The message reads "has files under src that git does not track, and the engine
+could load them:" and lists each one (the first 20, then how many more). The
+engine runs from the clone's `src` folder, so an extra file there could run as
+part of it. Ignored files count, and so does a `.pyc` file beside the sources.
+A folder named `Src` or `SRC` counts as `src`, since Windows and macOS find
+it under that name.
+An editable `pip install` of the clone writes `src/apothem.egg-info`, and a file
+manager can write `.DS_Store` or `desktop.ini`. Move the files out of
+`~/.apothem/src`, then re-run; nothing was changed. The check runs before the
+fetch, in an update in place and in a dry run. Python's cache folders
+(`__pycache__`) do not count: after the checkout, and before the engine first
+runs from the clone, the update removes every `__pycache__` folder under `src`,
+so no cached bytecode from before the update loads.
+
+"Could not remove the Python cache folders (__pycache__) under ..." means that
+removal failed, for example because a file in one of them belongs to another
+user or, on Windows, is open in another program. The clone is already checked
+out to the new release. Remove those folders yourself, then re-run.
 
 ### The installer stops: another run holds the lock
 
@@ -354,6 +425,74 @@ ownership of the folder, or point `APOTHEM_HOME` at a folder you own, then
 re-run. The installer does not add the folder to git's `safe.directory`
 list. Any other failure of that first git command reads "git could not read
 the clone at ..." followed by git's own first line of explanation.
+
+### The installer warns: other users can change APOTHEM_HOME
+
+The install and update scripts, dry runs included, warn when users other
+than you can write to `APOTHEM_HOME`, since they can then change the code
+the `apothem` command runs as you. The run goes on; the warning only names
+the folder, who can write to it, and the fix. The warning starts with one of:
+
+- "Other users can change the code Apothem runs as you", when they can write
+  to `APOTHEM_HOME`. When `APOTHEM_HOME` is a link, the message names the
+  folder it leads to.
+- "Other users can replace ...", when they can write to the folder that holds
+  `APOTHEM_HOME` (or holds the link to it), and so rename or remove it.
+- "A new ... would let", when `APOTHEM_HOME` does not exist yet and a new
+  folder there would be open to others.
+
+An install from a local checkout is not checked, whether `APOTHEM_SOURCE`
+names it or you run that checkout's own `scripts/installer/install.sh` or
+`install.ps1`. The update scripts skip the check only when `APOTHEM_SOURCE` is
+set. If the warning names a group that you share on purpose with people you trust to
+change the code, you can ignore it.
+
+On Linux and macOS, the warning names "all users" or "the group" it found in
+the folder's permission bits. A group with your own user name is your own
+group and is never named. To fix it, run the command the message gives:
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+Files made under the same settings can be writable too: `chmod -R go-w` on
+the folder fixes those as well. If others need to write to the folder that
+holds `APOTHEM_HOME`, as with `/tmp`, set its sticky bit with `chmod +t` so
+they cannot rename or remove what you put there, or move `APOTHEM_HOME`. For
+a new install, the warning reports your umask: run `umask 022` and run the
+installer again. On WSL, keep `APOTHEM_HOME` in your Linux home, not under
+`/mnt/c`, where every file looks writable by all users.
+
+On Windows, the warning names Everyone, Authenticated Users, Users or
+INTERACTIVE (everyone signed in at the computer or over Remote Desktop, who
+can change what is made in `C:\Users\Public`) when a permission entry lets
+them change the folder. When the message adds "access
+that folders made at the root of a drive inherit from the drive's default
+permissions", the folder sits at the root of a drive, such as `C:\apothem`:
+Windows lets every user who signs in add and change folders made there. The
+simplest fix is to move `APOTHEM_HOME` into your user folder (`%USERPROFILE%`),
+as the default `~\.apothem` is. To keep the folder where it is, turn off
+inheritance, give yourself full control, then remove the four groups:
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+Give yourself access before you remove the groups: the entry you remove can
+be your only way to write to the folder. The `*S-...` names are the groups'
+security IDs (Authenticated Users, Users, Everyone and INTERACTIVE), which
+work in every
+Windows language. You can make the same change in the folder's Properties >
+Security > Advanced. When the warning is about the folder that holds
+`APOTHEM_HOME`, make the change there, or move `APOTHEM_HOME`. A link or
+junction at `APOTHEM_HOME` takes its permissions from that folder, so
+others who can change the folder can delete the link and make their own.
+
+The shell scripts skip the check under Git Bash, MSYS2 and Cygwin, where the
+permission bits are made up from Windows permissions; `install.ps1` and
+`update.ps1` read the Windows permissions themselves.
 
 ### The installer stops: the existing clone could not be updated
 

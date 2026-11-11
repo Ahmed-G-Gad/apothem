@@ -1854,4 +1854,85 @@ def test_replacing_a_clone_never_runs_git_inside_a_nested_repository(
     assert not marker.exists(), combined
 
 
+# --- the warning when others can write to APOTHEM_HOME ------------------------
+
+# A stand-in engine and example profile, so a run gets past the engine call
+# and ends with exit 0.
+ENGINE_STAND_IN: dict[str, bytes] = {
+    "src/apothem/__main__.py": b"",
+    "src/apothem/schemas/profile.example.yaml": b"{}\n",
+}
+HOME_ACCESS_OPENINGS = (
+    "Other users can change the code Apothem runs as you",
+    "Other users can replace",
+    "change the code Apothem runs as you (umask",
+)
+
+
+def _stub_id_user(tmp_path: Path, user: str) -> Path:
+    """A folder holding an ``id`` whose ``-un`` answer is USER; every other
+    call runs the real id."""
+    stubs = tmp_path / "stub-id"
+    stubs.mkdir(exist_ok=True)
+    real_id = shutil.which("id") or "/usr/bin/id"
+    program = stubs / "id"
+    program.write_text(
+        "#!/bin/sh\n"
+        f"[ \"$1\" = -un ] && {{ printf '%s\\n' {shlex.quote(user)}; exit 0; }}\n"
+        f'exec {shlex.quote(real_id)} "$@"\n',
+        encoding="utf-8",
+    )
+    program.chmod(EXECUTABLE_MODE)
+    return stubs
+
+
+def test_a_fresh_install_under_a_user_private_group_gives_no_warning(
+    tmp_path: Path,
+) -> None:
+    """With umask 002 the new APOTHEM_HOME may be group-writable, but its
+    group is the one named after you (here, ``id -un`` answers with the
+    primary group's name), so the run gives no warning."""
+    import grp
+
+    base = _release(tmp_path, extra=ENGINE_STAND_IN)
+    own_group = grp.getgrgid(os.getgid()).gr_name
+
+    result = _run(
+        tmp_path,
+        base,
+        cosign_dir=_stub_cosign(tmp_path),
+        prelude="umask 002",
+        path_first=[_stub_id_user(tmp_path, own_group)],
+    )
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert (tmp_path / "apothem-home" / "src" / "apothem" / "__main__.py").is_file()
+    for opening in HOME_ACCESS_OPENINGS:
+        assert opening not in combined, combined
+
+
+def test_a_dry_run_warns_once_about_a_world_writable_home(tmp_path: Path) -> None:
+    """A dry run reads APOTHEM_HOME as it is, warns, and carries on."""
+    home = tmp_path / "apothem-home"
+    home.mkdir()
+    home.chmod(0o777)
+    tmp_path.chmod(0o700)
+    base = _release(tmp_path, extra=ENGINE_STAND_IN)
+
+    result = _run(tmp_path, base, cosign_dir=_stub_cosign(tmp_path), dry_run=True)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, combined
+    assert "Dry-run complete" in combined, combined
+    real = os.path.realpath(home)
+    expected = (
+        "Other users can change the code Apothem runs as you: all users can "
+        f'write to {real}. To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
+    )
+    lines = [line for line in combined.splitlines() if "Other users can" in line]
+    assert len(lines) == 1, combined
+    assert lines[0].endswith(expected), combined
+
+
 # REUSE-IgnoreEnd

@@ -61,14 +61,26 @@ changes to tracked files stops the update, and you commit or stash them and
 re-run. Before it fetches, the update also stops when files are marked
 assume-unchanged or skip-worktree (git would not see their changes), when the
 clone's work tree is not `APOTHEM_HOME`, when the clone holds a submodule,
-when `.git/info/attributes` sets a `filter=`, or when the clone's
+when `.git/info/attributes` sets a `filter=` (or it or a config file is not
+a plain file), when the clone borrows objects
+from another repository (`objects/info/alternates`), or when the clone's
 `.git/config` or `.git/config.worktree` holds a setting other than the ones
-`git clone` and `git init` write there, branch settings, `user.name`,
+`git clone` and `git init` write there for a full clone, branch settings (a
+branch's `remote` and `pushremote` must be `origin`), `user.name`,
 `user.email`, `maintenance.auto`, `maintenance.strategy`, `pull.rebase` and
-`pull.ff`. The message names the setting and the file it is in, and
+`pull.ff`. A partial clone, made with `--filter`, stops there too. The message
+names the setting and the file it is in, and
 [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
-lists the accepted settings. The clone's git hooks never run during the
-update, and a clone of a project other than Apothem is not updated at all.
+lists the accepted settings. It also stops, before the fetch, on a
+`.gitattributes` file in the work tree that git does not track, that differs
+from the committed copy or whose committed copy sets a filter, and on files
+under `src` (spelled in any case) that git does not track,
+since the engine could load them. After the checkout, it removes the Python
+cache folders (`__pycache__`) under `src` before the engine runs from the
+clone. The clone's git hooks never run during the update, and a clone of a
+project other than Apothem is not updated at all. The update sets
+`GIT_NO_LAZY_FETCH=1` and `GIT_ALLOW_PROTOCOL` for its run (see the
+[installer environment variables](/docs/how-to/installer-environment-variables#the-installer-variables)).
 Each run holds a lock, `<APOTHEM_HOME>.lock`, for its whole length, so a
 second install, update or uninstall on the same `APOTHEM_HOME` stops; see
 [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)

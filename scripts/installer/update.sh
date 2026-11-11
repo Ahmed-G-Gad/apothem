@@ -80,8 +80,12 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
     GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
+# No replace refs, no lazy fetch of a missing object (a fetch the clone's
+# config shapes), only these transports whatever the caller set.
 GIT_NO_REPLACE_OBJECTS=1
-export GIT_NO_REPLACE_OBJECTS
+GIT_NO_LAZY_FETCH=1
+GIT_ALLOW_PROTOCOL=file:git:http:https:ssh
+export GIT_NO_REPLACE_OBJECTS GIT_NO_LAZY_FETCH GIT_ALLOW_PROTOCOL
 
 # The caller's PYTHONPATH is set aside until the Python this script runs is
 # chosen: which separator and which path form are safe depends on that
@@ -471,9 +475,11 @@ git_path() {
 
 # The settings a clone's own git config (.git/config, and .git/config.worktree
 # when there is one) may hold for an update in place to go ahead: the ones
-# git clone and git init write there (any git 2.x, any platform, sha1 or
-# sha256, files or reftable refs, --no-tags, --single-branch, --depth,
-# --filter), branch settings, which tools such as editors add, the user's
+# git clone and git init write there for a full clone (any git 2.x, any
+# platform, sha1 or sha256, files or reftable refs, --no-tags,
+# --single-branch, --depth; no partial-clone or promisor setting, since a
+# lazy fetch of a missing object runs a fetch the clone's settings would
+# shape), branch settings, which tools such as editors add, the user's
 # name and email, the two maintenance settings `git maintenance register`
 # writes, and the two pull settings git pull's own hint suggests. None of
 # them names a program for git to run, a file or folder git reads settings,
@@ -498,16 +504,12 @@ core.symlinks
 core.ignorecase
 core.precomposeunicode
 core.longpaths
-core.partialclonefilter
 extensions.objectformat
 extensions.refstorage
-extensions.partialclone
 extensions.worktreeconfig
 remote.origin.url
 remote.origin.fetch
 remote.origin.tagopt
-remote.origin.promisor
-remote.origin.partialclonefilter
 branch.*.*
 user.name
 user.email
@@ -519,12 +521,11 @@ pull.ff'
 
 # unallowed_config_key [REFUSE] — read git setting names, one per line, as
 # `git config --name-only --list` prints them, and print the first one that
-# CLONE_CONFIG_ALLOW does not hold, or that equals REFUSE (compared without
-# regard to case). The section is the text before the first dot, the key the
-# text after the last dot, and the subsection whatever lies between (a name
-# with one dot has none); a name with an empty section or key matches
-# nothing. A two-part entry (user.name) matches only a name with no
-# subsection; a three-part entry matches only a name with one.
+# CLONE_CONFIG_ALLOW does not hold, or that is a line of REFUSE (byte for
+# byte). The section is the text before the first dot, the key the text
+# after the last dot, the subsection whatever lies between; a name with an
+# empty section or key matches nothing. A two-part entry (user.name) matches
+# only a name with no subsection, a three-part entry only a name with one.
 unallowed_config_key() {
     # LC_ALL=C: bytes, as git compares (macOS awk collates in UTF-8).
     LC_ALL=C CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
@@ -550,12 +551,13 @@ unallowed_config_key() {
         }
         BEGIN {
             n = split(ENVIRON["CLONE_CONFIG_ALLOW"], allow, "\n")
-            refuse = tolower(ENVIRON["CLONE_CONFIG_REFUSE"])
+            m = split(ENVIRON["CLONE_CONFIG_REFUSE"], names, "\n")
+            for (j = 1; j <= m; j++) if (names[j] != "") refuse[names[j]] = 1
         }
         $0 == "" { next }
         {
             if (!split_name($0, got) || got["sec"] == "" || got["key"] == "") { print; exit }
-            if (refuse != "" && tolower($0) == refuse) { print; exit }
+            if ($0 in refuse) { print; exit }
             ok = 0
             for (j = 1; j <= n && !ok; j++) {
                 if (allow[j] == "" || !split_name(allow[j], want)) continue
@@ -572,39 +574,61 @@ unallowed_config_key() {
 }
 
 # config_file_problem DIR FILE — print the first setting, in file order, in
-# the config file FILE of the clone at DIR that an update in place does not
-# accept: a name unallowed_config_key reports, or extensions.refstorage
-# when any of its values is other than files or reftable (a later git reads
-# refs from a folder such a value names). The values are read NUL-ended, and
-# a line break inside one turns into a byte that makes it fail. git runs in
-# the clone (-C DIR), never in the current folder, whose own repository
-# could stop it. Die when FILE cannot be read.
+# config file FILE of the clone at DIR that an update does not accept: one
+# unallowed_config_key reports, extensions.refstorage other than files or
+# reftable (a later git reads refs from a folder it names), or
+# branch.<name>.remote or .pushremote other than origin. Values are read
+# NUL-ended, CR kept (a line break or CR in one fails). Die when FILE cannot be
+# read, or a name holds a line break (a CR in a quoted subsection, which
+# PowerShell would read as two names).
 config_file_problem() {
     _cp_keys="$(cgit -C "$1" config --file "$2" --name-only --list 2>/dev/null)" \
         || die "Could not read the git config of $1 at ${2}."
-    _cp_refuse=""
-    if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
-        | LC_ALL=C tr '\000\n' '\n\001' \
-        | LC_ALL=C awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
-        _cp_refuse="extensions.refstorage"
+    if printf '%s\n' "$_cp_keys" | LC_ALL=C awk 'index($0, "\r") { f = 1; exit } END { exit f ? 0 : 1 }'; then
+        die "$1's own git config has a setting whose name holds a line break, which an update in place does not accept. Remove it from ${2}, then re-run."
     fi
+    _cp_refuse="$(cgit -C "$1" config --file "$2" --null --list 2>/dev/null \
+        | LC_ALL=C tr '\000\n\r' '\n\001\002' | LC_ALL=C awk '{
+            sep = index($0, "\001")
+            name = sep ? substr($0, 1, sep - 1) : $0
+            value = sep ? substr($0, sep + 1) : ""
+            low = tolower(name)
+            if (low == "extensions.refstorage") {
+                if (!sep || (value != "files" && value != "reftable")) print name
+            } else if (low ~ /^branch\..+\.(push)?remote$/ && (!sep || value != "origin")) print name
+        }')"
     printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
 }
 
-# check_clone_config DIR — die when the clone at DIR holds a git setting of
-# its own that an update in place does not accept (see CLONE_CONFIG_ALLOW),
-# in its config file or, when there is one, in its config.worktree, or when
-# its info/attributes file sets a filter, whose program checkout and diff
-# run. The message names the setting and the file it is in. Neither file's
-# include.path is followed (include settings are not on the list). This runs
-# before any git command that reads the clone's index or could run one of
-# its programs. A NUL byte would make grep treat info/attributes as binary
-# and print nothing, while git still reads the lines around it, so NUL
-# bytes are dropped first.
+# need_plain_file DIR FILE — die when FILE, in DIR's git folder, exists or
+# is a link but is not a plain file: from a pipe git could read other text
+# than the check read.
+need_plain_file() {
+    if { [ -e "$2" ] || [ -L "$2" ]; } && [ ! -f "$2" ]; then
+        die "$1's git folder holds ${2}, which is not a plain file, so git could read other text from it than this check reads. Make it a plain file or remove it, then re-run."
+    fi
+}
+
+# sets_filter — succeed when the git attributes text on stdin sets a filter
+# outside comments. NUL bytes are dropped (grep would call the text binary
+# while git reads the lines around them), and a line is a comment only
+# where # follows nothing but spaces, tabs and CR, as git reads it.
+sets_filter() {
+    _sf_blank="$(printf ' \t\r')"
+    LC_ALL=C tr -d '\000' 2>/dev/null | LC_ALL=C grep -v "^[${_sf_blank}]*#" | LC_ALL=C grep -q 'filter='
+}
+
+# check_clone_config DIR — die when the clone at DIR has a setting of its
+# own an update does not accept (config, then config.worktree; no
+# include.path is followed), borrows objects from another repository
+# (alternates), or its info/attributes sets a filter, or when one of those
+# files is not a plain file. This runs before any git command that reads
+# the clone's index or objects or could run one of its programs.
 check_clone_config() {
     _cc_key=""
     for _cc_name in config config.worktree; do
         _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
+        need_plain_file "$1" "$_cc_file"
         if [ -e "$_cc_file" ]; then
             _cc_key="$(config_file_problem "$1" "$_cc_file")" || exit 1
             [ -z "$_cc_key" ] || break
@@ -613,20 +637,22 @@ check_clone_config() {
     if [ -n "$_cc_key" ]; then
         die "$1's own git config sets ${_cc_key}, which an update in place does not accept in a clone's own config. Remove it from ${_cc_file}, then re-run."
     fi
+    for _cc_name in objects/info/alternates objects/info/http-alternates; do
+        _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
+        if [ -e "$_cc_file" ]; then
+            die "$1 borrows objects from another repository (${_cc_file} names it). A release clone does not, and the update would run git in that repository under settings nothing here checks. Run 'git -C $1 repack -a -d' to copy the objects in, remove ${_cc_file}, then re-run."
+        fi
+    done
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
-    # As git reads it: a line is a comment only where # follows nothing but
-    # spaces, tabs and CR (not VT or FF, which [[:space:]] would take).
-    _cc_blank="$(printf ' \t\r')"
-    if [ -f "$_cc_file" ] && LC_ALL=C tr -d '\000' 2>/dev/null < "$_cc_file" \
-        | LC_ALL=C grep -v "^[${_cc_blank}]*#" | LC_ALL=C grep -q 'filter='; then
+    need_plain_file "$1" "$_cc_file"
+    if [ -f "$_cc_file" ] && sets_filter < "$_cc_file"; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
 }
 
 # check_clone_modules DIR — die when the clone at DIR keeps submodule
-# repositories (a modules folder in its git folder). A release tree has
-# none, and git would run inside such a repository, under settings and
-# attributes nothing here checks. Reads no index.
+# repositories (its git folder's modules), where git would run under
+# settings nothing here checks. Reads no index.
 check_clone_modules() {
     _sm_dir="$(git_path "$1" modules)" || die "Could not read the git config of $1."
     if [ -d "$_sm_dir" ]; then
@@ -634,12 +660,9 @@ check_clone_modules() {
     fi
 }
 
-# check_clone_gitlinks DIR — die when the index of the clone at DIR records
-# a git repository inside its tree (a gitlink, mode 160000), as a clone with
-# a submodule, or with another clone added inside it, has it. A release tree
-# has none, and git diff and git status would run git inside it. Reading the
-# index runs no program of the clone's own once check_clone_config has
-# passed.
+# check_clone_gitlinks DIR — die when the clone's index records a git
+# repository in its tree (a gitlink, mode 160000), which git diff and git
+# status would run git inside. A release tree has none.
 check_clone_gitlinks() {
     _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
@@ -649,25 +672,122 @@ check_clone_gitlinks() {
     fi
 }
 
-# check_clone_setup DIR — die, before anything is fetched, when the clone at
-# DIR is set up so that updating it in place would trust something the
-# release does not hold: a clone git will not work in, git settings or
-# attributes of its own that an update does not accept (check_clone_config,
-# which runs first, before any git command that reads the index), kept
-# submodule repositories (check_clone_modules, right after it), a work tree
-# other than DIR (core.worktree, or a .git that points at another clone's),
-# a submodule in its index (check_clone_gitlinks), or files git has been
-# told to ignore changes to (assume-unchanged or skip-worktree, which
-# require_clean_clone cannot see). Every check only reads, so a dry
-# run makes them too.
+# git_z DIR ARGS... — print git ARGS' NUL-ended records in the clone at
+# DIR one per line (a line break in one turns into byte 001); die when git
+# fails, which a "<001>!" line after its output marks.
+git_z() {
+    _gz_dir="$1"
+    shift
+    _gz_out="$( { cgit -C "$_gz_dir" "$@" 2>/dev/null || printf '\000\001!\000'; } | LC_ALL=C tr '\000\n' '\n\001')"
+    case "
+${_gz_out}
+" in
+        *"
+$(printf '\001!')
+"*) die "$_gz_dir has changes to tracked files. Commit or stash them, then re-run." ;;
+    esac
+    printf '%s\n' "$_gz_out"
+}
+
+# check_clone_attributes DIR — die when the clone's work tree has a
+# .gitattributes (any case) git does not track, a tracked one that is not
+# a plain file matching the index and HEAD, or one whose index copy sets a
+# filter: git status, diff and checkout would apply it (it can name a
+# filter of the user's own). Compares without filters. Leaves the
+# untracked list in _ca_other.
+check_clone_attributes() {
+    _ca_index="$(git_z "$1" ls-files -s -z)" || exit 1
+    _ca_head="$(git_z "$1" ls-tree -r -z HEAD)" || exit 1
+    _ca_other="$(git_z "$1" ls-files -o -z)" || exit 1
+    # HEAD's entries, "=", the index's: out come C<TAB>-<TAB>PATH (changed)
+    # and H<TAB>OID<TAB>PATH (to compare).
+    _ca_found="$(printf '%s\n=\n%s\n' "$_ca_head" "$_ca_index" | LC_ALL=C awk '
+        $0 == "=" { in_index = 1; next }
+        { tab = index($0, "\t") }
+        tab == 0 { next }
+        {
+            path = substr($0, tab + 1)
+            leaf = path
+            sub(/.*\//, "", leaf)
+            if (tolower(leaf) != ".gitattributes") next
+            split(substr($0, 1, tab - 1), f, " ")
+        }
+        !in_index { head[path] = f[1] " " f[3]; order[++n] = path; next }
+        !(path in seen) {
+            seen[path] = 1
+            if (f[3] != "0" || head[path] != f[1] " " f[2] || index(path, "\001")) print "C\t-\t" path
+            else print "H\t" f[2] "\t" path
+        }
+        END { for (i = 1; i <= n; i++) if (!(order[i] in seen)) print "C\t-\t" order[i] }')"
+    _ca_tab="$(printf '\t')"
+    printf '%s\n' "$_ca_found" | while IFS= read -r _ca_line; do
+        [ -n "$_ca_line" ] || continue
+        _ca_kind="${_ca_line%%"$_ca_tab"*}"
+        _ca_line="${_ca_line#*"$_ca_tab"}"
+        _ca_oid="${_ca_line%%"$_ca_tab"*}"
+        _ca_path="${_ca_line#*"$_ca_tab"}"
+        if [ "$_ca_kind" = "C" ]; then
+            :
+        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_filter; then
+            die "$1 has a .gitattributes file at $1/${_ca_path} that sets a filter (filter=). git would apply it while it reads the clone. Remove the filter and commit that change, then re-run."
+        elif [ ! -e "$1/$_ca_path" ] && [ ! -L "$1/$_ca_path" ]; then
+            continue
+        elif [ ! -L "$1/$_ca_path" ] && [ -f "$1/$_ca_path" ] \
+            && [ "$(cgit -C "$1" hash-object --no-filters -- "$_ca_path" 2>/dev/null)" = "$_ca_oid" ]; then
+            continue
+        fi
+        die "$1 has a changed .gitattributes file at $1/${_ca_path}. git would apply it while it reads the clone. Undo the change, then re-run."
+    done || exit 1
+    _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '{ leaf = $0; sub(/.*\//, "", leaf) } tolower(leaf) == ".gitattributes" { print; exit }')"
+    if [ -n "$_ca_path" ]; then
+        die "$1 has a .gitattributes file that git does not track, at $1/${_ca_path}. git would apply it while it reads the clone. Remove it, then re-run."
+    fi
+}
+
+# check_clone_src DIR LIST — die, listing them, when the untracked LIST has
+# paths under src/ (in any case: a file system that ignores case finds Src
+# as src) other than files in __pycache__ folders (which
+# remove_source_caches removes): the engine could load them.
+check_clone_src() {
+    _sr_found="$(printf '%s\n' "$2" | SR_HOME="$1" LC_ALL=C awk '
+        tolower(substr($0, 1, 4)) != "src/" { next }
+        {
+            path = $0
+            sub(/\/$/, "", path)
+            n = split(path, part, "/")
+            for (i = 1; i < n; i++) if (part[i] == "__pycache__") next
+            if (++count <= 20) print "    " ENVIRON["SR_HOME"] "/" $0
+        }
+        END { if (count > 20) print "    and " (count - 20) " more" }')"
+    [ -n "$_sr_found" ] || return 0
+    printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$1 has files under src that git does not track, and the engine could load them:" >&2
+    printf '%s\n' "$_sr_found" >&2
+    printf '    %s\n' "Nothing was changed. Move these files out of $1/src, then re-run." >&2
+    exit 1
+}
+
+# remove_source_caches DIR — remove every __pycache__ folder or link under
+# DIR/src, so no bytecode the release did not make loads.
+remove_source_caches() {
+    [ ! -d "$1/src" ] || find "$1/src" -name __pycache__ \( -type d -o -type l \) -prune -exec rm -rf -- {} + \
+        || die "Could not remove the Python cache folders (__pycache__) under $1/src. Remove them, then re-run."
+}
+
+# check_clone_setup DIR — die, before anything is fetched, when updating
+# the clone at DIR in place would trust something the release does not
+# hold: a clone git will not work in, settings, attributes or borrowed
+# objects of its own (check_clone_config, before any git command that reads
+# the index), submodules, a work tree other than DIR (core.worktree, or a
+# .git pointing at another clone's), files git ignores changes to
+# (assume-unchanged, skip-worktree), work-tree .gitattributes files, or
+# untracked files under src. Every check only reads, so a dry run makes
+# them too.
 check_clone_setup() {
     clone_git_ok "$1"
     check_clone_config "$1"
     check_clone_modules "$1"
-    # Ask git whether DIR is inside the work tree and at its top, rather
-    # than comparing folder names: under Git Bash, git and pwd can spell one
-    # folder differently (other capitals, or /tmp for the Windows temp
-    # folder).
+    # Ask git, not folder names: under Git Bash, git and pwd can spell one
+    # folder differently (other capitals, or /tmp for the Windows temp).
     _cs_inside="$(cgit -C "$1" rev-parse --is-inside-work-tree 2>/dev/null || true)"
     _cs_prefix="$(cgit -C "$1" rev-parse --show-prefix 2>/dev/null)" || _cs_prefix="?"
     if [ "$_cs_inside" != "true" ] || [ -n "$_cs_prefix" ]; then
@@ -679,6 +799,8 @@ check_clone_setup() {
     if printf '%s\n' "$_cs_flags" | LC_ALL=C awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
         die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
+    check_clone_attributes "$1"
+    check_clone_src "$1" "$_ca_other"
 }
 
 # verify_tag_by_maintainer / verify_tag_valid_other_key mirror install.sh,
@@ -757,6 +879,59 @@ is_release_tag() {
         v[0-9]*.[0-9]*.[0-9]*) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+# warn_home_access — warn, never stop, when other users can write to
+# APOTHEM_HOME (a new one: by the umask) or the folder holding it. Git Bash,
+# MSYS2 and Cygwin make mode bits up from Windows permissions, which the ps1
+# scripts read instead.
+warn_home_access() {
+    _ha_os="$(uname -s 2>/dev/null)" || _ha_os=
+    case "$_ha_os" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
+    _ha_d="$APOTHEM_HOME"
+    if [ -L "$_ha_d" ]; then
+        warn_writable "$(dirname -- "$_ha_d")" 1 "$_ha_d"
+        [ -d "$_ha_d" ] || return 0
+    fi
+    if [ -d "$_ha_d" ]; then
+        _ha_d="$(cd -P -- "$_ha_d" && pwd -P)" || return 0
+    fi
+    warn_writable "$_ha_d" 0 "$_ha_d"
+    warn_writable "$(dirname -- "$_ha_d")" 1 "$_ha_d"
+}
+
+# warn_writable DIR KIND CHILD — KIND 0: warn when others can write to DIR.
+# KIND 1: when they can replace CHILD in DIR (the sticky bit stops that; a
+# missing DIR is skipped). A group named after you is your own group. stat
+# gives the group's whole name; a new DIR takes the group of a setgid
+# folder above it, and always on macOS and the BSDs.
+warn_writable() {
+    _ww_l=new _ww_f="$1"
+    if [ -d "$1" ]; then
+        _ww_l="$(ls -ldL -- "$1" 2>/dev/null)" || return 0
+    elif [ "$2" = 1 ] || [ -e "$1" ]; then
+        return 0
+    else
+        _ww_f="$(dirname -- "$1")"
+        _ww_l="new $(ls -ldL -- "$_ww_f" 2>/dev/null)" || _ww_l=new
+    fi
+    _ww_g="$(stat -Lc %G -- "$_ww_f" 2>/dev/null || stat -Lf %Sg -- "$_ww_f" 2>/dev/null)" || _ww_g=
+    _ww_w="$(printf '%s\n' "$_ww_l" | awk -v me="$(id -un 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" 'NR == 1 {
+        m = $1
+        if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g }
+        else if (sg != "") $4 = sg
+        if (p && substr(m, 10, 1) ~ /[tT]/) exit
+        if (substr(m, 9, 1) == "w") print "all users"
+        else if (substr(m, 6, 1) == "w" && $4 != me) print "the group " $4
+    }')" || return 0
+    [ -n "$_ww_w" ] || return 0
+    if [ "$2" = 1 ]; then
+        warn "Other users can replace ${3}: $_ww_w can write to $1, the folder that holds it. To fix it, run chmod go-w \"$1\", or move APOTHEM_HOME."
+    elif [ -d "$1" ]; then
+        warn "Other users can change the code Apothem runs as you: $_ww_w can write to $1. To fix it, run chmod go-w \"$1\", or move APOTHEM_HOME."
+    else
+        warn "A new $1 would let $_ww_w change the code Apothem runs as you (umask $(umask)). To fix it, run umask 022, then run the installer again."
+    fi
 }
 
 bold "Apothem updater"
@@ -962,6 +1137,7 @@ elif { [ -e "$APOTHEM_HOME/.git" ] || [ -L "$APOTHEM_HOME/.git" ]; } && is_apoth
     _co_status="$(cgit -C "$APOTHEM_HOME" status --porcelain --untracked-files=no 2>/dev/null)" || _co_status="unreadable"
     [ -z "$_co_status" ] \
         || die "The checkout in $APOTHEM_HOME does not match ${APOTHEM_REF} after the update. Aborting before re-materialization."
+    remove_source_caches "$APOTHEM_HOME"
     SOURCE="$APOTHEM_HOME"
     is_apothem_source "$SOURCE" || die "Updated tree is not an apothem source: $SOURCE"
     ok "Source updated at $SOURCE (ref: ${APOTHEM_REF})"
@@ -971,6 +1147,7 @@ elif is_apothem_source "$APOTHEM_HOME"; then
 else
     die "No source found at $APOTHEM_HOME — run install.sh first or set APOTHEM_SOURCE"
 fi
+[ -n "${APOTHEM_SOURCE:-}" ] || warn_home_access
 # Absolute, so no PYTHONPATH entry below can name the current folder.
 SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,

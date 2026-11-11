@@ -243,12 +243,25 @@ stops when `APOTHEM_REPO` starts with `-`. `GIT_CONFIG_NOSYSTEM` stays as you
 set it; it only stops git reading the system config. git still reads your own
 global config and, unless you set `GIT_CONFIG_NOSYSTEM`, the system config
 from the places it always looks, and `git`, `gpg` and `cosign` are the
-programs your `PATH` finds: the installer trusts them as found. The installer
+programs your `PATH` finds: the installer trusts them as found. For the whole
+run the installer sets `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing
+object from the remote on its own, and `GIT_ALLOW_PROTOCOL` to the file, git,
+http, https and ssh transports, so a value in your environment cannot widen
+that list; the PowerShell script puts both back when the run ends. The installer
 reads the release tag once, records the commit it names, verifies the tag,
 checks that commit out by ID, and requires `HEAD` to be that commit, so a tag
 moved after the check changes nothing. On Windows PowerShell 5.1 and 7, a
 download that redirects to an address that is not https is refused, as the
 POSIX installers' `curl` does.
+
+`APOTHEM_HOME` must be a folder that only you can write, since anyone who can
+write to it can change the code the `apothem` command runs. On Windows, a
+folder made at the root of a drive, such as `C:\apothem`, can be changed by
+every user who signs in to the computer, under Windows' default permissions.
+The default, `~/.apothem`, is in your own user folder. Each install, update
+and dry run warns, without stopping, when that is not so, naming the folder,
+who can write to it, and the fix (see
+[Troubleshooting](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)).
 
 A failed check aborts the install before any configuration is written and
 before the installer replaces `APOTHEM_HOME`. A
@@ -284,15 +297,25 @@ them (see below). These rules apply when the installer replaces `~/.apothem`:
   the installer stops when files are marked assume-unchanged or skip-worktree,
   when git finds no work tree in `APOTHEM_HOME` (as when the clone's config
   sets `core.bare` to `true`), when the clone holds a submodule (recorded in its
-  index, or kept in `.git/modules`), or when `.git/info/attributes` sets a
-  `filter=`. It also stops on any setting in the clone's own `.git/config` or
-  `.git/config.worktree` other than the ones `git clone` and `git init` write
-  there, branch settings, `user.name`, `user.email`, `maintenance.auto`,
-  `maintenance.strategy`, `pull.rebase` and `pull.ff`;
+  index, or kept in `.git/modules`), when `.git/info/attributes` sets a
+  `filter=` (or it or a config file is not a plain file), or when the clone borrows objects from another repository
+  (`objects/info/alternates`). It also stops on any setting in the clone's own
+  `.git/config` or `.git/config.worktree` other than the ones `git clone` and
+  `git init` write there for a full clone, branch settings (a branch's `remote`
+  and `pushremote` must be `origin`), `user.name`, `user.email`,
+  `maintenance.auto`, `maintenance.strategy`, `pull.rebase` and `pull.ff`, so a
+  partial clone made with `--filter` stops too;
   [Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
-  lists them. The message names the setting and the file it is in. The settings
-  and attributes checks run before any git command that reads the clone's index,
-  and also when `--yes` is about to replace the clone. The clone's git hooks
+  lists them. The message names the setting and the file it is in. The settings,
+  attributes and object checks run before any git command that reads the
+  clone's index or objects, and also, with the submodule check, when `--yes` is
+  about to replace the clone.
+  Before any git command that applies the work tree's `.gitattributes` files,
+  the installer stops on one that git does not track or that differs from the
+  committed copy or whose committed copy sets a filter, and before the fetch it
+  stops on files under `src` (spelled in any case) that git does not track, since the engine could load them. After the checkout, it
+  removes the Python cache folders (`__pycache__`) under `src` before the engine
+  runs from the clone. The clone's git hooks
   never run during the update, and every git command on the clone runs with no
   pager, no automatic maintenance, its file-system monitor off, only the file,
   git, http, https and ssh transports allowed (so an address in the clone's

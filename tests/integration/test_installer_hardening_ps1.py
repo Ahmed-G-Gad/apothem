@@ -1509,9 +1509,10 @@ def test_replacing_a_clone_never_runs_git_inside_a_nested_repository(
     tmp_path: Path,
 ) -> None:
     """When -Yes replaces a clone with the archive, git status looks for
-    local work. It skips submodules (diff.ignoreSubmodules=all), so the
-    nested repository's own clean filter never runs; the staged submodule
-    still counts as local work, and the clone is kept."""
+    local work, and would run inside a submodule under the nested
+    repository's own config. The clone's submodule is refused first, as for
+    an update in place, so the nested repository's clean filter never runs
+    and the clone is kept."""
     repo, home, old_commit = _clone_at_old_tag(tmp_path)
     repoint_tag(repo, TAG, TAG)
     marker = tmp_path / "nested-filter-ran"
@@ -1525,7 +1526,7 @@ def test_replacing_a_clone_never_runs_git_inside_a_nested_repository(
     plain = _out(result)
     assert not marker.exists(), plain
     assert result.returncode != 0, plain
-    assert "is a git clone with local work that replacing it would lose" in plain
+    assert "holds a submodule at evilsub (its index records a git repository" in plain
     assert _head(home) == old_commit, plain
 
 
@@ -1862,7 +1863,7 @@ try {
 } catch {
     'SCRIPT-FAILED: ' + $_
 }
-foreach ($Name in 'GIT_CONFIG_GLOBAL', 'GIT_DIR', 'GIT_CONFIG_NOSYSTEM', 'GIT_NO_REPLACE_OBJECTS') {
+foreach ($Name in 'GIT_CONFIG_GLOBAL', 'GIT_DIR', 'GIT_CONFIG_NOSYSTEM', 'GIT_NO_REPLACE_OBJECTS', 'GIT_NO_LAZY_FETCH', 'GIT_ALLOW_PROTOCOL') {
     "AFTER $Name=[$([Environment]::GetEnvironmentVariable($Name))]"
 }
 """
@@ -1874,10 +1875,12 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
 ) -> None:
     """Run the way the one-liner runs it (in the caller's own session), the
     script clears the git variables only for its run: here it stops at the
-    tag check, and the caller's GIT_CONFIG_GLOBAL and GIT_DIR are back,
-    GIT_NO_REPLACE_OBJECTS is unset again, and GIT_CONFIG_NOSYSTEM, which
-    only narrows what git reads, stayed set throughout (the stub gpg looks
-    while the tag is checked)."""
+    tag check, and the caller's GIT_CONFIG_GLOBAL, GIT_DIR and
+    GIT_ALLOW_PROTOCOL are back, GIT_NO_REPLACE_OBJECTS and
+    GIT_NO_LAZY_FETCH are unset again, and GIT_CONFIG_NOSYSTEM, which only
+    narrows what git reads, stayed set throughout. While the tag is checked
+    (the stub gpg looks), git may fetch no missing object and uses only the
+    run's own five transports."""
     _prepare(tmp_path, script)
     record = tmp_path / "git-variables"
     config = _gpg(
@@ -1894,10 +1897,12 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
             "GIT_CONFIG_GLOBAL": str(dotfiles),
             "GIT_DIR": str(elsewhere),
             "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_ALLOW_PROTOCOL": "ext",
             "APOTHEM_TEST_SCRIPT": str(INSTALLER_DIR / script),
         }
     )
     env.pop("GIT_NO_REPLACE_OBJECTS", None)
+    env.pop("GIT_NO_LAZY_FETCH", None)
     assert _PWSH is not None
 
     result = subprocess.run(
@@ -1923,11 +1928,15 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
     assert "is unsigned or its signature did not verify" in plain, plain
     during = record.read_text(encoding="utf-8").splitlines()
     assert "GIT_CONFIG_NOSYSTEM=1" in during, during
+    assert "GIT_NO_LAZY_FETCH=1" in during, during
+    assert "GIT_ALLOW_PROTOCOL=file:git:http:https:ssh" in during, during
     assert not any(line.startswith("GIT_CONFIG_GLOBAL=") for line in during), during
     assert f"AFTER GIT_CONFIG_GLOBAL=[{dotfiles}]" in result.stdout, plain
     assert f"AFTER GIT_DIR=[{elsewhere}]" in result.stdout, plain
     assert "AFTER GIT_CONFIG_NOSYSTEM=[1]" in result.stdout, plain
     assert "AFTER GIT_NO_REPLACE_OBJECTS=[]" in result.stdout, plain
+    assert "AFTER GIT_NO_LAZY_FETCH=[]" in result.stdout, plain
+    assert "AFTER GIT_ALLOW_PROTOCOL=[ext]" in result.stdout, plain
 
 
 # D8: Windows PowerShell 5.1 follows each redirect by hand -------------------------
@@ -2207,3 +2216,500 @@ def test_powershell_7s_own_redirect_refusal_says_what_happened(tmp_path: Path) -
         "a download from an https:// address follows only https:// redirects"
     ) in text, text
     assert not out.exists(), text
+
+
+# Folders others can write: APOTHEM_HOME and the folder that holds it ------------
+
+
+_WARN_FUNCTIONS = ("Resolve-FolderLink", "Get-FolderWriter", "Write-HomeAccessWarning")
+_WARN_SHELLS = [
+    pytest.param(_PWSH, id="pwsh"),
+    pytest.param(
+        _POWERSHELL_51,
+        id="powershell-5.1",
+        marks=pytest.mark.skipif(
+            _POWERSHELL_51 is None, reason="no Windows PowerShell 5.1"
+        ),
+    ),
+]
+_USERS = "S-1-5-32-545"
+_AUTHENTICATED_USERS = "S-1-5-11"
+#: Every user signed in at the console or over Remote Desktop; Windows gives
+#: it Modify on what is made in C:\Users\Public.
+_INTERACTIVE = "S-1-5-4"
+_DRIVE_ROOT = (
+    ", access that folders made at the root of a drive inherit from the drive's "
+    "default permissions"
+)
+
+
+def _icacls(path: Path, *args: str) -> None:
+    subprocess.run(
+        ["icacls", str(path), *args], check=True, capture_output=True, timeout=60
+    )
+
+
+def _home_warnings(
+    shell: str | None,
+    home: Path | str,
+    prelude: str = "",
+    script: str = "install.ps1",
+    env: dict[str, str] | None = None,
+) -> list[str]:
+    """Run SCRIPT's Write-HomeAccessWarning in SHELL with APOTHEM_HOME set to
+    HOME (after PRELUDE, with ENV over the test's own environment) and return
+    what it warned, one message per item."""
+    assert shell is not None
+    body = (
+        "function Write-Warn { param([string]$Msg) Write-Output ('WARN: ' + $Msg) }; "
+        f"$ApothemHome = $env:T_HOME; {prelude} Write-HomeAccessWarning"
+    )
+    program = _ps1_function_program(script, _WARN_FUNCTIONS, body)
+    result = subprocess.run(
+        [shell, "-NoProfile", "-NonInteractive", "-Command", program],
+        env={**os.environ, **(env or {}), "T_HOME": str(home)},
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not result.stderr.strip(), result.stderr
+    return [
+        line[len("WARN: ") :]
+        for line in result.stdout.splitlines()
+        if line.startswith("WARN: ")
+    ]
+
+
+def _home_message(home: Path | str, who: str, why: str = "") -> str:
+    return (
+        f"Other users can change the code Apothem runs as you: {who} can write to "
+        f"{home}{why}. To fix it, turn off inheritance for that folder and remove "
+        f"{who} (Properties > Security > Advanced), or move APOTHEM_HOME into your "
+        "user folder."
+    )
+
+
+def _my_sid() -> str:
+    out = subprocess.run(
+        ["whoami", "/user", "/fo", "csv", "/nh"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    ).stdout
+    return out.strip().split(",")[-1].strip('"')
+
+
+def _drive_root_like(folder: Path) -> Path:
+    """Give FOLDER what a client Windows's C:\\ passes on: Authenticated
+    Users may modify what is made inside, and may make folders in it."""
+    folder.mkdir(parents=True, exist_ok=True)
+    _icacls(folder, "/grant", f"*{_AUTHENTICATED_USERS}:(OI)(CI)(IO)(M)")
+    _icacls(folder, "/grant", f"*{_AUTHENTICATED_USERS}:(AD)")
+    return folder
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
+@pytest.mark.parametrize("state", ["made", "missing"])
+def test_a_home_in_a_folder_shaped_like_the_user_folder_gives_no_warning(
+    tmp_path: Path, shell: str | None, script: str, state: str
+) -> None:
+    """A folder only SYSTEM, Administrators and you can use, as a user
+    folder is, gives no warning, for a home in it or a new one there."""
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    _icacls(
+        profile,
+        "/inheritance:r",
+        "/grant:r",
+        "*S-1-5-18:(OI)(CI)F",
+        "*S-1-5-32-544:(OI)(CI)F",
+        f"*{_my_sid()}:(OI)(CI)F",
+    )
+    home = profile / ".apothem"
+    if state == "made":
+        home.mkdir()
+
+    assert _home_warnings(shell, home, script=script) == []
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+@pytest.mark.parametrize(
+    ("sid", "who"),
+    [
+        (_USERS, "Users"),
+        (_AUTHENTICATED_USERS, "Authenticated Users"),
+        (_INTERACTIVE, "INTERACTIVE"),
+    ],
+)
+def test_a_home_others_may_modify_is_named(
+    tmp_path: Path, shell: str | None, sid: str, who: str
+) -> None:
+    """An entry of the home's own that lets Users or Authenticated Users
+    modify it is named, with the fix; the folder holding it is fine."""
+    home = tmp_path / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", f"*{sid}:(OI)(CI)(M)")
+
+    assert _home_warnings(shell, home) == [_home_message(home, who)]
+
+
+def _pwsh_7_module_path() -> str:
+    """The PSModulePath PowerShell 7 hands to the programs it starts: its own
+    module folders first, then Windows PowerShell's."""
+    assert _PWSH is not None
+    return subprocess.run(
+        [_PWSH, "-NoProfile", "-NonInteractive", "-Command", "$env:PSModulePath"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    ).stdout.strip()
+
+
+@pytest.mark.skipif(
+    _POWERSHELL_51 is None or not _PWSH_IS_7,
+    reason="needs Windows PowerShell 5.1 and PowerShell 7",
+)
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
+def test_windows_powershell_given_powershell_7s_module_path_still_warns(
+    tmp_path: Path, script: str
+) -> None:
+    """Windows PowerShell started by a program PowerShell 7 started inherits
+    PowerShell 7's module folders first and then cannot load Get-Acl; the
+    warning reads the folder's entries without it."""
+    home = tmp_path / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", f"*{_USERS}:(OI)(CI)(M)")
+
+    warnings = _home_warnings(
+        _POWERSHELL_51,
+        home,
+        script=script,
+        env={"PSModulePath": _pwsh_7_module_path()},
+    )
+
+    assert warnings == [_home_message(home, "Users")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_new_home_where_interactive_users_may_modify_is_named(
+    tmp_path: Path, shell: str | None
+) -> None:
+    """A folder that passes INTERACTIVE's Modify to what is made in it, as
+    C:\\Users\\Public does, is named for a new home there."""
+    holder = tmp_path / "public"
+    holder.mkdir()
+    _icacls(holder, "/grant", f"*{_INTERACTIVE}:(OI)(CI)(IO)(M)")
+    new = holder / "apothem"
+
+    assert _home_warnings(shell, new) == [
+        f"A new {new} would let INTERACTIVE change the code Apothem runs as you, "
+        f"from the permissions of {holder}. To fix it, set APOTHEM_HOME to a folder "
+        "inside your user folder."
+    ]
+
+
+def _free_drive_letter() -> str:
+    for letter in "ZYXWVUTSRQPONMLKJIHGFED":
+        if not Path(f"{letter}:\\").exists():
+            return letter
+    pytest.skip("no free drive letter for subst")
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_home_made_at_the_root_of_a_drive_says_where_the_access_comes_from(
+    tmp_path: Path, shell: str | None
+) -> None:
+    """A folder made at the root of a drive inherits, under a client
+    Windows's defaults, Authenticated Users' Modify. A home made in a folder
+    that passes that on is named; at a drive's root (a subst drive here) the
+    message says the access comes from the drive's default permissions, for
+    a home there and for a new one. Making folders in the root is not
+    replacing the home, so the root itself is not named."""
+    holder = _drive_root_like(tmp_path / "drive")
+    home = holder / "apothem"
+    home.mkdir()
+    new = holder / "new"
+    assert _home_warnings(shell, home) == [_home_message(home, "Authenticated Users")]
+    assert _home_warnings(shell, new) == [
+        f"A new {new} would let Authenticated Users change the code Apothem runs as "
+        f"you, from the permissions of {holder}. To fix it, set APOTHEM_HOME to a "
+        "folder inside your user folder."
+    ]
+
+    letter = _free_drive_letter()
+    subprocess.run(["subst", f"{letter}:", str(holder)], check=True, timeout=60)
+    try:
+        at_root = _home_warnings(shell, f"{letter}:\\apothem")
+        new_at_root = _home_warnings(shell, f"{letter}:\\new")
+    finally:
+        subprocess.run(["subst", f"{letter}:", "/d"], check=False, timeout=60)
+
+    assert at_root == [
+        _home_message(f"{letter}:\\apothem", "Authenticated Users", _DRIVE_ROOT)
+    ]
+    assert new_at_root == [
+        f"A new {letter}:\\new would let Authenticated Users change the code Apothem "
+        f"runs as you{_DRIVE_ROOT}. To fix it, set APOTHEM_HOME to a folder inside "
+        "your user folder."
+    ]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_folder_where_others_may_delete_what_it_holds_is_named(
+    tmp_path: Path, shell: str | None
+) -> None:
+    """Users given delete-children on the folder holding the home can rename
+    the home away and put another in its place: that folder is named."""
+    holder = tmp_path / "holder"
+    home = holder / "apothem"
+    home.mkdir(parents=True)
+    _icacls(holder, "/grant", f"*{_USERS}:(DC)")
+
+    assert _home_warnings(shell, home) == [
+        f"Other users can replace {home}: Users can delete or rename what is in "
+        f"{holder}, the folder that holds it. To fix it, remove Users from that "
+        "folder's Security tab, or move APOTHEM_HOME into your user folder."
+    ]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_an_entry_only_for_what_a_folder_holds_does_not_name_that_folder(
+    tmp_path: Path, shell: str | None
+) -> None:
+    """An inherit-only entry gives Users nothing on the folder holding the
+    home, so that folder is not named; the home, which inherits it, is."""
+    holder = tmp_path / "holder"
+    holder.mkdir()
+    _icacls(holder, "/grant", f"*{_USERS}:(OI)(CI)(IO)(F)")
+    home = holder / "apothem"
+    home.mkdir()
+
+    assert _home_warnings(shell, home) == [_home_message(home, "Users")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_home_given_as_a_junction_names_the_folder_it_leads_to(
+    tmp_path: Path, shell: str | None
+) -> None:
+    """A junction's entries cover only the junction itself; the warning
+    reads, and names, the folder the junction leads to."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _icacls(target, "/grant", f"*{_AUTHENTICATED_USERS}:(OI)(CI)(M)")
+    link = tmp_path / "home-link"
+    _make_junction(link, target)
+
+    assert _home_warnings(shell, link) == [_home_message(target, "Authenticated Users")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+@pytest.mark.parametrize("holder_shape", ["modify", "drive-root"])
+def test_a_junction_others_may_delete_and_make_again_is_named(
+    tmp_path: Path, shell: str | None, holder_shape: str
+) -> None:
+    """A junction inherits its folder's entries, so Modify on the folder (or
+    a drive root's defaults) lets others delete the junction and, with
+    create-folders on the folder, make one of their own under the same name.
+    The folder is named, though the junction leads to a private folder."""
+    target = tmp_path / "target"
+    target.mkdir()
+    holder = tmp_path / "holder"
+    if holder_shape == "modify":
+        holder.mkdir()
+        _icacls(holder, "/grant", f"*{_AUTHENTICATED_USERS}:(OI)(CI)(M)")
+    else:
+        _drive_root_like(holder)
+    link = holder / "apothem"
+    _make_junction(link, target)
+
+    assert _home_warnings(shell, link) == [
+        f"Other users can replace {link}: Authenticated Users can delete or rename "
+        f"what is in {holder}, the folder that holds it. To fix it, remove "
+        "Authenticated Users from that folder's Security tab, or move APOTHEM_HOME "
+        "into your user folder."
+    ]
+
+
+# PowerShell outside Windows reads the mode bits ls prints and the group stat
+# names, as the sh scripts do. Windows PowerShell 5.1 has no $IsWindows of its
+# own, so setting it to $false takes that path here, with ls, stat, uname, id
+# and sh stood in for. ls splits a group name at a space, as the real one
+# prints it; stat gives it whole.
+_POSIX_STUBS = (
+    "$IsWindows = $false; Remove-Item Alias:ls -Force -ErrorAction SilentlyContinue; "
+    "function ls { $global:LASTEXITCODE = 0; "
+    "if ($args[-1] -eq $env:T_HOME) { $m = $env:T_HOME_MODE; $g = $env:T_GROUP } "
+    "else { $m = $env:T_UP_MODE; $g = $env:T_UP_GROUP }; "
+    '"$m 2 alice $g 4096 Nov 10 01:24 $($args[-1])" }; '
+    "function stat { $global:LASTEXITCODE = 0; "
+    "if ($args[-1] -eq $env:T_HOME) { $env:T_GROUP } else { $env:T_UP_GROUP } }; "
+    "function uname { $env:T_OS }; "
+    "function id { if ($args[0] -eq '-un') { 'alice' } else { $env:T_PRIMARY } }; "
+    "function sh { $env:T_UMASK }; "
+)
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+@pytest.mark.parametrize(
+    ("home_mode", "up_mode", "group", "up_group", "os_name", "umask", "expected"),
+    [
+        ("drwxr-xr-x", "drwxr-x---", "alice", "alice", "Linux", "0022", ""),
+        (
+            "drwxrwxrwx",
+            "drwxr-x---",
+            "alice",
+            "alice",
+            "Linux",
+            "0022",
+            "home:all users",
+        ),
+        (
+            "drwxrwxr-x",
+            "drwxr-x---",
+            "staff",
+            "alice",
+            "Linux",
+            "0022",
+            "home:the group staff",
+        ),
+        (
+            "drwxrwxr-x",
+            "drwxr-x---",
+            "domain users",
+            "alice",
+            "Linux",
+            "0022",
+            "home:the group domain users",
+        ),
+        ("drwxrwxr-x", "drwxrwxr-x", "alice", "alice", "Linux", "0002", ""),
+        ("drwxr-xr-x", "drwxrwxrwx", "alice", "alice", "Linux", "0022", "up:all users"),
+        ("drwxr-xr-x", "drwxrwxrwt", "alice", "alice", "Linux", "0022", ""),
+        ("missing", "drwxr-x---", "alice", "alice", "Linux", "0002", ""),
+        ("missing", "drwxr-x---", "alice", "alice", "Linux", "0000", "new:all users"),
+        ("missing", "drwxr-x---", "alice", "staff", "Linux", "0002", ""),
+        (
+            "missing",
+            "drwxr-s---",
+            "alice",
+            "staff",
+            "Linux",
+            "0002",
+            "new:the group staff",
+        ),
+        (
+            "missing",
+            "drwxr-x---",
+            "alice",
+            "staff",
+            "Darwin",
+            "0002",
+            "new:the group staff",
+        ),
+    ],
+)
+def test_outside_windows_the_mode_bits_decide(
+    tmp_path: Path,
+    home_mode: str,
+    up_mode: str,
+    group: str,
+    up_group: str,
+    os_name: str,
+    umask: str,
+    expected: str,
+) -> None:
+    """Outside Windows the ps1 scripts follow the sh rule and messages: others'
+    w bit, or the group's when the group is not named after you, and a sticky
+    folder holding the home is fine; a new home goes by the umask, with the
+    group a new folder gets: your primary group, or the folder's own when it
+    is setgid or the system is macOS or a BSD."""
+    holder = tmp_path / "holder"
+    home = holder / "apothem"
+    holder.mkdir()
+    if home_mode != "missing":
+        home.mkdir()
+    prelude = (
+        f"$env:T_HOME_MODE = '{home_mode}'; $env:T_UP_MODE = '{up_mode}'; "
+        f"$env:T_GROUP = '{group}'; $env:T_UP_GROUP = '{up_group}'; "
+        f"$env:T_PRIMARY = 'alice'; $env:T_OS = '{os_name}'; "
+        f"$env:T_UMASK = '{umask}'; " + _POSIX_STUBS
+    )
+
+    warnings = _home_warnings(_POWERSHELL_51, home, prelude)
+
+    kind, _, who = expected.partition(":")
+    messages = {
+        "": [],
+        "home": [
+            f"Other users can change the code Apothem runs as you: {who} can write to "
+            f'{home}. To fix it, run chmod go-w "{home}", or move APOTHEM_HOME.'
+        ],
+        "up": [
+            f"Other users can replace {home}: {who} can write to {holder}, the folder "
+            f'that holds it. To fix it, run chmod go-w "{holder}", or move APOTHEM_HOME.'
+        ],
+        "new": [
+            f"A new {home} would let {who} change the code Apothem runs as you (umask "
+            f"{umask}). To fix it, run umask 022, then run the installer again."
+        ],
+    }
+    assert warnings == messages[kind]
+
+
+def _went_on_after_one_warning(plain: str, warning: str, next_step: str) -> bool:
+    """PLAIN holds WARNING once, and NEXT_STEP (the run's next heading) after
+    it: the warning did not stop the run. The fixture repository is no full
+    source tree, so the run stops later, at the profile."""
+    squashed, mark = _squashed(plain), _squashed(warning)
+    at = squashed.find(mark)
+    return squashed.count(mark) == 1 and squashed.find(_squashed(next_step), at) > at
+
+
+@pytest.mark.parametrize("dry_run", [False, True], ids=["real", "dry-run"])
+def test_an_install_into_a_folder_others_may_modify_warns_once_and_goes_on(
+    tmp_path: Path, dry_run: bool
+) -> None:
+    """A fresh install into a folder that passes Authenticated Users' Modify
+    to what is made in it says so once, for the home it made, and goes on; a
+    dry run there names the home it would make."""
+    make_tagged_repo(tmp_path, TAG)
+    holder = _drive_root_like(tmp_path / "drive")
+    home = holder / "apothem-home"
+    env = _script_env(tmp_path, extra_env={"APOTHEM_HOME": str(home)})
+
+    result = _invoke(tmp_path, "install.ps1", env, *(["-DryRun"] if dry_run else []))
+
+    plain = _out(result)
+    if dry_run:
+        warning = (
+            f"A new {home} would let Authenticated Users change the code Apothem runs "
+            f"as you, from the permissions of {holder}."
+        )
+        assert not home.exists(), plain
+    else:
+        warning = _home_message(home, "Authenticated Users")
+        assert _head(home) == _head(tmp_path / "fixture-repo"), plain
+    assert _went_on_after_one_warning(plain, warning, "Profile setup"), plain
+    assert plain.count(" ! ") == 1, plain
+
+
+def test_an_update_of_a_home_others_may_modify_warns_once_and_goes_on(
+    tmp_path: Path,
+) -> None:
+    """An update in place of a home Users may modify says so once and goes on."""
+    home = _prepare(tmp_path, "update.ps1")
+    _icacls(home, "/grant", f"*{_USERS}:(OI)(CI)(M)")
+    env = _script_env(tmp_path)
+
+    result = _invoke(tmp_path, "update.ps1", env)
+
+    plain = _out(result)
+    assert _head(home) == _head(tmp_path / "fixture-repo"), plain
+    assert _went_on_after_one_warning(
+        plain, _home_message(home, "Users"), "Re-materializing harness"
+    ), plain
+    assert plain.count(" ! ") == 1, plain

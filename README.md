@@ -447,13 +447,20 @@ Apothem counts as a folder with no Apothem install. Before it fetches into an
 existing clone, the installer stops when the clone hides changes from git (files
 marked assume-unchanged or skip-worktree), when the clone's work tree is
 somewhere other than `APOTHEM_HOME`, when the clone holds a submodule, when
-`.git/info/attributes` sets a `filter=`, or when the clone's own git config
-(`.git/config`, and `.git/config.worktree` when the clone has one) holds a
-setting other than the ones `git clone` and `git init` write there, branch
-settings, `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+`.git/info/attributes` sets a `filter=` (or it or a config file is not a
+plain file), when the clone borrows objects from
+another repository, when a `.gitattributes` file in the work tree is untracked,
+changed or sets a filter, when files under `src` (spelled in any case) are
+untracked, or when the clone's own git
+config (`.git/config`, and `.git/config.worktree` when the clone has one) holds
+a setting other than the ones `git clone` and `git init` write there for a full
+clone, branch settings (a branch's `remote` and `pushremote` must be `origin`),
+`user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
 `pull.rebase` and `pull.ff`; the
 [troubleshooting page](https://apothem.ahmedgad.com/docs/install/troubleshooting/)
-lists them. The clone's git hooks never run during an update. If `APOTHEM_HOME`
+lists them. The clone's git hooks never run during an update, and the update
+removes the Python cache folders under `src` before the engine runs from the
+clone. `APOTHEM_HOME` must be a folder only you can write. If `APOTHEM_HOME`
 is a symbolic link (on Windows, a symbolic link or a junction), the installer
 refuses and asks you to point `APOTHEM_HOME` at the folder the link leads to;
 the exception is an existing clone, which is updated in place. On Linux and

@@ -1986,6 +1986,38 @@ def test_the_settings_a_clone_may_hold_do_not_stop_the_update(
     assert _head(home) == new_head, combined
 
 
+@pytest.mark.parametrize(
+    ("script", "next_step"),
+    [
+        pytest.param(INSTALLER, "Profile setup", id="install.sh", marks=requires_bash),
+        pytest.param(UPDATER_SH, "Re-materializing harness", id="update.sh"),
+    ],
+)
+def test_an_update_of_a_clone_every_user_can_write_warns_once_and_goes_on(
+    tmp_path: Path, script: Path, next_step: str
+) -> None:
+    """An update in place of a clone every user can write to says so once,
+    naming the clone, after the checkout and before the engine runs, and
+    goes on."""
+    env, home, _ = _clone_with_a_new_tag(tmp_path)
+    new_head = _head(Path(env["APOTHEM_REPO"]))
+    home.chmod(0o777)
+    tmp_path.chmod(0o700)
+
+    result = _run_in_place(env, script)
+
+    plain = _plain(result.stdout + result.stderr)
+    real = os.path.realpath(home)
+    warning = (
+        "Other users can change the code Apothem runs as you: all users can write "
+        f'to {real}. To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
+    )
+    assert plain.count("Other users can") == 1, plain
+    assert warning in plain, plain
+    assert _head(home) == new_head, plain
+    assert plain.find(next_step, plain.find(warning)) > plain.find(warning), plain
+
+
 @pytest.mark.parametrize("script", IN_PLACE_SCRIPTS)
 def test_the_clones_hooks_do_not_run_during_an_update(
     tmp_path: Path, script: Path

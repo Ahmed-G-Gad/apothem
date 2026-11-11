@@ -1,165 +1,95 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 
-# Purpose: Place the bundled Apothem source tree (self-contained — no
-#          package installation) and materialize harness configuration by
-#          running `python -m apothem` directly from that tree.
-# Contract: Idempotent on rerun (a re-run fetches an existing clone, checks
-#           the tag, and only then checks it out, then re-materializes).
-#           Exits 0 on success, non-zero on failure.
-#           POSIX sh only (no bashisms): the documented `curl … | sh`
-#           one-liner runs under dash/ash on Debian/Ubuntu/Alpine.
+# Purpose: Place the bundled Apothem source tree (self-contained, no package
+#          installation) and materialize harness configuration by running
+#          `python -m apothem` from that tree.
+# Contract: Idempotent (a re-run fetches an existing clone, checks the tag,
+#           then checks it out and re-materializes). Exits 0 on success,
+#           non-zero on failure. POSIX sh only: the `curl … | sh` one-liner
+#           runs under dash/ash on Debian/Ubuntu/Alpine.
 #
-# Trust model (tag-pinned, verified-by-default):
-#   With no APOTHEM_REF set, the installer resolves the latest released
-#   vMAJOR.MINOR.PATCH tag and installs THAT release — the moving `main`
-#   branch is no longer the default. How the release is checked depends on
-#   APOTHEM_VERIFY, whose default `auto` picks one of two paths:
-#     - cosign on PATH ("release"): two checks, both required. The release
-#       tag must be signed by the maintainer key (below), and the signed tag
-#       must be the one named for that release. cosign must then show that the
-#       release workflow signed the release's SHA256SUMS and, through its
-#       --certificate-github-workflow-sha check, that the certificate it
-#       verified was issued to a run on the commit that tag points at. The
-#       installer does not read the certificate itself. The platform
-#       archive's SHA-256 must then match SHA256SUMS. Needs git, gpg and
-#       cosign.
-#     - no cosign ("signature"), or APOTHEM_HOME already a git clone: clone or
-#       fetch the repository and check the tag with `git verify-tag`. Needs
-#       git and gpg.
-#   Either way the tag signature must be valid AND made by the maintainer key
-#   published in SECURITY.md (fingerprint
-#   5C8998F9F241720445D3F28B70396FED9C634163); a key the local keyring merely
-#   trusts is not enough. A signed tag object that names another release
-#   (a signed tag re-pointed at this name) is refused, and
-#   APOTHEM_ALLOW_UNVERIFIED does not bypass that. A signed git tag names its
-#   commit by SHA-1; the release path adds the SHA-256 digest that cosign
-#   checks.
-#   A failed check ABORTS the install before APOTHEM_HOME changes and before
-#   any config is written. An existing clone is fetched and its tag is checked
-#   BEFORE the clone is checked out, so a failed check leaves the clone as it
-#   was; changes to tracked files, or local changes that the checkout would
-#   overwrite, stop the update instead of being lost. The new source is
-#   otherwise built and checked in a folder beside APOTHEM_HOME and swapped in
-#   only when every check passed.
-#   Explicit opt-outs:
-#     - APOTHEM_REF=main           checks out the moving branch on request
-#                                  (together with APOTHEM_ALLOW_UNVERIFIED=1).
-#     - APOTHEM_ALLOW_UNVERIFIED=1 downgrades an unsigned or unverifiable tag,
-#                                  or one signed by another key, on the clone
-#                                  path to a loud warning and proceeds
-#                                  (air-gapped or local use, or a release that
-#                                  predates tag signing). Because it lets such
-#                                  a tag through, the re-pointed-tag check
-#                                  protects only tags that carry the
-#                                  maintainer key's signature. The release
-#                                  path never downgrades.
-#     - APOTHEM_VERIFY=checksum    needs APOTHEM_ALLOW_UNVERIFIED=1. Checksum
-#                                  mode does not verify the release.
-#                                  SHA256SUMS comes from the same release as
-#                                  the archive, so a match only shows the
-#                                  download isn't damaged; anyone who can
-#                                  change the release's files can change both.
-#   The APOTHEM_SOURCE local-checkout path fetches nothing, so it skips tag
-#   resolution and verification — it prints the source it is running and
-#   proceeds.
+# Trust model (tag-pinned, verified by default):
+#   With no APOTHEM_REF, the latest vMAJOR.MINOR.PATCH tag is installed, not
+#   the moving `main`. APOTHEM_VERIFY (default `auto`) picks the path:
+#     - cosign on PATH ("release"): the tag must be signed by the maintainer
+#       key and be the tag named for that release; cosign must show the
+#       release workflow signed SHA256SUMS in a run on the tag's commit
+#       (--certificate-github-workflow-sha; the installer does not read the
+#       certificate itself); the platform archive's SHA-256 must match
+#       SHA256SUMS. Needs git, gpg and cosign.
+#     - no cosign ("signature"), or APOTHEM_HOME already a git clone: clone
+#       or fetch, then `git verify-tag`. Needs git and gpg.
+#   Either way the signature must be valid AND made by the maintainer key in
+#   SECURITY.md (5C8998F9F241720445D3F28B70396FED9C634163); a key the local
+#   keyring trusts is not enough. A signed tag object naming another release
+#   is refused, even with APOTHEM_ALLOW_UNVERIFIED. A signed git tag names
+#   its commit by SHA-1; the release path adds the SHA-256 cosign checks.
+#   A failed check aborts before APOTHEM_HOME or any config changes. An
+#   existing clone is fetched and its tag checked BEFORE checkout, so a
+#   failed check leaves it as it was; local changes stop the update instead
+#   of being lost. Otherwise the new source is built and checked beside
+#   APOTHEM_HOME and swapped in only when every check passed.
+#   Opt-outs:
+#     - APOTHEM_REF=main (with APOTHEM_ALLOW_UNVERIFIED=1): the moving branch.
+#     - APOTHEM_ALLOW_UNVERIFIED=1: on the clone path, an unsigned or
+#       unverifiable tag, or one signed by another key, gives a warning and
+#       proceeds (air-gapped or local use, or a release older than tag
+#       signing); the re-pointed-tag check then protects only tags with the
+#       maintainer key's signature. The release path never downgrades.
+#     - APOTHEM_VERIFY=checksum (needs APOTHEM_ALLOW_UNVERIFIED=1) does not
+#       verify the release: SHA256SUMS comes from the same release as the
+#       archive, so a match only shows the download is not damaged.
+#   APOTHEM_SOURCE (a local checkout) fetches and verifies nothing.
 #
 # What happens to APOTHEM_HOME when the install replaces it:
-#   - An earlier Apothem install keeps everything that is not part of its
-#     source tree (backups, state, plans, memory and other engine data).
-#   - A folder that holds no Apothem install is refused unless --yes is given;
-#     with --yes it is moved, unchanged and under its own name, into a new
-#     folder <APOTHEM_HOME>.before-apothem-<time> and the install starts
-#     fresh.
-#   - A folder that holds only the engine's data (backups, state, plans,
-#     memory, contexts, learning, providers) is kept, like an earlier install.
-#   - A git clone is replaced by a release archive only with --yes, and never
+#   - An earlier install keeps everything outside its source tree (backups,
+#     state, plans, memory and other engine data). A folder holding only
+#     that data is kept the same way.
+#   - A folder with no Apothem install is refused without --yes; with --yes
+#     it moves, unchanged, into a new <APOTHEM_HOME>.before-apothem-<time>.
+#   - A git clone is replaced by a release archive only with --yes, never
 #     while it holds local work (changes, stashes, unpushed commits, or
-#     untracked files in its source tree). Its own tree (history and source)
-#     is then moved into a new folder <APOTHEM_HOME>.before-apothem-<time>,
-#     not deleted.
-#   - A git clone of anything other than an Apothem source is treated like
-#     any other folder that holds no Apothem install.
-#   - Before an existing clone is fetched or replaced, its owner, its own
-#     git settings (CLONE_CONFIG_ALLOW), attributes, submodules and hidden
-#     changes are checked (check_clone_setup), in a dry run too; git runs on
-#     it with its hooks, fsmonitor, pager and maintenance off (cgit).
+#     untracked files in its source tree); its tree moves into a new
+#     <APOTHEM_HOME>.before-apothem-<time>. A clone of anything else is any
+#     other folder.
+#   - Before an existing clone is fetched or replaced, its owner, its own git
+#     settings (CLONE_CONFIG_ALLOW), attributes, borrowed objects,
+#     submodules, hidden changes and untracked source files are checked
+#     (check_clone_setup), in a dry run too; git runs on it with its hooks,
+#     fsmonitor, pager and maintenance off (cgit), and lazy fetch is off
+#     for the whole run.
 #   - An entry to keep whose name has a space or another special character
-#     stops the install; move it out of APOTHEM_HOME first.
-#   - A symbolic link at APOTHEM_HOME is refused (point APOTHEM_HOME at the
-#     folder the link leads to), except when it leads to an existing clone
-#     that is updated in place.
-#   - A failure or an interrupt puts the earlier install back unchanged; a
-#     forced kill can leave folders the next install reports
-#     (check_leftovers). One run at a time holds the lock (take_lock).
+#     stops the install. A symbolic link at APOTHEM_HOME is refused unless it
+#     leads to an existing clone that is updated in place.
+#   - A failure or an interrupt puts the earlier install back; a forced kill
+#     can leave folders the next install reports (check_leftovers). One run
+#     at a time holds the lock (take_lock).
 #
-# Usage (recommended — tag-pinned, verified):
-#     # default: resolves and verifies the latest signed release tag
-#     curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
-#     # explicit pin to a known tag (also verified):
-#     APOTHEM_REF=vMAJOR.MINOR.PATCH sh scripts/installer/install.sh
+# Usage:
+#     curl -fsSL https://apothem.ahmedgad.com/install.sh | sh   # latest release
+#     APOTHEM_REF=vMAJOR.MINOR.PATCH sh scripts/installer/install.sh  # pinned
+#     sh scripts/installer/install.sh   # from a cloned checkout
+#   To read the script first (the one-liner trusts it on first use; the
+#   source it fetches is verified either way): curl -fsSL -o install.sh
+#   https://apothem.ahmedgad.com/install.sh, read it, then sh install.sh.
 #
-# Usage (inspect-first — the one-liner trusts this bootstrap script on
-# first use; the fetched source is always signature-verified either way):
-#     curl -fsSL -o install.sh https://apothem.ahmedgad.com/install.sh
-#     less install.sh   # review, then run:
-#     sh install.sh
+# Flags (--clean/--fresh, --dry-run, --yes): see the --help text below.
 #
-# Usage (local install — from a cloned checkout):
-#     sh scripts/installer/install.sh
-#
-# CLI flags (pass-through to the engine):
-#     --clean, --fresh  Back up and remove the bounded config set, then
-#                       materialize fresh.
-#     --dry-run         Preview only; write nothing. The source is fetched
-#                       and checked in a temporary directory, the same
-#                       refusals apply as in a real run, and APOTHEM_HOME is
-#                       left as it is.
-#     --yes             Non-interactive; skip per-target confirmation prompts.
-#                       Also authorizes replacing an existing git clone with
-#                       a release archive, and moving a folder that holds no
-#                       Apothem install aside into
-#                       <APOTHEM_HOME>.before-apothem-<time>.
-#
-# Environment overrides:
-#     APOTHEM_HOME              Install destination for the source tree
-#                              (default: $HOME/.apothem)
-#     APOTHEM_REPO             Git remote to clone
-#                              (default: https://github.com/ahmed-g-gad/apothem)
-#     APOTHEM_REF              Git ref to check out. Unset = resolve the latest
-#                              vMAJOR.MINOR.PATCH tag. Set to a tag to pin, or
-#                              to "main" for the moving branch.
-#     APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure
-#                              (unsigned, unverifiable, or signed by another
-#                              key) on the clone path from a fatal abort to a
-#                              loud warning and proceed, and allow
-#                              APOTHEM_VERIFY=checksum. It never relaxes the
-#                              release path or the check that the signed tag
-#                              names the release, but since it lets an
-#                              unsigned tag, or one signed by another key,
-#                              through, that check protects only tags that
-#                              carry the maintainer key's signature.
-#     APOTHEM_VERIFY           "auto" (default) uses "release" when cosign is
-#                              on PATH and APOTHEM_HOME is not a git clone, and
-#                              "signature" otherwise.
-#                              "release" installs the platform archive once
-#                              the tag carries the maintainer key's signature
-#                              and names the release, cosign shows the release
-#                              workflow signed SHA256SUMS in a run on the
-#                              tag's commit, and the archive's SHA-256 matches
-#                              it (needs cosign and gpg). "signature" clones
-#                              (or fetches) and checks the tag's GPG signature
-#                              against the pinned maintainer key (needs gpg).
-#                              "checksum" installs the archive after the
-#                              SHA-256 check alone and needs
-#                              APOTHEM_ALLOW_UNVERIFIED=1: it does not verify
-#                              the release, because SHA256SUMS comes from the
-#                              same release as the archive.
+# Environment:
+#     APOTHEM_HOME             Source tree destination (default $HOME/.apothem)
+#     APOTHEM_REPO             Git remote
+#                              (default https://github.com/ahmed-g-gad/apothem)
+#     APOTHEM_REF              Ref to check out; unset = the latest release tag.
+#     APOTHEM_ALLOW_UNVERIFIED "1": see Opt-outs above.
+#     APOTHEM_VERIFY           auto (default: release when cosign is on PATH
+#                              and APOTHEM_HOME is not a git clone, else
+#                              signature), release, signature or checksum (see
+#                              Trust model).
 #     APOTHEM_RELEASE_BASE     Release download base for the archive modes
-#                              (default: <APOTHEM_REPO>/releases/download).
-#     APOTHEM_SOURCE           Explicit local source tree to use instead of
-#                              cloning (a checkout containing src/apothem).
-#                              Skips tag resolution and verification.
+#                              (default <APOTHEM_REPO>/releases/download).
+#     APOTHEM_SOURCE           Local source tree to use (a checkout holding
+#                              src/apothem); skips tag resolution and checks.
 #     APOTHEM_HARNESS          Harness to install (default: claude-code)
 #     APOTHEM_PROFILE          Path to shared profile YAML
 #     APOTHEM_SKIP_VERIFY      If "1", skip post-install verify
@@ -182,13 +112,16 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
     GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
+# No replace refs, no lazy fetch of a missing object (a fetch the clone's
+# config shapes), only these transports whatever the caller set.
 GIT_NO_REPLACE_OBJECTS=1
-export GIT_NO_REPLACE_OBJECTS
+GIT_NO_LAZY_FETCH=1
+GIT_ALLOW_PROTOCOL=file:git:http:https:ssh
+export GIT_NO_REPLACE_OBJECTS GIT_NO_LAZY_FETCH GIT_ALLOW_PROTOCOL
 
-# The caller's PYTHONPATH is set aside until the Python this script runs is
-# chosen: which separator and which path form are safe depends on that
-# Python, not on the shell (see settle_python_form). Until then every Python
-# started here (the locator, the version probes) runs with no PYTHONPATH.
+# The caller's PYTHONPATH is set aside until the Python is chosen: the safe
+# separator and path form depend on it (settle_python_form). Until then
+# every Python started here runs with no PYTHONPATH.
 # APOTHEM_CALLER_PYTHONPATH is a plain shell variable, never exported.
 unset APOTHEM_CALLER_PYTHONPATH
 APOTHEM_CALLER_PYTHONPATH="${PYTHONPATH:-}"
@@ -196,17 +129,14 @@ unset PYTHONPATH
 PY_WINDOWS=""
 PY_PATHSEP=""
 
-# keep_full_pythonpath VALUE — print the entries of the PYTHONPATH value
-# VALUE that are full paths, joined the way the chosen Python splits them.
-# Python turns an empty or relative entry (":/x", "/x:", ".") into the
-# current folder, ahead of site-packages, so a sitecustomize.py, click.py or
-# apothem/ there would run in place of the real module. For a POSIX Python
-# (including Cygwin's and MSYS2's own python3) the value is split on ":" and
-# an entry is kept only when it starts with "/". For a Windows Python (the
-# usual one under Git Bash) it is split on ";" and an entry is kept only when
-# it is a drive path ("C:\x", "C:/x") or a network path ("\\server\x",
-# "//server/x"), so a rooted "\lib", a drive-relative "C:rel" and a "/c/x"
-# entry are dropped. Reads PY_WINDOWS, which settle_python_form sets.
+# keep_full_pythonpath VALUE — print the full-path entries of the
+# PYTHONPATH value VALUE, joined as the chosen Python splits them. Python
+# reads an empty or relative entry (":/x", ".") as the current folder, ahead
+# of site-packages, where a planted click.py would run. A POSIX Python
+# (Cygwin's and MSYS2's python3 too) splits on ":" and keeps entries that
+# start with "/"; a Windows Python splits on ";" and keeps drive paths
+# ("C:\x", "C:/x") and network paths ("\\server\x", "//server/x"), so
+# "\lib", "C:rel" and "/c/x" are dropped. Reads PY_WINDOWS.
 keep_full_pythonpath() {
     if [ "$PY_WINDOWS" = "1" ]; then _kp_sep=";"; else _kp_sep=":"; fi
     _kp_rest="$1"
@@ -234,15 +164,11 @@ keep_full_pythonpath() {
 }
 
 # settle_python_form — ask the chosen Python ($PY) which PYTHONPATH form it
-# reads, then give it the caller's full-path entries in that form. A Windows
-# Python (the usual one under Git Bash) splits on ";" and reads Windows
-# paths. A POSIX Python, including Cygwin's and MSYS2's own python3, splits
-# on ":" and reads POSIX paths. The shell cannot tell them apart: uname says
-# MINGW, MSYS or CYGWIN for both, and a ";"-joined list of Windows paths
-# reads to a POSIX Python as relative entries such as "C", folders in the
-# current folder. The probe runs isolated (-I) and needs only os and sys.
-# Sets PY_WINDOWS (1 or 0) and PY_PATHSEP, and exports the kept entries as
-# PYTHONPATH (unset when none are kept).
+# reads (a Windows Python splits on ";", a POSIX one, Cygwin's and MSYS2's
+# too, on ":"; uname cannot tell them apart, and Windows paths read to a
+# POSIX Python as relative entries), then export the caller's full-path
+# entries in that form as PYTHONPATH (unset when none). The probe runs
+# isolated (-I). Sets PY_WINDOWS (1 or 0) and PY_PATHSEP.
 settle_python_form() {
     _pf_form="$("$PY" -I -c 'import os, sys; sys.stdout.write(os.pathsep + sys.platform)' 2>/dev/null)" \
         || _pf_form=""
@@ -546,22 +472,13 @@ resolve_latest_tag() {
         | tail -n 1
 }
 
-# cgit ARGS — run git with ARGS on a clone. git never runs the clone's
-# fsmonitor program (core.fsmonitor is emptied) or a pager (--no-pager),
-# never starts its automatic maintenance (gc.auto=0, maintenance.auto=false),
-# uses only the file, git, http, https and ssh transports (protocol.allow=never
-# with those five allowed), so an address in the clone's config cannot make
-# git run a program (ext::, or <name>:: for a git-remote-<name> found on
-# PATH), does not recurse into submodules, and does not run git status
-# inside a nested repository to report on it (diff.ignoreSubmodules=all): a
-# nested repository's own settings are never checked here, and an update in
-# place refuses a clone that holds a submodule. core.longpaths=true, which
-# only Git for Windows reads, lets checkout write a path longer than
-# Windows' usual limit instead of leaving the file out. Once HOOKS_OFF names
-# an empty folder (an existing clone is being updated in place),
-# core.hooksPath points at it as well, so none of the clone's hook scripts
-# run during the update. core.sshCommand is left alone: setting it would
-# also override the user's own GIT_SSH.
+# cgit ARGS — run git with ARGS on a clone: no fsmonitor program, pager or
+# automatic maintenance, only the file, git, http, https and ssh transports
+# (no ext:: or git-remote-<name>), no recursion into submodules, and
+# core.longpaths=true (Git for Windows: checkout past the usual path limit).
+# Once HOOKS_OFF names an empty folder (an update in place), core.hooksPath
+# points at it, so no hook of the clone's runs. core.sshCommand is left
+# alone: it would override the user's own GIT_SSH.
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
@@ -583,32 +500,23 @@ cgit() {
     fi
 }
 
-# verify_tag DIR REF — verify the checked-out tag's signature in DIR. Returns 0
-# when `git verify-tag` succeeds (a GPG-signed tag whose key is trusted), and
-# non-zero on an unsigned / tampered / unknown-key tag. The verifier's output
-# is captured in VERIFY_TAG_OUTPUT so callers can tell a missing public key
-# (no local trust root yet — remediation: import the maintainer key) from a
-# bad or absent signature (hard abort). `--raw` captures GnuPG's status lines
-# ("[GNUPG:] KEYWORD ...") instead of its human-readable messages, which GnuPG
-# translates into the host's language. Callers decide whether a non-zero
-# result aborts (default) or downgrades to a warning
-# (APOTHEM_ALLOW_UNVERIFIED=1). A branch ref (e.g. main) is not a tag object and
-# cannot be verify-tag'd; callers gate on the ref shape before calling this.
+# verify_tag DIR REF — run `git verify-tag --raw` on REF in DIR: 0 for a
+# signed tag whose key the keyring trusts, non-zero for an unsigned,
+# tampered or unknown-key one. GnuPG's status lines ("[GNUPG:] KEYWORD ...",
+# never translated) go to VERIFY_TAG_OUTPUT, so callers can tell a missing
+# public key from a bad or absent signature, and decide whether to abort or
+# warn (APOTHEM_ALLOW_UNVERIFIED=1). Callers pass release tags only.
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
     VERIFY_TAG_OUTPUT="$(cgit -C "$1" verify-tag --raw "$2" 2>&1)"
 }
 
 # verify_tag_by_maintainer — return 0 when the captured status lines carry at
-# least one VALIDSIG line and every VALIDSIG line names MAINTAINER_FINGERPRINT
-# as its primary key, non-zero otherwise. `git verify-tag` alone accepts a
-# valid signature from any key the local keyring holds, so a key an attacker
-# got into that keyring would pass it; this check pins the one key that signs
-# Apothem releases. VALIDSIG's tenth argument (field 12 here) is the primary
-# key's fingerprint; GnuPG leaves it out only for keys too old to have one, so
-# the signing key's fingerprint (field 3) stands in then. Only lines that start
-# with the status prefix count; GnuPG escapes newlines inside user IDs, so a
-# key's name cannot forge one.
+# least one VALIDSIG line and every one names MAINTAINER_FINGERPRINT as its
+# primary key. `git verify-tag` alone accepts any key in the local keyring.
+# Field 12 is the primary key's fingerprint (field 3, the signing key's,
+# stands in for keys too old to have one). Only lines that start with the
+# status prefix count; GnuPG escapes newlines in user IDs.
 verify_tag_by_maintainer() {
     printf '%s\n' "$VERIFY_TAG_OUTPUT" | awk -v want="$MAINTAINER_FINGERPRINT" '
         $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
@@ -668,19 +576,13 @@ verify_tag_missing_key() {
     esac
 }
 
-# is_release_tag REF — return 0 when REF is a strict vMAJOR.MINOR.PATCH release
-# tag (the verifiable shape), non-zero otherwise (a branch like main, a SHA, a
-# pre-release tag like v1.2.3-rc1, or a malformed form like v1x.2.3 or
-# v1.2.3.4). Drives whether tag verification applies to the fetched ref. This
-# mirrors the anchored `^v[0-9]+\.[0-9]+\.[0-9]+\z` regex in install.ps1's
-# Test-ReleaseTag: a POSIX `case` glob cannot express "one-or-more digits" or
-# reject trailing junk on its own (a bare `v[0-9]*.[0-9]*.[0-9]*` matches
-# v1.2.3-rc1, v1x.2.3 and v1.2.3.4, since `*` absorbs any characters). The
-# reject gates run first. They drop any REF that carries a character outside
-# the strict `v`/digit/dot set (a trailing newline included), a `v` after the
-# first character, or a third dot. The shape gate then requires a leading `v`,
-# two dots, and a digit at the start of each component, so it accepts exactly
-# what the install.ps1 regex matches with case respected.
+# is_release_tag REF — return 0 when REF is a strict vMAJOR.MINOR.PATCH tag
+# (not main, a SHA, v1.2.3-rc1, v1x.2.3 or v1.2.3.4), as install.ps1's
+# `^v[0-9]+\.[0-9]+\.[0-9]+\z` matches it. A `case` glob's `*` absorbs any
+# characters, so reject gates come first: a character outside v, digits and
+# dots (a trailing newline too), a `v` after the first character, or a third
+# dot. The shape gate then needs a leading `v`, two dots, and a digit at the
+# start of each component.
 is_release_tag() {
     case "$1" in
         # Reject anything containing a character outside [v0-9.]; this drops
@@ -708,19 +610,14 @@ require_gpg() {
         || die "gpg not found in PATH — needed to check the ${APOTHEM_REF} release tag's signature against the maintainer key. Install GnuPG (https://gnupg.org/download/), then re-run."
 }
 
-# check_release_tag DIR REF ALLOW — the key-pinned tag gate. Checks the tag
-# refs/tags/REF in the repository at DIR, before anything is checked out, and
-# prints the result. The tag ref is read once: the signature, the signed tag
-# object's own name and the commit are all read from that one tag object,
-# and TAG_COMMIT records its commit, which checkout_ref then checks out by
-# its ID, so a tag ref moved after the check cannot change what is
-# installed. The tag passes when the maintainer key signed it and the signed
-# tag object names itself REF and points at a commit: a signed tag for
-# another release, re-pointed at refs/tags/REF, would otherwise roll an
-# install back to that release. Any other outcome aborts with the reason,
-# unless ALLOW is 1, which downgrades a missing or unverifiable signature to a
-# warning and returns 1; TAG_COMMIT then holds the commit the tag pointed at
-# when it was read.
+# check_release_tag DIR REF ALLOW — the key-pinned tag gate on refs/tags/REF
+# in the repository at DIR, before any checkout. The ref is read once, and
+# TAG_COMMIT records the commit checkout_ref checks out by ID, so a tag ref
+# moved later changes nothing. The tag passes when the maintainer key signed
+# it and it names itself REF and points at a commit (a signed tag for
+# another release would roll the install back). Otherwise abort, unless
+# ALLOW is 1: a missing or unverifiable signature then warns and returns 1,
+# TAG_COMMIT the commit the tag pointed at.
 TAG_COMMIT=""
 check_release_tag() {
     TAG_COMMIT=""
@@ -778,11 +675,9 @@ require_clean_clone() {
 }
 
 # clone_git_ok DIR — die, saying what to do, when git will not work in the
-# clone at DIR. git refuses a repository that another user owns ("dubious
-# ownership"), and its own advice, to mark the folder safe, would trust
-# whatever that user put in its git config, so the message gives the safer
-# ways out. git runs in the C locale here, so its message reads the same in
-# every language.
+# clone at DIR. For another user's clone ("dubious ownership", read in the C
+# locale) git's own advice would trust that user's git config, so the
+# message gives safer ways out.
 clone_git_ok() {
     if _cg_err="$(LC_ALL=C; export LC_ALL; cgit -C "$1" rev-parse --git-dir 2>&1 >/dev/null)"; then
         return 0
@@ -808,14 +703,14 @@ git_path() {
 
 # The settings a clone's own git config (.git/config, and .git/config.worktree
 # when there is one) may hold for an update in place: the ones git clone and
-# git init write there, branch settings, user.name and user.email, and the
-# maintenance and pull settings git itself suggests. None names a program,
-# a file or folder git reads from, a URL rewrite, or another work tree;
-# cgit allows only the file, git, http, https and ssh transports for
-# remote.origin.url. Any other setting stops the update. Section and key
-# compare without regard to case, the part between them exactly; `*` is any
-# name that is not empty. install.sh, update.sh, install.ps1 and update.ps1
-# hold the same list (tests/scripts/test_installer_parity.py compares them).
+# git init write for a full clone (no partial-clone or promisor setting),
+# branch settings, user.name and user.email, and the maintenance and pull
+# settings git suggests. None names a program, a file or folder git reads
+# from, a URL rewrite, or another work tree; only the file, git, http, https
+# and ssh transports are allowed. Any other setting stops the update.
+# Section and key compare without regard to case, the part between them
+# exactly; `*` is any name that is not empty. The four install and update
+# scripts hold the same list (test_installer_parity.py compares them).
 # clone-config-allow-list begin
 CLONE_CONFIG_ALLOW='core.repositoryformatversion
 core.filemode
@@ -825,16 +720,12 @@ core.symlinks
 core.ignorecase
 core.precomposeunicode
 core.longpaths
-core.partialclonefilter
 extensions.objectformat
 extensions.refstorage
-extensions.partialclone
 extensions.worktreeconfig
 remote.origin.url
 remote.origin.fetch
 remote.origin.tagopt
-remote.origin.promisor
-remote.origin.partialclonefilter
 branch.*.*
 user.name
 user.email
@@ -844,14 +735,12 @@ pull.rebase
 pull.ff'
 # clone-config-allow-list end
 
-# unallowed_config_key [REFUSE] — read git setting names, one per line, as
-# `git config --name-only --list` prints them, and print the first one that
-# CLONE_CONFIG_ALLOW does not hold, or that equals REFUSE (compared without
-# regard to case). The section is the text before the first dot, the key the
-# text after the last dot, and the subsection whatever lies between (a name
-# with one dot has none); a name with an empty section or key matches
-# nothing. A two-part entry (user.name) matches only a name with no
-# subsection; a three-part entry matches only a name with one.
+# unallowed_config_key [REFUSE] — read setting names, one per line, as
+# `git config --name-only --list` prints them, and print the first one
+# CLONE_CONFIG_ALLOW does not hold or that is a line of REFUSE. Section: the
+# text before the first dot; key: after the last; subsection: between. An
+# empty section or key matches nothing. A two-part entry (user.name) matches
+# only a name with no subsection, a three-part entry only a name with one.
 unallowed_config_key() {
     # LC_ALL=C: bytes, as git compares (macOS awk collates in UTF-8).
     LC_ALL=C CLONE_CONFIG_ALLOW="$CLONE_CONFIG_ALLOW" CLONE_CONFIG_REFUSE="${1:-}" awk '
@@ -877,12 +766,13 @@ unallowed_config_key() {
         }
         BEGIN {
             n = split(ENVIRON["CLONE_CONFIG_ALLOW"], allow, "\n")
-            refuse = tolower(ENVIRON["CLONE_CONFIG_REFUSE"])
+            m = split(ENVIRON["CLONE_CONFIG_REFUSE"], names, "\n")
+            for (j = 1; j <= m; j++) if (names[j] != "") refuse[names[j]] = 1
         }
         $0 == "" { next }
         {
             if (!split_name($0, got) || got["sec"] == "" || got["key"] == "") { print; exit }
-            if (refuse != "" && tolower($0) == refuse) { print; exit }
+            if ($0 in refuse) { print; exit }
             ok = 0
             for (j = 1; j <= n && !ok; j++) {
                 if (allow[j] == "" || !split_name(allow[j], want)) continue
@@ -899,39 +789,61 @@ unallowed_config_key() {
 }
 
 # config_file_problem DIR FILE — print the first setting, in file order, in
-# the config file FILE of the clone at DIR that an update in place does not
-# accept: a name unallowed_config_key reports, or extensions.refstorage
-# when any of its values is other than files or reftable (a later git reads
-# refs from a folder such a value names). The values are read NUL-ended, and
-# a line break inside one turns into a byte that makes it fail. git runs in
-# the clone (-C DIR), never in the current folder, whose own repository
-# could stop it. Die when FILE cannot be read.
+# config file FILE of the clone at DIR that an update does not accept: one
+# unallowed_config_key reports, extensions.refstorage other than files or
+# reftable (a later git reads refs from a folder it names), or
+# branch.<name>.remote or .pushremote other than origin. Values are read
+# NUL-ended, CR kept (a line break or CR in one fails). Die when FILE cannot be
+# read, or a name holds a line break (a CR in a quoted subsection, which
+# PowerShell would read as two names).
 config_file_problem() {
     _cp_keys="$(cgit -C "$1" config --file "$2" --name-only --list 2>/dev/null)" \
         || die "Could not read the git config of $1 at ${2}."
-    _cp_refuse=""
-    if cgit -C "$1" config --file "$2" --null --get-all extensions.refstorage 2>/dev/null \
-        | LC_ALL=C tr '\000\n' '\n\001' \
-        | LC_ALL=C awk '$0 != "files" && $0 != "reftable" { bad = 1 } END { exit bad ? 0 : 1 }'; then
-        _cp_refuse="extensions.refstorage"
+    if printf '%s\n' "$_cp_keys" | LC_ALL=C awk 'index($0, "\r") { f = 1; exit } END { exit f ? 0 : 1 }'; then
+        die "$1's own git config has a setting whose name holds a line break, which an update in place does not accept. Remove it from ${2}, then re-run."
     fi
+    _cp_refuse="$(cgit -C "$1" config --file "$2" --null --list 2>/dev/null \
+        | LC_ALL=C tr '\000\n\r' '\n\001\002' | LC_ALL=C awk '{
+            sep = index($0, "\001")
+            name = sep ? substr($0, 1, sep - 1) : $0
+            value = sep ? substr($0, sep + 1) : ""
+            low = tolower(name)
+            if (low == "extensions.refstorage") {
+                if (!sep || (value != "files" && value != "reftable")) print name
+            } else if (low ~ /^branch\..+\.(push)?remote$/ && (!sep || value != "origin")) print name
+        }')"
     printf '%s\n' "$_cp_keys" | unallowed_config_key "$_cp_refuse"
 }
 
-# check_clone_config DIR — die when the clone at DIR holds a git setting of
-# its own that an update in place does not accept (see CLONE_CONFIG_ALLOW),
-# in its config file or, when there is one, in its config.worktree, or when
-# its info/attributes file sets a filter, whose program checkout and diff
-# run. The message names the setting and the file it is in. Neither file's
-# include.path is followed (include settings are not on the list). This runs
-# before any git command that reads the clone's index or could run one of
-# its programs. A NUL byte would make grep treat info/attributes as binary
-# and print nothing, while git still reads the lines around it, so NUL
-# bytes are dropped first.
+# need_plain_file DIR FILE — die when FILE, in DIR's git folder, exists or
+# is a link but is not a plain file: from a pipe git could read other text
+# than the check read.
+need_plain_file() {
+    if { [ -e "$2" ] || [ -L "$2" ]; } && [ ! -f "$2" ]; then
+        die "$1's git folder holds ${2}, which is not a plain file, so git could read other text from it than this check reads. Make it a plain file or remove it, then re-run."
+    fi
+}
+
+# sets_filter — succeed when the git attributes text on stdin sets a filter
+# outside comments. NUL bytes are dropped (grep would call the text binary
+# while git reads the lines around them), and a line is a comment only
+# where # follows nothing but spaces, tabs and CR, as git reads it.
+sets_filter() {
+    _sf_blank="$(printf ' \t\r')"
+    LC_ALL=C tr -d '\000' 2>/dev/null | LC_ALL=C grep -v "^[${_sf_blank}]*#" | LC_ALL=C grep -q 'filter='
+}
+
+# check_clone_config DIR — die when the clone at DIR has a setting of its
+# own an update does not accept (config, then config.worktree; no
+# include.path is followed), borrows objects from another repository
+# (alternates), or its info/attributes sets a filter, or when one of those
+# files is not a plain file. This runs before any git command that reads
+# the clone's index or objects or could run one of its programs.
 check_clone_config() {
     _cc_key=""
     for _cc_name in config config.worktree; do
         _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
+        need_plain_file "$1" "$_cc_file"
         if [ -e "$_cc_file" ]; then
             _cc_key="$(config_file_problem "$1" "$_cc_file")" || exit 1
             [ -z "$_cc_key" ] || break
@@ -940,20 +852,22 @@ check_clone_config() {
     if [ -n "$_cc_key" ]; then
         die "$1's own git config sets ${_cc_key}, which an update in place does not accept in a clone's own config. Remove it from ${_cc_file}, then re-run."
     fi
+    for _cc_name in objects/info/alternates objects/info/http-alternates; do
+        _cc_file="$(git_path "$1" "$_cc_name")" || die "Could not read the git config of $1."
+        if [ -e "$_cc_file" ]; then
+            die "$1 borrows objects from another repository (${_cc_file} names it). A release clone does not, and the update would run git in that repository under settings nothing here checks. Run 'git -C $1 repack -a -d' to copy the objects in, remove ${_cc_file}, then re-run."
+        fi
+    done
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
-    # As git reads it: a line is a comment only where # follows nothing but
-    # spaces, tabs and CR (not VT or FF, which [[:space:]] would take).
-    _cc_blank="$(printf ' \t\r')"
-    if [ -f "$_cc_file" ] && LC_ALL=C tr -d '\000' 2>/dev/null < "$_cc_file" \
-        | LC_ALL=C grep -v "^[${_cc_blank}]*#" | LC_ALL=C grep -q 'filter='; then
+    need_plain_file "$1" "$_cc_file"
+    if [ -f "$_cc_file" ] && sets_filter < "$_cc_file"; then
         die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
     fi
 }
 
 # check_clone_modules DIR — die when the clone at DIR keeps submodule
-# repositories (a modules folder in its git folder). A release tree has
-# none, and git would run inside such a repository, under settings and
-# attributes nothing here checks. Reads no index.
+# repositories (its git folder's modules), where git would run under
+# settings nothing here checks. Reads no index.
 check_clone_modules() {
     _sm_dir="$(git_path "$1" modules)" || die "Could not read the git config of $1."
     if [ -d "$_sm_dir" ]; then
@@ -961,12 +875,9 @@ check_clone_modules() {
     fi
 }
 
-# check_clone_gitlinks DIR — die when the index of the clone at DIR records
-# a git repository inside its tree (a gitlink, mode 160000), as a clone with
-# a submodule, or with another clone added inside it, has it. A release tree
-# has none, and git diff and git status would run git inside it. Reading the
-# index runs no program of the clone's own once check_clone_config has
-# passed.
+# check_clone_gitlinks DIR — die when the clone's index records a git
+# repository in its tree (a gitlink, mode 160000), which git diff and git
+# status would run git inside. A release tree has none.
 check_clone_gitlinks() {
     _sm_list="$(cgit -C "$1" ls-files -s 2>/dev/null)" \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
@@ -976,25 +887,122 @@ check_clone_gitlinks() {
     fi
 }
 
-# check_clone_setup DIR — die, before anything is fetched, when the clone at
-# DIR is set up so that updating it in place would trust something the
-# release does not hold: a clone git will not work in, git settings or
-# attributes of its own that an update does not accept (check_clone_config,
-# which runs first, before any git command that reads the index), kept
-# submodule repositories (check_clone_modules, right after it), a work tree
-# other than DIR (core.worktree, or a .git that points at another clone's),
-# a submodule in its index (check_clone_gitlinks), or files git has been
-# told to ignore changes to (assume-unchanged or skip-worktree, which
-# require_clean_clone cannot see). Every check only reads, so a dry
-# run makes them too.
+# git_z DIR ARGS... — print git ARGS' NUL-ended records in the clone at
+# DIR one per line (a line break in one turns into byte 001); die when git
+# fails, which a "<001>!" line after its output marks.
+git_z() {
+    _gz_dir="$1"
+    shift
+    _gz_out="$( { cgit -C "$_gz_dir" "$@" 2>/dev/null || printf '\000\001!\000'; } | LC_ALL=C tr '\000\n' '\n\001')"
+    case "
+${_gz_out}
+" in
+        *"
+$(printf '\001!')
+"*) die "$_gz_dir has changes to tracked files. Commit or stash them, then re-run." ;;
+    esac
+    printf '%s\n' "$_gz_out"
+}
+
+# check_clone_attributes DIR — die when the clone's work tree has a
+# .gitattributes (any case) git does not track, a tracked one that is not
+# a plain file matching the index and HEAD, or one whose index copy sets a
+# filter: git status, diff and checkout would apply it (it can name a
+# filter of the user's own). Compares without filters. Leaves the
+# untracked list in _ca_other.
+check_clone_attributes() {
+    _ca_index="$(git_z "$1" ls-files -s -z)" || exit 1
+    _ca_head="$(git_z "$1" ls-tree -r -z HEAD)" || exit 1
+    _ca_other="$(git_z "$1" ls-files -o -z)" || exit 1
+    # HEAD's entries, "=", the index's: out come C<TAB>-<TAB>PATH (changed)
+    # and H<TAB>OID<TAB>PATH (to compare).
+    _ca_found="$(printf '%s\n=\n%s\n' "$_ca_head" "$_ca_index" | LC_ALL=C awk '
+        $0 == "=" { in_index = 1; next }
+        { tab = index($0, "\t") }
+        tab == 0 { next }
+        {
+            path = substr($0, tab + 1)
+            leaf = path
+            sub(/.*\//, "", leaf)
+            if (tolower(leaf) != ".gitattributes") next
+            split(substr($0, 1, tab - 1), f, " ")
+        }
+        !in_index { head[path] = f[1] " " f[3]; order[++n] = path; next }
+        !(path in seen) {
+            seen[path] = 1
+            if (f[3] != "0" || head[path] != f[1] " " f[2] || index(path, "\001")) print "C\t-\t" path
+            else print "H\t" f[2] "\t" path
+        }
+        END { for (i = 1; i <= n; i++) if (!(order[i] in seen)) print "C\t-\t" order[i] }')"
+    _ca_tab="$(printf '\t')"
+    printf '%s\n' "$_ca_found" | while IFS= read -r _ca_line; do
+        [ -n "$_ca_line" ] || continue
+        _ca_kind="${_ca_line%%"$_ca_tab"*}"
+        _ca_line="${_ca_line#*"$_ca_tab"}"
+        _ca_oid="${_ca_line%%"$_ca_tab"*}"
+        _ca_path="${_ca_line#*"$_ca_tab"}"
+        if [ "$_ca_kind" = "C" ]; then
+            :
+        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_filter; then
+            die "$1 has a .gitattributes file at $1/${_ca_path} that sets a filter (filter=). git would apply it while it reads the clone. Remove the filter and commit that change, then re-run."
+        elif [ ! -e "$1/$_ca_path" ] && [ ! -L "$1/$_ca_path" ]; then
+            continue
+        elif [ ! -L "$1/$_ca_path" ] && [ -f "$1/$_ca_path" ] \
+            && [ "$(cgit -C "$1" hash-object --no-filters -- "$_ca_path" 2>/dev/null)" = "$_ca_oid" ]; then
+            continue
+        fi
+        die "$1 has a changed .gitattributes file at $1/${_ca_path}. git would apply it while it reads the clone. Undo the change, then re-run."
+    done || exit 1
+    _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '{ leaf = $0; sub(/.*\//, "", leaf) } tolower(leaf) == ".gitattributes" { print; exit }')"
+    if [ -n "$_ca_path" ]; then
+        die "$1 has a .gitattributes file that git does not track, at $1/${_ca_path}. git would apply it while it reads the clone. Remove it, then re-run."
+    fi
+}
+
+# check_clone_src DIR LIST — die, listing them, when the untracked LIST has
+# paths under src/ (in any case: a file system that ignores case finds Src
+# as src) other than files in __pycache__ folders (which
+# remove_source_caches removes): the engine could load them.
+check_clone_src() {
+    _sr_found="$(printf '%s\n' "$2" | SR_HOME="$1" LC_ALL=C awk '
+        tolower(substr($0, 1, 4)) != "src/" { next }
+        {
+            path = $0
+            sub(/\/$/, "", path)
+            n = split(path, part, "/")
+            for (i = 1; i < n; i++) if (part[i] == "__pycache__") next
+            if (++count <= 20) print "    " ENVIRON["SR_HOME"] "/" $0
+        }
+        END { if (count > 20) print "    and " (count - 20) " more" }')"
+    [ -n "$_sr_found" ] || return 0
+    printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$1 has files under src that git does not track, and the engine could load them:" >&2
+    printf '%s\n' "$_sr_found" >&2
+    printf '    %s\n' "Nothing was changed. Move these files out of $1/src, then re-run." >&2
+    exit 1
+}
+
+# remove_source_caches DIR — remove every __pycache__ folder or link under
+# DIR/src, so no bytecode the release did not make loads.
+remove_source_caches() {
+    [ ! -d "$1/src" ] || find "$1/src" -name __pycache__ \( -type d -o -type l \) -prune -exec rm -rf -- {} + \
+        || die "Could not remove the Python cache folders (__pycache__) under $1/src. Remove them, then re-run."
+}
+
+# check_clone_setup DIR — die, before anything is fetched, when updating
+# the clone at DIR in place would trust something the release does not
+# hold: a clone git will not work in, settings, attributes or borrowed
+# objects of its own (check_clone_config, before any git command that reads
+# the index), submodules, a work tree other than DIR (core.worktree, or a
+# .git pointing at another clone's), files git ignores changes to
+# (assume-unchanged, skip-worktree), work-tree .gitattributes files, or
+# untracked files under src. Every check only reads, so a dry run makes
+# them too.
 check_clone_setup() {
     clone_git_ok "$1"
     check_clone_config "$1"
     check_clone_modules "$1"
-    # Ask git whether DIR is inside the work tree and at its top, rather
-    # than comparing folder names: under Git Bash, git and pwd can spell one
-    # folder differently (other capitals, or /tmp for the Windows temp
-    # folder).
+    # Ask git, not folder names: under Git Bash, git and pwd can spell one
+    # folder differently (other capitals, or /tmp for the Windows temp).
     _cs_inside="$(cgit -C "$1" rev-parse --is-inside-work-tree 2>/dev/null || true)"
     _cs_prefix="$(cgit -C "$1" rev-parse --show-prefix 2>/dev/null)" || _cs_prefix="?"
     if [ "$_cs_inside" != "true" ] || [ -n "$_cs_prefix" ]; then
@@ -1006,19 +1014,17 @@ check_clone_setup() {
     if printf '%s\n' "$_cs_flags" | LC_ALL=C awk '{ c = substr($0, 1, 1) } c ~ /[a-z]/ || c == "S" { found = 1; exit } END { exit found ? 0 : 1 }'; then
         die "$1 has changes to tracked files. Commit or stash them, then re-run."
     fi
+    check_clone_attributes "$1"
+    check_clone_src "$1" "$_ca_other"
 }
 
 # checkout_ref DIR — check out APOTHEM_REF in the clone at DIR, after
-# check_fetched_ref has passed. A release tag is checked out, detached, by
-# the commit ID check_release_tag recorded when it checked the tag
-# (TAG_COMMIT), never by its name again: a tag ref moved since, or a branch
-# that shares the tag's name, cannot change what is checked out, and HEAD
-# must then be that commit. Any other ref is taken from origin when the
-# fetch brought a remote-tracking branch of that name, so a stale local
-# branch cannot stand in for it, and otherwise as given (a commit, or a
-# branch only the clone has). No --force: a clone with local changes that the
-# checkout would overwrite stops instead of losing them. Afterwards the
-# tracked files must match the ref.
+# check_fetched_ref passed. A release tag is checked out, detached, by the
+# commit check_release_tag recorded (TAG_COMMIT), never by its name again,
+# and HEAD must then be that commit. Any other ref comes from origin when
+# the fetch brought a remote-tracking branch of that name (not a stale local
+# one), else as given. No --force: local changes the checkout would
+# overwrite stop it. Afterwards the tracked files must match the ref.
 checkout_ref() {
     if is_release_tag "$APOTHEM_REF"; then
         [ -n "$TAG_COMMIT" ] \
@@ -1039,6 +1045,59 @@ checkout_ref() {
     _co_status="$(cgit -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || _co_status="unreadable"
     [ -z "$_co_status" ] \
         || die "The checkout in $1 does not match ${APOTHEM_REF} after the update. Aborting before re-materialization."
+}
+
+# warn_home_access — warn, never stop, when other users can write to
+# APOTHEM_HOME (a new one: by the umask) or the folder holding it. Git Bash,
+# MSYS2 and Cygwin make mode bits up from Windows permissions, which the ps1
+# scripts read instead.
+warn_home_access() {
+    _ha_os="$(uname -s 2>/dev/null)" || _ha_os=
+    case "$_ha_os" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
+    _ha_d="$APOTHEM_HOME"
+    if [ -L "$_ha_d" ]; then
+        warn_writable "$(dirname -- "$_ha_d")" 1 "$_ha_d"
+        [ -d "$_ha_d" ] || return 0
+    fi
+    if [ -d "$_ha_d" ]; then
+        _ha_d="$(cd -P -- "$_ha_d" && pwd -P)" || return 0
+    fi
+    warn_writable "$_ha_d" 0 "$_ha_d"
+    warn_writable "$(dirname -- "$_ha_d")" 1 "$_ha_d"
+}
+
+# warn_writable DIR KIND CHILD — KIND 0: warn when others can write to DIR.
+# KIND 1: when they can replace CHILD in DIR (the sticky bit stops that; a
+# missing DIR is skipped). A group named after you is your own group. stat
+# gives the group's whole name; a new DIR takes the group of a setgid
+# folder above it, and always on macOS and the BSDs.
+warn_writable() {
+    _ww_l=new _ww_f="$1"
+    if [ -d "$1" ]; then
+        _ww_l="$(ls -ldL -- "$1" 2>/dev/null)" || return 0
+    elif [ "$2" = 1 ] || [ -e "$1" ]; then
+        return 0
+    else
+        _ww_f="$(dirname -- "$1")"
+        _ww_l="new $(ls -ldL -- "$_ww_f" 2>/dev/null)" || _ww_l=new
+    fi
+    _ww_g="$(stat -Lc %G -- "$_ww_f" 2>/dev/null || stat -Lf %Sg -- "$_ww_f" 2>/dev/null)" || _ww_g=
+    _ww_w="$(printf '%s\n' "$_ww_l" | awk -v me="$(id -un 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" 'NR == 1 {
+        m = $1
+        if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g }
+        else if (sg != "") $4 = sg
+        if (p && substr(m, 10, 1) ~ /[tT]/) exit
+        if (substr(m, 9, 1) == "w") print "all users"
+        else if (substr(m, 6, 1) == "w" && $4 != me) print "the group " $4
+    }')" || return 0
+    [ -n "$_ww_w" ] || return 0
+    if [ "$2" = 1 ]; then
+        warn "Other users can replace ${3}: $_ww_w can write to $1, the folder that holds it. To fix it, run chmod go-w \"$1\", or move APOTHEM_HOME."
+    elif [ -d "$1" ]; then
+        warn "Other users can change the code Apothem runs as you: $_ww_w can write to $1. To fix it, run chmod go-w \"$1\", or move APOTHEM_HOME."
+    else
+        warn "A new $1 would let $_ww_w change the code Apothem runs as you (umask $(umask)). To fix it, run umask 022, then run the installer again."
+    fi
 }
 
 # home_is_link — return 0 when APOTHEM_HOME is a symbolic link. The installers
@@ -1145,18 +1204,19 @@ ${_cn_base}
 # holds, or an untracked path inside a top-level entry the clone tracks (an
 # untracked top-level entry of its own is carried over instead). A git
 # command that fails counts as work, so an unreadable clone is not replaced.
-# The caller has run check_clone_config first, and every git command here
-# goes through cgit, so none runs the clone's fsmonitor or pager, starts
-# automatic maintenance, or runs git status inside a nested repository.
+# The caller has run the clone checks first; every git command goes through
+# cgit, and git status takes --ignore-submodules=all (which, unlike a -c
+# setting, .gitmodules cannot override), so none runs inside a nested
+# repository.
 clone_has_local_work() {
-    _lw_out="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
+    _lw_out="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain --ignore-submodules=all --untracked-files=no 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_out="$(cgit -C "$1" stash list 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_out="$(cgit -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
     _lw_tracked="$(cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
-    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain 2>/dev/null)" || return 0
+    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0; export GIT_OPTIONAL_LOCKS; cgit -C "$1" status --porcelain --ignore-submodules=all 2>/dev/null)" || return 0
     _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" LC_ALL=C awk '
         BEGIN { n = split(ENVIRON["LW_TRACKED"], names, "\n"); for (i = 1; i <= n; i++) top[names[i]] = 1 }
         substr($0, 1, 3) == "?? " {
@@ -1170,24 +1230,19 @@ clone_has_local_work() {
     [ -n "$_lw_found" ]
 }
 
-# swap_in NEW MODE — put the checked tree at NEW in place of APOTHEM_HOME.
-# NEW sits beside APOTHEM_HOME, so every move is a rename on one filesystem.
-#   MODE keep:  APOTHEM_HOME holds an earlier Apothem install (or only the
-#               engine's data). Every top-level entry that is not part of its
-#               source tree or of NEW (the engine's backups/, state/ and data
-#               folders among them) moves into NEW first; then the earlier
-#               tree moves aside, NEW moves in, and the earlier source is
-#               removed.
-#   MODE aside: APOTHEM_HOME holds something else, and --yes allowed
-#               replacing it. It moves, untouched and under its own name,
-#               into a new sibling <APOTHEM_HOME>.before-apothem-<time>
-#               folder (see claim_aside), and NEW moves in.
-# A failure or an interrupt at any step puts everything back where it was and
-# says so, or names where the earlier tree was left when that also fails.
-# The rollback works from what is on disk, not from how far the swap got, so
-# an interrupt between two steps undoes exactly the steps that happened.
-# Archive installs record their source entries (the manifest) so a later
-# swap can tell them from the engine's data.
+# swap_in NEW MODE — put the checked tree at NEW (beside APOTHEM_HOME, so
+# every move is a rename on one filesystem) in place of APOTHEM_HOME.
+#   keep:  APOTHEM_HOME holds an earlier install (or only engine data).
+#          Each top-level entry not in its source tree or in NEW (backups/,
+#          state/ and other data) moves into NEW; the earlier tree moves
+#          aside, NEW moves in, and the earlier source is removed.
+#   aside: --yes allowed replacing what APOTHEM_HOME holds; it moves,
+#          untouched, into a new sibling <APOTHEM_HOME>.before-apothem-<time>
+#          (claim_aside), and NEW moves in.
+# A failure or an interrupt puts everything back and says so, or names where
+# the earlier tree was left. The rollback reads what is on disk, so it undoes
+# exactly the steps that happened. Archive installs record their source
+# entries so a later swap can tell them from data.
 _SW_PHASE=""
 _SW_MODE=""
 _SW_NEW=""
@@ -1323,19 +1378,13 @@ on_exit() {
     release_lock
 }
 
-# The install lock. An install, update or uninstall holds the folder
-# <APOTHEM_HOME>.lock for its whole run, so two runs never change
-# APOTHEM_HOME, or the folders beside it, at the same time. mkdir makes the
-# folder in one step that fails when it is already there, and the folder
-# holds the owning run's process ID. on_exit removes it on every way out of
-# the run. A forced kill (or a power loss) leaves it behind: the next run
-# then says so and how to remove it, and never takes it over, since it
-# cannot be sure the other run has ended. A lock from another environment
-# (lock_env) cannot have its process checked. When APOTHEM_HOME is a
-# symbolic link, the lock sits beside the folder it leads to, so a run
-# through the link and a run through that folder's own path take the same
-# lock. install.ps1, update.ps1 and uninstall.ps1 hold a file there
-# instead, open with no sharing, which Windows removes when that run ends.
+# The install lock: an install, update or uninstall holds the folder
+# <APOTHEM_HOME>.lock (made by mkdir, holding its process ID) for its whole
+# run, and on_exit removes it. One a forced kill leaves is reported with how
+# to remove it, never taken over; one from another environment (lock_env)
+# cannot have its process checked. For a linked APOTHEM_HOME it sits beside
+# the folder the link leads to. The ps1 scripts hold a file there instead,
+# open with no sharing, which Windows removes when the run ends.
 LOCK_DIR=""
 LOCK_HELD=0
 take_lock() {
@@ -1837,24 +1886,14 @@ is_apothem_source() {
     [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }
 }
 
-# own_checkout — print the checkout this script file belongs to, if any.
-# It is found by the script's own path and nothing else: $0, with any
-# symbolic links followed, must be an existing regular file named install.sh
-# in a scripts/installer folder whose ../.. is an Apothem source. A piped run (`curl … | sh`, `sh < install.sh`)
-# has $0 set to the shell's name, so it never matches, and the current folder
-# and its parents are never searched: a folder shaped like an Apothem tree
-# there could otherwise put its own code in front of an unverified install.
-#
-# A bare `install.sh` with no "/" (as `sh -c "$(curl …)" install.sh` sets
-# it) names nothing on disk, so it is refused rather than looked up in the
-# current folder. A symbolic link, whatever its name, is followed to the
-# real file first, and the name and folder checks apply to that file.
-#
-# Under `sh -c "<text>" <name>`, $0 is whatever the caller typed, not the
-# file the text came from, so a path-shaped $0 there proves nothing. bash,
-# zsh and ksh put "c" in $- for a -c run, and that refuses it here. dash
-# leaves $- empty under -c, so with dash the check cannot tell; do not pass
-# a path-shaped name after `sh -c`.
+# own_checkout — print the checkout this script file belongs to, if any,
+# found by its own path only: $0, links followed, must be a regular file
+# named install.sh in a scripts/installer folder whose ../.. is an Apothem
+# source. A piped run has the shell's name in $0, and the current folder is
+# never searched, so a tree planted there cannot run unverified. A bare
+# `install.sh` with no "/" is refused, not looked up. Under `sh -c`, $0 is
+# whatever the caller typed: bash, zsh and ksh put "c" in $-, which refuses
+# it; dash does not, so pass no path-shaped name after `sh -c`.
 OWN_CHECKOUT_MAX_LINKS=40
 own_checkout() {
     case "$-" in
@@ -1967,22 +2006,15 @@ ok "$PY ($PY_VERSION)"
 
 # Prerequisite: CLI prerequisites importable ---------------------------------------
 #
-# The bundled engine ships yaml + jsonschema vendored, but imports click + rich
-# from the host interpreter. Probe each (a missing module is a quiet boolean,
-# never a crash), report any gap, and offer to install the prerequisites under
-# the chosen interpreter — auto-confirmed with --yes or APOTHEM_AUTO_INSTALL_DEPS=1,
-# prompted interactively, and declined (with manual guidance) in a piped
-# non-interactive session so the install never silently mutates the host.
+# The engine vendors yaml and jsonschema but imports click and rich from the
+# host Python. A missing one is reported and offered for install: yes with
+# --yes or APOTHEM_AUTO_INSTALL_DEPS=1, asked at a terminal, declined (with
+# guidance) in a piped run, so the host never changes silently.
 #
-# The current folder must never shadow the engine's modules. Python puts ''
-# (the working directory) first on sys.path for `-c`, and `-m` puts the
-# working directory there, so a `click.py`, `rich/` or `apothem/` in the
-# folder the installer (or the shim) runs from would run instead of the real
-# package. `-P` / PYTHONSAFEPATH does not exist on Python 3.10, and `-I` would
-# also drop PYTHONPATH and the user site (where click and rich may be
-# installed). So every such start sets PYTHONSAFEPATH=1 (3.11+ then adds
-# nothing) and runs a `-c` program whose first statement drops a leading ''.
-# Only sys.path changes; the working directory and the arguments do not.
+# The current folder must never shadow the engine's modules: `-c` and `-m`
+# put it first on sys.path. Python 3.10 has no PYTHONSAFEPATH, and `-I` would
+# drop PYTHONPATH and the user site too, so every start sets PYTHONSAFEPATH=1
+# and runs a `-c` program that first drops a leading ''.
 DROP_CWD_FROM_PATH="import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]"
 ENGINE_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('apothem', run_name='__main__', alter_sys=True)"
 PIP_PROGRAM="${DROP_CWD_FROM_PATH}; import runpy; runpy.run_module('pip', run_name='__main__', alter_sys=True)"
@@ -2049,16 +2081,11 @@ echo
 
 # Locate or fetch the bundled source ----------------------------------------------
 #
-# Source precedence:
-#   1. APOTHEM_SOURCE — an explicit local source tree (no fetch; verification
-#      is skipped because nothing is fetched).
-#   2. This script's own checkout (it was run by path from
-#      scripts/installer/ of an apothem source tree; no fetch; verification
-#      skipped). The current folder and its parents are never used.
-#   3. A git clone of APOTHEM_REPO into APOTHEM_HOME, pinned to the resolved
-#      ref (the latest release tag by default, or an explicit APOTHEM_REF),
-#      then signature-verified before materializing (idempotent: an existing
-#      clone is fetched and checked out to the ref).
+# Source precedence: 1. APOTHEM_SOURCE, a local tree (nothing fetched or
+# verified); 2. this script's own checkout, when run by path from its
+# scripts/installer/ (the current folder and its parents are never used);
+# 3. APOTHEM_REPO fetched at the resolved ref (latest release tag, or
+# APOTHEM_REF) and verified before materializing.
 
 bold "Locating Apothem source"
 
@@ -2068,9 +2095,6 @@ if [ "$LOCAL_KIND" = "explicit" ]; then
     [ -n "$SOURCE" ] \
         || die "APOTHEM_SOURCE is not an apothem source tree: ${APOTHEM_SOURCE}"
     ok "Using explicit source: $SOURCE"
-    # The local-source path fetches nothing, so there is no tag to resolve and
-    # no signature to verify. State plainly what is being run and skip the
-    # tag-resolution + verification gate (which applies only to fetched refs).
     info "Local source — skipping tag resolution and signature verification"
 elif [ "$LOCAL_KIND" = "checkout" ]; then
     SOURCE="$LOCAL_TREE"
@@ -2095,13 +2119,11 @@ case "$APOTHEM_VERIFY" in
     *) die "APOTHEM_VERIFY must be 'auto', 'release', 'signature' or 'checksum' (got '${APOTHEM_VERIFY}')." ;;
 esac
 
-# Pick the verification path for a fetched source. `auto` takes the release
-# path when cosign is on PATH and the key-pinned tag check otherwise. A ref
-# that is not a release tag (main, a SHA) has no release archive, so it goes
-# to the clone path, whose gate refuses it unless APOTHEM_ALLOW_UNVERIFIED=1.
-# An existing git clone at APOTHEM_HOME stays a clone: replacing it with an
-# archive would drop its history and any local work, so it is updated through
-# the clone path's key-pinned tag check.
+# Pick the verification path for a fetched source: `auto` takes the release
+# path when cosign is on PATH, else the key-pinned tag check. A ref that is
+# not a release tag has no archive, so it takes the clone path (refused
+# unless APOTHEM_ALLOW_UNVERIFIED=1). An existing clone stays a clone, so its
+# history and local work are kept.
 VERIFY_MODE="$APOTHEM_VERIFY"
 if [ -z "$SOURCE" ] && [ "$VERIFY_MODE" = "auto" ]; then
     if [ -n "$APOTHEM_REF" ] && ! is_release_tag "$APOTHEM_REF"; then
@@ -2165,10 +2187,14 @@ home_mode() {
     if is_apothem_clone "$APOTHEM_HOME"; then
         [ "$ASSUME_YES" = "1" ] \
             || die "Destination $APOTHEM_HOME is a git clone; refusing to replace it with $1, which would remove its history. Set APOTHEM_VERIFY=signature to update the clone, move it aside, or re-run with --yes."
-        # git status reads the clone's index, so the clone's own settings
-        # are checked first, as for an update in place.
+        # git status reads the clone's index, so the clone's own settings,
+        # submodules and attributes are checked first, as for an update in
+        # place.
         clone_git_ok "$APOTHEM_HOME"
         check_clone_config "$APOTHEM_HOME"
+        check_clone_modules "$APOTHEM_HOME"
+        check_clone_gitlinks "$APOTHEM_HOME"
+        check_clone_attributes "$APOTHEM_HOME"
         if clone_has_local_work "$APOTHEM_HOME"; then
             die "$APOTHEM_HOME is a git clone with local work that replacing it would lose (changes, stashes, unpushed commits, or untracked files in its source tree). Commit and push that work, or move it elsewhere, then re-run."
         fi
@@ -2380,6 +2406,7 @@ if [ -z "$SOURCE" ]; then
         check_fetched_ref "$APOTHEM_HOME"
         require_clean_clone "$APOTHEM_HOME"
         checkout_ref "$APOTHEM_HOME"
+        remove_source_caches "$APOTHEM_HOME"
         _cl_tree="$APOTHEM_HOME"
     else
         if is_apothem_clone "$APOTHEM_HOME"; then
@@ -2427,6 +2454,7 @@ if [ -z "$SOURCE" ]; then
     fi
     echo
 fi
+[ -n "$LOCAL_KIND" ] || warn_home_access
 # Absolute, so no PYTHONPATH entry below can name the current folder.
 SRC_PATH="$(abs_path "${SOURCE}/src")"
 # Vendored runtime dependencies resolve ahead of the host's site-packages,

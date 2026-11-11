@@ -809,7 +809,22 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "clone, then re-run.",
         "ls-files -s",
         "160000",
-        "--get-all extensions.refstorage",
+        "--null --list",
+        "'s own git config has a setting whose name holds a line break, which an "
+        "update in place does not accept. Remove it from ",
+        " borrows objects from another repository (",
+        " names it). A release clone does not, and the update would run git in "
+        "that repository under settings nothing here checks. Run 'git -C ",
+        " repack -a -d' to copy the objects in, remove ",
+        "objects/info/alternates",
+        "objects/info/http-alternates",
+        " has a changed .gitattributes file at ",
+        " has a .gitattributes file that git does not track, at ",
+        ". git would apply it while it reads the clone. ",
+        "hash-object --no-filters",
+        " has files under src that git does not track, and the engine could load them:",
+        "Nothing was changed. Move these files out of ",
+        "Could not remove the Python cache folders (__pycache__) under ",
         "'s own git attributes set a filter (filter=), which the update would "
         "trust. Remove it from ",
         "Could not read the git config of ",
@@ -1312,16 +1327,12 @@ CLONE_CONFIG_ALLOW: tuple[str, ...] = (
     "core.ignorecase",
     "core.precomposeunicode",
     "core.longpaths",
-    "core.partialclonefilter",
     "extensions.objectformat",
     "extensions.refstorage",
-    "extensions.partialclone",
     "extensions.worktreeconfig",
     "remote.origin.url",
     "remote.origin.fetch",
     "remote.origin.tagopt",
-    "remote.origin.promisor",
-    "remote.origin.partialclonefilter",
     "branch.*.*",
     "user.name",
     "user.email",
@@ -1390,6 +1401,12 @@ CONFIG_KEY_CASES: tuple[tuple[str, bool], ...] = (
     ("remote.origin​.promisor", False),
     ("branch.m­ain.merge", True),
     ("remote.upstream.url", False),
+    # Installer clones are full clones: no partial-clone or promisor setting
+    # (a lazy fetch of a missing object runs a fetch they would shape).
+    ("core.partialclonefilter", False),
+    ("extensions.partialclone", False),
+    ("remote.origin.promisor", False),
+    ("remote.origin.partialclonefilter", False),
     ("remote.origin.pushurl", False),
     ("remote.origin.uploadpack", False),
     ("remote.origin.mirror", False),
@@ -1563,6 +1580,58 @@ CONFIG_FILE_CASES: tuple[tuple[str, str, str | None], ...] = (
         "core.pager",
     ),
     ("branch", '[branch "main"]\n\tremote = origin\n\tmerge = refs/heads/main\n', None),
+    (
+        "branch-remotes-origin",
+        '[branch "x.y"]\n\tremote = origin\n\tpushremote = origin\n',
+        None,
+    ),
+    ("branch-remote-dot", '[branch "main"]\n\tremote = .\n', "branch.main.remote"),
+    (
+        "branch-pushremote",
+        '[branch "main"]\n\tpushremote = upstream\n',
+        "branch.main.pushremote",
+    ),
+    ("branch-remote-no-value", '[branch "main"]\n\tremote\n', "branch.main.remote"),
+    ("branch-remote-empty", '[branch "main"]\n\tremote =\n', "branch.main.remote"),
+    (
+        "branch-remote-case",
+        '[branch "Main"]\n\tRemote = Origin\n',
+        "branch.Main.remote",
+    ),
+    (
+        "branch-remote-twice",
+        '[branch "main"]\n\tremote = origin\n\tremote = evil\n',
+        "branch.main.remote",
+    ),
+    # Git Bash's awk drops a CR just before a line end, so these two
+    # passed in sh on Windows while ps1 refused them.
+    (
+        "branch-remote-carriage-return",
+        '[branch "main"]\n\tremote = "origin\r"\n',
+        "branch.main.remote",
+    ),
+    (
+        "refstorage-carriage-return",
+        '[extensions]\n\trefstorage = "files\r"\n',
+        "extensions.refstorage",
+    ),
+    ("branch-crlf-line", '[branch "main"]\r\n\tremote = origin\r\n', None),
+    (
+        "branch-remote-line-break",
+        '[branch "main"]\n\tremote = "origin\\nx"\n',
+        "branch.main.remote",
+    ),
+    (
+        "remote-before-pager",
+        '[branch "a"]\n\tremote = x\n[core]\n\tpager = less\n',
+        "branch.a.remote",
+    ),
+    (
+        "partialclone",
+        "[extensions]\n\tpartialclone = origin\n",
+        "extensions.partialclone",
+    ),
+    ("promisor", '[remote "origin"]\n\tpromisor = true\n', "remote.origin.promisor"),
     ("hook", '[hook "x"]\n\tcommand = touch y\n', "hook.x.command"),
 )
 
@@ -1612,6 +1681,10 @@ def test_sh_checks_a_clones_own_config_file(
         + _sh_allow_program(sh_name)
         + _sh_function(SCRIPTS[sh_name], "config_file_problem")
         + "\n"
+        + _sh_function(SCRIPTS[sh_name], "need_plain_file")
+        + "\n"
+        + _sh_function(SCRIPTS[sh_name], "sets_filter")
+        + "\n"
         + _sh_function(SCRIPTS[sh_name], "check_clone_config")
         + '\ncheck_clone_config "$1"\necho passed\n'
     )
@@ -1644,6 +1717,8 @@ def test_powershell_checks_a_clones_own_config_file(
                 "$GitNoProgram",
                 "$CloneConfigAllow",
                 "Test-AllowedConfigKey",
+                "Assert-ClonePlainFile",
+                "Test-AttributeFilter",
                 "Assert-CloneConfig",
             ),
             "function Write-Fail { param([string]$Msg) throw $Msg }",
@@ -1743,20 +1818,74 @@ def test_a_clone_is_checked_in_the_same_order_in_both(
         "is not the work tree",
         "check_clone_gitlinks",
         "ls-files -v",
+        'check_clone_attributes "$1"',
+        'check_clone_src "$1"',
     )
     assert _in_order(
-        ps1_body, "Assert-CloneGit $Dir", "Assert-CloneConfig $Dir", "ls-files -v"
+        ps1_body,
+        "Assert-CloneGit $Dir",
+        "Assert-CloneConfig $Dir",
+        "ls-files -v",
+        "Assert-CloneAttributeFile $Dir",
+        "Assert-SourceTracked $Dir",
     )
     assert _in_order(
         ps1_body,
         "Assert-CloneConfig $Dir",
-        "keeps submodule repositories in",
+        "Assert-CloneModuleFolder $Dir",
         "is not the work tree",
-        "if ($CcStagesCode -ne 0)",
-        "holds a submodule at",
+        "Assert-CloneGitlink $Dir",
         "if ($CcFlagsCode -ne 0)",
         "[char]::IsLower",
     )
+
+
+#: Per script: the checkout of the clone in place, the call that removes
+#: the __pycache__ folders under its src, and the first engine run.
+CACHE_REMOVAL_STEPS: dict[str, tuple[str, str, str]] = {
+    "install.sh": (
+        'checkout_ref "$APOTHEM_HOME"',
+        'remove_source_caches "$APOTHEM_HOME"',
+        '"$PY" -c "$ENGINE_PROGRAM"',
+    ),
+    "update.sh": (
+        'checkout --quiet --end-of-options "$APOTHEM_REF"',
+        'remove_source_caches "$APOTHEM_HOME"',
+        '"$PY" -c "$ENGINE_PROGRAM"',
+    ),
+    "install.ps1": (
+        "Invoke-CheckoutRef $ApothemHome -InPlace",
+        "Remove-SourceCache $ApothemHome",
+        "& $PY -c $EngineProgram",
+    ),
+    "update.ps1": (
+        "checkout --quiet --end-of-options $ApothemRef",
+        "Remove-SourceCache $ApothemHome",
+        "& $PY -c $EngineProgram",
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(CACHE_REMOVAL_STEPS))
+def test_an_update_in_place_removes_the_cache_folders_before_the_engine_runs(
+    name: str,
+) -> None:
+    """Each script's update-in-place flow calls the cache removal after it
+    checks out the clone and before the engine first runs, so stale or
+    planted bytecode under src never loads. The tests of the removal
+    function itself would still pass if the call were dropped."""
+    checkout, removal, engine = CACHE_REMOVAL_STEPS[name]
+    code = "\n".join(
+        line for line in SCRIPTS[name].splitlines() if not line.lstrip().startswith("#")
+    )
+
+    assert code.count(removal) == 1, (
+        f"{name} calls {removal!r} {code.count(removal)} times"
+    )
+    assert _in_order(code, checkout, removal, engine), name
+    if name.startswith("install"):
+        # One checkout call, and the removal is the very next line.
+        assert re.search(re.escape(checkout) + r"\n[ \t]*" + re.escape(removal), code)
 
 
 def test_the_check_for_local_work_runs_git_with_the_same_settings_in_both() -> None:
@@ -1771,8 +1900,9 @@ def test_the_check_for_local_work_runs_git_with_the_same_settings_in_both() -> N
     calls = re.findall(r"(?<![\w$.-])(c?git) -", code)
     assert calls, "clone_has_local_work runs no git command"
     assert set(calls) == {"cgit"}, calls
-    assert sh_body.count("status --porcelain") == 2
+    assert sh_body.count("status --porcelain --ignore-submodules=all") == 2
     ps1_body = _ps1_function(PS1, "Test-CloneHasLocalWork")
+    assert ps1_body.count("status --porcelain --ignore-submodules=all") == 2
     git_calls = re.findall(r"& git (@\w+)", ps1_body)
     assert git_calls, "Test-CloneHasLocalWork runs no git command"
     assert set(git_calls) <= {"@GitNoProgram", "@GitSafe"}, git_calls
@@ -1781,20 +1911,27 @@ def test_the_check_for_local_work_runs_git_with_the_same_settings_in_both() -> N
 
 def test_replacing_a_clone_checks_it_before_git_status_in_both() -> None:
     """With --yes / -Yes, replacing a clone with the archive asks git status
-    whether it holds local work; the clone's own settings are checked first,
-    so its fsmonitor program never runs."""
+    whether it holds local work; the clone's own settings, submodules and
+    attributes are checked first, so neither its fsmonitor program nor a
+    nested repository's filter runs."""
     sh_body = _sh_function(SH, "home_mode")
     ps1_body = _ps1_function(PS1, "Get-HomeMode")
     assert _in_order(
         sh_body,
         'clone_git_ok "$APOTHEM_HOME"',
         'check_clone_config "$APOTHEM_HOME"',
+        'check_clone_modules "$APOTHEM_HOME"',
+        'check_clone_gitlinks "$APOTHEM_HOME"',
+        'check_clone_attributes "$APOTHEM_HOME"',
         'clone_has_local_work "$APOTHEM_HOME"',
     )
     assert _in_order(
         ps1_body,
         "Assert-CloneGit $ApothemHome",
         "Assert-CloneConfig $ApothemHome",
+        "Assert-CloneModuleFolder $ApothemHome",
+        "Assert-CloneGitlink $ApothemHome",
+        "Assert-CloneAttributeFile $ApothemHome",
         "Test-CloneHasLocalWork $ApothemHome",
     )
 
@@ -2757,6 +2894,10 @@ def test_sh_reads_a_clones_attributes_as_git_does(
         + _sh_allow_program(sh_name)
         + _sh_function(SCRIPTS[sh_name], "config_file_problem")
         + "\n"
+        + _sh_function(SCRIPTS[sh_name], "need_plain_file")
+        + "\n"
+        + _sh_function(SCRIPTS[sh_name], "sets_filter")
+        + "\n"
         + _sh_function(SCRIPTS[sh_name], "check_clone_config")
         + '\ncheck_clone_config "$1"\necho passed\n'
     )
@@ -2789,6 +2930,8 @@ def test_powershell_reads_a_clones_attributes_as_sh_does(
                 "$GitNoProgram",
                 "$CloneConfigAllow",
                 "Test-AllowedConfigKey",
+                "Assert-ClonePlainFile",
+                "Test-AttributeFilter",
                 "Assert-CloneConfig",
             ),
             "function Write-Fail { param([string]$Msg) throw $Msg }",
@@ -2913,35 +3056,8 @@ def test_a_clone_whose_index_git_cannot_read_is_refused_in_both(
         f"{home} has changes to tracked files. Commit or stash them, then re-run."
     )
     if _SH is not None:
-        sh = SCRIPTS[sh_name]
-        program = (
-            "die() { printf '%s\\n' \"$*\"; exit 1; }\n"
-            + _sh_function(sh, "cgit")
-            + "\nHOOKS_OFF=\n"
-            + _sh_allow_program(sh_name)
-            + "".join(
-                _sh_function(sh, function) + "\n"
-                for function in (
-                    "git_path",
-                    "config_file_problem",
-                    "check_clone_config",
-                    "clone_git_ok",
-                    "check_clone_modules",
-                    "check_clone_gitlinks",
-                    "check_clone_setup",
-                )
-            )
-            + 'check_clone_setup "$1"\necho passed\n'
-        )
-        result = subprocess.run(
-            [_SH, "-c", program, "sh", home],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-            env=_sh_env(_git_env_without_user_config()),
-        )
-        assert result.stdout.strip() == expected, result.stdout + result.stderr
+        result = _run_sh_check(sh_name, 'check_clone_setup "$1"', home)
+        assert _lines(result) == _message(expected), result.stdout + result.stderr
     if _PWSH is not None:
         program = "; ".join(
             (
@@ -2950,8 +3066,12 @@ def test_a_clone_whose_index_git_cannot_read_is_refused_in_both(
                     "$CloneConfigAllow",
                     "Test-AllowedConfigKey",
                     "Get-ClonePath",
+                    "Assert-ClonePlainFile",
+                    "Test-AttributeFilter",
                     "Assert-CloneConfig",
                     "Assert-CloneGit",
+                    "Assert-CloneModuleFolder",
+                    "Assert-CloneGitlink",
                     "Assert-CleanClone",
                 ),
                 "function Write-Fail { param([string]$Msg) throw $Msg }",
@@ -3119,3 +3239,1068 @@ def test_a_fresh_clone_writes_its_pack_under_a_long_staging_folder(
 
     assert result.returncode == 0, result.stderr
     assert "core.longpaths=true" in fetch.group(1).split(), fetch.group(0)
+
+
+# Round 4: a clone's own config, attributes, borrowed objects and untracked
+# source files, checked the same way in both families before any git
+# command reads the clone's objects or runs a filter.
+
+_ALL_SH_FUNCTIONS = re.compile(
+    r"^[a-z_][a-z0-9_]*\(\) (?:\{\n.*?^\}|\(\n.*?^\))$", re.MULTILINE | re.DOTALL
+)
+
+#: sh stubs for the clone checks: die and the list header print to stderr,
+#: each message line indented four spaces, as install.ps1's lines are.
+_SH_STUBS = (
+    "die() { printf '    %s\\n' \"$*\" >&2; exit 1; }\n"
+    "paint() { printf '%s' \"$3\"; }\n"
+    "COLOR_ERR=0\nHOOKS_OFF=\n"
+)
+
+#: The PowerShell stub for Write-Fail: the message on stderr, indented four
+#: spaces, then exit 1, as the scripts stop.
+_PS1_FAIL = (
+    "function Write-Fail { param([string]$Msg) "
+    "[Console]::Error.WriteLine('    ' + $Msg); exit 1 }"
+)
+
+
+def _sh_check_program(sh_name: str, call: str) -> str:
+    """sh source defining every function of script SH_NAME, its allow-list
+    and the stubs, then running CALL and printing "passed"."""
+    script = SCRIPTS[sh_name]
+    return (
+        "".join(f + "\n" for f in _ALL_SH_FUNCTIONS.findall(script))
+        + _allow_list_block(sh_name).replace("\r", "")
+        + "\n"
+        + _SH_STUBS
+        + call
+        + "\necho passed\n"
+    )
+
+
+def _run_sh_check(
+    sh_name: str, call: str, home: str, **env: str
+) -> subprocess.CompletedProcess[str]:
+    assert _SH is not None
+    # In a file: the whole script's functions pass Windows' command-line limit.
+    program = Path(home).parent / f"check-{sh_name}"
+    program.write_bytes(_sh_check_program(sh_name, call).encode("utf-8"))
+    return subprocess.run(
+        [_SH, str(program), home],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=120,
+        check=False,
+        env=_sh_env({**_git_env_without_user_config(), **env}),
+    )
+
+
+def _ps1_define_functions(*variables: str) -> tuple[str, ...]:
+    """PowerShell statements that define every top-level function of the
+    script named by ``$env:RELEASE_TAG_SCRIPT``, and run the assignments of
+    VARIABLES. Nothing else in the script runs."""
+    return (
+        *_ps1_define(*variables),
+        "$fns = $ast.FindAll({ param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] }, $false)",
+        "foreach ($fn in $fns) { . ([scriptblock]::Create($fn.Extent.Text)) }",
+    )
+
+
+def _run_ps1_check(
+    ps1_name: str, call: str, home: str, **env: str
+) -> subprocess.CompletedProcess[str]:
+    program = "; ".join(
+        (
+            *_ps1_define_functions("$GitNoProgram", "$CloneConfigAllow"),
+            _PS1_FAIL,
+            "$ErrorActionPreference = 'Stop'",
+            call,
+            "'passed'",
+        )
+    )
+    return _run_powershell(
+        program, ps1_name, CLONE_HOME=home, **{**_git_env_overrides(), **env}
+    )
+
+
+def _lines(result: subprocess.CompletedProcess[str]) -> list[str]:
+    """What a check printed to stderr, with "x" for sh's mark and forward
+    slashes, and "passed" when it went on."""
+    lines = [
+        line.replace("✗", "x").replace("\\", "/")
+        for line in result.stderr.splitlines()
+        if line.strip()
+    ]
+    if "passed" in result.stdout.split():
+        lines.append("passed")
+    return lines
+
+
+_CHECK_FAMILIES = ("install.sh", "update.sh", "install.ps1", "update.ps1")
+
+
+def _run_check(
+    name: str, sh_call: str, ps1_call: str, home: str, **env: str
+) -> list[str]:
+    """Run SH_CALL or PS1_CALL with script NAME's functions on HOME (as
+    $1 / $env:CLONE_HOME), and return _lines of the result."""
+    if name.endswith(".sh"):
+        if _SH is None:
+            pytest.skip("no POSIX sh on this host")
+        return _lines(_run_sh_check(name, sh_call, home, **env))
+    if _PWSH is None:
+        pytest.skip("no PowerShell on this host")
+    return _lines(_run_ps1_check(name, ps1_call, home, **env))
+
+
+def _message(text: str) -> list[str]:
+    return [f"    {text}"]
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_a_setting_name_holding_a_line_break_is_refused_in_both(
+    tmp_path: Path, name: str
+) -> None:
+    """git allows a CR inside a quoted subsection, and prints the name
+    `remote.origin.url<CR>branch.x.uploadpack` as one. PowerShell's reader
+    splits it at the CR into two allowed names, so both families refuse any
+    name holding a line break, naming the file, before the allow-list."""
+    home = _clone_with_config(
+        tmp_path / "clone",
+        '[remote "origin.url\rbranch.x"]\n\tuploadpack = touch pwned\n'
+        "\turl = /nowhere\n\tpromisor = true\n",
+    )
+    stub_sh = "git_path() { printf '%s\\n' \"$1/.git/$2\"; }\n"
+    stub_ps1 = 'function Get-ClonePath { param([string]$Dir, [string]$Name) "$Dir/.git/$Name" }'
+
+    got = _run_check(
+        name,
+        stub_sh + 'check_clone_config "$1"',
+        stub_ps1 + "; Assert-CloneConfig $env:CLONE_HOME",
+        home,
+    )
+
+    assert got == _message(
+        f"{home}'s own git config has a setting whose name holds a line break, "
+        "which an update in place does not accept. Remove it from "
+        f"{home}/.git/config, then re-run."
+    )
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize("file", ["alternates", "http-alternates"])
+def test_a_clone_that_borrows_objects_is_refused_in_both(
+    tmp_path: Path, name: str, file: str
+) -> None:
+    """A clone whose objects/info/alternates (or http-alternates) names
+    another repository would make git run there, under that repository's
+    own settings; both families refuse it before the fetch."""
+    _, home_path = _upstream_and_clone(tmp_path)
+    borrowed = home_path / ".git" / "objects" / "info" / file
+    borrowed.write_text(f"{(tmp_path / 'upstream' / '.git' / 'objects').as_posix()}\n")
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name, 'check_clone_config "$1"', "Assert-CloneConfig $env:CLONE_HOME", home
+    )
+
+    path = f"{home}/.git/objects/info/{file}"
+    assert got == _message(
+        f"{home} borrows objects from another repository ({path} names it). A "
+        "release clone does not, and the update would run git in that repository "
+        f"under settings nothing here checks. Run 'git -C {home} repack -a -d' to "
+        f"copy the objects in, remove {path}, then re-run."
+    )
+
+
+def _work_clone(tmp_path: Path) -> Path:
+    """A clone of a repository that tracks .gitattributes at its top and in
+    docs/, ignores build/ and Python caches, and has a src/ tree."""
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", "-b", "main", str(upstream))
+    files = {
+        "README": "x\n",
+        ".gitattributes": "* text=auto eol=lf\n",
+        ".gitignore": "__pycache__/\n*.pyc\nbuild/\n",
+        "docs/.gitattributes": "*.md text\n",
+        "src/apothem/__init__.py": "",
+    }
+    for path, text in files.items():
+        (upstream / path).parent.mkdir(parents=True, exist_ok=True)
+        (upstream / path).write_bytes(text.encode())
+    _git("add", "-A", cwd=upstream)
+    _git("commit", "--quiet", "-m", "x", cwd=upstream)
+    home = tmp_path / "home"
+    _git("clone", "--quiet", str(upstream), str(home))
+    return home
+
+
+def _write(home: Path, path: str, data: str = "x\n") -> None:
+    (home / path).parent.mkdir(parents=True, exist_ok=True)
+    (home / path).write_bytes(data.encode())
+
+
+def _untracked_attributes(home: str, path: str) -> list[str]:
+    return _message(
+        f"{home} has a .gitattributes file that git does not track, at "
+        f"{home}/{path}. git would apply it while it reads the clone. Remove it, "
+        "then re-run."
+    )
+
+
+def _changed_attributes(home: str, path: str) -> list[str]:
+    return _message(
+        f"{home} has a changed .gitattributes file at {home}/{path}. git would "
+        "apply it while it reads the clone. Undo the change, then re-run."
+    )
+
+
+def _restage(home: Path, path: str) -> None:
+    _write(home, path, "* filter=lfs\n")
+    _git("-C", str(home), "add", "--", path)
+
+
+def _make_folder(home: Path, path: str) -> None:
+    (home / path).unlink()
+    (home / path).mkdir()
+
+
+def _untrack(home: Path, path: str) -> None:
+    _git("-C", str(home), "rm", "--quiet", "--cached", "--", path)
+
+
+#: How a work tree is changed, and what the attributes check says: None for
+#: no refusal, else ("changed" | "untracked", the path it names).
+ATTRIBUTE_WORK_CASES: tuple[tuple[str, object, tuple[str, str] | None], ...] = (
+    ("clean", lambda h: None, None),
+    ("same-bytes", lambda h: _write(h, ".gitattributes", "* text=auto eol=lf\n"), None),
+    ("deleted", lambda h: (h / "docs/.gitattributes").unlink(), None),
+    ("cache", lambda h: _write(h, "src/apothem/__pycache__/x.pyc"), None),
+    (
+        "modified",
+        lambda h: _write(h, ".gitattributes", "* filter=lfs\n"),
+        ("changed", ".gitattributes"),
+    ),
+    (
+        "staged",
+        lambda h: _restage(h, "docs/.gitattributes"),
+        ("changed", "docs/.gitattributes"),
+    ),
+    (
+        "folder",
+        lambda h: _make_folder(h, "docs/.gitattributes"),
+        ("changed", "docs/.gitattributes"),
+    ),
+    (
+        "untracked-from-index",
+        lambda h: _untrack(h, "docs/.gitattributes"),
+        ("changed", "docs/.gitattributes"),
+    ),
+    (
+        "untracked",
+        lambda h: _write(h, "new/deep/.GitAttributes", "* filter=lfs\n"),
+        ("untracked", "new/deep/.GitAttributes"),
+    ),
+    (
+        "ignored",
+        lambda h: _write(h, "build/x/.gitattributes", "* filter=lfs\n"),
+        ("untracked", "build/x/.gitattributes"),
+    ),
+    (
+        "tracked-first",
+        lambda h: (
+            _write(h, "a/.gitattributes", "* filter=lfs\n"),
+            _write(h, "docs/.gitattributes", "* filter=lfs\n"),
+        ),
+        ("changed", "docs/.gitattributes"),
+    ),
+)
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize(
+    ("case", "change", "refused"),
+    ATTRIBUTE_WORK_CASES,
+    ids=[c[0] for c in ATTRIBUTE_WORK_CASES],
+)
+def test_a_work_tree_gitattributes_is_checked_the_same_way_in_both(
+    tmp_path: Path,
+    name: str,
+    case: str,
+    change: object,
+    refused: tuple[str, str] | None,
+) -> None:
+    """git status, diff and checkout apply a .gitattributes in the work
+    tree, which can name a filter program the user's own config defines.
+    Both families refuse one git does not track (ignored, or in an untracked
+    folder, too), or a tracked one that is not the file HEAD and the index
+    hold, compared without filters, before any of those commands runs."""
+    home_path = _work_clone(tmp_path)
+    assert callable(change)
+    change(home_path)
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name,
+        'check_clone_attributes "$1"',
+        "Assert-CloneAttributeFile $env:CLONE_HOME",
+        home,
+    )
+
+    if refused is None:
+        assert got == ["passed"]
+    elif refused[0] == "changed":
+        assert got == _changed_attributes(home, refused[1])
+    else:
+        assert got == _untracked_attributes(home, refused[1])
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_an_unchanged_clone_passes_the_gitattributes_check_under_autocrlf(
+    tmp_path: Path, name: str
+) -> None:
+    """The check compares each .gitattributes file byte for byte with the
+    index, so it relies on git writing them with LF. core.autocrlf=true is
+    Git for Windows' default, and the installers accept it outside the
+    clone's own config. With this repository's real root .gitattributes, an
+    unchanged clone made and checked under that setting passes; a root file
+    that stopped covering .gitattributes files with eol=lf would fail every
+    update for those users."""
+    user_config = tmp_path / "user.gitconfig"
+    user_config.write_bytes(b"[core]\n\tautocrlf = true\n")
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", "-b", "main", str(upstream))
+    files = {
+        ".gitattributes": (REPO_ROOT / ".gitattributes").read_bytes(),
+        "docs/.gitattributes": b"*.md text\n",
+        "src/apothem/__init__.py": b"",
+    }
+    for path, data in files.items():
+        (upstream / path).parent.mkdir(parents=True, exist_ok=True)
+        (upstream / path).write_bytes(data)
+    _git("add", "-A", cwd=upstream)
+    _git("commit", "--quiet", "-m", "x", cwd=upstream)
+    home_path = tmp_path / "home"
+    subprocess.run(
+        ["git", "clone", "--quiet", str(upstream), str(home_path)],
+        check=True,
+        capture_output=True,
+        env={**_git_env_without_user_config(), "GIT_CONFIG_GLOBAL": str(user_config)},
+    )
+
+    got = _run_check(
+        name,
+        'check_clone_attributes "$1"',
+        "Assert-CloneAttributeFile $env:CLONE_HOME",
+        home_path.as_posix(),
+        GIT_CONFIG_GLOBAL=str(user_config),
+    )
+
+    assert got == ["passed"]
+
+
+def _src_header(home: str) -> str:
+    return (
+        f"  x {home} has files under src that git does not track, and the engine "
+        "could load them:"
+    )
+
+
+def _src_closing(home: str) -> str:
+    return f"    Nothing was changed. Move these files out of {home}/src, then re-run."
+
+
+#: Untracked files planted under src/ and the paths the check lists (an
+#: empty tuple: the check passes). Files inside a __pycache__ folder are
+#: removed before the engine runs, so they do not count.
+SRC_CASES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("caches-only", ("src/apothem/__pycache__/x.pyc", "src/__pycache__/y.pyc"), ()),
+    (
+        "planted",
+        ("src/sitecustomize.py", "src/apothem/_vendor/click/__init__.py"),
+        ("src/apothem/_vendor/click/__init__.py", "src/sitecustomize.py"),
+    ),
+    ("ignored-pyc", ("src/apothem/foo.pyc",), ("src/apothem/foo.pyc",)),
+    ("cache-named-file", ("src/apothem/__pycache__",), ("src/apothem/__pycache__",)),
+    ("other-case", ("src/__PYCACHE__/x.pyc",), ("src/__PYCACHE__/x.pyc",)),
+    ("outside-src", ("notes.txt", "build/x.py"), ()),
+)
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize(
+    ("case", "planted", "listed"), SRC_CASES, ids=[c[0] for c in SRC_CASES]
+)
+def test_untracked_files_under_src_stop_an_update_in_both(
+    tmp_path: Path,
+    name: str,
+    case: str,
+    planted: tuple[str, ...],
+    listed: tuple[str, ...],
+) -> None:
+    """The engine runs with the clone's src on its path, so a file git does
+    not track there (ignored ones too) could run after the release check.
+    Both families' whole clone check lists them, in git's order, and stops
+    before anything is fetched."""
+    home_path = _work_clone(tmp_path)
+    for path in planted:
+        _write(home_path, path)
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name, 'check_clone_setup "$1"', "Assert-CleanClone $env:CLONE_HOME", home
+    )
+
+    if not listed:
+        assert got == ["passed"]
+    else:
+        assert got == [
+            _src_header(home),
+            *(f"    {home}/{path}" for path in listed),
+            _src_closing(home),
+        ]
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_the_untracked_src_list_stops_at_twenty_lines_in_both(
+    tmp_path: Path, name: str
+) -> None:
+    """At most 20 paths are listed; a last line counts the rest."""
+    home_path = _work_clone(tmp_path)
+    paths = [f"src/x{i:02d}.py" for i in range(25)]
+    for path in paths:
+        _write(home_path, path)
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name, 'check_clone_setup "$1"', "Assert-CleanClone $env:CLONE_HOME", home
+    )
+
+    assert got == [
+        _src_header(home),
+        *(f"    {home}/{path}" for path in paths[:20]),
+        "    and 5 more",
+        _src_closing(home),
+    ]
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_untracked_files_under_a_renamed_src_stop_an_update_in_both(
+    tmp_path: Path, name: str
+) -> None:
+    """A file system that ignores case (Windows, macOS, a Windows drive
+    under WSL) finds a folder renamed Src under the name src, so the engine
+    loads a file planted there. Both families compare the folder name in
+    any case and list the planted file."""
+    home_path = _work_clone(tmp_path)
+    (home_path / "src").rename(home_path / "Src")
+    _write(home_path, "Src/sitecustomize.py")
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name, 'check_clone_setup "$1"', "Assert-CleanClone $env:CLONE_HOME", home
+    )
+
+    assert got[0] == _src_header(home), got
+    assert f"    {home}/Src/sitecustomize.py" in got
+    assert got[-1] == _src_closing(home)
+
+
+def _filter_attributes(home: str, path: str) -> list[str]:
+    return _message(
+        f"{home} has a .gitattributes file at {home}/{path} that sets a filter "
+        "(filter=). git would apply it while it reads the clone. Remove the "
+        "filter and commit that change, then re-run."
+    )
+
+
+def _commit_attributes(home: Path, path: str, text: str) -> None:
+    _write(home, path, text)
+    _git("-C", str(home), "add", "--", path)
+    _git("-C", str(home), "commit", "--quiet", "-m", "attributes")
+
+
+#: A tracked .gitattributes committed in the clone (it matches HEAD and the
+#: index), and the path whose filter both families refuse (None: none).
+COMMITTED_ATTRIBUTE_CASES: tuple[tuple[str, object, str | None], ...] = (
+    (
+        "top-level",
+        lambda h: _commit_attributes(
+            h, ".gitattributes", "*.py text filter=userfilter\n"
+        ),
+        ".gitattributes",
+    ),
+    (
+        "deleted-from-work-tree",
+        lambda h: (
+            _commit_attributes(h, "docs/.gitattributes", "* filter=userfilter\n"),
+            (h / "docs/.gitattributes").unlink(),
+        ),
+        "docs/.gitattributes",
+    ),
+    (
+        "comment-only",
+        lambda h: _commit_attributes(h, ".gitattributes", "  # * filter=userfilter\n"),
+        None,
+    ),
+)
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize(
+    ("case", "change", "refused"),
+    COMMITTED_ATTRIBUTE_CASES,
+    ids=[c[0] for c in COMMITTED_ATTRIBUTE_CASES],
+)
+def test_a_committed_gitattributes_that_sets_a_filter_is_refused_in_both(
+    tmp_path: Path, name: str, case: str, change: object, refused: str | None
+) -> None:
+    """Someone who can write to the clone can commit a .gitattributes that
+    names a filter the user's own config defines; it matches HEAD and the
+    index, so git diff would run that filter. Both families read the index
+    copy (git cat-file, which runs no filter) and refuse one that sets a
+    filter outside a comment, also when the work-tree file is missing."""
+    home_path = _work_clone(tmp_path)
+    assert callable(change)
+    change(home_path)
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name,
+        'check_clone_attributes "$1"',
+        "Assert-CloneAttributeFile $env:CLONE_HOME",
+        home,
+    )
+
+    assert got == (["passed"] if refused is None else _filter_attributes(home, refused))
+
+
+def _not_plain(home: str, name: str) -> list[str]:
+    return _message(
+        f"{home}'s git folder holds {home}/.git/{name}, which is not a plain "
+        "file, so git could read other text from it than this check reads. "
+        "Make it a plain file or remove it, then re-run."
+    )
+
+
+def _make_fifo(path: Path) -> None:
+    if not hasattr(os, "mkfifo"):
+        pytest.skip("no FIFOs on this host")
+    path.unlink(missing_ok=True)
+    os.mkfifo(path)
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize(
+    ("file", "make"),
+    [
+        ("info/attributes", lambda p: p.mkdir()),
+        ("info/attributes", _make_fifo),
+        ("config.worktree", lambda p: p.mkdir()),
+    ],
+    ids=["attributes-folder", "attributes-fifo", "config-worktree-folder"],
+)
+def test_a_git_file_that_is_not_a_plain_file_is_refused_in_both(
+    tmp_path: Path, name: str, file: str, make: object
+) -> None:
+    """git reads info/attributes and the config files again after the
+    check: from a FIFO a writer can hand the check clean text and git a
+    filter. Both families refuse such a file that is not a plain file before
+    reading it (a FIFO with no writer is never opened, so nothing hangs)."""
+    _, home_path = _upstream_and_clone(tmp_path)
+    target = home_path / ".git" / file
+    target.parent.mkdir(parents=True, exist_ok=True)
+    assert callable(make)
+    make(target)
+    home = home_path.as_posix()
+    stub_sh = "git_path() { printf '%s\\n' \"$1/.git/$2\"; }\n"
+    stub_ps1 = 'function Get-ClonePath { param([string]$Dir, [string]$Name) "$Dir/.git/$Name" }'
+
+    got = _run_check(
+        name,
+        stub_sh + 'check_clone_config "$1"',
+        stub_ps1 + "; Assert-CloneConfig $env:CLONE_HOME",
+        home,
+    )
+
+    assert got == _not_plain(home, file)
+
+
+def _clone_with_hostile_submodule(tmp_path: Path) -> tuple[Path, Path]:
+    """An Apothem-shaped clone whose index records a gitlink at sub, with a
+    .gitmodules entry that sets ignore = none, and a repository at sub whose
+    own config defines a clean filter that creates MARKER, applied to a file
+    git must hash again. Returns the clone and the marker path."""
+    home = _work_clone(tmp_path)
+    _write(home, "pyproject.toml", "[project]\n")
+    marker = tmp_path / "MARKER"
+    nested = home / "sub"
+    _git("init", "--quiet", str(nested))
+    _write(nested, "f.txt", "x\n")
+    _git("-C", str(nested), "add", "f.txt")
+    _git("-C", str(nested), "commit", "--quiet", "-m", "x")
+    _git(
+        "-C",
+        str(nested),
+        "config",
+        "filter.evil.clean",
+        f"touch '{marker.as_posix()}'; cat",
+    )
+    (nested / ".git" / "info").mkdir(exist_ok=True)
+    (nested / ".git" / "info" / "attributes").write_bytes(b"* filter=evil\n")
+    sha = subprocess.run(
+        ["git", "-C", str(nested), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=_git_env_without_user_config(),
+    ).stdout.strip()
+    _write(
+        home,
+        ".gitmodules",
+        '[submodule "sub"]\n\tpath = sub\n\turl = ./sub\n\tignore = none\n',
+    )
+    _git("-C", str(home), "update-index", "--add", "--cacheinfo", f"160000,{sha},sub")
+    _git("-C", str(home), "add", ".gitmodules")
+    _git("-C", str(home), "commit", "--quiet", "-m", "submodule")
+    # Same bytes and size, newer time: git must hash the file again.
+    _write(nested, "f.txt", "x\n")
+    later = (nested / "f.txt").stat().st_mtime + 10
+    os.utime(nested / "f.txt", (later, later))
+    return home, marker
+
+
+@pytest.mark.parametrize("name", ["install.sh", "install.ps1"])
+def test_replacing_a_clone_refuses_a_submodule_before_git_status_in_both(
+    tmp_path: Path, name: str
+) -> None:
+    """With --yes / -Yes (a dry run too), replacing a clone asks git status
+    whether it holds local work, and a .gitmodules entry with ignore = none
+    makes git status run inside the nested repository, under that
+    repository's own config. Both families refuse the submodule first, as
+    an update in place does, so its filter never runs."""
+    home_path, marker = _clone_with_hostile_submodule(tmp_path)
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name,
+        'APOTHEM_HOME="$1"; ASSUME_YES=1; DRY_RUN=1; home_mode "the v1.5.0 archive"',
+        "$ApothemHome = $env:CLONE_HOME; $Yes = $true; $DryRun = $true; "
+        "$EngineDataNames = @('backups', 'state'); $null = Get-HomeMode 'the v1.5.0 archive'",
+        home,
+    )
+
+    assert not marker.exists()
+    assert got == _message(
+        f"{home} holds a submodule at sub (its index records a git repository "
+        "there). A release tree has none, and the update would run git inside "
+        "it. Remove the submodule from the clone, then re-run."
+    )
+
+
+@pytest.mark.parametrize("name", ["install.sh", "install.ps1"])
+def test_the_check_for_local_work_stays_out_of_submodules_in_both(
+    tmp_path: Path, name: str
+) -> None:
+    """The check for local work passes --ignore-submodules=all to git
+    status itself, which a .gitmodules ignore setting cannot override (a -c
+    diff.ignoreSubmodules setting can be), so even on its own it runs
+    nothing inside a nested repository."""
+    home_path, marker = _clone_with_hostile_submodule(tmp_path)
+
+    _run_check(
+        name,
+        'clone_has_local_work "$1" || true',
+        "$null = Test-CloneHasLocalWork $env:CLONE_HOME",
+        home_path.as_posix(),
+    )
+
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_python_caches_under_src_are_removed_in_both(tmp_path: Path, name: str) -> None:
+    """After an in-place checkout, every __pycache__ folder under src goes,
+    so no bytecode the release did not make loads; a link named __pycache__
+    goes as a link, and what it points at stays."""
+    home_path = _work_clone(tmp_path)
+    for path in ("src/__pycache__/a.pyc", "src/apothem/__pycache__/b.pyc"):
+        _write(home_path, path)
+    outside = tmp_path / "outside"
+    _write(outside, "keep.pyc")
+    link = home_path / "src" / "apothem" / "sub" / "__pycache__"
+    link.parent.mkdir()
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError:
+        link.mkdir()
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name,
+        'remove_source_caches "$1"',
+        "Remove-SourceCache $env:CLONE_HOME",
+        home,
+    )
+
+    assert got == ["passed"]
+    caches = [p for p in (home_path / "src").rglob("*") if p.name == "__pycache__"]
+    assert caches == []
+    assert (outside / "keep.pyc").is_file()
+    assert (home_path / "src" / "apothem" / "__init__.py").is_file()
+
+
+def _sh_git_environment(sh_name: str) -> str:
+    """The startup statements of script SH_NAME that set git's environment:
+    from the unset of the git variables to the export after it."""
+    match = re.search(
+        r"^unset GIT_DIR .*?^export GIT_NO_REPLACE_OBJECTS[^\n]*$",
+        SCRIPTS[sh_name],
+        re.MULTILINE | re.DOTALL,
+    )
+    assert match, f"{sh_name} no longer sets git's environment in one block"
+    return match.group(0)
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_every_script_turns_off_lazy_fetch_and_fixes_the_transports(
+    name: str,
+) -> None:
+    """All four scripts set GIT_NO_LAZY_FETCH=1 and
+    GIT_ALLOW_PROTOCOL=file:git:http:https:ssh for the whole run; the
+    PowerShell scripts keep the caller's values and put them back."""
+    content = SCRIPTS[name]
+    if name.endswith(".sh"):
+        block = _sh_git_environment(name)
+        assert "\nGIT_NO_LAZY_FETCH=1\n" in block
+        assert "\nGIT_ALLOW_PROTOCOL=file:git:http:https:ssh\n" in block
+        export = block.splitlines()[-1].split()
+        assert {"GIT_NO_LAZY_FETCH", "GIT_ALLOW_PROTOCOL"} <= set(export)
+    else:
+        saved = re.search(r"^\$SavedGitEnv = @\{([^}]*)\}", content, re.MULTILINE)
+        assert saved, f"{name} no longer keeps the caller's git variables"
+        for variable in ("GIT_NO_LAZY_FETCH", "GIT_ALLOW_PROTOCOL"):
+            assert f"{variable} = $env:{variable}" in saved.group(1), variable
+        assert "$env:GIT_NO_LAZY_FETCH = '1'" in content
+        assert "$env:GIT_ALLOW_PROTOCOL = 'file:git:http:https:ssh'" in content
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+def test_the_callers_allowed_transports_do_not_reach_git_in_sh(
+    tmp_path: Path, sh_name: str
+) -> None:
+    """git reads GIT_ALLOW_PROTOCOL before any protocol.* setting, so a
+    caller's value listing ext would let a clone's ext:: address run its
+    program through cgit. The script's own value replaces it."""
+    _, home = _upstream_and_clone(tmp_path)
+    marker = tmp_path / "ext-ran"
+    _git(
+        "-C",
+        str(home),
+        "config",
+        "remote.origin.url",
+        f"ext::sh -c touch% {marker.as_posix()}",
+    )
+    fetch = 'cgit -C "$1" fetch --quiet origin 2>&1 || true\n'
+    program = _sh_function(SCRIPTS[sh_name], "cgit") + "\nHOOKS_OFF=\n"
+    env = _sh_env({**_git_env_without_user_config(), "GIT_ALLOW_PROTOCOL": "ext:file"})
+
+    def run(prelude: str) -> str:
+        assert _SH is not None
+        result = subprocess.run(
+            [_SH, "-c", prelude + "\n" + program + fetch, "sh", home.as_posix()],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env=env,
+        )
+        return result.stdout + result.stderr
+
+    control = run("")
+    assert marker.exists(), f"the caller's value did not reach git: {control}"
+    marker.unlink()
+
+    out = run(_sh_git_environment(sh_name))
+
+    assert not marker.exists(), out
+    assert "transport 'ext' not allowed" in out, out
+
+
+def _hostile_lazy_fetch_clone(tmp_path: Path, marker: Path) -> Path:
+    """The review's clone: only settings the allow-list used to accept
+    (repository format 1, an extensions.partialclone that git fetch reads
+    as an option, branch.main.remote = .), one blob deleted and its
+    work-tree file touched, so the next git command that reads that file
+    starts a lazy fetch, which runs the planted command."""
+    upstream = tmp_path / "upstream"
+    _git("init", "--quiet", "-b", "main", str(upstream))
+    (upstream / "README").write_bytes(b"lazy\n")
+    _git("add", "README", cwd=upstream)
+    _git("commit", "--quiet", "-m", "x", cwd=upstream)
+    home = tmp_path / "home"
+    _git("clone", "--quiet", str(upstream), str(home))
+    blob = subprocess.run(
+        ["git", "-C", str(home), "rev-parse", "HEAD:README"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=_git_env_without_user_config(),
+    ).stdout.strip()
+    loose = home / ".git" / "objects" / blob[:2] / blob[2:]
+    loose.chmod(0o644)
+    loose.unlink()
+    for key, value in (
+        ("core.repositoryformatversion", "1"),
+        ("extensions.partialclone", f"--upload-pack=touch {marker.as_posix()};"),
+        ("branch.main.remote", "."),
+    ):
+        _git("-C", str(home), "config", key, value)
+    _touch(home / "README")
+    return home
+
+
+def _touch(path: Path) -> None:
+    """Give PATH a new modification time, so git re-reads it."""
+    stamp = path.stat().st_mtime + 7
+    os.utime(path, (stamp, stamp))
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_a_clone_set_up_for_a_lazy_fetch_stops_before_git_reads_it(
+    tmp_path: Path, name: str
+) -> None:
+    """A lazy fetch of a missing object runs a git fetch the clone's own
+    settings shape, and extensions.partialclone can turn that fetch into a
+    command. Both families refuse every partial-clone setting and any
+    branch remote other than origin, so the clone check stops the run and
+    the diff that would start the fetch never runs."""
+    marker = tmp_path / "lazy-fetch-ran"
+    home_path = _hostile_lazy_fetch_clone(tmp_path, marker)
+    control = subprocess.run(
+        ["git", "-C", str(home_path), "diff", "--quiet", "HEAD"],
+        capture_output=True,
+        check=False,
+        env={
+            k: v
+            for k, v in _git_env_without_user_config().items()
+            if k != "GIT_NO_LAZY_FETCH"
+        },
+    )
+    assert marker.exists(), f"the clone does not start a lazy fetch: {control}"
+    marker.unlink()
+    _touch(home_path / "README")
+    home = home_path.as_posix()
+
+    got = _run_check(
+        name,
+        'check_clone_setup "$1"\ncgit -C "$1" diff --quiet HEAD',
+        "Assert-CleanClone $env:CLONE_HOME; "
+        "& git @GitNoProgram -C $env:CLONE_HOME diff --quiet HEAD",
+        home,
+    )
+
+    assert not marker.exists(), got
+    assert got == _message(_config_message(home, "branch.main.remote"))
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+def test_git_fetches_no_missing_object_under_the_sh_scripts_environment(
+    tmp_path: Path, sh_name: str
+) -> None:
+    """Even past the clone check, the sh scripts' own environment
+    (GIT_NO_LAZY_FETCH=1) keeps git from fetching a missing object, so the
+    planted command does not run."""
+    assert _SH is not None
+    marker = tmp_path / "lazy-fetch-ran"
+    home = _hostile_lazy_fetch_clone(tmp_path, marker)
+    program = (
+        _sh_git_environment(sh_name)
+        + "\n"
+        + _sh_function(SCRIPTS[sh_name], "cgit")
+        + '\nHOOKS_OFF=\ncgit -C "$1" diff --quiet HEAD 2>&1\necho "rc=$?"\n'
+    )
+
+    result = subprocess.run(
+        [_SH, "-c", program, "sh", home.as_posix()],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        env=_sh_env(_git_env_without_user_config()),
+    )
+
+    assert not marker.exists(), result.stdout + result.stderr
+
+
+# --- the warning when others can write to APOTHEM_HOME ----------------------
+
+#: Each script family's home-access functions, byte-identical between the
+#: install and the update script of that family.
+HOME_ACCESS_FUNCTIONS: dict[str, tuple[str, ...]] = {
+    "sh": ("warn_home_access", "warn_writable"),
+    "ps1": ("Write-HomeAccessWarning", "Get-FolderWriter", "Resolve-FolderLink"),
+}
+
+#: Per script: the one guarded call of the warning, the line that has to come
+#: next (comments aside), and the engine call it has to come before.
+HOME_ACCESS_CALLS: dict[str, tuple[str, str, str]] = {
+    "install.sh": (
+        '[ -n "$LOCAL_KIND" ] || warn_home_access',
+        "SRC_PATH=",
+        '-c "$ENGINE_PROGRAM"',
+    ),
+    "update.sh": (
+        '[ -n "${APOTHEM_SOURCE:-}" ] || warn_home_access',
+        "SRC_PATH=",
+        '-c "$ENGINE_PROGRAM"',
+    ),
+    "install.ps1": (
+        "if (-not $LocalKind) { Write-HomeAccessWarning }",
+        "$SrcPath =",
+        "-c $EngineProgram",
+    ),
+    "update.ps1": (
+        "if (-not $env:APOTHEM_SOURCE) { Write-HomeAccessWarning }",
+        "$SrcPath =",
+        "-c $EngineProgram",
+    ),
+}
+
+#: The Windows texts of the ps1 warnings (the round-4b spec, section 5), in
+#: pieces that hold no variable.
+HOME_ACCESS_WINDOWS_TEXTS: tuple[str, ...] = (
+    "can delete or rename what is in ",
+    ", the folder that holds it. To fix it, remove ",
+    " from that folder's Security tab, or move APOTHEM_HOME into your user folder.",
+    ". To fix it, turn off inheritance for that folder and remove ",
+    " (Properties > Security > Advanced), or move APOTHEM_HOME into your user folder.",
+    ", access that folders made at the root of a drive inherit from the drive's "
+    "default permissions",
+    ", from the permissions of ",
+    ". To fix it, set APOTHEM_HOME to a folder inside your user folder.",
+)
+
+#: A variable in a message: sh ``$name``, ``${name}``, ``$1``, ``$(...)``;
+#: PowerShell ``$name``, ``${name}``, ``$(...)`` (one level of parentheses).
+_MESSAGE_VARIABLE = re.compile(
+    r"\$(?:\((?:[^()]|\([^()]*\))*\)|\{[^}]*\}|[A-Za-z_][A-Za-z0-9_]*|[0-9])"
+)
+
+
+def _message_shape(text: str) -> str:
+    """TEXT, a warning as a script writes it, with each run of variables as
+    ``{}`` and each escaped double quote as a plain one."""
+    text = text.replace('\\"', '"').replace('`"', '"')
+    return re.sub(r"(?:\{\})+", "{}", _MESSAGE_VARIABLE.sub("{}", text))
+
+
+def _home_access_messages(name: str) -> set[str]:
+    """The shapes of the warnings script NAME's home-access functions write."""
+    if name.endswith(".sh"):
+        body = _sh_function(SCRIPTS[name], "warn_writable")
+        pattern = r'^\s*warn "(.*)"$'
+    else:
+        body = _ps1_function(SCRIPTS[name], "Write-HomeAccessWarning")
+        pattern = r'^\s*Write-Warn "(.*)"$'
+    return {_message_shape(text) for text in re.findall(pattern, body, re.MULTILINE)}
+
+
+#: The POSIX warnings, as the sh scripts write them and pwsh outside Windows
+#: writes them too.
+HOME_ACCESS_POSIX_MESSAGES: frozenset[str] = frozenset(
+    {
+        "Other users can change the code Apothem runs as you: {} can write to {}. "
+        'To fix it, run chmod go-w "{}", or move APOTHEM_HOME.',
+        "Other users can replace {}: {} can write to {}, the folder that holds it. "
+        'To fix it, run chmod go-w "{}", or move APOTHEM_HOME.',
+        "A new {} would let {} change the code Apothem runs as you (umask {}). "
+        "To fix it, run umask 022, then run the installer again.",
+    }
+)
+
+
+@pytest.mark.parametrize("family", sorted(HOME_ACCESS_FUNCTIONS))
+def test_each_family_carries_the_same_home_access_functions(family: str) -> None:
+    """install and update of each family define the warning byte for byte
+    alike, so a fix to one cannot miss the other."""
+    extract = _sh_function if family == "sh" else _ps1_function
+    install, update = SCRIPTS[f"install.{family}"], SCRIPTS[f"update.{family}"]
+
+    differ = [
+        name
+        for name in HOME_ACCESS_FUNCTIONS[family]
+        if extract(install, name) != extract(update, name)
+    ]
+
+    assert differ == [], f"install.{family} and update.{family} differ in {differ}"
+
+
+@pytest.mark.parametrize("name", sorted(HOME_ACCESS_CALLS))
+def test_each_script_warns_once_before_the_engine_runs(name: str) -> None:
+    """Each script calls the warning once, skipped for a local source, just
+    before it works out the engine's paths and so before the engine runs."""
+    guard, following, engine = HOME_ACCESS_CALLS[name]
+    entry = HOME_ACCESS_FUNCTIONS["sh" if name.endswith(".sh") else "ps1"][0]
+    lines = SCRIPTS[name].splitlines()
+    code = [
+        (index, line)
+        for index, line in enumerate(lines)
+        if entry in line and not line.lstrip().startswith("#")
+    ]
+    calls = [
+        (index, line)
+        for index, line in code
+        if not line.startswith((f"{entry}()", f"function {entry} "))
+    ]
+
+    assert [line for _, line in calls] == [guard], calls
+    after = next(
+        line for line in lines[calls[0][0] + 1 :] if not line.lstrip().startswith("#")
+    )
+    assert after.startswith(following), after
+    first_engine_call = next(
+        index for index, line in enumerate(lines) if engine in line
+    )
+    assert calls[0][0] < first_engine_call
+
+
+@pytest.mark.parametrize(
+    "name", ["install.sh", "update.sh", "install.ps1", "update.ps1"]
+)
+def test_every_script_writes_the_posix_home_access_warnings_alike(name: str) -> None:
+    """The sh scripts and the ps1 scripts under pwsh outside Windows write
+    the same three POSIX warnings, word for word."""
+    messages = _home_access_messages(name)
+
+    posix = {text for text in messages if "chmod" in text or "umask" in text}
+
+    assert posix == HOME_ACCESS_POSIX_MESSAGES, posix ^ HOME_ACCESS_POSIX_MESSAGES
+
+
+@pytest.mark.parametrize("name", ["install.ps1", "update.ps1"])
+def test_the_ps1_scripts_write_the_windows_home_access_warnings(name: str) -> None:
+    """The ps1 scripts on Windows open with the same words as the POSIX
+    warnings and name the Windows fix; the sh scripts have no Windows text."""
+    body = _ps1_function(SCRIPTS[name], "Write-HomeAccessWarning")
+    openings = {
+        "Other users can change the code Apothem runs as you: ",
+        "Other users can replace ",
+        "A new ",
+    }
+
+    missing = [text for text in HOME_ACCESS_WINDOWS_TEXTS if text not in body]
+    windows = _home_access_messages(name) - HOME_ACCESS_POSIX_MESSAGES
+
+    assert missing == [], missing
+    assert len(windows) == len(HOME_ACCESS_POSIX_MESSAGES), windows
+    assert all(any(text.startswith(o) for o in openings) for text in windows), windows
+    for sh_name in ("install.sh", "update.sh"):
+        assert not [t for t in HOME_ACCESS_WINDOWS_TEXTS if t in SCRIPTS[sh_name]], (
+            sh_name
+        )

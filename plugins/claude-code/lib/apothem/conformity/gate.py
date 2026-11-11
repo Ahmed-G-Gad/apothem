@@ -1053,8 +1053,10 @@ def _list_validators() -> str:
 # ``-E -s`` (see :func:`_run_standalone`), which also ignores
 # ``PYTHONSAFEPATH``, so the launcher drops the ``''`` entry ``-c`` puts first
 # on ``sys.path`` itself. ``-E`` ignores ``PYTHONIOENCODING`` and
-# ``PYTHONUTF8`` too, so the launcher sets the child's output streams to UTF-8,
-# which is how the gate reads them.
+# ``PYTHONUTF8`` too, so the child also starts with ``-X utf8``: a validator
+# then reads git output and files as UTF-8 under any locale code page. The
+# launcher still sets the child's output streams to UTF-8, which is how the
+# gate reads them.
 _STANDALONE_LAUNCHER: Final[str] = (
     "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]\n"
     "for _stream in (sys.stdout, sys.stderr):\n"
@@ -1122,7 +1124,9 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     which the caller has already resolved to an absolute directory. The
     child starts with ``-E -s``: no ``PYTHON*`` variable (so no
     ``PYTHONPATH`` entry) and no user site-packages folder can load code into
-    it.
+    it. ``-X utf8`` puts back the UTF-8 text default that an ignored
+    ``PYTHONUTF8`` would have given, so git output and file text decode the
+    same way under every locale code page.
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
@@ -1134,6 +1138,8 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
                 sys.executable,
                 "-E",
                 "-s",
+                "-X",
+                "utf8",
                 "-c",
                 _STANDALONE_LAUNCHER,
                 str(Path(__file__).resolve()),

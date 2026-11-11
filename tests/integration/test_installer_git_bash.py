@@ -386,6 +386,8 @@ clone_git_ok() { :; }
 check_clone_config() { :; }
 check_clone_modules() { :; }
 check_clone_gitlinks() { :; }
+check_clone_attributes() { :; }
+check_clone_src() { :; }
 die() { printf 'DIE %s\\n' "$*"; exit 1; }
 HOOKS_OFF=
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1

@@ -1032,54 +1032,86 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   also removes that module's bytecode (`__pycache__/<module>.*.pyc` beside it),
   then the `__pycache__` folder if it is left empty; it removes no other cache
   file. The conformity gate now starts each of its standalone validators with
-  `-E -s` too, and the docs run the gate by its script path with `-E -s`, which
-  keeps the checked project's Python files and your `PYTHONPATH` out of the
-  gate. `--all`, `--all-perwrite` and a few single validators still run `git` in
-  that project, and git reads the project's own `.git/config`, so the docs say
-  to run them only on a repository whose `.git` folder you made yourself. An
-  install made by an earlier release keeps its old hook commands until you run
-  `apothem install` or `apothem update`; an update replaces them without
-  touching your own hooks, and an uninstall removes the old and the new form.
-  The Claude Code statusline snippet in `~/.claude/statuslines/conformity.json`
-  also starts Python with `-E -s`, and its renderer reads its input as UTF-8. No
-  install or update writes the `statusLine` setting, so if you copied an earlier
-  snippet's command into your `settings.json`, add `-E -s` after the interpreter
-  yourself.
+  `-E -s` too, plus `-X utf8`, so a validator still reads git output and files
+  as UTF-8 under any Windows code page; the docs run the gate by its script
+  path with `-E -s`, which keeps the checked project's Python files and your
+  `PYTHONPATH` out of the gate. `--all`, `--all-perwrite` and a few single
+  validators still run `git` in that project, and git reads the project's own
+  `.git/config`, so the docs say to run them only on a repository whose `.git`
+  folder you made yourself. An install made by an earlier release keeps its old
+  hook commands until you run `apothem install` or `apothem update`; an update
+  replaces them without touching your own hooks, and an uninstall removes the
+  old and the new form. The Claude Code statusline snippet in
+  `~/.claude/statuslines/conformity.json` also starts Python with `-E -s`, and
+  its renderer reads its input as UTF-8. No install or update writes the
+  `statusLine` setting, so if you copied an earlier snippet's command into your
+  `settings.json`, add `-E -s` after the interpreter yourself.
 - **An update in place checks more of the clone's own setup, and sooner.**
   `install.sh`, `install.ps1`, `update.sh` and `update.ps1` now read both
   `.git/config` and `.git/config.worktree` of an existing clone and accept only
-  the settings `git clone` and `git init` write there, branch settings,
-  `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
-  `pull.rebase` and `pull.ff`; `extensions.refStorage` must be `files` or
-  `reftable`. Any other setting stops the run, since it could make git run a
-  program, read settings, hooks or attributes from another place, or connect
-  somewhere else. The message names the setting and the file, and the
-  [troubleshooting
+  the settings `git clone` and `git init` write there for a full clone, branch
+  settings, `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` and `pull.ff`; `extensions.refStorage`
+  must be `files` or `reftable`, and a branch's `remote` and `pushRemote` must
+  be `origin`. Any other setting stops the run, since it could make git run a
+  program, read settings, hooks, attributes or objects from another place, or
+  connect somewhere else. A partial clone, made with `--filter`, stops the run
+  too: clone again without `--filter`. The message names the setting and the
+  file, and the [troubleshooting
   page](https://apothem.ahmedgad.com/docs/install/troubleshooting) of the
-  install guide lists the accepted settings. The run also stops on a `filter=`
-  line in `.git/info/attributes`, which every script reads byte by byte as git
-  does, so a UTF-16 byte-order mark hides nothing; and on a clone that holds a
-  submodule, recorded in its index or kept in `.git/modules`: a release tree has
-  none, and git would run inside it under settings nothing checks. The settings
-  and attributes checks run before any git command that reads the clone's index,
-  so a configured file-system monitor cannot run first, and also before `--yes`
-  replaces a clone; a dry run of the installers makes all of these checks. Every
-  git command on the clone now runs with no pager, no automatic maintenance, the
-  file-system monitor off, only the file, git, http, https and ssh transports
-  allowed (so an address in the clone's config cannot make git run a helper
-  program such as `ext::`) and no submodule recursion, and `git diff` and `git
-  status` skip submodules. On Windows, a fresh clone, the fetch of the release
-  tag and a checkout also write paths longer than the usual limit, so a long
-  profile folder no longer stops the clone or leaves files out of it. The
-  installers and updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
-  `GIT_CONFIG_SYSTEM`, so a value inherited from your environment can no longer
-  point git at another config file; the PowerShell scripts put them back when
-  the run ends, so an `irm ... | iex` run leaves your session as it was.
-  `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL` for
-  the installer, it is now ignored; git still reads your own global and system
-  config from the usual places, and `git`, `gpg` and `cosign` are the ones your
-  `PATH` finds. A clone that another user owns now stops the run with an
-  explanation and what to do, in place of git's raw "dubious ownership" error.
+  install guide lists the accepted settings. A setting whose name holds a line
+  break stops the run with its own message, since a reader could take it for
+  two settings. The run also stops on a `filter=` line in
+  `.git/info/attributes`, which every script reads byte by byte as git does, so
+  a UTF-16 byte-order mark hides nothing; on that file or a config file that
+  is not a plain file, such as a named pipe that could hand git other text
+  than the check read; on a clone that borrows objects from
+  another repository (`objects/info/alternates` or `http-alternates`, as
+  `--reference` and `--shared` write), where git would read objects under
+  settings nothing checks; and on a clone that holds a submodule, recorded in
+  its index or kept in `.git/modules`: a release tree has none, and git would
+  run inside it under settings nothing checks. The settings, attributes and
+  object checks run before any git command that reads the clone's index or
+  objects, so a configured file-system monitor cannot run first, and they run,
+  with the submodule check, before `--yes` replaces a clone, so `git status`
+  never runs inside a submodule there. Before any git command that applies the
+  work tree's `.gitattributes` files, the run stops on one that git does not
+  track or that differs from the committed copy, in any folder of the clone, or
+  whose committed copy sets a filter. Before the fetch, it stops on files under
+  `src` (spelled in any case, since a file system that ignores case reads `Src`
+  as `src`) that git does not track, ignored files included, and lists them,
+  since the engine could load them; after the checkout, it removes the Python
+  cache folders (`__pycache__`) under `src` before the engine first runs from
+  the clone, so no bytecode from before the update loads. A dry run of the
+  installers makes all of these checks. Every git command on the clone now runs
+  with no pager, no automatic maintenance, the file-system monitor off and no
+  submodule recursion, and `git diff` and `git status` skip submodules. For the
+  whole run, the installers and updaters set `GIT_NO_LAZY_FETCH=1`, so git never
+  fetches a missing object from the remote on its own, and `GIT_ALLOW_PROTOCOL`
+  to the file, git, http, https and ssh transports, so neither a value in your
+  environment nor an address in the clone's config can widen that list or make
+  git run a helper program such as `ext::`; `APOTHEM_REPO` must use one of those
+  transports. On Windows, a fresh clone, the fetch of the release tag and a
+  checkout also write paths longer than the usual limit, so a long profile
+  folder no longer stops the clone or leaves files out of it. The installers and
+  updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`,
+  so a value inherited from your environment can no longer point git at another
+  config file; the PowerShell scripts put them, and the two variables they set,
+  back when the run ends, so an `irm ... | iex` run leaves your session as it
+  was. `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL`
+  for the installer, it is now ignored; git still reads your own global and
+  system config from the usual places, and `git`, `gpg` and `cosign` are the
+  ones your `PATH` finds. A clone that another user owns now stops the run with
+  an explanation and what to do, in place of git's raw "dubious ownership"
+  error. The install guide now says that `APOTHEM_HOME` must be a folder only
+  you can write: on Windows, a folder made at the root of a drive, such as
+  `C:\apothem`, can be changed by every user who signs in, under Windows'
+  default permissions. The installers now warn, without stopping, when users
+  other than you can write to `APOTHEM_HOME` or the folder holding it, since
+  they can then change the code Apothem runs as you. Linux and macOS read the
+  permission bits; Windows reads Everyone, Authenticated Users, Users and
+  INTERACTIVE, and names a folder made at a drive's root, such as `C:\apothem`.
+  Git Bash runs skip the check.
 - **A second install, update or uninstall script can no longer run on the same
   `APOTHEM_HOME`, and a stopped run is reported.** Each run of `install.sh`,
   `update.sh`, `uninstall.sh` and their PowerShell versions now holds a lock,

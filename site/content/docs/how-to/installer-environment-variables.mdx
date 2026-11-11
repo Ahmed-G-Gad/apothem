@@ -19,7 +19,7 @@ environment variables before you run it.
 
 | Variable | Controls | Default |
 | --- | --- | --- |
-| `APOTHEM_HOME` | Install destination for the source tree | `$HOME/.apothem` |
+| `APOTHEM_HOME` | Install destination for the source tree; it must be a folder only you can write (see below), and the installers warn when others can write to it or its folder | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Git remote to clone; a value that starts with `-` is refused | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch. A non-tag ref such as `main` aborts unless `APOTHEM_ALLOW_UNVERIFIED=1`. | unset (latest signed tag) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a failed tag check on the clone path from a fatal abort to a warning when set to `1`, and allow `APOTHEM_VERIFY=checksum`; the `release` path never downgrades, and no setting skips the check that the signed tag is the one named for the release, but since it lets an unsigned tag, or one signed by another key, through, that check protects only tags that carry the maintainer key's signature | `0` (verify, fail-closed) |
@@ -83,6 +83,25 @@ from the places it always looks, and `git`, `gpg` and `cosign` are the
 programs your `PATH` finds. The installers trust them as found, and so they
 trust that config.
 
+The installers and updaters also set two git variables for the whole run.
+`GIT_NO_LAZY_FETCH=1` stops git from fetching a missing object from the remote
+on its own while it reads a clone. `GIT_ALLOW_PROTOCOL=file:git:http:https:ssh`
+allows only those five transports for every git command of the run, so a value
+in your environment cannot widen the list and an address cannot make git run a
+helper program such as `ext::`. `APOTHEM_REPO` must use one of them; a local
+path counts as `file`. The PowerShell scripts put both variables back as they
+were when the run ends.
+
+`APOTHEM_HOME` must be a folder that only you can write. Anyone who can write
+to it can change the code the `apothem` command runs. On Windows, a folder made
+at the root of a drive, such as `C:\apothem`, can be changed by every user who
+signs in to the computer, under Windows' default permissions. Keep it under
+your own user folder, as the default is. The install and update scripts, dry
+runs included, warn without stopping when other users can write to
+`APOTHEM_HOME` or to the folder that holds it;
+[Troubleshooting](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)
+shows how to fix it.
+
 Each run of the install, update and uninstall scripts holds a lock,
 `<APOTHEM_HOME>.lock`, for the whole run; a second run on the same
 `APOTHEM_HOME` stops. When `APOTHEM_HOME` is a symbolic link (or, on Windows,
@@ -109,12 +128,18 @@ what it holds.
   deleted. Before the fetch, an update in place stops when files are marked
   assume-unchanged or skip-worktree, when the clone's work tree is not
   `APOTHEM_HOME`, when the clone holds a submodule, when `.git/info/attributes`
-  sets a `filter=`, or when the clone's `.git/config` or `.git/config.worktree`
-  holds a setting other than the ones `git clone` and `git init` write there,
-  branch settings, `user.name`, `user.email`, `maintenance.auto`,
-  `maintenance.strategy`, `pull.rebase` and `pull.ff`
+  sets a `filter=`, when the clone borrows objects from another repository,
+  when a `.gitattributes` file in the work tree is untracked or differs from
+  the committed copy, when files under `src` are untracked, or when the clone's
+  `.git/config` or `.git/config.worktree` holds a setting other than the ones
+  `git clone` and `git init` write there for a full clone, branch settings (a
+  branch's `remote` and `pushremote` must be `origin`), `user.name`,
+  `user.email`, `maintenance.auto`, `maintenance.strategy`, `pull.rebase` and
+  `pull.ff`
   ([Troubleshooting](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
-  lists them); the clone's git hooks never run during the update. Only a clone
+  lists them); the clone's git hooks never run during the update. After the
+  checkout, the update removes the Python cache folders (`__pycache__`) under
+  `src` before the engine runs from the clone. Only a clone
   of an Apothem source counts: a clone of anything else is handled as a folder
   that holds no Apothem install.
 - An earlier release-archive install is updated by a re-run in `auto` mode
@@ -207,7 +232,7 @@ APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    not a signed tag, so the installer also needs `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME="$HOME/tools/apothem" bash install.sh
    ```
 
 3. Use a local checkout and a custom profile, skipping verify:
@@ -231,7 +256,7 @@ pwsh -NoProfile -File install.ps1
 ```powershell
 $env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
-$env:APOTHEM_HOME = 'C:\opt\apothem'
+$env:APOTHEM_HOME = "$HOME\tools\apothem"
 pwsh -NoProfile -File install.ps1
 ```
 
