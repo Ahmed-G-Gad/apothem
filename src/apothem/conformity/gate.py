@@ -68,6 +68,13 @@ from typing import Any, Final, Protocol, cast
 # that import above this block reintroduces the ModuleNotFoundError the block
 # exists to prevent. The standalone-validator launcher reuses it by running this
 # file as a plain script before each validator.
+#
+# Run by a hook, this file imports its sibling modules from Apothem's installed
+# folder: a bytecode cache written there (``__pycache__``) is a file Apothem did
+# not write, which an uninstall then has to keep. So a run as a program writes
+# none (set before the first sibling import below).
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
 if __package__ in (None, ""):
     _PACKAGE_DIR: Final[Path] = Path(__file__).resolve().parents[1]
     if _PACKAGE_DIR.name == "apothem" and (_PACKAGE_DIR / "__init__.py").is_file():
@@ -1126,7 +1133,9 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     ``PYTHONPATH`` entry) and no user site-packages folder can load code into
     it. ``-X utf8`` puts back the UTF-8 text default that an ignored
     ``PYTHONUTF8`` would have given, so git output and file text decode the
-    same way under every locale code page.
+    same way under every locale code page. The child writes no bytecode cache
+    (``-B``), as this file run as a program writes none (see the bootstrap at
+    the top of this file).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
@@ -1136,6 +1145,7 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
         completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
             [
                 sys.executable,
+                "-B",
                 "-E",
                 "-s",
                 "-X",

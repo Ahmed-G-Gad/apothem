@@ -19,6 +19,7 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
 from apothem.lib.propagation import text_digest
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
+from .install_driver_blocks import sentinel_refusal
 from .install_driver_jsonmerge import (
     _leading_comment_block,
     _LossyRewriteError,
@@ -32,6 +33,7 @@ from .install_driver_ownership import (
     strip_owned,
 )
 from .install_driver_pathsafety import _validate_target_path, _write_boundary
+from .install_driver_retention import unlisted_block_warnings
 from .install_driver_types import (
     _REMOVE_KEY,
     MaterializationResult,
@@ -362,7 +364,8 @@ def _surgical_remove_from_target(
 
     - ``sentinel_merge`` anchors: strip the managed block via
       :func:`remove_managed_block`; delete when the remainder is whitespace-only,
-      else atomic-rewrite the operator prose.
+      else atomic-rewrite the operator prose. A BEGIN marker with no END after
+      it is a warning, and the file is left as it is.
     - ``.json`` / ``.yaml`` / ``.yml`` targets: remove only Apothem's keys/hooks
       via the recursive structured stripper (operator-added/overridden keys
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;
@@ -395,6 +398,9 @@ def _surgical_remove_from_target(
         # Nothing of Apothem's is left in the anchor, so there is nothing to
         # remove (and no reason to refuse a path reached through a link).
         return None
+    if mode == "sentinel_merge" and (refusal := sentinel_refusal(target)):
+        # Nothing is changed, so a link or a non-UTF-8 byte does not matter.
+        return refusal
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation="surgical_uninstall"
     )
@@ -580,7 +586,8 @@ def _holds_managed_block(target: Path) -> bool:
 
     Bytes that are not UTF-8 are read as U+FFFD, so the sentinels are still
     found in a file that has them; an unreadable file counts as holding one,
-    so the caller reports it rather than passing over it.
+    so the caller reports it rather than passing over it. So does a BEGIN
+    marker without its END, which the caller reports and leaves.
     """
     try:
         text = target.read_bytes().decode("utf-8", errors="replace")
@@ -633,11 +640,13 @@ def _remove_unlisted_anchors(
     These are the bolt-on profile anchors (claude-code ``CLAUDE.md``, the
     single-file adapters' profile rule) and any sentinel entry removed from the
     manifest after install. The managed block self-delimits, so it strips without
-    the template. Each path stripped is added to *handled*.
+    the template. Each path stripped is added to *handled*. With no install
+    record, a bolt-on anchor keeps its block, with a warning that names it (see
+    :func:`unlisted_block_warnings`).
     """
-    results: list[MaterializationResult] = []
     if record is None:
-        return results
+        return unlisted_block_warnings(root, skip=handled)
+    results: list[MaterializationResult] = []
     for recorded in record.targets:
         if recorded.path in handled or recorded.mode != "sentinel_merge":
             continue

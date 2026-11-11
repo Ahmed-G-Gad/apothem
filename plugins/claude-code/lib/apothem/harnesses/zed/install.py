@@ -88,7 +88,8 @@ def _has_operator_text(path: Path) -> bool:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return False
-    return bool(remove_managed_block(text).strip())
+    # Read as the install merge does: a block cut short runs to the end.
+    return bool(remove_managed_block(text, reclaim=True).strip())
 
 
 def _shadowing_warning(

@@ -24,10 +24,12 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
+from .install_driver_blocks import install_may_be_open
 from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
 )
+from .install_driver_evidence import _entry_proves_install, _unfinished_here
 from .install_driver_expected import expected_lookup
 from .install_driver_hookfile import (
     HOOK_FILE_MODE,
@@ -35,10 +37,14 @@ from .install_driver_hookfile import (
     release_native_hooks,
 )
 from .install_driver_merge import render_content_tokens
+from .install_driver_outcome import (
+    last_uninstall_finished,
+    left_behind,
+    left_unfinished,
+    record_uninstall,
+)
 from .install_driver_pathsafety import (
-    _APOTHEM_SUBTREE,
     _allowed_write_root,
-    _holds_content,
     _root_for,
     _stale_path_proves_install,
 )
@@ -51,8 +57,8 @@ from .install_driver_removal import (
     _remove_unlisted_anchors,
     _surgical_remove_from_target,
 )
+from .install_driver_retention import BOLT_ON_ANCHORS, apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
-from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationError,
@@ -63,14 +69,7 @@ from .install_driver_types import (
     resolve_source,
     skills_sharing_command_target,
 )
-from .install_driver_written import (
-    kept_file_warnings,
-    left_unfinished,
-    links_on_the_way,
-    record_uninstall,
-    remove_written,
-    still_written,
-)
+from .install_driver_written import kept_file_warnings, remove_written
 
 
 def _native_config_parses(target: Path) -> bool:
@@ -156,51 +155,6 @@ def verify_install(
     return True
 
 
-def _carries_managed_block(target: Path) -> bool:
-    """Return True when *target* holds an Apothem sentinel-delimited block.
-
-    The managed block is self-delimiting and Apothem-specific, so finding one
-    inside an operator-owned anchor is positive proof of an install even though
-    the file itself is not Apothem's to own.
-    """
-    if not target.is_file():
-        return False
-    try:
-        text = target.read_text(encoding="utf-8")
-    except OSError:
-        return False
-    return extract_managed_block(text) is not None
-
-
-def _entry_proves_install(
-    entry: InstallEntry,
-    *,
-    harness_root: Path | None,
-    project_root: Path | None,
-) -> bool:
-    """Return True when *entry*'s on-disk state proves Apothem installed here.
-
-    Only *unambiguous* evidence counts — a surface Apothem alone can produce:
-
-    * a ``sentinel_merge`` anchor carrying the Apothem managed block, and
-    * a non-empty target under the Apothem-owned ``.apothem/`` subtree.
-
-    Every other manifest target is deliberately NOT evidence. A target's
-    ``ownership_class`` of ``apothem-owned`` says Apothem *manages* the path,
-    not that Apothem *created* it: ``~/.claude/agents/``, ``~/.qwen/skills/``,
-    and their siblings are surfaces the harness itself offers for
-    operator-authored content, so their existence proves nothing. Neither does a
-    ``write_text`` target on a vendor-owned config file such as
-    ``~/.claude/settings.json``, which the harness writes for its own use.
-    """
-    target = resolve_target(
-        entry.target, harness_root=harness_root, project_root=project_root
-    )
-    if entry.mode == "sentinel_merge":
-        return _carries_managed_block(target)
-    return _APOTHEM_SUBTREE in target.parts and _holds_content(target)
-
-
 def detect_install(
     harness_name: str,
     *,
@@ -221,51 +175,28 @@ def detect_install(
     The walk is existential: ANY unambiguous Apothem artifact under this root
     means installed. That keeps a genuinely half-removed tree reporting
     ``installed=True`` + ``verified=False`` — real drift — while an untouched
-    harness home reports absent. See :func:`_entry_proves_install` for what
-    counts as evidence and why the weaker signals are excluded. A stale-sweep
-    path of an earlier layout that still holds Apothem's files counts too (see
+    harness home reports absent. See
+    :func:`install_driver_evidence._entry_proves_install` for what counts as
+    evidence and why the weaker signals are excluded. A stale-sweep path of an
+    earlier layout that still holds Apothem's files counts too (see
     :func:`_stale_path_proves_install`). So does an uninstall that did not
-    finish (see :func:`_unfinished_here`), so a second run can complete it.
+    finish (see :func:`install_driver_evidence._unfinished_here`), so a second
+    run can complete it.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
+    install_open = functools.partial(install_may_be_open, harness_name, root)
     if any(
         _entry_proves_install(
-            entry, harness_root=harness_root, project_root=project_root
+            entry,
+            harness_root=harness_root,
+            project_root=project_root,
+            install_open=install_open,
         )
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):
         return True
     return _unfinished_here(harness_name, root)
-
-
-def _unfinished_here(harness_name: str, root: Path) -> bool:
-    """Return True when an unfinished uninstall left Apothem's files at *root*.
-
-    *root*'s latest record is ``uninstall-incomplete`` and a file the active
-    install lists still has the content Apothem wrote (see
-    :func:`still_written`); an unreadable ledger reads as no evidence. With
-    nothing Apothem wrote left, the install is closed by an ``uninstall``.
-    """
-    try:
-        unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
-        if unfinished is None:
-            return False
-        active = install_ledger.active_install_records(harness_name, root=root)
-    except install_ledger.LedgerError:
-        return False
-    if any(still_written(target) for install in active for target in install.targets):
-        return True
-    with contextlib.suppress(OSError, install_ledger.LedgerError):
-        install_ledger.append_record(
-            LedgerRecord.create(
-                harness=harness_name,
-                root=root,
-                kind="uninstall",
-                install_id=unfinished.install_id,
-            )
-        )
-    return False
 
 
 @dataclass(frozen=True)
@@ -313,7 +244,7 @@ def _profile_anchor_targets(
             if recorded.mode == "sentinel_merge" and recorded.path not in listed
         )
         return targets
-    for relative in ("CLAUDE.md", "apothem/rules/00-apothem-profile.md"):
+    for relative in BOLT_ON_ANCHORS:
         bolt_on = root / relative
         if bolt_on.is_file():
             targets.append(bolt_on)
@@ -351,7 +282,7 @@ def check_fidelity(
             results.append(FidelityResult(_path_text(target), "missing"))
             continue
         try:
-            text = target.read_text(encoding="utf-8")
+            text = target.read_bytes().decode("utf-8", errors="replace")
         except OSError:
             results.append(FidelityResult(_path_text(target), "missing"))
             continue
@@ -433,7 +364,8 @@ def run_uninstall(
     manifest is still cleaned). Tree/discovery surfaces are enumerated from the
     manifest and source, and a child the record does not list stays. A record
     written before file digests existed, or no record at all (a pre-ledger
-    install), proves nothing about the files, so those children stay too. The
+    install), proves nothing about the files, so those children stay too (see
+    :func:`remove_written` for when that leaves the uninstall unfinished). The
     shared data home (memory / contexts / learning) is backed up and removed
     only when last-referenced, at the home the latest install recorded (see
     :func:`_data_home_for`). The directories the installs since the last
@@ -456,7 +388,10 @@ def run_uninstall(
     active: list[LedgerRecord] = []
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
-    finished = False
+    # The records this pass builds, each kept before it is appended, so the
+    # fallback below never contradicts one that landed (see record_uninstall).
+    own: list[LedgerRecord] = []
+    record_pass = functools.partial(record_uninstall, harness_name, root, own=own)
     try:
         active = install_ledger.active_install_records(harness_name, root=root)
         record = active[-1] if active else None
@@ -467,42 +402,29 @@ def run_uninstall(
             results,
             harness_root=harness_root,
             project_root=project_root,
+            already=frozenset(result.path for result in prior_results),
         )
+        # The warnings are built before the record, so a failure here leaves
+        # the uninstall recorded as unfinished, as the CLI then reports it.
+        kept = left_behind(results, active, floor=root_floor, prior=prior_results)
         finished = not left_unfinished([*prior_results, *results])
-    except Exception as exc:
+        kept += record_pass(record, [*prior_results, *results], finished=finished)
+        if finished:
+            # Housekeeping after the final record: any failure here leaves
+            # older backup sets for the next pass or ``backups prune``, and the
+            # finished uninstall stands, as its record says.
+            with contextlib.suppress(Exception):
+                apply_retention(harness_name)
+    except BaseException as exc:
+        results += record_pass(record, [*prior_results, *results], finished=False)
+        if not isinstance(exc, Exception):
+            raise
         # Hand the caller what this pass removed before it stopped, so the CLI
         # can report the uninstall as partial instead of a bare failure.
-        run = MaterializationRun(harness_name, False, tuple(results))
+        kept_now = kept_file_warnings(results)
+        run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-    finally:
-        record_uninstall(
-            harness_name,
-            root,
-            record,
-            [*prior_results, *results],
-            finished=finished,
-        )
-    try:
-        return [*results, *_left_behind(results, active, floor=root_floor)]
-    except Exception as exc:
-        run = MaterializationRun(harness_name, False, tuple(results))
-        raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-
-
-def _left_behind(
-    results: list[MaterializationResult], active: list[LedgerRecord], *, floor: Path
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files."""
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in results}
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
+    return [*results, *kept]
 
 
 def _remove_installed(
@@ -513,11 +435,13 @@ def _remove_installed(
     *,
     harness_root: Path | None,
     project_root: Path | None,
+    already: frozenset[str] = frozenset(),
 ) -> None:
     """Remove what *record* shows this install wrote, appending to *results*.
 
     *results* is the caller's list, so the removals made before an exception
-    are still recorded.
+    are still recorded. A path in *already* (one the caller removed or
+    reported before this pass) is not handled again.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -533,10 +457,11 @@ def _remove_installed(
     recorded_paths: set[str] | None = (
         set(recorded_targets) if record is not None else None
     )
-    handled: set[str] = set()
+    handled: set[str] = set(already)
     remove = functools.partial(
         remove_written,
         recorded=recorded_targets if record is not None else None,
+        installs_ended=record is None and last_uninstall_finished(harness_name, root),
         install_root=root,
         harness_name=harness_name,
         expected=expected_lookup(
@@ -544,6 +469,7 @@ def _remove_installed(
             harness_name=harness_name,
             harness_root=harness_root,
             project_root=project_root,
+            strict=record is None,
         ),
     )
     gate = UserLevelGate.build(

@@ -38,7 +38,7 @@ deterministic pipelines, an audit fortress, and a reversible verified lifecycle.
 | Audit fortress that detects and remediates | Yes — eleven-command sweep, `/fortress` re-audit loop | No | No | No |
 | Durable memory across sessions | Yes — `memory/records.json` store under the Apothem data home, created at install | Not compared | Not stated in its README | Not stated in its README |
 | Supply-chain hardened releases | Yes — SBOM, Sigstore, SLSA, Scorecard target | Not compared | Not stated in its README | Not stated in its README |
-| Reversible, verified lifecycle | Yes — backup, `apothem verify --json`, zero-orphan uninstall | chezmoi: `chezmoi verify` checks every target; Stow: symlinks only | Not stated in its README | `.bak` backups and `ruler revert`; no verify command in its README |
+| Reversible, verified lifecycle | Yes — backup, `apothem verify --json`, an uninstall that removes only Apothem's files and reports what it had to leave | chezmoi: `chezmoi verify` checks every target; Stow: symlinks only | Not stated in its README | `.bak` backups and `ruler revert`; no verify command in its README |
 
 Where a peer is stronger, it is named: **rulesync** reaches more than three
 times as many tools and syncs MCP, ignore files, permissions and review checks,

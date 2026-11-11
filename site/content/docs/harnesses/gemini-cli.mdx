@@ -109,6 +109,16 @@ Before the change, a timestamped copy of each file is saved under
 `~/.apothem/backups/`; no backup file is left in the project. The shared
 profile YAML and Apothem engine are unaffected.
 
+Earlier releases (the [changelog](/docs/changelog) names them) also removed a
+project's own `skills/AGENTS.md` (at the project root, not under `.gemini/`)
+on every install and update, after
+copying it to a backup set under `~/.apothem/backups/<timestamp>/gemini_cli/`.
+The current release leaves that file alone. To get it back, copy
+`~/.apothem/backups/` somewhere else before you run Apothem again, then copy
+the file from that copy back into the project by hand. The
+[changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+has the full recovery steps.
+
 ## Conformity gate
 
 ```bash
