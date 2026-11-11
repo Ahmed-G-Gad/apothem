@@ -40,11 +40,13 @@ from typing import Any, Final
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_blocks import (
+    ANOTHER_BLOCK,
+    another_block_warning,
     endless_block_warning,
     stray_begin_install_warnings,
 )
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
-from apothem.harnesses._shared.install_driver_types import _path_text
+from apothem.harnesses._shared.install_driver_types import KEPT_REASON, _path_text
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
@@ -797,6 +799,11 @@ def _holds_block(path: Path, *, whole: bool = False) -> bool:
     return find(text) is not None
 
 
+#: The next step an install or update gives for a rules file it could not
+#: retire because it holds another block (see :func:`_retire_one`).
+_RETRIED = "the next install, update or uninstall then takes Apothem's block out"
+
+
 def _retire_one(
     path: Path,
     harness_root: Path,
@@ -868,7 +875,11 @@ def _retire_one(
         return [named if strict else replace(named, outcome="warning")]
     if result is not None and result.outcome == "warning":
         # Another marked block that is not Apothem's: the file is left as it is.
-        return [result]
+        # An install or update retries it once the operator fixed it; only an
+        # uninstall says to run itself again.
+        if strict or result.detail.get(KEPT_REASON) != ANOTHER_BLOCK:
+            return [result]
+        return [another_block_warning(path, operation=RETIRE, then=_RETRIED)]
     if path.exists() and _holds_block(path, whole=True):
         which, then = (
             (

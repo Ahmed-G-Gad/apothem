@@ -42,9 +42,10 @@ from .install_driver_types import (
 #: ``detail`` key (``"1"``) of a warning that names a file the uninstall left
 #: as it is because of its markers: a BEGIN marker with no END marker after it
 #: (:func:`endless_block_warning`, :func:`stray_begin_warnings`), or another
-#: whole block (:func:`another_block_warning`). An install or update keeps such
-#: a marker and writes Apothem's block apart from it, and verify fails until the
-#: operator deletes it, so an uninstall whose next step is ``apothem update``
+#: whole block (:func:`another_block_warning`). An install or update keeps a
+#: BEGIN marker with no END and writes Apothem's block apart from it, and verify
+#: fails until the operator deletes it; in a file with two whole blocks, it
+#: writes over the first. So an uninstall whose next step is ``apothem update``
 #: says to fix such a file first.
 MARKER_LEFT = "marker_left"
 
@@ -242,19 +243,34 @@ def sentinel_refusal(target: Path) -> MaterializationResult | None:
     return None
 
 
-def another_block_warning(target: Path) -> MaterializationResult:
+#: The next step :func:`another_block_warning` gives an uninstall.
+UNINSTALL_AGAIN = "then run the uninstall again"
+
+
+def another_block_warning(
+    target: Path,
+    *,
+    operation: str = "surgical_uninstall",
+    then: str = UNINSTALL_AGAIN,
+) -> MaterializationResult:
     """Name a file that holds another whole block besides Apothem's own.
 
     It is not a copy of Apothem's block, so it may be the operator's (a marker
     pair they quote): nothing changes, and the uninstall stays unfinished.
+    Apothem writes one block per file, so the fix is the marker lines the
+    operator added, never Apothem's block: with those gone, the strip takes
+    out the one block left, whichever came first. *then* is the step after the
+    fix (an install or update that retires the file gives its own).
     """
     return _result(
         "warning",
-        "surgical_uninstall",
+        operation,
         target,
-        f"{_path_text(target)} holds another block between Apothem's markers that "
-        "is not a copy of Apothem's own, so Apothem left the file as it is. Delete "
-        "it by hand (or the marker pair you quoted), then run the uninstall again.",
+        f"{_path_text(target)} holds two different blocks between Apothem's "
+        "markers, so Apothem cannot tell which one is its own and left the file "
+        "as it is. Delete or reword the marker lines you added there (a marker "
+        "pair you quoted, or a block you pasted in a second time), or move them "
+        f"inside a code block, keeping your own text; {then}.",
         detail={KEPT_REASON: ANOTHER_BLOCK, MARKER_LEFT: "1"},
     )
 

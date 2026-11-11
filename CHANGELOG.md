@@ -487,12 +487,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that, the file no longer makes the tool read as installed. A whole block is
   found from its END marker back to the nearest BEGIN marker, and each exact
   copy of it is taken out too (a block pasted in twice used to leave one, so
-  the tool still read as installed); another block between the markers, such
-  as a pair you quote, is left with the file and named, and the uninstall
-  stays unfinished until you remove it. A BEGIN marker of yours left with no
-  END once Apothem's block is out is named too. When the uninstall's next step is to run
-  `apothem update` and a warning names such a file, that step says to fix the
-  file first: the update keeps the marker, and `verify` fails until it is gone.
+  the tool still read as installed). A second, different block between the
+  markers, such as a pair you quote outside a code block, is left with the
+  file and named, and the uninstall stays unfinished (exit code `2`, a second
+  run included) until you remove or reword the marker lines you added. A
+  BEGIN marker of yours left with no END once Apothem's block is out is named
+  too, also when the uninstall stops part way, and under `--quiet` on
+  standard error. When the uninstall's next step is to run `apothem update`
+  and a warning names such a file, the step, and the warning of each path it
+  keeps for that reason, say to fix the file first: an update keeps a BEGIN
+  marker with no END, and `verify` fails until it is gone, but it writes over
+  the first whole block in a file that holds two. An OpenClaw update that
+  cannot retire a rules file with two blocks says the next install, update or
+  uninstall tries again, not to run the uninstall.
 - **Install and update no longer cut your text after a BEGIN marker with no
   END.** They replaced everything from such a marker to the end of the file,
   with any text you had written below it (a backup was kept). They now keep

@@ -272,7 +272,11 @@ keeps the keys it already has, and the Apothem entries in
 `skills.load.extraDirs` and the hook entry stay listed once however often you
 update. Each update writes Apothem's path last in the hook entry's list, so it
 moves to the end if you put entries after it. Text you add to a rules file
-outside its managed block stays. Run after editing `~/.config/apothem/profile.yaml` or upgrading the
+outside its managed block stays. A rules file in a workspace the install no
+longer uses loses its block; if that file holds two different blocks between
+Apothem's markers, the update leaves it as it is and names it. Remove or
+reword the marker lines you added there, and the next install, update or
+uninstall takes Apothem's block out. Run after editing `~/.config/apothem/profile.yaml` or upgrading the
 installed Apothem package.
 
 ## Uninstalling

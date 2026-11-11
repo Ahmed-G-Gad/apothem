@@ -40,6 +40,7 @@ from apothem.harnesses.open_claw.rules_file import (
 )
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     extract_managed_block,
 )
@@ -1890,3 +1891,30 @@ def test_an_install_keeps_your_text_after_a_rules_file_begin_with_no_end(
         for w in run.warnings
     ), run.warnings
     assert damaged is False
+
+
+def test_an_update_that_cannot_retire_a_file_with_two_blocks_says_what_comes_next(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # An update or install tells you the next run retries; it never says to
+    # run the uninstall, which would remove the whole harness. An uninstall
+    # still says to run itself again.
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    quoted = f"{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
+    target.write_bytes(target.read_bytes() + b"\n" + quoted.encode())
+    before = target.read_bytes()
+    _move_default_workspace(home, "~/ws-b")
+
+    updated = [m for m in _messages(adapter.update({})) if str(target) in m]
+    uninstalled = [m for m in _messages(adapter.uninstall()) if str(target) in m]
+
+    assert target.read_bytes() == before
+    (update_note,) = updated
+    assert "the next install, update or uninstall then takes" in update_note
+    assert "uninstall again" not in update_note
+    (uninstall_note,) = uninstalled
+    assert "then run the uninstall again" in uninstall_note

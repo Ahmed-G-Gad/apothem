@@ -120,21 +120,28 @@ does. The message depends on the reason:
 - `✗ <harness> uninstall did not finish:` names Apothem files it left behind a
   link (a symlink or junction), files that an earlier release's install
   recorded and that differ from what this release writes, the files of an
-  install with no record at all, or removal steps that reported errors. For a
-  link, an earlier release's files or an install with no record it also gives
-  the number of paths it left.
+  install with no record at all, files that hold two different blocks between
+  Apothem's markers, or removal steps that reported errors. For a link, an
+  earlier release's files, an install with no record or files with two blocks
+  it also gives the number of paths it left.
 - `✗ <harness> uninstall stopped after removing files:` means a removal step
   stopped the uninstall after it had removed some files.
 - `✗ <harness> uninstall failed:` means a removal step stopped the uninstall
   before it removed anything.
 
 It exits `2` when it removed files, left Apothem's own files behind a link,
-or kept the files of an earlier release's install or of an install with no
-record, and `1` when it stopped before removing anything for any other
-reason. Fix what the message names, then run the same `apothem uninstall`
-command again: it removes what the first run left. For an earlier release's
-install or an install with no record, first copy any listed file you edited
-or added, then run `apothem update`, then the uninstall. The
+kept the files of an earlier release's install or of an install with no
+record, or left a file with two different blocks between Apothem's markers,
+and `1` when it stopped before removing anything for any other reason. Fix
+what the message names, then run the same `apothem uninstall` command again:
+it removes what the first run left. For a file with two blocks, remove or
+reword the marker lines you added (a marker pair you quoted, say), or move
+them inside a code block; do not delete Apothem's block. For an earlier
+release's install or an install with no record, first copy any listed file
+you edited or added and fix each file a warning names for an Apothem marker,
+as that warning says, then run `apothem update`, then the uninstall. An
+update keeps a BEGIN marker with no END and your text below it, but it
+writes over the first whole block in a file that holds two. The
 [uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
 describes each case, and its [exit codes](/docs/cli-reference/uninstall#exit-codes)
 table lists what `1` and `2` mean.

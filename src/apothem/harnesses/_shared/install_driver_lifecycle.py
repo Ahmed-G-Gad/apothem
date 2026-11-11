@@ -28,6 +28,7 @@ from .install_driver_blocks import (
     install_may_be_open,
     stray_begin_at,
     stray_begin_files,
+    stray_begin_warnings,
 )
 from .install_driver_datahome import (
     _data_home_for,
@@ -439,8 +440,10 @@ def run_uninstall(
         if not isinstance(exc, Exception):
             raise
         # Hand the caller what this pass removed before it stopped, so the CLI
-        # can report the uninstall as partial instead of a bare failure.
-        kept_now = kept_file_warnings(results)
+        # can report the uninstall as partial instead of a bare failure, with
+        # each file it rewrote that still holds a BEGIN marker alone named.
+        done = [*prior_results, *results]
+        kept_now = [*kept_file_warnings(results), *stray_begin_warnings(done)]
         run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]
