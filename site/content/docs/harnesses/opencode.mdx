@@ -149,8 +149,9 @@ when that happens; verify prints it only while `opencode.json` lists an entry
 the install wrote, and the note does not fail the check. When the list in
 `opencode.jsonc` already holds every entry Apothem writes, OpenCode 1 loads
 them, but from a copy that installs and updates do not refresh, and the note
-says so. OpenCode 2 joins the `instructions` lists of every file it reads, so
-the note is about OpenCode 1 only.
+says so. When it holds only some of them, the note says how many it holds and
+that the others do not reach OpenCode 1. OpenCode 2 joins the `instructions`
+lists of every file it reads, so the note is about OpenCode 1 only.
 
 Apart from the files described below that stop OpenCode 1, there is no note
 for an `opencode.jsonc` with no `instructions` list, or for a symbolic link to
@@ -204,26 +205,33 @@ names in a loop of symbolic links lead to no file, so each gets its own note.
 The check looks at the top level and the `instructions` value only, not at every
 setting OpenCode reads, and it does not read a file that is not a regular file,
 such as a named pipe or a device, or a very large one. A configuration file of
-that kind gets no note. A `{file:path}` that names a very large file, or that
-on Windows starts at a root without a drive letter (OpenCode 1 reads it on the
-drive of the folder it was started in), is checked as empty text while it sits
-inside a string value, where its text cannot change the outcome, so the rest of
-the file is still checked. In a key, outside quotes, or within an escape
-sequence such as `\u00`, its text decides the outcome, and the file gets no
-note. A `{file:path}` naming the null device, `/dev/null`, reads as empty text
-wherever it sits, as it does for OpenCode 1. One naming a named pipe or another
-device leaves the file without a note, since OpenCode 1 may wait on it forever,
-and so does, on Windows, one naming anything but a file or a folder, such as
-the `NUL` device, or a path with a part that ends in a dot or a space, which
-Windows usually reads without that dot or space but OpenCode 1 may not; another
-`{file:path}` in that file naming a file OpenCode 1 cannot read still gets its
-note on Windows. Verify prints these notes while `opencode.json` lists an entry
-the install wrote; the note for `opencode.json` itself also prints while the
-profile document holds the Apothem block, since such a file may list nothing
-Apothem can read. When install or update cannot
-parse `opencode.json` even as JSON5, they stop with a `config.unparseable` error
-that names it instead of the note; verify, which then fails the check, prints
-the note.
+that kind gets no note. A `{file:path}` that names a very large file, that comes
+after the first 16 MiB that the file's `{env:NAME}` values and `{file:path}`
+files put in (counted as the text put in, escaped, so a control character counts
+as six characters), or that on Windows starts at a root without a drive letter
+(OpenCode 1 reads it on the drive of the folder it was started in), is checked
+as empty text while it sits inside a string value, where its text cannot change
+the outcome, so the rest of the file is still checked. So is, on Windows, one
+naming anything but a file or a folder, such as the `NUL` device, or a path with
+a part that ends in a dot or a space, which Windows usually reads without that
+dot or space but OpenCode 1 may not; its note adds that if OpenCode 1 cannot
+read that file, it stops at that reference first. In a key, outside quotes,
+within an escape sequence such as `\u00`, or after a `/*` comment that is never
+closed, its text decides the outcome, and the file gets no note unless another
+`{file:path}` in it names a file OpenCode 1 cannot read. `{env:NAME}` values
+that put in more than 16 MiB leave the file without a note too, and so do
+`{file:path}` tokens that name more than 1,000 different paths. A `{file:path}`
+naming the null device, `/dev/null`, reads as empty text wherever it sits, as it
+does for OpenCode 1. One naming a named pipe or another device on Linux and
+macOS leaves the file without a note, since OpenCode 1 may wait on it forever. A
+note names an `{env:NAME}` reference, never its value, and shows a `{file:path}`
+with its control characters escaped and cut to 200 characters. Verify prints
+these notes while `opencode.json` lists an entry the install wrote; the note for
+`opencode.json` itself also prints while the profile document holds the Apothem
+block, since such a file may list nothing Apothem can read. When install or
+update cannot parse `opencode.json` even as JSON5, they stop with a
+`config.unparseable` error that names it instead of the note; verify, which then
+fails the check, prints the note.
 
 OpenCode 2 reads no `config.json`. It skips an `opencode.json` or
 `opencode.jsonc` it cannot parse or whose top level is not an object, so it

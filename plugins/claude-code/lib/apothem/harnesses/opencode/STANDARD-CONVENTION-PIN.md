@@ -282,9 +282,11 @@ Retrieved 2026-10-03 unless marked.
   file can stop OpenCode 1 without a note. The check reads nothing but a regular
   file or a folder, and no file larger than 16 MiB, so a configuration file that
   is a named pipe or a device, which could block the read, or a very large one,
-  gets no note either. A `{file:path}` naming a very large file is checked as
-  empty text while it sits inside a string value and not within an escape
-  sequence, where text escaped as a string's inside cannot change the outcome;
+  gets no note either. A `{file:path}` naming a very large file, or one past
+  the first 16 MiB that a file's `{env:NAME}` values and `{file:path}` files
+  put in, counted as escaped text, is checked as empty text while it sits
+  inside a string value and not within an escape sequence, where text escaped
+  as a string's inside cannot change the outcome;
   in a key (a string followed by `:` after spaces and comments, the only
   separators jsonc-parser 3.3.1 skips, `lib/esm/impl/scanner.js:352-357`),
   after an odd backslash, inside a `\u` escape, or outside a string, the file
@@ -292,19 +294,25 @@ Retrieved 2026-10-03 unless marked.
   empty text and goes on (`readFile`), so the check puts in empty text for it
   anywhere. The system refuses to open a socket (`ENXIO` on Linux, run under
   WSL 2026-11-10; macOS was not run), for `readFile` too, so OpenCode 1 stops
-  with a `bad file reference`. A named pipe or another device can keep `readFile` waiting
-  forever, and OpenCode 1 reads the references in order (`variable.ts:48-87`),
+  with a `bad file reference`. A named pipe or another device can keep
+  `readFile` waiting forever, and OpenCode 1 reads the references in order
+  (`variable.ts:48-87`),
   so such a reference leaves the file without a note, and no reference after
   it counts. On Windows a `{file:path}` naming anything but a file or a folder,
-  or a path with a part that ends in a dot or a space, leaves the file without
-  a note: Python reads `NUL` in any folder as the device and drops such a dot
-  or space, while Node 26.7.0 opens `<folder>\NUL` and `f.txt.` beside `f.txt`
-  as missing files (`ENOENT`) and reads a folder named `sub.` by that name (run
-  2026-11-10), and the Bun runtime was not checked; another reference there
-  that OpenCode 1 cannot read still gets its note. When the text with its
-  `{env:NAME}` values escaped depends on such a reference, the note says
-  OpenCode 1 cannot parse the file and nothing of OpenCode 2. Names among
-  the three that lead to one file through a symbolic link share one note,
+  or a path with a part that ends in a dot or a space, is not read: Python
+  reads `NUL` in any folder as the device and drops such a dot or space, while
+  Node 26.7.0 opens `<folder>\NUL` and `f.txt.` beside `f.txt` as missing files
+  (`ENOENT`) and reads a folder named `sub.` by that name (run 2026-11-10), and
+  the Bun runtime was not checked. Such a reference is checked as empty text
+  inside a string value, like a very large file, since OpenCode 1 then refuses
+  a file refused for the rest of its text whether the read succeeds or fails,
+  and the note says OpenCode 1 may stop at that reference first; outside a
+  string value the file gets no note unless another reference there names a
+  file OpenCode 1 cannot read. A file whose references name more than 1,000
+  paths gets no note. When the text with its `{env:NAME}` values escaped
+  depends on such a reference, the note says OpenCode 1 cannot parse the file
+  and nothing of OpenCode 2. Names among the three that lead to one file
+  through a symbolic link share one note,
   given to `opencode.json` when it is one of them, else to the name that is not
   a link, else to the first one read; when that is `config.json` and
   `opencode.jsonc` leads to it, the note says OpenCode 2 reads the file as

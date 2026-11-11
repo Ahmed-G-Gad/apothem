@@ -329,7 +329,10 @@ the `instructions` list Apothem writes in `opencode.json`:
   writes back a reference removed from the file, so change the variable or, to
   keep it as it is, restate that server under
   `harnesses.opencode.mcp_servers.<name>` with the value saved in a file and
-  written as a `{file:path}` that names it. When the note names a second problem with the file, fix that too.
+  written as a `{file:path}` that names it. When the note names a second
+  problem with the file, fix that too. When it says Apothem cannot tell
+  whether OpenCode 1 can read the file a `{file:path}` names, make sure that
+  file can be read as well.
 
 These notes are about OpenCode 1. OpenCode 2 reads both lists and reads no
 `config.json`. It skips a file it cannot parse or whose top level is not an

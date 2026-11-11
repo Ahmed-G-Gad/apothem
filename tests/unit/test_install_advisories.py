@@ -1228,13 +1228,20 @@ def test_the_white_space_set_is_unicode_white_space() -> None:
 
 def _deny_agents_md(monkeypatch: pytest.MonkeyPatch) -> None:
     real_is_file = Path.is_file
+    real_stat = Path.stat
 
     def is_file(self: Path, *args: object, **kwargs: object) -> bool:
         if self.name == "AGENTS.md":
             raise PermissionError(13, "Permission denied", str(self))
         return real_is_file(self, *args, **kwargs)  # type: ignore[arg-type]
 
+    def path_stat(self: Path, **kwargs: bool) -> os.stat_result:
+        if self.name == "AGENTS.md":
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_stat(self, **kwargs)
+
     monkeypatch.setattr(Path, "is_file", is_file)
+    monkeypatch.setattr(Path, "stat", path_stat)
 
 
 def test_an_unreadable_agents_md_gives_no_note_instead_of_an_error(
@@ -1431,7 +1438,10 @@ def test_an_opencode_jsonc_opencode_1_cannot_parse_gets_a_note(
     assert "loads none of its configuration" in message
     assert "the Apothem profile document and rules included" in message
     assert "until the file is fixed or removed" in message
-    assert "OpenCode 2 skips that file and still loads opencode.json" in message
+    assert (
+        "OpenCode 2 skips that file, which does not keep it from loading opencode.json"
+        in message
+    )
     assert path.read_bytes() == text.encode("utf-8")
     assert not (folder / "opencode.json").exists()
 
@@ -1467,13 +1477,20 @@ def test_a_folder_named_opencode_jsonc_gets_a_note(tmp_path: Path) -> None:
 def _refuse_read(monkeypatch: pytest.MonkeyPatch, path: Path, error: OSError) -> None:
     """Make every read of *path* raise *error*."""
     real_read_bytes = Path.read_bytes
+    real_open = Path.open
 
     def read_bytes(self: Path) -> bytes:
         if self == path:
             raise error
         return real_read_bytes(self)
 
+    def path_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self == path:
+            raise error
+        return real_open(self, *args, **kwargs)  # type: ignore[arg-type]
+
     monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    monkeypatch.setattr(Path, "open", path_open)
 
 
 @pytest.mark.parametrize("text", ['{"instructions": []}', "{instructions: []}"])
@@ -1656,7 +1673,8 @@ def test_an_opencode_jsonc_file_token_it_cannot_read_gets_a_note(
     assert note["path"] == str(path)
     message = " ".join(str(note["message"]).split())
     start = text.index("{file:")
-    token = text[start : text.index("}", start) + 1]
+    # A control character, such as the NUL, is shown as an escape.
+    token = text[start : text.index("}", start) + 1].replace(chr(0), "\\u0000")
     assert f"OpenCode 1 cannot read the file that {token} in {path} names" in message
     assert 'stops with a "bad file reference" error' in message
     assert "loads none of its configuration" in message
@@ -1790,7 +1808,7 @@ def test_each_global_opencode_file_opencode_1_refuses_gets_a_note(
         )
     else:
         assert message.endswith(
-            "OpenCode 2 skips that file and still loads opencode.json."
+            "OpenCode 2 skips that file, which does not keep it from loading opencode.json."
         )
     assert path.read_bytes() == text.encode("utf-8")
 
@@ -1902,7 +1920,10 @@ def test_names_that_lead_to_one_refused_file_share_one_note(
 @pytest.mark.parametrize(
     ("text", "tail"),
     [
-        ("{x: 1}", "OpenCode 2 skips that file and still loads opencode.json."),
+        (
+            "{x: 1}",
+            "OpenCode 2 skips that file, which does not keep it from loading opencode.json.",
+        ),
         (
             '{"instructions": "a.md"}',
             "OpenCode 2 instead ignores that value, which is not a list.",
@@ -2005,7 +2026,9 @@ def test_an_env_value_escaping_does_not_save_gets_the_parse_note(
     [note] = instruction_override_advisories("opencode", home=tmp_path)
     message = " ".join(str(note["message"]).split())
     assert f"OpenCode 1 cannot parse {path} as JSONC (JSON with comments" in message
-    assert message.endswith("OpenCode 2 skips that file and still loads opencode.json.")
+    assert message.endswith(
+        "OpenCode 2 skips that file, which does not keep it from loading opencode.json."
+    )
 
 
 @pytest.mark.parametrize("name", _FOLDED)
@@ -2030,13 +2053,14 @@ def test_an_env_note_says_a_top_level_that_is_not_an_object_needs_a_fix_too(
         "config.json": "OpenCode 2 does not read config.json.",
         "opencode.json": (
             "OpenCode 2 escapes those values when the file would not parse "
-            "otherwise, but then skips that file, whose top level is not an "
-            "object, so the entries Apothem lists there do not reach it either."
+            "otherwise, but then skips that file because its top level is not "
+            "an object, so the entries Apothem lists there do not reach it either."
         ),
         "opencode.jsonc": (
             "OpenCode 2 escapes those values when the file would not parse "
-            "otherwise, but then skips that file, whose top level is not an "
-            "object, and still loads opencode.json."
+            "otherwise, but then skips that file because its top level is not "
+            "an object; skipping it does not keep OpenCode 2 from loading "
+            "opencode.json."
         ),
     }[name]
     assert message.endswith(tail)
@@ -2109,6 +2133,7 @@ def _fake_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
     """
     real_stat = Path.stat
     real_read_bytes = Path.read_bytes
+    real_path_open = Path.open
     real_os_stat = os.stat
     pipe = os.stat_result((stat.S_IFIFO | 0o644, 0, 0, 1, 0, 0, 0, 0, 0, 0))
 
@@ -2121,6 +2146,10 @@ def _fake_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
         assert self != path, "a named pipe was read"
         return real_read_bytes(self)
 
+    def path_open(self: Path, *args: object, **kwargs: object) -> object:
+        assert self != path, "a named pipe was opened"
+        return real_path_open(self, *args, **kwargs)  # type: ignore[arg-type]
+
     def fake_os_stat(name: object, *args: object, **kwargs: object) -> os.stat_result:
         if isinstance(name, str) and name == str(path):
             return pipe
@@ -2132,6 +2161,7 @@ def _fake_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
 
     monkeypatch.setattr(Path, "stat", fake_stat)
     monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    monkeypatch.setattr(Path, "open", path_open)
     monkeypatch.setattr(os, "stat", fake_os_stat)
     monkeypatch.setattr(install_advisories, "open", fake_open, raising=False)
 
@@ -2173,19 +2203,22 @@ def test_a_file_token_naming_a_pipe_is_not_read(
 def test_a_file_token_naming_a_pipe_leaves_the_file_unchecked(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str
 ) -> None:
-    # OpenCode 1 may wait on a pipe forever, which no note describes, and on
-    # Windows anything but a file or a folder leaves the file unchecked (see
-    # test_a_windows_device_name_leaves_the_file_unchecked).
+    # OpenCode 1 may wait on a pipe forever, which no note describes. On
+    # Windows a reference to anything but a file or a folder is checked as
+    # empty text inside a string (see
+    # test_a_windows_device_name_inside_a_string_is_checked_as_empty_text).
     folder = _opencode_folder()
     path = _opencode_jsonc(folder, text)
     pipe = folder / "pipe"
     pipe.write_text("x", encoding="utf-8")
     _fake_pipe(monkeypatch, pipe)
     notes = instruction_override_advisories("opencode", home=tmp_path)
-    if sys.platform == "win32" and "missing" in text:
-        # A Windows device blocks nothing, so the later reference still counts.
+    if sys.platform == "win32":
+        # A Windows device blocks nothing, so the rest of the file counts.
         [note] = notes
-        assert f"{{file:missing.txt}} in {path}" in str(note["message"])
+        assert note["path"] == str(path)
+        if "missing" in text:
+            assert f"{{file:missing.txt}} in {path}" in str(note["message"])
         return
     assert notes == []
 
@@ -2278,20 +2311,42 @@ def test_the_null_device_reads_as_empty_text(tmp_path: Path) -> None:
     assert f"OpenCode 1 cannot parse {path} as JSONC" in str(note["message"])
 
 
+# What a note adds for a {file:path} whose file the check cannot tell
+# OpenCode 1 reads.
+_UNKNOWN = (
+    "Apothem cannot tell whether OpenCode 1 can read the file that {reference} "
+    'names; if it cannot, OpenCode 1 stops at that reference first, with a "bad '
+    'file reference" error.'
+)
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="NUL is a Windows device name")
-def test_a_windows_device_name_leaves_the_file_unchecked(tmp_path: Path) -> None:
+def test_a_windows_device_name_inside_a_string_is_checked_as_empty_text(
+    tmp_path: Path,
+) -> None:
     # Python reads NUL in any folder as the device; Node opens it as a file
-    # name there, so whether OpenCode 1 reads it is not known: no note.
+    # name there, so whether OpenCode 1 reads it is not known. Inside a string
+    # the rest of the file decides: OpenCode 1 refuses this one either way.
     text = '{"x": "{file:NUL}", "instructions": "AGENTS.md"}'
-    _opencode_jsonc(_opencode_folder(), text)
+    path = _opencode_jsonc(_opencode_folder(), text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 needs the instructions value in {path}" in message
+    assert _UNKNOWN.format(reference="{file:NUL}") in message
+    # A file that is otherwise fine gets no note, and nor does one where the
+    # text decides, outside a string.
+    _opencode_jsonc(_opencode_folder(), '{"x": "{file:NUL}"}')
     assert instruction_override_advisories("opencode", home=tmp_path) == []
-    # A later reference OpenCode 1 cannot read still stops it.
+    _opencode_jsonc(_opencode_folder(), '{"x": {file:NUL}, "instructions": 1}')
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+    # A later reference OpenCode 1 cannot read still stops it, unless the
+    # earlier one does first, which the note says too.
     text = '{"x": "{file:NUL}", "z": "{file:missing.txt}"}'
     path = _opencode_jsonc(_opencode_folder(), text)
     [note] = instruction_override_advisories("opencode", home=tmp_path)
-    assert f"cannot read the file that {{file:missing.txt}} in {path}" in str(
-        note["message"]
-    )
+    message = " ".join(str(note["message"]).split())
+    assert f"cannot read the file that {{file:missing.txt}} in {path}" in message
+    assert _UNKNOWN.format(reference="{file:NUL}") in message
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="a drive is a Windows path part")
@@ -2312,29 +2367,44 @@ def test_a_windows_file_token_rooted_without_a_drive_is_not_read(
     assert instruction_override_advisories("opencode", home=tmp_path) == []
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Win32 name rules")
 @pytest.mark.parametrize(
     "name", ["key.txt.", "key.txt ", "key.txt...", "sub./key.txt", "sub /key.txt"]
 )
-def test_a_windows_file_token_with_a_part_ending_in_a_dot_is_not_checked(
-    tmp_path: Path, name: str
+def test_a_windows_file_token_with_a_part_ending_in_a_dot_is_checked_in_a_string(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str
 ) -> None:
     # Python drops a trailing dot or space from each part and reads key.txt,
     # but Node opens the path as written, where key.txt. is another, missing
-    # file, so whether OpenCode 1 can read it is not known: no note, even
-    # inside a string.
+    # file, so whether OpenCode 1 can read it is not known. The rule reads
+    # only the text, so it is checked wherever the tests run.
+    monkeypatch.setattr(install_advisories, "_WINDOWS", True)
     folder = _opencode_folder()
     folder.mkdir(parents=True)
     (folder / "key.txt").write_text("secret", encoding="utf-8")
     (folder / "sub").mkdir()
     (folder / "sub" / "key.txt").write_text("secret", encoding="utf-8")
     token = "{file:" + name + "}"
-    _opencode_jsonc(folder, '{"key": "' + token + '", "instructions": 1}')
-    assert instruction_override_advisories("opencode", home=tmp_path) == []
-    # A path without such a part is read and checked.
-    _opencode_jsonc(folder, '{"key": "{file:sub/key.txt}", "instructions": 1}')
+    # Inside a string OpenCode 1 refuses this file whichever way the read goes.
+    path = _opencode_jsonc(folder, '{"key": "' + token + '", "instructions": 1}')
     [note] = instruction_override_advisories("opencode", home=tmp_path)
-    assert "needs the instructions value" in str(note["message"])
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 needs the instructions value in {path}" in message
+    assert _UNKNOWN.format(reference=token) in message
+    # A parse error carries the sentence too.
+    path = _opencode_jsonc(folder, '{"key": "' + token + '", y: 1}')
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = " ".join(str(note["message"]).split())
+    assert f"OpenCode 1 cannot parse {path} as JSONC" in message
+    assert _UNKNOWN.format(reference=token) in message
+    # Outside a string the file's text decides, so the file is not checked.
+    _opencode_jsonc(folder, '{"key": ' + token + ', "instructions": 1}')
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+    # A path without such a part is read and checked, with no such sentence.
+    if sys.platform == "win32":
+        _opencode_jsonc(folder, '{"key": "{file:sub/key.txt}", "instructions": 1}')
+        [note] = instruction_override_advisories("opencode", home=tmp_path)
+        assert "needs the instructions value" in str(note["message"])
+        assert "cannot tell" not in str(note["message"])
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX path semantics")
@@ -2988,12 +3058,17 @@ def test_cli_opencode_env_note_is_plain_for_an_env_reference_in_another_file(
     assert "Apothem writes" not in message
 
 
-def _owned_mcp(monkeypatch: pytest.MonkeyPatch, entries: list[tuple[str, ...]]) -> None:
+def _owned_mcp(
+    monkeypatch: pytest.MonkeyPatch, entries: list[tuple[object, ...]]
+) -> None:
     """Make the install record own each ``(*path, value)`` key in opencode.json."""
     from apothem.harnesses._shared import install_driver_ownership
     from apothem.lib.install_ledger import OwnedEntry
 
-    owned = tuple(OwnedEntry(entry[:-1], "key", entry[-1]) for entry in entries)
+    owned = tuple(
+        OwnedEntry(tuple(str(key) for key in entry[:-1]), "key", entry[-1])
+        for entry in entries
+    )
     monkeypatch.setattr(
         install_driver_ownership, "prior_ownership", lambda *_args: owned
     )
@@ -3002,11 +3077,19 @@ def _owned_mcp(monkeypatch: pytest.MonkeyPatch, entries: list[tuple[str, ...]]) 
 @pytest.mark.parametrize(
     ("owned", "values", "named"),
     [
-        # A server an operator moved to mcp.servers.<name> is still Apothem's.
+        # A server an operator moved to mcp.servers.<name> is still Apothem's,
+        # given as one key that holds the whole server.
         (
-            [("mcp", "servers", "fs", "environment", "DATA", "{env:APX_A}")],
+            [("mcp", "servers", "fs", {"environment": {"DATA": "{env:APX_A}"}})],
             {"APX_A": "C:" + _BACKSLASH + "x"},
             "Apothem writes {env:APX_A} there for the MCP server fs in the profile",
+        ),
+        # A server named "servers" written under mcp is not that envelope.
+        (
+            [("mcp", "servers", "environment", "DATA", "{env:APX_A}")],
+            {"APX_A": "C:" + _BACKSLASH + "x"},
+            "Apothem writes {env:APX_A} there for the MCP server servers in the "
+            "profile",
         ),
         # A double quote alone breaks the text too.
         (
@@ -3029,7 +3112,7 @@ def _owned_mcp(monkeypatch: pytest.MonkeyPatch, entries: list[tuple[str, ...]]) 
 def test_an_env_note_names_each_mcp_server_apothem_wrote_a_reference_for(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    owned: list[tuple[str, ...]],
+    owned: list[tuple[object, ...]],
     values: dict[str, str],
     named: str,
 ) -> None:
@@ -3040,17 +3123,546 @@ def test_an_env_note_names_each_mcp_server_apothem_wrote_a_reference_for(
     for entry in owned:
         node = document
         for key in entry[:-2]:
-            node = node.setdefault(key, {})  # type: ignore[assignment]
-        node[entry[-2]] = entry[-1]
+            node = node.setdefault(str(key), {})  # type: ignore[assignment]
+        node[str(entry[-2])] = entry[-1]
     path = _opencode_file("opencode.json", json.dumps(document))
     [note] = instruction_override_advisories("opencode", home=tmp_path)
     assert note["path"] == str(path)
     message = " ".join(str(note["message"]).split())
     assert "rules included, until those values change." in message
     assert named in message
+    servers = {entry[2] if isinstance(entry[-1], dict) else entry[1] for entry in owned}
     restate = (
         "each of those servers under harnesses.opencode.mcp_servers.<name>"
-        if len({entry[2] if entry[1] == "servers" else entry[1] for entry in owned}) > 1
-        else "that server under harnesses.opencode.mcp_servers.fs"
+        if len(servers) > 1
+        else f"that server under harnesses.opencode.mcp_servers.{servers.pop()}"
     )
     assert f"to keep the variable as it is, restate {restate}" in message
+
+
+# A string never closed, full of escaped quotes: each quote used to start
+# another scan to the end, so the time grew with the square of the length
+# (about 20 s for this one, against milliseconds for one scan).
+_NEVER_CLOSED = '{"a": "' + (_BACKSLASH + '"') * 20_000
+
+
+def test_a_string_never_closed_is_scanned_once(tmp_path: Path) -> None:
+    import time
+
+    path = _opencode_file("opencode.jsonc", _NEVER_CLOSED)
+    started = time.perf_counter()
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    elapsed = time.perf_counter() - started
+    assert f"OpenCode 1 cannot parse {path} as JSONC" in str(note["message"])
+    assert elapsed < 10
+
+
+def test_the_check_for_where_a_token_sits_scans_a_string_never_closed_once() -> None:
+    import time
+
+    started = time.perf_counter()
+    inside = install_advisories._inside_strings(_NEVER_CLOSED, [len(_NEVER_CLOSED) - 1])
+    elapsed = time.perf_counter() - started
+    # A string never closed is no value, so text put in there is not safe.
+    assert inside is False
+    assert elapsed < 10
+
+
+def test_verify_reads_no_opencode_json_over_the_read_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apothem.harnesses.opencode.materializer import instruction_entries
+
+    listed = json.dumps({"instructions": instruction_entries()})
+    _opencode_file("opencode.json", listed)
+    jsonc = _opencode_file("opencode.jsonc", '{"instructions": []}')
+    verify = {"home": tmp_path, "require_block": True}
+    notes = instruction_override_advisories("opencode", **verify)
+    assert [note["path"] for note in notes] == [str(jsonc)]
+    # The check skips an opencode.json over the limit, and verify, which
+    # would read it to find the entries, does not read it either.
+    monkeypatch.setattr(install_advisories, "_READ_LIMIT", len(listed) - 1)
+    assert instruction_override_advisories("opencode", home=tmp_path) != []
+    assert instruction_override_advisories("opencode", **verify) == []
+
+
+def _count_reads(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Count the bytes the check reads from the files ``{file:path}`` names."""
+    import builtins
+
+    sizes: list[int] = []
+
+    class Counted:
+        def __init__(self, handle: object) -> None:
+            self.handle = handle
+
+        def __enter__(self) -> Counted:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            self.handle.close()  # type: ignore[attr-defined]
+
+        def read(self, *args: int) -> bytes:
+            data: bytes = self.handle.read(*args)  # type: ignore[attr-defined]
+            sizes.append(len(data))
+            return data
+
+    def counted_open(*args: object, **kwargs: object) -> Counted:
+        handle = builtins.open(*args, **kwargs)  # type: ignore[call-overload]  # noqa: PTH123, SIM115
+        return Counted(handle)
+
+    monkeypatch.setattr(install_advisories, "open", counted_open, raising=False)
+    return sizes
+
+
+def test_the_files_one_config_names_are_read_up_to_a_total(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ten references to one file each put its text in before; past the total,
+    # a reference is checked as one to a file too large to read.
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 100)
+    sizes = _count_reads(monkeypatch)
+    _opencode_file("part", "x" * 60)
+    text = '{"k": "' + "{file:part}" * 10 + '", "instructions": 1}'
+    path = _opencode_file("opencode.jsonc", text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"needs the instructions value in {path}" in str(note["message"])
+    assert sum(sizes) <= 100
+    put_in, _unknown = install_advisories._opencode_substitute(text, path.parent)
+    assert len(put_in) <= len(text) + 100
+    # Such a reference outside a string decides the outcome, so the file is
+    # not checked: its text would not parse there.
+    _opencode_file("opencode.jsonc", '{"k": "{file:part}", "n": {file:part}}')
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+    # A later reference to a file that cannot be read still gets its note.
+    _opencode_file("opencode.jsonc", '{"k": "' + "{file:part}" * 3 + '{file:gone}"}')
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert "the file that {file:gone} in" in str(note["message"])
+
+
+def test_env_values_past_the_total_leave_the_file_unchecked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 100)
+    monkeypatch.setenv("APOTHEM_TEST_DIR", "x" * 60)
+    text = '{"k": "{env:APOTHEM_TEST_DIR}", "instructions": 1}'
+    _opencode_file("opencode.jsonc", text)
+    assert len(instruction_override_advisories("opencode", home=tmp_path)) == 1
+    text = '{"k": "{env:APOTHEM_TEST_DIR}{env:APOTHEM_TEST_DIR}", "instructions": 1}'
+    _opencode_file("opencode.jsonc", text)
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    ("value", "text", "written"),
+    [
+        # OpenCode 1 finds {file:path} tokens once the values are in, so a
+        # value can hold one; the note names the reference that held it.
+        (
+            "{file:dummy-secret-value}",
+            '{"k": "{env:APOTHEM_TEST_SECRET}"}',
+            "{env:APOTHEM_TEST_SECRET}",
+        ),
+        (
+            "dummy-secret-value",
+            '{"k": "{file:~/{env:APOTHEM_TEST_SECRET}}"}',
+            "{file:~/{env:APOTHEM_TEST_SECRET}}",
+        ),
+    ],
+)
+def test_a_reference_note_never_shows_an_env_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+    text: str,
+    written: str,
+) -> None:
+    monkeypatch.setenv("APOTHEM_TEST_SECRET", value)
+    path = _opencode_file("opencode.jsonc", text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = str(note["message"])
+    assert f"OpenCode 1 cannot read the file that {written} in {path} names" in message
+    assert "dummy-secret-value" not in message
+
+
+@pytest.mark.parametrize(
+    "rest",
+    [
+        "/secrets/token.txt",
+        pytest.param(
+            _BACKSLASH + "secrets/token.txt",
+            marks=pytest.mark.skipif(
+                sys.platform != "win32", reason="a backslash separates on Windows"
+            ),
+        ),
+    ],
+)
+def test_a_home_file_token_with_a_separator_after_the_tilde_reads_from_home(
+    tmp_path: Path, rest: str
+) -> None:
+    # Node's path.join keeps the home folder for "~//secrets/token.txt" and, on
+    # Windows, for a backslash after "~/"; the file there reads.
+    secret = Path.home() / "secrets" / "token.txt"
+    secret.parent.mkdir(parents=True)
+    secret.write_bytes(b"x")
+    token = "{file:~/" + rest + "}"
+    # Written as it is: OpenCode 1 puts in the file's text before it parses.
+    _opencode_file("opencode.jsonc", '{"k": "' + token + '"}')
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+    # With the file gone, the same token gets its note.
+    secret.unlink()
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"cannot read the file that {token} in" in str(note["message"])
+
+
+@pytest.mark.parametrize(
+    ("form", "flag"),
+    [
+        # JSON5, which the install reads too: OpenCode 1 refuses the file.
+        ("{instructions: LIST}", ""),
+        # An unquoted {env:NAME}, which OpenCode 1 parses once it is in.
+        ('{"instructions": LIST, "autoupdate": {env:APOTHEM_TEST_FLAG}}', "true"),
+    ],
+)
+def test_verify_finds_the_written_list_in_an_opencode_json_that_is_not_jsonc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, form: str, flag: str
+) -> None:
+    from apothem.harnesses.opencode.materializer import instruction_entries
+
+    monkeypatch.setenv("APOTHEM_TEST_FLAG", flag)
+    text = form.replace("LIST", json.dumps(instruction_entries()))
+    target = _opencode_file("opencode.json", text)
+    jsonc = _opencode_file("opencode.jsonc", '{"instructions": []}')
+    verify = {"home": tmp_path, "require_block": True}
+    notes = instruction_override_advisories("opencode", **verify)
+    expected = [str(jsonc)] if flag else [str(target), str(jsonc)]
+    assert [note["path"] for note in notes] == expected
+
+
+def test_a_note_does_not_say_opencode_2_loads_a_broken_opencode_json(
+    tmp_path: Path,
+) -> None:
+    _opencode_file("opencode.json", "{x: 1}")
+    jsonc = _opencode_file("opencode.jsonc", "{x: 1}")
+    notes = instruction_override_advisories("opencode", home=tmp_path)
+    [message] = [
+        " ".join(str(note["message"]).split())
+        for note in notes
+        if note["path"] == str(jsonc)
+    ]
+    assert "still loads" not in message
+    assert message.endswith(
+        "OpenCode 2 skips that file, which does not keep it from loading opencode.json."
+    )
+
+
+def test_an_opencode_jsonc_with_part_of_the_written_list_says_what_is_missing(
+    tmp_path: Path,
+) -> None:
+    from apothem.harnesses.opencode.materializer import instruction_entries
+
+    entries = instruction_entries()
+    assert len(entries) > 1
+    path = _opencode_jsonc(
+        _opencode_folder(), json.dumps({"instructions": entries[1:]})
+    )
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert note["path"] == str(path)
+    message = " ".join(str(note["message"]).split())
+    assert (
+        f"holds {len(entries) - 1} of the {len(entries)} entries Apothem writes, "
+        "as a copy installs and updates do not refresh, and lacks the other one, "
+        "so it does not reach OpenCode 1."
+    ) in message
+    assert "The profile document and rules Apothem lists" not in message
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Each "{env:" or "{file:" with no "}" after it used to start another
+        # scan to the end, so the time grew with the square of the length.
+        pytest.param('{"a": "' + "{env:" * 40_000, id="env"),
+        pytest.param('{"a": "' + "{file:" * 40_000, id="file"),
+        # Each token on one long line used to look back to the line's start.
+        pytest.param("// " + "{file:x}" * 200_000 + chr(10) + "{x: 1}", id="line"),
+    ],
+)
+def test_tokens_are_found_in_one_pass(tmp_path: Path, text: str) -> None:
+    import time
+
+    path = _opencode_file("opencode.jsonc", text)
+    started = time.perf_counter()
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    elapsed = time.perf_counter() - started
+    assert f"OpenCode 1 cannot parse {path} as JSONC" in str(note["message"])
+    assert elapsed < 20
+
+
+def test_each_file_a_config_names_is_read_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # OpenCode 1 reads it for each token, and finds the same text each time.
+    sizes = _count_reads(monkeypatch)
+    _opencode_file("part", "x")
+    text = '{"k": "' + "{file:part}" * 1000 + '", "instructions": 1}'
+    path = _opencode_file("opencode.jsonc", text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"needs the instructions value in {path}" in str(note["message"])
+    assert len(sizes) == 1
+
+
+def test_a_file_token_after_a_comment_never_closed_leaves_the_file_unchecked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The text of a file too large to read can close the comment ("*/" needs
+    # no escape in a string), after which OpenCode 1 may parse the file.
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 2)
+    _opencode_file("big", "*/,")
+    _opencode_file("opencode.jsonc", '{"a": 1 /*"{file:big}"k": 2}')
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+    # Before such a comment, the token sits inside a string, as before.
+    path = _opencode_file("opencode.jsonc", '{"a": "{file:big}" /* x')
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"OpenCode 1 cannot parse {path} as JSONC" in str(note["message"])
+
+
+@pytest.mark.parametrize(
+    ("value", "note"),
+    [
+        # OpenCode 1 finds a {file:path} in a value once the values are in.
+        (
+            "{file:dummy-secret-value}",
+            "OpenCode 1 cannot read the file that {env:APOTHEM_TEST_SECRET} in",
+        ),
+        # A backslash before the closing quote breaks the text.
+        ("dummy-secret-value" + _BACKSLASH, "once it puts in its {env:NAME} values"),
+    ],
+)
+def test_cli_opencode_notes_never_show_an_env_value(
+    cli_env: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+    note: str,
+) -> None:
+    # A note names a variable, never its value, which may be a secret.
+    home, profile = cli_env
+    monkeypatch.setenv("APOTHEM_TEST_SECRET", value)
+    folder = home / ".config" / "opencode"
+    folder.mkdir(parents=True)
+    jsonc = folder / "opencode.jsonc"
+    jsonc.write_bytes(b'{"theme": "{env:APOTHEM_TEST_SECRET}"}')
+    runner = CliRunner()
+    for args in _opencode_cli_args(profile):
+        for mode in (["--format", "json"], []):
+            result = runner.invoke(main, [*args, "--no-color", *mode])
+            # Plain output wraps lines, so the value is looked for unwrapped.
+            assert "dummy-secret-value" not in "".join(result.output.split())
+            assert note in " ".join(result.output.split()), (args[0], mode)
+
+
+@pytest.mark.parametrize(
+    ("value", "text", "reference"),
+    [
+        # The {file:path} comes from the value, and its file cannot be told.
+        (
+            "{file:dummy-secret-value.}",
+            '"{env:APOTHEM_TEST_SECRET}"',
+            "{env:APOTHEM_TEST_SECRET}",
+        ),
+        # The value is the path itself.
+        (
+            "dummy-secret-value.",
+            '"{file:{env:APOTHEM_TEST_SECRET}}"',
+            "{file:{env:APOTHEM_TEST_SECRET}}",
+        ),
+    ],
+)
+def test_cli_opencode_unknown_reference_never_shows_an_env_value(
+    cli_env: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+    text: str,
+    reference: str,
+) -> None:
+    # The sentence on a reference the check cannot tell OpenCode 1 reads names
+    # the token as the file spells it, never the value.
+    home, profile = cli_env
+    monkeypatch.setattr(install_advisories, "_WINDOWS", True)
+    monkeypatch.setenv("APOTHEM_TEST_SECRET", value)
+    folder = home / ".config" / "opencode"
+    folder.mkdir(parents=True)
+    jsonc = folder / "opencode.jsonc"
+    jsonc.write_bytes(('{"a": ' + text + ', "instructions": 5}').encode("utf-8"))
+    runner = CliRunner()
+    for args in _opencode_cli_args(profile):
+        for mode in (["--format", "json"], []):
+            result = runner.invoke(main, [*args, "--no-color", *mode])
+            assert "dummy-secret-value" not in "".join(result.output.split())
+            flat = " ".join(result.output.split())
+            assert f"the file that {reference} names" in flat, (args[0], mode)
+
+
+def test_distinct_files_one_config_names_are_read_up_to_a_total(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two files that add up to more than the total: the second is not read.
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 100)
+    sizes = _count_reads(monkeypatch)
+    _opencode_file("first", "x" * 60)
+    _opencode_file("second", "y" * 60)
+    text = '{"k": "{file:first}{file:second}", "instructions": 1}'
+    path = _opencode_file("opencode.jsonc", text)
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"needs the instructions value in {path}" in str(note["message"])
+    assert sum(sizes) <= 100
+
+
+def test_a_file_counts_against_the_total_as_its_escaped_text(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Each control character is put in as a six-character escape, so 30 bytes
+    # put in 180 characters, past a total of 100.
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 100)
+    _opencode_file("controls", chr(1) * 30)
+    text = '{"k": "{file:controls}", "instructions": 1}'
+    path = _opencode_file("opencode.jsonc", text)
+    put_in, _unknown = install_advisories._opencode_substitute(text, path.parent)
+    assert len(put_in) <= len(text) + 100
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert f"needs the instructions value in {path}" in str(note["message"])
+    # The escaped text is not even built, so a large file of such characters
+    # takes no more than its own size.
+    assert install_advisories._reference("controls", path.parent, 100).piece is None
+    assert install_advisories._reference("controls", path.parent, 180).piece
+
+
+def test_the_escaped_length_is_what_json_puts_in() -> None:
+    text = "".join(chr(code) for code in (*range(0x80), 0xE9, 0x4E2D, 0x2028))
+    expected = len(json.dumps(text, ensure_ascii=False)) - 2
+    assert install_advisories._escaped_length(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "text"),
+    [
+        # A file larger than what is left of the total.
+        ("big", '{"k": "TOKENS", "instructions": 1}'),
+        # The same, in a file OpenCode 2 reads a second time with its
+        # {env:NAME} values escaped.
+        ("big", '{"k": "{env:APOTHEM_TEST_UNSET}TOKENS", y: 1}'),
+        # A path the check cannot tell OpenCode 1 reads.
+        ("big.txt.", '{"k": "TOKENS", "instructions": 1}'),
+    ],
+)
+def test_each_path_a_config_names_is_looked_up_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, text: str
+) -> None:
+    # OpenCode 1 reads the file for each token; the check looks it up once,
+    # whatever it found, so many tokens cost no more than one.
+    monkeypatch.setattr(install_advisories, "_PUT_IN_LIMIT", 2)
+    if name.endswith("."):
+        monkeypatch.setattr(install_advisories, "_WINDOWS", True)
+    monkeypatch.delenv("APOTHEM_TEST_UNSET", raising=False)
+    looked_up: list[str] = []
+    real = install_advisories._referenced_text
+
+    def counted(found: str, folder: Path, room: int) -> str | None:
+        looked_up.append(found)
+        return real(found, folder, room)
+
+    monkeypatch.setattr(install_advisories, "_referenced_text", counted)
+    _opencode_file("big", "x" * 8)
+    tokens = ("{file:" + name + "}") * 20_000
+    path = _opencode_file("opencode.jsonc", text.replace("TOKENS", tokens))
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    assert str(path) in str(note["message"])
+    assert looked_up == [name]
+
+
+def test_a_config_naming_too_many_files_is_not_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(install_advisories, "_LOOKUP_LIMIT", 3)
+    for name in ("p1", "p2", "p3", "p4"):
+        _opencode_file(name, "x")
+    _opencode_file(
+        "opencode.jsonc", '{"k": "{file:p1}{file:p2}{file:p3}", "instructions": 1}'
+    )
+    assert len(instruction_override_advisories("opencode", home=tmp_path)) == 1
+    text = '{"k": "{file:p1}{file:p2}{file:p3}{file:p4}", "instructions": 1}'
+    _opencode_file("opencode.jsonc", text)
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+
+
+def test_a_note_shows_a_file_token_without_control_characters_and_cut_short(
+    tmp_path: Path,
+) -> None:
+    # A token can hold characters that drive a terminal, and be very long.
+    name = chr(27) + "]0;x" + chr(7) + "a" * 300
+    path = _opencode_file("opencode.jsonc", '{"k": "{file:' + name + '}"}')
+    [note] = instruction_override_advisories("opencode", home=tmp_path)
+    message = str(note["message"])
+    assert "OpenCode 1 cannot read the file that {file:\\u001b]0;x\\u0007a" in message
+    assert chr(27) not in message
+    assert chr(7) not in message
+    assert "a" * 300 not in message
+    assert "...} in" not in message
+    assert f"... in {path} names" in message
+
+
+def test_verify_does_not_open_an_opencode_json_that_is_not_a_regular_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apothem.harnesses.opencode.materializer import instruction_entries
+
+    target = _opencode_file(
+        "opencode.json", json.dumps({"instructions": instruction_entries()})
+    )
+    _opencode_file("opencode.jsonc", '{"instructions": []}')
+    verify = {"home": tmp_path, "require_block": True}
+    assert len(instruction_override_advisories("opencode", **verify)) == 1
+    # Seen as a named pipe, it is neither read by the check nor opened to find
+    # the written list, so verify finds no list there.
+    _fake_pipe(monkeypatch, target)
+    assert instruction_override_advisories("opencode", **verify) == []
+
+
+def test_a_global_file_is_read_no_further_than_the_read_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The file grew after its size was taken: what is read stops at the limit.
+    path = _opencode_file("opencode.jsonc", "{x: 1}" + " " * 20)
+    assert len(instruction_override_advisories("opencode", home=tmp_path)) == 1
+    monkeypatch.setattr(install_advisories, "_READ_LIMIT", 10)
+    real_stat = Path.stat
+    small = os.stat_result((stat.S_IFREG | 0o644, 0, 0, 1, 0, 0, 5, 0, 0, 0))
+
+    def fake_stat(self: Path, **kwargs: bool) -> os.stat_result:
+        return small if self == path else real_stat(self, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", fake_stat)
+    assert instruction_override_advisories("opencode", home=tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param('{"a": "' + "x" * 200_000 + '"}', id="string"),
+        pytest.param('{"a": "' + (_BACKSLASH + '"') * 100_000 + '"}', id="escapes"),
+        pytest.param('{"a": "x"' + " " * 200_000 + "}", id="gap"),
+    ],
+)
+def test_the_jsonc_scan_keeps_no_state_per_character(text: str) -> None:
+    # A regular expression such as (?:a|b)* kept about 120 bytes for each
+    # character of a long string or gap, gigabytes for a large file.
+    import tracemalloc
+
+    tracemalloc.start()
+    try:
+        install_advisories._parse_jsonc(text)
+        install_advisories._inside_strings(text, [7])
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    assert peak < 4 * len(text)
