@@ -378,7 +378,7 @@
             "type": "string"
           },
           "default": {},
-          "description": "Environment variables passed to the server process. A secret value SHOULD be a ${VAR} reference (e.g. ${GITHUB_TOKEN}) rather than a raw literal; the reference passes through to native config unresolved (the OpenCode install writes it as {env:VAR}, the form OpenCode substitutes)."
+          "description": "Environment variables passed to the server process. A secret value SHOULD be a ${VAR} reference (e.g. ${GITHUB_TOKEN}) rather than a raw literal; the reference passes through to native config unresolved (the OpenCode install writes it as {env:VAR}, the form OpenCode substitutes, and leaves out an entry such as GITHUB_TOKEN: ${GITHUB_TOKEN}, since OpenCode starts the server with its own environment)."
         },
         "headers": {
           "type": "object",

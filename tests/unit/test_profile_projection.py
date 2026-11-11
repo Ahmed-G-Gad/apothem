@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from apothem.lib.profile_projection import (
     ProjectedSurfaces,
     mcp_servers_for,
@@ -283,12 +285,12 @@ class TestRenderMcpOpencode:
                     "transport": "stdio",
                     "command": "run",
                     "args": ["--token", "${API_KEY}"],
-                    "env": {"GITHUB_TOKEN": "${GITHUB_TOKEN}"},
+                    "env": {"GITHUB_TOKEN": "${GH_PAT}"},
                 }
             }
         )
         assert out["s"]["command"] == ["run", "--token", "${API_KEY}"]
-        assert out["s"]["environment"] == {"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"}
+        assert out["s"]["environment"] == {"GITHUB_TOKEN": "{env:GH_PAT}"}
 
     def test_every_reference_in_a_value_and_the_url_is_rewritten(self) -> None:
         out = render_mcp_opencode(
@@ -328,6 +330,122 @@ class TestRenderMcpOpencode:
             "DOUBLED": "$${NAME}",
             "${KEY}": "x",
         }
+
+
+class TestRenderMcpOpencodePassThrough:
+    """An environment entry naming its own variable is left out for OpenCode.
+
+    OpenCode starts a local server with its own environment and lays
+    ``environment`` over it, in both release lines, so ``FOO: ${FOO}`` adds
+    nothing. Written as ``{env:FOO}`` it would be pasted into the config text
+    unescaped, which stops OpenCode 1 reading the file when the value holds a
+    backslash, a double quote or a control character.
+    """
+
+    @staticmethod
+    def _local(env: dict[str, Any]) -> dict[str, Any]:
+        out = render_mcp_opencode(
+            {"s": {"transport": "stdio", "command": "run", "env": env}}
+        )
+        return out["s"]
+
+    def test_an_entry_naming_its_own_variable_is_left_out(self) -> None:
+        server = self._local({"FOO": "${FOO}", "MODE": "fast"})
+        assert server["environment"] == {"MODE": "fast"}
+
+    def test_renamed_and_embedded_references_are_kept(self) -> None:
+        server = self._local(
+            {
+                "TOKEN": "${FS_TOKEN}",
+                "AUTH": "Bearer ${AUTH}",
+                "PATHS": "${PATHS}:/opt/bin",
+                "LOWER": "${lower}",
+            }
+        )
+        assert server["environment"] == {
+            "TOKEN": "{env:FS_TOKEN}",
+            "AUTH": "Bearer {env:AUTH}",
+            "PATHS": "{env:PATHS}:/opt/bin",
+            "LOWER": "{env:lower}",
+        }
+
+    def test_other_forms_of_the_own_name_are_kept(self) -> None:
+        # Only an exact ${KEY} is a pass-through; the other forms reach the
+        # server as written today and keep doing so.
+        env = {
+            "A": "$A",
+            "B": "${B:-x}",
+            "C": "$${C}",
+            "E-F": "${E-F}",
+        }
+        assert self._local(env)["environment"] == env
+
+    def test_a_mix_in_one_server_keeps_order_and_drops_only_pass_through(
+        self,
+    ) -> None:
+        server = self._local(
+            {
+                "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+                "API_KEY": "${OPENAI_API_KEY}",
+                "HOME_DIR": "${HOME_DIR}",
+                "URL": "https://${HOST}/v1",
+                "LEVEL": "debug",
+            }
+        )
+        assert list(server["environment"].items()) == [
+            ("API_KEY", "{env:OPENAI_API_KEY}"),
+            ("URL", "https://{env:HOST}/v1"),
+            ("LEVEL", "debug"),
+        ]
+
+    def test_an_environment_left_empty_is_not_written(self) -> None:
+        server = self._local({"FOO": "${FOO}", "BAR": "${BAR}"})
+        assert server == {"type": "local", "command": ["run"], "enabled": True}
+
+    def test_the_render_does_not_depend_on_whether_the_variable_is_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An unset ``FOO`` no longer reaches the server as ``""``.
+
+        Written as ``{env:FOO}``, an unset variable was substituted as the
+        empty string, so the server saw ``FOO`` set to ``""``. With the entry
+        left out the server inherits OpenCode's environment, where ``FOO`` is
+        absent, so it stays unset. The render does not depend on the variable.
+        """
+        monkeypatch.delenv("FOO", raising=False)
+        unset = self._local({"FOO": "${FOO}"})
+        monkeypatch.setenv("FOO", "C:\\keys\\token")
+        assert self._local({"FOO": "${FOO}"}) == unset
+        assert "environment" not in unset
+
+    def test_headers_and_url_are_unchanged(self) -> None:
+        out = render_mcp_opencode(
+            {
+                "s": {
+                    "transport": "streamable-http",
+                    "url": "https://${API_HOST}/mcp",
+                    "headers": {
+                        "API_TOKEN": "${API_TOKEN}",
+                        "Authorization": "Bearer ${API_TOKEN}",
+                    },
+                }
+            }
+        )
+        assert out["s"] == {
+            "type": "remote",
+            "url": "https://{env:API_HOST}/mcp",
+            "enabled": True,
+            "headers": {
+                "API_TOKEN": "{env:API_TOKEN}",
+                "Authorization": "Bearer {env:API_TOKEN}",
+            },
+        }
+
+    def test_other_harnesses_keep_the_entry(self) -> None:
+        out = render_mcp_standard(
+            {"s": {"transport": "stdio", "command": "run", "env": {"FOO": "${FOO}"}}}
+        )
+        assert out["s"]["env"] == {"FOO": "${FOO}"}
 
 
 class TestMcpServersFor:
