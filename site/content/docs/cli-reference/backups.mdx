@@ -41,9 +41,10 @@ demand, with your own bound:
   while the record is kept. So does the `uninstall-incomplete` record an
   unfinished uninstall leaves (see
   [uninstall](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)),
-  which is kept with the install it belongs to. A root with nothing installed keeps its last
-  record, so the backups of its last uninstall or rollback stay until that
-  root sees another install, uninstall or rollback.
+  which is kept with the install it belongs to. A root with nothing installed
+  keeps the record of its last uninstall that finished and every record after
+  it, or only its last record when no uninstall there finished, and the
+  backups those records reference stay with them.
 - It never deletes a backup set holding a path that earlier releases
   removed whole though it held your own files, such as a folder of your own
   commands, hooks or rules (the [changelog](/docs/changelog) lists examples),
