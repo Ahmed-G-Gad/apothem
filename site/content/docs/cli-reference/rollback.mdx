@@ -28,20 +28,26 @@ that install's ledger record, newest change first, it:
   restored exactly, without the files the install added to it);
 - removes every file and directory the install created, as long as it still
   has the content that install wrote: a file you made at that path since, or
-  one you edited, stays with a `Warning:` line, and so does a folder holding
-  it. An install recorded by an earlier release does not say what it wrote,
-  so what it created stays. It also puts back any
-  legacy-layout path the install swept away. A path the current release no
-  longer sweeps (a folder that may hold your own files) is restored only where
-  files are missing: every file there now is kept, and the output names the
-  backup used. A file it cannot write is listed for you to copy by hand, and
-  the rollback then exits 2 (partial) when it wrote any other file. A path
-  that is now a link (a symlink or a Windows junction), or a file where the
-  backup has a folder or the other way round, is never written through.
-  Nothing is restored there, and nothing is restored either when the path's
-  backup is gone. The rollback still exits 0 and prints a `Warning:` line (a
-  `warnings` entry under `--json`) that names the backup to copy from by
-  hand. Rollback reaches that install only while its record is among the
+  one you edited, stays with a `Warning:` line (a `warnings` entry under
+  `--json`), and so does a folder holding it. An empty folder inside a folder
+  the install created is removed, one you made included. The line lists each
+  file it kept, the files inside a kept folder included, whether or not a
+  restore failed, and the `warnings` entry lists them as `files`. An install
+  recorded by an earlier release does not say what it wrote, and rollback
+  compares nothing with this release, so what it created stays: each such
+  path gets a `Warning:` line saying that rollback cannot tell it is
+  Apothem's. It also puts back any legacy-layout path the install swept away.
+  A path the current release no longer sweeps (a folder that may hold your
+  own files) is restored only where files are missing: every file there now
+  is kept, and the output names the backup used. A file it cannot write is
+  listed for you to copy by hand, and the rollback then exits 2 (partial)
+  when it wrote any other file.
+  A path that is now a link (a symlink or a Windows junction), or a file
+  where the backup has a folder or the other way round, is never written
+  through. Nothing is restored there, and nothing is restored either when the
+  path's backup is gone. The rollback still exits 0 and prints a `Warning:`
+  line (a `warnings` entry under `--json`) that names the backup to copy from
+  by hand. Rollback reaches that install only while its record is among the
   newest 10 kept (below). `apothem backups prune --keep N` prunes to `N` once;
   the next install, update, uninstall or rollback prunes to 10 again. The
   backup set itself stays even after the record goes, so copying the files
@@ -158,8 +164,8 @@ its backup is gone) is a `skipped` row in `results` and also an entry in
   "harness": "claude-code",
   "outcome": "advisory",
   "operation": "rollback",
-  "path": "C:\Users\Example\.claude\commands",
-  "message": "left in place: C:\Users\Example\.claude\commands is now a link, so nothing was restored there; copy what you need from C:\Users\Example\.apothem\backups\20261001T000000Z\claude_code\.claude\commands"
+  "path": "C:\\Users\\Example\\.claude\\commands",
+  "message": "left in place: C:\\Users\\Example\\.claude\\commands is now a link, so nothing was restored there; copy what you need from C:\\Users\\Example\\.apothem\\backups\\20261001T000000Z\\claude_code\\.claude\\commands"
 }
 ```
 

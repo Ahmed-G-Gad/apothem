@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 import subprocess
@@ -309,3 +310,211 @@ def test_advisory_lock_killed_holder_does_not_deadlock(tmp_path: Path) -> None:
         if proc.poll() is None:
             proc.kill()
             proc.wait(timeout=10)
+
+
+def test_append_line_durably_writes_the_rest_after_a_short_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_write = atomic_io.os.write
+
+    def short_first(fd: int, data: bytes) -> int:
+        return real_write(fd, bytes(data[:3]))
+
+    monkeypatch.setattr(atomic_io.os, "write", short_first)
+    target = tmp_path / "ledger.jsonl"
+
+    atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert target.read_text(encoding="utf-8") == '{"kind": "uninstall"}\n'
+
+
+def test_append_line_durably_raises_when_a_write_makes_no_progress(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(atomic_io.os, "write", lambda fd, data: 0)
+
+    with pytest.raises(OSError, match="could not write"):
+        atomic_io.append_line_durably(tmp_path / "ledger.jsonl", "{}")
+
+
+def test_a_failed_append_is_cut_back_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+    real_write = atomic_io.os.write
+    calls = {"n": 0}
+
+    def half_then_full(fd: int, data: bytes) -> int:
+        calls["n"] += 1
+        if calls["n"] > 1:
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_write(fd, bytes(data[: len(data) // 2]))
+
+    monkeypatch.setattr(atomic_io.os, "write", half_then_full)
+    with pytest.raises(OSError, match="No space left"):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall", "pad": "xxxx"}')
+    after_failure = target.read_bytes()
+    monkeypatch.setattr(atomic_io.os, "write", real_write)
+    atomic_io.append_line_durably(target, '{"kind": "uninstall-incomplete"}')
+
+    assert after_failure == before
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall-incomplete"}',
+    ]
+
+
+def test_a_torn_last_line_is_cut_before_the_next_append(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "unin')
+
+    atomic_io.append_line_durably(target, '{"kind": "uninstall-incomplete"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall-incomplete"}',
+    ]
+
+
+def test_a_whole_last_line_that_lost_its_newline_is_kept(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "uninstall"}')
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        '{"kind": "install"}',
+        '{"kind": "uninstall"}',
+        '{"kind": "install"}',
+    ]
+
+
+def test_a_torn_only_line_is_cut_before_the_next_append(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "ins')
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    assert target.read_text(encoding="utf-8").splitlines() == ['{"kind": "install"}']
+
+
+def test_a_record_is_written_as_its_own_bytes(tmp_path: Path) -> None:
+    target = tmp_path / "ledger.jsonl"
+
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    # A bare newline on every platform: no text-mode CR is added.
+    assert target.read_bytes() == b'{"kind": "install"}\n'
+
+
+@pytest.mark.parametrize(
+    "error", [OSError(errno.EIO, "I/O error"), KeyboardInterrupt()]
+)
+def test_an_append_whose_sync_fails_is_cut_back_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+
+    def fails(fd: int) -> None:
+        raise error
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails)
+    with pytest.raises(type(error)):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert target.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "error", [OSError(errno.EIO, "I/O error"), KeyboardInterrupt()]
+)
+def test_the_cut_back_of_a_failed_append_is_synced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+    real_fsync = atomic_io.os.fsync
+    synced: list[bytes] = []
+
+    def fails_once(fd: int) -> None:
+        if not synced:
+            synced.append(b"failed")
+            raise error
+        synced.append(target.read_bytes())
+        real_fsync(fd)
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails_once)
+    with pytest.raises(type(error)):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert synced == [b"failed", before]
+    assert target.read_bytes() == before
+
+
+def test_a_cut_back_that_fails_is_not_synced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    calls: list[int] = []
+
+    def fails(fd: int) -> None:
+        calls.append(fd)
+        raise OSError(errno.EIO, "I/O error")
+
+    def cannot_cut(fd: int, length: int) -> None:
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails)
+    monkeypatch.setattr(atomic_io.os, "ftruncate", cannot_cut)
+    with pytest.raises(OSError, match="I/O error"):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert len(calls) == 1
+
+
+def test_a_tail_that_cannot_be_settled_refuses_the_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"kind": "install"}\n{"kind": "uninstall"}')
+    before = target.read_bytes()
+
+    def unreadable(path: Path) -> None:
+        raise PermissionError("no read access")
+
+    monkeypatch.setattr(atomic_io, "_settle_torn_tail", unreadable)
+    with pytest.raises(PermissionError):
+        atomic_io.append_line_durably(target, '{"kind": "install"}')
+
+    # Never glued onto the record that lost its newline.
+    assert target.read_bytes() == before
+
+
+def test_a_last_line_that_is_not_utf8_is_kept_on_a_line_of_its_own(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"a": 1}\n{"a": "\xff\xfe')
+
+    atomic_io.append_line_durably(target, '{"a": 3}')
+
+    # Damage, not a tear: it stays for the reader to report.
+    assert target.read_bytes() == b'{"a": 1}\n{"a": "\xff\xfe\n{"a": 3}\n'
+
+
+@pytest.mark.parametrize(
+    "tail", [b'{"a": "caf\xc3', b'{"a": "caf\xc3\xa9', b"\x00\x00"]
+)
+def test_a_torn_utf8_last_line_is_cut(tmp_path: Path, tail: bytes) -> None:
+    target = tmp_path / "ledger.jsonl"
+    target.write_bytes(b'{"a": 1}\n' + tail)
+
+    atomic_io.append_line_durably(target, '{"a": 3}')
+
+    assert target.read_bytes() == b'{"a": 1}\n{"a": 3}\n'
