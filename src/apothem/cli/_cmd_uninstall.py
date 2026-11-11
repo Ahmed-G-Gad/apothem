@@ -49,7 +49,8 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
-from apothem.harnesses._shared.install_driver_written import UNFINISHED_REASONS
+from apothem.harnesses._shared.install_driver_blocks import ANOTHER_BLOCK, MARKER_LEFT
+from apothem.harnesses._shared.install_driver_written import UNPROVEN_REASONS
 
 
 def _retention_advisories(
@@ -212,6 +213,21 @@ def _blocked_by_link(run: MaterializationRun) -> Counter[str]:
     )
 
 
+def _unloaded_links(run: MaterializationRun) -> set[str]:
+    """Return the blocking links whose files the tool no longer loads.
+
+    A warning says so with ``loaded: "0"`` (open-claw's rules file, whose hook
+    entry the uninstall has already removed); a link counts only when every
+    blocked warning for it says so.
+    """
+    loaded = {
+        warning.detail.get("symlink", "")
+        for warning in run.warnings
+        if warning.detail.get("blocked") and warning.detail.get("loaded") != "0"
+    }
+    return set(_blocked_by_link(run)) - loaded
+
+
 def _earlier_release_paths(run: MaterializationRun) -> int:
     """Count the paths kept because no record shows whether Apothem wrote them.
 
@@ -223,19 +239,80 @@ def _earlier_release_paths(run: MaterializationRun) -> int:
     return sum(
         1
         for warning in run.warnings
-        if warning.detail.get("kept_reason") in UNFINISHED_REASONS
+        if warning.detail.get("kept_reason") in UNPROVEN_REASONS
     )
 
 
-#: The failure line for the paths :func:`_earlier_release_paths` counts.
+#: The failure line for the paths :func:`_earlier_release_paths` counts;
+#: ``{fix}`` is :data:`_FIX_MARKED` when a warning names a file with an Apothem
+#: marker the uninstall left, otherwise empty.
 _UNPROVEN_PATHS = (
     "{count} path(s) stay because no record shows whether Apothem wrote them "
     "(the install was recorded by an earlier release, or not at all). apothem "
     "update writes this release's files over them and replaces each Apothem "
     "folder entry it writes whole (backing both up first), so first copy any "
-    "listed file you edited or added; then run apothem update, then apothem "
-    "uninstall again"
+    "listed file you edited or added{fix}; then run apothem update, then "
+    "apothem uninstall again"
 )
+
+#: Why a file a warning names for an Apothem marker the uninstall left (a BEGIN
+#: marker with no END after it, or another block between the markers) is
+#: fixed before an update.
+_MARKER_RISK = (
+    "until a later release, an update rewrites a managed block from a BEGIN "
+    "marker with no END marker to the end of the file, cutting your text after it"
+)
+
+#: What :data:`_UNPROVEN_PATHS` adds for those files.
+_FIX_MARKED = (
+    ", and fix the {count} file(s) whose warnings name an Apothem marker: "
+    + _MARKER_RISK
+)
+
+#: The same for an uninstall that stopped, whose warnings may say to run
+#: apothem update (see :func:`_stopped_caveat`).
+_FIX_MARKED_FIRST = (
+    ". Before you run apothem update, fix the {count} file(s) whose warnings "
+    "name an Apothem marker: " + _MARKER_RISK
+)
+
+#: The failure line for files that hold another block between Apothem's
+#: markers (``kept_reason`` ``another-block``).
+_ANOTHER_BLOCK_LINE = (
+    "{count} file(s) hold another block between Apothem's markers that is not "
+    "a copy of Apothem's own, so Apothem left them as they are; delete it by "
+    "hand (or the marker pair you quoted), then run apothem uninstall again"
+)
+
+
+def _marked_files(run: MaterializationRun) -> list[str]:
+    """Return each file a warning names for an Apothem marker the uninstall left.
+
+    A BEGIN marker with no END marker after it, or another block between
+    Apothem's markers: the warning's ``detail`` carries ``marker_left`` (see
+    :data:`~apothem.harnesses._shared.install_driver_blocks.MARKER_LEFT`).
+    """
+    marked = (w.path for w in run.warnings if w.detail.get(MARKER_LEFT))
+    return list(dict.fromkeys(marked))
+
+
+def _link_problems(
+    harness_id: str, run: MaterializationRun, blocked: Counter[str]
+) -> dict[str, list[str]]:
+    """Return the failure line for each link that keeps Apothem's files in place.
+
+    A link whose files the tool no longer loads (see :func:`_unloaded_links`)
+    does not say it still loads them.
+    """
+    unloaded = _unloaded_links(run)
+    return {
+        f"{count} installed path(s) stay because they are reached through the "
+        f"link {link}"
+        + ("" if link in unloaded else f", and {harness_id} still loads them")
+        + "; replace the link with a real folder that holds the same files, "
+        "then run the command again": []
+        for link, count in blocked.items()
+    }
 
 
 def _problems(
@@ -245,13 +322,11 @@ def _problems(
 
     A failed step that could not remove files Apothem wrote names them, so
     the advice to close what holds them points at files the reader can see.
+    When the next step is to run apothem update and a warning names a file
+    with an Apothem marker the uninstall left, the step says to fix that file
+    first (:data:`_FIX_MARKED`).
     """
-    problems: dict[str, list[str]] = {
-        f"{count} installed path(s) stay because they are reached through the "
-        f"link {link}, and {harness_id} still loads them; replace the link with a "
-        "real folder that holds the same files, then run the command again": []
-        for link, count in blocked.items()
-    }
+    problems = _link_problems(harness_id, run, blocked)
     for message, count in Counter(error.message for error in run.errors).items():
         problems[f"{message} ({count} paths)" if count > 1 else message] = [
             path
@@ -260,8 +335,29 @@ def _problems(
             for path in detail_paths(error, "stuck_files")
         ]
     if earlier:
-        problems[_UNPROVEN_PATHS.format(count=earlier)] = []
+        marked = len(_marked_files(run))
+        fix = _FIX_MARKED.format(count=marked) if marked else ""
+        problems[_UNPROVEN_PATHS.format(count=earlier, fix=fix)] = []
+    another = sum(
+        1 for w in run.warnings if w.detail.get("kept_reason") == ANOTHER_BLOCK
+    )
+    if another:
+        problems[_ANOTHER_BLOCK_LINE.format(count=another)] = []
     return problems
+
+
+def _stopped_caveat(run: MaterializationRun | None) -> str:
+    """Return what the failure line of an uninstall that stopped adds, or ``""``.
+
+    Its warnings may say to run apothem update (paths no record shows are
+    Apothem's, see :func:`_earlier_release_paths`); when another warning names
+    a file with an Apothem marker the uninstall left, that file comes first
+    (:data:`_FIX_MARKED_FIRST`).
+    """
+    if run is None or not _earlier_release_paths(run):
+        return ""
+    marked = len(_marked_files(run))
+    return _FIX_MARKED_FIRST.format(count=marked) if marked else ""
 
 
 #: The ``detail`` keys that join the files a removal kept.
@@ -314,7 +410,7 @@ def _report_run(
     failure returns one ``uninstall`` error row for the harness, then one row
     per failed step. The uninstall is partial when it removed files before the
     failure, or when installed files stay because they are reached through a
-    link: the tool still loads them.
+    link (most tools still load them).
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
@@ -384,6 +480,7 @@ def _failed_adapter(
             for group in _warning_groups(run)
             if not _is_blocked(group)
         )
+    caveat = _stopped_caveat(run)
     if fmt != "json":
         err = get_error_console(no_color=no_color)
         listing = err if con.quiet else con
@@ -397,9 +494,11 @@ def _failed_adapter(
             for error in (run.errors if run is not None else ())
             for path in detail_paths(error, "stuck_files")
         ]
-        message = kept_listing(str(exc), stuck, None)
+        message = kept_listing(f"{exc}{caveat}", stuck, None)
         err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(message)}")
     row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
+    if caveat:
+        row["message"] = f"{row['message']}{caveat}"
     return [row, *_step_rows(harness_id, run)], removed
 
 
