@@ -4,7 +4,7 @@
 
 A BEGIN marker that starts no whole block, in a file a tool's install keeps a
 managed block in, fails that tool's verify (see
-:func:`apothem.harnesses._shared.install_driver_written.stray_begin_files`).
+:func:`apothem.harnesses._shared.install_driver_blocks.stray_begin_files`).
 Install and update keep such a marker, so re-running them does not clear it.
 A failed ``verify`` row and ``doctor``'s failed check name each such file and
 say what to delete, so the fix is not a guess. Everything here reads files and
@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from apothem.cli._helpers import _Adapter, _harness_roots
-from apothem.harnesses._shared.install_driver_written import stray_begin_files
+from apothem.harnesses._shared.install_driver_blocks import stray_begin_files
 from apothem.lib.harness_registry import HarnessRegistryEntry
 
 

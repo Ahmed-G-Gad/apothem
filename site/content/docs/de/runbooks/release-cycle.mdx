@@ -114,14 +114,24 @@ aktuellen Version richtet nur abweichende Anker neu aus.
 Prüfen Sie den Diff und committen Sie dann:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-Das Flag `-S` signiert den Commit mit dem GPG-Schlüssel. Der Push löst die
-Standard-CI-Matrix aus (lint, test, build); warten Sie auf Grün, bevor Sie
-taggen.
+Das Flag `-s` fügt die Zeile `Signed-off-by` hinzu, die die erforderliche
+Prüfung `Require Signed-off-by` erwartet. Der Release-Commit gelangt als
+Squash-Merge dieses Pull Requests auf `main`; GitHub signiert diesen Commit mit
+seinem eigenen Schlüssel, und Ihre Signatur des Release ist die des Tags (§2.2).
+Der Merge löst die Standard-CI-Matrix (lint, test, build) auf `main` aus; warten
+Sie auf Grün, bevor Sie taggen.
 
 Die Prüfung in §2.4 setzt außerdem voraus, dass CodeQL und Conformity für den
 Release-Commit grün sind. Beide Workflows laufen nur, wenn sich ihre eigenen
@@ -581,11 +591,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Erwartet: `Verified OK`, `PASSED: SLSA verification passed` und
-`verify-provenance: chain OK (3 of 3 layers verified)`. Das Skript prüft
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Das Skript prüft
 `SHA256SUMS`, jedes Signatur-Bundle und die Provenienz in einem Lauf; es
 leitet das Tag aus dem Wheel-Namen ab (`--tag vX.Y.Z` überschreibt es).
 

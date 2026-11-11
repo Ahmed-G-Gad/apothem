@@ -12,52 +12,51 @@ from __future__ import annotations
 
 import contextlib
 import os
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver
-from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import (
-    APOTHEM_BLOCK_END,
-    complete_managed_block,
-    extract_managed_block,
-    has_stray_begin,
-    remove_managed_block,
-)
-from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
-from apothem.lib.propagation import resolve_target
+from apothem.lib.install_ledger import LedgerTarget
 
 from .install_driver_backup import backup_existing
-from .install_driver_digests import backup_ledger_targets, file_digest
+from .install_driver_blocks import whole_block_left
+from .install_driver_digests import file_digest
 from .install_driver_pathsafety import (
     _is_link,
-    _root_for,
     _unsafe_symlink,
     _validate_target_path,
     _walk_without_links,
     _write_boundary,
     kept_links_detail,
 )
-from .install_driver_retention import apply_retention
-from .install_driver_shared import path_key
-from .install_driver_sweep import _link_kept as link_kept
-from .install_driver_sweep import kept_link_warnings, links_left_in
-from .install_driver_types import MaterializationResult, _path_text, _result
+from .install_driver_types import (
+    KEPT_REASON,
+    MaterializationResult,
+    _path_text,
+    _result,
+)
 
 #: ``detail`` key of a removal: the files it kept because nothing shows Apothem
 #: wrote them as they are now (newline-joined paths).
 KEPT_FILES = "kept_files"
 
+#: ``detail`` key of a removal: the files it kept that sit at a name this
+#: release writes but differ from it, under an install an earlier release
+#: recorded without digests (newline-joined paths).
+KEPT_DIFFERING = "kept_differing"
+
 #: ``detail`` key of a failed removal: the files Apothem wrote that it could
 #: not remove (newline-joined paths).
 STUCK_FILES = "stuck_files"
 
-#: Kept reasons that leave the uninstall unfinished: files of an install an
-#: earlier release recorded, which this release cannot show are Apothem's.
-UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests", "another-block"})
-
-#: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
-KEPT_REASON = "kept_reason"
+#: Kept reasons ``apothem update`` settles: files this release cannot show are
+#: Apothem's or not, under an install an earlier release recorded without
+#: digests (``no-digests``) or with no install record at all (``no-record``).
+#: The update records them; a second uninstall then finishes. A path kept after
+#: a finished uninstall (``no-active-install``) is not one: no install is left
+#: to finish. Each leaves the uninstall unfinished (see
+#: :data:`install_driver_outcome.UNFINISHED_REASONS`); the ``detail`` key is
+#: :data:`~install_driver_types.KEPT_REASON`.
+UNPROVEN_REASONS: frozenset[str] = frozenset({"no-digests", "no-record"})
 
 
 def _proof(entry: LedgerTarget | None) -> dict[str, str] | None:
@@ -99,27 +98,60 @@ def _matches(path: Path, expected: str | None) -> bool:
     return file_digest(path) == expected
 
 
-def _kept_whole(target: Path, reason: str, message: str) -> MaterializationResult:
-    """Return the warning for a target an uninstall left entirely in place."""
+def _paths(text: str) -> list[str]:
+    """Split a newline-joined ``detail`` value into paths.
+
+    Only ``\n`` separates them: a file name may hold other line breaks
+    (``U+2028``, ``\x85``), which :meth:`str.splitlines` would split on.
+    """
+    return [path for path in text.split("\n") if path]
+
+
+def _files_in(target: Path) -> list[str] | None:
+    """Return what the folder *target* holds (never through a link), or ``None``.
+
+    Files, the links in it and the folders that cannot be read: a folder kept
+    whole lists them all, so the report can name each one.
+    """
+    if not target.is_dir() or _is_link(target):
+        return None
+    walk = _walk_without_links(target)
+    return [_path_text(path) for path in (*walk.files, *walk.links, *walk.unreadable)]
+
+
+def _kept_whole(
+    target: Path, reason: str, message: str, files: list[str] | None = None
+) -> MaterializationResult:
+    """Return the warning for a target an uninstall left in place.
+
+    *files* names what is kept inside a folder target (``detail``
+    ``kept_files``, present even when empty), so the report can list each one.
+    """
+    detail = {KEPT_REASON: reason}
+    if files is not None:
+        detail[KEPT_FILES] = "\n".join(files)
     return _result(
         "warning",
         "remove_existing",
         target,
         f"{target} was kept: {message}",
-        detail={KEPT_REASON: reason},
+        detail=detail,
     )
 
 
 def _through_link(
-    target: Path, link: Path, proof: dict[str, str] | None
+    target: Path, link: Path, proof: dict[str, str] | None, *, legacy: bool
 ) -> MaterializationResult:
     """Return the warning for a target reached through *link*.
 
-    It blocks the uninstall only while Apothem's own files are behind the
-    link: the tool still loads them. Otherwise the target stays and the
-    uninstall completes.
+    It blocks the uninstall while files *proof* shows are Apothem's are behind
+    the link, or, under an install an earlier release recorded (*legacy*),
+    files at names this release writes: the tool still loads them. Otherwise
+    the target stays and the uninstall completes.
     """
-    blocked = proof is not None and bool(_written_now(target, proof))
+    blocked = proof is not None and (
+        bool(_written_now(target, proof)) or (legacy and _named_by(target, proof))
+    )
     detail = {"symlink": _path_text(link)}
     if blocked:
         detail["blocked"] = "1"
@@ -138,29 +170,87 @@ def _remove_matching(
 ) -> tuple[list[Path], list[Path]]:
     """Remove *written* under the folder *target*; return the files and links kept.
 
-    Each folder that held a removed file goes once empty, deepest first; a
-    folder that still holds something stays, and so does an empty folder the
-    operator made, which held nothing Apothem wrote.
+    Then each empty folder goes (see :func:`_remove_empty_folders`), an
+    operator's empty folder included: it holds nothing of anyone's, and it
+    would keep *target* with nothing to report.
     """
     for path in written:
         if not _is_link(path):
             with contextlib.suppress(OSError):
                 path.unlink()
-    emptied = {target}
-    for path in written:
-        emptied.update(
-            parent
-            for parent in path.parents
-            if parent == target or target in parent.parents
-        )
-    for folder in sorted(emptied, key=lambda path: len(path.parts), reverse=True):
-        if not _is_link(folder):
-            with contextlib.suppress(OSError):
-                folder.rmdir()
+    _remove_empty_folders(target)
     if not target.exists():
         return [], []
     after = _walk_without_links(target)
     return after.files, [*after.links, *after.unreadable]
+
+
+def _remove_empty_folders(target: Path) -> None:
+    """Remove each empty folder in the folder *target*, deepest first, then *target*.
+
+    Never through a link: the walk enters none, and none is removed. A folder
+    that still holds something stays.
+    """
+    folders = [*_walk_without_links(target).folders, target]
+    for folder in sorted(folders, key=lambda path: len(path.parts), reverse=True):
+        if not _is_link(folder):
+            with contextlib.suppress(OSError):
+                folder.rmdir()
+
+
+def _kept_detail(
+    target: Path, kept: list[Path], legacy_proof: dict[str, str] | None
+) -> dict[str, str]:
+    """Return the ``detail`` that names the files kept in the folder *target*.
+
+    Under an install an earlier release recorded (*legacy_proof*, what this
+    release writes there), a kept file at a name this release writes is
+    ``kept_differing`` and makes the uninstall unfinished; every other kept
+    file is the operator's or changed (``kept_files``).
+    """
+    differing = [
+        path
+        for path in kept
+        if legacy_proof is not None
+        and path.relative_to(target).as_posix() in legacy_proof
+    ]
+    others = [path for path in kept if path not in differing]
+    detail: dict[str, str] = {}
+    if others:
+        detail[KEPT_FILES] = "\n".join(_path_text(path) for path in others)
+    if differing:
+        detail[KEPT_DIFFERING] = "\n".join(_path_text(path) for path in differing)
+        detail[KEPT_REASON] = "no-digests"
+    return detail
+
+
+def _kept_folder(
+    target: Path, legacy_proof: dict[str, str] | None
+) -> MaterializationResult | None:
+    """Return the result for a folder in which nothing is Apothem's as it is now.
+
+    Nothing is removed. The folder's files are named in the result's
+    ``detail`` (see :func:`_kept_detail`), and its links and unreadable
+    folders as ``kept_links``; :func:`kept_file_warnings` and the link
+    warnings report them. A folder that holds no file goes, with the empty
+    folders in it (it holds nothing of anyone's); one that stays is reported.
+    """
+    walk = _walk_without_links(target)
+    if not walk.files and not walk.links and not walk.unreadable:
+        _remove_empty_folders(target)
+        if not target.exists():
+            return None
+        return _kept_whole(target, "not-removed", "it could not be removed")
+    return _result(
+        "unchanged",
+        "remove_existing",
+        target,
+        f"{target} was kept",
+        detail={
+            **kept_links_detail([*walk.links, *walk.unreadable]),
+            **_kept_detail(target, walk.files, legacy_proof),
+        },
+    )
 
 
 def remove_written(
@@ -171,59 +261,79 @@ def remove_written(
     harness_name: str,
     allowed_root: Path | None = None,
     expected: Callable[[Path], dict[str, str] | None] | None = None,
+    installs_ended: bool = False,
 ) -> MaterializationResult | None:
     """Remove *target* only as far as the install record shows Apothem wrote it.
 
     *recorded* maps each path of the install record to its target (``None``
-    when there is no record). A file goes only while its SHA-256 matches the
-    recorded ``digest``; in a folder only the recorded files whose content
+    when no install is in place). A file goes only while its SHA-256 matches
+    the recorded ``digest``; in a folder only the recorded files whose content
     still matches go, then each folder left empty. Everything else stays and
     is named in the result: a file the operator added or changed, a target
     the record does not list, and anything behind a link. The target is
     backed up before anything is removed.
 
+    With no install in place, *installs_ended* tells the two cases apart.
+    False: the ledger holds no record of an install here (it was deleted, or
+    never written), so nothing shows whether Apothem wrote what is there, and
+    the uninstall does not finish (``kept_reason`` ``no-record``). True: the
+    latest record here is a finished uninstall, so each target is compared
+    with *expected*, as below, but with no install-time token filled in (an
+    interpreter's path never matches; see
+    :func:`install_driver_expected.expected_lookup`): a file with those bytes
+    goes, and so does a folder that holds no file; the rest stays with a
+    warning (``no-active-install``) but never stops the uninstall, though
+    one with those bytes behind a link does. Any other history (a rollback,
+    or only unfinished uninstalls) is the first case.
+
     A target an earlier release recorded without digests is compared with
     what this release writes there (*expected*, the digests of those files;
     see :func:`install_driver_expected.expected_digests`): a file with those
     bytes goes. A file at a name Apothem writes that differs stays and leaves
-    the uninstall unfinished (``kept_reason`` ``no-digests``), since run
-    ``apothem update`` records it, then a second uninstall finishes.
+    the uninstall unfinished (``kept_reason`` ``no-digests``): ``apothem
+    update`` records it, then a second uninstall finishes. The files kept in
+    a folder are named in the result's ``detail`` (``kept_differing`` for
+    those, ``kept_files`` for the rest); :func:`kept_file_warnings` reports
+    them. Without *expected* (a rollback), such a target is compared with
+    nothing, so it stays with a warning that says only that.
     """
     allowed = _write_boundary(allowed_root, install_root)
     entry = None if recorded is None else recorded.get(_path_text(target))
     proof = _proof(entry)
     legacy = proof is None and entry is not None and expected is not None
-    if legacy and expected is not None:
+    ended = recorded is None and installs_ended
+    # Before the link check, so Apothem's files behind a link are found.
+    if (legacy or (ended and os.path.lexists(target))) and expected is not None:
         proof = expected(target)
     target_error = _validate_target_path(
         target, allowed_root=allowed, operation="remove_existing"
     )
     if target_error is not None:
         link = _unsafe_symlink(target, allowed)
-        return target_error if link is None else _through_link(target, link, proof)
+        if link is None:
+            return target_error
+        return _through_link(target, link, proof, legacy=legacy)
     if not target.exists():
         return None
-    if proof is None:
-        if recorded is None:
-            return _kept_whole(
-                target, "no-record", "no install record shows Apothem wrote it"
-            )
-        if entry is None:
-            return _kept_whole(
-                target, "unrecorded", "the install record does not list it"
-            )
+    written = [] if proof is None else _written_now(target, proof)
+    if proof is None or (ended and not written):
+        files = _files_in(target)
+        if ended and files == []:
+            # A folder that holds no file holds nothing of anyone's.
+            return _kept_folder(target, None)
         return _kept_whole(
             target,
-            "no-digests",
-            _EARLIER_RELEASE,
+            *_why_kept(recorded, entry, expected, ended=installs_ended),
+            files=files,
         )
-    written = _written_now(target, proof)
-    if not written:
+    if not written and target.is_file():
         if legacy and _named_by(target, proof):
             return _kept_whole(target, "no-digests", _EARLIER_RELEASE)
         return _kept_whole(
             target, "changed", "it is not what Apothem wrote (changed or yours)"
         )
+    if not written:
+        return _kept_folder(target, proof if legacy else None)
     backup = backup_existing(
         target,
         install_root=install_root,
@@ -238,6 +348,13 @@ def remove_written(
     else:
         kept_files, kept_links = _remove_matching(target, written)
     stuck = [path for path in written if os.path.lexists(path)]
+    # A file Apothem wrote that would not go is named as stuck, never as a
+    # kept file of the operator's or one that differs.
+    kept = _kept_detail(
+        target,
+        [path for path in kept_files if path not in stuck],
+        proof if legacy else None,
+    )
     if stuck:
         return _result(
             "error",
@@ -247,252 +364,127 @@ def remove_written(
             "close what holds them or make them writable, then run the command "
             "again",
             backup_path=backup,
-            detail={STUCK_FILES: "\n".join(_path_text(path) for path in stuck)},
+            detail={STUCK_FILES: "\n".join(map(_path_text, stuck)), **kept},
         )
-    detail = kept_links_detail(kept_links)
-    if kept_files:
-        detail[KEPT_FILES] = "\n".join(_path_text(path) for path in kept_files)
-    if legacy and _named_by(target, proof, kept_files):
-        detail[KEPT_REASON] = "no-digests"
     return _result(
         "updated",
         "remove_existing",
         target,
         "removed the files Apothem wrote",
         backup_path=backup,
-        detail=detail,
+        detail={**kept_links_detail(kept_links), **kept},
     )
 
 
-#: Why a target an earlier release recorded stays, and the next step.
+def _why_kept(
+    recorded: Mapping[str, LedgerTarget] | None,
+    entry: LedgerTarget | None,
+    expected: Callable[[Path], dict[str, str] | None] | None,
+    *,
+    ended: bool,
+) -> tuple[str, str]:
+    """Return the ``kept_reason`` and message for a target nothing proves.
+
+    See :func:`remove_written` for each case.
+    """
+    if recorded is None and ended:
+        return "no-active-install", _NO_ACTIVE_INSTALL
+    if recorded is None:
+        return "no-record", "no install record shows whether Apothem wrote it"
+    if entry is None:
+        return "unrecorded", "the install record does not list it"
+    if expected is None:
+        return "no-digests", _ROLLBACK_UNCHECKED
+    return "no-digests", _EARLIER_RELEASE_UNSHIPPED
+
+
+#: Why a path stays when no install is recorded here after a finished uninstall.
+_NO_ACTIVE_INSTALL = (
+    "no install record lists it, and it does not match what this release "
+    "writes; remove it by hand if you no longer want it"
+)
+
+#: Why a path an earlier release recorded stays when this release writes
+#: nothing there to compare it with.
+_EARLIER_RELEASE_UNSHIPPED = (
+    "the install record (made by an earlier release) cannot show it is "
+    "Apothem's, and this release writes nothing there to compare it with; "
+    "copy it first if you edited it, then run apothem update, then apothem "
+    "uninstall again"
+)
+
+#: Why a path an earlier release recorded stays after a rollback, which
+#: compares nothing with this release.
+_ROLLBACK_UNCHECKED = (
+    "an earlier release recorded it without digests, so rollback cannot tell "
+    "it is Apothem's, and it stays"
+)
+
+#: Why a file an earlier release recorded stays, and the next step.
 _EARLIER_RELEASE = (
-    "the install record (made by an earlier release) does not show which files "
-    "Apothem wrote, and it differs from what this release writes; move any file "
-    "of your own out of it (an update replaces it), then run apothem update, "
+    "the install record (made by an earlier release) cannot show it is "
+    "Apothem's, and it differs from what this release writes; apothem update "
+    "overwrites it with this release's file (after a backup), so copy it first "
+    "if you edited it, then run apothem update, then apothem uninstall again"
+)
+
+#: The same for files kept in a folder.
+_EARLIER_RELEASE_FILES = (
+    "the install record (made by an earlier release) cannot show they are "
+    "Apothem's; apothem update overwrites them with this release's files "
+    "(after a backup), so copy any you edited first, then run apothem update, "
     "then apothem uninstall again"
 )
 
 
-def _named_by(
-    target: Path, proof: dict[str, str], paths: list[Path] | None = None
-) -> bool:
-    """Return True when a file at *target* (or among *paths*) has a name *proof* lists."""
+def _named_by(target: Path, proof: dict[str, str]) -> bool:
+    """Return True when *proof* lists the name of a file at *target*."""
     if target.is_file():
         return "" in proof
-    found = _walk_without_links(target).files if paths is None else paths
-    return any(path.relative_to(target).as_posix() in proof for path in found)
+    files = _walk_without_links(target).files
+    return any(path.relative_to(target).as_posix() in proof for path in files)
 
 
 def kept_file_warnings(
     results: list[MaterializationResult],
 ) -> list[MaterializationResult]:
-    """Return one warning per folder in which a removal kept files.
+    """Return a warning for each kind of file a removal kept in a folder.
 
-    The files were not written by Apothem as they are now: the operator added
-    or changed them, so the folder stays with them in it.
+    A file at a name this release writes that differs, under an install an
+    earlier release recorded (``kept_differing``), gets the earlier-release
+    warning; any other kept file is the operator's or changed
+    (``kept_files``). Each warning names its files in ``detail``
+    (``kept_files``). A result that is itself a warning already reports its
+    target and is skipped, so nothing is reported twice.
     """
     warnings = []
     for result in results:
-        kept = [line for line in result.detail.get(KEPT_FILES, "").splitlines() if line]
-        if not kept:
+        if result.outcome == "warning":
             continue
         folder = Path(result.path)
-        if result.detail.get(KEPT_REASON) == "no-digests":
-            warnings.append(_kept_whole(folder, "no-digests", _EARLIER_RELEASE))
-            continue
-        names = [Path(path).relative_to(folder).as_posix() for path in kept]
-        shown = ", ".join(names[:5]) + (
-            f" and {len(names) - 5} more" if len(names) > 5 else ""
-        )
-        warnings.append(
-            _kept_whole(
-                folder,
-                "changed",
-                f"{len(kept)} file(s) in it are not what Apothem wrote "
-                f"(changed or yours): {shown}",
+        differing = _paths(result.detail.get(KEPT_DIFFERING, ""))
+        kept = _paths(result.detail.get(KEPT_FILES, ""))
+        if differing:
+            warnings.append(
+                _kept_whole(
+                    folder,
+                    "no-digests",
+                    f"{len(differing)} file(s) in it differ from what this "
+                    f"release writes; {_EARLIER_RELEASE_FILES}",
+                    files=differing,
+                )
             )
-        )
+        if kept:
+            warnings.append(
+                _kept_whole(
+                    folder,
+                    "changed",
+                    f"{len(kept)} file(s) in it are not what Apothem wrote "
+                    "(changed or yours)",
+                    files=kept,
+                )
+            )
     return warnings
-
-
-def links_on_the_way(
-    paths: Iterable[str],
-    floor: Path,
-    *,
-    known: list[MaterializationResult],
-) -> list[MaterializationResult]:
-    """Return one warning per link between *floor* and a recorded path.
-
-    An uninstall leaves a link and what it points to in place; when nothing
-    of Apothem's is left behind it, nothing else would name it. A link a
-    result in *known* already names is skipped.
-    """
-    seen = {result.path for result in known} | {
-        result.detail["symlink"] for result in known if "symlink" in result.detail
-    }
-    notes = []
-    for text in paths:
-        for ancestor in Path(text).parents:
-            if ancestor == floor or floor not in ancestor.parents:
-                break
-            if _path_text(ancestor) not in seen and _is_link(ancestor):
-                seen.add(_path_text(ancestor))
-                notes.append(link_kept(ancestor))
-    return notes
-
-
-def left_behind(
-    results: list[MaterializationResult],
-    active: list[LedgerRecord],
-    *,
-    floor: Path,
-    prior: tuple[MaterializationResult, ...] = (),
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files.
-
-    A link a *prior* result (the caller's own removal) already names is not
-    named again.
-    """
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in (*prior, *results)}
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [
-        *kept,
-        *links_on_the_way(recorded, floor, known=[*prior, *results, *kept]),
-        *stray_begin_warnings([*prior, *results]),
-    ]
-
-
-def stray_begin_at(path: Path) -> bool:
-    """Return True when *path* holds a BEGIN marker that starts no whole block."""
-    try:
-        text = path.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return False
-    return has_stray_begin(text)
-
-
-def stray_begin_files(
-    harness_name: str,
-    *,
-    harness_root: Path | None,
-    project_root: Path | None,
-) -> list[Path]:
-    """Return the managed-block files of *harness_name* that hold a stray BEGIN.
-
-    The files looked at are the ones this tool's install keeps a managed block
-    in: the manifest's ``sentinel_merge`` targets, resolved against the root as
-    ``verify_install`` resolves them, and the ``sentinel_merge`` targets of the
-    current install record at that root (the anchors written outside the
-    manifest, such as a profile document or an OpenClaw workspace's rules file).
-    Without a readable record only the manifest targets count: nothing then
-    shows which other file the install wrote, and a file of the project's own,
-    such as its ``CLAUDE.md``, must not fail this tool's verify. Each existing
-    file :func:`stray_begin_at` flags is returned once, manifest targets first,
-    then the record's, in their own order.
-    """
-    rules = install_driver.load_rules(harness_name)
-    candidates = [
-        resolve_target(
-            entry.target, harness_root=harness_root, project_root=project_root
-        )
-        for entry in rules.install
-        if entry.mode == "sentinel_merge"
-    ]
-    root = _root_for(harness_root, project_root)
-    try:
-        record = install_ledger.current_install_record(harness_name, root=root)
-    except (OSError, install_ledger.LedgerError):
-        record = None
-    if record is not None:
-        candidates.extend(
-            Path(target.path)
-            for target in record.targets
-            if target.mode == "sentinel_merge"
-        )
-    unique: dict[str, Path] = {}
-    for path in candidates:
-        unique.setdefault(path_key(path), path)
-    return [path for path in unique.values() if path.is_file() and stray_begin_at(path)]
-
-
-def stray_begin_install_warnings(
-    results: list[MaterializationResult],
-) -> list[MaterializationResult]:
-    """Name each managed-block file an install or update keeps a stray BEGIN in.
-
-    The text after a BEGIN marker with no END is kept as it is, and Apothem's
-    own block is written apart from it, so the text an old block left below
-    the marker repeats Apothem's rules. The marker stays until the operator
-    deletes it, with that old text; verify reports the file until then.
-    """
-    paths = dict.fromkeys(
-        result.path
-        for result in results
-        if result.operation == "sentinel_merge" and result.outcome != "error"
-    )
-    return [
-        _result(
-            "warning",
-            "stray_begin",
-            Path(path),
-            f"{path} has an Apothem BEGIN marker that starts no whole block of its "
-            f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
-            "yours). Apothem never cuts the text after it: install and update "
-            "keep that text as it is and write a whole block of their own apart "
-            "from it. Delete that marker line by hand, with the old Apothem text "
-            "below it that repeats the rules in Apothem's whole block, and keep "
-            "your own lines; apothem verify fails for this tool until you do.",
-        )
-        for path in paths
-        if stray_begin_at(Path(path))
-    ]
-
-
-def endless_block_left(entry: LedgerTarget) -> bool:
-    """Return True when *entry*, a managed-block file, lost its block's END marker.
-
-    After an unfinished uninstall such a file keeps the install open, so the
-    next uninstall runs, names the file and finishes (see :func:`still_written`,
-    which does not count it as Apothem's).
-    """
-    return entry.mode == "sentinel_merge" and stray_begin_at(Path(entry.path))
-
-
-def stray_begin_warnings(
-    results: list[MaterializationResult],
-) -> list[MaterializationResult]:
-    """Name each file the uninstall rewrote that still holds a BEGIN marker alone.
-
-    Taking Apothem's whole block out can leave such a line above where it was
-    (a stray line of the operator's, say). An install keeps it as it is and
-    verify reports the file, so the operator deletes it by hand.
-    """
-    rewritten = {
-        result.path: result.operation
-        for result in results
-        if result.outcome == "updated"
-        and result.operation in {"surgical_uninstall", "retire_anchor"}
-    }
-    return [
-        _result(
-            "warning",
-            operation,
-            Path(path),
-            f"{path} still holds a line that reads as the Apothem BEGIN marker, "
-            f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
-            "Apothem's block is out. Delete that line by hand: an install keeps "
-            "it as it is, and apothem verify fails until you do.",
-        )
-        for path, operation in rewritten.items()
-        if stray_begin_at(Path(path))
-    ]
 
 
 def still_written(entry: LedgerTarget) -> bool:
@@ -504,178 +496,14 @@ def still_written(entry: LedgerTarget) -> bool:
     (``sentinel_merge``) is meant to hold the operator's text beside Apothem's
     block, so the block, not the whole file, is what Apothem wrote: it counts
     while it carries the whole block, both markers. A BEGIN marker left without
-    its END does not count: the uninstall leaves that file as it is.
+    its END does not count: the uninstall leaves that file as it is (see
+    :func:`install_driver_blocks.whole_block_left`).
     """
     if entry.mode == "sentinel_merge":
-        try:
-            text = Path(entry.path).read_bytes().decode("utf-8", errors="replace")
-        except OSError:
-            return False
-        return complete_managed_block(text) is not None
+        return whole_block_left(entry)
     proof = _proof(entry)
     if proof is None:
         # An earlier release recorded no digests: the path is the evidence,
         # and the removal that follows still checks each file's content.
         return os.path.lexists(entry.path)
     return bool(_written_now(Path(entry.path), proof))
-
-
-def install_may_be_open(harness_name: str, root: Path) -> bool:
-    """Return False only when the ledger shows the install at *root* was closed.
-
-    Closed means the latest record there is an ``uninstall``, or a rollback of
-    a known install.
-
-    An install still in effect, and a root the ledger knows nothing about (an
-    install from before the ledger, a ledger lost or unreadable), may be open:
-    the evidence that depends on it keeps counting there.
-    """
-    try:
-        if install_ledger.current_install_record(harness_name, root=root):
-            return True
-        here = [
-            record
-            for record in install_ledger.read_records(harness_name)
-            if record.root == str(root)
-        ]
-    except (OSError, install_ledger.LedgerError):
-        return True
-    if not here:
-        return True
-    # Closed: an uninstall, or a rollback of an install recorded here. An
-    # unfinished uninstall or a rollback of no known install leaves it open.
-    latest = here[-1]
-    installs = {record.install_id for record in here if record.kind == "install"}
-    return not (
-        latest.kind == "uninstall"
-        or (latest.kind == "rollback" and latest.install_id in installs)
-    )
-
-
-def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
-    """Return True when *target* holds an Apothem sentinel-delimited block.
-
-    The managed block is self-delimiting and Apothem-specific, so finding one
-    inside an operator-owned anchor is positive proof of an install even though
-    the file itself is not Apothem's to own. A BEGIN marker whose END is gone
-    counts until the ledger shows the install closed (*install_open*), so an
-    uninstall still runs, names that file and closes the install.
-    """
-    if not target.is_file():
-        return False
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return False
-    if complete_managed_block(text) is not None:
-        return True
-    return extract_managed_block(text) is not None and install_open()
-
-
-def endless_block_warning(target: Path, operation: str) -> MaterializationResult | None:
-    """Return a warning when *target*'s managed block lost its END marker.
-
-    A BEGIN marker with no END after it: the text below it may be the
-    operator's, so nothing is removed, and the file no longer counts as
-    Apothem's (see :func:`still_written`). ``None`` when the file holds a whole
-    block, holds no marker, or cannot be read.
-    """
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return None
-    if extract_managed_block(text) is None or complete_managed_block(text):
-        return None
-    return _result(
-        "warning",
-        operation,
-        target,
-        f"{_path_text(target)} has the Apothem BEGIN marker but no END marker "
-        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
-        "ends and left the file as it is. Delete that marker line, and what is "
-        "left of the block, by hand, "
-        "keeping your own text.",
-    )
-
-
-def sentinel_refusal(target: Path) -> MaterializationResult | None:
-    """Return why an uninstall leaves the managed-block file *target* as it is.
-
-    Its block lost its END marker (:func:`endless_block_warning`), or another
-    whole block stays once Apothem's own and its copies are out
-    (:func:`another_block_warning`). ``None`` when the strip may go ahead.
-    """
-    endless = endless_block_warning(target, "surgical_uninstall")
-    if endless is not None:
-        return endless
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return None
-    if complete_managed_block(remove_managed_block(text)):
-        return another_block_warning(target)
-    return None
-
-
-def another_block_warning(target: Path) -> MaterializationResult:
-    """Name a file that holds another whole block besides Apothem's own.
-
-    It is not a copy of Apothem's block, so it may be the operator's (a marker
-    pair they quote): nothing changes, and the uninstall stays unfinished.
-    """
-    return _result(
-        "warning",
-        "surgical_uninstall",
-        target,
-        f"{_path_text(target)} holds another block between Apothem's markers that "
-        "is not a copy of Apothem's own, so Apothem left the file as it is. Delete "
-        "it by hand (or the marker pair you quoted), then run the uninstall again.",
-        detail={KEPT_REASON: "another-block"},
-    )
-
-
-def left_unfinished(results: list[MaterializationResult]) -> bool:
-    """Return True when Apothem's files stay where the uninstall could not finish.
-
-    A removal failed, Apothem's files stay behind a link, or files an earlier
-    release recorded without digests stay because this release cannot show
-    they are Apothem's (``apothem update`` records them, then a second
-    uninstall finishes).
-    """
-    return any(
-        result.outcome == "error"
-        or result.detail.get("blocked")
-        or result.detail.get(KEPT_REASON) in UNFINISHED_REASONS
-        for result in results
-    )
-
-
-def record_uninstall(
-    harness_name: str,
-    root: Path,
-    record: LedgerRecord | None,
-    results: list[MaterializationResult],
-    *,
-    finished: bool,
-) -> None:
-    """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
-
-    Either record references every backup the pass took. A finished uninstall
-    ends the install and runs retention. An unfinished one keeps the install
-    active, so a second run is driven by the same record; it is written even
-    when the pass raised, and a failure to write it then does not hide the
-    pass's own error.
-    """
-    entry = LedgerRecord.create(
-        harness=harness_name,
-        root=root,
-        kind="uninstall" if finished else "uninstall-incomplete",
-        targets=backup_ledger_targets(results),
-        install_id=record.install_id if record is not None else None,
-    )
-    if not finished:
-        with contextlib.suppress(OSError, install_ledger.LedgerError):
-            install_ledger.append_record(entry)
-        return
-    install_ledger.append_record(entry)
-    apply_retention(harness_name)

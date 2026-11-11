@@ -28,7 +28,7 @@ import apothem
 from apothem.cli import main
 from apothem.cli._stray_begin_report import stray_begin_note
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_written import (
+from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
     stray_begin_install_warnings,
 )

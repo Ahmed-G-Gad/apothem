@@ -33,6 +33,7 @@ from .install_driver_backup import (
     _install_lock_path,
     backup_ledger_targets,
 )
+from .install_driver_blocks import stray_begin_install_warnings
 from .install_driver_hookfile import HOOK_FILE_MODE, apply_native_hooks
 from .install_driver_merge import (
     apply_sentinel_merge,
@@ -58,7 +59,6 @@ from .install_driver_types import (
     backup_session,
     skills_sharing_command_target,
 )
-from .install_driver_written import stray_begin_install_warnings
 
 
 def capability_projection_results(harness_name: str) -> list[MaterializationResult]:

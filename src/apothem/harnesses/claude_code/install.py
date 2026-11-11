@@ -50,11 +50,11 @@ from typing import Any
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
-from apothem.harnesses._shared.install_driver_layout import with_support_announcement
-from apothem.harnesses._shared.install_driver_types import _result, resolve_source
-from apothem.harnesses._shared.install_driver_written import (
+from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_install_warnings,
 )
+from apothem.harnesses._shared.install_driver_layout import with_support_announcement
+from apothem.harnesses._shared.install_driver_types import _result, resolve_source
 from apothem.lib.claude_agent_mcp import agent_mcp_grants, grant_problems
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project

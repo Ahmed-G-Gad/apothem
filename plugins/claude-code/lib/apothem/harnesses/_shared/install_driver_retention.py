@@ -6,22 +6,36 @@ Every install, uninstall and rollback appends a ledger record and may write a
 timestamped backup set under ``BACKUP_ROOT/<timestamp>/<harness>/``. After each
 of them :func:`apply_retention` keeps the newest :data:`BACKUP_KEEP`; ``apothem
 backups prune`` runs the same pass on demand through :func:`prune_history`,
-with its own bound and an optional dry run.
+with its own bound and an optional dry run. The uninstall's warnings for what
+no ledger record covers are built here too: a record the ledger could not
+take, and a managed block in a file no install record lists.
 """
 
 from __future__ import annotations
 
 import contextlib
 import shutil
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    extract_managed_block,
+)
 from apothem.lib.install_ledger import LedgerRecord
 
-from .install_driver_types import _handle_rm_error
+from .install_driver_blocks import endless_block_warning
+from .install_driver_types import (
+    MaterializationResult,
+    _handle_rm_error,
+    _path_text,
+    _result,
+)
 
 #: How many install records per install root, and backup sets per harness,
 #: retention keeps. Older ones are deleted after each install, uninstall and
@@ -186,6 +200,81 @@ def _referenced_timestamps(records: list[LedgerRecord]) -> set[str]:
             if relative.parts:
                 stamps.add(relative.parts[0])
     return stamps
+
+
+def unrecorded_warning(
+    record: LedgerRecord, error: Exception, *, finished: bool
+) -> MaterializationResult:
+    """Return the warning for an uninstall *record* the ledger may not hold.
+
+    It names the ledger and the backup sets *record* references: with no kept
+    record that references them, retention may delete them.
+    """
+    ledger = install_ledger.ledger_path(record.harness)
+    done = (
+        "finished, but its record may not have been saved"
+        if finished
+        else "did not finish, and that could not be recorded"
+    )
+    message = f"{ledger}: the uninstall {done} ({error})"
+    sets = [
+        str(install_driver.BACKUP_ROOT / stamp / record.harness)
+        for stamp in sorted(_referenced_timestamps([record]))
+    ]
+    if sets:
+        message += (
+            f". Copy the backups it took ({', '.join(sets)}) if you need them: "
+            "with no record, a later prune may delete them"
+        )
+    return _result("warning", "record_uninstall", ledger, message)
+
+
+#: The instruction files an install folds its managed block into outside its
+#: manifest, relative to the install root: claude-code's ``CLAUDE.md`` and the
+#: single-file-config adapters' profile document (``PROFILE_DOCUMENT_RELATIVE``;
+#: importing it from :mod:`install_driver_merge` would close an import cycle).
+BOLT_ON_ANCHORS: Final[tuple[str, ...]] = (
+    "CLAUDE.md",
+    "apothem/rules/00-apothem-profile.md",
+)
+
+
+def unlisted_block_warnings(
+    root: Path, *, skip: Collection[str] = ()
+) -> list[MaterializationResult]:
+    """Return a warning for each bolt-on anchor at *root* that holds a managed block.
+
+    For an uninstall with no install record in place: nothing shows which
+    install wrote the block, so the file is left as it is, and the warning
+    names it without stopping the uninstall. A block that lost its END marker
+    gets the warning for that instead (see
+    :func:`install_driver_blocks.endless_block_warning`): no line shows where
+    it ends. A path in *skip* (one the uninstall handled already) and a file
+    that cannot be read are passed over.
+    """
+    warnings: list[MaterializationResult] = []
+    for relative in BOLT_ON_ANCHORS:
+        anchor = root / relative
+        if _path_text(anchor) in skip:
+            continue
+        try:
+            text = anchor.read_bytes().decode("utf-8", errors="replace")
+        except OSError:
+            continue
+        if extract_managed_block(text) is None:
+            continue
+        endless = endless_block_warning(anchor, "surgical_uninstall")
+        if endless is not None:
+            warnings.append(endless)
+            continue
+        message = (
+            f"{anchor} still holds Apothem's managed block: no install record "
+            "lists the file, so the uninstall leaves it as it is; delete the "
+            f"lines from {APOTHEM_BLOCK_BEGIN} to {APOTHEM_BLOCK_END} by hand if "
+            "you no longer want them"
+        )
+        warnings.append(_result("warning", "surgical_uninstall", anchor, message))
+    return warnings
 
 
 def _latest_installs(records: list[LedgerRecord]) -> list[LedgerRecord]:

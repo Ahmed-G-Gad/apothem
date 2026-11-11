@@ -110,13 +110,23 @@ menyelaraskan ulang jangkar yang menyimpang.
 Tinjau diff, lalu commit:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-Flag `-S` menandatangani commit dengan kunci GPG. Push memicu matriks CI
-standar (lint, test, build); tunggu hingga hijau sebelum membuat tag.
+Flag `-s` menambahkan baris `Signed-off-by` yang dicari oleh pemeriksaan wajib
+`Require Signed-off-by`. Commit rilis masuk ke `main` sebagai squash merge dari
+pull request ini; GitHub menandatangani commit itu dengan kuncinya sendiri, dan
+tanda tangan Anda atas rilis ada pada tag (§2.2). Merge memicu matriks CI
+standar (lint, test, build) di `main`; tunggu hingga hijau sebelum membuat tag.
 
 Pemeriksaan kesiapan di §2.4 juga memerlukan CodeQL dan Conformity hijau pada
 commit rilis. Keduanya hanya berjalan ketika path masing-masing berubah, dan
@@ -551,11 +561,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Diharapkan: `Verified OK`, `PASSED: SLSA verification passed`, dan
-`verify-provenance: chain OK (3 of 3 layers verified)`. Skrip memeriksa
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Skrip memeriksa
 `SHA256SUMS`, setiap bundel tanda tangan, dan provenance dalam satu run;
 skrip menurunkan tag dari nama wheel (`--tag vX.Y.Z` menimpanya).
 

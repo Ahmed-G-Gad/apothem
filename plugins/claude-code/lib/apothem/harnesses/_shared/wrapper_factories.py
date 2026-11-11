@@ -42,12 +42,10 @@ from .install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from .install_driver_blocks import stray_begin_install_warnings
+from .install_driver_outcome import record_uninstall
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
-from .install_driver_written import (
-    record_uninstall,
-    stray_begin_install_warnings,
-)
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
@@ -635,8 +633,9 @@ def make_native_config_uninstall(
     *before_fn* removes files written beside the native config (open_claw's
     workspace rules files) first. When it reports an ``error`` (something the
     operator has to clear by hand), the uninstall records itself unfinished,
-    with the backups *before_fn* took, and returns those results at once,
-    before it touches the native config or the support tree, so the next
+    with the backups *before_fn* took, and returns those results at once (with
+    a warning that names the ledger when it cannot take that record), before
+    it touches the native config or the support tree, so the next
     uninstall, after the fix, does the whole job. Otherwise its results join
     the uninstall's: their paths are not handled again, and a ``blocked``
     warning (Apothem's file behind a link) leaves the uninstall unfinished
@@ -653,16 +652,18 @@ def make_native_config_uninstall(
             # unfinished uninstall is recorded with those backups: retention
             # keeps them, and the next run continues from the same install.
             root = output_path.parent
+            unrecorded: list[MaterializationResult] = []
             with contextlib.suppress(OSError, install_ledger.LedgerError):
-                record_uninstall(
+                unrecorded = record_uninstall(
                     harness_name,
                     root,
                     install_ledger.current_install_record(harness_name, root=root),
                     list(before),
                     finished=False,
+                    own=[],
                 )
             return MaterializationRun(
-                harness=harness_name, dry_run=False, results=tuple(before)
+                harness=harness_name, dry_run=False, results=(*before, *unrecorded)
             )
         native = install_driver.surgically_remove_materialized_config(
             output_path,

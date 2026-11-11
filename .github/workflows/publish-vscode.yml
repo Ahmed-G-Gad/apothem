@@ -71,7 +71,7 @@ jobs:
     # repeated.
     permissions:
       contents: read
-      id-token: write   # OIDC for the Entra federated credential (Azure/login)
+      id-token: write   # OIDC for Marketplace Trusted Publishing (vsce --oidc) and the Entra federated credential (Azure/login)
     defaults:
       run:
         working-directory: vscode-extension

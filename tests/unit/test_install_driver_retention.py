@@ -19,7 +19,7 @@ import pytest
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
-from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, RecordKind
 
 _HARNESS = "cursor"
 
@@ -331,3 +331,41 @@ def test_uninstall_record_keeps_its_backup_set_through_retention(
 
     assert stamp in report.protected
     assert all(ref.exists() for ref in refs)
+
+
+@pytest.mark.parametrize(
+    ("kinds", "kept"),
+    [
+        (("install", "uninstall"), ["uninstall"]),
+        (
+            ("install", "uninstall", "uninstall-incomplete"),
+            ["uninstall", "uninstall-incomplete"],
+        ),
+        (
+            ("uninstall", "install", "uninstall", "uninstall-incomplete") * 2,
+            ["uninstall", "uninstall-incomplete"],
+        ),
+        (
+            ("uninstall-incomplete", "uninstall-incomplete"),
+            ["uninstall-incomplete"],
+        ),
+    ],
+)
+def test_a_root_with_nothing_installed_keeps_its_last_finished_uninstall(
+    tmp_path: Path, kinds: tuple[RecordKind, ...], kept: list[str]
+) -> None:
+    """Retention keeps the finished uninstall that unfinished ones follow.
+
+    The next uninstall at that root reads it to tell an install whose record
+    was lost after a finished uninstall from one that has no record at all.
+    """
+    root = tmp_path / "project"
+    for kind in kinds:
+        install_ledger.append_record(
+            LedgerRecord.create(harness=_HARNESS, root=root, kind=kind)
+        )
+
+    records = install_ledger.compact_records(_HARNESS, keep_installs=1)
+
+    assert [record.kind for record in records] == kept
+    assert [record.kind for record in install_ledger.read_records(_HARNESS)] == kept
