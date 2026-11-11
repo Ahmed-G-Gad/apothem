@@ -217,6 +217,36 @@ def render_mcp_opencode(
     when a shell the server runs expands it. Another ``$`` form, such as
     ``${NAME:-default}``, ``$${NAME}`` or ``$NAME``, is copied unchanged, and
     OpenCode does not expand it either.
+
+    An ``environment`` entry whose whole value is a reference to its own name
+    (``FOO: ${FOO}``) is left out, and so is an ``environment`` that loses
+    every entry that way. OpenCode starts a local server with its own
+    environment and lays ``environment`` over it, in both release lines
+    (v1.19.5 ``packages/opencode/src/mcp/index.ts:340-357``; v2.2.6
+    ``packages/core/src/mcp/stdio.ts:101-113`` and
+    ``packages/util/src/cross-spawn-spawner.ts:168-177``), so a host-run
+    server still receives the ``FOO`` OpenCode runs with. Written as
+    ``{env:FOO}``, the value would be pasted into the config text unescaped
+    (v1.19.5 ``packages/opencode/src/config/variable.ts:36-38``): a typical
+    Windows path such as ``C:\\Users\\...`` can stop OpenCode 1 from reading
+    the file, and one made only of valid JSON escapes, such as
+    ``D:\\tools\\node``, parses in both lines but reaches the server altered
+    (v2.2.6 ``packages/core/src/config/variable.ts:26-38`` escapes only when
+    the raw text fails to parse).
+
+    Leaving the entry out differs from writing it in four narrow cases:
+    an unset ``FOO`` stays unset rather than becoming ``""``; a name
+    OpenCode 1 itself sets after the config loads, such as
+    ``AWS_BEARER_TOKEN_BEDROCK`` or ``OPENCODE_CONSOLE_TOKEN``, reaches the
+    server with its spawn-time value (v1.19.5
+    ``packages/opencode/src/provider/provider.ts:360``,
+    ``packages/opencode/src/config/config.ts:505``); on OpenCode 1 a name filled from an ``opencode auth login <url>``
+    org login, which ``{env:}`` reads before ``process.env`` but which is
+    never put in OpenCode's environment, no longer reaches the server
+    (v1.19.5 ``packages/opencode/src/config/config.ts:373,412``); and on
+    OpenCode 2 a server an SDK embedder runs in a workspace sandbox gets the
+    sandbox's environment, not the host's (v2.2.6
+    ``packages/core/src/mcp/stdio.ts:27-35``).
     """
     rendered: dict[str, dict[str, Any]] = {}
     for name, spec in servers.items():
@@ -228,8 +258,9 @@ def render_mcp_opencode(
                 "command": command,
                 "enabled": True,
             }
-            if spec.get("env"):
-                entry["environment"] = _env_references(spec["env"])
+            environment = _env_references(_without_pass_through(spec.get("env") or {}))
+            if environment:
+                entry["environment"] = environment
         else:
             url = _ENV_REFERENCE.sub(r"{env:\1}", spec.get("url", ""))
             entry = {"type": "remote", "url": url, "enabled": True}
@@ -245,6 +276,20 @@ def render_mcp_opencode(
 _ENV_REFERENCE: Final[re.Pattern[str]] = re.compile(
     r"(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}"
 )
+
+
+def _without_pass_through(values: dict[str, Any]) -> dict[str, Any]:
+    """Return *values* without each entry whose whole value is ``${<its key>}``.
+
+    Only a reference :data:`_ENV_REFERENCE` rewrites counts, so an entry such
+    as ``A-B: ${A-B}``, which OpenCode would receive as literal text, is kept.
+    """
+    kept: dict[str, Any] = {}
+    for key, value in values.items():
+        match = _ENV_REFERENCE.fullmatch(value) if isinstance(value, str) else None
+        if match is None or match.group(1) != key:
+            kept[key] = value
+    return kept
 
 
 def _env_references(values: dict[str, Any]) -> dict[str, Any]:

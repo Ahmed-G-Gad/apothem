@@ -469,6 +469,77 @@ def test_install_notes_an_env_value_opencode_1_cannot_insert(
         assert _notes(adapter.update(_MCP_PROFILE)) == []
 
 
+_PASS_THROUGH_PROFILE: dict[str, object] = {
+    "mcp_servers": {
+        "fs": {
+            "transport": "stdio",
+            "command": "npx",
+            "args": ["srv"],
+            "env": {"FOO": "${FOO}", "TOKEN": "${FS_TOKEN}"},
+        },
+        "bare": {
+            "transport": "stdio",
+            "command": "npx",
+            "env": {"FOO": "${FOO}"},
+        },
+    }
+}
+
+
+def test_a_pass_through_entry_is_left_out_of_the_one_config_both_lines_read(
+    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # OpenCode 1 and OpenCode 2 read the same V1-shaped mcp.<name> entries and
+    # start a local server with their own environment, so FOO: ${FOO} is left
+    # out; a server it leaves with no environment gets no environment key.
+    monkeypatch.setenv("FOO", "C:\\Users\\me\\new")
+    adapter.install(_PASS_THROUGH_PROFILE)
+    target = adapter.output_path
+    text = target.read_text(encoding="utf-8")
+
+    assert text == opencode_materializer.materialize_native_config(
+        _PASS_THROUGH_PROFILE
+    )
+    assert "{env:FOO}" not in text
+    assert _read(target)["mcp"] == {
+        "fs": {
+            "type": "local",
+            "command": ["npx", "srv"],
+            "enabled": True,
+            "environment": {"TOKEN": "{env:FS_TOKEN}"},
+        },
+        "bare": {"type": "local", "command": ["npx"], "enabled": True},
+    }
+
+    # A server an operator converts to OpenCode 2's shape is still Apothem's.
+    _move_server_to_servers(target, "bare")
+    adapter.update(_PASS_THROUGH_PROFILE)
+    config = _read(target)
+    assert "servers" not in config["mcp"]
+    assert config["mcp"]["bare"] == {
+        "type": "local",
+        "command": ["npx"],
+        "enabled": True,
+    }
+    _move_server_to_servers(target, "bare")
+    adapter.uninstall()
+    assert not target.exists()
+
+
+def test_install_notes_skip_a_pass_through_entry(
+    adapter: OpenCodeAdapter, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The install no longer writes {env:FOO}, so FOO's value cannot stop
+    # OpenCode 1 reading the file; a renamed reference still draws the note.
+    monkeypatch.setenv("FOO", "C:\\Users\\me\\new")
+    monkeypatch.setenv("FS_TOKEN", "C:\\keys\\token")
+
+    notes = _notes(adapter.install(_PASS_THROUGH_PROFILE))
+
+    assert len(notes) == 1
+    assert notes[0].startswith("MCP server fs: FS_TOKEN holds a backslash")
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="needs case-insensitive paths")
 def test_a_change_of_case_in_xdg_config_home_names_the_same_install(
     adapter: OpenCodeAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -104,13 +104,43 @@ your `permission` settings.
 When the shared profile lists MCP servers, the install writes them to the `mcp`
 block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
 each `${NAME}` in a server's environment, headers or URL is written as
-`{env:NAME}`. Command arguments are copied as written: a reference there is
-left for the server, or a shell it runs, to expand. The install warns about
+`{env:NAME}`, except the pass-through environment entry described below.
+Command arguments are copied as written: a reference there is left for the
+server, or a shell it runs, to expand. The install warns about
 two kinds of `$` reference OpenCode does not expand, which the server then
 receives as written: a `$NAME` in an environment or header value, and any
 other `${...}` form, a plain `${NAME}` in a command argument included. The
 warning names where the reference sits, such as `environment.TOKEN`, and never
 prints the value.
+
+The install leaves out an environment entry that only passes a variable on
+under its own name, such as `GITHUB_TOKEN: ${GITHUB_TOKEN}`, and writes no
+`environment` for a server left with none. OpenCode 1 and OpenCode 2 start a
+local server with OpenCode's own environment and add the server's
+`environment` on top, so the server still receives the `GITHUB_TOKEN` OpenCode
+runs with. Three things differ from writing the entry:
+
+- When the variable is not set, the server sees it unset. Written as
+  `{env:GITHUB_TOKEN}`, it would be set to an empty string.
+- OpenCode 1 also fills `{env:NAME}` from an organization login made with
+  `opencode auth login <url>`, whose token it does not put in its own
+  environment. A variable that comes only from such a login reaches the server
+  only through an entry.
+- An application built on the OpenCode SDK can register a workspace provider
+  that runs a server inside a sandbox; the `opencode` CLI and desktop app
+  register none. According to OpenCode's source, such a server gets the
+  sandbox's environment, not the one OpenCode runs in, so a variable set only
+  where OpenCode runs does not reach it.
+
+In either of the last two cases, restate that server under
+`harnesses.opencode.mcp_servers.<name>` with the value written as
+`{env:NAME}`, which the install copies as it is. That brings back the
+OpenCode 1 risk the next paragraph describes.
+
+An entry that renames a variable (`TOKEN: ${FS_TOKEN}`), a reference inside a
+longer value, every header and URL reference, and an `{env:NAME}` written in an
+override are still written as `{env:NAME}`, and the next paragraph applies to
+them.
 
 OpenCode inserts an `{env:NAME}` value into the config text it reads without
 escaping it; OpenCode 2 escapes it only when that text would not parse
