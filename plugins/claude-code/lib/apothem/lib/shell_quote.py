@@ -26,9 +26,10 @@ _UNQUOTABLE = {
 }
 
 #: What cmd acts on in a Windows folder that holds no space. PowerShell and
-#: Git Bash then pass that folder to the installer's ``apothem.cmd`` shim
-#: without its quotes, and the shim's ``%*`` hands it to cmd. With a space in
-#: the folder they keep the quotes, and cmd leaves these alone.
+#: Git Bash pass such a folder without its quotes to a ``.cmd`` launcher (the
+#: installer's ``apothem.cmd`` shim, or ``npx.cmd``), and the ``cmd.exe`` that
+#: starts the launcher acts on these characters before the launcher runs.
+#: With a space in the folder they keep the quotes, and cmd leaves these alone.
 _CMD_METACHARACTERS = frozenset("&^|<>")
 
 
@@ -44,11 +45,12 @@ def shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
 
     ``None`` when those quotes cannot carry the path (see
     :data:`_UNQUOTABLE`); on Windows also when a path with no space holds a
-    character cmd acts on (see :data:`_CMD_METACHARACTERS`); and when two
-    backslashes stand together before its end: on Windows, as at the start of
-    a network share (``\\\\server\\share``), Git Bash reads them as one inside
-    double quotes; elsewhere fish reads them as one inside single quotes, and
-    a trailing backslash there escapes the closing quote.
+    character cmd acts on (see :data:`_CMD_METACHARACTERS`); when two
+    backslashes stand together before its end (on Windows, as at the start of
+    a network share ``\\\\server\\share``, Git Bash reads them as one inside
+    double quotes; elsewhere fish reads them as one inside single quotes); and
+    elsewhere also when it ends in a backslash, which escapes fish's closing
+    quote.
     """
     windows = os.name == "nt" if windows is None else windows
     if any(
