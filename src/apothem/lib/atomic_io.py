@@ -143,9 +143,12 @@ def append_line_durably(path: Path, line: str) -> None:
             _write_all(fd, record.encode("utf-8"), path)
             os.fsync(fd)
         except BaseException:
-            # Never mask the write's own error with the cleanup's.
+            # Never mask the write's own error with the cleanup's. The cut is
+            # synced too, so a crash cannot bring the failed record back; a
+            # cut that failed is not synced, since that would keep the record.
             with contextlib.suppress(OSError):
                 os.ftruncate(fd, start)
+                os.fsync(fd)
             raise
     finally:
         # The record is durable or cut back by now, so a failed close changes

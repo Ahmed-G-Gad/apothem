@@ -429,6 +429,55 @@ def test_an_append_whose_sync_fails_is_cut_back_off(
     assert target.read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    "error", [OSError(errno.EIO, "I/O error"), KeyboardInterrupt()]
+)
+def test_the_cut_back_of_a_failed_append_is_synced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    before = target.read_bytes()
+    real_fsync = atomic_io.os.fsync
+    synced: list[bytes] = []
+
+    def fails_once(fd: int) -> None:
+        if not synced:
+            synced.append(b"failed")
+            raise error
+        synced.append(target.read_bytes())
+        real_fsync(fd)
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails_once)
+    with pytest.raises(type(error)):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert synced == [b"failed", before]
+    assert target.read_bytes() == before
+
+
+def test_a_cut_back_that_fails_is_not_synced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "ledger.jsonl"
+    atomic_io.append_line_durably(target, '{"kind": "install"}')
+    calls: list[int] = []
+
+    def fails(fd: int) -> None:
+        calls.append(fd)
+        raise OSError(errno.EIO, "I/O error")
+
+    def cannot_cut(fd: int, length: int) -> None:
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr(atomic_io.os, "fsync", fails)
+    monkeypatch.setattr(atomic_io.os, "ftruncate", cannot_cut)
+    with pytest.raises(OSError, match="I/O error"):
+        atomic_io.append_line_durably(target, '{"kind": "uninstall"}')
+
+    assert len(calls) == 1
+
+
 def test_a_tail_that_cannot_be_settled_refuses_the_append(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
