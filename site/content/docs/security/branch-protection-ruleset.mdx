@@ -20,7 +20,7 @@ This page records the live settings exactly, as last read from the GitHub API on
 | **Require status checks to pass** | `required_status_checks` | ✅ | The 12 contexts listed under [Required status checks](#required-status-checks) must pass. |
 | **Require branches to be up to date before merging** | `required_status_checks.strict` | ❌ | A pull request can merge when its required checks passed against an older `main`. The workflows that run on a push to `main` then test the merged result. |
 | **Require conversation resolution before merging** | `required_conversation_resolution` | ✅ | Open review threads block merge. |
-| **Require signed commits** | `required_signatures` | ❌ | Release commits are signed locally. Enforcement waits until contributor onboarding documents SSH or GPG signing setup. |
+| **Require signed commits** | `required_signatures` | ❌ | Release commits reach `main` as squash merges that GitHub signs with its own key; the maintainer's signature is on the release tag. Enforcement waits until contributor onboarding documents SSH or GPG signing setup. |
 | **Require linear history** | `required_linear_history` | ✅ | Keeps the public history of `main` a single line. |
 | **Lock branch** | `lock_branch` | ❌ | `main` accepts merges. |
 | **Do not allow bypassing the above settings** | `enforce_admins` | ❌ | The settings above do not bind a repository admin. An admin can merge without the required checks or push to `main` directly. |

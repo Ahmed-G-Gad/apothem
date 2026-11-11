@@ -35,6 +35,7 @@ from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
+from . import install_driver_homelink
 from .install_driver_backup import backup_existing, write_bytes_safely
 from .install_driver_datahome import _data_home_for, _remove_data_home
 from .install_driver_pathsafety import (
@@ -49,7 +50,6 @@ from .install_driver_pathsafety import (
     _walk_without_links,
     _within_allowed_root,
     kept_links_detail,
-    link_leaving_home_refusal,
 )
 from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -470,16 +470,18 @@ def rollback_install(
     user-scope root spelled inside the home out of it (``CODEX_HOME=~/a/b/codex``
     after ``~/a`` became a link to a folder outside the home): the one result
     is a ``rollback_refused`` error naming the link (see
-    :func:`~.install_driver_pathsafety.link_leaving_home_refusal`).
+    :func:`~.install_driver_homelink.link_leaving_home_refusal`).
     The rollback holds the user-level lock (see ``shared_scope``).
     """
     if harness_root is not None:
-        refusal = link_leaving_home_refusal(harness_root, operation="rollback_refused")
+        refusal = install_driver_homelink.link_leaving_home_refusal(
+            harness_root, operation="rollback_refused"
+        )
         if refusal is not None:
-            link = refusal.detail["symlink"]
             message = (
-                f"rollback refused: {refusal.message} ({link} leads outside the "
-                "home folder); nothing was changed"
+                f"rollback refused: {refusal.message} "
+                f"{install_driver_homelink.link_refusal_text(refusal)}; nothing was changed. "
+                f"{refusal.detail['fix']}"
             )
             return [replace(refusal, message=message)]
     root = _root_for(harness_root, project_root)

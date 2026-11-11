@@ -323,6 +323,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config
   holding one read as unparseable and the install refused to merge into a valid
   file. Found by the new fuzzer.
+- **The OpenSSF Best Practices answer sheet describes the installers' checks
+  accurately.** The `crypto_weaknesses` answer and its Remaining gaps entry say
+  that the one-shot installers and the update scripts check a signed tag that
+  names its commit by a SHA-1 object ID, that they pin the maintainer key by
+  its OpenPGP v4 fingerprint, also a SHA-1 hash, and that an install without
+  cosign, and every install or update over an existing Apothem clone,
+  installs a git checkout in which every file rests on SHA-1. The
+  `crypto_keylength`, `crypto_working` and `crypto_published` answers name the
+  same SHA-1 uses, the TLS rows name the programs that make Apothem's TLS
+  connections (pip and npm included), and `delivery_mitm` says which release
+  files carry SLSA provenance and when the cosign check runs. Every answer
+  stays as it was; `crypto_weaknesses` is still Unmet.
 - **Deeply nested input is a parse error, not a crash.** The config reader now
   stops at 200 levels of objects and arrays with a `LenientJSONError`, and the
   install-ledger reader reports a line nested too deeply to parse as invalid
@@ -490,7 +502,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   stays unfinished until you remove it. A BEGIN marker of yours left with no
   END once Apothem's block is out is named too: an install or update that
   writes such a file again still replaces everything from that marker to the
-  end of the file.
+  end of the file. When the uninstall's next step is to run `apothem update`
+  and a warning names such a file, that step says to fix the file first.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and
@@ -506,9 +519,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   had put there since. For an install recorded by an earlier release, which
   does not say which files Apothem wrote, the uninstall removes the files that
   have the same bytes as what this release writes there; a file that differs
-  leaves the uninstall unfinished (exit `2`) with the next step: move any file
-  of your own out of those folders, then run `apothem update` and `apothem
-  uninstall` again. An uninstall that does not finish
+  leaves the uninstall unfinished (exit `2`) with the next step: copy any of
+  those files you edited and move your own files out of Apothem's folders
+  (an update replaces them), then run `apothem update` and `apothem uninstall`
+  again. An uninstall that does not finish
   (a failed step, an error, or Apothem's own files reached through a link)
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished
@@ -528,6 +542,73 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   wrote. Uninstalling a tool from one project no longer removes the shared
   memory, contexts and learning stores in your home folder while the same tool
   installed in another project still uses them.
+- **Uninstall checks more strictly which files are Apothem's.** An install
+  recorded by an earlier release does not say which files Apothem wrote, so
+  the uninstall compares them with what this release writes. In the two places
+  that hold the Python interpreter (the statusline's command and a comment in
+  the conformity gate), a file now matches only when it holds `py -3`, the one
+  launcher an earlier release wrote there, or the full path of an interpreter
+  file on this machine (`pythonw`, an 8.3 short name, a free-threaded or debug
+  build included). A command, an option, prose, a JSON escape or a path that
+  names no file here (an interpreter since upgraded or removed, say) no longer
+  makes the file match, and a path that holds `&`, `#` or `$` never does, so
+  such a file is kept. Under such an install, any file behind a link at a name
+  this release writes now stops the uninstall, edited or not. An install with
+  no ledger record at all now leaves the uninstall unfinished too: every path
+  it keeps is listed under one warning line, with the advice to copy any
+  listed file you edited or added, then run `apothem update`, then uninstall
+  again. When the latest record at a location is an uninstall that finished,
+  the next uninstall there removes only the files that have exactly the bytes
+  this release writes, so a file that holds an interpreter's path stays, and
+  it removes a folder that holds no file. The shared folders in your home
+  directory stay as they are, as when there is no record, and everything else
+  stays with a warning; a path no install record lists comes with the advice
+  to remove it by hand if you no longer want it. That uninstall finishes,
+  unless a file with those bytes sits behind a link: the tool still loads it,
+  so it stops the uninstall, as it does for a recorded install. If it does
+  not finish, it is recorded as unfinished, and running it again works the
+  same way, also after an install that failed and undid its own changes, and
+  after `apothem backups prune`, which now keeps the record of that finished
+  uninstall with the unfinished ones after it. With no install record in
+  place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
+  document of a tool configured through one settings file, stays as it is,
+  and a warning now names the file so you can delete the block by hand.
+- **Uninstall and rollback list every file they keep.** The plain output of
+  `apothem uninstall` and `apothem rollback` now lists every file kept (paths
+  left behind a link are counted, not listed), also when a rollback's restore
+  fails, and the `--format json` warnings list them as `files`. With
+  `--quiet`, an uninstall that did not finish lists them on standard error. A
+  file Apothem wrote that could not be removed is listed under the failure
+  that reports it, and as `stuck` in that step's `--format json` row; a
+  warning line counts the same paths as the failure line. An empty folder
+  inside an Apothem folder, yours included, is now removed, so it no longer
+  keeps that folder in place with nothing listed. Rolling back an install an
+  earlier release recorded keeps what that install created, with a warning
+  that rollback cannot tell those files are Apothem's. When the only installs
+  that keep the shared `memory`, `contexts` and `learning` stores sit in
+  folders that no longer exist, the warning now gives the steps that release
+  them: for a project install, the exact commands, with the folder quoted for
+  your shell and a `--profile` placeholder for the profile that install used.
+  A folder those quotes cannot carry (a `$` in its name or a network share on
+  Windows, a straight or curly single quote elsewhere) gets the same steps in
+  words. Apothem's hook scripts and the conformity gate's checks also stop
+  writing Python bytecode caches (`__pycache__`) into the folders Apothem
+  installs.
+- **The install ledger stays right when a write fails.** If an uninstall
+  cannot write its final record, it records the uninstall as unfinished, so
+  running it again finishes the job. When the ledger still ends in a finished
+  uninstall (the record stayed in, or the uninstall followed one that
+  finished), it finishes with a warning instead. If the unfinished record
+  cannot be written either, the ledger stays as it was, and a warning names
+  the ledger and the backups the uninstall took, which no record then keeps
+  from a later prune; running the uninstall again may then find nothing
+  installed. A record that cannot be saved to disk is taken back
+  out, and an interrupt after the record is saved no longer marks a finished
+  uninstall as unfinished. A ledger record cut short by a full disk or a
+  crash no longer damages the records written after it, a last line that is
+  damaged rather than cut short stays for the ledger reader to report, and a
+  new record is never joined to a last line Apothem cannot check. On Windows,
+  records now end with a plain newline, as they do elsewhere.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
@@ -746,7 +827,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `apothem rollback` too, wherever above the folder the link sits; a refused
   rollback changes nothing, writes no `rollback` record and exits 1. A link
   on a path the install writes inside the harness folder still stops it, with
-  `target path crosses a symlink`, or with `target escapes the allowed
+  `target path crosses a link`, or with `target escapes the allowed
   materialization root` when that link leads out of the folder holding the
   harness folder.
 - **The profile is not written through a link that leaves your home
@@ -788,6 +869,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
   and the install record stayed. It now prints the error and exits non-zero.
+- **An uninstall that a link refuses no longer asks first.** When a link
+  leads a tool's folder in your home directory out of it, `apothem uninstall`
+  asked `Remove ... configuration?` and only then refused. It now refuses
+  before the question, as `apothem rollback` does. The install, update,
+  uninstall and rollback errors for such a link now name the link and the
+  folder it leads to, and say to replace the link with a real folder or make
+  it lead inside your home directory. The `install --clean` error for a
+  `~/.config` link that leaves your home directory gives the same fix instead
+  of asking you to re-run interactively. A write refused at a link inside a
+  tool's folder also names where the link leads, and for a link to a file it
+  says to replace the link with a copy of the file. In `--format json`
+  output, a result refused at a link carries a new key, `detail.leads_to`,
+  the path the link leads to. A result refused because a link leads a
+  tool's folder out of your home directory now also carries `detail.fix`,
+  the fix, as other refused results already do. No existing key changed.
+- **`install --clean` writes your profile back when a removal stops
+  partway.** When the clean-slate step could not remove a folder, for example
+  because another program held a file in it, the command stopped with a
+  traceback, and a profile it had already removed was not written back. It now
+  writes the profile back first and names the backup folder.
 - **OpenCode update and uninstall find an MCP server converted to OpenCode 2's
   shape.** OpenCode 2 keeps MCP servers under `mcp.servers` and reads the
   `mcp.<name>` entries the install writes in place, without rewriting the file.
@@ -826,6 +927,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`install --clean` no longer rewrites a profile it did not remove.** After
+  the clean-slate step, the install wrote the profile back to the `--profile
+  PATH` it was given, whether or not the step had removed it, and without the
+  link check every other profile write has. With `--profile ~/ext/profile.yaml`
+  and `~/ext` a link or a junction leading out of your home directory, it
+  replaced the file at the far end of the link. The profile is now written back
+  only when the clean-slate step removed it, and that write is refused when a
+  link would lead it out of your home directory. A refused or failed write back
+  names the backup copy that holds your profile.
+- **The folder you name with `--project` is followed wherever it leads.**
+  A project folder that is itself a link, `~/.config` among them, is the
+  folder you named, so Apothem writes in the folder the link leads to, also
+  outside your home directory. A link inside the project folder stops the
+  install, also when it leads back into the project folder. A tool that also
+  writes in `~/.config/apothem` still stops when `~/.config` leads out of your
+  home directory. The command line already followed the folder you name.
+  Python code that calls Apothem's install functions with a project folder now
+  follows the same rule; before, it refused a project folder that was a
+  symbolic link.
+- **Two folders whose names differ only in case are no longer taken for one
+  folder where the system keeps them apart.** On Linux, and in a Windows
+  folder set to keep case, a folder such as `/home/U` beside `/home/u` counted
+  as inside `/home/u`, so a write could land in the other folder. Apothem now
+  checks the case exactly first, and treats the names as one folder only when
+  both name the same folder on disk.
 - **A piped install no longer adopts a source tree from the current folder
   (GHSA-799g-h543-w5gg).** In releases 1.0.1 to 1.5.0, `curl ... | sh` and
   `irm ... | iex` fell back to the folder they were started in, and to its
@@ -880,7 +1006,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   junction on a path an install writes counts as a link, as a symbolic link
   already did, so a junction at or inside a tool's folder, such as
   `~/.claude`, `~/.claude/skills`, or a project's `.cursor` or `.gemini`
-  folder, now stops the install with `target path crosses a symlink`, also
+  folder, now stops the install with `target path crosses a link`, also
   when it leads somewhere inside your home directory or project. Replace such
   a junction with the folder itself, or link `~/.config` or `~/.agents`
   instead, which are followed while they lead somewhere inside your home

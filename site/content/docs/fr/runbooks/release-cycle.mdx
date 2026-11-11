@@ -114,13 +114,24 @@ que réaligner les ancrages divergents.
 Examinez le diff, puis créez le commit :
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-Le drapeau `-S` signe le commit avec la clé GPG. Le push déclenche la matrice
-de CI standard (lint, test, build) ; attendez le vert avant d'étiqueter.
+Le drapeau `-s` ajoute la ligne `Signed-off-by` que recherche la vérification
+obligatoire `Require Signed-off-by`. Le commit de release arrive sur `main`
+comme le squash merge de cette pull request ; GitHub signe ce commit avec sa
+propre clé, et votre signature de la release est celle de l'étiquette (§2.2). Le
+merge déclenche la matrice de CI standard (lint, test, build) sur `main` ;
+attendez le vert avant d'étiqueter.
 
 La vérification de l'état de préparation du §2.4 exige aussi que CodeQL et
 Conformity soient au vert sur le commit de publication. Les deux ne
@@ -583,11 +594,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Attendu : `Verified OK`, `PASSED: SLSA verification passed` et
-`verify-provenance: chain OK (3 of 3 layers verified)`. Le script vérifie
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Le script vérifie
 `SHA256SUMS`, chaque paquet de signature et la provenance en une seule
 exécution ; il déduit l'étiquette du nom du wheel (`--tag vX.Y.Z` la remplace).
 

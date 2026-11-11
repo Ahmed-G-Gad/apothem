@@ -41,9 +41,10 @@ demand, with your own bound:
   while the record is kept. So does the `uninstall-incomplete` record an
   unfinished uninstall leaves (see
   [uninstall](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)),
-  which is kept with the install it belongs to. A root with nothing installed keeps its last
-  record, so the backups of its last uninstall or rollback stay until that
-  root sees another install, uninstall or rollback.
+  which is kept with the install it belongs to. A root with nothing installed
+  keeps the record of its last uninstall that finished and every record after
+  it, or only its last record when no uninstall there finished, and the
+  backups those records reference stay with them.
 - It never deletes a backup set holding a path that earlier releases
   removed whole though it held your own files, such as a folder of your own
   commands, hooks or rules (the [changelog](/docs/changelog) lists examples),
@@ -52,6 +53,12 @@ demand, with your own bound:
   `apothem backups prune --keep 1 --dry-run --verbose`: each such set shows
   as `kept (holds a path an earlier release removed)`, and nothing is
   deleted.
+
+`prune` follows a link at `~/.apothem`. When `~/.apothem` is a link, it
+deletes the old backup sets at the far end of that link, also when the link
+leads out of your home directory. Automatic retention after each install,
+uninstall and rollback does the same. A link inside a backup set is removed as
+a link; `prune` does not enter it.
 
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so

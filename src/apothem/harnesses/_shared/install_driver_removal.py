@@ -19,6 +19,7 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
 from apothem.lib.propagation import text_digest
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
+from .install_driver_blocks import sentinel_refusal
 from .install_driver_jsonmerge import (
     _leading_comment_block,
     _LossyRewriteError,
@@ -31,14 +32,14 @@ from .install_driver_ownership import (
     remove_owned_text,
     strip_owned,
 )
-from .install_driver_pathsafety import _validate_target_path
+from .install_driver_pathsafety import _validate_target_path, _write_boundary
+from .install_driver_retention import unlisted_block_warnings
 from .install_driver_types import (
     _REMOVE_KEY,
     MaterializationResult,
     _path_text,
     _result,
 )
-from .install_driver_written import sentinel_refusal
 
 
 def _remove_apothem_hook_handlers(
@@ -563,7 +564,7 @@ def surgically_remove_materialized_config(
         mode="write_text",
         install_root=install_root,
         harness_name=harness_name,
-        allowed_root=allowed_root or install_root,
+        allowed_root=_write_boundary(allowed_root, install_root),
         apothem_keys=apothem_keys,
         recorded=recorded,
         retired=retired,
@@ -639,11 +640,13 @@ def _remove_unlisted_anchors(
     These are the bolt-on profile anchors (claude-code ``CLAUDE.md``, the
     single-file adapters' profile rule) and any sentinel entry removed from the
     manifest after install. The managed block self-delimits, so it strips without
-    the template. Each path stripped is added to *handled*.
+    the template. Each path stripped is added to *handled*. With no install
+    record, a bolt-on anchor keeps its block, with a warning that names it (see
+    :func:`unlisted_block_warnings`).
     """
-    results: list[MaterializationResult] = []
     if record is None:
-        return results
+        return unlisted_block_warnings(root, skip=handled)
+    results: list[MaterializationResult] = []
     for recorded in record.targets:
         if recorded.path in handled or recorded.mode != "sentinel_merge":
             continue

@@ -39,9 +39,9 @@ from typing import Any, Final
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
+from apothem.harnesses._shared.install_driver_blocks import endless_block_warning
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
 from apothem.harnesses._shared.install_driver_types import _path_text
-from apothem.harnesses._shared.install_driver_written import endless_block_warning
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
