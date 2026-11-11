@@ -984,7 +984,25 @@ _QUOTED = (
     # quotes, so the command would name \server\my share.
     (True, _SHARE, None),
     (True, _SHARE.rstrip(_BS), None),
+    (True, "C:" + _BS + "O'Brien x", '"C:' + _BS + "O'Brien x" + '"'),
+    # Without a space, PowerShell and Git Bash hand the folder to the
+    # installer's apothem.cmd shim unquoted, and cmd acts on these characters.
+    (True, "C:" + _BS + "work" + _BS + "R&D", None),
+    (True, "C:" + _BS + "a^b", None),
+    (True, "C:" + _BS + "a|b", None),
+    (True, "C:" + _BS + "a<b", None),
+    (True, "C:" + _BS + "a>b", None),
+    # With a space the shells keep the quotes, and parentheses never break.
+    (True, "C:" + _BS + "a & b", '"C:' + _BS + "a & b" + '"'),
+    (True, "C:" + _BS + "a ^ b", '"C:' + _BS + "a ^ b" + '"'),
     (True, "C:" + _BS + "O'Brien & Co (x)", '"C:' + _BS + "O'Brien & Co (x)" + '"'),
+    (True, "C:" + _BS + "proj (old)", '"C:' + _BS + "proj (old)" + '"'),
+    (True, "C:" + _BS + "(old)", '"C:' + _BS + "(old)" + '"'),
+    (
+        True,
+        "C:" + _BS + "Program Files (x86)" + _BS + "x",
+        '"C:' + _BS + "Program Files (x86)" + _BS + "x" + '"',
+    ),
     (True, "C:" + _BS + "work" + _BS + "$site", None),
     (True, "C:" + _BS + "tick`n", None),
     (True, "C:" + _BS + "100%PATH%", None),
@@ -1020,9 +1038,9 @@ _QUOTED = (
 def test_a_printed_folder_is_quoted_for_the_shell(
     windows: bool, path: str, quoted: str | None
 ) -> None:
-    from apothem.harnesses._shared import install_driver_datahome as datahome
+    from apothem.lib.shell_quote import shell_quoted
 
-    assert datahome.shell_quoted(path, windows=windows) == quoted
+    assert shell_quoted(path, windows=windows) == quoted
 
 
 def test_a_folder_the_quotes_cannot_carry_gets_the_steps_in_words() -> None:
