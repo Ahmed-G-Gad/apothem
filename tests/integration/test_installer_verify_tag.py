@@ -2207,8 +2207,9 @@ def test_a_filter_set_in_info_attributes_is_refused(
         result,
         home,
         old_head,
-        f"{home}'s own git attributes set a filter (filter=), which the update "
-        f"would trust. Remove it from {attributes}, then re-run.",
+        f"{home}'s own git attributes name a filter or diff driver (filter= or "
+        "diff=), which the update would trust. Remove the setting from "
+        f"{attributes}, then re-run.",
         env,
     )
 

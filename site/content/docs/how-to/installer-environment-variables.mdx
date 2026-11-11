@@ -74,7 +74,10 @@ option.
 
 The installers and updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
 `GIT_CONFIG_SYSTEM`, so a value inherited from your environment cannot point
-git at another config file. If you set one of them, the installer ignores it;
+git at another config file, and `GIT_ATTR_SOURCE`, which would make git read
+attributes from another tree than the work tree and index the checks read (an
+`attr.tree` in your own config is emptied on every git command run on a clone
+for the same reason). If you set one of them, the installer ignores it;
 the PowerShell scripts put it back when the run ends, so an `irm ... | iex`
 run leaves your session as it was. `GIT_CONFIG_NOSYSTEM` stays as you set it:
 it only stops git reading the system config. git still reads your own global
@@ -98,7 +101,9 @@ at the root of a drive, such as `C:\apothem`, can be changed by every user who
 signs in to the computer, under Windows' default permissions. Keep it under
 your own user folder, as the default is. The install and update scripts, dry
 runs included, warn without stopping when other users can write to
-`APOTHEM_HOME` or to the folder that holds it;
+`APOTHEM_HOME` or to the folder that holds it, or own either. On Windows the
+warning comes from `install.ps1` and `update.ps1`: `install.sh` and
+`update.sh` do not check under Git Bash, MSYS2 or Cygwin;
 [Troubleshooting](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)
 shows how to fix it.
 
@@ -128,9 +133,10 @@ what it holds.
   deleted. Before the fetch, an update in place stops when files are marked
   assume-unchanged or skip-worktree, when the clone's work tree is not
   `APOTHEM_HOME`, when the clone holds a submodule, when `.git/info/attributes`
-  sets a `filter=`, when the clone borrows objects from another repository,
-  when a `.gitattributes` file in the work tree is untracked or differs from
-  the committed copy, when files under `src` are untracked, or when the clone's
+  names a filter or diff driver, when the clone borrows objects from another
+  repository, when a `.gitattributes` file in the work tree is untracked,
+  differs from the committed copy or names such a driver, when files under
+  `src` are untracked, or when the clone's
   `.git/config` or `.git/config.worktree` holds a setting other than the ones
   `git clone` and `git init` write there for a full clone, branch settings (a
   branch's `remote` and `pushremote` must be `origin`), `user.name`,

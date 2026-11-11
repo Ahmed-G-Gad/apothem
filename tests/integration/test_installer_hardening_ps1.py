@@ -254,8 +254,9 @@ def test_a_filter_the_clone_assigns_is_refused(
     else:
         user_config = smudge
         expected = (
-            f"{home}'s own git attributes set a filter (filter=), which the update "
-            f"would trust. Remove it from {home}/.git/info/attributes, then re-run."
+            f"{home}'s own git attributes name a filter or diff driver (filter= or "
+            "diff=), which the update would trust. Remove the setting from "
+            f"{home}/.git/info/attributes, then re-run."
         )
 
     result = _invoke(
@@ -282,7 +283,7 @@ def test_a_filter_line_that_is_a_comment_is_not_refused(tmp_path: Path) -> None:
     result = _invoke(tmp_path, "update.ps1", _script_env(tmp_path))
 
     plain = _out(result)
-    assert "own git attributes set a filter" not in plain, plain
+    assert "own git attributes name a filter" not in plain, plain
     assert _head(home) == _head(repo), plain
 
 
@@ -2092,8 +2093,9 @@ def test_a_filter_behind_a_utf16_byte_order_mark_is_refused(
     assert _head(home) == old_commit, plain
     assert result.returncode != 0, plain
     assert _in(
-        f"{home}'s own git attributes set a filter (filter=), which the update "
-        f"would trust. Remove it from {home}/.git/info/attributes, then re-run.",
+        f"{home}'s own git attributes name a filter or diff driver (filter= or "
+        "diff=), which the update would trust. Remove the setting from "
+        f"{home}/.git/info/attributes, then re-run.",
         plain,
     ), plain
 
@@ -2111,7 +2113,7 @@ def test_a_comment_line_holding_a_carriage_return_is_not_refused(
     result = _invoke(tmp_path, "update.ps1", _script_env(tmp_path))
 
     plain = _out(result)
-    assert "own git attributes set a filter" not in plain, plain
+    assert "own git attributes name a filter" not in plain, plain
     assert _head(home) == _head(repo), plain
 
 
@@ -2302,6 +2304,41 @@ def _my_sid() -> str:
     return out.strip().split(",")[-1].strip('"')
 
 
+#: NT SERVICE\TrustedInstaller, which owns and may change Windows' own folders.
+_TRUSTED_INSTALLER = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464"
+
+
+def _make_private(folder: Path) -> Path:
+    """Give FOLDER entries for SYSTEM, Administrators and you only, none of
+    them inherited, as a user folder has."""
+    folder.mkdir(parents=True, exist_ok=True)
+    _icacls(
+        folder,
+        "/inheritance:r",
+        "/grant:r",
+        "*S-1-5-18:(OI)(CI)F",
+        "*S-1-5-32-544:(OI)(CI)F",
+        f"*{_my_sid()}:(OI)(CI)F",
+    )
+    return folder
+
+
+@pytest.fixture
+def own_tmp(tmp_path: Path) -> Path:
+    """tmp_path made private (_make_private). The warning names every
+    account or group, other than you and the system ones, that may change a
+    folder, so what the host's temporary folder passes on (on some hosts, a
+    sandbox group's Modify) would otherwise be named in every warning here."""
+    return _make_private(tmp_path)
+
+
+def _owner_message(folder: Path | str, who: str) -> str:
+    return (
+        f"Other users can change the code Apothem runs as you: {who} owns {folder}. "
+        "To fix it, move APOTHEM_HOME into your user folder."
+    )
+
+
 def _drive_root_like(folder: Path) -> Path:
     """Give FOLDER what a client Windows's C:\\ passes on: Authenticated
     Users may modify what is made inside, and may make folders in it."""
@@ -2319,16 +2356,7 @@ def test_a_home_in_a_folder_shaped_like_the_user_folder_gives_no_warning(
 ) -> None:
     """A folder only SYSTEM, Administrators and you can use, as a user
     folder is, gives no warning, for a home in it or a new one there."""
-    profile = tmp_path / "profile"
-    profile.mkdir()
-    _icacls(
-        profile,
-        "/inheritance:r",
-        "/grant:r",
-        "*S-1-5-18:(OI)(CI)F",
-        "*S-1-5-32-544:(OI)(CI)F",
-        f"*{_my_sid()}:(OI)(CI)F",
-    )
+    profile = _make_private(tmp_path / "profile")
     home = profile / ".apothem"
     if state == "made":
         home.mkdir()
@@ -2346,15 +2374,75 @@ def test_a_home_in_a_folder_shaped_like_the_user_folder_gives_no_warning(
     ],
 )
 def test_a_home_others_may_modify_is_named(
-    tmp_path: Path, shell: str | None, sid: str, who: str
+    own_tmp: Path, shell: str | None, sid: str, who: str
 ) -> None:
     """An entry of the home's own that lets Users or Authenticated Users
     modify it is named, with the fix; the folder holding it is fine."""
-    home = tmp_path / "holder" / "apothem"
+    home = own_tmp / "holder" / "apothem"
     home.mkdir(parents=True)
     _icacls(home, "/grant", f"*{sid}:(OI)(CI)(M)")
 
     assert _home_warnings(shell, home) == [_home_message(home, who)]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+@pytest.mark.parametrize(
+    ("sid", "who"),
+    [
+        ("S-1-5-32-546", "Guests"),
+        ("S-1-5-32-555", "Remote Desktop Users"),
+        ("S-1-5-2", "NETWORK"),
+        ("S-1-1-0", "Everyone"),
+    ],
+)
+def test_any_other_account_or_group_that_may_modify_the_home_is_named(
+    own_tmp: Path, shell: str | None, sid: str, who: str
+) -> None:
+    """Not only the groups every user is in: any account or group other than
+    you, SYSTEM, Administrators and TrustedInstaller that may modify the home
+    is named, as the folder's Security tab names it."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", f"*{sid}:(OI)(CI)(M)")
+
+    assert _home_warnings(shell, home) == [_home_message(home, who)]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_you_and_the_system_accounts_are_never_named(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """SYSTEM, Administrators, TrustedInstaller and CREATOR OWNER (which
+    stands for whoever makes an item inside) may change a folder, as they
+    may change Windows' own, and give no warning; neither do you."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    for sid in ("S-1-5-18", "S-1-5-32-544", _TRUSTED_INSTALLER):
+        _icacls(home, "/grant", f"*{sid}:(OI)(CI)(F)")
+    _icacls(home, "/grant", "*S-1-3-0:(OI)(CI)(IO)(F)")
+
+    assert _home_warnings(shell, home) == []
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_home_another_account_owns_names_the_owner(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """An owner can always change a folder's permissions, so a home another
+    account owns is named, with the fix to move it. Giving a folder another
+    owner takes the right to restore files, which an elevated run has."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    given = subprocess.run(
+        ["icacls", str(home), "/setowner", "*S-1-5-32-546"],
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    if given.returncode != 0:
+        pytest.skip("this run may not give a folder another owner (not elevated)")
+
+    assert _home_warnings(shell, home) == [_owner_message(home, "Guests")]
 
 
 def _pwsh_7_module_path() -> str:
@@ -2376,12 +2464,12 @@ def _pwsh_7_module_path() -> str:
 )
 @pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
 def test_windows_powershell_given_powershell_7s_module_path_still_warns(
-    tmp_path: Path, script: str
+    own_tmp: Path, script: str
 ) -> None:
     """Windows PowerShell started by a program PowerShell 7 started inherits
     PowerShell 7's module folders first and then cannot load Get-Acl; the
     warning reads the folder's entries without it."""
-    home = tmp_path / "holder" / "apothem"
+    home = own_tmp / "holder" / "apothem"
     home.mkdir(parents=True)
     _icacls(home, "/grant", f"*{_USERS}:(OI)(CI)(M)")
 
@@ -2397,11 +2485,11 @@ def test_windows_powershell_given_powershell_7s_module_path_still_warns(
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 def test_a_new_home_where_interactive_users_may_modify_is_named(
-    tmp_path: Path, shell: str | None
+    own_tmp: Path, shell: str | None
 ) -> None:
     """A folder that passes INTERACTIVE's Modify to what is made in it, as
     C:\\Users\\Public does, is named for a new home there."""
-    holder = tmp_path / "public"
+    holder = own_tmp / "public"
     holder.mkdir()
     _icacls(holder, "/grant", f"*{_INTERACTIVE}:(OI)(CI)(IO)(M)")
     new = holder / "apothem"
@@ -2422,7 +2510,7 @@ def _free_drive_letter() -> str:
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 def test_a_home_made_at_the_root_of_a_drive_says_where_the_access_comes_from(
-    tmp_path: Path, shell: str | None
+    own_tmp: Path, shell: str | None
 ) -> None:
     """A folder made at the root of a drive inherits, under a client
     Windows's defaults, Authenticated Users' Modify. A home made in a folder
@@ -2430,7 +2518,7 @@ def test_a_home_made_at_the_root_of_a_drive_says_where_the_access_comes_from(
     message says the access comes from the drive's default permissions, for
     a home there and for a new one. Making folders in the root is not
     replacing the home, so the root itself is not named."""
-    holder = _drive_root_like(tmp_path / "drive")
+    holder = _drive_root_like(own_tmp / "drive")
     home = holder / "apothem"
     home.mkdir()
     new = holder / "new"
@@ -2461,11 +2549,11 @@ def test_a_home_made_at_the_root_of_a_drive_says_where_the_access_comes_from(
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 def test_a_folder_where_others_may_delete_what_it_holds_is_named(
-    tmp_path: Path, shell: str | None
+    own_tmp: Path, shell: str | None
 ) -> None:
     """Users given delete-children on the folder holding the home can rename
     the home away and put another in its place: that folder is named."""
-    holder = tmp_path / "holder"
+    holder = own_tmp / "holder"
     home = holder / "apothem"
     home.mkdir(parents=True)
     _icacls(holder, "/grant", f"*{_USERS}:(DC)")
@@ -2479,11 +2567,11 @@ def test_a_folder_where_others_may_delete_what_it_holds_is_named(
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 def test_an_entry_only_for_what_a_folder_holds_does_not_name_that_folder(
-    tmp_path: Path, shell: str | None
+    own_tmp: Path, shell: str | None
 ) -> None:
     """An inherit-only entry gives Users nothing on the folder holding the
     home, so that folder is not named; the home, which inherits it, is."""
-    holder = tmp_path / "holder"
+    holder = own_tmp / "holder"
     holder.mkdir()
     _icacls(holder, "/grant", f"*{_USERS}:(OI)(CI)(IO)(F)")
     home = holder / "apothem"
@@ -2494,14 +2582,14 @@ def test_an_entry_only_for_what_a_folder_holds_does_not_name_that_folder(
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 def test_a_home_given_as_a_junction_names_the_folder_it_leads_to(
-    tmp_path: Path, shell: str | None
+    own_tmp: Path, shell: str | None
 ) -> None:
     """A junction's entries cover only the junction itself; the warning
     reads, and names, the folder the junction leads to."""
-    target = tmp_path / "target"
+    target = own_tmp / "target"
     target.mkdir()
     _icacls(target, "/grant", f"*{_AUTHENTICATED_USERS}:(OI)(CI)(M)")
-    link = tmp_path / "home-link"
+    link = own_tmp / "home-link"
     _make_junction(link, target)
 
     assert _home_warnings(shell, link) == [_home_message(target, "Authenticated Users")]
@@ -2510,15 +2598,15 @@ def test_a_home_given_as_a_junction_names_the_folder_it_leads_to(
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
 @pytest.mark.parametrize("holder_shape", ["modify", "drive-root"])
 def test_a_junction_others_may_delete_and_make_again_is_named(
-    tmp_path: Path, shell: str | None, holder_shape: str
+    own_tmp: Path, shell: str | None, holder_shape: str
 ) -> None:
     """A junction inherits its folder's entries, so Modify on the folder (or
     a drive root's defaults) lets others delete the junction and, with
     create-folders on the folder, make one of their own under the same name.
     The folder is named, though the junction leads to a private folder."""
-    target = tmp_path / "target"
+    target = own_tmp / "target"
     target.mkdir()
-    holder = tmp_path / "holder"
+    holder = own_tmp / "holder"
     if holder_shape == "modify":
         holder.mkdir()
         _icacls(holder, "/grant", f"*{_AUTHENTICATED_USERS}:(OI)(CI)(M)")
@@ -2545,11 +2633,16 @@ _POSIX_STUBS = (
     "function ls { $global:LASTEXITCODE = 0; "
     "if ($args[-1] -eq $env:T_HOME) { $m = $env:T_HOME_MODE; $g = $env:T_GROUP } "
     "else { $m = $env:T_UP_MODE; $g = $env:T_UP_GROUP }; "
-    '"$m 2 alice $g 4096 Nov 10 01:24 $($args[-1])" }; '
+    "$o = if ($args[0] -eq '-ldnL') { if ($env:T_OWNER_UID) { $env:T_OWNER_UID } "
+    "else { '1000' } } elseif ($env:T_OWNER) { $env:T_OWNER } else { 'alice' }; "
+    '"$m 2 $o $g 4096 Nov 10 01:24 $($args[-1])" }; '
     "function stat { $global:LASTEXITCODE = 0; "
     "if ($args[-1] -eq $env:T_HOME) { $env:T_GROUP } else { $env:T_UP_GROUP } }; "
     "function uname { $env:T_OS }; "
-    "function id { if ($args[0] -eq '-un') { 'alice' } else { $env:T_PRIMARY } }; "
+    "function id { if ($args[0] -eq '-un') { 'alice' } elseif ($args[0] -eq '-u') "
+    "{ '1000' } else { $env:T_PRIMARY } }; "
+    "function getfacl { if ($env:T_ACL -and $args[-1] -eq $env:T_HOME) "
+    "{ $env:T_ACL -split '\\|' } }; "
     "function sh { $env:T_UMASK }; "
 )
 
@@ -2660,6 +2753,74 @@ def test_outside_windows_the_mode_bits_decide(
     assert warnings == messages[kind]
 
 
+#: An access list as getfacl prints it, lines joined by |: bob and the group
+#: staff may write; alice (you), root, the group named after you, carol (the
+#: mask takes her write away) and the default entry for dave are not named.
+_ACCESS_LIST = "|".join(
+    (
+        "# file: apothem",
+        "user::rwx",
+        "user:bob:rwx",
+        "user:alice:rwx",
+        "user:root:rwx",
+        "user:carol:rwx\t\t\t#effective:r-x",
+        "group::r-x",
+        "group:alice:rwx",
+        "group:staff:rwx",
+        "mask::rwx",
+        "other::r-x",
+        "default:user:dave:rwx",
+    )
+)
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+@pytest.mark.parametrize(
+    ("owner", "owner_uid", "access_list", "expected"),
+    [
+        ("bob", "1001", "", "owner"),
+        ("root", "0", "", ""),
+        ("alice", "1000", _ACCESS_LIST, "access-list"),
+    ],
+    ids=["another-user", "root", "access-list"],
+)
+def test_outside_windows_the_owner_and_the_access_list_decide(
+    tmp_path: Path, owner: str, owner_uid: str, access_list: str, expected: str
+) -> None:
+    """Outside Windows the ps1 scripts follow the sh rule and messages: a user
+    other than you or root who owns the home or the folder holding it is
+    named, with the fix to move it (ls -n gives the number); root is not; and
+    each user and group an access list (getfacl) lets write is named."""
+    holder = tmp_path / "holder"
+    home = holder / "apothem"
+    home.mkdir(parents=True)
+    prelude = (
+        "$env:T_HOME_MODE = 'drwxr-xr-x'; $env:T_UP_MODE = 'drwxr-x---'; "
+        "$env:T_GROUP = 'alice'; $env:T_UP_GROUP = 'alice'; "
+        "$env:T_PRIMARY = 'alice'; $env:T_OS = 'Linux'; $env:T_UMASK = '0022'; "
+        f"$env:T_OWNER = '{owner}'; $env:T_OWNER_UID = '{owner_uid}'; " + _POSIX_STUBS
+    )
+
+    warnings = _home_warnings(_POWERSHELL_51, home, prelude, env={"T_ACL": access_list})
+
+    fix = "To fix it, move APOTHEM_HOME into a folder you own."
+    messages = {
+        "": [],
+        "owner": [
+            f"Other users can change the code Apothem runs as you: the user {owner} "
+            f"owns {home}. {fix}",
+            f"Other users can change the code Apothem runs as you: the user {owner} "
+            f"owns {holder}. {fix}",
+        ],
+        "access-list": [
+            "Other users can change the code Apothem runs as you: the user bob, the "
+            f'group staff can write to {home}. To fix it, run chmod go-w "{home}", '
+            "or move APOTHEM_HOME."
+        ],
+    }
+    assert warnings == messages[expected]
+
+
 def _went_on_after_one_warning(plain: str, warning: str, next_step: str) -> bool:
     """PLAIN holds WARNING once, and NEXT_STEP (the run's next heading) after
     it: the warning did not stop the run. The fixture repository is no full
@@ -2671,17 +2832,17 @@ def _went_on_after_one_warning(plain: str, warning: str, next_step: str) -> bool
 
 @pytest.mark.parametrize("dry_run", [False, True], ids=["real", "dry-run"])
 def test_an_install_into_a_folder_others_may_modify_warns_once_and_goes_on(
-    tmp_path: Path, dry_run: bool
+    own_tmp: Path, dry_run: bool
 ) -> None:
     """A fresh install into a folder that passes Authenticated Users' Modify
     to what is made in it says so once, for the home it made, and goes on; a
     dry run there names the home it would make."""
-    make_tagged_repo(tmp_path, TAG)
-    holder = _drive_root_like(tmp_path / "drive")
+    make_tagged_repo(own_tmp, TAG)
+    holder = _drive_root_like(own_tmp / "drive")
     home = holder / "apothem-home"
-    env = _script_env(tmp_path, extra_env={"APOTHEM_HOME": str(home)})
+    env = _script_env(own_tmp, extra_env={"APOTHEM_HOME": str(home)})
 
-    result = _invoke(tmp_path, "install.ps1", env, *(["-DryRun"] if dry_run else []))
+    result = _invoke(own_tmp, "install.ps1", env, *(["-DryRun"] if dry_run else []))
 
     plain = _out(result)
     if dry_run:
@@ -2692,23 +2853,23 @@ def test_an_install_into_a_folder_others_may_modify_warns_once_and_goes_on(
         assert not home.exists(), plain
     else:
         warning = _home_message(home, "Authenticated Users")
-        assert _head(home) == _head(tmp_path / "fixture-repo"), plain
+        assert _head(home) == _head(own_tmp / "fixture-repo"), plain
     assert _went_on_after_one_warning(plain, warning, "Profile setup"), plain
     assert plain.count(" ! ") == 1, plain
 
 
 def test_an_update_of_a_home_others_may_modify_warns_once_and_goes_on(
-    tmp_path: Path,
+    own_tmp: Path,
 ) -> None:
     """An update in place of a home Users may modify says so once and goes on."""
-    home = _prepare(tmp_path, "update.ps1")
+    home = _prepare(own_tmp, "update.ps1")
     _icacls(home, "/grant", f"*{_USERS}:(OI)(CI)(M)")
-    env = _script_env(tmp_path)
+    env = _script_env(own_tmp)
 
-    result = _invoke(tmp_path, "update.ps1", env)
+    result = _invoke(own_tmp, "update.ps1", env)
 
     plain = _out(result)
-    assert _head(home) == _head(tmp_path / "fixture-repo"), plain
+    assert _head(home) == _head(own_tmp / "fixture-repo"), plain
     assert _went_on_after_one_warning(
         plain, _home_message(home, "Users"), "Re-materializing harness"
     ), plain

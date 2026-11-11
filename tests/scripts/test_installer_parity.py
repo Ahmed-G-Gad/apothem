@@ -788,8 +788,8 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "checkout --quiet --end-of-options",
         "is not a signed release tag and cannot be verified",
         "has changes to tracked files. Commit or stash them, then re-run.",
-        "diff --quiet HEAD",
-        "diff --cached --quiet",
+        "diff --quiet --no-textconv --no-ext-diff HEAD",
+        "diff --cached --quiet --no-textconv --no-ext-diff",
         "after the update. Aborting before re-materialization.",
         "status --porcelain --untracked-files=no",
         "checkout --quiet --detach",
@@ -825,8 +825,8 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         " has files under src that git does not track, and the engine could load them:",
         "Nothing was changed. Move these files out of ",
         "Could not remove the Python cache folders (__pycache__) under ",
-        "'s own git attributes set a filter (filter=), which the update would "
-        "trust. Remove it from ",
+        "'s own git attributes name a filter or diff driver (filter= or diff=), "
+        "which the update would trust. Remove the setting from ",
         "Could not read the git config of ",
         "config --file ",
         "--name-only --list",
@@ -869,6 +869,7 @@ CLEARED_GIT_VARIABLES = (
     "GIT_CONFIG",
     "GIT_CONFIG_GLOBAL",
     "GIT_CONFIG_SYSTEM",
+    "GIT_ATTR_SOURCE",
 )
 
 #: The git variables every script leaves as the caller set them:
@@ -1683,7 +1684,7 @@ def test_sh_checks_a_clones_own_config_file(
         + "\n"
         + _sh_function(SCRIPTS[sh_name], "need_plain_file")
         + "\n"
-        + _sh_function(SCRIPTS[sh_name], "sets_filter")
+        + _sh_function(SCRIPTS[sh_name], "sets_driver")
         + "\n"
         + _sh_function(SCRIPTS[sh_name], "check_clone_config")
         + '\ncheck_clone_config "$1"\necho passed\n'
@@ -1718,7 +1719,7 @@ def test_powershell_checks_a_clones_own_config_file(
                 "$CloneConfigAllow",
                 "Test-AllowedConfigKey",
                 "Assert-ClonePlainFile",
-                "Test-AttributeFilter",
+                "Test-AttributeDriver",
                 "Assert-CloneConfig",
             ),
             "function Write-Fail { param([string]$Msg) throw $Msg }",
@@ -1746,7 +1747,9 @@ def _git_env_without_user_config() -> dict[str, str]:
 #: fsmonitor program, only the file, git, http, https and ssh transports
 #: (no ext:: and no other remote helper), no recursion into submodules, no
 #: git status run inside a nested repository, no automatic maintenance,
-#: and paths longer than Windows' usual limit written at checkout.
+#: paths longer than Windows' usual limit written at checkout, and
+#: attributes read from the work tree and index only (an empty attr.tree
+#: overrides one in the user's own config, which would name another tree).
 GIT_NO_PROGRAM_SETTINGS = (
     "core.fsmonitor=",
     "protocol.ext.allow=never",
@@ -1762,6 +1765,7 @@ GIT_NO_PROGRAM_SETTINGS = (
     "gc.auto=0",
     "maintenance.auto=false",
     "core.longpaths=true",
+    "attr.tree=",
 )
 
 
@@ -1777,10 +1781,10 @@ def test_git_runs_on_a_clone_with_the_same_settings_in_both(
         r"^\$GitNoProgram = @\((.*)\)\r?$", SCRIPTS[ps1_name], re.MULTILINE
     )
     assert match, f"{ps1_name} no longer defines $GitNoProgram"
-    assert cgit.count("git --no-pager ") == 2, f"{sh_name}'s cgit lacks --no-pager"
+    assert cgit.count("git --no-pager ") == 1, f"{sh_name}'s cgit lacks --no-pager"
     assert "'--no-pager'" in match.group(1), f"{ps1_name} lacks --no-pager"
     for setting in GIT_NO_PROGRAM_SETTINGS:
-        assert cgit.count(f"-c {setting}") == 2, f"{sh_name}'s cgit lacks -c {setting}"
+        assert cgit.count(f"-c {setting} ") == 1, f"{sh_name}'s cgit lacks -c {setting}"
         assert f"'-c', '{setting}'" in match.group(1), (
             f"{ps1_name}'s $GitNoProgram lacks -c {setting}"
         )
@@ -2839,11 +2843,16 @@ def test_sh_sorts_names_by_their_bytes(tmp_path: Path) -> None:
 
 
 #: .git/info/attributes contents and whether both families refuse them: a
-#: filter= line counts unless the line is a comment, with lines ended by LF
-#: only (as git reads them), NUL bytes dropped, and a UTF-16 byte-order mark
-#: read as the bytes it is, so it hides nothing git sees.
+#: filter= or diff= line counts unless the line is a comment, with lines
+#: ended by LF only (as git reads them), NUL bytes dropped, and a UTF-16
+#: byte-order mark read as the bytes it is, so it hides nothing git sees.
 ATTRIBUTE_CASES: tuple[tuple[str, bytes, bool], ...] = (
     ("plain", b"# mine\n*.toml filter=lfs\n", True),
+    # git diff runs a diff driver's textconv on the files it names.
+    ("diff-driver", b"*.md diff=astextplain\n", True),
+    ("diff-driver-comment", b"# *.md diff=astextplain\n", False),
+    # -diff (as the binary macro sets it) names no driver.
+    ("diff-unset", b"*.png -diff\n", False),
     ("nul-byte", b"#\0\n*.toml filter=lfs\n", True),
     ("utf16-le-bom", b"\xff\xfe\n* filter=lfs\n", True),
     ("utf16-be-bom", b"\xfe\xff\n* filter=lfs\n", True),
@@ -2869,8 +2878,9 @@ def _attributes_home(root: Path, content: bytes) -> str:
 
 def _attributes_message(home: str) -> str:
     return (
-        f"{home}'s own git attributes set a filter (filter=), which the update "
-        f"would trust. Remove it from {home}/.git/info/attributes, then re-run."
+        f"{home}'s own git attributes name a filter or diff driver (filter= or "
+        "diff=), which the update would trust. Remove the setting from "
+        f"{home}/.git/info/attributes, then re-run."
     )
 
 
@@ -2896,7 +2906,7 @@ def test_sh_reads_a_clones_attributes_as_git_does(
         + "\n"
         + _sh_function(SCRIPTS[sh_name], "need_plain_file")
         + "\n"
-        + _sh_function(SCRIPTS[sh_name], "sets_filter")
+        + _sh_function(SCRIPTS[sh_name], "sets_driver")
         + "\n"
         + _sh_function(SCRIPTS[sh_name], "check_clone_config")
         + '\ncheck_clone_config "$1"\necho passed\n'
@@ -2931,7 +2941,7 @@ def test_powershell_reads_a_clones_attributes_as_sh_does(
                 "$CloneConfigAllow",
                 "Test-AllowedConfigKey",
                 "Assert-ClonePlainFile",
-                "Test-AttributeFilter",
+                "Test-AttributeDriver",
                 "Assert-CloneConfig",
             ),
             "function Write-Fail { param([string]$Msg) throw $Msg }",
@@ -3067,7 +3077,7 @@ def test_a_clone_whose_index_git_cannot_read_is_refused_in_both(
                     "Test-AllowedConfigKey",
                     "Get-ClonePath",
                     "Assert-ClonePlainFile",
-                    "Test-AttributeFilter",
+                    "Test-AttributeDriver",
                     "Assert-CloneConfig",
                     "Assert-CloneGit",
                     "Assert-CloneModuleFolder",
@@ -3711,9 +3721,9 @@ def test_untracked_files_under_a_renamed_src_stop_an_update_in_both(
 
 def _filter_attributes(home: str, path: str) -> list[str]:
     return _message(
-        f"{home} has a .gitattributes file at {home}/{path} that sets a filter "
-        "(filter=). git would apply it while it reads the clone. Remove the "
-        "filter and commit that change, then re-run."
+        f"{home} has a .gitattributes file at {home}/{path} that names a filter "
+        "or diff driver (filter= or diff=). git would run that driver while it "
+        "reads the clone. Remove the setting and commit that change, then re-run."
     )
 
 
@@ -3746,6 +3756,22 @@ COMMITTED_ATTRIBUTE_CASES: tuple[tuple[str, object, str | None], ...] = (
         lambda h: _commit_attributes(h, ".gitattributes", "  # * filter=userfilter\n"),
         None,
     ),
+    # git ends a line at LF only and reads a raw CR inside a quoted pattern
+    # as part of it, so this line is the pattern *[<CR>#]* and a filter.
+    # PowerShell's reader of git's output also ends a line at the CR, which
+    # left a line starting with # that the check took for a comment.
+    (
+        "cr-inside-a-quoted-pattern",
+        lambda h: _commit_attributes(
+            h, ".gitattributes", '"*[\r#]*" filter=userfilter\n'
+        ),
+        ".gitattributes",
+    ),
+    (
+        "diff-driver",
+        lambda h: _commit_attributes(h, ".gitattributes", "README diff=astextplain\n"),
+        ".gitattributes",
+    ),
 )
 
 
@@ -3755,14 +3781,16 @@ COMMITTED_ATTRIBUTE_CASES: tuple[tuple[str, object, str | None], ...] = (
     COMMITTED_ATTRIBUTE_CASES,
     ids=[c[0] for c in COMMITTED_ATTRIBUTE_CASES],
 )
-def test_a_committed_gitattributes_that_sets_a_filter_is_refused_in_both(
+def test_a_committed_gitattributes_that_names_a_driver_is_refused_in_both(
     tmp_path: Path, name: str, case: str, change: object, refused: str | None
 ) -> None:
     """Someone who can write to the clone can commit a .gitattributes that
-    names a filter the user's own config defines; it matches HEAD and the
-    index, so git diff would run that filter. Both families read the index
-    copy (git cat-file, which runs no filter) and refuse one that sets a
-    filter outside a comment, also when the work-tree file is missing."""
+    names a filter or diff driver the user's own config (or Git for Windows'
+    system config) defines; it matches HEAD and the index, so git diff would
+    run that driver. Both families read the index copy as bytes (git
+    cat-file, which runs no filter), lines ended by LF only, and refuse one
+    that names a driver outside a comment, also when the work-tree file is
+    missing."""
     home_path = _work_clone(tmp_path)
     assert callable(change)
     change(home_path)
@@ -4031,6 +4059,120 @@ def test_the_callers_allowed_transports_do_not_reach_git_in_sh(
     assert "transport 'ext' not allowed" in out, out
 
 
+def _attribute_source_clone(tmp_path: Path, marker: Path) -> tuple[Path, Path]:
+    """The review's clone: HEAD has no .gitattributes, branch side commits
+    one that names userfilter, and a tracked file is touched so the next git
+    diff reads it again. Returns the clone and a global config of the
+    user's own whose userfilter clean command creates MARKER."""
+    _, home = _upstream_and_clone(tmp_path)
+    _git("-C", str(home), "checkout", "--quiet", "-b", "side")
+    (home / ".gitattributes").write_bytes(b"* filter=userfilter\n")
+    _git("-C", str(home), "add", ".gitattributes")
+    _git("-C", str(home), "commit", "--quiet", "-m", "attributes")
+    _git("-C", str(home), "checkout", "--quiet", "-")
+    config = tmp_path / "user.gitconfig"
+    config.write_bytes(
+        f'[filter "userfilter"]\n\tclean = touch {marker.as_posix()} && cat\n'.encode()
+    )
+    _touch(home / "README")
+    return home, config
+
+
+def _diff_ran_the_filter(home: Path, marker: Path, **env: str) -> bool:
+    """Whether a plain git diff in HOME, with ENV, runs the filter."""
+    subprocess.run(
+        ["git", "-C", str(home), "diff", "--quiet", "HEAD"],
+        capture_output=True,
+        timeout=120,
+        check=False,
+        env={**_git_env_without_user_config(), **env},
+    )
+    ran = marker.exists()
+    marker.unlink(missing_ok=True)
+    _touch(home / "README")
+    return ran
+
+
+@requires_posix_sh
+@pytest.mark.parametrize("sh_name", ["install.sh", "update.sh"])
+def test_the_callers_attribute_source_does_not_reach_git_in_sh(
+    tmp_path: Path, sh_name: str
+) -> None:
+    """GIT_ATTR_SOURCE makes git read attributes from another tree than the
+    work tree and index the attribute checks read, so a caller's value
+    naming a branch whose .gitattributes names the user's own filter would
+    make the clean check run it. The sh scripts clear the variable (the ps1
+    scripts clear it with the rest, and put it back as the run ends)."""
+    assert _SH is not None
+    marker = tmp_path / "filter-ran"
+    home, config = _attribute_source_clone(tmp_path, marker)
+    source = {"GIT_CONFIG_GLOBAL": str(config), "GIT_ATTR_SOURCE": "side"}
+    if not _diff_ran_the_filter(home, marker, **source):
+        pytest.skip("this git does not read GIT_ATTR_SOURCE")
+    # The scripts clear GIT_CONFIG_GLOBAL too, so here the user's own
+    # config is the one git finds in HOME.
+    user = tmp_path / "user-home"
+    user.mkdir()
+    (user / ".gitconfig").write_bytes(config.read_bytes())
+    env = {
+        **_git_env_without_user_config(),
+        "HOME": str(user),
+        "XDG_CONFIG_HOME": str(user / "xdg"),
+        "GIT_ATTR_SOURCE": "side",
+    }
+    program = (
+        _sh_function(SCRIPTS[sh_name], "cgit")
+        + '\nHOOKS_OFF=\ncgit -C "$1" diff --quiet HEAD 2>&1\n'
+    )
+
+    def run(prelude: str) -> str:
+        result = subprocess.run(
+            [_SH, "-c", prelude + "\n" + program, "sh", home.as_posix()],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env=_sh_env(env),
+        )
+        ran = marker.exists()
+        marker.unlink(missing_ok=True)
+        _touch(home / "README")
+        return ("ran " if ran else "") + result.stdout + result.stderr
+
+    control = run("unset GIT_CONFIG_GLOBAL")
+    assert control.startswith("ran "), f"the filter did not run: {control}"
+
+    out = run(_sh_git_environment(sh_name))
+
+    assert not out.startswith("ran "), out
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+def test_a_users_attr_tree_does_not_reach_git_on_a_clone(
+    tmp_path: Path, name: str
+) -> None:
+    """attr.tree in the user's own config points git at another tree's
+    attributes, as GIT_ATTR_SOURCE does. Every git command on a clone
+    empties it (cgit, $GitNoProgram), so attributes come from the work
+    tree and index the checks read, and the filter does not run."""
+    marker = tmp_path / "filter-ran"
+    home, config = _attribute_source_clone(tmp_path, marker)
+    config.write_bytes(config.read_bytes() + b"[attr]\n\ttree = side\n")
+    if not _diff_ran_the_filter(home, marker, GIT_CONFIG_GLOBAL=str(config)):
+        pytest.skip("this git does not read attr.tree")
+
+    got = _run_check(
+        name,
+        'cgit -C "$1" diff --quiet HEAD',
+        "& git @GitNoProgram -C $env:CLONE_HOME diff --quiet HEAD",
+        home.as_posix(),
+        GIT_CONFIG_GLOBAL=str(config),
+    )
+
+    assert not marker.exists(), got
+    assert got == ["passed"], got
+
+
 def _hostile_lazy_fetch_clone(tmp_path: Path, marker: Path) -> Path:
     """The review's clone: only settings the allow-list used to accept
     (repository format 1, an extensions.partialclone that git fetch reads
@@ -4184,6 +4326,7 @@ HOME_ACCESS_WINDOWS_TEXTS: tuple[str, ...] = (
     "default permissions",
     ", from the permissions of ",
     ". To fix it, set APOTHEM_HOME to a folder inside your user folder.",
+    ". To fix it, move APOTHEM_HOME into your user folder.",
 )
 
 #: A variable in a message: sh ``$name``, ``${name}``, ``$1``, ``$(...)``;
@@ -4221,6 +4364,8 @@ HOME_ACCESS_POSIX_MESSAGES: frozenset[str] = frozenset(
         'To fix it, run chmod go-w "{}", or move APOTHEM_HOME.',
         "A new {} would let {} change the code Apothem runs as you (umask {}). "
         "To fix it, run umask 022, then run the installer again.",
+        "Other users can change the code Apothem runs as you: {} owns {}. "
+        "To fix it, move APOTHEM_HOME into a folder you own.",
     }
 )
 
@@ -4275,10 +4420,14 @@ def test_each_script_warns_once_before_the_engine_runs(name: str) -> None:
 )
 def test_every_script_writes_the_posix_home_access_warnings_alike(name: str) -> None:
     """The sh scripts and the ps1 scripts under pwsh outside Windows write
-    the same three POSIX warnings, word for word."""
+    the same four POSIX warnings, word for word."""
     messages = _home_access_messages(name)
 
-    posix = {text for text in messages if "chmod" in text or "umask" in text}
+    posix = {
+        text
+        for text in messages
+        if "chmod" in text or "umask" in text or "a folder you own" in text
+    }
 
     assert posix == HOME_ACCESS_POSIX_MESSAGES, posix ^ HOME_ACCESS_POSIX_MESSAGES
 

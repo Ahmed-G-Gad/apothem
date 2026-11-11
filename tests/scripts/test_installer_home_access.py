@@ -4,15 +4,18 @@
 
 ``install.sh`` and ``update.sh`` call ``warn_home_access`` once, before the
 engine first runs from APOTHEM_HOME. It warns, and never stops the run, when
-the permission bits let users other than you write to APOTHEM_HOME (or, for a
-home not made yet, when the umask would), or rename what the folder holding it
-holds. A group named after you is your user-private group (umask 002 setups on
-Debian, Ubuntu, Fedora and RHEL), so its write bit is no warning. Git Bash,
-MSYS2 and Cygwin make the bits up from Windows permissions, so the check is
-skipped there; the ps1 scripts read the Windows permissions instead.
+the permission bits or an access list (``getfacl``, where installed) let
+users other than you write to APOTHEM_HOME (or, for a home not made yet, when
+the umask would), or rename what the folder holding it holds, and when either
+folder belongs to a user other than you or root. A group named after you is
+your user-private group (umask 002 setups on Debian, Ubuntu, Fedora and RHEL),
+so its write bit is no warning. Git Bash, MSYS2 and Cygwin make the bits up
+from Windows permissions, so the check is skipped there; on Windows the ps1
+scripts give the warning.
 
 These tests run the two functions, as install.sh carries them, under sh with
-a ``warn`` that prints its text, and stub ``id`` and ``uname`` on PATH.
+a ``warn`` that prints its text, and stub ``id``, ``uname``, ``stat`` and
+``getfacl`` on PATH where a test needs another answer.
 """
 
 from __future__ import annotations
@@ -45,6 +48,7 @@ EXECUTABLE_MODE = 0o755
 TEST_USER = "apothem-test-user"
 H_OPENING = "Other users can change the code Apothem runs as you:"
 P_OPENING = "Other users can replace "
+OWNER_FIX = "To fix it, move APOTHEM_HOME into a folder you own."
 
 posix_only = pytest.mark.skipif(
     sys.platform == "win32" or shutil.which("sh") is None,
@@ -93,11 +97,14 @@ def _stub_bin(
     group: str | None,
     uname: str | None,
     stat_group: str | None = None,
+    uid: str | None = None,
+    acl: tuple[str, str] | None = None,
 ) -> Path:
-    """A folder of stub programs: ``id -un`` prints USER and ``id -gn``
-    prints GROUP (other ``id`` calls run the real one); ``uname`` prints
-    UNAME; ``stat`` prints STAT_GROUP. A None leaves that answer to the real
-    program."""
+    """A folder of stub programs: ``id -un`` prints USER, ``id -gn`` prints
+    GROUP and ``id -u`` prints UID (other ``id`` calls run the real one);
+    ``uname`` prints UNAME; ``stat`` prints STAT_GROUP; ``getfacl`` prints
+    ACL's text for ACL's folder and nothing for any other. A None leaves that
+    answer to the real program."""
     stubs = tmp_path / "stub-bin"
     stubs.mkdir(exist_ok=True)
     real_id = shutil.which("id") or "/usr/bin/id"
@@ -106,6 +113,8 @@ def _stub_bin(
         lines.append(f"[ \"$1\" = -un ] && {{ printf '%s\\n' '{user}'; exit 0; }}")
     if group is not None:
         lines.append(f"[ \"$1\" = -gn ] && {{ printf '%s\\n' '{group}'; exit 0; }}")
+    if uid is not None:
+        lines.append(f"[ \"$1\" = -u ] && {{ printf '%s\\n' '{uid}'; exit 0; }}")
     lines.append(f"exec '{real_id}' \"$@\"")
     (stubs / "id").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (stubs / "id").chmod(EXECUTABLE_MODE)
@@ -119,6 +128,15 @@ def _stub_bin(
             f"#!/bin/sh\nprintf '%s\\n' '{stat_group}'\n", encoding="utf-8"
         )
         (stubs / "stat").chmod(EXECUTABLE_MODE)
+    if acl is not None:
+        folder, text = acl
+        (stubs / "acl.txt").write_text(text + "\n", encoding="utf-8")
+        (stubs / "getfacl").write_text(
+            f"#!/bin/sh\n[ \"$2\" = '{folder}' ] && cat '{stubs / 'acl.txt'}'\n"
+            "exit 0\n",
+            encoding="utf-8",
+        )
+        (stubs / "getfacl").chmod(EXECUTABLE_MODE)
     return stubs
 
 
@@ -131,12 +149,20 @@ def _warnings(
     group: str | None = None,
     uname: str | None = None,
     stat_group: str | None = None,
+    uid: str | None = None,
+    acl: tuple[str, str] | None = None,
     shell: str | None = None,
 ) -> list[str]:
     """Run warn_home_access for APOTHEM_HOME=HOME and return its warnings."""
     assert _SH is not None
     stubs = _stub_bin(
-        tmp_path, user=user, group=group, uname=uname, stat_group=stat_group
+        tmp_path,
+        user=user,
+        group=group,
+        uname=uname,
+        stat_group=stat_group,
+        uid=uid,
+        acl=acl,
     )
     env = dict(os.environ)
     env["PATH"] = f"{stubs}{os.pathsep}{env.get('PATH', os.defpath)}"
@@ -380,6 +406,93 @@ def test_a_linked_home_names_the_target_and_the_link(tmp_path: Path) -> None:
         "APOTHEM_HOME.",
         f'{H_OPENING} all users can write to {real}. To fix it, run chmod go-w "{real}", '
         "or move APOTHEM_HOME.",
+    ]
+
+
+def _owner_name(path: Path) -> str:
+    """The owner's name as ls prints it: the user name, or the number when
+    the user has none."""
+    import pwd  # POSIX only; the tests that call this skip on Windows.
+
+    uid = path.stat().st_uid
+    try:
+        return pwd.getpwuid(uid).pw_name
+    except KeyError:
+        return str(uid)
+
+
+@posix_only
+@pytest.mark.parametrize(
+    "parent_mode", [PRIVATE_DIR, STICKY_OPEN_DIR], ids=["private", "sticky"]
+)
+def test_a_home_and_a_folder_someone_else_owns_name_the_owner(
+    tmp_path: Path, parent_mode: int
+) -> None:
+    """A user other than you or root who owns APOTHEM_HOME or the folder
+    that holds it can change either, whatever the mode bits say, and the
+    sticky bit does not stop a folder's own owner. Here ``id -u`` gives
+    another number than the folders' owner, as if someone else made them."""
+    if os.getuid() == 0:
+        pytest.skip("root owns these folders, and root is never named")
+    parent = _folder(tmp_path / "parent", parent_mode)
+    home = _folder(parent / "home", DEFAULT_DIR)
+    real, real_parent = os.path.realpath(home), os.path.realpath(parent)
+    owner = _owner_name(home)
+
+    lines = _warnings(tmp_path, home, uid=str(os.getuid() + 1))
+
+    assert lines == [
+        f"{H_OPENING} the user {owner} owns {real}. {OWNER_FIX}",
+        f"{H_OPENING} the user {owner} owns {real_parent}. {OWNER_FIX}",
+    ]
+
+
+@posix_only
+def test_folders_root_owns_give_no_warning(tmp_path: Path) -> None:
+    """root can change any folder anyway, so a folder root owns, such as
+    /usr/share, is not named."""
+    home = Path("/usr/share")
+    for folder in (home, home.parent):
+        info = folder.stat() if folder.is_dir() else None
+        if info is None or info.st_uid != 0 or info.st_mode & 0o022:
+            pytest.skip(f"{folder} is not a folder only root can write")
+
+    lines = _warnings(tmp_path, home, user=TEST_USER)
+
+    assert lines == []
+
+
+@posix_only
+def test_an_access_list_that_lets_others_write_names_them(tmp_path: Path) -> None:
+    """getfacl, where installed, lists the users and groups an access list
+    gives write access. You, root, a group named after you, an entry the
+    mask takes write from (#effective) and a default entry (for what is
+    made inside) are not named; the folder holding the home has none."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR)
+    real = os.path.realpath(home)
+    text = "\n".join(
+        (
+            "# file: home",
+            "user::rwx",
+            "user:bob:rwx",
+            f"user:{TEST_USER}:rwx",
+            "user:root:rwx",
+            "user:carol:rwx\t\t\t#effective:r-x",
+            "group::r-x",
+            f"group:{TEST_USER}:rwx",
+            "group:staff:rwx",
+            "mask::rwx",
+            "other::r-x",
+            "default:user:dave:rwx",
+        )
+    )
+
+    lines = _warnings(tmp_path, home, user=TEST_USER, acl=(real, text))
+
+    assert lines == [
+        f"{H_OPENING} the user bob, the group staff can write to {real}. "
+        f'To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
     ]
 
 

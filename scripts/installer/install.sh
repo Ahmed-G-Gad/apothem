@@ -53,12 +53,8 @@
 #     untracked files in its source tree); its tree moves into a new
 #     <APOTHEM_HOME>.before-apothem-<time>. A clone of anything else is any
 #     other folder.
-#   - Before an existing clone is fetched or replaced, its owner, its own git
-#     settings (CLONE_CONFIG_ALLOW), attributes, borrowed objects,
-#     submodules, hidden changes and untracked source files are checked
-#     (check_clone_setup), in a dry run too; git runs on it with its hooks,
-#     fsmonitor, pager and maintenance off (cgit), and lazy fetch is off
-#     for the whole run.
+#   - An existing clone is checked before it is fetched or replaced
+#     (check_clone_setup), in a dry run too, and git runs on it through cgit.
 #   - An entry to keep whose name has a space or another special character
 #     stops the install. A symbolic link at APOTHEM_HOME is refused unless it
 #     leads to an existing clone that is updated in place.
@@ -101,17 +97,18 @@ set -eu
 # git reads these from the environment and would then work on another
 # repository, index or object store than the one each command names, swap
 # objects through replace refs, take extra configuration or read its
-# configuration from other files, or run its helper programs and templates
-# from elsewhere; none of them may reach the installer's git commands. git
-# still reads the user's own global and system configuration from the
-# places it always looks, and git, gpg and cosign are the ones PATH finds.
+# configuration from other files, read attributes from another tree, or run
+# its helper programs and templates from elsewhere; none of them may reach
+# the installer's git commands. git still reads the user's own global and
+# system configuration from the places it always looks, and git, gpg and
+# cosign are the ones PATH finds.
 # GIT_CONFIG_NOSYSTEM stays as the caller set it: it only makes git skip
 # the system configuration.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_REPLACE_REF_BASE GIT_CEILING_DIRECTORIES GIT_CONFIG_PARAMETERS \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
-    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM
+    GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_ATTR_SOURCE
 # No replace refs, no lazy fetch of a missing object (a fetch the clone's
 # config shapes), only these transports whatever the caller set.
 GIT_NO_REPLACE_OBJECTS=1
@@ -453,11 +450,8 @@ sq() {
 }
 
 # resolve_latest_tag REPO — print the highest vMAJOR.MINOR.PATCH tag advertised
-# by the remote, or nothing when the remote carries no release tag. Uses only
-# POSIX tools (git ls-remote, sed, sort -t. -k -n) so the moving-branch default
-# is replaced by a pinned-tag default without bashisms. Pure-numeric semver
-# only — pre-release / build-metadata tags (v1.2.3-rc1) are intentionally
-# excluded so the default never resolves to a non-final release.
+# by the remote, or nothing when it has none (POSIX tools only). Pre-release
+# and build tags (v1.2.3-rc1) are left out: the default is a final release.
 resolve_latest_tag() {
     # git ls-remote --tags prints "<sha>\trefs/tags/<tag>" (and "<tag>^{}" for
     # dereferenced annotated tags). Keep only lines that are exactly an
@@ -474,30 +468,23 @@ resolve_latest_tag() {
 
 # cgit ARGS — run git with ARGS on a clone: no fsmonitor program, pager or
 # automatic maintenance, only the file, git, http, https and ssh transports
-# (no ext:: or git-remote-<name>), no recursion into submodules, and
-# core.longpaths=true (Git for Windows: checkout past the usual path limit).
+# (no ext:: or git-remote-<name>), no recursion into submodules, attributes
+# from the work tree and index only (attr.tree emptied, as a user's own
+# attr.tree would name another tree), and core.longpaths=true (Git for
+# Windows: checkout past the usual path limit).
 # Once HOOKS_OFF names an empty folder (an update in place), core.hooksPath
 # points at it, so no hook of the clone's runs. core.sshCommand is left
 # alone: it would override the user's own GIT_SSH.
 HOOKS_OFF=""
 cgit() {
-    if [ -n "$HOOKS_OFF" ]; then
-        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
-            -c protocol.allow=never -c protocol.file.allow=always \
-            -c protocol.git.allow=always -c protocol.http.allow=always \
-            -c protocol.https.allow=always -c protocol.ssh.allow=always \
-            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
-            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
-            -c core.longpaths=true -c core.hooksPath="$HOOKS_OFF" "$@"
-    else
-        git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
-            -c protocol.allow=never -c protocol.file.allow=always \
-            -c protocol.git.allow=always -c protocol.http.allow=always \
-            -c protocol.https.allow=always -c protocol.ssh.allow=always \
-            -c submodule.recurse=false -c fetch.recurseSubmodules=false \
-            -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
-            -c core.longpaths=true "$@"
-    fi
+    [ -z "$HOOKS_OFF" ] || set -- -c core.hooksPath="$HOOKS_OFF" "$@"
+    git --no-pager -c core.fsmonitor= -c protocol.ext.allow=never \
+        -c protocol.allow=never -c protocol.file.allow=always \
+        -c protocol.git.allow=always -c protocol.http.allow=always \
+        -c protocol.https.allow=always -c protocol.ssh.allow=always \
+        -c submodule.recurse=false -c fetch.recurseSubmodules=false \
+        -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
+        -c core.longpaths=true -c attr.tree= "$@"
 }
 
 # verify_tag DIR REF — run `git verify-tag --raw` on REF in DIR: 0 for a
@@ -668,9 +655,11 @@ check_fetched_ref() {
 # files, staged or not. Run after the tag check and before an in-place
 # checkout: git checkout without --force carries such a change over to the
 # new tree whenever the release does not touch that file, and the update
-# would then run code the release does not hold.
+# would then run code the release does not hold. No textconv or external
+# diff program runs on the clone's files.
 require_clean_clone() {
-    { cgit -C "$1" diff --quiet HEAD && cgit -C "$1" diff --cached --quiet; } \
+    { cgit -C "$1" diff --quiet --no-textconv --no-ext-diff HEAD \
+        && cgit -C "$1" diff --cached --quiet --no-textconv --no-ext-diff; } \
         || die "$1 has changes to tracked files. Commit or stash them, then re-run."
 }
 
@@ -824,21 +813,23 @@ need_plain_file() {
     fi
 }
 
-# sets_filter — succeed when the git attributes text on stdin sets a filter
+# sets_driver — succeed when the git attributes text on stdin names a filter
+# or diff driver (filter= or diff=; git diff runs a diff driver's textconv)
 # outside comments. NUL bytes are dropped (grep would call the text binary
 # while git reads the lines around them), and a line is a comment only
 # where # follows nothing but spaces, tabs and CR, as git reads it.
-sets_filter() {
+sets_driver() {
     _sf_blank="$(printf ' \t\r')"
-    LC_ALL=C tr -d '\000' 2>/dev/null | LC_ALL=C grep -v "^[${_sf_blank}]*#" | LC_ALL=C grep -q 'filter='
+    LC_ALL=C tr -d '\000' 2>/dev/null | LC_ALL=C grep -v "^[${_sf_blank}]*#" | LC_ALL=C grep -Eq '(filter|diff)='
 }
 
 # check_clone_config DIR — die when the clone at DIR has a setting of its
 # own an update does not accept (config, then config.worktree; no
 # include.path is followed), borrows objects from another repository
-# (alternates), or its info/attributes sets a filter, or when one of those
-# files is not a plain file. This runs before any git command that reads
-# the clone's index or objects or could run one of its programs.
+# (alternates), or its info/attributes names a filter or diff driver, or
+# when one of those files is not a plain file. This runs before any git
+# command that reads the clone's index or objects or could run one of its
+# programs.
 check_clone_config() {
     _cc_key=""
     for _cc_name in config config.worktree; do
@@ -860,8 +851,8 @@ check_clone_config() {
     done
     _cc_file="$(git_path "$1" info/attributes)" || die "Could not read the git config of $1."
     need_plain_file "$1" "$_cc_file"
-    if [ -f "$_cc_file" ] && sets_filter < "$_cc_file"; then
-        die "$1's own git attributes set a filter (filter=), which the update would trust. Remove it from ${_cc_file}, then re-run."
+    if [ -f "$_cc_file" ] && sets_driver < "$_cc_file"; then
+        die "$1's own git attributes name a filter or diff driver (filter= or diff=), which the update would trust. Remove the setting from ${_cc_file}, then re-run."
     fi
 }
 
@@ -906,10 +897,10 @@ $(printf '\001!')
 
 # check_clone_attributes DIR — die when the clone's work tree has a
 # .gitattributes (any case) git does not track, a tracked one that is not
-# a plain file matching the index and HEAD, or one whose index copy sets a
-# filter: git status, diff and checkout would apply it (it can name a
-# filter of the user's own). Compares without filters. Leaves the
-# untracked list in _ca_other.
+# a plain file matching the index and HEAD, or one whose index copy names
+# a filter or diff driver: git status, diff and checkout would apply it
+# (it can name a driver of the user's own). Compares without filters.
+# Leaves the untracked list in _ca_other.
 check_clone_attributes() {
     _ca_index="$(git_z "$1" ls-files -s -z)" || exit 1
     _ca_head="$(git_z "$1" ls-tree -r -z HEAD)" || exit 1
@@ -943,8 +934,8 @@ check_clone_attributes() {
         _ca_path="${_ca_line#*"$_ca_tab"}"
         if [ "$_ca_kind" = "C" ]; then
             :
-        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_filter; then
-            die "$1 has a .gitattributes file at $1/${_ca_path} that sets a filter (filter=). git would apply it while it reads the clone. Remove the filter and commit that change, then re-run."
+        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_driver; then
+            die "$1 has a .gitattributes file at $1/${_ca_path} that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
         elif [ ! -e "$1/$_ca_path" ] && [ ! -L "$1/$_ca_path" ]; then
             continue
         elif [ ! -L "$1/$_ca_path" ] && [ -f "$1/$_ca_path" ] \
@@ -1048,9 +1039,10 @@ checkout_ref() {
 }
 
 # warn_home_access — warn, never stop, when other users can write to
-# APOTHEM_HOME (a new one: by the umask) or the folder holding it. Git Bash,
-# MSYS2 and Cygwin make mode bits up from Windows permissions, which the ps1
-# scripts read instead.
+# APOTHEM_HOME (a new one: by the umask) or the folder holding it, or own
+# either. Git Bash, MSYS2 and Cygwin make mode bits up from Windows
+# permissions, so nothing is read there: install.ps1 and update.ps1 read
+# the Windows permissions.
 warn_home_access() {
     _ha_os="$(uname -s 2>/dev/null)" || _ha_os=
     case "$_ha_os" in MINGW* | MSYS* | CYGWIN*) return 0 ;; esac
@@ -1067,14 +1059,19 @@ warn_home_access() {
 }
 
 # warn_writable DIR KIND CHILD — KIND 0: warn when others can write to DIR.
-# KIND 1: when they can replace CHILD in DIR (the sticky bit stops that; a
-# missing DIR is skipped). A group named after you is your own group. stat
-# gives the group's whole name; a new DIR takes the group of a setgid
-# folder above it, and always on macOS and the BSDs.
+# KIND 1: when they can replace CHILD in DIR (the sticky bit stops that,
+# but not for DIR's owner; a missing DIR is skipped). Others: the user who
+# owns DIR when that is not you or root (by number: ls -n), and the users
+# and groups the mode bits or an access list (getfacl, where installed)
+# let write. A group named after you is your own. stat gives the group's
+# whole name; a new DIR takes the group of a setgid folder above it, and
+# always on macOS and the BSDs.
 warn_writable() {
-    _ww_l=new _ww_f="$1"
+    _ww_l=new _ww_f="$1" _ww_n='' _ww_a=''
     if [ -d "$1" ]; then
         _ww_l="$(ls -ldL -- "$1" 2>/dev/null)" || return 0
+        _ww_n="$(ls -ldnL -- "$1" 2>/dev/null)" || _ww_n=
+        _ww_a="$(getfacl -- "$1" 2>/dev/null)" || _ww_a=
     elif [ "$2" = 1 ] || [ -e "$1" ]; then
         return 0
     else
@@ -1082,15 +1079,31 @@ warn_writable() {
         _ww_l="new $(ls -ldL -- "$_ww_f" 2>/dev/null)" || _ww_l=new
     fi
     _ww_g="$(stat -Lc %G -- "$_ww_f" 2>/dev/null || stat -Lf %Sg -- "$_ww_f" 2>/dev/null)" || _ww_g=
-    _ww_w="$(printf '%s\n' "$_ww_l" | awk -v me="$(id -un 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" 'NR == 1 {
-        m = $1
-        if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g }
+    _ww_w="$(printf '%s\n%s\n%s\n' "$_ww_l" "$_ww_n" "$_ww_a" | awk -v me="$(id -un 2>/dev/null)" -v id="$(id -u 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" '
+    function add(n) { if (!(n in s)) { s[n] = 1; w = w (w == "" ? "" : ", ") n } }
+    NR == 1 {
+        m = $1; o = $3
+        if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g; o = "" }
         else if (sg != "") $4 = sg
-        if (p && substr(m, 10, 1) ~ /[tT]/) exit
-        if (substr(m, 9, 1) == "w") print "all users"
-        else if (substr(m, 6, 1) == "w" && $4 != me) print "the group " $4
-    }')" || return 0
-    [ -n "$_ww_w" ] || return 0
+        if (t = p && substr(m, 10, 1) ~ /[tT]/) next
+        if (substr(m, 9, 1) == "w") add("all users")
+        else if (substr(m, 6, 1) == "w" && $4 != me) add("the group " $4)
+    }
+    NR == 2 && o != "" && id != "" && $3 != "" && $3 != id && $3 != 0 { print "the user " o; x = 1; exit }
+    NR > 2 && !t && /^(user|group):[^:]/ {
+        split($0, f, ":"); e = f[3]; sub(/[ \t].*/, "", e)
+        if (match($0, /#effective:/)) e = substr($0, RSTART + 11)
+        if (e ~ /w/ && f[2] != me && $0 !~ /^user:root:/) add("the " f[1] " " f[2])
+    }
+    END { if (!x && w != "") print "+" w }')" || return 0
+    case "$_ww_w" in
+        "") return 0 ;;
+        +*) _ww_w="${_ww_w#+}" ;;
+        *)
+            warn "Other users can change the code Apothem runs as you: $_ww_w owns ${1}. To fix it, move APOTHEM_HOME into a folder you own."
+            return 0
+            ;;
+    esac
     if [ "$2" = 1 ]; then
         warn "Other users can replace ${3}: $_ww_w can write to $1, the folder that holds it. To fix it, run chmod go-w \"$1\", or move APOTHEM_HOME."
     elif [ -d "$1" ]; then
@@ -2004,7 +2017,7 @@ settle_python_form
 PY_VERSION="$("$PY" -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
 ok "$PY ($PY_VERSION)"
 
-# Prerequisite: CLI prerequisites importable ---------------------------------------
+# Prerequisite: CLI prerequisites importable ---------------------------------
 #
 # The engine vendors yaml and jsonschema but imports click and rich from the
 # host Python. A missing one is reported and offered for install: yes with
@@ -2540,16 +2553,13 @@ else
 fi
 echo
 
-# Entry-point shim ---------------------------------------------------------------
+# Entry-point shim -------------------------------------------------------------
 #
-# Place an `apothem` command on PATH so the operator runs `apothem <command>`
-# instead of the verbose self-contained form. The shim forwards to the bundled
-# engine with the vendored PYTHONPATH (mirroring the self-contained banner). The
-# POSIX user-bin convention is $HOME/.local/bin (override with APOTHEM_BIN_DIR).
-# When the bin directory is not already on PATH, the banner prints the exact
-# line to add it and the shim's full path (or, with no shim, the self-contained
-# form), so it never advertises a bare `apothem` command the operator cannot
-# yet resolve.
+# An `apothem` command in $HOME/.local/bin (APOTHEM_BIN_DIR) runs the bundled
+# engine with the vendored PYTHONPATH, as the self-contained banner does. When
+# that folder is not on PATH, the banner prints the line that adds it and the
+# shim's full path (with no shim, the self-contained form), never a bare
+# `apothem` the shell cannot find.
 
 BIN_DIR="${APOTHEM_BIN_DIR:-$HOME/.local/bin}"
 SHIM="${BIN_DIR}/apothem"

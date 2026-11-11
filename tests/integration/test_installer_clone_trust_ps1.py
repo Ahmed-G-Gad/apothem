@@ -365,7 +365,7 @@ def test_the_config_check_reads_names_and_branch_remotes_as_git_writes_them(
             "$CloneConfigAllow",
             "Test-AllowedConfigKey",
             "Assert-ClonePlainFile",
-            "Test-AttributeFilter",
+            "Test-AttributeDriver",
             "Assert-CloneConfig",
         ),
         body,

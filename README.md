@@ -447,10 +447,10 @@ Apothem counts as a folder with no Apothem install. Before it fetches into an
 existing clone, the installer stops when the clone hides changes from git (files
 marked assume-unchanged or skip-worktree), when the clone's work tree is
 somewhere other than `APOTHEM_HOME`, when the clone holds a submodule, when
-`.git/info/attributes` sets a `filter=` (or it or a config file is not a
-plain file), when the clone borrows objects from
+`.git/info/attributes` names a filter or diff driver (`filter=` or `diff=`),
+or it or a config file is not a plain file, when the clone borrows objects from
 another repository, when a `.gitattributes` file in the work tree is untracked,
-changed or sets a filter, when files under `src` (spelled in any case) are
+changed or names such a driver, when files under `src` (spelled in any case) are
 untracked, or when the clone's own git
 config (`.git/config`, and `.git/config.worktree` when the clone has one) holds
 a setting other than the ones `git clone` and `git init` write there for a full
@@ -466,9 +466,10 @@ refuses and asks you to point `APOTHEM_HOME` at the folder the link leads to;
 the exception is an existing clone, which is updated in place. On Linux and
 macOS, a file or folder to carry over whose name has a space or another special
 character stops the install; move it out of `APOTHEM_HOME` first. The installer
-ignores `GIT_DIR` and the other `GIT_*` variables that redirect git or point it
+ignores `GIT_DIR` and the other `GIT_*` variables that redirect git, point it
 at another config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
-`GIT_CONFIG_SYSTEM`; `GIT_CONFIG_NOSYSTEM` stays as you set it), trusts the
+`GIT_CONFIG_SYSTEM`; `GIT_CONFIG_NOSYSTEM` stays as you set it) or make it
+read attributes from another tree (`GIT_ATTR_SOURCE`), trusts the
 `git`, `gpg` and `cosign` that `PATH` finds and your own global git config, and
 refuses an `APOTHEM_REPO` that starts with `-`. `--dry-run` fetches and checks
 the source in a temporary folder and leaves `APOTHEM_HOME` as it is. It makes

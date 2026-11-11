@@ -133,9 +133,10 @@ function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
 # A git variable set in the calling shell would point every git command
 # below at another repository, work tree, index or object store, add
-# settings, read its configuration from other files, use another git
-# program, or swap objects through replace refs, so the run clears them
-# once it holds the install lock (see the start of the run, below;
+# settings, read its configuration from other files or attributes from
+# another tree, use another git program, or swap objects through replace
+# refs, so the run clears them once it holds the install lock (see the
+# start of the run, below;
 # mirrors update.sh). It also sets GIT_NO_LAZY_FETCH=1, so git never starts
 # a fetch of its own for an object the clone lacks (the clone's settings
 # would shape that fetch), and GIT_ALLOW_PROTOCOL to the five transports
@@ -164,8 +165,9 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 # address in the clone's config cannot make git run a program (ext::,
 # or <name>:: for a git-remote-<name> found on PATH), writes a path
 # longer than Windows' usual limit at checkout (core.longpaths=true)
-# instead of leaving the file out, and does not go into submodules:
-# fetch and checkout leave
+# instead of leaving the file out, reads attributes from the work tree and
+# index only (attr.tree is emptied: a user's own attr.tree would name
+# another tree), and does not go into submodules: fetch and checkout leave
 # them alone, and diff and status skip them (diff.ignoreSubmodules=all),
 # so the settings of a repository nested in the clone, which nothing
 # here checks, are never read. An update in place refuses a clone that
@@ -175,7 +177,7 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 # run, so none of the clone's hooks runs either. core.sshCommand is left
 # alone: setting it would also override the user's own GIT_SSH (mirrors
 # update.sh's cgit).
-$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true')
+$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true', '-c', 'attr.tree=')
 $GitSafe = @()
 
 # The current folder must never shadow the engine's modules (mirrors
@@ -574,15 +576,16 @@ function Assert-ClonePlainFile {
     }
 }
 
-# Test-AttributeFilter LINES - $true when git attributes text, given as
-# lines, sets a filter (filter=) outside comments. NUL characters are
-# dropped (as install.sh's sets_filter does), and a line is a comment only
-# where # follows nothing but spaces, tabs or CR.
-function Test-AttributeFilter {
+# Test-AttributeDriver LINES - $true when git attributes text, given as
+# lines, names a filter or diff driver (filter= or diff=; git diff runs a
+# diff driver's textconv) outside comments. NUL characters are dropped (as
+# install.sh's sets_driver does), and a line is a comment only where #
+# follows nothing but spaces, tabs or CR.
+function Test-AttributeDriver {
     param([string[]]$Lines)
     foreach ($TfLine in $Lines) {
         $TfText = $TfLine.Replace([string][char]0, '')
-        if ($TfText -cnotmatch '^[ \t\r]*#' -and $TfText.Contains('filter=')) { return $true }
+        if ($TfText -cnotmatch '^[ \t\r]*#' -and $TfText -cmatch '(filter|diff)=') { return $true }
     }
     return $false
 }
@@ -697,8 +700,8 @@ function Assert-CloneConfig {
         } catch {
             $CfLines = @()
         }
-        if (Test-AttributeFilter $CfLines) {
-            Write-Fail "$Dir's own git attributes set a filter (filter=), which the update would trust. Remove it from $CfFile, then re-run."
+        if (Test-AttributeDriver $CfLines) {
+            Write-Fail "$Dir's own git attributes name a filter or diff driver (filter= or diff=), which the update would trust. Remove the setting from $CfFile, then re-run."
         }
     }
 }
@@ -724,12 +727,48 @@ function Get-CloneRecord {
     if ($GrParts.Count -gt 1) { return $GrParts[0..($GrParts.Count - 2)] }
 }
 
+# Read-CloneBlob DIR ID - the lines of the object ID in the clone at DIR
+# (git cat-file blob, which runs no filter), read from git's output as
+# bytes and ended by LF only, as git reads attributes: PowerShell's reader
+# of a program's output also ends a line at a lone CR, which would hide
+# the rest of a line from Test-AttributeDriver. A failed read gives none.
+function Read-CloneBlob {
+    param([string]$Dir, [string]$Id)
+    try {
+        $RbArgs = @($GitNoProgram + @('-C', $Dir, 'cat-file', 'blob', $Id))
+        $RbInfo = [System.Diagnostics.ProcessStartInfo]::new((Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Path)
+        if ($RbInfo.PSObject.Properties['ArgumentList']) {
+            foreach ($RbArg in $RbArgs) { $RbInfo.ArgumentList.Add($RbArg) }
+        } else {
+            # Windows PowerShell's .NET has no ArgumentList: each argument
+            # is quoted as the C runtime reads a command line.
+            $RbInfo.Arguments = @($RbArgs | ForEach-Object { if ($_ -eq '' -or $_ -match '[\s"]') { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' } else { $_ } }) -join ' '
+        }
+        $RbInfo.WorkingDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+        $RbInfo.UseShellExecute = $false
+        $RbInfo.RedirectStandardOutput = $true
+        $RbInfo.RedirectStandardError = $true
+        $RbInfo.CreateNoWindow = $true
+        $RbRun = [System.Diagnostics.Process]::Start($RbInfo)
+        $RbError = $RbRun.StandardError.ReadToEndAsync()
+        $RbBytes = [System.IO.MemoryStream]::new()
+        $RbRun.StandardOutput.BaseStream.CopyTo($RbBytes)
+        $RbRun.WaitForExit()
+        [void]$RbError.Result
+        if ($RbRun.ExitCode -ne 0) { return }
+        return [System.Text.Encoding]::GetEncoding(28591).GetString($RbBytes.ToArray()).Split([char]10)
+    } catch {
+        return
+    }
+}
+
 # Assert-CloneAttributeFile DIR - stop when the work tree of the clone at DIR
 # holds a .gitattributes file (in any ASCII case) that git does not
 # track, or a tracked one that differs from HEAD or the index, is not a
-# plain file, or whose index copy sets a filter (read with git cat-file,
-# which runs none): git status, diff and checkout would apply it, and it can
-# name a filter the user's own config defines. Tracked files come
+# plain file, or whose index copy names a filter or diff driver (read as
+# bytes with git cat-file, which runs no filter: Read-CloneBlob): git
+# status, diff and checkout would apply it, and it can name a driver the
+# user's own config defines. Tracked files come
 # first, in index order, then untracked ones, ignored files and files
 # in untracked folders included. A tracked file missing from the work tree is left to the
 # check for changes (git then reads the index copy). Files are compared
@@ -761,15 +800,8 @@ function Assert-CloneAttributeFile {
         $CaWant = $null
         [void]$CaHeadEntry.TryGetValue($CaPath, [ref]$CaWant)
         if ($CaField[-1] -cne '0' -or $CaWant -cne "$($CaField[0]) $($CaField[1])" -or $CaPath.Contains("`n")) { & $CaChanged $CaPath }
-        $prior = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            $CaBlob = @(& git @GitNoProgram -C $Dir cat-file blob $CaField[1] 2>$null | ForEach-Object { [string]$_ })
-        } finally {
-            $ErrorActionPreference = $prior
-        }
-        if (Test-AttributeFilter $CaBlob) {
-            Write-Fail "$Dir has a .gitattributes file at $Dir/$CaPath that sets a filter (filter=). git would apply it while it reads the clone. Remove the filter and commit that change, then re-run."
+        if (Test-AttributeDriver (Read-CloneBlob $Dir $CaField[1])) {
+            Write-Fail "$Dir has a .gitattributes file at $Dir/$CaPath that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
         }
         try {
             $CaAttr = [System.IO.File]::GetAttributes("$Dir/$CaPath")
@@ -1041,18 +1073,25 @@ function Resolve-FolderLink {
 }
 
 # Get-FolderWriter PATH KIND - who other than you can change PATH, as
-# Names: on Windows, Everyone, Authenticated Users, Users and INTERACTIVE
-# when an allow entry gives them write access (Deny entries are not read, so
-# a warning can be extra but is never missed), and Inherited, true when each
-# such entry comes from the folder above; elsewhere, 'all users' or 'the
-# group G' from the mode bits ls prints and the group stat names (a group
-# named after you is your own). KIND: 'home' (PATH and what it holds),
+# Names, and Owner, set when PATH belongs to someone else. On Windows:
+# each account or group an allow entry gives write access, other than you,
+# SYSTEM, Administrators and TrustedInstaller, named as the Security tab
+# names it (Deny entries are not read, so a warning can be extra but is
+# never missed; CREATOR OWNER, OWNER RIGHTS and a sign-in session's entry
+# stand for the one who made, owns or uses the item); Inherited, true when
+# each such entry comes from the folder above; and Owner, the owner when
+# it is none of those. Elsewhere: 'all users' or 'the group G' from the
+# mode bits ls prints and the group stat names (a group named after you is
+# your own), each user and group an access list (getfacl, where installed)
+# lets write, and Owner, 'the user U' when U owns PATH and is neither you
+# nor root (ls -n gives the number). KIND: 'home' (PATH and what it holds),
 # 'parent' (others can rename or remove what PATH holds; a sticky folder
-# stops that) or 'new' (a new folder made in PATH; outside Windows, by the
-# umask, given as Umask, and the group of PATH when PATH is setgid or the
-# system is macOS or a BSD). Windows only: 'link' (others can delete the
-# link PATH, whose own entries are read) and 'make' (others can make
-# folders in PATH). A failed read names no one.
+# stops that, but not for its owner) or 'new' (a new folder made in PATH;
+# outside Windows, by the umask, given as Umask, and the group of PATH
+# when PATH is setgid or the system is macOS or a BSD). Windows only:
+# 'link' (others can delete the link PATH, whose own entries are read) and
+# 'make' (others can make folders in PATH); for these, an owner who is
+# someone else is one of the Names. A failed read names no one.
 function Get-FolderWriter {
     # Outside Windows, where this calls ls, PowerShell has no ls alias.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', '')]
@@ -1060,9 +1099,13 @@ function Get-FolderWriter {
     $FwNames = @()
     $FwInherited = $true
     $FwMask = ''
+    $FwOwner = ''
     try {
         if ((Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false) {
-            $FwSids = [ordered]@{ 'S-1-1-0' = 'Everyone'; 'S-1-5-11' = 'Authenticated Users'; 'S-1-5-32-545' = 'Users'; 'S-1-5-4' = 'INTERACTIVE' }
+            $FwMe = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+            # SYSTEM, Administrators, TrustedInstaller, CREATOR OWNER,
+            # OWNER RIGHTS and a sign-in session.
+            $FwTrusted = '^S-1-(5-18|5-32-544|5-80-956008885-3418522649-1831038044-1853292631-2271478464|3-0|3-4|5-5-\d+-\d+)$'
             # Parent: delete children, change permissions, take ownership,
             # generic all. Home and new: also create files or folders,
             # delete, generic write. Link: delete, change permissions, take
@@ -1071,22 +1114,48 @@ function Get-FolderWriter {
             $FwRights = switch ($Kind) { 'parent' { 0x100C0040 } 'link' { 0x100D0000 } 'make' { 0x50000004 } default { 0x500D0046 } }
             # Read as Get-Acl does, without Get-Acl: Windows PowerShell
             # cannot load it when it inherits PowerShell 7's module path.
-            $FwAcl = [System.Security.AccessControl.DirectorySecurity]::new($Path, [System.Security.AccessControl.AccessControlSections]::Access)
+            $FwAcl = [System.Security.AccessControl.DirectorySecurity]::new($Path, [System.Security.AccessControl.AccessControlSections]'Access, Owner')
+            $FwSids = [System.Collections.Generic.List[string]]::new()
             foreach ($FwRule in $FwAcl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
-                $FwName = $FwSids[[string]$FwRule.IdentityReference.Value]
-                if (-not $FwName -or $FwRule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
+                $FwSid = [string]$FwRule.IdentityReference.Value
+                if ($FwSid -eq $FwMe -or $FwSid -match $FwTrusted -or $FwRule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
                 if (([int]$FwRule.FileSystemRights -band $FwRights) -eq 0) { continue }
                 $FwInheritOnly = ($FwRule.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0
                 $FwToFolders = ($FwRule.InheritanceFlags -band [System.Security.AccessControl.InheritanceFlags]::ContainerInherit) -ne 0
                 if (($Kind -notmatch '^(home|new)$' -and $FwInheritOnly) -or ($Kind -eq 'new' -and -not $FwToFolders)) { continue }
-                $FwNames += $FwName
+                if (-not $FwSids.Contains($FwSid)) { $FwSids.Add($FwSid) }
                 if (-not $FwRule.IsInherited) { $FwInherited = $false }
             }
-            $FwNames = @($FwSids.Values | Where-Object { $FwNames -contains $_ })
+            $FwBy = $FwAcl.GetOwner([System.Security.Principal.SecurityIdentifier])
+            $FwBy = if ($FwBy) { [string]$FwBy.Value } else { '' }
+            if ($Kind -ne 'new' -and $FwBy -and $FwBy -ne $FwMe -and $FwBy -notmatch $FwTrusted) {
+                if ($Kind -match '^(home|parent)$') {
+                    $FwOwner = $FwBy
+                } elseif (-not $FwSids.Contains($FwBy)) {
+                    $FwSids.Add($FwBy)
+                    $FwInherited = $false
+                }
+            }
+            # As the Security tab names them: a built-in group or an NT
+            # AUTHORITY name without its domain, any other as DOMAIN\name,
+            # and one that cannot be looked up by its SID.
+            $FwName = {
+                param([string]$Sid)
+                try {
+                    $FwText = [System.Security.Principal.SecurityIdentifier]::new($Sid).Translate([System.Security.Principal.NTAccount]).Value
+                } catch {
+                    return $Sid
+                }
+                if ($Sid -match '^S-1-(1-0|5-\d+|5-32-\d+)$') { $FwText = $FwText.Substring($FwText.LastIndexOf('\') + 1) }
+                return $FwText
+            }
+            $FwNames = @($FwSids | ForEach-Object { & $FwName $_ })
+            if ($FwOwner) { $FwOwner = & $FwName $FwOwner }
         } else {
             $FwMe = [string](& id -un)
             $FwField = @('', '', '', '')
             $FwOs = ''
+            $FwAces = @()
             if ($Kind -ne 'new' -or (Test-Path -LiteralPath $Path -PathType Container)) {
                 $FwLine = @(& ls -ldL $Path)
                 if ($LASTEXITCODE -eq 0 -and $FwLine.Count) { $FwField = @(-split [string]$FwLine[0]) + $FwField }
@@ -1099,6 +1168,23 @@ function Get-FolderWriter {
                     $FwOs = ''
                 }
             }
+            if ($Kind -ne 'new') {
+                # The owner by number (ls -n), and the access list where
+                # getfacl is installed.
+                $FwNum = @(& ls -ldnL $Path)
+                $FwId = if ($LASTEXITCODE -eq 0 -and $FwNum.Count) { @(-split [string]$FwNum[0]) } else { @() }
+                $FwUid = [string](& id -u)
+                if ($FwId.Count -gt 2 -and $FwField[2] -and $FwUid -and $FwId[2] -ne '0' -and $FwId[2] -ne $FwUid) { $FwOwner = "the user $($FwField[2])" }
+                $prior = $ErrorActionPreference
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $FwAces = @(& getfacl -- $Path 2>$null)
+                } catch {
+                    $FwAces = @()
+                } finally {
+                    $ErrorActionPreference = $prior
+                }
+            }
             $FwMode = $FwField[0]
             $FwGroup = $FwField[3]
             if ($Kind -eq 'new') {
@@ -1106,22 +1192,35 @@ function Get-FolderWriter {
                 $FwMask = [string](& sh -c umask)
                 $FwMode = 'd----' + $(if ($FwMask -match '[0145].$') { 'w' } else { '-' }) + '--' + $(if ($FwMask -match '[0145]$') { 'w' } else { '-' }) + '-'
             }
-            if ($Kind -eq 'parent' -and $FwMode -cmatch '^.{9}[tT]') { $FwMode = '' }
+            $FwSticky = $Kind -eq 'parent' -and $FwMode -cmatch '^.{9}[tT]'
+            if ($FwSticky) { $FwMode = '' }
             if ($FwMode -cmatch '^.{8}w') { $FwNames = @('all users') }
             elseif ($FwMode -cmatch '^.{5}w' -and $FwGroup -cne $FwMe) { $FwNames = @("the group $FwGroup") }
+            foreach ($FwAce in $FwAces) {
+                if ($FwSticky -or "$FwAce" -cnotmatch '^(user|group):([^:]+):([^:\s]*)') { continue }
+                # Each -cmatch below sets $Matches anew: read this one first.
+                $FwWho = "the $($Matches[1]) $($Matches[2])"
+                $FwSkip = $Matches[2] -ceq $FwMe
+                $FwPerm = $Matches[3]
+                if ("$FwAce" -cmatch '^user:root:') { $FwSkip = $true }
+                if ("$FwAce" -cmatch '#effective:(.*)') { $FwPerm = $Matches[1] }
+                if ($FwPerm.Contains('w') -and -not $FwSkip -and $FwNames -cnotcontains $FwWho) { $FwNames += $FwWho }
+            }
         }
     } catch {
         $FwNames = @()
+        $FwOwner = ''
     }
-    return @{ Names = ($FwNames -join ', '); Inherited = $FwInherited; Umask = $FwMask }
+    return @{ Names = ($FwNames -join ', '); Inherited = $FwInherited; Umask = $FwMask; Owner = $FwOwner }
 }
 
 # Write-HomeAccessWarning - warn, never stop, when users other than you can
 # change the code a run starts as you: they can write to APOTHEM_HOME (a
 # new one: by what it would inherit, or the umask), or rename what the
-# folder holding it holds, or the folder holding APOTHEM_HOME's link (as
-# install.sh's warn_home_access). The messages name the folder a link leads
-# to, as a junction's entries cover only the junction itself.
+# folder holding it holds, or the folder holding APOTHEM_HOME's link, or
+# one of those folders belongs to someone else (as install.sh's
+# warn_home_access). The messages name the folder a link leads to, as a
+# junction's entries cover only the junction itself.
 function Write-HomeAccessWarning {
     try {
         $HaWindows = (Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false
@@ -1129,14 +1228,18 @@ function Write-HomeAccessWarning {
         $HaParent = {
             param([string]$Folder, [string]$Child, [bool]$Link)
             if (-not $Folder -or -not (Test-Path -LiteralPath $Folder -PathType Container)) { return }
-            $HpWho = (Get-FolderWriter $Folder 'parent').Names
+            $HpBy = Get-FolderWriter $Folder 'parent'
+            $HpWho = $HpBy.Names
             # A link others may delete, in a folder they may make folders
             # in, can be swapped for one of theirs as well.
             if (-not $HpWho -and $Link -and $HaWindows -and (Get-FolderWriter $Folder 'make').Names) { $HpWho = (Get-FolderWriter $Child 'link').Names }
-            if (-not $HpWho) { return }
-            if ($HaWindows) {
+            if ($HpBy.Owner -and $HaWindows) {
+                Write-Warn "Other users can change the code Apothem runs as you: $($HpBy.Owner) owns $Folder. To fix it, move APOTHEM_HOME into your user folder."
+            } elseif ($HpBy.Owner) {
+                Write-Warn "Other users can change the code Apothem runs as you: $($HpBy.Owner) owns $Folder. To fix it, move APOTHEM_HOME into a folder you own."
+            } elseif ($HpWho -and $HaWindows) {
                 Write-Warn "Other users can replace ${Child}: $HpWho can delete or rename what is in $Folder, the folder that holds it. To fix it, remove $HpWho from that folder's Security tab, or move APOTHEM_HOME into your user folder."
-            } else {
+            } elseif ($HpWho) {
                 Write-Warn "Other users can replace ${Child}: $HpWho can write to $Folder, the folder that holds it. To fix it, run chmod go-w `"$Folder`", or move APOTHEM_HOME."
             }
         }
@@ -1148,7 +1251,11 @@ function Write-HomeAccessWarning {
         $HaUp = Split-Path -Parent $HaDir
         if (Test-Path -LiteralPath $HaDir -PathType Container) {
             $HaWho = Get-FolderWriter $HaDir 'home'
-            if ($HaWho.Names -and $HaWindows) {
+            if ($HaWho.Owner -and $HaWindows) {
+                Write-Warn "Other users can change the code Apothem runs as you: $($HaWho.Owner) owns $HaDir. To fix it, move APOTHEM_HOME into your user folder."
+            } elseif ($HaWho.Owner) {
+                Write-Warn "Other users can change the code Apothem runs as you: $($HaWho.Owner) owns $HaDir. To fix it, move APOTHEM_HOME into a folder you own."
+            } elseif ($HaWho.Names -and $HaWindows) {
                 $HaWhy = ''
                 if ($HaWho.Inherited -and $HaUp -match '^[A-Za-z]:\\$') { $HaWhy = $HaRoot }
                 Write-Warn "Other users can change the code Apothem runs as you: $($HaWho.Names) can write to $HaDir$HaWhy. To fix it, turn off inheritance for that folder and remove $($HaWho.Names) (Properties > Security > Advanced), or move APOTHEM_HOME into your user folder."
@@ -1251,7 +1358,7 @@ try {
 # block at the end puts them all back.
 $SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS; GIT_NO_LAZY_FETCH = $env:GIT_NO_LAZY_FETCH; GIT_ALLOW_PROTOCOL = $env:GIT_ALLOW_PROTOCOL }
 try {
-foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM')) {
+foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_ATTR_SOURCE')) {
     if (Test-Path -LiteralPath "Env:$GitVar") {
         $SavedGitEnv[$GitVar] = [string](Get-Item -LiteralPath "Env:$GitVar").Value
         Remove-Item -LiteralPath "Env:$GitVar"
@@ -1453,9 +1560,9 @@ if ($env:APOTHEM_SOURCE) {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            & git @GitSafe -C $ApothemHome diff --quiet HEAD
+            & git @GitSafe -C $ApothemHome diff --quiet --no-textconv --no-ext-diff HEAD
             $DiffCode = $LASTEXITCODE
-            & git @GitSafe -C $ApothemHome diff --cached --quiet
+            & git @GitSafe -C $ApothemHome diff --cached --quiet --no-textconv --no-ext-diff
             $CachedCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior

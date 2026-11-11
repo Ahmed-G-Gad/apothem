@@ -197,7 +197,10 @@ def _remove_own_bytecode(removed: list[Path]) -> set[Path]:
     """Remove the bytecode of each module in *removed*; return its cache folders.
 
     A module that is still there (it could not be removed) keeps its bytecode.
-    The caller removes each returned ``__pycache__`` folder once it is empty.
+    Where no pass over empty folders follows (the single-file path of
+    :func:`remove_written`), the caller removes each returned ``__pycache__``
+    folder once it is empty; :func:`_remove_matching` leaves that to
+    :func:`_remove_empty_folders`.
     """
     caches: set[Path] = set()
     for source in removed:
