@@ -573,6 +573,31 @@ def current_install_record(
     return installs[-1] if installs else None
 
 
+def _settled_records(
+    harness: str, root: Path | str, state_root: Path | None
+) -> list[LedgerRecord]:
+    """Return *root*'s records in ledger order, less the rollbacks that changed nothing.
+
+    A failed install that undid itself appends a rollback of an id no install
+    at *root* has; it changed nothing, so it supersedes nothing.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    root_str = str(root)
+    records = [
+        record
+        for record in read_records(harness, state_root=state_root)
+        if record.root == root_str
+    ]
+    installed = {record.install_id for record in records if record.kind == "install"}
+    return [
+        record
+        for record in records
+        if record.kind != "rollback" or record.install_id in installed
+    ]
+
+
 def unfinished_uninstall(
     harness: str,
     *,
@@ -589,20 +614,31 @@ def unfinished_uninstall(
     Raises:
         LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
     """
-    root_str = str(root)
-    records = [
-        record
-        for record in read_records(harness, state_root=state_root)
-        if record.root == root_str
-    ]
-    installed = {record.install_id for record in records if record.kind == "install"}
-    for record in reversed(records):
-        # A failed install that undid itself appends a rollback of an id no
-        # install has; it changed nothing, so it supersedes nothing.
-        if record.kind == "rollback" and record.install_id not in installed:
-            continue
-        return record if record.kind == "uninstall-incomplete" else None
+    records = _settled_records(harness, root, state_root)
+    if records and records[-1].kind == "uninstall-incomplete":
+        return records[-1]
     return None
+
+
+def last_uninstall_finished(
+    harness: str,
+    *,
+    root: Path | str,
+    state_root: Path | None = None,
+) -> bool:
+    """Return True when *root*'s latest record is a finished ``uninstall``.
+
+    The ``uninstall-incomplete`` records after it (passes that did not
+    finish) are passed over, and so is the rollback a failed install appends
+    to undo itself, as :func:`unfinished_uninstall` passes it over.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    for record in reversed(_settled_records(harness, root, state_root)):
+        if record.kind != "uninstall-incomplete":
+            return record.kind == "uninstall"
+    return False
 
 
 def active_install_ids(records: list[LedgerRecord]) -> set[str]:
@@ -630,7 +666,9 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
     gives the same active installs as replaying the whole history. The
     directories older dropped installs created are folded into the first kept
     install, so uninstall still removes them. A root with no active install
-    keeps only its last record.
+    keeps every record from its last finished uninstall on (its last record
+    when none finished), so the next uninstall there still finds that
+    finished one behind the unfinished ones that follow it.
     """
     by_root: dict[str, list[int]] = {}
     for index, record in enumerate(records):
@@ -643,10 +681,13 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
             for index in indices
             if records[index].kind == "install" and records[index].install_id in active
         ]
-        if not active_positions:
-            kept[indices[-1]] = records[indices[-1]]
-            continue
-        start = active_positions[-keep_installs:][0]
+        if active_positions:
+            start = active_positions[-keep_installs:][0]
+        else:
+            finished = [
+                index for index in indices if records[index].kind == "uninstall"
+            ]
+            start = finished[-1] if finished else indices[-1]
         for index in indices:
             if index >= start:
                 kept[index] = records[index]
@@ -748,6 +789,7 @@ __all__ = [
     "current_install_record",
     "find_record",
     "generate_ulid",
+    "last_uninstall_finished",
     "latest_record",
     "ledger_path",
     "read_records",

@@ -109,10 +109,23 @@ Use [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/sec
 
 ## Supply-chain release evidence
 
-Every release artifact ships with:
+Each GitHub Release carries this evidence. Which files it covers differs per
+item:
 
-- **SLSA-3 build provenance** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Sigstore signatures** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+  for every distributed file: the sdist, the wheel, the VS Code package
+  `apothem.vsix`, the SBOM `sbom.cdx.json`, the three platform archives and
+  `SHA256SUMS`. Each has its own `<file>.cosign.bundle`. The provenance file
+  `provenance.intoto.jsonl` has no cosign bundle; the SLSA generator signs it
+  inside its own DSSE envelope.
+- **SLSA-3 build provenance** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+  in `provenance.intoto.jsonl` for four files: the sdist, the wheel,
+  `apothem.vsix` and `sbom.cdx.json`. The release workflow also asks GitHub
+  to keep its own build-provenance record of the same files, a separate
+  record from this file; that step does not gate the release, so a release
+  can lack it. The
+  platform archives and `SHA256SUMS` have no SLSA provenance; their cosign
+  signatures and the signed release tag cover them.
 - **CycloneDX SBOM** of the shipped wheel and sdist, written by `scripts/release/generate_sbom.py`: the apothem package, every package vendored under `apothem/_vendor` with its license, the declared runtime requirements, and each distribution's SHA-256. The SBOM is signed and covered by the build provenance like the distributions
 - **npm provenance statements** via Trusted Publishing OIDC on `@ahmed-g-gad/apothem`
 - **GPG-signed git tags** (EDDSA key `70396FED9C634163`)
@@ -142,8 +155,15 @@ verification passed`. Repeat the `cosign` command for any other asset with its
 `<asset>.cosign.bundle` (earlier releases name the platform-archive and
 `SHA256SUMS` bundles `<asset>.sig`). The darwin and linux archives are the same
 bytes under two names, so `SHA256SUMS` lists one digest twice. From a clone,
-`bash scripts/release/verify-provenance.sh <download-dir>` runs all three
-checks, the `SHA256SUMS` manifest included, in one pass.
+`bash scripts/release/verify-provenance.sh --require-all <download-dir>`
+runs the three checks in one pass: the `SHA256SUMS` manifest, every cosign
+bundle, and the SLSA provenance of the wheel, the sdist, `apothem.vsix` and the
+signed SBOM. It skips a check whose tool (`cosign`, `slsa-verifier`) or file
+(`SHA256SUMS`) is missing, and its last line names the checks that ran and the
+ones it skipped. Only `chain OK (3 of 3 layers verified: ...)` means the
+release is verified; a line that starts `partial check` does not. With
+`--require-all` (`-RequireAll` for `verify-provenance.ps1`) a partial check
+exits 1; without it, a partial check exits 0.
 
 Two details decide whether verification means anything:
 

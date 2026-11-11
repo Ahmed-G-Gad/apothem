@@ -111,13 +111,24 @@ YYYY-MM-DD` (डिफ़ॉल्ट: UTC में आज), या पुन�
 डिफ़ की समीक्षा करें, फिर कमिट करें:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-`-S` फ़्लैग कमिट को GPG कुंजी से हस्ताक्षरित करता है। पुश मानक CI मैट्रिक्स
-(lint, test, build) को ट्रिगर करता है; टैगिंग से पहले हरे की प्रतीक्षा करें।
+`-s` फ़्लैग वह `Signed-off-by` पंक्ति जोड़ता है जिसे आवश्यक `Require
+Signed-off-by` जाँच खोजती है। रिलीज़ कमिट इस पुल रिक्वेस्ट के squash merge के
+रूप में `main` पर पहुँचता है; GitHub उस कमिट को अपनी कुंजी से हस्ताक्षरित करता
+है, और रिलीज़ पर आपका हस्ताक्षर टैग पर होता है (§2.2)। मर्ज `main` पर मानक CI
+मैट्रिक्स (lint, test, build) को ट्रिगर करता है; टैगिंग से पहले हरे की प्रतीक्षा
+करें।
 
 §2.4 की तत्परता जाँच के लिए रिलीज़ कमिट पर CodeQL और Conformity का हरा होना भी
 आवश्यक है। ये दोनों केवल तब चलते हैं जब उनके अपने पथ बदलते हैं, और रिलीज़ कमिट
@@ -525,11 +536,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 अपेक्षित: `Verified OK`, `PASSED: SLSA verification passed`, और
-`verify-provenance: chain OK (3 of 3 layers verified)`। स्क्रिप्ट एक ही रन में
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`। स्क्रिप्ट एक ही रन में
 `SHA256SUMS`, हर हस्ताक्षर बंडल, और प्रोवेनेंस की जाँच करती है; यह टैग को wheel
 नाम से व्युत्पन्न करती है (`--tag vX.Y.Z` इसे ओवरराइड करता है)।
 
