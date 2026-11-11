@@ -32,6 +32,7 @@ from .install_driver_ownership import (
     strip_owned,
 )
 from .install_driver_pathsafety import _validate_target_path, _write_boundary
+from .install_driver_retention import unlisted_block_warnings
 from .install_driver_types import (
     _REMOVE_KEY,
     MaterializationResult,
@@ -633,11 +634,13 @@ def _remove_unlisted_anchors(
     These are the bolt-on profile anchors (claude-code ``CLAUDE.md``, the
     single-file adapters' profile rule) and any sentinel entry removed from the
     manifest after install. The managed block self-delimits, so it strips without
-    the template. Each path stripped is added to *handled*.
+    the template. Each path stripped is added to *handled*. With no install
+    record, a bolt-on anchor keeps its block, with a warning that names it (see
+    :func:`unlisted_block_warnings`).
     """
-    results: list[MaterializationResult] = []
     if record is None:
-        return results
+        return unlisted_block_warnings(root, skip=handled)
+    results: list[MaterializationResult] = []
     for recorded in record.targets:
         if recorded.path in handled or recorded.mode != "sentinel_merge":
             continue

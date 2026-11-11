@@ -4,6 +4,18 @@ description: "Update Apothem and harness adapters."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
+<Callout title="Updating from an earlier release? Save your backups first">
+  In earlier releases (the changelog names them), every install and update
+  removed some folders that hold your own files, such as Claude Code slash
+  commands and hook scripts, after copying them to `~/.apothem/backups/`.
+  Most of those releases keep only the newest 10 backup sets per harness, so
+  each further run of one of them can delete the oldest set, which may hold
+  your only copy. Before you run Apothem again, copy
+  `~/.apothem/backups/` somewhere else. The
+  [changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+  lists every affected folder and how to copy your files back.
+</Callout>
+
 ## Update the Claude Code plugin
 
 Refresh the marketplace listing, then update the plugin from the `/plugin`

@@ -28,6 +28,7 @@ from click.testing import CliRunner, Result
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver_materialize, wrapper_factories
+from apothem.harnesses._shared.install_driver_datahome import shell_quoted
 from apothem.harnesses._shared.install_driver_types import MaterializationError, _result
 from apothem.harnesses.cursor import CursorAdapter
 from apothem.harnesses.cursor.install import install as cursor_install
@@ -532,32 +533,38 @@ def test_an_uninstall_that_matches_no_record_does_not_say_uninstalled(
     folder.mkdir()
     result = _uninstall_without_record(folder, tmp_path, fmt)
 
-    assert result.exit_code == 0, result.output
+    # No record shows which files Apothem wrote, so the uninstall does not
+    # finish; it removed some files first, so it exits 2.
+    assert result.exit_code == 2, result.output
     assert _files(folder / ".cursor" / "agents")
     assert not (folder / ".cursor" / "rules" / "apothem-rules.mdc").exists()
     if fmt == "json":
         rows = json.loads(result.output)["results"]
         assert [row["operation"] for row in rows] == ["uninstall"]
-        assert rows[0]["outcome"] == "updated"
+        assert rows[0]["outcome"] == "error"
         assert rows[0]["detail"] == {"kept_reason": "no-record"}
         message = rows[0]["message"]
-        assert message.startswith("no install record matched, so ")
+        assert "first copy any listed file you edited or added" in message
+        assert "then run apothem update, then apothem uninstall again" in message
+        assert "; no install record matched" in message
         assert (
             "2 Apothem-only files and the memory, contexts and learning stores "
             "in its data folder (backed up) were removed"
         ) in message
-        assert "check that --project names the folder you installed into" in message
-        assert f"run apothem install --harness cursor --project {folder}, " in message
+        quoted = shell_quoted(str(folder))
         assert (
-            "running the same uninstall again with --yes --format json lists "
-            "them in its warnings"
+            f"before you run apothem update, check that --project {quoted} is "
+            "the folder you installed into"
         ) in message
+        assert "apothem install" not in message
     else:
         text = " ".join(result.output.split())
         assert "Uninstalled cursor" not in text
-        # The count is on the outcome line, not on a warning line before it.
-        assert "paths were kept: no install record shows Apothem wrote them" not in text
-        assert "Partly uninstalled: cursor - no install record matched" in text
+        assert "cursor uninstall did not finish" in text
+        # The grouped warning line lists the kept paths; the Note line adds
+        # what was left in the home folder and what was still removed.
+        assert "paths were kept: no install record shows whether Apothem" in text
+        assert "Note: cursor - no install record matched" in text
 
 
 def test_a_quiet_uninstall_that_matches_no_record_still_says_so(
@@ -572,10 +579,10 @@ def test_a_quiet_uninstall_that_matches_no_record_still_says_so(
         "uninstall", "--harness", "cursor", "--project", str(folder), "--yes", "-q"
     )
 
-    assert result.exit_code == 0, result.output
-    assert "Partly uninstalled: cursor - no install record matched" in " ".join(
-        result.output.split()
-    )
+    assert result.exit_code == 2, result.output
+    words = " ".join(result.output.split())
+    assert "cursor uninstall did not finish" in words
+    assert "Note: cursor - no install record matched" in words
 
 
 def test_a_failing_uninstall_that_matches_no_record_still_says_so(
@@ -601,10 +608,10 @@ def test_a_failing_uninstall_that_matches_no_record_still_says_so(
     assert text.exit_code == 2, text.output
     words = " ".join(text.output.split())
     assert "Note: cursor - no install record matched" in words
-    # The count is on the Note line, not on a warning line before it too.
-    assert "paths were kept: no install record shows Apothem wrote them" not in words
-    # The earlier runs removed the rest, so this one removed nothing: exit 1.
-    assert quiet.exit_code == 1, quiet.output
+    assert "paths were kept: no install record shows whether Apothem" in words
+    # The earlier runs removed the rest, so this one removed nothing; the
+    # paths kept for want of a record still make it partial: exit 2.
+    assert quiet.exit_code == 2, quiet.output
     assert "Note: cursor - no install record matched" in " ".join(quiet.output.split())
     rows = json.loads(data.output)["results"]
     assert rows[0]["outcome"] == "error", rows
@@ -636,17 +643,17 @@ def test_an_uninstall_that_matches_no_record_and_removes_nothing(
         "json",
     )
 
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 2, result.output
     rows = json.loads(result.output)["results"]
-    assert rows[0]["outcome"] == "unchanged", rows
+    assert rows[0]["outcome"] == "error", rows
     assert rows[0]["detail"] == {"kept_reason": "no-record"}
     assert " were removed" not in rows[0]["message"], rows[0]["message"]
     assert " was removed" not in rows[0]["message"], rows[0]["message"]
     assert _files(folder) == installed
     text = _cli("uninstall", "--harness", "cursor", "--project", str(folder), "--yes")
-    assert "Not uninstalled: cursor - no install record matched" in " ".join(
-        text.output.split()
-    )
+    words = " ".join(text.output.split())
+    assert "Uninstalled cursor" not in words
+    assert "Note: cursor - no install record matched" in words
 
 
 def _unlink_folder_link(link: Path) -> None:
@@ -1119,8 +1126,12 @@ def test_a_case_only_copy_with_no_record_gets_no_notes(
 
     result = _cli("uninstall", "--harness", "cursor", "--project", str(lower), "--yes")
 
-    assert result.exit_code == 0, result.output
-    assert "Note:" not in result.output, result.output
+    # No record matches proj, so the uninstall does not finish (exit 2); its
+    # only note is the no-record one, never a retention note about Proj's.
+    assert result.exit_code == 2, result.output
+    notes = [line for line in result.output.splitlines() if "Note:" in line]
+    assert all("no install record matched" in note for note in notes), notes
+    assert "still used by" not in result.output, result.output
     assert "no other Apothem install uses it" not in result.output, result.output
     assert CursorAdapter().verify(project=upper.resolve())
 

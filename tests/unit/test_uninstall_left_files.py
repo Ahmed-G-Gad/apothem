@@ -11,16 +11,16 @@ error before anything is looked at.
 
 from __future__ import annotations
 
-import shlex
-import sys
+import os
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner, Result
 
 from apothem.cli import main
-from apothem.cli._cmd_uninstall import _quoted
+from apothem.cli._cmd_uninstall import _no_record_message
 from apothem.harnesses._shared.install_driver_backup import _guarded_unlink
+from apothem.harnesses._shared.install_driver_types import MaterializationRun, _result
 
 
 def _cli(*args: str) -> Result:
@@ -95,16 +95,41 @@ def test_a_rules_file_that_is_not_utf8_gets_the_fix_not_a_decoding_error(
     assert rules.exists()
 
 
-@pytest.mark.parametrize("name", ["my proj", "a&b", "x(1)", "it's", "a$b", "a;b"])
-def test_a_folder_a_shell_would_split_is_quoted(name: str) -> None:
-    # The no-record message prints commands to paste; a folder name with a
-    # character a shell treats specially is quoted, so the command still works.
+@pytest.mark.parametrize(
+    ("name", "on_windows", "elsewhere"),
+    [
+        ("my proj", '--project "work\\my proj"', "--project 'work/my proj'"),
+        ("a&b;c(1)", '--project "work\\a&b;c(1)"', "--project 'work/a&b;c(1)'"),
+        # The apostrophe ends single quotes; the $ expands inside double
+        # quotes, so neither shell's quotes can carry this folder.
+        (
+            "it's $site",
+            "the --project folder work\\it's $site",
+            "the --project folder work/it's $site",
+        ),
+    ],
+)
+def test_the_no_record_note_quotes_the_folder_as_commands_do(
+    name: str, on_windows: str, elsewhere: str
+) -> None:
+    # The Note names the --project folder to check; it is quoted as every
+    # printed command quotes a folder, or named as it is when the quotes
+    # cannot carry it.
     folder = Path("work") / name
+    kept = _result(
+        "warning",
+        "keep_unrecorded",
+        folder / "a.md",
+        "kept",
+        detail={"kept_reason": "no-record"},
+    )
+    run = MaterializationRun(harness="cursor", dry_run=False, results=(kept,))
 
-    quoted = _quoted(folder)
+    note = _no_record_message(run, "cursor", project=folder)
 
-    if sys.platform == "win32":
-        assert quoted == f'"{folder}"'
-    else:
-        assert shlex.split(quoted) == [str(folder)]
-    assert _quoted(Path("work") / "proj") == str(Path("work") / "proj")
+    named = on_windows if os.name == "nt" else elsewhere
+    assert note.endswith(
+        f"; before you run apothem update, check that {named} is the folder you "
+        "installed into"
+    ), note
+    assert note.startswith("no install record matched"), note

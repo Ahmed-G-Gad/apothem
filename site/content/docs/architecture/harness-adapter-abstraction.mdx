@@ -95,6 +95,8 @@ profile at the core, every harness an equal distance out along its own adapter.
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -105,7 +107,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -114,6 +116,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+Shipped adapters return a `MaterializationRun` from `uninstall`, and the CLI
+reports its warnings and errors; an adapter that has nothing to report may
+return `None`.
 
 Project-scope adapters may additionally accept `project: Path | None` on
 lifecycle methods and expose `resolve_output_path(project)`. The CLI passes

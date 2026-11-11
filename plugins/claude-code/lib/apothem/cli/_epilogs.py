@@ -42,11 +42,14 @@ Related commands:
   verify       Check installation status
 
 Exit codes:
-  0  Adapter uninstalled or was not installed, or no install record
-     matched and no step failed (kept_reason no-record)
+  0  Adapter uninstalled or was not installed
   1  Harness not found, confirmation declined or unavailable
      (non-interactive or JSON mode without --yes), or every removal failed
-  2  Partial removal — at least one harness removed before a failure
+     before removing anything
+  2  Partial removal or an unfinished uninstall — files were removed before
+     a failure, Apothem's files stay behind a link, an earlier release's
+     files differ from this release's, or the install has no record (for
+     the last two, run apothem update, then uninstall again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
