@@ -11,9 +11,10 @@ terminates with a verified Release page, a filed CHANGELOG, and an
 install-path smoke confirming each user-facing surface answers the
 canonical install command.
 
-The release model is **additive**. Each release adds one commit on `main` and
-one signed, annotated `vX.Y.Z` tag; nothing is force-pushed and no earlier
-tag, GitHub Release or npm version is removed. Every release keeps its tag,
+The release model is **additive**. Each release adds one commit on `main` (the
+squash merge of a release pull request) and one signed, annotated `vX.Y.Z`
+tag; nothing is force-pushed and no earlier tag, GitHub Release or npm version
+is removed. Every release keeps its tag,
 its GitHub Release and its npm version, and all stay published: npm versions
 are immutable (a published `name@version` can never be replaced), and pinned
 installs depend on the tags.
@@ -26,7 +27,7 @@ and the platform runtime archives. `publish-npm.yml` publishes
 `publish-vscode.yml` packages the VS Code extension and publishes it to the
 Visual Studio Marketplace. The
 versioned CHANGELOG section lands in the release commit; the operator runs
-the install-path smoke after both workflows finish.
+the install-path smoke after all three workflows finish.
 
 ## 1. Prerequisites
 
@@ -34,8 +35,12 @@ The maintainer confirms the following before tagging:
 
 - **Working tree.** Clean (`git status` shows nothing pending). All
   feature work for the release is on `main`.
-- **CI green.** Latest `main` `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` returns `success`.
+- **CI green.** The newest CI run on `main` succeeded:
+  `gh run list --workflow ci.yml --branch=main --limit=1 --json conclusion
+  --jq '.[0].conclusion'` returns `success`. Without `--workflow` the command
+  reads the newest run of any workflow (Badges, say), not CI. The readiness
+  check in §2.4 later checks every required workflow on the release commit;
+  `scripts/release/check-release-ready.sh` lists them.
 - **Tooling.** `gh` (GitHub CLI) version 2.40 or later authenticated
   against `ahmed-g-gad`; `git` 2.40 or later with the GPG signing subkey
   loaded; the npm trusted-publisher binding for `@ahmed-g-gad/apothem`
@@ -63,19 +68,23 @@ The maintainer confirms the following before tagging:
 
 ### 2.1 Author the release commit
 
-The version lives in more than a dozen files, so do not edit them by hand.
-One command moves all of them:
+The release commit lands on `main` through a pull request that is squash
+merged, like every other change. The branch protection does not bind an admin,
+who could push to `main` directly; this runbook does not use that bypass. Make
+the commit on a `release/vX.Y.Z` branch. The version lives in more than a dozen files, so do
+not edit them by hand. One command moves all of them:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
+git checkout -b release/vX.Y.Z
 python scripts/release/bump_version.py X.Y.Z
 ```
 
 `bump_version.py` updates every version anchor together:
 
 - Every packaging, extension, plugin and marketplace manifest, plus the
-  citation file (version and release date). The full list:
+  citation file (version and release date):
 
   ```text
   pyproject.toml
@@ -91,11 +100,42 @@ python scripts/release/bump_version.py X.Y.Z
   CITATION.cff
   ```
 
+- The wrapper files that run the engine through npx, whose
+  `npx @ahmed-g-gad/apothem@X.Y.Z` calls are pinned to the release:
+
+  ```text
+  commands/apothem.toml
+  qwen-commands/apothem.md
+  GEMINI.md
+  QWEN.md
+  plugins/apothem/skills/apothem/SKILL.md
+  vscode-extension/extension.js
+  vscode-extension/package.json
+  vscode-extension/README.md
+  ```
+
+  The two lists are `JSON_ANCHORS` and `NPX_PIN_ANCHORS` in
+  `scripts/release/bump_version.py`; the script, not this page, is the
+  authority.
+
 - `CHANGELOG.md`: the `[Unreleased]` entries become a dated `## [X.Y.Z]`
   section, `[Unreleased]` compares from `vX.Y.Z`, and a `[X.Y.Z]` link is
   added.
 - `SECURITY.md`: a new minor gets a supported `X.Y.x` row. Whether older
   minors stay listed is your decision; the script prints a reminder.
+
+Two `SECURITY.md` edits are yours, by hand, in the same commit:
+
+- Add the new tag at the top of the signed-tag table under "Release tags are
+  not all the same kind of object". The script does not touch that table. The
+  row reads:
+
+  ```text
+  | `vX.Y.Z` | annotated, GPG-signed | `git verify-tag vX.Y.Z` |
+  ```
+
+- For a new minor, change the previous minor's row to the support you keep for
+  it, for example "Critical security fixes only, until `<date>`".
 
 It then regenerates the derived trees: the Claude Code plugin package, the
 behavior-diff goldens, and the docs reference and changelog pages. Pass
@@ -105,17 +145,38 @@ to skip the regeneration. The script refuses a malformed version or a
 downgrade, and re-running it with the current version only re-aligns stray
 anchors.
 
-Review the diff, then commit:
+Review the diff, then commit, push the branch and open the pull request:
 
 ```bash
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
 ```
 
-The `-S` flag signs the commit with the GPG key. The push triggers
-the standard CI matrix (lint, test, build); wait for green before
-tagging.
+The `-s` flag adds the `Signed-off-by` line that the required
+`Require Signed-off-by` check looks for on every commit of the pull request.
+The squash commit's subject is the pull request title plus ` (#N)`, and it
+must fit in 72 characters.
+
+Wait for the required checks, then squash merge the pull request and bring the
+merge commit into your clone:
+
+```bash
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
+git log -1 --format='%h %s'
+```
+
+The last command prints the short hash followed by
+`chore(release): cut vX.Y.Z (#N)`. GitHub creates the
+squash commit and signs it with its own key, so the commit does not carry your
+GPG signature. Your signature on the release is the tag's (§2.2), which the
+installers check. The merge starts the standard CI matrix (lint, test, build)
+on `main`; wait for green before tagging.
 
 The readiness check in §2.4 also needs CodeQL and Conformity green on the
 release commit. Both run only when their own paths change, and a release
@@ -129,19 +190,22 @@ gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
 gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
 ```
 
-Wait for both to succeed before tagging, and push nothing else to `main` until
-the release is out: a later push moves `main` away from the release commit, and
-CI cancels a run still in progress on the same branch.
+Wait for both to succeed before tagging, and merge nothing else into `main`
+until the release is out: a later merge moves `main` away from the release
+commit, and CI cancels a run still in progress on the same branch.
 
 ### 2.2 Sign and push the tag
+
+Tag the squash commit from §2.1, which is the head of `main` in your clone:
 
 ```bash
 git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-The `-a -s` combination produces an annotated, GPG-signed tag. The
-push triggers `.github/workflows/release.yml`, which builds, signs,
+The `-a -s` combination produces an annotated, GPG-signed tag. A missing or
+locked signing key makes `git tag` itself fail, before anything is pushed
+(§6). The push triggers `.github/workflows/release.yml`, which builds, signs,
 attests, and publishes.
 
 ### 2.3 Confirm the release workflow completed
@@ -444,6 +508,73 @@ of each plain-text template as that release shipped it
 when the template changed. The `release-preflight` CI job checks out every tag,
 so it fails with the tag names until the pin is refreshed.
 
+### 2.6 Refresh the badges, the site and the channel smoke
+
+The badges workflow reads the newest tag with `git describe` after each CI run
+on `main`. CI on the release commit finished before the tag existed, so the
+published release badge still names the previous release. Run three
+workflows by hand, in this order, once the npm and Marketplace publishes from
+§2.4 are done. Each one must succeed before you start the next: the site
+publish copies the badges from the newest successful badges run, and the
+channel smoke installs from the published site and registries.
+
+```bash
+gh workflow run badges.yml --ref main
+gh run watch "$(gh run list --workflow badges.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run publish-static-site.yml --ref main
+gh run watch "$(gh run list --workflow publish-static-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run channel-smoke.yml --ref main
+gh run watch "$(gh run list --workflow channel-smoke.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+curl -fsSL https://apothem.ahmedgad.com/badges/release.json
+```
+
+`--event workflow_dispatch` keeps the badges run that CI on `main` starts by
+itself out of the list. A dispatched run can take a few seconds to appear in
+`gh run list`, so check that the run each `gh run watch` follows is the one
+you just started and not an earlier dispatch. The last
+command prints JSON whose `message` is `vX.Y.Z`.
+
+### 2.7 Publish the security advisories the release fixes
+
+A release that fixes a reported vulnerability ships with its repository
+security advisory still a draft. Publish each one only after the fixed version
+is live on npm (`npm view @ahmed-g-gad/apothem version` prints `X.Y.Z`), and
+only after you have read it through. List the drafts:
+
+```bash
+gh api "repos/Ahmed-G-Gad/apothem/security-advisories?state=draft" \
+  --jq '.[] | [.ghsa_id, .severity, .summary] | @tsv'
+```
+
+For each draft this release fixes:
+
+1. Read its description. The Patches text names `X.Y.Z` as the fixed version
+   and gives the upgrade step, and no `TODO(clarify)` is left. Edit it on the
+   advisory's page if not.
+2. Set the patched version on every affected package. The API replaces the
+   whole `vulnerabilities` list, so send each entry back with
+   `patched_versions` set:
+
+   ```bash
+   ghsa=GHSA-xxxx-xxxx-xxxx
+   gh api "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     --jq '{vulnerabilities: [.vulnerabilities[] | {package: {ecosystem: .package.ecosystem, name: .package.name}, vulnerable_version_range, patched_versions: "X.Y.Z", vulnerable_functions}]}' \
+     | gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+         --input - --jq '.vulnerabilities'
+   ```
+
+   The first call's output goes straight into the second through a pipe, so
+   no file is left in your clone. The output lists each package with
+   `patched_versions` `X.Y.Z`.
+3. Publish it:
+
+   ```bash
+   gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     -f state=published --jq '.state'
+   ```
+
+   The command prints `published`.
+
 ## 3. Distribution Surfaces
 
 Each surface has a verification command answering "did the release land
@@ -454,7 +585,7 @@ here?":
 | 1 | GitHub Release (Python distributions) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` includes both filenames |
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | asset list includes both; the SBOM's `metadata.component.purl` is `pkg:pypi/apothem@X.Y.Z` and its components include every package in `src/apothem/_vendor/vendor.txt` |
 | 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, VS Code extension, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
-| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
+| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh --require-all <download-dir>` exits 0 and prints `chain OK (3 of 3 layers verified: ...)` (§5.5) |
 | 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS`. The darwin and linux archives are the same bytes under two names (the runtime is platform-neutral; `--platform` only picks tar.gz or zip), so their `SHA256SUMS` lines show one digest twice |
 | 6 | GitHub Release (VS Code extension) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | asset list includes both; `code --install-extension apothem.vsix` installs it. Releases before the release workflow packaged the extension carry neither |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
@@ -558,13 +689,18 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Expected: `Verified OK`, `PASSED: SLSA verification passed`, and
-`verify-provenance: chain OK (3 of 3 layers verified)`. The script checks
-`SHA256SUMS`, every signature bundle, and the provenance in one run; it
-derives the tag from the wheel name (`--tag vX.Y.Z` overrides it).
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest,
+cosign signatures, SLSA provenance)`. The script checks `SHA256SUMS`, every
+signature bundle, and the provenance in one run; it derives the tag from the
+wheel name (`--tag vX.Y.Z` overrides it). It skips a check whose tool or file
+is missing and then prints `partial check` with the skipped checks instead of
+`chain OK`. Without `--require-all` a partial check still exits 0; with it
+(`-RequireAll` for `verify-provenance.ps1`), any skipped check exits 1, so the
+exit status alone tells a full check from a partial one.
 
 The smoke produces a one-line PASS / FAIL row per surface; record
 the rows in the maintainer's release log.
@@ -576,8 +712,8 @@ and the npm publisher:
 
 | Failure | Diagnostic | Recovery |
 |---|---|---|
-| Tag push rejected (signing failure) | `git push origin vX.Y.Z` returns `error: failed to push some refs` with a GPG-related message | Verify the GPG subkey is loaded (`gpg --list-secret-keys --keyid-format=long`); re-tag locally with `-s` after fixing the keyring; re-push |
-| Release build stops at `Check the plugin version changed with the plugin` | The build job log names the plugin and the previous tag; no asset was built or published | The plugin package changed since the previous release but its version did not. Delete the tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), run `python scripts/release/bump_version.py X.Y.Z`, commit, then sign and push the tag again (§2.2). The same check runs on every pull request as a warning annotation, so this normally surfaces before tagging |
+| Tag signing fails | `git tag -a -s vX.Y.Z` stops with a gpg error (for example `gpg failed to sign the data`) and creates no tag, so nothing is pushed | Verify the GPG subkey is loaded (`gpg --list-secret-keys --keyid-format=long`); after fixing the keyring, run the `git tag -a -s` command again, then push the tag (§2.2) |
+| Release build stops at `Check the plugin version changed with the plugin` | The build job log names the plugin and the previous tag; no asset was built or published | The plugin package changed since the previous release but its version did not. `publish-npm.yml` and `publish-vscode.yml` run beside the release workflow, so first check that neither published (`npm view @ahmed-g-gad/apothem version` does not print `X.Y.Z`, and the Marketplace does not list it). If either did, leave the tag and cut the next patch release. Otherwise delete the tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), run `python scripts/release/bump_version.py X.Y.Z`, land the change through a pull request as in §2.1, then sign and push the tag again (§2.2). The tag then names the new release commit, which the [release-recovery runbook](/docs/runbooks/release-recovery) §2 allows only because nothing was published from the first one. The same check runs on every pull request as a warning annotation, so this normally surfaces before tagging |
 | `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build, which also writes the SBOM / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
 | SLSA provenance verification fails | The `verify SLSA provenance artifact` job exits non-zero | Inspect the provenance artifact for subject-digest mismatch; rebuild from the same tag — provenance binds to the exact artifact digests, so any artifact regeneration requires a full workflow rerun |
 | npmjs.com publish rejected | The npm job exits non-zero during `npm publish`; a registry `404` during `PUT` is an authorization / trusted-publisher mismatch, not proof that the package code is missing | Verify npm Trusted Publishing for `@ahmed-g-gad/apothem` names owner `ahmed-g-gad`, repository `apothem`, workflow `publish-npm.yml`, and allowed action `npm publish`; confirm the job runs with the Node version and npm CLI OIDC floor pinned in the workflow |

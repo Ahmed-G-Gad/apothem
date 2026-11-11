@@ -112,14 +112,23 @@ YYYY-MM-DD`, чтобы задать дату релиза (по умолчан�
 Просмотрите diff, затем сделайте коммит:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-Флаг `-S` подписывает коммит ключом GPG. Push запускает стандартную
-матрицу CI (lint, test, build); дождитесь зелёного статуса перед
-тегированием.
+Флаг `-s` добавляет строку `Signed-off-by`, которую ищет обязательная проверка
+`Require Signed-off-by`. Релизный коммит попадает в `main` как squash merge
+этого pull request; GitHub подписывает этот коммит своим ключом, а ваша подпись
+релиза стоит на теге (§2.2). Merge запускает стандартную матрицу CI (lint, test,
+build) на `main`; дождитесь зелёного статуса перед тегированием.
 
 Проверка готовности в §2.4 также требует, чтобы CodeQL и Conformity были
 зелёными на коммите релиза. Оба запускаются только при изменении файлов,
@@ -560,11 +569,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Ожидается: `Verified OK`, `PASSED: SLSA verification passed` и
-`verify-provenance: chain OK (3 of 3 layers verified)`. Скрипт проверяет
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Скрипт проверяет
 `SHA256SUMS`, каждый бандл подписи и происхождение за один запуск; он
 выводит тег из имени wheel (`--tag vX.Y.Z` переопределяет его).
 

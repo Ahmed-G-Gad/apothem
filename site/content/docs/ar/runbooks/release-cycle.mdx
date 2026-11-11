@@ -109,14 +109,19 @@ python scripts/release/bump_version.py X.Y.Z
 راجِع الفرق، ثم أنشئ الكوميت:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-تُوقّع الراية <bdi>`-S`</bdi> الكوميت بمفتاح <bdi>GPG</bdi>. يُطلِق الدفع مصفوفة
-<bdi>CI</bdi> القياسية (<bdi>lint</bdi>، <bdi>test</bdi>، <bdi>build</bdi>)؛ انتظر
-النتيجة الخضراء قبل وضع الوسم.
+تُضيف الراية <bdi>`-s`</bdi> سطر <bdi>`Signed-off-by`</bdi> الذي يبحث عنه الفحص الإلزامي <bdi>`Require Signed-off-by`</bdi>. يصل كوميت الإصدار إلى <bdi>`main`</bdi> بوصفه دمجًا مضغوطًا (<bdi>squash merge</bdi>) لطلب السحب هذا؛ ويوقّع <bdi>GitHub</bdi> ذلك الكوميت بمفتاحه الخاص، أما توقيعك على الإصدار فهو توقيع الوسم (§2.2). يُطلِق الدمج مصفوفة <bdi>CI</bdi> القياسية (<bdi>lint</bdi>، <bdi>test</bdi>، <bdi>build</bdi>) على <bdi>`main`</bdi>؛ انتظر النتيجة الخضراء قبل وضع الوسم.
 
 يحتاج فحص الجاهزية في القسم 2.4 أيضًا إلى أن تكون نتيجة سيرَي عمل <bdi>CodeQL</bdi> و<bdi>Conformity</bdi> خضراء على كوميت الإصدار. يعمل كلٌّ منهما فقط عندما تتغيّر مساراته الخاصة، وعادةً لا يغيّر كوميت الإصدار أيًّا منها، لذا شغِّلهما بعد أن يصبح كوميت الإصدار رأس <bdi>`main`</bdi>، ثم تحقّق من أن كل تشغيل يُسمّي ذلك الكوميت:
 
@@ -398,11 +403,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 المتوقّع: <bdi>`Verified OK`</bdi>، و<bdi>`PASSED: SLSA verification passed`</bdi>،
-و<bdi>`verify-provenance: chain OK (3 of 3 layers verified)`</bdi>. يفحص السكربت
+و<bdi>`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`</bdi>. يفحص السكربت
 <bdi>`SHA256SUMS`</bdi>، وكل حزمة توقيع، والمنشأ في تشغيل واحد؛ ويستنتج
 الوسم من اسم الـ <bdi>wheel</bdi> (ويتجاوزه <bdi>`--tag vX.Y.Z`</bdi>).
 
