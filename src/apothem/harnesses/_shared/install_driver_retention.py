@@ -28,6 +28,7 @@ from apothem.lib.harness_materializer import (
 )
 from apothem.lib.install_ledger import LedgerRecord
 
+from .install_driver_blocks import endless_block_warning
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -252,8 +253,11 @@ def unlisted_block_warnings(
 
     For an uninstall with no install record in place: nothing shows which
     install wrote the block, so the file is left as it is, and the warning
-    names it without stopping the uninstall. A path in *skip* (one the
-    uninstall handled already) and a file that cannot be read are passed over.
+    names it without stopping the uninstall. A block that lost its END marker
+    gets the warning for that instead (see
+    :func:`install_driver_blocks.endless_block_warning`): no line shows where
+    it ends. A path in *skip* (one the uninstall handled already) and a file
+    that cannot be read are passed over.
     """
     warnings: list[MaterializationResult] = []
     for relative in BOLT_ON_ANCHORS:
@@ -265,6 +269,10 @@ def unlisted_block_warnings(
         except OSError:
             continue
         if extract_managed_block(text) is None:
+            continue
+        endless = endless_block_warning(anchor, "surgical_uninstall")
+        if endless is not None:
+            warnings.append(endless)
             continue
         message = (
             f"{anchor} still holds Apothem's managed block: no install record "

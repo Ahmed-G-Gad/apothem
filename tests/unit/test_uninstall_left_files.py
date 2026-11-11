@@ -20,6 +20,7 @@ from click.testing import CliRunner, Result
 from apothem.cli import main
 from apothem.cli._cmd_uninstall import _no_record_message
 from apothem.harnesses._shared.install_driver_backup import _guarded_unlink
+from apothem.harnesses._shared.install_driver_blocks import MARKER_LEFT
 from apothem.harnesses._shared.install_driver_types import MaterializationRun, _result
 
 
@@ -133,3 +134,38 @@ def test_the_no_record_note_quotes_the_folder_as_commands_do(
         "installed into"
     ), note
     assert note.startswith("no install record matched"), note
+
+
+def test_the_no_record_note_puts_a_file_with_a_marker_left_first() -> None:
+    # An update rewrites a managed block from a BEGIN marker with no END to
+    # the end of the file, so the Note's check before the update also names
+    # the files whose warnings say an Apothem marker was left.
+    folder = Path("work") / "proj"
+    kept = _result(
+        "warning",
+        "keep_unrecorded",
+        folder / "a.md",
+        "kept",
+        detail={"kept_reason": "no-record"},
+    )
+    endless = _result(
+        "warning",
+        "surgical_uninstall",
+        folder / "AGENTS.md",
+        "BEGIN marker with no END marker",
+        detail={MARKER_LEFT: "1"},
+    )
+    run = MaterializationRun(harness="cursor", dry_run=False, results=(kept, endless))
+
+    note = _no_record_message(run, "cursor", project=folder)
+    plain = _no_record_message(
+        MaterializationRun(harness="cursor", dry_run=False, results=(kept,)),
+        "cursor",
+        project=folder,
+    )
+
+    assert note.endswith(
+        "is the folder you installed into, and fix the 1 file(s) whose warnings "
+        "name an Apothem marker"
+    ), note
+    assert "Apothem marker" not in plain, plain

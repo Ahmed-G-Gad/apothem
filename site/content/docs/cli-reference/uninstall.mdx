@@ -55,18 +55,25 @@ shows which of its files Apothem wrote; every path it keeps outside a link is
 listed under one `Warning:` line, the files you added included, since nothing
 tells them apart. The shared folders in your home stay for it too. Some
 parts still go: Apothem's lines in a shared file such as a rules file or
-`hooks.json` (a file left with nothing else goes too), the memory, contexts
-and learning stores of the data folder (backed up first; they hold your
-data, not only Apothem's), and, for some harnesses, folders of an older
-layout that the harness lists as stale. After the `✗` line, a `Note:
+`hooks.json` (a file left with nothing else goes too; a file whose block lost
+its END marker stays as it is, see
+[An uninstall that did not finish](#an-uninstall-that-did-not-finish)), the
+memory, contexts and learning stores of the data folder (backed up first;
+they hold your data, not only Apothem's), and, for some harnesses, folders of
+an older layout that the harness lists as stale. After the `✗` line, a `Note:
 <harness> - no install record matched` line names the shared folders it
 left and what it still removed. For a project-scope harness it also says to
 check that `--project` names the folder you installed into before you run
 `apothem update`, since an update in another folder installs there; the
-folder is quoted as in the other printed commands. The `Note:` line is
-printed under `--quiet` too, to the error stream. In `--format json` output
-the harness's `uninstall` row has `"outcome": "error"`, carries that note in
-its message and has `"detail": {"kept_reason": "no-record"}`.
+folder is quoted as in the other printed commands. When a warning names a
+file with an Apothem marker the uninstall left (a BEGIN marker with no END
+after it, or another block between Apothem's markers), the `✗` line says to
+fix that file before the update, which would otherwise cut your text after
+that marker; for a project-scope harness the `Note:` line says so too. The
+`Note:` line is printed under `--quiet` too, to the error stream. In
+`--format json` output the harness's `uninstall` row has
+`"outcome": "error"`, carries that note in its message and has
+`"detail": {"kept_reason": "no-record"}`.
 `apothem update` writes this release's files and records them, so running it
 and then `apothem uninstall` again finishes the job. Before you do, copy any
 listed file you edited or added: the update overwrites the paths it writes
@@ -286,20 +293,23 @@ your home directory, say) removes nothing and exits `1`.
 When an uninstall does not finish, it appends an `uninstall-incomplete` record
 to the install ledger instead of an `uninstall` record. That happens when a
 step failed, when it stopped with an exception, when Apothem's own files stay
-behind a link, when files of an install an earlier release recorded differ
+behind a link, when a file holds another block between Apothem's markers (see
+below), when files of an install an earlier release recorded differ
 from what this release writes, and when the install has no record. The last
 two exit `2` with `status` `"partial"` even when nothing was removed, and
 finish only after `apothem update` (see
 [What an uninstall removes](#what-an-uninstall-removes)). The
 install stays recorded, so `apothem status`, `verify` and
-`rollback` still see it, and the harness reads as installed while a file the
-install wrote is still there unchanged, so running `uninstall` again finishes
-the job. An install with no record has none to keep: only its files on disk
-make the harness read as installed, and `rollback` has nothing to roll back.
+`rollback` still see it, and the harness reads as installed while something
+the install wrote is still there as it wrote it (see below), so running
+`uninstall` again finishes the job. An install with no record has none to
+keep: only its files on disk make the harness read as installed, and
+`rollback` has nothing to roll back.
 An `install`, `update`, `rollback` or finished `uninstall` of that
 harness at that location replaces the state, and so does removing the
-remaining files by hand: with none of Apothem's files left as it wrote them,
-the harness reads as not installed, whatever else is in the folder. The first
+remaining files by hand: with none of Apothem's files left as it wrote them
+and nothing left in its `.apothem` folder, the harness reads as not
+installed, whatever else is in the folder. The first
 command that checks whether the harness is installed (`status`, `verify`,
 `uninstall`) then appends an `uninstall` record that closes the install. After
 an uninstall that finished, though, no record lists the files an install
@@ -309,6 +319,33 @@ replaces the state.
 install it belongs to is kept. After an uninstall that finished, it keeps the
 record together with that uninstall's record, so running the uninstall again
 still works the same way.
+
+What still counts: a whole file the install wrote, while it is unchanged (for
+an install an earlier release recorded, while it is there); anything in the
+folders Apothem installs into under `.apothem`; and a file where Apothem keeps
+a managed block beside your own text, while the block is still in it,
+whatever you have written around it. Those files are `CLAUDE.md`, the profile
+document the shared profile is projected into, the rules file in each
+OpenClaw workspace, and `AGENTS.md` and the other instruction files the
+install adds a block to.
+
+A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` marker to
+the next `<!-- END APOTHEM MANAGED BLOCK -->` marker. If the END marker is
+gone, nothing shows where Apothem's text stops and yours starts, so the
+uninstall leaves the file as it is, names it in a warning and finishes
+(unless something else leaves it unfinished, such as an install with no
+record); so does a retry after an uninstall that did not finish. If a BEGIN
+marker of yours is left with no END after it once Apothem's block is out, the
+uninstall names that file too. A file that holds another block between the markers that
+is not a copy of Apothem's own (a marker pair you quote, say) is left as it is
+and named, and the uninstall stays unfinished until you remove that block.
+Delete such a marker, or the rest of the block, by hand:
+an `install` or `update` that writes the file again replaces everything from
+that BEGIN marker to the end of the file. When the uninstall's next step is to
+run `apothem update` and a warning names such a file (in the `--format json`
+envelope, its `detail` has `marker_left`), that step tells you to fix the file
+first: until a later release, an update rewrites a managed block from a BEGIN
+marker with no END marker to the end of the file, cutting your text after it.
 
 If the ledger cannot take the `uninstall-incomplete` record (a full disk,
 say), the ledger stays as it was, and a `Warning:` line names the ledger and

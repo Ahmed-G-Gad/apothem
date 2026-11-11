@@ -12,14 +12,14 @@ from __future__ import annotations
 
 import contextlib
 import os
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from apothem.lib import install_ledger
-from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.install_ledger import LedgerTarget
 
 from .install_driver_backup import backup_existing
-from .install_driver_digests import backup_ledger_targets, file_digest
+from .install_driver_blocks import whole_block_left
+from .install_driver_digests import file_digest
 from .install_driver_pathsafety import (
     _is_link,
     _unsafe_symlink,
@@ -28,10 +28,12 @@ from .install_driver_pathsafety import (
     _write_boundary,
     kept_links_detail,
 )
-from .install_driver_retention import unrecorded_warning
-from .install_driver_sweep import _link_kept as link_kept
-from .install_driver_sweep import kept_link_warnings, links_left_in
-from .install_driver_types import MaterializationResult, _path_text, _result
+from .install_driver_types import (
+    KEPT_REASON,
+    MaterializationResult,
+    _path_text,
+    _result,
+)
 
 #: ``detail`` key of a removal: the files it kept because nothing shows Apothem
 #: wrote them as they are now (newline-joined paths).
@@ -46,16 +48,15 @@ KEPT_DIFFERING = "kept_differing"
 #: not remove (newline-joined paths).
 STUCK_FILES = "stuck_files"
 
-#: Kept reasons that leave the uninstall unfinished: files this release cannot
-#: show are Apothem's or not, under an install an earlier release recorded
-#: without digests (``no-digests``) or with no install record at all
-#: (``no-record``). ``apothem update`` records them; a second uninstall then
-#: finishes. A path kept after a finished uninstall (``no-active-install``)
-#: does not: no install is left to finish.
-UNFINISHED_REASONS: frozenset[str] = frozenset({"no-digests", "no-record"})
-
-#: ``detail`` key naming why a target was kept whole (see :func:`remove_written`).
-KEPT_REASON = "kept_reason"
+#: Kept reasons ``apothem update`` settles: files this release cannot show are
+#: Apothem's or not, under an install an earlier release recorded without
+#: digests (``no-digests``) or with no install record at all (``no-record``).
+#: The update records them; a second uninstall then finishes. A path kept after
+#: a finished uninstall (``no-active-install``) is not one: no install is left
+#: to finish. Each leaves the uninstall unfinished (see
+#: :data:`install_driver_outcome.UNFINISHED_REASONS`); the ``detail`` key is
+#: :data:`~install_driver_types.KEPT_REASON`.
+UNPROVEN_REASONS: frozenset[str] = frozenset({"no-digests", "no-record"})
 
 
 def _proof(entry: LedgerTarget | None) -> dict[str, str] | None:
@@ -486,168 +487,23 @@ def kept_file_warnings(
     return warnings
 
 
-def links_named(results: Iterable[MaterializationResult]) -> set[str]:
-    """Return the links that *results* name in their messages.
-
-    An escape refusal (``target escapes the allowed materialization root``)
-    records its link in ``detail["symlink"]`` without naming it in the
-    message; that link still gets its own warning that it was left in place.
-    """
-    return {
-        link
-        for result in results
-        if (link := result.detail.get("symlink")) and link in result.message
-    }
-
-
-def left_behind(
-    results: list[MaterializationResult],
-    active: list[LedgerRecord],
-    *,
-    floor: Path,
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files."""
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = links_named(results)
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
-
-
-def links_on_the_way(
-    paths: Iterable[str],
-    floor: Path,
-    *,
-    known: list[MaterializationResult],
-) -> list[MaterializationResult]:
-    """Return one warning per link between *floor* and a recorded path.
-
-    An uninstall leaves a link and what it points to in place; when nothing
-    of Apothem's is left behind it, nothing else would name it. A link a
-    result in *known* already names is skipped (see :func:`links_named`).
-    """
-    seen = {result.path for result in known} | links_named(known)
-    notes = []
-    for text in paths:
-        for ancestor in Path(text).parents:
-            if ancestor == floor or floor not in ancestor.parents:
-                break
-            if _path_text(ancestor) not in seen and _is_link(ancestor):
-                seen.add(_path_text(ancestor))
-                notes.append(link_kept(ancestor))
-    return notes
-
-
 def still_written(entry: LedgerTarget) -> bool:
     """Return True when a file *entry* records still has the content Apothem wrote.
 
     Used as install evidence after an unfinished uninstall: a path that merely
     exists (a settings file the tool recreated, a folder of the operator's)
-    proves nothing, unless the record predates digests.
+    proves nothing, unless the record predates digests. A managed-block file
+    (``sentinel_merge``) is meant to hold the operator's text beside Apothem's
+    block, so the block, not the whole file, is what Apothem wrote: it counts
+    while it carries the whole block, both markers. A BEGIN marker left without
+    its END does not count: the uninstall leaves that file as it is (see
+    :func:`install_driver_blocks.whole_block_left`).
     """
+    if entry.mode == "sentinel_merge":
+        return whole_block_left(entry)
     proof = _proof(entry)
     if proof is None:
         # An earlier release recorded no digests: the path is the evidence,
         # and the removal that follows still checks each file's content.
         return os.path.lexists(entry.path)
     return bool(_written_now(Path(entry.path), proof))
-
-
-def left_unfinished(results: list[MaterializationResult]) -> bool:
-    """Return True when Apothem's files stay where the uninstall could not finish.
-
-    A removal failed, Apothem's files stay behind a link, or files stay
-    because this release cannot show whether they are Apothem's: an earlier
-    release recorded them without digests, or no install record is left
-    (see :data:`UNFINISHED_REASONS`; ``apothem update`` records them, then a
-    second uninstall finishes).
-    """
-    return any(
-        result.outcome == "error"
-        or result.detail.get("blocked")
-        or result.detail.get(KEPT_REASON) in UNFINISHED_REASONS
-        for result in results
-    )
-
-
-def last_uninstall_finished(harness_name: str, root: Path) -> bool:
-    """Return True when *root*'s latest ledger record is a finished uninstall.
-
-    The unfinished uninstalls after it, and a failed install's own rollback,
-    are passed over (see :func:`install_ledger.last_uninstall_finished`), so
-    the next run works the same way. With no install in place, only then does
-    what stays never stop the uninstall (``kept_reason`` ``no-active-install``);
-    any other history (a rollback, unfinished uninstalls only, none) leaves it
-    unfinished. See :func:`remove_written`. A ledger that cannot be read shows
-    no such record.
-    """
-    try:
-        return install_ledger.last_uninstall_finished(harness_name, root=root)
-    except (OSError, install_ledger.LedgerError):
-        return False
-
-
-def _latest_record(harness_name: str, root: Path | str) -> LedgerRecord | None:
-    """Return *root*'s latest ledger record (``None`` also when it cannot be read)."""
-    try:
-        return install_ledger.latest_record(harness_name, root=root, kind=None)
-    except (OSError, install_ledger.LedgerError):
-        return None
-
-
-def _is_latest(entry: LedgerRecord) -> bool:
-    """Return True when *entry* is the latest record at its root (by id, time, kind)."""
-    latest = _latest_record(entry.harness, entry.root)
-    key = (entry.install_id, entry.timestamp, entry.kind)
-    return (
-        latest is not None and (latest.install_id, latest.timestamp, latest.kind) == key
-    )
-
-
-def record_uninstall(
-    harness_name: str,
-    root: Path,
-    record: LedgerRecord | None,
-    results: list[MaterializationResult],
-    *,
-    finished: bool,
-    own: list[LedgerRecord],
-) -> list[MaterializationResult]:
-    """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
-
-    Either record references every backup the pass took, and goes into *own*
-    (this pass's records) before it is appended, as an append interrupted
-    after the record landed returns nothing. A finished uninstall ends the
-    install; a failure to write it raises, so the caller can record the
-    uninstall as unfinished instead, unless the root's latest record is a
-    finished uninstall all the same (this one, left in after the error, or an
-    earlier pass's): it then stands, with a warning. An unfinished one keeps
-    the install active for a second run; it is written even when the pass
-    raised, unless the root's latest record is this pass's own (the last in
-    *own*); an earlier pass's finished uninstall does not count. A failure to
-    write it returns a warning naming the ledger, so it does not hide the
-    pass's own error. Retention is the caller's to run.
-    """
-    if not finished and own and _is_latest(own[-1]):
-        return []
-    entry = LedgerRecord.create(
-        harness=harness_name,
-        root=root,
-        kind="uninstall" if finished else "uninstall-incomplete",
-        targets=backup_ledger_targets(results),
-        install_id=record.install_id if record is not None else None,
-    )
-    own.append(entry)
-    try:
-        install_ledger.append_record(entry)
-    except (OSError, install_ledger.LedgerError) as exc:
-        latest = _latest_record(harness_name, root)
-        if finished and (latest is None or latest.kind != "uninstall"):
-            raise
-        return [unrecorded_warning(entry, exc, finished=finished)]
-    return []
