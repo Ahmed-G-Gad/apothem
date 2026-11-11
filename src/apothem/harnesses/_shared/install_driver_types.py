@@ -322,6 +322,12 @@ def _path_text(path: Path) -> str:
     return str(path)
 
 
+#: ``detail`` key naming why an uninstall kept a target (see
+#: :func:`install_driver_written.remove_written` and
+#: :func:`install_driver_blocks.another_block_warning`).
+KEPT_REASON = "kept_reason"
+
+
 def _result(
     outcome: MaterializationOutcome,
     operation: str,

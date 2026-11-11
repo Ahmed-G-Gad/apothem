@@ -10,7 +10,7 @@ keys instead of using the generic managed body.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Final
 
@@ -57,6 +57,28 @@ def wrap_managed_block(body: str) -> str:
     return f"{APOTHEM_BLOCK_BEGIN}\n{safe}\n{APOTHEM_BLOCK_END}\n"
 
 
+def complete_managed_block(text: str) -> str | None:
+    """Return the managed block in *text* only when it has both sentinels.
+
+    The block is the first end sentinel together with the nearest begin
+    sentinel before it, returned with both, exactly as in *text*. So a begin
+    sentinel left without its end above a whole block (or one the operator
+    quotes there) is not taken as the start of the block, and the text after
+    it stays. A begin sentinel with no end sentinel after it (a block cut short
+    or edited by hand) returns ``None``: nothing shows where Apothem's text
+    stops and the operator's starts. An uninstall therefore leaves such a file
+    as it is. :func:`extract_managed_block` is the install-side form, which
+    reclaims such a block.
+    """
+    start = 0
+    while (end := text.find(APOTHEM_BLOCK_END, start)) != -1:
+        begin = text.rfind(APOTHEM_BLOCK_BEGIN, 0, end)
+        if begin != -1:
+            return text[begin : end + len(APOTHEM_BLOCK_END)]
+        start = end + len(APOTHEM_BLOCK_END)
+    return None
+
+
 def extract_managed_block(text: str) -> str | None:
     """Return the managed-block region found in *text*, or ``None``.
 
@@ -70,15 +92,15 @@ def extract_managed_block(text: str) -> str | None:
     the orphan begin and the appended block — so the orphan is reclaimed on the
     first merge instead (operator prose *before* the orphan begin is always
     preserved; the caller writes a backup of the prior file). ``None`` only when
-    no begin sentinel is present at all.
+    no begin sentinel is present at all. Removal and install evidence use
+    :func:`complete_managed_block`, which never reads past a missing end
+    sentinel.
     """
+    block = complete_managed_block(text)
+    if block is not None:
+        return block
     begin = text.find(APOTHEM_BLOCK_BEGIN)
-    if begin == -1:
-        return None
-    end = text.find(APOTHEM_BLOCK_END, begin + len(APOTHEM_BLOCK_BEGIN))
-    if end == -1:
-        return text[begin:]
-    return text[begin : end + len(APOTHEM_BLOCK_END)]
+    return None if begin == -1 else text[begin:]
 
 
 def merge_managed_block(existing: str, body: str) -> str:
@@ -148,7 +170,8 @@ def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
     if owned is None and split_frontmatter(existing) is not None:
         return merge_managed_block(existing, body)
     remainder = owned[1] if owned is not None else existing
-    operator = remove_managed_block(remainder)
+    # The install reclaims a block cut short, as merge_managed_block does.
+    operator = remove_managed_block(remainder, reclaim=True)
     head = frontmatter if frontmatter.endswith("\n") else f"{frontmatter}\n"
     emitted = head + wrap_managed_block(body)
     if operator.strip():
@@ -156,7 +179,7 @@ def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
     return emitted
 
 
-def remove_managed_block(existing: str) -> str:
+def remove_managed_block(existing: str, *, reclaim: bool = False) -> str:
     """Return *existing* with the Apothem managed block surgically removed.
 
     The inverse of :func:`merge_managed_block`: strips the managed block (and the
@@ -164,19 +187,42 @@ def remove_managed_block(existing: str) -> str:
     prose before and after it. When the remainder is whitespace-only — i.e. the
     anchor was Apothem-only — returns the empty string so the caller can delete
     the now-empty file rather than leaving a stub. Returns *existing* unchanged
-    when it carries no managed block (including a degenerate orphan-begin block,
-    which :func:`extract_managed_block` reclaims).
+    when it carries no complete managed block: a begin sentinel with no end
+    sentinel after it stays, with any text below it, since nothing shows where
+    the block ended (see :func:`complete_managed_block`). With *reclaim*, the
+    install-side reading applies instead: such a block runs to the end of the
+    text, as :func:`merge_managed_block` replaces it.
 
     Round-trips byte-for-byte for the canonical case: an operator prose block
     ending in a single newline, merged-then-removed, returns the original.
 
     For the frontmatter-first shape (Apothem's frontmatter directly followed by
-    the block), the frontmatter is removed together with the block.
+    the block), the frontmatter is removed together with the block. Without
+    *reclaim*, the first whole block goes, and so does each later exact copy of
+    it (a block pasted in twice); any other whole block, such as a marker pair
+    the operator quotes, stays.
+    """
+    if reclaim:
+        return _remove_block(existing, extract_managed_block)
+    first = complete_managed_block(existing)
+    text = _remove_block(existing, complete_managed_block)
+    while first is not None and complete_managed_block(text) == first:
+        text = _remove_block(text, complete_managed_block)
+    return text
+
+
+def _remove_block(existing: str, find: Callable[[str], str | None]) -> str:
+    """Return *existing* without the block *find* locates in it.
+
+    See :func:`remove_managed_block`; *find* is :func:`complete_managed_block`,
+    or :func:`extract_managed_block` with ``reclaim``.
     """
     owned = _owned_frontmatter_split(existing)
     if owned is not None:
-        return remove_managed_block(owned[1])
-    block = extract_managed_block(existing)
+        rest = _remove_block(owned[1], find)
+        # No block to take out after Apothem's frontmatter: keep the file whole.
+        return existing if rest == owned[1] else rest
+    block = find(existing)
     if block is None:
         return existing
     index = existing.find(block)
