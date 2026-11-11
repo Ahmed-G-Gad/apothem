@@ -158,10 +158,11 @@ elsewhere. When those quotes cannot carry the folder, the warning gives the
 same steps in words and names the folder as it is. On Windows that happens
 when the folder holds `$`, a backquote, `%`, `!`, a straight or curly double
 quote or a control character, which a Windows shell would change inside
-double quotes; `&`, `^`, `|`, `<`, `>`, `(` or `)`, which the Command Prompt
-acts on when the installer's `apothem.cmd` passes a folder on without its
-quotes; or two backslashes in a row, as at the start of a network share
-(`\\server\share`), which Git Bash reads as one. Elsewhere it happens
+double quotes; `&`, `^`, `|`, `<` or `>` in a folder with no space, which
+PowerShell and Git Bash then pass to the installer's `apothem.cmd` without
+its quotes, so the Command Prompt acts on them; or two backslashes in a row,
+as at the start of a network share (`\\server\share`), which Git Bash reads
+as one. Elsewhere it happens
 when the folder holds a straight or curly single quote (a shell can end
 single quotes at a curly one too) or a control character.
 

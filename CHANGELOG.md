@@ -536,9 +536,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folders that no longer exist, the warning now gives the steps that release
   them: for a project install, the exact commands, with the folder quoted for
   your shell and a `--profile` placeholder for the profile that install used.
-  A folder those quotes cannot carry (a `$` or `&` in its name or a network
-  share on Windows, a straight or curly single quote elsewhere) gets the same
-  steps in words. Apothem's hook scripts and the conformity gate's checks also stop
+  A folder those quotes cannot carry gets the same steps in words: on Windows,
+  one holding `$`, a backquote, `%`, `!` or a double quote, one with no space
+  that holds `&`, `^`, `|`, `<` or `>`, or a network share; elsewhere, one
+  holding a straight or curly single quote. Apothem's hook scripts and the conformity gate's checks also stop
   writing Python bytecode caches (`__pycache__`) into the folders Apothem
   installs.
 - **The install ledger stays right when a write fails.** If an uninstall
