@@ -69,7 +69,7 @@ const features: Feature[] = [
   {
     icon: RotateCcw,
     title: 'Reversible, verified lifecycle',
-    body: 'Every install backs up what it replaces; apothem verify --json reports drift; uninstall reverses cleanly with zero orphans left behind.',
+    body: 'Every install backs up what it replaces; apothem verify --json reports drift; uninstall removes only the files Apothem wrote, lists any file of yours it kept, and says why when it cannot finish, so a second run can finish.',
   },
 ];
 
