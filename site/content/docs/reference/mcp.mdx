@@ -51,7 +51,11 @@ The `OpenCode` adapter writes the inventory to the `mcp` block of
 `opencode.json`. `OpenCode` substitutes `{env:NAME}` in its config, not
 `${NAME}`, so the adapter writes each `${NAME}` reference in a server's
 environment, headers or URL as `{env:NAME}`; an unset variable becomes an empty
-string. Command arguments are copied as written. A `$NAME` in an environment
+string. An environment entry that only passes a variable on under its own name,
+such as `GITHUB_TOKEN: ${GITHUB_TOKEN}`, is left out, because `OpenCode` starts
+the server with its own environment, so an unset variable stays unset; the
+[OpenCode page](/docs/harnesses/opencode) lists the cases where that differs.
+Command arguments are copied as written. A `$NAME` in an environment
 or header value, or any other `${...}` form, such as `${NAME:-default}` or a
 plain `${NAME}` in a command argument, is copied as written, and
 `apothem install` warns that `OpenCode` does not expand it, naming where the
