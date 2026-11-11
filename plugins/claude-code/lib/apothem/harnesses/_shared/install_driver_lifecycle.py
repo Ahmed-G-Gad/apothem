@@ -52,8 +52,8 @@ from .install_driver_removal import (
     _remove_unlisted_anchors,
     _surgical_remove_from_target,
 )
+from .install_driver_retention import BOLT_ON_ANCHORS, apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
-from .install_driver_sweep import kept_link_warnings, links_left_in
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationError,
@@ -66,8 +66,9 @@ from .install_driver_types import (
 )
 from .install_driver_written import (
     kept_file_warnings,
+    last_uninstall_finished,
+    left_behind,
     left_unfinished,
-    links_on_the_way,
     record_uninstall,
     remove_written,
     still_written,
@@ -245,8 +246,10 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
 
     *root*'s latest record is ``uninstall-incomplete`` and a file the active
     install lists still has the content Apothem wrote (see
-    :func:`still_written`); an unreadable ledger reads as no evidence. With
-    nothing Apothem wrote left, the install is closed by an ``uninstall``.
+    :func:`still_written`), or no install is left since a finished uninstall
+    (only a second run, which compares each path with what this release
+    writes, can tell); an unreadable ledger reads as no evidence. With nothing
+    Apothem wrote left, the install is closed by an ``uninstall``.
     """
     try:
         unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
@@ -255,6 +258,8 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
         active = install_ledger.active_install_records(harness_name, root=root)
     except install_ledger.LedgerError:
         return False
+    if not active and last_uninstall_finished(harness_name, root):
+        return True
     if any(still_written(target) for install in active for target in install.targets):
         return True
     with contextlib.suppress(OSError, install_ledger.LedgerError):
@@ -314,7 +319,7 @@ def _profile_anchor_targets(
             if recorded.mode == "sentinel_merge" and recorded.path not in listed
         )
         return targets
-    for relative in ("CLAUDE.md", "apothem/rules/00-apothem-profile.md"):
+    for relative in BOLT_ON_ANCHORS:
         bolt_on = root / relative
         if bolt_on.is_file():
             targets.append(bolt_on)
@@ -425,16 +430,20 @@ def run_uninstall(
     added or changed stays, with a warning.
 
     The pass is ledger-driven: the latest install record for this harness+root
-    says which single-file targets were written, so manifest drift cannot
-    strand or over-remove them. Tree surfaces are enumerated from the manifest
-    and source, and a child the record does not list stays; a record without
-    file digests, or none (a pre-ledger install), proves nothing, so those
-    children stay too. The shared data home (memory / contexts / learning) is
-    backed up and removed only when last-referenced, at the home the latest
-    install recorded (see :func:`_data_home_for`). The directories the
-    installs since the last uninstall created are removed once empty. This
-    harness's records under another spelling of the root's folder are this
-    install too (see :func:`one_install`): what they list goes, and they end.
+    is the source of truth for which single-file targets were actually written,
+    so manifest drift after install cannot strand or over-remove them (a target
+    added to the manifest later is untouched; a recorded target removed from the
+    manifest is still cleaned). Tree/discovery surfaces are enumerated from the
+    manifest and source, and a child the record does not list stays. A record
+    written before file digests existed, or no record at all (a pre-ledger
+    install), proves nothing about the files, so those children stay too (see
+    :func:`remove_written` for when that leaves the uninstall unfinished). The
+    shared data home (memory / contexts / learning) is backed up and removed
+    only when last-referenced, at the home the latest install recorded (see
+    :func:`_data_home_for`). The directories the installs since the last
+    uninstall created are removed once empty. This harness's records under
+    another spelling of the root's folder are this install too (see
+    :func:`one_install`): what they list goes, and they end.
 
     Returns every :class:`MaterializationResult`. A ``kind="uninstall"``
     record is appended only when no removal errored and nothing Apothem wrote
@@ -451,8 +460,10 @@ def run_uninstall(
     active: list[LedgerRecord] = []
     record: LedgerRecord | None = None
     results: list[MaterializationResult] = []
-    finished = False
-    same: tuple[str, ...] = ()
+    # The records this pass builds, each kept before it is appended, so the
+    # fallback below never contradicts one that landed (see record_uninstall).
+    own: list[LedgerRecord] = []
+    record_pass = functools.partial(record_uninstall, harness_name, root, own=own)
     try:
         active, same = one_install(harness_name, root)
         record = active[-1] if active else None
@@ -465,42 +476,29 @@ def run_uninstall(
             project_root=project_root,
             same=same,
         )
+        # The warnings are built before the record, so a failure here leaves
+        # the uninstall recorded as unfinished, as the CLI then reports it.
+        kept = left_behind(results, active, floor=root_floor)
         finished = not left_unfinished([*prior_results, *results])
-    except Exception as exc:
+        kept += record_pass(
+            record, [*prior_results, *results], finished=finished, same=same
+        )
+        if finished:
+            # Housekeeping after the final record: any failure here leaves
+            # older backup sets for the next pass or ``backups prune``, and the
+            # finished uninstall stands, as its record says.
+            with contextlib.suppress(Exception):
+                apply_retention(harness_name)
+    except BaseException as exc:
+        results += record_pass(record, [*prior_results, *results], finished=False)
+        if not isinstance(exc, Exception):
+            raise
         # Hand the caller what this pass removed before it stopped, so the CLI
         # can report the uninstall as partial instead of a bare failure.
-        run = MaterializationRun(harness_name, False, tuple(results))
+        kept_now = kept_file_warnings(results)
+        run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-    finally:
-        record_uninstall(
-            harness_name,
-            root,
-            record,
-            [*prior_results, *results],
-            finished=finished,
-            same=same,
-        )
-    try:
-        return [*results, *_left_behind(results, active, floor=root_floor)]
-    except Exception as exc:
-        run = MaterializationRun(harness_name, False, tuple(results))
-        raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
-
-
-def _left_behind(
-    results: list[MaterializationResult], active: list[LedgerRecord], *, floor: Path
-) -> list[MaterializationResult]:
-    """Return a warning for each path the uninstall kept: links and the user's files."""
-    kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
-    created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in results}
-    kept += [
-        warning
-        for warning in links_left_in(created, known=kept)
-        if warning.path not in named
-    ]
-    recorded = (target.path for install in active for target in install.targets)
-    return [*kept, *links_on_the_way(recorded, floor, known=[*results, *kept])]
+    return [*results, *kept]
 
 
 def _remove_installed(
@@ -536,6 +534,7 @@ def _remove_installed(
     remove = functools.partial(
         remove_written,
         recorded=recorded_targets if record is not None else None,
+        installs_ended=record is None and last_uninstall_finished(harness_name, root),
         install_root=root,
         harness_name=harness_name,
         expected=expected_lookup(
@@ -543,6 +542,7 @@ def _remove_installed(
             harness_name=harness_name,
             harness_root=harness_root,
             project_root=project_root,
+            strict=record is None,
         ),
     )
     gate = UserLevelGate.build(

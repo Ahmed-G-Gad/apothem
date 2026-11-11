@@ -111,13 +111,24 @@ solo realinea las anclas desalineadas.
 Revisa el diff y luego haz commit:
 
 ```bash
+git checkout -b release/vX.Y.Z
 git add -A
-git commit -S -m "chore(release): cut vX.Y.Z"
-git push origin main
+git commit -s -m "chore(release): cut vX.Y.Z"
+git push -u origin release/vX.Y.Z
+gh pr create --base main --head release/vX.Y.Z \
+  --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+gh pr checks release/vX.Y.Z --required --watch
+gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
+git checkout main
+git pull --ff-only origin main
 ```
 
-El indicador `-S` firma el commit con la clave GPG. El push dispara la matriz de
-CI estándar (lint, test, build); espera a que esté en verde antes de etiquetar.
+El indicador `-s` añade la línea `Signed-off-by` que busca la comprobación
+obligatoria `Require Signed-off-by`. El commit de release llega a `main` como el
+squash merge de esta pull request; GitHub firma ese commit con su propia clave,
+y tu firma de la release es la de la etiqueta (§2.2). El merge dispara la matriz
+de CI estándar (lint, test, build) en `main`; espera a que esté en verde antes
+de etiquetar.
 
 La comprobación de §2.4 también necesita que CodeQL y Conformity estén en verde
 en el commit de lanzamiento. Ambos se ejecutan solo cuando cambian sus propias
@@ -570,11 +581,11 @@ slsa-verifier verify-artifact \
   --source-uri github.com/Ahmed-G-Gad/apothem \
   --source-tag vX.Y.Z \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
-bash ../scripts/release/verify-provenance.sh .
+bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Esperado: `Verified OK`, `PASSED: SLSA verification passed` y
-`verify-provenance: chain OK (3 of 3 layers verified)`. El script comprueba
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. El script comprueba
 `SHA256SUMS`, cada bundle de firma y la procedencia en una sola ejecución; deriva
 la etiqueta del nombre del wheel (`--tag vX.Y.Z` la reemplaza).
 

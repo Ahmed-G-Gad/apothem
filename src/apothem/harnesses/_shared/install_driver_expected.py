@@ -54,15 +54,80 @@ _RENDERED: dict[str, tuple[Callable[[Path], str], str | None]] = {
 }
 
 
+#: The interpreter's own file name, in any case (``PYTHON.EXE``, macOS's
+#: ``Python``): ``python`` with an optional ``w`` (``pythonw``), version
+#: (``3``, ``3.12``), free-threaded ``t``, debug ``d`` (``python3.12d``), build
+#: suffix (``-dbg``, ``_d``, ``-intel64``, ``-arm64``) and ``.exe``, or its
+#: Windows 8.3 short form (``PYTHON~1.EXE``).
+_INTERPRETER_NAME = (
+    rb"(?i:pythonw?(?:[0-9]+(?:\.[0-9]+)*)?t?d?(?:-dbg|_d|-intel64|-arm64)?"
+    rb"(?:\.exe)?|python~[0-9]+\.exe)"
+)
+
+#: One run of path characters: no whitespace, separator, colon, quote,
+#: backquote or shell metacharacter (``;&|<>#$``). An apostrophe
+#: (``O'Brien``), parentheses, ``~``, ``-`` and non-ASCII letters are path
+#: characters.
+_PATH_WORD = rb"[^\s/\\:;&|<>#$`\"]+"
+
+#: A folder name: words joined by spaces (``Program Files (x86)``,
+#: ``OneDrive - Contoso``). A second command written after the interpreter
+#: can read as a folder here; :func:`_names_a_file` rules it out.
+_PATH_SEGMENT = _PATH_WORD + rb"(?: +" + _PATH_WORD + rb")*"
+
+#: A separator: ``/``, a doubled backslash (as JSON writes one), or a single
+#: backslash not followed by a letter JSON reads as an escape (``\n``).
+_PATH_SEP = rb"(?:/|\\\\|\\(?![bfnrtu]))"
+
+#: Where an absolute path starts: a drive (``C:/``, ``C:\``, also after the
+#: long-path prefix ``//?/`` or ``\\?\``), a UNC share (``//``, ``\\``), the
+#: home (``~/``) or the root (``/``). In a JSON file each backslash is doubled,
+#: so the share and the long-path prefix are spelled ``\\\\`` and ``\\\\?\\``
+#: there.
+_PATH_ROOT = (
+    rb"(?:(?://\?/|\\\\\?\\|\\\\\\\\\?\\\\)?[A-Za-z]:"
+    + _PATH_SEP
+    + rb"|//|\\\\\\\\|\\\\|~/|/)"
+)
+
+#: The one bare launcher an earlier release wrote where this check reads the
+#: interpreter: ``py -3``, in the statusline's ``commandWindows`` (v1.0.1 to
+#: v1.1.0); later releases wrote the interpreter's full path there. It stands
+#: for itself; no file check applies.
+_LAUNCHER = rb"py -3"
+
+#: What an install writes for the interpreter: exactly the bare launcher, or
+#: an absolute path whose last component is an interpreter (see
+#: :data:`_INTERPRETER_NAME`), and nothing else. A path must also name a file
+#: on this machine (see :func:`_names_a_file`). A path that holds ``&``, ``#``,
+#: ``$``, ``;``, a quote or a colon past the drive (a Windows user name such
+#: as ``R&D``), or one that no longer exists, never matches, so such a file is
+#: kept rather than removed: the check fails safe.
+_INTERPRETER = (
+    rb"(?:"
+    + _LAUNCHER
+    + rb"|"
+    + _PATH_ROOT
+    + rb"(?:"
+    + _PATH_SEGMENT
+    + _PATH_SEP
+    + rb")*"
+    + _INTERPRETER_NAME
+    + rb")"
+)
+
+#: The tokens that stand for the interpreter.
+_INTERPRETER_TOKENS = frozenset({b"${PYTHON_BIN}", b"${STATUSLINE_PYTHON_BIN}"})
+
 #: The install-time tokens an adapter fills in that the shipped source leaves
-#: unrendered, each with what it can stand for: an interpreter path on one
-#: line without quotes (``${PYTHON_BIN}``), or the PowerShell call operator
-#: (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere). Any other
-#: ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``) is text the
-#: tool reads, so it must match exactly.
+#: unrendered, each with what it can stand for: the interpreter
+#: (``${PYTHON_BIN}``, see :data:`_INTERPRETER`), or the PowerShell call
+#: operator (``${CALL_OP}``, ``"& "`` on a Windows host and empty elsewhere).
+#: Any other ``${NAME}`` (``${CLAUDE_SKILL_DIR}``, ``${CLAUDE_PLUGIN_ROOT}``)
+#: is text the tool reads, so it must match exactly.
 _FILLED: dict[bytes, bytes] = {
-    b"${PYTHON_BIN}": rb"[^\r\n\"'`]+",
-    b"${STATUSLINE_PYTHON_BIN}": rb"[^\r\n\"'`]+",
+    b"${PYTHON_BIN}": _INTERPRETER,
+    b"${STATUSLINE_PYTHON_BIN}": _INTERPRETER,
     b"${CALL_OP}": rb"(?:& )?",
 }
 
@@ -70,34 +135,66 @@ _FILLED: dict[bytes, bytes] = {
 _TOKEN = re.compile(b"(" + b"|".join(re.escape(token) for token in _FILLED) + b")")
 
 
+def _names_a_file(value: bytes, *, json_text: bool) -> bool:
+    """Return True when *value*, an interpreter position's text, is an interpreter here.
+
+    The bare launcher an earlier release wrote stands for itself. A path must
+    name a file that exists on this machine: a wrapper command line (``uv.exe
+    run .venv/Scripts/python.exe``) matches the path pattern, but never names
+    a file. In a JSON file (*json_text*) a doubled backslash is one.
+    """
+    if re.fullmatch(_LAUNCHER, value):
+        return True
+    try:
+        text = value.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    if json_text:
+        text = text.replace("\\\\", "\\")
+    try:
+        return Path(text).expanduser().is_file()
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
 def _filled(expected: bytes, actual: Path) -> bool:
     """Return True when *actual* is *expected* with each filled token in place.
 
     Everything outside the tokens of :data:`_FILLED` must match byte for byte,
-    and each token only what it can stand for.
+    each token only what it can stand for, and each interpreter must name a
+    file on this machine (see :func:`_names_a_file`).
     """
     try:
         data = actual.read_bytes()
     except OSError:
         return False
     pattern = b"".join(
-        _FILLED[part] if part in _FILLED else re.escape(part)
+        (b"(" + _FILLED[part] + b")" if part in _INTERPRETER_TOKENS else _FILLED[part])
+        if part in _FILLED
+        else re.escape(part)
         for part in _TOKEN.split(expected)
     )
-    return re.fullmatch(pattern, data, flags=re.DOTALL) is not None
+    match = re.fullmatch(pattern, data, flags=re.DOTALL)
+    if match is None:
+        return False
+    json_text = actual.suffix.lower() == ".json"
+    return all(_names_a_file(value, json_text=json_text) for value in match.groups())
 
 
-def _digests(files: dict[str, bytes], target: Path) -> dict[str, str]:
+def _digests(
+    files: dict[str, bytes], target: Path, *, strict: bool = False
+) -> dict[str, str]:
     """Return *files* (relative path to bytes) mapped to their SHA-256.
 
     A file whose expected bytes still hold an install-time token gets the
     on-disk file's digest when that file is the expected text with the token
-    filled, so it compares as Apothem's.
+    filled, so it compares as Apothem's. With *strict* no token is filled: a
+    file compares as Apothem's only with the bytes this release ships.
     """
     digests = {}
     for path, data in files.items():
         on_disk = target / path if path else target
-        if _TOKEN.search(data) and _filled(data, on_disk):
+        if not strict and _TOKEN.search(data) and _filled(data, on_disk):
             data = on_disk.read_bytes()
         digests[path] = hashlib.sha256(data).hexdigest()
     return digests
@@ -202,11 +299,13 @@ def expected_digests(
     harness_root: Path | None,
     project_root: Path | None,
     ignore: IgnoreFn | None,
+    strict: bool = False,
 ) -> dict[str, str] | None:
     """Return the SHA-256 of each file this release writes at *target*.
 
     Keyed like a recorded ``files`` map (``""`` for a file target). ``None``
     when *target* is not one *entry* writes, or its source cannot be read.
+    With *strict*, no install-time token is filled (see :func:`_digests`).
     """
     try:
         files = _expected_bytes(
@@ -219,7 +318,7 @@ def expected_digests(
         )
     except (OSError, UnicodeDecodeError, ValueError):
         return None
-    return None if files is None else _digests(files, target)
+    return None if files is None else _digests(files, target, strict=strict)
 
 
 def expected_lookup(
@@ -228,12 +327,16 @@ def expected_lookup(
     harness_name: str,
     harness_root: Path | None,
     project_root: Path | None,
+    strict: bool = False,
 ) -> Callable[[Path], dict[str, str] | None]:
     """Return a function giving this release's digests at any target *rules* write.
 
     The target belongs to the last entry that writes it (the one whose content
     the install left); a command that shares its name with a skill is left
     out, as the install leaves it out. The map is built on the first call.
+    *strict* fills no install-time token, for a root with no install record
+    after a finished uninstall: nothing there shows which interpreter an
+    install wrote, so a file that holds one is never taken for Apothem's.
     """
     ignore = make_ignore(
         list(rules.exclude), dict(getattr(rules, "per_directory_filters", {}))
@@ -268,6 +371,7 @@ def expected_lookup(
             harness_root=harness_root,
             project_root=project_root,
             ignore=ignore,
+            strict=strict,
         )
 
     return lookup

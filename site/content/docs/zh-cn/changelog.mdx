@@ -480,9 +480,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   had put there since. For an install recorded by an earlier release, which
   does not say which files Apothem wrote, the uninstall removes the files that
   have the same bytes as what this release writes there; a file that differs
-  leaves the uninstall unfinished (exit `2`) with the next step: move any file
-  of your own out of those folders, then run `apothem update` and `apothem
-  uninstall` again. An uninstall that does not finish
+  leaves the uninstall unfinished (exit `2`) with the next step: copy any of
+  those files you edited and move your own files out of Apothem's folders
+  (an update replaces them), then run `apothem update` and `apothem uninstall`
+  again. An uninstall that does not finish
   (a failed step, an error, or Apothem's own files reached through a link)
   appends an `uninstall-incomplete` record to the install ledger, so running
   it again finishes the job; an install, update, rollback or finished
@@ -499,6 +500,73 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   wrote. Uninstalling a tool from one project no longer removes the shared
   memory, contexts and learning stores in your home folder while the same tool
   installed in another project still uses them.
+- **Uninstall checks more strictly which files are Apothem's.** An install
+  recorded by an earlier release does not say which files Apothem wrote, so
+  the uninstall compares them with what this release writes. In the two places
+  that hold the Python interpreter (the statusline's command and a comment in
+  the conformity gate), a file now matches only when it holds `py -3`, the one
+  launcher an earlier release wrote there, or the full path of an interpreter
+  file on this machine (`pythonw`, an 8.3 short name, a free-threaded or debug
+  build included). A command, an option, prose, a JSON escape or a path that
+  names no file here (an interpreter since upgraded or removed, say) no longer
+  makes the file match, and a path that holds `&`, `#` or `$` never does, so
+  such a file is kept. Under such an install, any file behind a link at a name
+  this release writes now stops the uninstall, edited or not. An install with
+  no ledger record at all now leaves the uninstall unfinished too: every path
+  it keeps is listed under one warning line, with the advice to copy any
+  listed file you edited or added, then run `apothem update`, then uninstall
+  again. When the latest record at a location is an uninstall that finished,
+  the next uninstall there removes only the files that have exactly the bytes
+  this release writes, so a file that holds an interpreter's path stays, and
+  it removes a folder that holds no file. The shared folders in your home
+  directory stay as they are, as when there is no record, and everything else
+  stays with a warning; a path no install record lists comes with the advice
+  to remove it by hand if you no longer want it. That uninstall finishes,
+  unless a file with those bytes sits behind a link: the tool still loads it,
+  so it stops the uninstall, as it does for a recorded install. If it does
+  not finish, it is recorded as unfinished, and running it again works the
+  same way, also after an install that failed and undid its own changes, and
+  after `apothem backups prune`, which now keeps the record of that finished
+  uninstall with the unfinished ones after it. With no install record in
+  place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
+  document of a tool configured through one settings file, stays as it is,
+  and a warning now names the file so you can delete the block by hand.
+- **Uninstall and rollback list every file they keep.** The plain output of
+  `apothem uninstall` and `apothem rollback` now lists every file kept (paths
+  left behind a link are counted, not listed), also when a rollback's restore
+  fails, and the `--format json` warnings list them as `files`. With
+  `--quiet`, an uninstall that did not finish lists them on standard error. A
+  file Apothem wrote that could not be removed is listed under the failure
+  that reports it, and as `stuck` in that step's `--format json` row; a
+  warning line counts the same paths as the failure line. An empty folder
+  inside an Apothem folder, yours included, is now removed, so it no longer
+  keeps that folder in place with nothing listed. Rolling back an install an
+  earlier release recorded keeps what that install created, with a warning
+  that rollback cannot tell those files are Apothem's. When the only installs
+  that keep the shared `memory`, `contexts` and `learning` stores sit in
+  folders that no longer exist, the warning now gives the steps that release
+  them: for a project install, the exact commands, with the folder quoted for
+  your shell and a `--profile` placeholder for the profile that install used.
+  A folder those quotes cannot carry (a `$` in its name or a network share on
+  Windows, a straight or curly single quote elsewhere) gets the same steps in
+  words. Apothem's hook scripts and the conformity gate's checks also stop
+  writing Python bytecode caches (`__pycache__`) into the folders Apothem
+  installs.
+- **The install ledger stays right when a write fails.** If an uninstall
+  cannot write its final record, it records the uninstall as unfinished, so
+  running it again finishes the job. When the ledger still ends in a finished
+  uninstall (the record stayed in, or the uninstall followed one that
+  finished), it finishes with a warning instead. If the unfinished record
+  cannot be written either, the ledger stays as it was, and a warning names
+  the ledger and the backups the uninstall took, which no record then keeps
+  from a later prune; running the uninstall again may then find nothing
+  installed. A record that cannot be saved to disk is taken back
+  out, and an interrupt after the record is saved no longer marks a finished
+  uninstall as unfinished. A ledger record cut short by a full disk or a
+  crash no longer damages the records written after it, a last line that is
+  damaged rather than cut short stays for the ledger reader to report, and a
+  new record is never joined to a last line Apothem cannot check. On Windows,
+  records now end with a plain newline, as they do elsewhere.
 - **Rollback no longer restores a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
@@ -767,7 +835,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and the install note `Installs using it now` counts both. One tool
   installed both ways is one install: uninstalling it, with the home spelled
   either way, removes what either install wrote and ends both of its install
-  records, so no record is left that keeps the folders.
+  records, so no record is left that keeps the folders. When the ledger cannot
+  take the second ending, the uninstall still finishes and warns, naming the
+  record left active; uninstalling with the home spelled that way ends it.
 - **A rollback keeps the shared folders the same tool's other install uses.**
   When one tool was installed twice with the home spelled in two cases
   (`C:\Users\gad` and `C:\Users\Gad` on Windows), `apothem rollback` under

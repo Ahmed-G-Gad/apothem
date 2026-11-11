@@ -111,3 +111,30 @@ removed.
 To fully clean up a harness root, remove the harness-native path documented on
 the [harness reference pages](/docs/harnesses) after confirming you have backed up
 any custom rules, helpers, or profile files you want to keep.
+
+## If uninstall reports it did not finish
+
+An uninstall can stop part way, and it keeps the install recorded when it
+does. The message depends on the reason:
+
+- `✗ <harness> uninstall did not finish:` names Apothem files it left behind a
+  link (a symlink or junction), files that an earlier release's install
+  recorded and that differ from what this release writes, the files of an
+  install with no record at all, or removal steps that reported errors. For a
+  link, an earlier release's files or an install with no record it also gives
+  the number of paths it left.
+- `✗ <harness> uninstall stopped after removing files:` means a removal step
+  stopped the uninstall after it had removed some files.
+- `✗ <harness> uninstall failed:` means a removal step stopped the uninstall
+  before it removed anything.
+
+It exits `2` when it removed files, left Apothem's own files behind a link,
+or kept the files of an earlier release's install or of an install with no
+record, and `1` when it stopped before removing anything for any other
+reason. Fix what the message names, then run the same `apothem uninstall`
+command again: it removes what the first run left. For an earlier release's
+install or an install with no record, first copy any listed file you edited
+or added, then run `apothem update`, then the uninstall. The
+[uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+describes each case, and its [exit codes](/docs/cli-reference/uninstall#exit-codes)
+table lists what `1` and `2` mean.

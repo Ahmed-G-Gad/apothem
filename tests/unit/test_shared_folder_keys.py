@@ -32,7 +32,7 @@ from click.testing import CliRunner
 
 from apothem.cli import main
 from apothem.cli._user_level_report import LedgerView, ledger_holders
-from apothem.harnesses._shared import install_driver_keys
+from apothem.harnesses._shared import install_driver_keys, install_driver_written
 from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
@@ -779,7 +779,10 @@ def test_compaction_does_not_keep_an_install_an_earlier_uninstall_ended(
 
     kept = _kinds_after_compaction(root)
 
-    assert kept == [("install", second.install_id), ("rollback", second.install_id)]
+    # The finished uninstall stays as the start of the tail (see _retained);
+    # the first install it ended is not kept, as the second made the same file.
+    assert [kind for kind, _ in kept] == ["uninstall", "install", "rollback"]
+    assert kept[1:] == [("install", second.install_id), ("rollback", second.install_id)]
 
 
 def test_compaction_keeps_only_what_the_ending_record_left(tmp_path: Path) -> None:
@@ -857,3 +860,66 @@ def test_compaction_keeps_a_creator_a_rollback_of_an_earlier_install_ended(
         ("install", second.install_id),
         ("rollback", first.install_id),
     ]
+
+
+def test_ending_the_other_spelling_ends_its_install(tmp_path: Path) -> None:
+    other = tmp_path / "other" / ".codex"
+    record = _install_record(other, "created")
+
+    warnings = install_driver_written.end_other_spellings("codex", [str(other)])
+
+    assert warnings == []
+    assert install_ledger.current_install_record("codex", root=other) is None
+    latest = install_ledger.latest_record("codex", root=other, kind=None)
+    assert latest is not None
+    assert (latest.kind, latest.install_id) == ("uninstall", record.install_id)
+
+
+def test_an_ending_the_ledger_refuses_is_a_warning_not_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The uninstall that removed the files stands: one other-spelling record
+    # it could not end is reported, naming the ledger, and the rest still end.
+    first = tmp_path / "first" / ".codex"
+    second = tmp_path / "second" / ".codex"
+    _install_record(first, "created")
+    _install_record(second, "created")
+    append = install_ledger.append_record
+
+    def refuse_first(entry: LedgerRecord) -> None:
+        if entry.root == str(first):
+            raise OSError("ledger is read-only")
+        append(entry)
+
+    monkeypatch.setattr(install_ledger, "append_record", refuse_first)
+
+    warnings = install_driver_written.end_other_spellings(
+        "codex", [str(first), str(second)]
+    )
+
+    assert [warning.outcome for warning in warnings] == ["warning"]
+    assert "ledger is read-only" in warnings[0].message
+    assert f"the install under {first} " in warnings[0].message
+    assert f"until an uninstall runs for {first}" in warnings[0].message
+    assert install_ledger.current_install_record("codex", root=first) is not None
+    assert install_ledger.current_install_record("codex", root=second) is None
+
+
+def test_an_ending_that_fails_any_other_way_is_a_warning_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The finished uninstall record has already landed, so no error ending an
+    # other-spelling record may send the pass down the "uninstall stopped" path.
+    other = tmp_path / "other" / ".codex"
+    _install_record(other, "created")
+
+    def broken(entry: LedgerRecord) -> None:
+        raise ValueError("unexpected")
+
+    monkeypatch.setattr(install_ledger, "append_record", broken)
+
+    warnings = install_driver_written.end_other_spellings("codex", [str(other)])
+
+    assert [warning.outcome for warning in warnings] == ["warning"]
+    assert "unexpected" in warnings[0].message
+    assert install_ledger.current_install_record("codex", root=other) is not None
