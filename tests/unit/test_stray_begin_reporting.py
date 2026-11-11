@@ -32,8 +32,13 @@ from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
     stray_begin_install_warnings,
 )
+from apothem.harnesses._shared.install_driver_evidence import _carries_managed_block
 from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    wrap_managed_block,
+)
 from apothem.lib.harness_registry import HARNESS_REGISTRY, HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.schemas import profile_minimal_path
@@ -349,3 +354,69 @@ def test_the_report_module_imports_in_a_fresh_interpreter() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+# --- a byte order mark, CRLF endings, a project's own CLAUDE.md --------------
+
+
+def _resave_with_a_bom(anchor: Path) -> None:
+    """Re-save *anchor* as "UTF-8 with BOM" with a line of the operator's added."""
+    anchor.write_bytes(b"\xef\xbb\xbf" + anchor.read_bytes() + b"\nmy own line\n")
+
+
+def test_a_bom_in_front_of_the_block_still_counts_as_an_install(
+    tmp_path: Path,
+) -> None:
+    anchor = tmp_path / "AGENTS.md"
+    anchor.write_text("﻿" + wrap_managed_block("rules") + "\nmine\n", encoding="utf-8")
+
+    assert _carries_managed_block(anchor, lambda: False)
+
+
+def test_install_and_uninstall_find_the_block_behind_a_bom(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """Notepad's "UTF-8 with BOM" must not hide Apothem's block in AGENTS.md."""
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    _resave_with_a_bom(anchor)
+
+    box.install()
+    resaved = anchor.read_bytes()
+    verify_code, verify_output = box.invoke("verify")
+    uninstall_code, uninstall_output = box.invoke("uninstall", "--yes")
+
+    assert resaved.count(APOTHEM_BLOCK_BEGIN.encode()) == 1
+    assert verify_code == 0, verify_output
+    assert uninstall_code == 0, uninstall_output
+    assert "not installed" not in uninstall_output
+    assert anchor.read_bytes() == b"\xef\xbb\xbfmy own line\n"
+
+
+def test_a_crlf_anchor_shows_no_drift_under_verify_profile(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    anchor.write_bytes(
+        anchor.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+    )
+
+    code, output = box.invoke("verify", "--profile", str(profile_minimal_path()))
+
+    assert code == 0, output
+
+
+def test_a_project_claude_md_shows_no_drift_for_a_tool_without_a_record(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    box = sandbox_factory("gemini-cli")
+    box.install()
+    install_ledger.ledger_path("gemini_cli").unlink()
+    (box.project / "CLAUDE.md").write_text("# Notes\n\nmy own text\n", encoding="utf-8")
+
+    code, output = box.invoke("verify", "--profile", str(profile_minimal_path()))
+
+    assert code == 0, output

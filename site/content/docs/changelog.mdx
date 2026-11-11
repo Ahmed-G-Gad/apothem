@@ -512,12 +512,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   below a whole block. This covers every file where Apothem keeps a
   managed block: `CLAUDE.md`, the profile documents, `AGENTS.md` and the other
   instruction files, and the rules file in each OpenClaw workspace. Apothem now
-  reads a marker only as a line of its own outside a fenced code block, as it
-  writes them, so a marker you quote in prose or in a code example is never
-  taken for its block. `verify` and `doctor` name each file that holds a stray
-  marker and say to delete the marker line (`doctor` reports it as
-  `harness.stray_begin` and still starts that tool's hooks); only the files a
-  tool's install keeps its block in count.
+  reads a marker only as a line of its own outside code, as it writes them and
+  as a Markdown viewer reads them, so a marker you quote in prose, in a fenced
+  code block (a longer outer fence or a fence in a list included) or in a block
+  indented four spaces is never taken for its block. A fence in Apothem's own
+  block cannot hide its END marker, a code fence left open anywhere is read as
+  text, and a byte order mark at the start of the file (as Notepad's "UTF-8
+  with BOM" writes it) does not hide a marker on the first line. `verify` and
+  `doctor` name each file that holds a stray marker and say to delete the
+  marker line (`doctor` reports it as `harness.stray_begin` and still starts
+  that tool's hooks); only the files a tool's install keeps its block in count.
+- **`verify --profile` and `status --profile` no longer report drift for a
+  file saved with CRLF line endings, or for a project's own `CLAUDE.md`.** A
+  file where Apothem keeps a managed block, saved with Windows line endings,
+  read as drifted for good, and an update did not clear it. A project-scope
+  tool with no install record on this machine read the project's `CLAUDE.md`
+  as its own profile file and reported drift.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and

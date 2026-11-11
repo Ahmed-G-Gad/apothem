@@ -305,8 +305,13 @@ install adds a block to.
 
 A managed block runs from a `<!-- BEGIN APOTHEM MANAGED BLOCK -->` marker to
 the next `<!-- END APOTHEM MANAGED BLOCK -->` marker, each on a line of its own;
-Apothem reads a marker only that way and outside a fenced code block, so a
-marker you quote in a sentence or a code example is your text. If the END marker is
+Apothem reads a marker only that way and outside code, as a Markdown viewer
+would: a fenced code block (closed by a fence of the same character, at least
+as long, with nothing after it) or a block indented four spaces. So a marker
+you quote in a sentence or a code example is your text. A fence in Apothem's own
+block does not hide its END marker, a fence you leave open anywhere is read
+as text, and a byte order mark at the start of the file (as some Windows
+editors save it) does not hide a marker on the first line. If the END marker is
 gone, nothing shows where Apothem's text stops and yours starts, so the
 uninstall leaves the file as it is, names it in a warning and finishes; so
 does a retry after an uninstall that did not finish. If a BEGIN marker of

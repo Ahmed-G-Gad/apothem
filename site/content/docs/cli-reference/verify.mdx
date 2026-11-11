@@ -19,7 +19,8 @@ selected adapters report their managed targets are present and valid. Without
 `--profile` the check is **structural** — every managed target must be present
 and valid. With `--profile` the check additionally requires **profile
 fidelity**, so a present-but-drifted install fails verify, answering "is THIS
-profile faithfully installed?" rather than merely "does it exist?". Either way,
+profile faithfully installed?" rather than merely "does it exist?". Line
+endings do not count, so a file saved with CRLF endings passes as well. Either way,
 a file where Apothem keeps a managed block fails verify while it holds a BEGIN
 marker that starts no whole block, such as one whose END marker is gone (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).

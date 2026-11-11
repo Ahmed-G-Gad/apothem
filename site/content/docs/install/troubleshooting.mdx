@@ -323,6 +323,11 @@ starts. So Apothem never cuts the text after that marker:
   keeps a block in for that harness count, so a marker in a file of your own
   does not fail them.
 
+Apothem reads a marker only as a line of its own outside code, as a Markdown
+viewer would, so a marker you quote in a sentence, a fenced code block or a
+block indented four spaces is never taken for one. A code fence you leave open
+anywhere in the file is read as text.
+
 To fix it, open the named file and find the stray BEGIN marker: the one with no
 END marker before the next BEGIN marker, or none at all. Delete that line and
 any old Apothem text below it, which repeats Apothem's rules, and keep your own
