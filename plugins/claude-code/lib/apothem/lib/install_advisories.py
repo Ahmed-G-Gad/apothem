@@ -1129,7 +1129,7 @@ def _escaped_read(text: str, folder: Path) -> _OpencodeFile:
     of it is not known, so the result is ``"parse"`` and *unsure*.
     """
     # What JSON.stringify escapes, as the install's MCP note checks it.
-    from apothem.harnesses.opencode.materializer import _UNSAFE
+    from apothem.harnesses.opencode.materializer import JSON_UNSAFE
 
     if "{env:" not in text:
         return _OpencodeFile("parse")
@@ -1143,7 +1143,7 @@ def _escaped_read(text: str, folder: Path) -> _OpencodeFile:
         {
             name
             for name in _OPENCODE_ENV_TOKEN.findall(text)
-            if _UNSAFE.search(os.environ.get(name) or "")
+            if JSON_UNSAFE.search(os.environ.get(name) or "")
         }
     )
     return _OpencodeFile(

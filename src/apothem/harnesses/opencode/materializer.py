@@ -505,7 +505,7 @@ _ENV: Final[re.Pattern[str]] = re.compile(r"\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
 
 #: Characters a JSON string cannot hold as they are. OpenCode inserts an
 #: ``{env:NAME}`` value into the config text unescaped (U+007F is legal).
-_UNSAFE: Final[re.Pattern[str]] = re.compile(r'[\\"\x00-\x1f]')
+JSON_UNSAFE: Final[re.Pattern[str]] = re.compile(r'[\\"\x00-\x1f]')
 
 
 def install_notes(root: Path, profile: dict[str, Any]) -> list[str]:
@@ -638,7 +638,7 @@ def _mcp_reference_notes(profile: dict[str, Any]) -> list[str]:
                 f"{', '.join(sorted(doubled))} is copied unchanged."
             )
         for variable in sorted(variables):
-            if _UNSAFE.search(os.environ.get(variable, "")):
+            if JSON_UNSAFE.search(os.environ.get(variable, "")):
                 notes.append(
                     f"MCP server {name}: {variable} holds a backslash, a double "
                     "quote or a control character. OpenCode inserts "
