@@ -25,9 +25,15 @@ from click.testing import CliRunner
 
 from apothem import cli
 from apothem.harnesses._shared import install_driver, install_driver_lifecycle
+from apothem.harnesses._shared import install_driver_blocks as blocks
 from apothem.harnesses._shared import install_driver_written as written
 from apothem.harnesses.claude_code import ClaudeCodeAdapter
 from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    wrap_managed_block,
+)
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 
@@ -2164,3 +2170,334 @@ def test_one_path_kept_after_a_finished_uninstall_says_how_to_remove_it() -> Non
 
     assert reason == "no-active-install"
     assert message.endswith("remove it by hand if you no longer want it")
+
+
+def _unreadable_claude_md(claude: Path) -> tuple[Path, str]:
+    """Install, save CLAUDE.md in another encoding, uninstall (partial)."""
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    installed = anchor.read_text(encoding="utf-8")
+    anchor.write_bytes(installed.encode("utf-8") + b"\nmy line \xff\n")
+    code, _ = _uninstall()
+    assert code == cli._EXIT_PARTIAL
+    return anchor, installed
+
+
+def test_a_claude_md_edited_beside_the_block_is_finished_by_the_retry(
+    claude: Path,
+) -> None:
+    # The block, not the whole file, is what Apothem wrote: text of your own
+    # beside it must not make the retry read as not installed.
+    anchor, installed = _unreadable_claude_md(claude)
+    anchor.write_text(installed + "\nmy own line\n", encoding="utf-8")
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    text = anchor.read_text(encoding="utf-8")
+    assert "my own line" in text
+    assert "BEGIN APOTHEM MANAGED BLOCK" not in text
+    assert _unfinished(claude) is None
+
+
+def test_a_retry_leaves_a_claude_md_whose_block_lost_its_end_marker(
+    claude: Path,
+) -> None:
+    # Nothing shows where the block ends, so the text below it may be yours:
+    # the file is not Apothem's any more, and the retry leaves it as it is.
+    anchor, installed = _unreadable_claude_md(claude)
+    broken = installed.replace(APOTHEM_BLOCK_END, "") + "my own line\n"
+    anchor.write_text(broken, encoding="utf-8")
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert anchor.read_bytes() == before
+    assert any(
+        "CLAUDE.md" in str(w["message"]) and APOTHEM_BLOCK_END in str(w["message"])
+        for w in envelope["warnings"]
+    ), envelope
+    assert _unfinished(claude) is None
+
+
+def test_a_managed_block_counts_only_while_both_markers_are_there(
+    tmp_path: Path,
+) -> None:
+    anchor = tmp_path / "CLAUDE.md"
+    entry = LedgerTarget(
+        path=str(anchor), mode="sentinel_merge", ownership_class="operator-owned"
+    )
+    block = wrap_managed_block("rules")
+    anchor.write_text(f"mine\n\n{block}\nmore of mine\n", encoding="utf-8")
+    edited = written.still_written(entry)
+    cut = block.replace(APOTHEM_BLOCK_END, "")
+    anchor.write_text(f"mine\n\n{cut}more of mine\n", encoding="utf-8")
+
+    assert edited is True
+    assert written.still_written(entry) is False
+
+
+def test_an_uninstall_keeps_your_text_after_a_stray_begin_marker(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    stray = f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n\n"
+    anchor.write_bytes((stray + anchor.read_text(encoding="utf-8")).encode())
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert anchor.read_bytes() == f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n".encode()
+    named = [
+        str(w["message"])
+        for w in envelope["warnings"]
+        if APOTHEM_BLOCK_END in str(w["message"])
+    ]
+    assert len(named) == 1, envelope["warnings"]
+    assert "CLAUDE.md" in named[0]
+
+
+def _endless(text: str = "rules") -> bytes:
+    block = wrap_managed_block(text).replace(APOTHEM_BLOCK_END, "")
+    return f"{block}my own line\n".encode()
+
+
+def test_a_block_without_its_end_behind_a_link_is_left_with_a_warning(
+    claude: Path, tmp_path: Path
+) -> None:
+    # Nothing is changed, so the link does not stop the uninstall.
+    home = claude.parent
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    _link_folder(home / "linked", elsewhere)
+    (elsewhere / "AGENTS.md").write_bytes(_endless())
+
+    result = install_driver.strip_managed_anchor(
+        home / "linked" / "AGENTS.md",
+        install_root=home,
+        harness_name="claude_code",
+        allowed_root=home,
+    )
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert APOTHEM_BLOCK_END in result.message
+    assert (elsewhere / "AGENTS.md").read_bytes() == _endless()
+
+
+def test_a_block_without_its_end_in_a_non_utf8_file_is_left_with_a_warning(
+    claude: Path,
+) -> None:
+    home = claude.parent
+    target = home / "AGENTS.md"
+    target.write_bytes(_endless() + b"mine \xff\n")
+
+    result = install_driver.strip_managed_anchor(
+        target, install_root=home, harness_name="claude_code", allowed_root=home
+    )
+
+    assert result is not None
+    assert result.outcome == "warning"
+    assert target.read_bytes() == _endless() + b"mine \xff\n"
+
+
+def test_an_install_stays_possibly_open_until_an_uninstall_closes_it(
+    claude: Path,
+) -> None:
+    # A root the ledger knows nothing about, or whose only record is an
+    # unfinished uninstall, may still be installed; an uninstall closes it.
+    def record(kind: str) -> None:
+        install_ledger.append_record(
+            LedgerRecord.create(harness="claude_code", root=_root(claude), kind=kind)
+        )
+
+    unknown = blocks.install_may_be_open("claude_code", claude)
+    record("uninstall-incomplete")
+    unfinished = blocks.install_may_be_open("claude_code", claude)
+    record("uninstall")
+
+    assert unknown is True
+    assert unfinished is True
+    assert blocks.install_may_be_open("claude_code", claude) is False
+
+
+def test_an_uninstall_leaves_a_file_with_another_marked_block(claude: Path) -> None:
+    # A marker pair the user quotes is not Apothem's block: the file stays as it
+    # is, the warning names it, and the install stays open for a retry.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code != 0, envelope
+    assert anchor.read_bytes() == before
+    assert any("CLAUDE.md" in str(w["message"]) for w in envelope["warnings"]), envelope
+    assert _unfinished(claude) is not None
+
+
+def test_a_rollback_of_a_recorded_install_closes_it(claude: Path) -> None:
+    def record(kind: str, install_id: str) -> None:
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness="claude_code",
+                root=_root(claude),
+                kind=kind,
+                install_id=install_id,
+            )
+        )
+
+    record("install", "known")
+    record("rollback", "known")
+    closed = blocks.install_may_be_open("claude_code", claude)
+    record("rollback", "never-installed")
+    orphan = blocks.install_may_be_open("claude_code", claude)
+
+    assert closed is False
+    assert orphan is True
+
+
+def _cut_the_end_marker(anchor: Path) -> None:
+    """Drop the END marker of *anchor*'s block and add a line of your own below."""
+    text = anchor.read_text(encoding="utf-8").replace(APOTHEM_BLOCK_END, "")
+    anchor.write_text(text + "my own line\n", encoding="utf-8")
+
+
+def _earlier_release_with_an_edited_agent(claude: Path) -> None:
+    """Install as an earlier release recorded it, then edit one of its agents.
+
+    The uninstall keeps that agent and says to run apothem update.
+    """
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    agent = sorted((claude / "agents").glob("*.md"))[0]
+    agent.write_text("my own agent\n", encoding="utf-8")
+
+
+def _failure_text(output: str) -> tuple[int, str]:
+    """Run the uninstall; return its exit code and its failure text."""
+    if output == "json":
+        code, envelope = _uninstall()
+        return code, str(envelope["results"][0]["message"])
+    plain = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+    return plain.exit_code, plain.stderr
+
+
+_FIX_FIRST = (
+    "first copy any listed file you edited or added, and fix the 1 file(s) "
+    "whose warnings name an Apothem marker: until a later release, an update "
+    "rewrites a managed block from a BEGIN marker with no END marker to the end "
+    "of the file, cutting your text after it; then run apothem update, then "
+    "apothem uninstall again"
+)
+
+
+@pytest.mark.parametrize("output", ["plain", "json"])
+def test_the_update_step_says_to_fix_a_file_with_a_lone_begin_marker_first(
+    claude: Path, output: str
+) -> None:
+    _earlier_release_with_an_edited_agent(claude)
+    _cut_the_end_marker(claude / "CLAUDE.md")
+
+    code, failure = _failure_text(output)
+
+    assert code == cli._EXIT_PARTIAL, failure
+    assert _FIX_FIRST in failure
+
+
+@pytest.mark.parametrize("output", ["plain", "json"])
+def test_the_update_step_names_no_marker_when_no_warning_does(
+    claude: Path, output: str
+) -> None:
+    _earlier_release_with_an_edited_agent(claude)
+
+    code, failure = _failure_text(output)
+
+    assert code == cli._EXIT_PARTIAL, failure
+    assert "whose warnings name an Apothem marker" not in failure
+    assert (
+        "first copy any listed file you edited or added; then run apothem "
+        "update, then apothem uninstall again"
+    ) in failure
+
+
+def test_a_claude_md_without_its_end_and_no_record_comes_before_the_update(
+    claude: Path,
+) -> None:
+    # With no install record, the next step is apothem update, which would cut
+    # the text below the BEGIN marker: the warning is the END-less one.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    _cut_the_end_marker(anchor)
+    shutil.rmtree(install_ledger.ledger_path("claude_code").parent)
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert anchor.read_bytes() == before
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    assert note["detail"] == {blocks.MARKER_LEFT: "1"}
+    assert APOTHEM_BLOCK_END in note["message"]
+    assert "whose warnings name an Apothem marker" in envelope["results"][0]["message"]
+
+
+@pytest.mark.parametrize("marker", [True, False])
+def test_a_stopped_uninstall_says_to_fix_a_file_with_a_lone_begin_marker_first(
+    claude: Path, monkeypatch: pytest.MonkeyPatch, marker: bool
+) -> None:
+    _earlier_release_with_an_edited_agent(claude)
+    if marker:
+        _cut_the_end_marker(claude / "CLAUDE.md")
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    message = str(envelope["results"][0]["message"])
+    assert "listing failed" in message
+    caveat = "Before you run apothem update, fix the 1 file(s) whose warnings"
+    assert (caveat in message) is marker
+
+
+def test_each_warning_for_a_marker_left_in_a_file_carries_marker_left(
+    tmp_path: Path,
+) -> None:
+    endless = tmp_path / "endless.md"
+    endless.write_bytes(_endless())
+    stray = tmp_path / "stray.md"
+    stray.write_text(f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n", encoding="utf-8")
+    whole = tmp_path / "whole.md"
+    whole.write_text(f"mine\n\n{wrap_managed_block('rules')}", encoding="utf-8")
+    rewritten = [
+        install_driver.MaterializationResult(
+            outcome="updated",
+            operation="surgical_uninstall",
+            path=str(path),
+            message="removed the block",
+        )
+        for path in (stray, whole)
+    ]
+
+    warnings = [
+        blocks.endless_block_warning(endless, "surgical_uninstall"),
+        blocks.another_block_warning(whole),
+        *blocks.stray_begin_warnings(rewritten),
+    ]
+
+    assert [w.path if w else None for w in warnings] == [
+        str(endless),
+        str(whole),
+        str(stray),
+    ]
+    assert all(w is not None and w.detail[blocks.MARKER_LEFT] == "1" for w in warnings)
+    assert blocks.endless_block_warning(whole, "surgical_uninstall") is None
