@@ -2689,7 +2689,7 @@ def test_the_another_block_advice_names_the_marker_lines_you_added(
     assert "then run the uninstall again" in str(note["message"])
 
 
-def test_an_update_leaves_a_quoted_marker_pair_above_the_block_as_it_is(
+def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
     claude: Path,
 ) -> None:
     # An earlier release's install, a marker pair you quote in a fenced code
@@ -2766,3 +2766,84 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
         if w.get("detail", {}).get("kept_reason") == "no-digests"
     ]
     assert f"Before you run apothem update, {another}" in str(kept["message"])
+
+
+# --- a marker pair no rule can place ------------------------------------------
+
+_SPLIT = (
+    f"{APOTHEM_BLOCK_BEGIN}\nop text A\n```\n{APOTHEM_BLOCK_END}\n```\nop text B\n\n"
+)
+
+
+def test_the_update_step_says_to_fix_a_file_apothem_cannot_place_first(
+    claude: Path,
+) -> None:
+    # tests-7: the partial uninstall's update step names the unclear file's
+    # fix, which is neither the BEGIN-marker nor the two-blocks advice.
+    _earlier_release_with_an_edited_agent(claude)
+    anchor = claude / "CLAUDE.md"
+    text = anchor.read_bytes().decode("utf-8")
+    anchor.write_bytes(
+        f"My notes:\n\n```\nmake test\n\n{text}\nMore:\n\n```sh\nls\n```\n".encode()
+    )
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    failure = str(envelope["results"][0]["message"])
+    assert (
+        "fix the marker lines the warnings name in the 1 file(s) where Apothem "
+        "cannot tell its block from your text: an update leaves those files as "
+        "they are, and apothem verify fails until you fix them"
+    ) in failure
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    assert note["detail"] == {"kept_reason": "unclear-block", "marker_left": "1"}
+
+
+def test_with_no_install_record_a_split_marker_pair_is_named_as_such(
+    claude: Path,
+) -> None:
+    # docs-7: the END marker is there, in a code block, so the warning does not
+    # say it is gone; it names both pairs as an install record would.
+    ClaudeCodeAdapter().install({})
+    install_ledger.ledger_path("claude_code").unlink()
+    anchor = claude / "CLAUDE.md"
+    anchor.write_bytes(_SPLIT.encode() + anchor.read_bytes())
+    before = anchor.read_bytes()
+
+    _, envelope = _uninstall()
+
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    assert note["detail"] == {"kept_reason": "unclear-block", "marker_left": "1"}
+    message = str(note["message"])
+    assert "no END marker" not in message
+    assert "The BEGIN marker at line 1 is outside code" in message
+    assert "code block that opens at line 3" in message
+    assert anchor.read_bytes() == before
+
+
+def test_without_a_record_a_split_pair_in_a_manifest_file_is_named_as_such(
+    tmp_path: Path,
+) -> None:
+    # diff-7: the same text from the uninstall of a manifest anchor.
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes((_SPLIT + wrap_managed_block("old body")).encode())
+
+    warning = blocks.sentinel_refusal(target, recorded=False)
+
+    assert warning is not None
+    assert warning.detail == {"kept_reason": "unclear-block", "marker_left": "1"}
+    assert "no END marker" not in warning.message
+
+
+def test_without_a_record_a_pair_quoted_in_code_is_not_reported(
+    tmp_path: Path,
+) -> None:
+    # A file Apothem never wrote may quote the markers; that is not Apothem's.
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(
+        f"# Notes\n\n```md\n{APOTHEM_BLOCK_BEGIN}\nexample\n{APOTHEM_BLOCK_END}\n"
+        "```\n".encode()
+    )
+
+    assert blocks.sentinel_refusal(target, recorded=False) is None

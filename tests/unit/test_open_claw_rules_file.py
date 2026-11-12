@@ -817,6 +817,44 @@ def test_operator_text_beside_the_block_counts_against_the_limit(
     assert target.read_text(encoding="utf-8").strip() == note
 
 
+def test_the_size_check_reads_a_recorded_unclear_file_as_the_write_does(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """wiring-4, diff-5, tests-8: a file that fits keeps its hook entry.
+
+    The block sits in a code block of yours, one line edited, so only the
+    install record keeps the merge from appending a second block. The plan
+    must size the file as that merge leaves it: unchanged.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_bytes().decode("utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN) + len(APOTHEM_BLOCK_BEGIN) + 1
+    edited = text[:at] + "a line I added\n" + text[at:]
+    fenced = (
+        f"My notes:\n\n```\nmake test\n\n{edited}\nMore examples:\n\n```sh\nls\n```\n"
+    )
+    target.write_bytes(fenced.encode())
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(fenced) + 10}}
+    _write_config(home, config)
+    body, _ = rules_file.rules_text(home / ".openclaw", {})
+
+    fits = rules_file.fits_somewhere(
+        body,
+        rules_file.read_config(_config_path(home)),
+        home,
+        harness_root=home / ".openclaw",
+    )
+    run = adapter.update({})
+
+    assert fits
+    assert target.read_bytes() == fenced.encode()
+    assert _entry(home) == {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
+    assert not any("fits no workspace" in message for message in _messages(run))
+
+
 def test_a_glob_that_matches_the_rules_file_does_not_count_it_twice(
     adapter: OpenClawAdapter, home: Path
 ) -> None:

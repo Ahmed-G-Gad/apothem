@@ -18,17 +18,28 @@ from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
+    uncertain_block,
 )
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import InstallEntry, resolve_target
 
 from .install_driver_blocks import endless_block_left
 from .install_driver_outcome import last_uninstall_finished
+from .install_driver_ownership import current_target
 from .install_driver_pathsafety import _APOTHEM_SUBTREE, _holds_content
 from .install_driver_written import still_written
 
 
-def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bool:
+def listed_in_record(harness_name: str, root: Path, target: Path) -> bool:
+    """Return True when the current install record at *root* lists *target*."""
+    return current_target(harness_name, root, target) is not None
+
+
+def _carries_managed_block(
+    target: Path,
+    install_open: Callable[[], bool],
+    listed: Callable[[Path], bool] | None = None,
+) -> bool:
     """Return True when *target* holds an Apothem sentinel-delimited block.
 
     The managed block is self-delimiting and Apothem-specific, so finding one
@@ -36,7 +47,11 @@ def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bo
     the file itself is not Apothem's to own. A BEGIN marker whose END is gone
     counts unless the ledger shows the install was closed (*install_open*):
     the uninstall then runs, leaves that file as it is and names it, and once
-    the install is closed the file no longer reads as installed.
+    the install is closed the file no longer reads as installed. A marker
+    pair no rule can place (see :func:`uncertain_block`), such as Apothem's
+    block in a code block of the operator's, counts only while the current
+    install record lists the file (*listed*): a file Apothem never wrote may
+    quote the markers in a code example.
     """
     if not target.is_file():
         return False
@@ -46,7 +61,9 @@ def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bo
         return False
     if complete_managed_block(text) is not None:
         return True
-    return extract_managed_block(text) is not None and install_open()
+    if extract_managed_block(text) is not None and install_open():
+        return True
+    return listed is not None and uncertain_block(text) is not None and listed(target)
 
 
 def _entry_proves_install(
@@ -55,12 +72,15 @@ def _entry_proves_install(
     harness_root: Path | None,
     project_root: Path | None,
     install_open: Callable[[], bool],
+    listed: Callable[[Path], bool] | None = None,
 ) -> bool:
     """Return True when *entry*'s on-disk state proves Apothem installed here.
 
     Only *unambiguous* evidence counts — a surface Apothem alone can produce:
 
-    * a ``sentinel_merge`` anchor carrying the Apothem managed block, and
+    * a ``sentinel_merge`` anchor carrying the Apothem managed block (or a
+      marker pair no rule can place, while the install record lists it, see
+      :func:`_carries_managed_block`), and
     * a non-empty target under the Apothem-owned ``.apothem/`` subtree.
 
     Every other manifest target is deliberately NOT evidence. A target's
@@ -75,7 +95,7 @@ def _entry_proves_install(
         entry.target, harness_root=harness_root, project_root=project_root
     )
     if entry.mode == "sentinel_merge":
-        return _carries_managed_block(target, install_open)
+        return _carries_managed_block(target, install_open, listed)
     return _APOTHEM_SUBTREE in target.parts and _holds_content(target)
 
 

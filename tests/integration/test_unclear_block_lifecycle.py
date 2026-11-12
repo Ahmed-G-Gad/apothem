@@ -10,8 +10,10 @@ marker pair is Apothem's block or a quote of the operator's, so:
 
 * a re-install changes no byte of the file, adds no second block, and names
   the file and the line of the code block in a warning;
-* verify fails until the operator fixes the file;
-* uninstall keeps every byte of the operator's text.
+* verify fails until the operator fixes the file, and still reads the tool as
+  installed;
+* uninstall removes Apothem's other files, keeps every byte of the file,
+  names it in a warning, and finishes.
 
 That holds only when the merge sees the file's install record, so a harness
 whose record is kept under another root than the one the merge reads would
@@ -150,6 +152,39 @@ def _warnings_naming(payload: dict[str, Any], anchor: Path, line: int) -> list[s
     ]
 
 
+def _other_files(harness_id: str, anchors: list[Path]) -> list[Path]:
+    """Return the paths besides *anchors* the latest install record lists."""
+    record = install_ledger.read_records(package_key_for_public_id(harness_id))[-1]
+    return [
+        Path(target.path)
+        for target in record.targets
+        if Path(target.path) not in anchors and Path(target.path).exists()
+    ]
+
+
+def _assert_uninstall_finished(
+    box: _Sandbox, anchors: list[Path], others: list[Path]
+) -> None:
+    """Uninstall: it runs, names each anchor once, finishes and removes the rest."""
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    assert code == 0, output
+    payload = json.loads(output)
+    assert "not installed" not in json.dumps(payload["results"]), payload["results"]
+    for anchor in anchors:
+        named = [
+            warning
+            for warning in payload["warnings"]
+            if warning.get("detail", {}).get("kept_reason") == "unclear-block"
+            and Path(str(warning["path"])) == anchor
+        ]
+        assert len(named) == 1, payload["warnings"]
+        assert named[0]["detail"]["marker_left"] == "1"
+    key = package_key_for_public_id(box.entry.public_id)
+    assert install_ledger.read_records(key)[-1].kind == "uninstall"
+    assert others, "the install wrote no other file to check"
+    assert [path for path in others if not path.exists()], others
+
+
 @pytest.mark.parametrize(
     ("harness_id", "edit"),
     [
@@ -164,13 +199,14 @@ def test_a_recorded_block_inside_an_operator_code_block_is_left_alone(
     box = sandbox_factory(harness_id)
     box.install()
     anchors = _recorded_anchors(harness_id)
+    others = _other_files(harness_id, anchors)
     lines = {anchor: _fence_around_the_block(anchor, edit=edit) for anchor in anchors}
     before = {anchor: anchor.read_bytes() for anchor in anchors}
 
     again = box.install()
     after_install = {anchor: anchor.read_bytes() for anchor in anchors}
     verify, verify_output = box.invoke("verify", "--json")
-    box.invoke("uninstall", "--yes", "--json")
+    _assert_uninstall_finished(box, anchors, others)
     after_uninstall = {anchor: anchor.read_bytes() for anchor in anchors}
 
     assert after_install == before
@@ -178,6 +214,7 @@ def test_a_recorded_block_inside_an_operator_code_block_is_left_alone(
         assert after_install[anchor].count(APOTHEM_BLOCK_BEGIN.encode()) == 1
         assert _warnings_naming(again, anchor, lines[anchor]), again["warnings"]
     assert verify != 0, verify_output
+    assert json.loads(verify_output)["installed"] is True
     assert after_uninstall == before
 
 
@@ -189,6 +226,7 @@ def test_a_stray_begin_whose_end_is_quoted_in_code_cuts_nothing(
     box = sandbox_factory(harness_id)
     box.install()
     [anchor] = _recorded_anchors(harness_id)
+    others = _other_files(harness_id, [anchor])
     stray = (
         f"{APOTHEM_BLOCK_BEGIN}\nop text A\n```\n{APOTHEM_BLOCK_END}\n```\n"
         "op text B\n\n"
@@ -199,11 +237,12 @@ def test_a_stray_begin_whose_end_is_quoted_in_code_cuts_nothing(
     again = box.install()
     after_install = anchor.read_bytes()
     verify, verify_output = box.invoke("verify", "--json")
-    box.invoke("uninstall", "--yes", "--json")
+    _assert_uninstall_finished(box, [anchor], others)
 
     assert after_install == before
     assert _warnings_naming(again, anchor, 3), again["warnings"]
     assert verify != 0, verify_output
+    assert json.loads(verify_output)["installed"] is True
     assert anchor.read_bytes() == before
 
 

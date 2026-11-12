@@ -19,9 +19,8 @@ from pathlib import Path
 from apothem.cli._helpers import _Adapter, _harness_roots
 from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
-    unclear_block_at,
-    unclear_block_fix,
-    unclear_block_text,
+    unclear_block_report,
+    unclear_pairs_at,
 )
 from apothem.lib.harness_registry import HarnessRegistryEntry
 
@@ -52,30 +51,31 @@ def stray_begin_note(files: Sequence[Path], *, then: str) -> str:
 
     The old Apothem text below the marker goes too: an install or update writes
     a whole block of its own apart from the marker, so that text only repeats
-    Apothem's rules. A file whose marker pair no rule can place is named on its
-    own, with the lines of its BEGIN marker and code block and the fix (see
-    :func:`unclear_block_text`). *then* is the step that follows; both callers
-    name an update, which writes Apothem's block back when the file holds none.
+    Apothem's rules. A file whose marker pairs no rule can place is named on
+    its own, with each pair, where its marker lines read, and how to fix it
+    (see :func:`unclear_block_report`). *then* is the step that follows; both
+    callers name an update, which writes Apothem's block back when the file
+    holds none.
     """
-    parts: list[str] = []
+    unclear: list[str] = []
     stray: list[str] = []
     for path in files:
-        where = unclear_block_at(path)
-        if where is None:
-            stray.append(str(path))
+        pairs = unclear_pairs_at(path)
+        if pairs:
+            unclear.append(unclear_block_report(path, pairs, left=False))
         else:
-            parts.append(
-                f"{unclear_block_text(path, where)}. {unclear_block_fix(where)}"
-            )
+            stray.append(str(path))
+    lead = ""
     if stray:
         if len(stray) == 1:
             subject = f"{stray[0]} has"
         else:
             subject = f"{', '.join(stray[:-1])} and {stray[-1]} each have"
-        parts.insert(
-            0,
+        lead = (
             f"{subject} an Apothem BEGIN marker with no END marker: delete that "
             "marker line and the old Apothem text below it by hand, keep your own "
-            "lines",
+            "lines"
         )
-    return f"{'; '.join(parts)}, then {then}"
+    if not unclear:
+        return f"{lead}, then {then}"
+    return " ".join([*([f"{lead}."] if lead else []), *unclear, f"Then {then}"])

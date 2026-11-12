@@ -34,7 +34,11 @@ from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
 )
-from .install_driver_evidence import _entry_proves_install, _unfinished_here
+from .install_driver_evidence import (
+    _entry_proves_install,
+    _unfinished_here,
+    listed_in_record,
+)
 from .install_driver_expected import expected_lookup
 from .install_driver_hookfile import (
     HOOK_FILE_MODE,
@@ -197,12 +201,14 @@ def detect_install(
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     install_open = functools.partial(install_may_be_open, harness_name, root)
+    listed = functools.partial(listed_in_record, harness_name, root)
     if any(
         _entry_proves_install(
             entry,
             harness_root=harness_root,
             project_root=project_root,
             install_open=install_open,
+            listed=listed,
         )
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):

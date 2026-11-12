@@ -322,13 +322,14 @@ _FIX_ANOTHER = (
     "over the first whole block in a file, which can be yours"
 )
 
-#: What to do first with each file whose marker pair Apothem cannot place
+#: What to do first with each file whose marker pairs Apothem cannot place
 #: (``kept_reason`` ``unclear-block``): an update leaves such a file as it is,
-#: and verify fails until the operator fixes the lines its warning names.
+#: and verify fails until the operator fixes the marker lines its warning
+#: names (each pair, where it reads, and the fix for each case).
 _FIX_UNCLEAR = (
-    "fix the lines the warnings name in the {count} file(s) whose Apothem "
-    "markers sit in or around a code block: an update leaves those files as "
-    "they are, and apothem verify fails until you fix them"
+    "fix the marker lines the warnings name in the {count} file(s) where "
+    "Apothem cannot tell its block from your text: an update leaves those "
+    "files as they are, and apothem verify fails until you fix them"
 )
 
 

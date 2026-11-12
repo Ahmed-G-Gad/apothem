@@ -65,7 +65,7 @@ _SENTINELS: Final[tuple[str, str]] = (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END)
 #: The byte order mark an editor may put at offset 0 (Notepad's "UTF-8 with
 #: BOM", Windows PowerShell 5.1's ``Set-Content -Encoding UTF8``). It is not
 #: part of the first line, so a marker right after it still counts.
-_BOM: Final[str] = "﻿"
+_BOM: Final[str] = "\ufeff"
 
 _EOL: Final = re.compile(r"\r\n|\r|\n")
 _FENCE_OPEN: Final = re.compile(r"(`{3,}|~{3,})(.*)\Z", re.DOTALL)
@@ -73,6 +73,10 @@ _FENCE_CLOSE: Final = re.compile(r"(`{3,}|~{3,})[ \t]*\Z")
 _LIST_ITEM: Final = re.compile(r"(?:[-+*]|[0-9]{1,9}[.)])(?=[ \t]|\Z)")
 #: A thematic break such as ``***`` or ``- - -`` (CommonMark): it is not a list.
 _THEMATIC_BREAK: Final = re.compile(r"([-*_])(?:[ \t]*\1){2,}[ \t]*\Z")
+#: A setext heading's underline: under a paragraph line it makes a heading.
+_SETEXT_UNDERLINE: Final = re.compile(r"(?:-+|=+)[ \t]*\Z")
+#: An ATX heading such as ``# Notes``: no paragraph goes on after it.
+_ATX_HEADING: Final = re.compile(r"#{1,6}(?:[ \t]|\Z)")
 
 #: Columns of indentation that make a line indented code (CommonMark).
 _CODE_INDENT: Final = 4
@@ -80,6 +84,7 @@ _CODE_INDENT: Final = 4
 _MAX_ITEM_GAP: Final = 4
 #: How many times a text is read again with one more fence left open to its
 #: end taken as text (see :func:`_marker_lines`), so the reading stays linear.
+#: Past that, the last reading stands.
 _MAX_REREADS: Final = 8
 
 
@@ -192,9 +197,11 @@ class _MarkdownState:
     """The CommonMark code-block state of a scan, one line at a time.
 
     Tracks fenced code (with the column of the list item it sits in), indented
-    code, and the content columns of the open list items, which is all that
-    decides whether a line is code. *ignored* holds the lines of fences found
-    to stay open to the end of the text; they open nothing.
+    code, the content columns of the open list items, and whether a paragraph
+    is open (``can_interrupt`` is False then), which is all that decides
+    whether a line is code. *ignored* holds the lines of fences found to stay
+    open to the end of the text; they open nothing. ``empty_item`` is True
+    while the innermost list item has nothing after its bullet yet.
     """
 
     lines: list[_Line]
@@ -203,6 +210,7 @@ class _MarkdownState:
     code_column: int | None = None
     items: list[int] = field(default_factory=list)
     can_interrupt: bool = True
+    empty_item: bool = False
 
     def reset(self) -> None:
         """Start afresh after an Apothem block, which ends every open construct."""
@@ -210,23 +218,29 @@ class _MarkdownState:
         self.code_column = None
         self.items.clear()
         self.can_interrupt = True
+        self.empty_item = False
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
         columns, chars = _indent(self.lines[index].text)
         content = self.lines[index].text[chars:]
         if not content.strip():
-            if self.fence is None:
-                self.can_interrupt = True
+            self._blank()
             return _Kind.BLANK
+        self.empty_item = False
         if self.fence is not None and self._in_fence(self.fence, columns, content):
             return _Kind.CODE
         if self.code_column is not None:
             if columns >= self.code_column + _CODE_INDENT:
                 return _Kind.CODE
             self.code_column = None
+        open_items = len(self.items)
         while self.items and columns < self.items[-1]:
             self.items.pop()
+        # A line that leaves a list item may go on its paragraph lazily in
+        # CommonMark; this model does not follow that, so only a line that
+        # stays in the innermost item counts as going on the paragraph.
+        paragraph = not self.can_interrupt and len(self.items) == open_items
         base = self.items[-1] if self.items else 0
         if columns - base >= _CODE_INDENT:
             # Indented code, or a paragraph's continuation line: neither is a
@@ -238,15 +252,35 @@ class _MarkdownState:
         if content.strip() in _SENTINELS:
             self.can_interrupt = True
             return _Kind.MARKER
-        rest = self._open_items(columns, content)
+        if paragraph and _SETEXT_UNDERLINE.match(content):
+            # The underline of a setext heading ends the paragraph; it opens
+            # no list item, even a lone "-".
+            self.can_interrupt = True
+            return _Kind.TEXT
+        rest = self._open_items(columns, content, interrupt=paragraph)
         opener = _fence_opener(rest)
         if opener is not None and index not in self.ignored:
             column = self.items[-1] if self.items else 0
             self.fence = _Fence(opener[0], opener[1], column, index)
             return _Kind.CODE
-        # A thematic break ends a paragraph as a blank line does.
-        self.can_interrupt = not rest.strip() or bool(_THEMATIC_BREAK.match(rest))
+        # A thematic break or a heading ends a paragraph as a blank line does.
+        self.can_interrupt = not rest.strip() or bool(
+            _THEMATIC_BREAK.match(rest) or _ATX_HEADING.match(rest)
+        )
         return _Kind.TEXT
+
+    def _blank(self) -> None:
+        """Advance over a blank line.
+
+        Outside a fence it ends a paragraph, and it ends a list item that
+        holds nothing yet: CommonMark lets an item start with one blank line
+        at most.
+        """
+        if self.fence is None:
+            self.can_interrupt = True
+            if self.empty_item:
+                self.items.pop()
+        self.empty_item = False
 
     def _in_fence(self, fence: _Fence, columns: int, content: str) -> bool:
         """Return True when the open *fence* holds this line (its closer included)."""
@@ -265,11 +299,14 @@ class _MarkdownState:
             self.can_interrupt = True
         return True
 
-    def _open_items(self, columns: int, content: str) -> str:
+    def _open_items(self, columns: int, content: str, *, interrupt: bool) -> str:
         """Open the list items *content* starts with; return the text after them.
 
         *content* starts at column *columns*. A thematic break such as
-        ``* * *`` opens no item.
+        ``* * *`` opens no item. With *interrupt* (the line would go on an
+        open paragraph), the first item opens only where CommonMark lets a
+        list interrupt a paragraph: the item is not empty and, when ordered,
+        is numbered 1; otherwise the line is paragraph text.
         """
         rest = content
         while (
@@ -277,11 +314,15 @@ class _MarkdownState:
             and (match := _LIST_ITEM.match(rest)) is not None
         ):
             after = rest[match.end() :]
+            if interrupt and not _may_interrupt(match.group(), after):
+                return rest
+            interrupt = False
             bullet_end = columns + match.end()
             gap, gap_chars = _indent(after, bullet_end)
             if not after.strip() or gap > _MAX_ITEM_GAP:
                 # An empty item, or one that starts with indented code.
                 self.items.append(bullet_end + 1)
+                self.empty_item = not after.strip()
                 return ""
             columns = bullet_end + gap
             self.items.append(columns)
@@ -289,37 +330,70 @@ class _MarkdownState:
         return rest
 
 
+def _may_interrupt(bullet: str, after: str) -> bool:
+    """Return True when an item with *bullet* and text *after* may end a paragraph.
+
+    CommonMark: a list that interrupts a paragraph starts with an item that
+    is not empty and, when ordered, is numbered 1.
+    """
+    if not after.strip():
+        return False
+    return bullet[-1] not in ".)" or int(bullet[:-1]) == 1
+
+
 @dataclass(frozen=True)
 class _Scan:
     """What one reading of a text found.
 
     ``markers`` are the marker lines outside code, in order. ``unclosed`` is the
-    line of a fence left open at the end of the text, if any. ``unclear`` is
-    True when a BEGIN marker outside code had its END marker hidden in code
-    with another BEGIN/END pair after it, so no block is certain. ``fences``
-    maps each BEGIN marker line of a pair that was not taken as Apothem's block
-    to the line of the fence that held it (or hid its END marker); ``None`` for
-    indented code.
+    line of a fence left open at the end of the text, if any. ``hidden`` is the
+    line of a BEGIN marker outside code whose END marker reads as code with
+    another BEGIN/END pair after it (rule 3): no block is certain then.
+    ``places`` maps each marker line of a candidate pair (see
+    :func:`_candidate_pairs`) the reading went through to what it read as, and
+    the line of the fence holding it when that is fenced code.
     """
 
     markers: list[_Marker]
     unclosed: int | None
-    unclear: bool = False
-    fences: dict[int, int | None] = field(default_factory=dict)
+    hidden: int | None = None
+    places: dict[int, tuple[_Kind, int | None]] = field(default_factory=dict)
+
+    @property
+    def unclear(self) -> bool:
+        """Return True when rule 3 fired, so no block is certain."""
+        return self.hidden is not None
 
 
-def _hidden_end(state: _MarkdownState, begin: int, end: int) -> tuple[bool, int | None]:
+def _hidden_end(state: _MarkdownState, begin: int, end: int) -> bool:
     """Return whether the END marker at *end* reads as code after *begin*.
 
     The lines between are read on a copy of *state*, so the scan itself goes
-    on unchanged. Also returns the line of the fence open at *end*, if any.
+    on unchanged.
     """
     copy = replace(state, items=list(state.items))
     for index in range(begin + 1, end):
         copy.step(index)
-    if copy.step(end) is _Kind.MARKER:
-        return False, None
-    return True, None if copy.fence is None else copy.fence.line
+    return copy.step(end) is not _Kind.MARKER
+
+
+def _found(lines: list[_Line], index: int, end: int | None) -> list[_Marker]:
+    """Return the marker on line *index*, with the END marker on line *end*.
+
+    A marker with no *end* is not in a block; one with an *end* is the BEGIN
+    marker of Apothem's block, which runs to the END marker on that line.
+    """
+    line = lines[index]
+    token = line.text.strip()
+    start = line.start + line.text.index(token)
+    found = [_Marker(token, start, start + len(token), end is not None)]
+    if end is not None:
+        closing = lines[end]
+        stop = closing.start + closing.text.index(APOTHEM_BLOCK_END)
+        found.append(
+            _Marker(APOTHEM_BLOCK_END, stop, stop + len(APOTHEM_BLOCK_END), True)
+        )
+    return found
 
 
 def _scan(lines: list[_Line], pairs: dict[int, int], ignored: set[int]) -> _Scan:
@@ -332,43 +406,29 @@ def _scan(lines: list[_Line], pairs: dict[int, int], ignored: set[int]) -> _Scan
     """
     state = _MarkdownState(lines, ignored)
     found: list[_Marker] = []
-    fences: dict[int, int | None] = {}
-    unclear = False
-    later = sorted(pairs, reverse=True)
+    places: dict[int, tuple[_Kind, int | None]] = {}
+    marked = {*pairs, *pairs.values()}
+    last = max(pairs, default=-1)
+    hidden: int | None = None
     index = 0
     while index < len(lines):
         kind = state.step(index)
-        end = pairs.get(index)
+        if index in marked:
+            fence = state.fence if kind is _Kind.CODE else None
+            places[index] = (kind, None if fence is None else fence.line)
         if kind is _Kind.MARKER:
-            line = lines[index]
-            token = line.text.strip()
-            start = line.start + line.text.index(token)
-            if unclear:
-                end = None
-            elif end is not None:
-                hidden, fence = _hidden_end(state, index, end)
-                if hidden and later[0] > end:
-                    # The END is in code, and another pair follows: either
-                    # pair can be Apothem's, so neither is taken.
-                    unclear = True
-                    fences[index] = fence
-                    end = None
-            found.append(_Marker(token, start, start + len(token), end is not None))
+            end = None if hidden is not None else pairs.get(index)
+            if end is not None and last > end and _hidden_end(state, index, end):
+                # The END is in code, and another pair follows: either pair
+                # can be Apothem's, so neither is taken.
+                hidden, end = index, None
+            found.extend(_found(lines, index, end))
             if end is not None:
-                closing = lines[end]
-                stop = closing.start + closing.text.index(APOTHEM_BLOCK_END)
-                found.append(
-                    _Marker(
-                        APOTHEM_BLOCK_END, stop, stop + len(APOTHEM_BLOCK_END), True
-                    )
-                )
                 state.reset()
                 index = end
-        elif end is not None:
-            fences[index] = None if state.fence is None else state.fence.line
         index += 1
     unclosed = None if state.fence is None else state.fence.line
-    return _Scan(found, unclosed, unclear, fences)
+    return _Scan(found, unclosed, hidden, places)
 
 
 def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
@@ -381,15 +441,16 @@ def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
     ignored: set[int] = set()
     scan = _scan(lines, pairs, ignored)
     for _ in range(_MAX_REREADS):
-        if scan.unclosed is None:
+        if scan.unclosed is None or scan.unclear:
+            # Rule 3 stands: reading the text again without the fence that
+            # hides an END marker would make a whole block of its pair.
             return lines, pairs, scan
         ignored.add(scan.unclosed)
         scan = _scan(lines, pairs, ignored)
-    if scan.unclosed is None:
-        return lines, pairs, scan
-    # Too many fences left open: nothing is certain.
-    unpaired = [replace(marker, paired=False) for marker in scan.markers]
-    return lines, pairs, replace(scan, markers=unpaired)
+    # Past the cap the last reading stands. A re-read changes only the lines
+    # after the fence it reads as text, so every line before the fence still
+    # open reads as with no cap, and the lines after it are code.
+    return lines, pairs, scan
 
 
 def _marker_lines(text: str) -> list[_Marker]:
@@ -409,15 +470,20 @@ def _marker_lines(text: str) -> list[_Marker]:
     - A list item's content starts after its bullet and the spaces or tab
       after it (a tab reaches the next multiple of four columns of the line).
       A thematic break such as ``* * *`` or ``- - -`` is not a list item.
+      Under a paragraph line, an empty item, or an ordered one not numbered
+      1, opens nothing (the line goes on the paragraph), and a line of only
+      ``-`` or only ``=`` is a setext underline that ends the paragraph. An
+      item with nothing after its bullet ends at the next blank line.
     - A line indented four or more columns past the content column of the list
       item it sits in (or past the margin outside a list), after a blank line,
       a heading or break, or at the start, is indented code, as are the lines
       after it that stay indented so.
     - A BEGIN marker line outside code whose next marker line is an END marker
-      opens Apothem's block: nothing between them is read as code, so a fence
-      in Apothem's own text cannot hide its END marker. But when the lines
-      between, read as Markdown, leave that END marker in code and another
-      BEGIN/END pair follows, no block is certain (see :func:`uncertain_block`).
+      opens Apothem's block: nothing between them is read as code. But when
+      the lines between, read as Markdown, leave that END marker in code and
+      another BEGIN/END pair follows, no block is certain (rule 3, see
+      :func:`uncertain_pairs`); so a fence in Apothem's own text hides its END
+      marker only when another pair follows.
     - Every other line is read in turn, a BEGIN marker in code included: a
       marker pair inside one code block is a quoted example and marks nothing,
       and a marker quoted in one code block never pairs with one outside it.
@@ -425,7 +491,10 @@ def _marker_lines(text: str) -> list[_Marker]:
       CommonMark runs it to the end, but then a block Apothem appended after an
       unclosed fence of the operator's would never be found, and each install
       would add another. So such a fence opener counts as text, and the text is
-      read again without it, up to eight times; past that, no block is certain.
+      read again without it, up to eight times. A reading in which rule 3
+      fired is not read again. Past the eighth, the last reading stands: every
+      line before the fence it leaves open reads as it would with no limit,
+      and the lines after that fence are code.
     """
     return _read(text)[2].markers
 
@@ -443,23 +512,95 @@ def _block_span(text: str) -> tuple[int, int] | None:
     return None
 
 
+class MarkerPlace(enum.Enum):
+    """What a marker line of a pair no rule can place reads as.
+
+    ``OUTSIDE`` is a marker line outside code; ``FENCE`` a line in a fenced
+    code block; ``INDENTED`` a line of indented code; ``PARAGRAPH`` a line
+    indented four or more columns under a line of text, which goes on that
+    paragraph.
+    """
+
+    OUTSIDE = "outside"
+    FENCE = "fence"
+    INDENTED = "indented"
+    PARAGRAPH = "paragraph"
+
+
+@dataclass(frozen=True)
+class MarkerLine:
+    """One marker line: its 1-based line, what it reads as, and its fence.
+
+    ``fence`` is the 1-based line of the fence that opens the code block
+    holding it, for :attr:`MarkerPlace.FENCE`; otherwise ``None``.
+    """
+
+    line: int
+    place: MarkerPlace
+    fence: int | None = None
+
+
+@dataclass(frozen=True)
+class UncertainPair:
+    """A BEGIN marker line whose next marker line is an END, in no whole block.
+
+    ``split`` is True for the pair rule 3 fired on: its BEGIN marker is
+    outside code, its END marker reads as code, and another pair follows, so
+    either pair can be Apothem's block.
+    """
+
+    begin: MarkerLine
+    end: MarkerLine
+    split: bool = False
+
+
+def _marker_line(index: int, scan: _Scan) -> MarkerLine:
+    """Return line *index* of a candidate pair as *scan* read it."""
+    kind, fence = scan.places.get(index, (_Kind.TEXT, None))
+    if kind is _Kind.MARKER:
+        return MarkerLine(index + 1, MarkerPlace.OUTSIDE)
+    if kind is _Kind.TEXT:
+        return MarkerLine(index + 1, MarkerPlace.PARAGRAPH)
+    if fence is None:
+        return MarkerLine(index + 1, MarkerPlace.INDENTED)
+    return MarkerLine(index + 1, MarkerPlace.FENCE, fence + 1)
+
+
+def uncertain_pairs(text: str) -> list[UncertainPair]:
+    """Return each marker pair in *text* that no rule can place, in order.
+
+    Only a text with no whole block (see :func:`complete_managed_block`) has
+    such pairs: each BEGIN marker line whose next marker line is an END
+    marker, with what each of its two lines reads as. Apothem's block inside a
+    code block of the operator's that a later fence closes is one; so is a
+    pair the operator quotes in code. An install that recorded a block in the
+    file leaves it as it is (see :func:`merge_managed_block`).
+    """
+    _, pairs, scan = _read(text)
+    if any(marker.paired for marker in scan.markers):
+        return []
+    return [
+        UncertainPair(
+            _marker_line(begin, scan), _marker_line(end, scan), begin == scan.hidden
+        )
+        for begin, end in sorted(pairs.items())
+    ]
+
+
 def uncertain_block(text: str) -> tuple[int, int | None] | None:
     """Return where *text* holds a marker pair no rule can place, if it does.
 
-    That is a text with no whole block (see :func:`complete_managed_block`)
-    but a BEGIN marker line whose next marker line is an END marker, such as
-    Apothem's block inside a code block of the operator's that a later fence
-    closes, or a pair quoted in code. Returns the 1-based line of the first
-    such BEGIN marker, and the 1-based line of the fence that holds it or hides
-    its END marker (``None`` for indented code). An install that recorded a
-    block in the file leaves it as it is (see :func:`merge_managed_block`).
+    The 1-based line of the first BEGIN marker :func:`uncertain_pairs` names,
+    and the 1-based line of the fence that holds it, or that hides its END
+    marker when rule 3 fired on it (``None`` when no fence does). ``None``
+    when *text* holds a whole block or no such pair.
     """
-    _, pairs, scan = _read(text)
-    if not pairs or any(marker.paired for marker in scan.markers):
+    found = uncertain_pairs(text)
+    if not found:
         return None
-    first = min(pairs)
-    fence = scan.fences.get(first)
-    return first + 1, None if fence is None else fence + 1
+    first = found[0]
+    holder = first.end if first.split else first.begin
+    return first.begin.line, holder.fence
 
 
 def _held_back(text: str, wrapped: str, *, recorded: bool) -> bool:

@@ -41,6 +41,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_blocks import (
     ANOTHER_BLOCK,
+    TAKES_OUT,
     another_block_warning,
     endless_block_warning,
     stray_begin_install_warnings,
@@ -710,18 +711,25 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
     )
 
 
-def fits_somewhere(body: str, config: object, home: Path) -> bool:
+def fits_somewhere(
+    body: str, config: object, home: Path, *, harness_root: Path | None = None
+) -> bool:
     """Return True when the rules file would be written in some workspace.
 
     With workspaces to write into, at least one of them must take the file
-    within both limits. With none yet (OpenClaw is not set up), the per-file
+    within both limits, sized as the write leaves it: with *harness_root*, the
+    install record there says whether an install wrote the file (see
+    :func:`file_text`). With none yet (OpenClaw is not set up), the per-file
     limit of the configured workspaces decides, so the path is registered for
     the workspaces OpenClaw will create.
     """
     found = find_workspaces(config, home)
     if found.found:
         return any(
-            refusal(file_text(workspace, body), config, workspace) is None
+            refusal(
+                file_text(workspace, body, harness_root=harness_root), config, workspace
+            )
+            is None
             for workspace in found.found
         )
     if not found.missing:
@@ -839,7 +847,7 @@ def _retire_one(
     """
     home = harness_root.parent
     flag = _error if strict else _warning
-    unclear = unclear_block_warning(path, RETIRE, then=None if strict else _RETRIED)
+    unclear = unclear_block_warning(path, RETIRE, outcome=None if strict else TAKES_OUT)
     if unclear is not None:
         return [unclear]
     if not _holds_block(path):

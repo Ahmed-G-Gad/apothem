@@ -144,7 +144,7 @@ def _documents(draw: st.DrawFn) -> _Doc:
         if draw(st.booleans()):
             after.append(draw(st.sampled_from(_OPEN)))
     has_real = draw(st.booleans())
-    bom = "﻿" if draw(st.booleans()) else ""
+    bom = "\ufeff" if draw(st.booleans()) else ""
     ending = draw(st.sampled_from(["\n", "\n", "\r\n", "\r"]))
     if not has_real:
         text = _JOIN.join(before + after) + "\n"
@@ -179,7 +179,7 @@ def _removed(doc: _Doc, out: str) -> bool:
     start, end = doc.real
     head = doc.text[:start].rstrip("\r\n")
     tail = doc.text[end:].lstrip("\r\n")
-    if not (head + tail).strip(" \t\r\n﻿"):
+    if not (head + tail).strip(" \t\r\n\ufeff"):
         return out == ""
     # The blank lines around the block collapse to one blank line; CR endings
     # next to it may stay (removal joins with LF), so only line endings and

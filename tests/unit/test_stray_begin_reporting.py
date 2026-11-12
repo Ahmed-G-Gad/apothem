@@ -9,6 +9,12 @@ name each such file and say to delete the marker line; the plain verify line
 then leaves out the adapter's output path, which can be another file. Only the
 files a tool's install keeps a block in count: a project's own CLAUDE.md does
 not fail a project-scope tool's verify.
+
+A file whose marker pairs no rule can place gets its own text: each pair with
+the lines of its markers and where they read, and a fix for each case that
+says what follows from it. Install gives that text only when the merge left
+the file as it is, and a recorded file in that state still counts as an
+install.
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ import apothem
 from apothem.cli import main
 from apothem.cli._stray_begin_report import stray_begin_note
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver_blocks as blocks
 from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
     stray_begin_install_warnings,
@@ -368,7 +375,9 @@ def test_a_bom_in_front_of_the_block_still_counts_as_an_install(
     tmp_path: Path,
 ) -> None:
     anchor = tmp_path / "AGENTS.md"
-    anchor.write_text("﻿" + wrap_managed_block("rules") + "\nmine\n", encoding="utf-8")
+    anchor.write_text(
+        "\ufeff" + wrap_managed_block("rules") + "\nmine\n", encoding="utf-8"
+    )
 
     assert _carries_managed_block(anchor, lambda: False)
 
@@ -420,3 +429,298 @@ def test_a_project_claude_md_shows_no_drift_for_a_tool_without_a_record(
     code, output = box.invoke("verify", "--profile", str(profile_minimal_path()))
 
     assert code == 0, output
+
+
+# --- a marker pair no rule can place -----------------------------------------
+
+B = APOTHEM_BLOCK_BEGIN
+E = APOTHEM_BLOCK_END
+OLD = wrap_managed_block("old body")
+
+#: An example of the operator's in a closed fence above Apothem's block, which
+#: an open fence of the operator's holds (lines 4-6 in a code block opening at
+#: line 3, lines 14-16 in one opening at line 11).
+_EXAMPLE_ABOVE = (
+    f"# Notes\n\n```md\n{B}\nexample\n{E}\n```\n\nMy notes:\n\n```\nmake test\n\n"
+    f"{OLD}\nMore:\n\n```sh\nls\n```\n"
+)
+#: A stray BEGIN of the operator's whose END is quoted in a code block, then
+#: Apothem's block at lines 8-10.
+_RESIDUAL = f"{B}\nop text A\n```\n{E}\n```\nop text B\n\n{OLD}"
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _held(tmp_path: Path, text: str) -> tuple[Path, list[str]]:
+    """Write *text* as an anchor a merge left as it is; return its warnings."""
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(text.encode())
+    merged = install_driver.MaterializationResult(
+        outcome="unchanged", operation="sentinel_merge", path=str(target), message=""
+    )
+    return target, [w.message for w in stray_begin_install_warnings([merged])]
+
+
+def test_the_install_warning_names_every_pair_and_conditions_each_fix(
+    tmp_path: Path,
+) -> None:
+    """docs-1, cmark-3, diff-3, oracle-2: the example is not the only pair named."""
+    target, [message] = _held(tmp_path, _EXAMPLE_ABOVE)
+
+    assert message.startswith(
+        f"{target}: Apothem cannot tell whether the marker lines in this file "
+        "mark its block or text of yours, so it left the file as it is."
+    )
+    for begin, end, fence in ((4, 6, 3), (14, 16, 11)):
+        assert (
+            f"The BEGIN marker at line {begin} and the END marker at line {end} sit "
+            f"inside a code block that opens at line {fence}. If lines {begin} to "
+            f"{end} are Apothem's block, close that code block above line {begin}: "
+            "the next update then replaces those lines. If they are text of yours, "
+            "change or delete those two marker lines."
+        ) in message
+    assert message.endswith(
+        "Then run apothem update again. apothem verify fails for this tool until "
+        "you fix the file."
+    )
+
+
+def test_the_rule_3_warning_names_the_begin_and_the_later_pair(
+    tmp_path: Path,
+) -> None:
+    """lifecycle-3, tests-6, oracle-2: no unconditional fix that cuts your text."""
+    _, [message] = _held(tmp_path, _RESIDUAL)
+
+    assert (
+        "The BEGIN marker at line 1 is outside code, but its END marker at line 4 "
+        "sits inside a code block that opens at line 3, and the marker pair from "
+        "line 8 to line 10 comes after them: that pair may be Apothem's block."
+    ) in message
+    assert (
+        "If the BEGIN marker at line 1 is yours, delete or change it: the next "
+        "update then replaces lines 8 to 10."
+    ) in message
+    assert (
+        "If lines 1 to 4 are Apothem's block, the code block that opens at line 3 "
+        "comes from a rule in your profile: close it above line 4 and fix that "
+        "rule; the next update then replaces those lines."
+    ) in message
+    assert "close that code block above the END marker" not in message
+
+
+@pytest.mark.parametrize(
+    ("text", "where", "fix"),
+    [
+        pytest.param(
+            f"Start marker:\n```\n{B}\n```\nEnd marker:\n```\n{E}\n```\n",
+            "The BEGIN marker at line 3 sits inside a code block that opens at line "
+            "2, and the END marker at line 7 sits inside a code block that opens at "
+            "line 6.",
+            "If lines 3 to 7 are Apothem's block, delete them by hand, keeping your "
+            "own text.",
+            id="two-code-blocks",
+        ),
+        pytest.param(
+            f"Intro\n\n    {B}\n    old\n    {E}\n",
+            "The BEGIN marker at line 3 and the END marker at line 5 sit in indented "
+            "code.",
+            "If lines 3 to 5 are Apothem's block, start lines 3 and 5 at the left "
+            "margin: the next update then replaces those lines.",
+            id="indented",
+        ),
+        pytest.param(
+            f"Example of the markers:\n    {B}\n    quoted\n    {E}\n",
+            "The BEGIN marker at line 2 and the END marker at line 4 read as part of "
+            "the paragraph above them.",
+            "If lines 2 to 4 are Apothem's block, start lines 2 and 4 at the left "
+            "margin: the next update then replaces those lines.",
+            id="paragraph",
+        ),
+        pytest.param(
+            f"{B}\n    {E}\n\n{OLD}",
+            "The BEGIN marker at line 1 is outside code, but its END marker at line "
+            "2 sits in indented code, and the marker pair from line 4 to line 6 "
+            "comes after them: that pair may be Apothem's block.",
+            "If lines 1 to 2 are Apothem's block, start line 2 at the left margin: "
+            "the next update then replaces those lines.",
+            id="rule-3-indented-end",
+        ),
+    ],
+)
+def test_each_shape_gets_its_own_place_and_fix(
+    tmp_path: Path, text: str, where: str, fix: str
+) -> None:
+    """docs-4, oracle-4, diff-6, tests-7: no shape is called indented code wrongly."""
+    _, [message] = _held(tmp_path, text)
+
+    assert where in message
+    assert fix in message
+
+
+def test_the_uninstall_warning_says_to_delete_whichever_pair_is_apothems(
+    tmp_path: Path,
+) -> None:
+    """docs-1: every pair is named, so the operator can find Apothem's block."""
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(_EXAMPLE_ABOVE.encode())
+
+    warning = blocks.unclear_block_warning(target, "surgical_uninstall")
+
+    assert warning is not None
+    assert warning.detail == {"kept_reason": "unclear-block", "marker_left": "1"}
+    assert warning.message.endswith(
+        "If one of these pairs is Apothem's block (lines 4 to 6, or lines 14 to "
+        "16), delete it by hand, keeping your own text."
+    )
+    assert "sit inside a code block that opens at line 11" in warning.message
+
+
+def test_the_verify_note_names_every_pair_with_its_fix(tmp_path: Path) -> None:
+    """tests-7: the verify and doctor note for an unclear file."""
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(_EXAMPLE_ABOVE.encode())
+
+    note = stray_begin_note(
+        [target], then="run apothem update and apothem verify again"
+    )
+
+    assert note.startswith(
+        f"{target}: Apothem cannot tell whether the marker lines in this file mark "
+        "its block or text of yours. The BEGIN marker at line 4"
+    )
+    assert "If lines 14 to 16 are Apothem's block" in note
+    assert note.endswith(" Then run apothem update and apothem verify again")
+
+
+@pytest.mark.parametrize(
+    ("outcome", "warned"), [("updated", False), ("created", False), ("unchanged", True)]
+)
+def test_the_unclear_warning_follows_what_the_merge_did(
+    tmp_path: Path, outcome: str, warned: bool
+) -> None:
+    """wiring-5, diff-2: only a file the merge left as it is gets the warning."""
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(
+        f"# Notes\n\nApothem writes its markers like this:\n\n```md\n{B}\nexample\n"
+        f"{E}\n```\n".encode()
+    )
+    result = install_driver.MaterializationResult(
+        outcome=outcome,  # type: ignore[arg-type]
+        operation="sentinel_merge",
+        path=str(target),
+        message="",
+    )
+
+    warnings = stray_begin_install_warnings([result])
+
+    assert bool(warnings) is warned
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_a_dry_run_over_a_quoted_pair_previews_no_refusal(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """diff-2, wiring-5: no record, so the install appends; the preview agrees."""
+    box = sandbox_factory(harness_id)
+    anchor = _anchor(box)
+    anchor.parent.mkdir(parents=True, exist_ok=True)
+    anchor.write_bytes(
+        f"# Notes\n\nApothem writes its markers like this:\n\n```md\n{B}\nexample\n"
+        f"{E}\n```\n".encode()
+    )
+    profile = str(profile_minimal_path())
+
+    code, output = box.invoke("install", "--profile", profile, "--dry-run", "--json")
+    preview = json.loads(output)["warnings"]
+    box.install()
+    verify, verify_output = box.invoke("verify")
+
+    assert code == 0, output
+    assert not [w for w in preview if _names(str(w["message"]), anchor)], preview
+    assert anchor.read_bytes().count(B.encode()) == 2
+    assert verify == 0, verify_output
+
+
+def _fence_the_block(anchor: Path) -> tuple[int, int, int]:
+    """Put *anchor*'s block, one line edited, in a code block you close below.
+
+    Return the 1-based lines of the BEGIN marker, the END marker and the fence
+    that opens the code block.
+    """
+    text = anchor.read_bytes().decode("utf-8")
+    at = text.index(B)
+    begin_end = at + len(B) + 1
+    text = text[:begin_end] + "a line I added\n" + text[begin_end:]
+    head = text[:at] + "My notes:\n\n```\nmake test\n\n"
+    fenced = head + text[at:] + "\nMore examples:\n\n```sh\nls\n```\n"
+    anchor.write_bytes(fenced.encode())
+    lines = fenced.split("\n")
+    return lines.index(B) + 1, lines.index(E) + 1, head.count("\n") - 2
+
+
+def test_a_recorded_block_in_your_code_block_still_reads_as_installed(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """cmark-1, lifecycle-2, wiring-1, diff-1, tests-1, corpus-1 (codex).
+
+    verify and doctor see the install and name the lines; tests-7 for the note
+    and the doctor summary.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    begin, end, fence = _fence_the_block(anchor)
+    box.install()
+
+    code, output = box.invoke("verify", "--json")
+    result = CliRunner().invoke(main, ["doctor", "--json"])
+
+    assert code == 1, output
+    payload = json.loads(output)
+    assert payload["installed"] is True
+    [row] = payload["results"]
+    note = row["stray_begin"]["message"]
+    assert (
+        f"The BEGIN marker at line {begin} and the END marker at line {end} sit "
+        f"inside a code block that opens at line {fence}."
+    ) in note
+    assert f"If lines {begin} to {end} are Apothem's block" in note
+    assert result.exit_code == 1, result.output
+    [check] = [c for c in json.loads(result.output)["checks"] if c["status"] == "fail"]
+    assert check["code"] == "harness.stray_begin"
+    assert check["message"] == (
+        "codex is installed but does not verify: a file holds Apothem markers to "
+        "fix by hand."
+    )
+    assert _names(check["fix"], anchor)
+    assert f"close that code block above line {begin}" in check["fix"]
+
+
+def test_a_quote_in_a_file_no_install_record_lists_is_no_install(
+    tmp_path: Path,
+) -> None:
+    """A never-installed AGENTS.md that quotes the markers is not an install."""
+    root = tmp_path / ".codex"
+    anchor = root / "AGENTS.md"
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(
+        f"# Notes\n\nApothem wraps its block like this:\n\n```md\n{B}\n(rules)\n{E}\n"
+        "```\n\nMore notes.\n".encode()
+    )
+
+    assert not install_driver.detect_install("codex", harness_root=root)
+
+
+def test_a_recorded_unclear_anchor_counts_as_an_install(tmp_path: Path) -> None:
+    """The install record, not an open install alone, makes the pair evidence."""
+    root = tmp_path / ".codex"
+    anchor = root / "AGENTS.md"
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(
+        f"Intro\n```\ncode\n\n{OLD}New:\n```bash\nnpm ci\n```\n".encode()
+    )
+    _record("codex", root, anchor)
+
+    assert install_driver.detect_install("codex", harness_root=root)
