@@ -178,9 +178,9 @@ What the guard cannot see or stop:
   ``.agents``), whether a test names one as its own install root while ``HOME``
   is isolated or ``CODEX_HOME`` or ``XDG_CONFIG_HOME`` points at one;
   ``XDG_DATA_HOME`` and ``XDG_CACHE_HOME``, which Apothem does not read but the
-  tools a test launches do; ``OPENCODE_CONFIG_DIR``, which only adds an install
-  note; and ``APOTHEM_HOOK_STATE_DIR``, which counts only through the hook state
-  folder it names.
+  tools a test launches do; ``OPENCODE_CONFIG_DIR`` and ``OPENCODE_CONFIG``,
+  which only add or take away an install note; and ``APOTHEM_HOOK_STATE_DIR``,
+  which counts only through the hook state folder it names.
 - Code that runs outside pytest.
 
 ``tests/unit/test_real_home_guard.py`` runs the guard in a pytester session, with
@@ -321,8 +321,10 @@ def _isolate_session_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[
         monkeypatch.delenv("CODEX_HOME", raising=False)
         monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
         # A developer's own OPENCODE_CONFIG_DIR would add an OpenCode install
-        # note to every OpenCode install a fixture runs.
+        # note to every OpenCode install a fixture runs, and OPENCODE_CONFIG
+        # can take the opencode.jsonc note away.
         monkeypatch.delenv("OPENCODE_CONFIG_DIR", raising=False)
+        monkeypatch.delenv("OPENCODE_CONFIG", raising=False)
         monkeypatch.setenv(
             "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("session-hook-state"))
         )
@@ -348,16 +350,17 @@ def _isolate_user_home(
     the Codex root; ``_isolate_session_home`` has already cleared it for the
     session, and this clears it again in case a fixture set it.
     ``CLAUDE_CONFIG_DIR`` is cleared the same way, so the Claude Code folder is
-    the one in this home. ``OPENCODE_CONFIG_DIR`` is cleared the same way, so a
-    developer's own setting cannot add an OpenCode install note
-    (``_redirect_home`` clears ``XDG_CONFIG_HOME``, which would move the
-    OpenCode root).
+    the one in this home. ``OPENCODE_CONFIG_DIR`` and ``OPENCODE_CONFIG`` are
+    cleared the same way, so a developer's own setting cannot add or take away
+    an OpenCode note (``_redirect_home`` clears ``XDG_CONFIG_HOME``, which
+    would move the OpenCode root).
     """
     home = tmp_path_factory.mktemp("user-home")
     _redirect_home(monkeypatch, home)
     monkeypatch.delenv("CODEX_HOME", raising=False)
     monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
     monkeypatch.delenv("OPENCODE_CONFIG_DIR", raising=False)
+    monkeypatch.delenv("OPENCODE_CONFIG", raising=False)
     return home
 
 
