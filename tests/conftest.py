@@ -179,7 +179,7 @@ What the guard cannot see or stop:
   is isolated or ``CODEX_HOME`` or ``XDG_CONFIG_HOME`` points at one;
   ``XDG_DATA_HOME`` and ``XDG_CACHE_HOME``, which Apothem does not read but the
   tools a test launches do; ``OPENCODE_CONFIG_DIR`` and ``OPENCODE_CONFIG``,
-  which only add or take away an install note; and ``APOTHEM_HOOK_STATE_DIR``,
+  which only add or take away an OpenCode note; and ``APOTHEM_HOOK_STATE_DIR``,
   which counts only through the hook state folder it names.
 - Code that runs outside pytest.
 
