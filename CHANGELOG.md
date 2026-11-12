@@ -1053,11 +1053,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   lines in a shared file, and the memory, contexts and learning stores of its
   data folder, which are backed up. For a project-scope harness it also says
   to check that `--project` names the folder you installed into before you
-  run `apothem update`, the folder quoted as in the other printed commands,
-  and to fix first any file whose warning names an Apothem marker the
-  uninstall left. The `Note:` line is printed under `--quiet` too, to the
-  error stream. In `--format json` output the harness's error row carries the
-  same note and `"detail": {"kept_reason": "no-record"}`.
+  run `apothem update`, the folder quoted as in the other printed commands
+  or named as it is when those quotes cannot carry it, and to fix first any
+  file whose warning names an Apothem marker the uninstall left. The `Note:`
+  line is printed under `--quiet` too, to the error stream. In
+  `--format json` output the harness's error row carries the same note and
+  `"detail": {"kept_reason": "no-record"}`.
 - **Uninstalling a project keeps the shared folders a project named in
   another case uses.** In a case-sensitive folder that holds `Proj` and
   `proj`, each with an install, `apothem uninstall --project .../proj`

@@ -551,9 +551,11 @@ def test_an_uninstall_that_matches_no_record_does_not_say_uninstalled(
             "2 Apothem-only files and the memory, contexts and learning stores "
             "in its data folder (backed up) were removed"
         ) in message
+        # A folder the shell's quotes cannot carry is named as it is.
         quoted = shell_quoted(str(folder))
+        named = f"--project {quoted}" if quoted else f"the --project folder {folder}"
         assert (
-            f"before you run apothem update, check that --project {quoted} is "
+            f"before you run apothem update, check that {named} is "
             "the folder you installed into"
         ) in message
         assert "apothem install" not in message
