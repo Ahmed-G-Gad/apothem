@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,8 +24,9 @@ import pytest
 from click.testing import CliRunner
 
 import apothem
-from apothem.cli import main
+from apothem.cli import _doctor_hooks, main
 from apothem.harnesses._shared import install_driver
+from apothem.lib import install_ledger
 
 _PROFILE = (
     "schema_version: 1\nidentity:\n  name: Ada Lovelace\n"
@@ -103,6 +106,291 @@ def test_doctor_fails_when_a_registered_hook_cannot_start(
     assert failed[0]["harness"] == "codex"
     assert "dispatch.py" in failed[0]["message"]
     assert failed[0]["fix"]
+
+
+def test_doctor_checks_the_hooks_of_the_root_it_examines(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A newer install at a since-deleted ``CODEX_HOME`` does not stand in."""
+    _install(runner, "codex")
+    elsewhere = tmp_path / "codex-elsewhere"
+    monkeypatch.setenv("CODEX_HOME", str(elsewhere))
+    _install(runner, "codex")
+    monkeypatch.delenv("CODEX_HOME")
+    shutil.rmtree(elsewhere)
+    dispatcher = home / ".codex" / "hooks" / "dispatch.py"
+    dispatcher.write_text("raise SystemExit(3)\n", encoding="utf-8")
+
+    code, payload = _doctor(runner)
+
+    assert code == 1, payload
+    codex = _row(payload, "codex")
+    assert codex["status"] == "hook_failed"
+    assert codex["hooks"]["probed"] >= 1
+    assert "dispatch.py" in codex["hooks"]["failed"][0]["command"]
+
+
+def test_doctor_checks_the_hooks_of_the_project_it_is_given(
+    runner: CliRunner, home: Path, tmp_path: Path
+) -> None:
+    """A newer install in a since-deleted project does not stand in."""
+    first, second = tmp_path / "first", tmp_path / "second"
+    for project in (first, second):
+        project.mkdir()
+        result = runner.invoke(
+            main,
+            ["install", "--harness", "cursor", "--project", str(project), "--yes"],
+        )
+        assert result.exit_code == 0, result.output
+    shutil.rmtree(second)
+    # Healthy first: the hook command (with PowerShell's "&" on Windows) starts.
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(first)])
+    payload = json.loads(result.stdout)
+    assert result.exit_code == 0, payload
+    assert _row(payload, "cursor")["hooks"] == {"probed": 1, "failed": []}
+    dispatcher = first / ".apothem" / "support" / "cursor" / "hooks" / "dispatch.py"
+    assert dispatcher.is_file()
+    dispatcher.write_text("raise SystemExit(3)\n", encoding="utf-8")
+
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(first)])
+
+    payload = json.loads(result.stdout)
+    assert result.exit_code == 1, payload
+    cursor = _row(payload, "cursor")
+    assert cursor["status"] == "hook_failed"
+    assert cursor["hooks"]["probed"] >= 1
+    command = os.path.normcase(cursor["hooks"]["failed"][0]["command"])
+    assert os.path.normcase(str(first / ".apothem")) in command
+    assert os.path.normcase(str(second)) not in command
+
+
+def test_doctor_reports_the_hook_check_not_run_for_a_root_with_no_record(
+    runner: CliRunner, home: Path
+) -> None:
+    _install(runner, "codex")
+    # The only record now names another root (an install of an earlier spelling).
+    ledger = install_ledger.ledger_path("codex")
+    text = ledger.read_text(encoding="utf-8")
+    ledger.write_text(
+        text.replace(json.dumps(str(home / ".codex"))[1:-1], "elsewhere"),
+        encoding="utf-8",
+    )
+
+    code, payload = _doctor(runner)
+
+    codex = _row(payload, "codex")
+    assert codex["status"] == "ok", payload
+    assert codex["hooks"] is None
+    unchecked = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+    assert [c["harness"] for c in unchecked] == ["codex"]
+    assert "--project" not in unchecked[0]["fix"]
+    assert code == 0
+    # The plain report says so too, rather than leaving the Hooks cell blank.
+    plain = runner.invoke(main, ["doctor"])
+    assert plain.exit_code == 0, plain.output
+    assert "not checked" in plain.output
+    assert "no install record for" in plain.output
+    # The last line says what was not checked rather than that all passed.
+    flat = " ".join(plain.output.split())
+    assert "All checks passed" not in flat
+    assert "the hook commands of codex were not checked" in flat
+
+
+def test_doctor_finds_the_install_under_another_spelling_of_its_folder(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``CODEX_HOME`` spelled another way still names the folder installed to."""
+    codex_home = tmp_path / "cx"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _install(runner, "codex")
+    (codex_home / "hooks" / "dispatch.py").write_text(
+        "raise SystemExit(3)\n", encoding="utf-8"
+    )
+    (tmp_path / "step").mkdir()
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "step" / ".." / "cx"))
+
+    code, payload = _doctor(runner)
+
+    assert code == 1, payload
+    codex = _row(payload, "codex")
+    assert codex["status"] == "hook_failed"
+    assert not [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+
+
+def test_doctor_finds_the_install_under_another_letter_case_of_its_folder(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On a case-insensitive file system, ``CODEX_HOME`` may change its case."""
+    codex_home = tmp_path / "cx"
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    _install(runner, "codex")
+    if not (tmp_path / "CX").is_dir():
+        pytest.skip("this file system tells letter cases apart")
+    (codex_home / "hooks" / "dispatch.py").write_text(
+        "raise SystemExit(3)\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "CX"))
+
+    code, payload = _doctor(runner)
+
+    assert code == 1, payload
+    assert _row(payload, "codex")["status"] == "hook_failed"
+    assert not [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+
+
+def test_a_spelling_in_another_letter_case_is_matched_by_file_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Where the OS does not fold case (macOS), the file ID joins the spellings.
+
+    ``same_location`` is made to answer no, as it does on macOS, so this runs
+    the file-ID branch on every case-insensitive file system.
+    """
+    (tmp_path / "cx").mkdir()
+    (tmp_path / "other").mkdir()
+    if not (tmp_path / "CX").is_dir():
+        pytest.skip("this file system tells letter cases apart")
+    monkeypatch.setattr(_doctor_hooks, "same_location", lambda left, right: False)
+
+    assert _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "CX")
+    assert not _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "other")
+
+
+def test_two_folders_that_differ_only_in_letter_case_stay_apart(
+    tmp_path: Path,
+) -> None:
+    """On a case-sensitive file system ``cx`` and ``CX`` are two folders."""
+    (tmp_path / "cx").mkdir()
+    try:
+        (tmp_path / "CX").mkdir()
+    except FileExistsError:
+        pytest.skip("this file system folds letter case")
+
+    assert not _doctor_hooks._same_folder(str(tmp_path / "cx"), tmp_path / "CX")
+
+
+@pytest.mark.parametrize(
+    ("windows", "name", "quotes"),
+    [
+        (True, "plain dir", '"{}"'),
+        (True, "a $HOME", None),
+        (True, "100%PATH%", None),
+        (True, "trailing, comma,", '"{}"'),
+        (False, "plain dir", "'{}'"),
+        (False, "it's", None),
+    ],
+)
+def test_the_project_in_a_fix_is_quoted_or_given_in_words(
+    windows: bool,
+    name: str,
+    quotes: str | None,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Doctor quotes the root with the helper every printed command uses.
+
+    The command ends the fix, after a colon, so nothing follows the root. Where
+    those quotes cannot carry the root (``$`` or ``%`` on Windows, ``'``
+    elsewhere), the fix names ``--project`` in words and ends with the root as
+    it is. The fix puts no quotes of its own around the command.
+    """
+    from functools import partial
+
+    from apothem.cli import _cmd_doctor
+    from apothem.lib.shell_quote import shell_quoted
+
+    project = tmp_path / name
+    monkeypatch.setattr(
+        _cmd_doctor, "shell_quoted", partial(shell_quoted, windows=windows)
+    )
+    fix = _cmd_doctor._update_fix("cursor", project)
+    assert "'update" not in fix
+    if quotes is None:
+        assert _cmd_doctor._update_command("cursor", project) is None
+        assert fix == (
+            "Run update --harness cursor with the same command prefix you "
+            "installed with and this folder as --project, then run doctor again: "
+            f"{project}"
+        )
+        return
+    expected = "update --harness cursor --project " + quotes.format(project)
+    assert _cmd_doctor._update_command("cursor", project) == expected
+    assert fix == (
+        "Run this command with the same command prefix you installed with, "
+        f"then run doctor again: {expected}"
+    )
+    if not windows:
+        assert shlex.split(expected)[-1] == str(project)
+
+
+def test_an_unreadable_ledger_fix_ends_with_the_update_command(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``ledger.unreadable`` fix moves the ledger aside, then names update."""
+    from apothem.cli import _cmd_doctor
+    from apothem.lib.install_ledger import LedgerError
+    from apothem.lib.shell_quote import shell_quoted
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+
+    def unreadable(*args: object, **kwargs: object) -> None:
+        raise LedgerError("damaged line 3")
+
+    monkeypatch.setattr(_cmd_doctor, "registered_hook_argvs", unreadable)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    failed = [c for c in payload["checks"] if c["code"] == "ledger.unreadable"]
+    assert [c["harness"] for c in failed] == ["cursor"]
+    quoted = shell_quoted(str(project))
+    assert quoted is not None
+    assert failed[0]["fix"] == (
+        "Move the damaged ledger file aside, then run this command with the "
+        "same command prefix you installed with, to record a fresh install: "
+        f"update --harness cursor --project {quoted}"
+    )
+
+
+def test_doctor_names_the_project_in_a_project_harness_fix(
+    runner: CliRunner, home: Path, tmp_path: Path
+) -> None:
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    ledger = install_ledger.ledger_path("cursor")
+    text = ledger.read_text(encoding="utf-8")
+    ledger.write_text(
+        text.replace(json.dumps(str(project))[1:-1], "elsewhere"), encoding="utf-8"
+    )
+
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    unchecked = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+    assert [c["harness"] for c in unchecked] == ["cursor"]
+    quoted = f'"{project}"' if os.name == "nt" else f"'{project}'"
+    command = f"update --harness cursor --project {quoted}"
+    assert unchecked[0]["fix"].endswith(f"to record the install: {command}")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        '& "py" "x/hooks/dispatch.py" --contract cursor sessionStart',
+        'py "x/hooks/dispatch.py" --contract cursor sessionStart',
+    ],
+)
+def test_a_shell_form_hook_drops_the_powershell_call_operator(command: str) -> None:
+    argv = _doctor_hooks._handler_argv({"command": command})
+    assert argv == ["py", "x/hooks/dispatch.py", "--contract", "cursor", "sessionStart"]
 
 
 def test_doctor_fails_when_an_installed_harness_does_not_verify(

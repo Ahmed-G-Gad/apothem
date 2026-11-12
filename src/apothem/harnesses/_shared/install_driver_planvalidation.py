@@ -537,15 +537,14 @@ def user_level_entry_ok(
     harness_root: Path | None,
     project_root: Path | None,
     harness_name: str,
+    guard: SkillGuard | None = None,
 ) -> bool:
     """Return True when a user-level *entry*'s folders are all in place and Apothem's.
 
     Every folder must exist (a skill folder with a ``SKILL.md``), whichever
     harness wrote it. A skill folder that differs from what would be written and
-    that no install record lists belongs to someone else, so it fails: the name
-    is held. A folder an install lists but whose bytes differ (an older engine
-    wrote it) passes; ``update`` rewrites it. An unreadable ledger skips the
-    second test.
+    that :class:`SkillGuard` does not accept fails: the name is held. An
+    unreadable ledger skips that test. A *guard* passed in keeps its conflicts.
     """
     folders = _generated_targets_for_entry(
         entry,
@@ -557,7 +556,7 @@ def user_level_entry_ok(
         return False
     if entry.mode not in SKILL_MODES:
         return True
-    guard = SkillGuard.load()
+    guard = SkillGuard.load() if guard is None else guard
     _prospective_child_outcomes(
         entry,
         src=resolve_source(entry.source),
@@ -664,7 +663,7 @@ def _dry_run_results(
                     if preview.gate_required:
                         detail["destructive_gate"] = "required"
         else:
-            skill_guard = SkillGuard.load() if entry.user_level else None
+            skill_guard = SkillGuard.for_entry(entry, harness_name, project_root)
             outcome = _prospective_entry_outcome(
                 entry,
                 target=target,

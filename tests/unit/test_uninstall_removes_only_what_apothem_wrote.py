@@ -1026,6 +1026,11 @@ _QUOTED = (
     (False, "/home/u/O" + chr(0x2019) + "Brien", None),
     (False, "/home/u/" + chr(0x201A) + "low", None),
     (False, "/home/u/" + chr(0x201B) + "high", None),
+    # fish reads two backslashes as one inside single quotes, and a trailing
+    # one escapes the closing quote; one backslash inside stays as it is.
+    (False, "/home/u/a" + _BS + "b", "'/home/u/a" + _BS + "b'"),
+    (False, "/home/u/a" + _BS * 2 + "b", None),
+    (False, "/home/u/a" + _BS, None),
 )
 
 
@@ -1033,9 +1038,9 @@ _QUOTED = (
 def test_a_printed_folder_is_quoted_for_the_shell(
     windows: bool, path: str, quoted: str | None
 ) -> None:
-    from apothem.harnesses._shared import install_driver_datahome as datahome
+    from apothem.lib.shell_quote import shell_quoted
 
-    assert datahome._shell_quoted(path, windows=windows) == quoted
+    assert shell_quoted(path, windows=windows) == quoted
 
 
 def test_a_folder_the_quotes_cannot_carry_gets_the_steps_in_words() -> None:

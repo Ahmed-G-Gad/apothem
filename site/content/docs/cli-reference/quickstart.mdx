@@ -46,7 +46,12 @@ supported harness and is always an explicit choice.
   as one grouped note per harness (pass `--verbose` for the per-capability
   detail); the full set is always in the `--format json` warnings array.
 - **Next step** — the terminal output names the follow-on commands (`apothem
-  verify …`, `apothem doctor`).
+  verify …`, `apothem doctor`). A `--project` folder is quoted for the shell,
+  as [`doctor`](/docs/cli-reference/doctor) quotes it. When the quotes cannot
+  carry it, the output prints the command up to `--project` and names the
+  folder in words after it, and the `recommended_next` entry in JSON reads
+  `Run apothem verify --harness … with --project set to <folder>`, which is
+  not a command to run as it is.
 
 ## Options
 

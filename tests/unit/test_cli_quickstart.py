@@ -24,6 +24,7 @@ from click.testing import CliRunner
 import apothem.cli as cli
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
+from apothem.lib.shell_quote import shell_quoted
 
 _PERSONALIZED = (
     "identity:\n  name: Ada Lovelace\n  email: ada@analytical.engine\n"
@@ -83,7 +84,9 @@ def test_quickstart_yes_fresh_runs_full_ordered_sequence(
     # project root the operator actually installed into (join wrapped lines —
     # the console soft-wraps long paths).
     flat = out.replace("\n", "")
-    assert f"verify --harness all --project {project}" in flat
+    quoted = shell_quoted(str(project))
+    assert quoted is not None
+    assert f"verify --harness all --project {quoted}" in flat
     assert "apothem doctor" in out
 
 
@@ -253,3 +256,44 @@ def test_quickstart_noninteractive_without_harness_writes_nothing(
     assert "--harness" in result.output
     assert list(home.iterdir()) == []
     assert list(project.iterdir()) == []
+
+
+@pytest.mark.parametrize("windows", [True, False])
+def test_quickstart_names_a_project_the_quotes_cannot_carry_in_words(
+    windows: bool,
+    runner: CliRunner,
+    env: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A root the quotes cannot carry stays out of the printed command.
+
+    The plain output prints the command up to ``--project`` and names the root
+    in words after it; the JSON entry reads as words too, never as a command
+    with prose in its arguments.
+    """
+    from functools import partial
+
+    from apothem.cli import _cmd_install
+
+    monkeypatch.setattr(
+        _cmd_install, "shell_quoted", partial(shell_quoted, windows=windows)
+    )
+    # Cursor refuses a "$" in a project path; "%" passes its hook guard.
+    project = tmp_path / ("100%x%" if windows else "it's")
+    project.mkdir()
+    assert shell_quoted(str(project), windows=windows) is None
+    args = ["quickstart", "--harness", "cursor", "--project", str(project), "--yes"]
+
+    result = runner.invoke(main, [*args, "--no-color"])
+    assert result.exit_code == 0, result.output
+    flat = result.output.replace("\n", "")
+    words = f" with --project set to {project}"
+    assert f"Confirm the install:  run apothem verify --harness cursor{words}" in flat
+
+    result = runner.invoke(main, [*args, "--format", "json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["recommended_next"][0] == (
+        f"Run apothem verify --harness cursor{words}"
+    )
