@@ -46,16 +46,22 @@ something Apothem did not write. A failed row says which: in plain mode a
 [`install`](/docs/cli-reference/install) to restore a missing folder; rename or
 move a foreign one, then run [`update`](/docs/cli-reference/update).
 
-A row, verified or not, can be followed by a note. When the Apothem block is in
-place but a
-file of yours keeps the tool from loading it, for example an
+A row, verified or not, can be followed by a note. When what Apothem wrote is
+in place but a file of yours keeps the tool from loading it, a `Note:` line
+names that file and the JSON envelope's `warnings` gains an entry with
+`"operation": "instruction_override"` (described under
+[`install`](/docs/cli-reference/install)). One such file is an
 `AGENTS.override.md` with text beside the `AGENTS.md` that
 [one supported tool](/docs/harnesses/codex#compatibility-notes) loads from its
-home folder, a `Note:` line names that file
-and the JSON envelope's `warnings` gains an entry with
-`"operation": "instruction_override"` (described under
-[`install`](/docs/cli-reference/install)). The note does not fail the check, and
-when the Apothem block is not in that file, there is no note.
+home folder. Others are files that
+[OpenCode 1](/docs/harnesses/opencode#compatibility-notes) loads from its
+configuration folder: an `opencode.jsonc` with its own `instructions` list, and
+a `config.json`, `opencode.json` or `opencode.jsonc` that OpenCode 1 cannot
+load at all. The note does not fail the check. There is no note when the
+Apothem block is not in that `AGENTS.md`, or when `opencode.json` lists no
+entry the install wrote; the note for an `opencode.json` that OpenCode 1
+cannot load needs only the profile document the install writes to hold the
+Apothem block.
 
 A `--harness all` sweep honors the profile's `exclude_harnesses` — the same
 exclusions the `install`/`update` batch applied — so verify never reports a

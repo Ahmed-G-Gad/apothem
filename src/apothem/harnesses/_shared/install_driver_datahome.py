@@ -166,6 +166,12 @@ _UNQUOTABLE = {
     False: frozenset("'" + "".join(map(chr, (0x2018, 0x2019, 0x201A, 0x201B)))),
 }
 
+#: What cmd acts on in a Windows folder that holds no space. PowerShell and
+#: Git Bash then pass that folder to the installer's ``apothem.cmd`` shim
+#: without its quotes, and the shim's ``%*`` hands it to cmd. With a space in
+#: the folder they keep the quotes, and cmd leaves these alone.
+_CMD_METACHARACTERS = frozenset("&^|<>")
+
 
 def _shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
     """Return *path* quoted for a command the operator pastes into a shell.
@@ -173,10 +179,11 @@ def _shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
     On Windows (*windows*, by default this host) the path goes in double
     quotes, with each trailing backslash doubled so the closing quote stays a
     quote (``C:\\`` becomes ``"C:\\\\"``); elsewhere in single quotes. ``None``
-    when those quotes cannot carry the path (see :data:`_UNQUOTABLE`), and on
-    Windows also when two backslashes stand together before its end, as at
-    the start of a network share (``\\\\server\\share``): Git Bash reads them
-    as one inside double quotes.
+    when those quotes cannot carry the path (see :data:`_UNQUOTABLE`). On
+    Windows also when a path with no space holds a character cmd acts on (see
+    :data:`_CMD_METACHARACTERS`), and when two backslashes stand together
+    before its end, as at the start of a network share
+    (``\\\\server\\share``): Git Bash reads them as one inside double quotes.
     """
     windows = os.name == "nt" if windows is None else windows
     if any(
@@ -186,6 +193,8 @@ def _shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
         return None
     if not windows:
         return f"'{path}'"
+    if " " not in path and not _CMD_METACHARACTERS.isdisjoint(path):
+        return None
     bare = path.rstrip("\\")
     if "\\\\" in bare:
         return None

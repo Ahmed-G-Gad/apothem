@@ -372,6 +372,42 @@ block:
 Confirm Apothem is wired by checking ~/.claude/settings.json for the hook entries.
 If the file is missing the hooks, run apothem install again.
 
+### OpenCode does not load the Apothem rules
+
+`apothem install`, `apothem update` and `apothem verify` print a note when a
+file of yours in OpenCode's configuration folder keeps OpenCode 1 from loading
+the `instructions` list Apothem writes in `opencode.json`:
+
+- An `opencode.jsonc` with its own `instructions` list, even an empty one,
+  replaces Apothem's list. Remove that key, or move its entries into the list
+  in `opencode.json`, where installs keep the entries they did not write.
+- A `config.json`, `opencode.json` or `opencode.jsonc` there that OpenCode 1
+  cannot read or parse stops OpenCode 1 from loading any of its configuration.
+  So does one whose top level is not an object, whose `instructions` value is
+  not a list of text, or whose `{file:path}` names a file OpenCode 1 cannot
+  read, and a folder with one of those names. Correct the file so it is one
+  JSON object with only comments and trailing commas added, with `instructions`
+  as a list of text, or move it out of the folder. When the note says the file
+  breaks once OpenCode 1 puts in its `{env:NAME}` values, change that variable
+  so its value holds no backslash, double quote or control character, for
+  example a Windows path written with forward slashes. When the note says
+  Apothem writes that `{env:NAME}` for an MCP server in your profile, an update
+  writes back a reference removed from the file, so change the variable or, to
+  keep it as it is, restate that server under
+  `harnesses.opencode.mcp_servers.<name>` with the value saved in a file and
+  written as a `{file:path}` that names it. When the note names a second
+  problem with the file, fix that too. When it says Apothem cannot tell
+  whether OpenCode 1 can read the file a `{file:path}` names, make sure that
+  file can be read as well.
+
+These notes are about OpenCode 1. OpenCode 2 reads both lists and reads no
+`config.json`. It skips a file it cannot parse or whose top level is not an
+object, which for `opencode.json` means it misses the rules too; a note says
+what OpenCode 2 does with its file when that is known. The notes change no file
+and no exit code. When install or update cannot parse `opencode.json` at all,
+they stop with a `config.unparseable` error instead. See
+[OpenCode](/docs/harnesses/opencode) for the details.
+
 ## Getting help
 
 - [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- bug reports

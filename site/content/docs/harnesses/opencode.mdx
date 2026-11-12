@@ -104,24 +104,76 @@ your `permission` settings.
 When the shared profile lists MCP servers, the install writes them to the `mcp`
 block of `opencode.json`. OpenCode substitutes `{env:NAME}`, not `${NAME}`, so
 each `${NAME}` in a server's environment, headers or URL is written as
-`{env:NAME}`. Command arguments are copied as written: a reference there is
-left for the server, or a shell it runs, to expand. The install warns about
+`{env:NAME}`, except the pass-through environment entry described below.
+Command arguments are copied as written: a reference there is left for the
+server, or a shell it runs, to expand. The install warns about
 two kinds of `$` reference OpenCode does not expand, which the server then
 receives as written: a `$NAME` in an environment or header value, and any
 other `${...}` form, a plain `${NAME}` in a command argument included. The
 warning names where the reference sits, such as `environment.TOKEN`, and never
 prints the value.
 
+The install leaves out an environment entry that only passes a variable on
+under its own name, such as `GITHUB_TOKEN: ${GITHUB_TOKEN}`, and writes no
+`environment` for a server left with none. OpenCode 1 and OpenCode 2 start a
+local server with OpenCode's own environment and add the server's
+`environment` on top, so the server still receives the `GITHUB_TOKEN` OpenCode
+runs with. Leaving the entry out differs from writing it as
+`{env:GITHUB_TOKEN}` in these ways:
+
+- When the variable is not set, the server sees it unset. Written as
+  `{env:GITHUB_TOKEN}`, it would be set to an empty string.
+- OpenCode 1 sets some variables itself after it reads its config:
+  `AWS_BEARER_TOKEN_BEDROCK` and `AICORE_SERVICE_KEY` from a provider login it
+  stores, and `OPENCODE_CONSOLE_TOKEN`. OpenCode 2 sets `AICORE_SERVICE_KEY`
+  from the `serviceKey` setting of the provider that uses it, when it first
+  uses that provider. The server gets the value such a variable has when the
+  server starts; written as `{env:NAME}`, it would hold the value from when
+  the config was read, which is often an empty string.
+- OpenCode 1 also fills `{env:NAME}` from an organization login made with
+  `opencode auth login <url>`, and reads that login's token before its own
+  environment, but does not put the token in its environment. When only the
+  login sets a variable, the server does not get it; when both set it, the
+  server gets the environment's value. Written as `{env:NAME}`, it would get
+  the login's in both cases.
+- An application built on the OpenCode SDK can register a workspace provider
+  that runs a server inside a sandbox; the `opencode` CLI and desktop app
+  register none. According to OpenCode's source, such a server gets the
+  sandbox's environment, not the one OpenCode runs in, so a variable set only
+  where OpenCode runs does not reach it.
+- On Windows, where variable names ignore case, when OpenCode's environment
+  holds the name in another case than the entry's key, such as `Github_Token`
+  for `GITHUB_TOKEN`, the server gets it in that case; written as
+  `{env:GITHUB_TOKEN}`, the entry would pass it as `GITHUB_TOKEN`. A program
+  that reads names with their case, such as a Git Bash or Cygwin shell, may
+  then not find it.
+- Written as `{env:NAME}`, a value that itself holds `{file:path}` text would
+  have that file's content put in its place, and a `BUN_BE_BUN` entry on a
+  server whose command is `opencode` would replace the `1` OpenCode sets
+  there. Left out, the value reaches the server as it is, and OpenCode's `1`
+  stays.
+
+When a server needs what the entry gave it, restate that server under
+`harnesses.opencode.mcp_servers.<name>` with the value written as
+`{env:NAME}`, which the install copies as it is. That brings back the
+OpenCode 1 risk described below.
+
+An entry that renames a variable (`TOKEN: ${FS_TOKEN}`), a reference inside a
+longer value, every header and URL reference, and an `{env:NAME}` written in an
+override are still written as `{env:NAME}`, and the next paragraph applies to
+them.
+
 OpenCode inserts an `{env:NAME}` value into the config text it reads without
 escaping it; OpenCode 2 escapes it only when that text would not parse
 otherwise. So a value with a backslash (such as a Windows path), a double
 quote or a control character can stop OpenCode 1 from reading the file, and
-in both lines a `\t` or `\n` in it reaches the server as a control character.
-The install checks each such variable when it runs and warns about one that
-holds those characters. Restate that whole server under
-`harnesses.opencode.mcp_servers.<name>`, since an override replaces the whole
-server, and write the value there as `{file:path}`; the other tools keep the
-`${NAME}` reference.
+OpenCode 1's error then prints the config text with each value filled in,
+secrets included. In both lines a `\t` or `\n` in such a value reaches the
+server as a control character. The install checks each such variable when it
+runs and warns about one that holds those characters. Restate that whole
+server under `harnesses.opencode.mcp_servers.<name>`, since an override
+replaces the whole server, and write the value there as `{file:path}`; the
+other tools keep the `${NAME}` reference.
 
 OpenCode combines every file the `instructions` list names into every session
 ([OpenCode rules](https://opencode.ai/docs/rules/)). The list therefore names
@@ -137,6 +189,125 @@ reference material under `~/.config/opencode/.apothem/support/`, and the index
 names each rule and the situation that calls for it. A rule, skill, or command
 that cites a rule, template, or hook prompt reads it from there. Commands,
 skills, and helper definitions use native discovery locations.
+
+OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc` from
+its configuration folder, and a list in a later file replaces the list in an
+earlier one. This is the same in every OpenCode 1 release whose source was
+checked, from the first to the newest. So an `instructions` list in an
+`opencode.jsonc` beside the `opencode.json` Apothem writes, even an empty one,
+keeps OpenCode 1 from loading the profile document and the rules. `apothem
+install`, `apothem update` and `apothem verify` print a note that names the file
+when that happens; verify prints it only while `opencode.json` lists an entry
+the install wrote, and the note does not fail the check. When the list in
+`opencode.jsonc` already holds every entry Apothem writes, OpenCode 1 loads
+them, but from a copy that installs and updates do not refresh, and the note
+says so. When it holds only some of them, the note says how many it holds and
+that the others do not reach OpenCode 1. OpenCode 2 joins the `instructions`
+lists of every file it reads, so the note is about OpenCode 1 only.
+
+Apart from the files described below that stop OpenCode 1, there is no note
+for an `opencode.jsonc` with no `instructions` list, or for a symbolic link to
+`opencode.json`. There is no note while `OPENCODE_CONFIG_DIR`
+names this folder, because current OpenCode 1 releases then read both files
+there a second time and join their lists (the first OpenCode 1 release did not
+read them again). There is none while `OPENCODE_CONFIG` names this
+`opencode.json` either, because OpenCode 1 then reads that file again after the
+others and joins its list. To load the list in OpenCode 1, remove the
+`instructions` key from `opencode.jsonc`, or move its entries into the list in
+`opencode.json`, where installs and updates keep the entries they did not
+write.
+
+OpenCode 1 reads `config.json`, `opencode.json` and `opencode.jsonc` as JSONC:
+JSON with comments and trailing commas, and nothing more. In each file it first
+replaces each `{env:NAME}` with that variable's value and each `{file:path}`
+with the text of that file. It stops with an error and loads none of its
+configuration, so the profile document and the rules do not reach it either,
+when one of those files:
+
+- cannot be parsed once those values are in. JSON5 syntax such as unquoted keys
+  or single quotes, `NaN`, a comment that is never closed, and a file that
+  holds only spaces or only comments all count. So does a file that is only one
+  `{env:NAME}` or `{file:path}` that puts in nothing. OpenCode 1 puts in an
+  `{env:NAME}` value as it is, so a value with a backslash, such as a Windows
+  path, a double quote or a control character can break a file that is
+  otherwise valid; that note says so, and says too when the file has a top
+  level or an `instructions` value OpenCode 1 refuses once the value is
+  fixed. Apothem itself writes an `{env:NAME}` into `opencode.json` for each
+  `${NAME}` in the environment, headers or URL of an MCP server in your
+  profile, and an update writes it back when you remove it from the file, so
+  for such a reference the note names the server and its fix: restate that
+  server under `harnesses.opencode.mcp_servers.<name>` with the value saved
+  in a file and written as a `{file:path}` that names it.
+- has a top level that is not an object, or an `instructions` value that is not
+  a list of text.
+- has a `{file:path}` that names a file OpenCode 1 cannot read, even inside a
+  `/* */` comment. A `{file:path}` on a line that starts with `//` is left as
+  it is. A socket cannot be read. On Linux and macOS, OpenCode 1 uses an
+  absolute path exactly as it is written, and keeps a trailing `/` on a `~/`
+  path, so a path to a file written with a trailing `/`, or with a trailing
+  `/.` on an absolute path, cannot be read.
+- is a folder, or a file OpenCode 1 cannot read for a reason other than the
+  ones described below, such as a symbolic link that leads back to itself.
+
+`apothem install`, `apothem update` and `apothem verify` print a note that names
+each such file, and the note stays even while `OPENCODE_CONFIG_DIR` or
+`OPENCODE_CONFIG` is set, because OpenCode 1 still reads the file. Two of these
+names that lead to one file through a symbolic link get one note between them;
+names in a loop of symbolic links lead to no file, so each gets its own note.
+The check looks at the top level and the `instructions` value only, not at every
+setting OpenCode reads, and it does not read a file that is not a regular file,
+such as a named pipe or a device, or a very large one. A configuration file of
+that kind gets no note. A `{file:path}` that names a very large file, that comes
+after the first 16 MiB that the file's `{env:NAME}` values and `{file:path}`
+files put in (counted as the text put in, escaped, so a control character counts
+as six characters), or that on Windows starts at a root without a drive letter
+(OpenCode 1 reads it on the drive of the folder it was started in), is checked
+as empty text while it sits inside a string value, where its text cannot change
+the outcome, so the rest of the file is still checked. So is, on Windows, one
+naming anything but a file or a folder, such as the `NUL` device, or a path with
+a part that ends in a dot or a space, which Windows usually reads without that
+dot or space but OpenCode 1 may not; its note adds that if OpenCode 1 cannot
+read that file, it stops at that reference first. In a key, outside quotes,
+within an escape sequence such as `\u00`, or after a `/*` comment that is never
+closed, its text decides the outcome, and the file gets no note unless another
+`{file:path}` in it names a file OpenCode 1 cannot read. `{env:NAME}` values
+that put in more than 16 MiB leave the file without a note too, and so do
+`{file:path}` tokens that name more than 1,000 different paths. A `{file:path}`
+naming the null device, `/dev/null`, reads as empty text wherever it sits, as it
+does for OpenCode 1. One naming a named pipe or another device on Linux and
+macOS leaves the file without a note, since OpenCode 1 may wait on it forever. A
+note names an `{env:NAME}` reference, never its value, and shows a `{file:path}`
+with its control characters escaped and cut to 200 characters. Verify prints
+these notes while `opencode.json` lists an entry the install wrote; the note for
+`opencode.json` itself also prints while the profile document holds the Apothem
+block, since such a file may list nothing Apothem can read. When install or
+update cannot parse `opencode.json` even as JSON5, they stop with a
+`config.unparseable` error that names it instead of the note; verify, which then
+fails the check, prints the note.
+
+OpenCode 2 reads no `config.json`. It skips an `opencode.json` or
+`opencode.jsonc` it cannot parse or whose top level is not an object, so it
+still loads `opencode.json` when only `opencode.jsonc` is broken. It escapes
+`{env:NAME}` values when a file would not parse with them as they are, puts in
+empty text for a `{file:path}` it cannot read, ignores an `instructions` value
+that is not a list, a single text value included, and drops the items of a list
+that are not text, so none of those stops it from loading the file. A note says
+what OpenCode 2 does with its file when that is known.
+
+Apothem replaces `{env:NAME}` with the value in its own environment, so the
+note is right when Apothem runs with the environment variables OpenCode sees.
+OpenCode 1 also takes values for `{env:NAME}` from the providers you signed in
+to with `opencode auth`, which Apothem cannot see, so a token outside quotes
+that holds such a value can get a parse note OpenCode 1 does not agree with.
+
+In current OpenCode 1 releases, a file with no bytes at all, or only a byte
+order mark, is read as an empty configuration and gets no note. On Linux and
+macOS, current OpenCode 1 releases skip a file they are not allowed to read
+(`Permission denied`), so it gets no note there; a read the system refuses
+with `Operation not permitted` stops them, and gets a note. On Windows they
+stop for a file they are not allowed to read, so it gets a note. Earlier
+OpenCode 1 releases stop for it on every system, but Apothem notes it only on
+Windows.
 
 Every install and update deletes every file in
 `~/.config/opencode/apothem/rules/` that Apothem did not put there, after
@@ -236,6 +407,13 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness opencode` |
 | Verification failed | Run `apothem update --harness opencode`, then verify again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness opencode` |
+| A note says OpenCode 1 reads the `instructions` list in `opencode.jsonc` | Remove the `instructions` key from `opencode.jsonc` in the configuration folder, or move its entries into the list in `opencode.json` |
+| A note says OpenCode 1 cannot parse a file | Correct that file in the configuration folder so it is JSON with only comments and trailing commas added (quote every key, use double quotes, close every `/*` comment), or remove it |
+| A note says OpenCode 1 cannot parse a file once it puts in its `{env:NAME}` values | Change the variable so its value holds no backslash, double quote or control character (on Windows, write a path with forward slashes), or remove that `{env:NAME}`. When the note says Apothem writes that reference for an MCP server in your profile, an update writes it back if you remove it, so change the variable or, to keep it as it is, restate that server under `harnesses.opencode.mcp_servers.<name>` with the value saved in a file and written as a `{file:path}` that names it. When the note names a second problem, fix that too |
+| A note says OpenCode 1 needs an object at the top level of a file, or an `instructions` value that is a list of text | Make the file one JSON object, and make `instructions` a list of text such as `["notes.md"]`, or remove that key |
+| A note says OpenCode 1 cannot read the file that a `{file:path}` names | Create that file, correct the path, or remove the `{file:path}` |
+| A note says a file is a folder | Move or rename that folder in the configuration folder |
+| A note says OpenCode 1 cannot read a file | Let your user account read the file, replace a symbolic link that leads back to itself, or remove the file |
 
 ## Configuration knobs
 
