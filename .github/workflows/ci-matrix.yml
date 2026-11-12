@@ -95,4 +95,9 @@ jobs:
         if command -v node >/dev/null; then time node -e 0; fi;
         python -m pytest -n auto --color=yes
       egress-policy: audit
-      timeout-minutes: 90
+      # The Windows cells run the whole suite in 45 to 89 minutes (median 64,
+      # 138 cells, 2026-11-10 to 2026-11-12), so the 90-minute limit cancelled
+      # healthy runs; they get 120. The other cells keep 90. The workflow
+      # validator's 90-minute matrix ceiling covers jobs with their own steps;
+      # this job passes its limit to the reusable workflow, which owns it.
+      timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 }}
