@@ -687,10 +687,11 @@ jobs:
   # 12 — home-isolation
   home-isolation:
     # tests/conftest.py redirects the user home, the install ledger and backup
-    # roots and the hook state folder, and clears CODEX_HOME, for the session
-    # and for every test. A write made before those fixtures run
-    # (collection-time code, a plugin's session fixture), or through a root they
-    # do not cover, still lands in the developer's real home. Such a write can
+    # roots and the hook state folder, and clears CODEX_HOME and
+    # CLAUDE_CONFIG_DIR, for the session and for every test. A write made
+    # before those fixtures run (collection-time code, a plugin's session
+    # fixture), or through a root they do not cover, still lands in the
+    # developer's real home. Such a write can
     # start in any test subtree, so this job runs the whole suite, as the
     # quality job's Pytest step does, with the home and the four XDG base
     # directories on fresh empty folders: anything that appears in them is such
