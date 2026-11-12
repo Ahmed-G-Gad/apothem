@@ -325,20 +325,29 @@ would: a fenced code block (closed by a fence of the same character, at least
 as long, with nothing after it) or code indented four columns past its list
 item (or the margin) after a blank line. So a marker you quote in a sentence
 or a code example is your text, and a BEGIN and an END marker you quote in two
-separate code blocks do not make a block. A fence in Apothem's own block does
-not hide its END marker, a fence you leave open to the end of the file is read
-as text (up to eight of them), and a byte order mark at the start of the file
-(as some Windows editors save it) does not hide a marker on the first line.
-Markers inside an HTML block or a block quote can still be read differently
-from a Markdown viewer.
+separate code blocks do not make a block. A fence in Apothem's own block hides
+its END marker only when another marker pair follows (see below), a fence you
+leave open to the end of the file is read as text (up to eight of them; from
+the ninth, the rest of the file reads as code), and a byte order mark at the
+start of the file (as some Windows editors save it) does not hide a marker on
+the first line. Markers inside an HTML block or a block quote, or after a list
+item whose text goes on at the left margin, can still be read differently from
+a Markdown viewer.
 
 If Apothem's block sits inside a code block of yours (a fence left open above
 it and closed by one below), or a code block between a BEGIN marker and its END
 hides that END with another marker pair after it, Apothem cannot tell its
-block from an example of yours. The uninstall leaves such a file as it is,
-names it with the line of the BEGIN marker and of the code block, and finishes;
-delete Apothem's block there by hand if it is still in the file (see
-[Apothem's markers sit inside a code block](/docs/install/troubleshooting#apothems-markers-sit-inside-a-code-block)).
+block from an example of yours. The uninstall leaves such a file as it is and
+removes the rest of the install; the file does not keep the uninstall from
+finishing. Its warning names each marker pair in the file by its lines and
+ends, for example, "If lines 6 to 38 are Apothem's block, delete them by hand,
+keeping your own text." or, with several pairs, "If one of these pairs is
+Apothem's block (lines 1 to 4, or lines 8 to 39), delete it by hand, keeping
+your own text."
+Delete Apothem's block there by hand: once the uninstall has finished, no
+install record lists the file, so a later install treats that block as your
+text (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 
 If the END marker is
 gone, nothing shows where Apothem's text stops and yours starts, so the

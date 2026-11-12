@@ -25,14 +25,15 @@ Either way, a file where Apothem keeps a managed block fails verify while it
 holds a BEGIN marker that starts no whole block, such as one whose END marker
 is gone (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)),
-or while it holds no whole block but a marker pair inside a code block (see
-[Apothem's markers sit inside a code block](/docs/install/troubleshooting#apothems-markers-sit-inside-a-code-block)).
+or while it holds no whole block but marker pairs Apothem cannot tell from your
+text, such as its block inside a code block of yours (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 The files checked are the ones the harness's install writes a block into and
 the ones its install record lists, so a marker in a file of your own, such as a
 project's notes file, does not fail it. The failed row names each such file and
-says what to fix: the stray marker line to delete or, for a pair inside a code
-block, the lines of the BEGIN marker and of the code block. In plain mode a
-`Note:` line follows the row,
+says what to fix: the stray marker line to delete or, for marker pairs Apothem
+cannot tell from your text, the lines of each pair, where they read, and how to
+fix them. In plain mode a `Note:` line follows the row,
 which then leaves out the expected path, and the JSON row gains a `stray_begin`
 object with the `files` and a `message`.
 

@@ -600,37 +600,52 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   columns past its list item (or the margin) after a blank line, is not taken
   for its block, and neither is a BEGIN and an END marker you quote in two
   separate code blocks. A tab after a list bullet and a line such as `* * *`
-  read as they do in a Markdown viewer. A fence in Apothem's own block cannot
-  hide its END marker, a code fence left open to the end of the file is read
-  as text (up to eight of them; past that, no block is taken), and a byte
-  order mark at the start of the file (as Notepad's "UTF-8 with BOM" writes it)
-  does not hide a marker on the first line. Markers inside an HTML block or a
-  block quote can still be read differently from a Markdown viewer. `verify`
-  and `doctor` name each file that holds a stray marker and say to delete the
-  marker line (`doctor` reports it as `harness.stray_begin` and still starts
-  that tool's hooks); only the files a tool's install keeps its block in count.
-- **Install and update no longer add a second block when Apothem's block sits
-  inside a code block of yours.** A code fence you left open above the block,
-  closed by a fence you added below it, put the block inside your code block;
-  the next install added a second block, `verify` passed, and the uninstall
-  left the first one. When an install record lists the file, install and
-  update now change nothing in it, and a warning names the file, the line of
-  the BEGIN marker and the line where the code block opens; the same happens
-  when the BEGIN marker's END is inside a code block and another marker pair
-  follows. A re-install whose block is already there unchanged keeps the file
-  as it is. `verify` fails and `doctor` reports the file (as
-  `harness.stray_begin`) until you close that code block above the marker, or
-  delete or change the marker lines that are yours; then run `apothem update`
-  again. The uninstall leaves such a file as it is, with the same warning, and
-  finishes. With no install record, a marker pair you quote in code is your
-  text, and the install adds its block after it.
+  read as they do in a Markdown viewer. A fence in Apothem's own block hides
+  its END marker only when another marker pair follows (see the next entry), a
+  code fence left open to the end of the file is read as text (up to eight of
+  them; from the ninth, the rest of the file reads as code), and a byte order
+  mark at the start of the file (as Notepad's "UTF-8 with BOM" writes it) does
+  not hide a marker on the first line. Markers inside an HTML block or a block
+  quote, or after a list item whose text goes on at the left margin, can still
+  be read differently from a Markdown viewer. `verify` and `doctor` name each
+  file that holds a stray marker and say to delete the marker line (`doctor`
+  reports it as `harness.stray_begin` and still starts that tool's hooks);
+  only the files a tool's install keeps its block in count.
+- **Install and update no longer guess which marker pair is Apothem's
+  block.** Release 1.5.0 took the first BEGIN marker in a file, and the END
+  marker after it, for its block wherever they were: an update wrote over a
+  marker pair you quote in a code example above the block, and the uninstall
+  took that pair out and left the block. It also updated Apothem's block in
+  place when the block sat inside a code block of yours (a code fence you left
+  open above it, closed by a fence you added below it), and the uninstall
+  removed it. Apothem now reads its markers only outside code (see the entry
+  above), so it cannot tell its block inside your code block from a pair you
+  quote there. While an install record lists the file (until an uninstall
+  finishes), install and update now leave such a file as it is and print a
+  warning that names each marker pair in it by the lines of its two markers,
+  says where those lines read (inside a code block that opens at a given line,
+  in indented code, or as part of the paragraph above them), and gives a fix
+  for each case with what follows from it: if the pair is Apothem's block,
+  close that code block above its BEGIN marker, or start its marker lines at
+  the left margin, and the next update replaces those lines; if the pair is
+  yours, change or delete its two marker lines. The same happens, record or
+  not, when a BEGIN marker outside code has its END marker in code and another
+  marker pair follows, even when a rule in your profile opens that code block
+  inside Apothem's own block (the warning then says to fix that rule).
+  `verify` fails, `doctor` reports the file (as `harness.stray_begin`) and
+  `status --profile` shows drift until you fix those lines; then run
+  `apothem update` again. The uninstall leaves such a file as it is, with a
+  similar warning that says to delete Apothem's block by hand, removes the
+  rest of the install, and finishes. With no install record, a marker pair you
+  quote in code is your text, and the install adds its block after it, unless
+  that pair holds exactly the block the install writes: then the install
+  leaves the file as it is, with the warning. So once an uninstall has
+  finished, delete Apothem's block from your code block by hand: a later
+  install treats it as your text.
 - **`verify --profile` and `status --profile` no longer report drift for a
-  file saved with CRLF or CR line endings, or for a project's own
-  `CLAUDE.md`.** A file where Apothem keeps a managed block, saved with Windows
-  (or CR-only) line endings, read as drifted for good, and an update did not
-  clear it. A project-scope
-  tool with no install record on this machine read the project's `CLAUDE.md`
-  as its own profile file and reported drift.
+  project's own `CLAUDE.md`.** A project-scope tool with no install record on
+  this machine read the project's `CLAUDE.md` as its own profile file and
+  reported drift.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and

@@ -276,7 +276,13 @@ outside its managed block stays. A rules file in a workspace the install no
 longer uses loses its block; if that file holds two different blocks between
 Apothem's markers, the update leaves it as it is and names it. Remove or
 reword the marker lines you added there, and the next install, update or
-uninstall takes Apothem's block out. Run after editing `~/.config/apothem/profile.yaml` or upgrading the
+uninstall takes Apothem's block out. If Apothem cannot tell its block in that
+file from your text (the block sits inside a code block of yours, say), the
+update leaves the file as it is too, and its warning names each marker pair
+with how to fix it; once you fix it, the next install, update or uninstall
+takes Apothem's block out (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Run after editing `~/.config/apothem/profile.yaml` or upgrading the
 installed Apothem package.
 
 ## Uninstalling
@@ -318,7 +324,10 @@ finishes; delete the rest of the block by hand. An install or update keeps the
 text of such a rules file, writes Apothem's block apart from it and names the
 file. Until you do, each
 install and update names such a file in a workspace the install no longer
-uses. The shared profile YAML
+uses. A rules file where Apothem cannot tell its block from your text (the
+block sits inside a code block of yours, say) is left as it is too, and the
+uninstall still finishes: its warning names each marker pair, and you delete
+Apothem's block there by hand. The shared profile YAML
 and Apothem engine are unaffected.
 
 ## Conformity gate
