@@ -100,7 +100,19 @@ def test_a_rules_file_that_is_not_utf8_gets_the_fix_not_a_decoding_error(
     ("name", "on_windows", "elsewhere"),
     [
         ("my proj", '--project "work\\my proj"', "--project 'work/my proj'"),
-        ("a&b;c(1)", '--project "work\\a&b;c(1)"', "--project 'work/a&b;c(1)'"),
+        (
+            "a & b;c(1)",
+            '--project "work\\a & b;c(1)"',
+            "--project 'work/a & b;c(1)'",
+        ),
+        # With no space, PowerShell and Git Bash pass the folder to the
+        # apothem.cmd shim without its quotes, and cmd acts on the &, so on
+        # Windows this folder is named as it is.
+        (
+            "a&b;c(1)",
+            "the --project folder work\\a&b;c(1)",
+            "--project 'work/a&b;c(1)'",
+        ),
         # The apostrophe ends single quotes; the $ expands inside double
         # quotes, so neither shell's quotes can carry this folder.
         (
