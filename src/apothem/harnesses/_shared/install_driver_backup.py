@@ -10,7 +10,6 @@ import os
 import shutil
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
@@ -26,7 +25,6 @@ from .install_driver_pathsafety import (
     _remove_tree_keeping_links,
     _root_for,
     _skip_links_into,
-    _unsafe_symlink,
     _validate_target_path,
     _within_allowed_root,
     _write_boundary,
@@ -37,7 +35,6 @@ from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
-    _path_text,
     _result,
 )
 
@@ -99,6 +96,8 @@ def _reserve_unique_backup(base: Path, *, is_dir: bool) -> Path:
 
 def _sibling_backup_path(target: Path) -> Path:
     """Return a timestamped sibling backup path for a file target."""
+    from apothem.harnesses._shared import install_driver
+
     timestamp = install_driver._timestamp_slug()
     return _unique_path(target.parent / f"{target.name}.{timestamp}.bak")
 
@@ -109,39 +108,17 @@ def _replace_path(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
-    removing: bool = False,
 ) -> MaterializationResult | None:
     """Backup and remove one existing target before writing its replacement.
 
     A link inside a folder target stays (see
-    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it. With
-    *removing* (an uninstall), a target reached through a link, or that is a
-    link, is left in place with a warning: removing through the link is what
-    the write guard refuses, and an error would keep the install recorded
-    while the files a retry looks for are already gone.
+    :func:`_remove_tree_keeping_links`); the result's ``detail`` names it.
     """
     target_error = _validate_target_path(
         target,
         allowed_root=_write_boundary(allowed_root, install_root),
         operation="remove_existing",
     )
-    # The link is looked up directly: one pointing out of the allowed root
-    # fails the escape check before the link check names it.
-    link = (
-        _unsafe_symlink(target, _write_boundary(allowed_root, install_root))
-        if removing and target_error is not None
-        else None
-    )
-    if link is not None:
-        return _result(
-            "warning",
-            "remove_existing",
-            target,
-            f"{target} is reached through the link {link}, so it was left in "
-            "place: Apothem does not remove anything through a link",
-            # "blocked": an installed file stays, so the uninstall is unfinished.
-            detail={"symlink": _path_text(link), "blocked": "1"},
-        )
     if target_error is not None:
         return target_error
     if not target.exists():
@@ -246,6 +223,8 @@ def backup_existing(
     two), so the backup tree mirrors the boundary-relative layout that
     :func:`restore_backup` reconstructs against.
     """
+    from apothem.harnesses._shared import install_driver
+
     if not target.exists():
         return None
     rel = _backup_relative_path(target, _write_boundary(allowed_root, install_root))
@@ -285,6 +264,8 @@ def write_bytes_safely(
     allowed_root: Path | None = None,
 ) -> MaterializationResult:
     """Write bytes with no-op detection, backup-before-replace, and atomic swap."""
+    from apothem.harnesses._shared import install_driver
+
     target_error = _validate_target_path(
         target,
         allowed_root=_write_boundary(allowed_root, install_root),
@@ -353,6 +334,10 @@ def write_bytes_safely(
     )
 
 
+#: The message of a result that deleted an Apothem-only file outright.
+REMOVED_APOTHEM_ONLY_FILE = "removed Apothem-only file"
+
+
 def _guarded_unlink(
     target: Path,
     *,
@@ -364,15 +349,28 @@ def _guarded_unlink(
     The deletion path for an Apothem-only file the surgical uninstall reduced to
     empty. Guards the unlink with the same path-escape / symlink check the write
     paths use, so an uninstall can never delete outside the materialization root.
+    A file that cannot be deleted (another program holds it open, say) is an
+    error, so the uninstall is unfinished and keeps the install recorded.
     """
     target_error = _validate_target_path(
         target, allowed_root=allowed_root, operation=operation
     )
     if target_error is not None:
         return target_error
-    with contextlib.suppress(OSError):  # pragma: no cover - defensive
+    try:
         target.unlink()
-    return _result("updated", operation, target, "removed Apothem-only file")
+    except FileNotFoundError:
+        return _result("unchanged", operation, target, "Apothem-only file already gone")
+    except OSError as exc:
+        return _result(
+            "error",
+            operation,
+            target,
+            f"could not remove {target}, an Apothem-only file "
+            f"({exc.strerror or exc}); close any program that holds it, then "
+            "run the uninstall again",
+        )
+    return _result("updated", operation, target, REMOVED_APOTHEM_ONLY_FILE)
 
 
 def _install_lock_path(harness_name: str, root: Path) -> Path:
@@ -544,6 +542,8 @@ def restore_backup(
     Raises:
         ValueError: When neither *harness_root* nor *project_root* is supplied.
     """
+    from apothem.harnesses._shared import install_driver
+
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
     backup_set = install_driver.BACKUP_ROOT / timestamp / harness_name

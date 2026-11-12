@@ -14,10 +14,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# Loaded first, so this module can be the first one a program imports: the
-# concern modules it loads read ``install_driver_pathsafety`` in the order
-# the driver expects (see ``install_driver_types``, which does the same).
-from apothem.harnesses._shared import install_driver  # noqa: F401
 from apothem.lib.propagation import user_home
 
 from .install_driver_pathsafety import (
@@ -157,6 +153,36 @@ def link_refusal_text(refusal: MaterializationResult) -> str:
     return f"({link} leads outside the home folder{where})"
 
 
+def _named_link(link: str, leads_to: str | None) -> str:
+    """Return ``<link> is a link to <where>``; without *where* when it is unknown."""
+    named = f"{link} is a link"
+    if leads_to and leads_to != link:
+        named += f" to {leads_to}"
+    return named
+
+
+def leads_to_text(link: str) -> str:
+    """Return where *link* leads, as display text (the link itself for a loop)."""
+    return _leads_to(Path(link))
+
+
+def unnamed_link_text(result: MaterializationResult) -> str | None:
+    """Return the link and its fix for a refusal whose message does not name them.
+
+    A write refused because a link leads it out of the allowed folder keeps
+    the message ``target escapes the allowed materialization root`` and
+    records the link in ``detail["symlink"]``. The text is
+    ``<link> is a link to <where>. To fix it, replace the link ...``, with no
+    final full stop, for a line that reports the refusal. ``None`` when
+    *result* names no link, or when its message already does.
+    """
+    link = result.detail.get("symlink")
+    if not link or link in result.message:
+        return None
+    named = _named_link(link, result.detail.get("leads_to"))
+    return f"{named}{LINK_FIX_LEAD}{_link_fix(Path(link))}"
+
+
 def link_refusal_reason_and_fix(
     result: MaterializationResult,
 ) -> tuple[str, str] | None:
@@ -165,19 +191,19 @@ def link_refusal_reason_and_fix(
     ``None`` when *result* names no link (``detail["symlink"]``). A refusal
     from :func:`link_leaving_home_refusal` carries its own fix; its reason
     names the link, where it leads, and that this is outside the home. A
-    write-guard refusal's message already names the kind of link, the link
-    and where it leads, then its fix after
+    write-guard refusal at a link (``target path crosses a link``) has a
+    message that already names the kind of link, the link and where it
+    leads, then its fix after
     :data:`~.install_driver_pathsafety.LINK_FIX_LEAD`: the reason is the part
     before the last one (a folder name may hold the same words), and the fix
-    names the link, so it is given once.
+    names the link, so it is given once. An escape refusal (``target escapes
+    the allowed materialization root``) names no link in its message, so its
+    reason is ``<message>: <link> is a link to <where>``.
     """
     link = result.detail.get("symlink")
     if not link:
         return None
-    leads_to = result.detail.get("leads_to")
-    named = f"{link} is a link"
-    if leads_to and leads_to != link:
-        named += f" to {leads_to}"
+    named = _named_link(link, result.detail.get("leads_to"))
     own_fix = result.detail.get("fix")
     if own_fix:
         return f"{result.message}: {named}, outside your home directory", own_fix

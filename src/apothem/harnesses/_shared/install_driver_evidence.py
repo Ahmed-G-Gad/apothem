@@ -36,7 +36,10 @@ def _carries_managed_block(target: Path, install_open: Callable[[], bool]) -> bo
     the file itself is not Apothem's to own. A BEGIN marker whose END is gone
     counts unless the ledger shows the install was closed (*install_open*):
     the uninstall then runs, leaves that file as it is and names it, and once
-    the install is closed the file no longer reads as installed.
+    the install is closed the file no longer reads as installed. The markers
+    are ASCII, so a file that is not UTF-8 is read with its bad bytes
+    replaced: the uninstall then reaches the step that says how to fix it,
+    instead of a decoding error.
     """
     if not target.is_file():
         return False

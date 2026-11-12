@@ -376,7 +376,7 @@ def test_a_leftover_path_behind_a_link_is_kept_with_a_warning(
 
 
 @pytest.mark.parametrize("kind", KINDS)
-def test_an_uninstall_leaves_a_target_behind_a_link_with_a_warning(
+def test_a_write_refuses_a_target_behind_a_link(
     home: Path, tmp_path: Path, kind: str
 ) -> None:
     elsewhere = tmp_path / "elsewhere"
@@ -385,36 +385,24 @@ def test_an_uninstall_leaves_a_target_behind_a_link_with_a_warning(
     hooks = home / ".tool" / ".apothem" / "support" / "hooks"
     _link(kind, elsewhere, hooks)
 
-    removed = _replace_path(
-        hooks,
-        install_root=home / ".tool",
-        harness_name="t",
-        allowed_root=home,
-        removing=True,
-    )
     written = _replace_path(
         hooks / "a.py", install_root=home / ".tool", harness_name="t", allowed_root=home
     )
 
-    assert removed is not None
-    assert removed.outcome == "warning"
-    assert "does not remove anything through a link" in removed.message
     assert written is not None
     assert written.outcome == "error"
     assert (elsewhere / "hook.py").exists()
 
 
 @pytest.mark.parametrize("kind", KINDS)
-def test_removing_an_installed_folder_keeps_a_link_in_it(home: Path, kind: str) -> None:
+def test_replacing_an_installed_folder_keeps_a_link_in_it(
+    home: Path, kind: str
+) -> None:
     skill = home / ".tool" / "skills" / "apothem-x"
     mine, link = _tree_with_a_link(home, kind, skill)
 
     removed = _replace_path(
-        skill,
-        install_root=home / ".tool",
-        harness_name="t",
-        allowed_root=home,
-        removing=True,
+        skill, install_root=home / ".tool", harness_name="t", allowed_root=home
     )
 
     assert removed is not None

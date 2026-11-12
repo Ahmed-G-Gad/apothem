@@ -34,6 +34,40 @@ def _same_path(left: Path, right: Path) -> bool:
     )
 
 
+def _same_home(left: Path, right: Path) -> bool:
+    """Return True when the data homes *left* and *right* are one folder.
+
+    As :func:`_same_path`, except that two existing folders the file system
+    tells apart are two homes: in a case-sensitive folder ``Proj/.apothem``
+    and ``proj/.apothem`` are two. Any doubt keeps them one, which keeps a
+    store rather than removing it.
+    """
+    if not _same_path(left, right):
+        return False
+    try:
+        return left.samefile(right)
+    except OSError:
+        return True
+
+
+def _same_root(recorded: str, root: Path) -> bool:
+    """Return True when the recorded root *recorded* is the install root *root*.
+
+    The same text, or the same text once both are resolved (a link an
+    earlier release recorded beside the folder it leads to). Case is never
+    folded: in a case-sensitive folder ``Proj`` and ``proj`` resolve to two
+    texts, and a folder that no longer exists keeps its case as typed, so
+    any doubt counts the other root, which keeps a store rather than
+    removing it.
+    """
+    if recorded == str(root):
+        return True
+    try:
+        return str(Path(recorded).resolve()) == str(root.resolve())
+    except (OSError, RuntimeError):
+        return False
+
+
 def _data_home_for(record: install_ledger.LedgerRecord | None, *, root: Path) -> Path:
     """Return the shared working directory the install recorded under *root*.
 
@@ -87,7 +121,10 @@ def _other_harness_shares_home(
     when any other install is still in place at a root whose data home is
     *shared_home*. Only the install being removed (*current_harness* at
     *current_root*) is left out: the same harness installed at another root
-    (a second project sharing the user-home store) still counts.
+    (a second project sharing the user-home store) still counts. That root is
+    matched by its text, resolved or not, never with the case folded (see
+    :func:`_same_root`), so a case-only sibling (``Proj`` beside ``proj`` in
+    a case-sensitive folder) counts too.
 
     A harness is "still installed at a root" when its most recent ledger
     record of any kind for that root is an ``install``. The records are grouped
@@ -112,14 +149,14 @@ def _other_harness_shares_home(
         # finish, leaves the earlier one active, and its home still in use.
         roots = {record.root for record in install_ledger.read_records(package_key)}
         for raw_root in sorted(roots):
-            if package_key == current_harness and _same_path(
-                Path(raw_root), current_root or Path(raw_root)
+            if package_key == current_harness and (
+                current_root is None or _same_root(raw_root, current_root)
             ):
                 continue
             current = install_ledger.current_install_record(package_key, root=raw_root)
             if current is None:
                 continue
-            if _same_path(_data_home_for(current, root=Path(raw_root)), shared_home):
+            if _same_home(_data_home_for(current, root=Path(raw_root)), shared_home):
                 return True
     return False
 
@@ -138,12 +175,10 @@ def _holder(
     for package_key in SUPPORTED_PACKAGE_KEYS:
         roots = {record.root for record in install_ledger.read_records(package_key)}
         for raw_root in sorted(roots):
-            if package_key == current_harness and _same_path(
-                Path(raw_root), current_root
-            ):
+            if package_key == current_harness and _same_root(raw_root, current_root):
                 continue
             current = install_ledger.current_install_record(package_key, root=raw_root)
-            if current is None or not _same_path(
+            if current is None or not _same_home(
                 _data_home_for(current, root=Path(raw_root)), shared_home
             ):
                 continue
@@ -173,7 +208,7 @@ _UNQUOTABLE = {
 _CMD_METACHARACTERS = frozenset("&^|<>")
 
 
-def _shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
+def shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
     """Return *path* quoted for a command the operator pastes into a shell.
 
     On Windows (*windows*, by default this host) the path goes in double
@@ -210,7 +245,7 @@ def _release_steps(home: Path, package_key: str, root: str) -> str:
     install used a profile whose workspace puts them in *home*: the reinstall
     needs that profile too, or it writes stores of its own and leaves these
     with no install that uses them. A project install gets the exact commands,
-    the folder quoted for the shell (see :func:`_shell_quoted`), or the steps
+    the folder quoted for the shell (see :func:`shell_quoted`), or the steps
     in words, naming the folder as it is, when the quotes cannot carry it. A
     user-scope install's folder may have come from a setting (``CODEX_HOME``,
     ``XDG_CONFIG_HOME``) the commands cannot repeat, so it gets the steps in
@@ -218,7 +253,7 @@ def _release_steps(home: Path, package_key: str, root: str) -> str:
     """
     entry = get_harness_entry(package_key)
     stores = "its memory, contexts and learning folders"
-    quoted = _shell_quoted(root) if entry.scope == "project" else None
+    quoted = shell_quoted(root) if entry.scope == "project" else None
     if quoted is not None:
         where = f" --project {quoted}"
         steps = (

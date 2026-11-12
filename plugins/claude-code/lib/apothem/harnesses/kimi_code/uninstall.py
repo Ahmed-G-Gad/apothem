@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib.install_ledger import recorded_root
 
 _HARNESS_NAME: str = "kimi_code"
 
@@ -44,8 +45,11 @@ def uninstall(
     their backups are passed on as ``prior_results``: the uninstall record then
     references them and retention keeps them.
     """
-    project_root = (
-        project if project is not None else output_path.parents[_PROJECT_DEPTH]
+    # Spelled as the install records spell it, so an install made through a
+    # link, or with the folder resolved, is found either way.
+    project_root = recorded_root(
+        _HARNESS_NAME,
+        project if project is not None else output_path.parents[_PROJECT_DEPTH],
     )
     legacy = install_driver.sweep_stale(
         install_driver.load_rules(_HARNESS_NAME).stale_sweep,

@@ -33,6 +33,20 @@ from .install_driver_written import UNPROVEN_REASONS, kept_file_warnings
 UNFINISHED_REASONS: frozenset[str] = UNPROVEN_REASONS | {ANOTHER_BLOCK}
 
 
+def links_named(results: Iterable[MaterializationResult]) -> set[str]:
+    """Return the links that *results* name in their messages.
+
+    An escape refusal (``target escapes the allowed materialization root``)
+    records its link in ``detail["symlink"]`` without naming it in the
+    message; that link still gets its own warning that it was left in place.
+    """
+    return {
+        link
+        for result in results
+        if (link := result.detail.get("symlink")) and link in result.message
+    }
+
+
 def left_behind(
     results: list[MaterializationResult],
     active: list[LedgerRecord],
@@ -42,13 +56,14 @@ def left_behind(
 ) -> list[MaterializationResult]:
     """Return a warning for each path the uninstall kept: links and the user's files.
 
-    A link a *prior* result (the caller's own removal) already names is not
-    named again. A file the uninstall rewrote that still holds a BEGIN marker
-    with no END after it is named too (see :func:`stray_begin_warnings`).
+    A link a *prior* result (the caller's own removal) already names in its
+    message is not named again (see :func:`links_named`). A file the uninstall
+    rewrote that still holds a BEGIN marker with no END after it is named too
+    (see :func:`stray_begin_warnings`).
     """
     kept = [*kept_link_warnings(results), *kept_file_warnings(results)]
     created = {Path(path) for install in active for path in install.created_dirs}
-    named = {result.detail.get("symlink") for result in (*prior, *results)}
+    named = links_named((*prior, *results))
     kept += [
         warning
         for warning in links_left_in(created, known=kept)
@@ -72,11 +87,9 @@ def links_on_the_way(
 
     An uninstall leaves a link and what it points to in place; when nothing
     of Apothem's is left behind it, nothing else would name it. A link a
-    result in *known* already names is skipped.
+    result in *known* already names is skipped (see :func:`links_named`).
     """
-    seen = {result.path for result in known} | {
-        result.detail["symlink"] for result in known if "symlink" in result.detail
-    }
+    seen = {result.path for result in known} | links_named(known)
     notes = []
     for text in paths:
         for ancestor in Path(text).parents:

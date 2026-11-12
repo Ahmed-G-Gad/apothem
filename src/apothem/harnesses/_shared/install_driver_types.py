@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any, Final, Literal
 
 import apothem
-from apothem.harnesses._shared import install_driver
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.propagation import HarnessRules, InstallEntry
 
@@ -314,6 +313,8 @@ class MaterializationError(ValueError):
 
 def resolve_source(source: str) -> Path:
     """Resolve a manifest source-path (package-relative) to an on-disk path."""
+    from apothem.harnesses._shared import install_driver
+
     return install_driver.APOTHEM_SRC / source.rstrip("/")
 
 

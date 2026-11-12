@@ -12,7 +12,6 @@ from typing import Any, Literal
 
 import yaml
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
@@ -36,6 +35,7 @@ from .install_driver_hookfile import (
     registration_present,
     release_native_hooks,
 )
+from .install_driver_layout import _load_rules
 from .install_driver_merge import render_content_tokens
 from .install_driver_outcome import (
     last_uninstall_finished,
@@ -120,7 +120,7 @@ def verify_install(
     wrote them (see :func:`user_level_entry_ok`). Returns False on the first
     unsatisfied target.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     if native_config is not None:
         if not native_config.is_file() or native_config.stat().st_size <= 0:
             return False
@@ -183,7 +183,7 @@ def detect_install(
     finish (see :func:`install_driver_evidence._unfinished_here`), so a second
     run can complete it.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     install_open = functools.partial(install_may_be_open, harness_name, root)
     if any(
@@ -223,7 +223,7 @@ def _profile_anchor_targets(
     install from before the ledger) a bolt-on counts only when present. An
     adapter that projects no profile content (GLM) has no anchors.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     targets: list[Path] = [
         resolve_target(
@@ -443,7 +443,7 @@ def _remove_installed(
     are still recorded. A path in *already* (one the caller removed or
     reported before this pass) is not handled again.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
     # Ledger-driven: the latest install record is the source of truth for what
@@ -599,7 +599,7 @@ def build_plan(
     target string so the operator sees the unresolved template form instead
     of a misleading absolute path.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     return [
         {
             "source": str(resolve_source(entry.source)),

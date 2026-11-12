@@ -87,6 +87,11 @@ def user_level_dirs(harness_id: str) -> tuple[Path, ...]:
     return tuple(found.values())
 
 
+def existing_user_level_dirs(harness_id: str) -> list[str]:
+    """Return the user-home folders *harness_id* writes that exist, as ``~/...``."""
+    return [_tilde(folder) for folder in user_level_dirs(harness_id) if folder.is_dir()]
+
+
 def is_project_scope(adapter: object) -> bool:
     """Return True for an adapter whose install root is the ``--project`` folder."""
     return callable(getattr(adapter, "resolve_output_path", None))
@@ -160,10 +165,15 @@ class LedgerView:
         return [i for i in self.installs if i is not exclude and i.lists(key)]
 
     def find(self, harness: str, root: Path) -> _Install | None:
-        """Return the active install of *harness* at *root*, or ``None``."""
-        wanted = path_key(root)
+        """Return the active install of *harness* at *root*, or ``None``.
+
+        The root is matched by exact text, as the ledger matches roots (the
+        caller passes the spelling :func:`install_ledger.recorded_root`
+        gives): a folded comparison would ignore case on Windows, where a
+        case-sensitive folder can hold ``Proj`` and ``proj`` as two installs.
+        """
         for install in self.installs:
-            if install.harness == harness and path_key(install.root) == wanted:
+            if install.harness == harness and install.root == str(root):
                 return install
         return None
 

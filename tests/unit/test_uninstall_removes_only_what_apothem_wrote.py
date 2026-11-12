@@ -1035,7 +1035,7 @@ def test_a_printed_folder_is_quoted_for_the_shell(
 ) -> None:
     from apothem.harnesses._shared import install_driver_datahome as datahome
 
-    assert datahome._shell_quoted(path, windows=windows) == quoted
+    assert datahome.shell_quoted(path, windows=windows) == quoted
 
 
 def test_a_folder_the_quotes_cannot_carry_gets_the_steps_in_words() -> None:
