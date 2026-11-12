@@ -47,9 +47,11 @@ Exit codes:
      (non-interactive or JSON mode without --yes), or every removal failed
      before removing anything
   2  Partial removal or an unfinished uninstall — files were removed before
-     a failure, Apothem's files stay behind a link, an earlier release's
-     files differ from this release's, or the install has no record (for
-     the last two, run apothem update, then uninstall again)
+     a failure, Apothem's files stay behind a link, a file holds two
+     different blocks between Apothem's markers, an earlier release's files
+     differ from this release's, or the install has no record (for the last
+     two, first fix each file a warning names for an Apothem marker, then
+     run apothem update, then uninstall again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 

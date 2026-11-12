@@ -10,8 +10,11 @@ keys instead of using the generic managed body.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+import enum
+import itertools
+import re
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
 from typing import Any, Final
 
 import yaml
@@ -57,79 +60,537 @@ def wrap_managed_block(body: str) -> str:
     return f"{APOTHEM_BLOCK_BEGIN}\n{safe}\n{APOTHEM_BLOCK_END}\n"
 
 
+_SENTINELS: Final[tuple[str, str]] = (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END)
+
+#: The byte order mark an editor may put at offset 0 (Notepad's "UTF-8 with
+#: BOM", Windows PowerShell 5.1's ``Set-Content -Encoding UTF8``). It is not
+#: part of the first line, so a marker right after it still counts.
+_BOM: Final[str] = "﻿"
+
+_EOL: Final = re.compile(r"\r\n|\r|\n")
+_FENCE_OPEN: Final = re.compile(r"(`{3,}|~{3,})(.*)\Z", re.DOTALL)
+_FENCE_CLOSE: Final = re.compile(r"(`{3,}|~{3,})[ \t]*\Z")
+_LIST_ITEM: Final = re.compile(r"(?:[-+*]|[0-9]{1,9}[.)])(?=[ \t]|\Z)")
+#: A thematic break such as ``***`` or ``- - -`` (CommonMark): it is not a list.
+_THEMATIC_BREAK: Final = re.compile(r"([-*_])(?:[ \t]*\1){2,}[ \t]*\Z")
+
+#: Columns of indentation that make a line indented code (CommonMark).
+_CODE_INDENT: Final = 4
+#: The widest gap after a list bullet that still sets the item's content column.
+_MAX_ITEM_GAP: Final = 4
+#: How many times a text is read again with one more fence left open to its
+#: end taken as text (see :func:`_marker_lines`), so the reading stays linear.
+_MAX_REREADS: Final = 8
+
+
+@dataclass(frozen=True)
+class _Line:
+    """One line of text: where it starts and its text, without the line ending."""
+
+    start: int
+    text: str
+
+
+@dataclass(frozen=True)
+class _Marker:
+    """A marker line Apothem could have written, and whether it is in a block."""
+
+    marker: str
+    start: int
+    end: int
+    paired: bool
+
+
+@dataclass(frozen=True)
+class _Fence:
+    """An open fenced code block: its character, run length, column and line."""
+
+    char: str
+    length: int
+    column: int
+    line: int
+
+
+class _Kind(enum.Enum):
+    """What :meth:`_MarkdownState.step` found a line to be."""
+
+    BLANK = "blank"
+    CODE = "code"
+    MARKER = "marker"
+    TEXT = "text"
+
+
+def _split_lines(text: str) -> list[_Line]:
+    """Return the lines of *text*, split at ``\\n``, ``\\r\\n`` and ``\\r``.
+
+    A byte order mark at offset 0 is left out of the first line.
+    """
+    pos = len(_BOM) if text.startswith(_BOM) else 0
+    lines: list[_Line] = []
+    for match in _EOL.finditer(text, pos):
+        lines.append(_Line(pos, text[pos : match.start()]))
+        pos = match.end()
+    if pos < len(text):
+        lines.append(_Line(pos, text[pos:]))
+    return lines
+
+
+def _indent(text: str, start: int = 0) -> tuple[int, int]:
+    """Return the columns and characters of *text*'s leading spaces and tabs.
+
+    *text* starts at column *start* of its line. A tab moves to the next
+    multiple of four columns of the line, as in CommonMark.
+    """
+    column = start
+    for index, char in enumerate(text):
+        if char == " ":
+            column += 1
+        elif char == "\t":
+            column += _CODE_INDENT - column % _CODE_INDENT
+        else:
+            return column - start, index
+    return column - start, len(text)
+
+
+def _fence_opener(text: str) -> tuple[str, int] | None:
+    """Return the character and run length of the fence *text* opens, if any.
+
+    A run of three or more backticks or tildes; after backticks, the rest of the
+    line (the info string) holds no backtick, so a line that starts with inline
+    code such as ``` ```npm ci``` must pass ``` opens nothing.
+    """
+    match = _FENCE_OPEN.match(text)
+    if match is None:
+        return None
+    run, info = match.groups()
+    if run[0] == "`" and "`" in info:
+        return None
+    return run[0], len(run)
+
+
+def _candidate_pairs(lines: list[_Line]) -> dict[int, int]:
+    """Map each BEGIN marker line whose next marker line is an END to that END.
+
+    Only whole marker lines count, whatever the code blocks around them; the
+    caller decides which of these pairs is Apothem's block. Apothem defuses any
+    marker in the text it writes (:func:`defuse_sentinels`), so its own block
+    is always such a pair.
+    """
+    marked = [
+        index for index, line in enumerate(lines) if line.text.strip() in _SENTINELS
+    ]
+    return {
+        begin: end
+        for begin, end in itertools.pairwise(marked)
+        if lines[begin].text.strip() == APOTHEM_BLOCK_BEGIN
+        and lines[end].text.strip() == APOTHEM_BLOCK_END
+    }
+
+
+@dataclass
+class _MarkdownState:
+    """The CommonMark code-block state of a scan, one line at a time.
+
+    Tracks fenced code (with the column of the list item it sits in), indented
+    code, and the content columns of the open list items, which is all that
+    decides whether a line is code. *ignored* holds the lines of fences found
+    to stay open to the end of the text; they open nothing.
+    """
+
+    lines: list[_Line]
+    ignored: set[int]
+    fence: _Fence | None = None
+    code_column: int | None = None
+    items: list[int] = field(default_factory=list)
+    can_interrupt: bool = True
+
+    def reset(self) -> None:
+        """Start afresh after an Apothem block, which ends every open construct."""
+        self.fence = None
+        self.code_column = None
+        self.items.clear()
+        self.can_interrupt = True
+
+    def step(self, index: int) -> _Kind:
+        """Advance over line *index* and return what it is."""
+        columns, chars = _indent(self.lines[index].text)
+        content = self.lines[index].text[chars:]
+        if not content.strip():
+            if self.fence is None:
+                self.can_interrupt = True
+            return _Kind.BLANK
+        if self.fence is not None and self._in_fence(self.fence, columns, content):
+            return _Kind.CODE
+        if self.code_column is not None:
+            if columns >= self.code_column + _CODE_INDENT:
+                return _Kind.CODE
+            self.code_column = None
+        while self.items and columns < self.items[-1]:
+            self.items.pop()
+        base = self.items[-1] if self.items else 0
+        if columns - base >= _CODE_INDENT:
+            # Indented code, or a paragraph's continuation line: neither is a
+            # marker line of its own.
+            if self.can_interrupt:
+                self.code_column = base
+                return _Kind.CODE
+            return _Kind.TEXT
+        if content.strip() in _SENTINELS:
+            self.can_interrupt = True
+            return _Kind.MARKER
+        rest = self._open_items(columns, content)
+        opener = _fence_opener(rest)
+        if opener is not None and index not in self.ignored:
+            column = self.items[-1] if self.items else 0
+            self.fence = _Fence(opener[0], opener[1], column, index)
+            return _Kind.CODE
+        # A thematic break ends a paragraph as a blank line does.
+        self.can_interrupt = not rest.strip() or bool(_THEMATIC_BREAK.match(rest))
+        return _Kind.TEXT
+
+    def _in_fence(self, fence: _Fence, columns: int, content: str) -> bool:
+        """Return True when the open *fence* holds this line (its closer included)."""
+        if columns < fence.column:
+            # The list item the fence sits in ended, and the fence with it.
+            self.fence = None
+            return False
+        close = _FENCE_CLOSE.match(content)
+        if (
+            close is not None
+            and columns - fence.column < _CODE_INDENT
+            and close.group(1)[0] == fence.char
+            and len(close.group(1)) >= fence.length
+        ):
+            self.fence = None
+            self.can_interrupt = True
+        return True
+
+    def _open_items(self, columns: int, content: str) -> str:
+        """Open the list items *content* starts with; return the text after them.
+
+        *content* starts at column *columns*. A thematic break such as
+        ``* * *`` opens no item.
+        """
+        rest = content
+        while (
+            not _THEMATIC_BREAK.match(rest)
+            and (match := _LIST_ITEM.match(rest)) is not None
+        ):
+            after = rest[match.end() :]
+            bullet_end = columns + match.end()
+            gap, gap_chars = _indent(after, bullet_end)
+            if not after.strip() or gap > _MAX_ITEM_GAP:
+                # An empty item, or one that starts with indented code.
+                self.items.append(bullet_end + 1)
+                return ""
+            columns = bullet_end + gap
+            self.items.append(columns)
+            rest = after[gap_chars:]
+        return rest
+
+
+@dataclass(frozen=True)
+class _Scan:
+    """What one reading of a text found.
+
+    ``markers`` are the marker lines outside code, in order. ``unclosed`` is the
+    line of a fence left open at the end of the text, if any. ``unclear`` is
+    True when a BEGIN marker outside code had its END marker hidden in code
+    with another BEGIN/END pair after it, so no block is certain. ``fences``
+    maps each BEGIN marker line of a pair that was not taken as Apothem's block
+    to the line of the fence that held it (or hid its END marker); ``None`` for
+    indented code.
+    """
+
+    markers: list[_Marker]
+    unclosed: int | None
+    unclear: bool = False
+    fences: dict[int, int | None] = field(default_factory=dict)
+
+
+def _hidden_end(state: _MarkdownState, begin: int, end: int) -> tuple[bool, int | None]:
+    """Return whether the END marker at *end* reads as code after *begin*.
+
+    The lines between are read on a copy of *state*, so the scan itself goes
+    on unchanged. Also returns the line of the fence open at *end*, if any.
+    """
+    copy = replace(state, items=list(state.items))
+    for index in range(begin + 1, end):
+        copy.step(index)
+    if copy.step(end) is _Kind.MARKER:
+        return False, None
+    return True, None if copy.fence is None else copy.fence.line
+
+
+def _scan(lines: list[_Line], pairs: dict[int, int], ignored: set[int]) -> _Scan:
+    """Read *lines* once; see :func:`_marker_lines` for the rules.
+
+    A BEGIN marker line outside code whose next marker line is an END marker
+    (see :func:`_candidate_pairs`) is Apothem's block, and the lines between
+    are not read for code. Every other line is read in turn, a BEGIN marker in
+    code included, so a pair quoted across two code blocks marks nothing.
+    """
+    state = _MarkdownState(lines, ignored)
+    found: list[_Marker] = []
+    fences: dict[int, int | None] = {}
+    unclear = False
+    later = sorted(pairs, reverse=True)
+    index = 0
+    while index < len(lines):
+        kind = state.step(index)
+        end = pairs.get(index)
+        if kind is _Kind.MARKER:
+            line = lines[index]
+            token = line.text.strip()
+            start = line.start + line.text.index(token)
+            if unclear:
+                end = None
+            elif end is not None:
+                hidden, fence = _hidden_end(state, index, end)
+                if hidden and later[0] > end:
+                    # The END is in code, and another pair follows: either
+                    # pair can be Apothem's, so neither is taken.
+                    unclear = True
+                    fences[index] = fence
+                    end = None
+            found.append(_Marker(token, start, start + len(token), end is not None))
+            if end is not None:
+                closing = lines[end]
+                stop = closing.start + closing.text.index(APOTHEM_BLOCK_END)
+                found.append(
+                    _Marker(
+                        APOTHEM_BLOCK_END, stop, stop + len(APOTHEM_BLOCK_END), True
+                    )
+                )
+                state.reset()
+                index = end
+        elif end is not None:
+            fences[index] = None if state.fence is None else state.fence.line
+        index += 1
+    unclosed = None if state.fence is None else state.fence.line
+    return _Scan(found, unclosed, unclear, fences)
+
+
+def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
+    """Return the lines of *text*, its candidate pairs and its final reading.
+
+    See :func:`_marker_lines` for the rules.
+    """
+    lines = _split_lines(text)
+    pairs = _candidate_pairs(lines)
+    ignored: set[int] = set()
+    scan = _scan(lines, pairs, ignored)
+    for _ in range(_MAX_REREADS):
+        if scan.unclosed is None:
+            return lines, pairs, scan
+        ignored.add(scan.unclosed)
+        scan = _scan(lines, pairs, ignored)
+    if scan.unclosed is None:
+        return lines, pairs, scan
+    # Too many fences left open: nothing is certain.
+    unpaired = [replace(marker, paired=False) for marker in scan.markers]
+    return lines, pairs, replace(scan, markers=unpaired)
+
+
+def _marker_lines(text: str) -> list[_Marker]:
+    """Return the markers in *text* that Apothem could have written.
+
+    The rule follows CommonMark, so a marker the operator quotes in code is
+    their text:
+
+    - A marker counts only as a line of its own (whitespace and the line
+      ending aside, as :meth:`str.strip` reads it) that is not code. A byte
+      order mark at offset 0 is not part of the first line.
+    - A fence opens on a line indented 0-3 columns (from the content column of
+      the list item it sits in) with three or more backticks or tildes; after
+      backticks, the info string holds no backtick. It closes on a line of the
+      same character, at least as long, indented 0-3 columns, with nothing
+      after it, or when its list item ends.
+    - A list item's content starts after its bullet and the spaces or tab
+      after it (a tab reaches the next multiple of four columns of the line).
+      A thematic break such as ``* * *`` or ``- - -`` is not a list item.
+    - A line indented four or more columns past the content column of the list
+      item it sits in (or past the margin outside a list), after a blank line,
+      a heading or break, or at the start, is indented code, as are the lines
+      after it that stay indented so.
+    - A BEGIN marker line outside code whose next marker line is an END marker
+      opens Apothem's block: nothing between them is read as code, so a fence
+      in Apothem's own text cannot hide its END marker. But when the lines
+      between, read as Markdown, leave that END marker in code and another
+      BEGIN/END pair follows, no block is certain (see :func:`uncertain_block`).
+    - Every other line is read in turn, a BEGIN marker in code included: a
+      marker pair inside one code block is a quoted example and marks nothing,
+      and a marker quoted in one code block never pairs with one outside it.
+    - A fence still open at the end of the text marks nothing for certain:
+      CommonMark runs it to the end, but then a block Apothem appended after an
+      unclosed fence of the operator's would never be found, and each install
+      would add another. So such a fence opener counts as text, and the text is
+      read again without it, up to eight times; past that, no block is certain.
+    """
+    return _read(text)[2].markers
+
+
+def _block_span(text: str) -> tuple[int, int] | None:
+    """Return where the first whole managed block in *text* starts and ends.
+
+    The block is a BEGIN marker line outside code whose next marker line is an
+    END marker (see :func:`_marker_lines` for what counts as a marker).
+    """
+    markers = _marker_lines(text)
+    for begin, end in itertools.pairwise(markers):
+        if begin.paired and begin.marker == APOTHEM_BLOCK_BEGIN:
+            return begin.start, end.end
+    return None
+
+
+def uncertain_block(text: str) -> tuple[int, int | None] | None:
+    """Return where *text* holds a marker pair no rule can place, if it does.
+
+    That is a text with no whole block (see :func:`complete_managed_block`)
+    but a BEGIN marker line whose next marker line is an END marker, such as
+    Apothem's block inside a code block of the operator's that a later fence
+    closes, or a pair quoted in code. Returns the 1-based line of the first
+    such BEGIN marker, and the 1-based line of the fence that holds it or hides
+    its END marker (``None`` for indented code). An install that recorded a
+    block in the file leaves it as it is (see :func:`merge_managed_block`).
+    """
+    _, pairs, scan = _read(text)
+    if not pairs or any(marker.paired for marker in scan.markers):
+        return None
+    first = min(pairs)
+    fence = scan.fences.get(first)
+    return first + 1, None if fence is None else fence + 1
+
+
+def _held_back(text: str, wrapped: str, *, recorded: bool) -> bool:
+    """Return True when a merge of *wrapped* must leave *text* as it is.
+
+    *text* holds no whole block, and either a marker pair in it already reads
+    as *wrapped* (each line compared without its surrounding whitespace, so a
+    re-install adds no second block), or a pair is there that may be Apothem's
+    block: an install recorded one in this file, or a pair's END marker is
+    hidden in code with another pair after it.
+    """
+    lines, pairs, scan = _read(text)
+    if not pairs or any(marker.paired for marker in scan.markers):
+        return False
+    want = [line.strip() for line in wrapped.rstrip("\n").split("\n")]
+    for begin, end in pairs.items():
+        if [line.text.strip() for line in lines[begin : end + 1]] == want:
+            return True
+    return recorded or scan.unclear
+
+
 def complete_managed_block(text: str) -> str | None:
     """Return the managed block in *text* only when it has both sentinels.
 
-    The block is the first end sentinel together with the nearest begin
-    sentinel before it, returned with both, exactly as in *text*. So a begin
-    sentinel left without its end above a whole block (or one the operator
-    quotes there) is not taken as the start of the block, and the text after
-    it stays. A begin sentinel with no end sentinel after it (a block cut short
-    or edited by hand) returns ``None``: nothing shows where Apothem's text
-    stops and the operator's starts. An uninstall therefore leaves such a file
-    as it is. :func:`extract_managed_block` is the install-side form, which
-    reclaims such a block.
+    The block is the first BEGIN marker line outside code whose next marker
+    line is an END marker, returned with both, exactly as in *text*. A sentinel
+    counts only as a line of its own that is not code (see
+    :func:`_marker_lines`), so one an operator quotes is their text. So a begin
+    sentinel left without its end above a whole block is not taken as the start
+    of the block, and the text after it stays. A begin sentinel with no end
+    sentinel after it (a block cut short or edited by hand) returns ``None``:
+    nothing shows where Apothem's text stops and the operator's starts, so no
+    install, update or uninstall cuts the text after it (see
+    :func:`has_stray_begin`).
     """
-    start = 0
-    while (end := text.find(APOTHEM_BLOCK_END, start)) != -1:
-        begin = text.rfind(APOTHEM_BLOCK_BEGIN, 0, end)
-        if begin != -1:
-            return text[begin : end + len(APOTHEM_BLOCK_END)]
-        start = end + len(APOTHEM_BLOCK_END)
-    return None
+    span = _block_span(text)
+    return None if span is None else text[span[0] : span[1]]
+
+
+def has_stray_begin(text: str) -> bool:
+    """Return True when *text* holds a begin sentinel that starts no whole block.
+
+    A begin sentinel outside code whose next marker line is not an end
+    sentinel is stray: a block that lost its end sentinel, or a marker line the
+    operator wrote (see :func:`_marker_lines`). So is one whose end sentinel
+    reads as code with another marker pair after it (see
+    :func:`uncertain_block`). Install and update keep the text after it, and
+    verify reports the file.
+    """
+    return any(
+        marker.marker == APOTHEM_BLOCK_BEGIN and not marker.paired
+        for marker in _marker_lines(text)
+    )
 
 
 def extract_managed_block(text: str) -> str | None:
     """Return the managed-block region found in *text*, or ``None``.
 
-    A well-formed block (begin sentinel followed by an end sentinel) returns
-    both sentinels and the body between them, exactly as in *text*. An *orphan*
-    begin sentinel with no following end sentinel (a truncated or
-    operator-mangled block) returns the degenerate region from the begin
-    sentinel to end-of-text, so :func:`merge_managed_block` REPLACES it in place
-    rather than appending a second block. Appending on an orphan would leave a
-    two-begin file whose next merge swallows the operator text trapped between
-    the orphan begin and the appended block — so the orphan is reclaimed on the
-    first merge instead (operator prose *before* the orphan begin is always
-    preserved; the caller writes a backup of the prior file). ``None`` only when
-    no begin sentinel is present at all. Removal and install evidence use
-    :func:`complete_managed_block`, which never reads past a missing end
-    sentinel.
+    A whole block (see :func:`complete_managed_block`) is returned as it is.
+    A begin sentinel with no end sentinel after it returns the region from that
+    sentinel to the end of the text, so callers can tell such a marker is there
+    (an uninstall names the file; an install keeps the text). Nothing removes
+    or replaces that region. ``None`` only when no begin sentinel is present.
     """
-    block = complete_managed_block(text)
-    if block is not None:
-        return block
-    begin = text.find(APOTHEM_BLOCK_BEGIN)
-    return None if begin == -1 else text[begin:]
+    span = _block_span(text)
+    if span is not None:
+        return text[span[0] : span[1]]
+    begins = [
+        marker.start
+        for marker in _marker_lines(text)
+        if marker.marker == APOTHEM_BLOCK_BEGIN
+    ]
+    return text[begins[0] :] if begins else None
 
 
-def merge_managed_block(existing: str, body: str) -> str:
+def _split_bom(text: str) -> tuple[str, str]:
+    """Return *text*'s byte order mark at offset 0 (or ``""``) and the rest."""
+    if text.startswith(_BOM):
+        return _BOM, text[len(_BOM) :]
+    return "", text
+
+
+def merge_managed_block(existing: str, body: str, *, recorded: bool = False) -> str:
     """Merge an Apothem managed block carrying *body* into *existing* text.
 
-    Three cases, all preserving operator prose:
+    Four cases, all preserving operator prose:
 
     - *existing* is empty — return the wrapped block alone.
-    - *existing* already carries a managed block — replace that block in
-      place, leaving operator prose before and after it untouched.
-    - *existing* carries no managed block — append the wrapped block after
-      the operator's content, separated by one blank line.
+    - *existing* already carries a whole managed block — replace that block
+      in place, leaving operator prose before and after it untouched.
+    - *existing* carries no whole block, but a BEGIN marker line whose next
+      marker line is an END marker (see :func:`uncertain_block`) — return
+      *existing* unchanged when such a pair already reads as the wrapped block,
+      when *recorded* (an install record lists the file, so the pair may be
+      Apothem's block), or when a pair's END marker reads as code with another
+      pair after it. Otherwise append, as below.
+    - *existing* carries no whole managed block — append the wrapped block
+      after the operator's content, separated by one blank line. A begin
+      sentinel with no end after it is such a case: its text is kept, and the
+      next merge finds the appended block by its own sentinels.
 
     The merge is idempotent: re-merging the same *body* into text that
     already carries the resulting block returns byte-identical output.
 
     A *body* that opens with YAML frontmatter (the rule-file templates whose
     activation keys a harness reads from byte 0) is emitted frontmatter first;
-    see :func:`_merge_frontmatter_block`.
+    see :func:`_merge_frontmatter_block`. A byte order mark at offset 0 of
+    *existing* stays there, in front of everything the merge returns.
+    """
+    bom, rest = _split_bom(existing)
+    return bom + _merge_block(rest, body, recorded=recorded)
+
+
+def _merge_block(existing: str, body: str, *, recorded: bool) -> str:
+    """Merge *body* into *existing*, which has no byte order mark at offset 0.
+
+    See :func:`merge_managed_block`.
     """
     body_parts = split_frontmatter(body)
     if body_parts is not None:
-        return _merge_frontmatter_block(existing, *body_parts)
+        return _merge_frontmatter_block(existing, *body_parts, recorded=recorded)
     wrapped = wrap_managed_block(body)
     if not existing.strip():
         return wrapped
-    current_block = extract_managed_block(existing)
-    if current_block is not None:
-        return existing.replace(current_block, wrapped.rstrip("\n"), 1)
+    span = _block_span(existing)
+    if span is not None:
+        # Spliced by position: a copy of the block the operator quotes in a
+        # code example above it must stay as it is.
+        return existing[: span[0]] + wrapped.rstrip("\n") + existing[span[1] :]
+    if _held_back(existing, wrapped, recorded=recorded):
+        return existing
     separator = "" if existing.endswith("\n") else "\n"
     return f"{existing}{separator}\n{wrapped}"
 
@@ -145,12 +606,14 @@ def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
     never matches.
     """
     parts = split_frontmatter(text)
-    if parts is None or not parts[1].startswith(APOTHEM_BLOCK_BEGIN):
+    if parts is None or parts[1].split("\n", 1)[0].strip() != APOTHEM_BLOCK_BEGIN:
         return None
     return parts
 
 
-def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
+def _merge_frontmatter_block(
+    existing: str, frontmatter: str, body: str, *, recorded: bool
+) -> str:
     """Merge a frontmatter-carrying managed body, keeping the frontmatter first.
 
     Emits ``frontmatter``, then the BEGIN sentinel, *body* and the END sentinel,
@@ -165,13 +628,17 @@ def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
       frontmatter sat inside the block): any existing block is removed and the
       frontmatter-first unit is written at the top, with the operator prose
       moved below it.
+
+    A text with no whole block whose marker pair may be Apothem's block is
+    returned unchanged, as :func:`merge_managed_block` says.
     """
     owned = _owned_frontmatter_split(existing)
     if owned is None and split_frontmatter(existing) is not None:
-        return merge_managed_block(existing, body)
+        return _merge_block(existing, body, recorded=recorded)
     remainder = owned[1] if owned is not None else existing
-    # The install reclaims a block cut short, as merge_managed_block does.
-    operator = remove_managed_block(remainder, reclaim=True)
+    if _held_back(remainder, wrap_managed_block(body), recorded=recorded):
+        return existing
+    operator = _remove_block(remainder)
     head = frontmatter if frontmatter.endswith("\n") else f"{frontmatter}\n"
     emitted = head + wrap_managed_block(body)
     if operator.strip():
@@ -179,7 +646,7 @@ def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
     return emitted
 
 
-def remove_managed_block(existing: str, *, reclaim: bool = False) -> str:
+def remove_managed_block(existing: str) -> str:
     """Return *existing* with the Apothem managed block surgically removed.
 
     The inverse of :func:`merge_managed_block`: strips the managed block (and the
@@ -189,45 +656,45 @@ def remove_managed_block(existing: str, *, reclaim: bool = False) -> str:
     the now-empty file rather than leaving a stub. Returns *existing* unchanged
     when it carries no complete managed block: a begin sentinel with no end
     sentinel after it stays, with any text below it, since nothing shows where
-    the block ended (see :func:`complete_managed_block`). With *reclaim*, the
-    install-side reading applies instead: such a block runs to the end of the
-    text, as :func:`merge_managed_block` replaces it.
+    the block ended (see :func:`complete_managed_block`).
 
     Round-trips byte-for-byte for the canonical case: an operator prose block
     ending in a single newline, merged-then-removed, returns the original.
 
     For the frontmatter-first shape (Apothem's frontmatter directly followed by
-    the block), the frontmatter is removed together with the block. Without
-    *reclaim*, the first whole block goes, and so does each later exact copy of
-    it (a block pasted in twice); any other whole block, such as a marker pair
-    the operator quotes, stays.
+    the block), the frontmatter is removed together with the block. The first
+    whole block goes, and so does each later exact copy of it (a block pasted
+    in twice); any other whole block, such as a marker pair the operator
+    quotes, stays. A byte order mark at offset 0 stays in front of what is
+    left, and goes with the file when nothing else is left.
     """
-    if reclaim:
-        return _remove_block(existing, extract_managed_block)
-    first = complete_managed_block(existing)
-    text = _remove_block(existing, complete_managed_block)
+    bom, rest = _split_bom(existing)
+    first = complete_managed_block(rest)
+    if first is None:
+        return existing
+    text = _remove_block(rest)
     while first is not None and complete_managed_block(text) == first:
-        text = _remove_block(text, complete_managed_block)
-    return text
+        text = _remove_block(text)
+    return bom + text if text else ""
 
 
-def _remove_block(existing: str, find: Callable[[str], str | None]) -> str:
-    """Return *existing* without the block *find* locates in it.
+def _remove_block(existing: str) -> str:
+    """Return *existing* without its first whole block.
 
-    See :func:`remove_managed_block`; *find* is :func:`complete_managed_block`,
-    or :func:`extract_managed_block` with ``reclaim``.
+    Only the first whole block goes (see :func:`complete_managed_block`); the
+    frontmatter merge uses it so a second block, or a marker pair the
+    operator quotes, stays. See :func:`remove_managed_block`.
     """
     owned = _owned_frontmatter_split(existing)
     if owned is not None:
-        rest = _remove_block(owned[1], find)
+        rest = _remove_block(owned[1])
         # No block to take out after Apothem's frontmatter: keep the file whole.
         return existing if rest == owned[1] else rest
-    block = find(existing)
-    if block is None:
+    span = _block_span(existing)
+    if span is None:
         return existing
-    index = existing.find(block)
-    before = existing[:index].rstrip("\n")
-    after = existing[index + len(block) :].lstrip("\n")
+    before = existing[: span[0]].rstrip("\n")
+    after = existing[span[1] :].lstrip("\n")
     if before and after:
         remainder = f"{before}\n\n{after}"
     elif before:

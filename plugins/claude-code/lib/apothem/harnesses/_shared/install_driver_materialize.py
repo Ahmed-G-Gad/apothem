@@ -33,6 +33,7 @@ from .install_driver_backup import (
     _install_lock_path,
     backup_ledger_targets,
 )
+from .install_driver_blocks import stray_begin_install_warnings
 from .install_driver_hookfile import HOOK_FILE_MODE, apply_native_hooks
 from .install_driver_merge import (
     apply_sentinel_merge,
@@ -329,20 +330,22 @@ def run_install(
             run,
         )
     if dry_run:
+        preview = _dry_run_results(
+            rules,
+            root=root,
+            harness_root=harness_root,
+            project_root=project_root,
+            harness_name=harness_name,
+            profile_body=profile_body,
+            profile=profile,
+        )
         return MaterializationRun(
             harness=harness_name,
             dry_run=True,
             results=(
                 *results,
-                *_dry_run_results(
-                    rules,
-                    root=root,
-                    harness_root=harness_root,
-                    project_root=project_root,
-                    harness_name=harness_name,
-                    profile_body=profile_body,
-                    profile=profile,
-                ),
+                *preview,
+                *stray_begin_install_warnings([*results, *preview]),
             ),
         )
     if harness_root is not None:
@@ -414,5 +417,9 @@ def run_install(
     return MaterializationRun(
         harness=harness_name,
         dry_run=False,
-        results=(*results, *kept_link_warnings(results)),
+        results=(
+            *results,
+            *kept_link_warnings(results),
+            *stray_begin_install_warnings(results),
+        ),
     )

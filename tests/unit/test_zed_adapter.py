@@ -286,16 +286,23 @@ def test_capabilities_layered_context_names_flat_rules_file() -> None:
     assert ".rules" in str(capabilities["layered_context_surface"])
 
 
-def test_a_rules_file_whose_block_lost_its_end_still_warns_about_shadowing(
+def test_a_rules_file_whose_block_lost_its_end_is_kept_and_named(
     adapter: ZedAdapter, tmp_path: Path
 ) -> None:
-    # The install reclaims a block cut short, so .rules then holds only
-    # Apothem's block and hides the operator's AGENTS.md: say so.
-    from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN
+    # The install keeps the text after a BEGIN with no END and writes its own
+    # block apart from it. Zed already read that .rules file over AGENTS.md,
+    # so nothing new is hidden; the warning names the file instead.
+    from apothem.lib.harness_materializer import (
+        APOTHEM_BLOCK_BEGIN,
+        APOTHEM_BLOCK_END,
+    )
 
-    (tmp_path / ".rules").write_bytes(f"{APOTHEM_BLOCK_BEGIN}\nold body\n".encode())
+    cut = f"{APOTHEM_BLOCK_BEGIN}\nold body\n".encode()
+    (tmp_path / ".rules").write_bytes(cut)
     (tmp_path / "AGENTS.md").write_text("# Team instructions\n", encoding="utf-8")
 
     run = adapter.install({}, project=tmp_path)
 
-    assert len(_shadowing_warnings(run)) == 1
+    assert _shadowing_warnings(run) == []
+    assert (tmp_path / ".rules").read_bytes().startswith(cut)
+    assert any(APOTHEM_BLOCK_END in w.message for w in run.warnings)

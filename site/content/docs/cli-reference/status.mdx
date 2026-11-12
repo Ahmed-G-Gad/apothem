@@ -32,7 +32,7 @@ The `drift` value is one of:
 | Value | Meaning |
 |---|---|
 | `in-sync` | The installed configuration carries the freshly-projected shared profile verbatim. |
-| `drift` | The harness is installed but its projected profile content no longer matches the current shared profile. Re-run `apothem install` to re-project. |
+| `drift` | The harness is installed but its projected profile content no longer matches the current shared profile, or a file where Apothem keeps a managed block holds a BEGIN marker that starts no whole block. Re-run `apothem install` to re-project; delete such a marker by hand (see [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)). |
 | `absent` | The harness is not installed, so there is nothing to compare. |
 | `needs-project` | A project-scope harness was reported without `--project`, so its target cannot be resolved. Pass `--project PATH` to inspect it. |
 | `unknown` | The default profile could not be loaded, so an installed harness has no baseline to compare against. Fix the profile to restore the drift verdict. |

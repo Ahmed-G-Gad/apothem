@@ -8,6 +8,7 @@ shared helpers that keep adapter materialization behavior consolidated.
 
 from __future__ import annotations
 
+import pytest
 import yaml
 
 from apothem.lib.harness_materializer import (
@@ -18,6 +19,7 @@ from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
     extract_markdown_fields,
+    has_stray_begin,
     merge_managed_block,
     remove_managed_block,
     wrap_managed_block,
@@ -37,21 +39,61 @@ class TestManagedBlockMerge:
         assert extract_managed_block("plain operator prose") is None
 
     def test_extract_returns_orphan_region_on_truncated_block(self):
-        # A begin sentinel with no matching end returns the degenerate region
-        # (begin to end-of-text) so the next merge replaces it, not appends.
+        # A begin sentinel with no matching end returns the region from it to
+        # the end of the text, so callers can tell such a marker is there.
         text = f"{APOTHEM_BLOCK_BEGIN}\nbody"
         assert extract_managed_block(text) == text
 
-    def test_orphan_begin_sentinel_is_idempotent_and_preserves_prior_prose(self):
-        # Operator prose BEFORE a stray (unclosed) begin sentinel survives; the
-        # merge is idempotent and never accumulates a second begin sentinel.
+    def test_a_begin_without_end_keeps_its_text_and_gets_a_fresh_block(self):
+        # Install and update never cut the text after a BEGIN with no END:
+        # it stays, a whole block is added, and the next merge finds that
+        # block by its own sentinels, so merging again changes nothing.
         mangled = f"# My notes\n{APOTHEM_BLOCK_BEGIN}\ntrapped operator text\n"
         once = merge_managed_block(mangled, "body")
         twice = merge_managed_block(once, "body")
-        assert once == twice  # idempotent — no double-begin accumulation
-        assert once.count(APOTHEM_BLOCK_BEGIN) == 1
-        assert "# My notes" in once  # prose before the orphan begin preserved
-        assert "body" in once
+        assert once == twice
+        assert once.startswith(mangled)
+        assert once.count(APOTHEM_BLOCK_BEGIN) == 2
+        assert once.count(APOTHEM_BLOCK_END) == 1
+        assert has_stray_begin(once)
+
+    def test_merge_replaces_the_whole_block_and_keeps_a_stray_begin(self):
+        block = wrap_managed_block("v1").rstrip("\n")
+        text = f"{APOTHEM_BLOCK_BEGIN}\nmine\n\n{block}\n"
+        merged = merge_managed_block(text, "v2")
+        assert merged == text.replace(block, wrap_managed_block("v2").rstrip("\n"))
+
+    def test_a_marker_counts_only_as_a_whole_line_outside_fenced_code(self):
+        block = wrap_managed_block("body")
+        fenced = f"```\n{APOTHEM_BLOCK_BEGIN}\nexample\n{APOTHEM_BLOCK_END}\n```\n"
+        inline = f"Apothem writes `{APOTHEM_BLOCK_BEGIN}` first.\n"
+        assert complete_managed_block(fenced) is None
+        assert not has_stray_begin(fenced)
+        assert not has_stray_begin(inline)
+        assert complete_managed_block(f"{fenced}\n{block}") == block.rstrip("\n")
+        assert (
+            merge_managed_block(inline, "v1") == f"{inline}\n{wrap_managed_block('v1')}"
+        )
+
+    def test_merge_and_remove_leave_a_fenced_copy_above_the_block(self):
+        block = wrap_managed_block("v1")
+        fenced = f"```\n{block}```\n"
+        text = f"{fenced}\n{block}"
+        assert merge_managed_block(text, "v2").startswith(fenced)
+        assert remove_managed_block(text) == fenced
+
+    def test_an_unclosed_fence_does_not_hide_the_block(self):
+        block = wrap_managed_block("v1")
+        text = f"```\nnot closed\n\n{block}"
+        assert complete_managed_block(text) == block.rstrip("\n")
+
+    def test_has_stray_begin(self):
+        block = wrap_managed_block("body")
+        assert not has_stray_begin(f"mine\n\n{block}")
+        assert not has_stray_begin("plain operator prose")
+        assert has_stray_begin(f"{APOTHEM_BLOCK_BEGIN}\nmine\n")
+        assert has_stray_begin(f"{APOTHEM_BLOCK_BEGIN}\nmine\n\n{block}")
+        assert has_stray_begin(f"{block}\n{APOTHEM_BLOCK_BEGIN}\nmine\n")
 
     def test_complete_block_needs_both_sentinels(self):
         block = wrap_managed_block("body").rstrip("\n")
@@ -90,6 +132,17 @@ class TestManagedBlockMerge:
         text = f"pre\n\n{block}\nmid\n\n{block}\npost\n"
         assert remove_managed_block(text) == "pre\n\nmid\n\npost\n"
 
+    def test_frontmatter_merge_keeps_a_second_block_and_a_quoted_pair(self):
+        # Only Apothem's own block is replaced; a marker pair the operator
+        # quotes after it stays.
+        fm = "---\ndescription: x\n---\n"
+        first = merge_managed_block("", fm + "v1")
+        quoted = f"Mine: {APOTHEM_BLOCK_BEGIN} and {APOTHEM_BLOCK_END} mark it.\n"
+        merged = merge_managed_block(first + "\n" + quoted, fm + "v2")
+        assert quoted in merged
+        assert "v2" in merged
+        assert "v1" not in merged
+
     def test_remove_keeps_a_quoted_marker_pair_after_the_block(self):
         # Only Apothem's block and its exact copies go: a marker pair the
         # operator quotes stays, with the text between the markers.
@@ -97,15 +150,14 @@ class TestManagedBlockMerge:
         quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
         assert remove_managed_block(f"{block}\n{quoted}") == quoted
 
-    def test_reclaim_removes_a_block_without_end_as_the_install_does(self):
-        assert remove_managed_block(f"{APOTHEM_BLOCK_BEGIN}\nold\n", reclaim=True) == ""
-
-    def test_install_merge_still_reclaims_a_frontmatter_block_without_end(self):
+    def test_install_merge_keeps_a_frontmatter_block_without_end(self):
         cut = f"---\ndescription: x\n---\n{APOTHEM_BLOCK_BEGIN}\nold body\n"
-        merged = merge_managed_block(cut, "---\ndescription: x\n---\nnew body")
-        assert merged.count(APOTHEM_BLOCK_BEGIN) == 1
-        assert "old body" not in merged
+        body = "---\ndescription: x\n---\nnew body"
+        merged = merge_managed_block(cut, body)
+        assert "old body" in merged
         assert "new body" in merged
+        assert merged.count(APOTHEM_BLOCK_END) == 1
+        assert merge_managed_block(merged, body) == merged
 
     def test_merge_into_empty_returns_wrapped_block(self):
         assert merge_managed_block("", "body") == wrap_managed_block("body")
@@ -176,6 +228,121 @@ class TestManagedBlockMerge:
         assert remove_managed_block(merged) == operator
         # Re-merging the same body is still a no-op.
         assert merge_managed_block(merged, body) == merged
+
+
+_BOM = "﻿"
+_QUOTED = f"{APOTHEM_BLOCK_BEGIN}\nquoted example\n{APOTHEM_BLOCK_END}\n"
+
+
+class TestMarkerReading:
+    """A marker counts only where CommonMark reads it as a line that is not code.
+
+    Each case puts Apothem's real block between operator text: the merge
+    replaces only that block, a second merge changes nothing, and the removal
+    keeps every operator line.
+    """
+
+    @pytest.mark.parametrize(
+        ("before", "after"),
+        [
+            pytest.param(f"````markdown\n```\n{_QUOTED}```\n````\n\n", "", id="nested"),
+            pytest.param(
+                f"```text\n{_QUOTED}```python is how\n```\n\n", "", id="info-closer"
+            ),
+            pytest.param(f"~~~\n{_QUOTED}```\n~~~\n\n", "", id="other-char-closer"),
+            pytest.param(
+                f"- a\n  - b\n\n    ```\n    {APOTHEM_BLOCK_BEGIN}\n    ex\n"
+                f"    {APOTHEM_BLOCK_END}\n    ```\n\n",
+                "",
+                id="fence-in-nested-list",
+            ),
+            pytest.param(
+                f"Example:\n\n    {APOTHEM_BLOCK_BEGIN}\n    ex\n"
+                f"    {APOTHEM_BLOCK_END}\n\n",
+                "",
+                id="indented-code",
+            ),
+            pytest.param(
+                f"Example:\n\n\t{APOTHEM_BLOCK_BEGIN}\n\tex\n\t{APOTHEM_BLOCK_END}\n\n",
+                "",
+                id="tab-indented-code",
+            ),
+            pytest.param(
+                f"```\n{_QUOTED}```\n\n", "\n```\nleft open\n", id="open-fence-below"
+            ),
+            pytest.param("```\nleft open\n\n", "", id="open-fence-above"),
+            pytest.param(
+                "```npm ci``` must pass\n\n", "```y``` too\n", id="inline-code-lines"
+            ),
+            pytest.param(_BOM, "", id="bom"),
+            pytest.param(f"{_BOM}mine\n\n", "\nafter\n", id="bom-and-text"),
+        ],
+    )
+    def test_only_the_real_block_is_replaced_and_removed(
+        self, before: str, after: str
+    ) -> None:
+        text = before + wrap_managed_block("old") + after
+
+        merged = merge_managed_block(text, "new")
+
+        assert merged == before + wrap_managed_block("new") + after
+        assert merge_managed_block(merged, "new") == merged
+        assert not has_stray_begin(text)
+        assert complete_managed_block(text) == wrap_managed_block("old").rstrip("\n")
+        removed = remove_managed_block(text)
+        assert removed.count(APOTHEM_BLOCK_BEGIN) == (before + after).count(
+            APOTHEM_BLOCK_BEGIN
+        )
+        for line in (before + after).splitlines():
+            assert line.strip(_BOM) in removed
+
+    def test_a_bom_stays_in_front_and_goes_with_an_emptied_file(self) -> None:
+        block = wrap_managed_block("body")
+
+        assert merge_managed_block(_BOM, "body") == _BOM + block
+        assert remove_managed_block(_BOM + block) == ""
+        assert remove_managed_block(f"{_BOM}mine\n\n{block}") == f"{_BOM}mine\n"
+        assert has_stray_begin(f"{_BOM}{APOTHEM_BLOCK_BEGIN}\nmine\n")
+        assert extract_managed_block(f"{_BOM}{block}") == block.rstrip("\n")
+
+    def test_a_fence_in_apothem_text_does_not_hide_its_end_marker(self) -> None:
+        # A multi-line profile rule can leave a fence open in Apothem's own
+        # text; an operator line below the block must not close it.
+        body = "## Custom Rules\n\n- Wrap shell in a fence like:\n```bash\nls"
+        text = merge_managed_block("KEEP top\n", body) + "```KEEP inline```\n"
+
+        assert merge_managed_block(text, body) == text
+        assert not has_stray_begin(text)
+        assert remove_managed_block(text) == "KEEP top\n\n```KEEP inline```\n"
+
+    def test_a_fence_in_apothem_text_after_an_unclosed_fence_is_one_block(
+        self,
+    ) -> None:
+        body = "rules\n```sh\nls\n```\nmore"
+        text = merge_managed_block("```\nleft open\n", body)
+
+        assert merge_managed_block(text, body) == text
+        assert text.count(APOTHEM_BLOCK_BEGIN) == 1
+        assert not has_stray_begin(text)
+
+    def test_crlf_and_trailing_whitespace_around_the_markers(self) -> None:
+        text = (
+            f"mine\r\n\r\n{APOTHEM_BLOCK_BEGIN}  \r\nbody\r\n{APOTHEM_BLOCK_END}\t\r\n"
+        )
+
+        assert complete_managed_block(text) is not None
+        assert not has_stray_begin(text)
+        assert APOTHEM_BLOCK_BEGIN not in remove_managed_block(text)
+
+    def test_a_stray_begin_above_a_quoted_pair_and_the_block(self) -> None:
+        # The quoted pair is not paired with the stray marker above it.
+        block = wrap_managed_block("old")
+        text = f"{APOTHEM_BLOCK_BEGIN}\nold text\n\n```\n{_QUOTED}```\n\n{block}"
+
+        merged = merge_managed_block(text, "new")
+
+        assert has_stray_begin(text)
+        assert merged == text.replace(block, wrap_managed_block("new"))
 
 
 class TestExtractMarkdownFields:

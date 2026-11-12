@@ -39,9 +39,19 @@ from typing import Any, Final
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
-from apothem.harnesses._shared.install_driver_blocks import endless_block_warning
+from apothem.harnesses._shared.install_driver_blocks import (
+    ANOTHER_BLOCK,
+    another_block_warning,
+    endless_block_warning,
+    stray_begin_install_warnings,
+    unclear_block_warning,
+)
+from apothem.harnesses._shared.install_driver_ownership import (
+    fold_block,
+    prior_ownership,
+)
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
-from apothem.harnesses._shared.install_driver_types import _path_text
+from apothem.harnesses._shared.install_driver_types import KEPT_REASON, _path_text
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
     PATTERN_KEYS,
@@ -634,16 +644,25 @@ def _error(target: Path, message: str) -> MaterializationResult:
     )
 
 
-def file_text(workspace: Workspace, body: str) -> str:
+def file_text(
+    workspace: Workspace, body: str, *, harness_root: Path | None = None
+) -> str:
     """Return the rules file as the install would leave it in *workspace*.
 
     The managed block merged into what the file holds now, so text the
-    operator keeps beside the block counts against the limits too.
+    operator keeps beside the block counts against the limits too. With
+    *harness_root*, the install record there says whether an install wrote
+    the file (see :func:`fold_block`), as the write itself reads it.
     """
     existing = (
         _raw_text(workspace.rules_file) if workspace.rules_file.is_file() else None
     )
-    return merge_managed_block(existing or "", body)
+    prior = (
+        ()
+        if harness_root is None
+        else prior_ownership(_HARNESS_NAME, harness_root, workspace.rules_file)
+    )
+    return fold_block(existing, body, prior)
 
 
 def refusal(text: str, config: object, workspace: Workspace) -> str | None:
@@ -794,6 +813,11 @@ def _holds_block(path: Path, *, whole: bool = False) -> bool:
     return find(text) is not None
 
 
+#: The next step an install or update gives for a rules file it could not
+#: retire because it holds another block (see :func:`_retire_one`).
+_RETRIED = "the next install, update or uninstall then takes Apothem's block out"
+
+
 def _retire_one(
     path: Path,
     harness_root: Path,
@@ -809,10 +833,15 @@ def _retire_one(
     out is an ``error`` that names the file; either way the uninstall is
     recorded unfinished and the install stays active, so the file is not
     forgotten. A block with no END marker is a plain warning, in a preview
-    too: the file stays as it is, and it no longer counts as Apothem's.
+    too: the file stays as it is, and it no longer counts as Apothem's. A
+    marker pair no rule can place is a warning that leaves the file as it is
+    (see :func:`unclear_block_warning`).
     """
     home = harness_root.parent
     flag = _error if strict else _warning
+    unclear = unclear_block_warning(path, RETIRE, then=None if strict else _RETRIED)
+    if unclear is not None:
+        return [unclear]
     if not _holds_block(path):
         # Nothing of Apothem's is left in it (reading through a link changes
         # nothing), so there is nothing to take out.
@@ -865,7 +894,11 @@ def _retire_one(
         return [named if strict else replace(named, outcome="warning")]
     if result is not None and result.outcome == "warning":
         # Another marked block that is not Apothem's: the file is left as it is.
-        return [result]
+        # An install or update retries it once the operator fixed it; only an
+        # uninstall says to run itself again.
+        if strict or result.detail.get(KEPT_REASON) != ANOTHER_BLOCK:
+            return [result]
+        return [another_block_warning(path, operation=RETIRE, then=_RETRIED)]
     if path.exists() and _holds_block(path, whole=True):
         which, then = (
             (
@@ -941,7 +974,8 @@ def apply(
     body, _ = rules_text(harness_root, profile)
     keep: list[Path] = []
     for workspace in found.found:
-        reason = refusal(file_text(workspace, body), config, workspace)
+        text = file_text(workspace, body, harness_root=harness_root)
+        reason = refusal(text, config, workspace)
         if reason is not None:
             results.append(_warning(workspace.rules_file, reason))
             continue
@@ -958,6 +992,7 @@ def apply(
                 dry_run=dry_run,
             )
         )
+        results.extend(stray_begin_install_warnings(results[-1:]))
     results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
     return tuple(results)
 

@@ -25,8 +25,16 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   passes. Project-scope harnesses are checked when `--project` names their root;
   without it they are reported as `needs_project`.
 - **Verify.** Each installed harness must pass the same check as
-  [`verify`](/docs/cli-reference/verify).
-- **Hook runtime.** For each verified harness, doctor reads the files its latest
+  [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
+  marker with no END marker, the failed check is `harness.stray_begin`, and its
+  fix names each such file and says to delete the marker line: an update alone
+  does not clear it (see
+  [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  A file whose Apothem markers sit inside a code block fails the same check;
+  its fix names the lines of the BEGIN marker and of the code block (see
+  [Apothem's markers sit inside a code block](/docs/install/troubleshooting#apothems-markers-sit-inside-a-code-block)).
+- **Hook runtime.** For each verified harness, and for each one that such a
+  marker fails, doctor reads the files its latest
   install wrote, finds the hook commands Apothem registered there, and starts
   each interpreter and hook script once with a no-op payload (the registered
   arguments plus `--help`, `{}` on stdin, a scratch working directory, and
@@ -48,7 +56,8 @@ and `profile_error` when the profile is invalid) and adds:
   `verify_failed`, `hook_failed`, or `error`; plus `verified` and `hooks`
   (`{"probed": N, "failed": [...]}`, or `null` when no install record exists).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
-  `hook.start_failed`, `ledger.unreadable`, or a `profile.*` code), `status`
+  `harness.stray_begin`, `hook.start_failed`, `ledger.unreadable`, or a
+  `profile.*` code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.
 
 ```json

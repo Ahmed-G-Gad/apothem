@@ -24,7 +24,12 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_blocks import install_may_be_open
+from .install_driver_blocks import (
+    install_may_be_open,
+    stray_begin_at,
+    stray_begin_files,
+    stray_begin_warnings,
+)
 from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
@@ -117,7 +122,11 @@ def verify_install(
     not-installed. *native_config* (the adapter's dynamically-rendered config
     file, which is not a manifest entry) is checked the same way when supplied.
     A user-level entry passes when its folders are in place whichever harness
-    wrote them (see :func:`user_level_entry_ok`). Returns False on the first
+    wrote them (see :func:`user_level_entry_ok`). A file this install keeps a
+    managed block in fails it while it holds a BEGIN marker that starts no
+    whole block, or a marker pair no rule can place (see
+    :func:`stray_begin_files`): install and update keep such a marker, so only
+    the operator can clear it. Returns False on the first
     unsatisfied target.
     """
     rules = install_driver.load_rules(harness_name)
@@ -152,7 +161,9 @@ def verify_install(
                 return False
         elif not target.exists():
             return False
-    return True
+    return not stray_begin_files(
+        harness_name, harness_root=harness_root, project_root=project_root
+    )
 
 
 def detect_install(
@@ -220,8 +231,10 @@ def _profile_anchor_targets(
     manifest (claude_code's ``CLAUDE.md``, the single-file-config adapters'
     ``apothem/rules/00-apothem-profile.md``): the ones the current install
     record lists, so a deleted bolt-on reads as missing. Without a record (an
-    install from before the ledger) a bolt-on counts only when present. An
-    adapter that projects no profile content (GLM) has no anchors.
+    install from before the ledger) a bolt-on counts only when present, and
+    ``CLAUDE.md`` only for claude_code: at a project root it is the project's
+    own file, which no other tool's install writes. An adapter that projects
+    no profile content (GLM) has no anchors.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -245,6 +258,8 @@ def _profile_anchor_targets(
         )
         return targets
     for relative in BOLT_ON_ANCHORS:
+        if relative == "CLAUDE.md" and harness_name != "claude_code":
+            continue
         bolt_on = root / relative
         if bolt_on.is_file():
             targets.append(bolt_on)
@@ -265,7 +280,10 @@ def check_fidelity(
     on-disk anchor's managed block. An anchor whose projected content was edited
     on disk (so the freshly-projected body is no longer a substring) reads as
     ``drifted``; an absent anchor or one with no managed block reads as
-    ``missing``; an exact carry reads as ``faithful``. This is what makes the CLI
+    ``missing``; an exact carry reads as ``faithful``. Line endings do not count:
+    an anchor saved with CRLF or CR endings carries the body as well as one with
+    LF endings, and an update that leaves the block as it is keeps those
+    endings. This is what makes the CLI
     ``verify`` answer "is the profile faithfully installed?" rather than merely
     "does a file exist".
     """
@@ -289,7 +307,11 @@ def check_fidelity(
         block = extract_managed_block(text)
         if block is None:
             results.append(FidelityResult(_path_text(target), "missing"))
-        elif expected and expected in block:
+        elif (
+            expected
+            and expected in block.replace("\r\n", "\n").replace("\r", "\n")
+            and not stray_begin_at(target)
+        ):
             results.append(FidelityResult(_path_text(target), "faithful"))
         else:
             results.append(FidelityResult(_path_text(target), "drifted"))
@@ -420,8 +442,10 @@ def run_uninstall(
         if not isinstance(exc, Exception):
             raise
         # Hand the caller what this pass removed before it stopped, so the CLI
-        # can report the uninstall as partial instead of a bare failure.
-        kept_now = kept_file_warnings(results)
+        # can report the uninstall as partial instead of a bare failure, with
+        # each file it rewrote that still holds a BEGIN marker alone named.
+        done = [*prior_results, *results]
+        kept_now = [*kept_file_warnings(results), *stray_begin_warnings(done)]
         run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]

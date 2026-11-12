@@ -35,6 +35,7 @@ from apothem.lib.harness_materializer import (
     wrap_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.schemas import profile_minimal_path
 
 
 @pytest.fixture
@@ -2337,11 +2338,11 @@ def test_an_install_stays_possibly_open_until_an_uninstall_closes_it(
 
 
 def test_an_uninstall_leaves_a_file_with_another_marked_block(claude: Path) -> None:
-    # A marker pair the user quotes is not Apothem's block: the file stays as it
-    # is, the warning names it, and the install stays open for a retry.
+    # A second marked block that is not a copy of Apothem's may be the user's:
+    # the file stays as it is, the warning names it, and the install stays open.
     ClaudeCodeAdapter().install({})
     anchor = claude / "CLAUDE.md"
-    quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    quoted = f"{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
     anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
     before = anchor.read_bytes()
 
@@ -2374,6 +2375,20 @@ def test_a_rollback_of_a_recorded_install_closes_it(claude: Path) -> None:
     assert orphan is True
 
 
+def test_an_uninstall_keeps_a_fenced_marker_pair_and_finishes(claude: Path) -> None:
+    # Markers inside a fenced code example are the user's text, not a block.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    fenced = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + fenced.encode())
+
+    code, envelope = _uninstall()
+
+    assert code == 0, envelope
+    assert anchor.read_bytes() == fenced.encode()
+    assert _unfinished(claude) is None
+
+
 def _cut_the_end_marker(anchor: Path) -> None:
     """Drop the END marker of *anchor*'s block and add a line of your own below."""
     text = anchor.read_text(encoding="utf-8").replace(APOTHEM_BLOCK_END, "")
@@ -2404,10 +2419,10 @@ def _failure_text(output: str) -> tuple[int, str]:
 
 _FIX_FIRST = (
     "first copy any listed file you edited or added, and fix the 1 file(s) "
-    "whose warnings name an Apothem marker: until a later release, an update "
-    "rewrites a managed block from a BEGIN marker with no END marker to the end "
-    "of the file, cutting your text after it; then run apothem update, then "
-    "apothem uninstall again"
+    "whose warnings name a BEGIN marker with no END after it: an update keeps "
+    "that marker and your text as they are, and apothem verify fails until you "
+    "delete the marker line by hand, keeping your own lines; then run apothem "
+    "update, then apothem uninstall again"
 )
 
 
@@ -2433,7 +2448,8 @@ def test_the_update_step_names_no_marker_when_no_warning_does(
     code, failure = _failure_text(output)
 
     assert code == cli._EXIT_PARTIAL, failure
-    assert "whose warnings name an Apothem marker" not in failure
+    assert "whose warnings name a BEGIN marker" not in failure
+    assert "that hold two different blocks" not in failure
     assert (
         "first copy any listed file you edited or added; then run apothem "
         "update, then apothem uninstall again"
@@ -2443,8 +2459,9 @@ def test_the_update_step_names_no_marker_when_no_warning_does(
 def test_a_claude_md_without_its_end_and_no_record_comes_before_the_update(
     claude: Path,
 ) -> None:
-    # With no install record, the next step is apothem update, which would cut
-    # the text below the BEGIN marker: the warning is the END-less one.
+    # With no install record, the next step is apothem update, which keeps the
+    # BEGIN marker, so the warning is the END-less one and the step says to
+    # delete that marker first.
     ClaudeCodeAdapter().install({})
     anchor = claude / "CLAUDE.md"
     _cut_the_end_marker(anchor)
@@ -2458,7 +2475,7 @@ def test_a_claude_md_without_its_end_and_no_record_comes_before_the_update(
     (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
     assert note["detail"] == {blocks.MARKER_LEFT: "1"}
     assert APOTHEM_BLOCK_END in note["message"]
-    assert "whose warnings name an Apothem marker" in envelope["results"][0]["message"]
+    assert "whose warnings name a BEGIN marker" in envelope["results"][0]["message"]
 
 
 @pytest.mark.parametrize("marker", [True, False])
@@ -2514,3 +2531,238 @@ def test_each_warning_for_a_marker_left_in_a_file_carries_marker_left(
     ]
     assert all(w is not None and w.detail[blocks.MARKER_LEFT] == "1" for w in warnings)
     assert blocks.endless_block_warning(whole, "surgical_uninstall") is None
+
+
+# --- the marker caveat on every path, and the grade of a retry ---------------
+
+_FIX_MARKED_FIRST = (
+    "Before you run apothem update, fix the 1 file(s) whose warnings name a "
+    "BEGIN marker with no END after it"
+)
+
+
+def _stray_above_the_block(anchor: Path) -> bytes:
+    """Put a stray BEGIN line of yours above *anchor*'s block and a tail below.
+
+    Return what the file holds once an uninstall took Apothem's block out.
+    """
+    stray = f"# top\n{APOTHEM_BLOCK_BEGIN}\nmy stray text\n\n"
+    text = anchor.read_bytes().decode("utf-8")
+    anchor.write_bytes(f"{stray}{text}\nmy tail\n".encode())
+    return f"# top\n{APOTHEM_BLOCK_BEGIN}\nmy stray text\n\nmy tail\n".encode()
+
+
+def test_a_stopped_uninstall_names_a_begin_marker_it_left_alone(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The pass took Apothem's block out, then stopped: the BEGIN line above it
+    # is still named, and the update step says to fix that file first.
+    _earlier_release_with_an_edited_agent(claude)
+    anchor = claude / "CLAUDE.md"
+    left = _stray_above_the_block(anchor)
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert anchor.read_bytes() == left
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    assert note["detail"] == {blocks.MARKER_LEFT: "1"}
+    assert _FIX_MARKED_FIRST in str(envelope["results"][0]["message"])
+
+
+def _plain_uninstall(*extra: str) -> tuple[int, str, str]:
+    """Run a plain uninstall; return its exit code, stdout and stderr."""
+    result = CliRunner().invoke(
+        cli.main,
+        ["uninstall", "--harness", "claude-code", "--yes", "--no-color", *extra],
+    )
+    return result.exit_code, result.stdout, result.stderr
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+@pytest.mark.parametrize("marker", [True, False])
+def test_a_kept_files_own_update_step_says_to_fix_a_marked_file_first(
+    claude: Path, marker: bool
+) -> None:
+    # The one kept agent's warning says to run apothem update; with a file a
+    # warning names for a marker, it says to fix that file first, on standard
+    # output and in the JSON warnings, as the failure line does.
+    _earlier_release_with_an_edited_agent(claude)
+    if marker:
+        _cut_the_end_marker(claude / "CLAUDE.md")
+
+    code, envelope = _uninstall()
+    (kept,) = [
+        w
+        for w in envelope["warnings"]
+        if w.get("detail", {}).get("kept_reason") == "no-digests"
+    ]
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert "then run apothem update" in str(kept["message"])
+    assert (_FIX_MARKED_FIRST in str(kept["message"])) is marker
+
+
+def test_the_plain_kept_file_warning_says_to_fix_a_marked_file_first(
+    claude: Path,
+) -> None:
+    _earlier_release_with_an_edited_agent(claude)
+    _cut_the_end_marker(claude / "CLAUDE.md")
+
+    code, stdout, _ = _plain_uninstall()
+
+    assert code == cli._EXIT_PARTIAL, stdout
+    (line,) = [
+        line
+        for line in _flat(stdout).split("Warning: ")
+        if "then run apothem update" in line
+    ]
+    assert _FIX_MARKED_FIRST in line
+
+
+def test_quiet_still_prints_a_warning_that_names_a_marker_left_in_a_file(
+    claude: Path,
+) -> None:
+    # The uninstall finishes, but a later install keeps the BEGIN line and
+    # verify fails until it is gone: --quiet does not hide that.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    anchor.write_bytes(
+        f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n\n".encode() + anchor.read_bytes()
+    )
+
+    code, stdout, stderr = _plain_uninstall("--quiet")
+
+    assert code == 0, stderr
+    assert stdout == ""
+    assert "CLAUDE.md" in stderr
+    assert "still holds a line that reads as the Apothem BEGIN marker" in _flat(stderr)
+
+
+def _another_block(anchor: Path) -> None:
+    """Add a second, different whole block of yours below *anchor*'s block."""
+    quoted = f"{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
+
+
+def test_a_retry_with_only_another_block_left_exits_as_the_first_run_did(
+    claude: Path,
+) -> None:
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    _another_block(anchor)
+    before = anchor.read_bytes()
+
+    first, envelope = _uninstall()
+    retry, again = _uninstall()
+
+    assert (first, envelope["status"]) == (cli._EXIT_PARTIAL, "partial"), envelope
+    assert (retry, again["status"]) == (cli._EXIT_PARTIAL, "partial"), again
+    assert anchor.read_bytes() == before
+    assert _unfinished(claude) is not None
+
+
+def test_the_another_block_advice_names_the_marker_lines_you_added(
+    claude: Path,
+) -> None:
+    # Not "delete it": deleting Apothem's block would leave the retry to take
+    # out the pair you quoted, as the one block left.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    _another_block(anchor)
+
+    _, envelope = _uninstall()
+
+    (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+    failure = str(envelope["results"][0]["message"])
+    for text in (str(note["message"]), failure):
+        assert "two different blocks between Apothem's markers" in text
+        assert "reword the marker lines you added" in text
+        assert "Delete it by hand" not in text
+    assert "then run the uninstall again" in str(note["message"])
+
+
+def test_an_update_leaves_a_quoted_marker_pair_above_the_block_as_it_is(
+    claude: Path,
+) -> None:
+    # An earlier release's install, a marker pair you quote in a fenced code
+    # example above Apothem's block: the uninstall stops after taking Apothem's
+    # block out. The install record still lists CLAUDE.md, so the update it
+    # asks for cannot tell your quoted pair from a block of Apothem's inside
+    # your code block: it changes nothing there (never writing over your
+    # example) and names the file and the code block's line. The next
+    # uninstall finishes and leaves the file as it is.
+    profile = str(profile_minimal_path())
+    code, envelope = _run("install", "--harness", "claude-code", "--profile", profile)
+    assert code == 0, envelope
+    _strip_digests(claude)
+    agent = sorted((claude / "agents").glob("*.md"))[0]
+    agent.write_bytes(b"my own agent\n")
+    anchor = claude / "CLAUDE.md"
+    quoted = (
+        f"# My notes\n\n```\n{APOTHEM_BLOCK_BEGIN}\napothem v2\n"
+        f"{APOTHEM_BLOCK_END}\n```\n\n"
+    ).encode()
+    anchor.write_bytes(quoted + anchor.read_bytes())
+
+    first, _ = _uninstall()
+    before_update = anchor.read_bytes()
+    code, envelope = _run("update", "--harness", "claude-code", "--profile", profile)
+    after_update = anchor.read_bytes()
+    last, _ = _uninstall()
+
+    assert first == cli._EXIT_PARTIAL
+    assert before_update.startswith(quoted.rstrip(b"\n")), before_update[:200]
+    assert code == 0, envelope
+    assert after_update == before_update
+    named = [
+        str(w["message"])
+        for w in envelope["warnings"]
+        if "CLAUDE.md" in str(w["message"])
+        and "code block that opens at line 3" in str(w["message"])
+    ]
+    assert named, envelope["warnings"]
+    assert last == 0
+    assert anchor.read_bytes() == before_update
+
+
+def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
+    claude: Path,
+) -> None:
+    # An update writes over the first whole block, here the pair you quote,
+    # so the advice is to remove your marker lines first; the BEGIN-marker
+    # advice (an update keeps it) is not given for this file.
+    _earlier_release_with_an_edited_agent(claude)
+    anchor = claude / "CLAUDE.md"
+    quoted = (
+        f"# Notes\n\nThe markers look like:\n\n{APOTHEM_BLOCK_BEGIN}\n"
+        f"MY QUOTED EXAMPLE\n{APOTHEM_BLOCK_END}\n\n"
+    )
+    anchor.write_bytes(quoted.encode() + anchor.read_bytes())
+    before = anchor.read_bytes()
+
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert anchor.read_bytes() == before
+    failure = str(envelope["results"][0]["message"])
+    another = (
+        "remove the marker lines you added to the 1 file(s) that hold two "
+        "different blocks, or move them inside a code block: an update writes "
+        "over the first whole block in a file, which can be yours"
+    )
+    assert f"first copy any listed file you edited or added, and {another}" in failure
+    assert "an update keeps that marker" not in failure
+    (kept,) = [
+        w
+        for w in envelope["warnings"]
+        if w.get("detail", {}).get("kept_reason") == "no-digests"
+    ]
+    assert f"Before you run apothem update, {another}" in str(kept["message"])

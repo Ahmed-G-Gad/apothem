@@ -16,9 +16,6 @@ from pathlib import Path
 from string import Template
 from typing import Any, Final
 
-from apothem.lib.harness_materializer import (
-    merge_managed_block,
-)
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.propagation import (
     InstallEntry,
@@ -45,6 +42,7 @@ from .install_driver_ownership import (
     _merge_native_content,
     _operator_json_merge,
     adjust_prior,
+    fold_block,
     prior_ownership,
 )
 from .install_driver_pathsafety import (
@@ -78,7 +76,7 @@ def apply_managed_block_anchor(
     """Fold a profile-projected managed block into an operator-owned anchor.
 
     Reads the existing anchor (if any), merges *body* into the canonical Apothem
-    sentinel block via :func:`merge_managed_block` (operator prose outside the
+    sentinel block via :func:`fold_block` (operator prose outside the
     sentinels preserved verbatim), and writes the result atomically with
     backup-before-replace + no-op detection. This is the reusable projection
     write path every instruction-anchor adapter shares: the profile-projection
@@ -92,7 +90,9 @@ def apply_managed_block_anchor(
         before = _read_existing(target)
     except _LossyRewriteError as refusal:
         return _refused_result("sentinel_merge", target, refusal, {})
-    merged = merge_managed_block(before or "", body)
+    merged = fold_block(
+        before, body, prior_ownership(harness_name, install_root, target)
+    )
     if dry_run:
         return prospective_result(
             target, before=before, after=merged, operation="sentinel_merge"
@@ -468,7 +468,7 @@ def _operator_owned_merge_text(
             losslessly (see :func:`_operator_json_merge`).
     """
     if entry.mode == "sentinel_merge":
-        return MergeOutcome(merge_managed_block(before or "", content), None)
+        return MergeOutcome(fold_block(before, content, prior), None)
     if target.suffix.lower() != ".json":
         # A format Apothem cannot merge into (the GLM provider TOML): write the
         # template only when the file is absent; the operator owns it after.
