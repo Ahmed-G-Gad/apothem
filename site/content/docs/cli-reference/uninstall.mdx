@@ -186,6 +186,19 @@ Apothem install still uses it.
   them, and says so. One tool installed in two projects counts as two installs,
   so uninstalling it from project A keeps the folders while project B still
   uses them. The last uninstall removes them (see the second example below).
+- A folder counts as one folder however your home folder was spelled when
+  each install ran. When your home folder is a link, such as `/home` leading
+  to `/var/home` on Fedora Silverblue or a Windows user profile moved behind a
+  junction, an install made through the link and one made through the folder
+  it leads to use the same folders. Two tools installed that way are two
+  installs, and uninstalling one keeps the folders for the other. One tool
+  installed both ways is one install: uninstalling it, with your home spelled
+  either way, removes what either install wrote and the folders no other
+  install uses. If that uninstall stops before it finishes, both installs stay
+  recorded until you fix what stopped it and run the uninstall again. An
+  uninstall finds an install only with your home spelled one
+  of the ways an install of that tool used; with it spelled any other way, it
+  finds nothing to remove.
 - Only what the install's own record lists is removed. An install made before
   the folders were managed has no such record, so uninstalling it removes
   nothing in your home. Files you added to the folders stay, and so does a

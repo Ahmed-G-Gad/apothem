@@ -62,9 +62,16 @@ rollback keeps it while another install still lists it, and restores or removes
 it only for the last install that uses it. A folder this install found already
 in place (a second tool installed after the first) goes with the last install
 that uses it when an install that has since let go of it created it, so rolling
-back every tool leaves nothing behind. When an install's record that could use
-the folder cannot be read, rollback stops with an error before it changes
-anything and writes no `rollback` record; repair the record and run it again.
+back every tool leaves nothing behind, even when the tool that created the
+folder was installed again in between. A folder Apothem removed and you put
+back yourself, from a backup say, is yours: a rollback keeps it. A rollback
+reverses only the install recorded with your home spelled as it is when the
+rollback runs. When the same tool was also installed with your home spelled
+another way (through a link to it, or in another case on Windows), that install
+still uses the folders and keeps them; a rollback run with your home spelled
+that way reverses it too. When an install's record that could use the folder
+cannot be read, rollback stops with an error before it changes anything and
+writes no `rollback` record; repair the record and run it again.
 
 A rollback also stops before it changes anything, and writes no `rollback`
 record, when a link leads the tool's folder out of your home directory: a

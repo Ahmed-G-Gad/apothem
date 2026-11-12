@@ -23,7 +23,8 @@ from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import InstallEntry, resolve_target
 
 from .install_driver_blocks import endless_block_left
-from .install_driver_outcome import last_uninstall_finished
+from .install_driver_keys import one_install
+from .install_driver_outcome import end_other_spellings, last_uninstall_finished
 from .install_driver_pathsafety import _APOTHEM_SUBTREE, _holds_content
 from .install_driver_written import still_written
 
@@ -87,15 +88,19 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
     :func:`still_written`), a managed block lost its END marker (the retry
     then names that file), or no install is left since a finished uninstall
     (only a second run, which compares each path with what this release
-    writes, can tell); an unreadable ledger reads as no evidence. With nothing
-    Apothem wrote left, the install is closed by an ``uninstall``.
+    writes, can tell); an unreadable ledger reads as no evidence. The install
+    is the one the uninstall removes (see :func:`one_install`), so the files
+    its records under the folder's other spellings list count too. With
+    nothing Apothem wrote left, the install is closed by an ``uninstall``, and
+    so is the install under each of those spellings (see
+    :func:`end_other_spellings`), as a finished uninstall closes them.
     """
     try:
         unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
         if unfinished is None:
             return False
-        active = install_ledger.active_install_records(harness_name, root=root)
-    except install_ledger.LedgerError:
+        active, same = one_install(harness_name, root)
+    except (install_ledger.LedgerError, OSError):
         return False
     if not active and last_uninstall_finished(harness_name, root):
         return True
@@ -114,4 +119,5 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
                 install_id=unfinished.install_id,
             )
         )
+        end_other_spellings(harness_name, same)
     return False

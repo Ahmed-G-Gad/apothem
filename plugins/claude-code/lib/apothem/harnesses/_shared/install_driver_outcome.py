@@ -6,7 +6,8 @@ After the removals, :func:`left_behind` names each path the pass kept (files
 of the operator's, links, a BEGIN marker left alone), :func:`left_unfinished`
 tells whether what stays leaves the uninstall unfinished, and
 :func:`record_uninstall` appends the record that says which: ``uninstall`` or
-``uninstall-incomplete``.
+``uninstall-incomplete``. A finished uninstall also ends the harness's install
+under each other spelling of the same folder (:func:`end_other_spellings`).
 """
 
 from __future__ import annotations
@@ -23,7 +24,12 @@ from .install_driver_pathsafety import _is_link
 from .install_driver_retention import unrecorded_warning
 from .install_driver_sweep import _link_kept as link_kept
 from .install_driver_sweep import kept_link_warnings, links_left_in
-from .install_driver_types import KEPT_REASON, MaterializationResult, _path_text
+from .install_driver_types import (
+    KEPT_REASON,
+    MaterializationResult,
+    _path_text,
+    _result,
+)
 from .install_driver_written import UNPROVEN_REASONS, kept_file_warnings
 
 #: Kept reasons that leave the uninstall unfinished: the ones ``apothem
@@ -148,6 +154,7 @@ def record_uninstall(
     *,
     finished: bool,
     own: list[LedgerRecord],
+    same: Iterable[str] = (),
 ) -> list[MaterializationResult]:
     """Append the uninstall record, ``uninstall-incomplete`` unless *finished*.
 
@@ -157,12 +164,15 @@ def record_uninstall(
     install; a failure to write it raises, so the caller can record the
     uninstall as unfinished instead, unless the root's latest record is a
     finished uninstall all the same (this one, left in after the error, or an
-    earlier pass's): it then stands, with a warning. An unfinished one keeps
-    the install active for a second run; it is written even when the pass
-    raised, unless the root's latest record is this pass's own (the last in
-    *own*); an earlier pass's finished uninstall does not count. A failure to
-    write it returns a warning naming the ledger, so it does not hide the
-    pass's own error. Retention is the caller's to run.
+    earlier pass's): it then stands, with a warning. A finished uninstall that
+    stands also ends the install still in place under each root in *same*, the
+    harness's other spellings of this folder, whose files this pass removed
+    (see :func:`end_other_spellings`). An unfinished one keeps the install
+    active for a second run; it is written even when the pass raised, unless
+    the root's latest record is this pass's own (the last in *own*); an
+    earlier pass's finished uninstall does not count. A failure to write it
+    returns a warning naming the ledger, so it does not hide the pass's own
+    error. Retention is the caller's to run.
     """
     if not finished and own and _is_latest(own[-1]):
         return []
@@ -174,11 +184,52 @@ def record_uninstall(
         install_id=record.install_id if record is not None else None,
     )
     own.append(entry)
+    warnings: list[MaterializationResult] = []
     try:
         install_ledger.append_record(entry)
     except (OSError, install_ledger.LedgerError) as exc:
         latest = _latest_record(harness_name, root)
         if finished and (latest is None or latest.kind != "uninstall"):
             raise
-        return [unrecorded_warning(entry, exc, finished=finished)]
-    return []
+        warnings.append(unrecorded_warning(entry, exc, finished=finished))
+    if finished:
+        warnings += end_other_spellings(harness_name, same)
+    return warnings
+
+
+def end_other_spellings(
+    harness_name: str, same: Iterable[str]
+) -> list[MaterializationResult]:
+    """End the install still in place under each root in *same*.
+
+    The roots are the harness's other spellings of the folder a finished
+    uninstall cleaned; it removed what their records list, so none of them
+    holds the shared folders afterwards. The uninstall stands when one cannot
+    be recorded, whatever the error: that one returns a warning naming the
+    ledger and the spelling whose install stays active instead.
+    """
+    warnings: list[MaterializationResult] = []
+    for other in same:
+        try:
+            current = install_ledger.current_install_record(harness_name, root=other)
+            if current is None:
+                continue
+            install_ledger.append_record(
+                LedgerRecord.create(
+                    harness=harness_name,
+                    root=other,
+                    kind="uninstall",
+                    targets=(),
+                    install_id=current.install_id,
+                )
+            )
+        except Exception as exc:  # the finished uninstall stands either way
+            ledger = install_ledger.ledger_path(harness_name)
+            message = (
+                f"{ledger}: the uninstall removed what the install under {other} "
+                f"wrote, but could not record that install's end ({exc}). Status "
+                "and verify still count it, and it keeps the shared folders, "
+                f"until an uninstall runs for {other}"
+            )
+            warnings.append(_result("warning", "record_uninstall", ledger, message))
+    return warnings
