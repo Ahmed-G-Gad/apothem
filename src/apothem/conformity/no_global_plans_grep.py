@@ -63,6 +63,7 @@ from pathlib import Path
 from typing import Final
 
 from apothem.conformity._grep_base import (
+    GIT_LS_FILES_TIMEOUT_SECONDS,
     finish_root_report,
     has_git_entry,
     parse_root_args,
@@ -152,8 +153,10 @@ class GrepResult:
 def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
-    Raises ``RuntimeError`` when ``git`` is unavailable or root is not
-    a git repository — both are operator errors the caller surfaces.
+    Raises ``RuntimeError`` when ``git`` is unavailable, root is not
+    a git repository, or git runs past :data:`GIT_LS_FILES_TIMEOUT_SECONDS`
+    (the repository's own configuration can make git wait for ever) — all
+    errors the caller surfaces.
     """
     try:
         completed = subprocess.run(  # noqa: S603 — trusted invocation: literal argv against git
@@ -162,9 +165,15 @@ def _git_ls_files(root: Path) -> list[str]:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
         )
     except FileNotFoundError as exc:
         raise RuntimeError("git executable not found on PATH") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"git ls-files did not finish within {GIT_LS_FILES_TIMEOUT_SECONDS} "
+            f"seconds under {root!s}"
+        ) from exc
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or "").strip()
         raise RuntimeError(
