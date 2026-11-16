@@ -20,16 +20,23 @@ whose record is kept under another root than the one the merge reads would
 show up here as a second block. A stray BEGIN marker whose END marker is
 quoted in code above the real block, and an anchor saved with CR line endings,
 are run through the CLI the same way.
+
+The uninstall's text for such a stray BEGIN marker is followed too, with and
+without an install record: you delete Apothem's block by hand, and each BEGIN
+marker the text says may be yours, and a later install or update keeps every
+line of yours.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 from apothem.cli import main
@@ -263,3 +270,167 @@ def test_an_anchor_saved_with_cr_endings_shows_no_drift(
 
     assert code == 0, output
     assert again == 0, again_output
+
+
+# --- following the uninstall's text ---------------------------------------------
+
+B = APOTHEM_BLOCK_BEGIN
+E = APOTHEM_BLOCK_END
+
+#: A BEGIN marker of yours whose END marker you quote in a code block (lines
+#: 1 to 4), above Apothem's block; every line of yours starts with "OP ".
+_STRAY = f"{B}\nOP text A\n```\n{E}\n```\nOP text B\n\n"
+#: The same under another BEGIN marker of yours, one that starts no pair.
+_TWO_BEGINS = f"{B}\nOP stray\n\n{_STRAY}"
+#: A rule whose code block Apothem's block never closes, so its END marker
+#: reads as code too.
+_OPEN_RULE = "Run the tests with:\n```bash"
+
+
+def _block_file(harness_id: str) -> Path:
+    """Return the one file the install keeps Apothem's block in.
+
+    For Open-Claw it is the rules file in the workspace, apothem/AGENTS.md.
+    """
+    anchors = _recorded_anchors(harness_id)
+    if harness_id == "open-claw":
+        anchors = [a for a in anchors if a.parts[-2:] == ("apothem", "AGENTS.md")]
+    [anchor] = anchors
+    return anchor
+
+
+def _op_lines(anchor: Path) -> list[str]:
+    """Return the lines of yours in *anchor*, in order."""
+    return [
+        line
+        for line in anchor.read_bytes().decode("utf-8").split("\n")
+        if line.startswith("OP ")
+    ]
+
+
+def _unclear_text(payload: dict[str, Any], anchor: Path) -> str:
+    """Return the one warning that names *anchor* as a file Apothem cannot read."""
+    [message] = [
+        str(warning["message"])
+        for warning in payload["warnings"]
+        if warning.get("detail", {}).get("kept_reason") == "unclear-block"
+        and Path(str(warning["path"])) == anchor
+    ]
+    return message
+
+
+def _follow(anchor: Path, message: str) -> None:
+    """Edit *anchor* as you would after reading the uninstall's *message*.
+
+    Apothem's block is the last marker pair the text lists, so delete it, and
+    each BEGIN marker the text says may be yours or starts no pair: here they
+    are all yours.
+    """
+    spans = re.findall(r"lines (\d+) to (\d+)", message.split("If one of these")[-1])
+    first, last = (int(line) for line in spans[-1])
+    yours = re.findall(r"If the BEGIN marker at line (\d+) is yours", message)
+    lone = re.search(
+        r"BEGIN markers? at lines? ([\d, and]+?) starts? no marker", message
+    )
+    lone_lines = re.findall(r"\d+", lone.group(1)) if lone else []
+    drop = {*range(first, last + 1), *map(int, yours), *map(int, lone_lines)}
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    kept = [line for number, line in enumerate(lines, 1) if number not in drop]
+    anchor.write_bytes("\n".join(kept).encode("utf-8"))
+
+
+def _profile_with(tmp_path: Path, rules: list[str]) -> str:
+    """Write the minimal profile with *rules* added; return its path."""
+    data = yaml.safe_load(Path(_PROFILE).read_text(encoding="utf-8"))
+    data["rules"] = rules
+    path = tmp_path / "profile-with-rules.yaml"
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    return str(path)
+
+
+def _assert_your_lines_kept(box: _Sandbox, anchor: Path, mine: list[str]) -> None:
+    """Your lines are all there, with one BEGIN marker (Apothem's); verify passes."""
+    verify, verify_output = box.invoke("verify", "--json")
+    assert _op_lines(anchor) == mine
+    assert anchor.read_bytes().count(B.encode()) == 1
+    assert verify == 0, verify_output
+
+
+@pytest.mark.parametrize(
+    ("harness_id", "above"),
+    [
+        pytest.param("codex", _STRAY, id="codex"),
+        pytest.param("claude-code", _STRAY, id="claude-code"),
+        pytest.param("open-claw", _STRAY, id="open-claw"),
+        pytest.param("codex", _TWO_BEGINS, id="codex-two-begins"),
+    ],
+)
+def test_following_the_uninstall_text_keeps_your_lines(
+    harness_id: str, above: str, sandbox_factory: SandboxFactory
+) -> None:
+    """regress-1, messages-1, diff-1, diff-2: the later install then cuts nothing.
+
+    Deleting only Apothem's block would leave your BEGIN marker and the END
+    marker you quote as a whole block, which the install replaces.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _block_file(harness_id)
+    anchor.write_bytes(above.encode() + anchor.read_bytes())
+    mine = _op_lines(anchor)
+
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    assert code == 0, output
+    _follow(anchor, _unclear_text(json.loads(output), anchor))
+    box.install()
+
+    _assert_your_lines_kept(box, anchor, mine)
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_following_the_uninstall_text_without_a_record_keeps_your_lines(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """messages-2: the uninstall stays unfinished; the update it names cuts nothing."""
+    box = sandbox_factory(harness_id)
+    box.install()
+    [anchor] = _recorded_anchors(harness_id)
+    anchor.write_bytes(_STRAY.encode() + anchor.read_bytes())
+    mine = _op_lines(anchor)
+    install_ledger.ledger_path(package_key_for_public_id(harness_id)).unlink()
+
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    assert code == 2, output
+    _follow(anchor, _unclear_text(json.loads(output), anchor))
+    box.run("update", "--profile", _PROFILE)
+
+    _assert_your_lines_kept(box, anchor, mine)
+
+
+def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_lines(
+    sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """oracle-1: Apothem's END marker reads as code too, so its pair is named apart.
+
+    The install text's fix for that pair says to delete your BEGIN marker at
+    line 1 as well, and the uninstall text says so in a step of its own.
+    """
+    box = sandbox_factory("codex")
+    profile = _profile_with(tmp_path, [_OPEN_RULE])
+    box.run("install", "--profile", profile)
+    [anchor] = _recorded_anchors("codex")
+    anchor.write_bytes(_STRAY.encode() + anchor.read_bytes())
+    mine = _op_lines(anchor)
+
+    again = box.run("install", "--profile", profile)
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    assert code == 0, output
+    _follow(anchor, _unclear_text(json.loads(output), anchor))
+    box.run("install", "--profile", profile)
+
+    _assert_your_lines_kept(box, anchor, mine)
+    assert [
+        warning
+        for warning in again["warnings"]
+        if "and delete or change the BEGIN marker at line 1" in str(warning["message"])
+    ], again["warnings"]

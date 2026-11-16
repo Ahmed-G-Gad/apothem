@@ -19,8 +19,12 @@ the library functions an install, update and uninstall use:
   CommonMark reads them, and so do the list items CommonMark does not open
   (one that would interrupt a paragraph, a setext underline, an empty item
   past its first blank line);
+* those rules hold only for a line that stays in the list item holding the
+  paragraph, so an item opens after a line of the item's text that goes on
+  at the left margin, and after a block quote's line;
 * :func:`uncertain_pairs` names every marker pair no rule can place, with
-  where each of its marker lines reads.
+  where each of its marker lines reads, and reads nothing for code in a text
+  with no marker pair.
 """
 
 from __future__ import annotations
@@ -264,7 +268,12 @@ def test_past_eight_fences_left_open_no_block_is_certain(
 
 
 def test_a_block_past_the_cap_is_named_inside_the_fence_left_open() -> None:
-    """oracle-4, docs-4 (a): the last reading puts it in the ninth code block."""
+    """oracle-4, docs-4 (a): the last reading puts it in the ninth code block.
+
+    A test of how :func:`uncertain_block` and :func:`uncertain_pairs` name a
+    pair past the cap. The "still found" tests below (four texts, and the
+    frontmatter one) cover the reading past the cap itself (tests-8).
+    """
     text = "```a\n" * 9 + OLD
 
     assert uncertain_block(text) == (10, 9)
@@ -465,6 +474,144 @@ def test_after_a_heading_or_an_item_a_new_item_still_opens(lead: str) -> None:
     assert complete_managed_block(text) == f"{B}\n    my text\n    {E}"
 
 
+@pytest.mark.parametrize("bullet", ["*", "+", "1.", "1)"])
+def test_an_empty_item_right_under_a_paragraph_line_opens_nothing(bullet: str) -> None:
+    """tests-1: an empty item cannot interrupt a paragraph, so the quote is text."""
+    quote = f"    {B}\n    quoted\n    {E}\n"
+    text = f"Para\n{bullet}\n{quote}\n{OLD}"
+
+    _quote_stays(text, quote)
+
+
+def test_a_setext_underline_leaves_the_quote_under_it_in_indented_code() -> None:
+    """regress-3, tests-2: the underline ends the paragraph, so this is code."""
+    text = f"Para\n-\n    {B}\n    quoted\n    {E}\n"
+
+    assert _pairs(text) == [(3, "INDENTED", None, 5, "INDENTED", None, False)]
+
+
+def test_an_item_opens_after_a_setext_underline() -> None:
+    """regress-3, tests-2: '2. x' under the heading holds the pair, outside code."""
+    text = f"Para\n-\n2. x\n    {B}\n    quoted\n    {E}\n\n{B}\nreal\n{E}\n"
+
+    assert complete_managed_block(text) == f"{B}\n    quoted\n    {E}"
+
+
+def test_only_the_first_bullet_on_a_line_is_held_to_the_interrupt_rules() -> None:
+    """tests-5: '2.' after '- ' opens a list in the item, not under the paragraph."""
+    text = f"Para\n- 2. step\n\n      {B}\n      quoted\n      {E}\n\n{OLD}"
+
+    assert complete_managed_block(text) == f"{B}\n      quoted\n      {E}"
+
+
+def test_an_empty_item_whose_text_starts_on_the_next_line_stays_open() -> None:
+    """tests-6: once the item holds text, a blank line does not end it."""
+    text = f"-\n  text\n\n    {B}\n    quoted\n    {E}\n\n{OLD}"
+
+    assert complete_managed_block(text) == f"{B}\n    quoted\n    {E}"
+
+
+# --- a line left of the list item that holds the paragraph --------------------
+
+
+def test_the_quote_in_the_item_after_a_wrapped_one_stays() -> None:
+    """cmark-1: '2.' after a line that goes on at the margin opens an item.
+
+    So its fence ends with the item, the quoted pair is code in it, and the
+    first install appends its block after the example.
+    """
+    text = (
+        "# Agent notes\n\n1. Install Apothem and make sure the apothem command is on "
+        "your PATH before\nyou run the next step.\n2. Apothem writes its rules "
+        f"between two marker lines, like this:\n   ```md\n   {B}\n   (generated "
+        f"rules)\n   {E}\n\nThen run apothem install.\n"
+    )
+
+    assert merge_managed_block(text, "new body") == _appended(text)
+    assert merge_managed_block(text, "new body", recorded=True) == text
+    assert remove_managed_block(text) == text
+    assert _pairs(text) == [(7, "FENCE", 6, 9, "FENCE", 6, False)]
+
+
+def test_a_block_below_the_item_after_a_wrapped_one_is_found() -> None:
+    """cmark-2: the fence of item 2 ends with the item, so the block is outside it."""
+    text = (
+        "# Setup\n\n1. Install the tool and make sure it is on your PATH before you "
+        "go\non to the next step.\n2. Build it:\n   ```sh\n   make\n\n"
+        f"{OLD}\n## Debugging\n\n```sh\napothem doctor\n```\n"
+    )
+
+    for recorded in (False, True):
+        merged = merge_managed_block(text, "new body", recorded=recorded)
+        assert merged == text.replace(OLD, NEW), recorded
+    assert remove_managed_block(text) == text.replace(f"\n{OLD}", "")
+    assert uncertain_block(text) is None
+
+
+@pytest.mark.parametrize(
+    ("first", "item"),
+    [("-", "-"), ("*", "*"), ("1.", "2."), ("1)", "1)"), ("1.", "2. Build it:")],
+)
+def test_after_a_line_at_the_margin_the_next_item_opens(first: str, item: str) -> None:
+    """cmark-2: an empty item and one not numbered 1 open there too.
+
+    The line at the margin goes on the paragraph of the first item, inside
+    that item, so the next line is no line under a paragraph.
+    """
+    pad = " " * (len(item.split(" ")[0]) + 1)
+    text = (
+        f"{first} Install the tool before you go\non to the next step.\n{item}\n"
+        f"{pad}```sh\n{pad}make\n\n{OLD}\nMore:\n\n```sh\nls\n```\n"
+    )
+
+    for recorded in (False, True):
+        merged = merge_managed_block(text, "new body", recorded=recorded)
+        assert merged == text.replace(OLD, NEW), recorded
+    assert remove_managed_block(text) == text.replace(f"\n{OLD}", "")
+
+
+def test_an_item_in_the_wrapped_item_s_column_still_goes_on_its_paragraph() -> None:
+    """'   2. step' stays in item 1, under its paragraph, so it opens no item."""
+    quote = f"       {B}\n       quoted\n       {E}\n"
+    text = (
+        "1. Install the tool before you go\non to the next step.\n   2. step\n\n"
+        f"{quote}\n{OLD}"
+    )
+
+    _quote_stays(text, quote)
+
+
+@pytest.mark.parametrize(
+    "lead",
+    [
+        pytest.param("> Note: run the setup first.\n", id="block-quote"),
+        pytest.param("Setup\n- Install the tool first.\n", id="item-under-paragraph"),
+    ],
+)
+def test_an_item_after_a_line_outside_the_paragraph_s_item_opens(lead: str) -> None:
+    """cmark-1: no paragraph goes on into '2. Example:', so its fence holds the quote.
+
+    A block quote's paragraph takes no line without its ">", and the item
+    that interrupted 'Setup' holds the paragraph after its bullet.
+    """
+    text = (
+        f"{lead}2. Example:\n   ```md\n   {B}\n   (generated rules)\n   {E}\n\n"
+        "Then run apothem install.\n"
+    )
+
+    assert merge_managed_block(text, "new body") == _appended(text)
+    assert merge_managed_block(text, "new body", recorded=True) == text
+    assert remove_managed_block(text) == text
+
+
+def test_a_fence_ends_the_paragraph_even_when_its_item_ends_the_fence() -> None:
+    """The line after such a fence starts a paragraph, and '2. Then:' goes on it."""
+    quote = f"    {B}\n    quoted\n    {E}\n"
+    text = f"- Build it:\n  ```sh\n  make\nThat builds it.\n2. Then:\n{quote}\n{OLD}"
+
+    _quote_stays(text, quote)
+
+
 # --- every pair no rule can place, with where it reads ------------------------
 
 
@@ -554,6 +701,25 @@ def test_a_text_with_a_whole_block_has_no_uncertain_pair() -> None:
     text = f"{_EXAMPLE}{OLD}"
 
     assert harness_materializer.uncertain_pairs(text) == []
+
+
+def test_a_text_with_no_marker_pair_is_not_read_for_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """diff-3: an install check reads every anchor; one with no pair costs nothing."""
+    readings: list[str] = []
+    read = harness_materializer._read
+
+    def counted(text: str) -> object:
+        readings.append(text)
+        return read(text)
+
+    monkeypatch.setattr(harness_materializer, "_read", counted)
+    text = "```bash\nnpm ci\n" * 9 + f"{B}\nold rules, no END marker\n"
+
+    assert harness_materializer.uncertain_pairs(text) == []
+    assert uncertain_block(text) is None
+    assert readings == []
 
 
 # --- the frontmatter merge path ----------------------------------------------

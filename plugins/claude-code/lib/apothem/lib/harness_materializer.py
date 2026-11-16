@@ -82,6 +82,9 @@ _ATX_HEADING: Final = re.compile(r"#{1,6}(?:[ \t]|\Z)")
 _CODE_INDENT: Final = 4
 #: The widest gap after a list bullet that still sets the item's content column.
 _MAX_ITEM_GAP: Final = 4
+#: The paragraph column of a block quote's paragraph (see
+#: :class:`_MarkdownState`): no line without the quote's ">" stays in it.
+_QUOTED: Final = 1 << 30
 #: How many times a text is read again with one more fence left open to its
 #: end taken as text (see :func:`_marker_lines`), so the reading stays linear.
 #: Past that, the last reading stands.
@@ -202,6 +205,12 @@ class _MarkdownState:
     whether a line is code. *ignored* holds the lines of fences found to stay
     open to the end of the text; they open nothing. ``empty_item`` is True
     while the innermost list item has nothing after its bullet yet.
+    ``para_column`` is the content column of the list item that holds the open
+    paragraph (0 outside a list, :data:`_QUOTED` in a block quote). Only a line
+    indented that far stays in that item, so only such a line is held to the
+    rules for a line under a paragraph; a line left of it goes on the
+    paragraph lazily (CommonMark), and the column stays for the lines after
+    it.
     """
 
     lines: list[_Line]
@@ -211,6 +220,7 @@ class _MarkdownState:
     items: list[int] = field(default_factory=list)
     can_interrupt: bool = True
     empty_item: bool = False
+    para_column: int = 0
 
     def reset(self) -> None:
         """Start afresh after an Apothem block, which ends every open construct."""
@@ -219,6 +229,7 @@ class _MarkdownState:
         self.items.clear()
         self.can_interrupt = True
         self.empty_item = False
+        self.para_column = 0
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
@@ -234,13 +245,14 @@ class _MarkdownState:
             if columns >= self.code_column + _CODE_INDENT:
                 return _Kind.CODE
             self.code_column = None
-        open_items = len(self.items)
         while self.items and columns < self.items[-1]:
             self.items.pop()
-        # A line that leaves a list item may go on its paragraph lazily in
-        # CommonMark; this model does not follow that, so only a line that
-        # stays in the innermost item counts as going on the paragraph.
-        paragraph = not self.can_interrupt and len(self.items) == open_items
+        # The rules for a line under a paragraph hold only for a line that
+        # stays in the list item holding the paragraph (CommonMark): a line
+        # left of that item's text goes on it lazily, outside the item.
+        open_paragraph = not self.can_interrupt
+        paragraph = open_paragraph and columns >= self.para_column
+        kept = len(self.items)
         base = self.items[-1] if self.items else 0
         if columns - base >= _CODE_INDENT:
             # Indented code, or a paragraph's continuation line: neither is a
@@ -262,11 +274,23 @@ class _MarkdownState:
         if opener is not None and index not in self.ignored:
             column = self.items[-1] if self.items else 0
             self.fence = _Fence(opener[0], opener[1], column, index)
+            # A fence ends the paragraph: the line after the code block
+            # starts a new one, even when its list item ended the fence.
+            self.can_interrupt = True
             return _Kind.CODE
         # A thematic break or a heading ends a paragraph as a blank line does.
         self.can_interrupt = not rest.strip() or bool(
             _THEMATIC_BREAK.match(rest) or _ATX_HEADING.match(rest)
         )
+        if self.can_interrupt:
+            return _Kind.TEXT
+        if rest.startswith(">"):
+            # A block quote: no later line without its ">" goes on its paragraph.
+            self.para_column = _QUOTED
+        elif not open_paragraph or len(self.items) > kept:
+            # A paragraph starts on this line, in the innermost list item; a
+            # line that goes on one keeps its column.
+            self.para_column = self.items[-1] if self.items else 0
         return _Kind.TEXT
 
     def _blank(self) -> None:
@@ -472,8 +496,13 @@ def _marker_lines(text: str) -> list[_Marker]:
       A thematic break such as ``* * *`` or ``- - -`` is not a list item.
       Under a paragraph line, an empty item, or an ordered one not numbered
       1, opens nothing (the line goes on the paragraph), and a line of only
-      ``-`` or only ``=`` is a setext underline that ends the paragraph. An
-      item with nothing after its bullet ends at the next blank line.
+      ``-`` or only ``=`` is a setext underline that ends the paragraph.
+      Those rules hold only for a line that stays in the list item holding
+      the paragraph: a line left of that item's text, such as one after a
+      line of the item's text that goes on at the left margin, or one after
+      a block quote's line, is held to none of them. A fence ends a
+      paragraph. An item with nothing after its bullet ends at the next
+      blank line.
     - A line indented four or more columns past the content column of the list
       item it sits in (or past the margin outside a list), after a blank line,
       a heading or break, or at the start, is indented code, as are the lines
@@ -576,6 +605,10 @@ def uncertain_pairs(text: str) -> list[UncertainPair]:
     pair the operator quotes in code. An install that recorded a block in the
     file leaves it as it is (see :func:`merge_managed_block`).
     """
+    if not _candidate_pairs(_split_lines(text)):
+        # No pair to place, so no reading for code: an install check reads
+        # every anchor, most of which hold no marker line at all.
+        return []
     _, pairs, scan = _read(text)
     if any(marker.paired for marker in scan.markers):
         return []
@@ -584,6 +617,29 @@ def uncertain_pairs(text: str) -> list[UncertainPair]:
             _marker_line(begin, scan), _marker_line(end, scan), begin == scan.hidden
         )
         for begin, end in sorted(pairs.items())
+    ]
+
+
+def lone_begins(text: str) -> list[int]:
+    """Return the 1-based lines of the BEGIN markers outside code that start no pair.
+
+    Such a marker's next marker line is not an END marker (see
+    :func:`_candidate_pairs`): what is left of a block that lost its END
+    marker, or a marker line of the operator's. Once the marker pairs after
+    it are fixed, it can pair with an END marker below it. Empty when *text*
+    holds a whole block: a BEGIN marker beside one is the stray marker
+    :func:`has_stray_begin` reports.
+    """
+    lines, pairs, scan = _read(text)
+    if any(marker.paired for marker in scan.markers):
+        return []
+    outside = {m.start for m in scan.markers if m.marker == APOTHEM_BLOCK_BEGIN}
+    return [
+        index + 1
+        for index, line in enumerate(lines)
+        if index not in pairs
+        and line.text.strip() == APOTHEM_BLOCK_BEGIN
+        and line.start + line.text.index(APOTHEM_BLOCK_BEGIN) in outside
     ]
 
 

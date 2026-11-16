@@ -230,7 +230,7 @@ class TestManagedBlockMerge:
         assert merge_managed_block(merged, body) == merged
 
 
-_BOM = "﻿"
+_BOM = "\ufeff"
 _QUOTED = f"{APOTHEM_BLOCK_BEGIN}\nquoted example\n{APOTHEM_BLOCK_END}\n"
 
 

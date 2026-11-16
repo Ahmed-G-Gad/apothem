@@ -33,6 +33,7 @@ from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
     has_stray_begin,
+    lone_begins,
     remove_managed_block,
     uncertain_block,
     uncertain_pairs,
@@ -106,6 +107,19 @@ def unclear_pairs_at(path: Path) -> list[UncertainPair]:
     except OSError:
         return []
     return uncertain_pairs(text)
+
+
+def lone_begins_at(path: Path) -> list[int]:
+    """Return the lines of *path*'s BEGIN markers outside code that start no pair.
+
+    See :func:`apothem.lib.harness_materializer.lone_begins`. Empty when the
+    file cannot be read.
+    """
+    try:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    return lone_begins(text)
 
 
 #: What the next update does with a marker pair once both of its lines read
@@ -191,32 +205,86 @@ def _split_fix(pair: UncertainPair, later: UncertainPair | None, outcome: str) -
     return f"{yours}. If lines {begin.line} to {end.line} are Apothem's block, {ours}."
 
 
-def _pair_fix(pair: UncertainPair, later: UncertainPair | None, outcome: str) -> str:
+def _pair_fix(
+    pair: UncertainPair,
+    later: UncertainPair | None,
+    outcome: str,
+    split: UncertainPair | None = None,
+) -> str:
     """Return how to fix *pair* by hand, each choice with what follows from it.
 
     *outcome* (:data:`REPLACES` or :data:`TAKES_OUT`) is what the next run
     does once both marker lines of a pair read outside code. A pair whose
     lines both read outside code already needs no fix of its own: a pair
-    before it is what holds it back.
+    before it is what holds it back. *split* is the pair rule 3 fired on,
+    before *pair*: if *pair* is Apothem's block, that pair's BEGIN marker is
+    the operator's, and it must go too, or it pairs with the END marker in
+    code once *pair* is fixed.
     """
     if pair.split:
         return _split_fix(pair, later, outcome)
     if _outside(pair):
         return ""
     begin, end = pair.begin, pair.end
-    done = outcome.format(lines="those lines")
+    also = (
+        ""
+        if split is None
+        else f", and delete or change the BEGIN marker at line {split.begin.line}"
+    )
     if begin.place is end.place and begin.fence == end.fence:
         step = (
             f"close that code block above line {begin.line}"
             if begin.place is MarkerPlace.FENCE
             else f"start lines {begin.line} and {end.line} at the left margin"
         )
-        ours = f"{step}: {done}"
+        ours = f"{step}{also}: {outcome.format(lines='those lines')}"
     else:
-        ours = "delete them by hand, keeping your own text"
+        ours = f"delete them by hand, keeping your own text{also}"
     return (
         f"If lines {begin.line} to {end.line} are Apothem's block, {ours}. If they "
         "are text of yours, change or delete those two marker lines."
+    )
+
+
+def _lone_text(lone: Sequence[int]) -> str:
+    """Return what to do with the BEGIN markers on lines *lone*, which start no pair.
+
+    Left in place, such a marker can pair with an END marker below it once
+    the pairs between are fixed, and a later run then replaces the lines
+    between them.
+    """
+    if not lone:
+        return ""
+    if len(lone) == 1:
+        return (
+            f"The BEGIN marker at line {lone[0]} starts no marker pair: its END "
+            "marker is gone, or the marker is yours. Delete or change it by hand, "
+            "with any old Apothem text below it, and keep your own text. If you "
+            "leave it, a later install or update can pair it with an END marker "
+            "below it and replace the lines between them."
+        )
+    listed = ", ".join(str(line) for line in lone[:-1])
+    return (
+        f"The BEGIN markers at lines {listed} and {lone[-1]} start no marker pair: "
+        "their END markers are gone, or the markers are yours. Delete or change "
+        "them by hand, with any old Apothem text below them, and keep your own "
+        "text. If you leave one, a later install or update can pair it with an "
+        "END marker below it and replace the lines between them."
+    )
+
+
+def _begin_first(pair: UncertainPair) -> str:
+    """Return the step an uninstall gives for the pair rule 3 fired on.
+
+    Once no pair comes after it, its BEGIN marker and the END marker in code
+    read as a whole block, which a later install or update replaces.
+    """
+    begin, end = pair.begin.line, pair.end.line
+    return (
+        f"If the BEGIN marker at line {begin} is yours, delete or change it. If "
+        "you leave it and no marker pair comes after it any more, a later "
+        f"install or update reads lines {begin} to {end} as Apothem's block and "
+        "replaces them."
     )
 
 
@@ -241,6 +309,7 @@ def unclear_block_report(
     *,
     outcome: str | None = REPLACES,
     left: bool = True,
+    lone: Sequence[int] = (),
 ) -> str:
     """Return what is wrong with *path*, whose marker pairs are *pairs*, and the fix.
 
@@ -249,23 +318,39 @@ def unclear_block_report(
     those lines are Apothem's block, what makes both read outside code, and
     *outcome* says what the next run then does; if they are text of the
     operator's, change or delete the marker lines. A pair after the one rule 3
-    fired on, both of whose lines read outside code, is named with that pair.
-    Without *outcome* (an uninstall), the fix is to delete Apothem's block by
-    hand. With *left*, the text says Apothem left the file as it is.
+    fired on, both of whose lines read outside code, is named with that pair;
+    any other pair after it is Apothem's block only if that pair's BEGIN
+    marker is the operator's, so its fix says to delete or change that marker
+    too. Without *outcome* (an uninstall), the fix is to delete Apothem's
+    block by hand, after a step for the BEGIN marker of the pair rule 3 fired
+    on: left in place once no pair follows it, it pairs with the END marker in
+    code. With *left*, the text says Apothem left the file as it is. *lone*
+    names the BEGIN markers outside code that start no pair (see
+    :func:`lone_begins_at`): each must go too, or it can pair with an END
+    marker once the pairs are fixed.
     """
     head = (
         f"{path}: Apothem cannot tell whether the marker lines in this file mark "
         "its block or text of yours"
     )
     parts = [f"{head}, so it left the file as it is." if left else f"{head}."]
+    parts.append(_lone_text(lone))
+    split = next((pair for pair in pairs if pair.split), None)
     for index, pair in enumerate(pairs):
         if index and pairs[index - 1].split and _outside(pair):
             continue
         later = pairs[index + 1] if index + 1 < len(pairs) else None
         parts.append(_pair_text(pair, later))
         if outcome is not None:
-            parts.append(_pair_fix(pair, later, outcome))
+            after = (
+                split
+                if split is not None and split.begin.line < pair.begin.line
+                else None
+            )
+            parts.append(_pair_fix(pair, later, outcome, after))
     if outcome is None:
+        if split is not None:
+            parts.append(_begin_first(split))
         parts.append(_delete_by_hand(pairs))
     return " ".join(part for part in parts if part)
 
@@ -329,9 +414,12 @@ def stray_begin_install_warnings(
     deletes it, with that old text; verify reports the file until then. A file
     the merge left as it is (outcome ``unchanged``, a dry run's preview
     included) whose marker pairs no rule can place (:func:`unclear_pairs_at`)
-    gets its own warning, which names each pair and how to fix it. A merge
-    that writes the file (a first install appends its block after a pair the
-    operator quotes) gets no such warning.
+    gets its own warning, which names each pair and how to fix it, and so
+    does a file the merge wrote that holds the pair rule 3 fired on (a code
+    block a rule in the profile opens hides the END marker of the block just
+    written); that warning does not say the file was left as it is. A preview
+    of a write whose pairs are all quoted (a first install appends its block
+    after a pair the operator quotes) gets no such warning.
     """
     held: dict[str, bool] = {}
     for result in results:
@@ -340,11 +428,17 @@ def stray_begin_install_warnings(
             held[result.path] = held.get(result.path, False) or unchanged
     warnings: list[MaterializationResult] = []
     for path, unchanged in held.items():
-        pairs = unclear_pairs_at(Path(path)) if unchanged else []
-        if pairs:
+        pairs = unclear_pairs_at(Path(path))
+        # A write that leaves a pair rule 3 fired on (a code block a profile
+        # rule opens in Apothem's block) gets the same text, without the
+        # claim that the file was left as it is.
+        if pairs and (unchanged or any(pair.split for pair in pairs)):
+            report = unclear_block_report(
+                path, pairs, left=unchanged, lone=lone_begins_at(Path(path))
+            )
             message = (
-                f"{unclear_block_report(path, pairs)} Then run apothem update "
-                "again. apothem verify fails for this tool until you fix the file."
+                f"{report} Then run apothem update again. apothem verify fails "
+                "for this tool until you fix the file."
             )
         elif stray_begin_at(Path(path)):
             message = (
@@ -507,7 +601,9 @@ def unclear_block_warning(
         "warning",
         operation,
         target,
-        unclear_block_report(_path_text(target), pairs, outcome=outcome),
+        unclear_block_report(
+            _path_text(target), pairs, outcome=outcome, lone=lone_begins_at(target)
+        ),
         detail={KEPT_REASON: UNCLEAR_BLOCK, MARKER_LEFT: "1"},
     )
 

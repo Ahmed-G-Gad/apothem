@@ -18,6 +18,7 @@ from pathlib import Path
 
 from apothem.cli._helpers import _Adapter, _harness_roots
 from apothem.harnesses._shared.install_driver_blocks import (
+    lone_begins_at,
     stray_begin_files,
     unclear_block_report,
     unclear_pairs_at,
@@ -62,7 +63,8 @@ def stray_begin_note(files: Sequence[Path], *, then: str) -> str:
     for path in files:
         pairs = unclear_pairs_at(path)
         if pairs:
-            unclear.append(unclear_block_report(path, pairs, left=False))
+            lone = lone_begins_at(path)
+            unclear.append(unclear_block_report(path, pairs, left=False, lone=lone))
         else:
             stray.append(str(path))
     lead = ""
