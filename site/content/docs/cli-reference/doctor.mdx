@@ -33,10 +33,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   `PYTHONPATH` removed). Nothing is written. A missing interpreter, a missing
   script, or a crash at import time fails the check. When a hook has a
   separate command line for each system, doctor starts the one the tool runs
-  on this machine: GitHub Copilot's `powershell` line on Windows and its `bash`
-  line on macOS and Linux. Doctor starts the program itself, without a shell,
-  so it leaves out the `&` that a line written for PowerShell starts with
-  (Cursor's hook line on Windows and Copilot's `powershell` line).
+  on this machine: the `powershell` line on Windows and the `bash` line on
+  macOS and Linux. Doctor starts the program itself, without a shell, so it
+  leaves out the `&` that a line written for PowerShell starts with.
 
 Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
 
