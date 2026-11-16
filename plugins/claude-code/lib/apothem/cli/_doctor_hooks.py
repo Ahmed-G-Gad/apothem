@@ -4,12 +4,18 @@
 
 The check is harness-neutral: it holds no vendor config format. It reads the
 files the latest install wrote (from the install ledger), parses the JSON ones,
-and collects every handler mapping the shared install driver recognizes as
-Apothem-owned (``is_apothem_hook``: a ``command`` plus optional ``args`` that
-point at the materialized ``hooks/dispatch.py`` or ``conformity/gate.py``).
-Both registration shapes in use resolve to an argv: exec form (``command`` is
-the interpreter, ``args`` the script and its arguments) and shell form (one
-``command`` string, split with :mod:`shlex`).
+and collects every handler mapping whose command line for this platform the
+shared install driver recognizes as Apothem-owned (``is_apothem_hook``: a
+command plus optional ``args`` that point at the materialized
+``hooks/dispatch.py`` or ``conformity/gate.py``). A handler holds that command
+line under ``command``, or under a key for one platform that takes precedence
+there: ``commandWindows`` (Codex) and ``powershell`` (GitHub Copilot) on
+Windows, ``bash`` (GitHub Copilot) on macOS and Linux. Both registration
+shapes in use resolve to an argv: exec form (the command is the interpreter,
+``args`` the script and its arguments) and shell form (one command string,
+split with :mod:`shlex`). A shell-form line written for PowerShell (Cursor's
+on Windows, Copilot's ``powershell``) starts with the call operator ``&``,
+which is PowerShell syntax rather than part of the argv, so it is dropped first.
 
 Each distinct interpreter and script pair is started once with a no-op
 payload: the registered arguments plus ``--help``, and ``{}`` on stdin. The
@@ -45,6 +51,13 @@ _PROBE_TIMEOUT_SECONDS = 30
 
 #: Characters of a failing probe's stderr kept for the report.
 _DETAIL_LIMIT = 300
+
+#: Keys a handler may hold its command line under, in the order the harness
+#: reads them on Windows and on macOS and Linux. GitHub Copilot uses ``command``
+#: only when the key for the platform is absent
+#: (https://docs.github.com/en/copilot/reference/hooks-reference).
+_WINDOWS_COMMAND_KEYS = ("commandWindows", "powershell", "command")
+_POSIX_COMMAND_KEYS = ("bash", "command")
 
 
 @dataclass(frozen=True)
@@ -106,10 +119,32 @@ def probe_hooks(argvs: list[list[str]]) -> list[HookProbe]:
     return probes
 
 
+def _on_windows() -> bool:
+    """Return True on Windows; the platform seam the tests monkeypatch."""
+    return sys.platform == "win32"
+
+
+def _platform_command(handler: dict[str, object]) -> str | None:
+    """Return the command line *handler* runs on this platform, or ``None``."""
+    keys = _WINDOWS_COMMAND_KEYS if _on_windows() else _POSIX_COMMAND_KEYS
+    for key in keys:
+        command = handler.get(key)
+        if isinstance(command, str):
+            return command
+    return None
+
+
 def _handlers(node: object) -> Iterator[dict[str, object]]:
-    """Yield every Apothem-owned hook handler mapping nested in *node*."""
+    """Yield every Apothem-owned hook handler mapping nested in *node*.
+
+    Ownership is read from the command line the handler runs on this platform,
+    the one the probe starts.
+    """
     if isinstance(node, dict):
-        if isinstance(node.get("command"), str) and is_apothem_hook(node):
+        command = _platform_command(node)
+        if command is not None and is_apothem_hook(
+            {"command": command, "args": node.get("args")}
+        ):
             yield node
         for value in node.values():
             yield from _handlers(value)
@@ -120,17 +155,17 @@ def _handlers(node: object) -> Iterator[dict[str, object]]:
 
 def _handler_argv(handler: dict[str, object]) -> list[str] | None:
     """Resolve a handler mapping to the argv the harness would run."""
-    command = handler.get("command")
-    windows_command = handler.get("commandWindows")
-    if sys.platform == "win32" and isinstance(windows_command, str):
-        command = windows_command
-    if not isinstance(command, str) or not command.strip():
+    command = _platform_command(handler)
+    if command is None or not command.strip():
         return None
     args = handler.get("args")
     if isinstance(args, list):
         return [command, *(str(arg) for arg in args)]
+    line = command.lstrip()
+    if line.startswith("&"):  # PowerShell's call operator, not a program
+        line = line[1:]
     try:
-        tokens = shlex.split(command, posix=sys.platform != "win32")
+        tokens = shlex.split(line, posix=not _on_windows())
     except ValueError:
         return None
     return [token.strip('"') for token in tokens] or None
