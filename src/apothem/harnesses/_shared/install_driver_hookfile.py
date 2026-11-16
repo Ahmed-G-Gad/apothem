@@ -111,6 +111,30 @@ def _is_ours(hook: object) -> bool:
     return is_apothem_contract_command(_command_text(hook))
 
 
+def apothem_hook_entries(doc: object) -> list[dict[str, object]]:
+    """Return the hooks in *doc* that an install takes for its own.
+
+    The same hooks :func:`_without_ours` drops, so an install replaces and an
+    uninstall removes exactly these: the direct items of a list-shaped
+    ``hooks``, or of each event list of an event-map ``hooks``, that run the
+    native dispatcher. In a file still as an install left it, each was written
+    by that install.
+    """
+    if not isinstance(doc, dict):
+        return []
+    hooks = doc.get("hooks")
+    if isinstance(hooks, dict):
+        hooks = [
+            hook
+            for listed in hooks.values()
+            if isinstance(listed, list)
+            for hook in listed
+        ]
+    if not isinstance(hooks, list):
+        return []
+    return [hook for hook in hooks if isinstance(hook, dict) and _is_ours(hook)]
+
+
 def _without_ours(doc: object) -> tuple[dict[str, object], int] | None:
     """Return *doc* without Apothem's hooks, plus how many hooks remain.
 

@@ -309,13 +309,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Fixed
 
 - **`apothem doctor` starts GitHub Copilot's hooks, and Cursor's on Windows.**
-  Doctor read a hook's command line only from a `command` key. GitHub Copilot
-  keeps its lines under `bash` and `powershell`, so doctor never started
-  Copilot's hooks and passed a project whose Copilot hook could not run. It now
-  starts the `powershell` line on Windows and the `bash` line on macOS and
-  Linux. On Windows, Cursor's hook line starts with PowerShell's `&`, which
-  doctor took for the program to start, so it reported a working Cursor hook
-  as unable to start. Doctor now leaves the `&` out.
+  Doctor looked for a hook's command line only under `command` (and Codex's
+  `commandWindows` on Windows). GitHub Copilot keeps its lines under `bash`
+  and `powershell`, so doctor never started Copilot's hooks and passed a
+  project whose Copilot hook could not run. It now starts the `powershell`
+  line on Windows and the `bash` line on macOS and Linux. On Windows,
+  Cursor's hook line starts with PowerShell's `&`, which doctor took for the
+  program to start, so it reported a working Cursor hook as unable to start.
+  Doctor now leaves the `&` out there.
 
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
@@ -1004,6 +1005,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`apothem doctor --project` starts only hook commands that run Apothem's
+  own code.** Doctor started any command in a project's hook files that named
+  a `hooks/dispatch.py`, so a command someone else committed to
+  `.cursor/hooks.json` or `.github/hooks/apothem.json`, or a changed script in
+  `.apothem/support/`, ran when you ran doctor, even if you never opened the
+  project in the tool. Doctor now starts a project hook command only when its
+  interpreter is the Python Apothem runs under or the one the install wrote,
+  its options run no code, its script is the hook script the install wrote,
+  in a folder whose files still match the SHA-256 checksums the install
+  recorded and that holds no other Python file and no link, and its
+  arguments are the ones Apothem writes. It starts those known paths rather
+  than the text it read, and looks up no other path a hook command names,
+  such as a network share. A known interpreter or script that is gone is
+  reported as unable to start, without anything being started; any other
+  command is reported as `hook.unchecked`. Doctor also reads the install
+  record of the project that `--project` names: it read the newest record of
+  any project, so after an install into another project it started none of
+  the named project's hooks and still passed.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the

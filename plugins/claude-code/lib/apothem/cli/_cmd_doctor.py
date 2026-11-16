@@ -30,7 +30,7 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
-from apothem.cli._doctor_hooks import probe_hooks, registered_hook_argvs
+from apothem.cli._doctor_hooks import probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
@@ -155,10 +155,10 @@ def _probe_registered_hooks(
 ) -> None:
     """Start the hooks a verified harness registered; record the outcome on *row*."""
     name = entry.public_id
+    in_project = entry.scope == "project"
     try:
-        argvs = registered_hook_argvs(
-            entry.package_key,
-            within=project_root if entry.scope == "project" else None,
+        hooks = registered_hooks(
+            entry.package_key, project_root=project_root if in_project else None
         )
     except LedgerError as exc:
         row.update(status="error", hooks=None)
@@ -173,19 +173,33 @@ def _probe_registered_hooks(
             )
         )
         return
-    if argvs is None:
+    if hooks is None:
         row["hooks"] = None
+        where = " for this project" if in_project else ""
         checks.append(
             _check(
                 "hook.unchecked",
                 "info",
-                f"{name}: no install record, so its hook commands were not checked.",
+                f"{name}: no install record{where}, so its hook commands were "
+                "not checked.",
                 harness=name,
                 fix=f"Run 'update --harness {name}' to record the install.",
             )
         )
         return
-    probes = probe_hooks(argvs)
+    for reason in hooks.unchecked:
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: {reason}.",
+                harness=name,
+                fix="Find out who changed the hook command or file named here. "
+                "If Apothem should run it, "
+                f"{_update_fix(name)[0].lower()}{_update_fix(name)[1:]}",
+            )
+        )
+    probes = [*hooks.unstartable, *probe_hooks(hooks.argvs)]
     failed = [probe for probe in probes if not probe.ok]
     row["hooks"] = {
         "probed": len(probes),

@@ -26,7 +26,7 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   without it they are reported as `needs_project`.
 - **Verify.** Each installed harness must pass the same check as
   [`verify`](/docs/cli-reference/verify).
-- **Hook runtime.** For each verified harness, doctor reads the files its latest
+- **Hook runtime.** For each verified harness, doctor reads the files its
   install wrote, finds the hook commands Apothem registered there, and starts
   each interpreter and hook script once with a no-op payload (the registered
   arguments plus `--help`, `{}` on stdin, a scratch working directory, and
@@ -34,8 +34,24 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   script, or a crash at import time fails the check. When a hook has a
   separate command line for each system, doctor starts the one the tool runs
   on this machine: the `powershell` line on Windows and the `bash` line on
-  macOS and Linux. Doctor starts the program itself, without a shell, so it
-  leaves out the `&` that a line written for PowerShell starts with.
+  macOS and Linux. Doctor starts the program itself, without a shell, so on
+  Windows it leaves out the `&` that a line written for PowerShell starts
+  with.
+- **Project hook files.** Anyone who can commit to a project can change its
+  files, so for a project-scope harness doctor starts a hook command only when
+  everything it runs is known. It reads the install record of the project
+  that `--project` names, and starts a command only when its interpreter is
+  the Python that Apothem itself runs under or the one the install wrote into
+  its own hook entries, the options before the script run no code (such as
+  `-E` and `-s`), the script is the hook script that install wrote, in a
+  folder whose files still match the SHA-256 checksums the install recorded
+  and that holds no other Python file and no link, and the arguments after it
+  are the ones Apothem writes. Doctor then starts those known paths rather than
+  the text it read, and it looks up no other path a hook command names. A
+  known interpreter or hook script that is gone fails the check without
+  anything being started. Doctor starts no other project hook command, and
+  reports each one, with the reason, as `hook.unchecked` (info, not a
+  failure). Run `update` to install the hook scripts again.
 
 Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
 
@@ -50,9 +66,11 @@ and `profile_error` when the profile is invalid) and adds:
 - `project` — the resolved `--project` root, or `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed`, or `error`; plus `verified` and `hooks`
-  (`{"probed": N, "failed": [...]}`, or `null` when no install record exists).
+  (`{"probed": N, "failed": [...]}`, or `null` when no install record exists,
+  for a project-scope harness no record of the `--project` root).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
-  `hook.start_failed`, `ledger.unreadable`, or a `profile.*` code), `status`
+  `hook.start_failed`, `hook.unchecked`, `ledger.unreadable`, or a `profile.*`
+  code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.
 
 ```json
