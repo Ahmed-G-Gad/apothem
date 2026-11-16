@@ -135,11 +135,16 @@ def _plain(repo: Path, *args: str) -> str:
     """Run plain git, as the gate did before, so a planted program can run.
 
     Returns git's error output, for the message of a control that ran nothing.
+    A host that already blocks fetching for every git would hide the
+    partial-clone plants, so the two variables that do it are dropped here.
     """
+    env = hermetic_git_env()
+    env.pop("GIT_ALLOW_PROTOCOL", None)
+    env.pop("GIT_NO_LAZY_FETCH", None)
     completed = subprocess.run(
         ["git", *args],
         cwd=str(repo),
-        env=hermetic_git_env(),
+        env=env,
         stdin=subprocess.DEVNULL,
         capture_output=True,
         check=False,
