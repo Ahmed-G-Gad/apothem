@@ -265,9 +265,14 @@ def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, obje
     """Return, and print under the harness's line, the notes for a hidden block.
 
     A file the harness loads ahead of its instruction file, in the same folder,
-    hides the Apothem block while it has text. Verify gives the note only while
-    the instruction file holds the Apothem block, under a passing or a failing
-    row alike, and the note never changes the verdict.
+    hides the Apothem block while it has text; for OpenCode 1, an
+    ``opencode.jsonc`` ``instructions`` list replaces the one in
+    ``opencode.json``, and a ``config.json``, ``opencode.json`` or
+    ``opencode.jsonc`` it cannot load stops it from loading any configuration
+    (see ``install_advisories._installed_notes`` for when verify gives each).
+    Verify gives the note only while the instruction file holds what the
+    install wrote, under a passing or a failing row alike, and the note never
+    changes the verdict.
     """
     notes = instruction_override_advisories(
         harness_id, home=user_home(), require_block=True
