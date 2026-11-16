@@ -1180,10 +1180,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install guide lists the accepted settings. A setting whose name holds a line
   break stops the run with its own message, since a reader could take it for two
   settings. The run also stops on a `filter=` or `diff=` line in
-  `.git/info/attributes` (git diff runs a diff driver's text conversion), which
-  every script reads byte by byte as git does, so a UTF-16 byte-order mark hides
-  nothing; on that file or a config file that is not a plain file, such as a
-  named pipe that could hand git other text than the check read; on a clone that
+  `.git/info/attributes` (`git diff` can run a program a diff driver names; the
+  update's own `git diff` turns that off, and the check keeps such a driver out
+  of the clone), which every script reads byte by byte as git does, so a
+  UTF-16 byte-order mark hides nothing; on that file or a config file that is
+  not a plain file, such as a named pipe that could hand git other text than
+  the check read; on a clone that
   borrows objects from another repository (`objects/info/alternates` or
   `http-alternates`, as `--reference` and `--shared` write), where git would
   read objects under settings nothing checks; and on a clone that holds a
@@ -1195,51 +1197,71 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   status` never runs inside a submodule there. Before any git command that
   applies the work tree's `.gitattributes` files, the run stops on one that git
   does not track or that differs from the committed copy, in any folder of the
-  clone, or whose committed copy names a filter or diff driver; every script
-  reads that copy byte by byte too, so a carriage return inside a line hides
-  nothing. Before the fetch, it stops on files under `src` (spelled in any case,
-  since a file system that ignores case reads `Src` as `src`) that git does not
-  track, ignored files included, and lists them, since the engine could load
-  them; after the checkout, it removes the Python cache folders (`__pycache__`)
-  under `src` before the engine first runs from the clone, so no bytecode from
-  before the update loads. A dry run of the installers makes all of these
-  checks. Every git command on the clone now runs with no pager, no automatic
-  maintenance, the file-system monitor off and no submodule recursion, and `git
-  diff` and `git status` skip submodules; the check for changes runs `git diff`
-  with no text conversion or external diff program. For the whole run, the
-  installers and updaters set `GIT_NO_LAZY_FETCH=1`, so git never fetches a
-  missing object from the remote on its own, and `GIT_ALLOW_PROTOCOL` to the
-  file, git, http, https and ssh transports, so neither a value in your
-  environment nor an address in the clone's config can widen that list or make
-  git run a helper program such as `ext::`; `APOTHEM_REPO` must use one of those
-  transports. On Windows, a fresh clone, the fetch of the release tag and a
-  checkout also write paths longer than the usual limit, so a long profile
-  folder no longer stops the clone or leaves files out of it. The installers and
-  updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`,
-  so a value inherited from your environment can no longer point git at another
-  config file, and `GIT_ATTR_SOURCE`, and every git command on the clone empties
-  `attr.tree`, so git reads attributes only from the work tree and index the
-  checks read; the PowerShell scripts put them, and the two variables they set,
-  back when the run ends, so an `irm ... | iex` run leaves your session as it
-  was. `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL`
-  for the installer, it is now ignored; git still reads your own global and
-  system config from the usual places, and `git`, `gpg` and `cosign` are the
-  ones your `PATH` finds. A clone that another user owns now stops the run with
-  an explanation and what to do, in place of git's raw "dubious ownership"
-  error. The install guide now says that `APOTHEM_HOME` must be a folder only
-  you can write: on Windows, a folder made at the root of a drive, such as
-  `C:\apothem`, can be changed by every user who signs in, under Windows'
-  default permissions. The installers now warn, without stopping, when users
-  other than you can write to `APOTHEM_HOME` or the folder holding it, since
-  they can then change the code Apothem runs as you. The warning also names the
-  user who owns either folder when that is someone else: on Linux and macOS a
-  user other than you or root, on Windows an account other than you, SYSTEM,
-  Administrators and TrustedInstaller. Linux and macOS read the permission bits
-  and, where `getfacl` is installed, the access list; Windows names every
-  account or group, other than those, that a permission entry lets write, and
-  names a folder made at a drive's root, such as `C:\apothem`. `install.sh` and
-  `update.sh` do not check under Git Bash, MSYS2 or Cygwin; on Windows the
-  warning comes from `install.ps1` and `update.ps1`.
+  clone, or whose committed copy git cannot read, or reads as bytes that do not
+  match its ID (git does not check that as it reads an object), and on one
+  whose committed or work-tree copy names a filter or diff driver. Every script
+  reads both copies byte by byte, so a carriage return inside a line hides
+  nothing, and the PowerShell scripts read the committed copy through a git
+  program even when `git` in your session is a function or a script, such as a
+  wrapper in your profile; with no git program on `PATH`, the run stops and says
+  so. It also stops on a git repository in the clone that git does not track,
+  since git lists nothing inside it but would apply its `.gitattributes` files
+  to what a release adds there. Neither check reads the engine's own data
+  folders (`backups`, `state`, `plans`, `memory`, `contexts`, `learning` and
+  `providers`), where no release writes, unless the clone tracks files there,
+  so a `--clean` backup of a folder that holds a git clone does not stop an
+  update. `--yes` makes these checks too before it replaces a clone. The
+  PowerShell scripts read git's output as UTF-8 for the whole run, whatever the
+  console's code page, so a clone whose git folder or files have non-ASCII names
+  gets every one of these checks. Before the fetch, it stops on files under
+  `src` (spelled in any case, since a file system that ignores case reads `Src`
+  as `src`) that git does not track, ignored files included, and lists them,
+  since the engine could load them; after the checkout, it removes the Python
+  cache folders (`__pycache__`) under `src` before the engine first runs from
+  the clone, so no bytecode from before the update loads. A dry run of the
+  installers makes all of these checks. Every git command on the clone now runs
+  with no pager, no automatic maintenance, the file-system monitor off and no
+  submodule recursion, and `git diff` and `git status` skip submodules; the
+  check for changes runs `git diff` with no text conversion or external diff
+  program. For the whole run, the installers and updaters set
+  `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing object from the remote
+  on its own, and `GIT_ALLOW_PROTOCOL` to the file, git, http, https and ssh
+  transports, so neither a value in your environment nor an address in the
+  clone's config can widen that list or make git run a helper program such as
+  `ext::`; `APOTHEM_REPO` must use one of those transports. On Windows, a fresh
+  clone, the fetch of the release tag and a checkout also write paths longer
+  than the usual limit, so a long profile folder no longer stops the clone or
+  leaves files out of it. The installers and updaters also clear `GIT_CONFIG`,
+  `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`, so a value inherited from your
+  environment can no longer point git at another config file, and
+  `GIT_ATTR_SOURCE`, and every git command on the clone empties `attr.tree`, so
+  git never reads attributes from another tree; the PowerShell scripts put them,
+  the variables they set (`GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH` and
+  `GIT_ALLOW_PROTOCOL`) and the console's output encoding back when the run
+  ends, so an `irm ... | iex` run leaves your session as it was.
+  `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL` for
+  the installer, it is now ignored; git still reads your own global and system
+  config from the usual places, and `git`, `gpg` and `cosign` are the ones your
+  `PATH` finds. A clone that another user owns now stops the run with an
+  explanation and what to do, in place of git's raw "dubious ownership" error.
+  The install guide now says that `APOTHEM_HOME` must be a folder only you can
+  write: on Windows, a folder made at the root of a drive, such as `C:\apothem`,
+  can be changed by every user who signs in, under Windows' default permissions.
+  The installers now warn, without stopping, when users other than you can write
+  to `APOTHEM_HOME` or the folder holding it, since they can then change the
+  code Apothem runs as you. The warning also names the user who owns either
+  folder when that is someone else: on Linux and macOS a user other than you or
+  root, on Windows an account other than you, SYSTEM, Administrators and
+  TrustedInstaller. Linux and macOS read the permission bits and, where
+  `getfacl` is installed, the access list, whose entry for the folder's group
+  decides whether that group is named (`ls` shows the list's mask in the group
+  bits), and take each name `getfacl` writes with escapes as it is, such as a
+  domain account's `CORP\alice`, so your own entry is never named; Windows names
+  every account or group that a permission entry lets write, other than those,
+  CREATOR OWNER, OWNER RIGHTS and your own sign-in session, as the Security tab
+  names it, and names a folder made at a drive's root, such as `C:\apothem`.
+  `install.sh` and `update.sh` do not check under Git Bash, MSYS2 or Cygwin; on
+  Windows the warning comes from `install.ps1` and `update.ps1`.
 - **A second install, update or uninstall script can no longer run on the same
   `APOTHEM_HOME`, and a stopped run is reported.** Each run of `install.sh`,
   `update.sh`, `uninstall.sh` and their PowerShell versions now holds a lock,

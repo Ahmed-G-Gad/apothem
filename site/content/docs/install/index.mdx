@@ -260,10 +260,12 @@ POSIX installers' `curl` does.
 write to it can change the code the `apothem` command runs. On Windows, a
 folder made at the root of a drive, such as `C:\apothem`, can be changed by
 every user who signs in to the computer, under Windows' default permissions.
-The default, `~/.apothem`, is in your own user folder. Each install, update
-and dry run warns, without stopping, when that is not so, or when the folder
-or the one that holds it belongs to someone else, naming the folder, who can
-write to it or owns it, and the fix. On Windows the warning comes from
+The default, `~/.apothem`, is in your own user folder. Each fetched install,
+update and dry run warns, without stopping, when that is not so, or when the
+folder or the one that holds it belongs to someone else, naming the folder,
+who can write to it or owns it, and the fix; an install from a local
+checkout, and an update with `APOTHEM_SOURCE` set, skip the check. On Windows
+the warning comes from
 `install.ps1` and `update.ps1`: `install.sh` and `update.sh` do not check
 under Git Bash, MSYS2 or Cygwin (see
 [Troubleshooting](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)).
@@ -303,8 +305,8 @@ them (see below). These rules apply when the installer replaces `~/.apothem`:
   when git finds no work tree in `APOTHEM_HOME` (as when the clone's config
   sets `core.bare` to `true`), when the clone holds a submodule (recorded in its
   index, or kept in `.git/modules`), when `.git/info/attributes` names a
-  filter or diff driver (`filter=` or `diff=`), or it or a config file is not a
-  plain file, or when the clone borrows objects from another repository
+  filter or diff driver (`filter=` or `diff=`), when it or a config file is not
+  a plain file, or when the clone borrows objects from another repository
   (`objects/info/alternates`). It also stops on any setting in the clone's own
   `.git/config` or `.git/config.worktree` other than the ones `git clone` and
   `git init` write there for a full clone, branch settings (a branch's `remote`
@@ -317,10 +319,14 @@ them (see below). These rules apply when the installer replaces `~/.apothem`:
   clone's index or objects, and also, with the submodule check, when `--yes` is
   about to replace the clone.
   Before any git command that applies the work tree's `.gitattributes` files,
-  the installer stops on one that git does not track or that differs from the
-  committed copy or whose committed copy names a filter or diff driver, and
-  before the fetch it
-  stops on files under `src` (spelled in any case) that git does not track, since the engine could load them. After the checkout, it
+  the installer stops on one that git does not track, that differs from the
+  committed copy, or whose committed copy git cannot read or names a filter or
+  diff driver (the copy in the work tree is read too), and on a git repository
+  in the clone that git does not track, whose `.gitattributes` files git would
+  read too. The engine's own data folders, such as `backups`, where no release
+  writes, are not read for these. Before the fetch it stops
+  on files under `src` (spelled in any case) that git does not track, since
+  the engine could load them. After the checkout, it
   removes the Python cache folders (`__pycache__`) under `src` before the engine
   runs from the clone. The clone's git hooks
   never run during the update, and every git command on the clone runs with no

@@ -1858,7 +1858,10 @@ def test_the_tag_object_read_first_is_the_one_verified(
 # D9: the caller's git variables come back -----------------------------------------
 
 
+_POWERSHELL_51 = shutil.which("powershell.exe")
+
 _CALLER_SESSION = r"""
+[Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(437)
 try {
     & ([scriptblock]::Create((Get-Content -Raw -LiteralPath $env:APOTHEM_TEST_SCRIPT)))
 } catch {
@@ -1867,12 +1870,27 @@ try {
 foreach ($Name in 'GIT_CONFIG_GLOBAL', 'GIT_DIR', 'GIT_CONFIG_NOSYSTEM', 'GIT_NO_REPLACE_OBJECTS', 'GIT_NO_LAZY_FETCH', 'GIT_ALLOW_PROTOCOL') {
     "AFTER $Name=[$([Environment]::GetEnvironmentVariable($Name))]"
 }
+"AFTER CODE PAGE=[$([Console]::OutputEncoding.CodePage)]"
 """
 
 
+#: Each PowerShell the one-liner runs under: 7, and Windows PowerShell 5.1.
+_SESSION_SHELLS = [
+    pytest.param(_PWSH, id="pwsh"),
+    pytest.param(
+        _POWERSHELL_51,
+        id="powershell-5.1",
+        marks=pytest.mark.skipif(
+            _POWERSHELL_51 is None, reason="no Windows PowerShell 5.1"
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("shell", _SESSION_SHELLS)
 @pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
 def test_a_run_in_the_callers_session_puts_its_git_variables_back(
-    tmp_path: Path, script: str
+    tmp_path: Path, script: str, shell: str | None
 ) -> None:
     """Run the way the one-liner runs it (in the caller's own session), the
     script clears the git variables only for its run: here it stops at the
@@ -1881,12 +1899,20 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
     GIT_NO_LAZY_FETCH are unset again, and GIT_CONFIG_NOSYSTEM, which only
     narrows what git reads, stayed set throughout. While the tag is checked
     (the stub gpg looks), git may fetch no missing object and uses only the
-    run's own five transports."""
+    run's own five transports, and the console's output code page is UTF-8
+    (65001), so PowerShell reads every git command's output of the run as
+    UTF-8, not only the clone checks'; the session's own (code page 437
+    here, in a console of the test's own) is back as the run ends."""
     _prepare(tmp_path, script)
     record = tmp_path / "git-variables"
+    code_page = (
+        f"'{Path(sys.executable).as_posix()}' -I -c "
+        "\"import ctypes; print('CODE PAGE', ctypes.windll.kernel32.GetConsoleOutputCP())\""
+    )
     config = _gpg(
         tmp_path / "probe-gpg",
-        f"env | grep '^GIT_' | sort > '{record.as_posix()}'\n",
+        f"env | grep '^GIT_' | sort > '{record.as_posix()}'\n"
+        f"{code_page} >> '{record.as_posix()}'\n",
         "",
     )
     env = _script_env(tmp_path, gpg_config=config)
@@ -1904,11 +1930,11 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
     )
     env.pop("GIT_NO_REPLACE_OBJECTS", None)
     env.pop("GIT_NO_LAZY_FETCH", None)
-    assert _PWSH is not None
+    assert shell is not None
 
     result = subprocess.run(
         [
-            _PWSH,
+            shell,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
@@ -1922,12 +1948,15 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
         text=True,
         timeout=180,
         check=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
 
     plain = _out(result)
     assert "SCRIPT-FAILED" in plain, plain
     assert "is unsigned or its signature did not verify" in plain, plain
+    assert "AFTER CODE PAGE=[437]" in result.stdout, plain
     during = record.read_text(encoding="utf-8").splitlines()
+    assert "CODE PAGE 65001" in during, during
     assert "GIT_CONFIG_NOSYSTEM=1" in during, during
     assert "GIT_NO_LAZY_FETCH=1" in during, during
     assert "GIT_ALLOW_PROTOCOL=file:git:http:https:ssh" in during, during
@@ -1941,9 +1970,6 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
 
 
 # D8: Windows PowerShell 5.1 follows each redirect by hand -------------------------
-
-
-_POWERSHELL_51 = shutil.which("powershell.exe")
 
 # An Invoke-WebRequest stand-in for Windows PowerShell 5.1 with
 # -MaximumRedirection 0: it logs each address asked for and answers from
@@ -2408,20 +2434,144 @@ def test_any_other_account_or_group_that_may_modify_the_home_is_named(
     assert _home_warnings(shell, home) == [_home_message(home, who)]
 
 
+def _my_logon_sid() -> str:
+    """This session's sign-in session SID (whoami /logonid), which the
+    PowerShell started from this process shares."""
+    whoami = (
+        Path(os.environ.get("SYSTEMROOT", r"C:\Windows")) / "System32" / "whoami.exe"
+    )
+    return subprocess.run(
+        [str(whoami), "/logonid"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    ).stdout.strip()
+
+
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
-def test_you_and_the_system_accounts_are_never_named(
+def test_only_others_are_named_never_you_or_the_system_accounts(
     own_tmp: Path, shell: str | None
 ) -> None:
-    """SYSTEM, Administrators, TrustedInstaller and CREATOR OWNER (which
-    stands for whoever makes an item inside) may change a folder, as they
-    may change Windows' own, and give no warning; neither do you."""
+    """SYSTEM, Administrators, TrustedInstaller, CREATOR OWNER and OWNER
+    RIGHTS (which stand for whoever makes or owns an item) and your own
+    sign-in session may change a folder and give no warning; neither do
+    you. Users, given Modify beside them, is named: the entries were read,
+    and only the trusted ones were left out."""
     home = own_tmp / "holder" / "apothem"
     home.mkdir(parents=True)
-    for sid in ("S-1-5-18", "S-1-5-32-544", _TRUSTED_INSTALLER):
+    for sid in ("S-1-5-18", "S-1-5-32-544", _TRUSTED_INSTALLER, "S-1-3-4"):
         _icacls(home, "/grant", f"*{sid}:(OI)(CI)(F)")
     _icacls(home, "/grant", "*S-1-3-0:(OI)(CI)(IO)(F)")
+    _icacls(home, "/grant", f"*{_my_logon_sid()}:(OI)(CI)(M)")
+    _icacls(home, "/grant", f"*{_USERS}:(OI)(CI)(M)")
 
-    assert _home_warnings(shell, home) == []
+    assert _home_warnings(shell, home) == [_home_message(home, "Users")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_another_sign_in_session_is_named(own_tmp: Path, shell: str | None) -> None:
+    """An entry for a sign-in session other than this one lets that
+    session's programs change the folder, so it is named (by its security
+    ID: Windows has no account name for it), like any other account."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", "*S-1-5-5-0-424242:(OI)(CI)(M)")
+
+    assert _home_warnings(shell, home) == [_home_message(home, "S-1-5-5-0-424242")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_an_app_package_group_is_named_as_the_security_tab_names_it(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """ALL APPLICATION PACKAGES is named without its APPLICATION PACKAGE
+    AUTHORITY domain, as the Security tab and icacls name it."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", "*S-1-15-2-1:(OI)(CI)(M)")
+
+    assert _home_warnings(shell, home) == [
+        _home_message(home, "ALL APPLICATION PACKAGES")
+    ]
+
+
+def _add_access_rule(folder: Path, sid: str) -> None:
+    """Give SID Modify on FOLDER (and what it holds) through .NET, which,
+    unlike icacls, takes a SID no account answers to."""
+    assert _PWSH is not None
+    script = (
+        "$acl = [System.Security.AccessControl.DirectorySecurity]::new($env:T_DIR, 'Access'); "
+        "$acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new("
+        "[System.Security.Principal.SecurityIdentifier]$env:T_SID, 'Modify', "
+        "'ContainerInherit, ObjectInherit', 'None', 'Allow')); "
+        "[System.IO.FileSystemAclExtensions]::SetAccessControl("
+        "[System.IO.DirectoryInfo]::new($env:T_DIR), $acl)"
+    )
+    subprocess.run(
+        [_PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
+        env={**os.environ, "T_DIR": str(folder), "T_SID": sid},
+        check=True,
+        capture_output=True,
+        timeout=120,
+    )
+
+
+@pytest.mark.skipif(not _PWSH_IS_7, reason="sets the entry through PowerShell 7's .NET")
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_an_account_windows_cannot_look_up_is_named_by_its_sid(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """An entry for an account Windows can no longer look up (a deleted
+    one) is named by its security ID, not left out."""
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _add_access_rule(home, "S-1-5-21-1-2-3-1234")
+
+    assert _home_warnings(shell, home) == [_home_message(home, "S-1-5-21-1-2-3-1234")]
+
+
+def _account_name(sid: str) -> str:
+    """The name Windows gives SID, DOMAIN\\name."""
+    assert _PWSH is not None
+    return subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "[System.Security.Principal.SecurityIdentifier]::new($env:T_SID)"
+            ".Translate([System.Security.Principal.NTAccount]).Value",
+        ],
+        env={**os.environ, "T_SID": sid},
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    ).stdout.strip()
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_local_account_is_named_with_its_computer(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """An account of this computer or a domain is named as DOMAIN\\name, as
+    the Security tab names it; here the computer's built-in Administrator
+    account (its SID ends in 500), which may be renamed."""
+    mine = _my_sid()
+    if not mine.startswith("S-1-5-21-"):
+        pytest.skip("this run's account has no computer or domain SID")
+    administrator = mine.rsplit("-", 1)[0] + "-500"
+    if administrator == mine:
+        pytest.skip("this run is the built-in Administrator, whom no warning names")
+    name = _account_name(administrator)
+    if "\\" not in name:
+        pytest.skip(f"{administrator} has no DOMAIN\\name form here")
+    home = own_tmp / "holder" / "apothem"
+    home.mkdir(parents=True)
+    _icacls(home, "/grant", f"*{administrator}:(OI)(CI)(M)")
+
+    assert _home_warnings(shell, home) == [_home_message(home, name)]
 
 
 @pytest.mark.parametrize("shell", _WARN_SHELLS)
@@ -2443,6 +2593,28 @@ def test_a_home_another_account_owns_names_the_owner(
         pytest.skip("this run may not give a folder another owner (not elevated)")
 
     assert _home_warnings(shell, home) == [_owner_message(home, "Guests")]
+
+
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+def test_a_folder_holding_the_home_another_account_owns_names_the_owner(
+    own_tmp: Path, shell: str | None
+) -> None:
+    """The owner check reads the folder that holds the home too: its owner
+    can rename the home away. Giving a folder another owner needs an
+    elevated run."""
+    holder = own_tmp / "holder"
+    home = holder / "apothem"
+    home.mkdir(parents=True)
+    given = subprocess.run(
+        ["icacls", str(holder), "/setowner", "*S-1-5-32-546"],
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    if given.returncode != 0:
+        pytest.skip("this run may not give a folder another owner (not elevated)")
+
+    assert _home_warnings(shell, home) == [_owner_message(holder, "Guests")]
 
 
 def _pwsh_7_module_path() -> str:
@@ -2501,9 +2673,47 @@ def test_a_new_home_where_interactive_users_may_modify_is_named(
     ]
 
 
-def _free_drive_letter() -> str:
+@pytest.mark.parametrize("shell", _WARN_SHELLS)
+@pytest.mark.parametrize(
+    ("grant", "named"),
+    [("(OI)(IO)(M)", True), ("(OI)(NP)(M)", False)],
+    ids=["to-files", "to-its-own-files-only"],
+)
+def test_a_new_home_where_others_may_modify_the_files_made_in_it(
+    own_tmp: Path, shell: str | None, grant: str, named: bool
+) -> None:
+    """An entry a folder passes only to files (ObjectInherit) still reaches
+    every file made in a new home there, so a dry run names it; with
+    NoPropagateInherit it stops at the files of the folder itself, and the
+    new home gets nothing."""
+    holder = own_tmp / "holder"
+    holder.mkdir()
+    _icacls(holder, "/grant", f"*{_USERS}:{grant}")
+    new = holder / "apothem"
+
+    expected = [
+        f"A new {new} would let Users change the code Apothem runs as you, from "
+        f"the permissions of {holder}. To fix it, set APOTHEM_HOME to a folder "
+        "inside your user folder."
+    ]
+    assert _home_warnings(shell, new) == (expected if named else [])
+
+
+def _subst_free_letter(target: Path) -> str:
+    """Map TARGET to a free drive letter and return the letter. subst refuses
+    a letter already mapped in this sign-in session, so the mapping itself
+    claims the letter: two xdist workers, or two runs, cannot both take it,
+    and a letter a killed run left mapped is passed over."""
     for letter in "ZYXWVUTSRQPONMLKJIHGFED":
-        if not Path(f"{letter}:\\").exists():
+        if Path(f"{letter}:\\").exists():
+            continue
+        mapped = subprocess.run(
+            ["subst", f"{letter}:", str(target)],
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+        if mapped.returncode == 0:
             return letter
     pytest.skip("no free drive letter for subst")
 
@@ -2529,8 +2739,7 @@ def test_a_home_made_at_the_root_of_a_drive_says_where_the_access_comes_from(
         "folder inside your user folder."
     ]
 
-    letter = _free_drive_letter()
-    subprocess.run(["subst", f"{letter}:", str(holder)], check=True, timeout=60)
+    letter = _subst_free_letter(holder)
     try:
         at_root = _home_warnings(shell, f"{letter}:\\apothem")
         new_at_root = _home_warnings(shell, f"{letter}:\\new")
@@ -2627,22 +2836,30 @@ def test_a_junction_others_may_delete_and_make_again_is_named(
 # names, as the sh scripts do. Windows PowerShell 5.1 has no $IsWindows of its
 # own, so setting it to $false takes that path here, with ls, stat, uname, id
 # and sh stood in for. ls splits a group name at a space, as the real one
-# prints it; stat gives it whole.
+# prints it; stat gives it whole. The folder holding the home has the
+# owner of the home unless T_UP_OWNER names another; ls -n fails when
+# T_LSN_FAIL is set; getfacl prints T_ACL for the home and T_UP_ACL for the
+# folder holding it, lines joined by |; id -un prints T_ME, else alice.
 _POSIX_STUBS = (
     "$IsWindows = $false; Remove-Item Alias:ls -Force -ErrorAction SilentlyContinue; "
     "function ls { $global:LASTEXITCODE = 0; "
-    "if ($args[-1] -eq $env:T_HOME) { $m = $env:T_HOME_MODE; $g = $env:T_GROUP } "
-    "else { $m = $env:T_UP_MODE; $g = $env:T_UP_GROUP }; "
-    "$o = if ($args[0] -eq '-ldnL') { if ($env:T_OWNER_UID) { $env:T_OWNER_UID } "
-    "else { '1000' } } elseif ($env:T_OWNER) { $env:T_OWNER } else { 'alice' }; "
+    "if ($args[0] -eq '-ldnL' -and $env:T_LSN_FAIL) { $global:LASTEXITCODE = 2; return }; "
+    "if ($args[-1] -eq $env:T_HOME) { $m = $env:T_HOME_MODE; $g = $env:T_GROUP; "
+    "$on = $env:T_OWNER; $ou = $env:T_OWNER_UID } "
+    "else { $m = $env:T_UP_MODE; $g = $env:T_UP_GROUP; "
+    "$on = if ($env:T_UP_OWNER) { $env:T_UP_OWNER } else { $env:T_OWNER }; "
+    "$ou = if ($env:T_UP_OWNER_UID) { $env:T_UP_OWNER_UID } else { $env:T_OWNER_UID } }; "
+    "$o = if ($args[0] -eq '-ldnL') { if ($ou) { $ou } "
+    "else { '1000' } } elseif ($on) { $on } else { 'alice' }; "
     '"$m 2 $o $g 4096 Nov 10 01:24 $($args[-1])" }; '
     "function stat { $global:LASTEXITCODE = 0; "
     "if ($args[-1] -eq $env:T_HOME) { $env:T_GROUP } else { $env:T_UP_GROUP } }; "
     "function uname { $env:T_OS }; "
-    "function id { if ($args[0] -eq '-un') { 'alice' } elseif ($args[0] -eq '-u') "
-    "{ '1000' } else { $env:T_PRIMARY } }; "
+    "function id { if ($args[0] -eq '-un') { if ($env:T_ME) { $env:T_ME } else "
+    "{ 'alice' } } elseif ($args[0] -eq '-u') { '1000' } else { $env:T_PRIMARY } }; "
     "function getfacl { if ($env:T_ACL -and $args[-1] -eq $env:T_HOME) "
-    "{ $env:T_ACL -split '\\|' } }; "
+    "{ $env:T_ACL -split '\\|' } elseif ($env:T_UP_ACL -and $args[-1] -ne $env:T_HOME) "
+    "{ $env:T_UP_ACL -split '\\|' } }; "
     "function sh { $env:T_UMASK }; "
 )
 
@@ -2753,9 +2970,10 @@ def test_outside_windows_the_mode_bits_decide(
     assert warnings == messages[kind]
 
 
-#: An access list as getfacl prints it, lines joined by |: bob and the group
-#: staff may write; alice (you), root, the group named after you, carol (the
-#: mask takes her write away) and the default entry for dave are not named.
+#: An access list as getfacl prints it on a folder whose group bits are its
+#: mask (drwxrwxr-x+), lines joined by |: bob and the group staff may write;
+#: alice (you), root, the group named after you, the folder's group (its own
+#: entry, group::, has no w) and the default entry for dave are not named.
 _ACCESS_LIST = "|".join(
     (
         "# file: apothem",
@@ -2763,7 +2981,6 @@ _ACCESS_LIST = "|".join(
         "user:bob:rwx",
         "user:alice:rwx",
         "user:root:rwx",
-        "user:carol:rwx\t\t\t#effective:r-x",
         "group::r-x",
         "group:alice:rwx",
         "group:staff:rwx",
@@ -2774,7 +2991,59 @@ _ACCESS_LIST = "|".join(
 )
 
 
+def _posix_warnings(
+    tmp_path: Path,
+    *,
+    home_mode: str = "drwxr-xr-x",
+    up_mode: str = "drwxr-x---",
+    group: str = "alice",
+    up_group: str = "alice",
+    owner: str = "alice",
+    owner_uid: str = "1000",
+    env: dict[str, str] | None = None,
+) -> tuple[Path, Path, list[str]]:
+    """Run install.ps1's warning outside Windows (Windows PowerShell 5.1 with
+    the POSIX stubs) on HOLDER/apothem; return the holder, the home and the
+    warnings. GROUP and UP_GROUP are the groups stat names for the home and
+    the holder; ENV sets the stubs' other answers (T_ACL, T_UP_ACL, ...)."""
+    holder = tmp_path / "holder"
+    home = holder / "apothem"
+    home.mkdir(parents=True)
+    prelude = (
+        "$env:T_PRIMARY = 'alice'; $env:T_OS = 'Linux'; "
+        "$env:T_UMASK = '0022'; " + _POSIX_STUBS
+    )
+    warnings = _home_warnings(
+        _POWERSHELL_51,
+        home,
+        prelude,
+        env={
+            "T_HOME_MODE": home_mode,
+            "T_UP_MODE": up_mode,
+            "T_GROUP": group,
+            "T_UP_GROUP": up_group,
+            "T_OWNER": owner,
+            "T_OWNER_UID": owner_uid,
+            **(env or {}),
+        },
+    )
+    return holder, home, warnings
+
+
+def _posix_home_message(home: Path, who: str) -> str:
+    return (
+        f"Other users can change the code Apothem runs as you: {who} can write to "
+        f'{home}. To fix it, run chmod go-w "{home}", or move APOTHEM_HOME.'
+    )
+
+
+_OWNER_FIX = "To fix it, move APOTHEM_HOME into a folder you own."
+
+
 @pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+@pytest.mark.parametrize(
+    "up_mode", ["drwxr-x---", "drwxrwxrwt"], ids=["private", "sticky"]
+)
 @pytest.mark.parametrize(
     ("owner", "owner_uid", "access_list", "expected"),
     [
@@ -2785,40 +3054,187 @@ _ACCESS_LIST = "|".join(
     ids=["another-user", "root", "access-list"],
 )
 def test_outside_windows_the_owner_and_the_access_list_decide(
-    tmp_path: Path, owner: str, owner_uid: str, access_list: str, expected: str
+    tmp_path: Path,
+    up_mode: str,
+    owner: str,
+    owner_uid: str,
+    access_list: str,
+    expected: str,
 ) -> None:
     """Outside Windows the ps1 scripts follow the sh rule and messages: a user
     other than you or root who owns the home or the folder holding it is
-    named, with the fix to move it (ls -n gives the number); root is not; and
-    each user and group an access list (getfacl) lets write is named."""
-    holder = tmp_path / "holder"
-    home = holder / "apothem"
-    home.mkdir(parents=True)
-    prelude = (
-        "$env:T_HOME_MODE = 'drwxr-xr-x'; $env:T_UP_MODE = 'drwxr-x---'; "
-        "$env:T_GROUP = 'alice'; $env:T_UP_GROUP = 'alice'; "
-        "$env:T_PRIMARY = 'alice'; $env:T_OS = 'Linux'; $env:T_UMASK = '0022'; "
-        f"$env:T_OWNER = '{owner}'; $env:T_OWNER_UID = '{owner_uid}'; " + _POSIX_STUBS
+    named, with the fix to move it (ls -n gives the number), a sticky folder
+    holding the home included, since the sticky bit does not stop its owner;
+    root is not; and each user and group an access list (getfacl) lets write
+    is named, the folder's group only when its own entry lets it write."""
+    holder, home, warnings = _posix_warnings(
+        tmp_path,
+        home_mode="drwxrwxr-x+" if access_list else "drwxr-xr-x",
+        up_mode=up_mode,
+        group="users" if access_list else "alice",
+        owner=owner,
+        owner_uid=owner_uid,
+        env={"T_ACL": access_list},
     )
 
-    warnings = _home_warnings(_POWERSHELL_51, home, prelude, env={"T_ACL": access_list})
-
-    fix = "To fix it, move APOTHEM_HOME into a folder you own."
     messages = {
         "": [],
         "owner": [
-            f"Other users can change the code Apothem runs as you: the user {owner} "
-            f"owns {home}. {fix}",
-            f"Other users can change the code Apothem runs as you: the user {owner} "
-            f"owns {holder}. {fix}",
+            "Other users can change the code Apothem runs as you: the user "
+            f"{owner} owns {home}. {_OWNER_FIX}",
+            "Other users can change the code Apothem runs as you: the user "
+            f"{owner} owns {holder}. {_OWNER_FIX}",
         ],
-        "access-list": [
-            "Other users can change the code Apothem runs as you: the user bob, the "
-            f'group staff can write to {home}. To fix it, run chmod go-w "{home}", '
-            "or move APOTHEM_HOME."
-        ],
+        "access-list": [_posix_home_message(home, "the user bob, the group staff")],
     }
     assert warnings == messages[expected]
+
+
+#: Access lists outside Windows, lines joined by |, on a home with these mode
+#: bits and group, and the names the warning gives ('' for none).
+_POSIX_ACCESS_CASES: tuple[tuple[str, str, str, str, str], ...] = (
+    (
+        "only-you",
+        "drwxrwxr-x+",
+        "users",
+        "user::rwx|user:alice:rwx|group::r-x|mask::rwx|other::r-x",
+        "",
+    ),
+    (
+        "masked",
+        "drwxr-xr-x+",
+        "users",
+        "user::rwx|user:carol:rwx\t\t\t#effective:r-x|user:erin:rwx\t\t# effective: r-x"
+        "|group::r-x|group:wheel:rwx\t\t# effective: r-x|mask::r-x|other::r-x",
+        "",
+    ),
+    (
+        "group-entry-writes",
+        "drwxrwxr-x+",
+        "staff",
+        "user::rwx|user:bob:rwx|group::rwx|group:staff:rwx|mask::rwx|other::r-x",
+        "the group staff, the user bob",
+    ),
+    ("backslash-in-a-name", "drwxrwxr-x", "CORP\\tools", "", "the group CORP\\tools"),
+)
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+@pytest.mark.parametrize(
+    ("case", "home_mode", "group", "access_list", "names"),
+    _POSIX_ACCESS_CASES,
+    ids=[c[0] for c in _POSIX_ACCESS_CASES],
+)
+def test_outside_windows_the_access_list_decides_as_in_sh(
+    tmp_path: Path,
+    case: str,
+    home_mode: str,
+    group: str,
+    access_list: str,
+    names: str,
+) -> None:
+    """Outside Windows the ps1 scripts read an access list as the sh scripts
+    do: an entry for you alone names no one, with the mask's w in the group
+    bits too; an entry the mask takes write from names no one, in Linux's
+    and in FreeBSD's layout; the folder's group is named, once and first,
+    when its own entry lets it write; and a name holding a backslash is
+    named as it is."""
+    _, home, warnings = _posix_warnings(
+        tmp_path, home_mode=home_mode, group=group, env={"T_ACL": access_list}
+    )
+
+    assert warnings == ([_posix_home_message(home, names)] if names else [])
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+@pytest.mark.parametrize(
+    ("up_mode", "named"),
+    [("drwxrwx---+", True), ("drwxrwxrwt+", False)],
+    ids=["private", "sticky"],
+)
+def test_outside_windows_an_access_list_on_the_folder_that_holds_the_home(
+    tmp_path: Path, up_mode: str, named: bool
+) -> None:
+    """An access-list entry that lets bob write to the folder holding the
+    home lets bob rename the home away; a sticky folder stops that, so its
+    access list is not read (as in sh). The folder's group (users, not
+    yours) is not named: its own entry (group::) has no w, and the group
+    bits ls shows are the list's mask."""
+    holder, home, warnings = _posix_warnings(
+        tmp_path,
+        up_mode=up_mode,
+        up_group="users",
+        env={"T_UP_ACL": "user::rwx|user:bob:rwx|group::---|mask::rwx|other::---"},
+    )
+
+    expected = [
+        f"Other users can replace {home}: the user bob can write to {holder}, the "
+        f'folder that holds it. To fix it, run chmod go-w "{holder}", or move '
+        "APOTHEM_HOME."
+    ]
+    assert warnings == (expected if named else [])
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+def test_outside_windows_an_access_list_name_is_read_back_as_getfacl_escapes_it(
+    tmp_path: Path,
+) -> None:
+    """getfacl writes a \\ in a name as \\\\, and a space, tab, line break,
+    colon or comma as \\ and three octal digits. The ps1 scripts read each
+    name back as it is, as the sh scripts do: your own entry as a domain
+    user (CORP\\alice, written CORP\\\\alice) is not named, and the others
+    are named as they are."""
+    _, home, warnings = _posix_warnings(
+        tmp_path,
+        home_mode="drwxrwxr-x+",
+        env={
+            "T_ME": "CORP\\alice",
+            "T_ACL": "|".join(
+                (
+                    "user::rwx",
+                    "user:CORP\\\\alice:rwx",
+                    "user:CORP\\\\bob:rwx",
+                    "group::r-x",
+                    "group:domain\\040admins:rwx",
+                    "mask::rwx",
+                    "other::r-x",
+                )
+            ),
+        },
+    )
+
+    assert warnings == [
+        _posix_home_message(home, "the user CORP\\bob, the group domain admins")
+    ]
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+def test_outside_windows_only_the_folder_that_holds_the_home_owned_by_another(
+    tmp_path: Path,
+) -> None:
+    """The owner check reads each folder's own owner: here only the folder
+    holding the home belongs to another user."""
+    holder, _, warnings = _posix_warnings(
+        tmp_path, env={"T_UP_OWNER": "bob", "T_UP_OWNER_UID": "1001"}
+    )
+
+    assert warnings == [
+        "Other users can change the code Apothem runs as you: the user bob owns "
+        f"{holder}. {_OWNER_FIX}"
+    ]
+
+
+@pytest.mark.skipif(_POWERSHELL_51 is None, reason="no Windows PowerShell 5.1")
+def test_outside_windows_a_failed_owner_read_keeps_the_rest_of_the_warning(
+    tmp_path: Path,
+) -> None:
+    """When ls -n fails, only the owner check is lost, as in sh: a home all
+    users may write is still named."""
+    _, home, warnings = _posix_warnings(
+        tmp_path, home_mode="drwxrwxrwx", env={"T_LSN_FAIL": "1"}
+    )
+
+    assert warnings == [_posix_home_message(home, "all users")]
 
 
 def _went_on_after_one_warning(plain: str, warning: str, next_step: str) -> bool:

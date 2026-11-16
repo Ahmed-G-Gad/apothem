@@ -446,12 +446,14 @@ being deleted, and the installer says where. A git clone of anything other than
 Apothem counts as a folder with no Apothem install. Before it fetches into an
 existing clone, the installer stops when the clone hides changes from git (files
 marked assume-unchanged or skip-worktree), when the clone's work tree is
-somewhere other than `APOTHEM_HOME`, when the clone holds a submodule, when
-`.git/info/attributes` names a filter or diff driver (`filter=` or `diff=`),
-or it or a config file is not a plain file, when the clone borrows objects from
-another repository, when a `.gitattributes` file in the work tree is untracked,
-changed or names such a driver, when files under `src` (spelled in any case) are
-untracked, or when the clone's own git
+somewhere other than `APOTHEM_HOME`, when the clone holds a submodule or a git
+repository that git does not track (outside the engine's own data folders, such
+as `backups`), when `.git/info/attributes` names a filter
+or diff driver (`filter=` or `diff=`), when it or a config file is not a plain
+file, when the clone borrows objects from another repository, when a
+`.gitattributes` file in the work tree is untracked, changed, names such a
+driver or has a committed copy git cannot read, when files under `src`
+(spelled in any case) are untracked, or when the clone's own git
 config (`.git/config`, and `.git/config.worktree` when the clone has one) holds
 a setting other than the ones `git clone` and `git init` write there for a full
 clone, branch settings (a branch's `remote` and `pushremote` must be `origin`),

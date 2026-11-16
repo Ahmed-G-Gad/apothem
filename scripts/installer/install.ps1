@@ -33,14 +33,17 @@
 #   git will not work in it because another user owns it, when its own git
 #   config (its config or config.worktree file) sets a key that is not on
 #   $CloneConfigAllow (the keys git clone and git init write, and a few
-#   that name no program, file or address), or when its info\attributes
-#   sets a filter, when it borrows objects from another repository, or
-#   when a .gitattributes file in its work tree is untracked or differs
-#   from the index. An update in place, and a dry run, also stop when the
-#   clone holds submodules, hides changes from git (assume-unchanged or
-#   skip-worktree files), has a work tree that is not APOTHEM_HOME, or
-#   holds files under src that git does not track. After the checkout,
-#   an update in place removes the Python cache folders under src.
+#   that name no program, file or address), when its info\attributes
+#   names a filter or diff driver, when it borrows objects from another
+#   repository, when a .gitattributes file in its work tree is
+#   untracked, differs from the index, or has a committed copy git
+#   cannot read or that names a filter or diff driver, or when it holds
+#   a git repository git does not track. An update in place, and a dry
+#   run, also stop when the clone holds submodules, hides changes from
+#   git (assume-unchanged or skip-worktree files), has a work tree that
+#   is not APOTHEM_HOME, or holds files under src that git does not
+#   track. After the checkout, an update in place removes the Python
+#   cache folders under src.
 #   Every git command on the clone runs with its hooks, its fsmonitor, the
 #   pager and automatic maintenance off, with only the file, git, http,
 #   https and ssh transports, with no fetch of a missing object, and
@@ -1249,24 +1252,29 @@ function Resolve-FolderLink {
 
 # Get-FolderWriter PATH KIND - who other than you can change PATH, as
 # Names, and Owner, set when PATH belongs to someone else. On Windows:
-# each account or group an allow entry gives write access, other than you,
-# SYSTEM, Administrators and TrustedInstaller, named as the Security tab
-# names it (Deny entries are not read, so a warning can be extra but is
-# never missed; CREATOR OWNER, OWNER RIGHTS and a sign-in session's entry
-# stand for the one who made, owns or uses the item); Inherited, true when
-# each such entry comes from the folder above; and Owner, the owner when
-# it is none of those. Elsewhere: 'all users' or 'the group G' from the
-# mode bits ls prints and the group stat names (a group named after you is
-# your own), each user and group an access list (getfacl, where installed)
-# lets write, and Owner, 'the user U' when U owns PATH and is neither you
-# nor root (ls -n gives the number). KIND: 'home' (PATH and what it holds),
-# 'parent' (others can rename or remove what PATH holds; a sticky folder
-# stops that, but not for its owner) or 'new' (a new folder made in PATH;
-# outside Windows, by the umask, given as Umask, and the group of PATH
-# when PATH is setgid or the system is macOS or a BSD). Windows only:
-# 'link' (others can delete the link PATH, whose own entries are read) and
-# 'make' (others can make folders in PATH); for these, an owner who is
-# someone else is one of the Names. A failed read names no one.
+# each account or group an allow entry gives write access, named as the
+# Security tab names it (Deny entries are not read, so a warning can be
+# extra but is never missed), other than you, this run's own sign-in
+# session, SYSTEM, Administrators, TrustedInstaller, CREATOR OWNER and
+# OWNER RIGHTS (the last two stand for the one who makes or owns the
+# item); Inherited, true when each such entry comes from the folder
+# above; and Owner, the owner when it is none of those. Elsewhere: 'all
+# users' from the mode bits ls prints, else 'the group G' (the group stat
+# names; a group named after you is your own) when its own access-list
+# entry (group::, where getfacl lists one: ls shows the list's mask in
+# the group bits) or else the group bits let it write, then each user and
+# group an access list (getfacl, where installed) lets write; and Owner,
+# 'the user U' when U owns PATH and is neither you nor root (ls -n gives
+# the number). KIND: 'home' (PATH and what it holds), 'parent' (others
+# can rename or remove what PATH holds; a sticky folder stops that, but
+# not for its owner) or 'new' (a new folder made in PATH, and the files
+# made in it; outside Windows, by the umask, given as Umask, and the
+# group of PATH when PATH is setgid or the system is macOS or a BSD).
+# Windows only: 'link' (others can delete the link PATH, whose own
+# entries are read) and 'make' (others can make folders in PATH); for
+# these, an owner who is someone else is one of the Names. A failed read
+# names no one; outside Windows, a failed read of the owner's number or
+# of the access list leaves the rest of the check as it is.
 function Get-FolderWriter {
     # Outside Windows, where this calls ls, PowerShell has no ls alias.
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', '')]
@@ -1278,9 +1286,15 @@ function Get-FolderWriter {
     try {
         if ((Get-Variable IsWindows -ValueOnly -ErrorAction SilentlyContinue) -ne $false) {
             $FwMe = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-            # SYSTEM, Administrators, TrustedInstaller, CREATOR OWNER,
-            # OWNER RIGHTS and a sign-in session.
-            $FwTrusted = '^S-1-(5-18|5-32-544|5-80-956008885-3418522649-1831038044-1853292631-2271478464|3-0|3-4|5-5-\d+-\d+)$'
+            # SYSTEM, Administrators, TrustedInstaller, CREATOR OWNER and
+            # OWNER RIGHTS. A sign-in session's entry (S-1-5-5-x-y) counts
+            # as yours only for this run's own session, which whoami names
+            # (.NET leaves it out of the groups it lists); another one is
+            # named.
+            $FwTrusted = '^S-1-(5-18|5-32-544|5-80-956008885-3418522649-1831038044-1853292631-2271478464|3-0|3-4)$'
+            $FwSession = ''
+            try { $FwSession = ([string](& "$env:SystemRoot\System32\whoami.exe" /logonid 2>$null)).Trim() } catch { $FwSession = '' }
+            $FwOurs = { param([string]$Sid) $Sid -eq $FwMe -or $Sid -eq $FwSession -or $Sid -match $FwTrusted }
             # Parent: delete children, change permissions, take ownership,
             # generic all. Home and new: also create files or folders,
             # delete, generic write. Link: delete, change permissions, take
@@ -1293,17 +1307,21 @@ function Get-FolderWriter {
             $FwSids = [System.Collections.Generic.List[string]]::new()
             foreach ($FwRule in $FwAcl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
                 $FwSid = [string]$FwRule.IdentityReference.Value
-                if ($FwSid -eq $FwMe -or $FwSid -match $FwTrusted -or $FwRule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
+                if ((& $FwOurs $FwSid) -or $FwRule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
                 if (([int]$FwRule.FileSystemRights -band $FwRights) -eq 0) { continue }
                 $FwInheritOnly = ($FwRule.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0
+                # A new folder takes an entry that passes to folders, and
+                # one that passes to files unless NoPropagateInherit keeps
+                # it on the files of PATH itself.
                 $FwToFolders = ($FwRule.InheritanceFlags -band [System.Security.AccessControl.InheritanceFlags]::ContainerInherit) -ne 0
-                if (($Kind -notmatch '^(home|new)$' -and $FwInheritOnly) -or ($Kind -eq 'new' -and -not $FwToFolders)) { continue }
+                $FwToFiles = ($FwRule.InheritanceFlags -band [System.Security.AccessControl.InheritanceFlags]::ObjectInherit) -ne 0 -and ($FwRule.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::NoPropagateInherit) -eq 0
+                if (($Kind -notmatch '^(home|new)$' -and $FwInheritOnly) -or ($Kind -eq 'new' -and -not ($FwToFolders -or $FwToFiles))) { continue }
                 if (-not $FwSids.Contains($FwSid)) { $FwSids.Add($FwSid) }
                 if (-not $FwRule.IsInherited) { $FwInherited = $false }
             }
             $FwBy = $FwAcl.GetOwner([System.Security.Principal.SecurityIdentifier])
             $FwBy = if ($FwBy) { [string]$FwBy.Value } else { '' }
-            if ($Kind -ne 'new' -and $FwBy -and $FwBy -ne $FwMe -and $FwBy -notmatch $FwTrusted) {
+            if ($Kind -ne 'new' -and $FwBy -and -not (& $FwOurs $FwBy)) {
                 if ($Kind -match '^(home|parent)$') {
                     $FwOwner = $FwBy
                 } elseif (-not $FwSids.Contains($FwBy)) {
@@ -1311,9 +1329,10 @@ function Get-FolderWriter {
                     $FwInherited = $false
                 }
             }
-            # As the Security tab names them: a built-in group or an NT
-            # AUTHORITY name without its domain, any other as DOMAIN\name,
-            # and one that cannot be looked up by its SID.
+            # As the Security tab names them: a built-in group, an NT
+            # AUTHORITY or an APPLICATION PACKAGE AUTHORITY name without
+            # its domain, any other as DOMAIN\name, and one that cannot be
+            # looked up by its SID.
             $FwName = {
                 param([string]$Sid)
                 try {
@@ -1321,7 +1340,7 @@ function Get-FolderWriter {
                 } catch {
                     return $Sid
                 }
-                if ($Sid -match '^S-1-(1-0|5-\d+|5-32-\d+)$') { $FwText = $FwText.Substring($FwText.LastIndexOf('\') + 1) }
+                if ($Sid -match '^S-1-(1-0|5-\d+|5-32-\d+|15-[23]-\d+)$') { $FwText = $FwText.Substring($FwText.LastIndexOf('\') + 1) }
                 return $FwText
             }
             $FwNames = @($FwSids | ForEach-Object { & $FwName $_ })
@@ -1345,10 +1364,17 @@ function Get-FolderWriter {
             }
             if ($Kind -ne 'new') {
                 # The owner by number (ls -n), and the access list where
-                # getfacl is installed.
-                $FwNum = @(& ls -ldnL $Path)
-                $FwId = if ($LASTEXITCODE -eq 0 -and $FwNum.Count) { @(-split [string]$FwNum[0]) } else { @() }
-                $FwUid = [string](& id -u)
+                # getfacl is installed. A failed read of either leaves the
+                # rest of the check as it is, as in install.sh.
+                $FwId = @()
+                $FwUid = ''
+                try {
+                    $FwNum = @(& ls -ldnL $Path)
+                    if ($LASTEXITCODE -eq 0 -and $FwNum.Count) { $FwId = @(-split [string]$FwNum[0]) }
+                    $FwUid = [string](& id -u)
+                } catch {
+                    $FwId = @()
+                }
                 if ($FwId.Count -gt 2 -and $FwField[2] -and $FwUid -and $FwId[2] -ne '0' -and $FwId[2] -ne $FwUid) { $FwOwner = "the user $($FwField[2])" }
                 $prior = $ErrorActionPreference
                 $ErrorActionPreference = 'Continue'
@@ -1369,17 +1395,34 @@ function Get-FolderWriter {
             }
             $FwSticky = $Kind -eq 'parent' -and $FwMode -cmatch '^.{9}[tT]'
             if ($FwSticky) { $FwMode = '' }
-            if ($FwMode -cmatch '^.{8}w') { $FwNames = @('all users') }
-            elseif ($FwMode -cmatch '^.{5}w' -and $FwGroup -cne $FwMe) { $FwNames = @("the group $FwGroup") }
+            # The group's own access-list entry (group::) decides for the
+            # group where the list has one: ls shows the list's mask in the
+            # group bits.
+            $FwGroupWrites = $FwMode -cmatch '^.{5}w'
+            $FwListed = @()
             foreach ($FwAce in $FwAces) {
-                if ($FwSticky -or "$FwAce" -cnotmatch '^(user|group):([^:]+):([^:\s]*)') { continue }
+                if ($FwSticky -or "$FwAce" -cnotmatch '^(user|group):([^:]*):([^:\s]*)') { continue }
                 # Each -cmatch below sets $Matches anew: read this one first.
-                $FwWho = "the $($Matches[1]) $($Matches[2])"
-                $FwSkip = $Matches[2] -ceq $FwMe
+                # getfacl writes a \ in a name as \\, and a space, tab, line
+                # break, colon or comma as \ and three octal digits: the name
+                # is read back as it is (as install.sh's dq does).
+                $FwAceName = [regex]::Replace($Matches[2], '\\(\\|[0-7]{3})', { param($FwEscape) if ($FwEscape.Length -eq 2) { '\' } else { [string][char][Convert]::ToInt32($FwEscape.Value.Substring(1), 8) } })
+                $FwWho = "the $($Matches[1]) $FwAceName"
+                $FwOwning = $Matches[1] -ceq 'group' -and $FwAceName -ceq ''
+                $FwSkip = $FwAceName -ceq '' -or $FwAceName -ceq $FwMe
                 $FwPerm = $Matches[3]
                 if ("$FwAce" -cmatch '^user:root:') { $FwSkip = $true }
-                if ("$FwAce" -cmatch '#effective:(.*)') { $FwPerm = $Matches[1] }
-                if ($FwPerm.Contains('w') -and -not $FwSkip -and $FwNames -cnotcontains $FwWho) { $FwNames += $FwWho }
+                if ("$FwAce" -cmatch '#\s*effective:\s*(.*)') { $FwPerm = $Matches[1] }
+                if ($FwOwning) {
+                    $FwGroupWrites = $FwPerm.Contains('w')
+                } elseif ($FwPerm.Contains('w') -and -not $FwSkip) {
+                    $FwListed += $FwWho
+                }
+            }
+            if ($FwMode -cmatch '^.{8}w') { $FwNames = @('all users') }
+            elseif ($FwGroupWrites -and $FwGroup -cne $FwMe) { $FwNames = @("the group $FwGroup") }
+            foreach ($FwWho in $FwListed) {
+                if ($FwNames -cnotcontains $FwWho) { $FwNames += $FwWho }
             }
         }
     } catch {
@@ -1749,6 +1792,13 @@ try {
 # GIT_NO_LAZY_FETCH and GIT_ALLOW_PROTOCOL as they were, and the finally
 # block at the end puts them all back.
 $SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS; GIT_NO_LAZY_FETCH = $env:GIT_NO_LAZY_FETCH; GIT_ALLOW_PROTOCOL = $env:GIT_ALLOW_PROTOCOL }
+# git writes paths and names in UTF-8, and PowerShell reads a program's
+# output in [Console]::OutputEncoding, the console's code page, where a
+# non-ASCII path reads as one that does not exist. It is UTF-8 for the
+# run, and the finally block at the end puts it back (a host with no
+# console keeps its own).
+$SavedOutputEncoding = $null
+try { $SavedOutputEncoding = [Console]::OutputEncoding; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { $SavedOutputEncoding = $null }
 try {
 foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_CEILING_DIRECTORIES', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_EXEC_PATH', 'GIT_TEMPLATE_DIR', 'GIT_CONFIG', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_ATTR_SOURCE')) {
     if (Test-Path -LiteralPath "Env:$GitVar") {
@@ -2074,16 +2124,21 @@ function Assert-CloneGit {
 # Get-ClonePath DIR NAME - where the clone at DIR keeps NAME, as a full
 # path, or $null when git cannot say: config and info\ sit in the git folder
 # all its worktrees share, config.worktree in the worktree's own (mirrors
-# install.sh's git_path).
+# install.sh's git_path). git writes the path in UTF-8, so it is read as
+# UTF-8: in the console's code page a non-ASCII folder name would read as
+# a path that does not exist, and the checks of that file would be skipped.
 function Get-ClonePath {
     param([string]$Dir, [string]$Name)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $GpEncoding = $null
+    try { $GpEncoding = [Console]::OutputEncoding; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { $GpEncoding = $null }
     try {
         $GpPath = "$(& git @GitNoProgram -C $Dir rev-parse --git-path $Name 2>$null)"
         $GpCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
+        if ($GpEncoding) { try { [Console]::OutputEncoding = $GpEncoding } catch { $GpEncoding = $null } }
     }
     if ($GpCode -ne 0 -or -not $GpPath) { return $null }
     if ($GpPath -match '^(/|[A-Za-z]:[\\/])') { return $GpPath }
@@ -2138,8 +2193,9 @@ function Test-AttributeDriver {
 # refs from), or sets branch.<name>.remote or branch.<name>.pushremote to
 # anything but origin; when the clone borrows objects from another
 # repository (objects\info\alternates or http-alternates); or when its
-# info\attributes sets a filter, whose program checkout and diff run
-# (mirrors install.sh's check_clone_config). Each file is listed alone, so
+# info\attributes names a filter or diff driver (Test-AttributeDriver),
+# whose program git runs while it reads the clone (mirrors install.sh's
+# check_clone_config). Each file is listed alone, so
 # its include lines are not followed (include is not on the list), and
 # each name and value is read up to the NUL byte that ends it:
 # PowerShell ends a line of a program's output at CR as well as LF, and
@@ -2248,17 +2304,21 @@ function Assert-CloneConfig {
 
 # Get-CloneRecord DIR ARGS - run git ARGS (a listing with -z) in the clone
 # at DIR and return its records, each ended by a NUL byte, in git's order;
-# a line break inside one reads as LF. A failed git command stops the run
-# (mirrors install.sh's git_z).
+# a line break inside one reads as LF. git writes paths in UTF-8, so the
+# listing is read as UTF-8 (see Get-ClonePath). A failed git command stops
+# the run (mirrors install.sh's git_z).
 function Get-CloneRecord {
     param([string]$Dir, [string[]]$GitArgs)
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $GrEncoding = $null
+    try { $GrEncoding = [Console]::OutputEncoding; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { $GrEncoding = $null }
     try {
         $GrText = (@(& git @GitNoProgram -C $Dir @GitArgs 2>$null | ForEach-Object { [string]$_ }) -join "`n")
         $GrCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
+        if ($GrEncoding) { try { [Console]::OutputEncoding = $GrEncoding } catch { $GrEncoding = $null } }
     }
     $GrParts = $GrText.Split([char]0)
     if ($GrCode -ne 0 -or $GrParts[-1] -ne '') {
@@ -2271,12 +2331,35 @@ function Get-CloneRecord {
 # (git cat-file blob, which runs no filter), read from git's output as
 # bytes and ended by LF only, as git reads attributes: PowerShell's reader
 # of a program's output also ends a line at a lone CR, which would hide
-# the rest of a line from Test-AttributeDriver. A failed read gives none.
+# the rest of a line from Test-AttributeDriver. git is the program `& git`
+# runs, through an alias to it; when the first git is a function or a
+# script (a wrapper in a profile, say), which cannot be read from as
+# bytes, it is the first git program on PATH, and with none the run stops
+# with a message that says so. The bytes must hash to ID as git hashes a
+# blob (SHA-1, or SHA-256 for a 64-digit ID): git does not check that as
+# it reads an object, so a replaced object file could hand the check
+# other text than the committed one (mirrors install.sh's
+# check_clone_attributes). Any other failure, git's own included, gives
+# $null; an empty blob gives one empty line.
 function Read-CloneBlob {
     param([string]$Dir, [string]$Id)
+    $RbGit = $null
+    try {
+        $RbGit = Get-Command git -ErrorAction Stop | Select-Object -First 1
+        if ($RbGit -is [System.Management.Automation.AliasInfo]) { $RbGit = $RbGit.ResolvedCommand }
+        if ($RbGit -isnot [System.Management.Automation.ApplicationInfo]) { $RbGit = Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1 }
+    } catch {
+        $RbGit = $null
+    }
+    if ($RbGit -isnot [System.Management.Automation.ApplicationInfo]) {
+        Write-Fail "Could not run git to read the committed .gitattributes files in $Dir. In this PowerShell session, git is a function or a script, and no git program is on PATH. Add git's folder to PATH, then re-run."
+    }
+    $RbRun = $null
+    $RbBytes = $null
+    $RbHash = $null
     try {
         $RbArgs = @($GitNoProgram + @('-C', $Dir, 'cat-file', 'blob', $Id))
-        $RbInfo = [System.Diagnostics.ProcessStartInfo]::new((Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Path)
+        $RbInfo = [System.Diagnostics.ProcessStartInfo]::new($RbGit.Path)
         if ($RbInfo.PSObject.Properties['ArgumentList']) {
             foreach ($RbArg in $RbArgs) { $RbInfo.ArgumentList.Add($RbArg) }
         } else {
@@ -2284,7 +2367,9 @@ function Read-CloneBlob {
             # is quoted as the C runtime reads a command line.
             $RbInfo.Arguments = @($RbArgs | ForEach-Object { if ($_ -eq '' -or $_ -match '[\s"]') { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' } else { $_ } }) -join ' '
         }
-        $RbInfo.WorkingDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+        # git -C picks the clone; git starts in it too, so a current folder
+        # that is gone does not matter.
+        $RbInfo.WorkingDirectory = $Dir
         $RbInfo.UseShellExecute = $false
         $RbInfo.RedirectStandardOutput = $true
         $RbInfo.RedirectStandardError = $true
@@ -2295,32 +2380,57 @@ function Read-CloneBlob {
         $RbRun.StandardOutput.BaseStream.CopyTo($RbBytes)
         $RbRun.WaitForExit()
         [void]$RbError.Result
-        if ($RbRun.ExitCode -ne 0) { return }
-        return [System.Text.Encoding]::GetEncoding(28591).GetString($RbBytes.ToArray()).Split([char]10)
+        if ($RbRun.ExitCode -ne 0) { return $null }
+        $RbData = $RbBytes.ToArray()
+        $RbHash = if ($Id.Length -eq 64) { [System.Security.Cryptography.SHA256]::Create() } else { [System.Security.Cryptography.SHA1]::Create() }
+        $RbHead = [System.Text.Encoding]::ASCII.GetBytes("blob $($RbData.Length)`0")
+        [void]$RbHash.TransformBlock($RbHead, 0, $RbHead.Length, $null, 0)
+        [void]$RbHash.TransformFinalBlock($RbData, 0, $RbData.Length)
+        if ((-join @($RbHash.Hash | ForEach-Object { $_.ToString('x2') })) -cne $Id) { return $null }
+        # The comma keeps the lines one array, however few there are.
+        return , ([System.Text.Encoding]::GetEncoding(28591).GetString($RbData).Split([char]10))
     } catch {
-        return
+        return $null
+    } finally {
+        if ($RbRun) { $RbRun.Dispose() }
+        if ($RbBytes) { $RbBytes.Dispose() }
+        if ($RbHash) { $RbHash.Dispose() }
     }
 }
 
 # Assert-CloneAttributeFile DIR - stop when the work tree of the clone at DIR
 # holds a .gitattributes file (in any ASCII case) that git does not
 # track, or a tracked one that differs from HEAD or the index, is not a
-# plain file, or whose index copy names a filter or diff driver (read as
-# bytes with git cat-file, which runs no filter: Read-CloneBlob): git
-# status, diff and checkout would apply it, and it can name a driver the
-# user's own config defines. Tracked files come
-# first, in index order, then untracked ones, ignored files and files
-# in untracked folders included. A tracked file missing from the work tree is left to the
-# check for changes (git then reads the index copy). Files are compared
-# without filters (git hash-object --no-filters), so nothing here runs
-# one (mirrors install.sh's check_clone_attributes).
+# plain file, whose index copy git cannot read (or reads as bytes that do
+# not hash to its ID), or whose index or work-tree copy names a filter or
+# diff driver (each read as bytes; the index copy with git cat-file,
+# which runs no filter: Read-CloneBlob): git status, diff and checkout
+# would apply it, and it can name a driver the user's own config defines.
+# Tracked files come first, in index order, then untracked ones, ignored
+# files and files in untracked folders included; last, a git repository
+# git does not track (git lists it as one path ending in /, and nothing
+# inside it), whose attributes git would apply to what a release adds
+# there. Untracked paths in one of the engine's data folders (backups,
+# state, plans, memory, contexts, learning, providers), where no release
+# writes, are skipped when git tracks nothing in that folder, its name in
+# any ASCII case. A tracked file missing from the work tree is left to
+# the check for changes (git then reads the index copy). Files are
+# compared without filters (git hash-object --no-filters), so nothing
+# here runs one (mirrors install.sh's check_clone_attributes).
 function Assert-CloneAttributeFile {
     param([string]$Dir)
     $CaIndex = @(Get-CloneRecord $Dir @('ls-files', '-s', '-z'))
     $CaHead = @(Get-CloneRecord $Dir @('ls-tree', '-r', '-z', 'HEAD'))
     $CaOther = @(Get-CloneRecord $Dir @('ls-files', '-o', '-z'))
+    $CaTracked = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($CaRecord in @($CaHead + $CaIndex)) {
+        $CaTop = $CaRecord.Substring($CaRecord.IndexOf("`t") + 1).Split('/')[0]
+        [void]$CaTracked.Add([regex]::Replace($CaTop, '[A-Z]', { param($CaLetter) $CaLetter.Value.ToLowerInvariant() }))
+    }
+    $CaOther = @($CaOther | Where-Object { $CaTracked.Contains($_.Split('/')[0]) -or @('backups', 'state', 'plans', 'memory', 'contexts', 'learning', 'providers') -cnotcontains $_.Split('/')[0] })
     $CaIsAttributes = { param([string]$Path) $Path.Substring($Path.LastIndexOf('/') + 1) -cmatch '^\.[Gg][Ii][Tt][Aa][Tt][Tt][Rr][Ii][Bb][Uu][Tt][Ee][Ss]\z' }
     $CaChanged = { param([string]$Path) Write-Fail "$Dir has a changed .gitattributes file at $Dir/$Path. git would apply it while it reads the clone. Undo the change, then re-run." }
+    $CaDriver = { param([string]$Path) Write-Fail "$Dir has a .gitattributes file at $Dir/$Path that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run." }
     # HEAD's entries read <mode> <type> <id><TAB><path>, the index's
     # <mode> <id> <stage><TAB><path>.
     $CaHeadEntry = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::Ordinal)
@@ -2340,9 +2450,11 @@ function Assert-CloneAttributeFile {
         $CaWant = $null
         [void]$CaHeadEntry.TryGetValue($CaPath, [ref]$CaWant)
         if ($CaField[-1] -cne '0' -or $CaWant -cne "$($CaField[0]) $($CaField[1])" -or $CaPath.Contains("`n")) { & $CaChanged $CaPath }
-        if (Test-AttributeDriver (Read-CloneBlob $Dir $CaField[1])) {
-            Write-Fail "$Dir has a .gitattributes file at $Dir/$CaPath that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
+        $CaLines = Read-CloneBlob $Dir $CaField[1]
+        if ($null -eq $CaLines) {
+            Write-Fail "$Dir has a .gitattributes file at $Dir/$CaPath whose committed copy git could not read. Repair the clone or move it aside, then re-run."
         }
+        if (Test-AttributeDriver $CaLines) { & $CaDriver $CaPath }
         try {
             $CaAttr = [System.IO.File]::GetAttributes("$Dir/$CaPath")
         } catch [System.IO.FileNotFoundException], [System.IO.DirectoryNotFoundException] {
@@ -2360,6 +2472,15 @@ function Assert-CloneAttributeFile {
             $ErrorActionPreference = $prior
         }
         if ($CaIdCode -ne 0 -or $CaId -cne $CaField[1]) { & $CaChanged $CaPath }
+        # git applies the work-tree copy, so its own bytes are read too
+        # (lines ended by LF only): only the ID ties them to the index copy
+        # read above.
+        try {
+            $CaWork = [System.Text.Encoding]::GetEncoding(28591).GetString([System.IO.File]::ReadAllBytes("$Dir/$CaPath")).Split([char]10)
+        } catch {
+            $CaWork = @()
+        }
+        if (Test-AttributeDriver $CaWork) { & $CaDriver $CaPath }
     }
     foreach ($CaPath in $CaHeadEntry.Keys) {
         if (-not $CaSeen.Contains($CaPath)) { & $CaChanged $CaPath }
@@ -2367,6 +2488,11 @@ function Assert-CloneAttributeFile {
     foreach ($CaPath in $CaOther) {
         if (& $CaIsAttributes $CaPath) {
             Write-Fail "$Dir has a .gitattributes file that git does not track, at $Dir/$CaPath. git would apply it while it reads the clone. Remove it, then re-run."
+        }
+    }
+    foreach ($CaPath in $CaOther) {
+        if ($CaPath.EndsWith('/', [System.StringComparison]::Ordinal)) {
+            Write-Fail "$Dir holds a git repository that git does not track, at $Dir/$($CaPath.Substring(0, $CaPath.Length - 1)). A release tree has none, and git would read the attributes in it. Move it out of $Dir, then re-run."
         }
     }
 }
@@ -2543,8 +2669,10 @@ function Assert-CloneGitlink {
 # And no tracked file may be marked assume-unchanged or skip-worktree (git
 # ls-files -v prints a lower-case letter or S for one), since git then
 # hides a change to it. Last, no .gitattributes file in its work tree
-# may be untracked or differ from the index (Assert-CloneAttributeFile),
-# and no file under src may be untracked (Assert-SourceTracked).
+# may be untracked, differ from the index, or have a committed copy git
+# cannot read or that names a driver, no git repository git does not
+# track may be in it (Assert-CloneAttributeFile), and no file under src
+# may be untracked (Assert-SourceTracked).
 # Nothing here writes, so a dry run runs it too.
 function Assert-CleanClone {
     param([string]$Dir)
@@ -2912,6 +3040,11 @@ if (-not $Source) {
             Invoke-GitOutsideRepository { & git -c core.longpaths=true clone --quiet --no-checkout $ApothemRepo $ClTree }
             if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
             Write-Bold "Verifying source signature"
+            # Like every git command on a clone, the tag check and the
+            # checkout take $GitNoProgram: its core.longpaths=true lets the
+            # checkout write paths past Windows' usual limit under the
+            # staging folder, which git -c on the clone does not keep.
+            $GitSafe = $GitNoProgram
             Assert-FetchedRef $ClTree
             Invoke-CheckoutRef $ClTree
         }
@@ -3137,7 +3270,8 @@ completion (opt-in; appends to your profile):
 "@
 }
 } finally {
-    # The caller's git variables, as they were before the run.
+    # The caller's git variables, and the encoding PowerShell read a
+    # program's output in, as they were before the run.
     foreach ($GitVar in @($SavedGitEnv.Keys)) {
         if ($null -eq $SavedGitEnv[$GitVar]) {
             Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
@@ -3145,6 +3279,7 @@ completion (opt-in; appends to your profile):
             Set-Item -LiteralPath "Env:$GitVar" -Value $SavedGitEnv[$GitVar]
         }
     }
+    if ($SavedOutputEncoding) { try { [Console]::OutputEncoding = $SavedOutputEncoding } catch { $SavedOutputEncoding = $null } }
 }
 } finally {
     Unlock-ApothemHome

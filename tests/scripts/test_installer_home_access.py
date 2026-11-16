@@ -98,13 +98,16 @@ def _stub_bin(
     uname: str | None,
     stat_group: str | None = None,
     uid: str | None = None,
-    acl: tuple[str, str] | None = None,
+    acl: dict[str, str] | None = None,
+    owner_number: tuple[str, str] | None = None,
 ) -> Path:
     """A folder of stub programs: ``id -un`` prints USER, ``id -gn`` prints
     GROUP and ``id -u`` prints UID (other ``id`` calls run the real one);
     ``uname`` prints UNAME; ``stat`` prints STAT_GROUP; ``getfacl`` prints
-    ACL's text for ACL's folder and nothing for any other. A None leaves that
-    answer to the real program."""
+    ACL's text for each folder ACL names and nothing for any other;
+    ``ls -ldnL`` gives OWNER_NUMBER's folder the owner number it names, or
+    fails when that number is ``fail`` (other ``ls`` calls run the real
+    one). A None leaves that answer to the real program."""
     stubs = tmp_path / "stub-bin"
     stubs.mkdir(exist_ok=True)
     real_id = shutil.which("id") or "/usr/bin/id"
@@ -129,14 +132,31 @@ def _stub_bin(
         )
         (stubs / "stat").chmod(EXECUTABLE_MODE)
     if acl is not None:
-        folder, text = acl
-        (stubs / "acl.txt").write_text(text + "\n", encoding="utf-8")
+        cases = []
+        for index, (folder, text) in enumerate(acl.items()):
+            listing = stubs / f"acl-{index}.txt"
+            listing.write_text(text + "\n", encoding="utf-8")
+            cases.append(f"    '{folder}') cat '{listing}' ;;\n")
         (stubs / "getfacl").write_text(
-            f"#!/bin/sh\n[ \"$2\" = '{folder}' ] && cat '{stubs / 'acl.txt'}'\n"
-            "exit 0\n",
+            '#!/bin/sh\ncase "$2" in\n' + "".join(cases) + "esac\nexit 0\n",
             encoding="utf-8",
         )
         (stubs / "getfacl").chmod(EXECUTABLE_MODE)
+    if owner_number is not None:
+        folder, number = owner_number
+        real_ls = shutil.which("ls") or "/bin/ls"
+        answer = (
+            "exit 2"
+            if number == "fail"
+            else f"'{real_ls}' \"$@\" | awk '{{ $3 = \"{number}\"; print }}'; exit 0"
+        )
+        (stubs / "ls").write_text(
+            "#!/bin/sh\n"
+            f'if [ "$1" = -ldnL ] && [ "$3" = \'{folder}\' ]; then {answer}; fi\n'
+            f"exec '{real_ls}' \"$@\"\n",
+            encoding="utf-8",
+        )
+        (stubs / "ls").chmod(EXECUTABLE_MODE)
     return stubs
 
 
@@ -150,7 +170,8 @@ def _warnings(
     uname: str | None = None,
     stat_group: str | None = None,
     uid: str | None = None,
-    acl: tuple[str, str] | None = None,
+    acl: dict[str, str] | None = None,
+    owner_number: tuple[str, str] | None = None,
     shell: str | None = None,
 ) -> list[str]:
     """Run warn_home_access for APOTHEM_HOME=HOME and return its warnings."""
@@ -163,6 +184,7 @@ def _warnings(
         stat_group=stat_group,
         uid=uid,
         acl=acl,
+        owner_number=owner_number,
     )
     env = dict(os.environ)
     env["PATH"] = f"{stubs}{os.pathsep}{env.get('PATH', os.defpath)}"
@@ -450,7 +472,10 @@ def test_a_home_and_a_folder_someone_else_owns_name_the_owner(
 @posix_only
 def test_folders_root_owns_give_no_warning(tmp_path: Path) -> None:
     """root can change any folder anyway, so a folder root owns, such as
-    /usr/share, is not named."""
+    /usr/share, is not named. Run as root, the folder's owner is you, so
+    the test would show nothing about root."""
+    if os.getuid() == 0:
+        pytest.skip("root owns these folders and is you here, so nothing is tested")
     home = Path("/usr/share")
     for folder in (home, home.parent):
         info = folder.stat() if folder.is_dir() else None
@@ -462,37 +487,279 @@ def test_folders_root_owns_give_no_warning(tmp_path: Path) -> None:
     assert lines == []
 
 
-@posix_only
-def test_an_access_list_that_lets_others_write_names_them(tmp_path: Path) -> None:
-    """getfacl, where installed, lists the users and groups an access list
-    gives write access. You, root, a group named after you, an entry the
-    mask takes write from (#effective) and a default entry (for what is
-    made inside) are not named; the folder holding the home has none."""
-    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
-    home = _folder(parent / "home", DEFAULT_DIR)
-    real = os.path.realpath(home)
-    text = "\n".join(
+#: Access lists as getfacl prints them, each on a folder whose mode bits a
+#: real access list gives it (the group bits are the mask), the group stat
+#: names (None: the folder's real group, which is not yours here), and the
+#: names the warning gives (empty: no warning).
+ACCESS_LIST_CASES: tuple[tuple[str, int, str | None, tuple[str, ...], str], ...] = (
+    (
+        # You, root, a group named after you and a default entry (for what
+        # is made inside) are not named; the group's own entry (group::)
+        # has no w, so the mask's w in the group bits names no group.
+        "named-entries",
+        DEFAULT_DIR | stat.S_IWGRP,
+        None,
         (
             "# file: home",
             "user::rwx",
             "user:bob:rwx",
             f"user:{TEST_USER}:rwx",
             "user:root:rwx",
-            "user:carol:rwx\t\t\t#effective:r-x",
             "group::r-x",
             f"group:{TEST_USER}:rwx",
             "group:staff:rwx",
             "mask::rwx",
             "other::r-x",
             "default:user:dave:rwx",
-        )
+        ),
+        "the user bob, the group staff",
+    ),
+    (
+        "only-you",
+        DEFAULT_DIR | stat.S_IWGRP,
+        None,
+        ("user::rwx", f"user:{TEST_USER}:rwx", "group::r-x", "mask::rwx", "other::r-x"),
+        "",
+    ),
+    (
+        # The mask takes write from every entry: getfacl says so after #
+        # (as Linux writes it, and as FreeBSD writes it, with spaces).
+        "masked",
+        DEFAULT_DIR,
+        None,
+        (
+            "user::rwx",
+            "user:carol:rwx\t\t\t#effective:r-x",
+            "user:erin:rwx\t\t# effective: r-x",
+            "group::r-x",
+            "group:wheel:rwx\t\t# effective: r-x",
+            "mask::r-x",
+            "other::r-x",
+        ),
+        "",
+    ),
+    (
+        # The group's own entry lets it write: it is named once, first.
+        "group-entry-writes",
+        DEFAULT_DIR | stat.S_IWGRP,
+        "staff",
+        (
+            "user::rwx",
+            "user:bob:rwx",
+            "group::rwx",
+            "group:staff:rwx",
+            "mask::rwx",
+            "other::r-x",
+        ),
+        "the group staff, the user bob",
+    ),
+)
+
+
+@posix_only
+@pytest.mark.parametrize(
+    ("case", "mode", "stat_group", "entries", "names"),
+    ACCESS_LIST_CASES,
+    ids=[c[0] for c in ACCESS_LIST_CASES],
+)
+def test_an_access_list_that_lets_others_write_names_them(
+    tmp_path: Path,
+    case: str,
+    mode: int,
+    stat_group: str | None,
+    entries: tuple[str, ...],
+    names: str,
+) -> None:
+    """getfacl, where installed, lists the users and groups an access list
+    gives write access, and each is named. With an access list, ls shows
+    the list's mask in the group bits, so the folder's group is named only
+    when its own entry (group::) lets it write. You, root, a group named
+    after you, an entry the mask takes write from and a default entry are
+    not named; the folder holding the home has no list."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", mode)
+    real = os.path.realpath(home)
+
+    lines = _warnings(
+        tmp_path,
+        home,
+        user=TEST_USER,
+        stat_group=stat_group,
+        acl={real: "\n".join(entries)},
     )
 
-    lines = _warnings(tmp_path, home, user=TEST_USER, acl=(real, text))
+    expected = (
+        [
+            f"{H_OPENING} {names} can write to {real}. "
+            f'To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
+        ]
+        if names
+        else []
+    )
+    assert lines == expected
+
+
+@posix_only
+@pytest.mark.parametrize(
+    ("parent_mode", "named"),
+    [(0o770, True), (STICKY_OPEN_DIR, False)],
+    ids=["private", "sticky"],
+)
+def test_an_access_list_on_the_folder_that_holds_the_home(
+    tmp_path: Path, parent_mode: int, named: bool
+) -> None:
+    """An access-list entry that lets bob write to the folder holding the
+    home lets bob rename the home away; a sticky folder stops that, so its
+    access list is not read."""
+    parent = _folder(tmp_path / "parent", parent_mode)
+    home = _folder(parent / "home", DEFAULT_DIR)
+    real, real_parent = os.path.realpath(home), os.path.realpath(parent)
+    entries = ("user::rwx", "user:bob:rwx", "group::---", "mask::rwx", "other::---")
+
+    lines = _warnings(
+        tmp_path, home, user=TEST_USER, acl={real_parent: "\n".join(entries)}
+    )
+
+    expected = [
+        f"{P_OPENING}{real}: the user bob can write to {real_parent}, the folder "
+        f'that holds it. To fix it, run chmod go-w "{real_parent}", or move '
+        "APOTHEM_HOME."
+    ]
+    assert lines == (expected if named else [])
+
+
+@posix_only
+def test_only_the_folder_that_holds_the_home_owned_by_another_user(
+    tmp_path: Path,
+) -> None:
+    """The owner check reads each folder's own owner: here only the folder
+    holding the home belongs to another user number (ls -n)."""
+    if os.getuid() == 0:
+        pytest.skip("root owns these folders, and root is never named")
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR)
+    real_parent = os.path.realpath(parent)
+
+    lines = _warnings(tmp_path, home, owner_number=(real_parent, "4242"))
 
     assert lines == [
-        f"{H_OPENING} the user bob, the group staff can write to {real}. "
+        f"{H_OPENING} the user {_owner_name(parent)} owns {real_parent}. {OWNER_FIX}"
+    ]
+
+
+@posix_only
+def test_the_warning_goes_on_when_the_owner_number_cannot_be_read(
+    tmp_path: Path,
+) -> None:
+    """When ls -n fails, only the owner check is lost: a home all users may
+    write is still named (the ps1 scripts do the same outside Windows)."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR | stat.S_IWOTH)
+    real = os.path.realpath(home)
+
+    lines = _warnings(tmp_path, home, user=TEST_USER, owner_number=(real, "fail"))
+
+    assert lines == [
+        f'{H_OPENING} all users can write to {real}. To fix it, run chmod go-w "{real}", '
+        "or move APOTHEM_HOME."
+    ]
+
+
+@posix_only
+@pytest.mark.parametrize("shell", _shells())
+def test_a_group_name_holding_a_backslash_is_named_as_it_is(
+    tmp_path: Path, shell: str
+) -> None:
+    """A group from a Windows domain (winbind, sssd) can hold a backslash.
+    The names reach awk through the environment, which keeps a backslash;
+    awk -v reads one as an escape, so \\t became a tab."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR | stat.S_IWGRP)
+    real = os.path.realpath(home)
+
+    lines = _warnings(
+        tmp_path, home, user=TEST_USER, stat_group="CORP\\tools", shell=shell
+    )
+
+    assert lines == [
+        f"{H_OPENING} the group CORP\\tools can write to {real}. "
         f'To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
+    ]
+
+
+@posix_only
+@pytest.mark.parametrize("shell", _shells())
+def test_a_user_name_holding_a_backslash_is_read_as_it_is(
+    tmp_path: Path, shell: str
+) -> None:
+    """A user from a Windows domain can have a name such as CORP\\tom, and a
+    group of that name is their own. The user name reaches awk through the
+    environment too: awk -v would read it as CORP, a tab and om, and name
+    the user's own group."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR | stat.S_IWGRP)
+
+    lines = _warnings(
+        tmp_path, home, user="CORP\\tom", stat_group="CORP\\tom", shell=shell
+    )
+
+    assert lines == []
+
+
+@posix_only
+@pytest.mark.parametrize("shell", _shells())
+def test_a_primary_group_holding_a_backslash_is_named_as_it_is(
+    tmp_path: Path, shell: str
+) -> None:
+    """A new home takes your primary group (id -gn), which on a host joined
+    to a Windows domain can hold a backslash. It reaches awk through the
+    environment and is named as it is."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = parent / "home"
+
+    lines = _warnings(
+        tmp_path, home, umask="002", user=TEST_USER, group="CORP\\tools", shell=shell
+    )
+
+    assert lines == [
+        f"A new {home} would let the group CORP\\tools change the code Apothem runs "
+        "as you (umask 0002). To fix it, run umask 022, then run the installer again."
+    ]
+
+
+@posix_only
+@pytest.mark.parametrize("shell", _shells())
+def test_an_access_list_name_is_read_back_as_getfacl_escapes_it(
+    tmp_path: Path, shell: str
+) -> None:
+    """getfacl writes a \\ in a name as \\\\, and a space, tab, line break,
+    colon or comma as \\ and three octal digits. Each name is read back as
+    it is: your own entry as a domain user (CORP\\alice, written
+    CORP\\\\alice) is not named, and the others are named as they are."""
+    parent = _folder(tmp_path / "parent", PRIVATE_DIR)
+    home = _folder(parent / "home", DEFAULT_DIR | stat.S_IWGRP)
+    real = os.path.realpath(home)
+    entries = (
+        "user::rwx",
+        "user:CORP\\\\alice:rwx",
+        "user:CORP\\\\bob:rwx",
+        "group::r-x",
+        "group:domain\\040admins:rwx",
+        "mask::rwx",
+        "other::r-x",
+    )
+
+    lines = _warnings(
+        tmp_path,
+        home,
+        user="CORP\\alice",
+        acl={real: "\n".join(entries)},
+        shell=shell,
+    )
+
+    assert lines == [
+        f"{H_OPENING} the user CORP\\bob, the group domain admins can write to "
+        f'{real}. To fix it, run chmod go-w "{real}", or move APOTHEM_HOME.'
     ]
 
 

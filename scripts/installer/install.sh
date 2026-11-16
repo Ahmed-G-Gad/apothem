@@ -9,58 +9,26 @@
 #           non-zero on failure. POSIX sh only: the `curl … | sh` one-liner
 #           runs under dash/ash on Debian/Ubuntu/Alpine.
 #
-# Trust model (tag-pinned, verified by default):
-#   With no APOTHEM_REF, the latest vMAJOR.MINOR.PATCH tag is installed, not
-#   the moving `main`. APOTHEM_VERIFY (default `auto`) picks the path:
-#     - cosign on PATH ("release"): the tag must be signed by the maintainer
-#       key and be the tag named for that release; cosign must show the
-#       release workflow signed SHA256SUMS in a run on the tag's commit
-#       (--certificate-github-workflow-sha; the installer does not read the
-#       certificate itself); the platform archive's SHA-256 must match
-#       SHA256SUMS. Needs git, gpg and cosign.
-#     - no cosign ("signature"), or APOTHEM_HOME already a git clone: clone
-#       or fetch, then `git verify-tag`. Needs git and gpg.
-#   Either way the signature must be valid AND made by the maintainer key in
-#   SECURITY.md (5C8998F9F241720445D3F28B70396FED9C634163); a key the local
-#   keyring trusts is not enough. A signed tag object naming another release
-#   is refused, even with APOTHEM_ALLOW_UNVERIFIED. A signed git tag names
-#   its commit by SHA-1; the release path adds the SHA-256 cosign checks.
-#   A failed check aborts before APOTHEM_HOME or any config changes. An
-#   existing clone is fetched and its tag checked BEFORE checkout, so a
-#   failed check leaves it as it was; local changes stop the update instead
-#   of being lost. Otherwise the new source is built and checked beside
-#   APOTHEM_HOME and swapped in only when every check passed.
-#   Opt-outs:
-#     - APOTHEM_REF=main (with APOTHEM_ALLOW_UNVERIFIED=1): the moving branch.
-#     - APOTHEM_ALLOW_UNVERIFIED=1: on the clone path, an unsigned or
-#       unverifiable tag, or one signed by another key, gives a warning and
-#       proceeds (air-gapped or local use, or a release older than tag
-#       signing); the re-pointed-tag check then protects only tags with the
-#       maintainer key's signature. The release path never downgrades.
-#     - APOTHEM_VERIFY=checksum (needs APOTHEM_ALLOW_UNVERIFIED=1) does not
-#       verify the release: SHA256SUMS comes from the same release as the
-#       archive, so a match only shows the download is not damaged.
-#   APOTHEM_SOURCE (a local checkout) fetches and verifies nothing.
+# Trust model (tag-pinned, verified by default): the Trust model paragraph
+#   and the Overrides of --help below, not repeated here. APOTHEM_VERIFY
+#   (see Environment) picks the path. "release" (cosign on PATH) needs git,
+#   gpg and cosign; cosign itself checks the run's commit
+#   (--certificate-github-workflow-sha), and the installer never reads the
+#   certificate. "signature" (no cosign, or APOTHEM_HOME already a git
+#   clone) clones or fetches, then runs `git verify-tag`; it needs git and
+#   gpg. Either way the tag's signer must be MAINTAINER_FINGERPRINT, as
+#   SECURITY.md publishes it: a key the local keyring trusts is not enough.
+#   A signed git tag names its commit by SHA-1; the release path adds the
+#   SHA-256 checks. New source is built and checked beside APOTHEM_HOME and
+#   swapped in only when every check passed. APOTHEM_SOURCE (a local
+#   checkout) fetches and verifies nothing.
 #
-# What happens to APOTHEM_HOME when the install replaces it:
-#   - An earlier install keeps everything outside its source tree (backups,
-#     state, plans, memory and other engine data). A folder holding only
-#     that data is kept the same way.
-#   - A folder with no Apothem install is refused without --yes; with --yes
-#     it moves, unchanged, into a new <APOTHEM_HOME>.before-apothem-<time>.
-#   - A git clone is replaced by a release archive only with --yes, never
-#     while it holds local work (changes, stashes, unpushed commits, or
-#     untracked files in its source tree); its tree moves into a new
-#     <APOTHEM_HOME>.before-apothem-<time>. A clone of anything else is any
-#     other folder.
-#   - An existing clone is checked before it is fetched or replaced
-#     (check_clone_setup), in a dry run too, and git runs on it through cgit.
-#   - An entry to keep whose name has a space or another special character
-#     stops the install. A symbolic link at APOTHEM_HOME is refused unless it
-#     leads to an existing clone that is updated in place.
-#   - A failure or an interrupt puts the earlier install back; a forced kill
-#     can leave folders the next install reports (check_leftovers). One run
-#     at a time holds the lock (take_lock).
+# What happens to APOTHEM_HOME when the install replaces it: the
+# APOTHEM_HOME paragraph of --help below. An existing clone is checked
+# before it is fetched or replaced (check_clone_setup), in a dry run too,
+# and git runs on it through cgit; a forced kill can leave folders the next
+# install reports (check_leftovers); one run at a time holds the lock
+# (take_lock).
 #
 # Usage:
 #     curl -fsSL https://apothem.ahmedgad.com/install.sh | sh   # latest release
@@ -77,7 +45,7 @@
 #     APOTHEM_REPO             Git remote
 #                              (default https://github.com/ahmed-g-gad/apothem)
 #     APOTHEM_REF              Ref to check out; unset = the latest release tag.
-#     APOTHEM_ALLOW_UNVERIFIED "1": see Opt-outs above.
+#     APOTHEM_ALLOW_UNVERIFIED "1": see Overrides in --help.
 #     APOTHEM_VERIFY           auto (default: release when cosign is on PATH
 #                              and APOTHEM_HOME is not a git clone, else
 #                              signature), release, signature or checksum (see
@@ -316,16 +284,19 @@ anything other than Apothem counts as a folder with no Apothem install. An
 existing clone is not updated or replaced when another user owns it, when
 its own git config holds a setting outside the short list that git clone
 and git init write there (plus branch, user name and email, maintenance
-and pull settings), or when its info/attributes sets a filter; an update in
-place also stops when it holds a submodule, hides changes from git, or has
-no work tree that git can find. Its hooks, fsmonitor and pager never run
-during the update. An entry to keep whose name has a space or another
-special character stops the install until it is moved out. A symbolic link
-at APOTHEM_HOME is refused, except when it leads to an existing clone that
-is updated in place. A failure or an interrupt puts the earlier install back
-unchanged; folders that a forced kill leaves beside APOTHEM_HOME stop the
-next fetched install, which names them. One install, update or uninstall
-runs at a time (the lock is <APOTHEM_HOME>.lock).
+and pull settings), when its info/attributes names a filter or diff
+driver, when it holds a submodule or a git repository git does not track
+(outside the engine data), or when a .gitattributes file in it is
+untracked, changed, unreadable or names a driver; an update in place also
+stops when it hides changes from git, or has no work tree that git can
+find. Its hooks, fsmonitor and pager never run during the update. An
+entry to keep whose name has a space or another special character stops
+the install until it is moved out. A symbolic link at APOTHEM_HOME is
+refused, except when it leads to an existing clone that is updated in
+place. A failure or an interrupt puts the earlier install back unchanged;
+folders that a forced kill leaves beside APOTHEM_HOME stop the next
+fetched install, which names them. One install, update or uninstall runs
+at a time (the lock is <APOTHEM_HOME>.lock).
 
 Overrides:
   APOTHEM_REF=main             check out the moving branch (needs
@@ -897,14 +868,24 @@ $(printf '\001!')
 
 # check_clone_attributes DIR — die when the clone's work tree has a
 # .gitattributes (any case) git does not track, a tracked one that is not
-# a plain file matching the index and HEAD, or one whose index copy names
-# a filter or diff driver: git status, diff and checkout would apply it
-# (it can name a driver of the user's own). Compares without filters.
+# a plain file matching the index and HEAD, one whose index copy does not
+# read as bytes that hash to its ID (git does not check that as it reads
+# an object), or one whose index or work-tree copy names a filter or diff
+# driver: git status, diff and checkout would apply it (it can name a
+# driver of the user's own); or a git repository git does not track
+# (listed as one path ending in /), whose attributes git would apply to
+# what a release adds there. Skips the engine's data folders where git
+# tracks nothing (no release writes there). Compares without filters.
 # Leaves the untracked list in _ca_other.
 check_clone_attributes() {
     _ca_index="$(git_z "$1" ls-files -s -z)" || exit 1
     _ca_head="$(git_z "$1" ls-tree -r -z HEAD)" || exit 1
     _ca_other="$(git_z "$1" ls-files -o -z)" || exit 1
+    _ca_other="$(printf '%s\n=\n%s\n=\n%s\n' "$_ca_head" "$_ca_index" "$_ca_other" | LC_ALL=C awk '
+        n < 2 && $0 == "=" { n++; next }
+        { p = $0; if (n < 2) sub(/^[^\t]*\t/, "", p); sub(/\/.*/, "", p) }
+        n < 2 { t[tolower(p)] = 1; next }
+        p in t || p !~ /^(backups|state|plans|memory|contexts|learning|providers)$/')"
     # HEAD's entries, "=", the index's: out come C<TAB>-<TAB>PATH (changed)
     # and H<TAB>OID<TAB>PATH (to compare).
     _ca_found="$(printf '%s\n=\n%s\n' "$_ca_head" "$_ca_index" | LC_ALL=C awk '
@@ -934,19 +915,27 @@ check_clone_attributes() {
         _ca_path="${_ca_line#*"$_ca_tab"}"
         if [ "$_ca_kind" = "C" ]; then
             :
-        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_driver; then
-            die "$1 has a .gitattributes file at $1/${_ca_path} that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
+        elif [ "$( { cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null || printf x; } | cgit -C "$1" hash-object --stdin 2>/dev/null)" != "$_ca_oid" ]; then
+            die "$1 has a .gitattributes file at $1/${_ca_path} whose committed copy git could not read. Repair the clone or move it aside, then re-run."
+        elif { cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null || printf '\nfilter=\n'; } | sets_driver; then
+            _ca_kind=D
         elif [ ! -e "$1/$_ca_path" ] && [ ! -L "$1/$_ca_path" ]; then
             continue
         elif [ ! -L "$1/$_ca_path" ] && [ -f "$1/$_ca_path" ] \
             && [ "$(cgit -C "$1" hash-object --no-filters -- "$_ca_path" 2>/dev/null)" = "$_ca_oid" ]; then
-            continue
+            sets_driver < "$1/$_ca_path" || continue
+            _ca_kind=D
         fi
+        [ "$_ca_kind" != D ] || die "$1 has a .gitattributes file at $1/${_ca_path} that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
         die "$1 has a changed .gitattributes file at $1/${_ca_path}. git would apply it while it reads the clone. Undo the change, then re-run."
     done || exit 1
     _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '{ leaf = $0; sub(/.*\//, "", leaf) } tolower(leaf) == ".gitattributes" { print; exit }')"
     if [ -n "$_ca_path" ]; then
         die "$1 has a .gitattributes file that git does not track, at $1/${_ca_path}. git would apply it while it reads the clone. Remove it, then re-run."
+    fi
+    _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '/\/$/ { print; exit }')"
+    if [ -n "$_ca_path" ]; then
+        die "$1 holds a git repository that git does not track, at $1/${_ca_path%/}. A release tree has none, and git would read the attributes in it. Move it out of $1, then re-run."
     fi
 }
 
@@ -1063,9 +1052,12 @@ warn_home_access() {
 # but not for DIR's owner; a missing DIR is skipped). Others: the user who
 # owns DIR when that is not you or root (by number: ls -n), and the users
 # and groups the mode bits or an access list (getfacl, where installed)
-# let write. A group named after you is your own. stat gives the group's
-# whole name; a new DIR takes the group of a setgid folder above it, and
-# always on macOS and the BSDs.
+# let write; the group's own entry (group::) decides for it, as ls shows
+# the list's mask there. A group named after you is your own. stat gives
+# the group's whole name; a new DIR takes the group of a setgid folder
+# above it, and always on macOS and the BSDs. Names reach awk through the
+# environment, as -v would read a \ in them as an escape; dq decodes the
+# \\ and \ooo escapes getfacl writes in a name.
 warn_writable() {
     _ww_l=new _ww_f="$1" _ww_n='' _ww_a=''
     if [ -d "$1" ]; then
@@ -1079,23 +1071,26 @@ warn_writable() {
         _ww_l="new $(ls -ldL -- "$_ww_f" 2>/dev/null)" || _ww_l=new
     fi
     _ww_g="$(stat -Lc %G -- "$_ww_f" 2>/dev/null || stat -Lf %Sg -- "$_ww_f" 2>/dev/null)" || _ww_g=
-    _ww_w="$(printf '%s\n%s\n%s\n' "$_ww_l" "$_ww_n" "$_ww_a" | awk -v me="$(id -un 2>/dev/null)" -v id="$(id -u 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" '
+    _ww_w="$(printf '%s\n%s\n%s\n' "$_ww_l" "$_ww_n" "$_ww_a" | WW_ME="$(id -un 2>/dev/null)" WW_G="$(id -gn 2>/dev/null)" WW_SG="$_ww_g" awk -v id="$(id -u 2>/dev/null)" -v p="$2" -v u="$(umask)" -v os="${_ha_os:-}" '
     function add(n) { if (!(n in s)) { s[n] = 1; w = w (w == "" ? "" : ", ") n } }
+    function dq(v, r) { while (match(v, /\\(\\|[0-7][0-7][0-7])/)) { r = r substr(v, 1, RSTART - 1) (RLENGTH == 2 ? "\\" : sprintf("%c", substr(v, RSTART + 1, 1) * 64 + substr(v, RSTART + 2, 1) * 8 + substr(v, RSTART + 3, 1))); v = substr(v, RSTART + RLENGTH) } return r v }
+    BEGIN { me = ENVIRON["WW_ME"]; g = ENVIRON["WW_G"]; sg = ENVIRON["WW_SG"] }
     NR == 1 {
         m = $1; o = $3
         if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g; o = "" }
         else if (sg != "") $4 = sg
         if (t = p && substr(m, 10, 1) ~ /[tT]/) next
         if (substr(m, 9, 1) == "w") add("all users")
-        else if (substr(m, 6, 1) == "w" && $4 != me) add("the group " $4)
+        else if ($4 != me) { gn = "the group " $4; gw = substr(m, 6, 1) == "w" }
     }
     NR == 2 && o != "" && id != "" && $3 != "" && $3 != id && $3 != 0 { print "the user " o; x = 1; exit }
-    NR > 2 && !t && /^(user|group):[^:]/ {
-        split($0, f, ":"); e = f[3]; sub(/[ \t].*/, "", e)
-        if (match($0, /#effective:/)) e = substr($0, RSTART + 11)
-        if (e ~ /w/ && f[2] != me && $0 !~ /^user:root:/) add("the " f[1] " " f[2])
+    NR > 2 && !t && /^(user|group):/ {
+        split($0, f, ":"); e = f[3]; sub(/[ \t].*/, "", e); f[2] = dq(f[2])
+        if (match($0, /#[ \t]*effective:[ \t]*/)) e = substr($0, RSTART + RLENGTH)
+        if (f[1] f[2] == "group") gw = e ~ /w/
+        else if (e ~ /w/ && f[2] != "" && f[2] != me && $0 !~ /^user:root:/) l[++k] = "the " f[1] " " f[2]
     }
-    END { if (!x && w != "") print "+" w }')" || return 0
+    END { if (gw && gn != "") add(gn); for (i = 1; i <= k; i++) add(l[i]); if (!x && w != "") print "+" w }')" || return 0
     case "$_ww_w" in
         "") return 0 ;;
         +*) _ww_w="${_ww_w#+}" ;;
@@ -2252,15 +2247,13 @@ home_mode() {
     fi
 }
 
-# Archive modes: install the release's platform archive after checking its
-# SHA-256 against the release's SHA256SUMS. They replace the git clone below.
-# `release` checks two things before it trusts the digest, and both must
-# pass: the release tag is signed by the maintainer key, and cosign shows
-# that the release workflow signed SHA256SUMS in a run on the commit that tag
-# points at. cosign itself checks that commit, against the GitHub workflow
-# SHA its verified certificate carries, so no other code reads the bundle.
-# Either check alone is not enough: anyone who can push a tag can make the
-# workflow sign a release, and a signed tag says nothing about the archive.
+# Archive modes: install the release's platform archive, in place of the
+# git clone below, once its SHA-256 matches the release's SHA256SUMS.
+# `release` first needs both the maintainer's tag signature and cosign's
+# check that the release workflow signed SHA256SUMS in a run on the tag's
+# commit (cosign compares that commit with its verified certificate; no
+# other code reads the bundle). SECURITY.md says why either alone falls
+# short.
 if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "release" ]; }; then
     command -v curl >/dev/null 2>&1 || die "curl not found in PATH — needed to download the release archive"
     if [ -z "$APOTHEM_REF" ]; then

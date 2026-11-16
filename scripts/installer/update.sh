@@ -30,12 +30,13 @@
 # git init write there, plus branch settings, user.name, user.email,
 # maintenance.auto, maintenance.strategy, pull.rebase and pull.ff), when its
 # info/attributes names a filter or diff driver, when the clone holds a
-# submodule, when it hides changes from git (files marked assume-unchanged
-# or skip-worktree), or when its work tree is not APOTHEM_HOME. Every git
-# command on the clone
-# runs with its hooks, its fsmonitor, its pager and git's automatic
-# maintenance off, with no ext:: transport, and without looking inside
-# nested repositories.
+# submodule or a git repository git does not track, when it hides changes
+# from git (files marked assume-unchanged or skip-worktree), when its work
+# tree is not APOTHEM_HOME, or when a .gitattributes file in it is
+# untracked, changed, or has a committed copy git cannot read or that
+# names a filter or diff driver. Every git command on the clone runs with
+# its hooks, its fsmonitor, its pager and git's automatic maintenance off,
+# with no ext:: transport, and without going into submodules.
 # Only one install, update or uninstall runs at a time: each holds the lock
 # folder <APOTHEM_HOME>.lock while it runs. Only a clone of an Apothem
 # source tree is updated; any other folder is left alone. APOTHEM_REF=main
@@ -687,14 +688,24 @@ $(printf '\001!')
 
 # check_clone_attributes DIR — die when the clone's work tree has a
 # .gitattributes (any case) git does not track, a tracked one that is not
-# a plain file matching the index and HEAD, or one whose index copy names
-# a filter or diff driver: git status, diff and checkout would apply it
-# (it can name a driver of the user's own). Compares without filters.
+# a plain file matching the index and HEAD, one whose index copy does not
+# read as bytes that hash to its ID (git does not check that as it reads
+# an object), or one whose index or work-tree copy names a filter or diff
+# driver: git status, diff and checkout would apply it (it can name a
+# driver of the user's own); or a git repository git does not track
+# (listed as one path ending in /), whose attributes git would apply to
+# what a release adds there. Skips the engine's data folders where git
+# tracks nothing (no release writes there). Compares without filters.
 # Leaves the untracked list in _ca_other.
 check_clone_attributes() {
     _ca_index="$(git_z "$1" ls-files -s -z)" || exit 1
     _ca_head="$(git_z "$1" ls-tree -r -z HEAD)" || exit 1
     _ca_other="$(git_z "$1" ls-files -o -z)" || exit 1
+    _ca_other="$(printf '%s\n=\n%s\n=\n%s\n' "$_ca_head" "$_ca_index" "$_ca_other" | LC_ALL=C awk '
+        n < 2 && $0 == "=" { n++; next }
+        { p = $0; if (n < 2) sub(/^[^\t]*\t/, "", p); sub(/\/.*/, "", p) }
+        n < 2 { t[tolower(p)] = 1; next }
+        p in t || p !~ /^(backups|state|plans|memory|contexts|learning|providers)$/')"
     # HEAD's entries, "=", the index's: out come C<TAB>-<TAB>PATH (changed)
     # and H<TAB>OID<TAB>PATH (to compare).
     _ca_found="$(printf '%s\n=\n%s\n' "$_ca_head" "$_ca_index" | LC_ALL=C awk '
@@ -724,19 +735,27 @@ check_clone_attributes() {
         _ca_path="${_ca_line#*"$_ca_tab"}"
         if [ "$_ca_kind" = "C" ]; then
             :
-        elif cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null | sets_driver; then
-            die "$1 has a .gitattributes file at $1/${_ca_path} that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
+        elif [ "$( { cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null || printf x; } | cgit -C "$1" hash-object --stdin 2>/dev/null)" != "$_ca_oid" ]; then
+            die "$1 has a .gitattributes file at $1/${_ca_path} whose committed copy git could not read. Repair the clone or move it aside, then re-run."
+        elif { cgit -C "$1" cat-file blob "$_ca_oid" 2>/dev/null || printf '\nfilter=\n'; } | sets_driver; then
+            _ca_kind=D
         elif [ ! -e "$1/$_ca_path" ] && [ ! -L "$1/$_ca_path" ]; then
             continue
         elif [ ! -L "$1/$_ca_path" ] && [ -f "$1/$_ca_path" ] \
             && [ "$(cgit -C "$1" hash-object --no-filters -- "$_ca_path" 2>/dev/null)" = "$_ca_oid" ]; then
-            continue
+            sets_driver < "$1/$_ca_path" || continue
+            _ca_kind=D
         fi
+        [ "$_ca_kind" != D ] || die "$1 has a .gitattributes file at $1/${_ca_path} that names a filter or diff driver (filter= or diff=). git would run that driver while it reads the clone. Remove the setting and commit that change, then re-run."
         die "$1 has a changed .gitattributes file at $1/${_ca_path}. git would apply it while it reads the clone. Undo the change, then re-run."
     done || exit 1
     _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '{ leaf = $0; sub(/.*\//, "", leaf) } tolower(leaf) == ".gitattributes" { print; exit }')"
     if [ -n "$_ca_path" ]; then
         die "$1 has a .gitattributes file that git does not track, at $1/${_ca_path}. git would apply it while it reads the clone. Remove it, then re-run."
+    fi
+    _ca_path="$(printf '%s\n' "$_ca_other" | LC_ALL=C awk '/\/$/ { print; exit }')"
+    if [ -n "$_ca_path" ]; then
+        die "$1 holds a git repository that git does not track, at $1/${_ca_path%/}. A release tree has none, and git would read the attributes in it. Move it out of $1, then re-run."
     fi
 }
 
@@ -902,9 +921,12 @@ warn_home_access() {
 # but not for DIR's owner; a missing DIR is skipped). Others: the user who
 # owns DIR when that is not you or root (by number: ls -n), and the users
 # and groups the mode bits or an access list (getfacl, where installed)
-# let write. A group named after you is your own. stat gives the group's
-# whole name; a new DIR takes the group of a setgid folder above it, and
-# always on macOS and the BSDs.
+# let write; the group's own entry (group::) decides for it, as ls shows
+# the list's mask there. A group named after you is your own. stat gives
+# the group's whole name; a new DIR takes the group of a setgid folder
+# above it, and always on macOS and the BSDs. Names reach awk through the
+# environment, as -v would read a \ in them as an escape; dq decodes the
+# \\ and \ooo escapes getfacl writes in a name.
 warn_writable() {
     _ww_l=new _ww_f="$1" _ww_n='' _ww_a=''
     if [ -d "$1" ]; then
@@ -918,23 +940,26 @@ warn_writable() {
         _ww_l="new $(ls -ldL -- "$_ww_f" 2>/dev/null)" || _ww_l=new
     fi
     _ww_g="$(stat -Lc %G -- "$_ww_f" 2>/dev/null || stat -Lf %Sg -- "$_ww_f" 2>/dev/null)" || _ww_g=
-    _ww_w="$(printf '%s\n%s\n%s\n' "$_ww_l" "$_ww_n" "$_ww_a" | awk -v me="$(id -un 2>/dev/null)" -v id="$(id -u 2>/dev/null)" -v g="$(id -gn 2>/dev/null)" -v p="$2" -v u="$(umask)" -v sg="$_ww_g" -v os="${_ha_os:-}" '
+    _ww_w="$(printf '%s\n%s\n%s\n' "$_ww_l" "$_ww_n" "$_ww_a" | WW_ME="$(id -un 2>/dev/null)" WW_G="$(id -gn 2>/dev/null)" WW_SG="$_ww_g" awk -v id="$(id -u 2>/dev/null)" -v p="$2" -v u="$(umask)" -v os="${_ha_os:-}" '
     function add(n) { if (!(n in s)) { s[n] = 1; w = w (w == "" ? "" : ", ") n } }
+    function dq(v, r) { while (match(v, /\\(\\|[0-7][0-7][0-7])/)) { r = r substr(v, 1, RSTART - 1) (RLENGTH == 2 ? "\\" : sprintf("%c", substr(v, RSTART + 1, 1) * 64 + substr(v, RSTART + 2, 1) * 8 + substr(v, RSTART + 3, 1))); v = substr(v, RSTART + RLENGTH) } return r v }
+    BEGIN { me = ENVIRON["WW_ME"]; g = ENVIRON["WW_G"]; sg = ENVIRON["WW_SG"] }
     NR == 1 {
         m = $1; o = $3
         if (m == "new") { m = "d----" (u ~ /[0145].$/ ? "w" : "-") "--" (u ~ /[0145]$/ ? "w" : "-") "-"; $4 = substr($2, 7, 1) ~ /[sS]/ || os ~ /Darwin|BSD/ ? (sg != "" ? sg : $5) : g; o = "" }
         else if (sg != "") $4 = sg
         if (t = p && substr(m, 10, 1) ~ /[tT]/) next
         if (substr(m, 9, 1) == "w") add("all users")
-        else if (substr(m, 6, 1) == "w" && $4 != me) add("the group " $4)
+        else if ($4 != me) { gn = "the group " $4; gw = substr(m, 6, 1) == "w" }
     }
     NR == 2 && o != "" && id != "" && $3 != "" && $3 != id && $3 != 0 { print "the user " o; x = 1; exit }
-    NR > 2 && !t && /^(user|group):[^:]/ {
-        split($0, f, ":"); e = f[3]; sub(/[ \t].*/, "", e)
-        if (match($0, /#effective:/)) e = substr($0, RSTART + 11)
-        if (e ~ /w/ && f[2] != me && $0 !~ /^user:root:/) add("the " f[1] " " f[2])
+    NR > 2 && !t && /^(user|group):/ {
+        split($0, f, ":"); e = f[3]; sub(/[ \t].*/, "", e); f[2] = dq(f[2])
+        if (match($0, /#[ \t]*effective:[ \t]*/)) e = substr($0, RSTART + RLENGTH)
+        if (f[1] f[2] == "group") gw = e ~ /w/
+        else if (e ~ /w/ && f[2] != "" && f[2] != me && $0 !~ /^user:root:/) l[++k] = "the " f[1] " " f[2]
     }
-    END { if (!x && w != "") print "+" w }')" || return 0
+    END { if (gw && gn != "") add(gn); for (i = 1; i <= k; i++) add(l[i]); if (!x && w != "") print "+" w }')" || return 0
     case "$_ww_w" in
         "") return 0 ;;
         +*) _ww_w="${_ww_w#+}" ;;
