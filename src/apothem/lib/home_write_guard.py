@@ -80,6 +80,18 @@ _LOG_LIMIT = 100
 #: ``FOLDERID_Profile``, the account's profile folder on Windows.
 _FOLDERID_PROFILE = "5E6C858F-0E22-4760-9AFE-EA3317B67173"
 
+#: What one home lookup may raise when the system, or a test's stand-in for
+#: part of ``ctypes`` or ``winreg``, cannot answer: the next lookup is tried.
+_LOOKUP_ERRORS = (
+    ImportError,
+    LookupError,
+    OSError,
+    AttributeError,
+    TypeError,
+    ValueError,
+    RuntimeError,
+)
+
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
 _extra_homes: list[str] = []
 #: The refusal log, a list of exceptions.
@@ -368,9 +380,9 @@ def _os_account_home() -> str:
     """Return the account's home from the operating system, looked up once.
 
     Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
-    no failure, so the next call tries again. Any exception from one lookup (a
-    test that replaced part of ``ctypes`` with a fake, say) moves on to the
-    next lookup, so a broken step never stops the check itself.
+    no failure, so the next call tries again. An error from one lookup (a test
+    that replaced part of ``ctypes`` with a fake, say) moves on to the next
+    lookup, so a broken step never stops the check itself.
     """
     lookups = (
         (_windows_profile, _volatile_profile)
@@ -380,7 +392,7 @@ def _os_account_home() -> str:
     for lookup in lookups:
         try:
             found: object = lookup()
-        except Exception:  # any failure falls through to the next lookup
+        except _LOOKUP_ERRORS:
             found = None
         if _usable_home(found):
             return os.path.abspath(found)
