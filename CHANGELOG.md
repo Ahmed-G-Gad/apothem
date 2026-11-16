@@ -202,13 +202,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix
-  Windows cells already do; the Linux and macOS cells keep 90. The workflow
+  Windows cells already do; the other cells keep 90. The workflow
   validator (`workflow-concurrency-grep`) accepts this one form for a matrix
   job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
-  most 120 and M at most 90, and still flags any other expression. It now
+  most 120 and M at most 90, and still flags any other expression. Every
+  limit, N and M included, must be at least 1. It now
   also checks the limit a job passes to a reusable workflow through
   `with: timeout-minutes`, which it skipped before, so the CI Matrix limit is
-  held to the same ceilings.
+  held to the same ceilings. A caller without a matrix gets the matrix
+  ceiling when it calls a workflow in the same folder whose matrix job takes
+  that limit.
 - **A link in a translated docs page keeps the reader in their language.** A
   link such as `/docs/install#choose-a-channel` in the body of a translated page
   now opens the translated copy of the page, at the matching section, when the

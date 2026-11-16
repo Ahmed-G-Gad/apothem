@@ -27,14 +27,26 @@ Detection. Walk ``<root>/.github/workflows/*.yml``. For each workflow:
    heuristically via the presence of a ``strategy.matrix`` block). A
    full-matrix job may instead declare exactly
    ``${{ matrix.os == 'windows-latest' && N || M }}``: the Windows cells
-   get ``N <= 120`` and every other cell ``M <= 90``. Any other value is
-   drift.
+   get ``N <= 120`` and every other cell ``M <= 90``. An integer limit,
+   ``N`` and ``M`` must each be at least 1: GitHub reads 0 as false, so
+   ``&& 0 || 90`` would give the Windows cells 90, and a negative limit
+   means nothing. Any other value is drift.
 5. A job that calls a reusable workflow (``uses:`` and no ``steps:``)
    declares no ``timeout-minutes:`` of its own; when it passes one to the
    callee through ``with: timeout-minutes:``, that value meets the same
    rules. The caller's ``strategy.matrix`` decides the ceiling, because
-   the fan-out lives on the caller: each matrix cell runs the callee once,
-   and the callee's own job carries no matrix.
+   the fan-out usually lives on the caller: each matrix cell runs the
+   callee once. When the caller has no matrix and calls a workflow in the
+   same folder (``./.github/workflows/<file>``), the validator reads that
+   file, and an integer limit gets the full-matrix ceiling when a job there
+   carries its own ``strategy.matrix`` and sets ``timeout-minutes`` from
+   ``inputs.timeout-minutes``. The ``matrix.os`` conditional still needs
+   the caller's own matrix, because GitHub evaluates ``with:`` in the
+   caller's context. The limit of this check: the validator does not read
+   a callee in another repository or one it cannot find or parse, and it
+   does not recognise a callee job that reads the input in another way,
+   such as ``inputs['timeout-minutes']``; for those, the caller's matrix
+   alone sets the ceiling, the stricter reading.
 
 Drift classes. ``missing-concurrency-block``,
 ``missing-cancel-in-progress-flag``, ``cancel-in-progress-wrong-value``,
@@ -73,9 +85,21 @@ WINDOWS_FULL_MATRIX_JOB_CEILING_MINUTES: Final[int] = 120
 # The one expression a full-matrix job may give as its limit: a longer limit
 # for the Windows cells, which run the same suite more slowly, and the usual
 # one for the rest. GitHub expression strings take single quotes only.
+# re.ASCII keeps \d to 0-9, so full-width or other Unicode digits fail.
 _WINDOWS_CONDITIONAL_TIMEOUT: Final[re.Pattern[str]] = re.compile(
     r"\s*\$\{\{\s*matrix\.os\s*==\s*'windows-latest'\s*&&\s*(\d+)"
-    r"\s*\|\|\s*(\d+)\s*\}\}\s*"
+    r"\s*\|\|\s*(\d+)\s*\}\}\s*",
+    re.ASCII,
+)
+
+# A local reusable workflow sits directly in .github/workflows/; GitHub
+# accepts no subfolder there, so the part after the prefix is a bare file
+# name. The name pattern also keeps out "..", path separators and a Windows
+# drive prefix, so the lookup cannot leave the workflows folder.
+_LOCAL_CALLEE_PREFIX: Final[str] = "./.github/workflows/"
+_LOCAL_CALLEE_NAME: Final[re.Pattern[str]] = re.compile(r"[\w-][\w.-]*", re.ASCII)
+_TIMEOUT_INPUT: Final[re.Pattern[str]] = re.compile(
+    r"\binputs\.timeout-minutes(?![\w-])", re.ASCII
 )
 
 DEPLOYMENT_NAME_MARKERS: Final[tuple[str, ...]] = ("release", "publish", "deploy")
@@ -162,25 +186,70 @@ def _parse_windows_conditional(value: str) -> tuple[int, int] | None:
     """Return ``(windows, other)`` minutes for the Windows conditional form.
 
     Returns ``None`` unless ``value`` is exactly
-    ``${{ matrix.os == 'windows-latest' && N || M }}`` (whitespace aside).
+    ``${{ matrix.os == 'windows-latest' && N || M }}`` (whitespace aside)
+    with ASCII digits and ``N`` and ``M`` both at least 1.
     """
     match = _WINDOWS_CONDITIONAL_TIMEOUT.fullmatch(value)
     if match is None:
         return None
-    return int(match.group(1)), int(match.group(2))
+    windows, other = int(match.group(1)), int(match.group(2))
+    if windows < 1 or other < 1:
+        return None
+    return windows, other
+
+
+def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
+    """Return True when a local callee's matrix job takes the passed limit.
+
+    ``uses`` counts only as ``./.github/workflows/<file>`` naming a file
+    directly in ``workflows_dir``. The callee must hold a job that carries
+    ``strategy.matrix`` and sets its ``timeout-minutes`` from
+    ``inputs.timeout-minutes``. Any other reference, and a callee that is
+    missing or does not parse, returns False, so the caller's own matrix
+    alone decides the ceiling.
+    """
+    if not isinstance(uses, str) or not uses.startswith(_LOCAL_CALLEE_PREFIX):
+        return False
+    name = uses[len(_LOCAL_CALLEE_PREFIX) :]
+    if _LOCAL_CALLEE_NAME.fullmatch(name) is None:
+        return False
+    try:
+        doc = yaml.safe_load((workflows_dir / name).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+        return False
+    jobs = doc.get("jobs") if isinstance(doc, dict) else None
+    if not isinstance(jobs, dict):
+        return False
+    for job in jobs.values():
+        if not isinstance(job, dict) or not _job_is_full_matrix(job):
+            continue
+        timeout = job.get("timeout-minutes")
+        if isinstance(timeout, str) and _TIMEOUT_INPUT.search(timeout):
+            return True
+    return False
 
 
 def _timeout_drift(
-    timeout: object, *, full_matrix: bool, label: str
+    timeout: object,
+    *,
+    full_matrix: bool,
+    label: str,
+    matrix_os_in_scope: bool | None = None,
 ) -> tuple[str, str] | None:
     """Return ``(drift_class, detail)`` for a declared limit, or ``None``.
 
-    ``timeout`` is an integer, checked against the short or full-matrix
-    ceiling, or, on a full-matrix job, the Windows conditional form, whose
-    branches are checked against the Windows and full-matrix ceilings.
-    Anything else is drift. ``label`` names the key in the detail.
+    ``timeout`` is an integer of at least 1, checked against the short or
+    full-matrix ceiling, or, where ``matrix.os`` is in scope, the Windows
+    conditional form, whose branches are checked against the Windows and
+    full-matrix ceilings. ``matrix_os_in_scope`` defaults to
+    ``full_matrix``; a caller whose matrix lives only in the callee passes
+    False. Anything else is drift. ``label`` names the key in the detail.
     """
+    if matrix_os_in_scope is None:
+        matrix_os_in_scope = full_matrix
     if isinstance(timeout, int) and not isinstance(timeout, bool):
+        if timeout < 1:
+            return ("missing-job-timeout", f"{label}={timeout} is below 1")
         ceiling = (
             FULL_MATRIX_JOB_CEILING_MINUTES
             if full_matrix
@@ -195,7 +264,7 @@ def _timeout_drift(
     branches = _parse_windows_conditional(timeout) if isinstance(timeout, str) else None
     if branches is None:
         return ("missing-job-timeout", f"{label} is not an integer: {timeout!r}")
-    if not full_matrix:
+    if not matrix_os_in_scope:
         return (
             "missing-job-timeout",
             f"{label} uses the matrix.os conditional on a job without "
@@ -288,15 +357,19 @@ def _check_workflow(path: Path) -> list[Finding]:
         # inline `steps:` sequence. GitHub rejects a job-level
         # timeout-minutes there, so the called workflow owns the limit; a
         # caller that passes one through `with: timeout-minutes` is held to
-        # the same ceilings as a job with its own steps. A caller that
-        # passes none leaves the callee's default in force.
+        # the same ceilings as a job with its own steps, and a local callee
+        # whose job runs a matrix on that input lifts an integer to the
+        # full-matrix ceiling. A caller that passes none leaves the callee's
+        # default in force.
         if "uses" in job and "steps" not in job:
             with_block = job.get("with")
             if isinstance(with_block, dict) and "timeout-minutes" in with_block:
                 drift = _timeout_drift(
                     with_block["timeout-minutes"],
-                    full_matrix=full_matrix,
+                    full_matrix=full_matrix
+                    or _callee_runs_matrix(path.parent, job["uses"]),
                     label="with: timeout-minutes",
+                    matrix_os_in_scope=full_matrix,
                 )
                 if drift is not None:
                     findings.append(
