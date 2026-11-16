@@ -553,7 +553,11 @@ def rollback_install(
             results.append(removal)
     # Once empty, the user-level folders an install that has let go of them
     # created go too: tidy leaves them here when the boundary is the home.
-    made = made_dirs(gate.bases.values(), {record.install_id})
-    results.extend(remove_created_dirs(created | made, allowed_root=allowed_root))
+    made = made_dirs(gate.bases.values(), {record.install_id}, boundary=allowed_root)
+    results.extend(
+        remove_created_dirs(
+            created | made, allowed_root=allowed_root, inherited=made - created
+        )
+    )
     results.extend(gate.tidy(created))
     return results

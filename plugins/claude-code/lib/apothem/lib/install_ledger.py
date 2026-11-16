@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -696,6 +697,15 @@ def _without_backups(record: LedgerRecord) -> LedgerRecord:
     )
 
 
+def _with_dirs(record: LedgerRecord, dirs: Iterable[str]) -> LedgerRecord:
+    """Return *record* also listing *dirs* among the directories it created, sorted."""
+    known = set(record.created_dirs)
+    added = set(dirs) - known
+    if not added:
+        return record
+    return replace(record, created_dirs=tuple(sorted(known | added)))
+
+
 def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRecord]:
     """Return the records before position *before* that say what Apothem made.
 
@@ -711,21 +721,36 @@ def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRec
     holder's rollback or uninstall also removes the empty folders that held
     it (see ``install_driver_keys.made_dirs``); nothing else reads them, as
     the record replays to nothing in place.
+
+    A later install of the root that made such a file while the earlier one
+    was still in place (a second install or an update carries ``created``
+    forward) may be the only record left that says Apothem made it, so it
+    also lists the directories the earlier one created. One installed after
+    the earlier one ended made the file anew and gets none of them: the
+    folders that stood then may be ones someone put back.
     """
     ended = _endings(records)
     kept: dict[int, LedgerRecord] = {}
-    claimed: set[str] = set()
+    claimed: dict[str, int] = {}  # each file a kept install made, to its position
     for position in sorted((p for p in ended if p < before), reverse=True):
         record, end = records[position], records[ended[position]]
-        changed = claimed | {target.path for target in end.targets}
+        changed = {target.path for target in end.targets}
+        mine = [t for t in record.targets if created_here(t) and t.path not in changed]
+        heirs = {
+            claimed[target.path]
+            for target in mine
+            if target.path in claimed and claimed[target.path] < ended[position]
+        }
+        for heir in heirs:
+            kept[heir] = _with_dirs(kept[heir], record.created_dirs)
         made = tuple(
             replace(target, backup_ref=None)
-            for target in record.targets
-            if created_here(target) and target.path not in changed
+            for target in mine
+            if target.path not in claimed
         )
         if not made:
             continue
-        claimed.update(target.path for target in made)
+        claimed.update(dict.fromkeys((target.path for target in made), position))
         kept[position] = replace(record, targets=made)
         kept[ended[position]] = _without_backups(end)
         if end.kind == "rollback":
@@ -788,12 +813,7 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
             if index < start
             for path in records[index].created_dirs
         }
-        if dropped_dirs:
-            first = records[start]
-            kept[start] = replace(
-                first,
-                created_dirs=tuple(sorted(dropped_dirs | set(first.created_dirs))),
-            )
+        kept[start] = _with_dirs(kept[start], dropped_dirs)
     return [kept[index] for index in sorted(kept)]
 
 

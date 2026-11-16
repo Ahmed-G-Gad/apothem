@@ -299,60 +299,110 @@ def one_install(harness: str, root: Path) -> tuple[list[LedgerRecord], tuple[str
     return [*others, *active[:-1], merged], same
 
 
+#: What an uninstall or rollback record says of a target it backed up but
+#: did not change.
+_LEFT_AS_IT_WAS = frozenset({"skipped", "error"})
+
+
+def _user_level_ledgers() -> list[list[LedgerRecord]]:
+    """Return the records of each harness that writes a user-level folder.
+
+    Raises:
+        apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
+        OSError: A ledger cannot be read.
+    """
+    return [
+        install_ledger.read_records(package_key)
+        for package_key in SUPPORTED_PACKAGE_KEYS
+        if writes_user_level(package_key)
+    ]
+
+
+def _changes(ledgers: list[list[LedgerRecord]], memo: dict[str, str]) -> dict[str, str]:
+    """Map the key of each path an uninstall or rollback changed to its latest time.
+
+    Such a record lists what its pass backed up before changing or removing
+    it, so a folder Apothem made, then removed, and someone put back shows
+    here with the time it was removed.
+    """
+    changed: dict[str, str] = {}
+    for records in ledgers:
+        for record in records:
+            if record.kind == "install":
+                continue
+            for target in record.targets:
+                if target.outcome not in _LEFT_AS_IT_WAS:
+                    key = path_key(target.path, memo)
+                    changed[key] = max(changed.get(key, ""), record.timestamp)
+    return changed
+
+
 def made_keys(memo: dict[str, str] | None = None) -> frozenset[str]:
     """Return the keys of the paths an install made that nothing changed since.
 
     Across every harness that writes a user-level folder: a path an install
     record made (see :func:`~apothem.lib.install_ledger.created_here`) that
-    no uninstall or rollback record lists from that record's time on. Such a
-    record lists what its pass backed up before changing or removing it, so
-    a folder Apothem made, then removed, and someone put back is not counted.
+    no uninstall or rollback record lists from that record's time on (see
+    :func:`_changes`). The latest install that made a path counts, so a
+    file Apothem made, removed and made again is counted, and one someone
+    put back by hand is not.
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
         OSError: A ledger cannot be read.
     """
     memo = {} if memo is None else memo
+    ledgers = _user_level_ledgers()
+    changed = _changes(ledgers, memo)
     made: dict[str, str] = {}
-    changed: dict[str, str] = {}
-    for package_key in SUPPORTED_PACKAGE_KEYS:
-        if not writes_user_level(package_key):
-            continue
-        for record in install_ledger.read_records(package_key):
+    for records in ledgers:
+        for record in records:
+            if record.kind != "install":
+                continue
             for target in record.targets:
-                key = path_key(target.path, memo)
-                if record.kind == "install":
-                    if created_here(target):
-                        made[key] = max(made.get(key, ""), record.timestamp)
-                elif target.outcome not in {"skipped", "error"}:
-                    changed[key] = max(changed.get(key, ""), record.timestamp)
+                if created_here(target):
+                    key = path_key(target.path, memo)
+                    made[key] = max(made.get(key, ""), record.timestamp)
     return frozenset(key for key, stamp in made.items() if changed.get(key, "") < stamp)
 
 
-def _installs() -> Iterator[tuple[LedgerRecord, bool]]:
-    """Yield every install record of each harness that writes a user-level folder.
+def _installs(records: list[LedgerRecord]) -> Iterator[tuple[LedgerRecord, bool]]:
+    """Yield each install record of one harness's *records*, in ledger order.
 
     Each comes with whether it is in place: no uninstall or rollback ended
     it, and its root still exists (``install_driver_shared.holder_index``
     skips a holder whose root is gone the same way).
-
-    Raises:
-        apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
-        OSError: A ledger cannot be read.
     """
-    for package_key in SUPPORTED_PACKAGE_KEYS:
-        if not writes_user_level(package_key):
-            continue
-        by_root: dict[str, list[LedgerRecord]] = {}
-        for record in install_ledger.read_records(package_key):
-            by_root.setdefault(record.root, []).append(record)
-        for root, group in by_root.items():
-            live: set[str] = set()
-            if Path(root).is_dir():
-                live = install_ledger.active_install_ids(group)
-            for record in group:
-                if record.kind == "install":
-                    yield record, record.install_id in live
+    by_root: dict[str, list[LedgerRecord]] = {}
+    for record in records:
+        by_root.setdefault(record.root, []).append(record)
+    for root, group in by_root.items():
+        live: set[str] = set()
+        if Path(root).is_dir():
+            live = install_ledger.active_install_ids(group)
+        for record in group:
+            if record.kind == "install":
+                yield record, record.install_id in live
+
+
+def _still_made(
+    record: LedgerRecord,
+    dirs: set[str],
+    changed: dict[str, str],
+    memo: dict[str, str],
+) -> set[str]:
+    """Return the folders of *dirs* that hold a path *record* made, unchanged since.
+
+    The path is judged against *record*'s own time, not the latest install
+    that made it: once an uninstall or rollback removed it, the folder that
+    stands there may be one someone put back, whatever wrote into it later.
+    """
+    paths = [
+        key
+        for key in (path_key(t.path, memo) for t in record.targets if created_here(t))
+        if changed.get(key, "") < record.timestamp
+    ]
+    return {folder for folder in dirs if any(path.startswith(folder) for path in paths)}
 
 
 def _made_and_used(
@@ -361,47 +411,49 @@ def _made_and_used(
     """Return the keys :func:`made_dirs` reads from the ledgers.
 
     The first set holds the directories named one of *names* that an install
-    no longer in place created, while a path it made inside one is still
-    counted by :func:`made_keys`. The second holds the directories, so named,
-    that an install in place created and every path it lists; the installs
-    whose ids are in *ending* are left out of it.
+    no longer in place created, while a path it made inside one is unchanged
+    since that install (see :func:`_still_made`). The second holds the
+    directories, so named, that an install in place created and every path
+    it lists; the installs whose ids are in *ending* are left out of it.
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
         OSError: A ledger cannot be read.
     """
     memo: dict[str, str] = {}
-    unchanged = made_keys(memo)
+    ledgers = _user_level_ledgers()
+    changed = _changes(ledgers, memo)
     made: set[str] = set()
     used: set[str] = set()
-    for record, in_place in _installs():
-        dirs = {
-            _key_prefix(path)
-            for path in record.created_dirs
-            if os.path.normcase(Path(path).name) in names
-        }
-        if not in_place:
-            paths = [path_key(t.path, memo) for t in record.targets if created_here(t)]
-            made.update(
-                folder
-                for folder in dirs
-                if any(path.startswith(folder) and path in unchanged for path in paths)
-            )
-        elif record.install_id not in ending:
-            used |= dirs
-            used.update(path_key(target.path, memo) for target in record.targets)
+    for records in ledgers:
+        for record, in_place in _installs(records):
+            dirs = {
+                _key_prefix(path)
+                for path in record.created_dirs
+                if os.path.normcase(Path(path).name) in names
+            }
+            if in_place:
+                if record.install_id not in ending:
+                    used |= dirs
+                    used.update(
+                        path_key(target.path, memo) for target in record.targets
+                    )
+            elif dirs:
+                made |= _still_made(record, dirs, changed, memo)
     return made, used
 
 
-def made_dirs(bases: Iterable[Path], ending: Collection[str]) -> set[Path]:
+def made_dirs(
+    bases: Iterable[Path], ending: Collection[str], *, boundary: Path
+) -> set[Path]:
     """Return the user-level folders an install that has let go of them created.
 
     *bases* are the user-level folders a harness writes; each of them, and
     each folder that holds one below the home (``~/.agents``,
     ``~/.config/apothem`` and ``~/.config``), is returned when an install of
     any harness that is no longer in place lists it among the directories it
-    created and a path it made there is still Apothem's (see
-    :func:`made_keys`): a folder Apothem removed and someone put back is
+    created and a path it made there is unchanged since it ran (see
+    :func:`_still_made`): a folder Apothem removed and someone put back is
     theirs. Retention keeps those directories on the record that says what the
     install made (see :func:`~apothem.lib.install_ledger.compact_records`). An
     install whose root no longer exists counts as no longer in place. A folder
@@ -410,15 +462,21 @@ def made_dirs(bases: Iterable[Path], ending: Collection[str]) -> set[Path]:
     do not count as in place, by install id: the one a rollback reverses, or
     those an uninstall ends.
 
+    *boundary* is the write boundary of the install the caller reverses.
+    Only when it is the home, as for Codex's own root, does
+    ``UserLevelGate.tidy`` leave these folders to the caller; for any other
+    boundary tidy removes them once empty, whoever made them, so none is
+    returned and no ledger is read.
+
     Folders are compared with their links followed, so a record made with the
     home spelled another way counts. They are returned with their links
     followed too, as install records spell the directories they created, so
     the caller removes them with those, deepest first, and only the empty
-    ones: Codex's boundary is the home, so ``UserLevelGate.tidy`` leaves them
-    to that removal. An unreadable ledger proves nothing, so none is returned
-    then.
+    ones. An unreadable ledger proves nothing, so none is returned then.
     """
     home = user_home()
+    if not same_location(boundary, home):
+        return set()
     wanted: dict[str, Path] = {}
     for base in bases:
         try:

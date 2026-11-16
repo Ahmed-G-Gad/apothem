@@ -585,8 +585,16 @@ def _remove_installed(
     # stays. The user-level folders an install that has let go of them created
     # go the same way: tidy leaves them here when the boundary is the home.
     created = {Path(path) for install in active for path in install.created_dirs}
-    made = made_dirs(gate.bases.values(), {install.install_id for install in active})
-    results.extend(remove_created_dirs(created | made, allowed_root=allowed_root))
+    made = made_dirs(
+        gate.bases.values(),
+        {install.install_id for install in active},
+        boundary=allowed_root,
+    )
+    results.extend(
+        remove_created_dirs(
+            created | made, allowed_root=allowed_root, inherited=made - created
+        )
+    )
     results.extend(gate.tidy(created))
 
 
