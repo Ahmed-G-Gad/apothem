@@ -63,6 +63,12 @@ make test
 
 CI runs the equivalent commands directly (Ruff, mypy, pytest, the ecosystem sweep, and the conformity gate) rather than through `make`; running the targets locally catches the common failures before a reviewer is involved. The orchestrator at `src/apothem/conformity/gate.py` is the canonical entry point for both `make validate` and the local pre-commit hooks below — list the registered validators with `python -m apothem.conformity.gate --list` or invoke a single one with `python -m apothem.conformity.gate --check <name>`.
 
+### Tests and the real home
+
+An agent or a probe must never run Apothem's installers or adapters against the real home. Run behaviour inside a pytest test under [`tests/`](./tests/), where `tests/conftest.py` points the home, the install ledger and the backup root at temporary folders, or in a script that points `HOME`, `USERPROFILE` and every Apothem root at a new temporary folder before it imports Apothem.
+
+Apothem backs this up for pytest runs: while `PYTEST_CURRENT_TEST` is set, `apothem.lib.home_write_guard` refuses a write, removal or lock file in the account's real `.apothem`, `.config/apothem` and the tool folders the harness registry names there (`.claude`, `.codex`, `.agents` and the rest), and raises `RealHomeWriteError`. The account home comes from the operating system, not from `HOME`. Dry runs, previews and reads are not refused. It does not cover folders moved by `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, writes during collection, programs that are not Python (the shell installers, `pwsh`, `git`), or anything run outside pytest, which is why the rule above still applies. New code that changes files in those folders outside `atomic_io` and the install driver's target check MUST call `refuse_real_home_write` first. [`tests/README.md`](./tests/README.md) has the details.
+
 ### Pre-commit hooks
 
 Pre-commit installation is part of the **One-time setup** above (the `pre-commit install` line). With the hooks installed, every `git commit` runs the ratified hook set from `.pre-commit-config.yaml`:

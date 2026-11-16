@@ -85,11 +85,36 @@ The guard does not catch:
 
 So:
 
+- An agent or a probe must never run Apothem's installers or adapters against the real home. The guard and the refusal below cover pytest runs only; a script or an agent's probe that runs an install is covered by nothing but this rule.
 - Never star-import a conftest.
 - Put probes and experiments under `tests/`, so `tests/conftest.py` applies to them.
 - Outside pytest, point `HOME` and `USERPROFILE` at a temporary folder before you import Apothem. Apothem sets its ledger and backup roots from the home when it is imported, so changing the home later does not move them.
 
 `unit/test_real_home_guard.py` checks the guard. Its in-suite tests confirm that the import registered one guard object, that its setup hook runs before pytest's, that its call hooks run before pytest's own (`pytest_pyfunc_call` right before the function is called), that its report hook wraps the `skipping` plugin's, that `__all__` carries the isolation and the guard, and that the call check finds nothing for a suite test. It also runs a separate pytest session with the `pytester` plugin, in which each case writes a probe folder, points the home and `LOCALAPPDATA` at fresh folders that the probe session takes as the real ones, and runs two probe tests, one with no fixture and one with `tmp_path`. A probe conftest that star-imports `tests/conftest.py` runs both tests. A probe conftest that imports one plain name, or two isolation fixtures by name, is stopped at setup, with or without `--setup-only` and with or without `xfail`, and neither its own fixtures nor the test bodies write the file each writes first; so is a star-importing one with a session-scoped fixture named to run before `_isolate_session_home` (one that requests it runs), or with a fixture of its own named `_isolate_session_home`. A fixture that puts the real home, the ledger and backup roots, `CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME` or `CLAUDE_PLUGIN_DATA` for the hook state, or, on Windows, `LOCALAPPDATA` for the hook state back on a real location gets both tests stopped before their bodies, and so do a conftest that deletes the guard's names, a later `pytest_runtest_call` or `pytest_pyfunc_call` wrapper that puts the real home back, an `xfail` mark (reported as failed), and a session that imported the file before it started.
+
+## Product-side refusal
+
+Apothem also refuses these writes itself, so a test run that skips `tests/conftest.py` (a test file copied out of `tests/` and run with `-c`, `-o addopts=` or `--rootdir` elsewhere) still cannot reach the real home through Apothem.
+
+- **What is refused.** `apothem.lib.home_write_guard` raises `RealHomeWriteError`, an `OSError`, for a write, a new folder, a copy destination, a removal, a rename or a lock file at or inside one of these folders of the account's home: `.apothem`, `.config/apothem`, and the tool folders that the harness registry names there (`.agents`, `.claude`, `.codebuddy`, `.codex`, `.config/opencode`, `.gemini`, `.hermes`, `.kiro`, `.openclaw`, `.qwen`, `.trae`). Removing or moving a folder that holds one of them, such as the home or `~/.config`, is refused too. Nothing is changed before the error.
+- **When.** Only while `PYTEST_CURRENT_TEST` is set, which pytest does during each test's setup, call and teardown. Reads, dry runs and previews are never refused, and outside pytest nothing changes.
+- **Which home.** The account's home as the operating system records it (the profile folder on Windows, the `passwd` entry elsewhere), never `HOME` or `USERPROFILE`, which name a temporary folder during a test. The temporary folder, the checkout and the rest of the home stay writable.
+- **Where it is checked.** The atomic write, append and lock helpers in `apothem.lib.atomic_io`; the install driver's target check `_validate_target_path` (a caller that only previews passes `mutating=False`); backup copies and backup pruning; the stale sweep; the install root; the data home and the store folders; clean-slate; workspace migration; and the profile write.
+- **How you see it.** The error names the path, the protected folder, the running test and the fix. Each refusal is also written to `stderr`, once per protected folder, and logged in the process, because a few callers absorb the error (a best-effort ledger line, for one). The autouse fixture `_report_real_home_refusals` in `tests/conftest.py` fails a test after which a refusal was logged.
+- **The test seam.** `home_write_guard.also_protect_home(path)` makes the guard treat a test folder as one more account home, and `clear_extra_homes()` forgets those folders. It only adds a home: it cannot replace or remove the real one, and no environment variable, setting or flag reaches it.
+- **A real install on purpose.** A test that must run a real install starts Apothem without `PYTEST_CURRENT_TEST` in the child's environment. No test in the suite or in CI does this today.
+
+Known gaps:
+
+- folders moved out of the home by `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`;
+- the hook state folder (`~/.local/state/apothem`, `%LOCALAPPDATA%\apothem`, `CLAUDE_PLUGIN_DATA`);
+- writes during collection or in session hooks, where `PYTEST_CURRENT_TEST` is unset;
+- programs that are not Python (`pwsh`, the shell installers, `git`), and the developer tools (`plugin_tree`, the audit writers);
+- a checkout that itself sits inside a protected folder (under `~/.claude`, say): its Apothem writes are refused during tests;
+- on macOS, a spelling of the home whose letter case differs from the system's record;
+- a system with no record of the account's home (a container user with no `passwd` entry): then only the homes added with `also_protect_home` are protected.
+
+`unit/test_home_write_guard.py` checks the decision against a fake home, `unit/test_home_write_guard_driver.py` checks the install driver, the stores and the profile write, and `unit/test_home_write_guard_incidents.py` rebuilds three ways of running a copied test file without `tests/conftest.py` in child pytest sessions whose home is a fake one, plus a control run without the guard's fake home that shows the probe does reach the writers.
 
 ## Conformity corpus layout
 

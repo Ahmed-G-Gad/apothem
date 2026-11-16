@@ -199,6 +199,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Apothem refuses to write into the real home while a pytest test runs.**
+  While `PYTEST_CURRENT_TEST` is set, a write, removal, copy, rename or lock
+  file in the account's `~/.apothem`, `~/.config/apothem` or a tool folder the
+  harness registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest) stops with
+  `RealHomeWriteError` before anything changes. The home is the one the
+  operating system records for the account, not `HOME`. Reads, dry runs and
+  previews still work, and nothing changes outside pytest. A test that must run
+  a real install starts Apothem without `PYTEST_CURRENT_TEST` in the child's
+  environment. `tests/README.md` lists what the refusal does not cover.
 - **A link in a translated docs page keeps the reader in their language.** A
   link such as `/docs/install#choose-a-channel` in the body of a translated page
   now opens the translated copy of the page, at the matching section, when the
