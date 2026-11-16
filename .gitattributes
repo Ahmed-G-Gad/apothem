@@ -42,6 +42,10 @@
 *.whl   binary
 
 # Export-ignore — developer-only / ephemeral trees omitted from source archives.
+# scripts/build_release_tarball.py honors these lines too, so the signed
+# release archives leave the same paths out. A line ending in "/" drops the
+# whole folder, and no later line can keep a file inside it; ".github/**"
+# drops the files one by one, so the line below can keep one of them.
 .plans/  export-ignore
 .apothem/  export-ignore
 tests/   export-ignore

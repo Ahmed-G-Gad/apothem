@@ -8,14 +8,16 @@ workflow signs and publishes. Its correctness is load-bearing: a wrong
 exclusion ships the wrong files to every downloader, and a non-reproducible
 build breaks the signed-digest guarantee. These tests exercise the exclusion
 logic, deterministic naming/timestamps, member collection, and an end-to-end
-build whose byte output is asserted reproducible. The fixture trees carry no
+build whose byte output is asserted reproducible. Most fixture trees carry no
 ``.git``, so the git-blob and git-ls-files fast paths fall back to the
-filesystem walk — covered directly, no real repository required.
+filesystem walk; the git-backed classes build throwaway repositories, and one
+test reads this checkout's own ``.gitattributes``.
 """
 
 from __future__ import annotations
 
 import hashlib
+import io
 import shutil
 import subprocess
 import sys
@@ -184,6 +186,110 @@ class TestGitTrackedPath:
             extracted = tf.extractfile("apothem-v0.1.0/README.md")
             assert extracted is not None
             assert extracted.read() == b"from-commit"
+
+
+# Each pattern shape the repository's own .gitattributes uses: a folder line, a
+# "/**" line with a later line that keeps one file, a root-anchored folder,
+# plus a later line that cannot keep a file in a skipped folder, a name
+# pattern, and a nested .gitattributes.
+_EXPORT_FIXTURE: dict[str, bytes] = {
+    ".gitattributes": (
+        b"devonly/ export-ignore\n"
+        b"devonly/keep.py -export-ignore\n"
+        b"/rooted/ export-ignore\n"
+        b"ci/** export-ignore\n"
+        b"ci/dependabot.yml -export-ignore\n"
+        b"*.scratch export-ignore\n"
+    ),
+    "src/.gitattributes": b"local.txt export-ignore\n",
+    "src/apothem/__init__.py": b"pkg",
+    "src/local.txt": b"dropped by the nested file",
+    "devonly/a.py": b"a",
+    "devonly/nested/b.py": b"b",
+    "devonly/keep.py": b"in a skipped folder",
+    "rooted/c.txt": b"c",
+    "src/rooted/d.txt": b"d",
+    "ci/workflows/ci.yml": b"ci",
+    "ci/notes.md": b"notes",
+    "ci/dependabot.yml": b"kept",
+    "src/x.scratch": b"x",
+}
+_EXPORT_KEPT: frozenset[str] = frozenset(
+    {
+        ".gitattributes",
+        "src/.gitattributes",
+        "src/apothem/__init__.py",
+        "src/rooted/d.txt",
+        "ci/dependabot.yml",
+    }
+)
+
+
+@requires_git
+class TestExportIgnore:
+    """Leaving out the paths ``.gitattributes`` marks ``export-ignore``.
+
+    Covers a folder line dropping every file below it, a file kept by a later
+    line under a ``/**`` line, a file no later line can keep because its
+    folder is skipped, agreement with ``git archive`` (the tool behind GitHub's
+    source archives), the built archive itself, this checkout's own test
+    suite, and a failed attribute query stopping the build.
+    """
+
+    def test_parent_dirs_lists_each_folder_outermost_first(self) -> None:
+        assert brt._parent_dirs("a/b/c.txt") == ["a/", "a/b/"]
+        assert brt._parent_dirs("top.txt") == []
+
+    def test_marked_paths_are_left_out_and_a_re_included_file_is_kept(
+        self, tmp_path: Path
+    ) -> None:
+        _init_git_repo(tmp_path, _EXPORT_FIXTURE)
+        rels = {m.as_posix() for m in brt.collect_members(tmp_path)}
+        assert rels == _EXPORT_KEPT
+
+    def test_members_match_git_archive(self, tmp_path: Path) -> None:
+        _init_git_repo(tmp_path, _EXPORT_FIXTURE)
+        tar_bytes = subprocess.run(
+            [_GIT, "-C", str(tmp_path), "archive", "--format=tar", "HEAD"],
+            check=True,
+            capture_output=True,
+            env=hermetic_git_env(),
+        ).stdout
+        with tarfile.open(fileobj=io.BytesIO(tar_bytes)) as tf:
+            archived = {m.name for m in tf.getmembers() if m.isfile()}
+        assert {m.as_posix() for m in brt.collect_members(tmp_path)} == archived
+
+    def test_built_archive_leaves_marked_paths_out(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        _init_git_repo(repo, _EXPORT_FIXTURE)
+        archive = brt.build_tarball(repo, tmp_path / "out", "apothem", "0.1.0", "linux")
+        with tarfile.open(archive, "r:gz") as tf:
+            names = {name.removeprefix("apothem-v0.1.0/") for name in tf.getnames()}
+        assert names == _EXPORT_KEPT
+
+    def test_this_checkout_leaves_its_export_ignored_trees_out(self) -> None:
+        if not (_REPO_ROOT / ".git").exists():
+            pytest.skip("needs a git checkout of the repository")
+        rels = [m.as_posix() for m in brt.collect_members(_REPO_ROOT)]
+        assert "src/apothem/__init__.py" in rels
+        assert [r for r in rels if r.startswith(("tests/", "tools/", ".github/"))] == []
+
+    def test_a_failed_attribute_query_stops_the_build(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _init_git_repo(tmp_path, {"README.md": b"r"})
+        real_run = subprocess.run
+
+        def failing_check_attr(
+            argv: list[str], **kwargs: object
+        ) -> subprocess.CompletedProcess[bytes]:
+            if "check-attr" in argv:
+                return subprocess.CompletedProcess(argv, 128, b"", b"fatal: simulated")
+            return real_run(argv, **kwargs)
+
+        monkeypatch.setattr(brt.subprocess, "run", failing_check_attr)
+        with pytest.raises(RuntimeError, match="export-ignore"):
+            brt.collect_members(tmp_path)
 
 
 class TestNamingAndEpoch:

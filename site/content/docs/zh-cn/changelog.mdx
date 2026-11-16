@@ -839,6 +839,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   apart from `dependabot.yml`, so it found no workflows and reported
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
+- **The release archives leave out the test suite.** The platform archives
+  (`apothem-vX.Y.Z-darwin.tar.gz`, `-linux.tar.gz` and `-windows.zip`) were
+  built from every tracked file, and the builder did not read the
+  `export-ignore` lines in `.gitattributes`, so the archives carried `tests/`,
+  which GitHub's source archives leave out. In an archive built from the
+  current source, `tests/` held 1,916 of the 3,415 files. The builder now
+  leaves out every path that `git archive` leaves out. The installed engine
+  does not use those files, and the wheel, the sdist and the npm package never
+  held them. Updating an archive install made by an installer from release
+  1.5.0 or earlier keeps its old `tests/` folder, because the installers keep
+  every folder they cannot tell is theirs; you can delete it.
 - **The pipeline overview's command index is current in every translation.**
   The docs generator wrote the index of shipped commands into the English page
   only, so the eleven translated overviews kept older summaries for every
