@@ -39,6 +39,7 @@ import importlib.util
 import json
 import ntpath
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -91,6 +92,7 @@ if __package__ in (None, ""):
         sys.modules["apothem"] = _support_package
 
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
@@ -353,6 +355,19 @@ STANDALONE_MODULES: Final[tuple[str, ...]] = (
 # has its own 10s ceiling and the orchestrator avoids hard-killing a
 # grep mid-scan.
 PER_GREP_BUDGET_SECONDS: Final[float] = 0.520
+
+# Seconds one standalone validator may run, in --all or --check, before the
+# gate stops it. Unlike the per-grep budget this is a hard stop: it ends a
+# validator that would never finish, such as one whose git command waits on a
+# FIFO that the checked repository's own ``include.path`` names. The slowest
+# validator takes about a minute on this repository on a busy machine, so the
+# limit leaves room for slower machines and larger projects.
+STANDALONE_TIMEOUT_SECONDS: Final[int] = 600
+
+# Seconds the gate waits, after stopping a validator, for the validator's
+# output to close. A process the validator started can hold that output open;
+# the gate then stops waiting for it and reports the stop.
+_STOP_GRACE_SECONDS: Final[int] = 5
 
 # Maximum per-matcher flagged-file sample carried in the ``--all-perwrite``
 # payload. ``file_count`` is the full tally; ``files`` is a bounded sample and
@@ -1107,6 +1122,76 @@ def _standalone_env() -> dict[str, str]:
     return env
 
 
+def _stop_process_tree(process: subprocess.Popen[str]) -> None:
+    """Stop *process* and, outside Windows, every process in its group.
+
+    :func:`_run_bounded` starts the process in a session of its own, so its
+    process group holds the validator and every git command the validator
+    started. Windows has no such group, so the process alone is stopped there.
+    """
+    if sys.platform != "win32":
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(process.pid, signal.SIGKILL)
+    with contextlib.suppress(OSError):
+        process.kill()
+
+
+def _run_bounded(
+    argv: list[str], *, env: dict[str, str], timeout: float
+) -> tuple[int, str] | None:
+    """Run *argv*; return ``(exit code, output)``, or None past *timeout* seconds.
+
+    The output is the program's standard output, or its standard error when
+    standard output is empty. Standard input is the null device, so nothing
+    the program runs can wait for input. Outside Windows the program starts in
+    a session of its own, so stopping it stops every process it started (see
+    :func:`_stop_process_tree`); that also happens when the gate itself is
+    interrupted. After a stop the gate waits at most
+    :data:`_STOP_GRACE_SECONDS` for the output to close and then leaves it
+    open: a process the program started can hold it, and closing it while it
+    is being read would wait just as long.
+    """
+    process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
+        argv,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+        env=env,
+        start_new_session=sys.platform != "win32",
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _stop_process_tree(process)
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            process.communicate(timeout=_STOP_GRACE_SECONDS)
+        return None
+    except BaseException:
+        _stop_process_tree(process)
+        raise
+    return process.returncode, stdout or stderr or ""
+
+
+def _stopped_report(name: str) -> str:
+    """Return the JSON report for a validator the gate stopped at its limit.
+
+    The validator printed no report of its own, so the gate writes one in its
+    place: not passed, with a ``check_error`` that says why.
+    """
+    return json.dumps(
+        {
+            "grep": name,
+            "passed": False,
+            CHECK_ERROR_KEY: (
+                f"{name} did not finish within {STANDALONE_TIMEOUT_SECONDS} "
+                "seconds and was stopped"
+            ),
+        },
+        indent=2,
+    )
+
+
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     """Invoke a standalone validator via subprocess; return (passed, output).
 
@@ -1118,14 +1203,17 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
     which the caller has already resolved to an absolute directory. The child
     writes no bytecode cache (``-B``), as this file run as a program writes
-    none (see the bootstrap at the top of this file).
+    none (see the bootstrap at the top of this file). It gets
+    :data:`STANDALONE_TIMEOUT_SECONDS`: a validator still running then is
+    stopped (see :func:`_run_bounded`) and does not pass, and the output is
+    the gate's report in its place (see :func:`_stopped_report`).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
+        completed = _run_bounded(
             [
                 sys.executable,
                 "-B",
@@ -1135,16 +1223,15 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
                 module,
                 str(root),
             ],
-            capture_output=True,
-            text=True,
-            check=False,
-            encoding="utf-8",
             env=_standalone_env(),
+            timeout=STANDALONE_TIMEOUT_SECONDS,
         )
     except OSError as exc:
         return False, f"{name}: invocation failed: {exc}"
-    output = completed.stdout or completed.stderr or ""
-    return completed.returncode == EXIT_PASS, output
+    if completed is None:
+        return False, _stopped_report(name)
+    returncode, output = completed
+    return returncode == EXIT_PASS, output
 
 
 def _advisory_verdict(output: str) -> dict[str, object] | None:
@@ -1175,12 +1262,14 @@ def _advisory_verdict(output: str) -> dict[str, object] | None:
 
 
 def _inspection_fields(output: str) -> dict[str, object]:
-    """Return a validator report's ``inspected`` / empty-scope fields, if any.
+    """Return a validator report's inspection fields, if any.
 
     Every standalone validator stamps ``inspected`` (how many targets it
     examined) on its JSON report, plus ``empty_scope_expected`` when it
-    examined none. Lifting them into the ``--all`` result entry lets a consumer
-    see a vacuous run without parsing each embedded ``output`` string.
+    examined none, and ``check_error`` when its check could not finish (the
+    gate's own report for a validator it stopped carries ``check_error`` too).
+    Lifting them into the ``--all`` result entry lets a consumer see a vacuous
+    or unfinished run without parsing each embedded ``output`` string.
     """
     try:
         payload = json.loads(output)
@@ -1189,7 +1278,9 @@ def _inspection_fields(output: str) -> dict[str, object]:
     if not isinstance(payload, dict):
         return {}
     return {
-        key: payload[key] for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY) if key in payload
+        key: payload[key]
+        for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY, CHECK_ERROR_KEY)
+        if key in payload
     }
 
 
@@ -1206,6 +1297,11 @@ def _run_all(root: Path) -> tuple[bool, str]:
     ``advisory`` / ``advisory_passed`` / ``findings`` and aggregated into the
     top-level ``advisory_findings_present`` flag so the drift is visible
     without parsing each validator's embedded ``output``.
+
+    A validator whose check could not finish (one the gate stopped at
+    :data:`STANDALONE_TIMEOUT_SECONDS`, or one whose own git command ran past
+    its time limit) does not pass, advisory or not, and its entry carries the
+    reason as ``check_error``.
     """
     results: list[dict[str, object]] = []
     overall_passed = True

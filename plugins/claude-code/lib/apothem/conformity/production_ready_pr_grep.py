@@ -34,6 +34,7 @@ from typing import Final
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
+    GitTimeoutError,
     GrepResult,
     make_parser,
     parse_path_input,
@@ -80,7 +81,8 @@ STAGED_FLAG: Final[str] = "--staged"
 # Subprocess timeout for the git invocation; the per-grep budget is
 # `gate.PER_GREP_BUDGET_SECONDS` (~520ms) but the staged-diff check is a
 # single git command that completes well under that ceiling on
-# representative repositories.
+# representative repositories. A timeout does not pass: the change set was
+# not read, which is not the same as an empty one.
 GIT_TIMEOUT_SECONDS: Final[int] = 5
 
 
@@ -115,7 +117,12 @@ def _classify(path: str) -> set[str]:
 
 
 def _staged_paths() -> list[str]:
-    """Return the staged-diff path list via git; empty on failure."""
+    """Return the staged-diff path list via git; empty on failure.
+
+    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when git
+    runs past ``GIT_TIMEOUT_SECONDS``: the repository's own configuration can
+    make git wait for ever, and a change set that was not read is not empty.
+    """
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],  # noqa: S607  # PATH-resolved git is acceptable for a developer-tool grep; full-path resolution would require host-discovery and breaks portability across operator setups.
@@ -124,18 +131,28 @@ def _staged_paths() -> list[str]:
             text=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        FileNotFoundError,
-    ):
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
 def _check_staged() -> GrepResult:
-    """Substantive check: inspect the staged diff against the four-class shape."""
-    paths = _staged_paths()
+    """Substantive check: inspect the staged diff against the four-class shape.
+
+    A staged list that git did not deliver within ``GIT_TIMEOUT_SECONDS``
+    does not pass: the result carries the reason as ``check_error``.
+    """
+    try:
+        paths = _staged_paths()
+    except GitTimeoutError as exc:
+        return GrepResult(
+            grep=GREP_NAME,
+            path="<staged diff>",
+            passed=False,
+            check_error=str(exc),
+        )
     classes_present: set[str] = set()
     for path in paths:
         classes_present |= _classify(path)

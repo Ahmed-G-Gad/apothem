@@ -30,6 +30,8 @@ The gate runs only machine-checkable validators. The reasoned judgment that the 
 
 The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all` or `--all-perwrite`) exits `2` when a blocking validator or matcher fails; advisory findings are reported only. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
 
+A check that could not finish does not pass either. A standalone validator still running after 10 minutes is stopped, and a validator whose own `git` command runs past its time limit reports so; either result carries `passed: false` and a `check_error` that says why, so with `--strict` it exits `2` too. [Running the conformity gate](/docs/usage/conformity-gate) lists the limits.
+
 ## Validators
 
 The mechanical fraction lives at [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrated by [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).

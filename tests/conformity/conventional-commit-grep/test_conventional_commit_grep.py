@@ -7,7 +7,8 @@ The pure classifier ``_classify_drift(subject)`` is driven directly with
 synthetic subject strings for deterministic pass+fail, and ``check_repo``
 is exercised against a tmp git repository so the git-read path is covered
 end to end. A final test confirms the git-read bounds its subprocess with
-``GIT_TIMEOUT_SECONDS`` and degrades to an informational pass on timeout.
+``GIT_TIMEOUT_SECONDS`` and that a timeout does not pass: the HEAD subject
+was never read, so the status is ``git-timeout`` with a ``check_error``.
 """
 
 from __future__ import annotations
@@ -151,7 +152,7 @@ def test_no_git_repo_is_informational_pass(tmp_path: Path) -> None:
     assert result.status == "not-a-git-repo"
 
 
-def test_git_timeout_degrades_to_pass(tmp_path: Path, monkeypatch) -> None:
+def test_git_timeout_does_not_pass(tmp_path: Path, monkeypatch) -> None:
     (tmp_path / ".git").mkdir()
 
     def _raise_timeout(*args: object, **kwargs: object) -> NoReturn:
@@ -160,8 +161,26 @@ def test_git_timeout_degrades_to_pass(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(_MOD.subprocess, "run", _raise_timeout)
     result = _MOD.check_repo(tmp_path)
+    assert not result.passed
+    assert result.status == "git-timeout"
+    assert result.check_error == (
+        f"git log did not finish within {_MOD.GIT_TIMEOUT_SECONDS} seconds"
+    )
+
+
+def test_git_that_cannot_start_stays_exempt(tmp_path: Path, monkeypatch) -> None:
+    # git missing from the host is unchanged: the history cannot be read
+    # at all, so the check stays informational, as before.
+    (tmp_path / ".git").mkdir()
+
+    def _raise_missing(*args: object, **kwargs: object) -> NoReturn:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(_MOD.subprocess, "run", _raise_missing)
+    result = _MOD.check_repo(tmp_path)
     assert result.passed
     assert result.status == "git-unavailable"
+    assert result.check_error is None
 
 
 def _git_available() -> bool:

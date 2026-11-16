@@ -64,6 +64,25 @@ INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+# Report key emitted only when a check could not finish, for example because a
+# git command ran past its time limit or the gate stopped the validator. The
+# value says why; a report that carries it does not pass.
+CHECK_ERROR_KEY: Final[str] = "check_error"
+
+
+class GitTimeoutError(Exception):
+    """A git command ran past its time limit, so a check could not finish.
+
+    A repository's own configuration can make git wait for ever, for example
+    through an ``include.path`` that names a FIFO. The message, such as
+    ``git log did not finish within 5 seconds``, is what the validator reports
+    as its ``check_error``; a check whose git never answered has not earned a
+    pass.
+    """
+
+    def __init__(self, command: str, seconds: float) -> None:
+        """Name the git *command* that did not finish within *seconds*."""
+        super().__init__(f"{command} did not finish within {seconds} seconds")
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +211,7 @@ def finish_root_report(
     inspected: int,
     empty_scope_expected: bool = False,
     advisory: bool = False,
+    check_error: str | None = None,
 ) -> int:
     """Stamp the ``inspected`` count on a root report, print it, return the exit.
 
@@ -200,23 +220,29 @@ def finish_root_report(
     ``empty_scope_expected`` is True only when the validator documents that
     an empty scope is legitimate (for example a gitignored plans tree that a
     clean checkout does not carry). ``advisory`` validators report findings
-    without failing.
+    without failing. ``check_error`` is why the check could not finish (a
+    git command that ran past its time limit, say), or None when it finished.
     Post-conditions: the printed payload carries ``inspected``. When nothing
     was inspected it also carries ``empty_scope_expected``; an unexpected empty
     scope sets ``passed`` to false and returns :data:`EXIT_FAIL` even for an
     advisory validator, because a validator that inspected nothing has not
-    earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
-    advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    earned a pass. A ``check_error`` is stamped on the payload and fails the
+    run the same way, advisory or not: a check that could not finish has not
+    earned a pass either. Otherwise the return is :data:`EXIT_PASS` for a pass
+    or an advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
     vacuous = inspected == 0 and not empty_scope_expected
     if inspected == 0:
         payload[EMPTY_SCOPE_KEY] = empty_scope_expected
-    if vacuous:
+    if check_error is not None:
+        payload[CHECK_ERROR_KEY] = check_error
+    unearned = vacuous or check_error is not None
+    if unearned:
         payload["passed"] = False
     print(json.dumps(payload, indent=2))
-    if vacuous:
+    if unearned:
         return EXIT_FAIL
     if advisory or passed:
         return EXIT_PASS
@@ -383,9 +409,11 @@ class GrepResult:
     """Canonical path-based matcher report.
 
     Pre-conditions: ``findings`` holds the matcher-specific finding dataclasses
-    (each a frozen ``@dataclass``). Post-conditions: ``to_json`` emits the
-    canonical ``{grep, path, passed, findings}`` payload, including ``note``
-    only when it is not ``None``.
+    (each a frozen ``@dataclass``). ``check_error``, when set, says why the
+    check could not finish, and the caller sets ``passed`` to false with it.
+    Post-conditions: ``to_json`` emits the canonical ``{grep, path, passed,
+    findings}`` payload, including ``note`` and ``check_error`` only when they
+    are not ``None``.
     """
 
     grep: str
@@ -393,6 +421,7 @@ class GrepResult:
     passed: bool
     findings: list[Any] = field(default_factory=list)
     note: str | None = None
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -400,7 +429,8 @@ class GrepResult:
         Post-conditions: the payload carries ``{grep, path, passed,
         findings}``; each finding is flattened through ``dataclasses.asdict``.
 
-        ``note`` is emitted only when it is not ``None``.
+        ``note`` and ``check_error`` are emitted only when they are not
+        ``None``.
         """
         payload: dict[str, object] = {
             "grep": self.grep,
@@ -410,6 +440,8 @@ class GrepResult:
         }
         if self.note is not None:
             payload["note"] = self.note
+        if self.check_error is not None:
+            payload[CHECK_ERROR_KEY] = self.check_error
         return json.dumps(payload, indent=2)
 
 

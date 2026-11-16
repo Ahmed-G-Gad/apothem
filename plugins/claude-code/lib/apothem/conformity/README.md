@@ -145,6 +145,16 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **No unfinished pass.** A check that could not finish does not pass either.
+  Give every git call a timeout, and turn `subprocess.TimeoutExpired` into
+  `GitTimeoutError` from `_grep_base.py`, whose message names the command; a
+  corpus walker hands that message to `finish_root_report(check_error=...)`,
+  which stamps `check_error` and exits `2`, advisory or not. A timeout is not
+  the exempt state of a missing repository, a repository with no commit, or a
+  host without git: the data is there but was not read, and a checked
+  repository's own configuration can make git wait for ever. The gate gives
+  each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
+  to stop with a `check_error` of its own.
 - **Two layouts, one import surface.** `gate.py` runs from the package
   (`src/apothem/conformity/`) and from a harness install
   (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its

@@ -45,15 +45,19 @@ content commit postdates its committed companion's commit. Folders with no
 companion on disk are skipped entirely — absence is not a finding under the
 root-only convention. Where git history is unavailable (a shallow clone, a
 non-git tree), freshness is skipped and the sweep reports a clean pass — it
-never blocks a fresh clone.
+never blocks a fresh clone. A ``git log`` that runs past its time limit is
+different: the history is there but was not read (the repository's own
+configuration can make git wait for ever), so the sweep reports a
+``check_error`` and does not pass.
 
 Posture. The result is advisory: the sweep surfaces findings and never
 silent-blocks by default, honoring the agnostic gate posture. The orchestrator
 reads the JSON ``advisory: true`` flag plus the inner ``passed`` field — a
 stale-companion finding surfaces as ``advisory_findings_present`` without
 gating the ``gate --all`` run. CI opts into strict enforcement separately.
-``_main`` always exits 0 so the advisory posture holds regardless of findings;
-the verdict travels in the JSON, not the exit code.
+``_main`` exits 0 on findings so the advisory posture holds; the verdict
+travels in the JSON, not the exit code. It exits 2 only when the sweep did not
+earn a verdict: it inspected no folder, or its ``git log`` ran past its limit.
 """
 
 from __future__ import annotations
@@ -66,6 +70,8 @@ from pathlib import Path
 from typing import Final
 
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
+    GitTimeoutError,
     finish_root_report,
     iter_tree_files,
     parse_root_args,
@@ -82,8 +88,9 @@ EXIT_PASS: Final[int] = 0
 COMPANION_NAME: Final[str] = "AGENTS.md"
 README_NAME: Final[str] = "README.md"
 
-# Bound the git invocation so a hung `git log` cannot stall the sweep; a
-# timeout is treated as a transient git error and degrades to a clean pass.
+# Bound the git invocation so a hung `git log` cannot stall the sweep. A
+# timeout is not missing history: the history is there but was not read, so
+# the sweep reports a check error and does not pass.
 GIT_TIMEOUT_SECONDS: Final[int] = 10
 
 # Path segments that mark a directory as out of scope wherever they appear.
@@ -146,15 +153,19 @@ class GrepResult:
     freshness_checked: bool
     passed: bool
     findings: list[Finding] = field(default_factory=list)
+    # Why the freshness check could not finish (``git log`` ran past
+    # ``GIT_TIMEOUT_SECONDS``); None otherwise.
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
 
         Post-conditions: the payload carries ``{grep, root, folders_inspected,
-        freshness_checked, passed, findings, advisory}``; each finding is
-        flattened through ``dataclasses.asdict``.
+        freshness_checked, passed, findings, advisory}``, plus
+        ``check_error`` when it is set; each finding is flattened through
+        ``dataclasses.asdict``.
         """
-        payload = {
+        payload: dict[str, object] = {
             "grep": self.grep,
             "root": self.root,
             "folders_inspected": self.folders_inspected,
@@ -163,6 +174,8 @@ class GrepResult:
             "findings": [asdict(f) for f in self.findings],
             "advisory": True,
         }
+        if self.check_error is not None:
+            payload[CHECK_ERROR_KEY] = self.check_error
         return json.dumps(payload, indent=2)
 
 
@@ -257,8 +270,10 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
 
     One ``git log`` pass, newest commit first: the first time a path is seen
     is its last-touching commit. Returns None when git history is unavailable
-    (no repository, shallow clone with no log, git absent, or timeout) so the
-    caller degrades to a presence-only sweep.
+    (no repository, shallow clone with no log, or git absent) so the caller
+    degrades to a presence-only sweep. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when ``git log``
+    runs past ``GIT_TIMEOUT_SECONDS``: the history exists but was not read.
     """
     try:
         completed = subprocess.run(
@@ -276,6 +291,8 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             timeout=GIT_TIMEOUT_SECONDS,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git log", GIT_TIMEOUT_SECONDS) from exc
     except (OSError, subprocess.SubprocessError):
         return None
     if completed.returncode != 0 or not completed.stdout:
@@ -321,14 +338,19 @@ def check(root: Path) -> GrepResult:
     ``result.passed`` is True iff (when git history is available) no *present*,
     committed per-folder companion is stale relative to its folder's
     directly-contained artifacts; it is always True when git history is
-    unavailable.
+    unavailable. A ``git log`` past ``GIT_TIMEOUT_SECONDS`` is not missing
+    history: ``passed`` is False and ``check_error`` names the command.
     """
     folders = meaningful_folders(root)
     folder_set = frozenset(folders)
     findings: list[Finding] = []
 
     # Freshness — git-commit truth; skipped when history is unavailable.
-    commit_times = _last_commit_times(root)
+    check_error: str | None = None
+    try:
+        commit_times = _last_commit_times(root)
+    except GitTimeoutError as exc:
+        commit_times, check_error = None, str(exc)
     freshness_checked = commit_times is not None
     if commit_times is not None:
         content_ct: dict[str, int] = {}
@@ -368,8 +390,9 @@ def check(root: Path) -> GrepResult:
         root=str(root),
         folders_inspected=len(folders),
         freshness_checked=freshness_checked,
-        passed=not findings,
+        passed=not findings and check_error is None,
         findings=findings,
+        check_error=check_error,
     )
 
 
@@ -382,12 +405,14 @@ def _main(argv: list[str]) -> int:
     # ``gate._advisory_verdict``) and surfaces a stale-companion finding as
     # ``advisory_findings_present`` without failing the ``gate --all`` run.
     # CI opts into strict enforcement separately. A sweep that inspected no
-    # folder fails: that is a misconfiguration, not advisory drift.
+    # folder fails: that is a misconfiguration, not advisory drift. So does a
+    # sweep whose ``git log`` ran past its limit: it did not finish.
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
         inspected=result.folders_inspected,
         advisory=True,
+        check_error=result.check_error,
     )
 
 

@@ -18,11 +18,14 @@ subjects (``Merge branch ...`` / ``Merge pull request ...``) pass
 through — the merger does not author the merged content's subject form.
 Shallow-clone or no-git contexts (no ``.git/``, empty repo) exit 0 with
 an informational status so the validator never blocks a fresh clone or
-a non-git working tree.
+a non-git working tree. A ``git log`` that runs past
+``GIT_TIMEOUT_SECONDS`` is not such a context: the repository is there but
+its HEAD subject was never read (its own configuration can make git wait
+for ever), so the status is ``git-timeout`` and the check does not pass.
 
 Exit semantics. Exits 0 when HEAD is conformant (or informationally
-exempt). Exits 2 on any drift class. The exit-2 convention matches the
-conformity-gate orchestrator's ``EXIT_FAIL`` constant.
+exempt). Exits 2 on any drift class, and on ``git-timeout``. The exit-2
+convention matches the conformity-gate orchestrator's ``EXIT_FAIL`` constant.
 """
 
 from __future__ import annotations
@@ -42,8 +45,14 @@ EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
 
 # Bound the gate-path git invocation so a hung `git log` cannot block a
-# commit indefinitely; a timeout is treated as a transient git error.
+# commit indefinitely. A timeout does not pass: the subject was never read.
 GIT_TIMEOUT_SECONDS: Final[int] = 5
+
+# Statuses with nothing to inspect, which pass: no repository, no commit
+# yet, or no git to read the history with.
+EXEMPT_STATUSES: Final[frozenset[str]] = frozenset(
+    {"not-a-git-repo", "no-commits-yet", "git-unavailable"}
+)
 
 ALLOWED_TYPES: Final[frozenset[str]] = frozenset(
     {
@@ -182,20 +191,25 @@ class GrepResult:
     status: str
     subject: str | None = None
     drifts: list[Drift] = field(default_factory=list)
+    # Why the check could not finish (``git-timeout``); None otherwise.
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
 
         Post-conditions: the payload carries ``{grep, passed, status, subject,
-        drifts}``; each finding is flattened through ``dataclasses.asdict``.
+        drifts}``, plus ``check_error`` when it is set; each finding is
+        flattened through ``dataclasses.asdict``.
         """
-        payload = {
+        payload: dict[str, object] = {
             "grep": self.grep,
             "passed": self.passed,
             "status": self.status,
             "subject": self.subject,
             "drifts": [asdict(d) for d in self.drifts],
         }
+        if self.check_error is not None:
+            payload["check_error"] = self.check_error
         return json.dumps(payload, indent=2)
 
 
@@ -203,8 +217,10 @@ def _read_head_subject(root: Path) -> tuple[str | None, str]:
     """Return ``(subject, status)`` for the HEAD commit.
 
     ``status`` is one of ``ok`` (subject populated), ``not-a-git-repo``,
-    ``no-commits-yet``, ``git-unavailable``. The subject is None for
-    every non-``ok`` status so the caller can short-circuit.
+    ``no-commits-yet``, ``git-unavailable`` (git could not be started),
+    ``git-timeout`` (``git log`` ran past ``GIT_TIMEOUT_SECONDS``). The
+    subject is None for every non-``ok`` status so the caller can
+    short-circuit.
     """
     if not (root / ".git").exists():
         return None, "not-a-git-repo"
@@ -218,7 +234,9 @@ def _read_head_subject(root: Path) -> tuple[str | None, str]:
             encoding="utf-8",
             timeout=GIT_TIMEOUT_SECONDS,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except subprocess.TimeoutExpired:
+        return None, "git-timeout"
+    except OSError:
         return None, "git-unavailable"
     if completed.returncode != 0:
         # Empty repo or other transient git error — never block.
@@ -335,8 +353,17 @@ def check_repo(root: Path) -> GrepResult:
     Pre-conditions: ``root`` is the working-tree directory.
     Post-conditions: ``result.passed`` is True iff HEAD is conformant
     or the repo state is informationally exempt (no .git, no commits).
+    A ``git log`` past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``,
+    ``passed`` False and a ``check_error`` that names the command.
     """
     subject, status = _read_head_subject(root)
+    if status == "git-timeout":
+        return GrepResult(
+            grep=GREP_NAME,
+            passed=False,
+            status=status,
+            check_error=f"git log did not finish within {GIT_TIMEOUT_SECONDS} seconds",
+        )
     if status != "ok" or subject is None:
         return GrepResult(
             grep=GREP_NAME,
@@ -369,12 +396,14 @@ def _main(argv: list[str]) -> int:
     result = check_repo(root)
     # One HEAD subject is inspected. A directory with no commit history (no
     # repository, or no commit yet) is the documented exempt state, not a
-    # vacuous pass.
+    # vacuous pass. A ``git log`` that ran past its limit is not exempt: it
+    # reports an unexpected empty scope plus the ``check_error``.
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
         inspected=int(result.subject is not None),
-        empty_scope_expected=result.subject is None,
+        empty_scope_expected=result.status in EXEMPT_STATUSES,
+        check_error=result.check_error,
     )
 
 
