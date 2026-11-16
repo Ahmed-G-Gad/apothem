@@ -5,10 +5,11 @@
 Why these tests exist. The conformity gate runs git inside the project it
 checks: ``git ls-files`` for ``--all-perwrite`` and ``no-global-plans-grep``,
 ``git log`` for ``conventional-commit-grep`` and ``agents-md-coverage-grep``,
-and ``git diff --cached`` / ``git show`` for the two ``--staged`` change-set
-checks. git reads that repository's own ``.git/config`` on every run, and a
-project that arrives with its ``.git`` folder (an archive, a shared folder) can
-plant settings there that make git start a program while it only reads.
+and ``git diff --cached`` / ``git cat-file`` for the two ``--staged``
+change-set checks. git reads that repository's own ``.git/config`` on every
+run, and a project that arrives with its ``.git`` folder (an archive, a shared
+folder) can plant settings there that make git start a program while it only
+reads.
 
 Each scenario below plants one such setting in a throwaway repository, proves
 the plant is live by running the matching plain git command (the planted
@@ -16,11 +17,18 @@ program then runs and leaves a marker file), and then drives every git call
 the gate makes. No marker may appear. The scenarios that a plain git command
 triggers today are the file-system monitor (``core.fsmonitor``, also through
 ``include.path`` and ``.git/config.worktree``), commit-signature checks
-(``log.showSignature`` with the OpenPGP, SSH and X.509 programs) and the lazy
+(``log.showSignature`` with the OpenPGP, SSH and X.509 programs), the lazy
 fetch of a partial clone (``remote.<name>.uploadpack``, ``core.sshCommand``,
-``ext::``). Hooks, filters, diff programs and pagers do not run for the gate's
-commands today; they are planted too, so a later command change cannot bring
-them back unnoticed.
+``ext::``), and a staged submodule entry shown as a commit: a ``%G?`` in
+``format.pretty`` starts the signature program, and ``diff.submodule=diff``
+starts a second git inside a submodule with its own ``diff.external``. Hooks,
+filters, diff programs and pagers do not run for the gate's commands today;
+they are planted too, so a later command change cannot bring them back
+unnoticed.
+
+The tests after the scenarios cover how the gate reads git's output: the
+record marker of ``agents-md-coverage-grep``'s log format, non-ASCII path
+names, a missing root, and the forward-slash path of the version check.
 
 HERMETIC: every repository lives under ``tmp_path``. The fixture git commands
 and the plain controls run with :func:`hermetic_git_env`, and the gate's own
@@ -30,6 +38,7 @@ developer's git configuration changes nothing here.
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import json
 import os
@@ -114,12 +123,17 @@ _HOOK_NAMES = (
 )
 
 
-def _git(repo: Path, *args: str, data: bytes | None = None) -> str:
+def _git(
+    repo: Path,
+    *args: str,
+    data: bytes | None = None,
+    env: dict[str, str] | None = None,
+) -> str:
     """Run a fixture git command in *repo* with no host configuration."""
     completed = subprocess.run(
         ["git", *args],
         cwd=str(repo),
-        env=hermetic_git_env(),
+        env={**hermetic_git_env(), **(env or {})},
         input=data,
         stdin=None if data is not None else subprocess.DEVNULL,
         capture_output=True,
@@ -157,12 +171,23 @@ def _config(repo: Path, key: str, value: str) -> None:
     _git(repo, "config", "--local", key, value)
 
 
+_VERSIONED = "src/apothem/__init__.py"
+_LINKED = "src/apothem/linked.py"
+
+
 def _build_repo(repo: Path) -> Path:
-    """Two commits, a staged change to a public module, an unstaged one on top."""
+    """Two commits, a staged change to a public module, an unstaged one on top.
+
+    The staged change drops the public ``g``, so the change-set check finds a
+    breaking change and goes on to read ``src/apothem/__init__.py`` as well.
+    """
     repo.mkdir()
     _git(repo, "-c", "init.defaultBranch=main", "init", "-q")
     (repo / "src" / "apothem").mkdir(parents=True)
-    (repo / _TRACKED).write_bytes(b"def f():\n    return 1\n")
+    (repo / _VERSIONED).write_bytes(b'__version__ = "1.2.3"\n')
+    (repo / _TRACKED).write_bytes(
+        b"def f():\n    return 1\n\n\ndef g():\n    return 1\n"
+    )
     (repo / "README.md").write_bytes(b"# readme\n")
     (repo / ".gitattributes").write_bytes(b"* diff=planted filter=planted\n")
     _git(repo, "add", "-A")
@@ -176,15 +201,24 @@ def _build_repo(repo: Path) -> Path:
     return repo
 
 
-def _sign_head(repo: Path, fmt: str) -> None:
-    """Replace HEAD with a copy that carries a *fmt* signature header."""
+def _signed_copy_of_head(repo: Path, fmt: str) -> str:
+    """Write a copy of HEAD that carries a *fmt* signature header; return its id."""
     header, _, message = _git(repo, "cat-file", "commit", "HEAD").partition("\n\n")
     signature = "\n ".join(_SIGNATURES[fmt])
     signed = f"{header}\ngpgsig {signature}\n\n{message}\n"
-    oid = _git(
+    return _git(
         repo, "hash-object", "-t", "commit", "-w", "--stdin", data=signed.encode()
     )
-    _git(repo, "update-ref", "refs/heads/main", oid)
+
+
+def _sign_head(repo: Path, fmt: str) -> None:
+    """Replace HEAD with a copy that carries a *fmt* signature header."""
+    _git(repo, "update-ref", "refs/heads/main", _signed_copy_of_head(repo, fmt))
+
+
+def _stage_gitlink(repo: Path, path: str, oid: str) -> None:
+    """Stage a gitlink (a submodule entry, mode 160000) at *path* naming *oid*."""
+    _git(repo, "update-index", "--add", "--cacheinfo", f"160000,{oid},{path}")
 
 
 def _drop_head_objects(repo: Path) -> None:
@@ -326,7 +360,44 @@ def _pagers(repo: Path, programs: _Programs, outside: Path) -> None:
         _config(repo, f"pager.{command}", programs("pager"))
 
 
+def _gitlink_signature(repo: Path, programs: _Programs, outside: Path) -> None:
+    """A staged gitlink naming a signed commit, which a ``%G?`` format checks."""
+    _stage_gitlink(repo, _LINKED, _signed_copy_of_head(repo, "openpgp"))
+    _config(repo, "format.pretty", "format:%H %G?")
+    _config(repo, "gpg.program", programs("signature"))
+
+
+def _gitlink_submodule_diff(repo: Path, programs: _Programs, outside: Path) -> None:
+    """A staged gitlink naming a commit whose diff moves a populated submodule.
+
+    With ``diff.submodule=diff``, showing that commit starts a second git
+    inside the submodule, where the submodule's own ``diff.external`` applies.
+    """
+    sub = repo / "sub"
+    sub.mkdir()
+    _git(sub, "-c", "init.defaultBranch=main", "init", "-q")
+    (sub / "a.txt").write_bytes(b"one\n")
+    _git(sub, "add", "-A")
+    _git(sub, *_IDENT, "commit", "-q", "-m", "one")
+    first = _git(sub, "rev-parse", "HEAD")
+    (sub / "a.txt").write_bytes(b"two\n")
+    _git(sub, *_IDENT, "commit", "-q", "-am", "two")
+    second = _git(sub, "rev-parse", "HEAD")
+    _config(sub, "diff.external", programs("diff"))
+    entries = _git(repo, "ls-tree", "HEAD")
+
+    def commit_with_sub_at(oid: str, parent: str) -> str:
+        listing = f"{entries}\n160000 commit {oid}\tsub\n".encode()
+        tree = _git(repo, "mktree", data=listing)
+        return _git(repo, *_IDENT, "commit-tree", tree, "-p", parent, "-m", "sub")
+
+    before = commit_with_sub_at(first, _git(repo, "rev-parse", "HEAD"))
+    _stage_gitlink(repo, _LINKED, commit_with_sub_at(second, before))
+    _config(repo, "diff.submodule", "diff")
+
+
 _SHOW_HEAD = ("show", f"HEAD:{_TRACKED}")
+_SHOW_LINKED = ("show", f":{_LINKED}")
 _COMMIT = (*_IDENT, "commit", "-q", "--allow-empty", "-m", "test: run the hooks")
 
 SCENARIOS = (
@@ -351,6 +422,8 @@ SCENARIOS = (
     _Scenario("diff-driver", _setting("diff.planted.command", "diff"), ("diff",)),
     _Scenario("diff-textconv", _setting("diff.planted.textconv", "diff"), ("diff",)),
     _Scenario("pagers", _pagers, None),
+    _Scenario("gitlink-signature", _gitlink_signature, _SHOW_LINKED),
+    _Scenario("gitlink-submodule-diff", _gitlink_submodule_diff, _SHOW_LINKED),
 )
 
 
@@ -552,6 +625,10 @@ def test_git_argv_puts_the_protective_options_first() -> None:
     argv = git_helper.git_argv("/usr/bin/git", ["ls-files", "-z"])
     assert argv[1 + options :] == ["ls-files", "-z"]
 
+    # A folder reaches git as -C, so git reports a missing one itself.
+    argv = git_helper.git_argv("/usr/bin/git", ["ls-files"], cwd="/project")
+    assert argv[1 + options :] == ["-C", "/project", "ls-files"]
+
     with pytest.raises(ValueError, match="subcommand"):
         git_helper.git_argv("/usr/bin/git", [])
 
@@ -567,11 +644,17 @@ def test_protective_options_name_every_program_switch() -> None:
         if flag == "-c"
     )
     assert settings["core.fsmonitor"] == ""
+    assert settings["core.useBuiltinFSMonitor"] == "false"
     assert settings["log.showSignature"] == "false"
+    assert settings["diff.submodule"] == "short"
+    assert settings["log.mailmap"] == "false"
     assert settings["gc.auto"] == "0"
     assert settings["maintenance.auto"] == "false"
-    # The hooks path sits below a regular file, where no hook can exist.
-    assert Path(settings["core.hooksPath"]).parent.is_file()
+    assert settings["core.quotePath"] == "false"
+    # The hooks path and the signature programs sit below a regular file,
+    # where nothing can exist, so no hook or signature program can start.
+    for key in ("core.hooksPath", "gpg.program", "gpg.ssh.program", "gpg.x509.program"):
+        assert Path(settings[key]).parent.is_file(), key
     assert git_helper.PROTECTIVE_OPTIONS[0] == "--no-pager"
 
 
@@ -596,3 +679,123 @@ def test_run_git_reports_a_missing_git_as_file_not_found(
     monkeypatch.setenv("PATH", "")
     with pytest.raises(FileNotFoundError, match=re.escape("full-path PATH entry")):
         git_helper.run_git(["version"])
+
+
+def test_no_conformity_module_starts_git_itself() -> None:
+    """Only ``_git.py`` starts git; every other module calls ``run_git``.
+
+    A literal list or tuple that begins with ``"git"`` is how a direct
+    ``subprocess.run(["git", ...])`` call is written, and
+    ``shutil.which("git")`` is how a direct lookup is.
+    """
+    package = Path(gate.__file__).resolve().parent
+    offenders: list[str] = []
+    for module in sorted(package.glob("*.py")):
+        if module.name == "_git.py":
+            continue
+        tree = ast.parse(module.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.List, ast.Tuple)) and node.elts:
+                first = node.elts[0]
+                if isinstance(first, ast.Constant) and first.value == "git":
+                    offenders.append(f"{module.name}:{node.lineno}")
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "which"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and node.args[0].value == "git"
+            ):
+                offenders.append(f"{module.name}:{node.lineno}")
+    assert offenders == []
+
+
+def _dated_commit(repo: Path, message: str, when: int) -> None:
+    """Commit everything in *repo* with author and committer time *when*."""
+    stamp = f"@{when} +0000"
+    _git(repo, "add", "-A")
+    _git(
+        repo,
+        *_IDENT,
+        "commit",
+        "-q",
+        "-m",
+        message,
+        env={"GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp},
+    )
+
+
+def _empty_repo(repo: Path) -> Path:
+    repo.mkdir()
+    _git(repo, "-c", "init.defaultBranch=main", "init", "-q")
+    return repo
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_stale_folder_companion_is_reported(tmp_path: Path) -> None:
+    """The freshness check reads git log's ``\\x1e`` record markers.
+
+    ``str.splitlines()`` treats ``\\x1e`` as a line break, which emptied every
+    commit-time map, so no stale companion was ever reported.
+    """
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "pkg").mkdir()
+    (repo / "pkg" / "README.md").write_bytes(b"# pkg\n")
+    (repo / "pkg" / "AGENTS.md").write_bytes(b"# pkg notes\n")
+    _dated_commit(repo, "docs: add pkg", 1_700_000_000)
+    (repo / "pkg" / "x.py").write_bytes(b"X = 1\n")
+    _dated_commit(repo, "feat: add pkg code", 1_700_001_000)
+
+    assert agents_md_coverage_grep._last_commit_times(repo) == {
+        "pkg/AGENTS.md": 1_700_000_000,
+        "pkg/README.md": 1_700_000_000,
+        "pkg/x.py": 1_700_001_000,
+    }
+    result = agents_md_coverage_grep.check(repo)
+    assert [(finding.surface, finding.kind) for finding in result.findings] == [
+        ("pkg/AGENTS.md", "stale-companion")
+    ]
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_non_ascii_paths_read_as_themselves(tmp_path: Path) -> None:
+    """git's C-quoting of non-ASCII path names is off for every gate git call."""
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    (repo / "docs" / "café.md").write_bytes(b"# cafe\n")
+    _dated_commit(repo, "docs: add the cafe page", 1_700_000_000)
+
+    assert no_global_plans_grep._git_ls_files(repo) == ["docs/café.md"]
+    assert agents_md_coverage_grep._last_commit_times(repo) == {
+        "docs/café.md": 1_700_000_000
+    }
+
+
+def test_ls_files_reports_a_missing_root_as_a_git_failure(tmp_path: Path) -> None:
+    """A root that is gone, or is a file, is git's own error, not a lost git."""
+    with pytest.raises(RuntimeError, match="git ls-files failed under"):
+        no_global_plans_grep._git_ls_files(tmp_path / "missing")
+    a_file = tmp_path / "a-file"
+    a_file.write_bytes(b"x\n")
+    with pytest.raises(RuntimeError, match="git ls-files failed under"):
+        no_global_plans_grep._git_ls_files(a_file)
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_staged_major_bump_admits_a_breaking_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The version check reads ``src/apothem/__init__.py`` on every platform.
+
+    git names a path with forward slashes; a Windows path spelled with
+    backslashes made the check fail, so a staged MAJOR bump never counted.
+    """
+    repo = _build_repo(tmp_path / "project")
+    monkeypatch.chdir(repo)
+    assert semver_stability_grep.check_staged() != []  # g was dropped
+
+    (repo / _VERSIONED).write_bytes(b'__version__ = "2.0.0"\n')
+    _git(repo, "add", _VERSIONED)
+
+    assert semver_stability_grep.check_staged() == []

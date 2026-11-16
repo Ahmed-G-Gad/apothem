@@ -260,8 +260,9 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     is its last-touching commit. Returns None when git history is unavailable
     (no repository, shallow clone with no log, git absent, or timeout) so the
     caller degrades to a presence-only sweep. git runs through
-    :func:`run_git`, so the repository's own settings cannot make it start a
-    program (a signature check, say), and path names decode as UTF-8.
+    :func:`run_git`, which turns off the repository's program-running settings
+    (a signature check, say) and prints path names as they are, decoded as
+    UTF-8.
     """
     try:
         completed = run_git(
@@ -276,7 +277,9 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
 
     times: dict[str, int] = {}
     current_ct: int | None = None
-    for raw_line in completed.stdout.splitlines():
+    # Split on "\n" only: str.splitlines() also breaks at the \x1e record
+    # marker, which would strip it from every header line.
+    for raw_line in completed.stdout.split("\n"):
         if raw_line.startswith("\x1e"):
             stamp = raw_line[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None

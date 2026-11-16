@@ -320,6 +320,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Three conformity validators read git's output correctly.**
+  `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
+  Python's `str.splitlines()` also breaks lines at the record marker its
+  `git log` format uses, so every commit time was lost; it now splits on new
+  lines only. `no-global-plans-grep` and `agents-md-coverage-grep` received
+  non-ASCII path names in git's quoted form (`"caf\303\251.md"`), which their
+  path rules did not match; git now prints them as they are. On Windows,
+  `semver_stability_grep --staged` named `src\apothem\__init__.py` with
+  backslashes, which git does not accept, so a staged MAJOR version bump never
+  admitted a breaking change. `no-global-plans-grep` again reports a root that
+  does not exist, or is a file, as a failed `git ls-files` rather than as git
+  missing from `PATH`.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -1016,13 +1028,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   a shared folder, could set `core.fsmonitor` to a program that ran during
   `git ls-files`, turn on `log.showSignature` so that `git log` ran its
   `gpg.program`, or make a partial clone fetch a missing object through
-  `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. Every
-  git command the gate runs now turns those settings off on git's command
-  line (no file-system monitor, signature check, hooks, pager, external diff
-  or text-conversion program, or automatic maintenance), sets
-  `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, and starts git
-  only from a full-path entry of `PATH`. On Windows the gate no longer runs a
-  `git.exe` that sits in the folder it was started from.
+  `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. A
+  staged submodule entry also let `semver_stability_grep --staged` run
+  `git show` on a commit: a `%G` placeholder in `format.pretty` started the
+  signature program, and `diff.submodule=diff` started a second git inside the
+  submodule with the submodule's own diff program. Every git command the gate
+  runs now turns those settings off on git's command line (no file-system
+  monitor, hooks, pager or automatic maintenance; signature programs that
+  cannot start; no external diff or text-conversion program; submodule changes
+  as commit ids only), reads file contents with `git cat-file blob`, which
+  refuses a submodule entry, sets `GIT_NO_LAZY_FETCH=1` and an empty
+  `GIT_ALLOW_PROTOCOL`, and starts git only from a full-path entry of `PATH`.
+  On Windows the gate no longer runs a `git.exe` that sits in the folder it
+  was started from. The repository can still make git read a file elsewhere
+  (`include.path`, `.git/objects/info/alternates`); on Windows a network path
+  there makes Windows sign in to that server.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the

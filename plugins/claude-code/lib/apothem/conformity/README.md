@@ -143,10 +143,13 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   own files) reads everything below that subtree.
 - **Every git call goes through `run_git`.** The project being checked can come
   with a `.git` folder someone else wrote, and its `.git/config` can name a
-  program for git to start (`core.fsmonitor`, a signature program, a lazy-fetch
-  transport). `run_git` in `_git.py` turns those settings off on git's command
-  line, blocks fetching, and starts git only from a full-path `PATH` entry. A
-  matcher never calls `subprocess.run(["git", ...])` itself;
+  program for git to start (`core.fsmonitor`, a signature program, a second git
+  in a submodule, a lazy-fetch transport). `run_git` in `_git.py` turns those
+  settings off on git's command line, blocks fetching, and starts git only from
+  a full-path `PATH` entry. A matcher never calls `subprocess.run(["git", ...])`
+  itself (`test_no_conformity_module_starts_git_itself` fails if one does), and
+  reads file contents with `git cat-file blob`, never `git show`, which would
+  show a submodule entry as a commit.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many

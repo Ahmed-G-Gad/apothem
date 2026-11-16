@@ -5,16 +5,20 @@ program-running git settings turned off.
 
 Why this module exists. The gate and several validators read the checked
 project's git data: the tracked-file list (``ls-files``), the commit history
-(``log``) and the staged change set (``diff --cached``, ``show``). That project
-can come from someone else together with its ``.git`` folder, in an archive or
-a shared folder, and git reads the repository's own configuration on every run:
-``.git/config``, the files it includes and ``.git/config.worktree``. Settings
-there can name a program for git to start while it only reads:
+(``log``) and the staged change set (``diff --cached``, ``cat-file``). That
+project can come from someone else together with its ``.git`` folder, in an
+archive or a shared folder, and git reads the repository's own configuration
+on every run: ``.git/config``, the files it includes and
+``.git/config.worktree``. Settings there can name a program for git to start
+while it only reads:
 
 - ``core.fsmonitor`` names a program git runs whenever it loads the index
-  (``ls-files``, ``diff --cached``, ``show :<path>``);
-- ``log.showSignature`` makes ``log`` and ``show`` check every signed commit
-  with ``gpg.program``, ``gpg.ssh.program`` or ``gpg.x509.program``;
+  (``ls-files``, ``diff --cached``, ``cat-file :<path>``);
+- ``log.showSignature``, or a ``%G`` placeholder in ``format.pretty``, makes
+  git check a commit signature with ``gpg.program``, ``gpg.ssh.program`` or
+  ``gpg.x509.program``;
+- ``diff.submodule=diff`` starts a second git in a submodule, which reads that
+  submodule's own configuration;
 - in a partial clone (``extensions.partialClone``), git fetches a missing
   object through the transport the configuration names, which can run
   ``remote.<name>.uploadpack``, ``core.sshCommand`` or an ``ext::`` command.
@@ -22,14 +26,15 @@ there can name a program for git to start while it only reads:
 :func:`run_git` runs every git command the gate makes, the same way:
 
 - options on git's own command line (:data:`PROTECTIVE_OPTIONS`), which win
-  over every configuration file: no pager, no file-system monitor, no
-  signature check, no automatic maintenance, and a hooks path no hook can
-  exist under;
+  over every configuration file and reach any git that git starts: no pager,
+  no file-system monitor, signature programs that cannot exist, submodule
+  changes shown as commit ids only, no mailmap, no automatic maintenance, and
+  a hooks path no hook can exist under;
 - ``--no-ext-diff`` and ``--no-textconv`` on ``diff``, ``log`` and ``show``
   (:data:`NO_DIFF_PROGRAMS`), so no diff driver or text-conversion program
   runs;
 - ``GIT_NO_LAZY_FETCH=1`` (git 2.44 and later) and an empty
-  ``GIT_ALLOW_PROTOCOL``, which allows no transport on every git version and
+  ``GIT_ALLOW_PROTOCOL`` (git 2.6.1 and later), which allows no transport and
   overrides the repository's ``protocol.*`` settings, so a missing object is
   never fetched;
 - git found only in the full-path entries of ``PATH``, and git started with a
@@ -38,8 +43,14 @@ there can name a program for git to start while it only reads:
   names the current folder on every platform, so a ``git`` or helper program
   placed in the checked project would run instead.
 
-The caller's own global and system git configuration and ``GIT_*``
-environment variables still apply: they are the user's own.
+What stays: the user's own global and system configuration and ``GIT_*``
+variables apply, except the settings above, which win in every scope. The
+repository can still make git read a file from another place: an
+``include.path`` file, or objects borrowed through ``objects/info/alternates``.
+On Windows a network path there (``\\\\server\\share``) makes Windows sign in
+to that server. Reading content is done with ``cat-file blob``, never with
+``show``, so a gitlink (a submodule entry) is refused instead of shown as a
+commit.
 """
 
 from __future__ import annotations
@@ -52,28 +63,53 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Final
 
-# A path below a regular file, where no hook can exist (a file cannot hold
-# entries), so ``core.hooksPath`` set to it runs no hook. This module's own
-# file is a regular file wherever the gate runs from, and its path is absolute.
-_HOOKS_OFF: Final[str] = str(Path(__file__).resolve() / "no-hooks")
+# A path below a regular file, where nothing can exist (a file cannot hold
+# entries). This module's own file is a regular file wherever the gate runs
+# from, and its path is absolute. ``core.hooksPath`` set to it runs no hook,
+# and a signature program set to it cannot start.
+_NOWHERE: Final[str] = str(Path(__file__).resolve() / "nothing-here")
 
 # Options on git's own command line, ahead of the subcommand. A setting given
 # with ``-c`` wins over every configuration file, so the checked repository
-# cannot turn these back on. ``core.fsmonitor`` is set empty: on every git
-# version that turns off both a monitor program and the built-in daemon
-# (``false`` would name a program called ``false`` on git before 2.36).
+# cannot turn these back on, and git passes them on to any git it starts (a
+# submodule's included). ``core.fsmonitor`` is set empty: on every git version
+# that turns off both a monitor program and the built-in daemon (``false``
+# would name a program called ``false`` on git before 2.36);
+# ``core.useBuiltinFSMonitor`` is Git for Windows 2.33 to 2.35's own switch for
+# that daemon. The three signature programs point nowhere, so neither
+# ``log.showSignature`` nor a ``%G`` placeholder in ``format.pretty`` can start
+# one. ``diff.submodule=short`` keeps git from starting a second git inside a
+# submodule, where the submodule's own configuration would apply.
+# ``log.mailmap=false`` keeps ``log`` from reading a mailmap file the
+# repository names. ``core.quotePath=false`` prints path names as they are
+# rather than C-quoting every byte above 0x7f, so a non-ASCII path reads as
+# itself.
 PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "--no-pager",
     "-c",
     "core.fsmonitor=",
     "-c",
-    f"core.hooksPath={_HOOKS_OFF}",
+    "core.useBuiltinFSMonitor=false",
+    "-c",
+    f"core.hooksPath={_NOWHERE}",
     "-c",
     "log.showSignature=false",
+    "-c",
+    f"gpg.program={_NOWHERE}",
+    "-c",
+    f"gpg.ssh.program={_NOWHERE}",
+    "-c",
+    f"gpg.x509.program={_NOWHERE}",
+    "-c",
+    "diff.submodule=short",
+    "-c",
+    "log.mailmap=false",
     "-c",
     "gc.auto=0",
     "-c",
     "maintenance.auto=false",
+    "-c",
+    "core.quotePath=false",
 )
 
 # Subcommands that can show a diff or a blob, and the options that keep a
@@ -83,9 +119,10 @@ NO_DIFF_PROGRAMS: Final[tuple[str, ...]] = ("--no-ext-diff", "--no-textconv")
 
 # Environment for every git run. GIT_ALLOW_PROTOCOL holds an empty list, so no
 # transport (file, ssh, ext, or a remote-helper program) is allowed whatever
-# the repository's protocol.* settings say. GIT_NO_LAZY_FETCH stops git 2.44
-# and later from even trying to fetch a missing object. GIT_TERMINAL_PROMPT=0
-# keeps git from waiting for a credential on the terminal.
+# the repository's protocol.* settings say (git 2.6.1 and later read it).
+# GIT_NO_LAZY_FETCH stops git 2.44 and later from even trying to fetch a
+# missing object. GIT_TERMINAL_PROMPT=0 keeps git from waiting for a
+# credential on the terminal.
 GIT_ENVIRONMENT: Final[Mapping[str, str]] = {
     "GIT_ALLOW_PROTOCOL": "",
     "GIT_NO_LAZY_FETCH": "1",
@@ -159,18 +196,21 @@ def git_environment(environ: Mapping[str, str] | None = None) -> dict[str, str]:
     return env
 
 
-def git_argv(git: str, args: Sequence[str]) -> list[str]:
+def git_argv(
+    git: str, args: Sequence[str], *, cwd: Path | str | None = None
+) -> list[str]:
     """Return the full argument vector for ``git <args>``.
 
     *args* starts with the subcommand. :data:`PROTECTIVE_OPTIONS` go before
-    it, and :data:`NO_DIFF_PROGRAMS` right after it for ``diff``, ``log`` and
-    ``show``.
+    it, then ``-C <cwd>`` when *cwd* is given, and :data:`NO_DIFF_PROGRAMS`
+    right after the subcommand for ``diff``, ``log`` and ``show``.
     """
     if not args:
         raise ValueError("git_argv needs a subcommand")
     subcommand, *rest = args
+    where = ("-C", str(cwd)) if cwd is not None else ()
     extra = NO_DIFF_PROGRAMS if subcommand in DIFF_SUBCOMMANDS else ()
-    return [git, *PROTECTIVE_OPTIONS, subcommand, *extra, *rest]
+    return [git, *PROTECTIVE_OPTIONS, *where, subcommand, *extra, *rest]
 
 
 def run_git(
@@ -182,9 +222,11 @@ def run_git(
 ) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *cwd* with the project's program-running settings off.
 
-    *args* starts with the git subcommand (``ls-files``, ``log``, ...). Output
-    is captured and decoded as UTF-8, the encoding git writes path names in; a
-    byte that is not UTF-8 reads as U+FFFD. Standard input is empty.
+    *args* starts with the git subcommand (``ls-files``, ``log``, ...). *cwd*
+    reaches git as ``-C <cwd>``, so a folder that does not exist is git's own
+    error (a non-zero exit), as for any other git failure. Output is captured
+    and decoded as UTF-8, the encoding git writes path names in; a byte that
+    is not UTF-8 reads as U+FFFD. Standard input is empty.
 
     Raises :class:`FileNotFoundError` when no git is found in a full-path
     ``PATH`` entry, and otherwise what :func:`subprocess.run` raises
@@ -198,8 +240,7 @@ def run_git(
             errno.ENOENT, "git not found in a full-path PATH entry", "git"
         )
     return subprocess.run(  # noqa: S603 — argv list (never a shell): the git found above, fixed options, and the caller's git arguments
-        git_argv(git, args),
-        cwd=None if cwd is None else str(cwd),
+        git_argv(git, args, cwd=cwd),
         env=git_environment(),
         stdin=subprocess.DEVNULL,
         capture_output=True,
