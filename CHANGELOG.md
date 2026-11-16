@@ -159,7 +159,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exchange, and stops with a plain error when it does not. The Entra route
   and the `VSCE_PAT` token stay as alternatives. An unrecognised
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
-  release-cycle runbook gains the setup procedure.
+  release-cycle runbook gains the setup procedure. `tools/vsce` now locks
+  vsce 4.1.0, so `VSCE_AUTH=oidc` works from this release.
 - **The weekly convention monitor watches each tool's release channels.**
   OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
   GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
@@ -182,12 +183,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   OpenCode has four channels: `opencode-ai` for OpenCode 1, `@opencode/cli`
   for OpenCode 2, the GitHub releases of `anomalyco/opencode`, where a new
   major line shows whatever npm package it ships as, and
-  `opencode.ai/install`. Two of them watch the OpenCode decision's second
-  signal, OpenCode 1's installer or npm package moving to OpenCode 2: the
-  check fails when `opencode-ai`'s `latest` version moves past major version
-  1, or when `opencode.ai/install` stops redirecting to the OpenCode 1
-  installer script. The decision's first signal, a date to remove OpenCode
-  2's translation of OpenCode 1's formats, stays a check by hand.
+  `opencode.ai/install`. Apothem writes OpenCode 1 formats for both lines,
+  and two of these channels flag when that should change: the check fails
+  when `opencode-ai`'s `latest` version moves past major version 1, or when
+  `opencode.ai/install` stops redirecting to the OpenCode 1 installer script.
+  A date for OpenCode 2 to stop translating OpenCode 1's formats is checked
+  by hand.
   Antigravity, Cursor, Kiro, Trae and Windsurf have no release channel a
   script can query, and the file gives the reason for each. The check job
   sends the workflow's `GITHUB_TOKEN` to the GitHub API with read access
@@ -223,9 +224,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **CI installs pip from a hash-locked file.** Every workflow upgrades pip
   with `--require-hashes` from `scripts/ci/requirements-ci-pip.txt` instead
   of a version pin, so the download is checked against its published hash,
-  and Dependabot proposes pip upgrades with their hashes. The same pip,
-  26.2.1, still runs in CI; the lock holds it at 26.2 or later, which fixes
-  CVE-2026-13346. `check_pip_pin_drift.py` now checks the lock file and the
+  and Dependabot proposes pip upgrades with their hashes. CI runs the pip
+  version the lock holds, 26.2 or later, which fixes CVE-2026-13346.
+  `check_pip_pin_drift.py` now checks the lock file and the
   workflows' install lines instead of the per-workflow version setting, and
   `pip-audit.yml` audits the lock. The PowerShell steps that install it now
   stop on a failed install.
@@ -806,8 +807,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `agents.entries.<id>.subagents.allowAgents`, and the Open-Claw page names the
   `agents.entries.<id>.skills` list. OpenClaw also loads `AGENTS.md` and five
   other files from each agent's workspace. The pin now records them. The
-  install still writes none of them, and whether it should is an open question
-  for the maintainer. CodeBuddy moved its IDE Rules page, and that page
+  install does not write these files; it adds its own `apothem/AGENTS.md`
+  through the `bootstrap-extra-files` hook (see Added). CodeBuddy moved its IDE Rules page, and that page
   describes one folder per rule holding a `RULE.mdc` file. The CodeBuddy rules
   file and docs now link the CodeBuddy Code memory page, which documents the
   plain `.md` rule files the install writes. The docs say Apothem has not
@@ -1169,16 +1170,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refusals as a real run, and leaves `APOTHEM_HOME` unchanged. The
   [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
   explains each mode.
-- **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
-  allows every tool by default and asks before reading `.env` and `.env.*`
-  files. A helper's rules come after those defaults and after the operator's
+- **OpenCode helpers no longer turn off the `.env` read prompt
+  (GHSA-qpmp-8g2h-296c).** OpenCode allows every tool by default and asks
+  before reading `.env` and `.env.*` files. A helper's rules come after those defaults and after the operator's
   own `permission` config, and the last matching rule wins, in OpenCode 1
   (v1.19.5) and OpenCode 2 (v2.2.5). Every helper the OpenCode install wrote
   carried `read: allow`, which turned that prompt off, and `allow` rules for
   the other tools it may use, which overrode a stricter rule the operator set,
   such as a global `bash: ask`. Helpers now carry only `deny` rules, for the
   tools they must not use, so the `.env` prompt and the operator's rules apply
-  to them.
+  to them. Releases 1.0.1 to 1.5.0 are affected. Upgrading leaves the
+  installed helpers as they are: after the upgrade, run `apothem update` (or
+  `apothem install --harness opencode`), then check that no Apothem helper
+  in `~/.config/opencode/agents` still has an `allow` line.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
