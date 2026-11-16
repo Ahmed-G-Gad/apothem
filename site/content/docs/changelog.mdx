@@ -318,6 +318,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **`apothem doctor` starts GitHub Copilot's hooks, and Cursor's on Windows.**
+  Doctor read a hook's command line only from a `command` key. GitHub Copilot
+  keeps its lines under `bash` and `powershell`, so doctor never started
+  Copilot's hooks and passed a project whose Copilot hook could not run. It now
+  starts the `powershell` line on Windows and the `bash` line on macOS and
+  Linux. On Windows, Cursor's hook line starts with PowerShell's `&`, which
+  doctor took for the program to start, so it reported a working Cursor hook
+  as unable to start. Doctor now leaves the `&` out.
+
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
