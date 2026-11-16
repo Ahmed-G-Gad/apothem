@@ -194,8 +194,9 @@ _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the proj
     The project root is the one the CLI supplied, or else the one derived from
     the adapter's declared relative target. It is spelled as the install
     record spells it, and an install recorded under another spelling of the
-    folder, such as a link, is first moved to the folder resolved. Returns the
-    run; a step that reports an error is an ``error`` result in it."""
+    folder, such as a link, is first moved to the folder resolved, unless the
+    folder has an install of its own still in place. Returns the run; a step
+    that reports an error is an ``error`` result in it."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 

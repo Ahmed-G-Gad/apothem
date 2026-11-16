@@ -847,6 +847,18 @@ def test_an_unfinished_uninstall_through_a_link_finishes_on_the_next_run(
     assert _files(outside) == []
 
 
+def _hold(patch: pytest.MonkeyPatch, stuck: Path) -> None:
+    """Make deleting *stuck* fail, as when another program holds it open."""
+    real_unlink = Path.unlink
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if (self.parent.name, self.name) == (stuck.parent.name, stuck.name):
+            raise PermissionError(13, "The file is in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    patch.setattr(Path, "unlink", unlink)
+
+
 @pytest.mark.parametrize("held", ["rules", "skill"])
 def test_an_unfinished_uninstall_finishes_once_the_link_is_removed(
     linked: tuple[Path, Path],
@@ -869,16 +881,9 @@ def test_an_unfinished_uninstall_finishes_once_the_link_is_removed(
         if held == "rules"
         else sorted((Path.home() / ".agents" / "skills").glob("*/SKILL.md"))[0]
     )
-    real_unlink = Path.unlink
-
-    def unlink(self: Path, missing_ok: bool = False) -> None:
-        if (self.parent.name, self.name) == (stuck.parent.name, stuck.name):
-            raise PermissionError(13, "The file is in use")
-        real_unlink(self, missing_ok=missing_ok)
-
     args = ("uninstall", "--harness", "cursor", "--project", str(outside), "--yes")
     with monkeypatch.context() as patch:
-        patch.setattr(Path, "unlink", unlink)
+        _hold(patch, stuck)
         first = _cli(*args)
     assert first.exit_code == 2, first.output
     assert stuck.exists()
@@ -894,8 +899,49 @@ def test_an_unfinished_uninstall_finishes_once_the_link_is_removed(
     assert "not installed" not in second.output, second.output
     assert "Uninstalled" in second.output, second.output
     assert not stuck.exists()
+    assert _files(outside) == []
     for root in {record.root for record in install_ledger.read_records("cursor")}:
         assert install_ledger.active_install_records("cursor", root=root) == []
+
+
+def test_a_kimi_code_uninstall_finishes_once_the_link_is_removed(
+    linked: tuple[Path, Path],
+    profile: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Kimi Code has its own uninstall in front of the shared one, and it
+    # moves the record the same way. Its skill files are in the project:
+    # with one held, the uninstall does not finish, and the next run
+    # finishes it once the link is removed.
+    project, outside = linked
+    with monkeypatch.context() as patch:
+        _as_typed(patch)
+        run = kimi_install(project / "AGENTS.md", profile, project=project)
+    assert not run.errors, [error.message for error in run.errors]
+    installed = install_ledger.latest_record("kimi_code")
+    assert installed is not None
+    assert installed.root == str(project)
+    stuck = sorted((outside / ".kimi-code" / "skills").glob("*/SKILL.md"))[0]
+    args = ("uninstall", "--harness", "kimi-code", "--project", str(outside), "--yes")
+    with monkeypatch.context() as patch:
+        _hold(patch, stuck)
+        first = _cli(*args)
+    assert first.exit_code == 2, first.output
+    assert stuck.exists()
+    (moved,) = install_ledger.active_install_records("kimi_code", root=outside)
+    assert moved.install_id == installed.install_id
+    assert install_ledger.unfinished_uninstall("kimi_code", root=outside) is not None
+    _unlink_folder_link(project)
+
+    second = _cli(*args)
+
+    assert second.exit_code == 0, second.output
+    assert "not installed" not in second.output, second.output
+    assert "Uninstalled" in second.output, second.output
+    assert not stuck.exists()
+    assert _files(outside) == []
+    for root in {record.root for record in install_ledger.read_records("kimi_code")}:
+        assert install_ledger.active_install_records("kimi_code", root=root) == []
 
 
 def test_the_install_with_more_files_in_the_folder_wins(tmp_path: Path) -> None:
@@ -1137,6 +1183,45 @@ def test_an_install_through_a_link_to_an_installed_folder_moves_nothing(
     # An uninstall through the link moves nothing either: it removes the
     # install recorded under the link, as before.
     assert install_ledger.uninstall_spelling("cursor", link) == (link, None)
+
+
+def test_a_move_onto_a_folder_installed_since_appends_nothing(
+    linked: tuple[Path, Path],
+) -> None:
+    # The caller chose to move the link's install while the folder had none,
+    # and another install recorded the folder before the move ran. Moving
+    # then would put the link's older install after that newer one.
+    project, outside = linked
+    install_ledger.append_record(_record(project))
+    assert install_ledger.install_spelling("cursor", project) == (outside, project)
+    install_ledger.append_record(_record(outside))
+    before = install_ledger.read_records("cursor")
+
+    install_ledger.move_install("cursor", project, outside)
+
+    assert install_ledger.read_records("cursor") == before
+
+
+def test_an_uninstall_looks_the_folder_up_once(
+    linked: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # recorded_root can check every recorded folder on disk, so an uninstall
+    # takes its spelling and the one to move from a single call.
+    project, outside = linked
+    install_ledger.append_record(_record(outside))
+    real_recorded_root = install_ledger.recorded_root
+    looked_up: list[Path] = []
+
+    def recorded_root(
+        harness: str, root: Path, *, state_root: Path | None = None
+    ) -> Path:
+        looked_up.append(root)
+        return real_recorded_root(harness, root, state_root=state_root)
+
+    monkeypatch.setattr(install_ledger, "recorded_root", recorded_root)
+
+    assert install_ledger.uninstall_spelling("cursor", project) == (outside, None)
+    assert looked_up == [project]
 
 
 def test_a_second_record_of_the_folder_does_not_keep_its_data_stores(

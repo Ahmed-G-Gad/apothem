@@ -388,16 +388,16 @@ removes anything, so an uninstall that does not finish is recorded under the
 resolved folder, where running `uninstall` again still finds it once the link
 is removed. A folder that a record names another way on disk (a
 `\\localhost\C$` path to a folder recorded as `C:\...`) keeps the spelling
-the record has, and an install or uninstall in a folder that has an install
-record of its own leaves a record under another spelling as it is. A spelling
-whose install is still in place comes before one whose install was removed;
-of two in place, the one with more of its files in the folder, then the newer.
-An install none of whose files is in the folder is not taken for it, unless
-its uninstall did not finish: running `uninstall` again then finishes it.
-Folder names are compared exactly: in a case-sensitive folder (one WSL made,
-say) `Proj` and `proj` are two folders and are never taken for each other,
-and uninstalling one keeps the shared folders the other uses. In an
-ordinary Windows folder they are one folder while it exists; once it is
+the record has, and an install or uninstall in a folder that has an install of
+its own still in place leaves a record under another spelling as it is. A
+spelling whose install is still in place comes before one whose install was
+removed; of two in place, the one with more of its files in the folder, then
+the newer. An install none of whose files is in the folder is not taken for
+it, unless its uninstall did not finish: running `uninstall` again then
+finishes it. Folder names are compared exactly: in a case-sensitive folder
+(one WSL made, say) `Proj` and `proj` are two folders and are never taken for
+each other, and uninstalling one keeps the shared folders the other uses. In
+an ordinary Windows folder they are one folder while it exists; once it is
 gone, only the spelling the record has finds it. A cloned volume attached
 beside its original is not taken for it when Windows can name both volumes.
 A record on another network share (a `\\server\share` path or a drive

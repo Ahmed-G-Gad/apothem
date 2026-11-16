@@ -757,24 +757,8 @@ def install_spelling(
     cannot be resolved and a ledger that cannot be read: the install then
     writes under the spelling its record has, as it did before.
     """
-    spelling = recorded_root(harness, root, state_root=state_root)
-    try:
-        resolved = spelling.expanduser().resolve(strict=False)
-        records = read_records(harness, state_root=state_root)
-    except (LedgerError, OSError, RuntimeError):
-        return spelling, None
-    if str(spelling) == str(resolved):
-        return resolved, None
-    by_root: dict[str, list[LedgerRecord]] = {}
-    for record in records:
-        by_root.setdefault(record.root, []).append(record)
-    if _live_install(by_root.get(str(spelling), [])) is None:
-        return resolved, None
-    if not spelling.is_absolute():
-        return spelling, None
-    if _live_install(by_root.get(str(resolved), [])) is not None:
-        return resolved, None
-    return resolved, spelling
+    _recorded, spelling, moving = _spellings(harness, root, state_root)
+    return spelling, moving
 
 
 def uninstall_spelling(
@@ -790,10 +774,39 @@ def uninstall_spelling(
     after the link is removed. With nothing to move, *spelling* is the one
     :func:`recorded_root` gives. Reads only; nothing is written.
     """
-    spelling, moving = install_spelling(harness, root, state_root=state_root)
+    recorded, spelling, moving = _spellings(harness, root, state_root)
     if moving is None:
-        return recorded_root(harness, root, state_root=state_root), None
+        return recorded, None
     return spelling, moving
+
+
+def _spellings(
+    harness: str, root: Path, state_root: Path | None
+) -> tuple[Path, Path, Path | None]:
+    """Return ``(recorded, spelling, moving)`` for *root*, from one lookup.
+
+    *recorded* is the spelling :func:`recorded_root` gives, and *spelling*
+    and *moving* are what :func:`install_spelling` returns. Both public
+    functions take them from here, so an uninstall looks the folder up once.
+    """
+    recorded = recorded_root(harness, root, state_root=state_root)
+    try:
+        resolved = recorded.expanduser().resolve(strict=False)
+        records = read_records(harness, state_root=state_root)
+    except (LedgerError, OSError, RuntimeError):
+        return recorded, recorded, None
+    if str(recorded) == str(resolved):
+        return recorded, resolved, None
+    by_root: dict[str, list[LedgerRecord]] = {}
+    for record in records:
+        by_root.setdefault(record.root, []).append(record)
+    if _live_install(by_root.get(str(recorded), [])) is None:
+        return recorded, resolved, None
+    if not recorded.is_absolute():
+        return recorded, recorded, None
+    if _live_install(by_root.get(str(resolved), [])) is not None:
+        return recorded, resolved, None
+    return recorded, resolved, recorded
 
 
 def move_install(
@@ -808,7 +821,11 @@ def move_install(
     one append under the ledger lock: a crash can tear only its end, which
     leaves both spellings active (two live records for one folder), never
     the install unrecorded. Nothing is appended when nothing is active
-    under *old*.
+    under *old*, or when *new* has an active install of its own. The caller
+    chose to move when *new* had none (see :func:`install_spelling`); one
+    recorded since, by an install that ran in between, is newer, and moving
+    would put the older records after it. The check is made under the same
+    lock as the append.
 
     Raises:
         LedgerError: The ledger is corrupted.
@@ -816,11 +833,10 @@ def move_install(
     """
     path = ledger_path(harness, state_root=state_root)
     with atomic_io.advisory_lock(path.with_name(path.name + _LOCK_SUFFIX)):
-        own = [
-            record
-            for record in read_records(harness, state_root=state_root)
-            if record.root == str(old)
-        ]
+        records = read_records(harness, state_root=state_root)
+        if _live_install([r for r in records if r.root == str(new)]) is not None:
+            return
+        own = [record for record in records if record.root == str(old)]
         moved = _moved_records(own, str(old), new)
         if moved:
             lines = "\n".join(record.to_json_line() for record in moved)

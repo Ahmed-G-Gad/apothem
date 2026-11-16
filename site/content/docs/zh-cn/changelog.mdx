@@ -1028,16 +1028,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it once the link is removed. A folder that a record names another way on
   disk (a `\\localhost\C$` path to a folder recorded as `C:\...`) keeps the
   spelling the record has, and an install or uninstall in a folder that has
-  an install record of its own leaves a record under another spelling as it
-  is. A spelling whose install is still in place is taken before one whose
-  install was removed; of two in place, the one with more of its files in
-  the folder, then the newer. An install none of whose files is in the
-  folder is not taken for it, unless its uninstall did not finish: running
-  the uninstall again then finishes it. One recorded with a relative folder
-  or `~` is not taken for another folder of the same name. Folder names are
-  compared exactly: in a case-sensitive folder (one WSL made, say) `Proj`
-  and `proj` are two folders and are never taken for each other. In an
-  ordinary Windows folder they are one folder while it exists; once it is
+  an install of its own still in place leaves a record under another
+  spelling as it is. A spelling whose install is still in place is taken
+  before one whose install was removed; of two in place, the one with more
+  of its files in the folder, then the newer. An install none of whose files
+  is in the folder is not taken for it, unless its uninstall did not finish:
+  running the uninstall again then finishes it. One recorded with a relative
+  folder or `~` is not taken for another folder of the same name. Folder
+  names are compared exactly: in a case-sensitive folder (one WSL made, say)
+  `Proj` and `proj` are two folders and are never taken for each other. In
+  an ordinary Windows folder they are one folder while it exists; once it is
   gone, only the spelling the record has finds it. Two folders that look the
   same on disk count as one only when the volume gives them real file IDs
   and, when Windows can name both volumes, the names match, so a cloned
