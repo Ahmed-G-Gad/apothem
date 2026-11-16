@@ -297,6 +297,36 @@ def test_callee_matrix_job_without_the_input_keeps_caller_ceiling(
 
 
 @pytest.mark.parametrize(
+    "timeout",
+    [
+        "${{ matrix.os == 'windows-latest' && 400 || inputs.timeout-minutes }}",
+        "${{ github.event.inputs.timeout-minutes }}",
+    ],
+)
+def test_callee_must_use_the_input_alone(tmp_path: Path, timeout: str) -> None:
+    # A Windows override in the callee, or a different input, would let the
+    # callee run longer than the caller's checked limit.
+    callee = _MATRIX_CALLEE.replace("${{ inputs.timeout-minutes }}", f'"{timeout}"')
+    _write(tmp_path, callee, name="reusable.yml")
+    root = _write(
+        tmp_path, _CALLER.format(uses="./.github/workflows/reusable.yml", value=60)
+    )
+    details = [f.detail for f in wcg.check(root).findings]
+    assert details == ["with: timeout-minutes=60 exceeds ceiling=30"]
+
+
+def test_huge_digit_strings_are_findings_not_crashes(tmp_path: Path) -> None:
+    digits = "9" * 5000
+    conditional = "${{ matrix.os == 'windows-latest' && " + digits + " || 90 }}"
+    assert wcg._parse_windows_conditional(conditional) is None
+    root = _write(
+        tmp_path, _CALLER.format(uses="./.github/workflows/reusable.yml", value=digits)
+    )
+    drift = [f.drift_class for f in wcg.check(root).findings]
+    assert drift == ["yaml-parse-error"]
+
+
+@pytest.mark.parametrize(
     ("value", "expected"),
     [
         ("${{ matrix.os == 'windows-latest' && 120 || 90 }}", (120, 90)),

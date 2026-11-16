@@ -39,8 +39,8 @@ Detection. Walk ``<root>/.github/workflows/*.yml``. For each workflow:
    callee once. When the caller has no matrix and calls a workflow in the
    same folder (``./.github/workflows/<file>``), the validator reads that
    file, and an integer limit gets the full-matrix ceiling when a job there
-   carries its own ``strategy.matrix`` and sets ``timeout-minutes`` from
-   ``inputs.timeout-minutes``. The ``matrix.os`` conditional still needs
+   carries its own ``strategy.matrix`` and sets ``timeout-minutes`` to
+   exactly ``${{ inputs.timeout-minutes }}``. The ``matrix.os`` conditional still needs
    the caller's own matrix, because GitHub evaluates ``with:`` in the
    caller's context. The limit of this check: the validator does not read
    a callee in another repository or one it cannot find or parse, and it
@@ -86,9 +86,11 @@ WINDOWS_FULL_MATRIX_JOB_CEILING_MINUTES: Final[int] = 120
 # for the Windows cells, which run the same suite more slowly, and the usual
 # one for the rest. GitHub expression strings take single quotes only.
 # re.ASCII keeps \d to 0-9, so full-width or other Unicode digits fail.
+# Each limit takes one to five digits, so int() never meets a digit string
+# past Python's 4,300-digit conversion limit.
 _WINDOWS_CONDITIONAL_TIMEOUT: Final[re.Pattern[str]] = re.compile(
-    r"\s*\$\{\{\s*matrix\.os\s*==\s*'windows-latest'\s*&&\s*(\d+)"
-    r"\s*\|\|\s*(\d+)\s*\}\}\s*",
+    r"\s*\$\{\{\s*matrix\.os\s*==\s*'windows-latest'\s*&&\s*(\d{1,5})"
+    r"\s*\|\|\s*(\d{1,5})\s*\}\}\s*",
     re.ASCII,
 )
 
@@ -98,8 +100,10 @@ _WINDOWS_CONDITIONAL_TIMEOUT: Final[re.Pattern[str]] = re.compile(
 # drive prefix, so the lookup cannot leave the workflows folder.
 _LOCAL_CALLEE_PREFIX: Final[str] = "./.github/workflows/"
 _LOCAL_CALLEE_NAME: Final[re.Pattern[str]] = re.compile(r"[\w-][\w.-]*", re.ASCII)
+# The callee's limit must be exactly the passed input; an expression that
+# only mentions it (a Windows override, github.event.inputs) does not count.
 _TIMEOUT_INPUT: Final[re.Pattern[str]] = re.compile(
-    r"\binputs\.timeout-minutes(?![\w-])", re.ASCII
+    r"\s*\$\{\{\s*inputs\.timeout-minutes\s*\}\}\s*", re.ASCII
 )
 
 DEPLOYMENT_NAME_MARKERS: Final[tuple[str, ...]] = ("release", "publish", "deploy")
@@ -203,8 +207,8 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
 
     ``uses`` counts only as ``./.github/workflows/<file>`` naming a file
     directly in ``workflows_dir``. The callee must hold a job that carries
-    ``strategy.matrix`` and sets its ``timeout-minutes`` from
-    ``inputs.timeout-minutes``. Any other reference, and a callee that is
+    ``strategy.matrix`` and sets its ``timeout-minutes`` to exactly
+    ``${{ inputs.timeout-minutes }}``. Any other reference, and a callee that is
     missing or does not parse, returns False, so the caller's own matrix
     alone decides the ceiling.
     """
@@ -215,7 +219,8 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
         return False
     try:
         doc = yaml.safe_load((workflows_dir / name).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+    except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
+        # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         return False
     jobs = doc.get("jobs") if isinstance(doc, dict) else None
     if not isinstance(jobs, dict):
@@ -224,7 +229,7 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
         if not isinstance(job, dict) or not _job_is_full_matrix(job):
             continue
         timeout = job.get("timeout-minutes")
-        if isinstance(timeout, str) and _TIMEOUT_INPUT.search(timeout):
+        if isinstance(timeout, str) and _TIMEOUT_INPUT.fullmatch(timeout):
             return True
     return False
 
@@ -292,7 +297,8 @@ def _check_workflow(path: Path) -> list[Finding]:
     workflow_name = path.name
     try:
         doc = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
+    except (ValueError, yaml.YAMLError) as exc:
+        # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         findings.append(
             Finding(
                 workflow=workflow_name,
