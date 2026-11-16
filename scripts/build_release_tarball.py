@@ -134,7 +134,7 @@ def collect_members(root: Path) -> list[Path]:
     paths ``.gitattributes`` marks ``export-ignore``, so the archive never
     holds a file GitHub's source archive leaves out; falls back to a
     filesystem walk that prunes ``DEFAULT_EXCLUDE_DIRS`` and excluded
-    patterns when *root* is not a git tree (for example a source directory
+    patterns only when *root* has no ``.git`` (for example a source directory
     exported with ``git archive``, which has already dropped those paths).
 
     Args:
@@ -144,8 +144,10 @@ def collect_members(root: Path) -> list[Path]:
         Relative paths sorted for deterministic archive ordering.
 
     Raises:
-        RuntimeError: When *root* is a checkout but git cannot report the
-            ``export-ignore`` attribute.
+        RuntimeError: When *root* has ``.git`` but git is not on ``PATH``,
+            cannot list the tracked files, or cannot report the
+            ``export-ignore`` attribute, or when ``$GIT_DIR/info/attributes``
+            holds an attribute line.
     """
     git_members = _git_tracked_members(root)
     if git_members is not None:
@@ -166,20 +168,27 @@ def _git_tracked_members(root: Path) -> list[Path] | None:
     """Return tracked files when *root* is a git checkout, else ``None``.
 
     Paths marked ``export-ignore`` are left out, as ``git archive`` leaves
-    them out of GitHub's source archives.
+    them out of GitHub's source archives. A checkout git cannot read stops
+    the build: walking its files instead would ship the export-ignored trees
+    and every untracked file.
+
+    Raises:
+        RuntimeError: When *root* has ``.git`` but git is not on ``PATH`` or
+            cannot list the tracked files.
     """
     if not (root / ".git").exists():
         return None
     git_exe = shutil.which("git")
     if git_exe is None:
-        return None
+        raise RuntimeError(f"{root} is a git checkout, but git is not on PATH")
     result = subprocess.run(  # noqa: S603 - fixed argv, no shell; root selects checkout.
         [git_exe, "-C", str(root), "ls-files", "-z"],
         capture_output=True,
         check=False,
     )
     if result.returncode != 0:
-        return None
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"git ls-files failed in {root}: {detail}")
     tracked = [
         raw
         for raw in result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
@@ -204,6 +213,39 @@ def _parent_dirs(path: str) -> list[str]:
     return ["/".join(parts[: depth + 1]) + "/" for depth in range(len(parts))]
 
 
+def _refuse_info_attributes(root: Path, git_exe: str) -> None:
+    """Stop the build when ``$GIT_DIR/info/attributes`` holds an attribute line.
+
+    git applies that file on top of every ``.gitattributes``, and no option
+    turns it off, so the build refuses any line in it rather than let one
+    host's file decide which files the archive holds. Blank lines and
+    comments are allowed.
+
+    Raises:
+        RuntimeError: When git cannot name the file, or the file holds a line.
+    """
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell; root selects checkout.
+        [git_exe, "-C", str(root), "rev-parse", "--git-path", "info/attributes"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"git rev-parse failed in {root}: {detail}")
+    info = Path(result.stdout.decode("utf-8", errors="surrogateescape").rstrip("\r\n"))
+    if not info.is_absolute():
+        info = root / info
+    try:
+        lines = info.read_text(encoding="utf-8", errors="replace").splitlines()
+    except FileNotFoundError:
+        return
+    if any(line.strip() and not line.lstrip().startswith("#") for line in lines):
+        raise RuntimeError(
+            f"{info} sets attributes on top of .gitattributes, and the archive "
+            "must not depend on this host; empty it, or build from a fresh clone"
+        )
+
+
 def _export_ignored(root: Path, git_exe: str, paths: list[str]) -> set[str]:
     """Return the members of *paths* that ``git archive`` leaves out.
 
@@ -215,16 +257,22 @@ def _export_ignored(root: Path, git_exe: str, paths: list[str]) -> set[str]:
     it, which is why ``.gitattributes`` writes ``.github/**``, not
     ``.github/``, to keep ``.github/dependabot.yml``.
 
-    The query reads ``.gitattributes`` from the index, the source of the
-    member list and of the file bytes, and matches case-sensitively on every
-    host, so the darwin and linux builds keep the same files.
+    Only the repository's own ``.gitattributes`` files decide, read from the
+    index like the member list and the file bytes. The query turns off the
+    user's and the system's attribute files, and the build stops when
+    ``$GIT_DIR/info/attributes`` holds a line, since no option turns that
+    file off. Matching is case-sensitive, as it is for GitHub's source
+    archives, so every host keeps the same files.
 
     Raises:
-        RuntimeError: When git cannot report the attribute. Building on
-            regardless would ship the ignored trees without a word.
+        RuntimeError: When git cannot report the attribute, or when
+            ``$GIT_DIR/info/attributes`` holds an attribute line. Building on
+            regardless would ship the ignored trees, or another host's
+            choice of files, without a word.
     """
     if not paths:
         return set()
+    _refuse_info_attributes(root, git_exe)
     queries = sorted({folder for path in paths for folder in _parent_dirs(path)})
     queries.extend(paths)
     result = subprocess.run(  # noqa: S603 - fixed argv, no shell; paths go on stdin.
@@ -234,6 +282,8 @@ def _export_ignored(root: Path, git_exe: str, paths: list[str]) -> set[str]:
             str(root),
             "-c",
             "core.ignorecase=false",
+            "-c",
+            f"core.attributesFile={os.devnull}",
             "check-attr",
             "--cached",
             "-z",
@@ -245,6 +295,7 @@ def _export_ignored(root: Path, git_exe: str, paths: list[str]) -> set[str]:
         ),
         capture_output=True,
         check=False,
+        env={**os.environ, "GIT_ATTR_NOSYSTEM": "1"},
     )
     if result.returncode != 0:
         detail = result.stderr.decode("utf-8", errors="replace").strip()

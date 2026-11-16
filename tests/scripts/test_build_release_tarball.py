@@ -17,7 +17,7 @@ test reads this checkout's own ``.gitattributes``.
 from __future__ import annotations
 
 import hashlib
-import io
+import os
 import shutil
 import subprocess
 import sys
@@ -225,6 +225,50 @@ _EXPORT_KEPT: frozenset[str] = frozenset(
 )
 
 
+def _git_archive_files(repo: Path, env: dict[str, str]) -> set[str]:
+    """Return the files ``git archive HEAD`` writes for *repo*.
+
+    It runs the way GitHub builds its source archives: case-sensitive, and
+    with no user or system attribute file. The tar is read as a stream, so a
+    large checkout is never held in memory.
+    """
+    assert _GIT is not None
+    command = [
+        _GIT,
+        "-C",
+        str(repo),
+        "-c",
+        "core.ignorecase=false",
+        "-c",
+        f"core.attributesFile={os.devnull}",
+        "archive",
+        "--format=tar",
+        "HEAD",
+    ]
+    with subprocess.Popen(
+        command, stdout=subprocess.PIPE, env={**env, "GIT_ATTR_NOSYSTEM": "1"}
+    ) as proc:
+        assert proc.stdout is not None
+        with tarfile.open(fileobj=proc.stdout, mode="r|") as tf:
+            names = {member.name for member in tf if member.isfile()}
+    assert proc.returncode == 0
+    return names
+
+
+def _fail_git_step(monkeypatch: pytest.MonkeyPatch, step: str) -> None:
+    """Make the builder's git *step* (a subcommand name) exit 128."""
+    real_run = subprocess.run
+
+    def failing_run(
+        argv: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        if step in argv:
+            return subprocess.CompletedProcess(argv, 128, b"", b"fatal: simulated")
+        return real_run(argv, **kwargs)
+
+    monkeypatch.setattr(brt.subprocess, "run", failing_run)
+
+
 @requires_git
 class TestExportIgnore:
     """Leaving out the paths ``.gitattributes`` marks ``export-ignore``.
@@ -232,8 +276,9 @@ class TestExportIgnore:
     Covers a folder line dropping every file below it, a file kept by a later
     line under a ``/**`` line, a file no later line can keep because its
     folder is skipped, agreement with ``git archive`` (the tool behind GitHub's
-    source archives), the built archive itself, this checkout's own test
-    suite, and a failed attribute query stopping the build.
+    source archives), the built archive itself, the user's attribute files
+    having no say, ``info/attributes`` and every failing git step stopping
+    the build, and this checkout's own ``.gitattributes``.
     """
 
     def test_parent_dirs_lists_each_folder_outermost_first(self) -> None:
@@ -249,14 +294,7 @@ class TestExportIgnore:
 
     def test_members_match_git_archive(self, tmp_path: Path) -> None:
         _init_git_repo(tmp_path, _EXPORT_FIXTURE)
-        tar_bytes = subprocess.run(
-            [_GIT, "-C", str(tmp_path), "archive", "--format=tar", "HEAD"],
-            check=True,
-            capture_output=True,
-            env=hermetic_git_env(),
-        ).stdout
-        with tarfile.open(fileobj=io.BytesIO(tar_bytes)) as tf:
-            archived = {m.name for m in tf.getmembers() if m.isfile()}
+        archived = _git_archive_files(tmp_path, hermetic_git_env())
         assert {m.as_posix() for m in brt.collect_members(tmp_path)} == archived
 
     def test_built_archive_leaves_marked_paths_out(self, tmp_path: Path) -> None:
@@ -267,29 +305,88 @@ class TestExportIgnore:
             names = {name.removeprefix("apothem-v0.1.0/") for name in tf.getnames()}
         assert names == _EXPORT_KEPT
 
-    def test_this_checkout_leaves_its_export_ignored_trees_out(self) -> None:
-        if not (_REPO_ROOT / ".git").exists():
-            pytest.skip("needs a git checkout of the repository")
-        rels = [m.as_posix() for m in brt.collect_members(_REPO_ROOT)]
-        assert "src/apothem/__init__.py" in rels
-        assert [r for r in rels if r.startswith(("tests/", "tools/", ".github/"))] == []
+    def test_the_users_attribute_files_have_no_say(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = tmp_path / "repo"
+        _init_git_repo(repo, _EXPORT_FIXTURE)
+        drop_all = tmp_path / "drop-all"
+        drop_all.write_bytes(b"* export-ignore\n")
+        # The default user file, and one the repository's config names.
+        (tmp_path / "xdg" / "git").mkdir(parents=True)
+        (tmp_path / "xdg" / "git" / "attributes").write_bytes(b"* export-ignore\n")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+        subprocess.run(
+            [_GIT, "-C", str(repo), "config", "core.attributesFile", str(drop_all)],
+            check=True,
+            env=hermetic_git_env(),
+        )
+        assert {m.as_posix() for m in brt.collect_members(repo)} == _EXPORT_KEPT
 
-    def test_a_failed_attribute_query_stops_the_build(
+    def test_info_attributes_with_a_line_stops_the_build(self, tmp_path: Path) -> None:
+        _init_git_repo(tmp_path, _EXPORT_FIXTURE)
+        info = tmp_path / ".git" / "info" / "attributes"
+        info.parent.mkdir(parents=True, exist_ok=True)
+        info.write_bytes(b"# a comment and a blank line are fine\n\n")
+        assert {m.as_posix() for m in brt.collect_members(tmp_path)} == _EXPORT_KEPT
+        info.write_bytes(b"*.md export-ignore\n")
+        with pytest.raises(RuntimeError, match="info"):
+            brt.collect_members(tmp_path)
+
+    @pytest.mark.parametrize("step", ["ls-files", "rev-parse", "check-attr"])
+    def test_a_failing_git_step_stops_the_build(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, step: str
+    ) -> None:
+        _init_git_repo(tmp_path, {"README.md": b"r", "tests/t.py": b"t"})
+        _fail_git_step(monkeypatch, step)
+        with pytest.raises(RuntimeError, match=step):
+            brt.collect_members(tmp_path)
+
+    def test_a_checkout_without_git_on_path_stops_the_build(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _init_git_repo(tmp_path, {"README.md": b"r"})
-        real_run = subprocess.run
-
-        def failing_check_attr(
-            argv: list[str], **kwargs: object
-        ) -> subprocess.CompletedProcess[bytes]:
-            if "check-attr" in argv:
-                return subprocess.CompletedProcess(argv, 128, b"", b"fatal: simulated")
-            return real_run(argv, **kwargs)
-
-        monkeypatch.setattr(brt.subprocess, "run", failing_check_attr)
-        with pytest.raises(RuntimeError, match="export-ignore"):
+        monkeypatch.setattr(brt.shutil, "which", lambda name: None)
+        with pytest.raises(RuntimeError, match="not on PATH"):
             brt.collect_members(tmp_path)
+
+    def test_this_checkout_ships_nothing_github_leaves_out(self) -> None:
+        if not (_REPO_ROOT / ".git").exists():
+            pytest.skip("needs a git checkout of the repository")
+        staged = subprocess.run(
+            [_GIT, "-C", str(_REPO_ROOT), "diff", "--cached", "--quiet"], check=False
+        )
+        if staged.returncode != 0:
+            pytest.skip("the index differs from HEAD, which git archive reads")
+        members = {m.as_posix() for m in brt.collect_members(_REPO_ROOT)}
+        assert "src/apothem/__init__.py" in members
+        assert [m for m in members if m.startswith("tests/")] == []
+        assert members <= _git_archive_files(_REPO_ROOT, dict(os.environ))
+
+    def test_this_checkout_marks_only_its_top_level_trees(self) -> None:
+        if not (_REPO_ROOT / ".git").exists():
+            pytest.skip("needs a git checkout of the repository")
+        assert _GIT is not None
+        probes = {
+            "tests/a.py": True,
+            "src/apothem/skills/x/tests/a.py": False,
+            ".apothem/plans/a.md": True,
+            "src/apothem/x/.apothem/a.md": False,
+            ".plans/a.md": True,
+            "src/x/.plans/a.md": False,
+            "tools/vsce/a.json": True,
+            "src/x/tools/a.json": False,
+        }
+        marked = brt._export_ignored(_REPO_ROOT, _GIT, list(probes))
+        assert marked == {path for path, dropped in probes.items() if dropped}
+        tracked_src = subprocess.run(
+            [_GIT, "-C", str(_REPO_ROOT), "ls-files", "-z", "--", "src"],
+            check=True,
+            capture_output=True,
+        ).stdout.decode("utf-8", errors="surrogateescape")
+        runtime = [path for path in tracked_src.split("\0") if path]
+        assert runtime
+        assert brt._export_ignored(_REPO_ROOT, _GIT, runtime) == set()
 
 
 class TestNamingAndEpoch:

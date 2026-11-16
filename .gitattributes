@@ -43,12 +43,14 @@
 
 # Export-ignore — developer-only / ephemeral trees omitted from source archives.
 # scripts/build_release_tarball.py honors these lines too, so the signed
-# release archives leave the same paths out. A line ending in "/" drops the
-# whole folder, and no later line can keep a file inside it; ".github/**"
-# drops the files one by one, so the line below can keep one of them.
-.plans/  export-ignore
-.apothem/  export-ignore
-tests/   export-ignore
+# release archives leave the same paths out. A leading "/" ties a line to the
+# top of the repository; without it, a folder of that name at any depth (a
+# skill's own tests/, say) would be left out as well. A line ending in "/"
+# drops the whole folder, and no later line can keep a file inside it;
+# ".github/**" drops the files one by one, so the line below can keep one.
+/.plans/   export-ignore
+/.apothem/ export-ignore
+/tests/    export-ignore
 .github/** export-ignore
 # The CI tool lockfiles stay out of source archives, as they did under .github/.
 /tools/ export-ignore
