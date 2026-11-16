@@ -323,7 +323,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
   Python's `str.splitlines()` also breaks lines at the record marker its
   `git log` format uses, so every commit time was lost; it now splits on new
-  lines only. `no-global-plans-grep` and `agents-md-coverage-grep` received
+  lines only, and checks per-folder companions only, never the root
+  `AGENTS.md`, which is the canon rather than a folder's companion.
+  `no-global-plans-grep` and `agents-md-coverage-grep` received
   non-ASCII path names in git's quoted form (`"caf\303\251.md"`), which their
   path rules did not match; git now prints them as they are. On Windows,
   `semver_stability_grep --staged` named `src\apothem\__init__.py` with

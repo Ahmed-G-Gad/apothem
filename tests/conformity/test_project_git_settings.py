@@ -759,6 +759,22 @@ def test_a_stale_folder_companion_is_reported(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("hermetic_git")
+def test_the_root_agents_md_is_never_a_stale_companion(tmp_path: Path) -> None:
+    """The root ``AGENTS.md`` is the canon, checked against no folder's content."""
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "README.md").write_bytes(b"# project\n")
+    (repo / "AGENTS.md").write_bytes(b"# agents\n")
+    _dated_commit(repo, "docs: add the canon", 1_700_000_000)
+    (repo / "notes.md").write_bytes(b"later\n")
+    _dated_commit(repo, "docs: add notes", 1_700_001_000)
+
+    result = agents_md_coverage_grep.check(repo)
+
+    assert result.freshness_checked
+    assert result.findings == []
+
+
+@pytest.mark.usefixtures("hermetic_git")
 def test_non_ascii_paths_read_as_themselves(tmp_path: Path) -> None:
     """git's C-quoting of non-ASCII path names is off for every gate git call."""
     repo = _empty_repo(tmp_path / "project")

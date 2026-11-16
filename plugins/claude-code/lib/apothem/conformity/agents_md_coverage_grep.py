@@ -43,7 +43,8 @@ mtime: a checkout rewrites mtimes, so only commit history carries the truth of
 its nearest meaningful-folder ancestor; a folder is stale when its newest
 content commit postdates its committed companion's commit. Folders with no
 companion on disk are skipped entirely — absence is not a finding under the
-root-only convention. Where git history is unavailable (a shallow clone, a
+root-only convention. The root ``AGENTS.md`` is that canon, not a per-folder
+companion, so it is never checked against the root folder's content. Where git history is unavailable (a shallow clone, a
 non-git tree), freshness is skipped and the sweep reports a clean pass — it
 never blocks a fresh clone.
 
@@ -335,7 +336,9 @@ def check(root: Path) -> GrepResult:
             owner = _owning_folder(path, folder_set)
             if path.rpartition("/")[2] == COMPANION_NAME:
                 companion_folder = path.rpartition("/")[0] or "."
-                if companion_folder in folder_set:
+                # The root AGENTS.md is the repository's canon, not a
+                # per-folder companion, so it has no folder to fall behind.
+                if companion_folder != "." and companion_folder in folder_set:
                     companion_ct[companion_folder] = ct
                 continue
             content_ct[owner] = max(content_ct.get(owner, 0), ct)
@@ -345,9 +348,7 @@ def check(root: Path) -> GrepResult:
                 continue
             newest_content = content_ct.get(folder, 0)
             if newest_content > companion_ct[folder]:
-                surface = (
-                    COMPANION_NAME if folder == "." else f"{folder}/{COMPANION_NAME}"
-                )
+                surface = f"{folder}/{COMPANION_NAME}"
                 findings.append(
                     Finding(
                         surface=surface,
