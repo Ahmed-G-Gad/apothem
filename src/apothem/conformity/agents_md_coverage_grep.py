@@ -65,6 +65,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     finish_root_report,
     iter_tree_files,
@@ -258,23 +259,15 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     One ``git log`` pass, newest commit first: the first time a path is seen
     is its last-touching commit. Returns None when git history is unavailable
     (no repository, shallow clone with no log, git absent, or timeout) so the
-    caller degrades to a presence-only sweep.
+    caller degrades to a presence-only sweep. git runs through
+    :func:`run_git`, so the repository's own settings cannot make it start a
+    program (a signature check, say), and path names decode as UTF-8.
     """
     try:
-        completed = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(root),
-                "log",
-                "--format=%x1e%ct",
-                "--name-only",
-                "--no-renames",
-            ],
-            capture_output=True,
-            text=True,
+        completed = run_git(
+            ["log", "--format=%x1e%ct", "--name-only", "--no-renames"],
+            cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
-            check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None

@@ -318,25 +318,29 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
 
 
 def check_staged() -> list[Finding]:
-    """Per-change-set check across the staged diff."""
+    """Per-change-set check across the staged diff.
+
+    git runs through :func:`~apothem.conformity._git.run_git`, so the
+    repository's own settings cannot make it start a program.
+    """
+    # Imported here, not at module top, so the module stays stdlib-only for
+    # every caller except the change-set check.
+    from apothem.conformity._git import run_git
+
     version = current_version()
     if not version or is_v0(version):
         return []
 
     # Get list of staged Python files under src/apothem/.
     try:
-        result = subprocess.run(
+        result = run_git(
             [
-                "git",
                 "diff",
                 "--cached",
                 "--name-only",
                 "--diff-filter=AMR",
                 PUBLIC_PACKAGE,
             ],
-            capture_output=True,
-            text=True,
-            check=False,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -352,20 +356,10 @@ def check_staged() -> list[Finding]:
     findings: list[Finding] = []
     for fp in files:
         try:
-            staged = subprocess.run(
-                ["git", "show", f":{fp}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
+            staged = run_git(
+                ["show", f":{fp}"], check=True, timeout=GIT_TIMEOUT_SECONDS
             ).stdout
-            prior = subprocess.run(
-                ["git", "show", f"HEAD:{fp}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
+            prior = run_git(["show", f"HEAD:{fp}"], timeout=GIT_TIMEOUT_SECONDS).stdout
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             continue
         if not prior:
@@ -379,19 +373,11 @@ def check_staged() -> list[Finding]:
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
         try:
-            staged_init = subprocess.run(
-                ["git", "show", f":{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
+            staged_init = run_git(
+                ["show", f":{INIT_PATH}"], check=True, timeout=GIT_TIMEOUT_SECONDS
             ).stdout
-            prior_init = subprocess.run(
-                ["git", "show", f"HEAD:{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
+            prior_init = run_git(
+                ["show", f"HEAD:{INIT_PATH}"], timeout=GIT_TIMEOUT_SECONDS
             ).stdout
             staged_v = re.search(r'__version__\s*=\s*"([^"]+)"', staged_init)
             prior_v = re.search(r'__version__\s*=\s*"([^"]+)"', prior_init)

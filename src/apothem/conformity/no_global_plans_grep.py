@@ -62,6 +62,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     finish_root_report,
     has_git_entry,
@@ -153,16 +154,12 @@ def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable or root is not
-    a git repository — both are operator errors the caller surfaces.
+    a git repository — both are operator errors the caller surfaces. git runs
+    through :func:`run_git`, so the repository's own settings cannot make it
+    start a program.
     """
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: literal argv against git
-            ["git", "-C", str(root), "ls-files"],  # noqa: S607 — PATH-resolved git is acceptable for a developer-tool validator; full-path resolution would require host-discovery and breaks portability across operator setups.
-            check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+        completed = run_git(["ls-files"], cwd=root, check=True)
     except FileNotFoundError as exc:
         raise RuntimeError("git executable not found on PATH") from exc
     except subprocess.CalledProcessError as exc:

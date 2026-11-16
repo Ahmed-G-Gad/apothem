@@ -27,6 +27,35 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
+Three standalone validators run `git` in the project they check, and so do
+`--all`, which runs them, and `--all-perwrite`, which lists the tracked files
+with `git ls-files`:
+
+```text
+agents-md-coverage-grep
+conventional-commit-grep
+no-global-plans-grep
+```
+
+That repository's own settings, in `.git/config`, the files it includes and
+`.git/config.worktree`, can name a program for git to start while it only
+reads. The gate turns those settings off with options on git's command line,
+which win over every file git reads: no file-system monitor (`core.fsmonitor`),
+no commit-signature check (`log.showSignature` with a `gpg` program), no hooks,
+no pager, no external diff or text-conversion program, and no automatic
+maintenance. It also sets `GIT_NO_LAZY_FETCH=1` and an empty
+`GIT_ALLOW_PROTOCOL`, so git never fetches a missing object of a partial clone
+through an address the repository names. The gate starts git only from a
+full-path entry of your `PATH`. It never takes git from the current folder: it
+skips empty and relative `PATH` entries, which name that folder, and it does not
+look there first, as Windows does for a bare program name. git gets only those
+full-path entries for the programs it starts by name. So you can run these
+commands on a project that came with its `.git` folder from someone else, in an
+archive or a shared folder: its git settings cannot make the gate start a
+program. Your own global and system git settings still apply. This covers git
+only: `python -m` reads Python modules from the current folder first, so start
+the gate from a folder you trust.
+
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a
 root directory that does not exist. `--help` prints the full usage and exits

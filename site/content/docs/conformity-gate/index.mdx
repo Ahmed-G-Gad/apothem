@@ -116,6 +116,14 @@ prefix each `python` command below with `PYTHONPATH=src`. The
 gate is advisory by default: it reports findings and exits `0`. Add `--strict`
 to exit `2` on a blocking finding. An unknown validator name exits `3`.
 
+`--all`, `--all-perwrite`, three standalone validators and the `--staged`
+change-set checks run `git` in the project they check. Each starts git only from
+a full-path entry of your `PATH`, with the settings of that repository's
+`.git/config` that start a program turned off and with fetching a missing object
+blocked. A project that came with its `.git` folder from someone else therefore
+cannot make them start a program through git;
+[Running the conformity gate](/docs/usage/conformity-gate) lists the settings.
+
 ```shell
 # Every standalone validator across the repository:
 python -m apothem.conformity.gate --all .
