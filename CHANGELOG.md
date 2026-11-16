@@ -305,6 +305,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `unroutable` and gets no request. Like an unreachable URL, it does not fail
   the check. Each run carries a warning naming such a host, and the issue the
   monitor files lists its URLs to check by hand.
+- **Dependabot updates tailwindcss and `@tailwindcss/postcss` in one pull
+  request.** The website's `tailwind` group lists both, yet
+  `@tailwindcss/postcss` arrived in the `dev-tools` group's pull request.
+  Dependabot gives a package that fits several groups to the group whose rule
+  fits it most closely, and a group with no name patterns, like `dev-tools`,
+  counts as closer than a wildcard such as `@tailwindcss/*`. Because
+  `@tailwindcss/postcss` requires one exact tailwindcss version, either pull
+  request alone left two tailwindcss versions in the lockfile. `dev-tools` now
+  excludes both names, so the `tailwind` group is the only one they fit.
 
 ### Fixed
 
@@ -992,6 +1001,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (32 KiB by default). The developer guide states both rules. On Python 3.10,
   which has no TOML reader, a `~/.codex/config.toml` gives a null for Codex
   instead of ending the run.
+- **Docs pages have one skip link, and it works.** From 16.18.0 Fumadocs
+  layouts add their own "Skip to Content" link, aimed at a page container the
+  site replaces with its `main` element, so the link led nowhere. It stayed
+  hidden even when it had keyboard focus, so the second Tab press on every docs
+  page seemed to lose the focus, and it was English on translated pages without
+  a language mark. The site now hides that link. The first Tab still reaches
+  the site's own "Skip to content" link, which shows when focused and moves the
+  focus to the page content.
 
 ### Security
 
@@ -1188,6 +1205,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+  moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
+  GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
+  image optimization, Edge routes and self-hosted response forwarding). The
+  site is published as static files with no Next.js server, so none of them
+  reached it. The same update moves Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 
 ## [1.5.0] - 2026-10-28
 
