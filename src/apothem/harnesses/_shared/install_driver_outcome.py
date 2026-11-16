@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
 from .install_driver_blocks import ANOTHER_BLOCK, stray_begin_warnings
@@ -176,6 +176,8 @@ def record_uninstall(
     own.append(entry)
     try:
         install_ledger.append_record(entry)
+    except home_write_guard.RealHomeWriteError:
+        raise
     except (OSError, install_ledger.LedgerError) as exc:
         latest = _latest_record(harness_name, root)
         if finished and (latest is None or latest.kind != "uninstall"):

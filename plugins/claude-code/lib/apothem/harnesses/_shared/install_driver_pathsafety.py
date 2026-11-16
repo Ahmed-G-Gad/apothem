@@ -12,6 +12,7 @@ from collections.abc import Callable
 from pathlib import Path, PosixPath, WindowsPath
 from typing import NamedTuple
 
+from apothem.lib import home_write_guard
 from apothem.lib.links import is_link
 from apothem.lib.propagation import USER_LEVEL_PREFIXES, user_home
 
@@ -518,12 +519,18 @@ def _validate_target_path(
     *,
     allowed_root: Path,
     operation: str,
+    mutating: bool = True,
 ) -> MaterializationResult | None:
     """Return an error result when a resolved target is unsafe.
 
     An *allowed_root* from :func:`_allowed_write_root` for a project root is
     a :class:`_ProjectFloor`: a link at the project root as the operator
     spelled it is followed wherever it leads, and a link inside it is refused.
+
+    When the target passes and *mutating* is true (the caller is about to
+    change it), a target in the account's real home raises
+    :class:`~apothem.lib.home_write_guard.RealHomeWriteError` while a pytest
+    test runs. A dry run or preview passes ``mutating=False``.
     """
     project_floor = isinstance(allowed_root, _ProjectFloor)
     named = _named_floor(allowed_root)
@@ -555,6 +562,10 @@ def _validate_target_path(
             f"target path crosses a link ({kind}) at {symlink}{where}; Apothem does "
             f"not write through a link{LINK_FIX_LEAD}{_link_fix(symlink)}",
             detail={"symlink": _path_text(symlink), "leads_to": leads_to},
+        )
+    if mutating:
+        home_write_guard.refuse_real_home_write(
+            target, operation=f"apply {operation!r} to"
         )
     return None
 

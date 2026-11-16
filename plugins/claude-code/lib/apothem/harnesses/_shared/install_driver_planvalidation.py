@@ -234,9 +234,7 @@ def _validate_install_plan(
             errors.append(blocker)
     for entry in rules.install:
         target = resolve_target(
-            entry.target,
-            harness_root=harness_root,
-            project_root=project_root,
+            entry.target, harness_root=harness_root, project_root=project_root
         )
         if entry.mode not in _INSTALL_ENTRY_MODES:
             errors.append(
@@ -269,6 +267,7 @@ def _validate_install_plan(
             target,
             allowed_root=entry_write_root(entry, harness_root, project_root),
             operation=entry.mode,
+            mutating=False,
         )
         if target_error is not None:
             errors.append(target_error)

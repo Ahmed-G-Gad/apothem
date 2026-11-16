@@ -19,7 +19,7 @@ from apothem.harnesses.opencode.materializer import (
     relocated_entries,
     retired_entries,
 )
-from apothem.lib import atomic_io, install_ledger
+from apothem.lib import atomic_io, home_write_guard, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
 _HARNESS_NAME: str = "opencode"
@@ -196,6 +196,8 @@ def _remove_skeleton(
         backup = install_driver.backup_existing(
             config, install_root=root, harness_name=_HARNESS_NAME, allowed_root=allowed
         )
+    except home_write_guard.RealHomeWriteError:
+        raise
     except OSError as exc:
         return install_driver.MaterializationResult(
             outcome="error",

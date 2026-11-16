@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from apothem.lib import home_write_guard
 from apothem.lib.links import is_link
 
 __all__ = [
@@ -279,6 +280,10 @@ def _backup_targets(
             is removed when this is raised.
     """
     backup_dir = backup_root / f"clean-slate-{_timestamp(clock)}"
+    # Outside the ``try``: a refusal is not a failed backup.
+    home_write_guard.refuse_real_home_write(
+        backup_dir, operation="write the clean-slate backup into"
+    )
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
         for src in present:
@@ -351,8 +356,10 @@ def _remove_path(path: Path) -> None:
     """Remove a single target, whether a link, directory, or file.
 
     A link, a Windows junction included, is removed as a link: what it leads
-    to is left in place.
+    to is left in place. While a pytest test runs, a target in the account's
+    real home is refused (see :mod:`apothem.lib.home_write_guard`).
     """
+    home_write_guard.refuse_real_home_write(path, operation="remove", tree=True)
     if is_link(path):
         path.unlink(missing_ok=True)
     elif path.is_dir():

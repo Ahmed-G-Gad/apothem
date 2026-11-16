@@ -11,7 +11,7 @@ import shutil
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib import atomic_io, install_ledger
+from apothem.lib import atomic_io, home_write_guard, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import user_home
 
@@ -172,6 +172,7 @@ def backup_file_to_sibling(target: Path) -> Path | None:
     """Rename *target* to a timestamped sibling backup when it is a file."""
     if not target.is_file():
         return None
+    home_write_guard.refuse_real_home_write(target, operation="rename")
     backup = _sibling_backup_path(target)
     target.rename(backup)
     return backup
@@ -244,7 +245,9 @@ def backup_existing(
     The backup is keyed by *target*'s path relative to *allowed_root* (the
     allowed-write boundary; defaults to *install_root* for callers that share the
     two), so the backup tree mirrors the boundary-relative layout that
-    :func:`restore_backup` reconstructs against.
+    :func:`restore_backup` reconstructs against. While a pytest test runs, a
+    backup root in the account's real home is refused before any folder is made
+    (see :mod:`apothem.lib.home_write_guard`).
     """
     if not target.exists():
         return None
@@ -255,6 +258,7 @@ def backup_existing(
         / harness_name
         / rel
     )
+    home_write_guard.refuse_real_home_write(base, operation="write a backup copy into")
     if target.is_dir():
         backup = _reserve_unique_backup(base, is_dir=True)
         shutil.copytree(target, backup, dirs_exist_ok=True, ignore=_skip_links)
@@ -294,6 +298,8 @@ def write_bytes_safely(
         return target_error
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
+    except home_write_guard.RealHomeWriteError:
+        raise
     except OSError as exc:
         return _result(
             "error",
@@ -324,6 +330,8 @@ def write_bytes_safely(
                 harness_name=harness_name,
                 allowed_root=_write_boundary(allowed_root, install_root),
             )
+        except home_write_guard.RealHomeWriteError:
+            raise
         except OSError as exc:
             return _result(
                 "error",
@@ -334,6 +342,8 @@ def write_bytes_safely(
             )
     try:
         install_driver._write_file_atomically(target, content)
+    except home_write_guard.RealHomeWriteError:
+        raise
     except OSError as exc:
         return _result(
             "error",
@@ -395,7 +405,9 @@ def _compensating_rollback(
     Reverses a partially-applied install pass: a target with a captured backup is
     restored from it (the operator's prior bytes or tree); a target written fresh
     (no backup) is removed (its pre-install state was absence). Targets outside
-    *allowed_root* are skipped defensively. Best-effort and exception-safe — it
+    *allowed_root*, and targets the real-home guard refuses during a test (see
+    :func:`apothem.lib.home_write_guard.would_refuse`), are skipped defensively.
+    Best-effort and exception-safe — it
     runs from an ``except`` handler that re-raises the original failure, so it must
     not raise itself.
     """
@@ -403,8 +415,10 @@ def _compensating_rollback(
         if result.outcome not in {"created", "updated"}:
             continue
         target = Path(result.path)
-        if _is_link(target) or not _within_allowed_root(
-            _normalized(target), _normalized(allowed_root)
+        if (
+            _is_link(target)
+            or not _within_allowed_root(_normalized(target), _normalized(allowed_root))
+            or home_write_guard.would_refuse(target)
         ):
             continue
         # A link inside a folder being put back is the operator's: it stays,

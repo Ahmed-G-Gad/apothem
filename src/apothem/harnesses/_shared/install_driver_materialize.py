@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib import atomic_io, install_ledger
+from apothem.lib import atomic_io, home_write_guard, install_ledger
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import (
@@ -235,6 +235,8 @@ def _materialize_data_surfaces(
         memory_path = MemoryStore(home).ensure_initialized()
         contexts_path = ContextStore(home).ensure_initialized()
         learning_path = LearningStore(home).ensure_initialized()
+    except home_write_guard.RealHomeWriteError:
+        raise
     except OSError as exc:
         return [
             _result(
@@ -346,6 +348,7 @@ def run_install(
             ),
         )
     if harness_root is not None:
+        home_write_guard.refuse_real_home_write(harness_root, operation="install into")
         harness_root.mkdir(parents=True, exist_ok=True)
     ignore = make_ignore(rules.exclude, rules.per_directory_filters)
     write_root = _allowed_write_root(harness_root, project_root)
