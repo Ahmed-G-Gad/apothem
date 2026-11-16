@@ -68,6 +68,14 @@ nothing appears in it afterwards. The ``home-isolation`` job in
 ``.github/workflows/ci.yml`` does that for the whole suite, with the XDG base
 directories on empty folders too.
 
+Apothem itself refuses the same writes in the product:
+``apothem.lib.home_write_guard`` raises ``RealHomeWriteError`` for a write into
+the account's real ``.apothem``, ``.config/apothem`` or a tool's folder there
+while a test runs, whether or not this file loads. Some callers absorb that
+error (a best-effort ledger line, a suppressed removal), so the autouse
+``_report_real_home_refusals`` fails a test after which the guard logged a
+refusal.
+
 The isolation fixtures above are all named with a leading underscore, and a
 ``from <this module> import *`` skips such names unless the module lists them in
 ``__all__``. A probe folder whose conftest star-imported this file before it had
@@ -205,7 +213,7 @@ import pytest
 
 from apothem.harnesses._shared import install_driver, install_driver_types
 from apothem.hooks.lib import state_dir
-from apothem.lib import install_ledger, propagation
+from apothem.lib import home_write_guard, install_ledger, propagation
 from apothem.lib.data_home import resolve_shared_data_home
 from apothem.lib.profile import DEFAULT_PROFILE_PATH
 
@@ -235,8 +243,10 @@ __all__ = [
     "_isolate_install_ledger",
     "_isolate_session_home",
     "_isolate_user_home",
+    "_report_real_home_refusals",
     "annotations",
     "contextlib",
+    "home_write_guard",
     "install_driver",
     "install_driver_types",
     "install_ledger",
@@ -430,6 +440,28 @@ def _isolate_hook_state(
     monkeypatch.setenv(
         "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("hook-state"))
     )
+
+
+@pytest.fixture(autouse=True)
+def _report_real_home_refusals() -> Iterator[None]:
+    """Fail a test after which Apothem refused a write into the real home.
+
+    ``apothem.lib.home_write_guard`` refuses a write into the account's real
+    home while a test runs, and logs each refusal in the process. Some callers
+    absorb the error (a best-effort ledger line, a suppressed removal), so a
+    test can pass while the refusal fired; this fixture reads the log at
+    teardown and fails the test when it holds anything. A test of the guard
+    itself drains the log before it finishes.
+    """
+    yield
+    refused = home_write_guard.drain_refusals()
+    if refused:
+        pytest.fail(
+            "Apothem refused a write into the account's real home during this "
+            "test, and the refusal was not raised to the test:\n"
+            + "\n".join(f"  - {error}" for error in refused),
+            pytrace=False,
+        )
 
 
 # --- Real-home guard --------------------------------------------------------
