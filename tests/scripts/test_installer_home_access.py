@@ -711,14 +711,21 @@ def test_a_user_name_holding_a_backslash_is_read_as_it_is(
 def test_a_primary_group_holding_a_backslash_is_named_as_it_is(
     tmp_path: Path, shell: str
 ) -> None:
-    """A new home takes your primary group (id -gn), which on a host joined
-    to a Windows domain can hold a backslash. It reaches awk through the
-    environment and is named as it is."""
+    """On Linux a new home takes your primary group (id -gn), which on a host
+    joined to a Windows domain can hold a backslash. It reaches awk through
+    the environment and is named as it is. uname is stubbed as Linux: on
+    macOS and the BSDs a new folder takes the group of the folder above it."""
     parent = _folder(tmp_path / "parent", PRIVATE_DIR)
     home = parent / "home"
 
     lines = _warnings(
-        tmp_path, home, umask="002", user=TEST_USER, group="CORP\\tools", shell=shell
+        tmp_path,
+        home,
+        umask="002",
+        user=TEST_USER,
+        group="CORP\\tools",
+        uname="Linux",
+        shell=shell,
     )
 
     assert lines == [
