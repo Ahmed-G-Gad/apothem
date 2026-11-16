@@ -664,7 +664,8 @@ def recorded_root(harness: str, root: Path, *, state_root: Path | None = None) -
     record, while a Python caller passes the folder as it typed it, so the
     two can name one folder two ways: through a link, or with ``~``. Use
     this before reading a record by root, so both find the same record; an
-    install or update writes through :func:`install_spelling` instead. A
+    install or update writes through :func:`install_spelling` instead, and
+    an uninstall through :func:`uninstall_spelling`. A
     spelling whose install is still active (installed and not uninstalled)
     comes first, in this order:
 
@@ -774,6 +775,25 @@ def install_spelling(
     if _live_install(by_root.get(str(resolved), [])) is not None:
         return resolved, None
     return resolved, spelling
+
+
+def uninstall_spelling(
+    harness: str, root: Path, *, state_root: Path | None = None
+) -> tuple[Path, Path | None]:
+    """Return ``(spelling, moving)`` for an uninstall of *root*.
+
+    *moving* is the spelling, such as a link, whose active install an
+    install or update into *root* would move (see :func:`install_spelling`),
+    or ``None``. The uninstall moves that install to *spelling*, the folder
+    resolved, with :func:`move_install` before it removes anything, and runs
+    there, so its own record, an unfinished one included, is still found
+    after the link is removed. With nothing to move, *spelling* is the one
+    :func:`recorded_root` gives. Reads only; nothing is written.
+    """
+    spelling, moving = install_spelling(harness, root, state_root=state_root)
+    if moving is None:
+        return recorded_root(harness, root, state_root=state_root), None
+    return spelling, moving
 
 
 def move_install(
@@ -1207,4 +1227,5 @@ __all__ = [
     "read_records",
     "recorded_root",
     "unfinished_uninstall",
+    "uninstall_spelling",
 ]

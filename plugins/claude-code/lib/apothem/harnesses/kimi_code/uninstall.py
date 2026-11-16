@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib.install_ledger import recorded_root
+from apothem.lib.install_ledger import move_install, uninstall_spelling
 
 _HARNESS_NAME: str = "kimi_code"
 
@@ -46,11 +46,15 @@ def uninstall(
     references them and retention keeps them.
     """
     # Spelled as the install records spell it, so an install made through a
-    # link, or with the folder resolved, is found either way.
-    project_root = recorded_root(
+    # link, or with the folder resolved, is found either way. One recorded
+    # under a link moves to the folder resolved first, as the shared
+    # uninstall moves it, before anything is swept or removed.
+    project_root, moving = uninstall_spelling(
         _HARNESS_NAME,
         project if project is not None else output_path.parents[_PROJECT_DEPTH],
     )
+    if moving is not None:
+        move_install(_HARNESS_NAME, moving, project_root)
     legacy = install_driver.sweep_stale(
         install_driver.load_rules(_HARNESS_NAME).stale_sweep,
         project_root,

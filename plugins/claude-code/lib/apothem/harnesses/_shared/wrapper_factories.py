@@ -34,6 +34,7 @@ from apothem.lib.install_ledger import (
     install_spelling,
     move_install,
     recorded_root,
+    uninstall_spelling,
 )
 from apothem.lib.profile import (
     ProfileValidationError,
@@ -190,9 +191,11 @@ _UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
 
 _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
 
-    The project root passes through when the CLI supplied it; otherwise it is
-    derived from the adapter's declared relative target. Returns the run; a
-    step that reports an error is an ``error`` result in it."""
+    The project root is the one the CLI supplied, or else the one derived from
+    the adapter's declared relative target. It is spelled as the install
+    record spells it, and an install recorded under another spelling of the
+    folder, such as a link, is first moved to the folder resolved. Returns the
+    run; a step that reports an error is an ``error`` result in it."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 
@@ -577,17 +580,26 @@ def make_project_scope_uninstall(
     below the project root, so the project root is ``output_path.parents[d - 1]``.
     Deriving ``d`` from *relative_target* keeps the correct root under any
     manifest-depth change, where a hardcoded index would silently derive the
-    wrong root.
+    wrong root. Either root is then spelled as the install record spells it,
+    after an install recorded under another spelling of the folder is moved
+    to the folder resolved (see :func:`uninstall_spelling`).
     """
     _depth = len(relative_target.parts) - 1
 
     def uninstall(
         output_path: Path, *, project: Path | None = None
     ) -> MaterializationRun:
-        project_root = recorded_root(
+        # Spelled as the install record spells it. An install recorded under
+        # another spelling of the folder, such as a link, moves to the folder
+        # resolved first, as an install moves it, so an uninstall that does
+        # not finish is recorded where the next run finds it once the link
+        # is removed.
+        project_root, moving = uninstall_spelling(
             harness_name,
             project if project is not None else output_path.parents[_depth],
         )
+        if moving is not None:
+            move_install(harness_name, moving, project_root)
         return MaterializationRun(
             harness=harness_name,
             dry_run=False,

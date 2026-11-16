@@ -1021,9 +1021,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   command line does. An install still recorded under another spelling, such
   as a link, is moved to the resolved one once the install passes its
   checks, so it is still found after the link is removed, and an install
-  that is refused changes no record. A folder that a record names another
-  way on disk (a `\\localhost\C$` path to a folder recorded as `C:\...`)
-  keeps the spelling the record has, and an install into a folder that has
+  that is refused changes no record. An uninstall moves such an install the
+  same way before it removes anything, so an uninstall that does not finish
+  is recorded under the resolved folder, where running it again still finds
+  it once the link is removed. A folder that a record names another way on
+  disk (a `\\localhost\C$` path to a folder recorded as `C:\...`) keeps the
+  spelling the record has, and an install or uninstall in a folder that has
   an install record of its own leaves a record under another spelling as it
   is. A spelling whose install is still in place is taken before one whose
   install was removed; of two in place, the one with more of its files in

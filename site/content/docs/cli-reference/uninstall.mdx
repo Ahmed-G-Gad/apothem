@@ -383,12 +383,15 @@ say, is still found under the spelling its record keeps. An `install` or
 `update` records the folder resolved. Once the install passes its checks, it
 moves an install recorded under another spelling to the resolved one, so the
 install is still found after the link is removed; an install that is refused
-changes no record. A folder that a record names another way on disk (a
+changes no record. `uninstall` moves such an install the same way before it
+removes anything, so an uninstall that does not finish is recorded under the
+resolved folder, where running `uninstall` again still finds it once the link
+is removed. A folder that a record names another way on disk (a
 `\\localhost\C$` path to a folder recorded as `C:\...`) keeps the spelling
-the record has, and an install into a folder that has an install record of
-its own leaves a record under another spelling as it is. A spelling whose
-install is still in place comes before one whose install was removed; of
-two in place, the one with more of its files in the folder, then the newer.
+the record has, and an install or uninstall in a folder that has an install
+record of its own leaves a record under another spelling as it is. A spelling
+whose install is still in place comes before one whose install was removed;
+of two in place, the one with more of its files in the folder, then the newer.
 An install none of whose files is in the folder is not taken for it, unless
 its uninstall did not finish: running `uninstall` again then finishes it.
 Folder names are compared exactly: in a case-sensitive folder (one WSL made,

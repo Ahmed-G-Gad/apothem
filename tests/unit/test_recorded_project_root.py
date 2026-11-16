@@ -7,7 +7,9 @@ a Python caller passes the project folder as it typed it, a link included.
 Every project-scope entry point spells the folder the way the install
 records already do (:func:`apothem.lib.install_ledger.recorded_root`), so an
 install made one way is found, updated and removed the other way, and a new
-install records the folder resolved, as the CLI does.
+install records the folder resolved, as the CLI does. An install, update or
+uninstall moves an install recorded under a link to the folder resolved, so
+it is still found once the link is removed.
 
 Creating a symbolic link needs a privilege some Windows hosts lack, so there
 each link is a junction.
@@ -137,7 +139,9 @@ def test_the_cli_uninstalls_an_api_install_made_through_a_link(
     latest = install_ledger.latest_record("cursor", kind=None)
     assert latest is not None
     assert latest.kind == "uninstall"
-    assert latest.root == (str(project) if earlier_release else str(outside))
+    # An install recorded under the link is moved to the folder first.
+    assert latest.root == str(outside)
+    assert install_ledger.active_install_records("cursor", root=project) == []
     # The notes on the shared folders read the same record.
     assert "no other Apothem install uses it" in " ".join(result.output.split())
 
@@ -161,7 +165,9 @@ def test_the_api_finds_an_install_recorded_as_typed(
     assert _files(outside) == []
     latest = install_ledger.latest_record("cursor", kind=None)
     assert latest is not None
-    assert (latest.kind, latest.root) == ("uninstall", str(project))
+    # The uninstall moved the install from the link to the folder first.
+    assert (latest.kind, latest.root) == ("uninstall", str(outside))
+    assert install_ledger.active_install_records("cursor", root=project) == []
 
 
 def test_rollback_finds_an_api_install_recorded_as_typed(
@@ -236,7 +242,9 @@ def test_kimi_code_uninstall_finds_an_install_recorded_as_typed(
     assert _files(outside / ".kimi-code") == []
     latest = install_ledger.latest_record("kimi_code", kind=None)
     assert latest is not None
-    assert (latest.kind, latest.root) == ("uninstall", str(project))
+    # Its uninstall moves the install from the link first, as the shared one does.
+    assert (latest.kind, latest.root) == ("uninstall", str(outside))
+    assert install_ledger.active_install_records("kimi_code", root=project) == []
 
 
 @pytest.mark.parametrize("typed", ["proj", "~/proj"])
@@ -377,9 +385,11 @@ def test_a_live_install_wins_over_an_uninstalled_spelling(
     assert result.exit_code == 0, result.output
     assert "were kept" not in result.output, result.output
     assert _files(folder) == []
+    # The folder's own install was removed, so the link's moved onto it.
     latest = install_ledger.latest_record("cursor", kind=None)
     assert latest is not None
-    assert (latest.kind, latest.root) == ("uninstall", str(link))
+    assert (latest.kind, latest.root) == ("uninstall", str(folder))
+    assert install_ledger.active_install_records("cursor", root=link) == []
 
 
 def _record_with_file(root: Path, name: str) -> install_ledger.LedgerRecord:
@@ -837,6 +847,57 @@ def test_an_unfinished_uninstall_through_a_link_finishes_on_the_next_run(
     assert _files(outside) == []
 
 
+@pytest.mark.parametrize("held", ["rules", "skill"])
+def test_an_unfinished_uninstall_finishes_once_the_link_is_removed(
+    linked: tuple[Path, Path],
+    profile: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    held: str,
+) -> None:
+    # An earlier release recorded the install under the link. The uninstall
+    # moves that record to the folder resolved before it removes anything,
+    # so when another program holds a file (the project's rules file, or a
+    # skill file in the home) and the uninstall does not finish, it is
+    # recorded under the folder too. Once the link is removed, the next run
+    # still finds the install and finishes it.
+    project, outside = linked
+    _install_as_typed(monkeypatch, project, profile)
+    installed = install_ledger.latest_record("cursor")
+    assert installed is not None
+    stuck = (
+        outside / ".cursor" / "rules" / "apothem-rules.mdc"
+        if held == "rules"
+        else sorted((Path.home() / ".agents" / "skills").glob("*/SKILL.md"))[0]
+    )
+    real_unlink = Path.unlink
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if (self.parent.name, self.name) == (stuck.parent.name, stuck.name):
+            raise PermissionError(13, "The file is in use")
+        real_unlink(self, missing_ok=missing_ok)
+
+    args = ("uninstall", "--harness", "cursor", "--project", str(outside), "--yes")
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "unlink", unlink)
+        first = _cli(*args)
+    assert first.exit_code == 2, first.output
+    assert stuck.exists()
+    # The install moved with its id, so a rollback by install id still works.
+    (moved,) = install_ledger.active_install_records("cursor", root=outside)
+    assert moved.install_id == installed.install_id
+    assert install_ledger.unfinished_uninstall("cursor", root=outside) is not None
+    _unlink_folder_link(project)
+
+    second = _cli(*args)
+
+    assert second.exit_code == 0, second.output
+    assert "not installed" not in second.output, second.output
+    assert "Uninstalled" in second.output, second.output
+    assert not stuck.exists()
+    for root in {record.root for record in install_ledger.read_records("cursor")}:
+        assert install_ledger.active_install_records("cursor", root=root) == []
+
+
 def test_the_install_with_more_files_in_the_folder_wins(tmp_path: Path) -> None:
     # l1 lists more files and lacks one; l2, newer, lists one file only.
     folder = tmp_path / "Y"
@@ -1011,6 +1072,31 @@ def test_a_refused_install_leaves_the_record_where_it_was(
     assert len(install_ledger.active_install_records("cursor", root=outside)) == 2
 
 
+def test_a_declined_uninstall_leaves_the_record_where_it_was(
+    linked: tuple[Path, Path],
+    profile: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The uninstall moves a record kept under a link only once it goes
+    # ahead, so an uninstall declined at its question changes no record.
+    project, outside = linked
+    _install_as_typed(monkeypatch, project, profile)
+    ledger = install_ledger.ledger_path("cursor")
+    before = ledger.read_bytes()
+    monkeypatch.setattr("apothem.cli._stdin_is_interactive", lambda: True)
+
+    result = CliRunner().invoke(
+        main,
+        ["uninstall", "--harness", "cursor", "--project", str(outside)],
+        input="n\n",
+    )
+
+    assert result.exit_code != 0, result.output
+    assert "Remove cursor configuration" in result.output, result.output
+    assert ledger.read_bytes() == before
+    assert _files(outside)
+
+
 def test_an_install_through_a_disk_only_alias_keeps_the_recorded_spelling(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1048,6 +1134,9 @@ def test_an_install_through_a_link_to_an_installed_folder_moves_nothing(
 
     assert install_ledger.recorded_root("cursor", link) == link
     assert install_ledger.install_spelling("cursor", link) == (folder, None)
+    # An uninstall through the link moves nothing either: it removes the
+    # install recorded under the link, as before.
+    assert install_ledger.uninstall_spelling("cursor", link) == (link, None)
 
 
 def test_a_second_record_of_the_folder_does_not_keep_its_data_stores(
