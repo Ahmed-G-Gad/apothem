@@ -706,7 +706,11 @@ def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRec
     place. A file a later kept install made is left out of an earlier one. No
     kept record references a backup set. A shared folder another install kept
     is then still known as made by Apothem, so the last holder's rollback
-    removes it (see ``UserLevelGate.inherited``).
+    removes it (see ``UserLevelGate.inherited``). The kept install keeps the
+    directories its pass created, so once such a folder is gone the last
+    holder's rollback or uninstall also removes the empty folders that held
+    it (see ``install_driver_keys.made_dirs``); nothing else reads them, as
+    the record replays to nothing in place.
     """
     ended = _endings(records)
     kept: dict[int, LedgerRecord] = {}
@@ -722,7 +726,7 @@ def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRec
         if not made:
             continue
         claimed.update(target.path for target in made)
-        kept[position] = replace(record, targets=made, created_dirs=())
+        kept[position] = replace(record, targets=made)
         kept[ended[position]] = _without_backups(end)
         if end.kind == "rollback":
             named = next(

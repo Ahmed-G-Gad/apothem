@@ -541,21 +541,55 @@ def test_rolling_back_the_creator_then_the_last_holder_removes_the_folders(
     assert _gone(home)
 
 
+#: The folders the first install of Codex or Windsurf makes in an empty home:
+#: the shared folders and ``~/.agents``. The install writes the starter
+#: profile into ``~/.config/apothem`` before it records what it made, so that
+#: folder is not one of them.
+_MADE = (
+    Path(".agents"),
+    Path(".agents", "skills"),
+    Path(".config", "apothem", "rules"),
+    Path(".config", "apothem", "templates"),
+)
+
+#: A skill of the operator's, put in the shared skills folder after the installs.
+_MINE = Path(".agents", "skills", "zz-mine", "SKILL.md")
+
+
+@pytest.mark.parametrize("last", ["rollback", "uninstall"])
+@pytest.mark.parametrize("mine", [False, True], ids=["empty", "operator-file"])
 def test_rolling_back_both_spellings_creator_first_removes_the_folders(
-    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+    homes: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, mine: bool, last: str
 ) -> None:
+    # Codex installed through the link made the shared folders; installed
+    # again through the real home, it found them in place. Rolling back the
+    # first install keeps them for the second. Rolling back the second then
+    # removes their files and, once empty, the folders the first made, though
+    # Codex's boundary is the home. A folder that holds a file of the
+    # operator's stays, and so does the folder that holds it.
     real, linked = homes
     runner = CliRunner()
     for home in (linked, real):
         _spell_home(monkeypatch, home)
         result = runner.invoke(main, ["install", "--harness", "codex", "--yes"])
         assert result.exit_code == 0, result.output
-    for home in (linked, real):
+    assert all((real / folder).is_dir() for folder in _MADE)
+    if mine:
+        (real / _MINE).parent.mkdir()
+        (real / _MINE).write_bytes(b"# mine\n")
+    for home, command in ((linked, "rollback"), (real, last)):
         _spell_home(monkeypatch, home)
-        result = runner.invoke(main, ["rollback", "--harness", "codex", "--yes"])
+        result = runner.invoke(main, [command, "--harness", "codex", "--yes"])
         assert result.exit_code == 0, result.output
 
-    assert _gone(real)
+    left = {folder for folder in _MADE if (real / folder).exists()}
+    if mine:
+        assert left == {Path(".agents"), Path(".agents", "skills")}
+        assert _files(real / ".agents" / "skills") == ["zz-mine", "zz-mine/SKILL.md"]
+        assert (real / _MINE).read_bytes() == b"# mine\n"
+    else:
+        assert left == set(), sorted(map(str, left))
+    assert (real / ".config" / "apothem" / "profile.yaml").is_file()
 
 
 def _windsurf(project: Path) -> list[str]:
@@ -624,6 +658,24 @@ def test_the_last_holder_removes_the_folders_after_the_creator_is_reinstalled(
         _run("rollback", *windsurf)
 
     assert _gone(home)
+
+
+def test_codex_as_the_last_holder_removes_the_folders_another_tool_made(
+    tmp_path: Path,
+) -> None:
+    # Windsurf makes the shared folders and Codex finds them in place.
+    # Rolling back Windsurf keeps them for Codex; rolling back Codex then
+    # removes them, though it made none of them and its boundary is the home.
+    home = user_home()
+    windsurf = _windsurf(tmp_path / "project")
+    _run("install", *windsurf)
+    _run("install", "--harness", "codex", "--yes")
+    _run("rollback", *windsurf)
+    assert all(_files(home / folder) for folder in _SHARED)
+
+    _run("rollback", "--harness", "codex", "--yes")
+
+    assert not [folder for folder in _MADE if (home / folder).exists()]
 
 
 def test_the_last_holder_removes_the_folders_after_retention_drops_the_creator(
@@ -911,6 +963,101 @@ def test_compaction_keeps_a_creator_a_rollback_of_an_earlier_install_ended(
         ("install", second.install_id),
         ("rollback", first.install_id),
     ]
+
+
+def _rolled_back_creator(root: Path) -> tuple[Path, Path, tuple[str, ...]]:
+    """Record a Codex install under *root* that made a skill and its folders, then its rollback.
+
+    The rollback keeps the skill (another install held it), so it lists
+    nothing. Returns the skills folder, the skill and the folders made.
+    """
+    skills = user_home() / ".agents" / "skills"
+    alpha = skills / "alpha"
+    folders = (str(skills.parent), str(skills))
+    record = LedgerRecord.create(
+        harness="codex",
+        root=root,
+        kind="install",
+        targets=(
+            LedgerTarget(
+                path=str(alpha),
+                mode="native_skills",
+                ownership_class="apothem-owned",
+                outcome="created",
+            ),
+        ),
+        created_dirs=folders,
+    )
+    install_ledger.append_record(record)
+    _end(root, "rollback", record.install_id)
+    return skills, alpha, folders
+
+
+def test_compaction_keeps_the_folders_a_kept_creator_made(tmp_path: Path) -> None:
+    root = tmp_path / ".codex"
+    _skills, _alpha, folders = _rolled_back_creator(root)
+
+    kept = install_ledger.compact_records("codex", keep_installs=1)
+
+    assert [(record.kind, record.created_dirs) for record in kept] == [
+        ("install", folders),
+        ("rollback", ()),
+    ]
+
+
+# --- the folders an install that has let go of them made -------------------------
+
+
+def test_the_folders_a_rolled_back_creator_made_count_until_an_install_uses_them(
+    tmp_path: Path,
+) -> None:
+    # Another install in place that lists a path in them keeps them; the
+    # install the caller is ending does not.
+    skills, alpha, folders = _rolled_back_creator(tmp_path / "a" / ".codex")
+    made = {Path(folder).resolve() for folder in folders}
+
+    assert install_driver_keys.made_dirs([skills], ()) == made
+    _record("cursor", tmp_path / "b", alpha)
+    user = install_ledger.current_install_record("cursor", root=tmp_path / "b")
+    assert user is not None
+    assert install_driver_keys.made_dirs([skills], ()) == set()
+    assert install_driver_keys.made_dirs([skills], {user.install_id}) == made
+    assert install_driver_keys.made_dirs([], ()) == set()
+
+
+def test_folders_whose_files_another_pass_removed_are_not_counted(
+    tmp_path: Path,
+) -> None:
+    # Once a later uninstall removed what the creator made there, the folder
+    # that stands there now may be one someone put back: it is theirs.
+    skills, alpha, _folders = _rolled_back_creator(tmp_path / "a" / ".codex")
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="cursor",
+            root=tmp_path / "b",
+            kind="uninstall",
+            targets=(
+                LedgerTarget(
+                    path=str(alpha),
+                    mode="native_skills",
+                    ownership_class="apothem-owned",
+                    outcome="updated",
+                    backup_ref=str(tmp_path / "backup" / "alpha"),
+                ),
+            ),
+        )
+    )
+
+    assert install_driver_keys.made_dirs([skills], ()) == set()
+
+
+def test_no_folder_counts_when_a_ledger_cannot_be_read(tmp_path: Path) -> None:
+    skills, _alpha, _folders = _rolled_back_creator(tmp_path / "a" / ".codex")
+    ledger = install_ledger.ledger_path("cursor")
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("not json\n{}\n", encoding="utf-8")
+
+    assert install_driver_keys.made_dirs([skills], ()) == set()
 
 
 def test_ending_the_other_spelling_ends_its_install(tmp_path: Path) -> None:

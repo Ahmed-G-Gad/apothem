@@ -36,7 +36,7 @@ from .install_driver_hookfile import (
     registration_present,
     release_native_hooks,
 )
-from .install_driver_keys import one_install
+from .install_driver_keys import made_dirs, one_install
 from .install_driver_merge import render_content_tokens
 from .install_driver_outcome import (
     last_uninstall_finished,
@@ -582,9 +582,11 @@ def _remove_installed(
     # Remove the directories the installs since the last uninstall created,
     # now that their contents are gone — only the empty ones, deepest first, so
     # a directory still holding operator content or another harness's data
-    # stays.
+    # stays. The user-level folders an install that has let go of them created
+    # go the same way: tidy leaves them here when the boundary is the home.
     created = {Path(path) for install in active for path in install.created_dirs}
-    results.extend(remove_created_dirs(created, allowed_root=allowed_root))
+    made = made_dirs(gate.bases.values(), {install.install_id for install in active})
+    results.extend(remove_created_dirs(created | made, allowed_root=allowed_root))
     results.extend(gate.tidy(created))
 
 
