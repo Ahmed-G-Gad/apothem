@@ -52,6 +52,11 @@
 /.apothem/ export-ignore
 /tests/    export-ignore
 .github/** export-ignore
+# gitattributes_presence_grep looks for lines that start with ".plans" and
+# "tests", without a leading "/". These two match only the same top-level
+# folders, since a "/" inside a pattern ties it to the top of the repository.
+.plans/** export-ignore
+tests/**  export-ignore
 # The CI tool lockfiles stay out of source archives, as they did under .github/.
 /tools/ export-ignore
 # Scorecard runs in git mode (.github/workflows/scorecard.yml) and reads
