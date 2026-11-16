@@ -129,7 +129,11 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   fails the test before the body starts.
 - ``pytest_runtest_makereport``, a wrapper around every other: a test the guard
   stopped stays failed when it is marked ``xfail``, which would otherwise turn the
-  failure into XFAIL and let the run pass.
+  failure into XFAIL and let the run pass. Its teardown report also fails when
+  ``apothem.lib.home_write_guard`` logged a refusal that
+  ``_report_real_home_refusals`` did not see: one made while a fixture torn down
+  after it (an ``_isolate_*`` fixture, a module- or session-scoped one) was
+  torn down.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
@@ -1043,7 +1047,9 @@ class RealHomeGuard:
         pytest's ``skipping`` plugin turns any failure of an ``xfail`` test
         without ``raises=`` into XFAIL, so a stopped test would pass the run
         quietly. This wrapper starts first and so finishes last, after
-        ``skipping`` has changed the report, and changes it back.
+        ``skipping`` has changed the report, and changes it back. A teardown
+        report also fails on a refusal logged too late for
+        ``_report_real_home_refusals`` (see :func:`_fail_on_late_refusals`).
         """
         report = yield
         if call.excinfo is not None and isinstance(
@@ -1052,7 +1058,30 @@ class RealHomeGuard:
             report.outcome = "failed"
             if hasattr(report, "wasxfail"):
                 del report.wasxfail
+        if report.when == "teardown":
+            _fail_on_late_refusals(report)
         return report
+
+
+def _fail_on_late_refusals(report: pytest.TestReport) -> None:
+    """Fail a teardown report when Apothem logged a refusal nobody reported.
+
+    ``_report_real_home_refusals`` reads the log in its own teardown, so a
+    refusal made while a fixture torn down after it was torn down (an
+    ``_isolate_*`` fixture, a module- or session-scoped one) is still in the
+    log. pytest builds the teardown report after every finalizer of the
+    teardown has run, so this check sees it, the session's last teardown
+    included.
+    """
+    refused = home_write_guard.drain_refusals()
+    if not refused or report.outcome == "failed":
+        return
+    report.outcome = "failed"
+    report.longrepr = (
+        "Apothem refused a write into the account's real home while a fixture "
+        "was torn down, and the refusal was not raised to the test:\n"
+        + "\n".join(f"  - {error}" for error in refused)
+    )
 
 
 #: The name the guard is registered under, once per session.

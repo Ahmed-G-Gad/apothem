@@ -12,12 +12,14 @@ folders writes as before.
 
 from __future__ import annotations
 
+import copy
 import ctypes
 import os
+import pickle
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -199,6 +201,89 @@ def test_the_account_home_comes_from_the_system_not_the_environment(
     for name in ("HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH"):
         monkeypatch.delenv(name, raising=False)
     assert _fresh_account_home() == found
+
+
+def _suite_conftest(config: pytest.Config) -> ModuleType:
+    """Return ``tests/conftest.py`` as pytest registered it in this session."""
+    conftest = Path(__file__).resolve().parents[1] / "conftest.py"
+    for plugin in config.pluginmanager.get_plugins():
+        location = getattr(plugin, "__file__", None)
+        if location and Path(location).resolve() == conftest:
+            return plugin
+    raise AssertionError(f"pytest has not registered {conftest}")
+
+
+def test_the_account_home_is_the_home_this_process_started_with(
+    request: pytest.FixtureRequest,
+) -> None:
+    # tests/conftest.py records every spelling of the home the process started
+    # with (HOME, USERPROFILE, HOMEDRIVE and HOMEPATH, ``~``, and the passwd
+    # entry on POSIX) before it moves the home. A lookup that named another
+    # folder, a parent of the home say, would leave the real home unprotected
+    # while every test with a fake home still passed.
+    if os.name != "nt":
+        pwd = pytest.importorskip("pwd")
+        try:
+            pwd.getpwuid(os.geteuid())
+        except KeyError:
+            pytest.skip("the system has no passwd entry for this account")
+    startup_homes = _suite_conftest(request.config)._REAL_HOMES
+    found = _fresh_account_home()
+    assert found is not None
+    assert os.path.normcase(os.path.realpath(found)) in startup_homes, (
+        found,
+        startup_homes,
+    )
+    assert home_write_guard.would_refuse(Path(found) / ".apothem" / "x")
+    assert home_write_guard.would_refuse(Path(found) / ".claude")
+    assert not home_write_guard.would_refuse(Path(found) / "Documents" / "x")
+
+
+def test_a_lookup_that_fails_in_any_way_falls_through_to_the_next(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    found = _fresh_account_home()
+    assert found is not None
+
+    def broken() -> str:
+        raise TypeError("a fake that cannot be called this way")
+
+    first = "_windows_profile" if os.name == "nt" else "_passwd_home_effective"
+    monkeypatch.setattr(home_write_guard, first, broken)
+    assert _fresh_account_home() == found
+    monkeypatch.undo()
+    assert _fresh_account_home() == found
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the profile lookup is Windows")
+def test_a_function_in_place_of_kernel32_does_not_break_the_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    found = _fresh_account_home()
+    windll = ctypes.windll  # type: ignore[attr-defined,unused-ignore]
+    monkeypatch.setattr(windll, "kernel32", lambda *_args: 0, raising=False)
+    assert _fresh_account_home() == found
+    assert home_write_guard._windows_profile() == found
+    monkeypatch.undo()
+    _fresh_account_home()
+
+
+def test_a_refusal_survives_a_copy_and_a_pickle(fake_home: Path) -> None:
+    with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+        _write(fake_home / ".claude" / "x")
+    error = caught.value
+    for twin in (
+        copy.copy(error),
+        copy.deepcopy(error),
+        pickle.loads(pickle.dumps(error)),  # noqa: S301 - our own bytes
+    ):
+        assert type(twin) is home_write_guard.RealHomeWriteError
+        assert str(twin) == str(error)
+        assert (twin.path, twin.protected_root, twin.operation) == (
+            error.path,
+            error.protected_root,
+            error.operation,
+        )
 
 
 @pytest.mark.parametrize("platform", ["win32", "linux"])

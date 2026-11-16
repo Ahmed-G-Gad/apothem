@@ -424,6 +424,10 @@ def run_clean_slate(
         CleanSlateError: When the run is non-interactive without ``assume_yes``.
         BackupError: When the pre-removal backup cannot be written.
         RemovalError: When a target cannot be removed after the backup.
+        RealHomeWriteError: While a pytest test runs, for a backup folder or
+            a target in the account's real home (see
+            :mod:`apothem.lib.home_write_guard`); it is raised as it is, not
+            as a :class:`RemovalError`.
     """
     emit: EchoFn = echo if echo is not None else (lambda _message: None)
     tick: Clock = clock if clock is not None else _utcnow
@@ -506,6 +510,8 @@ def run_clean_slate(
             continue
         try:
             _remove_path(target)
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal is not a removal that stopped partway
         except OSError as exc:
             raise RemovalError(
                 f"could not remove {target}: {exc}", backup_dir=backup_dir

@@ -49,7 +49,7 @@ import importlib
 import os
 import stat
 import sys
-from typing import Any
+from typing import Any, TypeGuard
 
 #: The variable pytest sets for each test's setup, call and teardown.
 PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
@@ -93,10 +93,18 @@ class RealHomeWriteError(OSError):
 
     It is an :class:`OSError` built from its message alone, so ``errno`` and
     ``winerror`` stay ``None`` and no retry on a sharing violation picks it up.
+    The keyword arguments default to ``""`` so that a copy, or a pickle that
+    crosses a process boundary, can rebuild the error from its message; the
+    attributes then come back from the instance dictionary.
     """
 
     def __init__(
-        self, message: str, *, path: str, protected_root: str, operation: str
+        self,
+        message: str,
+        *,
+        path: str = "",
+        protected_root: str = "",
+        operation: str = "",
     ) -> None:
         super().__init__(message)
         self.path = path
@@ -360,7 +368,9 @@ def _os_account_home() -> str:
     """Return the account's home from the operating system, looked up once.
 
     Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
-    no failure, so the next call tries again.
+    no failure, so the next call tries again. Any exception from one lookup (a
+    test that replaced part of ``ctypes`` with a fake, say) moves on to the
+    next lookup, so a broken step never stops the check itself.
     """
     lookups = (
         (_windows_profile, _volatile_profile)
@@ -369,15 +379,15 @@ def _os_account_home() -> str:
     )
     for lookup in lookups:
         try:
-            found = lookup()
-        except (ImportError, OSError, AttributeError, KeyError, ValueError):
-            continue
+            found: object = lookup()
+        except Exception:  # any failure falls through to the next lookup
+            found = None
         if _usable_home(found):
             return os.path.abspath(found)
     raise _HomeLookupError("the system has no record of this account's home")
 
 
-def _usable_home(found: object) -> bool:
+def _usable_home(found: object) -> TypeGuard[str]:
     """Return True for a non-empty absolute path that is not a filesystem root."""
     if not isinstance(found, str) or not found or not os.path.isabs(found):
         return False
@@ -389,9 +399,10 @@ def _windows_profile() -> str:
     """Return ``FOLDERID_Profile`` from ``SHGetKnownFolderPath``."""
     ctypes: Any = importlib.import_module("ctypes")
     uuid: Any = importlib.import_module("uuid")
-    # Private library objects of the loader's own class: a test may replace
-    # ``ctypes.WinDLL``, and the shared ``windll`` functions may be retyped.
-    dll_type = type(ctypes.windll.kernel32)
+    # Private library objects of the class ``windll`` was built with when
+    # ``ctypes`` was imported: a test may replace ``ctypes.WinDLL``, and the
+    # shared ``windll`` functions may be retyped.
+    dll_type = ctypes.windll._dlltype
     shell32 = dll_type("shell32")
     ole32 = dll_type("ole32")
 

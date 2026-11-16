@@ -51,6 +51,7 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.harnesses._shared.install_driver_blocks import ANOTHER_BLOCK, MARKER_LEFT
 from apothem.harnesses._shared.install_driver_written import UNPROVEN_REASONS
+from apothem.lib import home_write_guard
 
 
 def _retention_advisories(
@@ -636,8 +637,8 @@ def _uninstall_impl(
                 harness_id, adapter, project_root, output_path
             )
             outcome = _invoke_with_project(adapter.uninstall, project=project_root)
-        except click.Abort:
-            raise
+        except (click.Abort, home_write_guard.RealHomeWriteError):
+            raise  # neither is a failed uninstall
         except Exception as exc:
             errored = True
             rows, removed = _failed_adapter(

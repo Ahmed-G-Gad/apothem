@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib import home_write_guard
 from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
@@ -381,6 +382,8 @@ def _restore_missing(
                 source=source,
                 allowed_root=allowed_root,
             )
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal is not a file that could not be written
         except OSError:
             failed.append(str(destination))
             continue

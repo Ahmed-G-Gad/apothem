@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 from rich.markup import escape
 
@@ -34,6 +36,7 @@ from apothem.cli._helpers import (
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
+from apothem.lib import home_write_guard
 from apothem.lib.harness_registry import SUPPORTED_HARNESS_IDS
 from apothem.lib.profile import ProfileValidationError
 
@@ -92,6 +95,31 @@ def install(
         verbose=verbose,
         create_default_profile=True,
     )
+
+
+def _create_starter_profile(profile_path: Path) -> dict[str, object] | None:
+    """Write quickstart's starter profile; return the error to emit, or None.
+
+    A refusal of a write into the real home during a test is raised as it is,
+    not reported as a permissions problem.
+    """
+    try:
+        _write_profile_text_safely(
+            profile_path, _profile_scaffold_text(), operation="quickstart"
+        )
+    except _CliUserError as exc:
+        return exc.to_dict()
+    except home_write_guard.RealHomeWriteError:
+        raise
+    except OSError as exc:
+        return _CliUserError(
+            code="profile.write_failed",
+            message="Apothem quickstart could not create a profile.",
+            field="profile",
+            reason=str(exc),
+            fix="Check the profile path and directory permissions.",
+        ).to_dict()
+    return None
 
 
 @main.command(epilog=_EP_QUICKSTART)
@@ -178,32 +206,14 @@ def quickstart(
                 ).to_dict(),
             )
             return
-        try:
-            _write_profile_text_safely(
-                profile_path, _profile_scaffold_text(), operation="quickstart"
-            )
-        except _CliUserError as exc:
+        error = _create_starter_profile(profile_path)
+        if error is not None:
             _emit_expected_error(
                 command="quickstart",
                 fmt=fmt,
                 harness=harness,
                 profile_path=profile_path,
-                error=exc.to_dict(),
-            )
-            return
-        except OSError as exc:
-            _emit_expected_error(
-                command="quickstart",
-                fmt=fmt,
-                harness=harness,
-                profile_path=profile_path,
-                error=_CliUserError(
-                    code="profile.write_failed",
-                    message="Apothem quickstart could not create a profile.",
-                    field="profile",
-                    reason=str(exc),
-                    fix="Check the profile path and directory permissions.",
-                ).to_dict(),
+                error=error,
             )
             return
         created = True
