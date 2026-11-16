@@ -39,8 +39,9 @@
         # Moved here from the Static Site build's `-ExcludeRule` list so
         # that both CI callers read one list. The rule flags a function
         # named New-, Set-, Remove-, Start-, Stop-, Restart-, Reset- or
-        # Update- that does not declare `SupportsShouldProcess`. No
-        # PowerShell script in this repository defines such a function.
+        # Update- that does not declare `SupportsShouldProcess`. The one
+        # such function, `Remove-Tree` in install.ps1, removes only the
+        # folders the installer itself made or set aside during the run.
         'PSUseShouldProcessForStateChangingFunctions'
     )
 }

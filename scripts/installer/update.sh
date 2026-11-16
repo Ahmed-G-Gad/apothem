@@ -272,15 +272,18 @@ resolve_latest_tag() {
         | tail -n 1
 }
 
-# cgit ARGS — run git with ARGS and, once HOOKS_OFF names an empty folder,
-# with core.hooksPath pointing at it, so none of the clone's hooks run
-# (mirrors install.sh).
+# cgit ARGS — run git with ARGS on the clone's files and, once HOOKS_OFF
+# names an empty folder, with core.hooksPath pointing at it, so none of the
+# clone's hooks run. core.longpaths is always set: a release can hold paths
+# longer than Windows' 260-character limit at APOTHEM_HOME, which Git for
+# Windows (under Git Bash) writes and reads only with it; git elsewhere
+# ignores it (mirrors install.sh).
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.hooksPath="$HOOKS_OFF" "$@"
+        git -c core.longpaths=true -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git "$@"
+        git -c core.longpaths=true "$@"
     fi
 }
 

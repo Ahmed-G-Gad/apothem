@@ -308,6 +308,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Windows installer checks out releases whose paths pass 260
+  characters.** `install.ps1` checks a release out in a staging folder beside
+  `APOTHEM_HOME`, or in the temporary folder for a dry run, before it moves
+  the tree into place. That folder adds 57 characters to every path, and
+  v1.5.0 holds paths up to 170 characters long, so with a home folder path of
+  33 characters or more (a temporary folder path of 40 or more, for a dry
+  run) the checkout passed Windows' 260-character limit: Git for Windows
+  stopped with `Filename too long`, and the installer with `Could not check
+  out the v1.5.0 tag`. Every git command the installers and the updaters run
+  on a clone now sets `core.longpaths`, so Git for Windows writes and reads
+  such paths; git on other systems ignores the setting. Under Git Bash,
+  `install.sh` and `update.sh` set it too: their shorter staging folder put
+  fewer installs past the limit, but could let such an install go on without
+  the files git could not write. `install.ps1` also removes its staging and
+  scratch folders, and an earlier tree it replaces, through the long form of
+  the path (`\\?\C:\...`), since Windows PowerShell 5.1 cannot reach a path
+  past 260 characters otherwise on a machine where long paths are off.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
