@@ -50,7 +50,11 @@ at any non-MAJOR bump in 0.x). The check fires from v1.0.0 onward only.
 Posture. On the change-set path (`--staged`) the matcher emits a JSON
 ``GrepResult`` payload and follows the package exit contract: ``EXIT_PASS``
 (0) on a clean surface, ``EXIT_FAIL`` (2) when breaking-change findings
-stand without a MAJOR bump. The per-Write hook path emits the same payload.
+stand without a MAJOR bump. A git command on that path that runs past
+``GIT_TIMEOUT_SECONDS``, or a git that refuses the checkout it runs in, leaves
+the change set unread, so the payload then carries ``check_error`` and
+``passed: false`` and the exit is ``EXIT_FAIL``.
+The per-Write hook path emits the same payload.
 """
 
 from __future__ import annotations
@@ -65,8 +69,10 @@ from pathlib import Path
 from typing import Any, Final
 
 # Bound every gate-path git invocation so a hung `git cat-file`/`git diff`
-# (filesystem lock, slow network-backed repo, large object) cannot block a
-# commit indefinitely. Mirrors the convention in production_ready_pr_grep.py.
+# (filesystem lock, slow network-backed repo, large object, or a repository
+# configuration that makes git wait) cannot block a commit indefinitely.
+# Mirrors the convention in production_ready_pr_grep.py: a timeout does not
+# pass, because the change set was not read.
 GIT_TIMEOUT_SECONDS: Final[int] = 5
 
 GREP_NAME: Final[str] = "semver-stability-grep"
@@ -124,17 +130,25 @@ class GrepResult:
     grep: str
     passed: bool
     findings: list[Finding] = field(default_factory=list)
+    # Why the change-set check could not finish (a git command ran past
+    # ``GIT_TIMEOUT_SECONDS``); None otherwise.
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
 
-        Post-conditions: the payload carries ``{grep, passed, findings}``.
+        Post-conditions: the payload carries ``{grep, passed, findings}``,
+        plus ``check_error`` when it is set.
         """
-        payload = {
+        payload: dict[str, object] = {
             "grep": self.grep,
             "passed": self.passed,
             "findings": [f.as_dict() for f in self.findings],
         }
+        if self.check_error is not None:
+            # The same key as ``_grep_base.CHECK_ERROR_KEY``, spelled out so
+            # the module stays stdlib-only at import.
+            payload["check_error"] = self.check_error
         return json.dumps(payload, indent=2)
 
 
@@ -317,6 +331,29 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
     return compare_surfaces(old_surface, new_surface, str(p))
 
 
+def _git(
+    label: str, *args: str, check: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
+
+    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
+    command as *label*, past the limit; :class:`OSError` when git cannot be
+    started; and, with *check*, :class:`subprocess.CalledProcessError` on a
+    non-zero exit.
+    """
+    # Imported here, not at module top, so the module stays stdlib-only for
+    # every caller except the change-set check.
+    from apothem.conformity._git import run_git
+    from apothem.conformity._grep_base import GitTimeoutError
+
+    try:
+        return run_git(list(args), timeout=GIT_TIMEOUT_SECONDS, check=check)
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
+
+
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
 
@@ -326,15 +363,23 @@ def check_staged() -> list[Finding]:
     gitlink (a submodule entry), which ``show`` would display as a commit,
     signature check and submodule diff included, while ``cat-file blob``
     refuses it.
+
+    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when the
+    staged list, or a staged or committed file, is not read within
+    ``GIT_TIMEOUT_SECONDS``, and
+    :class:`~apothem.conformity._grep_base.GitFailedError` when git fails to
+    list the change set in a folder that holds a ``.git`` entry: a change set
+    that was not read is not a clean one. Outside a checkout, or without git,
+    there is no change set and the list of findings is empty.
     """
-    # Imported here, not at module top, so the module stays stdlib-only for
-    # every caller except the change-set check.
-    from apothem.conformity._git import run_git
+    from apothem.conformity._grep_base import (
+        GitFailedError,
+        GitTimeoutError,
+        has_git_entry,
+    )
 
     def blob(spec: str, *, check: bool) -> str:
-        return run_git(
-            ["cat-file", "blob", spec], check=check, timeout=GIT_TIMEOUT_SECONDS
-        ).stdout
+        return _git("git cat-file", "cat-file", "blob", spec, check=check).stdout
 
     version = current_version()
     if not version or is_v0(version):
@@ -343,18 +388,21 @@ def check_staged() -> list[Finding]:
     # Get list of staged Python files under src/apothem/. -z ends each name
     # with NUL, unquoted, so no character in a name can split or hide it.
     try:
-        result = run_git(
-            [
-                "diff",
-                "--cached",
-                "--name-only",
-                "-z",
-                "--diff-filter=AMR",
-                PUBLIC_PACKAGE,
-            ],
-            timeout=GIT_TIMEOUT_SECONDS,
+        result = _git(
+            "git diff --cached",
+            "diff",
+            "--cached",
+            "--name-only",
+            "-z",
+            "--diff-filter=AMR",
+            PUBLIC_PACKAGE,
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    except FileNotFoundError:
+        return []
+    if result.returncode != 0:
+        # Outside a checkout there is no change set; in one, git refused it.
+        if has_git_entry(Path.cwd()):
+            raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [
         f
@@ -366,10 +414,12 @@ def check_staged() -> list[Finding]:
 
     findings: list[Finding] = []
     for fp in files:
+        # A GitTimeoutError goes on to the caller: skipping the file would
+        # pass a change that was never compared.
         try:
             staged = blob(f":{fp}", check=True)
             prior = blob(f"HEAD:{fp}", check=False)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        except subprocess.CalledProcessError:
             continue
         if not prior:
             continue  # newly-added file
@@ -395,10 +445,9 @@ def check_staged() -> list[Finding]:
             ):
                 # MAJOR bump present — breaking changes are admissible.
                 return []
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        except (subprocess.CalledProcessError, GitTimeoutError):
             # Missing/timed-out staged init means the original breaking-change
-            # findings stand. A TimeoutExpired here is caught consistently with
-            # the bounded git calls above rather than crashing the validator.
+            # findings stand, so the check does not pass either way.
             pass
 
     return findings
@@ -419,7 +468,7 @@ def _read_hook_findings() -> list[Finding]:
 def _main(argv: list[str]) -> int:
     # Imported here, not at module top, so the module stays stdlib-only for
     # every caller except the command-line entry.
-    from apothem.conformity._grep_base import make_parser
+    from apothem.conformity._grep_base import GitCheckError, make_parser
 
     parser = make_parser(GREP_NAME, __doc__)
     parser.add_argument(
@@ -429,8 +478,20 @@ def _main(argv: list[str]) -> int:
         help="check the staged change set (default: read a hook payload on stdin)",
     )
     args = parser.parse_args(argv[1:])
-    findings = check_staged() if args.staged else _read_hook_findings()
-    result = GrepResult(grep=GREP_NAME, passed=not findings, findings=findings)
+    check_error: str | None = None
+    if args.staged:
+        try:
+            findings = check_staged()
+        except GitCheckError as exc:
+            findings, check_error = [], str(exc)
+    else:
+        findings = _read_hook_findings()
+    result = GrepResult(
+        grep=GREP_NAME,
+        passed=not findings and check_error is None,
+        findings=findings,
+        check_error=check_error,
+    )
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL
 

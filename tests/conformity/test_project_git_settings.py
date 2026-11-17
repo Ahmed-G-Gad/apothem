@@ -61,6 +61,7 @@ from apothem.conformity import (
     production_ready_pr_grep,
     semver_stability_grep,
 )
+from apothem.conformity._grep_base import GitCheckError
 from tests._shared.git_env import hermetic_git_env
 
 _IDENT = (
@@ -458,17 +459,25 @@ def _planted_repo(tmp_path: Path, scenario: _Scenario) -> tuple[Path, _Programs]
 
 
 def _drive_every_gate_git_call(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Run each git-reading path of the gate and its validators against *repo*."""
+    """Run each git-reading path of the gate and its validators against *repo*.
+
+    A path whose git fails or runs past its limit raises ``GitCheckError``,
+    its report of an unread history or change set; that is an outcome here,
+    not an error: what counts is that no planted program ran.
+    """
     gate._run_all_perwrite(repo)
     with contextlib.suppress(RuntimeError):
         no_global_plans_grep._git_ls_files(repo)
     conventional_commit_grep._read_head_subject(repo)
-    agents_md_coverage_grep._last_commit_times(repo)
+    with contextlib.suppress(GitCheckError):
+        agents_md_coverage_grep._last_commit_times(repo)
     # The two change-set checks read the repository the process runs in.
     monkeypatch.chdir(repo)
-    production_ready_pr_grep._staged_paths()
+    with contextlib.suppress(GitCheckError):
+        production_ready_pr_grep._staged_paths()
     monkeypatch.setattr(semver_stability_grep, "current_version", lambda: "1.2.3")
-    semver_stability_grep.check_staged()
+    with contextlib.suppress(GitCheckError):
+        semver_stability_grep.check_staged()
 
 
 @pytest.mark.usefixtures("hermetic_git")
@@ -810,25 +819,34 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
 
 
 def test_no_conformity_module_starts_a_program_itself() -> None:
-    """Only ``_git.py`` starts git; every other module calls ``run_git``.
+    """Only ``_git.py`` names git; every other module calls ``run_git``.
 
-    The one other program start is gate.py's validator launcher
-    (``_run_standalone``), which starts Python, not git.
+    ``_bounded_run.py`` is the one module that starts a program:
+    ``run_git`` starts git through ``run_bounded``, and gate.py's validator
+    launcher (``_run_standalone``) starts Python through it, so neither git
+    nor any other program starts anywhere else.
     """
     package = Path(gate.__file__).resolve().parent
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
-        if module.name == "_git.py":
+        if module.name in {"_git.py", "_bounded_run.py"}:
             continue
-        allowed = (
-            frozenset({"_run_standalone"}) if module.name == "gate.py" else frozenset()
-        )
         source = module.read_text(encoding="utf-8")
         offenders.extend(
             f"{module.relative_to(package).as_posix()}:{line}"
-            for line in _program_starts(source, allowed=allowed)
+            for line in _program_starts(source)
         )
     assert offenders == []
+
+
+def test_only_the_shared_runner_and_git_helper_start_programs() -> None:
+    """``_bounded_run.py`` starts programs and ``_git.py`` only names git."""
+    package = Path(gate.__file__).resolve().parent
+    runner = (package / "_bounded_run.py").read_text(encoding="utf-8")
+    helper = (package / "_git.py").read_text(encoding="utf-8")
+    assert _program_starts(runner) != []
+    assert "subprocess.run(" not in helper
+    assert "_bounded_run.run_bounded(" in helper
 
 
 def _dated_commit(repo: Path, message: str, when: int) -> None:

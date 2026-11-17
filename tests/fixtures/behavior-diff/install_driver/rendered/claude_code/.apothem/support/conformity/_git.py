@@ -41,7 +41,11 @@ while it only reads:
   ``PATH`` that holds only those entries. Windows otherwise looks for a bare
   ``git`` in the current folder first, and an empty or relative ``PATH`` entry
   names the current folder on every platform, so a ``git`` or helper program
-  placed in the checked project would run instead.
+  placed in the checked project would run instead;
+- git started through :func:`~apothem.conformity._bounded_run.run_bounded`,
+  so a time limit holds for every program git starts: on Windows the real git
+  behind Git's ``cmd\\git.exe`` launcher, which holds the output after the
+  launcher is stopped, ends with it.
 
 What stays: the user's own global and system configuration and ``GIT_*``
 variables apply, except the settings above, which win in every scope. The
@@ -64,6 +68,8 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity import _bounded_run
 
 # A path below a regular file, where nothing can exist (a file cannot hold
 # entries). This module's own file is a regular file wherever the gate runs
@@ -239,26 +245,25 @@ def run_git(
     reaches git as ``-C <cwd>``, so a folder that does not exist is git's own
     error (a non-zero exit), as for any other git failure. Output is captured
     and decoded as UTF-8, the encoding git writes path names in; a byte that
-    is not UTF-8 reads as U+FFFD. Standard input is empty.
+    is not UTF-8 reads as U+FFFD. Standard input is empty. git runs through
+    :func:`~apothem.conformity._bounded_run.run_bounded`, so *timeout* holds
+    for every program git starts, also behind Git for Windows' launcher.
 
     Raises :class:`FileNotFoundError` when no git is found in a full-path
-    ``PATH`` entry, and otherwise what :func:`subprocess.run` raises
-    (:class:`subprocess.TimeoutExpired`, and
-    :class:`subprocess.CalledProcessError` when *check* is set), so a caller
-    handles a missing git as it would any failed start.
+    ``PATH`` entry, and otherwise what :func:`subprocess.run` would raise
+    (:class:`subprocess.TimeoutExpired`, after git and the programs it
+    started are stopped, and :class:`subprocess.CalledProcessError` when
+    *check* is set), so a caller handles a missing git as it would any failed
+    start.
     """
     git = find_git()
     if git is None:
         raise FileNotFoundError(
             errno.ENOENT, "git not found in a full-path PATH entry", "git"
         )
-    return subprocess.run(  # noqa: S603 — argv list (never a shell): the git found above, fixed options, and the caller's git arguments
+    return _bounded_run.run_bounded(
         git_argv(git, args, cwd=cwd),
         env=git_environment(),
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
         timeout=timeout,
         check=check,
     )
