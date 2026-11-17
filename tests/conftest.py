@@ -74,7 +74,7 @@ the account's real ``.apothem``, ``.config/apothem`` or a tool's folder there
 while a test runs, whether or not this file loads. Some callers absorb that
 error (a best-effort ledger line, a suppressed removal), so the autouse
 ``_report_real_home_refusals`` fails a test after which the guard logged a
-refusal.
+refusal, also when the test is marked ``xfail``.
 
 The isolation fixtures above are all named with a leading underscore, and a
 ``from <this module> import *`` skips such names unless the module lists them in
@@ -128,7 +128,8 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   implementation runs it. The check sees the environment the body will see and
   fails the test before the body starts.
 - ``pytest_runtest_makereport``, a wrapper around every other: a test the guard
-  stopped stays failed when it is marked ``xfail``, which would otherwise turn the
+  stopped, or one after which ``_report_real_home_refusals`` found a refusal,
+  stays failed when it is marked ``xfail``, which would otherwise turn the
   failure into XFAIL and let the run pass. Its teardown report also fails when
   ``apothem.lib.home_write_guard`` logged a refusal that
   ``_report_real_home_refusals`` did not see: one made while a fixture torn down
@@ -455,12 +456,15 @@ def _report_real_home_refusals() -> Iterator[None]:
     absorb the error (a best-effort ledger line, a suppressed removal), so a
     test can pass while the refusal fired; this fixture reads the log at
     teardown and fails the test when it holds anything. A test of the guard
-    itself drains the log before it finishes.
+    itself drains the log before it finishes. It fails with
+    ``RealHomeGuardFailure``, which the guard's report hook keeps failed when
+    the test is marked ``xfail``; a plain ``pytest.fail`` would turn into XFAIL
+    there and let the run pass.
     """
     yield
     refused = home_write_guard.drain_refusals()
     if refused:
-        pytest.fail(
+        raise RealHomeGuardFailure(
             "Apothem refused a write into the account's real home during this "
             "test, and the refusal was not raised to the test:\n"
             + "\n".join(f"  - {error}" for error in refused),
@@ -1045,22 +1049,41 @@ class RealHomeGuard:
         """Keep a test the guard stopped failed, even when it is marked ``xfail``.
 
         pytest's ``skipping`` plugin turns any failure of an ``xfail`` test
-        without ``raises=`` into XFAIL, so a stopped test would pass the run
-        quietly. This wrapper starts first and so finishes last, after
-        ``skipping`` has changed the report, and changes it back. A teardown
+        without ``raises=`` into XFAIL, in its setup, call or teardown, so a
+        stopped test, or an absorbed refusal ``_report_real_home_refusals``
+        found, would pass the run quietly. This wrapper starts first and so
+        finishes last, after ``skipping`` has changed the report, and changes it
+        back for a ``RealHomeGuardFailure``. A teardown
         report also fails on a refusal logged too late for
         ``_report_real_home_refusals`` (see :func:`_fail_on_late_refusals`).
         """
         report = yield
-        if call.excinfo is not None and isinstance(
-            call.excinfo.value, RealHomeGuardFailure
-        ):
-            report.outcome = "failed"
-            if hasattr(report, "wasxfail"):
-                del report.wasxfail
+        if call.excinfo is not None and _is_guard_failure(call.excinfo.value):
+            _keep_failed(report)
         if report.when == "teardown":
             _fail_on_late_refusals(report)
         return report
+
+
+def _is_guard_failure(error: BaseException) -> bool:
+    """Return whether *error* is the guard's failure, or a group that holds one.
+
+    pytest raises the errors of several finalizers that failed in one teardown
+    together, as an exception group.
+    """
+    if isinstance(error, RealHomeGuardFailure):
+        return True
+    inner = getattr(error, "exceptions", None)
+    return isinstance(inner, tuple) and any(
+        isinstance(each, BaseException) and _is_guard_failure(each) for each in inner
+    )
+
+
+def _keep_failed(report: pytest.TestReport) -> None:
+    """Mark *report* failed and drop the ``xfail`` note pytest's skipping added."""
+    report.outcome = "failed"
+    if hasattr(report, "wasxfail"):
+        del report.wasxfail
 
 
 def _fail_on_late_refusals(report: pytest.TestReport) -> None:
@@ -1076,7 +1099,7 @@ def _fail_on_late_refusals(report: pytest.TestReport) -> None:
     refused = home_write_guard.drain_refusals()
     if not refused or report.outcome == "failed":
         return
-    report.outcome = "failed"
+    _keep_failed(report)
     report.longrepr = (
         "Apothem refused a write into the account's real home while a fixture "
         "was torn down, and the refusal was not raised to the test:\n"

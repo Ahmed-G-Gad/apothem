@@ -26,6 +26,14 @@ fake home, never in the real one.
 own (``python -m pytest -p pytester`` on a copy of this file), so the
 ``pytester`` plugin stays out of the suite's session, and that session has a
 fake home of its own too.
+
+Every session started here has its own temporary folder (``TMP``, ``TEMP`` and
+``TMPDIR``) and ``--basetemp`` under the folder that runs it, and each case
+session gets ``--confcutdir`` on the pytester folder. Without that, ``-c`` on
+the null device leaves pytest no folder to stop at (on Windows it reads the
+null device as ``\\\\.\\nul``, which has no parent), so collection walks up
+through every parent folder of the probe and lists the shared temporary folder,
+where other processes create and remove folders while it reads.
 """
 
 from __future__ import annotations
@@ -58,6 +66,9 @@ _ROOT_VARIABLES = (
     "OPENCODE_CONFIG",
     "APOTHEM_HOOK_STATE_DIR",
 )
+
+#: The variables ``tempfile`` reads; every session gets a folder of its own.
+_TEMPORARY_VARIABLES = ("TMP", "TEMP", "TMPDIR")
 
 #: The file an incident overwrote, put in the fake home before the probe runs.
 _RULES_FILE = (".config", "apothem", "rules", "harness-adapter-shape-schemas.md")
@@ -102,6 +113,8 @@ def test_the_pytester_cases_pass(tmp_path: Path) -> None:
     (session / "pytest.ini").write_bytes(b"[pytest]\n")
     home = tmp_path / "session-home"
     home.mkdir()
+    temporary = tmp_path / "session-tmp"
+    temporary.mkdir()
     env = {
         name: value
         for name, value in os.environ.items()
@@ -111,6 +124,7 @@ def test_the_pytester_cases_pass(tmp_path: Path) -> None:
         {
             "HOME": str(home),
             "USERPROFILE": str(home),
+            **dict.fromkeys(_TEMPORARY_VARIABLES, str(temporary)),
             _REPO_VARIABLE: str(_REPO_ROOT),
             "PYTHONPATH": os.pathsep.join((str(_REPO_ROOT / "src"), str(_REPO_ROOT))),
             # Keeps the sessions from writing bytecode into the checkout.
@@ -155,8 +169,13 @@ def test_the_pytester_cases_pass(tmp_path: Path) -> None:
 def fake_home(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the home at a fake account home that holds one operator file.
 
-    The file is written here, by the case, before any Apothem code runs.
+    The file is written here, by the case, before any Apothem code runs. The
+    probe session also gets a temporary folder of its own.
     """
+    temporary = pytester.path / "tmp"
+    temporary.mkdir()
+    for name in _TEMPORARY_VARIABLES:
+        monkeypatch.setenv(name, str(temporary))
     home = pytester.path / "account-home"
     rules = home.joinpath(*_RULES_FILE)
     rules.parent.mkdir(parents=True)
@@ -174,6 +193,16 @@ def _protect(folder: Path, home: Path) -> None:
         "from apothem.lib import home_write_guard\n\n"
         f"home_write_guard.also_protect_home({str(home)!r})\n",
         encoding="utf-8",
+    )
+
+
+def _run(pytester: pytest.Pytester, *args: str) -> pytest.RunResult:
+    """Run a probe session that looks for conftests and tests only in its folder.
+
+    ``runpytest_subprocess`` adds a ``--basetemp`` under the pytester folder.
+    """
+    return pytester.runpytest_subprocess(
+        "--confcutdir", str(pytester.path), *args, timeout=600
     )
 
 
@@ -214,7 +243,8 @@ def case_incident_1_audit_folder_with_null_config(
     probe = run / "test_probe.py"
     probe.write_text(_PROBE, encoding="utf-8")
     _protect(pytester.path, fake_home)
-    result = pytester.runpytest_subprocess(
+    result = _run(
+        pytester,
         "-p",
         "fake_account_home",
         "-o",
@@ -224,7 +254,6 @@ def case_incident_1_audit_folder_with_null_config(
         "-c",
         os.devnull,
         str(probe),
-        timeout=600,
     )
     _assert_refused(result, fake_home)
 
@@ -240,7 +269,8 @@ def case_incident_2_scratch_ini_and_a_fixture_that_moves_only_home(
     )
     _protect(scratch, fake_home)
     monkeypatch.chdir(scratch)
-    result = pytester.runpytest_subprocess(
+    result = _run(
+        pytester,
         "-p",
         "fake_account_home",
         "-c",
@@ -248,7 +278,6 @@ def case_incident_2_scratch_ini_and_a_fixture_that_moves_only_home(
         "--rootdir",
         ".",
         "test_probe.py",
-        timeout=600,
     )
     _assert_refused(result, fake_home)
     probe_home = Path((scratch / "probe-home.txt").read_text(encoding="utf-8"))
@@ -261,9 +290,7 @@ def case_incident_3_single_file_with_rootdir(
     probe = pytester.path / "test_probe.py"
     probe.write_text(_PROBE, encoding="utf-8")
     _protect(pytester.path, fake_home)
-    result = pytester.runpytest_subprocess(
-        "-p", "fake_account_home", "--rootdir", ".", probe.name, timeout=600
-    )
+    result = _run(pytester, "-p", "fake_account_home", "--rootdir", ".", probe.name)
     _assert_refused(result, fake_home)
 
 
@@ -272,7 +299,7 @@ def case_control_without_the_plugin_the_probe_writes_the_fake_home(
 ) -> None:
     probe = pytester.path / "test_probe.py"
     probe.write_text(_PROBE, encoding="utf-8")
-    result = pytester.runpytest_subprocess("--rootdir", ".", probe.name, timeout=600)
+    result = _run(pytester, "--rootdir", ".", probe.name)
     result.assert_outcomes(passed=1)
     ledgers = sorted((fake_home / ".apothem" / "state").rglob("ledger.jsonl"))
     assert [ledger.parent.name for ledger in ledgers] == ["claude_code", "codex"]

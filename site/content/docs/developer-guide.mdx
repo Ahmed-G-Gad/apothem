@@ -687,6 +687,18 @@ the account home itself is refused the same way, before it writes anything:
 its project files would otherwise land straight in the home. A project folder
 inside the home stays allowed.
 
+Every spelling of a protected folder counts: a link or junction into it, and a
+folder swapped for a link during the test. On Windows letter case, short (8.3)
+names, the `\\?\` and `\\.\` prefixes, a loopback admin share such as
+`\\localhost\C$` and an alternate data stream (`.apothem:name`) count too. On
+macOS letter case is ignored as well.
+
+The CLI raises the error as it is, for an uninstall too: a refused uninstall
+records no unfinished uninstall in the ledger. A few internal callers absorb
+the error on purpose (a best-effort ledger line, for one), so every refusal is
+also logged, and `tests/conftest.py` fails the test after which one was
+logged, even when the test is marked `xfail`.
+
 The home is the one the operating system records for the account, not `HOME`
 or `USERPROFILE`. Reads, dry runs and previews still work; the one status
 check that records a finished uninstall in the ledger is a write, so it is
@@ -695,9 +707,12 @@ starts Apothem without `PYTEST_CURRENT_TEST` in the child's environment.
 
 The refusal does not cover folders moved out of the home by `CODEX_HOME`,
 `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, writes during
-collection, or programs that are not Python, such as the shell installers. It
-does nothing outside pytest, which is why the rule above still applies.
-`tests/README.md` lists every gap.
+collection, or programs that are not Python, such as the shell installers.
+When the system has no record of the account's home (a container user with no
+`passwd` entry), the account home is not protected at all. A checkout that sits
+inside a protected folder (under `~/.claude`, say) has its Apothem writes
+refused during tests. The refusal does nothing outside pytest, which is why
+the rule above still applies. `tests/README.md` lists every gap.
 
 ### Coverage per package
 

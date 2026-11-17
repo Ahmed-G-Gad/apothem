@@ -31,6 +31,10 @@ home; the first line of each writes a sentinel file into the probe folder, never
 into a home, so a missing sentinel proves the body never started. The probe
 fixtures that stand for a fixture writing during setup write their sentinels
 there too. One probe test uses no fixture and the other uses ``tmp_path``.
+Two cases use other probes: they protect the fake real home with
+``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
+write into it, in the test body or a fixture's teardown, with and without an
+``xfail`` mark. The guard refuses before any write, so nothing lands in a home.
 """
 
 from __future__ import annotations
@@ -294,6 +298,57 @@ _PROBE_TESTS = ("test_fixture_free", "test_with_tmp_path")
 #: The same two probe tests, each marked ``xfail``, which absorbs any failure.
 _XFAIL_PROBES = "import pytest\n" + _PROBES.replace(
     "\ndef test_", '\n@pytest.mark.xfail(reason="probe")\ndef test_'
+)
+
+#: Three probe tests that each absorb a refusal of a write into a protected home:
+#: in the test body, in a function fixture's teardown and in a module fixture's
+#: teardown. ``{home}`` is the protected home and ``{marker}`` a mark line or
+#: nothing. Nothing is written: the guard refuses before any write.
+_ABSORBING_PROBES = """
+import contextlib
+
+import pytest
+
+from apothem.lib import home_write_guard
+
+HOME = {home!r}
+home_write_guard.also_protect_home(HOME)
+
+
+def _absorb():
+    with contextlib.suppress(OSError):
+        home_write_guard.refuse_real_home_write(
+            HOME + "/.apothem/probe.txt", operation="write"
+        )
+
+
+@pytest.fixture
+def absorbs_at_teardown():
+    yield
+    _absorb()
+
+
+@pytest.fixture(scope="module")
+def absorbs_at_module_teardown():
+    yield
+    _absorb()
+
+{marker}
+def test_absorbs_in_its_body():
+    _absorb()
+
+{marker}
+def test_absorbs_in_a_fixture_teardown(absorbs_at_teardown):
+    pass
+
+{marker}
+def test_absorbs_in_a_module_fixture_teardown(absorbs_at_module_teardown):
+    pass
+"""
+_ABSORBING_TESTS = (
+    "test_absorbs_in_its_body",
+    "test_absorbs_in_a_fixture_teardown",
+    "test_absorbs_in_a_module_fixture_teardown",
 )
 
 #: The names the call guard gives, as its findings spell them.
@@ -1129,3 +1184,52 @@ def case_the_conftest_loaded_as_a_plugin_stops_a_fixture_that_undoes_it(
     _assert_stopped(result, pytester)
     assert _flagged(result) == _HOME_NAMES | _FOLDER_NAMES, result.stdout.str()
     assert f"{fake_real_home} is the real home" in result.stdout.str()
+
+
+def _assert_each_absorbed_refusal_errors(
+    result: pytest.RunResult, home: Path, **outcomes: int
+) -> None:
+    """Each absorbing probe errors at teardown, and nothing reached *home*."""
+    result.assert_outcomes(errors=len(_ABSORBING_TESTS), **outcomes)
+    expected: list[str] = []
+    for test in _ABSORBING_TESTS:
+        expected += [
+            f"*_ ERROR at teardown of {test} _*",
+            "*Apothem refused a write into the account's real home*",
+        ]
+    result.stdout.fnmatch_lines(expected)
+    assert "XFAIL" not in result.stdout.str()
+    assert not (home / ".apothem").exists()
+
+
+def case_an_xfail_test_that_absorbs_a_refusal_still_errors(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest's ``skipping`` would turn the teardown error into XFAIL."""
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(
+            home=str(fake_real_home), marker="@pytest.mark.xfail"
+        )
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, xpassed=len(_ABSORBING_TESTS)
+    )
+
+
+def case_a_test_that_absorbs_a_refusal_errors(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(home=str(fake_real_home), marker="")
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, passed=len(_ABSORBING_TESTS)
+    )
