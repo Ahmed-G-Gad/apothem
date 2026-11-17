@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+from apothem.conformity import no_global_plans_grep
 from apothem.conformity._grep_base import (
     is_project_dir,
     is_project_file,
@@ -218,3 +219,44 @@ def test_list_real_entries_leaves_links_and_special_files_out(tmp_path: Path) ->
         (root / "alias.md").symlink_to("a.md")
 
     assert sorted(p.name for p in list_real_entries(root)) == ["a.md", "sub"]
+
+
+# ---------------------------------------------------------------------------
+# The stray-plans sweep, a walk of its own
+# ---------------------------------------------------------------------------
+
+
+def test_the_stray_plans_sweep_does_not_follow_a_folder_link(tmp_path: Path) -> None:
+    """A folder link to a tree that holds a plans folder is not searched.
+
+    The sweep in ``no-global-plans-grep`` looks for stray plans folders below
+    the root. It went into every entry that ``is_dir()`` called a folder, and
+    that call follows a junction or a symbolic link, so a link to an outside
+    tree made it search that tree and report a plans folder outside the
+    project. A stray plans folder inside the project is still reported.
+    """
+    outside = tmp_path / "outside"
+    (outside / "deep" / ".plans").mkdir(parents=True)
+    root = tmp_path / "project"
+    (root / "real" / ".plans").mkdir(parents=True)
+    _link_folder(root / "j", outside)
+
+    findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+
+    assert [finding.path for finding in findings] == ["real/.plans/"]
+
+
+def test_the_stray_plans_sweep_does_not_follow_a_linked_plans_child(
+    tmp_path: Path,
+) -> None:
+    """A ``plans`` link inside a nested ``.apothem`` folder is not reported."""
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "project"
+    (root / "sub" / ".apothem").mkdir(parents=True)
+    _link_folder(root / "sub" / ".apothem" / "plans", outside)
+    (root / "other" / ".apothem" / "plans").mkdir(parents=True)
+
+    findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+
+    assert [finding.path for finding in findings] == ["other/.apothem/plans/"]
