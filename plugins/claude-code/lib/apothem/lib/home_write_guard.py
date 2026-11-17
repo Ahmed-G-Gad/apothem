@@ -32,12 +32,13 @@ A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
 protected folders' own resolved spellings are kept only while each home and
 its ``.config``, and the folder either leads to when it is a link, stay as
-they were (see :func:`_layout`). On Windows a
-``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either slash), a loopback
-admin share (``\\\\localhost\\C$``,
-``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
-name), a short (8.3) name and an alternate data stream (``.apothem:name``)
-all read as the plain drive-letter path. Any other share path, written so or
+they were (see :func:`_layout`).
+
+On Windows a ``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either
+slash), a loopback admin share (``\\\\localhost\\C$``, ``\\\\127.0.0.1\\C$``,
+``\\\\--1.ipv6-literal.net\\C$``, the machine's own name), a short (8.3) name
+and an alternate data stream (``.apothem:name``) all read as the plain
+drive-letter path. Any other share path, written so or
 reached through a mapped drive, is compared by file identity with the
 protected folders and the folders above them, folder by folder up to the
 share, so one of this machine's own addresses counts too. Only the string
@@ -68,8 +69,8 @@ real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` and
 
 Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
-each test (or, outside a test, in the pytest session), so a caller that absorbs the error still leaves a trace that
-``tests/conftest.py`` reports.
+each test (or, outside any test, in the pytest session), so a caller that
+absorbs the error still leaves a trace that ``tests/conftest.py`` reports.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
