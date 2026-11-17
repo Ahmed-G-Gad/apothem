@@ -441,6 +441,20 @@ def _written_data_home(run: MaterializationRun) -> str | None:
     return None
 
 
+def _rendered_python_bin() -> str | None:
+    """Return the interpreter this pass wrote into hook commands, or ``None``.
+
+    The ``${PYTHON_BIN}`` an enclosing ``content_tokens`` block set; rendering
+    leaves an unset token as written. Doctor trusts this interpreter for the
+    hooks of the install root.
+    """
+    from apothem.harnesses._shared import install_driver
+
+    placeholder = "${PYTHON_BIN}"
+    rendered = install_driver.render_content_tokens(placeholder, harness_root=None)
+    return None if rendered == placeholder else rendered
+
+
 def record_install(
     run: MaterializationRun,
     *,
@@ -474,6 +488,7 @@ def record_install(
             sorted(str(path) for path in missing_before if path.is_dir())
         ),
         data_home=_written_data_home(run),
+        python_bin=_rendered_python_bin(),
     )
     install_ledger.append_record(record)
     apply_retention(run.harness)

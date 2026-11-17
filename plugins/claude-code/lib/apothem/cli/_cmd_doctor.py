@@ -30,7 +30,7 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
-from apothem.cli._doctor_hooks import probe_hooks, registered_hook_argvs
+from apothem.cli._doctor_hooks import probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
@@ -265,10 +265,8 @@ def _probe_registered_hooks(
     project = install_root if entry.scope == "project" else None
     fix = _update_fix(name, project)
     try:
-        argvs = registered_hook_argvs(
-            entry.package_key,
-            root=install_root,
-            within=install_root if entry.scope == "project" else None,
+        hooks = registered_hooks(
+            entry.package_key, root=install_root, project=project is not None
         )
     except LedgerError as exc:
         row.update(status="error", hooks=None)
@@ -287,7 +285,7 @@ def _probe_registered_hooks(
             )
         )
         return
-    if argvs is None:
+    if hooks is None:
         row["hooks"] = None
         checks.append(
             _check(
@@ -300,7 +298,22 @@ def _probe_registered_hooks(
             )
         )
         return
-    probes = probe_hooks(argvs)
+    for reason in hooks.unchecked:
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: {reason}.",
+                harness=name,
+                fix=_update_fix(
+                    name,
+                    project,
+                    lead="Check the hook command or file named here. If Apothem "
+                    "installed it, run",
+                ),
+            )
+        )
+    probes = [*hooks.unstartable, *probe_hooks(hooks.argvs)]
     failed = [probe for probe in probes if not probe.ok]
     row["hooks"] = {
         "probed": len(probes),
@@ -454,7 +467,12 @@ def _print_summary(
     every check passed when one did not run.
     """
     installed_count = sum(1 for row in harness_rows if row["installed"])
-    unchecked = [str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"]
+    # A harness can carry several unchecked reasons; it is named once.
+    unchecked = list(
+        dict.fromkeys(
+            str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"
+        )
+    )
     if unchecked:
         con.print(
             f"[yellow]No check failed[/] ({installed_count} installed), but the "
