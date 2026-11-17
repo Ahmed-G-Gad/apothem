@@ -401,7 +401,12 @@ def _print_summary(
     every check passed when one did not run.
     """
     installed_count = sum(1 for row in harness_rows if row["installed"])
-    unchecked = [str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"]
+    # A harness can carry several unchecked reasons; it is named once.
+    unchecked = list(
+        dict.fromkeys(
+            str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"
+        )
+    )
     if unchecked:
         con.print(
             f"[yellow]No check failed[/] ({installed_count} installed), but the "

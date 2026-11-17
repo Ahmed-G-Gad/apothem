@@ -1176,6 +1176,25 @@ def test_doctor_names_an_install_recorded_without_checksums(
     assert "installed by an earlier Apothem that kept no checksums" in unchecked
 
 
+def test_the_summary_names_a_harness_with_unchecked_hooks_once() -> None:
+    import io
+
+    from rich.console import Console
+
+    from apothem.cli import _cmd_doctor
+
+    out = io.StringIO()
+    rows = [{"name": "kiro", "installed": True}]
+    checks = [
+        {"code": "hook.unchecked", "harness": "kiro", "status": "info"},
+        {"code": "hook.unchecked", "harness": "kiro", "status": "info"},
+    ]
+
+    _cmd_doctor._print_summary(Console(file=out, width=200), rows, checks)
+
+    assert "the hook commands of kiro were not checked" in out.getvalue()
+
+
 def test_doctor_fails_when_an_installed_harness_does_not_verify(
     runner: CliRunner, home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

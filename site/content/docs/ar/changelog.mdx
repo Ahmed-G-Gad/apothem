@@ -373,9 +373,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   quote `--project` the same way; when the quotes cannot carry the folder,
   `quickstart` prints the command up to `--project` and names the folder in
   words after it.
-- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
-  Windows install writes begins with PowerShell's `&`, which doctor tried to
-  start as a program, so every healthy Cursor install failed the hook check.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -1084,10 +1081,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   too, with any control character in it spelled out. Install records now keep the interpreter written into hook commands,
   so hooks installed by an earlier release stay unchecked until you run
   `apothem update`. An install now keeps only a true or false `enabled` flag
-  on Kiro's hooks, so no other value can ride along in the file. Doctor also
-  reads the install record of the project that `--project` names: it read
-  the newest record of any project, so after an install into another project
-  it started none of the named project's hooks and still passed.
+  on Kiro's hooks, so no other value can ride along in the file.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the
