@@ -30,7 +30,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
@@ -93,6 +92,8 @@ def capture_missing_dirs(
     directories it created. A user-level target is bounded by the user home, so
     the directories on the way to it (``~/.agents``) are covered too.
     """
+    from apothem.harnesses._shared import install_driver
+
     boundary = _allowed_write_root(harness_root, project_root)
     root = _root_for(harness_root, project_root)
     candidates: list[Path] = []
@@ -305,6 +306,8 @@ def _still_swept(recorded_path: str, harness_name: str, *, root: Path) -> bool:
     data in ``~/.gemini/antigravity/``, which an early release listed. Restoring
     such a record's backup would replace the live folder with a stale copy.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     return any(
         _is_lexically_within(Path(recorded_path), root / legacy)

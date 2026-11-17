@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
@@ -283,6 +283,7 @@ def run_install(
     authorize: AuthorizeFn | None = None,
     profile: dict[str, Any] | None = None,
     prior_results: tuple[MaterializationResult, ...] = (),
+    before_writes: Callable[[], object] | None = None,
 ) -> MaterializationRun:
     """Propagate *harness_name*'s convention surface to its install root.
 
@@ -306,7 +307,15 @@ def run_install(
     *prior_results* are writes the caller made just before this pass, such as
     a native config. If the pass fails, they are undone with its own writes
     and listed in the same rollback record.
+
+    *before_writes*, when given, is called once the plan passed validation,
+    under the install lock and before the first write (not on a dry run); an
+    exception from it stops the install with nothing written. An install
+    moves its record to the spelling it writes under there, so an install
+    that is refused changes nothing.
     """
+    from apothem.harnesses._shared import install_driver
+
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
     root = _root_for(harness_root, project_root)
@@ -357,6 +366,8 @@ def run_install(
     # install never leaves a half-materialized tree. The lock is released on
     # success and on exception (context-manager exit).
     with atomic_io.advisory_lock(_install_lock_path(harness_name, root)):
+        if before_writes is not None:
+            before_writes()
         try:
             results.extend(
                 sweep_stale(
