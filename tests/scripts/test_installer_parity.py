@@ -800,6 +800,9 @@ def test_tag_gate_messages_agree(sh_name: str, ps1_name: str, after: str) -> Non
         "config --local --name-only --get-regexp",
         "ls-files -v",
         "core.hooksPath=",
+        # Git for Windows writes and reads a release's paths past 260
+        # characters only with this set.
+        "core.longpaths=true",
     ):
         assert phrase in sh, f"{sh_name} lacks {phrase!r}"
         assert phrase in ps1, f"{ps1_name} lacks {phrase!r}"

@@ -535,15 +535,19 @@ resolve_latest_tag() {
         | tail -n 1
 }
 
-# cgit ARGS — run git with ARGS. Once HOOKS_OFF names an empty folder (an
-# existing clone is being updated in place), git runs with core.hooksPath
-# pointing at it, so none of the clone's hooks run during the update.
+# cgit ARGS — run git with ARGS on a clone's files. Once HOOKS_OFF names an
+# empty folder (an existing clone is being updated in place), git runs with
+# core.hooksPath pointing at it, so none of the clone's hooks run during the
+# update. Every git call that reads or writes a clone's files sets
+# core.longpaths: a release checked out in a staging folder holds paths
+# longer than Windows' 260-character limit, which Git for Windows (under
+# Git Bash) writes and reads only with it; git elsewhere ignores it.
 HOOKS_OFF=""
 cgit() {
     if [ -n "$HOOKS_OFF" ]; then
-        git -c core.hooksPath="$HOOKS_OFF" "$@"
+        git -c core.longpaths=true -c core.hooksPath="$HOOKS_OFF" "$@"
     else
-        git "$@"
+        git -c core.longpaths=true "$@"
     fi
 }
 
@@ -825,7 +829,7 @@ source_entries() {
     {
         printf '%s\n' .git
         if is_clone "$1"; then
-            git -C "$1" ls-tree --name-only HEAD 2>/dev/null || true
+            cgit -C "$1" ls-tree --name-only HEAD 2>/dev/null || true
         fi
         if [ -f "$1/$SOURCE_MANIFEST" ]; then
             cat "$1/$SOURCE_MANIFEST"
@@ -869,14 +873,14 @@ ${_cn_base}
 # untracked top-level entry of its own is carried over instead). A git
 # command that fails counts as work, so an unreadable clone is not replaced.
 clone_has_local_work() {
-    _lw_out="$(GIT_OPTIONAL_LOCKS=0 git -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
+    _lw_out="$(GIT_OPTIONAL_LOCKS=0 git -c core.longpaths=true -C "$1" status --porcelain --untracked-files=no 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_out="$(git -C "$1" stash list 2>/dev/null)" || return 0
+    _lw_out="$(git -c core.longpaths=true -C "$1" stash list 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_out="$(git -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
+    _lw_out="$(git -c core.longpaths=true -C "$1" log --branches --not --remotes --oneline 2>/dev/null)" || return 0
     [ -z "$_lw_out" ] || return 0
-    _lw_tracked="$(git -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
-    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0 git -C "$1" status --porcelain 2>/dev/null)" || return 0
+    _lw_tracked="$(git -c core.longpaths=true -C "$1" ls-tree --name-only HEAD 2>/dev/null)" || return 0
+    _lw_untracked="$(GIT_OPTIONAL_LOCKS=0 git -c core.longpaths=true -C "$1" status --porcelain 2>/dev/null)" || return 0
     _lw_found="$(printf '%s\n' "$_lw_untracked" | LW_TRACKED="$_lw_tracked" awk '
         BEGIN { n = split(ENVIRON["LW_TRACKED"], names, "\n"); for (i = 1; i <= n; i++) top[names[i]] = 1 }
         substr($0, 1, 3) == "?? " {
@@ -1551,7 +1555,7 @@ if [ -z "$SOURCE" ] && { [ "$VERIFY_MODE" = "checksum" ] || [ "$VERIFY_MODE" = "
         # throwaway repository; the source itself comes from the archive.
         ngit init --quiet --bare "${_ck_tmp}/tag.git" \
             || die "Could not create a scratch repository to check the ${APOTHEM_REF} tag"
-        git -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
+        cgit -C "${_ck_tmp}/tag.git" fetch --quiet --depth=1 --no-tags "$APOTHEM_REPO" \
             "+refs/tags/${APOTHEM_REF}:refs/tags/${APOTHEM_REF}" >"${_ck_tmp}/fetch.log" 2>&1 \
             || die "Could not fetch the ${APOTHEM_REF} tag from ${APOTHEM_REPO}: $(tail -n 2 "${_ck_tmp}/fetch.log" | tr '\n' ' ')"
         check_release_tag "${_ck_tmp}/tag.git" "$APOTHEM_REF" 0
@@ -1693,7 +1697,7 @@ if [ -z "$SOURCE" ]; then
         info "Cloning ${APOTHEM_REPO}"
         # Full clone (no --single-branch) so both tags and branches are
         # checkout-able from the placed tree, then pin to the resolved ref.
-        ngit clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
+        ngit -c core.longpaths=true clone --quiet --no-checkout "$APOTHEM_REPO" "$_cl_tree" \
             || die "git clone failed for $APOTHEM_REPO"
         bold "Verifying source signature"
         check_fetched_ref "$_cl_tree"
