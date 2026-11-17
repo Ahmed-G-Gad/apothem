@@ -250,6 +250,14 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 # folder made for the run, so none of the clone's hooks runs.
 $GitSafe = @()
 
+# Every git call that reads or writes a clone's files (the clone, the tag
+# fetch, the checkout and the checks around it) takes these arguments. A
+# release checked out in a staging folder holds paths longer than Windows'
+# 260-character limit, which Git for Windows writes and reads only with
+# core.longpaths set; git elsewhere ignores the setting (mirrors install.sh's
+# cgit).
+$GitLongPaths = @('-c', 'core.longpaths=true')
+
 # The current folder must never shadow the engine's modules (mirrors
 # install.sh). Python puts '' (the working directory) first on sys.path for
 # `-c`, and `-m` puts the working directory there, so a click.py, rich\ or
@@ -456,7 +464,7 @@ function Test-TagSignature {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $Lines = & git @GitSafe -C $Dir verify-tag --raw $Ref 2>&1
+        $Lines = & git @GitLongPaths @GitSafe -C $Dir verify-tag --raw $Ref 2>&1
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
@@ -561,7 +569,7 @@ function Test-MaintainerTag {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            $TagLines = @(& git @GitSafe -C $Dir cat-file tag "refs/tags/$Ref" 2>$null)
+            $TagLines = @(& git @GitLongPaths @GitSafe -C $Dir cat-file tag "refs/tags/$Ref" 2>$null)
         } finally {
             $ErrorActionPreference = $prior
         }
@@ -580,7 +588,7 @@ function Test-MaintainerTag {
         if (-not ($TagType -ceq 'type commit' -and $TagName -ceq "tag $Ref")) {
             Write-Fail "Tag $Ref carries the maintainer key's signature, but the signed tag object is not the $Ref release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or materialized."
         }
-        $Commit = & git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref^{commit}"
+        $Commit = & git @GitLongPaths @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref^{commit}"
         if ($LASTEXITCODE -ne 0 -or -not $Commit) { Write-Fail "Could not read the commit the $Ref tag points at" }
         Write-Ok "Tag $Ref carries a valid signature from the maintainer key $MaintainerFingerprint"
         return ([string]$Commit).Trim()
@@ -634,9 +642,9 @@ function Invoke-CheckoutRef {
     if ($InPlace) {
         $ErrorActionPreference = 'Continue'
         try {
-            & git @GitSafe -C $Dir diff --quiet HEAD
+            & git @GitLongPaths @GitSafe -C $Dir diff --quiet HEAD
             $DiffCode = $LASTEXITCODE
-            & git @GitSafe -C $Dir diff --cached --quiet
+            & git @GitLongPaths @GitSafe -C $Dir diff --cached --quiet
             $CachedCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior
@@ -648,14 +656,14 @@ function Invoke-CheckoutRef {
     $ErrorActionPreference = 'Continue'
     try {
         if (Test-ReleaseTag $ApothemRef) {
-            & git @GitSafe -C $Dir checkout --quiet --detach "refs/tags/$ApothemRef^{commit}"
+            & git @GitLongPaths @GitSafe -C $Dir checkout --quiet --detach "refs/tags/$ApothemRef^{commit}"
             $CoCode = $LASTEXITCODE
         } else {
-            & git @GitSafe -C $Dir show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
+            & git @GitLongPaths @GitSafe -C $Dir show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
             if ($LASTEXITCODE -eq 0) {
-                & git @GitSafe -C $Dir checkout --quiet --detach "refs/remotes/origin/$ApothemRef"
+                & git @GitLongPaths @GitSafe -C $Dir checkout --quiet --detach "refs/remotes/origin/$ApothemRef"
             } else {
-                & git @GitSafe -C $Dir checkout --quiet --end-of-options $ApothemRef
+                & git @GitLongPaths @GitSafe -C $Dir checkout --quiet --end-of-options $ApothemRef
             }
             $CoCode = $LASTEXITCODE
         }
@@ -664,8 +672,8 @@ function Invoke-CheckoutRef {
     }
     if (Test-ReleaseTag $ApothemRef) {
         if ($CoCode -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $Dir. If it has local changes, commit or stash them, then re-run." }
-        $CoHead = & git @GitSafe -C $Dir rev-parse --verify --quiet HEAD
-        $CoTag = & git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
+        $CoHead = & git @GitLongPaths @GitSafe -C $Dir rev-parse --verify --quiet HEAD
+        $CoTag = & git @GitLongPaths @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$ApothemRef^{commit}"
         if (-not $CoTag -or "$CoHead" -ne "$CoTag") {
             Write-Fail "The checkout in $Dir is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before anything is materialized."
         }
@@ -675,7 +683,7 @@ function Invoke-CheckoutRef {
     if ($InPlace) {
         $ErrorActionPreference = 'Continue'
         try {
-            $CoDirty = @(& git @GitSafe -C $Dir status --porcelain --untracked-files=no 2>$null)
+            $CoDirty = @(& git @GitLongPaths @GitSafe -C $Dir status --porcelain --untracked-files=no 2>$null)
             $CoStatusCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior
@@ -721,6 +729,27 @@ function Move-Entry {
     }
 }
 
+# Remove-Tree PATH - remove the folder at PATH and everything in it, read-only
+# files included. A source tree in a staging or scratch folder can hold paths
+# longer than Windows' 260-character limit, which Windows PowerShell 5.1
+# reaches only on a machine with long paths turned on. The extended-length
+# form of the full path (\\?\C:\... or \\?\UNC\server\share\...) reaches them
+# either way, so on Windows the removal goes through that form. -ErrorAction
+# applies as it does to Remove-Item.
+function Remove-Tree {
+    [CmdletBinding()]
+    param([string]$Path)
+    $RtPath = [System.IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path))
+    if ([System.IO.Path]::PathSeparator -eq ';') {
+        if ($RtPath -match '^[A-Za-z]:\\') {
+            $RtPath = '\\?\' + $RtPath
+        } elseif ($RtPath -match '^\\\\[^\\?.]') {
+            $RtPath = '\\?\UNC\' + $RtPath.Substring(2)
+        }
+    }
+    Remove-Item -LiteralPath $RtPath -Recurse -Force
+}
+
 # Get-SourceEntry DIR - the top-level names that belong to the Apothem source
 # tree at DIR rather than to the engine or the user: .git, the entries a git
 # clone tracks, and those an archive install recorded in its
@@ -737,7 +766,7 @@ function Get-SourceEntry {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            $Tracked = @(& git -C $Dir ls-tree --name-only HEAD 2>$null)
+            $Tracked = @(& git @GitLongPaths -C $Dir ls-tree --name-only HEAD 2>$null)
             if ($LASTEXITCODE -eq 0) { $Names += @($Tracked | ForEach-Object { [string]$_ }) }
         } finally {
             $ErrorActionPreference = $prior
@@ -938,7 +967,7 @@ function Invoke-SwapIn {
         Write-Warn "The earlier clone's tree is kept at $SwTreeAt; delete it once you no longer need it."
         return
     }
-    try { Remove-Item -LiteralPath $SwOld -Recurse -Force }
+    try { Remove-Tree $SwOld }
     catch { Write-Warn "Could not remove the earlier source at $SwOld; delete it by hand" }
 }
 
@@ -1152,15 +1181,15 @@ function Test-CloneHasLocalWork {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $LwChanged = @(& git -C $Dir status --porcelain --untracked-files=no 2>$null)
+        $LwChanged = @(& git @GitLongPaths -C $Dir status --porcelain --untracked-files=no 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwChanged.Count -gt 0) { return $true }
-        $LwStashes = @(& git -C $Dir stash list 2>$null)
+        $LwStashes = @(& git @GitLongPaths -C $Dir stash list 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwStashes.Count -gt 0) { return $true }
-        $LwUnpushed = @(& git -C $Dir log --branches --not --remotes --oneline 2>$null)
+        $LwUnpushed = @(& git @GitLongPaths -C $Dir log --branches --not --remotes --oneline 2>$null)
         if ($LASTEXITCODE -ne 0 -or $LwUnpushed.Count -gt 0) { return $true }
-        $LwTracked = @(& git -C $Dir -c core.quotePath=false ls-tree --name-only HEAD 2>$null | ForEach-Object { [string]$_ })
+        $LwTracked = @(& git @GitLongPaths -C $Dir -c core.quotePath=false ls-tree --name-only HEAD 2>$null | ForEach-Object { [string]$_ })
         if ($LASTEXITCODE -ne 0) { return $true }
-        $LwStatus = @(& git -C $Dir -c core.quotePath=false status --porcelain 2>$null)
+        $LwStatus = @(& git @GitLongPaths -C $Dir -c core.quotePath=false status --porcelain 2>$null)
         if ($LASTEXITCODE -ne 0) { return $true }
     } finally {
         $ErrorActionPreference = $prior
@@ -1189,7 +1218,7 @@ function Assert-CleanClone {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $CcConfig = @(& git -C $Dir config --local --name-only --get-regexp . 2>$null | ForEach-Object { [string]$_ })
+        $CcConfig = @(& git @GitLongPaths -C $Dir config --local --name-only --get-regexp . 2>$null | ForEach-Object { [string]$_ })
     } finally {
         $ErrorActionPreference = $prior
     }
@@ -1201,11 +1230,11 @@ function Assert-CleanClone {
     }
     $ErrorActionPreference = 'Continue'
     try {
-        $CcInside = [string](& git -C $Dir rev-parse --is-inside-work-tree 2>$null)
+        $CcInside = [string](& git @GitLongPaths -C $Dir rev-parse --is-inside-work-tree 2>$null)
         $CcInsideCode = $LASTEXITCODE
-        $CcPrefix = [string](& git -C $Dir rev-parse --show-prefix 2>$null)
+        $CcPrefix = [string](& git @GitLongPaths -C $Dir rev-parse --show-prefix 2>$null)
         $CcPrefixCode = $LASTEXITCODE
-        $CcFlags = @(& git -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
+        $CcFlags = @(& git @GitLongPaths -C $Dir ls-files -v 2>$null | ForEach-Object { [string]$_ })
     } finally {
         $ErrorActionPreference = $prior
     }
@@ -1292,7 +1321,7 @@ $script:DryRunScratch = $null
 trap {
     $TrapScratch = Get-Variable -Name DryRunScratch -Scope Script -ValueOnly -ErrorAction SilentlyContinue
     if ($TrapScratch -and (Test-Path -LiteralPath $TrapScratch)) {
-        Remove-Item -LiteralPath $TrapScratch -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Tree $TrapScratch -ErrorAction SilentlyContinue
     }
     break
 }
@@ -1350,7 +1379,7 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                $CkFetchOut = & git -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
+                $CkFetchOut = & git @GitLongPaths -C $CkTagGit fetch --quiet --depth=1 --no-tags $ApothemRepo "+refs/tags/${ApothemRef}:refs/tags/${ApothemRef}" 2>&1
                 $CkFetchCode = $LASTEXITCODE
             } finally {
                 $ErrorActionPreference = $prior
@@ -1449,8 +1478,8 @@ if (-not $Source -and ($VerifyMode -eq 'checksum' -or $VerifyMode -eq 'release')
         }
         $CkOk = $true
     } finally {
-        if ($CkExtract -and -not $DryRun -and -not $script:SwapKeepStaging -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
-        if ((-not $DryRun -or -not $CkOk) -and (Test-Path -LiteralPath $CkTmp)) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
+        if ($CkExtract -and -not $DryRun -and -not $script:SwapKeepStaging -and (Test-Path -LiteralPath $CkExtract)) { Remove-Tree $CkExtract }
+        if ((-not $DryRun -or -not $CkOk) -and (Test-Path -LiteralPath $CkTmp)) { Remove-Tree $CkTmp }
     }
     if ($DryRun) {
         Write-Ok "Source ready at $Source (release archive $ApothemRef; dry run, so $ApothemHome is not changed)"
@@ -1522,7 +1551,7 @@ if (-not $Source) {
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                & git @GitSafe -C $ApothemHome fetch --quiet --tags origin
+                & git @GitLongPaths @GitSafe -C $ApothemHome fetch --quiet --tags origin
                 $ClFetchCode = $LASTEXITCODE
             } finally {
                 $ErrorActionPreference = $prior
@@ -1538,7 +1567,7 @@ if (-not $Source) {
             # Full clone (no --single-branch) so both tags and branches are
             # checkout-able, with nothing checked out until the gate passes.
             $ClTree = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ClTree)
-            Invoke-GitOutsideRepository { & git clone --quiet --no-checkout $ApothemRepo $ClTree }
+            Invoke-GitOutsideRepository { & git @GitLongPaths clone --quiet --no-checkout $ApothemRepo $ClTree }
             if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed for $ApothemRepo" }
             Write-Bold "Verifying source signature"
             Assert-FetchedRef $ClTree
@@ -1560,7 +1589,7 @@ if (-not $Source) {
     } finally {
         $GitSafe = @()
         if (Test-Path -LiteralPath $NoHooksDir) { Remove-Item -LiteralPath $NoHooksDir -Recurse -Force }
-        if ($ClStage -and (-not $DryRun -or -not $ClOk) -and -not $script:SwapKeepStaging -and (Test-Path -LiteralPath $ClStage)) { Remove-Item -LiteralPath $ClStage -Recurse -Force }
+        if ($ClStage -and (-not $DryRun -or -not $ClOk) -and -not $script:SwapKeepStaging -and (Test-Path -LiteralPath $ClStage)) { Remove-Tree $ClStage }
     }
 }
 $SrcPath = Join-Path $Source 'src'
@@ -1645,7 +1674,7 @@ finally {
     $env:PYTHONPATH = $PriorPyPath
     $env:PYTHONSAFEPATH = $PriorSafePath
     if ($script:DryRunScratch -and (Test-Path -LiteralPath $script:DryRunScratch)) {
-        Remove-Item -LiteralPath $script:DryRunScratch -Recurse -Force
+        Remove-Tree $script:DryRunScratch
     }
 }
 
