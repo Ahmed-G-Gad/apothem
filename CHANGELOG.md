@@ -210,9 +210,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install, update, uninstall or rollback whose project root is the home itself
   is refused before it writes anything. Links and junctions into a protected
   folder count; on Windows so do letter case, short (8.3) names, the `\\?\`
-  and `\\.\` prefixes, loopback admin shares and alternate data streams, and
-  on macOS letter case. The CLI raises the error as it is: a refused uninstall
-  records no unfinished uninstall. The test suite fails a test after which a
+  and `\\.\` prefixes, loopback admin shares (IPv6 included), shares reached by
+  the machine's own addresses and alternate data streams, and on macOS letter
+  case and Unicode normalization. The CLI raises the error as it is: a refused
+  uninstall records an unfinished uninstall only for files it had already
+  removed outside the home. The test suite fails a test after which a
   refusal was absorbed, also when the test is marked `xfail`. With no system
   record of the account's home (no `passwd` entry), the home is not
   protected. A test that must run

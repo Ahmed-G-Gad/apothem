@@ -25,13 +25,18 @@ its first write. Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 With ``PYTEST_CURRENT_TEST`` unset the check is one environment lookup.
 
-A path is compared as written and as resolved through links, folder by folder
-on every check, so a folder swapped for a link during a test counts at once.
-On Windows a ``\\\\?\\`` or ``\\\\.\\`` prefix, a loopback admin share
-(``\\\\localhost\\C$``, ``\\\\127.0.0.1\\C$``, the machine's own name) and an
-alternate data stream (``.apothem:name``) all read as the plain drive-letter
-path. On macOS letter case is ignored, as the default volume format does;
-Linux compares case as it is.
+A path is compared as written and as resolved through links, afresh on every
+check, so a folder swapped for a link during a test counts at once. The
+protected folders' own resolved spellings are kept only while each home and
+its ``.config`` stay as they were (see :func:`_layout`). On Windows a
+``\\\\?\\`` or ``\\\\.\\`` prefix, a loopback admin share (``\\\\localhost\\C$``,
+``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
+name), a short (8.3) name and an alternate data stream (``.apothem:name``)
+all read as the plain drive-letter path. Any other share path is compared by
+file identity with the protected folders and the folders above them, so one
+of this machine's own addresses counts too. On macOS letter case and Unicode
+normalization are ignored, as the default volume format does; Linux compares
+names as they are.
 
 The account home comes from the operating system (``FOLDERID_Profile`` on
 Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
@@ -61,11 +66,13 @@ from __future__ import annotations
 import contextlib
 import functools
 import importlib
+import ipaddress
 import ntpath
 import os
 import re
-import stat
 import sys
+import time
+import unicodedata
 from typing import Any, TypeGuard
 
 #: The variable pytest sets for each test's setup, call and teardown.
@@ -109,14 +116,24 @@ _LOOKUP_ERRORS = (
     RuntimeError,
 )
 
-#: Fold letter case on both sides of a match. macOS volumes ignore case by
-#: default and ``os.path.normcase`` folds nothing on POSIX; Windows folds
-#: through ``normcase``, and Linux compares case as it is. Tests switch it.
+#: Fold letter case and Unicode normalization on both sides of a match. macOS
+#: volumes ignore both by default and ``os.path.normcase`` folds nothing on
+#: POSIX; Windows folds case through ``normcase``, and Linux compares names as
+#: they are. Tests switch it.
 _FOLD_CASE: bool = sys.platform == "darwin"
 
 #: An admin share of a drive (``C$``) and a loopback IPv4 host (``127.x.y.z``).
 _ADMIN_SHARE = re.compile(r"[a-z]\$", re.IGNORECASE)
 _LOOPBACK_V4 = re.compile(r"127\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+
+#: The domain Windows ends an IPv6 address with in a UNC host name.
+_IPV6_LITERAL = ".ipv6-literal.net"
+
+#: How long, in nanoseconds, a home and its ``.config`` must have stayed
+#: unchanged before the protected folders resolved under them are reused. A
+#: change within one tick of the file system clock (up to about 16 ms) can
+#: leave a folder's timestamp as it was.
+_SETTLE_NS = 100_000_000
 
 #: The path prefixes that name the same file as the plain path after them,
 #: lower case, with what replaces each.
@@ -244,13 +261,13 @@ def also_protect_home(path: str | os.PathLike[str]) -> None:
     account's own, so no test can weaken the refusal.
     """
     _extra_homes.append(os.path.abspath(os.fspath(path)))
-    _roots.cache_clear()
+    _resolved_roots.cache_clear()
 
 
 def clear_extra_homes() -> None:
     """Forget every home added with :func:`also_protect_home`."""
     _extra_homes.clear()
-    _roots.cache_clear()
+    _resolved_roots.cache_clear()
 
 
 def would_refuse(path: str | os.PathLike[str], *, tree: bool = False) -> bool:
@@ -379,9 +396,13 @@ def _protected_root_of(path: str, *, tree: bool) -> str | None:
     absolute = os.path.abspath(path)
     lexical = _canonical(absolute)
     found = _match(lexical, roots, tree=tree)
-    if found is not None:
-        return found
-    return _match(_real_target(absolute), roots, tree=tree)
+    if found is None:
+        found = _match(_real_target(absolute), roots, tree=tree)
+    if found is None and _is_share(lexical):
+        twin = _local_twin(lexical, roots)
+        if twin is not None:
+            found = _match(twin, roots, tree=tree)
+    return found
 
 
 def _home_at(path: str) -> str | None:
@@ -394,20 +415,28 @@ def _home_at(path: str) -> str | None:
         if home is not None
     ]
     absolute = os.path.abspath(path)
-    lexical = _folded(_canonical(absolute))
-    for home, keys in homes:
-        if lexical in keys:
-            return home
-    resolved = _folded(_canonical(_realpath(absolute)))
-    for home, keys in homes:
-        if resolved in keys:
-            return home
+    canonical = _canonical(absolute)
+    spellings = [canonical, _canonical(_realpath(absolute))]
+    if _is_share(canonical):
+        twin = _local_twin(canonical, _roots(account_home(), tuple(_extra_homes)))
+        spellings += [twin] if twin is not None else []
+    for spelling in spellings:
+        for home, keys in homes:
+            if _folded(spelling) in keys:
+                return home
     return None
 
 
 def _folded(path: str) -> str:
-    """Return *path* case-folded when :data:`_FOLD_CASE` is set."""
-    return path.casefold() if _FOLD_CASE else path
+    """Return *path* folded when :data:`_FOLD_CASE` is set.
+
+    That is letter case and Unicode normalization (``é`` written as one
+    character or as ``e`` and an accent), both of which a macOS volume
+    ignores by default.
+    """
+    if not _FOLD_CASE:
+        return path
+    return unicodedata.normalize("NFD", unicodedata.normalize("NFD", path).casefold())
 
 
 def _match(
@@ -426,26 +455,81 @@ def _match(
 
 
 def _real_target(absolute: str) -> str:
-    """Return *absolute* with its folder resolved through links, canonical.
+    """Return *absolute* resolved through links, canonical.
 
-    A leaf that is itself a link (or a Windows reparse point) is resolved too.
-    The folder is resolved on every call, never cached: a folder swapped for a
-    link (or back) during a test is judged by what it is now.
+    A path that exists is resolved whole, so a link at its leaf and a short
+    (8.3) name in its last part count too; for one that does not exist yet
+    its folder is resolved and the leaf kept as written. Nothing is cached: a
+    folder swapped for a link (or back) during a test is judged by what it is
+    now.
     """
     try:
-        info = os.lstat(absolute)
+        os.lstat(absolute)
     except (OSError, ValueError):
-        is_link = False
-    else:
-        attributes = getattr(info, "st_file_attributes", 0)
-        is_link = stat.S_ISLNK(info.st_mode) or bool(
-            attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT
-        )
-    if is_link:
-        return _canonical(_realpath(absolute))
-    folder, leaf = os.path.split(absolute)
-    real_folder = _realpath(folder)
-    return _canonical(os.path.join(real_folder, leaf) if leaf else real_folder)
+        folder, leaf = os.path.split(absolute)
+        real_folder = _realpath(folder)
+        return _canonical(os.path.join(real_folder, leaf) if leaf else real_folder)
+    return _canonical(_realpath(absolute))
+
+
+def _is_share(canonical: str) -> bool:
+    """Return True for a canonical Windows path on a share (``\\\\host\\share``)."""
+    return os.name == "nt" and canonical.startswith("\\\\")
+
+
+def _local_twin(
+    share_path: str, roots: tuple[tuple[tuple[str, ...], str], ...]
+) -> str | None:
+    """Return the local path a canonical share path names, found by identity.
+
+    A share of this machine reached by a host name the string rules do not
+    know (one of the machine's own addresses, a link-local IPv6 literal, a
+    full domain name) or through a share that is not an admin share names a
+    local folder all the same. The nearest folder of *share_path* that exists
+    is compared, by device and file number, with each protected folder and
+    every folder above one; on a match the rest of *share_path* is joined to
+    that local folder. Only a share path the string checks did not place pays
+    for this, and a host that cannot be reached matches nothing.
+    """
+    current, rest = share_path, []
+    wanted = _identity(current)
+    while wanted is None:
+        parent, leaf = ntpath.split(current)
+        if not leaf or parent == current:
+            return None
+        rest.append(leaf)
+        current = parent
+        wanted = _identity(current)
+    for folder in _folders_above(roots):
+        if _identity(folder) == wanted:
+            return _canonical(ntpath.join(folder, *reversed(rest)))
+    return None
+
+
+def _identity(path: str) -> tuple[int, int] | None:
+    """Return the device and file number of *path*, or None when unknown."""
+    try:
+        info = os.stat(path)  # noqa: PTH116 - the guard works on str paths
+    except (OSError, ValueError):
+        return None
+    return (info.st_dev, info.st_ino) if info.st_ino else None
+
+
+def _folders_above(
+    roots: tuple[tuple[tuple[str, ...], str], ...],
+) -> dict[str, None]:
+    """Return every spelling of every protected folder and each folder above it."""
+    folders: dict[str, None] = {}
+    for keys, _shown in roots:
+        for key in keys:
+            folder = key
+            while folder not in folders:
+                folders[folder] = None
+                parent = ntpath.dirname(folder)
+                if parent == folder:
+                    break
+                folder = parent
+    return folders
 
 
 def _realpath(path: str) -> str:
@@ -475,7 +559,8 @@ def _windows_spelling(path: str) -> str:
       ``\\\\?\\UNC\\host\\share`` and ``\\\\.\\UNC\\host\\share`` as
       ``\\\\host\\share``.
     - A loopback admin share reads as its drive: ``\\\\localhost\\C$\\x``,
-      ``\\\\127.0.0.1\\C$\\x`` and ``\\\\<this machine>\\C$\\x`` as ``C:\\x``.
+      ``\\\\127.0.0.1\\C$\\x``, ``\\\\--1.ipv6-literal.net\\C$\\x`` and
+      ``\\\\<this machine>\\C$\\x`` as ``C:\\x``.
     - A component ``name:stream`` or ``name::$TYPE`` (an alternate data
       stream) reads as ``name``.
 
@@ -503,8 +588,27 @@ def _is_loopback(host: str) -> bool:
     return (
         name == "localhost"
         or _LOOPBACK_V4.fullmatch(name) is not None
+        or _is_ipv6_loopback(name)
         or name in _machine_names()
     )
+
+
+def _is_ipv6_loopback(name: str) -> bool:
+    """Return True for the ``ipv6-literal.net`` name of the IPv6 loopback.
+
+    A UNC host cannot hold ``:``, so Windows writes an IPv6 address there with
+    ``-`` for ``:``, ``s`` before a zone, and ``.ipv6-literal.net`` after it:
+    ``--1.ipv6-literal.net`` and ``0--1.ipv6-literal.net`` are ``::1``.
+    """
+    if not name.endswith(_IPV6_LITERAL):
+        return False
+    text = name[: -len(_IPV6_LITERAL)].replace("-", ":").partition("s")[0]
+    try:
+        address = ipaddress.IPv6Address(text)
+    except ValueError:
+        return False
+    mapped = address.ipv4_mapped
+    return address.is_loopback or (mapped is not None and mapped.is_loopback)
 
 
 def _machine_names() -> frozenset[str]:
@@ -526,17 +630,59 @@ def _machine_names() -> frozenset[str]:
     return frozenset(names)
 
 
-@functools.lru_cache(maxsize=8)
 def _roots(
     home: str | None, extra: tuple[str, ...]
 ) -> tuple[tuple[tuple[str, ...], str], ...]:
-    """Return ``(spellings, shown)`` for every protected folder.
+    """Return ``(spellings, shown)`` for every protected folder, as they are now.
+
+    The resolved spellings are reused while :func:`_layout` finds each home
+    and its ``.config`` as they were, and built afresh otherwise.
+    """
+    homes = (*([home] if home else []), *extra)
+    layout, settled = _layout(homes)
+    if settled:
+        return _resolved_roots(homes, layout)
+    return _resolved_roots.__wrapped__(homes, layout)
+
+
+def _layout(homes: tuple[str, ...]) -> tuple[tuple[object, ...], bool]:
+    """Return what each home and its ``.config`` are now, and whether it settled.
+
+    A protected folder sits in a home or in its ``.config``. Swapping one of
+    them, or ``.config``, for a link (or back) changes the folder that holds
+    it: its timestamp, or, for a home swapped itself, its identity. A change
+    within the same tick of the file system clock can leave the timestamp as
+    it was, so a folder changed less than :data:`_SETTLE_NS` ago has not
+    settled, and nothing resolved under it is reused. Links above a home are
+    not looked at.
+    """
+    now = time.time_ns()
+    found: list[object] = []
+    settled = True
+    for home in homes:
+        for folder in (home, os.path.join(home, ".config")):
+            try:
+                info = os.lstat(folder)
+            except (OSError, ValueError):
+                found.append(None)
+                continue
+            found.append((info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns))
+            settled = settled and now - info.st_mtime_ns >= _SETTLE_NS
+    return tuple(found), settled
+
+
+@functools.lru_cache(maxsize=8)
+def _resolved_roots(
+    homes: tuple[str, ...], layout: tuple[object, ...]
+) -> tuple[tuple[tuple[str, ...], str], ...]:
+    """Return ``(spellings, shown)`` for every protected folder of *homes*.
 
     Each folder is compared as written and as resolved through links, and the
     home is resolved as well, so a link inside the home (a ``.config`` that
-    leads elsewhere) or a link to the home both count.
+    leads elsewhere) or a link to the home both count. *layout* only keys the
+    cache (see :func:`_layout`).
     """
-    homes = [*([home] if home else []), *extra]
+    del layout
     relative = dict.fromkeys((*APOTHEM_ROOTS, *_registry_roots()))
     found: list[tuple[tuple[str, ...], str]] = []
     for base in homes:

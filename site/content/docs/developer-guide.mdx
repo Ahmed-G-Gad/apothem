@@ -687,14 +687,19 @@ the account home itself is refused the same way, before it writes anything:
 its project files would otherwise land straight in the home. A project folder
 inside the home stays allowed.
 
-Every spelling of a protected folder counts: a link or junction into it, and a
+These spellings of a protected folder count: a link or junction into it, and a
 folder swapped for a link during the test. On Windows letter case, short (8.3)
 names, the `\\?\` and `\\.\` prefixes, a loopback admin share such as
-`\\localhost\C$` and an alternate data stream (`.apothem:name`) count too. On
-macOS letter case is ignored as well.
+`\\localhost\C$` or `\\--1.ipv6-literal.net\C$`, a share reached by one of the
+machine's own addresses and an alternate data stream (`.apothem:name`) count
+too. On macOS letter case and Unicode normalization are ignored as well.
+`tests/README.md` lists the spellings the check does not see, such as a hard
+link to a file in a protected folder.
 
-The CLI raises the error as it is, for an uninstall too: a refused uninstall
-records no unfinished uninstall in the ledger. A few internal callers absorb
+The CLI raises the error as it is, for an uninstall too. A refused uninstall
+records an unfinished uninstall in the ledger only when it had already removed
+files outside the protected folders, so the backups of those files stay
+referenced. A few internal callers absorb
 the error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
 logged, even when the test is marked `xfail`.
