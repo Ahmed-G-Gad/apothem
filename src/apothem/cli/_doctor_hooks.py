@@ -5,15 +5,13 @@
 The check is harness-neutral: it holds no vendor config format. It reads the
 files the current install at the root being checked wrote (from that root's
 install record in the ledger, under any spelling of the folder), parses the
-JSON ones, and
-collects every handler mapping whose command line for this platform the shared
+JSON ones, and collects every handler mapping whose command line the shared
 install driver recognizes as Apothem-owned (``is_apothem_hook``: a command plus
 optional ``args`` that point at the materialized ``hooks/dispatch.py`` or
-``conformity/gate.py``). A handler holds that command line under ``command``,
-or under a key for one platform that takes precedence there:
-``commandWindows`` (Codex) and ``powershell`` (GitHub Copilot) on Windows,
-``bash`` (GitHub Copilot) on macOS and Linux. Both registration shapes in use
-resolve to an argv: exec form (the command is the interpreter, ``args`` the
+``conformity/gate.py``). The command line is the one the tool itself runs: each
+tool reads its own keys (:data:`_COMMAND_KEYS`), so a line kept under a key the
+tool does not read is neither judged nor started. Both registration shapes in
+use resolve to an argv: exec form (the command is the interpreter, ``args`` the
 script and its arguments) and shell form (one command string, split with
 :mod:`shlex`). On Windows, a shell-form line written for PowerShell (Cursor's,
 and Copilot's ``powershell``) starts with the call operator ``&``, which is
@@ -23,20 +21,23 @@ A project's files are shared: anyone who can commit to the project can change
 them, so a project hook line that looks like Apothem's is no proof that
 Apothem wrote it. For a project-scope harness doctor reads the install record
 of the named project, takes handlers only from the places each tool reads them
-(:func:`_project_handlers`), and starts a line only when it runs nothing but
-known code: its interpreter is spelled as the one that install recorded
-(``python_bin``) or as the Python Apothem runs under; the options before the
-script take no value and run no code; the script is spelled as the dispatcher
-the install recorded, in a hook folder reached through no link, whose files
-still match the recorded SHA-256 checksums and which holds no other Python file;
-and the arguments after it are the ``--contract`` ones Apothem writes. Every
-check that reads only the line comes first. Doctor then starts those trusted
-strings, not the tokens read from the file, and it opens or looks up no path a
-hook line names unless that path is already trusted, so a line cannot make it
+(:func:`_project_handlers`), at most :data:`_MAX_PROJECT_HANDLERS` from a file,
+and starts a line only when it runs nothing but known code: its interpreter is
+spelled as the one that install recorded (``python_bin``, trusted because the
+ledger lives in the operator's own home, unless it lies inside the project) or
+as the Python Apothem runs under; the options before the script take no value
+and run no code; the script is spelled as the dispatcher the install recorded,
+in a hook folder reached through no link, whose files still match the recorded
+SHA-256 checksums and which holds no other Python file; and the arguments after
+it are the ``--contract`` names Apothem writes. Every check that reads only the
+line comes first. Doctor then starts those trusted strings, not the tokens read
+from the file, and it opens or looks up no path a hook line names unless that
+path is already trusted, nor follows a link it finds, so a line cannot make it
 touch a path of its choosing, such as a network share. A trusted interpreter or
 dispatcher that is gone is reported as unable to start, without starting
-anything; any other line is reported as unchecked, with the reason. Files under
-the operator's own home (user-scope harnesses) are read as they are.
+anything; any other line is reported as unchecked, with the reason. Every
+reported text has its control characters spelled out. Files under the
+operator's own home (user-scope harnesses) are read as they are.
 
 Each distinct interpreter, options and script is started once with a no-op
 payload: the registered arguments plus ``--help``, and ``{}`` on stdin. The
@@ -61,6 +62,7 @@ import tempfile
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
+from typing import Final
 
 from apothem.harnesses._shared.install_driver import is_apothem_hook
 from apothem.harnesses._shared.install_driver_shared import same_location
@@ -77,15 +79,28 @@ _PROBE_TIMEOUT_SECONDS = 30
 #: Characters of a failing probe's stderr kept for the report.
 _DETAIL_LIMIT = 300
 
-#: Keys a handler may hold its command line under, in the order the harness
-#: reads them on Windows and on macOS and Linux. GitHub Copilot uses ``command``
-#: only when the key for the platform is absent
-#: (https://docs.github.com/en/copilot/reference/hooks-reference).
-_WINDOWS_COMMAND_KEYS = ("commandWindows", "powershell", "command")
-_POSIX_COMMAND_KEYS = ("bash", "command")
+#: The keys each tool reads a hook's command line from, in its own order: on
+#: Windows, then on macOS and Linux. GitHub Copilot reads ``powershell`` on
+#: Windows and ``bash`` elsewhere and uses ``command`` only when that key is
+#: absent (https://docs.github.com/en/copilot/reference/hooks-reference);
+#: Codex reads ``commandWindows`` on Windows before ``command``. Every other
+#: tool reads ``command`` alone (:data:`_COMMAND_ONLY`).
+_COMMAND_KEYS: Final[dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = {
+    "github_copilot": (("powershell", "command"), ("bash", "command")),
+    "codex": (("commandWindows", "command"), ("command",)),
+}
+_COMMAND_ONLY: Final[tuple[tuple[str, ...], tuple[str, ...]]] = (
+    ("command",),
+    ("command",),
+)
 
 #: The install mode of a file that holds nothing but hook registrations.
 _HOOK_FILE_MODE = "native_hooks"
+
+#: The most handlers doctor reads from one project hook file. An install
+#: writes a handful; a file a commit filled with thousands would otherwise cost
+#: minutes. The rest are reported as not read.
+_MAX_PROJECT_HANDLERS = 100
 
 #: Python options a project hook line may pass before its script: ones that
 #: take no value and run no code (for example ``-E``, ``-s``, ``-I``). Apothem's
@@ -93,8 +108,12 @@ _HOOK_FILE_MODE = "native_hooks"
 _SAFE_PYTHON_OPTIONS = re.compile(r"-[BEIOSsu]+")
 
 #: A name after ``--contract`` in a project hook line: a contract id, an event
-#: or a route. Never an option, so the ``--help`` doctor appends stays one.
-_PLAIN_NAME = re.compile(r"[A-Za-z0-9][\w.-]*")
+#: or a route, of a length Apothem writes. Never an option, so the ``--help``
+#: doctor appends stays one, and never so long that the command cannot start.
+_PLAIN_NAME = re.compile(r"[A-Za-z0-9][\w.-]{0,63}")
+
+#: The most names a project hook line may pass after ``--contract``.
+_MAX_NAMES = 8
 
 #: Suffixes Python imports a module from. A hook folder file with one of them
 #: that the install did not write could replace a module the dispatcher loads.
@@ -121,27 +140,43 @@ class RegisteredHooks:
     holds the commands that cannot start because their interpreter or script
     does not exist; doctor reports them without starting anything.
     *unchecked* holds one sentence for each command or hook file doctor does
-    not start, naming it and the reason.
+    not start, naming it and the reason. *run_with* maps a sentence to the
+    interpreter the install recorded when that interpreter would start the
+    command but lies inside the project. Every sentence and command text has
+    its control characters spelled out (:func:`_printable`).
     """
 
     argvs: list[list[str]] = field(default_factory=list)
     unstartable: list[HookProbe] = field(default_factory=list)
     unchecked: list[str] = field(default_factory=list)
+    run_with: dict[str, str] = field(default_factory=dict)
+    _seen: set[tuple[str, ...]] = field(default_factory=set, repr=False)
 
     def add(self, argv: list[str]) -> None:
         """Keep *argv* to start, unless an earlier handler registered it."""
-        if argv not in self.argvs:
+        key = tuple(argv)
+        if key not in self._seen:
+            self._seen.add(key)
             self.argvs.append(argv)
 
     def cannot_start(self, probe: HookProbe) -> None:
         """Keep *probe* as a command that cannot start, once."""
-        if probe not in self.unstartable:
-            self.unstartable.append(probe)
+        shown = HookProbe(_printable(probe.command), probe.ok, _printable(probe.detail))
+        key = ("probe", shown.command, shown.detail)
+        if key not in self._seen:
+            self._seen.add(key)
+            self.unstartable.append(shown)
 
-    def note(self, reason: str) -> None:
+    def note(self, reason: str, *, run_with: str | None = None) -> None:
         """Keep *reason* for a command or file doctor does not start, once."""
-        if reason not in self.unchecked:
-            self.unchecked.append(reason)
+        shown = _printable(reason)
+        key = ("note", shown)
+        if key in self._seen:
+            return
+        self._seen.add(key)
+        self.unchecked.append(shown)
+        if run_with is not None:
+            self.run_with[shown] = run_with
 
 
 def registered_hooks(
@@ -166,14 +201,15 @@ def registered_hooks(
     record = _install_record(package_key, root)
     if record is None:
         return None
+    keys = _command_keys(package_key)
     hooks = RegisteredHooks()
     if not project:
         for target in record.targets:
             if target.path.endswith(".json"):
-                _read_user_file(Path(target.path), hooks)
+                _read_user_file(Path(target.path), keys, hooks)
         return hooks
     # The record's own spelling of the root: every path it lists is under it.
-    checked = _ProjectInstall(Path(record.root), record)
+    checked = _ProjectInstall(Path(record.root), record, keys)
     for target in record.targets:
         checked.read_file(target, hooks)
     return hooks
@@ -247,14 +283,20 @@ def probe_hooks(argvs: list[list[str]]) -> list[HookProbe]:
     return probes
 
 
-def _read_user_file(path: Path, hooks: RegisteredHooks) -> None:
+def _command_keys(package_key: str) -> tuple[str, ...]:
+    """Return the keys *package_key*'s tool reads a command line from, here."""
+    windows, posix = _COMMAND_KEYS.get(package_key, _COMMAND_ONLY)
+    return windows if _on_windows() else posix
+
+
+def _read_user_file(path: Path, keys: tuple[str, ...], hooks: RegisteredHooks) -> None:
     """Collect the hook commands in a file under the operator's own home."""
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return
-    for handler in _handlers(document):
-        argv = _handler_argv(handler)
+    for handler in _handlers(document, keys):
+        argv = _handler_argv(handler, keys)
         if argv is not None:
             hooks.add(argv)
 
@@ -265,12 +307,22 @@ class _ProjectInstall:
     Paths are compared by spelling only (:func:`_spelling`). A path is opened
     or looked up only once it is trusted: the interpreter the install recorded,
     the Python Apothem runs under, or a file the install recorded, reached from
-    the project root through no link.
+    the project root through no link. Each such lookup is made once.
     """
 
-    def __init__(self, root: Path, record: install_ledger.LedgerRecord) -> None:
+    def __init__(
+        self, root: Path, record: install_ledger.LedgerRecord, keys: tuple[str, ...]
+    ) -> None:
         self._root = root
-        self._root_key = _spelling(str(root)) or ""
+        self._keys = keys
+        # The root as recorded, and as the operator's system resolves it (the
+        # install records the interpreter resolved): a path under either is
+        # inside the project.
+        self._root_keys = {
+            key
+            for key in (_spelling(str(root)), _resolved_spelling(root))
+            if key is not None
+        }
         # The files and folders the install wrote, by spelling: the path as
         # recorded and its checksum. A folder target lists its files' checksums;
         # a record from before checksums lists files and folders with none.
@@ -303,6 +355,8 @@ class _ProjectInstall:
             key = _spelling(interpreter)
             if key is not None:
                 self._pythons.setdefault(key, interpreter)
+        # One answer per trusted path and per hook folder.
+        self._looked_up: dict[tuple[str, str], bool] = {}
         self._folders: dict[str, str | None] = {}
 
     def _remember(self, path: str, digest: str | None) -> None:
@@ -313,7 +367,22 @@ class _ProjectInstall:
     def _inside(self, path: str) -> bool:
         """Return True when *path* is spelled as a path inside the project."""
         key = _spelling(path)
-        return key is not None and key.startswith(self._root_key + os.sep)
+        return key is not None and any(
+            key.startswith(root + os.sep) for root in self._root_keys
+        )
+
+    def _cached(self, kind: str, path: Path) -> bool:
+        """Return the answer to *kind* (link-free, exists, is a file) for *path*, once."""
+        key = (kind, str(path))
+        if key not in self._looked_up:
+            if kind == "link-free":
+                answer = self._link_free(path)
+            elif kind == "exists":
+                answer = path.exists()
+            else:
+                answer = path.is_file()
+            self._looked_up[key] = answer
+        return self._looked_up[key]
 
     def _link_free(self, path: Path) -> bool:
         """Return True when no folder or file from the project root to *path* is a link.
@@ -322,7 +391,9 @@ class _ProjectInstall:
         were found to be no link, so the check itself never leaves the project.
         """
         try:
-            relative = PurePath(os.path.normcase(str(path))).relative_to(self._root_key)
+            relative = PurePath(os.path.normcase(str(path))).relative_to(
+                os.path.normcase(str(self._root))
+            )
         except ValueError:
             return False
         current = self._root
@@ -340,7 +411,7 @@ class _ProjectInstall:
         if not target.path.endswith(".json") or not self._inside(target.path):
             return
         hook_file = target.mode == _HOOK_FILE_MODE
-        if not self._link_free(path):
+        if not self._cached("link-free", path):
             if hook_file:
                 hooks.note(
                     f"{path} is reached through a link, so no hook in it was read"
@@ -348,23 +419,30 @@ class _ProjectInstall:
             return
         try:
             document: object = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             if hook_file:
                 hooks.note(
                     f"{path} cannot be read as JSON, so no hook in it was started"
                 )
             return
-        found = False
+        found = 0
         for handler in _project_handlers(document):
-            command = _platform_command(handler)
+            command = _platform_command(handler, self._keys)
             if command is None or not is_apothem_hook(
                 {"command": command, "args": handler.get("args")}, project_scope=True
             ):
                 continue
-            argv = _handler_argv(handler)
-            if argv is not None:
-                found = True
-                self._judge(argv, path, hooks)
+            argv = _handler_argv(handler, self._keys)
+            if argv is None:
+                continue
+            if found == _MAX_PROJECT_HANDLERS:
+                hooks.note(
+                    f"{path} holds more than {_MAX_PROJECT_HANDLERS} hook commands; "
+                    "doctor read only the first of them"
+                )
+                return
+            found += 1
+            self._judge(argv, path, hooks)
         if hook_file and not found:
             hooks.note(f"{path} holds no hook command doctor can start")
 
@@ -376,14 +454,12 @@ class _ProjectInstall:
             options.append(rest[len(options)])
         script = rest[len(options)] if len(options) < len(rest) else None
         tail = rest[len(options) + 1 :]
-        display = _printable(
-            interpreter if script is None else f"{interpreter} {script}"
-        )
+        display = interpreter if script is None else f"{interpreter} {script}"
         line = f"a hook command in {source}"
         # The checks that read only the line come first.
         python = self._pythons.get(_spelling(interpreter) or "")
         if python is None:
-            hooks.note(self._untrusted_python(line, interpreter))
+            self._untrusted_python(line, interpreter, hooks)
             return
         if not all(_SAFE_PYTHON_OPTIONS.fullmatch(option) for option in options):
             hooks.note(
@@ -394,33 +470,32 @@ class _ProjectInstall:
         recorded = None if script is None else self._files.get(_spelling(script) or "")
         if recorded is None or Path(recorded[0]).name != "dispatch.py":
             hooks.note(
-                f"{line} runs {_printable(str(script))}, which this install did not "
-                f"write, {_NOT_STARTED}"
+                f"{line} runs {script}, which this install did not write, {_NOT_STARTED}"
             )
             return
         names = tail[1:]
         if (
             tail[:1] != ["--contract"]
-            or not names
+            or not 0 < len(names) <= _MAX_NAMES
             or not all(_PLAIN_NAME.fullmatch(name) for name in names)
         ):
             hooks.note(
                 f"{line} passes arguments Apothem does not write, {_NOT_STARTED}"
             )
             return
-        # Only trusted paths are looked at from here on.
+        # Only trusted paths are looked at from here on, each once.
         dispatcher = Path(recorded[0])
-        if not self._link_free(dispatcher):
+        if not self._cached("link-free", dispatcher):
             hooks.note(
                 f"{line} runs a hook script reached through a link, {_NOT_STARTED}"
             )
             return
-        if not Path(python).exists():
+        if not self._cached("exists", Path(python)):
             hooks.cannot_start(
                 HookProbe(display, False, "the interpreter does not exist")
             )
             return
-        if not dispatcher.is_file():
+        if not self._cached("is-file", dispatcher):
             hooks.cannot_start(
                 HookProbe(display, False, "the hook script does not exist")
             )
@@ -431,27 +506,29 @@ class _ProjectInstall:
             return
         hooks.add([python, *options, str(dispatcher), *tail])
 
-    def _untrusted_python(self, line: str, interpreter: str) -> str:
-        """Say why *interpreter* is not one doctor starts."""
+    def _untrusted_python(
+        self, line: str, interpreter: str, hooks: RegisteredHooks
+    ) -> None:
+        """Note why *interpreter* is not one doctor starts."""
         recorded = self._recorded_python
         if recorded is not None and _spelling(interpreter) == _spelling(recorded):
-            return (
-                f"{line} runs {_printable(interpreter)}, the Python the install "
-                "recorded, which is inside the project, where others can change "
-                f"it, {_NOT_STARTED}"
+            hooks.note(
+                f"{line} runs {interpreter}, the Python the install recorded, which "
+                f"is inside the project, where others can change it, {_NOT_STARTED}",
+                run_with=recorded,
             )
-        interpreter = _printable(interpreter)
-        if recorded is None:
-            return (
+        elif recorded is None:
+            hooks.note(
                 f"{line} runs {interpreter}, which is not the Python Apothem runs "
                 f"under ({sys.executable}), and the install was recorded by an "
                 f"earlier Apothem that kept no interpreter, {_NOT_STARTED}"
             )
-        return (
-            f"{line} runs {interpreter}, not the Python the install recorded "
-            f"({self._recorded_python}) or the one Apothem runs under "
-            f"({sys.executable}), {_NOT_STARTED}"
-        )
+        else:
+            hooks.note(
+                f"{line} runs {interpreter}, not the Python the install recorded "
+                f"({recorded}) or the one Apothem runs under ({sys.executable}), "
+                f"{_NOT_STARTED}"
+            )
 
     def _folder_problem(self, folder: Path) -> str | None:
         """Return why *folder*'s scripts cannot be trusted, or ``None``; once per folder."""
@@ -475,23 +552,46 @@ class _ProjectInstall:
                 f"{reason} were installed by an earlier Apothem that kept no "
                 f"checksums of them, {stop}"
             )
-        for directory, folders, files in os.walk(folder):
-            for name in sorted([*folders, *files]):
-                entry = Path(directory, name)
+        try:
+            for entry, kind in _walk(folder):
                 shown = os.path.relpath(entry, folder)
-                if is_link(entry):
+                if kind == "link":
                     return f"{reason} hold a link, {shown}, {stop}"
                 if (
-                    name in files
+                    kind == "file"
                     and entry.suffix.lower() in _IMPORTABLE_SUFFIXES
                     and _spelling(str(entry)) not in recorded
                 ):
                     return f"{reason} hold {shown}, which the install did not write, {stop}"
+        except OSError:
+            return f"{reason} cannot be read, {stop}"
         for spelled, (path, digest) in sorted(recorded.items()):
             if _sha256(Path(path)) != digest:
                 shown = os.path.relpath(spelled, key)
                 return f"{reason} changed after the install ({shown}), {stop}"
         return None
+
+
+def _walk(folder: Path) -> Iterator[tuple[Path, str]]:
+    """Yield each entry under *folder* as ``link``, ``folder`` or ``file``.
+
+    A link is never followed, not even to tell whether it names a folder: it
+    is told apart first, from the entry itself, and not descended into.
+    """
+    pending = [folder]
+    while pending:
+        current = pending.pop()
+        with os.scandir(current) as listing:
+            entries = sorted(listing, key=lambda entry: entry.name)
+        for entry in entries:
+            path = Path(entry.path)
+            if entry.is_symlink() or is_link(path):
+                yield path, "link"
+            elif entry.is_dir(follow_symlinks=False):
+                yield path, "folder"
+                pending.append(path)
+            else:
+                yield path, "file"
 
 
 def _project_handlers(document: object) -> Iterator[dict[str, object]]:
@@ -539,11 +639,20 @@ def _spelling(path: str) -> str | None:
     return os.path.normcase(str(pure))
 
 
+def _resolved_spelling(root: Path) -> str | None:
+    """Return the spelling of the project root as the system resolves it."""
+    try:
+        return _spelling(str(root.resolve()))
+    except (OSError, RuntimeError):
+        return None
+
+
 def _printable(text: str) -> str:
     """Return *text* with each character a terminal would act on spelled out.
 
-    Hook-line text is the project's, not Apothem's: shown as it is, a control
-    character in it could move the cursor or repaint the report.
+    Hook-line text, and the names in a project's hook folder, are the
+    project's, not Apothem's: shown as they are, a control character in them
+    could move the cursor or repaint the report.
     """
     return "".join(
         char if char.isprintable() else f"<{ord(char):#04x}>" for char in text
@@ -563,9 +672,8 @@ def _on_windows() -> bool:
     return sys.platform == "win32"
 
 
-def _platform_command(handler: dict[str, object]) -> str | None:
-    """Return the command line *handler* runs on this platform, or ``None``."""
-    keys = _WINDOWS_COMMAND_KEYS if _on_windows() else _POSIX_COMMAND_KEYS
+def _platform_command(handler: dict[str, object], keys: tuple[str, ...]) -> str | None:
+    """Return the command line *handler* runs, read from the tool's *keys*, or ``None``."""
     for key in keys:
         command = handler.get(key)
         if isinstance(command, str):
@@ -573,28 +681,31 @@ def _platform_command(handler: dict[str, object]) -> str | None:
     return None
 
 
-def _handlers(node: object) -> Iterator[dict[str, object]]:
+def _handlers(node: object, keys: tuple[str, ...]) -> Iterator[dict[str, object]]:
     """Yield every Apothem-owned hook handler mapping nested in *node*.
 
     For a file under the operator's own home. Ownership is read from the
-    command line the handler runs on this platform, the one the probe starts.
+    command line the handler runs (under the tool's *keys*), the one the probe
+    starts.
     """
     if isinstance(node, dict):
-        command = _platform_command(node)
+        command = _platform_command(node, keys)
         if command is not None and is_apothem_hook(
             {"command": command, "args": node.get("args")}
         ):
             yield node
         for value in node.values():
-            yield from _handlers(value)
+            yield from _handlers(value, keys)
     elif isinstance(node, list):
         for item in node:
-            yield from _handlers(item)
+            yield from _handlers(item, keys)
 
 
-def _handler_argv(handler: dict[str, object]) -> list[str] | None:
+def _handler_argv(
+    handler: dict[str, object], keys: tuple[str, ...]
+) -> list[str] | None:
     """Resolve a handler mapping to the argv the harness would run."""
-    command = _platform_command(handler)
+    command = _platform_command(handler, keys)
     if command is None or not command.strip():
         return None
     args = handler.get("args")
@@ -623,6 +734,7 @@ def _unquoted(token: str) -> str:
 
 def _start(argv: list[str], *, display: str) -> HookProbe:
     """Run one hook command with the no-op payload in a scratch directory."""
+    display = _printable(display)
     env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
     with tempfile.TemporaryDirectory(prefix="apothem-doctor-") as scratch:
         try:
@@ -637,11 +749,13 @@ def _start(argv: list[str], *, display: str) -> HookProbe:
                 check=False,
             )
         except (OSError, subprocess.SubprocessError) as exc:
-            return HookProbe(display, False, f"{type(exc).__name__}: {exc}")
+            return HookProbe(display, False, _printable(f"{type(exc).__name__}: {exc}"))
     if completed.returncode == 0:
         return HookProbe(display, True, "")
     tail = (completed.stderr or completed.stdout).strip().splitlines()
     detail = tail[-1] if tail else f"exit {completed.returncode}"
     return HookProbe(
-        display, False, f"exit {completed.returncode}: {detail[:_DETAIL_LIMIT]}"
+        display,
+        False,
+        _printable(f"exit {completed.returncode}: {detail[:_DETAIL_LIMIT]}"),
     )

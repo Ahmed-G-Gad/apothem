@@ -38,7 +38,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   written. A missing interpreter, a missing script, or a crash at import time
   fails the check. When a hook has a separate command line for each system,
   doctor starts the one the tool runs on this machine: the `powershell` line
-  on Windows and the `bash` line on macOS and Linux. Doctor starts the program
+  on Windows and the `bash` line on macOS and Linux. It reads only the keys
+  the tool itself reads, so a line kept under another key is neither started
+  nor counted. Doctor starts the program
   itself, without a shell, so on Windows it leaves out the `&` that a line
   written for PowerShell starts with. A hook registered outside a JSON file is
   not started and is not counted in `N started`. The install record is found
@@ -51,7 +53,8 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   files, so for a project-scope harness doctor starts a hook command only when
   everything it runs is known. It reads the install record of the project
   that `--project` names, takes hook commands only from the places the tool
-  reads them, and starts a command only when its interpreter is the one that
+  reads them (at most 100 from one file), and starts a command only when its
+  interpreter is the one that
   install recorded (unless it is inside the project, where others can change
   it) or the Python that Apothem itself runs under, the options
   before the script run no code (such as `-E` and `-s`), the script is the
@@ -63,7 +66,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   that is gone fails the check without anything being started. Doctor starts
   no other project hook command, and reports each one, with the reason, as
   `hook.unchecked` (info, not a failure, marked `!` in the plain output).
-  Hooks installed by an earlier release, which recorded no interpreter or no
+  A recorded interpreter inside the project is not started: run doctor with
+  that interpreter, or install with a Python outside the project. Hooks
+  installed by an earlier release, which recorded no interpreter or no
   checksums, stay unchecked until you run `update` with the same options you
   installed with.
 
