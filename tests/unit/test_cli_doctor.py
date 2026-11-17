@@ -618,7 +618,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
 
 
 _OTHER_PYTHON = '"{other}" "{script}" --contract copilot'
-_GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
+_GONE_PYTHON = '"{out}/removed/python" "{script}" --contract copilot'
 
 
 @pytest.mark.parametrize(
@@ -635,7 +635,7 @@ _GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
         ),
         pytest.param(
             _GONE_PYTHON,
-            "{tmp}/removed/python",
+            "{out}/removed/python",
             None,
             "cannot start",
             "the interpreter does not exist",
@@ -643,7 +643,7 @@ _GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
         ),
         pytest.param(
             _OTHER_PYTHON,
-            "{tmp}/recorded/python",
+            "{out}/recorded/python",
             None,
             "unchecked",
             "not the Python the install recorded",
@@ -666,8 +666,8 @@ _GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
             id="an-unknown-python-is-not-looked-up",
         ),
         pytest.param(
-            '"{tmp}/removed/python" "{other}" "{script}" --contract copilot',
-            "{tmp}/removed/python",
+            '"{out}/removed/python" "{other}" "{script}" --contract copilot',
+            "{out}/removed/python",
             None,
             "unchecked",
             "which this install did not write",
@@ -749,6 +749,14 @@ _GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
         pytest.param(
             _DOUBLE, None, _link_folder, "unchecked", "hold a link", id="link"
         ),
+        pytest.param(
+            '"{tmp}/.venv/Scripts/python.exe" "{script}" --contract copilot',
+            "{tmp}/.venv/Scripts/python.exe",
+            None,
+            "unchecked",
+            "the Python the install recorded, which is inside the project",
+            id="a-recorded-python-inside-the-project",
+        ),
     ],
 )
 def test_doctor_starts_a_project_hook_line_only_when_it_runs_known_code(
@@ -760,9 +768,14 @@ def test_doctor_starts_a_project_hook_line_only_when_it_runs_known_code(
     outcome: str,
     detail: str | None,
 ) -> None:
-    other = tmp_path / "other-python.exe"
+    # The project is tmp_path; an interpreter the install recorded lives
+    # outside it, as the operator's own Python does.
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    other = outside / "other-python.exe"
     other.write_text("", encoding="utf-8")
     values = {
+        "out": outside.as_posix(),
         "py": Path(sys.executable).as_posix(),
         "script": _dispatcher(tmp_path, "github-copilot").as_posix(),
         "other": other.as_posix(),
@@ -822,6 +835,23 @@ def test_doctor_reads_no_handler_kept_beside_one(
     assert argv[-2:] == ["--contract", "copilot"]
     assert hooks.unchecked == []
     assert hooks.unstartable == []
+
+
+def test_doctor_spells_out_control_characters_from_a_hook_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Shown as it is, an escape character in a committed hook line could move
+    # the cursor or repaint the report.
+    escape = chr(27)
+    script = _dispatcher(tmp_path, "github-copilot").as_posix()
+    line = f'"{tmp_path.as_posix()}/a{escape}[2Jb/python" "{script}" --contract copilot'
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [unchecked] = hooks.unchecked
+    assert escape not in unchecked
+    assert "a<0x1b>[2Jb" in unchecked
 
 
 def test_doctor_names_an_install_recorded_without_checksums(

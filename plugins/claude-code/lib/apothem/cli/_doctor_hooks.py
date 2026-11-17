@@ -226,20 +226,28 @@ class _ProjectInstall:
             for relative, digest in (target.files or {}).items():
                 self._remember(str(Path(target.path, relative)), digest)
         # The interpreters doctor may start, by spelling, each mapped to the
-        # string doctor starts: the one the install recorded, then the Python
-        # doctor runs under. The first string trusted for a spelling keeps it.
+        # string doctor starts: the one the install recorded, unless it lives
+        # in the project, whose files others can change, then the Python doctor
+        # runs under. The first string trusted for a spelling keeps it.
         self._recorded_python = record.python_bin
-        executable = Path(sys.executable)
+        self._recorded_inside = record.python_bin is not None and self._inside(
+            record.python_bin
+        )
+        trusted: list[str] = []
+        if record.python_bin is not None and not self._recorded_inside:
+            trusted.append(record.python_bin)
+        if sys.executable:
+            executable = Path(sys.executable)
+            trusted += [
+                sys.executable,
+                str(executable.resolve()),
+                str(executable.absolute()),
+            ]
         self._pythons: dict[str, str] = {}
-        for trusted in (
-            record.python_bin,
-            sys.executable,
-            str(executable.resolve()),
-            str(executable.absolute()),
-        ):
-            key = None if trusted is None else _spelling(trusted)
-            if trusted is not None and key is not None:
-                self._pythons.setdefault(key, trusted)
+        for interpreter in trusted:
+            key = _spelling(interpreter)
+            if key is not None:
+                self._pythons.setdefault(key, interpreter)
         self._folders: dict[str, str | None] = {}
 
     def _remember(self, path: str, digest: str | None) -> None:
@@ -313,7 +321,9 @@ class _ProjectInstall:
             options.append(rest[len(options)])
         script = rest[len(options)] if len(options) < len(rest) else None
         tail = rest[len(options) + 1 :]
-        display = interpreter if script is None else f"{interpreter} {script}"
+        display = _printable(
+            interpreter if script is None else f"{interpreter} {script}"
+        )
         line = f"a hook command in {source}"
         # The checks that read only the line come first.
         python = self._pythons.get(_spelling(interpreter) or "")
@@ -329,7 +339,8 @@ class _ProjectInstall:
         recorded = None if script is None else self._files.get(_spelling(script) or "")
         if recorded is None or Path(recorded[0]).name != "dispatch.py":
             hooks.note(
-                f"{line} runs {script}, which this install did not write, {_NOT_STARTED}"
+                f"{line} runs {_printable(str(script))}, which this install did not "
+                f"write, {_NOT_STARTED}"
             )
             return
         names = tail[1:]
@@ -367,7 +378,15 @@ class _ProjectInstall:
 
     def _untrusted_python(self, line: str, interpreter: str) -> str:
         """Say why *interpreter* is not one doctor starts."""
-        if self._recorded_python is None:
+        recorded = self._recorded_python
+        if recorded is not None and _spelling(interpreter) == _spelling(recorded):
+            return (
+                f"{line} runs {_printable(interpreter)}, the Python the install "
+                "recorded, which is inside the project, where others can change "
+                f"it, {_NOT_STARTED}"
+            )
+        interpreter = _printable(interpreter)
+        if recorded is None:
             return (
                 f"{line} runs {interpreter}, which is not the Python Apothem runs "
                 f"under ({sys.executable}), and the install was recorded by an "
@@ -463,6 +482,17 @@ def _spelling(path: str) -> str | None:
     if not pure.is_absolute() or ".." in pure.parts:
         return None
     return os.path.normcase(str(pure))
+
+
+def _printable(text: str) -> str:
+    """Return *text* with each character a terminal would act on spelled out.
+
+    Hook-line text is the project's, not Apothem's: shown as it is, a control
+    character in it could move the cursor or repaint the report.
+    """
+    return "".join(
+        char if char.isprintable() else f"<{ord(char):#04x}>" for char in text
+    )
 
 
 def _sha256(path: Path) -> str | None:

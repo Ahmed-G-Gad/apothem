@@ -42,7 +42,8 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   everything it runs is known. It reads the install record of the project
   that `--project` names, takes hook commands only from the places the tool
   reads them, and starts a command only when its interpreter is the one that
-  install recorded or the Python that Apothem itself runs under, the options
+  install recorded (unless it is inside the project, where others can change
+  it) or the Python that Apothem itself runs under, the options
   before the script run no code (such as `-E` and `-s`), the script is the
   hook script that install wrote, in a folder whose files still match the
   SHA-256 checksums the install recorded and that holds no other Python file
