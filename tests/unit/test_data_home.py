@@ -86,8 +86,9 @@ def test_ensure_creates_the_tree_idempotently(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "bad_name",
-    # The colon cases (a Windows drive specifier) would otherwise reset pathlib
-    # to a drive root and escape the base directory entirely.
+    # The colon cases (a Windows drive specifier) would otherwise, when they
+    # name another drive, make pathlib drop the base folder and use that
+    # drive instead, escaping the base.
     ["", "   ", "a/b", "a\\b", ".", "..", "C:", "D:rel", "a:b"],
 )
 def test_invalid_directory_name_raises(bad_name: str, tmp_path: Path) -> None:
