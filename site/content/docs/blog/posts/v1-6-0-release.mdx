@@ -33,7 +33,6 @@ The [changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files
 lists every affected path. No release ever installed a file in these places,
 so v1.6.0 stops removing them.
 
-
 In the same releases, `apothem uninstall` could also remove your own text
 from a file such as `CLAUDE.md` or `AGENTS.md`. When the block Apothem writes
 in that file had lost its END marker line, the uninstall removed everything
@@ -50,7 +49,10 @@ home folder, or to the project for a project install (for example
 update, uninstall and rollback adds one. Older sets may already be gone, and
 each further run of an earlier release can delete the oldest one. v1.6.0
 never deletes a backup set that holds one of these paths, either on its own
-or through `apothem backups prune`.
+or through `apothem backups prune`. The copy an uninstall made of a file
+whose block had lost its END marker line is not covered: v1.6.0 still keeps
+only the newest 10 sets per harness, unless an install record it keeps refers
+to that set, so it can still delete it. Copy the backups first.
 
 1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
 2. Copy the files you need from that copy back to their place by hand.
@@ -95,8 +97,8 @@ with the same warning.
   Apothem's block in a file has lost its END marker line, uninstall leaves the
   file as it is and names it. {/* depends on #244 */} Install and update keep
   your text after a BEGIN marker line that has no END, write a fresh block,
-  and print a warning that names the file. `apothem verify` fails until you delete the stray BEGIN
-  line.
+  and print a warning that names the file. `apothem verify` fails until you
+  delete the stray BEGIN line.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
   stores while the same tool in another project still uses them.
@@ -114,7 +116,8 @@ with the same warning.
   v1.6.0 writes. While such a folder stays there, `apothem verify` reports
   that harness as not verified and names the folder. To keep your skill,
   leave it there. To use Apothem's version, move the folder out of the skills
-  folder, then run `apothem update` for that harness.
+  folder, then run `apothem update` for that harness (with `--project` for a
+  project install).
 - **`apothem doctor` checks the right hooks.** It now starts the hooks of the
   install in the folder it checks: the tool's own folder, or the `--project`
   folder. Before, it used the newest install of that tool in any folder. When
@@ -165,11 +168,12 @@ strictly before they install it.
 - **`APOTHEM_HOME`.** {/* TODO(clarify): no source states that APOTHEM_HOME must be a folder only you can write; confirm the rule and its wording before publishing this sentence. */}
   A symbolic link at `APOTHEM_HOME` is refused when the installer would
   replace it. {/* depends on #245 */} A clone that another user owns stops
-  the run with an explanation. Each run of the install, update and uninstall
-  scripts, a dry run included, takes a lock beside `APOTHEM_HOME`, so it needs
-  write access to the folder that holds `APOTHEM_HOME`. An existing
-  clone whose own git config holds a setting outside a short allow-list stops
-  the update until you remove that setting.
+  the run with an explanation. {/* depends on #245 */} Each run of the
+  install, update and uninstall scripts, a dry run included, takes a lock
+  beside `APOTHEM_HOME`, so it needs write access to the folder that holds
+  `APOTHEM_HOME`. {/* depends on #245 */} An existing clone whose own git
+  config holds a setting outside a short allow-list stops the update until you
+  remove that setting.
 
 The [trust model](/docs/install#trust-model) explains each mode.
 
