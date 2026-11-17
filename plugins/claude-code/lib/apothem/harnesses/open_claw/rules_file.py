@@ -41,6 +41,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_blocks import (
     ANOTHER_BLOCK,
+    RETIRED_WHY,
     UNINSTALL_AGAIN,
     another_block_at,
     another_block_warning,
@@ -1042,7 +1043,7 @@ def apply(
         # Taking Apothem's block out can leave a BEGIN marker alone above
         # where it was (a line of the operator's, or what is left of an older
         # block): the file is named, as an uninstall names it.
-        results.extend(stray_begin_warnings(retired))
+        results.extend(stray_begin_warnings(retired, why=RETIRED_WHY))
     return tuple(results)
 
 

@@ -323,7 +323,11 @@ starts. So Apothem never cuts the text after that marker:
   apart from it, and print a warning that names the file. The warning also
   says not to add the END marker back below that text: with Apothem's block
   written apart from it, the file would then hold two Apothem blocks, which
-  install and update leave as they are.
+  install and update leave as they are. A dry run reads the file before
+  anything is written, so when the file holds no whole block yet, its warning
+  says not to add the END marker back once an install or update has written
+  Apothem's block apart from it: until then, putting it back leaves one whole
+  block.
 - `apothem uninstall` takes out Apothem's whole block, leaves the rest as it is,
   and names the file. Its warning says to delete that marker line by hand,
   with what is left of the old block below it, and to keep your own text: the
@@ -397,9 +401,10 @@ which one is its own:
   (see
   [An uninstall that did not finish](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
 
-The warning says to "Keep one block (in a file that starts with Apothem's
-frontmatter, the one right below it) and fix the others by hand, keeping your
-own text". Open the named file at the lines the warning gives:
+The warning starts with a pair of yours: "For a marker pair of yours (an
+example you quote, say), change or delete its two marker lines, or move them
+inside a code block, keeping your own text; do not delete Apothem's block
+instead". Open the named file at the lines the warning gives:
 
 1. For a marker pair of yours, change or delete its two marker lines, or move
    them inside a code block. Left as the one whole block in the file, your pair
@@ -415,6 +420,18 @@ own text". Open the named file at the lines the warning gives:
    from your profile.
 3. Run `apothem update`, then `apothem verify` again. After an uninstall that
    did not finish, run `apothem uninstall` again instead.
+
+A BEGIN marker of yours above Apothem's block and an END marker of yours below
+it make a second block that shows only once Apothem's block is out. The
+uninstall's warning then names Apothem's block and those two marker lines, for
+example "once the block from line 5 to line 36 is out, the BEGIN marker at line
+2 and the END marker at line 39 make another", and says "Do not delete the
+block from line 5 to line 36": the next run would then read lines 2 to 39 as
+Apothem's block, and replace or take out what is between them. Delete or change
+the two marker lines it names instead, or move them inside a code block,
+keeping your own text, then run the uninstall again. If that BEGIN marker is
+what is left of an older Apothem block, delete the old Apothem text below it
+too.
 
 ### Apothem cannot tell its block from your text
 
@@ -474,7 +491,11 @@ BEGIN marker. Deleting the block instead does not help: the next update writes
 it again below the same open code block. An update that writes its block below
 an older block that lost its END marker, where a rule left a code block open,
 gets the same warning; it also names that older BEGIN marker, which you delete
-with the old Apothem text below it.
+with the old Apothem text below it. When the line that opens the code block
+may be part of that old text, the fix also says, for example, "or, if line 77
+is part of the old Apothem text below the BEGIN marker at line 1, delete it
+with that text": deleting that line ends the code block too, so add no closing
+line then.
 
 Until you fix the file, `apothem verify` fails and `apothem doctor` reports it
 (as `harness.stray_begin`); for a file the current install writes,
@@ -548,7 +569,10 @@ marker pair and BEGIN marker it names:
 5. If the warning says a BEGIN marker starts no marker pair, delete or change
    it by hand, with any old Apothem text below it, and keep your own text.
    Left in place, it can pair with an END marker below it once you fix the
-   pairs, and a later install or update then replaces the lines between them.
+   pairs: a later install or update then replaces the lines between them, and
+   the uninstall run again takes them out, as does a later install, update or
+   uninstall for an OpenClaw rules file in a workspace the install no longer
+   uses.
 6. Run `apothem update`, then `apothem verify` again. After an uninstall that
    did not finish, run `apothem uninstall` again instead.
 

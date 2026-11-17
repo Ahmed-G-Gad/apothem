@@ -42,6 +42,7 @@ from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
     stray_begin_install_warnings,
 )
+from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
 from apothem.harnesses._shared.install_driver_evidence import _carries_managed_block
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
@@ -49,6 +50,7 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     complete_managed_block,
     merge_managed_block,
+    whole_blocks,
     wrap_managed_block,
 )
 from apothem.lib.harness_registry import HARNESS_REGISTRY, HarnessRegistryEntry
@@ -739,14 +741,26 @@ def test_a_begin_marker_that_starts_no_pair_is_named_in_every_text(
     lone = (
         "The BEGIN marker at line 1 starts no marker pair: its END marker is gone, "
         "or the marker is yours. Delete or change it by hand, with any old Apothem "
-        "text below it, and keep your own text. If you leave it, a later install "
-        "or update can pair it with an END marker below it and replace the lines "
-        "between them."
+        "text below it, and keep your own text. If you leave it, "
+    )
+    replaces = (
+        "a later install or update can pair it with an END marker below it and "
+        "replace the lines between them."
+    )
+    # The uninstall run again takes those lines out, as its step for the split
+    # pair says; a later install or update replaces them.
+    taken_out = (
+        "the uninstall run again can pair it with an END marker below it and take "
+        "the lines between them out, as a later install or update replaces them."
     )
 
     assert uninstall is not None
-    for message in (install, uninstall.message, note):
-        assert lone in message
+    for message, then in (
+        (install, replaces),
+        (uninstall.message, taken_out),
+        (note, replaces),
+    ):
+        assert f"{lone}{then}" in message
         assert message.count("starts no marker pair") == 1
     assert "If the BEGIN marker at line 4 is yours, delete or change it" in install
     assert (
@@ -755,6 +769,31 @@ def test_a_begin_marker_that_starts_no_pair_is_named_in_every_text(
         "it, it pairs with the END marker at line 7, and the uninstall then takes "
         "lines 4 to 7 out"
     ) in uninstall.message
+
+
+def test_a_begin_marker_that_starts_no_pair_in_a_file_apothem_retires_takes_out(
+    tmp_path: Path,
+) -> None:
+    """A rules file Apothem takes its block out of: no later run replaces lines.
+
+    The fix for each pair in such a file says the next install, update or
+    uninstall takes its lines out; the text for the BEGIN marker that starts
+    no pair said a later install or update replaces them.
+    """
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(_TWO_BEGINS.encode())
+
+    warning = blocks.unclear_block_warning(target, "retire_anchor", outcome=TAKES_OUT)
+
+    assert warning is not None
+    assert (
+        "The BEGIN marker at line 1 starts no marker pair: its END marker is gone, "
+        "or the marker is yours. Delete or change it by hand, with any old Apothem "
+        "text below it, and keep your own text. If you leave it, a later install, "
+        "update or uninstall can pair it with an END marker below it and take the "
+        "lines between them out."
+    ) in warning.message
+    assert "replace" not in warning.message
 
 
 def test_begin_markers_that_start_no_pair_are_named_together(tmp_path: Path) -> None:
@@ -904,6 +943,65 @@ def test_a_block_your_open_code_block_hides_is_named_and_the_fix_holds(
     assert complete_managed_block(anchor.read_bytes().decode("utf-8")) is not None
     assert anchor.read_bytes().count(B.encode()) == 1
     assert fixed == 0, fixed_output
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_an_update_below_an_old_block_whose_rule_left_a_code_block_open(
+    harness_id: str, sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """The line that opens the code block can be part of the old Apothem text.
+
+    An earlier release's block, whose rule opened a code block it never
+    closed, lost its END marker; the update writes its block below, where
+    the closing line of a rule's code block closes that code block. Its
+    warning said to close the code block above the BEGIN marker and, for the
+    BEGIN marker that starts no pair, to delete the old Apothem text below
+    it: doing both made the closing line open a new code block. The fix now
+    also says that the line can go with that text, which ends the code
+    block, and the next update then writes a whole block.
+    """
+    box = sandbox_factory(harness_id)
+    old = _profile(tmp_path, "old.yaml", ["Rule one.", _OPEN_RULE])
+    new = _profile(tmp_path, "new.yaml", ["Rule two.", "Run:\n```sh\nnpm test\n```"])
+    code, output = box.invoke("install", "--profile", old, "--json")
+    assert code == 0, output
+    anchor = _anchor(box)
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    [(_, end)] = whole_blocks("\n".join(lines))
+    # An earlier release wrote no closing line for the rule's code block: drop
+    # this release's closing line and the END marker, and add a line of yours.
+    assert lines[end - 2] == "```", lines[end - 3 : end]
+    anchor.write_bytes(
+        "\n".join([*lines[: end - 2], "", "my own line", *lines[end:]]).encode()
+    )
+
+    code, output = box.invoke("update", "--profile", new, "--json")
+    after = anchor.read_bytes().decode("utf-8").split("\n")
+    fence = next(i for i, line in enumerate(after) if line.strip() == "```bash") + 1
+    begin = after.index(B, 1) + 1
+    anchor.write_bytes("\n".join(after[fence:]).encode())
+    updated, update_output = box.invoke("update", "--profile", new, "--json")
+    fixed = anchor.read_bytes().decode("utf-8")
+    verify, verify_output = box.invoke("verify")
+
+    assert code == 0, output
+    assert after[0] == B
+    [message] = [
+        _flat(str(warning["message"]))
+        for warning in json.loads(output)["warnings"]
+        if _names(str(warning["message"]), anchor)
+    ]
+    assert (
+        f"If lines {begin} to {after.index(E) + 1} are Apothem's block, close the "
+        f"code block that opens at line {fence} above line {begin}, or, if line "
+        f"{fence} is part of the old Apothem text below the BEGIN marker at line "
+        "1, delete it with that text: the next update then replaces those lines."
+    ) in message
+    assert updated == 0, update_output
+    assert len(whole_blocks(fixed)) == 1
+    assert fixed.count(B) == 1
+    assert "my own line" in fixed
+    assert verify == 0, verify_output
 
 
 def test_an_update_whose_rule_opens_a_code_block_closes_it_in_the_block(
@@ -1113,6 +1211,60 @@ def test_the_stray_warning_says_not_to_put_the_end_marker_back(tmp_path: Path) -
     ) in note
 
 
+def test_a_preview_says_not_to_put_the_end_marker_back_only_once_it_is_written(
+    sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """A dry run reads the file before the write, when it holds no whole block.
+
+    Putting the END marker back then leaves one whole block, which the update
+    refreshes, and verify passes; the preview said not to. The update that
+    wrote its block apart from the marker still says not to put it back.
+    """
+    box = sandbox_factory("claude-code")
+    box.install()
+    anchor = _anchor(box)
+    original = anchor.read_bytes().decode("utf-8")
+    anchor.write_bytes((original.replace(f"{E}\n", "") + "\nmy own line\n").encode())
+    changed = _profile_named(tmp_path, "Changed Person")
+
+    code, output = box.invoke("update", "--profile", changed, "--dry-run", "--json")
+    anchor.write_bytes(f"{original}\nmy own line\n".encode())
+    updated, update_output = box.invoke("update", "--profile", changed)
+    after = anchor.read_bytes().decode("utf-8")
+    verify, verify_output = box.invoke("verify")
+    anchor.write_bytes((after.replace(f"{E}\n", "", 1) + "\nmore of mine\n").encode())
+    real, real_output = box.invoke("update", "--profile", changed, "--json")
+
+    [preview] = [
+        _flat(str(warning["message"]))
+        for warning in json.loads(output)["warnings"]
+        if _names(str(warning["message"]), anchor)
+    ]
+    [written] = [
+        _flat(str(warning["message"]))
+        for warning in json.loads(real_output)["warnings"]
+        if _names(str(warning["message"]), anchor)
+    ]
+    assert code == 0, output
+    assert "write a block of their own apart from it" in preview
+    assert preview.endswith(
+        "Once an install or update has written Apothem's block apart from it, do "
+        "not add the END marker back below that text: the file would then hold "
+        "two Apothem blocks, which install and update leave as they are."
+    )
+    assert updated == 0, update_output
+    assert (after.count(B), after.count(E)) == (1, 1)
+    assert "Changed Person" in after
+    assert verify == 0, verify_output
+    assert real == 0, real_output
+    assert "write a whole block of their own apart from it" in written
+    assert written.endswith(
+        "lines; apothem verify fails for this tool until you do. Do not add the "
+        "END marker back below that text: the file would then hold two Apothem "
+        "blocks, which install and update leave as they are."
+    )
+
+
 #: An old block whose END marker came back (lines 2-4) above the block an
 #: update appended (lines 8-10).
 _TWO_BLOCKS = f"# top\n{B}\nold rules\n{E}\n\nmy own line\n\n{B}\nnew rules\n{E}\n"
@@ -1129,6 +1281,8 @@ def test_a_file_with_two_whole_blocks_names_each_block(
 
     The fix says which block to keep in a file that starts with Apothem's
     frontmatter, and that an Apothem block goes whole (lifecycle-2, advice-2).
+    A marker pair of yours comes first, and the text says not to delete
+    Apothem's block instead: your pair would then read as Apothem's block.
     """
     target = tmp_path / "AGENTS.md"
     target.write_bytes(_TWO_BLOCKS.encode())
@@ -1141,13 +1295,15 @@ def test_a_file_with_two_whole_blocks_names_each_block(
     assert warning.message == (
         f"{target} holds 2 whole blocks between Apothem's markers (lines 2 to 4, "
         "and lines 8 to 10). Apothem writes one block per file and cannot tell "
-        f"which one is its own, {left} the file as it is. Keep one block (in a "
-        "file that starts with Apothem's frontmatter, the one right below it) and "
-        "fix the others by hand, keeping your own text: delete an Apothem block "
-        "(an older one, or one pasted in a second time) from its BEGIN marker line "
-        "to its END marker line, and for a marker pair of yours (an example you "
-        "quote, say), change or delete its two marker lines or move them inside a "
-        "code block. Then run apothem update again. apothem verify fails for this "
+        f"which one is its own, {left} the file as it is. For a marker pair of "
+        "yours (an example you quote, say), change or delete its two marker lines, "
+        "or move them inside a code block, keeping your own text; do not delete "
+        "Apothem's block instead, since the next run would then read your pair as "
+        "Apothem's block and replace or take out the lines between its markers. "
+        "Of Apothem's own blocks (an older one, or one pasted in a second time), "
+        "keep one (in a file that starts with Apothem's frontmatter, the one right "
+        "below it) and delete each other one from its BEGIN marker line to its END "
+        "marker line. Then run apothem update again. apothem verify fails for this "
         "tool until you fix the file."
     )
 
@@ -1161,7 +1317,8 @@ def test_the_verify_note_names_both_blocks(tmp_path: Path) -> None:
     assert note.startswith(
         f"{target} holds 2 whole blocks between Apothem's markers (lines 2 to 4, "
         "and lines 8 to 10). Apothem writes one block per file and cannot tell "
-        "which one is its own. Keep one block"
+        "which one is its own. For a marker pair of yours (an example you quote, "
+        "say), change or delete its two marker lines"
     )
     assert note.endswith(" Then run apothem update")
 
@@ -1243,6 +1400,127 @@ def test_a_marker_pair_of_yours_above_the_block_is_not_written_over(
     assert code == 0, output
     assert anchor.read_bytes() == before
     assert "holds 2 whole blocks" in " ".join(output.split())
+
+
+# --- an uninstall over two blocks: following its text keeps your pair --------
+
+#: A marker pair of yours outside code: how Apothem wraps its rules.
+_EXAMPLE = (
+    f"My notes: Apothem wraps its rules like this:\n{B}\n(the rules go here)\n{E}\n\n"
+)
+
+
+def _uninstall_warning(box: _Sandbox, anchor: Path) -> tuple[int, str, str, str]:
+    """Run the uninstall; return its exit code, output, warning and failure line.
+
+    The warning is the one that names *anchor*; the failure line is the first
+    result's message.
+    """
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    payload = json.loads(output)
+    [warning] = [
+        _flat(str(entry["message"]))
+        for entry in payload["warnings"]
+        if _names(str(entry["message"]), anchor)
+    ]
+    return code, output, warning, _flat(str(payload["results"][0]["message"]))
+
+
+@pytest.mark.parametrize("where", ["above", "below"])
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_the_uninstall_puts_a_pair_of_yours_first_and_finishes_once_you_fix_it(
+    harness_id: str, where: str, sandbox_factory: SandboxFactory
+) -> None:
+    """Keeping one block led you to delete Apothem's block and keep your pair.
+
+    Someone uninstalling has no reason to keep Apothem's block, and the retry
+    then took out your pair, the one block left. The text now starts with
+    your pair: change its marker lines, and do not delete Apothem's block
+    instead. Done that way, the uninstall run again finishes and keeps your
+    example.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    shaped = _EXAMPLE + text if where == "above" else f"{text}\n{_EXAMPLE}"
+    anchor.write_bytes(shaped.encode())
+
+    code, output, warning, failure = _uninstall_warning(box, anchor)
+    kept = anchor.read_bytes()
+    unmarked = _EXAMPLE.replace("<!--", "&lt;!--")
+    anchor.write_bytes(shaped.replace(_EXAMPLE, unmarked, 1).encode())
+    again, again_output = box.invoke("uninstall", "--yes", "--json")
+    left = anchor.read_bytes().decode("utf-8")
+
+    assert code == 2, output
+    assert kept == shaped.encode()
+    assert (
+        "For a marker pair of yours (an example you quote, say), change or delete "
+        "its two marker lines, or move them inside a code block, keeping your own "
+        "text; do not delete Apothem's block instead, since the next run would "
+        "then read your pair as Apothem's block and replace or take out the lines "
+        "between its markers."
+    ) in warning
+    assert (
+        "fix each as its warning says, keeping your own text (change the marker "
+        "lines of a pair of yours, and delete only an older or pasted Apothem "
+        "block), then run apothem uninstall again"
+    ) in failure
+    assert "keep one block" not in failure.lower()
+    assert again == 0, again_output
+    assert left.strip() == unmarked.strip()
+    kinds = [r.kind for r in install_ledger.read_records(box.entry.package_key)]
+    assert kinds[-1] == "uninstall", kinds
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_the_uninstall_names_the_marker_lines_of_yours_around_apothem_s_block(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """A BEGIN marker above Apothem's block and an END marker below it.
+
+    They make a second block only once Apothem's block is out, and the text
+    named no lines: its step to delete an Apothem block from its BEGIN
+    marker line to its END marker line, taken on those two lines, deleted
+    Apothem's block and your text between them. The warning now names
+    Apothem's block and the two marker lines around it; once you change
+    those, the uninstall run again finishes and keeps every line of yours.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    shaped = f"my own text above\n{B}\nmy note\n\n{text}\nmy own text below\n{E}\n"
+    anchor.write_bytes(shaped.encode())
+    lines = shaped.split("\n")
+    outer, outer_end = lines.index(B) + 1, len(lines) - 1
+    inner, inner_end = lines.index(B, outer) + 1, lines.index(E) + 1
+
+    code, output, warning, _ = _uninstall_warning(box, anchor)
+    kept = anchor.read_bytes()
+    lines[outer - 1], lines[outer_end - 1] = "BEGIN (my marker)", "END (my marker)"
+    anchor.write_bytes("\n".join(lines).encode())
+    again, again_output = box.invoke("uninstall", "--yes", "--json")
+
+    assert code == 2, output
+    assert kept == shaped.encode()
+    assert (
+        "holds two different blocks between Apothem's markers: once the block "
+        f"from line {inner} to line {inner_end} is out, the BEGIN marker at line "
+        f"{outer} and the END marker at line {outer_end} make another."
+    ) in warning
+    assert (
+        f"Do not delete the block from line {inner} to line {inner_end}: the next "
+        f"run would then read lines {outer} to {outer_end} as Apothem's block, and "
+        "replace or take out what is between them. Delete or change the marker "
+        f"lines at lines {outer} and {outer_end} instead"
+    ) in warning
+    assert again == 0, again_output
+    assert anchor.read_bytes().decode("utf-8") == (
+        "my own text above\nBEGIN (my marker)\nmy note\n\nmy own text below\n"
+        "END (my marker)\n"
+    )
 
 
 # --- what an uninstall says about a BEGIN marker it leaves --------------------

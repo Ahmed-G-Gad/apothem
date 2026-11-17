@@ -281,14 +281,26 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
         return f"{report}{_UPDATE_AGAIN}"
     if not stray_begin_at(target):
         return None
+    # With no whole block yet (a preview reads the file before the write),
+    # nothing is written apart from the marker, and putting the END marker
+    # back then leaves one whole block, a fix that works.
+    block, back = (
+        ("a whole block", "Do not")
+        if blocks
+        else (
+            "a block",
+            "Once an install or update has written Apothem's block apart from "
+            "it, do not",
+        )
+    )
     return (
         f"{path} has an Apothem BEGIN marker that starts no whole block of its "
         f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
         "yours). Apothem never cuts the text after it: install and update keep "
-        "that text as it is and write a whole block of their own apart from it. "
+        f"that text as it is and write {block} of their own apart from it. "
         "Delete that marker line by hand, with the old Apothem text below it "
         "that repeats the rules in Apothem's whole block, and keep your own "
-        "lines; apothem verify fails for this tool until you do. Do not add the "
+        f"lines; apothem verify fails for this tool until you do. {back} add the "
         "END marker back below that text: the file would then hold two Apothem "
         "blocks, which install and update leave as they are."
     )
@@ -485,25 +497,57 @@ def another_block_warning(
     pair they quote), an older Apothem block, or one pasted in a second time:
     nothing changes, and the uninstall stays unfinished. The text is the one
     install and update give (see :func:`two_blocks_report`): it names each
-    whole block by its lines, and the operator keeps one, deletes each other
-    Apothem block whole and changes the marker lines of each pair of theirs;
-    then the strip takes out the one block left. *then* is the step after the
-    fix (an install or update that retires the file gives its own). With
-    *dry_run* (a preview), it says Apothem would leave the file as it is.
+    whole block by its lines, and the operator changes the marker lines of
+    each pair of theirs (never deleting Apothem's block to keep one: the
+    strip would then take that pair out) and deletes each other Apothem
+    block whole; then the strip takes out the one block left. A second block
+    that shows only once Apothem's is out is named by its marker lines (see
+    :func:`_revealed_block`). *then* is the step after the fix (an install
+    or update that retires the file gives its own). With *dry_run* (a
+    preview), it says Apothem would leave the file as it is.
     """
+    found = whole_blocks_at(target)
+    revealed = _revealed_block(target, found[0]) if len(found) == 1 else None
+    report = two_blocks_report(
+        _path_text(target), found, dry_run=dry_run, then=then, revealed=revealed
+    )
     return _result(
         "warning",
         operation,
         target,
-        two_blocks_report(
-            _path_text(target), whole_blocks_at(target), dry_run=dry_run, then=then
-        ),
+        report,
         detail={KEPT_REASON: ANOTHER_BLOCK, MARKER_LEFT: "1"},
     )
 
 
+def _revealed_block(path: Path, block: tuple[int, int]) -> tuple[int, int] | None:
+    """Return the lines of the whole block *path* shows once *block* is out.
+
+    The lines of *block* are blanked, not cut, so every other line keeps its
+    number. ``None`` when no whole block shows then, or the file cannot be
+    read.
+    """
+    try:
+        lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
+    except OSError:
+        return None
+    begin, end = block
+    lines[begin - 1 : end] = [""] * (end - begin + 1)
+    found = whole_blocks("\n".join(lines))
+    return found[0] if found else None
+
+
+#: Why the operator deletes a BEGIN marker an uninstall leaves alone.
+_STILL_READ = "the tool still reads that text, and an install keeps it as it is"
+
+#: The same for a rules file an update took Apothem's block out of because
+#: the install no longer writes it: no install writes there, and verify names
+#: the file while an install record lists it.
+RETIRED_WHY = "apothem verify fails for this tool until you do"
+
+
 def stray_begin_warnings(
-    results: list[MaterializationResult],
+    results: list[MaterializationResult], *, why: str = _STILL_READ
 ) -> list[MaterializationResult]:
     """Name each file the uninstall rewrote that still holds a BEGIN marker alone.
 
@@ -511,7 +555,8 @@ def stray_begin_warnings(
     (a stray line of the operator's, or what is left of an older block that
     lost its END marker, with that block's text below it). An install keeps
     it as it is, so the operator deletes it by hand, with any old Apothem
-    text below it.
+    text below it. *why* is the reason the text gives (:data:`RETIRED_WHY`
+    for a rules file an update took Apothem's block out of).
     """
     rewritten = {
         result.path: result.operation
@@ -527,8 +572,7 @@ def stray_begin_warnings(
             f"{path} still holds a line that reads as the Apothem BEGIN marker, "
             f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
             "Apothem's block is out. Delete that line by hand, with any old "
-            "Apothem text below it, and keep your own lines: the tool still "
-            "reads that text, and an install keeps it as it is.",
+            f"Apothem text below it, and keep your own lines: {why}.",
             detail={MARKER_LEFT: "1"},
         )
         for path, operation in rewritten.items()

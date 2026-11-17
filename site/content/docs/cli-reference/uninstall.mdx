@@ -392,20 +392,32 @@ quote outside a code block, an old block whose END marker you put back, or a
 block you pasted in a second time) is left as it is and named, and the
 uninstall does not finish: it prints `✗ <harness> uninstall did not finish:`
 followed by "1 file(s) hold two different blocks between Apothem's markers, so
-Apothem left them as they are; keep one block in each and fix the others as
-each warning says, keeping your own text, then run apothem uninstall again",
-and exits `2`, a second run included. Its warning names each block by its
-lines, as install and update do, and says to "Keep one block (in a file that
-starts with Apothem's frontmatter, the one right below it) and fix the others
-by hand, keeping your own text": delete an Apothem block you do not keep (an
-older one, or one pasted in a second time) from its BEGIN marker line to its
-END marker line, and change or delete the two marker lines of a pair of yours,
-or move them inside a code block. Do not delete Apothem's block to keep a pair
-of yours: the next uninstall would then take out the one block left, your own.
-An `apothem update` does not fix such a file: it leaves a file with two whole
+Apothem left them as they are; fix each as its warning says, keeping your own
+text (change the marker lines of a pair of yours, and delete only an older or
+pasted Apothem block), then run apothem uninstall again", and exits `2`, a
+second run included. Its warning names each block by its lines, as install and
+update do, and starts with a pair of yours: "For a marker pair of yours (an
+example you quote, say), change or delete its two marker lines, or move them
+inside a code block, keeping your own text; do not delete Apothem's block
+instead". Of Apothem's own blocks (an older one, or one pasted in a second
+time), it says to keep one (in a file that starts with Apothem's frontmatter,
+the one right below it) and to delete each other one from its BEGIN marker line
+to its END marker line. Do not delete Apothem's block to keep a pair of yours:
+the next uninstall would then take out the one block left, your own. An
+`apothem update` does not fix such a file: it leaves a file with two whole
 blocks as it is, with the same warning, and `verify` fails until you fix it
 (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+
+A BEGIN marker of yours above Apothem's block and an END marker of yours below
+it make a second block that shows only once Apothem's block is out. The
+uninstall's warning then names Apothem's block and those two marker lines, for
+example "once the block from line 5 to line 36 is out, the BEGIN marker at line
+2 and the END marker at line 39 make another", and says not to delete Apothem's
+block: the next run would then read lines 2 to 39 as Apothem's block. Delete or
+change the two marker lines it names instead, or move them inside a code
+block, keeping your own text; if that BEGIN marker is what is left of an older
+Apothem block, delete the old Apothem text below it too.
 
 When the uninstall's next step is to run `apothem update` and a warning names
 a file for an Apothem marker (in the `--format json` envelope, its `detail`

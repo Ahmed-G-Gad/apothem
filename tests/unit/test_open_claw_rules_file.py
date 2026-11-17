@@ -1988,6 +1988,54 @@ def test_an_update_that_retires_a_file_names_a_begin_marker_it_leaves(
     assert "still holds a line that reads as the Apothem BEGIN marker" in note
 
 
+def _update_json() -> tuple[int, dict[str, object]]:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    profile = str(profile_minimal_path())
+    result = CliRunner().invoke(
+        main, ["update", "--harness", "open-claw", "--profile", profile, "--json"]
+    )
+    envelope: dict[str, object] = json.loads(result.output)
+    return result.exit_code, envelope
+
+
+def test_an_update_that_retires_a_file_says_verify_fails_until_the_marker_goes(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """The reason given was the uninstall's, and neither half of it held.
+
+    It said the tool still reads the old text and an install keeps it, but
+    OpenClaw no longer loads a rules file in a workspace the config moved
+    away from, and no install writes there. An earlier install record still
+    lists the file, so verify names it until the BEGIN marker is gone, and
+    the warning now says so.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    stray = f"# mine\n{APOTHEM_BLOCK_BEGIN}\nold apothem text\n\nmy line\n\n"
+    target.write_bytes(stray.encode() + target.read_bytes())
+    _move_default_workspace(home, "~/ws-b")
+
+    code, envelope = _update_json()
+    verified, payload = _verify_json()
+
+    assert code == 0, envelope
+    (note,) = [m for m in _warning_messages(envelope) if str(target) in m]
+    assert " ".join(note.split()).endswith(
+        "Delete that line by hand, with any old Apothem text below it, and keep "
+        "your own lines: apothem verify fails for this tool until you do."
+    )
+    assert "the tool still reads that text" not in note
+    assert target.read_text(encoding="utf-8") == stray.rstrip("\n") + "\n"
+    assert verified == 1, payload
+    assert _stray_files(payload) == [target]
+
+
 def _fenced(text: str) -> str:
     """Return the rules file *text* with its block in a code block of yours."""
     at = text.index(APOTHEM_BLOCK_BEGIN)
