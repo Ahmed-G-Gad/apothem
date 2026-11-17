@@ -195,6 +195,10 @@ def _respelled(path: str, moves: list[tuple[str, str]]) -> str | None:
     A path in a user-level folder that none holds moves under the current
     home, where the gate looks for it; ``None`` for any other path. The
     folded text only finds the folder: the parts below it keep their case.
+    Where the OS does not fold case (macOS), a path whose leading parts
+    spell a folder of *moves* in another case is held by it when both are
+    one folder by file ID (see :func:`same_folder`), so ``~/.agents``
+    recorded under ``home`` is found under ``HOME``.
     """
     lexical = os.path.normpath(path)
     folded = os.path.normcase(lexical)
@@ -203,8 +207,12 @@ def _respelled(path: str, moves: list[tuple[str, str]]) -> str | None:
         base = folder.rstrip(os.sep)
         if folded in (folder, base):
             return to
+        depth = len(Path(base).parts)
         if folded.startswith(base + os.sep):
-            return str(Path(to, *parts[len(Path(base).parts) :]))
+            return str(Path(to, *parts[depth:]))
+        head = str(Path(*parts[:depth])) if len(parts) >= depth else ""
+        if head.lower() == base.lower() and same_folder(head, base):
+            return str(Path(to, *parts[depth:]))
     found = _SHARED_FOLDER.search(folded)
     if found is None:
         return None

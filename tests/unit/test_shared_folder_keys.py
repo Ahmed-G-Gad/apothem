@@ -498,9 +498,33 @@ def test_a_rollback_under_another_case_keeps_folders_the_first_case_holds(
     assert verified.exit_code == 0, verified.output
 
 
+def _keep_case_as_spelled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Compare paths as macOS does, on a Windows host.
+
+    macOS's default volume ignores case but keeps it, while
+    ``os.path.normcase`` leaves the text as it is and following the links
+    keeps the case as spelled. Windows ignores case the same way, so with
+    both made to keep the text, two case spellings of one folder differ as
+    text and are one folder only by file ID. The test paths hold no link.
+    """
+    if sys.platform != "win32":
+        pytest.skip("the plain run covers this where the OS does not fold case")
+    monkeypatch.setattr(os.path, "normcase", os.fspath)
+    # Path.resolve calls os.path.realpath, so the stand-in cannot use it.
+    absolute = os.path.abspath
+    monkeypatch.setattr(os.path, "realpath", lambda path, **_kw: absolute(path))
+
+
+@pytest.mark.parametrize("case", ["as-the-os-folds", "kept-as-spelled"])
 def test_an_uninstall_under_another_case_ends_both_records(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
 ) -> None:
+    # Codex installed under home made ~/.agents, then installed under HOME
+    # found it in place. The uninstall under HOME spells the first record's
+    # folders under HOME, matching ~/.agents by file ID where case is kept
+    # as text (macOS), and removes it once empty.
+    if case == "kept-as-spelled":
+        _keep_case_as_spelled(monkeypatch)
     home, upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
 
     result = CliRunner().invoke(main, ["uninstall", "--harness", "codex", "--yes"])
