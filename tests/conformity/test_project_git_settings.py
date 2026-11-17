@@ -1940,6 +1940,27 @@ def test_the_version_check_needs_no_pathspec_magic(
 
 
 @pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize("folder", [".", "docs"], ids=["top", "subfolder"])
+def test_the_version_check_reads_the_change_set_with_git_dir_exported(
+    folder: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hook that exports ``GIT_DIR`` and runs in a subfolder hides no change.
+
+    With ``GIT_DIR`` set and no ``GIT_WORK_TREE``, git takes the folder it
+    runs in as the top of the work tree. The check runs git in the folder
+    that holds the package, so the staged list is the same from a subfolder.
+    """
+    repo = _build_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    monkeypatch.setenv("GIT_DIR", str(repo / ".git"))
+    monkeypatch.chdir(repo / folder)
+
+    findings = semver_stability_grep.check_staged()
+
+    assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
+
+
+@pytest.mark.usefixtures("hermetic_git")
 def test_the_version_check_follows_a_link_into_the_checkout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
