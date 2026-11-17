@@ -44,8 +44,12 @@ function Find-RealPython {
             if (-not $info) { continue }
             if ($info.Length -lt 1024) { continue }
 
+            # -E -s: the probe runs in the opened project folder, so it reads
+            # no PYTHON* variable and no user site-packages; an empty
+            # PYTHONPATH entry would load a sitecustomize.py from that folder.
+            # The same flags as the hook start itself.
             $output = $null
-            try { $output = & $src -c $probe 2>$null } catch { continue }
+            try { $output = & $src -E -s -c $probe 2>$null } catch { continue }
             if ($LASTEXITCODE -ne 0) { continue }
             if (-not $output) { continue }
             $trimmed = ($output -join '').Trim()

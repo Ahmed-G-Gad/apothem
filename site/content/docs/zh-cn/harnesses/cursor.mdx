@@ -105,7 +105,7 @@ apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。当该文件�
 命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
 在 Windows 主机上，命令以 `& `（PowerShell 的调用运算符）开头，因为 Cursor 的桌面应用通过 PowerShell 运行钩子命令，而在 PowerShell 中，以带引号的程序路径开头的一行并不是一次调用。`sh` 会将开头的 `&` 读作语法错误，因此其他主机都不会得到它。文档指出了 shell，但没有指出引号规则，因此这是 Apothem 对 PowerShell 语法的解读。

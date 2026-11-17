@@ -72,7 +72,11 @@ find_real_python() {
                 [ -x "$_frp_path" ] || continue
                 _frp_size=$(wc -c < "$_frp_path" 2>/dev/null || echo 0)
                 [ "$_frp_size" -lt 1024 ] && continue
-                _frp_probe=$("$_frp_path" -c 'import sys; sys.stdout.write(str(sys.version_info.major) + " " + str(sys.version_info.minor))' 2>/dev/null) || continue
+                # -E -s: the probe runs in the opened project folder, so it
+                # reads no PYTHON* variable and no user site-packages; an empty
+                # PYTHONPATH entry would load a sitecustomize.py from that
+                # folder. The same flags as the hook start itself.
+                _frp_probe=$("$_frp_path" -E -s -c 'import sys; sys.stdout.write(str(sys.version_info.major) + " " + str(sys.version_info.minor))' 2>/dev/null) || continue
                 _frp_probe=$(printf '%s' "$_frp_probe" | tr -d '\r')
                 _frp_major=$(printf '%s\n' "$_frp_probe" | cut -d' ' -f1)
                 _frp_minor=$(printf '%s\n' "$_frp_probe" | cut -d' ' -f2)

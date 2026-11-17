@@ -64,7 +64,7 @@ Windows에서는 엔진 설치
 
 Claude Code가 아닌 하니스는 스크립트 뒤에 `--contract <id>`를 붙여 같은
 디스패처를 실행합니다. 예:
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 계약(`hooks/lib/vendor_contract.py`)은 벤더의 이벤트 및 도구 이름 표기와 페이로드
 키를 핸들러가 읽는 Claude 형태로 변환하고, 엔벨로프를 벤더가 읽는 형태로 다시
 쓰며, 벤더가 모델에 넘기지 않는 이벤트는 버립니다. 플래그가 없으면 아무것도

@@ -172,7 +172,7 @@ Perintah di berkas hook terlihat seperti ini, dengan interpreter dan jalur
 proyek Anda menggantikan kedua jalur tersebut:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` membuat dispatcher mencetak konteks sebagai teks biasa, yang

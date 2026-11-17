@@ -36,6 +36,7 @@ import ctypes
 import json
 import os
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -314,6 +315,11 @@ class LedgerRecord:
             stores under, as an absolute path string. Set on install records
             only; ``None`` for other kinds and for records written before the
             field existed, which reverse against the default location.
+        python_bin: The interpreter path the install pass wrote into hook
+            commands (the rendered ``${PYTHON_BIN}``), so ``doctor`` can tell
+            the install's own interpreter from one a changed hook file names.
+            Set on install records whose pass rendered it; ``None`` otherwise
+            and for records written before the field existed.
     """
 
     install_id: str
@@ -324,6 +330,7 @@ class LedgerRecord:
     targets: tuple[LedgerTarget, ...] = ()
     created_dirs: tuple[str, ...] = ()
     data_home: str | None = None
+    python_bin: str | None = None
 
     @classmethod
     def create(
@@ -336,6 +343,7 @@ class LedgerRecord:
         install_id: str | None = None,
         created_dirs: tuple[str, ...] = (),
         data_home: str | None = None,
+        python_bin: str | None = None,
     ) -> LedgerRecord:
         """Build a record, stamping a fresh ULID and UTC timestamp.
 
@@ -356,6 +364,7 @@ class LedgerRecord:
             targets=tuple(targets),
             created_dirs=tuple(created_dirs),
             data_home=data_home or None,
+            python_bin=python_bin or None,
         )
 
     def to_json_line(self) -> str:
@@ -376,6 +385,8 @@ class LedgerRecord:
             payload["created_dirs"] = list(self.created_dirs)
         if self.data_home is not None:
             payload["data_home"] = self.data_home
+        if self.python_bin is not None:
+            payload["python_bin"] = self.python_bin
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
@@ -400,6 +411,8 @@ class LedgerRecord:
         )
         raw_home = data.get("data_home")
         data_home = str(raw_home) if isinstance(raw_home, str) and raw_home else None
+        raw_python = data.get("python_bin")
+        python_bin = raw_python if isinstance(raw_python, str) and raw_python else None
         return cls(
             install_id=str(data["install_id"]),
             timestamp=str(data["timestamp"]),
@@ -409,6 +422,7 @@ class LedgerRecord:
             targets=targets,
             created_dirs=created_dirs,
             data_home=data_home,
+            python_bin=python_bin,
         )
 
 
@@ -1104,6 +1118,111 @@ def active_install_ids(records: list[LedgerRecord]) -> set[str]:
     return set(installs)
 
 
+def created_here(target: LedgerTarget) -> bool:
+    """Return True when the install record listing *target* says Apothem made it.
+
+    The pass created the file, or an earlier install still in place at the
+    same root did and the record carried that forward (``created``).
+    """
+    return target.outcome == "created" or target.created is True
+
+
+def _endings(records: list[LedgerRecord]) -> dict[int, int]:
+    """Map each install in one root's *records* that a later record ended to it.
+
+    Positions index *records*, replayed as :func:`active_install_records`
+    does: an ``uninstall`` ends every install still in place; a ``rollback``
+    ends the install it names and every later one.
+    """
+    stack: list[int] = []
+    ended: dict[int, int] = {}
+    for position, record in enumerate(records):
+        ids = [records[index].install_id for index in stack]
+        if record.kind == "install":
+            stack.append(position)
+        elif record.kind == "uninstall" or (
+            record.kind == "rollback" and record.install_id in ids
+        ):
+            cut = 0 if record.kind == "uninstall" else ids.index(record.install_id)
+            ended.update(dict.fromkeys(stack[cut:], position))
+            del stack[cut:]
+    return ended
+
+
+def _without_backups(record: LedgerRecord) -> LedgerRecord:
+    """Return *record* with no backup set referenced, so retention pins none."""
+    return replace(
+        record, targets=tuple(replace(t, backup_ref=None) for t in record.targets)
+    )
+
+
+def _with_dirs(record: LedgerRecord, dirs: Iterable[str]) -> LedgerRecord:
+    """Return *record* also listing *dirs* among the directories it created, sorted."""
+    known = set(record.created_dirs)
+    added = set(dirs) - known
+    if not added:
+        return record
+    return replace(record, created_dirs=tuple(sorted(known | added)))
+
+
+def _provenance(records: list[LedgerRecord], before: int) -> dict[int, LedgerRecord]:
+    """Return the records before position *before* that say what Apothem made.
+
+    *records* are one root's. Each install ended before *before* that made a
+    file (see :func:`created_here`) its ending record did not change is kept,
+    cut down to those files, with the record that ended it, and for a rollback
+    the install it names, so the kept records still replay to nothing in
+    place. A file a later kept install made is left out of an earlier one. No
+    kept record references a backup set. A shared folder another install kept
+    is then still known as made by Apothem, so the last holder's rollback
+    removes it (see ``UserLevelGate.inherited``). The kept install keeps the
+    directories its pass created, so once such a folder is gone the last
+    holder's rollback or uninstall also removes the empty folders that held
+    it (see ``install_driver_keys.made_dirs``); nothing else reads them, as
+    the record replays to nothing in place.
+
+    A later install of the root that made such a file while the earlier one
+    was still in place (a second install or an update carries ``created``
+    forward) may be the only record left that says Apothem made it, so it
+    also lists the directories the earlier one created. One installed after
+    the earlier one ended made the file anew and gets none of them: the
+    folders that stood then may be ones someone put back.
+    """
+    ended = _endings(records)
+    kept: dict[int, LedgerRecord] = {}
+    claimed: dict[str, int] = {}  # each file a kept install made, to its position
+    for position in sorted((p for p in ended if p < before), reverse=True):
+        record, end = records[position], records[ended[position]]
+        changed = {target.path for target in end.targets}
+        mine = [t for t in record.targets if created_here(t) and t.path not in changed]
+        heirs = {
+            claimed[target.path]
+            for target in mine
+            if target.path in claimed and claimed[target.path] < ended[position]
+        }
+        for heir in heirs:
+            kept[heir] = _with_dirs(kept[heir], record.created_dirs)
+        made = tuple(
+            replace(target, backup_ref=None)
+            for target in mine
+            if target.path not in claimed
+        )
+        if not made:
+            continue
+        claimed.update(dict.fromkeys((target.path for target in made), position))
+        kept[position] = replace(record, targets=made)
+        kept[ended[position]] = _without_backups(end)
+        if end.kind == "rollback":
+            named = next(
+                index
+                for index in range(position + 1)
+                if records[index].kind == "install"
+                and records[index].install_id == end.install_id
+            )
+            kept.setdefault(named, replace(records[named], targets=(), created_dirs=()))
+    return kept
+
+
 def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRecord]:
     """Return the records retention keeps, per root, in ledger order.
 
@@ -1114,26 +1233,36 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
     install, so uninstall still removes them. A root with no active install
     keeps every record from its last finished uninstall on (its last record
     when none finished), so the next uninstall there still finds that
-    finished one behind the unfinished ones that follow it.
+    finished one behind the unfinished ones that follow it. Before the tail
+    the records :func:`_provenance` picks before the oldest kept active
+    install (the last record when none is active) are kept too; they replay
+    to nothing in place, and one inside the tail is kept whole.
     """
     by_root: dict[str, list[int]] = {}
     for index, record in enumerate(records):
         by_root.setdefault(record.root, []).append(index)
     kept: dict[int, LedgerRecord] = {}
     for indices in by_root.values():
-        active = active_install_ids([records[index] for index in indices])
+        group = [records[index] for index in indices]
+        active = active_install_ids(group)
         active_positions = [
             index
             for index in indices
             if records[index].kind == "install" and records[index].install_id in active
         ]
         if active_positions:
-            start = active_positions[-keep_installs:][0]
+            start = settled = active_positions[-keep_installs:][0]
         else:
             finished = [
                 index for index in indices if records[index].kind == "uninstall"
             ]
-            start = finished[-1] if finished else indices[-1]
+            settled = indices[-1]
+            start = finished[-1] if finished else settled
+        # Provenance is judged against the last record, not the tail start: a
+        # file an install in the tail made is claimed there, so an earlier
+        # install that made it too is not kept for it.
+        for position, record in _provenance(group, indices.index(settled)).items():
+            kept[indices[position]] = record
         for index in indices:
             if index >= start:
                 kept[index] = records[index]
@@ -1143,12 +1272,7 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
             if index < start
             for path in records[index].created_dirs
         }
-        if dropped_dirs:
-            first = records[start]
-            kept[start] = replace(
-                first,
-                created_dirs=tuple(sorted(dropped_dirs | set(first.created_dirs))),
-            )
+        kept[start] = _with_dirs(kept[start], dropped_dirs)
     return [kept[index] for index in sorted(kept)]
 
 
@@ -1232,6 +1356,7 @@ __all__ = [
     "active_install_records",
     "append_record",
     "compact_records",
+    "created_here",
     "current_install_record",
     "find_record",
     "generate_ulid",

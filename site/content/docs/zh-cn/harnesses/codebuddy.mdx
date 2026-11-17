@@ -107,7 +107,7 @@ Apothem 不在 CodeBuddy 上注册 `PreToolUse` 守卫。CodeBuddy 的文档为 
 命令看起来如下所示，其中的两个路径会替换为你的解释器和项目路径：
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
 `--contract codebuddy` 对输出不起作用：CodeBuddy 读取的信封与 Claude Code 相同。CodeBuddy 通过你的 shell 运行钩子命令，在 Windows 上则通过 Git Bash 运行（它既不支持 cmd.exe，也不支持 PowerShell），因此这些命令使用 bash 引号规则和正斜杠形式的解释器路径。如果 CodeBuddy 要求，请安装 Git for Windows。
