@@ -426,3 +426,32 @@ def test_final_line_nested_too_deep_reads_as_a_torn_append(tmp_path: Path) -> No
     assert [r.install_id for r in read_records("codex", state_root=state)] == [
         record.install_id
     ]
+
+
+def test_an_install_record_keeps_the_interpreter_it_wrote_into_hooks() -> None:
+    record = LedgerRecord.create(
+        harness="cursor", root="/p", kind="install", python_bin="/usr/bin/python3"
+    )
+
+    stored = json.loads(record.to_json_line())
+
+    assert stored["python_bin"] == "/usr/bin/python3"
+    assert LedgerRecord.from_dict(stored).python_bin == "/usr/bin/python3"
+
+
+def test_a_record_without_an_interpreter_stores_no_python_bin() -> None:
+    record = LedgerRecord.create(harness="cursor", root="/p", kind="install")
+
+    stored = json.loads(record.to_json_line())
+
+    assert "python_bin" not in stored
+    assert LedgerRecord.from_dict(stored).python_bin is None
+
+
+def test_record_install_reads_the_interpreter_the_pass_rendered() -> None:
+    from apothem.harnesses._shared import install_driver
+    from apothem.harnesses._shared.install_driver_backup import _rendered_python_bin
+
+    assert _rendered_python_bin() is None
+    with install_driver.content_tokens(PYTHON_BIN="C:/py/python.exe"):
+        assert _rendered_python_bin() == "C:/py/python.exe"
