@@ -185,6 +185,24 @@ def _wait_for(path: Path, seconds: float = 90.0) -> bool:
     return path.exists()
 
 
+def _wait_for_line(path: Path, seconds: float = 90.0) -> str | None:
+    """The first line of PATH once it can be read whole, or None. On Windows
+    a file just renamed into place (Git for Windows' mv, as the stub gpg
+    does) can exist for a few milliseconds before it can be opened, while a
+    handle on it is still open, and an open then fails with a sharing
+    violation; a read can also come before the writer's line ends."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (FileNotFoundError, PermissionError):
+            text = ""
+        if text.endswith("\n"):
+            return text.splitlines()[0]
+        time.sleep(0.05)
+    return None
+
+
 # L1: the clone's own settings and attributes ---------------------------------
 
 
@@ -884,8 +902,9 @@ def test_a_killed_run_frees_the_lock(tmp_path: Path) -> None:
         stderr=subprocess.DEVNULL,
     )
     try:
-        assert _wait_for(record), "the stub gpg never ran"
-        assert record.read_text(encoding="utf-8").strip() == "held"
+        state = _wait_for_line(record)
+        assert state is not None, "the stub gpg never ran"
+        assert state == "held"
         run.kill()
         run.wait(timeout=60)
         deadline = time.monotonic() + 10
