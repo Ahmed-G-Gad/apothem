@@ -15,7 +15,6 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 
 from .install_driver_pathsafety import _is_link, _walk_without_links
@@ -74,6 +73,8 @@ def _ignored(folder: Path, relative: Path, ignore: IgnoreFn) -> bool:
 
 def _install_ignore(harness: str) -> IgnoreFn | None:
     """Return the copy filter *harness*'s install applies, or ``None`` when unknown."""
+    from apothem.harnesses._shared import install_driver
+
     try:
         rules = install_driver.load_rules(harness)
     except RuntimeError:

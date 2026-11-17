@@ -9,7 +9,7 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | Script | Purpose |
 |--------|---------|
 | `apothem` / `apothem.ps1` / `apothem.cmd` | The `apothem` CLI binary. Dispatches `apothem <subcommand>` to the matching install/update/uninstall script; serves `--help` and `--version` inline. `.ps1` is the PowerShell parity sibling; `.cmd` is the Windows CMD wrapper delegating to the `.ps1`. |
-| `build_release_tarball.py` | Cross-platform release-runtime archive builder (tar.gz on darwin/linux, zip on windows). Adds the `bin/` launcher layout the installers consume, excludes plan-suite ephemera / CI metadata / VCS internals, and emits the archive's SHA-256 digest to stdout. |
+| `build_release_tarball.py` | Cross-platform release-runtime archive builder (tar.gz on darwin/linux, zip on windows). Adds the `bin/` launcher layout the installers consume, leaves out every path `.gitattributes` marks `export-ignore` (the test suite among them) plus plan-suite ephemera / CI metadata / VCS internals, and emits the archive's SHA-256 digest to stdout. A checkout git cannot read, or one whose `.git/info/attributes` sets attributes, stops the build. |
 | `inject-header.py` / `inject-header.sh` | Deterministic authorship-header injector. Reads the canonical SPDX header line from `src/apothem/schemas/`; runs in `fix-in-place`, `emit-patch`, or `check` modes. The `.sh` wrapper locates a Python 3 interpreter and delegates to the `.py`. |
 
 ## `dev/` — contributor maintenance utilities

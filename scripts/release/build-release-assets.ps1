@@ -53,6 +53,8 @@ if (Test-Path -LiteralPath $tarballScript) {
             --name apothem `
             --version $Version `
             --platform $platform
+        # $ErrorActionPreference does not stop on a native command's exit code.
+        if ($LASTEXITCODE -ne 0) { throw "build-release-assets: archive build failed for $platform (exit $LASTEXITCODE)" }
     }
 }
 
@@ -81,6 +83,7 @@ $sbomScript = Join-Path $RepoRoot 'scripts' 'release' 'generate-sbom.ps1'
 if (Test-Path -LiteralPath $sbomScript) {
     $sbomOut = Join-Path $AssetsDir 'sbom.cdx.json'
     & pwsh -NoProfile -File $sbomScript -OutputPath $sbomOut -DistDir $AssetsDir
+    if ($LASTEXITCODE -ne 0) { throw "build-release-assets: SBOM generation failed (exit $LASTEXITCODE)" }
 }
 
 $installScript = Join-Path $RepoRoot 'dist' 'install' 'install.ps1'
