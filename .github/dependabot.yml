@@ -105,9 +105,26 @@ updates:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
+      # A dependency that fits several groups goes to the one whose rule is
+      # most specific, and a group with no patterns (score 500) outranks a
+      # wildcard pattern such as "@tailwindcss/*" (99), so dev-tools
+      # would take @tailwindcss/postcss away from the tailwind group. A group
+      # never takes a name its exclude-patterns match. @tailwindcss/postcss
+      # pins tailwindcss exactly, so the two must move in one pull request:
+      # the exclude keeps them together. Sources, in dependabot-core:
+      # updater/lib/dependabot/updater/pattern_specificity_calculator.rb (the
+      # scores) and common/lib/dependabot/dependency_group.rb (`contains?`
+      # returns false on an excluded name):
+      # https://github.com/dependabot/dependabot-core/blob/main/updater/lib/dependabot/updater/pattern_specificity_calculator.rb
+      # https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/dependency_group.rb
+      # GitHub's reference for groups and exclude-patterns:
+      # https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#patterns-and-exclude-patterns-groups
       dev-tools:
         dependency-type: development
         update-types: [minor, patch]
+        exclude-patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
     ignore:
       # @types/node follows the site's Node floor (`engines` and `.nvmrc`,
       # Node 22): a newer major lets the type-check accept Node APIs the
