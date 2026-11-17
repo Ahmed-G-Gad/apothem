@@ -100,21 +100,6 @@
   ],
   "codex": [
     {
-      "mode": "sentinel_merge",
-      "source": "harnesses/codex/templates/AGENTS.md",
-      "target": "<ROOT>/AGENTS.md"
-    },
-    {
-      "mode": "write_text",
-      "source": "harnesses/codex/templates/hooks.json",
-      "target": "<ROOT>/hooks.json"
-    },
-    {
-      "mode": "merge_tree_entries",
-      "source": "hooks",
-      "target": "<ROOT>/hooks"
-    },
-    {
       "mode": "merge_tree_entries",
       "source": "rules",
       "target": "<HOME>/.config/apothem/rules"
@@ -130,14 +115,29 @@
       "target": "<HOME>/.agents/skills"
     },
     {
-      "mode": "codex_agents",
-      "source": "agents",
-      "target": "<ROOT>/agents"
-    },
-    {
       "mode": "merge_tree_entries",
       "source": "templates",
       "target": "<HOME>/.config/apothem/templates"
+    },
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/codex/templates/AGENTS.md",
+      "target": "<ROOT>/AGENTS.md"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/codex/templates/hooks.json",
+      "target": "<ROOT>/hooks.json"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/hooks"
+    },
+    {
+      "mode": "codex_agents",
+      "source": "agents",
+      "target": "<ROOT>/agents"
     }
   ],
   "cursor": [
