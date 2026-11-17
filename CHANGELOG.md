@@ -376,6 +376,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`apothem doctor` starts Cursor's hook command on Windows.** The command a
   Windows install writes begins with PowerShell's `&`, which doctor tried to
   start as a program, so every healthy Cursor install failed the hook check.
+- **The conformity validators that read git's output read it correctly.**
+  `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
+  Python's `str.splitlines()` also breaks lines at the record marker its
+  `git log` format uses, so every commit time was lost. It now splits on new
+  lines only, checks only per-folder companions that still exist (never the
+  root `AGENTS.md`, which is the canon rather than a folder's companion), and
+  checks a subfolder root against that subfolder's own history.
+  `no-global-plans-grep`, `agents-md-coverage-grep`, and the `--staged` checks
+  of `production-ready-pr-grep` and `semver_stability_grep` received non-ASCII
+  path names in git's quoted form (`"caf\303\251.md"`), which their path rules
+  did not match; git now prints every name as it is. A repository whose
+  `diff.orderFile` named a missing file made both `--staged` checks see an
+  empty change set and pass; they no longer read that setting. On Windows,
+  `semver_stability_grep --staged` named `src\apothem\__init__.py` with
+  backslashes, which git does not accept, so a staged MAJOR version bump never
+  admitted a breaking change.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -1188,6 +1204,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **A checked project's git settings no longer make the conformity gate start
+  a program.** `--all`, `--all-perwrite`, three standalone validators
+  (`no-global-plans-grep`, `conventional-commit-grep` and
+  `agents-md-coverage-grep`) and the two `--staged` change-set checks run
+  `git` in the project they check, and git reads that repository's own
+  `.git/config`. A project that came with its `.git` folder, in an archive or
+  a shared folder, could set `core.fsmonitor` to a program that ran during
+  `git ls-files`, turn on `log.showSignature` so that `git log` ran its
+  `gpg.program`, or make a partial clone fetch a missing object through
+  `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. A
+  staged submodule entry also let `semver_stability_grep --staged` run
+  `git show` on a commit: a `%G` placeholder in `format.pretty` started the
+  signature program, and `diff.submodule=diff` started a second git inside the
+  submodule with the submodule's own diff program. Every git command the gate
+  runs now turns those settings off on git's command line (no file-system
+  monitor, hooks, pager or automatic maintenance; signature programs that
+  cannot start; no external diff or text-conversion program; submodule changes
+  as commit ids only; no diff order, excludes or mailmap file read), reads file
+  contents with `git cat-file blob`, which refuses a submodule entry, sets
+  `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, and starts git only
+  from a full-path entry of `PATH`.
+  On Windows the gate no longer runs a `git.exe` that sits in the folder it
+  was started from. The repository can still make git read a path elsewhere
+  through any setting or file that names one (for example `include.path`,
+  `core.worktree`, a `.git` file's `gitdir:` line or
+  `.git/objects/info/alternates`); on Windows a network path there makes
+  Windows sign in to that server.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the
