@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
@@ -115,13 +116,16 @@ def _classify(path: str) -> set[str]:
 
 
 def _staged_paths() -> list[str]:
-    """Return the staged-diff path list via git; empty on failure."""
+    """Return the staged-diff path list via git; empty on failure.
+
+    git runs through :func:`run_git`, so the repository's own settings cannot
+    make it start a program. ``-z`` ends each name with NUL, unquoted, so no
+    character in a name can split or hide it.
+    """
     try:
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],  # noqa: S607  # PATH-resolved git is acceptable for a developer-tool grep; full-path resolution would require host-discovery and breaks portability across operator setups.
+        result = run_git(
+            ["diff", "--cached", "--name-only", "-z"],
             check=True,
-            capture_output=True,
-            text=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except (
@@ -130,7 +134,7 @@ def _staged_paths() -> list[str]:
         FileNotFoundError,
     ):
         return []
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return [name for name in result.stdout.split("\0") if name]
 
 
 def _check_staged() -> GrepResult:

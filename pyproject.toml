@@ -327,9 +327,6 @@ max-complexity = 20
 "scripts/dev/audit_all.py"                                    = ["S603"]
 "scripts/dev/auto_update.py"                                  = ["S603", "S607"]
 "scripts/dev/chaos_pass.py"                                   = ["S603"]
-"src/apothem/conformity/production_ready_pr_grep.py"   = ["S603"]
-"src/apothem/conformity/semver_stability_grep.py"      = ["S603", "S607"]
-"src/apothem/conformity/agents_md_coverage_grep.py"    = ["S603", "S607"]
 # `_PASS` is a label string ("[PASS]"), not a credential. The
 # heuristic security-rule pattern-matches on the variable name.
 "src/apothem/lib/reporter.py" = ["S105"]
