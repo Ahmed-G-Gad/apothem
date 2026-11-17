@@ -169,7 +169,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exchange, and stops with a plain error when it does not. The Entra route
   and the `VSCE_PAT` token stay as alternatives. An unrecognised
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
-  release-cycle runbook gains the setup procedure.
+  release-cycle runbook gains the setup procedure. `tools/vsce` now locks
+  vsce 4.1.0, so `VSCE_AUTH=oidc` works from this release.
 - **The weekly convention monitor watches each tool's release channels.**
   OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
   GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
@@ -192,12 +193,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   OpenCode has four channels: `opencode-ai` for OpenCode 1, `@opencode/cli`
   for OpenCode 2, the GitHub releases of `anomalyco/opencode`, where a new
   major line shows whatever npm package it ships as, and
-  `opencode.ai/install`. Two of them watch the OpenCode decision's second
-  signal, OpenCode 1's installer or npm package moving to OpenCode 2: the
-  check fails when `opencode-ai`'s `latest` version moves past major version
-  1, or when `opencode.ai/install` stops redirecting to the OpenCode 1
-  installer script. The decision's first signal, a date to remove OpenCode
-  2's translation of OpenCode 1's formats, stays a check by hand.
+  `opencode.ai/install`. Apothem writes OpenCode 1 formats for both lines,
+  and two of these channels flag when that should change: the check fails
+  when `opencode-ai`'s `latest` version moves past major version 1, or when
+  `opencode.ai/install` stops redirecting to the OpenCode 1 installer script.
+  A date for OpenCode 2 to stop translating OpenCode 1's formats is checked
+  by hand.
   Antigravity, Cursor, Kiro, Trae and Windsurf have no release channel a
   script can query, and the file gives the reason for each. The check job
   sends the workflow's `GITHUB_TOKEN` to the GitHub API with read access
@@ -209,6 +210,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The Windows test cells in CI get 120 minutes.** The Windows cells of the
+  `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
+  cancelled cells whose tests had passed. They now get 120, as the CI Matrix
+  Windows cells already do; the other cells keep 90. The workflow
+  validator (`workflow-concurrency-grep`) accepts this one form for a matrix
+  job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
+  most 120 and M at most 90, and still flags any other expression. Every
+  limit, N and M included, must be at least 1. It now
+  also checks the limit a job passes to a reusable workflow through
+  `with: timeout-minutes`, which it skipped before, so the CI Matrix limit is
+  held to the same ceilings. A caller without a matrix gets the matrix
+  ceiling when it calls a workflow in the same folder whose matrix job takes
+  that limit.
 - **A link in a translated docs page keeps the reader in their language.** A
   link such as `/docs/install#choose-a-channel` in the body of a translated page
   now opens the translated copy of the page, at the matching section, when the
@@ -233,9 +247,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **CI installs pip from a hash-locked file.** Every workflow upgrades pip
   with `--require-hashes` from `scripts/ci/requirements-ci-pip.txt` instead
   of a version pin, so the download is checked against its published hash,
-  and Dependabot proposes pip upgrades with their hashes. The same pip,
-  26.2.1, still runs in CI; the lock holds it at 26.2 or later, which fixes
-  CVE-2026-13346. `check_pip_pin_drift.py` now checks the lock file and the
+  and Dependabot proposes pip upgrades with their hashes. CI runs the pip
+  version the lock holds, 26.2 or later, which fixes CVE-2026-13346.
+  `check_pip_pin_drift.py` now checks the lock file and the
   workflows' install lines instead of the per-workflow version setting, and
   `pip-audit.yml` audits the lock. The PowerShell steps that install it now
   stop on a failed install.
@@ -315,9 +329,64 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `unroutable` and gets no request. Like an unreachable URL, it does not fail
   the check. Each run carries a warning naming such a host, and the issue the
   monitor files lists its URLs to check by hand.
+- **Dependabot updates tailwindcss and `@tailwindcss/postcss` in one pull
+  request.** The website's `tailwind` group lists both, yet
+  `@tailwindcss/postcss` arrived in the `dev-tools` group's pull request.
+  Dependabot gives a package that fits several groups to the group whose rule
+  fits it most closely, and a group with no name patterns, like `dev-tools`,
+  counts as closer than a wildcard such as `@tailwindcss/*`. Because
+  `@tailwindcss/postcss` requires one exact tailwindcss version, either pull
+  request alone left two tailwindcss versions in the lockfile. `dev-tools` now
+  excludes both names, so the `tailwind` group is the only one they fit.
 
 ### Fixed
 
+- **A deleted project no longer lets an install overwrite your own skill.**
+  After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
+  a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` or `~/.trae/skills/`) under an
+  Apothem skill's name was overwritten by the next install (a backup was
+  kept). The install now skips it with the `skill_conflict` warning. A project
+  folder that still exists but holds none of the files its install recorded
+  there with Apothem's content in them (a re-cloned project that keeps only
+  its own instruction file, say) counts as deleted too, and so does one on a
+  drive or network share that does not answer. The deleted install still
+  counts while the skill folder holds exactly the files it recorded,
+  unchanged, so an update still refreshes a folder Apothem wrote. A folder
+  that already holds what this release writes is kept as it is. Otherwise,
+  when only deleted installs list a skill folder, or only an earlier install
+  in the same folder did, the install skips it and leaves it untouched unless
+  it holds exactly the files one of them recorded: you made it or edited it
+  (changed, added or removed a file), or an earlier release wrote it without
+  recording its files. For a skipped folder, the install, update and dry-run
+  warning and `apothem verify` give the same cause and fix: keep it there and
+  the harness stays not verified, or move it out of the skills folder, then
+  run `apothem update` for that harness (with `--project` for a project
+  install). `apothem verify` looks for these folders only for a harness that
+  is installed. A project installed at the home folder itself no longer counts
+  as present through the shared folders it writes there. A Codex install into
+  a removed or emptied `~/.codex` skips such a folder too: the files it had
+  just written there no longer make its old install count as present.
+- **`apothem doctor` checks the hooks of the install it is looking at.** It
+  read the newest install record of a harness from any folder. When that
+  record came from another folder (another project, a `CODEX_HOME`, or one you
+  had since deleted), doctor checked the wrong install's hooks or none, and
+  could report the harness as healthy even when its hook command could not
+  start. It now reads the record of the harness folder, or of the `--project`
+  folder, that it checks, under whichever spelling of that folder the install
+  used. When that folder has no record, the plain report shows the hook check
+  as `not checked`, its last line says which hook commands were not checked
+  rather than `All checks passed`, and for a project-scope harness the fix
+  names `--project`, quoted for the shell as uninstall's steps are (double
+  quotes on Windows, single quotes elsewhere), or in words, with the folder as
+  it is, when those quotes cannot carry it. The command, or that folder, ends
+  the fix, after a colon. `verify`, and the next step `quickstart` prints,
+  quote `--project` the same way; when the quotes cannot carry the folder,
+  `quickstart` prints the command up to `--project` and names the folder in
+  words after it.
+- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
+  Windows install writes begins with PowerShell's `&`, which doctor tried to
+  start as a program, so every healthy Cursor install failed the hook check.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -664,11 +733,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   them: for a project install, the exact commands, with the folder quoted for
   your shell and a `--profile` placeholder for the profile that install used.
   A folder those quotes cannot carry gets the same steps in words: on Windows,
-  one holding `$`, a backquote, `%`, `!` or a double quote, one with no space
-  that holds `&`, `^`, `|`, `<` or `>`, or a network share; elsewhere, one
-  holding a straight or curly single quote. Apothem's hook scripts and the conformity gate's checks also stop
-  writing Python bytecode caches (`__pycache__`) into the folders Apothem
-  installs.
+  one holding `$`, a backquote, `%`, `!`, a straight or curly double quote or a
+  control character, one with no space that holds `&`, `^`, `|`, `<` or `>`,
+  or one with two backslashes in a row, as in a network share; elsewhere, one
+  holding a straight or curly single quote, a control character or two
+  backslashes in a row, or one ending in a backslash. Apothem's hook scripts
+  and the conformity gate's checks also stop writing Python bytecode caches
+  (`__pycache__`) into the folders Apothem installs.
 - **The install ledger stays right when a write fails.** If an uninstall
   cannot write its final record, it records the uninstall as unfinished, so
   running it again finishes the job. When the ledger still ends in a finished
@@ -816,8 +887,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `agents.entries.<id>.subagents.allowAgents`, and the Open-Claw page names the
   `agents.entries.<id>.skills` list. OpenClaw also loads `AGENTS.md` and five
   other files from each agent's workspace. The pin now records them. The
-  install still writes none of them, and whether it should is an open question
-  for the maintainer. CodeBuddy moved its IDE Rules page, and that page
+  install does not write these files; it adds its own `apothem/AGENTS.md`
+  through the `bootstrap-extra-files` hook (see Added). CodeBuddy moved its IDE Rules page, and that page
   describes one folder per rule holding a `RULE.mdc` file. The CodeBuddy rules
   file and docs now link the CodeBuddy Code memory page, which documents the
   plain `.md` rule files the install writes. The docs say Apothem has not
@@ -838,6 +909,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   apart from `dependabot.yml`, so it found no workflows and reported
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
+- **The release archives leave out the test suite.** The platform archives
+  (`apothem-vX.Y.Z-darwin.tar.gz`, `-linux.tar.gz` and `-windows.zip`) were
+  built from every tracked file, and the builder did not read the
+  `export-ignore` lines in `.gitattributes`, so the archives carried `tests/`,
+  which GitHub's source archives leave out. In an archive built from the
+  current source, `tests/` held 1,916 of the 3,415 files. The builder now
+  leaves out every path that GitHub's source archives leave out. The installed
+  engine does not use those files, and the wheel, the sdist and the npm
+  package never held them. Updating an archive install made by an installer
+  from release 1.5.0 or earlier keeps its old `tests/` folder, because the
+  installers keep every folder they cannot tell is theirs; you can delete it.
 - **The pipeline overview's command index is current in every translation.**
   The docs generator wrote the index of shipped commands into the English page
   only, so the eleven translated overviews kept older summaries for every
@@ -1002,6 +1084,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (32 KiB by default). The developer guide states both rules. On Python 3.10,
   which has no TOML reader, a `~/.codex/config.toml` gives a null for Codex
   instead of ending the run.
+- **Docs pages have one skip link, and it works.** From 16.18.0 Fumadocs
+  layouts add their own "Skip to Content" link, aimed at a page container the
+  site replaces with its `main` element, so the link led nowhere. It stayed
+  hidden even when it had keyboard focus, so the second Tab press on every docs
+  page seemed to lose the focus. The site now hides that link. The first Tab
+  still reaches the site's own "Skip to content" link, which shows when
+  focused and moves the focus to the page content.
 
 ### Security
 
@@ -1179,16 +1268,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refusals as a real run, and leaves `APOTHEM_HOME` unchanged. The
   [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
   explains each mode.
-- **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
-  allows every tool by default and asks before reading `.env` and `.env.*`
-  files. A helper's rules come after those defaults and after the operator's
+- **OpenCode helpers no longer turn off the `.env` read prompt
+  (GHSA-qpmp-8g2h-296c).** OpenCode allows every tool by default and asks
+  before reading `.env` and `.env.*` files. A helper's rules come after those defaults and after the operator's
   own `permission` config, and the last matching rule wins, in OpenCode 1
   (v1.19.5) and OpenCode 2 (v2.2.5). Every helper the OpenCode install wrote
   carried `read: allow`, which turned that prompt off, and `allow` rules for
   the other tools it may use, which overrode a stricter rule the operator set,
   such as a global `bash: ask`. Helpers now carry only `deny` rules, for the
   tools they must not use, so the `.env` prompt and the operator's rules apply
-  to them.
+  to them. Releases 1.0.1 to 1.5.0 are affected. Upgrading leaves the
+  installed helpers as they are: after the upgrade, run `apothem update` (or
+  `apothem install --harness opencode`), then check that no Apothem helper
+  in `~/.config/opencode/agents` still has an `allow` line.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
@@ -1198,6 +1290,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+  moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
+  GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
+  image optimization, Edge routes and self-hosted response forwarding). The
+  site is published as static files with no Next.js server, so none of them
+  reached it. The same update moves Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 
 ## [1.5.0] - 2026-10-28
 

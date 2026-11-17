@@ -245,6 +245,21 @@
   }
 
   /*
+   * One skip link (WCAG 2.4.1 / 2.4.7). Fumadocs layouts always render their
+   * own "Skip to Content" link to #nd-page (SkipToContent in fumadocs-ui's
+   * layouts/shared/client.js), kept screen-reader-only even when focused, and
+   * offer no option to turn it off. The site replaces that page container
+   * with <main id="main-content">, so #nd-page never exists: the link would
+   * be a second, invisible tab stop that goes nowhere. The root layout's
+   * "Skip to content" link, visible on focus, is the one skip link; this
+   * global rule removes the duplicate from the tab order and the
+   * accessibility tree under any Fumadocs layout.
+   */
+  a[href='#nd-page'] {
+    display: none;
+  }
+
+  /*
    * Themed native scrollbar. The Fumadocs sidebar renders its own Radix
    * ScrollArea overlay, but the page (and any native-overflow region) shows
    * the browser default; this tints the track/thumb with the border/muted
