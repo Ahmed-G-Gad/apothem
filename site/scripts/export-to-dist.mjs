@@ -20,6 +20,9 @@
 // `dir="ltr"`. The locale → (code, dir) table is projected from the single
 // i18n source of truth so this step never diverges from `lib/i18n.ts`.
 //
+// Then it writes a redirect stub at the URL of each removed page listed in
+// `moved-page-redirects.mjs`, in English and every locale.
+//
 // Last, it writes a redirect stub at `<page>/index.html` for every exported
 // `<page>.html`, so a URL with a trailing slash reaches the page rather than a
 // 404 (see `trailing-slash-redirects.mjs`).
@@ -35,6 +38,7 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeMovedPageRedirects } from './moved-page-redirects.mjs';
 import { writeTrailingSlashRedirects } from './trailing-slash-redirects.mjs';
 
 // Anchor the build directories to the site root (the script's parent-of-parent),
@@ -94,6 +98,13 @@ for (const file of walkHtml(SERVE_DIR)) {
   }
 }
 console.log(`Baked per-locale lang/dir into ${rewritten} localized HTML file(s).`);
+
+// A removed page's URL would answer 404; send it to the page that replaces it.
+const moved = writeMovedPageRedirects(SERVE_DIR, {
+  siteUrl: loadSiteUrl(),
+  locales: PATH_TO_LOCALE,
+});
+console.log(`Wrote ${moved.length} moved-page redirect stub(s).`);
 
 // A static host answers `/docs/install/` from `docs/install/index.html`, which
 // the export does not write; add a redirect stub per page so URLs with a
