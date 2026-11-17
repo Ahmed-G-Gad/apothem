@@ -1206,8 +1206,10 @@ def test_the_stray_warning_says_not_to_put_the_end_marker_back(tmp_path: Path) -
         "two Apothem blocks, which install and update leave as they are."
     )
     assert (
-        "once an install or update has written Apothem's block apart from it, do "
-        "not add the END marker back (the file would then hold two Apothem blocks)"
+        "do not add the END marker back with a line of yours between the two "
+        "markers (the next run would replace or take out every line between "
+        "them), nor at all once an install or update has written Apothem's block "
+        "apart from it (the file would then hold two Apothem blocks)"
     ) in note
 
 
@@ -1248,9 +1250,11 @@ def test_a_preview_says_not_to_put_the_end_marker_back_only_once_it_is_written(
     assert code == 0, output
     assert "write a block of their own apart from it" in preview
     assert preview.endswith(
+        "Do not add the END marker back with a line of yours between the two "
+        "markers: the next run would replace or take out every line between them. "
         "Once an install or update has written Apothem's block apart from it, do "
-        "not add the END marker back below that text: the file would then hold "
-        "two Apothem blocks, which install and update leave as they are."
+        "not add the END marker back at all: the file would then hold two Apothem "
+        "blocks, which install and update leave as they are."
     )
     assert updated == 0, update_output
     assert (after.count(B), after.count(E)) == (1, 1)
@@ -1303,8 +1307,8 @@ def test_a_file_with_two_whole_blocks_names_each_block(
         "Of Apothem's own blocks (an older one, or one pasted in a second time), "
         "keep one (in a file that starts with Apothem's frontmatter, the one right "
         "below it) and delete each other one from its BEGIN marker line to its END "
-        "marker line. Then run apothem update again. apothem verify fails for this "
-        "tool until you fix the file."
+        "marker line, keeping any line of your own inside it. Then run apothem "
+        "update again. apothem verify fails for this tool until you fix the file."
     )
 
 
@@ -1517,6 +1521,238 @@ def test_the_uninstall_names_the_marker_lines_of_yours_around_apothem_s_block(
         f"lines at lines {outer} and {outer_end} instead"
     ) in warning
     assert again == 0, again_output
+    assert anchor.read_bytes().decode("utf-8") == (
+        "my own text above\nBEGIN (my marker)\nmy note\n\nmy own text below\n"
+        "END (my marker)\n"
+    )
+    assert "code block" not in warning
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_the_uninstall_leaves_an_end_marker_you_quote_in_code_below_the_block(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """The END marker below Apothem's block is one you quote in a code example.
+
+    With what is left of an older block above, it makes a second block once
+    Apothem's is out, and the text said to delete or change it too, an edit
+    to your example that the fix does not need. The text now asks for the
+    BEGIN marker alone and says the END marker can stay; done that way, the
+    uninstall run again finishes and keeps your example as it is.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    shaped = (
+        f"my own text above\n{B}\nold Apothem rule\n\n{text}How the markers look:"
+        f"\n\n```md\n{E}\n```\n\nmy own text below\n"
+    )
+    anchor.write_bytes(shaped.encode())
+    lines = shaped.split("\n")
+    outer = lines.index(B) + 1
+    inner, inner_end = lines.index(B, outer) + 1, lines.index(E) + 1
+    quoted = lines.index(E, inner_end) + 1
+
+    code, output, warning, _ = _uninstall_warning(box, anchor)
+    anchor.write_bytes("\n".join(lines[: outer - 1] + lines[outer + 2 :]).encode())
+    again, again_output = box.invoke("uninstall", "--yes", "--json")
+    left = anchor.read_bytes().decode("utf-8")
+
+    assert code == 2, output
+    assert (
+        f"Do not delete the block from line {inner} to line {inner_end}: the next "
+        f"run would then read lines {outer} to {quoted} as Apothem's block, and "
+        "replace or take out what is between them. Delete or change the BEGIN "
+        f"marker at line {outer} instead, keeping your own text (if it is what is "
+        "left of an older Apothem block, delete the old Apothem text below it "
+        f"too); the END marker at line {quoted} sits inside a code block that "
+        f"opens at line {quoted - 1}, so it can stay as it is; then run the "
+        "uninstall again."
+    ) in warning
+    assert again == 0, again_output
+    assert f"```md\n{E}\n```\n\nmy own text below\n" in left
+    assert "my own text above" in left
+    assert B not in left
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_the_two_block_step_keeps_a_line_of_yours_inside_an_older_block(
+    harness_id: str, sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """An END marker put back below a line of yours makes it the older block's.
+
+    The step for Apothem's own blocks said to delete each other one from its
+    BEGIN marker line to its END marker line, with no word on your own text,
+    so that line went with it. It now says to keep any line of yours inside
+    it; done that way, the update writes one block and verify passes.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    original = anchor.read_bytes().decode("utf-8")
+    anchor.write_bytes((original.replace(f"{E}\n", "") + "my own line\n").encode())
+    changed = _profile_named(tmp_path, "Changed Person")
+    first, first_output = box.invoke("update", "--profile", changed, "--json")
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    lines.insert(lines.index("my own line") + 1, E)
+    anchor.write_bytes("\n".join(lines).encode())
+
+    second, second_output = box.invoke("update", "--profile", changed, "--json")
+    [(old, old_end), _] = whole_blocks("\n".join(lines))
+    anchor.write_bytes(
+        "\n".join([*lines[: old - 1], "my own line", *lines[old_end:]]).encode()
+    )
+    third, third_output = box.invoke("update", "--profile", changed, "--json")
+    after = anchor.read_bytes().decode("utf-8")
+    verify, verify_output = box.invoke("verify")
+
+    assert first == 0, first_output
+    assert second == 0, second_output
+    [message] = [
+        _flat(str(warning["message"]))
+        for warning in json.loads(second_output)["warnings"]
+        if _names(str(warning["message"]), anchor)
+    ]
+    assert (
+        "delete each other one from its BEGIN marker line to its END marker line, "
+        "keeping any line of your own inside it."
+    ) in message
+    assert third == 0, third_output
+    assert (after.count(B), after.count(E), after.count("my own line")) == (1, 1, 1)
+    assert verify == 0, verify_output
+
+
+# --- with no install record, CLAUDE.md gets the same two-block text -----------
+
+#: How the warning for a file no install record lists ends, after the fix.
+_UNLISTED_END = (
+    "; then delete Apothem's block by hand if you no longer want it: no install "
+    "record lists the file, so the uninstall leaves it as it is."
+)
+
+
+def _unrecorded_uninstall(
+    box: _Sandbox, anchor: Path
+) -> tuple[int, str, dict[str, Any], str]:
+    """Delete the install ledger, then run the uninstall with no record in place.
+
+    Return its exit code, output, the warning that names *anchor* (flattened
+    message) and the failure line.
+    """
+    install_ledger.ledger_path(box.entry.package_key).unlink()
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    payload = json.loads(output)
+    [warning] = [
+        entry for entry in payload["warnings"] if _names(str(entry["message"]), anchor)
+    ]
+    warning["message"] = _flat(str(warning["message"]))
+    return code, output, warning, _flat(str(payload["results"][0]["message"]))
+
+
+def _update_then_uninstall(box: _Sandbox) -> None:
+    """Run the update, then the uninstall, the failure line asks for; both pass."""
+    profile = str(profile_minimal_path())
+    updated, update_output = box.invoke("update", "--profile", profile, "--json")
+    assert updated == 0, update_output
+    again, again_output = box.invoke("uninstall", "--yes", "--json")
+    assert again == 0, again_output
+
+
+def test_with_no_record_a_pair_of_yours_in_claude_md_gets_the_two_block_text(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """The warning said to delete the lines from BEGIN to END by hand.
+
+    With no install record, the uninstall leaves CLAUDE.md as it is and names
+    it. Above Apothem's block sits a marker pair of yours, so that step, taken
+    from the first BEGIN marker to the next END marker, deleted your pair and
+    its text. The warning now names each block and puts your pair first, as
+    it does for a recorded file; the exit code and the failure line stay as
+    they were. Done that way, the update and the uninstall that the failure
+    line asks for keep your example.
+    """
+    box = sandbox_factory("claude-code")
+    box.install()
+    anchor = _anchor(box)
+    shaped = _EXAMPLE + anchor.read_bytes().decode("utf-8")
+    anchor.write_bytes(shaped.encode())
+    [(begin, end), (block, block_end)] = whole_blocks(shaped)
+
+    code, output, warning, failure = _unrecorded_uninstall(box, anchor)
+    kept = anchor.read_bytes()
+    unmarked = _EXAMPLE.replace("<!--", "&lt;!--")
+    anchor.write_bytes(shaped.replace(_EXAMPLE, unmarked, 1).encode())
+    _update_then_uninstall(box)
+
+    assert code == 2, output
+    assert kept == shaped.encode()
+    assert (
+        f" holds 2 whole blocks between Apothem's markers (lines {begin} to {end}, "
+        f"and lines {block} to {block_end}). Apothem writes one block per file and "
+        "cannot tell which one is its own, so it left the file as it is. For a "
+        "marker pair of yours (an example you quote, say), change or delete its "
+        "two marker lines, or move them inside a code block, keeping your own "
+        "text; do not delete Apothem's block instead"
+    ) in warning["message"]
+    assert warning["message"].endswith(
+        f"keeping any line of your own inside it{_UNLISTED_END}"
+    )
+    assert "detail" not in warning
+    assert "then run apothem update, then apothem uninstall again" in failure
+    assert "two different blocks" not in failure
+    assert not _names(failure, anchor)
+    assert anchor.read_bytes().decode("utf-8").strip() == unmarked.strip()
+
+
+def test_with_no_record_claude_md_names_the_marker_lines_around_apothem_s_block(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """A BEGIN marker above Apothem's block and an END marker below it.
+
+    With no install record, the step to delete the lines from BEGIN to END by
+    hand, taken from the first BEGIN marker to the next END marker, deleted
+    your note with Apothem's block and left the END marker below. The warning
+    now names Apothem's block and the two marker lines around it, as it does
+    for a recorded file; the exit code and the failure line stay as they
+    were. Once you change those two lines, the update and the uninstall that
+    the failure line asks for keep every line of yours.
+    """
+    box = sandbox_factory("claude-code")
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    shaped = f"my own text above\n{B}\nmy note\n\n{text}\nmy own text below\n{E}\n"
+    anchor.write_bytes(shaped.encode())
+    lines = shaped.split("\n")
+    outer, outer_end = lines.index(B) + 1, len(lines) - 1
+    inner, inner_end = lines.index(B, outer) + 1, lines.index(E) + 1
+
+    code, output, warning, failure = _unrecorded_uninstall(box, anchor)
+    kept = anchor.read_bytes()
+    lines[outer - 1], lines[outer_end - 1] = "BEGIN (my marker)", "END (my marker)"
+    anchor.write_bytes("\n".join(lines).encode())
+    _update_then_uninstall(box)
+
+    assert code == 2, output
+    assert kept == shaped.encode()
+    assert (
+        " holds two different blocks between Apothem's markers: once the block "
+        f"from line {inner} to line {inner_end} is out, the BEGIN marker at line "
+        f"{outer} and the END marker at line {outer_end} make another."
+    ) in warning["message"]
+    assert warning["message"].endswith(
+        f"Do not delete the block from line {inner} to line {inner_end}: the next "
+        f"run would then read lines {outer} to {outer_end} as Apothem's block, and "
+        "replace or take out what is between them. Delete or change the marker "
+        f"lines at lines {outer} and {outer_end} instead, keeping your own text (if "
+        f"line {outer} is what is left of an older Apothem block, delete the old "
+        f"Apothem text below it too){_UNLISTED_END}"
+    )
+    assert "detail" not in warning
+    assert "then run apothem update, then apothem uninstall again" in failure
+    assert "two different blocks" not in failure
+    assert not _names(failure, anchor)
     assert anchor.read_bytes().decode("utf-8") == (
         "my own text above\nBEGIN (my marker)\nmy note\n\nmy own text below\n"
         "END (my marker)\n"

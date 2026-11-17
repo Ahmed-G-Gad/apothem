@@ -42,9 +42,11 @@ verify still fails, without naming the file, when the rules file in a
 workspace it finds holds no whole block or a BEGIN marker that starts none.
 The failed row names each such file and
 says what to fix: the stray marker line to delete, with the old Apothem text
-below it (the note also says not to add the END marker back once an install or
-update has written Apothem's block apart from it, which would leave two
-Apothem blocks); each whole block, by its lines; or, for marker pairs
+below it (the note also says not to add the END marker back with a line of
+yours between the two markers, which the next run would replace or take out,
+nor at all once an install or update has written Apothem's block apart from
+it, which would leave two Apothem blocks); each whole block, by its lines; or,
+for marker pairs
 Apothem cannot tell from your text, the lines of each pair, where they read
 and how to fix them, along with each BEGIN marker that starts no marker pair.
 In plain mode a `Note:` line follows the row,

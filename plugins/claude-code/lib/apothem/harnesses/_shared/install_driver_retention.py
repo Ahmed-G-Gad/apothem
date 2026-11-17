@@ -25,10 +25,15 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     extract_managed_block,
+    whole_blocks,
 )
 from apothem.lib.install_ledger import LedgerRecord
 
-from .install_driver_blocks import endless_block_warning
+from .install_driver_blocks import (
+    another_block_at,
+    another_block_report,
+    endless_block_warning,
+)
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -246,6 +251,16 @@ BOLT_ON_ANCHORS: Final[tuple[str, ...]] = (
 )
 
 
+#: What follows the fix in the warning for a bolt-on anchor no install record
+#: lists that holds two different blocks (see :func:`unlisted_block_warnings`).
+#: Once the file is fixed it holds Apothem's block alone, which the uninstall
+#: still leaves.
+_UNLISTED_THEN = (
+    "then delete Apothem's block by hand if you no longer want it: no install "
+    "record lists the file, so the uninstall leaves it as it is"
+)
+
+
 def unlisted_block_warnings(
     root: Path, *, skip: Collection[str] = ()
 ) -> list[MaterializationResult]:
@@ -259,8 +274,16 @@ def unlisted_block_warnings(
     it ends. A BEGIN marker outside code whose END marker reads as code, with
     another pair after it (rule 3), gets the warning that names each marker
     pair instead (see :func:`install_driver_blocks.unclear_block_warning`):
-    either pair may be Apothem's block. A path in *skip* (one the uninstall
-    handled already) and a file that cannot be read are passed over.
+    either pair may be Apothem's block. A file with two or more whole blocks,
+    or with a second block that shows only once Apothem's is out, gets the
+    text that names each block and how to fix the file (see
+    :func:`install_driver_blocks.another_block_report`): deleting the lines
+    from the first BEGIN marker to the next END marker there would take out a
+    marker pair of the operator's, or their text between two marker lines
+    around Apothem's block. Like the warning for one whole block, it carries
+    no ``detail``, so it changes nothing else the uninstall does. A path in
+    *skip* (one the uninstall handled already) and a file that cannot be read
+    are passed over.
     """
     warnings: list[MaterializationResult] = []
     for relative in BOLT_ON_ANCHORS:
@@ -277,12 +300,15 @@ def unlisted_block_warnings(
         if endless is not None:
             warnings.append(endless)
             continue
-        message = (
-            f"{anchor} still holds Apothem's managed block: no install record "
-            "lists the file, so the uninstall leaves it as it is; delete the "
-            f"lines from {APOTHEM_BLOCK_BEGIN} to {APOTHEM_BLOCK_END} by hand if "
-            "you no longer want them"
-        )
+        if len(whole_blocks(text)) > 1 or another_block_at(anchor):
+            message = another_block_report(anchor, then=_UNLISTED_THEN)
+        else:
+            message = (
+                f"{anchor} still holds Apothem's managed block: no install record "
+                "lists the file, so the uninstall leaves it as it is; delete the "
+                f"lines from {APOTHEM_BLOCK_BEGIN} to {APOTHEM_BLOCK_END} by hand "
+                "if you no longer want them"
+            )
         warnings.append(_result("warning", "surgical_uninstall", anchor, message))
     return warnings
 

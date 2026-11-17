@@ -2713,7 +2713,8 @@ def test_the_another_block_advice_names_each_block_and_which_to_delete_whole(
         "between its markers. Of Apothem's own blocks (an older one, or one pasted "
         "in a second time), keep one (in a file that starts with Apothem's "
         "frontmatter, the one right below it) and delete each other one from its "
-        "BEGIN marker line to its END marker line; then run the uninstall again."
+        "BEGIN marker line to its END marker line, keeping any line of your own "
+        "inside it; then run the uninstall again."
     ) in message
     assert (
         "1 file(s) hold two different blocks between Apothem's markers, so "
@@ -2787,13 +2788,16 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
 def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     claude: Path,
 ) -> None:
-    # An update leaves a file with two whole blocks as it is (one of them,
-    # here, the pair you quote), so the advice is to fix that file first, as
-    # its warning says: change the marker lines of a pair of yours, and delete
-    # only an older or pasted Apothem block (advice-2: not only the marker
-    # lines you added; not "keep one block", which led to deleting Apothem's
-    # block and keeping your pair); the BEGIN-marker advice (an update keeps
-    # it) is not given for this file.
+    # An update does not fix a file with two different blocks (here it leaves
+    # two whole blocks, one of them the pair you quote, as they are), so the
+    # advice is to fix that file first, as its warning says: change the marker
+    # lines of a pair of yours, and delete only an older or pasted Apothem
+    # block (advice-2: not only the marker lines you added; not "keep one
+    # block", which led to deleting Apothem's block and keeping your pair).
+    # It no longer says an update leaves such a file as it is: in a file whose
+    # second block shows only once Apothem's is out, an update rewrites
+    # Apothem's block. The BEGIN-marker advice (an update keeps it) is not
+    # given for this file.
     _earlier_release_with_an_edited_agent(claude)
     anchor = claude / "CLAUDE.md"
     quoted = (
@@ -2811,8 +2815,8 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     another = (
         "fix the 1 file(s) that hold two different blocks as each warning says "
         "(change the marker lines of a pair of yours, and delete only an older or "
-        "pasted Apothem block): an update leaves a file with two blocks as it is, "
-        "and apothem verify fails until you fix it"
+        "pasted Apothem block): an update does not fix such a file, and apothem "
+        "verify fails until you fix it"
     )
     assert f"first copy any listed file you edited or added, and {another}" in failure
     assert "an update keeps that marker" not in failure

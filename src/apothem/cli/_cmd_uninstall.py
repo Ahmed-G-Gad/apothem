@@ -374,15 +374,18 @@ _FIX_STRAY = (
 )
 
 #: What to do first with each file that holds two different blocks
-#: (``kept_reason`` ``another-block``): an update leaves a file with two whole
-#: blocks as it is (Apothem writes one block per file), so the operator
+#: (``kept_reason`` ``another-block``): an update does not fix such a file. It
+#: leaves a file with two whole blocks as it is (Apothem writes one block per
+#: file), and in a file whose second block shows only once Apothem's is out
+#: (a BEGIN marker above Apothem's block and an END marker below it) it
+#: rewrites Apothem's block and keeps those two marker lines. So the operator
 #: changes the marker lines of each pair of theirs and deletes each older or
 #: pasted Apothem block, as the file's warning says, before any update.
 _FIX_ANOTHER = (
     "fix the {count} file(s) that hold two different blocks as each warning "
     "says (change the marker lines of a pair of yours, and delete only an "
-    "older or pasted Apothem block): an update leaves a file with two blocks "
-    "as it is, and apothem verify fails until you fix it"
+    "older or pasted Apothem block): an update does not fix such a file, and "
+    "apothem verify fails until you fix it"
 )
 
 #: What to do first with each file whose marker pairs Apothem cannot place

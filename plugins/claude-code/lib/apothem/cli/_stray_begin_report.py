@@ -79,13 +79,15 @@ def stray_begin_note(files: Sequence[Path], *, then: str) -> str:
     a whole block of its own apart from the marker, so that text only repeats
     Apothem's rules. Once one has, putting the END marker back instead would
     leave two Apothem blocks, so the line says not to then; before any
-    install or update, putting it back leaves one whole block. A file with
-    two or more whole blocks, or whose marker pairs no rule can place, is
-    named on its own, with each block or pair, where its marker lines read,
-    and how to fix it (see :func:`two_blocks_report` and
-    :func:`unclear_block_report`). *then* is the step that follows; both
-    callers name an update, which writes Apothem's block back when the file
-    holds none.
+    install or update, putting it back right below the old text leaves one
+    whole block, but with a line of the operator's between the two markers the
+    next run replaces or takes out that line, so the line says not to put it
+    back there either. A file with two or more whole blocks, or whose marker
+    pairs no rule can place, is named on its own, with each block or pair,
+    where its marker lines read, and how to fix it (see
+    :func:`two_blocks_report` and :func:`unclear_block_report`). *then* is the
+    step that follows; both callers name an update, which writes Apothem's
+    block back when the file holds none.
     """
     named: list[str] = []
     stray: list[str] = []
@@ -104,9 +106,11 @@ def stray_begin_note(files: Sequence[Path], *, then: str) -> str:
         lead = (
             f"{subject} an Apothem BEGIN marker with no END marker: delete that "
             "marker line and the old Apothem text below it by hand, keep your own "
-            "lines, and once an install or update has written Apothem's block "
-            "apart from it, do not add the END marker back (the file would then "
-            "hold two Apothem blocks)"
+            "lines, and do not add the END marker back with a line of yours "
+            "between the two markers (the next run would replace or take out "
+            "every line between them), nor at all once an install or update has "
+            "written Apothem's block apart from it (the file would then hold two "
+            "Apothem blocks)"
         )
     if not named:
         return f"{lead}, then {then}"

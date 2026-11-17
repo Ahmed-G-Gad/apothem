@@ -357,10 +357,12 @@ def unclear_block_report(
 #: the one block in the file, which the next update replaces and the next
 #: uninstall takes out. An Apothem block that is not the one kept (an older
 #: one, or one pasted in a second time) goes whole, since deleting only its
-#: marker lines would leave its text behind where no later run finds it. In a
-#: file that starts with Apothem's frontmatter the block kept is the one right
-#: below it: only there does the frontmatter count as Apothem's, so an
-#: uninstall takes it out with that block.
+#: marker lines would leave its text behind where no later run finds it; a
+#: line of the operator's inside it (an END marker put back below that line
+#: makes it part of the block) stays. In a file that starts with Apothem's
+#: frontmatter the block kept is the one right below it: only there does the
+#: frontmatter count as Apothem's, so an uninstall takes it out with that
+#: block.
 _FIX_BLOCKS = (
     "For a marker pair of yours (an example you quote, say), change or delete "
     "its two marker lines, or move them inside a code block, keeping your own "
@@ -369,26 +371,40 @@ _FIX_BLOCKS = (
     "between its markers. Of Apothem's own blocks (an older one, or one pasted "
     "in a second time), keep one (in a file that starts with Apothem's "
     "frontmatter, the one right below it) and delete each other one from its "
-    "BEGIN marker line to its END marker line"
+    "BEGIN marker line to its END marker line, keeping any line of your own "
+    "inside it"
 )
 
 
-def _revealed_fix(block: tuple[int, int], revealed: tuple[int, int]) -> str:
+def _revealed_fix(
+    block: tuple[int, int], revealed: tuple[int, int], quoted: MarkerLine | None
+) -> str:
     """Return how to fix a file whose second block shows once *block* is out.
 
     *revealed* is that block: a BEGIN marker above Apothem's block and an END
-    marker below it, say. Its two marker lines go, never the lines between
-    them, which hold Apothem's block and the operator's text; deleting
-    Apothem's block instead would leave them the one block in the file.
+    marker below it, say. Its marker lines go, never the lines between them,
+    which hold Apothem's block and the operator's text; deleting Apothem's
+    block instead would leave them the one block in the file. One code block
+    around both lines would hold Apothem's block too, so the text offers no
+    code block. *quoted* is the END marker line when it reads as code or as
+    text (the operator quotes it in a code block, say): it stays, and the
+    BEGIN marker alone goes.
     """
     (begin, end), (outer, outer_end) = block, revealed
+    keep = (
+        f"Delete or change the marker lines at lines {outer} and {outer_end} "
+        f"instead, keeping your own text (if line {outer} is what is left of an "
+        "older Apothem block, delete the old Apothem text below it too)"
+        if quoted is None
+        else f"Delete or change the BEGIN marker at line {outer} instead, keeping "
+        "your own text (if it is what is left of an older Apothem block, delete "
+        f"the old Apothem text below it too); the END marker at line {outer_end} "
+        f"{_reads(quoted)}, so it can stay as it is"
+    )
     return (
         f"Do not delete the block from line {begin} to line {end}: the next run "
         f"would then read lines {outer} to {outer_end} as Apothem's block, and "
-        "replace or take out what is between them. Delete or change the marker "
-        f"lines at lines {outer} and {outer_end} instead, or move them inside a "
-        f"code block, keeping your own text (if line {outer} is what is left of "
-        "an older Apothem block, delete the old Apothem text below it too)"
+        f"replace or take out what is between them. {keep}"
     )
 
 
@@ -400,6 +416,7 @@ def two_blocks_report(
     dry_run: bool = False,
     then: str | None = None,
     revealed: tuple[int, int] | None = None,
+    quoted: MarkerLine | None = None,
 ) -> str:
     """Return what is wrong with *path*, which holds two or more whole *blocks*.
 
@@ -412,7 +429,8 @@ def two_blocks_report(
     after the fix, when the text names it. One block in *blocks* is a file
     that shows a second whole block only once that one is out (a BEGIN marker
     above Apothem's block and an END marker below it): *revealed* is that
-    block, and the fix is its two marker lines (see :func:`_revealed_fix`).
+    block, and the fix is its marker lines (see :func:`_revealed_fix`; *quoted*
+    is its END marker line when that reads as code or as text).
     """
     fix = _FIX_BLOCKS
     if len(blocks) > 1:
@@ -431,7 +449,7 @@ def two_blocks_report(
                 f"BEGIN marker at line {outer} and the END marker at line "
                 f"{outer_end} make another"
             )
-            fix = _revealed_fix(blocks[0], revealed)
+            fix = _revealed_fix(blocks[0], revealed, quoted)
     end = "." if then is None else f"; {then}."
     return (
         f"{head}. Apothem writes one block per file and cannot tell which one is "

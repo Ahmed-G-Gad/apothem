@@ -141,10 +141,12 @@ delete the two marker lines of a marker pair of yours (one you quote, say), or
 move them inside a code block, and do not delete Apothem's block to keep that
 pair, since the next uninstall would then take your pair out. Of Apothem's own
 blocks (an older one, or one pasted in a second time), keep one and delete
-each other one from its BEGIN marker line to its END marker line; in a file
-that starts with Apothem's frontmatter, keep the block right below it. When
-the warning names Apothem's block and the two marker lines around it, change
-or delete those two marker lines, not Apothem's block. For a file whose
+each other one from its BEGIN marker line to its END marker line, keeping
+any line of yours inside it; in a file that starts with Apothem's frontmatter,
+keep the block right below it. When the warning names Apothem's block and the
+marker lines around it, change or delete the marker lines it names, not
+Apothem's block, and if that BEGIN marker is what is left of an older Apothem
+block, delete the old Apothem text below it too. For a file whose
 marker lines Apothem cannot tell from your text, do what its warning says:
 delete Apothem's block by hand, change or delete the two marker lines of each
 marker pair of yours, and delete or change a BEGIN marker of yours that it
@@ -152,8 +154,8 @@ names before you run the uninstall again. For an earlier release's install or an
 install with no record, first copy any listed file you edited or added and
 fix each file a warning names for an Apothem marker, as that warning says,
 then run `apothem update`, then the uninstall. An update keeps a BEGIN marker
-with no END and the text below it, and leaves a file that holds two whole
-blocks as it is. The
+with no END and the text below it, and does not fix a file that holds two
+different blocks. The
 [uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
 describes each case, and its [exit codes](/docs/cli-reference/uninstall#exit-codes)
 table lists what `1` and `2` mean.

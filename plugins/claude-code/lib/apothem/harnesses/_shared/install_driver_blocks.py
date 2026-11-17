@@ -31,7 +31,9 @@ from pathlib import Path
 
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    MarkerLine,
     UncertainPair,
     complete_managed_block,
     extract_managed_block,
@@ -282,15 +284,18 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
     if not stray_begin_at(target):
         return None
     # With no whole block yet (a preview reads the file before the write),
-    # nothing is written apart from the marker, and putting the END marker
-    # back then leaves one whole block, a fix that works.
+    # nothing is written apart from the marker: putting the END marker back
+    # right below the old text then leaves one whole block, a fix that works,
+    # but below a line of the operator's it makes that line Apothem's.
     block, back = (
-        ("a whole block", "Do not")
+        ("a whole block", "Do not add the END marker back below that text")
         if blocks
         else (
             "a block",
-            "Once an install or update has written Apothem's block apart from "
-            "it, do not",
+            "Do not add the END marker back with a line of yours between the two "
+            "markers: the next run would replace or take out every line between "
+            "them. Once an install or update has written Apothem's block apart "
+            "from it, do not add the END marker back at all",
         )
     )
     return (
@@ -300,9 +305,9 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
         f"that text as it is and write {block} of their own apart from it. "
         "Delete that marker line by hand, with the old Apothem text below it "
         "that repeats the rules in Apothem's whole block, and keep your own "
-        f"lines; apothem verify fails for this tool until you do. {back} add the "
-        "END marker back below that text: the file would then hold two Apothem "
-        "blocks, which install and update leave as they are."
+        f"lines; apothem verify fails for this tool until you do. {back}: the "
+        "file would then hold two Apothem blocks, which install and update leave "
+        "as they are."
     )
 
 
@@ -502,30 +507,57 @@ def another_block_warning(
     strip would then take that pair out) and deletes each other Apothem
     block whole; then the strip takes out the one block left. A second block
     that shows only once Apothem's is out is named by its marker lines (see
-    :func:`_revealed_block`). *then* is the step after the fix (an install
-    or update that retires the file gives its own). With *dry_run* (a
+    :func:`another_block_report`). *then* is the step after the fix (an
+    install or update that retires the file gives its own). With *dry_run* (a
     preview), it says Apothem would leave the file as it is.
     """
-    found = whole_blocks_at(target)
-    revealed = _revealed_block(target, found[0]) if len(found) == 1 else None
-    report = two_blocks_report(
-        _path_text(target), found, dry_run=dry_run, then=then, revealed=revealed
-    )
     return _result(
         "warning",
         operation,
         target,
-        report,
+        another_block_report(target, then=then, dry_run=dry_run),
         detail={KEPT_REASON: ANOTHER_BLOCK, MARKER_LEFT: "1"},
     )
 
 
-def _revealed_block(path: Path, block: tuple[int, int]) -> tuple[int, int] | None:
-    """Return the lines of the whole block *path* shows once *block* is out.
+def another_block_report(
+    target: Path, *, then: str | None, dry_run: bool = False
+) -> str:
+    """Return the text that names the blocks of *target*, which holds another one.
+
+    Each whole block by its lines, or, when a second block shows only once
+    Apothem's is out (see :func:`_revealed_block`), Apothem's block and the
+    marker lines around it, with how to fix the file (see
+    :func:`two_blocks_report`). :func:`another_block_warning` gives it, and
+    so does the warning, with no ``detail``, that an uninstall with no
+    install record gives for a bolt-on anchor (see
+    :func:`install_driver_retention.unlisted_block_warnings`).
+    """
+    found = whole_blocks_at(target)
+    revealed = _revealed_block(target, found[0]) if len(found) == 1 else None
+    return two_blocks_report(
+        _path_text(target),
+        found,
+        dry_run=dry_run,
+        then=then,
+        revealed=None if revealed is None else revealed[0],
+        quoted=None if revealed is None else revealed[1],
+    )
+
+
+def _revealed_block(
+    path: Path, block: tuple[int, int]
+) -> tuple[tuple[int, int], MarkerLine | None] | None:
+    """Return the whole block *path* shows once *block* is out, and its END line.
 
     The lines of *block* are blanked, not cut, so every other line keeps its
-    number. ``None`` when no whole block shows then, or the file cannot be
-    read.
+    number. The END marker line is given when it reads as code or as text
+    (one the operator quotes in a code block, say): with no pair after them,
+    such a pair still reads as a whole block, and a pair added after the text
+    shows it, since rule 3 then fires on that pair (see
+    :func:`apothem.lib.harness_materializer.uncertain_pairs`). Only the BEGIN
+    marker of such a block needs to go. ``None`` when no whole block shows
+    then, or the file cannot be read.
     """
     try:
         lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
@@ -533,8 +565,20 @@ def _revealed_block(path: Path, block: tuple[int, int]) -> tuple[int, int] | Non
         return None
     begin, end = block
     lines[begin - 1 : end] = [""] * (end - begin + 1)
-    found = whole_blocks("\n".join(lines))
-    return found[0] if found else None
+    text = "\n".join(lines)
+    found = whole_blocks(text)
+    if not found:
+        return None
+    probe = f"{text}\n\n{APOTHEM_BLOCK_BEGIN}\n{APOTHEM_BLOCK_END}\n"
+    quoted = next(
+        (
+            pair.end
+            for pair in uncertain_pairs(probe)
+            if pair.split and pair.begin.line == found[0][0]
+        ),
+        None,
+    )
+    return found[0], quoted
 
 
 #: Why the operator deletes a BEGIN marker an uninstall leaves alone.

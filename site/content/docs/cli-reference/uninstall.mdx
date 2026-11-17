@@ -73,7 +73,9 @@ between Apothem's markers, or marker pairs Apothem cannot place), the `✗`
 line says to fix that file before the update, with the advice for its kind of
 marker (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)); for a
-project-scope harness the `Note:` line says so too. The
+project-scope harness the `Note:` line says so too. Only `CLAUDE.md` or a
+profile document that holds two different blocks is left out of that line
+(see below). The
 `Note:` line is printed under `--quiet` too, to the error stream. In
 `--format json` output the harness's `uninstall` row has
 `"outcome": "error"`, carries that note in its message and has
@@ -124,7 +126,17 @@ shows which install wrote that block, so the file stays as it is, and a
 `Warning:` line names it; the warning does not stop the uninstall. If you no
 longer want the block (Claude Code still reads `CLAUDE.md`), delete the lines
 from `<!-- BEGIN APOTHEM MANAGED BLOCK -->` to
-`<!-- END APOTHEM MANAGED BLOCK -->` by hand.
+`<!-- END APOTHEM MANAGED BLOCK -->` by hand. When that file holds two
+different blocks between Apothem's markers (a marker pair of yours outside
+code, say), deleting from the first BEGIN marker to the next END marker would
+take text of yours with it, so the warning gives the text for such a file
+instead (see
+[An uninstall that did not finish](#an-uninstall-that-did-not-finish)): it
+names each block by its lines, or Apothem's block and the marker lines around
+it, and says how to fix the file, keeping your own text. It then says to
+delete Apothem's block by hand if you no longer want it. This warning does not
+stop the uninstall either, and the `✗` line does not name that file. Fix it
+before you run `apothem update` too: an update does not fix it.
 
 The shared working directory's memory, contexts, and learning stores are
 backed up and removed only when this is the last harness installed at that
@@ -434,8 +446,9 @@ inside a code block, keeping your own text; do not delete Apothem's block
 instead". Of Apothem's own blocks (an older one, or one pasted in a second
 time), it says to keep one (in a file that starts with Apothem's frontmatter,
 the one right below it) and to delete each other one from its BEGIN marker line
-to its END marker line. Do not delete Apothem's block to keep a pair of yours:
-the next uninstall would then take out the one block left, your own. An
+to its END marker line, keeping any line of yours inside it. Do not delete
+Apothem's block to keep a pair of yours: the next uninstall would then take
+out the one block left, your own. An
 `apothem update` does not fix such a file: it leaves a file with two whole
 blocks as it is, with the same warning, and `verify` fails until you fix it
 (see
@@ -447,9 +460,13 @@ names Apothem's block and those two marker lines, for example "once the block
 from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
 line 39 make another", and says not to delete Apothem's block: the next run
 would then read lines 2 to 39 as Apothem's block. Delete or change the two
-marker lines it names instead, or move them inside a code block, keeping your
-own text; if that BEGIN marker is what is left of an older Apothem block,
-delete the old Apothem text below it too.
+marker lines it names instead, keeping your own text; if that BEGIN marker is
+what is left of an older Apothem block, delete the old Apothem text below it
+too. Do not put both lines in one code block: it would hold Apothem's block
+too. When that END marker sits in code or text of yours (an example you quote
+in a code block, say), the warning asks for the BEGIN marker alone and says
+the END marker can stay as it is. An `apothem update` does not fix such a file
+either, and `verify` fails until you fix it.
 
 When the uninstall's next step is to run `apothem update` and a warning names
 a file for an Apothem marker (in the `--format json` envelope, its `detail`
