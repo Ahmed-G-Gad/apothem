@@ -123,6 +123,12 @@ with the same warning.
   folder. Before, it used the newest install of that tool in any folder. When
   the folder it checks has no install record, the report shows the hooks as
   `not checked` instead of saying that all checks passed.
+  {/* depends on #257 */} It also starts GitHub Copilot's hooks, and Cursor's
+  on Windows. It starts a hook command only when the command runs the hook
+  script the install wrote, so a command someone else committed to a
+  project's hook files no longer runs when you run `apothem doctor`. It
+  reports any other command as `hook.unchecked`. Hooks installed by an
+  earlier release stay unchecked until you run `apothem update`.
 - **The installers keep the engine's data.** Replacing an install at
   `APOTHEM_HOME` with `--yes` used to delete the whole folder, with the rollback backups,
   install records, plans and memory. The installer now checks the new release
