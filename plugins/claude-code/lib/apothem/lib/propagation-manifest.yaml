@@ -59,10 +59,12 @@
 #                      for the `native_skills` and `command_skills` modes;
 #                      `.config/apothem/rules` and
 #                      `.config/apothem/templates` for `merge_tree_entries`),
-#                      must be `apothem-owned`, and in a project-scope block
-#                      comes before the project entries so a failure writing
-#                      the user folder aborts the install before the project
-#                      changes. Every install that writes such a folder emits
+#                      must be `apothem-owned`, and comes before the block's
+#                      other entries: a failure writing the user folder then
+#                      aborts the install before the project or harness root
+#                      changes, and the skill guard judges the install's
+#                      own folder as it was before the install wrote there.
+#                      Every install that writes such a folder emits
 #                      the same bytes, and the install ledger counts the
 #                      installs that hold it: an uninstall removes a folder
 #                      only when no other install still lists it.
@@ -229,19 +231,10 @@ harnesses:
     # (${USER_HOME}): they sit in the user home whatever CODEX_HOME is, and
     # every install that names them writes the same bytes (see the
     # ${USER_HOME} note in the schema above).
+    # The user-level entries come first: a failure writing the user home then
+    # aborts the install before ~/.codex changes, and the skill guard judges
+    # ~/.codex as it was before this install wrote into it.
     install:
-      - source: "harnesses/codex/templates/AGENTS.md"
-        target: "${HARNESS_ROOT}/AGENTS.md"
-        mode: sentinel_merge
-        ownership_class: operator-owned
-      - source: "harnesses/codex/templates/hooks.json"
-        target: "${HARNESS_ROOT}/hooks.json"
-        mode: write_text
-        ownership_class: operator-owned
-      - source: "hooks/"
-        target: "${HARNESS_ROOT}/hooks/"
-        mode: merge_tree_entries
-        ownership_class: apothem-owned
       - source: "rules/"
         target: "${USER_HOME}/.config/apothem/rules/"
         mode: merge_tree_entries
@@ -257,13 +250,25 @@ harnesses:
         target: "${USER_HOME}/.agents/skills/"
         mode: command_skills
         ownership_class: apothem-owned
-      - source: "agents/"
-        target: "${HARNESS_ROOT}/agents/"
-        mode: codex_agents
-        ownership_class: apothem-owned
       - source: "templates/"
         target: "${USER_HOME}/.config/apothem/templates/"
         mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "harnesses/codex/templates/AGENTS.md"
+        target: "${HARNESS_ROOT}/AGENTS.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "harnesses/codex/templates/hooks.json"
+        target: "${HARNESS_ROOT}/hooks.json"
+        mode: write_text
+        ownership_class: operator-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/agents/"
+        mode: codex_agents
         ownership_class: apothem-owned
 
     exclude:
