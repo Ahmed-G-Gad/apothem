@@ -432,8 +432,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   pass. The history read of `agents-md-coverage-grep` still gets a name with a
   control character in git's quoted form. Both `--staged` checks, and
   `agents-md-coverage-grep` on a subfolder, now look for the checkout in the
-  folders above the one they run in, as git does: run from a subfolder, a
-  `git` that failed, for example on `diff.renameLimit = abc`, was read as no
+  folders above the one they run in, up to where git stops looking (a
+  `GIT_CEILING_DIRECTORIES` folder, or another file system outside Windows):
+  run from a subfolder, a `git` that failed, for example on `diff.renameLimit = abc`, was read as no
   staged change and passed. `semver_stability_grep --staged` looked for
   `src/apothem` below the current folder only, so from a subfolder it ran no
   git and passed whatever was staged; it now reads the package and the staged

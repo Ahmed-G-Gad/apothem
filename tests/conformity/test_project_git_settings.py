@@ -54,6 +54,7 @@ import pytest
 
 from apothem.conformity import (
     _bounded_run,
+    _grep_base,
     agents_md_coverage_grep,
     conventional_commit_grep,
     gate,
@@ -1586,6 +1587,74 @@ def test_in_checkout_looks_above_the_folder_and_stops_at_a_ceiling(
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(project))
     assert not in_checkout(inner)
     assert in_checkout(project)  # the folder itself is still searched
+
+    # git ignores a ceiling entry that is not a full path.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", "project")
+    assert in_checkout(inner)
+
+
+def test_in_checkout_stops_at_another_file_system(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A folder mounted below a repository is not inside that repository.
+
+    git stops its search at a folder on another file system and reports no
+    repository there. A walk that went on found the ``.git`` above the mount,
+    so git's "no repository" was reported as a git that refused a checkout.
+    """
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    monkeypatch.delenv("GIT_DISCOVERY_ACROSS_FILESYSTEM", raising=False)
+    outer = tmp_path / "outer"
+    mounted = outer / "mounted"
+    inner = mounted / "work"
+    inner.mkdir(parents=True)
+    (outer / ".git").mkdir()
+    below_mount = {mounted.resolve(), inner.resolve()}
+
+    def device(folder: Path) -> int:
+        # Stand in for a mount: "mounted" and below are a file system apart.
+        return 2 if folder in below_mount else 1
+
+    monkeypatch.setattr(_grep_base, "_device", device)
+    monkeypatch.setattr(_grep_base, "_STOPS_AT_FILE_SYSTEM", True)
+
+    assert not in_checkout(inner)
+    assert not in_checkout(mounted)
+    assert in_checkout(outer)
+    # A repository on the mounted file system itself is found.
+    (mounted / ".git").mkdir()
+    assert in_checkout(inner)
+    (mounted / ".git").rmdir()
+
+    # git searches across file systems when this variable is set ...
+    monkeypatch.setenv("GIT_DISCOVERY_ACROSS_FILESYSTEM", "1")
+    assert in_checkout(inner)
+    monkeypatch.setenv("GIT_DISCOVERY_ACROSS_FILESYSTEM", "false")
+    assert not in_checkout(inner)
+    # ... and Git for Windows always does.
+    monkeypatch.setattr(_grep_base, "_STOPS_AT_FILE_SYSTEM", False)
+    assert in_checkout(inner)
+
+
+def test_in_checkout_reads_ceiling_links_as_git_does(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ceiling entry given through a link is resolved, unless an empty entry precedes it."""
+    project = tmp_path / "real" / "project"
+    inner = project / "src"
+    inner.mkdir(parents=True)
+    (tmp_path / "real" / ".git").mkdir()
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(tmp_path / "real" / "project", target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"this host cannot create a directory symlink: {exc}")
+
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(link))
+    assert not in_checkout(inner)  # the link names "project", which stops the walk
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", os.pathsep + str(link))
+    assert in_checkout(inner)  # after an empty entry the link is taken as written
 
 
 @pytest.mark.usefixtures("hermetic_git")

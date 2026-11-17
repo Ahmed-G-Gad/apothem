@@ -142,8 +142,11 @@ For the two `--staged` checks, a value git cannot read for a diff setting,
 such as `diff.renameLimit = abc`, is one such bad line: `git diff` fails, and a
 change set that was not read is not an empty one. These two checks and the
 stale-companion check look for the checkout in the folder they run in and in
-the folders above it, as git does, so the same holds in a subfolder of the
-checkout. `semver-stability-grep --staged` reads the package and the staged
+the folders above it, so the same holds in a subfolder of the checkout. They
+stop looking where git stops: at a folder named in `GIT_CEILING_DIRECTORIES`
+and, outside Windows, at a folder on another file system, unless
+`GIT_DISCOVERY_ACROSS_FILESYSTEM` is set. A folder with no repository of its
+own, mounted below one, therefore still passes. `semver-stability-grep --staged` reads the package and the staged
 list from the top of the checkout, so it checks the same change set from any
 folder in it.
 

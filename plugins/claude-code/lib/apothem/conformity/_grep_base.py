@@ -339,24 +339,74 @@ def has_git_entry(directory: Path) -> bool:
     return os.path.lexists(directory / GIT_ENTRY)
 
 
+# git stops its search for a repository at a folder on another file system.
+# Git for Windows does not: its file status carries no device number.
+_STOPS_AT_FILE_SYSTEM: Final[bool] = os.name != "nt"
+
+
+def _device(folder: Path) -> int | None:
+    """Return the number of the file system ``folder`` is on, or None."""
+    try:
+        return folder.stat().st_dev
+    except OSError:
+        return None
+
+
+def _git_flag_is_set(name: str) -> bool:
+    """Return True when git would read the environment variable as true."""
+    value = os.environ.get(name, "").strip().lower()
+    if value in {"true", "yes", "on"}:
+        return True
+    try:
+        return int(value) != 0
+    except ValueError:
+        return False
+
+
+def _ceiling_folders() -> frozenset[str]:
+    """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
+
+    git ignores an entry that is not a full path. It resolves the links in an
+    entry, except in the entries that follow an empty one.
+    """
+    resolve_links = True
+    folders: set[str] = set()
+    for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep):
+        if not entry:
+            resolve_links = False
+            continue
+        if not Path(entry).is_absolute():
+            continue
+        folder = Path(entry).resolve() if resolve_links else Path(entry)
+        folders.add(os.path.normcase(str(folder)))
+    return frozenset(folders)
+
+
 def in_checkout(directory: Path) -> bool:
     """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
 
-    This is where git itself looks for a repository when it runs in
+    The walk covers the folders git searches for a repository when it runs in
     ``directory``, so a git command that fails there failed inside a checkout
     and its data was not read, also when ``directory`` is a subfolder of the
-    checkout. The walk stops below a folder that ``GIT_CEILING_DIRECTORIES``
-    names, as git's own search does.
+    checkout. It stops where git's search stops: below a folder that
+    ``GIT_CEILING_DIRECTORIES`` names, and, outside Windows, at a folder on
+    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set. So a
+    folder with no repository of its own, mounted below one, is outside a
+    checkout here as it is for git. One difference remains: a ``.git`` folder
+    that holds no repository counts here, while git looks past it.
     """
-    start = directory.absolute()
-    ceilings = {
-        os.path.normcase(str(Path(entry).absolute()))
-        for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep)
-        if entry
-    }
+    start = directory.resolve()
+    ceilings = _ceiling_folders()
+    one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
+        "GIT_DISCOVERY_ACROSS_FILESYSTEM"
+    )
+    device = _device(start) if one_file_system else None
     for folder in (start, *start.parents):
-        if folder != start and os.path.normcase(str(folder)) in ceilings:
-            return False
+        if folder != start:
+            if os.path.normcase(str(folder)) in ceilings:
+                return False
+            if device is not None and _device(folder) != device:
+                return False
         if has_git_entry(folder):
             return True
     return False

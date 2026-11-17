@@ -183,8 +183,10 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   failure in a checkout the walker found into `GitFailedError`, both from
   `_grep_base.py`. `in_checkout` there says whether a folder is inside a
   checkout: it looks for a `.git` entry in the folder and in the folders above
-  it, as git does, so a failure in a subfolder counts too. The messages name the command in fixed words and never
-  repeat git's own output. A corpus walker hands that message to
+  it, so a failure in a subfolder counts too, and it stops where git stops
+  looking (a `GIT_CEILING_DIRECTORIES` folder, or another file system outside
+  Windows). The messages name the command in fixed words and never repeat
+  git's own output. A corpus walker hands that message to
   `finish_root_report(check_error=...)`, which stamps `check_error` and exits
   `2`, advisory or not. A timeout or a refused checkout is not the exempt state
   of a missing repository, a repository with no commit, or a host without git:
