@@ -926,8 +926,70 @@ def test_a_memo_resolves_each_folder_once(tmp_path: Path) -> None:
 
     keys = [path_key(folder / name, memo) for name in ("a", "b", "c")]
 
-    assert list(memo) == [os.path.normpath(str(folder))]
+    # The keys that start with a NUL, which no path holds, keep what the
+    # folder's lookup found: the resolved folder and, where case is kept,
+    # how each folder above it is listed.
+    folders = [key for key in memo if not key.startswith(chr(0))]
+    assert folders == [os.path.normpath(str(folder))]
     assert keys == [path_key(folder / name) for name in ("a", "b", "c")]
+
+
+def _count_listings(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    """Count, per folder, the listings path_key makes to find a part's case."""
+    listed: dict[str, int] = {}
+    listdir = os.listdir
+
+    def counted(path: str) -> list[str]:
+        if sys._getframe(1).f_code.co_name == "_listed_name":
+            listed[str(path)] = listed.get(str(path), 0) + 1
+        return listdir(path)
+
+    monkeypatch.setattr(os, "listdir", counted)
+    return listed
+
+
+def test_one_memo_lists_each_folder_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Keying every path of a pass with one memo looks each folder above
+    # them up once: the folders above the home are not listed again for
+    # each folder that holds a path, nor for a user-level folder itself.
+    if sys.platform == "win32":
+        _keep_case_as_spelled(monkeypatch)
+    home = tmp_path / "home"
+    paths = [home / prefix / name for prefix in _SHARED for name in ("a", "b", "c")] + [
+        home / prefix for prefix in _SHARED
+    ]
+    for path in paths:
+        path.mkdir(parents=True, exist_ok=True)
+    plain = [path_key(path) for path in paths]
+    listed = _count_listings(monkeypatch)
+    memo: dict[str, str] = {}
+
+    keys = [path_key(path, memo) for path in paths]
+
+    assert keys == plain
+    assert all(count == 1 for count in listed.values()), listed
+
+
+@pytest.mark.parametrize("case", ["as-the-os-folds", "kept-as-spelled"])
+def test_an_uninstall_lists_each_folder_a_few_times_at_most(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    # Each pass over the ledgers keys its paths with one memo, so a folder
+    # is listed once per pass, not once per recorded path: five times in
+    # this uninstall, where looking each folder up again for every path
+    # listed the folders above the home more than a thousand times.
+    if case == "kept-as-spelled":
+        _keep_case_as_spelled(monkeypatch)
+    home, _upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
+    listed = _count_listings(monkeypatch)
+
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "codex", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert _left(home) == []
+    assert max(listed.values(), default=0) <= 8, listed
 
 
 def test_only_a_path_in_a_user_level_folder_is_resolved(

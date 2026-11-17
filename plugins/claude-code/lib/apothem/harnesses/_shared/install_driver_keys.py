@@ -45,6 +45,11 @@ _SHARED_TAILS: tuple[str, ...] = tuple(
 _SHARED_FOLDER = re.compile(
     "|".join(re.escape(tail) + f"(?:{re.escape(os.sep)}|$)" for tail in _SHARED_TAILS)
 )
+#: Starts of the memo keys no path spells, since a path never holds a NUL:
+#: a folder's key prefix (:func:`_key_prefix`), a folder, as followed links
+#: spell it, in the case its parents list it with (:func:`_on_disk_case`),
+#: and a folder's entries, joined by NULs (:func:`_listed_name`).
+_PREFIX_KEY, _CASE_KEY, _LIST_KEY = "\0prefix\0", "\0case\0", "\0list\0"
 
 
 def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
@@ -73,9 +78,12 @@ def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
 
     *memo* maps a holding folder, as spelled, to its key prefix, for a caller
     that keys many paths in one pass, so each folder that holds a path is
-    tested and resolved once (a user-level folder itself is resolved on each
-    call). Nothing is kept between calls without it, since a link can be made
-    or removed at any time.
+    tested and resolved once, and so is each user-level folder itself. Under
+    keys no path spells, it also keeps each resolved folder, each folder's
+    listing and the case each folder is listed with (see
+    :func:`_on_disk_case`), so a pass lists each folder at most once. Nothing
+    is kept between calls without it, since a link can be made or removed at
+    any time.
     """
     # Text, not Path objects: an index keys a few thousand paths per pass, so
     # the folder test runs once per holding folder, not once per path.
@@ -87,28 +95,36 @@ def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
     if prefix is None:
         prefix = os.path.normcase(os.path.join(parent, ""))  # noqa: PTH118
         if _SHARED_FOLDER.search(prefix) is not None:  # inside a user-level folder
-            prefix = _key_prefix(parent)
+            prefix = _key_prefix(parent, memo)
         if memo is not None:
             memo[parent] = prefix
     key = prefix + os.path.normcase(leaf)
     if key.endswith(_SHARED_TAILS):  # a user-level folder itself
-        key = _key_prefix(parent) + os.path.normcase(leaf)
+        key = _key_prefix(parent, memo) + os.path.normcase(leaf)
     return key
 
 
-def _key_prefix(folder: str) -> str:
+def _key_prefix(folder: str, memo: dict[str, str] | None = None) -> str:
     """Return *folder*, its links followed when absolute, case-folded, ending in a separator.
 
     Where the OS keeps case as text (macOS), the folder is spelled in the
-    case its parents list it with (see :func:`_on_disk_case`).
+    case its parents list it with (see :func:`_on_disk_case`). *memo* (see
+    :func:`path_key`) keeps the result for the pass.
     """
+    cached = memo.get(_PREFIX_KEY + folder) if memo is not None else None
+    if cached is not None:
+        return cached
+    spelled = folder
     if os.path.isabs(folder):  # noqa: PTH117
         with contextlib.suppress(OSError, ValueError):
-            folder = _on_disk_case(os.path.realpath(folder))
-    return os.path.normcase(os.path.join(folder, ""))  # noqa: PTH118
+            spelled = _on_disk_case(os.path.realpath(folder), memo)
+    prefix = os.path.normcase(os.path.join(spelled, ""))  # noqa: PTH118
+    if memo is not None:
+        memo[_PREFIX_KEY + folder] = prefix
+    return prefix
 
 
-def _on_disk_case(folder: str) -> str:
+def _on_disk_case(folder: str, memo: dict[str, str] | None = None) -> str:
     """Return the absolute *folder* with each part in the case its parent lists it.
 
     Only where ``os.path.normcase`` keeps case (macOS, Linux): there,
@@ -117,21 +133,32 @@ def _on_disk_case(folder: str) -> str:
     ``HOME`` would give two keys. Each part whose other case names the same
     entry (one file ID) is looked up in its parent's listing. A part on a
     volume that tells case apart, or that does not exist, keeps its case,
-    which costs one failed lookup and no listing.
+    which costs one failed lookup and no listing. *memo* (see
+    :func:`path_key`) keeps each folder's listed case for the pass, so the
+    folders above many paths are looked up once.
     """
     if os.path.normcase("A") != "A":  # the OS folds case as text (Windows)
         return folder
     parts = Path(folder).parts
     if not parts:
         return folder
-    spelled = parts[0]
+    seen: dict[str, str] = {} if memo is None else memo
+    typed = spelled = parts[0]
     for name in parts[1:]:
-        spelled = os.path.join(spelled, _listed_name(spelled, name))  # noqa: PTH118
+        typed = os.path.join(typed, name)  # noqa: PTH118
+        listed = seen.get(_CASE_KEY + typed)
+        if listed is None:
+            listed = os.path.join(spelled, _listed_name(spelled, name, seen))  # noqa: PTH118
+            seen[_CASE_KEY + typed] = listed
+        spelled = listed
     return spelled
 
 
-def _listed_name(parent: str, name: str) -> str:
-    """Return the entry of *parent* that is *name* in another case, else *name*."""
+def _listed_name(parent: str, name: str, seen: dict[str, str]) -> str:
+    """Return the entry of *parent* that is *name* in another case, else *name*.
+
+    *seen* keeps *parent*'s listing, so a folder is listed once per pass.
+    """
     other = name.swapcase()
     if other == name:
         return name
@@ -141,7 +168,10 @@ def _listed_name(parent: str, name: str) -> str:
             return name
         if not os.path.samestat(own, os.lstat(os.path.join(parent, other))):  # noqa: PTH118
             return name
-        listed = os.listdir(parent)  # noqa: PTH208
+        kept = seen.get(_LIST_KEY + parent)
+        if kept is None:
+            kept = seen[_LIST_KEY + parent] = "\0".join(os.listdir(parent))  # noqa: PTH208
+        listed = kept.split("\0") if kept else []
     except (OSError, ValueError):
         return name
     if name in listed:
@@ -468,7 +498,7 @@ def _still_made(
 
 
 def _made_and_used(
-    names: set[str], ending: Collection[str]
+    names: set[str], ending: Collection[str], memo: dict[str, str]
 ) -> tuple[set[str], set[str]]:
     """Return the keys :func:`made_dirs` reads from the ledgers.
 
@@ -477,12 +507,12 @@ def _made_and_used(
     since that install (see :func:`_still_made`). The second holds the
     directories, so named, that an install in place created and every path
     it lists; the installs whose ids are in *ending* are left out of it.
+    *memo* is the caller's (see :func:`path_key`).
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
         OSError: A ledger cannot be read.
     """
-    memo: dict[str, str] = {}
     ledgers = _user_level_ledgers()
     changed = _changes(ledgers, memo)
     made: set[str] = set()
@@ -490,7 +520,7 @@ def _made_and_used(
     for records in ledgers:
         for record, in_place in _installs(records):
             dirs = {
-                _key_prefix(path)
+                _key_prefix(path, memo)
                 for path in record.created_dirs
                 if os.path.normcase(Path(path).name) in names
             }
@@ -540,6 +570,7 @@ def made_dirs(
     if not same_location(boundary, home):
         return set()
     wanted: dict[str, Path] = {}
+    memo: dict[str, str] = {}  # one pass: each folder resolved once
     for base in bases:
         try:
             parts = base.relative_to(home).parts
@@ -547,12 +578,12 @@ def made_dirs(
             continue
         for depth in range(1, len(parts) + 1):
             folder = home.joinpath(*parts[:depth])
-            wanted[_key_prefix(str(folder))] = folder
+            wanted[_key_prefix(str(folder), memo)] = folder
     if not wanted:
         return set()
     names = {os.path.normcase(folder.name) for folder in wanted.values()}
     try:
-        made, used = _made_and_used(names, ending)
+        made, used = _made_and_used(names, ending, memo)
     except (install_ledger.LedgerError, OSError, ValueError):
         return set()
     return {

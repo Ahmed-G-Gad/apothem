@@ -88,10 +88,11 @@ def user_level_dirs(harness_id: str) -> tuple[Path, ...]:
     except (RuntimeError, KeyError):
         return ()
     found: dict[str, Path] = {}
+    memo: dict[str, str] = {}  # each folder resolved once
     for entry in rules.install:
         if entry.user_level:
             folder = resolve_target(entry.target, harness_root=None, project_root=None)
-            found.setdefault(path_key(folder), folder)
+            found.setdefault(path_key(folder, memo), folder)
     return tuple(found.values())
 
 

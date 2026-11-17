@@ -390,8 +390,9 @@ class UserLevelGate:
         same_install: tuple[str, ...] = (),
     ) -> UserLevelGate:
         """Return the gate for *rules* installed at *root*."""
+        memo: dict[str, str] = {}  # the gate keeps it: each folder resolved once
         bases = {
-            path_key(base): base
+            path_key(base, memo): base
             for base in (
                 resolve_target(
                     entry.target, harness_root=harness_root, project_root=project_root
@@ -399,7 +400,9 @@ class UserLevelGate:
                 for entry in user_level_entries(rules)
             )
         }
-        return cls(harness_name, root, harness_root, project_root, bases, same_install)
+        gate = cls(harness_name, root, harness_root, project_root, bases, same_install)
+        gate._memo.update(memo)
+        return gate
 
     @classmethod
     def for_harness(
