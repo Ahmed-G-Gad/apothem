@@ -5,8 +5,9 @@
 A folder swapped for a link during a test (before or after the protected
 folders were first resolved), a loopback admin share, a share reached by one of
 the machine's own addresses, a device or long-path prefix, a short (8.3) name,
-an alternate data stream, and a letter-case or Unicode-normalization variant on
-a volume that ignores those all name the same protected folder. Every home here
+an alternate data stream, the macOS data-volume spelling, and a letter-case or
+Unicode-normalization variant on a volume that ignores those all name the same
+protected folder. Every home here
 is a folder under ``tmp_path`` added with ``also_protect_home``; the string
 checks of the Windows spellings touch no disk at all.
 """
@@ -707,6 +708,57 @@ def test_an_alternate_data_stream_of_a_protected_folder_is_refused(
     with pytest.raises(home_write_guard.RealHomeWriteError):
         atomic_io.write_bytes_atomically(Path(f"{home}\\.apothem:evil"), b"data")
     assert not home_write_guard.would_refuse(f"{home}\\notes.txt:stream")
+    assert _everything_in(fake_home) == []
+
+
+# The macOS data volume ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("fold", "spelling", "expected"),
+    [
+        (False, "/System/Volumes/Data/Users/me/.claude", "/Users/me/.claude"),
+        (False, "/System/Volumes/Data/Users/me", "/Users/me"),
+        (False, "/System/Volumes/Data", "/"),
+        (False, "/System/Volumes/Data/", "/"),
+        (False, "/System/Volumes/DataX/Users/me", "/System/Volumes/DataX/Users/me"),
+        (False, "/system/volumes/data/Users/me", "/system/volumes/data/Users/me"),
+        (True, "/system/volumes/data/Users/me", "/Users/me"),
+        (False, "/Users/me/System/Volumes/Data", "/Users/me/System/Volumes/Data"),
+    ],
+)
+def test_the_macos_data_volume_reads_as_the_path_it_is_firmlinked_to(
+    monkeypatch: pytest.MonkeyPatch, fold: bool, spelling: str, expected: str
+) -> None:
+    monkeypatch.setattr(home_write_guard, "_FOLD_CASE", fold)
+    assert home_write_guard._data_volume_spelling(spelling) == expected
+
+
+def test_the_data_volume_rule_is_on_for_macos_only_by_default() -> None:
+    assert home_write_guard._DATA_VOLUME_FIRMLINK is (sys.platform == "darwin")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="the data volume is a macOS path")
+@pytest.mark.parametrize("firmlink", [True, False])
+def test_a_home_spelled_on_the_macos_data_volume_is_refused_there(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch, firmlink: bool
+) -> None:
+    """``/System/Volumes/Data/Users/<u>`` is ``/Users/<u>`` on macOS 10.15+."""
+    monkeypatch.setattr(home_write_guard, "_DATA_VOLUME_FIRMLINK", firmlink)
+    spelled = f"/System/Volumes/Data{fake_home}"
+    assert home_write_guard.would_refuse(f"{spelled}/.claude/settings.json") is (
+        firmlink
+    )
+    assert home_write_guard.would_refuse(f"{spelled}/.apothem") is firmlink
+    assert home_write_guard.would_refuse(spelled, tree=True) is firmlink
+    assert home_write_guard.would_refuse_project_root(spelled) is firmlink
+    assert not home_write_guard.would_refuse(f"{spelled}/notes.txt")
+    if firmlink:
+        with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+            home_write_guard.refuse_real_home_write(
+                f"{spelled}/.claude/x", operation="write"
+            )
+        assert caught.value.protected_root == str(fake_home / ".claude")
     assert _everything_in(fake_home) == []
 
 

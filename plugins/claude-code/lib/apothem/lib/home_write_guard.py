@@ -42,9 +42,14 @@ protected folders and the folders above them, folder by folder up to the
 share, so one of this machine's own addresses counts too. Only the string
 rules make no network contact: resolving a share path and comparing it by
 identity ask its host, once per folder in a check, and stop at the first
-error that says the host or the share cannot be reached. On macOS letter case and Unicode
-normalization are ignored, as the default volume format does; Linux compares
-names as they are.
+error that says the host or the share cannot be reached.
+
+On macOS letter case and Unicode normalization are ignored, as the default
+volume format does, and ``/System/Volumes/Data/<path>``, the data volume that
+``/Users`` and the rest of it are firmlinked from, reads as ``/<path>``.
+Linux compares names as they are. On Linux and macOS no file identity is
+compared, so a bind mount of the home or a case-insensitive Linux mount is
+judged by its spelling.
 
 The account home comes from the operating system (``FOLDERID_Profile`` on
 Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
@@ -136,6 +141,15 @@ _LOOKUP_ERRORS = (
 #: POSIX; Windows folds case through ``normcase``, and Linux compares names as
 #: they are. Tests switch it.
 _FOLD_CASE: bool = sys.platform == "darwin"
+
+#: Read ``/System/Volumes/Data/<path>`` as ``/<path>``. From macOS 10.15 the
+#: data volume is mounted there and firmlinked into ``/`` (``/Users`` among
+#: the rest), so both spellings name one folder, and ``os.path.realpath``
+#: leaves the first as written. Tests switch it.
+_DATA_VOLUME_FIRMLINK: bool = sys.platform == "darwin"
+
+#: Where macOS mounts the data volume.
+_DATA_VOLUME = "/System/Volumes/Data"
 
 #: An admin share of a drive (``C$``) and a loopback IPv4 host (``127.x.y.z``).
 _ADMIN_SHARE = re.compile(r"[a-z]\$", re.IGNORECASE)
@@ -684,12 +698,31 @@ def _realpath(path: str) -> str:
 def _canonical(path: str) -> str:
     """Return *path* in the one spelling every comparison uses.
 
-    That is ``os.path.normcase`` of it, and on Windows also
-    :func:`_windows_spelling`.
+    That is ``os.path.normcase`` of it, on Windows also
+    :func:`_windows_spelling`, and on macOS :func:`_data_volume_spelling`.
     """
     path = os.path.normcase(path)
     if os.name == "nt":
         path = _windows_spelling(path)
+    elif _DATA_VOLUME_FIRMLINK:
+        path = _data_volume_spelling(path)
+    return path
+
+
+def _data_volume_spelling(path: str) -> str:
+    """Return a macOS *path* on the data volume as the path it is firmlinked to.
+
+    ``/System/Volumes/Data/Users/me`` reads as ``/Users/me``, and the volume
+    itself as ``/``. Letter case in the prefix counts only when
+    :data:`_FOLD_CASE` says so. It is string work on *path* alone.
+    """
+    head, rest = path[: len(_DATA_VOLUME)], path[len(_DATA_VOLUME) :]
+    if rest and not rest.startswith("/"):
+        return path
+    if head == _DATA_VOLUME or (
+        _FOLD_CASE and head.casefold() == _DATA_VOLUME.casefold()
+    ):
+        return rest or "/"
     return path
 
 

@@ -693,7 +693,9 @@ folder swapped for a link during the test. On Windows letter case, short (8.3)
 names, the `\\?\`, `\\.\` and `\??\` prefixes, a loopback admin share such as
 `\\localhost\C$` or `\\--1.ipv6-literal.net\C$`, a share reached by one of the
 machine's own addresses or through a mapped drive, and an alternate data
-stream (`.apothem:name`) count too. On macOS letter case and Unicode normalization are ignored as well.
+stream (`.apothem:name`) count too. On macOS letter case and Unicode
+normalization are ignored as well, and `/System/Volumes/Data/<path>` reads as
+`/<path>`.
 `tests/README.md` lists the spellings the check does not see, such as a hard
 link to a file in a protected folder.
 
