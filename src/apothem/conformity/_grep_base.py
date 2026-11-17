@@ -108,6 +108,24 @@ class GitFailedError(GitCheckError):
         super().__init__(f"{command} failed with exit code {returncode}")
 
 
+class GitNameError(GitCheckError):
+    """A file name git listed cannot be given back to git as an argument.
+
+    Windows passes arguments as UTF-16, so a name that is not valid UTF-8 (one
+    from an index made on another system) reaches git as other bytes and git
+    finds no such file. The file's content was not read, which is not the same
+    as a file with nothing to report. The message reads, for example,
+    ``git cat-file cannot read a file whose name is not UTF-8 on Windows``; it
+    never repeats the name, which a checked repository shapes.
+    """
+
+    def __init__(self, command: str) -> None:
+        """Name the git *command* that could not be given the file name."""
+        super().__init__(
+            f"{command} cannot read a file whose name is not UTF-8 on Windows"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Shared command-line parser
 # ---------------------------------------------------------------------------
@@ -319,6 +337,29 @@ def has_git_entry(directory: Path) -> bool:
     directory is a checkout root.
     """
     return os.path.lexists(directory / GIT_ENTRY)
+
+
+def in_checkout(directory: Path) -> bool:
+    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+
+    This is where git itself looks for a repository when it runs in
+    ``directory``, so a git command that fails there failed inside a checkout
+    and its data was not read, also when ``directory`` is a subfolder of the
+    checkout. The walk stops below a folder that ``GIT_CEILING_DIRECTORIES``
+    names, as git's own search does.
+    """
+    start = directory.absolute()
+    ceilings = {
+        os.path.normcase(str(Path(entry).absolute()))
+        for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep)
+        if entry
+    }
+    for folder in (start, *start.parents):
+        if folder != start and os.path.normcase(str(folder)) in ceilings:
+            return False
+        if has_git_entry(folder):
+            return True
+    return False
 
 
 def iter_tree_files(

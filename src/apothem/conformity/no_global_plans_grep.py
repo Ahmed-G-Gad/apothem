@@ -62,7 +62,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     finish_root_report,
     has_git_entry,
@@ -156,11 +156,11 @@ def _git_ls_files(root: Path) -> list[str]:
     Raises ``RuntimeError`` when ``git`` is unavailable or root is not
     a git repository — both are operator errors the caller surfaces. git runs
     through :func:`run_git`, so the repository's own settings cannot make it
-    start a program.
+    start a program. ``-z`` ends each name with NUL, unquoted, and the output
+    is read as file names, so a name comes back with every byte it holds.
     """
     try:
-        # -z: names end with NUL, unquoted, whatever characters they hold.
-        completed = run_git(["ls-files", "-z"], cwd=root, check=True)
+        completed = run_git(["ls-files", "-z"], cwd=root, check=True, file_names=True)
     except FileNotFoundError as exc:
         raise RuntimeError("git executable not found on PATH") from exc
     except subprocess.CalledProcessError as exc:
@@ -168,7 +168,7 @@ def _git_ls_files(root: Path) -> list[str]:
         raise RuntimeError(
             f"git ls-files failed under {root!s}: {stderr or 'no stderr'}"
         ) from exc
-    return [name for name in completed.stdout.split("\0") if name]
+    return split_names(completed.stdout)
 
 
 def _sweep_stray_plans_dirs(

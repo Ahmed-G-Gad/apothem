@@ -332,12 +332,13 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
 
 
 def _git(
-    label: str, *args: str, check: bool = False
+    label: str, *args: str, check: bool = False, file_names: bool = False
 ) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
-    the repository's program-running settings. Raises
+    the repository's program-running settings; *file_names* reads a ``-z``
+    list with every byte of each name kept. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
     command as *label*, past the limit; :class:`OSError` when git cannot be
     started; and, with *check*, :class:`subprocess.CalledProcessError` on a
@@ -349,7 +350,12 @@ def _git(
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return run_git(list(args), timeout=GIT_TIMEOUT_SECONDS, check=check)
+        return run_git(
+            list(args),
+            timeout=GIT_TIMEOUT_SECONDS,
+            check=check,
+            file_names=file_names,
+        )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
@@ -368,14 +374,19 @@ def check_staged() -> list[Finding]:
     staged list, or a staged or committed file, is not read within
     ``GIT_TIMEOUT_SECONDS``, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails to
-    list the change set in a folder that holds a ``.git`` entry: a change set
-    that was not read is not a clean one. Outside a checkout, or without git,
+    list the change set inside a checkout (a ``.git`` entry in the current
+    folder or one above it): a change set that was not read is not a clean
+    one. Raises :class:`~apothem.conformity._grep_base.GitNameError` when a
+    staged file's name cannot be given back to git to read its content (a
+    name that is not UTF-8, on Windows). Outside a checkout, or without git,
     there is no change set and the list of findings is empty.
     """
+    from apothem.conformity._git import reaches_git_unchanged, split_names
     from apothem.conformity._grep_base import (
         GitFailedError,
+        GitNameError,
         GitTimeoutError,
-        has_git_entry,
+        in_checkout,
     )
 
     def blob(spec: str, *, check: bool) -> str:
@@ -386,7 +397,10 @@ def check_staged() -> list[Finding]:
         return []
 
     # Get list of staged Python files under src/apothem/. -z ends each name
-    # with NUL, unquoted, so no character in a name can split or hide it.
+    # with NUL, unquoted, and the list is read as file names, so each name
+    # comes back with every byte it holds. ``--`` marks the package as a path:
+    # without it git stops with "ambiguous argument" in a work tree where the
+    # folder is gone.
     try:
         result = _git(
             "git diff --cached",
@@ -395,18 +409,20 @@ def check_staged() -> list[Finding]:
             "--name-only",
             "-z",
             "--diff-filter=AMR",
+            "--",
             PUBLIC_PACKAGE,
+            file_names=True,
         )
     except FileNotFoundError:
         return []
     if result.returncode != 0:
         # Outside a checkout there is no change set; in one, git refused it.
-        if has_git_entry(Path.cwd()):
+        if in_checkout(Path.cwd()):
             raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [
         f
-        for f in result.stdout.split("\0")
+        for f in split_names(result.stdout)
         if f.endswith(".py")
         and not PRIVATE_PATTERN.search(f)
         and not CONFORMITY_INTERNAL.search(f)
@@ -414,6 +430,11 @@ def check_staged() -> list[Finding]:
 
     findings: list[Finding] = []
     for fp in files:
+        # The name goes back to git as an argument. One that cannot arrive
+        # unchanged would read as a missing file and be skipped below, which
+        # would pass a change that was never compared.
+        if not reaches_git_unchanged(fp):
+            raise GitNameError("git cat-file")
         # A GitTimeoutError goes on to the caller: skipping the file would
         # pass a change that was never compared.
         try:

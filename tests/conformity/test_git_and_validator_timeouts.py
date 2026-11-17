@@ -422,10 +422,12 @@ def test_companion_history_read_gets_the_long_limit(
         argv: list[str], *, timeout: float | None, **_kwargs: object
     ) -> subprocess.CompletedProcess[str]:
         limits[_subcommand(argv)] = timeout
+        # rev-parse prints the root's path below the top of the work tree
+        # (empty at the top), then the commit; log prints "<status>\t<name>".
         output = (
-            "0" * 40 + "\n"
+            "\n" + "0" * 40 + "\n"
             if _subcommand(argv) == "rev-parse"
-            else "\x1e100\npkg/README.md\n"
+            else "\x1e100\nA\tpkg/README.md\n"
         )
         return subprocess.CompletedProcess(argv, 0, output, "")
 
@@ -452,7 +454,7 @@ def test_companion_history_read_past_its_limit_does_not_pass(
         argv: list[str], *, timeout: float | None, **kwargs: object
     ) -> subprocess.CompletedProcess[str]:
         if _subcommand(argv) == "rev-parse":
-            return subprocess.CompletedProcess(argv, 0, "0" * 40 + "\n", "")
+            return subprocess.CompletedProcess(argv, 0, "\n" + "0" * 40 + "\n", "")
         return _timing_out_run(argv, timeout=timeout, **kwargs)
 
     monkeypatch.setattr(_bounded_run, "run_bounded", run)

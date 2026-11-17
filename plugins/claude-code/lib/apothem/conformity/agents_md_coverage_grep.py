@@ -42,14 +42,18 @@ mtime: a checkout rewrites mtimes, so only commit history carries the truth of
 "what changed when". A single ``git log`` pass buckets every tracked file to
 its nearest meaningful-folder ancestor; a folder is stale when its newest
 content commit postdates its committed companion's commit. Folders with no
-companion on disk are skipped entirely, a companion deleted since included —
-absence is not a finding under the root-only convention. The root
-``AGENTS.md`` is that canon, not a per-folder companion, so it is never
-checked against the root folder's content. The log names paths relative to
-the checked root and covers only history under it, so a subtree root checks
-its own folders. Where git history is unavailable (a shallow clone, a non-git
-tree), freshness is skipped and the sweep reports a clean pass — it never
-blocks a fresh clone. A git command that runs past its time limit (the
+companion on disk are skipped entirely, including one that was deleted —
+absence is not a finding under the root-only convention. A companion whose
+newest commit deleted it and that is on disk again has not been committed
+since, so it is fresh like any other uncommitted companion. The
+``AGENTS.md`` at the top of the repository is that canon, not a per-folder
+companion, so it is never checked against the root folder's content. The log
+names paths relative to the checked root and covers only history under it, so
+a subtree root checks its own folders; the ``AGENTS.md`` of a subtree root is
+a per-folder companion there, as it is in a run on the whole repository, so
+both runs report it alike. Where git history is unavailable (a shallow clone,
+a non-git tree), freshness is skipped and the sweep reports a clean pass — it
+never blocks a fresh clone. A git command that runs past its time limit (the
 repository's own configuration can make git wait for ever), or a git that
 refuses a checkout it found (another owner, a bad configuration line), is
 different: the history is there but was not read, so the sweep reports a
@@ -82,7 +86,7 @@ from apothem.conformity._grep_base import (
     GitFailedError,
     GitTimeoutError,
     finish_root_report,
-    has_git_entry,
+    in_checkout,
     iter_tree_files,
     parse_root_args,
 )
@@ -281,30 +285,48 @@ def meaningful_folders(root: Path) -> list[str]:
     return sorted(folders)
 
 
-def _last_commit_times(root: Path) -> dict[str, int] | None:
-    """Return a map of tracked-file POSIX path → last-commit unix timestamp.
+@dataclass(frozen=True)
+class _History:
+    """What one read of the history under a root found.
 
-    First ``git rev-parse --verify --quiet HEAD`` within
-    ``GIT_TIMEOUT_SECONDS`` finds out whether there is a history to read; then
-    one ``git log`` pass within ``GIT_HISTORY_TIMEOUT_SECONDS``, newest commit
-    first: the first time a path is seen is its last-touching commit.
+    ``times`` maps each path, relative to the root, to the commit time of the
+    newest commit that touched it. ``deleted`` holds the paths that commit
+    deleted. ``root_is_top`` is True when the root is the top folder of the
+    repository's work tree.
+    """
+
+    times: dict[str, int]
+    deleted: frozenset[str]
+    root_is_top: bool
+
+
+def _read_history(root: Path) -> _History | None:
+    """Read the commit history under *root* in one ``git log`` pass.
+
+    First ``git rev-parse --show-prefix --verify --quiet HEAD`` within
+    ``GIT_TIMEOUT_SECONDS`` finds out whether there is a history to read, and
+    its first output line (the path of *root* below the top of the work tree,
+    empty at the top) says whether *root* is that top. Then one ``git log``
+    pass within ``GIT_HISTORY_TIMEOUT_SECONDS``, newest commit first: the
+    first time a path is seen is its last-touching commit, and
+    ``--name-status`` says whether that commit deleted it.
     ``--relative -- .`` limits the pass to history under *root* and names
     paths relative to it, so they match :func:`meaningful_folders` when *root*
     is a subtree of the repository. git runs through :func:`run_git`, which
     turns off the repository's program-running settings (a signature check,
-    say) and prints path names as they are, decoded as UTF-8. Returns None
-    when git history is unavailable (no repository, no commit yet, or git
-    absent) so the caller degrades to a presence-only sweep. Raises
-    :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
-    runs past its limit, and
+    say) and prints non-ASCII path names as they are, decoded as UTF-8.
+    Returns None when git history is unavailable (no repository, no commit
+    yet, or git absent) so the caller degrades to a presence-only sweep.
+    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git
+    command runs past its limit, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
-    although *root* holds a ``.git`` entry (git refused the repository) or
+    although *root* is inside a checkout (git refused the repository) or
     after it found the history: in both cases the history is there but was
     not read.
     """
     try:
         head = run_git(
-            ["rev-parse", "--verify", "--quiet", "HEAD"],
+            ["rev-parse", "--show-prefix", "--verify", "--quiet", "HEAD"],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
         )
@@ -315,7 +337,7 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     if head.returncode != 0:
         # Exit 1: HEAD names no commit yet. Any other failure outside a
         # checkout is the no-repository case; in a checkout git refused it.
-        if head.returncode != 1 and has_git_entry(root):
+        if head.returncode != 1 and in_checkout(root):
             raise GitFailedError("git rev-parse", head.returncode)
         return None
     try:
@@ -323,7 +345,7 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             [
                 "log",
                 "--format=%x1e%ct",
-                "--name-only",
+                "--name-status",
                 "--no-renames",
                 "--relative",
                 "--",
@@ -342,6 +364,7 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
         return None
 
     times: dict[str, int] = {}
+    deleted: set[str] = set()
     current_ct: int | None = None
     # Split on "\n" only: str.splitlines() also breaks at the \x1e record
     # marker, which would strip it from every header line.
@@ -350,15 +373,31 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             stamp = raw_line[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None
             continue
-        # The name as git printed it: core.quotePath=false keeps it unquoted,
-        # and stripping would change a name that starts or ends with a space.
-        path = raw_line
-        if not path or current_ct is None:
+        # A change line is "<status>\t<name>". The name is as git printed it:
+        # core.quotePath=false keeps a non-ASCII name unquoted, and stripping
+        # would change a name that starts or ends with a space.
+        status, tab, path = raw_line.partition("\t")
+        if not tab or not path or current_ct is None:
             continue
         # Newest-first: keep only the first (most recent) commit per path.
         if path not in times:
             times[path] = current_ct
-    return times
+            if status == "D":
+                deleted.add(path)
+    # The first line of the rev-parse output is the path of the root below the
+    # top of the work tree; it is empty when the root is that top.
+    prefix = head.stdout.split("\n", 1)[0]
+    return _History(times=times, deleted=frozenset(deleted), root_is_top=not prefix)
+
+
+def _last_commit_times(root: Path) -> dict[str, int] | None:
+    """Return a map of tracked-file POSIX path → last-commit unix timestamp.
+
+    The ``times`` of :func:`_read_history`, with the same None and the same
+    errors: for a deleted path, the time is that of the deleting commit.
+    """
+    history = _read_history(root)
+    return None if history is None else history.times
 
 
 def _owning_folder(file_posix: str, folder_set: frozenset[str]) -> str:
@@ -396,24 +435,31 @@ def check(root: Path) -> GrepResult:
     # Freshness — git-commit truth; skipped when history is unavailable.
     check_error: str | None = None
     try:
-        commit_times = _last_commit_times(root)
+        history = _read_history(root)
     except GitCheckError as exc:
-        commit_times, check_error = None, str(exc)
-    freshness_checked = commit_times is not None
-    if commit_times is not None:
+        history, check_error = None, str(exc)
+    freshness_checked = history is not None
+    if history is not None:
         content_ct: dict[str, int] = {}
         companion_ct: dict[str, int] = {}
-        for path, ct in commit_times.items():
+        for path, ct in history.times.items():
             if _has_excluded_segment(path):
                 continue
             owner = _owning_folder(path, folder_set)
             if path.rpartition("/")[2] == COMPANION_NAME:
                 companion_folder = path.rpartition("/")[0] or "."
-                # The root AGENTS.md is the repository's canon, not a
-                # per-folder companion, so it has no folder to fall behind.
-                # A companion deleted since is absent, and absence passes.
+                # The AGENTS.md at the top of the repository is its canon, not
+                # a per-folder companion, so it has no folder to fall behind.
+                # The AGENTS.md of a subtree root is a per-folder companion,
+                # as a run on the whole repository sees it.
+                is_canon = companion_folder == "." and history.root_is_top
+                # A companion whose newest commit deleted it is absent, and
+                # absence passes; one that is on disk again has not been
+                # committed since, so it is fresh. A committed companion that
+                # is gone from disk is absent too.
                 if (
-                    companion_folder != "."
+                    not is_canon
+                    and path not in history.deleted
                     and companion_folder in folder_set
                     and (root / path).is_file()
                 ):
@@ -426,7 +472,9 @@ def check(root: Path) -> GrepResult:
                 continue
             newest_content = content_ct.get(folder, 0)
             if newest_content > companion_ct[folder]:
-                surface = f"{folder}/{COMPANION_NAME}"
+                surface = (
+                    COMPANION_NAME if folder == "." else f"{folder}/{COMPANION_NAME}"
+                )
                 findings.append(
                     Finding(
                         surface=surface,

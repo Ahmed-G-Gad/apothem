@@ -403,12 +403,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `no-global-plans-grep`, `agents-md-coverage-grep`, and the `--staged` checks
   of `production-ready-pr-grep` and `semver_stability_grep` received non-ASCII
   path names in git's quoted form (`"caf\303\251.md"`), which their path rules
-  did not match; git now prints every name as it is. A repository whose
+  did not match; git now prints non-ASCII names as they are. A repository whose
   `diff.orderFile` named a missing file made both `--staged` checks see an
   empty change set and pass; they no longer read that setting. On Windows,
   `semver_stability_grep --staged` named `src\apothem\__init__.py` with
   backslashes, which git does not accept, so a staged MAJOR version bump never
   admitted a breaking change.
+- **The conformity gate reads every byte of a path name, and a failed
+  `git diff` does not pass from a subfolder.** The gate read git's lists of
+  path names as text, which turned a carriage return in a name into a line
+  feed and a byte that is not UTF-8 into U+FFFD. The changed name matched no
+  file, so `semver_stability_grep --staged` skipped that module and passed a
+  staged change that dropped a public function, and `--all-perwrite` left the
+  file out. `--all-perwrite`, `no-global-plans-grep` and both `--staged`
+  checks now read each name byte for byte. On Windows, git cannot be handed a
+  name that is not UTF-8 (only an index made on another system holds one), so
+  `semver_stability_grep --staged` reports a `check_error` for it and does not
+  pass. The history read of `agents-md-coverage-grep` still gets a name with a
+  control character in git's quoted form. Both `--staged` checks, and
+  `agents-md-coverage-grep` on a subfolder, now look for the checkout in the
+  folders above the one they run in, as git does: run from a subfolder, a
+  `git` that failed, for example on `diff.renameLimit = abc`, was read as no
+  staged change and passed. `semver_stability_grep --staged` also names
+  `src/apothem` after `--`, so git reads it as a path where that folder is
+  missing.
+- **`agents-md-coverage-grep` judges a re-created companion and a subfolder
+  root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
+  was written again was timed by the deleting commit, so the new file was
+  reported stale before it was ever committed. It now counts as new until you
+  commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
+  the canon and passed it, while a run on the whole repository reported it;
+  only the `AGENTS.md` at the top of the repository is the canon now, so both
+  runs agree.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`

@@ -50,10 +50,13 @@ git starts in a submodule:
 - no hooks, no pager, and no automatic maintenance;
 - no external diff or text-conversion program, and submodule changes shown as
   commit ids only, so git starts no second git inside a submodule;
-- no diff order file (`diff.orderFile`), excludes file (`core.excludesFile`)
-  or mailmap file read;
 - file contents read with `git cat-file blob`, which refuses a submodule entry
   where `git show` would show it as a commit.
+
+Three settings name a file for git to read, not a program, and that file can
+sit on a network path. The gate's command line keeps git from reading them
+too: the diff order file (`diff.orderFile`), the excludes file
+(`core.excludesFile`) and the mailmap file.
 
 It also sets `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, so git
 never fetches a missing object of a partial clone through an address the
@@ -70,11 +73,13 @@ still make git read a path somewhere else through any setting or file that
 names one, for example `include.path` or `includeIf`, `core.worktree`, the
 `gitdir:` line of a `.git` file, or `.git/objects/info/alternates`; on
 Windows, a network path there (`\\server\share`) makes Windows connect to that
-server and sign you in. And the list covers the settings known today; a later
-git release can add a new one. Your own global and system git settings still apply, except the ones
-above, which the gate's command line overrides. This covers git only:
-`python -m` reads Python modules from the current folder first, so start the
-gate from a folder you trust.
+server and sign you in. One case is narrower: Git for Windows 2.55 refuses a
+network path in a `gitdir:` line before it connects, unless your own
+`safe.directory` setting allows that path. And the list covers the settings
+known today; a later git release can add a new one. Your own global and system
+git settings still apply, except the ones above, which the gate's command line
+overrides. This covers git only: `python -m` reads Python modules from the
+current folder first, so start the gate from a folder you trust.
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a
@@ -115,7 +120,7 @@ conventional-commit-grep            git log -1, git rev-parse          5 seconds
 agents-md-coverage-grep             git rev-parse                     10 seconds
                                     git log over the whole history     5 minutes
 production-ready-pr-grep --staged   git diff --cached                  5 seconds
-semver-stability-grep --staged      git diff --cached, git show        5 seconds
+semver-stability-grep --staged      git diff --cached, git cat-file    5 seconds
 ```
 
 A project's own git settings can make `git` wait for ever, for example an
@@ -132,6 +137,28 @@ failure; a history that takes longer to read fails the check. A folder that is
 not a git repository, a repository with no commit yet, or a machine without
 `git` still passes these checks as before. As with any result that does not
 pass, the advisory default reports it and exits `0`, and `--strict` exits `2`.
+
+For the two `--staged` checks, a value git cannot read for a diff setting,
+such as `diff.renameLimit = abc`, is one such bad line: `git diff` fails, and a
+change set that was not read is not an empty one. These two checks and the
+stale-companion check look for the checkout in the folder they run in and in
+the folders above it, as git does, so the same holds in a subfolder of the
+checkout.
+
+The gate reads each list of path names from git byte for byte, so a name that
+holds a line break, a carriage return or a byte that is not UTF-8 names the
+same file to every check. One case cannot be read: Windows cannot hand git a
+name that is not UTF-8, which only an index made on another system can hold.
+`semver-stability-grep --staged` then reports a `check_error` for the change
+set; it does not skip that file. The history read of the stale-companion check
+is the exception to the first sentence: git prints a name with a control
+character there in its quoted form, so that check cannot match such a folder.
+
+The stale-companion check treats only the `AGENTS.md` at the top of the
+repository as the canon. When you run it on a subfolder, that subfolder's own
+`AGENTS.md` is a per-folder companion, and the run reports it as a run on the
+whole repository does. A companion that was deleted in a commit and written
+again counts as new until you commit it.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

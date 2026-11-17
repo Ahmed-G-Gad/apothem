@@ -91,7 +91,7 @@ if __package__ in (None, ""):
         sys.modules["apothem"] = _support_package
 
 from apothem.conformity._bounded_run import run_bounded
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
@@ -1300,18 +1300,19 @@ def _corpus_tracked_files(root: Path) -> list[Path]:
     Uses ``git ls-files`` so the corpus is exactly the tracked working tree —
     ignored artifacts (``dist/``, caches, ``.plans/`` ephemera) are excluded by
     construction. The invocation is read-only, and :func:`run_git` keeps the
-    checked repository's own git settings from starting a program. When git is
-    unavailable or *root* is not a work tree, returns an empty list (the caller
-    treats an empty corpus as a clean pass — there is nothing tracked to scan).
+    checked repository's own git settings from starting a program. The ``-z``
+    list is read as file names, so a name comes back with every byte it holds
+    and names the file on disk. When git is unavailable or *root* is not a
+    work tree, returns an empty list (the caller treats an empty corpus as a
+    clean pass — there is nothing tracked to scan).
     """
     try:
-        completed = run_git(["ls-files", "-z"], cwd=root)
+        completed = run_git(["ls-files", "-z"], cwd=root, file_names=True)
     except (OSError, ValueError):
         return []
     if completed.returncode != EXIT_PASS:
         return []
-    rels = [entry for entry in completed.stdout.split("\0") if entry]
-    return [(root / rel).resolve() for rel in rels]
+    return [(root / rel).resolve() for rel in split_names(completed.stdout)]
 
 
 def _is_corpus_fixture_path(path: Path) -> bool:

@@ -54,9 +54,15 @@ or repository file that names one, for example ``include.path`` or
 ``includeIf``, ``core.worktree``, the ``gitdir:`` line of a ``.git`` file, or
 ``objects/info/alternates``. On Windows a network path there
 (``\\\\server\\share``) makes Windows connect to that server and send the
-user's sign-in. Reading content is done with ``cat-file blob``, never with
-``show``, so a gitlink (a submodule entry) is refused instead of shown as a
-commit.
+user's sign-in; Git for Windows 2.55 refuses a network path in a ``gitdir:``
+line before it connects, unless the user's ``safe.directory`` allows it.
+Reading content is done with ``cat-file blob``, never with ``show``, so a
+gitlink (a submodule entry) is refused instead of shown as a commit.
+
+Path names. A command that prints a ``-z`` list of names runs with
+``file_names=True`` and its output goes through :func:`split_names`, so a name
+keeps every byte it holds. :func:`reaches_git_unchanged` says whether such a
+name can go back to git as an argument.
 """
 
 from __future__ import annotations
@@ -238,14 +244,19 @@ def run_git(
     cwd: Path | str | None = None,
     timeout: float | None = None,
     check: bool = False,
+    file_names: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *cwd* with the project's program-running settings off.
 
     *args* starts with the git subcommand (``ls-files``, ``log``, ...). *cwd*
     reaches git as ``-C <cwd>``, so a folder that does not exist is git's own
     error (a non-zero exit), as for any other git failure. Output is captured
-    and decoded as UTF-8, the encoding git writes path names in; a byte that
-    is not UTF-8 reads as U+FFFD. Standard input is empty. git runs through
+    and decoded as text: UTF-8, a byte that is not UTF-8 as U+FFFD, and every
+    line ending as ``\\n``. That changes a path name that holds a carriage
+    return or a byte that is not UTF-8, so a command that prints a ``-z`` list
+    of names sets *file_names*: the output then keeps every byte (see
+    :func:`~apothem.conformity._bounded_run.decode_output`), and
+    :func:`split_names` splits it. Standard input is empty. git runs through
     :func:`~apothem.conformity._bounded_run.run_bounded`, so *timeout* holds
     for every program git starts, also behind Git for Windows' launcher.
 
@@ -266,4 +277,36 @@ def run_git(
         env=git_environment(),
         timeout=timeout,
         check=check,
+        file_names=file_names,
     )
+
+
+def split_names(output: str) -> list[str]:
+    """Return the names in a ``-z`` list that ``run_git(..., file_names=True)`` read.
+
+    git ends each name with NUL and prints it unquoted, and the *file_names*
+    decoding keeps every byte, so a name with a line break, a carriage return
+    or a byte that is not UTF-8 comes back whole and encodes back to what git
+    stores.
+    """
+    return [name for name in output.split("\0") if name]
+
+
+def reaches_git_unchanged(name: str, *, windows: bool = os.name == "nt") -> bool:
+    """Return True when *name* reaches git unchanged as a command-line argument.
+
+    Outside Windows an argument is passed as bytes, and a name read with
+    *file_names* encodes back to the bytes git printed, so every name
+    qualifies. Windows passes arguments as UTF-16, which git turns back into
+    UTF-8: a name that is not valid UTF-8 (it holds a surrogate escape) arrives
+    as other bytes, so git finds no such entry. Such a name can sit in an
+    index made elsewhere, never in a Windows folder. A caller that needs its
+    content reports the name as unread; it never skips it.
+    """
+    if not windows:
+        return True
+    try:
+        name.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True

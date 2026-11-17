@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
@@ -39,7 +39,7 @@ from apothem.conformity._grep_base import (
     GitFailedError,
     GitTimeoutError,
     GrepResult,
-    has_git_entry,
+    in_checkout,
     make_parser,
     parse_path_input,
 )
@@ -126,11 +126,13 @@ def _staged_paths() -> list[str]:
     The list is empty when git is missing or the current folder is not a
     checkout. git runs through :func:`run_git`, so the repository's own
     settings cannot make it start a program. ``-z`` ends each name with NUL,
-    unquoted, so no character in a name can split or hide it. Raises
+    unquoted, and the output is read as file names, so a name comes back with
+    every byte it holds (a carriage return, a byte that is not UTF-8). Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
     wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
-    when git fails in a folder that holds a ``.git`` entry: a change set that
+    when git fails inside a checkout (a ``.git`` entry in the current folder or
+    one above it): a change set that
     was not read is not an empty one.
     """
     try:
@@ -138,16 +140,17 @@ def _staged_paths() -> list[str]:
             ["diff", "--cached", "--name-only", "-z"],
             check=True,
             timeout=GIT_TIMEOUT_SECONDS,
+            file_names=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
     except subprocess.CalledProcessError as exc:
-        if has_git_entry(Path.cwd()):
+        if in_checkout(Path.cwd()):
             raise GitFailedError("git diff --cached", exc.returncode) from exc
         return []
     except FileNotFoundError:
         return []
-    return [name for name in result.stdout.split("\0") if name]
+    return split_names(result.stdout)
 
 
 def _check_staged() -> GrepResult:

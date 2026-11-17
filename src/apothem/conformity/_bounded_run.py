@@ -28,6 +28,15 @@ the stall.
   close, then leaves it open: a program that escaped the stop can hold it, and
   closing a pipe that a reader thread is blocked on would wait as well.
 
+The output is captured as bytes and decoded here, in one of two ways. By
+default it reads as text: UTF-8, a byte that is not UTF-8 as U+FFFD, and every
+line ending as ``\\n``. With ``file_names=True`` it reads as a list of file
+names (git's ``-z`` lists): nothing is translated, and a byte that does not
+decode comes back as a surrogate escape, so each name encodes back to the
+bytes the program wrote. Text decoding would turn a carriage return in a name
+into a line feed and an undecodable byte into U+FFFD, and the name would then
+match no file.
+
 Without ``new_session`` the program stays in this process's group outside
 Windows, so a signal or a stop aimed at that group reaches it too; that is how a
 validator runs git under the gate. Every git command goes through
@@ -220,7 +229,32 @@ def _exit_on_termination(enabled: bool) -> Iterator[None]:
                 signal.signal(signum, previous)
 
 
-def _stop(process: subprocess.Popen[str], job: _Job, *, group: bool) -> None:
+# The encoding of a file name in a program's output. Outside Windows a name is
+# the bytes the file system holds, which Python reads with the file-system
+# encoding; Git for Windows writes names as UTF-8 whatever the code page.
+_NAME_ENCODING: Final[str] = (
+    "utf-8" if sys.platform == "win32" else sys.getfilesystemencoding()
+)
+
+
+def decode_output(data: bytes, *, file_names: bool = False) -> str:
+    """Return a program's captured output as a string.
+
+    By default the output is text: UTF-8, with a byte that is not UTF-8 read
+    as U+FFFD, and ``\\r\\n`` or a lone ``\\r`` read as ``\\n`` (what
+    :mod:`subprocess` does in text mode). With *file_names* the output is a
+    list of file names: no character is translated, and a byte that does not
+    decode becomes a surrogate escape (``errors="surrogateescape"``), so every
+    name encodes back to the bytes the program wrote. Outside Windows that is
+    how Python itself reads a file name, so such a name opens the file and
+    reaches a program unchanged as an argument.
+    """
+    if file_names:
+        return data.decode(_NAME_ENCODING, "surrogateescape")
+    return data.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _stop(process: subprocess.Popen[bytes], job: _Job, *, group: bool) -> None:
     """Stop *process* and every program it started that the platform can reach."""
     job.terminate()
     if sys.platform != "win32":
@@ -239,14 +273,18 @@ def run_bounded(
     env: Mapping[str, str] | None = None,
     check: bool = False,
     new_session: bool = False,
+    file_names: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run *argv*, capture its output, and keep *timeout* for its whole tree.
 
     Pre-conditions: *argv* is a program and its arguments (never run through a
     shell); *timeout* is in seconds, or None for no limit.
     Post-conditions: standard input is the null device and the output is
-    decoded as UTF-8, with a byte that is not UTF-8 read as U+FFFD. Returns the
-    completed process, and with *check* raises
+    decoded by :func:`decode_output`: as text by default (UTF-8, a byte that
+    is not UTF-8 read as U+FFFD, line endings as ``\\n``), or, with
+    *file_names*, standard output as file names that keep every byte. The
+    error output is always text. Returns the completed process, and with
+    *check* raises
     :class:`subprocess.CalledProcessError` on a non-zero exit. Past *timeout*
     the program and every program it started that the platform can reach are
     stopped (see the module docstring), the output is awaited for at most
@@ -264,8 +302,6 @@ def run_bounded(
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            encoding="utf-8",
-            errors="replace",
             start_new_session=new_session and sys.platform != "win32",
         )
     except BaseException:
@@ -285,7 +321,12 @@ def run_bounded(
         raise
     finally:
         job.close()
-    completed = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    completed = subprocess.CompletedProcess(
+        command,
+        process.returncode,
+        decode_output(stdout, file_names=file_names),
+        decode_output(stderr),
+    )
     if check:
         completed.check_returncode()
     return completed
