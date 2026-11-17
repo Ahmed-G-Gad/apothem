@@ -39,9 +39,9 @@ from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
     RootGrepResult,
-    is_project_dir,
     run_root_grep,
 )
+from apothem.conformity._project_paths import DIR_ENTRY, LINK_ENTRY, path_kind
 
 # Re-export the exit-code constants so the module's public CLI contract stays
 # stable after the base-skeleton adoption — callers and the self-tests read
@@ -75,7 +75,9 @@ def check(root: Path) -> RootGrepResult:
     """
     candidate = root / _FORBIDDEN_DIR
     findings: list[Finding] = []
-    if is_project_dir(root, candidate):
+    # A real folder or a link of any kind named docs is the forbidden entry;
+    # the link is reported by name and never followed.
+    if path_kind(candidate) in (DIR_ENTRY, LINK_ENTRY):
         findings.append(
             Finding(
                 path=f"{_FORBIDDEN_DIR}/",

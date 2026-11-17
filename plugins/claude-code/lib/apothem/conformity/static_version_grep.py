@@ -34,8 +34,8 @@ from typing import Final
 
 from apothem.conformity._grep_base import (
     finish_root_report,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "static-version-grep"
@@ -184,10 +184,11 @@ def _check_readme(root: Path, findings: list[Finding]) -> int:
     read = 0
     for candidate in README_CANDIDATES:
         readme = root / candidate
-        if not is_project_file(root, readme):
+        source = project_file_target(root, readme)
+        if source is None:
             continue
         try:
-            text = readme.read_text(encoding="utf-8")
+            text = source.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         read += 1
@@ -219,10 +220,11 @@ def _check_site_config(root: Path, findings: list[Finding]) -> int:
     read = 0
     for candidate in SITE_CONFIG_CANDIDATES:
         config = root / candidate
-        if not is_project_file(root, config):
+        source = project_file_target(root, config)
+        if source is None:
             continue
         try:
-            text = config.read_text(encoding="utf-8")
+            text = source.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         read += 1
@@ -252,10 +254,11 @@ def _check_site_config(root: Path, findings: list[Finding]) -> int:
 def _check_runtime_version(root: Path, findings: list[Finding]) -> int:
     """Flag a literal ``__version__`` in the runtime module; return files read."""
     module = root / RUNTIME_VERSION_MODULE
-    if not is_project_file(root, module):
+    source = project_file_target(root, module)
+    if source is None:
         return 0
     try:
-        text = module.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return 0
     if any(marker in text for marker in DYNAMIC_VERSION_MARKERS):

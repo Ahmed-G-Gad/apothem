@@ -35,8 +35,8 @@ from typing import Final
 
 from apothem.conformity._grep_base import (
     finish_root_report,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "editorconfig-presence-grep"
@@ -163,12 +163,13 @@ def check(root: Path) -> GrepResult:
     """
     findings: list[Finding] = []
     target = root / EDITORCONFIG_FILENAME
-    if not is_project_file(root, target):
+    source = project_file_target(root, target)
+    if source is None:
         findings.append(
             Finding(
                 drift_class="file-absent",
                 detail=(
-                    f"no .editorconfig at {target} (a link counts as none); "
+                    f"no .editorconfig at {target}, or a link to something other than a regular file in the project; "
                     "author a canonical file "
                     "per the supply-chain SOTA-rigor contract"
                 ),
@@ -182,7 +183,7 @@ def check(root: Path) -> GrepResult:
         )
 
     try:
-        text = target.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         findings.append(
             Finding(
@@ -301,7 +302,9 @@ def main(root: Path) -> int:
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
-        inspected=int(is_project_file(root, root / EDITORCONFIG_FILENAME)),
+        inspected=int(
+            project_file_target(root, root / EDITORCONFIG_FILENAME) is not None
+        ),
     )
 
 

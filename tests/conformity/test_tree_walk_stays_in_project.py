@@ -25,17 +25,24 @@ file skips where the host cannot create one (Windows without the privilege).
 from __future__ import annotations
 
 import itertools
+import json
 import os
 from pathlib import Path
 
 import pytest
 
-from apothem.conformity import no_global_plans_grep
+from apothem.conformity import (
+    dynamism_grep,
+    no_global_plans_grep,
+    no_toplevel_docs_grep,
+    plans_discipline_language_grep,
+)
 from apothem.conformity._grep_base import (
     is_project_dir,
     is_project_file,
     iter_tree_files,
     list_real_entries,
+    project_file_target,
 )
 
 _POSIX_ONLY = pytest.mark.skipif(
@@ -246,12 +253,16 @@ def test_the_stray_plans_sweep_does_not_follow_a_folder_link(tmp_path: Path) -> 
     assert [finding.path for finding in findings] == ["real/.plans/"]
 
 
-def test_the_stray_plans_sweep_does_not_follow_a_linked_plans_child(
+def test_the_stray_plans_sweep_reports_a_linked_plans_child_by_name(
     tmp_path: Path,
 ) -> None:
-    """A ``plans`` link inside a nested ``.apothem`` folder is not reported."""
+    """A ``plans`` link inside a nested ``.apothem`` folder is a stray, not entered.
+
+    Its plans tree lives wherever the link leads, so the sweep reports the link
+    by name; it never lists the folder the link points to.
+    """
     outside = tmp_path / "outside"
-    outside.mkdir()
+    (outside / "deep" / ".plans").mkdir(parents=True)
     root = tmp_path / "project"
     (root / "sub" / ".apothem").mkdir(parents=True)
     _link_folder(root / "sub" / ".apothem" / "plans", outside)
@@ -259,4 +270,146 @@ def test_the_stray_plans_sweep_does_not_follow_a_linked_plans_child(
 
     findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
 
-    assert [finding.path for finding in findings] == ["other/.apothem/plans/"]
+    assert sorted(finding.path for finding in findings) == [
+        "other/.apothem/plans/",
+        "sub/.apothem/plans/",
+    ]
+    linked = next(f for f in findings if f.path == "sub/.apothem/plans/")
+    assert "link" in linked.detail
+
+
+@pytest.mark.parametrize(
+    ("link_rel", "reported"),
+    [
+        (".plans", ".plans/"),
+        ("sub/.plans", "sub/.plans/"),
+        (".apothem", ".apothem/"),
+        (".apothem/plans", ".apothem/plans/"),
+    ],
+    ids=["root-plans", "nested-plans", "root-apothem", "canonical-plans"],
+)
+def test_the_stray_plans_sweep_reports_a_plans_location_that_is_a_link(
+    tmp_path: Path, link_rel: str, reported: str
+) -> None:
+    """A link at a plans location is reported by name, the canonical one included.
+
+    An operator who keeps plans in a global folder and links it into the
+    project has a plans tree outside the project, whatever the link is called.
+    The sweep reports it without following the link, so nothing behind it, not
+    even another plans folder, is listed.
+    """
+    outside = tmp_path / "outside"
+    (outside / "deep" / ".plans").mkdir(parents=True)
+    root = tmp_path / "project"
+    link = root / link_rel
+    link.parent.mkdir(parents=True, exist_ok=True)
+    _link_folder(link, outside)
+
+    findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+
+    assert [finding.path for finding in findings] == [reported]
+
+
+# ---------------------------------------------------------------------------
+# A forbidden name is checked by name, link or not
+# ---------------------------------------------------------------------------
+
+
+def test_a_top_level_docs_link_is_still_a_finding(tmp_path: Path) -> None:
+    """A ``docs`` link at the root is the forbidden entry, without following it."""
+    outside = tmp_path / "outside"
+    (outside / "page.md").parent.mkdir(parents=True)
+    root = tmp_path / "project"
+    root.mkdir()
+    _link_folder(root / "docs", outside)
+
+    result = no_toplevel_docs_grep.check(root)
+
+    assert [finding.path for finding in result.findings] == ["docs/"]
+
+
+def test_a_top_level_docs_file_is_not_a_finding(tmp_path: Path) -> None:
+    """A regular file named ``docs`` is not the forbidden folder, as before."""
+    root = tmp_path / "project"
+    _write(root / "docs", "notes\n")
+
+    assert no_toplevel_docs_grep.check(root).findings == []
+
+
+# ---------------------------------------------------------------------------
+# A link never hides a file without a trace
+# ---------------------------------------------------------------------------
+
+
+def test_the_report_lists_a_skipped_link(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A docs folder linked into a pruned folder is named under ``skipped_links``.
+
+    The walk does not follow the link, and it prunes ``node_modules``, so the
+    pages are read nowhere; the report says which link it left out.
+    """
+    root = tmp_path / "project"
+    _write(root / "README.md", "# Sample\n")
+    _write(root / "node_modules" / "docs-src" / "guide.md", "Install 9.9.9 now.\n")
+    (root / "site" / "content").mkdir(parents=True)
+    _link_folder(root / "site" / "content" / "docs", root / "node_modules" / "docs-src")
+
+    dynamism_grep._main(["dynamism-grep", str(root)])
+    report = json.loads(capsys.readouterr().out)
+
+    assert report["skipped_links"] == ["site/content/docs"]
+    assert report["findings"] == []
+
+
+# ---------------------------------------------------------------------------
+# A fixed file that links to another file in the project still counts
+# ---------------------------------------------------------------------------
+
+
+def _symlink_file_or_skip(link: Path, target: str) -> None:
+    """Make *link* a symbolic link with the text *target*, or skip the test."""
+    link.parent.mkdir(parents=True, exist_ok=True)
+    _symlink_or_skip(link, Path(target))
+
+
+def test_project_file_target_follows_one_link_inside_the_project(
+    tmp_path: Path,
+) -> None:
+    """A link to a regular file in the project names that file; nothing else does."""
+    root = tmp_path / "project"
+    agents = _write(root / "AGENTS.md", "# Agents\n")
+    beside = _write(tmp_path / "beside.md")
+    _write(root / "docs" / "page.md")
+    _symlink_file_or_skip(root / "CLAUDE.md", "AGENTS.md")
+    _symlink_file_or_skip(root / "nested" / "up.md", "../AGENTS.md")
+    _symlink_file_or_skip(root / "out.md", str(beside))
+    _symlink_file_or_skip(root / "chain.md", "CLAUDE.md")
+    _symlink_file_or_skip(root / "folder.md", "docs")
+
+    assert project_file_target(root, agents) == agents
+    assert project_file_target(root, root / "CLAUDE.md") == agents
+    assert project_file_target(root, root / "nested" / "up.md") == agents
+    assert project_file_target(root, root / "out.md") is None
+    assert project_file_target(root, root / "chain.md") is None
+    assert project_file_target(root, root / "folder.md") is None
+    assert project_file_target(root, root / "missing.md") is None
+
+
+def test_a_required_surface_that_links_inside_the_project_counts(
+    tmp_path: Path,
+) -> None:
+    """``CLAUDE.md`` pointing at ``AGENTS.md`` is a present surface, read at its target."""
+    root = tmp_path / "project"
+    _write(root / "AGENTS.md", "# Agents\n")
+    _symlink_file_or_skip(root / "CLAUDE.md", "AGENTS.md")
+
+    result = plans_discipline_language_grep.check(root)
+
+    absent = [
+        f.surface
+        for f in result.findings
+        if f.detail.startswith("surface file absent at canonical path")
+    ]
+    assert "CLAUDE.md" not in absent
+    assert "AGENTS.md" not in absent

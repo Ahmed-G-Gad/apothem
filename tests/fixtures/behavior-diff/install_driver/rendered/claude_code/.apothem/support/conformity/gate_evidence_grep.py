@@ -105,10 +105,10 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     is_project_dir,
-    is_project_file,
     iter_tree_files,
     list_real_entries,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "gate-evidence-grep"
@@ -779,7 +779,7 @@ def _suite_dirs(root: Path) -> list[Path]:
         return sorted(p for p in list_real_entries(plans) if p.is_dir())
     if root.name == APOTHEM_PLANS_RELPATH[1] and root.parent.name == ".apothem":
         return sorted(p for p in list_real_entries(root) if p.is_dir())
-    if is_project_file(root, root / "PROGRESS.md") or is_project_dir(
+    if project_file_target(root, root / "PROGRESS.md") is not None or is_project_dir(
         root, root / "phases"
     ):
         return [root]
@@ -789,14 +789,17 @@ def _suite_dirs(root: Path) -> list[Path]:
 def _suite_files(suite: Path) -> list[Path]:
     """Return the report, progress and attestation files of one suite."""
     files = [
-        suite / name for name in _ROOT_FILES if is_project_file(suite, suite / name)
+        source
+        for name in _ROOT_FILES
+        if (source := project_file_target(suite, suite / name)) is not None
     ]
     files.extend(sorted(iter_tree_files(suite, names=("REPORT.md",), prune=False)))
     for name in _ATTESTATION_FILES:
         files.extend(sorted(iter_tree_files(suite, names=(name,), prune=False)))
     manifest = suite.joinpath(*_MANIFEST_RELPATH)
-    if is_project_file(suite, manifest):
-        files.append(manifest)
+    manifest_source = project_file_target(suite, manifest)
+    if manifest_source is not None:
+        files.append(manifest_source)
     return files
 
 

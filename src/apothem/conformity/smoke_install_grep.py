@@ -31,8 +31,8 @@ from typing import Final
 
 from apothem.conformity._grep_base import (
     finish_root_report,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 # Strict-mode preamble fragments per code-craft-shell rule section 1.
@@ -128,15 +128,16 @@ def _has_any(content: str, fragments: tuple[str, ...]) -> bool:
 
 
 def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
-    if not is_project_file(root, path):
+    source = project_file_target(root, path)
+    if source is None:
         findings.append(
             Finding(
                 script=path.name,
-                detail="scripts/installer/install.sh absent at repo root, or a link",
+                detail="scripts/installer/install.sh absent at repo root, or a link to something other than a regular file in the project",
             )
         )
         return
-    content = path.read_text(encoding="utf-8")
+    content = source.read_text(encoding="utf-8")
     if not _has_any(content, BASH_STRICT_FRAGMENTS):
         findings.append(
             Finding(
@@ -161,15 +162,16 @@ def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
 
 
 def _check_powershell(root: Path, path: Path, findings: list[Finding]) -> None:
-    if not is_project_file(root, path):
+    source = project_file_target(root, path)
+    if source is None:
         findings.append(
             Finding(
                 script=path.name,
-                detail="scripts/installer/install.ps1 absent at repo root, or a link",
+                detail="scripts/installer/install.ps1 absent at repo root, or a link to something other than a regular file in the project",
             )
         )
         return
-    content = path.read_text(encoding="utf-8")
+    content = source.read_text(encoding="utf-8")
     if not _has_any(content, POWERSHELL_STRICT_FRAGMENTS):
         findings.append(
             Finding(
@@ -207,7 +209,9 @@ def check(root: Path) -> GrepResult:
         root=str(root),
         passed=not findings,
         findings=findings,
-        inspected=sum(1 for script in scripts if is_project_file(root, script)),
+        inspected=sum(
+            1 for script in scripts if project_file_target(root, script) is not None
+        ),
     )
 
 

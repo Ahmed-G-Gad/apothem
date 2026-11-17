@@ -42,10 +42,12 @@ descends into ``node_modules`` or a built site costs minutes.
 Project files only. A project can arrive with its files from someone else, in
 an archive or a shared folder, so every validator reads and lists only what
 the project itself holds: regular files and real folders below its root. The
-walk and the helpers beside it (:func:`is_project_file`,
-:func:`is_project_dir`, :func:`list_real_entries`) check each level with
-``os.lstat``, which never follows a link, and treat a symbolic link, a Windows
-junction, a named pipe, a device or a socket as if it were not there.
+walk lists each folder with ``os.scandir`` and never follows a link, and the
+helpers in ``_project_paths`` (re-exported here: :func:`is_project_file`,
+:func:`is_project_dir`, :func:`project_file_target`,
+:func:`list_real_entries`, :func:`child_folder_files`) treat a symbolic link,
+a Windows junction, a named pipe, a device or a socket as if it were not
+there. A root report lists what they left out under ``skipped_links``.
 """
 
 from __future__ import annotations
@@ -54,12 +56,36 @@ import argparse
 import json
 import os
 import re
-import stat
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol
+
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    FILE_ENTRY,
+    LINK_ENTRY,
+    note_skipped,
+    scan_entries,
+    start_skip_log,
+    take_skipped_paths,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT as NAME_SURROGATE_TAG_BIT,
+)
+from apothem.conformity._project_paths import (
+    child_folder_files as child_folder_files,
+)
+from apothem.conformity._project_paths import is_link as is_link
+from apothem.conformity._project_paths import is_project_dir as is_project_dir
+from apothem.conformity._project_paths import is_project_file as is_project_file
+from apothem.conformity._project_paths import (
+    list_real_entries as list_real_entries,
+)
+from apothem.conformity._project_paths import (
+    project_file_target as project_file_target,
+)
 
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
@@ -73,6 +99,9 @@ INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+# Report key emitted only when the run left out links or special files: their
+# paths relative to the root (see ``_project_paths``).
+SKIPPED_KEY: Final[str] = "skipped_links"
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +220,7 @@ def parse_root_args(
     if not root.is_dir():
         parser.error(f"root is not an existing directory: {root}")
     args.root = root.resolve()
+    start_skip_log(args.root)
     return args
 
 
@@ -216,9 +246,15 @@ def finish_root_report(
     advisory validator, because a validator that inspected nothing has not
     earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
     advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    When the run left out links or special files, the payload lists them under
+    ``skipped_links`` (relative to the root), so a link never hides a file
+    without a trace.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
+    skipped = take_skipped_paths()
+    if skipped:
+        payload[SKIPPED_KEY] = skipped
     vacuous = inspected == 0 and not empty_scope_expected
     if inspected == 0:
         payload[EMPTY_SCOPE_KEY] = empty_scope_expected
@@ -281,160 +317,6 @@ def has_git_entry(directory: Path) -> bool:
     return os.path.lexists(directory / GIT_ENTRY)
 
 
-# ---------------------------------------------------------------------------
-# Project files only: no links, no named pipes, no devices
-# ---------------------------------------------------------------------------
-#
-# A symbolic link, or on Windows a junction, can lead from the project to a
-# file or a whole tree anywhere on the disk, and a named pipe or a link to a
-# device such as ``/dev/zero`` makes a read wait or never end. ``Path.is_file``,
-# ``Path.is_dir``, ``Path.glob`` and ``os.walk`` all follow links (``os.walk``
-# stops at a symbolic link to a folder but enters a junction), so the helpers
-# below look at each level with ``os.lstat`` instead. A link is skipped even
-# when it points inside the root: what it points to is read under its own path,
-# once.
-
-# Windows sets this bit in the tag of a reparse point that names another file or
-# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
-# junction as a plain folder, so the tag is what shows it is a link.
-NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
-
-
-def is_link(info: os.stat_result) -> bool:
-    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
-    if stat.S_ISLNK(info.st_mode):
-        return True
-    return bool(getattr(info, "st_reparse_tag", 0) & NAME_SURROGATE_TAG_BIT)
-
-
-def _project_lstat(root: Path, path: Path) -> os.stat_result | None:
-    """Return ``os.lstat(path)`` when *path* is reached through real folders.
-
-    Pre-conditions: *path* was built from *root*, with the same spelling, so
-    the test is by name: a path that does not start with *root*, or that has a
-    ``..`` part, is outside it.
-    Post-conditions: None when *path* is outside *root*, is *root* itself,
-    does not exist or is a link, or when a level between *root* and *path* is
-    not a real folder (a link to a folder, a junction, a file). The levels are
-    looked at with ``os.lstat``, which never follows a link.
-    """
-    try:
-        parts = path.relative_to(root).parts
-    except ValueError:
-        return None
-    if not parts or ".." in parts:
-        return None
-    folder = root
-    for part in parts[:-1]:
-        folder = folder / part
-        try:
-            info = os.lstat(folder)
-        except OSError:
-            return None
-        if is_link(info) or not stat.S_ISDIR(info.st_mode):
-            return None
-    try:
-        info = os.lstat(folder / parts[-1])
-    except OSError:
-        return None
-    return None if is_link(info) else info
-
-
-def is_project_file(root: Path, path: Path) -> bool:
-    """Return True iff *path* is a regular file reached through real folders.
-
-    Pre-conditions: *path* was built from *root* (see :func:`_project_lstat`).
-    Post-conditions: False for a path outside *root*, a link at any level, a
-    named pipe, a device, a socket, a folder or a missing path. A validator
-    treats such a path as missing, the way git ignores a ``.gitattributes``
-    that is a symbolic link.
-    """
-    info = _project_lstat(root, path)
-    return info is not None and stat.S_ISREG(info.st_mode)
-
-
-def is_project_dir(root: Path, path: Path) -> bool:
-    """Return True iff *path* is *root* or a real folder reached through real folders.
-
-    Pre-conditions: *path* was built from *root* (see :func:`_project_lstat`).
-    Post-conditions: False for a path outside *root*, a link to a folder or a
-    junction at any level, a file or a missing path, so a caller never lists a
-    folder outside the project. *root* itself is the folder the caller was
-    pointed at and counts when it is a folder.
-    """
-    if path == root:
-        return root.is_dir()
-    info = _project_lstat(root, path)
-    return info is not None and stat.S_ISDIR(info.st_mode)
-
-
-def list_real_entries(folder: Path) -> list[Path]:
-    """Return the real folders and regular files directly inside *folder*.
-
-    Pre-conditions: the caller already trusts *folder*: it is the root, or
-    :func:`is_project_dir` or this function vouched for it.
-    Post-conditions: links of any kind, named pipes, devices and sockets are
-    left out, as if they were not there, so a caller can test each entry with
-    ``is_dir`` or ``is_file`` without following a link. The order is the
-    host's listing order; callers sort. A folder that cannot be listed gives
-    an empty list.
-    """
-    try:
-        with os.scandir(folder) as listing:
-            entries = list(listing)
-    except OSError:
-        return []
-    kept: list[Path] = []
-    for entry in entries:
-        try:
-            info = entry.stat(follow_symlinks=False)
-        except OSError:
-            continue
-        if is_link(info):
-            continue
-        if stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode):
-            kept.append(folder / entry.name)
-    return kept
-
-
-def child_folder_files(root: Path, folder: Path, name: str) -> list[Path]:
-    """Return ``folder/<child>/<name>`` for each real child folder that holds it.
-
-    Use it in place of ``folder.glob("*/" + name)``: on Python 3.12,
-    ``Path.glob`` matches the *name* part by listing every child folder, a
-    linked one included, so the glob would list a folder outside the project.
-    This lists *folder* alone and looks *name* up in each real child folder
-    with :func:`is_project_file`.
-    Pre-conditions: *folder* and *name*'s parents were built from *root* (see
-    :func:`_project_lstat`).
-    Post-conditions: empty when *folder* is not a real folder inside *root*;
-    otherwise the regular files only, in the host's listing order (callers
-    sort).
-    """
-    if not is_project_dir(root, folder):
-        return []
-    return [
-        child / name
-        for child in list_real_entries(folder)
-        if child.is_dir() and is_project_file(root, child / name)
-    ]
-
-
-def _lstat_kind(path: Path) -> int | None:
-    """Return the file type of *path* (``stat.S_IFMT``), or None for a link or no entry.
-
-    The type comes from ``os.lstat``, so a link of any kind is None, never the
-    type of what it points to; callers compare with ``S_IFDIR`` or ``S_IFREG``.
-    """
-    try:
-        info = os.lstat(path)
-    except OSError:
-        return None
-    if is_link(info):
-        return None
-    return stat.S_IFMT(info.st_mode)
-
-
 def iter_tree_files(
     root: Path,
     suffixes: Iterable[str] = (),
@@ -459,36 +341,47 @@ def iter_tree_files(
     ``.git`` file or directory; ``root`` itself is never nested, even when its
     ``.git`` is a file), a directory named in the pruned set, or a link to a
     folder (a symbolic link or a Windows junction), and never yields a link, a
-    named pipe, a device or a socket. A link that points inside ``root`` is
-    skipped too; what it points to is yielded under its own path. A directory
-    it cannot read is skipped.
+    named pipe, a device or a socket; each one it leaves out is noted in the
+    skip log (see ``_project_paths``). A link that points inside ``root`` is
+    skipped too; what it points to is yielded under its own path when the
+    walk reaches it. A directory it cannot read is skipped.
     """
     pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
-    for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
-        # Position 0 is the root itself; its own ``.git`` marks the checkout
-        # being inspected, not a nested one.
-        if prune and position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
-            dirnames.clear()
+
+    def wanted(name: str) -> bool:
+        folded = os.path.normcase(name)
+        return match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
+
+    # Depth first, files before folders, each in name order: the order a
+    # top-down os.walk with sorted folder names gives. Each folder is listed
+    # with os.scandir and every entry is classified without following it.
+    stack: list[tuple[Path, bool]] = [(root, True)]
+    while stack:
+        folder, is_root = stack.pop()
+        entries = scan_entries(folder)
+        # The root's own ``.git`` marks the checkout being inspected; one
+        # below it marks a nested checkout, which is skipped whole.
+        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
             continue
-        # ``os.walk`` lists a link to a folder and a junction among the
-        # folders and would enter a junction; keep real folders only.
-        dirnames[:] = sorted(
-            name
-            for name in dirnames
-            if name not in pruned and _lstat_kind(Path(dirpath, name)) == stat.S_IFDIR
-        )
-        for filename in sorted(filenames):
-            folded = os.path.normcase(filename)
-            if not (
-                match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
-            ):
+        files: list[Path] = []
+        folders: list[Path] = []
+        for path, kind in sorted(entries, key=lambda entry: entry[0].name):
+            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
                 continue
-            candidate = Path(dirpath, filename)
-            if _lstat_kind(candidate) == stat.S_IFREG:
-                yield candidate
+            if kind == DIR_ENTRY:
+                folders.append(path)
+            elif kind == FILE_ENTRY:
+                if wanted(path.name):
+                    files.append(path)
+            elif kind == LINK_ENTRY or wanted(path.name):
+                # A link may hide a folder or a file; a pipe, device or socket
+                # with a wanted name would make the read wait or never end.
+                note_skipped(path)
+        yield from files
+        stack.extend((path, False) for path in reversed(folders))
 
 
 # ---------------------------------------------------------------------------

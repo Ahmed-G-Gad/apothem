@@ -39,8 +39,8 @@ from typing import Final
 
 from apothem.conformity._grep_base import (
     finish_root_report,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "plans-discipline-language-grep"
@@ -133,9 +133,10 @@ class GrepResult:
 def _read_fixture(root: Path) -> str | None:
     """Return the fixture body, or None when the fixture file is absent."""
     fixture_file = root / FIXTURE_PATH
-    if not is_project_file(root, fixture_file):
+    source = project_file_target(root, fixture_file)
+    if source is None:
         return None
-    return fixture_file.read_text(encoding="utf-8").strip()
+    return source.read_text(encoding="utf-8").strip()
 
 
 def _coverage(body: str, tokens: tuple[tuple[str, ...], ...]) -> float:
@@ -200,7 +201,7 @@ def check(root: Path) -> GrepResult:
             Finding(
                 surface=FIXTURE_PATH,
                 detail=(
-                    "byte-exact fixture absent at canonical path, or a link; "
+                    "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
                     "byte-exact admission disabled for every surface"
                 ),
                 coverage=0.0,
@@ -208,7 +209,8 @@ def check(root: Path) -> GrepResult:
         )
     for surface_path in REQUIRED_SURFACES:
         full_path = root / surface_path
-        if not is_project_file(root, full_path):
+        source = project_file_target(root, full_path)
+        if source is None:
             verdicts.append(
                 SurfaceVerdict(
                     surface=surface_path,
@@ -220,12 +222,12 @@ def check(root: Path) -> GrepResult:
             findings.append(
                 Finding(
                     surface=surface_path,
-                    detail="surface file absent at canonical path, or a link",
+                    detail="surface file absent at canonical path, or a link to something other than a regular file in the project",
                     coverage=0.0,
                 )
             )
             continue
-        body = full_path.read_text(encoding="utf-8")
+        body = source.read_text(encoding="utf-8")
         verdict, finding = _verdict_for_surface(surface_path, body, fixture_text)
         verdicts.append(verdict)
         if finding is not None:

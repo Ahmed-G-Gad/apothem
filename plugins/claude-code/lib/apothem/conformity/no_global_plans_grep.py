@@ -65,9 +65,13 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     has_git_entry,
-    is_project_dir,
-    list_real_entries,
     parse_root_args,
+)
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    LINK_ENTRY,
+    path_kind,
+    scan_entries,
 )
 
 GREP_NAME: Final[str] = "no-global-plans-grep"
@@ -175,6 +179,16 @@ def _git_ls_files(root: Path) -> list[str]:
     return [line for line in completed.stdout.splitlines() if line]
 
 
+# Finding text for a plans location that is a link or a junction.
+_LINKED_PLANS_DETAIL: Final[str] = (
+    "a plans location is a link: its plans tree lives wherever the link "
+    "leads, outside the project, and the gate does not follow links; the sole "
+    "canonical plans tree is a real folder at <root>/.apothem/plans inside "
+    "the project per the suite-locality invariant — replace the link with a "
+    "real folder there, or remove it"
+)
+
+
 def _sweep_stray_plans_dirs(
     root: Path, tracked_plans_dirs: frozenset[str]
 ) -> list[Finding]:
@@ -203,20 +217,29 @@ def _sweep_stray_plans_dirs(
     ``tracked_plans_dirs`` to avoid double-reporting. The sweep's unique value is
     the *untracked* stray. Returns an empty list when the filesystem is
     unreadable (the git-index check still carries the verdict).
+
+    Links. The sweep never enters a link or a Windows junction, so it never
+    lists a tree outside the project. A link named ``.plans`` or ``.apothem``,
+    and a ``plans`` link inside an ``.apothem`` folder, the canonical one
+    included, is reported by name: its plans tree lives wherever the link
+    leads, which is outside the project's own folders. The canonical location
+    is compared by name, never resolved, so no link is followed to decide it.
     """
     findings: list[Finding] = []
     try:
         resolved_root = root.resolve()
     except (OSError, RuntimeError):
         return findings
-    canonical_new = (resolved_root / ".apothem" / "plans").resolve()
-    canonical = {canonical_new}
+    canonical = resolved_root / ".apothem" / "plans"
 
-    def _record_stray(entry: Path, rel: str) -> None:
+    def _record_stray(entry: Path, rel: str, *, link: bool = False) -> None:
         """Append a stray finding for a plans directory unless it is canonical
-        or already covered by the git-index check."""
-        already_tracked = rel in tracked_plans_dirs
-        if entry.resolve() in canonical or already_tracked:
+        or already covered by the git-index check. A *link* at a plans
+        location is reported wherever it is, the canonical one included."""
+        if rel in tracked_plans_dirs or (not link and entry == canonical):
+            return
+        if link:
+            findings.append(Finding(path=f"{rel}/", detail=_LINKED_PLANS_DETAIL))
             return
         findings.append(
             Finding(
@@ -235,19 +258,19 @@ def _sweep_stray_plans_dirs(
     stack: list[Path] = [resolved_root]
     while stack:
         current = stack.pop()
-        # Links and junctions are left out: the walk never follows one.
-        entries = list_real_entries(current)
-        for entry in entries:
-            try:
-                is_dir = entry.is_dir()
-            except OSError:
-                continue
-            if not is_dir:
-                continue
+        # Every entry is classified without following it; a link is never
+        # entered, but one at a plans location is reported by name.
+        for entry, kind in scan_entries(current):
             name = entry.name
             if name in _SWEEP_SKIP_DIRS:
                 continue
             rel = entry.relative_to(resolved_root).as_posix()
+            if kind == LINK_ENTRY:
+                if name in (".plans", ".apothem"):
+                    _record_stray(entry, rel, link=True)
+                continue
+            if kind != DIR_ENTRY:
+                continue
             if name == ".plans":
                 _record_stray(entry, rel)
                 # Do not descend into a .plans/ tree (it is suite content, not a
@@ -259,11 +282,13 @@ def _sweep_stray_plans_dirs(
                 # the ``plans`` child for stray-suite detection; descend no
                 # further into the data children.
                 plans_child = entry / "plans"
-                try:
-                    if is_project_dir(entry, plans_child):
-                        _record_stray(plans_child, f"{rel}/plans")
-                except OSError:
-                    pass
+                child_kind = path_kind(plans_child)
+                if child_kind in (DIR_ENTRY, LINK_ENTRY):
+                    _record_stray(
+                        plans_child,
+                        f"{rel}/plans",
+                        link=child_kind == LINK_ENTRY,
+                    )
                 continue
             if has_git_entry(entry):
                 # A nested git checkout (a worktree, a submodule, a nested

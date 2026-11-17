@@ -63,8 +63,8 @@ import yaml
 
 from apothem.conformity._grep_base import (
     finish_root_report,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "registry-capability-consistency-grep"
@@ -159,10 +159,11 @@ def _manifest_path(root: Path) -> Path:
 def _load_manifest(root: Path) -> dict[str, Any]:
     """Load the propagation manifest. Missing / unparseable → empty mapping."""
     path = _manifest_path(root)
-    if not is_project_file(root, path):
+    source = project_file_target(root, path)
+    if source is None:
         return {}
     try:
-        raw = path.read_text(encoding="utf-8")
+        raw = source.read_text(encoding="utf-8")
     except OSError:
         return {}
     try:
@@ -200,10 +201,11 @@ def _materializer_authors_mcp(root: Path, package_key: str) -> bool:
     materializer and authors no MCP surface.
     """
     path = root / "src" / "apothem" / "harnesses" / package_key / _MATERIALIZER_FILENAME
-    if not is_project_file(root, path):
+    source = project_file_target(root, path)
+    if source is None:
         return False
     try:
-        text = path.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except OSError:
         return False
     if _MATERIALIZER_FUNCTION not in text:

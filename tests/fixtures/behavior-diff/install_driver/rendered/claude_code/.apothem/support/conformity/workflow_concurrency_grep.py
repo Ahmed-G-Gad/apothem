@@ -77,6 +77,7 @@ from apothem.conformity._grep_base import (
     is_project_dir,
     is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "workflow-concurrency-grep"
@@ -226,10 +227,11 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
     if _LOCAL_CALLEE_NAME.fullmatch(name) is None:
         return False
     callee = workflows_dir / name
-    if not is_project_file(workflows_dir, callee):
+    source = project_file_target(workflows_dir, callee)
+    if source is None:
         return False
     try:
-        doc = yaml.safe_load(callee.read_text(encoding="utf-8"))
+        doc = yaml.safe_load(source.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
         # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         return False

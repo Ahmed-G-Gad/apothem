@@ -45,18 +45,31 @@ has no `.github/workflows/` directory yet, and the commit-subject validator does
 when the root has no commit history.
 
 A project can come with files someone else made, in an archive or a shared
-folder, so every `--all` validator reads only regular files that it reaches
-through real folders below the root. At any level below the root, a validator
+folder, so every `--all` validator opens and lists only regular files and real
+folders that it reaches through real folders below the root. It never follows
+a symbolic link or, on Windows, a junction, and at any level below the root it
 treats each of these as missing:
 
-- a symbolic link, or on Windows a junction, even one that points inside the
-  root. A file or folder that a link points to inside the root is checked under
-  its own path;
+- a link, even one that points inside the root. A walk or a folder listing
+  skips it, so what it points to is checked only where the validator reaches
+  it under its own path;
 - a named pipe, a device or a socket, where a read would wait or never end.
 
-So a validator that reports a missing file reports a linked one the same way,
-and a validator that passes when its folder is missing, such as the workflow
-validators, passes when that folder is a link.
+Three cases look at a link without following it:
+
+- a fixed file that is a link to a regular file inside the project, such as a
+  `CLAUDE.md` that points at another file there, is read at the file it points
+  to. A linked `.gitattributes` still counts as missing, because git does not
+  read it;
+- the stray-plans check in `no-global-plans-grep` reports a plans folder that
+  is a link, by its name, wherever the link leads;
+- `no-toplevel-docs-grep` reports a `docs` link at the root by its name.
+
+A validator that passes when its folder is missing, such as the workflow
+validators, passes when that folder is a link. Each validator's report lists
+the links and special files it left out under `skipped_links`, so a link never
+hides a file without a trace. A hard link is a regular file and is read like
+one, and the checks that run git read the `.git` folder through git itself.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

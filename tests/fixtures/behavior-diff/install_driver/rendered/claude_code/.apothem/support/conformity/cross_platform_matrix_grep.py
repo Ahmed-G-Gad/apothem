@@ -44,6 +44,7 @@ from apothem.conformity._grep_base import (
     is_project_dir,
     is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 REQUIRED_OS: Final[tuple[str, ...]] = (
@@ -83,10 +84,11 @@ def _required_python(root: Path) -> tuple[str, ...]:
     required axis.
     """
     pyproject = root / "pyproject.toml"
-    if not is_project_file(root, pyproject):
+    source = project_file_target(root, pyproject)
+    if source is None:
         return _FALLBACK_PYTHON
     try:
-        text = pyproject.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except OSError:
         return _FALLBACK_PYTHON
     found = _CLASSIFIER_RE.findall(text)
@@ -166,8 +168,9 @@ def _find_workflow(root: Path) -> Path | None:
         return None
     # Prefer the exact canonical name; fall back to the glob match.
     canonical = workflows / "ci-matrix.yml"
-    if is_project_file(root, canonical):
-        return canonical
+    source = project_file_target(root, canonical)
+    if source is not None:
+        return source
     candidates = sorted(
         p for p in workflows.glob(WORKFLOW_GLOB) if is_project_file(root, p)
     )

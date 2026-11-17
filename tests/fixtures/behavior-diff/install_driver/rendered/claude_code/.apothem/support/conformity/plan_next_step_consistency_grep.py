@@ -57,9 +57,9 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     is_project_dir,
-    is_project_file,
     list_real_entries,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "plan-next-step-consistency-grep"
@@ -327,9 +327,10 @@ def _inspect_suite(
     pass.
     """
     progress = suite_dir / PROGRESS_FILENAME
-    if not is_project_file(suite_dir, progress):
+    progress_source = project_file_target(suite_dir, progress)
+    if progress_source is None:
         return None
-    progress_lines = _read_lines(progress)
+    progress_lines = _read_lines(progress_source)
     if progress_lines is None:
         return (
             [
@@ -371,9 +372,10 @@ def _inspect_suite(
     unvalidated_footers: list[str] = []
     for fname in INFRA_FILENAMES:
         infra_path = suite_dir / fname
-        if not is_project_file(suite_dir, infra_path):
+        infra_source = project_file_target(suite_dir, infra_path)
+        if infra_source is None:
             continue
-        infra_lines = _read_lines(infra_path)
+        infra_lines = _read_lines(infra_source)
         if infra_lines is None:
             continue
         files_inspected += 1

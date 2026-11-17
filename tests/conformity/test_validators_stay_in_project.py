@@ -28,10 +28,12 @@ The project holds the same files as an outside copy, reached through links:
   cap its memory, so a regression fails fast instead of using up memory).
 
 No validator may open or list a link, a named pipe, or anything that resolves
-into the outside copy or to ``/dev/zero``. The audit hook does not see a
-``stat`` call, so each test also deletes the links and pipes and runs the
-validators again: every report and exit code must match, because a link counts
-as missing. A first run over the outside copy itself shows that every
+into the outside copy or to ``/dev/zero``, and some report must name what was
+skipped under ``skipped_links``. The audit hook does not see a ``stat`` call,
+so each test also deletes the links and pipes and runs the validators again:
+every report and exit code must match, apart from ``skipped_links``, because a
+link counts as missing. ``no-global-plans-grep`` is the exception by design:
+it reports a plans location that is a link, by name. A first run over the outside copy itself shows that every
 validator does reach these files when they are real, so a pass is not a
 validator that looked at nothing, and every run must end in a pass or a
 findings exit, not a crash. Windows junctions need no privilege, so the
@@ -443,23 +445,60 @@ def test_every_validator_reaches_the_files_when_they_are_real(
 
 _Builder = Callable[[Path, Path], list[Path]]
 
+# The validator that reports a plans location that is a link, by name.
+_PLANS_SWEEP = "no-global-plans-grep"
+
+
+def _comparable(result: list[object]) -> list[object]:
+    """Return a result without its ``skipped_links`` list, the one part a link adds."""
+    code, report = result
+    try:
+        payload = json.loads(str(report))
+    except ValueError:
+        return [code, report]
+    if isinstance(payload, dict):
+        payload.pop("skipped_links", None)
+    return [code, payload]
+
+
+def _finding_paths(result: list[object]) -> list[str]:
+    """Return the ``path`` of each finding in a validator's printed report."""
+    payload = json.loads(str(result[1]))
+    return [str(finding.get("path")) for finding in payload.get("findings", [])]
+
 
 @pytest.mark.parametrize(
-    "build",
+    ("build", "plans_link", "same_once_deleted"),
     [
-        pytest.param(_top_level_folder_links, id="top-level-folder-links"),
-        pytest.param(_middle_folder_links, id="middle-folder-links"),
-        pytest.param(_deepest_folder_links, id="deepest-folder-links"),
-        pytest.param(_file_links, id="file-links"),
-        pytest.param(_inside_file_links, id="links-inside-the-project"),
-        pytest.param(_named_pipes, id="named-pipes", marks=_POSIX_ONLY),
-        pytest.param(_device_links, id="dev-zero-links", marks=_LINUX_ONLY),
+        pytest.param(
+            _top_level_folder_links, ".apothem/", True, id="top-level-folder-links"
+        ),
+        pytest.param(
+            _middle_folder_links, ".apothem/plans/", True, id="middle-folder-links"
+        ),
+        pytest.param(_deepest_folder_links, None, True, id="deepest-folder-links"),
+        pytest.param(_file_links, None, True, id="file-links"),
+        pytest.param(_inside_file_links, None, False, id="links-inside-the-project"),
+        pytest.param(_named_pipes, None, True, id="named-pipes", marks=_POSIX_ONLY),
+        pytest.param(_device_links, None, True, id="dev-zero-links", marks=_LINUX_ONLY),
     ],
 )
 def test_no_validator_reaches_through_a_link_or_a_pipe(
-    outside: Path, tmp_path: Path, build: _Builder
+    outside: Path,
+    tmp_path: Path,
+    build: _Builder,
+    plans_link: str | None,
+    same_once_deleted: bool,
 ) -> None:
-    """No validator opens or lists through a link or a pipe; each sees it missing."""
+    """No validator opens or lists through a link or a pipe, and each one says so.
+
+    A link or pipe counts as missing, so each report equals the report once
+    they are deleted, apart from ``skipped_links``, which names them. Two
+    exceptions are by design: a fixed file that links to a regular file in the
+    project is read at that file (the links-inside-the-project case is checked
+    by the audit hook alone), and ``no-global-plans-grep`` reports a plans
+    location that is a link, by name.
+    """
     project = tmp_path / "project"
     project.mkdir()
     _git_init(project)
@@ -479,12 +518,29 @@ def test_no_validator_reaches_through_a_link_or_a_pipe(
         {f"{label}: {event} {path}" for label, event, path in events if offends(path)}
     )
     assert offenders == []
+    traced = sorted(
+        label
+        for label, result in linked.items()
+        if "skipped_links" in json.loads(str(result[1]) or "{}")
+    )
+    assert traced, "no report named a skipped link or pipe"
+    if plans_link is not None:
+        assert plans_link in _finding_paths(linked[_PLANS_SWEEP])
+    if not same_once_deleted:
+        return
 
     for special in specials:
         _remove_special(special)
     _events, missing = _run_validators(project, tmp_path / "missing-run")
     _assert_exits_cleanly(missing)
-    changed = sorted(label for label in missing if linked.get(label) != missing[label])
+    compared = [
+        label for label in missing if not (plans_link and label == _PLANS_SWEEP)
+    ]
+    changed = sorted(
+        label
+        for label in compared
+        if _comparable(linked[label]) != _comparable(missing[label])
+    )
 
     assert changed == [], {
         label: (linked.get(label), missing[label]) for label in changed

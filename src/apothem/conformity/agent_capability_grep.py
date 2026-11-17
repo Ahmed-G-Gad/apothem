@@ -59,8 +59,8 @@ import yaml
 from apothem.conformity._grep_base import (
     finish_root_report,
     is_project_dir,
-    is_project_file,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "agent-capability-grep"
@@ -194,8 +194,9 @@ def _find_declaration(harness_dir: Path) -> Path | None:
     for directory in candidate_dirs:
         for filename in DECLARATION_FILENAMES:
             candidate = directory / filename
-            if is_project_file(harness_dir, candidate):
-                return candidate
+            source = project_file_target(harness_dir, candidate)
+            if source is not None:
+                return source
     return None
 
 

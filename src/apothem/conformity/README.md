@@ -10,6 +10,7 @@
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
+| `_project_paths.py` | The link-aware helpers every validator reads project files through: a walk entry, a fixed path or a folder listing is looked at without following a link, a link to a regular file inside the project counts for a fixed file, and every link or special file left out is noted for the report's `skipped_links`. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -146,19 +147,25 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
 - **Project files only, never through a link.** The project being checked can
-  come with files someone else made, so a validator reads and lists only
+  come with files someone else made, so a validator opens and lists only
   regular files and real folders that it reaches through real folders below
-  the root. It never follows a symbolic link or a Windows junction, even one
-  that points inside the project, and never opens a named pipe, a device or a
-  socket; each counts as missing. Use the helpers in `_grep_base.py`:
+  the root. It never follows a symbolic link or a Windows junction, and never
+  opens a named pipe, a device or a socket; each counts as missing. Use the
+  helpers in `_project_paths.py`, re-exported by `_grep_base.py`:
   `iter_tree_files` for a walk (`prune=False` where every file below a fixed
-  folder counts, as `rglob` did), `is_project_file` before reading a fixed
-  path, `is_project_dir` before listing or globbing a fixed folder,
-  `list_real_entries` in place of `iterdir`, and `child_folder_files` in place
-  of a `*/NAME` glob. Plain `is_file`, `is_dir` and `exists` follow links,
-  `glob`, `rglob` and `iterdir` list a linked folder and return links, and on
-  Python 3.12 a `*/NAME` glob lists every child folder, a linked one too, so
-  keep each glob to one level of a folder you checked.
+  folder counts, as `rglob` did), `project_file_target` to read a fixed file
+  (it also accepts a link to a regular file inside the project, such as
+  `CLAUDE.md`), `is_project_dir` before listing or globbing a fixed folder,
+  `is_project_file` to filter a listing, `list_real_entries` in place of
+  `iterdir`, `child_folder_files` in place of a `*/NAME` glob, and `path_kind`
+  or `scan_entries` for a check that reports a name, such as a plans folder or
+  a `docs` entry that is a link. Plain `is_file`, `is_dir` and `exists` follow
+  links, `glob`, `rglob` and `iterdir` list a linked folder and return links,
+  `os.walk` looks up the target of each symbolic link it lists, and on Python
+  3.12 a `*/NAME` glob lists every child folder, a linked one too, so keep
+  each glob to one level of a folder you checked. The helpers note every link
+  and special file they leave out, and `finish_root_report` lists them under
+  `skipped_links`, so a link never hides a file without a trace.
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one
