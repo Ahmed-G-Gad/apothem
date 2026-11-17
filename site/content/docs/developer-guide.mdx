@@ -678,7 +678,8 @@ before anything changes, with an error like this:
 RealHomeWriteError: Apothem refused to create the lock file
 C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
 C:\Users\you\.apothem, a folder in this account's real home, while a pytest
-test is running (test_probe.py::test_install (call)). Nothing was changed. ...
+test is running (test_probe.py::test_install (call)). Nothing in
+C:\Users\you\.apothem was changed. ...
 ```
 
 The home is the one the operating system records for the account, not `HOME`

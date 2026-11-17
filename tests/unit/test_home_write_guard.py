@@ -12,6 +12,7 @@ folders writes as before.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import ctypes
 import os
@@ -410,6 +411,9 @@ def test_the_refusal_names_the_path_the_folder_the_test_and_the_fix(
     message = str(error)
     assert str(target) in message
     assert root in message
+    # Only the protected folder is known to be untouched, so only it is named.
+    assert f"Nothing in {root} was changed." in message
+    assert "Nothing was changed" not in message
     assert os.environ[home_write_guard.PYTEST_VARIABLE] in message
     assert "tests/conftest.py" in message
     assert "without PYTEST_CURRENT_TEST" in message
@@ -446,3 +450,159 @@ def test_adding_a_home_keeps_the_account_home_protected(fake_home: Path) -> None
         assert str(Path(account) / ".claude") in roots
     home_write_guard.clear_extra_homes()
     assert str(_under(fake_home, ".claude")) not in home_write_guard.protected_roots()
+
+
+def test_a_refusal_is_written_once_per_folder_in_each_test(
+    fake_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    claude = fake_home / ".claude" / "x"
+    apothem = fake_home / ".apothem" / "x"
+    phases = [
+        ("probe.py::test_one (setup)", claude),
+        ("probe.py::test_one (call)", claude),
+        ("probe.py::test_one (call)", apothem),
+        ("probe.py::test_one (teardown)", claude),
+        ("probe.py::test_two (call)", claude),
+        ("probe.py::test_two (teardown)", claude),
+        ("probe.py::test_one (call)", claude),
+    ]
+    for current, target in phases:
+        monkeypatch.setenv(home_write_guard.PYTEST_VARIABLE, current)
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            home_write_guard.refuse_real_home_write(target, operation="write")
+    notices = [
+        line
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("RealHomeWriteError: ")
+    ]
+    # One notice for each protected folder in each test, whatever the phase; a
+    # test that refuses again after another one ran is announced again.
+    assert [
+        (
+            line.split(" (probe.py::")[1].split(" (")[0],
+            str(fake_home / ".claude") in line,
+        )
+        for line in notices
+    ] == [
+        ("test_one", True),
+        ("test_one", False),
+        ("test_two", True),
+        ("test_one", True),
+    ]
+    assert len(home_write_guard.drain_refusals()) == len(phases)
+
+
+def _fake_open_key(*_args: object) -> contextlib.AbstractContextManager[object]:
+    return contextlib.nullcontext(object())
+
+
+def test_a_faked_system_lookup_neither_changes_nor_poisons_the_home(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    found = _fresh_account_home()
+    assert found is not None
+    fake = str(tmp_path / "fake-home")
+    if os.name == "nt":
+        import winreg
+
+        def fake_dll(*_args: object, **_kwargs: object) -> object:
+            raise OSError("a fake library")
+
+        monkeypatch.setattr(ctypes, "WinDLL", fake_dll, raising=False)
+        monkeypatch.setattr(
+            ctypes, "windll", SimpleNamespace(_dlltype=fake_dll), raising=False
+        )
+        monkeypatch.setattr(winreg, "OpenKey", _fake_open_key)
+        monkeypatch.setattr(winreg, "QueryValueEx", lambda *_args: (fake, 1))
+        # The fakes answer for anyone who looks the home up through them.
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "x") as key:
+            assert winreg.QueryValueEx(key, "USERPROFILE")[0] == fake
+    else:
+        pwd = pytest.importorskip("pwd")
+        monkeypatch.setattr(pwd, "getpwuid", lambda _uid: SimpleNamespace(pw_dir=fake))
+        monkeypatch.setattr(os, "geteuid", lambda: 0)
+        monkeypatch.setattr(os, "getuid", lambda: 0)
+        assert pwd.getpwuid(os.geteuid()).pw_dir == fake
+    assert _fresh_account_home() == found
+    monkeypatch.undo()
+    # The lookup made under the fakes is the one cached, and it is the real home.
+    assert home_write_guard.account_home() == found
+    assert _fresh_account_home() == found
+
+
+def test_the_system_functions_are_bound_without_a_path() -> None:
+    bound = home_write_guard._SYSTEM
+    expected = (
+        {"ctypes.WinDLL", "winreg.QueryValueEx", "uuid.UUID"}
+        if os.name == "nt"
+        else {"pwd.getpwuid", "os.geteuid", "os.getuid"}
+    )
+    assert expected <= set(bound)
+    assert not [value for value in bound.values() if isinstance(value, (str, Path))]
+
+
+def test_a_project_root_at_the_home_is_refused(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    link = tmp_path / "home-link"
+    _link_folder(link, fake_home)
+    spellings: list[str | Path] = [
+        fake_home,
+        str(fake_home) + os.sep,
+        fake_home / "Projects" / "..",
+        link,
+    ]
+    if os.name == "nt":
+        spellings.append("\\\\?\\" + str(fake_home))
+        drive, rest = os.path.splitdrive(str(fake_home))
+        if drive.endswith(":"):
+            spellings.append(f"\\\\localhost\\{drive[0]}${rest}")
+    for spelling in spellings:
+        assert home_write_guard.would_refuse_project_root(spelling), spelling
+        with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+            home_write_guard.refuse_project_root_at_home(spelling, operation="install")
+        error = caught.value
+        assert error.protected_root == str(fake_home)
+        assert error.operation == "install"
+        assert error.path == str(spelling)
+        message = str(error)
+        assert f"it is {fake_home}, this account's real home" in message
+        assert "stopped before writing anything for this project" in message
+        assert "Nothing was changed" not in message
+    assert len(home_write_guard.drain_refusals()) == len(spellings)
+    assert _everything_in(fake_home) == []
+
+
+def test_a_project_folder_other_than_the_home_is_allowed(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for allowed in (
+        fake_home / "Projects" / "x",
+        fake_home / "x",
+        tmp_path,
+        tmp_path / "project",
+        fake_home.parent,
+    ):
+        assert not home_write_guard.would_refuse_project_root(allowed), allowed
+        home_write_guard.refuse_project_root_at_home(allowed, operation="update")
+    # A project inside a protected folder is the write checks' business.
+    inside = fake_home / ".claude" / "project"
+    assert not home_write_guard.would_refuse_project_root(inside)
+    assert home_write_guard.would_refuse(inside / "AGENTS.md")
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    assert not home_write_guard.would_refuse_project_root(fake_home)
+    home_write_guard.refuse_project_root_at_home(fake_home, operation="uninstall")
+    assert home_write_guard.refusals() == ()
+
+
+def test_the_account_home_itself_is_refused_as_a_project_root() -> None:
+    account = home_write_guard.account_home()
+    if account is None:
+        pytest.skip("the system has no record of this account's home")
+    assert home_write_guard.would_refuse_project_root(account)
+    assert not home_write_guard.would_refuse_project_root(
+        Path(account) / "Projects" / "x"
+    )
+    assert home_write_guard.refusals() == ()

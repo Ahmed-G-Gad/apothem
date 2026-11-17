@@ -19,23 +19,38 @@ for a path at or inside one of these folders of the account's home:
   rest; :data:`FALLBACK_ROOTS` lists them).
 
 With ``tree=True`` (removing or moving a whole folder) a path that holds one of
-those folders is refused too. Nothing else is refused: reads, dry runs and
-previews, the temporary folder, the checkout, and the rest of the home all stay
-allowed. With ``PYTEST_CURRENT_TEST`` unset the check is one environment lookup.
+those folders is refused too. :func:`refuse_project_root_at_home` refuses a
+project root that is the home itself, which a project-scope pass calls before
+its first write. Nothing else is refused: reads, dry runs and previews, the
+temporary folder, the checkout, and the rest of the home all stay allowed.
+With ``PYTEST_CURRENT_TEST`` unset the check is one environment lookup.
+
+A path is compared as written and as resolved through links, folder by folder
+on every check, so a folder swapped for a link during a test counts at once.
+On Windows a ``\\\\?\\`` or ``\\\\.\\`` prefix, a loopback admin share
+(``\\\\localhost\\C$``, ``\\\\127.0.0.1\\C$``, the machine's own name) and an
+alternate data stream (``.apothem:name``) all read as the plain drive-letter
+path. On macOS letter case is ignored, as the default volume format does;
+Linux compares case as it is.
 
 The account home comes from the operating system (``FOLDERID_Profile`` on
 Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
-under ``tests/conftest.py`` those name a temporary folder. When the system has
-no answer, only the homes a test added with :func:`also_protect_home` are
-protected, and the failed lookup is tried again on the next check. No
+under ``tests/conftest.py`` those name a temporary folder. The system functions
+the lookup calls are bound when this module is imported, so a test that later
+replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg`` cannot change the
+home found or poison its cache. When the system has no answer (a container user
+with no ``passwd`` entry, say), the account home is not protected at all: only
+the homes a test added with :func:`also_protect_home` are, and the failed lookup
+is tried again on the next check. ``HOME`` is no fallback, because under
+``tests/conftest.py`` it can already name a test's temporary folder. No
 environment variable, setting or flag turns the refusal off; a test that runs a
 real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` in the
 child's environment.
 
 Every refusal is logged in this process (:func:`refusals`,
-:func:`drain_refusals`) and written once per protected folder to ``stderr``, so
-a caller that absorbs the error still leaves a trace that ``tests/conftest.py``
-reports.
+:func:`drain_refusals`) and written to ``stderr`` once per protected folder in
+each test, so a caller that absorbs the error still leaves a trace that
+``tests/conftest.py`` reports.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
@@ -46,7 +61,9 @@ from __future__ import annotations
 import contextlib
 import functools
 import importlib
+import ntpath
 import os
+import re
 import stat
 import sys
 from typing import Any, TypeGuard
@@ -92,12 +109,71 @@ _LOOKUP_ERRORS = (
     RuntimeError,
 )
 
+#: Fold letter case on both sides of a match. macOS volumes ignore case by
+#: default and ``os.path.normcase`` folds nothing on POSIX; Windows folds
+#: through ``normcase``, and Linux compares case as it is. Tests switch it.
+_FOLD_CASE: bool = sys.platform == "darwin"
+
+#: An admin share of a drive (``C$``) and a loopback IPv4 host (``127.x.y.z``).
+_ADMIN_SHARE = re.compile(r"[a-z]\$", re.IGNORECASE)
+_LOOPBACK_V4 = re.compile(r"127\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+
+#: The path prefixes that name the same file as the plain path after them,
+#: lower case, with what replaces each.
+_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("\\\\?\\unc\\", "\\\\"),
+    ("\\\\.\\unc\\", "\\\\"),
+    ("\\\\?\\", ""),
+    ("\\\\.\\", ""),
+)
+
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
 _extra_homes: list[str] = []
 #: The refusal log, a list of exceptions.
 _refusals: list[RealHomeWriteError] = []
-#: The first refusal written to ``stderr`` for each protected folder.
-_announced: list[RealHomeWriteError] = []
+#: The test whose refusals were last written to ``stderr``, and the protected
+#: folders already written for it.
+_announced: dict[str, set[str]] = {}
+
+
+def _bind_system() -> dict[str, Any]:
+    """Return the system functions the home lookup calls, bound at import.
+
+    Binding a function object looks nothing up. A test that replaces one of
+    them in its module later cannot change what the lookup calls.
+    """
+    wanted = (
+        {
+            "ctypes": (
+                "WinDLL",
+                "Structure",
+                "c_uint32",
+                "c_uint16",
+                "c_ubyte",
+                "c_long",
+                "c_wchar_p",
+                "byref",
+            ),
+            "uuid": ("UUID",),
+            "winreg": ("OpenKey", "QueryValueEx", "HKEY_CURRENT_USER"),
+        }
+        if os.name == "nt"
+        else {"pwd": ("getpwuid",), "os": ("geteuid", "getuid")}
+    )
+    bound: dict[str, Any] = {}
+    for module_name, names in wanted.items():
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            continue
+        for name in names:
+            if hasattr(module, name):
+                bound[f"{module_name}.{name}"] = getattr(module, name)
+    return bound
+
+
+#: ``module.name`` -> the function or constant the home lookup calls.
+_SYSTEM: dict[str, Any] = _bind_system()
 
 
 class RealHomeWriteError(OSError):
@@ -202,33 +278,95 @@ def refuse_real_home_write(
         text = os.fspath(path)
         root = _protected_root_of(text, tree=tree)
         if root is not None:
-            _refuse(text, root, operation)
+            test = os.environ.get(PYTEST_VARIABLE, "")
+            _refuse(
+                f"Apothem refused to {operation} {text}: it is inside or holds "
+                f"{root}, a folder in this account's real home, while a pytest "
+                f"test is running ({test}). Nothing in {root} was changed. Fix: "
+                f"{_FIX}",
+                path=text,
+                root=root,
+                operation=operation,
+            )
 
 
-def _refuse(path: str, root: str, operation: str) -> None:
-    """Log, report once per protected folder, and raise the refusal."""
-    test = os.environ.get(PYTEST_VARIABLE, "")
-    message = (
-        f"Apothem refused to {operation} {path}: it is inside or holds {root}, a "
-        "folder in this account's real home, while a pytest test is running "
-        f"({test}). Nothing was changed. Fix: run the test from the repository's "
-        "tests/ folder so tests/conftest.py loads; or, before the test writes, "
-        "point HOME and USERPROFILE at a temporary folder and set "
-        "apothem.lib.install_ledger.STATE_ROOT and "
-        "apothem.harnesses._shared.install_driver.BACKUP_ROOT to temporary "
-        "folders. To run a real install on purpose, start Apothem without "
-        f"{PYTEST_VARIABLE} in its environment."
-    )
+def would_refuse_project_root(project_root: str | os.PathLike[str]) -> bool:
+    """Return True when :func:`refuse_project_root_at_home` would refuse.
+
+    It never raises and logs nothing, for code that must not raise.
+    """
+    try:
+        return _home_at(os.fspath(project_root)) is not None
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def refuse_project_root_at_home(
+    project_root: str | os.PathLike[str], *, operation: str
+) -> None:
+    """Raise :class:`RealHomeWriteError` when *project_root* is an account home.
+
+    While a pytest test runs, a project-scope pass (install, update, uninstall,
+    rollback) whose project root is the account home, or a home added with
+    :func:`also_protect_home`, would write project files straight into that
+    home. The pass calls this before its first write, so a refusal leaves the
+    project untouched. Every spelling the write checks recognise counts (a link
+    to the home, a short name, a loopback admin share). Only the home itself
+    is refused: a project folder inside the home stays allowed, and one inside
+    a protected folder is refused by the write checks. *operation* names the
+    pass for the message (``install``, ``update``, ``uninstall``,
+    ``roll back``).
+    """
+    text = os.fspath(project_root)
+    home = _home_at(text)
+    if home is not None:
+        test = os.environ.get(PYTEST_VARIABLE, "")
+        _refuse(
+            f"Apothem refused to {operation} with the project root {text}: it is "
+            f"{home}, this account's real home, while a pytest test is running "
+            f"({test}). It stopped before writing anything for this project. Fix: "
+            f"pass a temporary folder as the project root; or {_FIX}",
+            path=text,
+            root=home,
+            operation=operation,
+        )
+
+
+#: The fix every refusal message ends with.
+_FIX = (
+    "run the test from the repository's tests/ folder so tests/conftest.py "
+    "loads; or, before the test writes, point HOME and USERPROFILE at a "
+    "temporary folder and set apothem.lib.install_ledger.STATE_ROOT and "
+    "apothem.harnesses._shared.install_driver.BACKUP_ROOT to temporary folders. "
+    "To run a real install on purpose, start Apothem without "
+    f"{PYTEST_VARIABLE} in its environment."
+)
+
+
+def _refuse(message: str, *, path: str, root: str, operation: str) -> None:
+    """Log, report once per protected folder and test, and raise the refusal."""
     error = RealHomeWriteError(
         message, path=path, protected_root=root, operation=operation
     )
     if len(_refusals) < _LOG_LIMIT:
         _refusals.append(error)
-    if not any(seen.protected_root == root for seen in _announced):
-        _announced.append(error)
+    test = _test_id(os.environ.get(PYTEST_VARIABLE, ""))
+    if test not in _announced:
+        _announced.clear()
+        _announced[test] = set()
+    if root not in _announced[test]:
+        _announced[test].add(root)
         with contextlib.suppress(OSError, ValueError, AttributeError):
             sys.stderr.write(f"{type(error).__name__}: {message}\n")
     raise error
+
+
+def _test_id(current: str) -> str:
+    """Return the test id of a ``PYTEST_CURRENT_TEST`` value, without its phase."""
+    for phase in (" (setup)", " (call)", " (teardown)"):
+        if current.endswith(phase):
+            return current[: -len(phase)]
+    return current
 
 
 def _protected_root_of(path: str, *, tree: bool) -> str | None:
@@ -246,12 +384,40 @@ def _protected_root_of(path: str, *, tree: bool) -> str | None:
     return _match(_real_target(absolute), roots, tree=tree)
 
 
+def _home_at(path: str) -> str | None:
+    """Return the account home, or added home, that *path* names, or None."""
+    if PYTEST_VARIABLE not in os.environ:
+        return None
+    homes = [
+        (home, {_folded(_canonical(home)), _folded(_canonical(_realpath(home)))})
+        for home in (account_home(), *_extra_homes)
+        if home is not None
+    ]
+    absolute = os.path.abspath(path)
+    lexical = _folded(_canonical(absolute))
+    for home, keys in homes:
+        if lexical in keys:
+            return home
+    resolved = _folded(_canonical(_realpath(absolute)))
+    for home, keys in homes:
+        if resolved in keys:
+            return home
+    return None
+
+
+def _folded(path: str) -> str:
+    """Return *path* case-folded when :data:`_FOLD_CASE` is set."""
+    return path.casefold() if _FOLD_CASE else path
+
+
 def _match(
     target: str, roots: tuple[tuple[tuple[str, ...], str], ...], *, tree: bool
 ) -> str | None:
     """Return the shown root whose spelling holds *target* (or *target* holds)."""
+    target = _folded(target)
     for keys, shown in roots:
-        for key in keys:
+        for raw in keys:
+            key = _folded(raw)
             if target == key or target.startswith(key + os.sep):
                 return shown
             if tree and key.startswith(target.rstrip(os.sep) + os.sep):
@@ -260,9 +426,11 @@ def _match(
 
 
 def _real_target(absolute: str) -> str:
-    """Return *absolute* with its folder resolved through links, case-folded.
+    """Return *absolute* with its folder resolved through links, canonical.
 
     A leaf that is itself a link (or a Windows reparse point) is resolved too.
+    The folder is resolved on every call, never cached: a folder swapped for a
+    link (or back) during a test is judged by what it is now.
     """
     try:
         info = os.lstat(absolute)
@@ -276,19 +444,8 @@ def _real_target(absolute: str) -> str:
     if is_link:
         return _canonical(_realpath(absolute))
     folder, leaf = os.path.split(absolute)
-    real_folder = _real_dir(folder, os.environ.get(PYTEST_VARIABLE, ""))
-    return os.path.normcase(os.path.join(real_folder, leaf)) if leaf else real_folder
-
-
-@functools.lru_cache(maxsize=4096)
-def _real_dir(absolute_dir: str, epoch: str) -> str:
-    """Return the canonical spelling of a folder, cached per test phase.
-
-    *epoch* is the current ``PYTEST_CURRENT_TEST`` value, so entries age out
-    as pytest moves from one test phase to the next.
-    """
-    del epoch
-    return _canonical(_realpath(absolute_dir))
+    real_folder = _realpath(folder)
+    return _canonical(os.path.join(real_folder, leaf) if leaf else real_folder)
 
 
 def _realpath(path: str) -> str:
@@ -300,12 +457,73 @@ def _realpath(path: str) -> str:
 
 
 def _canonical(path: str) -> str:
-    """Return *path* without a ``\\\\?\\`` prefix, case-folded as the system does."""
-    if path.startswith("\\\\?\\UNC\\"):
-        path = "\\\\" + path[len("\\\\?\\UNC\\") :]
-    elif path.startswith("\\\\?\\"):
-        path = path[len("\\\\?\\") :]
-    return os.path.normcase(path)
+    """Return *path* in the one spelling every comparison uses.
+
+    That is ``os.path.normcase`` of it, and on Windows also
+    :func:`_windows_spelling`.
+    """
+    path = os.path.normcase(path)
+    if os.name == "nt":
+        path = _windows_spelling(path)
+    return path
+
+
+def _windows_spelling(path: str) -> str:
+    """Return a Windows *path* as the plain drive-letter path it names.
+
+    - ``\\\\?\\C:\\x`` and ``\\\\.\\C:\\x`` read as ``C:\\x``;
+      ``\\\\?\\UNC\\host\\share`` and ``\\\\.\\UNC\\host\\share`` as
+      ``\\\\host\\share``.
+    - A loopback admin share reads as its drive: ``\\\\localhost\\C$\\x``,
+      ``\\\\127.0.0.1\\C$\\x`` and ``\\\\<this machine>\\C$\\x`` as ``C:\\x``.
+    - A component ``name:stream`` or ``name::$TYPE`` (an alternate data
+      stream) reads as ``name``.
+
+    It is string work on *path* alone, so it runs the same on every system:
+    nothing touches the disk, and no host name is looked up on the network.
+    """
+    path = path.replace("/", "\\")
+    lowered = path.lower()
+    for prefix, replacement in _PREFIXES:
+        if lowered.startswith(prefix):
+            path = replacement + path[len(prefix) :]
+            break
+    if path.startswith("\\\\"):
+        host, _sep, rest = path[2:].partition("\\")
+        share, _sep, tail = rest.partition("\\")
+        if _ADMIN_SHARE.fullmatch(share) and _is_loopback(host):
+            path = f"{share[0]}:\\{tail}"
+    drive, tail = ntpath.splitdrive(path)
+    return drive + "\\".join(part.split(":", 1)[0] for part in tail.split("\\"))
+
+
+def _is_loopback(host: str) -> bool:
+    """Return True for a UNC host name that is this machine."""
+    name = host.lower()
+    return (
+        name == "localhost"
+        or _LOOPBACK_V4.fullmatch(name) is not None
+        or name in _machine_names()
+    )
+
+
+def _machine_names() -> frozenset[str]:
+    """Return this machine's own names, lower case, from the system alone.
+
+    ``socket.gethostname()`` and ``platform.node()``, each with its first label
+    as well; there is no DNS lookup. Asked for only when a UNC path is checked.
+    """
+    names: set[str] = set()
+    for module_name, function in (("socket", "gethostname"), ("platform", "node")):
+        try:
+            value: object = getattr(importlib.import_module(module_name), function)()
+        except _LOOKUP_ERRORS:
+            continue
+        if isinstance(value, str) and value:
+            lowered = value.lower()
+            names.update((lowered, lowered.split(".", 1)[0]))
+    names.discard("")
+    return frozenset(names)
 
 
 @functools.lru_cache(maxsize=8)
@@ -380,9 +598,11 @@ def _os_account_home() -> str:
     """Return the account's home from the operating system, looked up once.
 
     Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
-    no failure, so the next call tries again. An error from one lookup (a test
-    that replaced part of ``ctypes`` with a fake, say) moves on to the next
-    lookup, so a broken step never stops the check itself.
+    no failure, so the next call tries again. An error from one lookup (a
+    broken system library, say) moves on to the next lookup, so a broken step
+    never stops the check itself. The lookups call the system functions bound
+    at import (:data:`_SYSTEM`; a missing one is a ``KeyError``), so a test's
+    later fake cannot reach them.
     """
     lookups = (
         (_windows_profile, _volatile_profile)
@@ -409,37 +629,37 @@ def _usable_home(found: object) -> TypeGuard[str]:
 
 def _windows_profile() -> str:
     """Return ``FOLDERID_Profile`` from ``SHGetKnownFolderPath``."""
-    ctypes: Any = importlib.import_module("ctypes")
-    uuid: Any = importlib.import_module("uuid")
-    # Private library objects of the class ``windll`` was built with when
-    # ``ctypes`` was imported: a test may replace ``ctypes.WinDLL``, and the
-    # shared ``windll`` functions may be retyped.
-    dll_type = ctypes.windll._dlltype
+    dll_type = _SYSTEM["ctypes.WinDLL"]
+    structure = _SYSTEM["ctypes.Structure"]
+    c_uint32 = _SYSTEM["ctypes.c_uint32"]
+    c_uint16 = _SYSTEM["ctypes.c_uint16"]
+    c_ubyte = _SYSTEM["ctypes.c_ubyte"]
+    byref = _SYSTEM["ctypes.byref"]
     shell32 = dll_type("shell32")
     ole32 = dll_type("ole32")
 
-    class _Guid(ctypes.Structure):  # type: ignore[misc]
+    class _Guid(structure):  # type: ignore[misc,valid-type]
         _fields_ = (
-            ("data1", ctypes.c_uint32),
-            ("data2", ctypes.c_uint16),
-            ("data3", ctypes.c_uint16),
-            ("data4", ctypes.c_ubyte * 8),
+            ("data1", c_uint32),
+            ("data2", c_uint16),
+            ("data3", c_uint16),
+            ("data4", c_ubyte * 8),
         )
 
-    folder = uuid.UUID(_FOLDERID_PROFILE)
+    folder = _SYSTEM["uuid.UUID"](_FOLDERID_PROFILE)
     guid = _Guid(
         folder.time_low,
         folder.time_mid,
         folder.time_hi_version,
-        (ctypes.c_ubyte * 8)(*folder.bytes[8:]),
+        (c_ubyte * 8)(*folder.bytes[8:]),
     )
-    pointer = ctypes.c_wchar_p()
+    pointer = _SYSTEM["ctypes.c_wchar_p"]()
     get_path = shell32.SHGetKnownFolderPath
-    get_path.restype = ctypes.c_long
+    get_path.restype = _SYSTEM["ctypes.c_long"]
     free = ole32.CoTaskMemFree
     free.restype = None
     try:
-        status = get_path(ctypes.byref(guid), 0, None, ctypes.byref(pointer))
+        status = get_path(byref(guid), 0, None, byref(pointer))
         if status != 0:
             raise OSError(f"SHGetKnownFolderPath failed: {status & 0xFFFFFFFF:#x}")
         return str(pointer.value or "")
@@ -449,21 +669,18 @@ def _windows_profile() -> str:
 
 def _volatile_profile() -> str:
     """Return ``USERPROFILE`` from the logon session's registry key."""
-    winreg: Any = importlib.import_module("winreg")
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Volatile Environment") as key:
-        value, _kind = winreg.QueryValueEx(key, "USERPROFILE")
+    open_key = _SYSTEM["winreg.OpenKey"]
+    current_user = _SYSTEM["winreg.HKEY_CURRENT_USER"]
+    with open_key(current_user, "Volatile Environment") as key:
+        value, _kind = _SYSTEM["winreg.QueryValueEx"](key, "USERPROFILE")
     return str(value)
 
 
 def _passwd_home_effective() -> str:
     """Return the ``passwd`` home of the process's effective user."""
-    pwd: Any = importlib.import_module("pwd")
-    system: Any = os  # ``geteuid`` exists only on POSIX
-    return str(pwd.getpwuid(system.geteuid()).pw_dir)
+    return str(_SYSTEM["pwd.getpwuid"](_SYSTEM["os.geteuid"]()).pw_dir)
 
 
 def _passwd_home_real() -> str:
     """Return the ``passwd`` home of the process's real user."""
-    pwd: Any = importlib.import_module("pwd")
-    system: Any = os  # ``getuid`` exists only on POSIX
-    return str(pwd.getpwuid(system.getuid()).pw_dir)
+    return str(_SYSTEM["pwd.getpwuid"](_SYSTEM["os.getuid"]()).pw_dir)
