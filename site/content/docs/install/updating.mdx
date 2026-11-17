@@ -28,6 +28,25 @@ menu inside Claude Code:
 Open `/plugin`, select **apothem**, and choose the update action when a newer
 plugin version is listed.
 
+## Update the VS Code extension
+
+The extension runs the engine version it shipped with. Its default runner is
+`npx @ahmed-g-gad/apothem@<extension version>`, so you get a new engine only
+when the extension itself updates.
+
+VS Code checks for extension updates and installs them on its own, as its
+[extension auto-update](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#extension-auto-update)
+docs describe. By default it waits 12 hours after an update is published.
+To install it at once, select the extension's **Update** button in the
+Extensions view. If you turned auto-update off, run the
+**Show Extension Updates** command and select **Update**, or run
+**Update All Extensions**.
+
+VS Code turns auto-update off for an extension installed from a `.vsix`
+file. If you installed `apothem.vsix`, install the `apothem.vsix` attached to
+the newer [GitHub Release](https://github.com/ahmed-g-gad/apothem/releases)
+the same way.
+
 ## npx always runs the current release
 
 `npx @ahmed-g-gad/apothem` resolves the current published package on each
