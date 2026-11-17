@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: MIT
+
+name: matrix-timeouts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integer-over:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 100
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo integer-over
+
+  windows-over:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 150 || 90 }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo windows-over
+
+  other-over:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 100 }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo other-over
+
+  other-os:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'macos-latest' && 120 || 90 }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - run: echo other-os
+
+  extra-term:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 || 30 }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo extra-term
+
+  input-expression:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo input-expression
+
+  no-matrix-conditional:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 20 || 10 }}
+    steps:
+      - run: echo no-matrix-conditional
