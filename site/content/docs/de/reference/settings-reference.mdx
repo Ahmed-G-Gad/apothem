@@ -27,7 +27,7 @@ Jeder konfigurierte Hook verwendet die Exec-Befehlsform von Claude Code. Die aus
 {
   "type": "command",
   "command": "${PYTHON_BIN}",
-  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 

@@ -118,7 +118,7 @@ Kiro がコマンドの出力をモデルのコンテキストに追加するの
 フックファイル内のコマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` は、ディスパッチャーにコンテキストをプレーンテキストとして出力させます。これは Kiro が `SessionStart` でコンテキストに追加する形式です。

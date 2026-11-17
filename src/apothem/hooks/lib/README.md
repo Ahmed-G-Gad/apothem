@@ -16,8 +16,8 @@ the bootstrap stubs are not on that surface's critical path.
 
 | File | Purpose |
 |------|---------|
-| `bootstrap.sh` / `bootstrap.ps1` | Shell bootstrap stubs — resolve the installed hook tree from the stub's own location (never from the opened project), source the interpreter locator, and `exec` the dispatcher. The plugin's entry path. |
-| `find-python.sh` / `find-python.ps1` | Python interpreter locators — find a real interpreter on PATH (rejecting zero-byte Store launcher shims, enforcing the version floor). |
+| `bootstrap.sh` / `bootstrap.ps1` | Shell bootstrap stubs — resolve the installed hook tree from the stub's own location (never from the opened project), source the interpreter locator, and `exec` the dispatcher with `-E -s`. The plugin's entry path. |
+| `find-python.sh` / `find-python.ps1` | Python interpreter locators — find a real interpreter on PATH (rejecting zero-byte Store launcher shims, enforcing the version floor). The version probe also runs with `-E -s`. |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary, imported by the dispatcher and handlers. |
 | `stdin_json.py` | Shared hook stdin JSON reader. Several handlers need the harness's event payload; this is the one canonical reader they consume, so the read path — and its behavior on absent, empty, or malformed stdin — cannot drift between them. |
@@ -33,6 +33,7 @@ the bootstrap stubs are not on that surface's critical path.
 
 - **Fail-open on the critical path.** The stubs use `set -u` (not `-euo pipefail`) and an `ERR` trap that emits a JSON diagnostic envelope and exits 0, so a missing interpreter or dispatcher never stalls the harness. Preserve every explicit diagnostic-envelope branch; `-e` would short-circuit them.
 - **Stubs are paired across `.sh` and `.ps1`.** A change to one shell family's stub is mirrored in its counterpart in the same change so behavior does not diverge by platform.
+- **Every interpreter start passes `-E -s`.** A hook runs in whatever folder the harness opened, and an empty `PYTHONPATH` entry stands for that folder, so without `-E` (no `PYTHON*` variable is read) a `sitecustomize.py` or `json.py` there would load into the hook; `-s` leaves out the user's site-packages. The hook code uses only the standard library and its own folder, and the dispatcher reads its payload as UTF-8 itself, because `-E` also turns off `PYTHONUTF8` and `PYTHONIOENCODING`. Keep both flags on any new start, the locator probes included.
 - **Per-platform startup budgets bound the stubs:** the POSIX-bash stub carries the tightest budget; the PowerShell stub and the Windows Git-Bash/mingw64 path carry a wider budget because their interpreter startup dominates; the interpreter locator sits inside the stub budget. Keep stub work minimal — resolve, locate, `exec`; do not add per-invocation overhead.
 - **The event vocabulary lives in `events.py`** and is imported, never duplicated, by the dispatcher and handlers.
 - Shell files open with `#!/usr/bin/env bash` then the hash-form single-line SPDX license header; Python files carry the same hash-form header.

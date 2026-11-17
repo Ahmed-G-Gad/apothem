@@ -68,7 +68,7 @@ Git Bash) में चलाता है; बूटस्ट्रैप ए�
 
 जो हार्नेस Claude Code नहीं है, वह वही डिस्पैचर स्क्रिप्ट के बाद
 `--contract <id>` के साथ चलाता है, उदाहरण के लिए
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`।
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`।
 अनुबंध (`hooks/lib/vendor_contract.py`) वेंडर की इवेंट और टूल-नाम वर्तनियों तथा
 पेलोड कुंजियों को उस Claude आकार में अनुवादित करता है जिसे हैंडलर पढ़ते हैं,
 एनवेलप को उस आकार में फिर से लिखता है जिसे वेंडर पढ़ता है, और ऐसे इवेंट को छोड़

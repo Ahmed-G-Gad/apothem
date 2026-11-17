@@ -354,9 +354,9 @@ the adapter does not write.
   Cascade hooks page named `bash -c` and `powershell -Command` (read 2026-10-27;
   it now redirects to the Customizations page), and the Local pages name none
   (the changelog's PowerShell default is for the `exec` tool). The adapter
-  writes bash quoting (`"<interpreter>" "<script>" ...`), which PowerShell would
-  not parse without a call operator; the install note says to confirm the hooks
-  loaded.
+  writes bash quoting (`"<interpreter>" -E -s "<script>" ...`), which PowerShell
+  would not parse without a call operator; the install note says to confirm the
+  hooks loaded.
 - Resolved 2026-11-02: Devin Desktop's Local agent applies the CLI's
   `read_config_from` defaults and reads the project `.devin/` files of an
   ancestor directory the way the CLI does. The Customizations page says every
