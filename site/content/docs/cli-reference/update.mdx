@@ -20,7 +20,9 @@ uses the same profile validation, `--harness all` selection, project-scope
 checking, dry-run behavior, and JSON envelope as `install`, and prints the same
 advisories, including the `instruction_override` note when a file of yours keeps
 a tool from loading what Apothem writes (see
-[`install`](/docs/cli-reference/install)).
+[`install`](/docs/cli-reference/install)). Like `install`, it records the
+`--project` folder resolved, and moves an install recorded under another
+spelling of that folder to it.
 
 In each folder Apothem writes into (a skills folder, the support files under
 `.apothem/support/`), `update` compares every entry it writes. A file entry is

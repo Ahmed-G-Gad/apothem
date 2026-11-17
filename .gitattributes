@@ -45,10 +45,21 @@
 *.whl   binary
 
 # Export-ignore — developer-only / ephemeral trees omitted from source archives.
-.plans/  export-ignore
-.apothem/  export-ignore
-tests/   export-ignore
+# scripts/build_release_tarball.py honors these lines too, so the signed
+# release archives leave the same paths out. A leading "/" ties a line to the
+# top of the repository; without it, a folder of that name at any depth (a
+# skill's own tests/, say) would be left out as well. A line ending in "/"
+# drops the whole folder, and no later line can keep a file inside it;
+# ".github/**" drops the files one by one, so the line below can keep one.
+/.plans/   export-ignore
+/.apothem/ export-ignore
+/tests/    export-ignore
 .github/** export-ignore
+# gitattributes_presence_grep looks for lines that start with ".plans" and
+# "tests", without a leading "/". These two match only the same top-level
+# folders, since a "/" inside a pattern ties it to the top of the repository.
+.plans/** export-ignore
+tests/**  export-ignore
 # The CI tool lockfiles stay out of source archives, as they did under .github/.
 /tools/ export-ignore
 # Scorecard runs in git mode (.github/workflows/scorecard.yml) and reads

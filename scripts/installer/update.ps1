@@ -182,6 +182,13 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 $GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true', '-c', 'attr.tree=')
 $GitSafe = @()
 
+# Every git call that reads or writes the clone's files (the fetch, the
+# checkout and the checks around it) takes these arguments. A release can
+# hold paths longer than Windows' 260-character limit at APOTHEM_HOME, which
+# Git for Windows writes and reads only with core.longpaths set; git
+# elsewhere ignores the setting (mirrors update.sh's cgit).
+$GitLongPaths = @('-c', 'core.longpaths=true')
+
 # The current folder must never shadow the engine's modules (mirrors
 # update.sh). Python puts '' (the working directory) first on sys.path for
 # `-c`, and `-m` puts the working directory there, so a click.py, rich\ or
@@ -356,7 +363,7 @@ function Test-TagSignature {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $Lines = & git @GitSafe -C $Dir verify-tag --raw $Ref 2>&1
+        $Lines = & git @GitLongPaths @GitSafe -C $Dir verify-tag --raw $Ref 2>&1
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prior
@@ -1604,7 +1611,7 @@ if ($env:APOTHEM_SOURCE) {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            & git @GitSafe -C $ApothemHome fetch --quiet --tags origin
+            & git @GitLongPaths @GitSafe -C $ApothemHome fetch --quiet --tags origin
             $FetchCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior
@@ -1638,7 +1645,7 @@ if ($env:APOTHEM_SOURCE) {
                 # `tag APOTHEM_REF`, as update.sh's awk check requires.
                 $ErrorActionPreference = 'Continue'
                 try {
-                    $TagLines = @(& git @GitSafe -C $ApothemHome cat-file tag $TagObject 2>$null)
+                    $TagLines = @(& git @GitLongPaths @GitSafe -C $ApothemHome cat-file tag $TagObject 2>$null)
                 } finally {
                     $ErrorActionPreference = $prior
                 }
@@ -1687,9 +1694,9 @@ if ($env:APOTHEM_SOURCE) {
         $prior = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         try {
-            & git @GitSafe -C $ApothemHome diff --quiet --no-textconv --no-ext-diff HEAD
+            & git @GitLongPaths @GitSafe -C $ApothemHome diff --quiet --no-textconv --no-ext-diff HEAD
             $DiffCode = $LASTEXITCODE
-            & git @GitSafe -C $ApothemHome diff --cached --quiet --no-textconv --no-ext-diff
+            & git @GitLongPaths @GitSafe -C $ApothemHome diff --cached --quiet --no-textconv --no-ext-diff
             $CachedCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior
@@ -1714,14 +1721,14 @@ if ($env:APOTHEM_SOURCE) {
         $ErrorActionPreference = 'Continue'
         try {
             if (Test-ReleaseTag $ApothemRef) {
-                & git @GitSafe -C $ApothemHome checkout --quiet --detach $TagCommit
+                & git @GitLongPaths @GitSafe -C $ApothemHome checkout --quiet --detach $TagCommit
                 $CoCode = $LASTEXITCODE
             } else {
-                & git @GitSafe -C $ApothemHome show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
+                & git @GitLongPaths @GitSafe -C $ApothemHome show-ref --verify --quiet "refs/remotes/origin/$ApothemRef"
                 if ($LASTEXITCODE -eq 0) {
-                    & git @GitSafe -C $ApothemHome checkout --quiet --detach "refs/remotes/origin/$ApothemRef"
+                    & git @GitLongPaths @GitSafe -C $ApothemHome checkout --quiet --detach "refs/remotes/origin/$ApothemRef"
                 } else {
-                    & git @GitSafe -C $ApothemHome checkout --quiet --end-of-options $ApothemRef
+                    & git @GitLongPaths @GitSafe -C $ApothemHome checkout --quiet --end-of-options $ApothemRef
                 }
                 $CoCode = $LASTEXITCODE
             }
@@ -1730,7 +1737,7 @@ if ($env:APOTHEM_SOURCE) {
         }
         if (Test-ReleaseTag $ApothemRef) {
             if ($CoCode -ne 0) { Write-Fail "Could not check out the $ApothemRef tag in $ApothemHome. If it has local changes, commit or stash them, then re-run." }
-            $CoHead = & git @GitSafe -C $ApothemHome rev-parse --verify --quiet HEAD
+            $CoHead = & git @GitLongPaths @GitSafe -C $ApothemHome rev-parse --verify --quiet HEAD
             $CoTag = $TagCommit
             if ("$CoHead" -ne "$CoTag") {
                 Write-Fail "The checkout in $ApothemHome is at '$CoHead', not at the $ApothemRef tag's commit '$CoTag'. Aborting before re-materialization."
@@ -1740,7 +1747,7 @@ if ($env:APOTHEM_SOURCE) {
         }
         $ErrorActionPreference = 'Continue'
         try {
-            $CoDirty = @(& git @GitSafe -C $ApothemHome status --porcelain --untracked-files=no 2>$null)
+            $CoDirty = @(& git @GitLongPaths @GitSafe -C $ApothemHome status --porcelain --untracked-files=no 2>$null)
             $CoStatusCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prior

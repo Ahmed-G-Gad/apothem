@@ -135,6 +135,17 @@ search path. The gate is advisory by default: it reports findings and exits
 `0`. Add `--strict` to exit `2` on a blocking finding. An unknown validator
 name exits `3`.
 
+`--all`, `--all-perwrite`, three standalone validators and the `--staged`
+change-set checks run `git` in the project they check. Each starts git only from
+a full-path entry of your `PATH`, with every setting of that repository's
+`.git/config` known to start a program turned off and with fetching a missing
+object blocked, so a project that came with its `.git` folder from someone else
+cannot make them start a program through those settings.
+[Running the conformity gate](/docs/usage/conformity-gate) lists the settings
+and the two limits that remain: git can still read a path the repository names
+in any setting or file (`include.path`, `core.worktree`, a `.git` file's
+`gitdir:` line, and others), and a later git release can add a new setting.
+
 ```shell
 gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
 

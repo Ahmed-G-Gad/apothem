@@ -47,6 +47,55 @@ which can make git run a program. Run them only on a repository whose
 `.git` folder you made yourself with `git clone` or `git init`, not one
 that arrived with its `.git` folder in an archive or a shared folder.
 
+Three standalone validators run `git` in the project they check, and so do
+`--all`, which runs them, and `--all-perwrite`, which lists the tracked files
+with `git ls-files`:
+
+```text
+agents-md-coverage-grep
+conventional-commit-grep
+no-global-plans-grep
+```
+
+That repository's own settings, in `.git/config`, the files it includes and
+`.git/config.worktree`, can name a program for git to start while it only
+reads. The gate turns off each such setting it knows of with options on git's
+command line, which win over every file git reads and also reach any git that
+git starts in a submodule:
+
+- no file-system monitor (`core.fsmonitor`);
+- no signature program (`gpg.program`, `gpg.ssh.program` and
+  `gpg.x509.program` point at a path where nothing can exist, and
+  `log.showSignature` is off);
+- no hooks, no pager, and no automatic maintenance;
+- no external diff or text-conversion program, and submodule changes shown as
+  commit ids only, so git starts no second git inside a submodule;
+- no diff order file (`diff.orderFile`), excludes file (`core.excludesFile`)
+  or mailmap file read;
+- file contents read with `git cat-file blob`, which refuses a submodule entry
+  where `git show` would show it as a commit.
+
+It also sets `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, so git
+never fetches a missing object of a partial clone through an address the
+repository names. The gate starts git only from a full-path entry of your
+`PATH`. It never takes git from the current folder: it skips empty and relative
+`PATH` entries, which name that folder, and it does not look there first, as
+Windows does for a bare program name. git gets only those full-path entries for
+the programs it starts by name.
+
+So you can run these commands on a project that came with its `.git` folder
+from someone else, in an archive or a shared folder: none of the settings
+above can make the gate start a program. Two limits remain. The repository can
+still make git read a path somewhere else through any setting or file that
+names one, for example `include.path` or `includeIf`, `core.worktree`, the
+`gitdir:` line of a `.git` file, or `.git/objects/info/alternates`; on
+Windows, a network path there (`\\server\share`) makes Windows connect to that
+server and sign you in. And the list covers the settings known today; a later
+git release can add a new one. Your own global and system git settings still apply, except the ones
+above, which the gate's command line overrides. This covers git only:
+`python -m` reads Python modules from the current folder first, so start the
+gate from a folder you trust.
+
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a
 root directory that does not exist. `--help` prints the full usage and exits

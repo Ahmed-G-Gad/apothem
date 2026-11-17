@@ -64,7 +64,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
 
-# Bound every gate-path git invocation so a hung `git show`/`git diff`
+# Bound every gate-path git invocation so a hung `git cat-file`/`git diff`
 # (filesystem lock, slow network-backed repo, large object) cannot block a
 # commit indefinitely. Mirrors the convention in production_ready_pr_grep.py.
 GIT_TIMEOUT_SECONDS: Final[int] = 5
@@ -318,33 +318,48 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
 
 
 def check_staged() -> list[Finding]:
-    """Per-change-set check across the staged diff."""
+    """Per-change-set check across the staged diff.
+
+    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings. File contents are read with
+    ``git cat-file blob``, never ``git show``: the staged list can name a
+    gitlink (a submodule entry), which ``show`` would display as a commit,
+    signature check and submodule diff included, while ``cat-file blob``
+    refuses it.
+    """
+    # Imported here, not at module top, so the module stays stdlib-only for
+    # every caller except the change-set check.
+    from apothem.conformity._git import run_git
+
+    def blob(spec: str, *, check: bool) -> str:
+        return run_git(
+            ["cat-file", "blob", spec], check=check, timeout=GIT_TIMEOUT_SECONDS
+        ).stdout
+
     version = current_version()
     if not version or is_v0(version):
         return []
 
-    # Get list of staged Python files under src/apothem/.
+    # Get list of staged Python files under src/apothem/. -z ends each name
+    # with NUL, unquoted, so no character in a name can split or hide it.
     try:
-        result = subprocess.run(
+        result = run_git(
             [
-                "git",
                 "diff",
                 "--cached",
                 "--name-only",
+                "-z",
                 "--diff-filter=AMR",
                 PUBLIC_PACKAGE,
             ],
-            capture_output=True,
-            text=True,
-            check=False,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
     files = [
-        f.strip()
-        for f in result.stdout.splitlines()
-        if f.strip().endswith(".py")
+        f
+        for f in result.stdout.split("\0")
+        if f.endswith(".py")
         and not PRIVATE_PATTERN.search(f)
         and not CONFORMITY_INTERNAL.search(f)
     ]
@@ -352,20 +367,8 @@ def check_staged() -> list[Finding]:
     findings: list[Finding] = []
     for fp in files:
         try:
-            staged = subprocess.run(
-                ["git", "show", f":{fp}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
-            prior = subprocess.run(
-                ["git", "show", f"HEAD:{fp}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
+            staged = blob(f":{fp}", check=True)
+            prior = blob(f"HEAD:{fp}", check=False)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             continue
         if not prior:
@@ -378,21 +381,11 @@ def check_staged() -> list[Finding]:
 
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
+        # git names a path with forward slashes on every platform.
+        init_spec = INIT_PATH.as_posix()
         try:
-            staged_init = subprocess.run(
-                ["git", "show", f":{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
-            prior_init = subprocess.run(
-                ["git", "show", f"HEAD:{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
+            staged_init = blob(f":{init_spec}", check=True)
+            prior_init = blob(f"HEAD:{init_spec}", check=False)
             staged_v = re.search(r'__version__\s*=\s*"([^"]+)"', staged_init)
             prior_v = re.search(r'__version__\s*=\s*"([^"]+)"', prior_init)
             if (

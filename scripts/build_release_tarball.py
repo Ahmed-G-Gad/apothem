@@ -4,9 +4,10 @@
 
 Packages the source-of-truth tree plus a normalized ``bin/`` launcher layout
 into a platform-specific archive (tar.gz for darwin / linux; zip for windows)
-used by the release workflow's tag-push job. Excludes plan-suite ephemera,
-vendored caches, CI metadata, non-runtime trees, and version-control
-internals.
+used by the release workflow's tag-push job. Excludes every path
+``.gitattributes`` marks ``export-ignore`` (the test suite among them), plus
+plan-suite ephemera, vendored caches, CI metadata, non-runtime trees, and
+version-control internals.
 
 Emits the archive's SHA-256 digest to stdout in the canonical
 ``<digest>  <archive.name>`` form so the caller can aggregate digests
@@ -54,7 +55,6 @@ DEFAULT_EXCLUDE_DIRS: Final[tuple[str, ...]] = (
     # Both plans trees: ".apothem" is the canonical workspace and ".plans" the
     # legacy one an unmigrated checkout may still carry. Excluding only the
     # legacy name would ship a current operator's plan-product in the tarball.
-    # generate-sbom.sh applies the same dual exclusion.
     ".apothem",
     ".plans",
     "_inputs",
@@ -70,6 +70,9 @@ DEFAULT_EXCLUDE_GLOBS: Final[tuple[str, ...]] = (
 # Excluded only at the archive root, unlike DEFAULT_EXCLUDE_DIRS, which matches
 # at any depth: ".github" holds CI metadata, "packaging" the non-runtime build
 # specs, and "tools" the CI tool lockfiles (vsce and the channel-smoke CLIs).
+# ".github" stays out whole, its Dependabot config included: .gitattributes
+# keeps that one file in GitHub's source archives for Scorecard, which never
+# reads these release archives.
 ROOT_EXCLUDE_DIRS: Final[tuple[str, ...]] = (".github", "packaging", "tools")
 PLATFORMS: Final[tuple[str, ...]] = ("darwin", "linux", "windows")
 SOURCE_DATE_EPOCH_DEFAULT: Final[int] = 0
@@ -127,17 +130,24 @@ def _is_excluded(rel: Path) -> bool:
 def collect_members(root: Path) -> list[Path]:
     """Return the relative paths to include in the release archive.
 
-    Prefers the git-tracked file set when *root* is a checkout, so the
-    archive mirrors exactly what version control ships; falls back to a
+    Prefers the git-tracked file set when *root* is a checkout, less the
+    paths ``.gitattributes`` marks ``export-ignore``, so the archive never
+    holds a file GitHub's source archive leaves out; falls back to a
     filesystem walk that prunes ``DEFAULT_EXCLUDE_DIRS`` and excluded
-    patterns when *root* is not a git tree (for example an exported
-    source directory).
+    patterns only when *root* has no ``.git`` (for example a source directory
+    exported with ``git archive``, which has already dropped those paths).
 
     Args:
         root: The source-of-truth tree to archive.
 
     Returns:
         Relative paths sorted for deterministic archive ordering.
+
+    Raises:
+        RuntimeError: When *root* has ``.git`` but git is not on ``PATH``,
+            cannot list the tracked files, or cannot report the
+            ``export-ignore`` attribute, or when ``$GIT_DIR/info/attributes``
+            holds an attribute line.
     """
     git_members = _git_tracked_members(root)
     if git_members is not None:
@@ -155,22 +165,39 @@ def collect_members(root: Path) -> list[Path]:
 
 
 def _git_tracked_members(root: Path) -> list[Path] | None:
-    """Return tracked files when *root* is a git checkout, else ``None``."""
+    """Return tracked files when *root* is a git checkout, else ``None``.
+
+    Paths marked ``export-ignore`` are left out, as ``git archive`` leaves
+    them out of GitHub's source archives. A checkout git cannot read stops
+    the build: walking its files instead would ship the export-ignored trees
+    and every untracked file.
+
+    Raises:
+        RuntimeError: When *root* has ``.git`` but git is not on ``PATH`` or
+            cannot list the tracked files.
+    """
     if not (root / ".git").exists():
         return None
     git_exe = shutil.which("git")
     if git_exe is None:
-        return None
+        raise RuntimeError(f"{root} is a git checkout, but git is not on PATH")
     result = subprocess.run(  # noqa: S603 - fixed argv, no shell; root selects checkout.
         [git_exe, "-C", str(root), "ls-files", "-z"],
         capture_output=True,
         check=False,
     )
     if result.returncode != 0:
-        return None
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"git ls-files failed in {root}: {detail}")
+    tracked = [
+        raw
+        for raw in result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
+        if raw
+    ]
+    ignored = _export_ignored(root, git_exe, tracked)
     members: list[Path] = []
-    for raw in result.stdout.decode("utf-8", errors="surrogateescape").split("\0"):
-        if not raw:
+    for raw in tracked:
+        if raw in ignored:
             continue
         rel = Path(raw)
         if _is_excluded(rel):
@@ -178,6 +205,115 @@ def _git_tracked_members(root: Path) -> list[Path] | None:
         if (root / rel).is_file():
             members.append(rel)
     return sorted(members)
+
+
+def _parent_dirs(path: str) -> list[str]:
+    """Return each folder above *path*, outermost first, with a trailing slash."""
+    parts = path.split("/")[:-1]
+    return ["/".join(parts[: depth + 1]) + "/" for depth in range(len(parts))]
+
+
+def _refuse_info_attributes(root: Path, git_exe: str) -> None:
+    """Stop the build when ``$GIT_DIR/info/attributes`` holds an attribute line.
+
+    git applies that file on top of every ``.gitattributes``, and no option
+    turns it off, so the build refuses any line in it rather than let one
+    host's file decide which files the archive holds. Blank lines and
+    comments are allowed.
+
+    Raises:
+        RuntimeError: When git cannot name the file, or the file holds a line.
+    """
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell; root selects checkout.
+        [git_exe, "-C", str(root), "rev-parse", "--git-path", "info/attributes"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"git rev-parse failed in {root}: {detail}")
+    info = Path(result.stdout.decode("utf-8", errors="surrogateescape").rstrip("\r\n"))
+    if not info.is_absolute():
+        info = root / info
+    try:
+        lines = info.read_text(encoding="utf-8", errors="replace").splitlines()
+    except FileNotFoundError:
+        return
+    if any(line.strip() and not line.lstrip().startswith("#") for line in lines):
+        raise RuntimeError(
+            f"{info} sets attributes on top of .gitattributes, and the archive "
+            "must not depend on this host; empty it, or build from a fresh clone"
+        )
+
+
+def _export_ignored(root: Path, git_exe: str, paths: list[str]) -> set[str]:
+    """Return the members of *paths* that ``git archive`` leaves out.
+
+    ``git archive`` skips a file whose ``export-ignore`` attribute is set,
+    and a whole folder whose own path, asked about with a trailing slash, has
+    it set. A ``tests/`` line matches the folder and none of the files in it,
+    so asking about each file alone would keep every one of them. A file in
+    a skipped folder stays out even when a later line unsets the attribute on
+    it, which is why ``.gitattributes`` writes ``.github/**``, not
+    ``.github/``, to keep ``.github/dependabot.yml``.
+
+    Only the repository's own ``.gitattributes`` files decide, read from the
+    index like the member list and the file bytes. The query turns off the
+    user's and the system's attribute files, and the build stops when
+    ``$GIT_DIR/info/attributes`` holds a line, since no option turns that
+    file off. Matching is case-sensitive, as it is for GitHub's source
+    archives, so every host keeps the same files.
+
+    Raises:
+        RuntimeError: When git cannot report the attribute, or when
+            ``$GIT_DIR/info/attributes`` holds an attribute line. Building on
+            regardless would ship the ignored trees, or another host's
+            choice of files, without a word.
+    """
+    if not paths:
+        return set()
+    _refuse_info_attributes(root, git_exe)
+    queries = sorted({folder for path in paths for folder in _parent_dirs(path)})
+    queries.extend(paths)
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell; paths go on stdin.
+        [
+            git_exe,
+            "-C",
+            str(root),
+            "-c",
+            "core.ignorecase=false",
+            "-c",
+            f"core.attributesFile={os.devnull}",
+            "check-attr",
+            "--cached",
+            "-z",
+            "--stdin",
+            "export-ignore",
+        ],
+        input="".join(f"{query}\0" for query in queries).encode(
+            "utf-8", errors="surrogateescape"
+        ),
+        capture_output=True,
+        check=False,
+        env={**os.environ, "GIT_ATTR_NOSYSTEM": "1"},
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(
+            f"git check-attr failed to report export-ignore in {root}: {detail}"
+        )
+    # With -z, each answer is three NUL-terminated fields: path, attribute, state.
+    fields = result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
+    marked = {
+        fields[index]
+        for index in range(0, len(fields) - 2, 3)
+        if fields[index + 2] == "set"
+    }
+    return {
+        path
+        for path in paths
+        if path in marked or any(folder in marked for folder in _parent_dirs(path))
+    }
 
 
 def _git_blob_bytes(root: Path, rel: Path) -> bytes | None:
