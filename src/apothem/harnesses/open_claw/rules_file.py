@@ -48,7 +48,7 @@ from apothem.harnesses.open_claw.materializer import (
     RULES_FILE_RELATIVE,
     SKILLS_DIRECTORY,
 )
-from apothem.lib import install_ledger, lenient_json
+from apothem.lib import home_write_guard, install_ledger, lenient_json
 from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
@@ -1001,7 +1001,15 @@ def before_uninstall(config_path: Path) -> tuple[MaterializationResult, ...]:
     uninstall first, before anything changes (:func:`json5_leftovers`).
     Otherwise every rules file an install still in effect wrote loses its
     managed block (:func:`retire_all`).
+
+    While pytest runs, an ``openclaw.json`` in a protected folder of the real
+    home is refused here (see :mod:`apothem.lib.home_write_guard`): the
+    uninstall would be refused at its next step, and a workspace outside
+    ``~/.openclaw`` would have lost its rules file by then.
     """
+    home_write_guard.refuse_real_home_write(
+        config_path, operation="remove Apothem's entries from"
+    )
     leftovers = json5_leftovers(config_path)
     if leftovers:
         return leftovers

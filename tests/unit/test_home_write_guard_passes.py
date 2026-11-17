@@ -14,6 +14,7 @@ then an unfinished uninstall keeps their backups referenced.
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Iterator
 from pathlib import Path
@@ -218,6 +219,37 @@ def test_a_tmp_path_write_and_the_checkout_stay_allowed_beside_the_retired_file(
     assert not home_write_guard.would_refuse(Path(__file__).parents[2], tree=True)
     atomic_io.write_bytes_atomically(elsewhere, b"data")
     assert elsewhere.read_bytes() == b"data"
+
+
+def test_an_open_claw_uninstall_is_refused_before_a_workspace_outside_its_folder(
+    home: Path, profile: Path
+) -> None:
+    """A workspace the operator moved out of ``~/.openclaw`` keeps its rules file.
+
+    The uninstall strips Apothem's block from each workspace's rules file before
+    it changes ``openclaw.json``. With the native config protected, it is refused
+    before that first step.
+    """
+    workspace = home / "agent-workspace"
+    workspace.mkdir()
+    config = home / ".openclaw" / "openclaw.json"
+    config.parent.mkdir()
+    settings = {"agents": {"defaults": {"workspace": workspace.as_posix()}}}
+    config.write_bytes(json.dumps(settings).encode() + b"\n")
+    _installed("--harness", "open-claw", "--profile", str(profile))
+    rules_file = workspace / "apothem" / "AGENTS.md"
+    assert rules_file.is_file()
+    assert not home_write_guard.would_refuse(rules_file)
+    before = _snapshot(home)
+    kinds = _kinds("open_claw")
+    home_write_guard.also_protect_home(home)
+
+    result = _run("uninstall", "--harness", "open-claw", "--yes")
+
+    assert isinstance(result.exception, Refused), (result.exit_code, result.output)
+    assert result.exception.protected_root == str(home / ".openclaw")
+    assert _snapshot(home) == before
+    assert _kinds("open_claw") == kinds
 
 
 @pytest.mark.parametrize("ledger_refuses", [False, True])
