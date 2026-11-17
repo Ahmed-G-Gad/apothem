@@ -743,21 +743,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that lost its END marker, where a rule left a code block open; its warning
   also names that older BEGIN marker. When the line that opens the code block
   may be part of the old Apothem text below that BEGIN marker, the fix also
-  says to delete that line with that text: that ends the code block too, so
-  no closing line is added then. The fix for a marker pair after such a
-  BEGIN marker says to delete or change that BEGIN marker as well. The warning
-  also names, before the pairs, each BEGIN marker that starts no marker pair
-  (its END marker is gone, or the marker is yours) and says to delete or change
-  it, with any old Apothem text below it: left in place, it can pair with an
-  END marker below it once the pairs are fixed, and a later install or update
-  then replaces the lines between them. The uninstall's warning says that the
-  uninstall run again then takes those lines out, and the warning for an
-  OpenClaw rules file in a workspace the install no longer uses says that a
-  later install, update or uninstall takes them out. Such a BEGIN marker does
-  not change what install and update do while an install record lists the
-  file, even when every marker pair is quoted in code below it: a pair in code
-  may be Apothem's block inside a code block of yours, so the file is left as
-  it is.
+  says you can delete that line with that text instead: that ends the code
+  block too, so you add no closing line then. The fix for a marker pair after
+  such a BEGIN marker says to delete or change that BEGIN marker as well. The
+  warning also names, before the pairs, each BEGIN marker that starts no
+  marker pair (its END marker is gone, or the marker is yours) and says to
+  delete or change it, with any old Apothem text below it: left in place, it
+  can pair with an END marker below it once the pairs are fixed, and a later
+  install or update then replaces the lines between them. The uninstall's
+  warning says that the uninstall run again then takes those lines out, and
+  the warning for an OpenClaw rules file in a workspace the install no longer
+  uses says that a later install, update or uninstall takes them out. Such a
+  BEGIN marker does not change what install and update do while an install
+  record lists the file, even when every marker pair is quoted in code below
+  it: a pair in code may be Apothem's block inside a code block of yours, so
+  the file is left as it is.
   Until you fix those lines, `verify` fails, `doctor` reports the file (as
   `harness.stray_begin`) and, for a file the current install writes,
   `status --profile` shows drift; then run `apothem update` again. A dry run's
@@ -802,10 +802,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   or one pasted in a second time, it says to keep one (in a file that starts
   with Apothem's frontmatter, the one right below it) and to delete each other
   one from its BEGIN marker line to its END marker line. The uninstall gives
-  the same text. When a BEGIN marker of yours above Apothem's block and an END
-  marker of yours below it make a second block only once Apothem's block is
-  out, the uninstall's warning names Apothem's block and those two marker
-  lines, and says to change or delete those marker lines, not Apothem's block.
+  the same text. When a BEGIN marker above Apothem's block and an END marker
+  below it make a second block only once Apothem's block is out, the
+  uninstall's warning names Apothem's block and those two marker lines, and
+  says to change or delete those marker lines, not Apothem's block.
   Until you fix the file, `verify` and `verify --profile` fail, `doctor`
   reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
   hand") and, for a file the current install writes, `status --profile` shows

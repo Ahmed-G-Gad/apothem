@@ -421,17 +421,16 @@ instead". Open the named file at the lines the warning gives:
 3. Run `apothem update`, then `apothem verify` again. After an uninstall that
    did not finish, run `apothem uninstall` again instead.
 
-A BEGIN marker of yours above Apothem's block and an END marker of yours below
-it make a second block that shows only once Apothem's block is out. The
-uninstall's warning then names Apothem's block and those two marker lines, for
-example "once the block from line 5 to line 36 is out, the BEGIN marker at line
-2 and the END marker at line 39 make another", and says "Do not delete the
-block from line 5 to line 36": the next run would then read lines 2 to 39 as
-Apothem's block, and replace or take out what is between them. Delete or change
-the two marker lines it names instead, or move them inside a code block,
-keeping your own text, then run the uninstall again. If that BEGIN marker is
-what is left of an older Apothem block, delete the old Apothem text below it
-too.
+A BEGIN marker above Apothem's block and an END marker below it make a second
+block that shows only once Apothem's block is out. The uninstall's warning then
+names Apothem's block and those two marker lines, for example "once the block
+from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
+line 39 make another", and says "Do not delete the block from line 5 to line
+36": the next run would then read lines 2 to 39 as Apothem's block, and replace
+or take out what is between them. Delete or change the two marker lines it
+names instead, or move them inside a code block, keeping your own text, then
+run the uninstall again. If that BEGIN marker is what is left of an older
+Apothem block, delete the old Apothem text below it too.
 
 ### Apothem cannot tell its block from your text
 
@@ -486,16 +485,17 @@ warning at once, without saying it left the file as it is, for example "The
 BEGIN marker at line 6 sits inside a code block that opens at line 3, and the
 END marker at line 44 is outside code. If lines 6 to 44 are Apothem's block,
 close the code block that opens at line 3 above line 6: the next update then
-replaces those lines." Add the closing fence where your code ends, above the
-BEGIN marker. Deleting the block instead does not help: the next update writes
-it again below the same open code block. An update that writes its block below
-an older block that lost its END marker, where a rule left a code block open,
-gets the same warning; it also names that older BEGIN marker, which you delete
-with the old Apothem text below it. When the line that opens the code block
-may be part of that old text, the fix also says, for example, "or, if line 77
-is part of the old Apothem text below the BEGIN marker at line 1, delete it
-with that text": deleting that line ends the code block too, so add no closing
-line then.
+replaces those lines." A dry run reads the file before anything is written, so
+it does not show that the block would read as code once written. Add the
+closing fence where your code ends, above the BEGIN marker. Deleting the block
+instead does not help: the next update writes it again below the same open
+code block. An update that writes its block below an older block that lost its
+END marker, where a rule left a code block open, gets the same warning; it also
+names that older BEGIN marker, which you delete with the old Apothem text below
+it. When the line that opens the code block may be part of that old text, the
+fix also says, for example, "or, if line 77 is part of the old Apothem text
+below the BEGIN marker at line 1, delete it with that text": deleting that line
+ends the code block too, so add no closing line then.
 
 Until you fix the file, `apothem verify` fails and `apothem doctor` reports it
 (as `harness.stray_begin`); for a file the current install writes,

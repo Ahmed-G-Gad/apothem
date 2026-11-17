@@ -221,6 +221,8 @@ closing line in the block closes it, so the block reads as code. The install
 warns about such a block as soon as it writes it, and the warning names the
 code block to close above the BEGIN marker (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+A dry run reads the file before anything is written, so it does not show that
+the block would read as code once written.
 The `--format json` envelope always carries the full `warnings` array regardless
 of verbosity.
 

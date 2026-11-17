@@ -48,8 +48,10 @@ release wrote from such a rule has no such closing line, so it can cause that.
 A code block of yours that opens above Apothem's block and never closes is a
 different case: a closing line in the block closes it, so the block reads as
 code, and the update that writes such a block warns at once and names the code
-block to close above the BEGIN marker. In a dry run, the warning for a file
-left as it is says that Apothem "would leave the file as it is".
+block to close above the BEGIN marker. A dry run reads the file before anything
+is written, so it does not show that the block would read as code once written.
+In a dry run, the warning for a file left as it is says that Apothem "would
+leave the file as it is".
 
 In each folder Apothem writes into (a skills folder, the support files under
 `.apothem/support/`), `update` compares every entry it writes. A file entry is

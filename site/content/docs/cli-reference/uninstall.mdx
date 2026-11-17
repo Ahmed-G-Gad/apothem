@@ -409,15 +409,15 @@ blocks as it is, with the same warning, and `verify` fails until you fix it
 (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
 
-A BEGIN marker of yours above Apothem's block and an END marker of yours below
-it make a second block that shows only once Apothem's block is out. The
-uninstall's warning then names Apothem's block and those two marker lines, for
-example "once the block from line 5 to line 36 is out, the BEGIN marker at line
-2 and the END marker at line 39 make another", and says not to delete Apothem's
-block: the next run would then read lines 2 to 39 as Apothem's block. Delete or
-change the two marker lines it names instead, or move them inside a code
-block, keeping your own text; if that BEGIN marker is what is left of an older
-Apothem block, delete the old Apothem text below it too.
+A BEGIN marker above Apothem's block and an END marker below it make a second
+block that shows only once Apothem's block is out. The uninstall's warning then
+names Apothem's block and those two marker lines, for example "once the block
+from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
+line 39 make another", and says not to delete Apothem's block: the next run
+would then read lines 2 to 39 as Apothem's block. Delete or change the two
+marker lines it names instead, or move them inside a code block, keeping your
+own text; if that BEGIN marker is what is left of an older Apothem block,
+delete the old Apothem text below it too.
 
 When the uninstall's next step is to run `apothem update` and a warning names
 a file for an Apothem marker (in the `--format json` envelope, its `detail`
