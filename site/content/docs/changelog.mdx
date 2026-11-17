@@ -1011,13 +1011,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   active; uninstalling with the home spelled that way ends it.
 - **A rollback keeps the shared folders the same tool's other install uses.**
   When one tool was installed twice with the home spelled in two cases
-  (`C:\Users\gad` and `C:\Users\Gad` on Windows), `apothem rollback` under
-  one spelling treated both installs as the one it rolled back. It removed
-  `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/` while
-  the other install still used them, and that install then failed
-  `apothem verify`. A rollback now reverses only the install recorded with the
-  home spelled exactly as it is for that run, and keeps the folders for the
-  other.
+  (`C:\Users\gad` and `C:\Users\Gad` on Windows, `/Users/gad` and
+  `/Users/Gad` on macOS), `apothem rollback` under one spelling treated both
+  installs as the one it rolled back. It removed `~/.agents/skills/` and
+  `~/.config/apothem/rules/` and `templates/` while the other install still
+  used them, and that install then failed `apothem verify`. A rollback now
+  reverses only the install recorded with the home spelled exactly as it is
+  for that run, and keeps the folders for the other, on macOS too when it
+  rolls back the install that created them.
 - **Rolling back every tool that uses the shared folders removes them.** When
   the tool that created `~/.agents/skills/` and the other shared folders was
   rolled back or uninstalled first, they were kept for the tool that still

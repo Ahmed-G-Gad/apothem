@@ -63,9 +63,13 @@ def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
     the other spelling qualifies too. The last part stays as spelled: a path
     that is itself a link is keyed as that entry, not as the place it leads
     to. Any other path, and a relative one, is only folded, which costs no
-    filesystem call. Case is folded the way the OS folds it, not the way the
-    folder does: a case-sensitive folder on Windows and a case-insensitive
-    volume on macOS are not told apart.
+    filesystem call. On Windows case is folded as text, the way the OS folds
+    it, so in a folder with case sensitivity turned on two homes that differ
+    only in case share keys: an uninstall then counts the other as a holder
+    and keeps the shared folders, the side that loses nothing. Where the OS
+    keeps case as text, the folder that holds the path is spelled in the case
+    its parents list it with, so on a volume that ignores case but keeps it
+    (macOS) ``home`` and ``HOME`` give one key.
 
     *memo* maps a holding folder, as spelled, to its key prefix, for a caller
     that keys many paths in one pass, so each folder that holds a path is
@@ -93,11 +97,61 @@ def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
 
 
 def _key_prefix(folder: str) -> str:
-    """Return *folder*, its links followed when absolute, case-folded, ending in a separator."""
+    """Return *folder*, its links followed when absolute, case-folded, ending in a separator.
+
+    Where the OS keeps case as text (macOS), the folder is spelled in the
+    case its parents list it with (see :func:`_on_disk_case`).
+    """
     if os.path.isabs(folder):  # noqa: PTH117
         with contextlib.suppress(OSError, ValueError):
-            folder = os.path.realpath(folder)
+            folder = _on_disk_case(os.path.realpath(folder))
     return os.path.normcase(os.path.join(folder, ""))  # noqa: PTH118
+
+
+def _on_disk_case(folder: str) -> str:
+    """Return the absolute *folder* with each part in the case its parent lists it.
+
+    Only where ``os.path.normcase`` keeps case (macOS, Linux): there,
+    following the links keeps the case as spelled, so on a volume that
+    ignores case but keeps it ``~/.agents`` under ``home`` and under
+    ``HOME`` would give two keys. Each part whose other case names the same
+    entry (one file ID) is looked up in its parent's listing. A part on a
+    volume that tells case apart, or that does not exist, keeps its case,
+    which costs one failed lookup and no listing.
+    """
+    if os.path.normcase("A") != "A":  # the OS folds case as text (Windows)
+        return folder
+    parts = Path(folder).parts
+    if not parts:
+        return folder
+    spelled = parts[0]
+    for name in parts[1:]:
+        spelled = os.path.join(spelled, _listed_name(spelled, name))  # noqa: PTH118
+    return spelled
+
+
+def _listed_name(parent: str, name: str) -> str:
+    """Return the entry of *parent* that is *name* in another case, else *name*."""
+    other = name.swapcase()
+    if other == name:
+        return name
+    try:
+        own = os.lstat(os.path.join(parent, name))  # noqa: PTH118
+        if not (own.st_ino and own.st_dev):
+            return name
+        if not os.path.samestat(own, os.lstat(os.path.join(parent, other))):  # noqa: PTH118
+            return name
+        listed = os.listdir(parent)  # noqa: PTH208
+    except (OSError, ValueError):
+        return name
+    if name in listed:
+        return name
+    for entry in listed:
+        if entry.lower() == name.lower():
+            with contextlib.suppress(OSError, ValueError):
+                if os.path.samestat(own, os.lstat(os.path.join(parent, entry))):  # noqa: PTH118
+                    return entry
+    return name
 
 
 def same_location(left: str | Path, right: str | Path) -> bool:

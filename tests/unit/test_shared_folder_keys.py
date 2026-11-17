@@ -480,22 +480,60 @@ def _install_codex_in_two_cases(
     return home, upper
 
 
-def test_a_rollback_under_another_case_keeps_folders_the_first_case_holds(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("case", ["as-the-os-folds", "kept-as-spelled"])
+@pytest.mark.parametrize("rolled_back", ["HOME", "home"])
+def test_a_rollback_under_one_case_keeps_folders_the_other_case_holds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rolled_back: str, case: str
 ) -> None:
-    # A rollback under HOME reverses only its own record, so the record
-    # under home, still in place, keeps the shared folders it lists.
-    home, _upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
+    # A rollback reverses only the record under the case it runs with, so
+    # the record under the other case, still in place, keeps the shared
+    # folders it lists. Under home that rollback reverses the install that
+    # made them, so only the other record keeps them, where case is kept as
+    # text (macOS) as much as where the OS folds it. That rollback also
+    # removes the ~/.codex files it made, so only the rollback under HOME
+    # leaves an install that verifies.
+    if case == "kept-as-spelled":
+        _keep_case_as_spelled(monkeypatch)
+    home, upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
     before = {folder: _files(home / folder) for folder in _SHARED}
     assert all(before.values())
+    reversed_root, kept = (home, upper) if rolled_back == "home" else (upper, home)
 
+    _spell_home(monkeypatch, reversed_root)
     result = CliRunner().invoke(main, ["rollback", "--harness", "codex", "--yes"])
 
     assert result.exit_code == 0, result.output
     assert {folder: _files(home / folder) for folder in _SHARED} == before
-    _spell_home(monkeypatch, home)
-    verified = CliRunner().invoke(main, ["verify", "--harness", "codex"])
-    assert verified.exit_code == 0, verified.output
+    assert _ended("codex", reversed_root / ".codex")
+    assert not _ended("codex", kept / ".codex")
+    if rolled_back == "HOME":
+        _spell_home(monkeypatch, kept)
+        verified = CliRunner().invoke(main, ["verify", "--harness", "codex"])
+        assert verified.exit_code == 0, verified.output
+
+
+def test_two_cases_of_one_folder_share_a_key_where_case_is_kept(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Where the OS keeps case as text, the folder that holds a shared path
+    # is spelled in the case its parent lists it with, so a record under
+    # HOME holds what a record under home lists.
+    _keep_case_as_spelled(monkeypatch)
+    home = tmp_path / "home"
+    (home / ".agents" / "skills").mkdir(parents=True)
+    if not _case_insensitive(home):
+        pytest.skip("this file system tells the case of a name apart")
+    upper = tmp_path / "HOME"
+    skill = Path(".agents", "skills", "alpha")
+    _record("codex", upper / ".codex", upper / skill)
+
+    assert path_key(upper / skill) == path_key(home / skill)
+    assert path_key(upper / skill.parent) == path_key(home / skill.parent)
+    assert path_key(tmp_path / "MISSING" / skill) != path_key(
+        tmp_path / "missing" / skill
+    )
+    index = holder_index(exclude=("codex", home / ".codex"))
+    assert [h.root for h in index.holders_of(home / skill)] == [str(upper / ".codex")]
 
 
 def _keep_case_as_spelled(monkeypatch: pytest.MonkeyPatch) -> None:
