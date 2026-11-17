@@ -397,6 +397,29 @@ def list_real_entries(folder: Path) -> list[Path]:
     return kept
 
 
+def child_folder_files(root: Path, folder: Path, name: str) -> list[Path]:
+    """Return ``folder/<child>/<name>`` for each real child folder that holds it.
+
+    Use it in place of ``folder.glob("*/" + name)``: on Python 3.12,
+    ``Path.glob`` matches the *name* part by listing every child folder, a
+    linked one included, so the glob would list a folder outside the project.
+    This lists *folder* alone and looks *name* up in each real child folder
+    with :func:`is_project_file`.
+    Pre-conditions: *folder* and *name*'s parents were built from *root* (see
+    :func:`_project_lstat`).
+    Post-conditions: empty when *folder* is not a real folder inside *root*;
+    otherwise the regular files only, in the host's listing order (callers
+    sort).
+    """
+    if not is_project_dir(root, folder):
+        return []
+    return [
+        child / name
+        for child in list_real_entries(folder)
+        if child.is_dir() and is_project_file(root, child / name)
+    ]
+
+
 def _lstat_kind(path: Path) -> int | None:
     """Return the file type of *path* (``stat.S_IFMT``), or None for a link or no entry.
 

@@ -153,10 +153,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   socket; each counts as missing. Use the helpers in `_grep_base.py`:
   `iter_tree_files` for a walk (`prune=False` where every file below a fixed
   folder counts, as `rglob` did), `is_project_file` before reading a fixed
-  path, `is_project_dir` before listing or globbing a fixed folder, and
-  `list_real_entries` in place of `iterdir`. Plain `is_file`, `is_dir` and
-  `exists` follow links, and `glob`, `rglob` and `iterdir` list a linked
-  folder and return links.
+  path, `is_project_dir` before listing or globbing a fixed folder,
+  `list_real_entries` in place of `iterdir`, and `child_folder_files` in place
+  of a `*/NAME` glob. Plain `is_file`, `is_dir` and `exists` follow links,
+  `glob`, `rglob` and `iterdir` list a linked folder and return links, and on
+  Python 3.12 a `*/NAME` glob lists every child folder, a linked one too, so
+  keep each glob to one level of a folder you checked.
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one

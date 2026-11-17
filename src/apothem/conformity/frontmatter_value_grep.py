@@ -70,6 +70,7 @@ from typing import Any, Final
 import yaml
 
 from apothem.conformity._grep_base import (
+    child_folder_files,
     finish_root_report,
     is_project_dir,
     is_project_file,
@@ -348,6 +349,24 @@ def _check_file(
     return True, findings
 
 
+def _cohort_files(root: Path, glob_pattern: str) -> list[Path]:
+    """Return the regular files a cohort pattern names, never through a link.
+
+    A pattern is a fixed folder, then ``/*`` and either a suffix
+    (``src/apothem/agents/*.md``: the files directly inside) or ``/`` and a
+    file name (``src/apothem/skills/*/SKILL.md``: that file in each child
+    folder). The folder is listed only when it is a real folder inside the
+    project, and a file reached through a link is left out.
+    """
+    folder_rel, _star, rest = glob_pattern.partition("/*")
+    folder = root / folder_rel
+    if rest.startswith("/"):
+        return child_folder_files(root, folder, rest[1:])
+    if not is_project_dir(root, folder):
+        return []
+    return [p for p in folder.glob("*" + rest) if is_project_file(root, p)]
+
+
 def check(root: Path) -> GrepResult:
     """Walk every governed cohort under *root*; flag enum/pattern value violations."""
     findings: list[Finding] = []
@@ -356,14 +375,7 @@ def check(root: Path) -> GrepResult:
         constraints = _load_value_constraints(SCHEMAS_DIR / schema_filename)
         if not constraints:
             continue
-        # The pattern's fixed folders come first; glob only a real folder,
-        # so a link on the way never leads the glob out of the project.
-        folder = root / glob_pattern.split("*", 1)[0]
-        if not is_project_dir(root, folder):
-            continue
-        for path in sorted(root.glob(glob_pattern)):
-            if not is_project_file(root, path):
-                continue
+        for path in sorted(_cohort_files(root, glob_pattern)):
             inspected, file_findings = _check_file(
                 path, root, artifact_class, constraints
             )

@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Final
 
 from apothem.conformity._grep_base import (
+    child_folder_files,
     finish_root_report,
     is_project_dir,
     is_project_file,
@@ -236,9 +237,7 @@ def check(root: Path) -> GrepResult:
             )
         )
     else:
-        for path in sorted(skills_dir.glob("*/SKILL.md")):
-            if not is_project_file(root, path):
-                continue
+        for path in sorted(child_folder_files(root, skills_dir, "SKILL.md")):
             files_inspected += 1
             finding = _classify_command_file(path)
             if finding is not None:

@@ -51,6 +51,7 @@ from pathlib import Path
 from typing import Final
 
 from apothem.conformity._grep_base import (
+    child_folder_files,
     finish_root_report,
     is_project_dir,
     is_project_file,
@@ -271,10 +272,7 @@ def _iter_surfaces(root: Path) -> list[Path]:
             if p.name not in EXCLUDED_FILES and is_project_file(root, p)
         )
     skills_dir = root / SKILLS_DIR
-    if is_project_dir(root, skills_dir):
-        surfaces.extend(
-            p for p in skills_dir.glob("*/SKILL.md") if is_project_file(root, p)
-        )
+    surfaces.extend(child_folder_files(root, skills_dir, "SKILL.md"))
     return sorted(surfaces)
 
 
