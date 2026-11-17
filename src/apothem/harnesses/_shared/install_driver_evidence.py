@@ -51,7 +51,9 @@ def _carries_managed_block(
     pair no rule can place (see :func:`uncertain_block`), such as Apothem's
     block in a code block of the operator's, counts only while the current
     install record lists the file (*listed*): a file Apothem never wrote may
-    quote the markers in a code example.
+    quote the markers in a code example. The markers are ASCII, so a file
+    that is not UTF-8 is read with its bad bytes replaced: the uninstall then
+    reaches the step that says how to fix it, instead of a decoding error.
     """
     if not target.is_file():
         return False

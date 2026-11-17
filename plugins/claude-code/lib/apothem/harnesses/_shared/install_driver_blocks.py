@@ -27,7 +27,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
@@ -45,6 +44,7 @@ from apothem.lib.harness_materializer import (
 from apothem.lib.install_ledger import LedgerTarget
 from apothem.lib.propagation import resolve_target
 
+from .install_driver_layout import _load_rules
 from .install_driver_pathsafety import _root_for
 from .install_driver_shared import path_key
 from .install_driver_types import (
@@ -380,7 +380,7 @@ def stray_begin_files(
     file :func:`stray_begin_at` or :func:`unclear_block_at` flags is returned
     once, manifest targets first, then the record's, in their own order.
     """
-    rules = install_driver.load_rules(harness_name)
+    rules = _load_rules(harness_name)
     candidates = [
         resolve_target(
             entry.target, harness_root=harness_root, project_root=project_root
