@@ -150,15 +150,19 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   a full-path `PATH` entry. A matcher starts no program itself and names no
   git program. `_bounded_run.py` is the one module that starts a program:
   `run_git` starts git through its `run_bounded`, and gate.py's validator
-  launcher starts Python through it.
+  launcher (`_run_standalone`) starts Python through it. No other code calls
+  `run_bounded`: it starts whatever it is given, with none of `run_git`'s
+  options.
   `test_no_conformity_module_starts_a_program_itself` is a tripwire for this
   rule, not a proof of it. It reads each module's source and fails on the forms
-  it knows: any use of `subprocess` beyond its exception and result types, also
-  under an `import ... as` name; the `os` functions that start a program;
-  `which`, `find_git` and `git_argv`; an import of `ctypes`, `multiprocessing`
-  or `pty`; a dynamic import, `exec` or `eval`; and a string naming the git
-  program. It leaves out only this folder's own `_git.py` and
-  `_bounded_run.py`, by path. Code that builds a call from computed names can
+  it knows, among them: a use of `subprocess` beyond its exception and result
+  types, also under an `import ... as` name or through another module; the
+  `os` functions that start a program; `which`, `find_git`, `git_argv`, and
+  `run_bounded` outside its two callers; an import of `ctypes`,
+  `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
+  a string naming the git program. It leaves out only this folder's own
+  `_git.py` and `_bounded_run.py`, by path. Code that builds a call from
+  computed names, or reaches a starter some way the test does not know, can
   still pass it, so review a new matcher against the rule as well.
   `run_git` reads file contents with `git cat-file blob`, never `git show`,
   which would show a submodule entry as a commit. Read a path list with `-z`

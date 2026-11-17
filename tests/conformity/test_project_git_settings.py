@@ -720,14 +720,20 @@ _PROGRAM_MODULES = frozenset(
         "_posixsubprocess",
         "_winapi",
         "ctypes",
+        "ensurepip",
         "multiprocessing",
         "pty",
+        "pydoc",
+        "venv",
         "webbrowser",
     }
 )
-# Modules a dynamic import or a ``sys.modules`` lookup may not name.
+# Modules a dynamic import, a ``sys.modules`` lookup, ``vars`` or a computed
+# ``getattr`` may not name.
 _PROCESS_MODULES = _PROGRAM_MODULES | {"asyncio", "os", "posix", "nt", "subprocess"}
 # Names that start or find a program on whatever object carries them.
+# ``run_bounded`` starts any program it is given, so only its two callers may
+# name it: ``run_git`` (in ``_git.py``) and the gate's validator launcher.
 _PROGRAM_NAMES = frozenset(
     {
         "CreateProcess",
@@ -737,13 +743,21 @@ _PROGRAM_NAMES = frozenset(
         "find_git",
         "git_argv",
         "import_module",
+        "run_bounded",
         "subprocess_exec",
         "subprocess_shell",
         "which",
     }
 )
-# Built-in calls that run source text or import by name.
+# Standard-library functions that start a program as a side effect.
+_PROGRAM_FUNCTIONS = frozenset({"platform.architecture"})
+# Built-in calls that run source text or import by name, and the modules that
+# carry the same calls as attributes.
 _DYNAMIC_CALLS = frozenset({"__import__", "compile", "eval", "exec"})
+_DYNAMIC_HOSTS = frozenset({"builtins", "importlib"})
+# A dotted name is judged from its last segment that names one of these, so
+# ``other_module.subprocess.run`` reads as ``subprocess.run``.
+_JUDGED_FROM = frozenset({"os", "subprocess"})
 # A string that names the git program: "git", "git.exe", or a path ending so.
 _GIT_PROGRAM = re.compile(r"(?:^|[\\/])git(?:\.exe)?$", re.IGNORECASE)
 
@@ -757,32 +771,62 @@ def _is_os_program_function(name: str) -> bool:
     return name in _OS_FUNCTIONS or name.startswith(_OS_PREFIXES)
 
 
-def _flagged_name(dotted: str) -> bool:
-    """Return True when a dotted name, as resolved, starts or finds a program."""
+def _canonical(dotted: str) -> str:
+    """Return *dotted* cut to start at its last ``os`` or ``subprocess`` segment."""
+    parts = dotted.split(".")
+    for index in range(len(parts) - 1, 0, -1):
+        if parts[index] in _JUDGED_FROM:
+            return ".".join(parts[index:])
+    return dotted
+
+
+def _flagged_name(dotted: str, names: frozenset[str] = _PROGRAM_NAMES) -> bool:
+    """Return True when a dotted name, as resolved, starts or finds a program.
+
+    *names* is :data:`_PROGRAM_NAMES`, or that set without ``run_bounded``
+    inside a function that may call it.
+    """
+    if dotted in _PROGRAM_FUNCTIONS:
+        return True
+    dotted = _canonical(dotted)
     module, _, rest = dotted.partition(".")
     first = rest.partition(".")[0]
+    last = dotted.rpartition(".")[2]
     if module == "subprocess":
         return first not in _SUBPROCESS_ALLOWED
-    if module in {"os", "posix", "nt"} and _is_os_program_function(first):
+    if module in {"os", "posix", "nt"} and (
+        _is_os_program_function(first) or first == "__dict__"
+    ):
         return True
-    return dotted.rpartition(".")[2] in _PROGRAM_NAMES
+    if module in _DYNAMIC_HOSTS and last in _DYNAMIC_CALLS:
+        return True
+    return last in names
 
 
-def _program_starts(source: str) -> list[int]:
+def _program_starts(
+    source: str, *, run_bounded_in: frozenset[str] = frozenset()
+) -> list[int]:
     """Return the lines where *source* starts or finds a program, or names git.
 
     Flagged, as a reference and not only as a call: any use of ``subprocess``
     beyond its exception and result types (through ``import ... as`` and
-    ``from ... import ... as`` names too, and the module passed around as a
-    value); the ``os`` functions that start a program; any ``which``,
-    ``find_git`` or ``git_argv``; the asyncio and event-loop program starters;
-    an import of a module that exists to start programs (``ctypes``,
-    ``multiprocessing``, ``pty``, ...); a star import from a process module; a
-    dynamic import, ``exec`` or ``eval``; a ``getattr`` on a process module
-    with a computed name; and any string naming the git program.
+    ``from ... import ... as`` names too, through another module that carries
+    it, and the module passed around as a value); the ``os`` functions that
+    start a program; any ``which``, ``find_git``, ``git_argv`` or
+    ``run_bounded``; the asyncio and event-loop program starters; an import of
+    a module that exists to start programs (``ctypes``, ``multiprocessing``,
+    ``pty``, ...); a star import from a process module; a dynamic import,
+    ``exec`` or ``eval``, also as ``builtins.`` or ``importlib.`` attributes; a
+    ``getattr`` with a computed name, ``vars`` or ``__dict__`` on a process
+    module; a ``sys.modules`` lookup of one; and any string naming the git
+    program. ``run_bounded`` is not flagged inside a function named in
+    *run_bounded_in*.
     """
     tree = ast.parse(source)
-    bound, lines = _import_bindings(tree)
+    # A module with a function that may call run_bounded may import the name;
+    # every use of it outside that function is still flagged.
+    importable = _PROGRAM_NAMES - {"run_bounded"} if run_bounded_in else _PROGRAM_NAMES
+    bound, lines = _import_bindings(tree, importable)
 
     def resolve(node: ast.expr) -> str:
         if isinstance(node, ast.Name):
@@ -797,32 +841,63 @@ def _program_starts(source: str) -> list[int]:
     attribute_bases = {
         id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)
     }
+    may_run_bounded = {
+        id(inner)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name in run_bounded_in
+        for inner in ast.walk(node)
+    }
     for node in ast.walk(tree):
+        names = (
+            _PROGRAM_NAMES - {"run_bounded"}
+            if id(node) in may_run_bounded
+            else _PROGRAM_NAMES
+        )
         if isinstance(node, ast.Attribute):
-            flagged = _flagged_name(resolve(node)) or node.attr in _PROGRAM_NAMES
+            flagged = _flagged_name(resolve(node), names) or node.attr in names
         elif isinstance(node, ast.Name):
             dotted = resolve(node)
             flagged = (
                 (dotted == "subprocess" and id(node) not in attribute_bases)
-                or ("." in dotted and _flagged_name(dotted))
-                or node.id in _PROGRAM_NAMES
+                or ("." in dotted and _flagged_name(dotted, names))
+                or node.id in names
                 or node.id in _DYNAMIC_CALLS
             )
-        elif isinstance(node, ast.Call) and resolve(node.func) == "getattr":
-            target = resolve(node.args[0]) if node.args else ""
-            name = _fixed_string(node.args[1]) if len(node.args) > 1 else None
-            flagged = _root(target) in _PROCESS_MODULES and (
-                name is None or _flagged_name(f"{target}.{name}")
-            )
+        elif isinstance(node, ast.Call):
+            flagged = _flagged_call(node, resolve)
         elif isinstance(node, ast.Subscript) and resolve(node.value) == "sys.modules":
-            key = _fixed_string(node.slice)
-            flagged = key is not None and _root(key) in _PROCESS_MODULES
+            flagged = _names_process_module(node.slice)
         else:
             text = _fixed_string(node)
             flagged = text is not None and bool(_GIT_PROGRAM.search(text.strip()))
         if flagged:
             lines.append(node.lineno)  # type: ignore[attr-defined]
     return sorted(set(lines))
+
+
+def _names_process_module(node: ast.AST) -> bool:
+    """Return True for a string literal that names a process module."""
+    key = _fixed_string(node)
+    return key is not None and _root(key) in _PROCESS_MODULES
+
+
+def _flagged_call(node: ast.Call, resolve: Callable[[ast.expr], str]) -> bool:
+    """Return True for a call that reaches into a process module by name.
+
+    ``getattr(module, <computed or starter name>)``, ``vars(module)`` and
+    ``sys.modules.get("<module>")``. The called name itself is judged where
+    the walk meets it as a name or an attribute.
+    """
+    called = resolve(node.func)
+    if called == "sys.modules.get":
+        return bool(node.args) and _names_process_module(node.args[0])
+    if called not in {"getattr", "vars"}:
+        return False
+    target = resolve(node.args[0]) if node.args else ""
+    if _root(_canonical(target)) not in _PROCESS_MODULES:
+        return False
+    name = _fixed_string(node.args[1]) if len(node.args) > 1 else None
+    return name is None or _flagged_name(f"{target}.{name}")
 
 
 def _fixed_string(node: ast.AST) -> str | None:
@@ -832,15 +907,17 @@ def _fixed_string(node: ast.AST) -> str | None:
     return None
 
 
-def _import_bindings(tree: ast.AST) -> tuple[dict[str, str], list[int]]:
+def _import_bindings(
+    tree: ast.AST, names: frozenset[str] = _PROGRAM_NAMES
+) -> tuple[dict[str, str], list[int]]:
     """Return what each imported name stands for, and the flagged import lines.
 
     The map goes from a local name to its dotted name: ``sp`` to
     ``subprocess`` after ``import subprocess as sp``, ``co`` to
     ``subprocess.check_output`` after ``from subprocess import check_output
     as co``. An import line is flagged when it brings in a module that exists
-    to start programs, a name that starts one, or everything from a process
-    module.
+    to start programs, a name that starts one (judged against *names*), or
+    everything from a process module.
     """
     bound: dict[str, str] = {}
     lines: list[int] = []
@@ -863,7 +940,7 @@ def _import_bindings(tree: ast.AST) -> tuple[dict[str, str], list[int]]:
                     continue
                 dotted = f"{node.module}.{alias.name}"
                 bound[alias.asname or alias.name] = dotted
-                if _flagged_name(dotted):
+                if _flagged_name(dotted, names):
                     lines.append(node.lineno)
     return bound, lines
 
@@ -954,6 +1031,38 @@ _BYPASSES = {
     ),
     "pty": 'import pty\npty.spawn(["g" + "it"])\n',
     "webbrowser": 'import webbrowser\nwebbrowser.open("file:///x")\n',
+    # run_bounded starts whatever it is given, with none of run_git's options.
+    "run_bounded, imported": (
+        "import sys\n"
+        "from apothem.conformity._bounded_run import run_bounded\n"
+        'run_bounded([sys.executable, "-c", "x"], timeout=5)\n'
+    ),
+    "run_bounded, attribute": (
+        "from apothem.conformity import _bounded_run\n"
+        '_bounded_run.run_bounded(["sh", "-c", "x"], timeout=5)\n'
+    ),
+    "run_bounded as a value": (
+        "from apothem.conformity import _bounded_run\n"
+        "start = _bounded_run.run_bounded\n"
+    ),
+    # subprocess reached through a module that carries it.
+    "subprocess, re-exported": (
+        'from apothem.conformity._bounded_run import subprocess as s\ns.Popen(["x"])\n'
+    ),
+    "subprocess, through a module": (
+        'from apothem.conformity import _bounded_run\n_bounded_run.subprocess.run(["x"])\n'
+    ),
+    "vars of a module": 'import os\nvars(os)["sys" + "tem"]("x")\n',
+    "module __dict__": 'import os\nos.__dict__["sys" + "tem"]("x")\n',
+    "sys.modules.get": 'import sys\nsys.modules.get("subprocess").run(["x"])\n',
+    "importlib.__import__": (
+        'import importlib\nimportlib.__import__("sub" + "process")\n'
+    ),
+    "builtins.__import__": 'import builtins\nbuiltins.__import__("sub" + "process")\n',
+    "builtins.exec": 'import builtins\nbuiltins.exec("import sub" + "process")\n',
+    "platform.architecture": "import platform\nplatform.architecture()\n",
+    "venv": 'import venv\nvenv.create("x", with_pip=True)\n',
+    "pydoc": 'import pydoc\npydoc.pipepager("text", "x")\n',
 }
 
 
@@ -989,13 +1098,18 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
 
 # The two modules that may start a program, by their path below the package.
 _PROGRAM_STARTERS = frozenset({"_git.py", "_bounded_run.py"})
+# The one other caller of ``run_bounded``, by path and function: the gate's
+# launcher, which starts a validator with this Python.
+_RUN_BOUNDED_CALLERS = {"gate.py": frozenset({"_run_standalone"})}
 
 
 def _modules_that_start_programs(package: Path) -> list[str]:
     """Return ``path:line`` for each program start below *package*.
 
     Only the package's own ``_git.py`` and ``_bounded_run.py`` are left out,
-    by their path: a file of the same name in a subfolder is checked.
+    by their path: a file of the same name in a subfolder is checked. A call
+    to ``run_bounded`` counts everywhere but in ``_run_standalone`` of the
+    package's own ``gate.py``.
     """
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
@@ -1003,20 +1117,59 @@ def _modules_that_start_programs(package: Path) -> list[str]:
         if relative in _PROGRAM_STARTERS:
             continue
         source = module.read_text(encoding="utf-8")
-        offenders.extend(f"{relative}:{line}" for line in _program_starts(source))
+        allowed = _RUN_BOUNDED_CALLERS.get(relative, frozenset())
+        offenders.extend(
+            f"{relative}:{line}"
+            for line in _program_starts(source, run_bounded_in=allowed)
+        )
     return offenders
 
 
 def test_no_conformity_module_starts_a_program_itself() -> None:
-    """Only ``_git.py`` names git; every other module calls ``run_git``.
+    """No module but ``_git.py`` and ``_bounded_run.py`` trips the guard.
 
     ``_bounded_run.py`` is the one module that starts a program:
     ``run_git`` starts git through ``run_bounded``, and gate.py's validator
-    launcher (``_run_standalone``) starts Python through it, so neither git
-    nor any other program starts anywhere else.
+    launcher (``_run_standalone``) starts Python through it. The guard flags
+    the forms :func:`_program_starts` lists, a ``run_bounded`` call anywhere
+    else among them; it is a tripwire, not a proof that nothing else starts.
     """
     package = Path(gate.__file__).resolve().parent
     assert _modules_that_start_programs(package) == []
+
+
+def test_run_bounded_is_allowed_only_in_the_gate_launcher(tmp_path: Path) -> None:
+    """``run_bounded`` passes in ``gate.py``'s ``_run_standalone`` and nowhere else."""
+    # The form gate.py uses: the name imported, the call inside the launcher.
+    launcher = (
+        "import sys\n"
+        "from apothem.conformity._bounded_run import run_bounded\n"
+        "def _run_standalone():\n"
+        "    return run_bounded([sys.executable], timeout=5)\n"
+    )
+    elsewhere = (
+        "def _helper():\n"
+        "    return run_bounded([sys.executable], timeout=5)\n"
+        "START = run_bounded\n"
+    )
+    package = tmp_path / "conformity"
+    (package / "sub").mkdir(parents=True)
+    (package / "gate.py").write_text(launcher + elsewhere, encoding="utf-8")
+    (package / "sub" / "gate.py").write_text(launcher, encoding="utf-8")
+    (package / "some_grep.py").write_text(launcher, encoding="utf-8")
+
+    assert _program_starts(launcher) == [2, 4]
+    assert (
+        _program_starts(launcher, run_bounded_in=frozenset({"_run_standalone"})) == []
+    )
+    assert _modules_that_start_programs(package) == [
+        "gate.py:6",
+        "gate.py:7",
+        "some_grep.py:2",
+        "some_grep.py:4",
+        "sub/gate.py:2",
+        "sub/gate.py:4",
+    ]
 
 
 def test_the_module_walk_leaves_out_the_two_starters_by_path_only(
