@@ -14,7 +14,7 @@ Apothem is not yet registered on bestpractices.dev, so it has no badge yet. The 
 
 | Level | Met | N/A | Unmet |
 |---|---|---|---|
-| MUST (43) | 39 | 4 | 0 |
+| MUST (43) | 40 | 3 | 0 |
 | SHOULD (10) | 8 | 1 | 1 |
 | SUGGESTED (14) | 13 | 1 | 0 |
 
@@ -92,7 +92,7 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
 | `release_notes` | MUST | Met | CHANGELOG.md (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) and each GitHub Release have hand-written notes for every version, not raw git log output, grouped under headings such as Added and Security. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
-| `release_notes_vulns` | MUST | N/A | No release so far has fixed a publicly known vulnerability with a CVE or a published advisory. Release notes will name the CVE or advisory ID of any that a future release fixes. | [security/advisories](https://github.com/ahmed-g-gad/apothem/security/advisories) |
+| `release_notes_vulns` | MUST | Met | The release notes name each advisory a release fixes. The CHANGELOG.md section (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) of the release that fixed GHSA-qpmp-8g2h-296c, GHSA-799g-h543-w5gg and GHSA-4rh9-7m5x-94j9 names all three, and that release's GitHub Release carries the same notes. No earlier release fixed a publicly known vulnerability. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
 
 ### Reporting: Bug-reporting process
 
