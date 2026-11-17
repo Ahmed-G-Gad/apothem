@@ -169,6 +169,8 @@ def test_doctor_checks_the_hooks_of_the_project_it_is_given(
     assert cursor["status"] == "hook_failed"
     assert cursor["hooks"]["probed"] >= 1
     command = os.path.normcase(cursor["hooks"]["failed"][0]["command"])
+    [failure] = [c for c in payload["checks"] if c["code"] == "hook.start_failed"]
+    assert "to put the hook scripts back" in failure["fix"]
     assert os.path.normcase(str(first / ".apothem")) in command
     assert os.path.normcase(str(second)) not in command
 
@@ -402,7 +404,7 @@ def test_a_shell_form_hook_drops_the_powershell_call_operator(
 ) -> None:
     # The operator is PowerShell's, so it is dropped where Windows runs the line.
     monkeypatch.setattr(_doctor_hooks, "_on_windows", lambda: True)
-    argv = _doctor_hooks._handler_argv({"command": command})
+    argv = _doctor_hooks._handler_argv({"command": command}, ("command",))
     assert argv == ["py", "x/hooks/dispatch.py", "--contract", "cursor", "sessionStart"]
 
 
@@ -642,8 +644,8 @@ def test_doctor_does_not_start_a_hook_line_the_install_did_not_write(
     assert code == 0, payload
     assert _row(payload, harness)["hooks"] == {"probed": 1, "failed": []}
     messages = _unchecked(payload, harness)
-    if shape == "nested":
-        # Not where the tool reads a handler, so not a hook at all.
+    if shape in {"nested", "commandWindows"}:
+        # Not where, or not under a key, the tool reads a handler: not a hook.
         assert messages == []
     else:
         [message] = messages
@@ -1017,6 +1019,22 @@ _GONE_PYTHON = '"{out}/removed/python" "{script}" --contract copilot'
             id="contract-not-first",
         ),
         pytest.param(
+            '"{py}" "{script}" --contract copilot ' + "a" * 65,
+            None,
+            None,
+            "unchecked",
+            "arguments Apothem does not write",
+            id="overlong-name",
+        ),
+        pytest.param(
+            '"{py}" "{script}" --contract copilot ' + " x" * 8,
+            None,
+            None,
+            "unchecked",
+            "arguments Apothem does not write",
+            id="too-many-names",
+        ),
+        pytest.param(
             _DOUBLE,
             None,
             _delete_dispatcher,
@@ -1148,6 +1166,145 @@ def test_doctor_spells_out_control_characters_from_a_hook_line(
     assert "a<0x1b>[2Jb" in unchecked
 
 
+class _Entry:
+    """A folder entry that fails the test if a link is followed to classify it."""
+
+    def __init__(self, folder: Path, name: str, *, link: bool) -> None:
+        self.name = name
+        self.path = str(folder / name)
+        self._link = link
+
+    def is_symlink(self) -> bool:
+        return self._link
+
+    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+        assert not (self._link and follow_symlinks), "followed a link"
+        return False
+
+
+def _with_entries(
+    monkeypatch: pytest.MonkeyPatch, folder: Path, *extra: _Entry
+) -> None:
+    """List *extra* in *folder*, beside its real entries, when doctor walks it."""
+    real = os.scandir
+
+    class _Listing:
+        def __init__(self, entries: list[object]) -> None:
+            self._entries = entries
+
+        def __enter__(self) -> list[object]:
+            return self._entries
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    def scandir(path: object) -> object:
+        with real(path) as listing:
+            entries: list[object] = list(listing)
+        if os.path.normcase(str(path)) == os.path.normcase(str(folder)):
+            entries += list(extra)
+        return _Listing(entries)
+
+    monkeypatch.setattr(_doctor_hooks.os, "scandir", scandir)
+
+
+def test_doctor_does_not_follow_a_link_in_the_hook_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Following a link, even to tell whether it names a folder, reaches its
+    # target, which may sit on a network share.
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    _with_entries(
+        monkeypatch, dispatcher.parent, _Entry(dispatcher.parent, "zz", link=True)
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "hold a link, zz" in unchecked
+
+
+def test_doctor_spells_out_control_characters_in_hook_folder_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    escape = chr(27)
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    planted = _Entry(dispatcher.parent, f"a{escape}[2Jb.py", link=False)
+    _with_entries(monkeypatch, dispatcher.parent, planted)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [unchecked] = hooks.unchecked
+    assert escape not in unchecked
+    assert "hold a<0x1b>[2Jb.py, which the install did not write" in unchecked
+
+
+def test_doctor_reads_at_most_a_hundred_commands_from_a_hook_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}
+    )
+    entries = [{"type": "command", "bash": f"{line} n{index}"} for index in range(150)]
+    document = {"version": 1, "hooks": {"sessionStart": entries}}
+    hook_file.write_text(json.dumps(document), encoding="utf-8")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert len(hooks.argvs) == 100
+    assert hooks.unchecked == [
+        f"{hook_file} holds more than 100 hook commands; doctor read only the "
+        "first of them"
+    ]
+
+
+def test_doctor_reports_a_hook_file_nested_too_deep_to_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}
+    )
+    hook_file.write_text(
+        '{"hooks": ' + "[" * 200_000 + "]" * 200_000 + "}", encoding="utf-8"
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"{hook_file} cannot be read as JSON, so no hook in it was started"
+    ]
+
+
+def test_a_recorded_python_inside_the_project_names_itself_to_run_with(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    recorded = (tmp_path / ".venv" / "Scripts" / "python.exe").as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = f'"{recorded}" "{dispatcher.as_posix()}" --contract copilot'
+    _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}, python_bin=recorded
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [unchecked] = hooks.unchecked
+    assert hooks.run_with == {unchecked: recorded}
+
+
 def test_doctor_names_an_install_recorded_without_checksums(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1193,6 +1350,92 @@ def test_the_summary_names_a_harness_with_unchecked_hooks_once() -> None:
     _cmd_doctor._print_summary(Console(file=out, width=200), rows, checks)
 
     assert "the hook commands of kiro were not checked" in out.getvalue()
+
+
+def test_doctor_judges_the_key_the_tool_runs_not_another(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Cursor runs "command". A teammate points it at their own program and moves
+    # the install's line to "commandWindows", a key only Codex reads: doctor
+    # must judge the line Cursor runs, not report the moved one as started.
+    _as_windows(monkeypatch)
+    project = _project(tmp_path)
+    _install(runner, "cursor", "--project", str(project))
+    script, marker = _marker_script(tmp_path)
+    hook_file = project / _HOOK_FILES["cursor"]
+    document = json.loads(hook_file.read_text(encoding="utf-8"))
+    [entry] = document["hooks"]["sessionStart"]
+    dispatcher = _dispatcher(project, "cursor").as_posix()
+    python = Path(sys.executable).as_posix()
+    entry["commandWindows"] = entry["command"]
+    entry["command"] = (
+        f'& "{python}" "{script.as_posix()}" "{dispatcher}" --contract cursor sessionStart'
+    )
+    hook_file.write_text(json.dumps(document, indent=2), encoding="utf-8")
+
+    code, payload = _doctor(runner, "--project", str(project))
+
+    assert not marker.exists()
+    assert code == 0, payload
+    assert _row(payload, "cursor")["hooks"] == {"probed": 0, "failed": []}
+    [message] = _unchecked(payload, "cursor")
+    assert "foreign_hook.py, which this install did not write" in message
+
+
+def test_doctor_fix_for_a_recorded_python_inside_the_project(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An update would record the same Python again, so the fix says to run
+    # doctor with it, or to install with a Python outside the project.
+    from apothem.cli import _cmd_doctor
+
+    project = _project(tmp_path)
+    _install(runner, "cursor", "--project", str(project))
+    recorded = (project / ".venv" / "Scripts" / "python.exe").as_posix()
+    reason = f"a hook command runs {recorded}, the Python the install recorded"
+    hooks = _doctor_hooks.RegisteredHooks()
+    hooks.note(reason, run_with=recorded)
+    monkeypatch.setattr(_cmd_doctor, "registered_hooks", lambda *a, **k: hooks)
+
+    code, payload = _doctor(runner, "--project", str(project))
+
+    assert code == 0, payload
+    [check] = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
+    assert check["fix"] == (
+        f"Run doctor with the Python the install recorded ({recorded}), which can "
+        "start these hooks, or install with a Python outside the project."
+    )
+
+
+def test_a_claude_code_install_records_the_interpreter_of_its_hooks(
+    runner: CliRunner, home: Path
+) -> None:
+    _install(runner, "claude-code")
+
+    record = install_ledger.latest_record("claude_code")
+
+    assert record is not None
+    assert record.python_bin
+    settings = (home / ".claude" / "settings.json").read_text(encoding="utf-8")
+    assert record.python_bin in settings
+
+
+@pytest.mark.parametrize("probed", [0, 1])
+def test_the_summary_says_some_when_a_harness_also_started_hooks(probed: int) -> None:
+    import io
+
+    from rich.console import Console
+
+    from apothem.cli import _cmd_doctor
+
+    out = io.StringIO()
+    rows = [{"name": "cursor", "installed": True, "hooks": {"probed": probed}}]
+    checks = [{"code": "hook.unchecked", "harness": "cursor", "status": "info"}]
+
+    _cmd_doctor._print_summary(Console(file=out, width=200), rows, checks)
+
+    which = "some hook commands" if probed else "the hook commands"
+    assert f"{which} of cursor were not checked" in out.getvalue()
 
 
 def test_doctor_fails_when_an_installed_harness_does_not_verify(

@@ -159,9 +159,10 @@ Examples:
   apothem doctor --json
 
 Checks each installed harness: its verify must pass and every hook command
-its install registered must start (run with a no-op payload). A harness that
-is not installed is reported, not failed. Project-scope harnesses are checked
-when --project names their root.
+its install registered that doctor can trust must start (run with a no-op
+payload); a project hook command it cannot trust is reported as not
+checked, with the reason. A harness that is not installed is reported, not
+failed. Project-scope harnesses are checked when --project names their root.
 
 Related commands:
   harnesses list  List all registered harnesses

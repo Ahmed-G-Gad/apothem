@@ -4,9 +4,11 @@
 
 doctor judges what is installed, not what could be. An uninstalled harness is
 informational. An installed harness must pass its adapter's ``verify``, and
-every hook command its install registered must start with a no-op payload
-(see :mod:`apothem.cli._doctor_hooks`). A present profile must validate. Any
-failed check exits 1; a machine with one healthy harness exits 0.
+every hook command its install registered that doctor can trust must start
+with a no-op payload; a project hook command it cannot trust is reported as
+not checked, with the reason (see :mod:`apothem.cli._doctor_hooks`). A
+present profile must validate. Any failed check exits 1; a machine with one
+healthy harness exits 0.
 """
 
 from __future__ import annotations
@@ -233,17 +235,25 @@ def _probe_registered_hooks(
         )
         return
     for reason in hooks.unchecked:
+        python = hooks.run_with.get(reason)
         checks.append(
             _check(
                 "hook.unchecked",
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
-                fix=_update_fix(
-                    name,
-                    project,
-                    lead="Check the hook command or file named here. If Apothem "
-                    "installed it, run",
+                # An update would record the same Python inside the project.
+                fix=(
+                    f"Run doctor with the Python the install recorded ({python}), "
+                    "which can start these hooks, or install with a Python "
+                    "outside the project."
+                    if python is not None
+                    else _update_fix(
+                        name,
+                        project,
+                        lead="Check the hook command or file named here. "
+                        "If Apothem installed it, run",
+                    )
                 ),
             )
         )
@@ -261,7 +271,13 @@ def _probe_registered_hooks(
                 f"{name}: a registered hook command cannot start: {probe.command} "
                 f"({probe.detail}).",
                 harness=name,
-                fix="Check that the interpreter in the hook command exists and "
+                fix=_update_fix(
+                    name,
+                    project,
+                    then="to put the hook scripts back, then run doctor again",
+                )
+                if probe.detail == "the hook script does not exist"
+                else "Check that the interpreter in the hook command exists and "
                 f"runs, then {fix[0].lower()}{fix[1:]}",
             )
         )
@@ -408,9 +424,21 @@ def _print_summary(
         )
     )
     if unchecked:
+        # "some" where the harness also started hook commands that passed.
+        started: set[str] = set()
+        for row in harness_rows:
+            hooks = row.get("hooks")
+            if isinstance(hooks, dict) and hooks.get("probed"):
+                started.add(str(row["name"]))
+        named = ", ".join(
+            f"some hook commands of {harness}"
+            if harness in started
+            else f"the hook commands of {harness}"
+            for harness in unchecked
+        )
         con.print(
-            f"[yellow]No check failed[/] ({installed_count} installed), but the "
-            f"hook commands of {', '.join(unchecked)} were not checked."
+            f"[yellow]No check failed[/] ({installed_count} installed), but "
+            f"{named} were not checked."
         )
     elif installed_count:
         con.print(f"[green]All checks passed[/] ({installed_count} installed).")
