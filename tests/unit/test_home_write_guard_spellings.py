@@ -19,7 +19,7 @@ import socket
 import sys
 import time
 import unicodedata
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -472,6 +472,224 @@ def test_a_share_reached_by_one_of_this_machines_own_addresses_is_refused(
             )
         assert caught.value.protected_root == str(fake_home / ".claude")
     assert _everything_in(fake_home) == []
+
+
+def _unused_drive() -> str:
+    """Return a drive letter with nothing behind it, such as ``Q:``."""
+    for letter in "QRSTUVWXYZ":
+        if not Path(f"{letter}:\\").exists():
+            return f"{letter}:"
+    pytest.skip("every drive letter from Q to Z is in use")
+
+
+def _as_drive(path: Path, drive: str) -> str:
+    """Return *path* on *drive*, the rest of it unchanged."""
+    return drive + ntpath.splitdrive(str(path))[1]
+
+
+#: A share host no name service knows; every test that names it fakes the
+#: file calls on it, so nothing goes to the network.
+_FAKE_SHARE = "\\\\share-host.invalid\\data"
+
+
+def _fake_share(
+    monkeypatch: pytest.MonkeyPatch, local_drive: str
+) -> list[tuple[str, str]]:
+    """Serve :data:`_FAKE_SHARE` from *local_drive*, as a share of this machine.
+
+    ``os.stat`` and ``os.lstat`` on the share read the local path, and the
+    guard's ``_realpath`` leaves a share path as it is. Returns the share
+    calls on it, in order, as ``(function, path)``.
+    """
+    asked: list[tuple[str, str]] = []
+    real_stat, real_lstat = os.stat, os.lstat
+    real_realpath = home_write_guard._realpath
+
+    def local(name: str, path: object) -> object:
+        text = os.fspath(path) if isinstance(path, (str, os.PathLike)) else None
+        if isinstance(text, str) and text.lower().startswith(_FAKE_SHARE):
+            asked.append((name, text))
+            return local_drive + text[len(_FAKE_SHARE) :]
+        return path
+
+    def stat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        return real_stat(local("stat", path), *args, **kwargs)
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        return real_lstat(local("lstat", path), *args, **kwargs)
+
+    def realpath(path: str) -> str:
+        if path.lower().startswith(_FAKE_SHARE):
+            return path
+        return real_realpath(path)
+
+    monkeypatch.setattr(os, "stat", stat)
+    monkeypatch.setattr(os, "lstat", lstat)
+    monkeypatch.setattr(home_write_guard, "_realpath", realpath)
+    return asked
+
+
+def _map_drive(monkeypatch: pytest.MonkeyPatch, drive: str, share_root: str) -> None:
+    """Make the guard's ``_realpath`` read *drive* as *share_root*.
+
+    That is what Windows does for a drive mapped to that share: the path
+    resolves to its share spelling.
+    """
+    real_realpath = home_write_guard._realpath
+
+    def realpath(path: str) -> str:
+        if path[:2].lower() == drive.lower():
+            return share_root + path[2:]
+        return real_realpath(path)
+
+    monkeypatch.setattr(home_write_guard, "_realpath", realpath)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="mapped drives are Windows")
+def test_a_mapped_drive_that_resolves_to_a_share_is_refused(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The resolved spelling of a drive mapped back to this machine is a share."""
+    local_drive = ntpath.splitdrive(str(fake_home))[0]
+    if not local_drive.endswith(":"):
+        pytest.skip("the temporary folder is not on a drive letter")
+    (fake_home / ".apothem" / "state").mkdir(parents=True)
+    _fake_share(monkeypatch, local_drive)
+    drive = _unused_drive()
+    _map_drive(monkeypatch, drive, _FAKE_SHARE)
+    mapped_home = _as_drive(fake_home, drive)
+    assert home_write_guard.would_refuse(f"{mapped_home}\\.claude\\settings.json")
+    assert home_write_guard.would_refuse(
+        f"{mapped_home}\\.apothem\\state\\ledger.jsonl"
+    )
+    assert home_write_guard.would_refuse(mapped_home, tree=True)
+    assert home_write_guard.would_refuse_project_root(mapped_home)
+    assert not home_write_guard.would_refuse(f"{mapped_home}\\notes.txt")
+    (tmp_path / "project").mkdir()
+    assert not home_write_guard.would_refuse_project_root(
+        _as_drive(tmp_path / "project", drive)
+    )
+    with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+        home_write_guard.refuse_real_home_write(
+            f"{mapped_home}\\.claude\\x", operation="write"
+        )
+    assert caught.value.protected_root == str(fake_home / ".claude")
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="shares are Windows")
+@pytest.mark.parametrize("ledger", ["existing", "missing"])
+def test_a_share_path_below_a_protected_folder_is_refused(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch, ledger: str
+) -> None:
+    """The nearest folder that exists is below ``.apothem``: walk up from it."""
+    local_drive = ntpath.splitdrive(str(fake_home))[0]
+    if not local_drive.endswith(":"):
+        pytest.skip("the temporary folder is not on a drive letter")
+    state = fake_home / ".apothem" / "state" / "codex"
+    state.mkdir(parents=True)
+    if ledger == "existing":
+        (state / "ledger.jsonl").write_bytes(b"kept\n")
+    _fake_share(monkeypatch, local_drive)
+    share_state = _FAKE_SHARE + ntpath.splitdrive(str(state))[1]
+    assert home_write_guard.would_refuse(f"{share_state}\\ledger.jsonl")
+    assert home_write_guard.would_refuse(f"{share_state}\\a\\b\\c.lock")
+    assert home_write_guard.would_refuse(share_state, tree=True)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="admin shares are Windows")
+def test_reachable_own_address_shares_reach_the_backstop(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A mapped drive to, and a path below a protected folder on, a real share."""
+    addresses = [
+        address
+        for address in _own_addresses()
+        if Path(_admin_share(fake_home, address)).is_dir()
+    ]
+    if not addresses:
+        pytest.skip("no admin share of this machine is reachable by its address")
+    state = fake_home / ".apothem" / "state"
+    state.mkdir(parents=True)
+    (state / "ledger.jsonl").write_bytes(b"kept\n")
+    address = addresses[0]
+    share_state = _admin_share(state, address)
+    assert home_write_guard.would_refuse(f"{share_state}\\ledger.jsonl")
+    assert home_write_guard.would_refuse(f"{share_state}\\new\\x.lock")
+    drive = _unused_drive()
+    local_drive = ntpath.splitdrive(str(fake_home))[0]
+    _map_drive(monkeypatch, drive, f"\\\\{address}\\{local_drive[0]}$")
+    mapped_home = _as_drive(fake_home, drive)
+    assert home_write_guard.would_refuse(f"{mapped_home}\\.claude\\settings.json")
+    assert home_write_guard.would_refuse_project_root(mapped_home)
+    assert not home_write_guard.would_refuse(f"{mapped_home}\\notes.txt")
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.append_line_durably(Path(share_state) / "ledger.jsonl", "line")
+    assert (state / "ledger.jsonl").read_bytes() == b"kept\n"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="shares are Windows")
+def test_an_unreachable_share_is_asked_once_and_matches_nothing(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    asked: list[tuple[str, str]] = []
+    real_stat, real_lstat = os.stat, os.lstat
+    remote = "\\\\remote-host.invalid\\share"
+
+    def unreachable(name: str, real: Callable[..., object]) -> Callable[..., object]:
+        def call(path: object, *args: object, **kwargs: object) -> object:
+            text = os.fspath(path) if isinstance(path, (str, os.PathLike)) else None
+            if isinstance(text, str) and text.lower().startswith(remote):
+                asked.append((name, text))
+                raise OSError(0, "The network path was not found", text, 53)
+            return real(path, *args, **kwargs)
+
+        return call
+
+    monkeypatch.setattr(os, "stat", unreachable("stat", real_stat))
+    monkeypatch.setattr(os, "lstat", unreachable("lstat", real_lstat))
+    deep = f"{remote}\\proj\\a\\b\\c\\settings.json"
+    project = f"{remote}\\proj"
+    assert not home_write_guard.would_refuse(deep)
+    assert not home_write_guard.would_refuse_project_root(project)
+    # One lstat to resolve each path, whose error ends the resolving there, and
+    # one stat to place it by identity, whose error ends the walk up the share.
+    assert [(name, path.lower()) for name, path in asked] == [
+        ("lstat", deep.lower()),
+        ("stat", deep.lower()),
+        ("lstat", project.lower()),
+        ("stat", project.lower()),
+    ]
+    assert home_write_guard.refusals() == ()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="shares are Windows")
+def test_each_share_folder_is_read_at_most_once_in_a_check(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The written and resolved spellings share their folders' reads."""
+    local_drive = ntpath.splitdrive(str(tmp_path))[0]
+    if not local_drive.endswith(":"):
+        pytest.skip("the temporary folder is not on a drive letter")
+    asked = _fake_share(monkeypatch, local_drive)
+    project = tmp_path / "project"
+    (project / "real").mkdir(parents=True)
+    on_share = _FAKE_SHARE + ntpath.splitdrive(str(project))[1]
+    resolved = f"{on_share}\\real\\x\\y.json"
+    real_realpath = home_write_guard._realpath
+
+    def realpath(path: str) -> str:
+        if path.lower().startswith(f"{on_share}\\link".lower()):
+            return f"{on_share}\\real" + path[len(f"{on_share}\\link") :]
+        return real_realpath(path)
+
+    monkeypatch.setattr(home_write_guard, "_realpath", realpath)
+    written = f"{on_share}\\link\\x\\y.json"
+    assert not home_write_guard.would_refuse(written)
+    stats = [path.lower() for name, path in asked if name == "stat"]
+    assert written.lower() in stats
+    assert resolved.lower() in stats
+    assert f"{on_share}\\real".lower() in stats
+    assert len(stats) == len(set(stats)), stats
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="data streams are NTFS")

@@ -33,9 +33,13 @@ its ``.config`` stay as they were (see :func:`_layout`). On Windows a
 admin share (``\\\\localhost\\C$``,
 ``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
 name), a short (8.3) name and an alternate data stream (``.apothem:name``)
-all read as the plain drive-letter path. Any other share path is compared by
-file identity with the protected folders and the folders above them, so one
-of this machine's own addresses counts too. On macOS letter case and Unicode
+all read as the plain drive-letter path. Any other share path, written so or
+reached through a mapped drive, is compared by file identity with the
+protected folders and the folders above them, folder by folder up to the
+share, so one of this machine's own addresses counts too. Only the string
+rules make no network contact: resolving a share path and comparing it by
+identity ask its host, once per folder in a check, and stop at the first
+error that says the host or the share cannot be reached. On macOS letter case and Unicode
 normalization are ignored, as the default volume format does; Linux compares
 names as they are.
 
@@ -154,6 +158,12 @@ _PREFIXES: tuple[tuple[str, str], ...] = (
     *_NT_PREFIXES,
 )
 
+#: The Windows errors that say a share's host, or the share itself, cannot be
+#: reached: bad network path or name, no network, host or network
+#: unreachable, a dropped or timed-out connection, a mapped drive not
+#: connected.
+_UNREACHABLE_ERRORS = frozenset({51, 53, 59, 64, 67, 121, 1222, 1231, 1232, 2250})
+
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
 _extra_homes: list[str] = []
 #: The refusal log, a list of exceptions.
@@ -229,6 +239,10 @@ class RealHomeWriteError(OSError):
 
 class _HomeLookupError(Exception):
     """The system has no record of this account's home."""
+
+
+class _UnreachableShareError(Exception):
+    """A share's host, or the share itself, cannot be reached."""
 
 
 def active() -> bool:
@@ -406,13 +420,17 @@ def _protected_root_of(path: str, *, tree: bool) -> str | None:
     absolute = _absolute(path)
     lexical = _canonical(absolute)
     found = _match(lexical, roots, tree=tree)
-    if found is None:
-        found = _match(_real_target(absolute), roots, tree=tree)
-    if found is None and _is_share(lexical):
-        twin = _local_twin(lexical, roots)
-        if twin is not None:
-            found = _match(twin, roots, tree=tree)
-    return found
+    if found is not None:
+        return found
+    real = _real_target(absolute)
+    found = _match(real, roots, tree=tree)
+    if found is not None:
+        return found
+    for twin in _local_twins((lexical, real), roots):
+        found = _match(twin, roots, tree=tree)
+        if found is not None:
+            return found
+    return None
 
 
 def _home_at(path: str) -> str | None:
@@ -426,10 +444,10 @@ def _home_at(path: str) -> str | None:
     ]
     absolute = _absolute(path)
     canonical = _canonical(absolute)
-    spellings = [canonical, _canonical(_realpath(absolute))]
-    if _is_share(canonical):
-        twin = _local_twin(canonical, _roots(account_home(), tuple(_extra_homes)))
-        spellings += [twin] if twin is not None else []
+    spellings = [canonical, _real_target(absolute)]
+    if any(_is_share(spelling) for spelling in spellings):
+        roots = _roots(account_home(), tuple(_extra_homes))
+        spellings += _local_twins(tuple(spellings), roots)
     for spelling in spellings:
         for home, keys in homes:
             if _folded(spelling) in keys:
@@ -489,11 +507,14 @@ def _real_target(absolute: str) -> str:
     (8.3) name in its last part count too; for one that does not exist yet
     its folder is resolved and the leaf kept as written. Nothing is cached: a
     folder swapped for a link (or back) during a test is judged by what it is
-    now.
+    now. A path whose share host cannot be reached is not resolved: asking
+    again, folder by folder, would only wait on the network once more.
     """
     try:
         os.lstat(absolute)
-    except (OSError, ValueError):
+    except (OSError, ValueError) as error:
+        if isinstance(error, OSError) and _unreachable(error):
+            return _canonical(absolute)
         folder, leaf = os.path.split(absolute)
         real_folder = _realpath(folder)
         return _canonical(os.path.join(real_folder, leaf) if leaf else real_folder)
@@ -505,33 +526,105 @@ def _is_share(canonical: str) -> bool:
     return os.name == "nt" and canonical.startswith("\\\\")
 
 
-def _local_twin(
-    share_path: str, roots: tuple[tuple[tuple[str, ...], str], ...]
-) -> str | None:
-    """Return the local path a canonical share path names, found by identity.
+def _local_twins(
+    spellings: tuple[str, ...], roots: tuple[tuple[tuple[str, ...], str], ...]
+) -> list[str]:
+    """Return the local paths that the share paths among *spellings* name.
 
     A share of this machine reached by a host name the string rules do not
     know (one of the machine's own addresses, a link-local IPv6 literal, a
-    full domain name) or through a share that is not an admin share names a
-    local folder all the same. The nearest folder of *share_path* that exists
-    is compared, by device and file number, with each protected folder and
-    every folder above one; on a match the rest of *share_path* is joined to
-    that local folder. Only a share path the string checks did not place pays
-    for this, and a host that cannot be reached matches nothing.
+    full domain name), through a share that is not an admin share, or through
+    a mapped drive (whose resolved spelling is the share) names a local folder
+    all the same. Each folder of a share path that exists, from the path up to
+    the share, is compared by device and file number with each protected
+    folder and every folder above one; at the first match the rest of the path
+    is joined to that local folder.
+
+    Only a path that the string checks did not place pays for this, and it
+    asks the share's host: each share folder is read at most once in a check,
+    and an error that says the host or the share cannot be reached ends the
+    walk for that share, which then matches nothing.
     """
-    current, rest = share_path, []
-    wanted = _identity(current)
-    while wanted is None:
+    shares = [spelling for spelling in dict.fromkeys(spellings) if _is_share(spelling)]
+    seen: dict[str, tuple[int, int] | None] = {}
+    local: dict[tuple[int, int], str] = {}
+    unreachable: set[str] = set()
+    twins: list[str] = []
+    for share in shares:
+        if ntpath.splitdrive(share)[0] in unreachable:
+            continue
+        if not local:
+            local = _local_identities(roots)
+        try:
+            twin = _local_twin(share, local, seen)
+        except _UnreachableShareError:
+            unreachable.add(ntpath.splitdrive(share)[0])
+            continue
+        if twin is not None:
+            twins.append(twin)
+    return twins
+
+
+def _local_twin(
+    share_path: str,
+    local: dict[tuple[int, int], str],
+    seen: dict[str, tuple[int, int] | None],
+) -> str | None:
+    """Return the local folder of *local* that *share_path* is in, or None.
+
+    *local* maps a device and file number to a local folder; *seen* holds the
+    share folders already read in this check.
+    """
+    current, rest = share_path, list[str]()
+    while True:
+        wanted = _share_identity(current, seen)
+        if wanted is not None and wanted in local:
+            return _canonical(ntpath.join(local[wanted], *reversed(rest)))
         parent, leaf = ntpath.split(current)
         if not leaf or parent == current:
             return None
         rest.append(leaf)
         current = parent
-        wanted = _identity(current)
+
+
+def _local_identities(
+    roots: tuple[tuple[tuple[str, ...], str], ...],
+) -> dict[tuple[int, int], str]:
+    """Return the protected folders and the folders above them, by identity."""
+    found: dict[tuple[int, int], str] = {}
     for folder in _folders_above(roots):
-        if _identity(folder) == wanted:
-            return _canonical(ntpath.join(folder, *reversed(rest)))
-    return None
+        identity = _identity(folder)
+        if identity is not None:
+            found.setdefault(identity, folder)
+    return found
+
+
+def _share_identity(
+    path: str, seen: dict[str, tuple[int, int] | None]
+) -> tuple[int, int] | None:
+    """Return the device and file number of the share path *path*, read once.
+
+    Raises :class:`_UnreachableShareError` when the error says the host or the
+    share cannot be reached.
+    """
+    if path in seen:
+        return seen[path]
+    try:
+        info = os.stat(path)  # noqa: PTH116 - the guard works on str paths
+    except OSError as error:
+        if _unreachable(error):
+            raise _UnreachableShareError(path) from None
+        info = None
+    except ValueError:
+        info = None
+    found = (info.st_dev, info.st_ino) if info is not None and info.st_ino else None
+    seen[path] = found
+    return found
+
+
+def _unreachable(error: OSError) -> bool:
+    """Return True when *error* says a share's host or the share is unreachable."""
+    return getattr(error, "winerror", None) in _UNREACHABLE_ERRORS
 
 
 def _identity(path: str) -> tuple[int, int] | None:
