@@ -211,6 +211,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The Windows test cells in CI get 120 minutes.** The Windows cells of the
+  `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
+  cancelled cells whose tests had passed. They now get 120, as the CI Matrix
+  Windows cells already do; the other cells keep 90. The workflow
+  validator (`workflow-concurrency-grep`) accepts this one form for a matrix
+  job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
+  most 120 and M at most 90, and still flags any other expression. Every
+  limit, N and M included, must be at least 1. It now
+  also checks the limit a job passes to a reusable workflow through
+  `with: timeout-minutes`, which it skipped before, so the CI Matrix limit is
+  held to the same ceilings. A caller without a matrix gets the matrix
+  ceiling when it calls a workflow in the same folder whose matrix job takes
+  that limit.
 - **A link in a translated docs page keeps the reader in their language.** A
   link such as `/docs/install#choose-a-channel` in the body of a translated page
   now opens the translated copy of the page, at the matching section, when the
@@ -317,9 +330,64 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `unroutable` and gets no request. Like an unreachable URL, it does not fail
   the check. Each run carries a warning naming such a host, and the issue the
   monitor files lists its URLs to check by hand.
+- **Dependabot updates tailwindcss and `@tailwindcss/postcss` in one pull
+  request.** The website's `tailwind` group lists both, yet
+  `@tailwindcss/postcss` arrived in the `dev-tools` group's pull request.
+  Dependabot gives a package that fits several groups to the group whose rule
+  fits it most closely, and a group with no name patterns, like `dev-tools`,
+  counts as closer than a wildcard such as `@tailwindcss/*`. Because
+  `@tailwindcss/postcss` requires one exact tailwindcss version, either pull
+  request alone left two tailwindcss versions in the lockfile. `dev-tools` now
+  excludes both names, so the `tailwind` group is the only one they fit.
 
 ### Fixed
 
+- **A deleted project no longer lets an install overwrite your own skill.**
+  After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
+  a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` or `~/.trae/skills/`) under an
+  Apothem skill's name was overwritten by the next install (a backup was
+  kept). The install now skips it with the `skill_conflict` warning. A project
+  folder that still exists but holds none of the files its install recorded
+  there with Apothem's content in them (a re-cloned project that keeps only
+  its own instruction file, say) counts as deleted too, and so does one on a
+  drive or network share that does not answer. The deleted install still
+  counts while the skill folder holds exactly the files it recorded,
+  unchanged, so an update still refreshes a folder Apothem wrote. A folder
+  that already holds what this release writes is kept as it is. Otherwise,
+  when only deleted installs list a skill folder, or only an earlier install
+  in the same folder did, the install skips it and leaves it untouched unless
+  it holds exactly the files one of them recorded: you made it or edited it
+  (changed, added or removed a file), or an earlier release wrote it without
+  recording its files. For a skipped folder, the install, update and dry-run
+  warning and `apothem verify` give the same cause and fix: keep it there and
+  the harness stays not verified, or move it out of the skills folder, then
+  run `apothem update` for that harness (with `--project` for a project
+  install). `apothem verify` looks for these folders only for a harness that
+  is installed. A project installed at the home folder itself no longer counts
+  as present through the shared folders it writes there. A Codex install into
+  a removed or emptied `~/.codex` skips such a folder too: the files it had
+  just written there no longer make its old install count as present.
+- **`apothem doctor` checks the hooks of the install it is looking at.** It
+  read the newest install record of a harness from any folder. When that
+  record came from another folder (another project, a `CODEX_HOME`, or one you
+  had since deleted), doctor checked the wrong install's hooks or none, and
+  could report the harness as healthy even when its hook command could not
+  start. It now reads the record of the harness folder, or of the `--project`
+  folder, that it checks, under whichever spelling of that folder the install
+  used. When that folder has no record, the plain report shows the hook check
+  as `not checked`, its last line says which hook commands were not checked
+  rather than `All checks passed`, and for a project-scope harness the fix
+  names `--project`, quoted for the shell as uninstall's steps are (double
+  quotes on Windows, single quotes elsewhere), or in words, with the folder as
+  it is, when those quotes cannot carry it. The command, or that folder, ends
+  the fix, after a colon. `verify`, and the next step `quickstart` prints,
+  quote `--project` the same way; when the quotes cannot carry the folder,
+  `quickstart` prints the command up to `--project` and names the folder in
+  words after it.
+- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
+  Windows install writes begins with PowerShell's `&`, which doctor tried to
+  start as a program, so every healthy Cursor install failed the hook check.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -666,11 +734,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   them: for a project install, the exact commands, with the folder quoted for
   your shell and a `--profile` placeholder for the profile that install used.
   A folder those quotes cannot carry gets the same steps in words: on Windows,
-  one holding `$`, a backquote, `%`, `!` or a double quote, one with no space
-  that holds `&`, `^`, `|`, `<` or `>`, or a network share; elsewhere, one
-  holding a straight or curly single quote. Apothem's hook scripts and the conformity gate's checks also stop
-  writing Python bytecode caches (`__pycache__`) into the folders Apothem
-  installs.
+  one holding `$`, a backquote, `%`, `!`, a straight or curly double quote or a
+  control character, one with no space that holds `&`, `^`, `|`, `<` or `>`,
+  or one with two backslashes in a row, as in a network share; elsewhere, one
+  holding a straight or curly single quote, a control character or two
+  backslashes in a row, or one ending in a backslash. Apothem's hook scripts
+  and the conformity gate's checks also stop writing Python bytecode caches
+  (`__pycache__`) into the folders Apothem installs.
 - **The install ledger stays right when a write fails.** If an uninstall
   cannot write its final record, it records the uninstall as unfinished, so
   running it again finishes the job. When the ledger still ends in a finished
@@ -1004,6 +1074,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (32 KiB by default). The developer guide states both rules. On Python 3.10,
   which has no TOML reader, a `~/.codex/config.toml` gives a null for Codex
   instead of ending the run.
+- **Docs pages have one skip link, and it works.** From 16.18.0 Fumadocs
+  layouts add their own "Skip to Content" link, aimed at a page container the
+  site replaces with its `main` element, so the link led nowhere. It stayed
+  hidden even when it had keyboard focus, so the second Tab press on every docs
+  page seemed to lose the focus. The site now hides that link. The first Tab
+  still reaches the site's own "Skip to content" link, which shows when
+  focused and moves the focus to the page content.
 
 ### Security
 
@@ -1200,6 +1277,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+  moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
+  GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
+  image optimization, Edge routes and self-hosted response forwarding). The
+  site is published as static files with no Next.js server, so none of them
+  reached it. The same update moves Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 - **The conformity gate's `--all` validators read only real files inside the
   project they check.** A project that came from someone else, in an archive
   or a shared folder, can hold symbolic links and, on Windows, junctions that

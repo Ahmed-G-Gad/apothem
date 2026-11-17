@@ -37,8 +37,9 @@ For the project-scope adapters that write skills to your home directory (see
 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)),
 `update` also brings those folders up to date and prints the same `Note:` that
 names them. An adapter installed before it wrote skills gets them on
-its next update. A skill folder that Apothem did not write is skipped with a
-warning, as for [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
+its next update. A skill folder that Apothem did not write, or cannot prove
+it wrote, is skipped with a warning that gives the fix, as for
+[`install`](/docs/cli-reference/install#folders-in-your-home-directory).
 An install that wrote the shared skills folder before is rewritten into the
 form every install shares on its next update; each changed folder is backed up
 first.

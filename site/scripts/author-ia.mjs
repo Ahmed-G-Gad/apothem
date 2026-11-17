@@ -138,8 +138,8 @@ const sections = {
     'release-engineering-policy', 'badge-policy',
   ]],
   security: ['Security', [
-    'index', 'openssf-scorecard-target', 'branch-protection-ruleset',
-    'webhooks-audit', 'binary-artifacts-sweep',
+    'index', 'openssf-scorecard-target', 'openssf-best-practices',
+    'branch-protection-ruleset', 'webhooks-audit', 'binary-artifacts-sweep',
   ]],
   runbooks: ['Runbooks', [
     'index', 'release-cycle', 'deployment-checklist', 'release-recovery',
