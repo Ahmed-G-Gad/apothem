@@ -912,17 +912,29 @@ def test_name_with_a_character_windows_reserves_is_unsupported_there(
     assert _skipped(payload) == expected
 
 
-@pytest.mark.parametrize("destination", ["ci.yml.", "ci.yml ", "/docs/guide./page"])
-def test_link_part_ending_in_a_dot_or_a_space_is_not_checked_on_windows(
+@pytest.mark.parametrize(
+    "destination",
+    [
+        "ci.yml.",
+        "ci.yml ",
+        "ci.yml..",
+        "ci.yml.#top",
+        "guide./notes.md",
+        "/docs/guide./page",
+    ],
+)
+def test_link_found_through_a_trailing_dot_or_space_is_unchecked_on_windows(
     tmp_path: Path, destination: str
 ) -> None:
-    """Windows drops a trailing dot or space, so on Windows ``ci.yml.`` would
-    find ``ci.yml`` and pass as alive; there such a link is counted as external,
-    not checked. Elsewhere it names a file of its own, here a dead link."""
+    """On Windows, a lookup through a part ending in a dot or a space can find
+    a file under another name (``ci.yml.`` finds ``ci.yml``). Such a find proves
+    nothing about the link, so it is left unchecked, counted as external.
+    Elsewhere the link names a file of its own, here a dead link."""
     _write(
         tmp_path,
         {
             "ci.yml": "x: 1\n",
+            "guide/notes.md": "notes\n",
             "site/content/docs/guide/page.mdx": "page\n",
         },
     )
@@ -934,6 +946,35 @@ def test_link_part_ending_in_a_dot_or_a_space_is_not_checked_on_windows(
     else:
         assert len(result.findings) == 1
         assert result.internal_count == 1
+
+
+@pytest.mark.parametrize(
+    "destination",
+    [
+        "/docs/missing?x=1.",
+        "sub../a.md",
+        "sub/.../a.md",
+        "sub /a.md",
+        "guide /notes.md",
+    ],
+)
+def test_link_with_a_trailing_dot_or_space_that_finds_nothing_is_dead(
+    tmp_path: Path, destination: str
+) -> None:
+    """A query string is no part of a file name, and a lookup through a part
+    ending in a dot or a space that finds nothing is a dead link on every
+    system: Windows keeps such a part in the middle of a path as written."""
+    _write(
+        tmp_path,
+        {
+            "sub/a.md": "a\n",
+            "guide/notes.md": "notes\n",
+            "site/content/docs/index.mdx": "page\n",
+        },
+    )
+    result = link_check.check(f"[x](<{destination}>)\n", tmp_path / "doc.md")
+    assert len(result.findings) == 1
+    assert result.internal_count == 1
 
 
 def test_tracked_file_next_to_its_trailing_dot_names_is_still_read(

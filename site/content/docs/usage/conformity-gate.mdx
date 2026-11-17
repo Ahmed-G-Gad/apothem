@@ -152,9 +152,10 @@ for a `site/content/docs` folder stops at the root. In every mode, it never
 looks up a link that names a place by itself, such as a network share
 (`\\host\share`), a drive (`C:/notes.md`) or a `file:` address. On Windows,
 looking up a share sends your sign-in to that host. On Windows it also leaves
-unchecked a link with a part that ends in a dot or a space, which Windows
-would read as another file (`ci.yml.` as `ci.yml`), and a `/docs/` route
-segment holding a colon, which Windows reads as a drive.
+unchecked a `/docs/` route segment holding a colon, which Windows reads as a
+drive, and a link it finds only through a part that ends in a dot or a
+space: Windows can drop that ending (`ci.yml.` finds `ci.yml`), so the find
+proves nothing. Such a link that finds nothing is reported dead as usual.
 
 Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
 in `no-global-plans-grep`, whose report then carries the same `check_error`

@@ -38,9 +38,11 @@ checks each resolvable internal reference:
   ``//host/share``) or a backslash-rooted path — are counted as external and
   never looked up. A lookup can reach another machine (on Windows, opening a
   share sends the user's sign-in to that host) or a file outside the project.
-  On Windows, a link with a part that ends in a dot or a space, which Windows
-  drops so the lookup finds another file (``ci.yml.`` finds ``ci.yml``), and
-  a ``/docs/`` route segment holding a colon are counted as external too.
+  On Windows, a ``/docs/`` route segment holding a colon is counted as
+  external too, and so is a link whose lookup finds a file only through a
+  part that ends in a dot or a space: Windows can drop that ending
+  (``ci.yml.`` finds ``ci.yml``), so the find proves nothing about the link.
+  A lookup through such a part that finds nothing is a dead link as usual.
 
 A relative destination is resolved by its name, as a browser resolves a
 link, without following links on disk. In a corpus run
@@ -214,18 +216,21 @@ def _is_out_of_reach(target: str) -> bool:
 
 
 def _ends_a_part_in_dot_or_space(target: str) -> bool:
-    """Return True on Windows when a part of *target* ends in a dot or a space.
+    """Return True on Windows when a path part of *target* ends in a dot or space.
 
-    Windows drops a trailing dot or space from a name, so such a link would
-    find another file (``ci.yml.`` finds ``ci.yml``) and pass as alive. It is
-    counted as external instead, as :func:`apothem.conformity._corpus.name_skip`
-    skips such a tracked name.
+    Only the path counts: a query string after ``?`` is no part of a file
+    name. Windows can drop such an ending (``ci.yml.`` finds ``ci.yml``), so
+    a lookup through such a part that finds a file proves nothing about the
+    link, and the caller leaves the link unchecked, as
+    :func:`apothem.conformity._corpus.name_skip` skips such a tracked name. A
+    lookup that finds nothing is still a dead link.
     """
     if os.name != "nt":
         return False
+    path_part = target.split("?", 1)[0]
     return any(
         part not in ("", ".", "..") and part.endswith((".", " "))
-        for part in re.split(r"[\\/]", target)
+        for part in re.split(r"[\\/]", path_part)
     )
 
 
@@ -384,13 +389,12 @@ def check(
                 # nothing to resolve; skip it rather than mis-count it.
                 continue
             stripped = _strip_fragment(destination)
-            if (
-                _is_external(destination)
-                or _is_out_of_reach(stripped)
-                or _ends_a_part_in_dot_or_space(stripped)
-            ):
+            if _is_external(destination) or _is_out_of_reach(stripped):
                 external += 1
                 continue
+            # A find through a part Windows can alias proves nothing (see
+            # _ends_a_part_in_dot_or_space); a miss is a dead link as usual.
+            aliased = _ends_a_part_in_dot_or_space(stripped)
             if stripped.startswith("/"):
                 if not docs_root_computed:
                     docs_root = _find_docs_content_root(path, root)
@@ -408,8 +412,12 @@ def check(
                     # build's concern, out of scope here.
                     external += 1
                     continue
+                alive = any(_exists(target, root) for target in targets)
+                if alive and aliased:
+                    external += 1
+                    continue
                 internal += 1
-                if not any(_exists(target, root) for target in targets):
+                if not alive:
                     findings.append(
                         Finding(
                             line=index,
@@ -442,8 +450,8 @@ def check(
                 # A corpus run looks up nothing outside the project.
                 external += 1
                 continue
-            internal += 1
             if resolved is None:
+                internal += 1
                 findings.append(
                     Finding(
                         line=index,
@@ -452,7 +460,12 @@ def check(
                     )
                 )
                 continue
-            if not _exists(resolved, root):
+            alive = _exists(resolved, root)
+            if alive and aliased:
+                external += 1
+                continue
+            internal += 1
+            if not alive:
                 findings.append(
                     Finding(
                         line=index,
