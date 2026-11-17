@@ -105,14 +105,21 @@ with the same warning.
   `~/.config/apothem/templates/`) are now counted by folder. A home folder
   reached through a link no longer makes one shared folder look like two, so
   an uninstall no longer removes skills and rules another tool still uses.
-- {/* depends on #242 */} **A skill of your own is not replaced.** If you put
-  your own skill in `~/.agents/skills/` and the only install that listed that
-  folder was in a folder you have since deleted, the next install
-  skips it with a warning. It no longer replaces it.
-  {/* TODO(clarify): #242 asks the maintainer to confirm the trade-off that `apothem verify` then fails until the folder is moved aside; state it here once confirmed. */}
-- {/* depends on #242 */} **`apothem doctor` checks the right hooks.** It now
-  probes the hooks of the install it examines, not the newest install of that
-  tool in any folder.
+- **A skill of your own is not replaced.** Say you put your own skill in a
+  shared skills folder such as `~/.agents/skills/`, under the name of an
+  Apothem skill, and the only install that listed that folder was in a folder
+  you have since deleted. The next install skips it with a warning and leaves
+  it as it is. It no longer replaces it. The same holds for a skill folder you
+  edited, and for one an earlier release wrote there that differs from what
+  v1.6.0 writes. While such a folder stays there, `apothem verify` reports
+  that harness as not verified and names the folder. To keep your skill,
+  leave it there. To use Apothem's version, move the folder out of the skills
+  folder, then run `apothem update` for that harness.
+- **`apothem doctor` checks the right hooks.** It now starts the hooks of the
+  install in the folder it checks: the tool's own folder, or the `--project`
+  folder. Before, it used the newest install of that tool in any folder. When
+  the folder it checks has no install record, the report shows the hooks as
+  `not checked` instead of saying that all checks passed.
 - **The installers keep the engine's data.** Replacing an install at
   `APOTHEM_HOME` with `--yes` used to delete the whole folder, with the rollback backups,
   install records, plans and memory. The installer now checks the new release
@@ -151,7 +158,7 @@ strictly before they install it.
   The installers, the `apothem` command and `npx @ahmed-g-gad/apothem` no
   longer load Python modules from the current folder
   ([GHSA-4rh9-7m5x-94j9](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-4rh9-7m5x-94j9)).
-  {/* TODO(clarify): confirm both advisories are published at release time; on 2026-11-10 both were still drafts, so the links are not public yet. */}
+  {/* TODO(clarify): confirm the three advisories linked in this post (GHSA-799g-h543-w5gg, GHSA-4rh9-7m5x-94j9, GHSA-qpmp-8g2h-296c) are published at release time; on 2026-11-17 all three were still drafts, so the links are not public yet. */}
 - {/* depends on #245 */} **Hooks start Python isolated.** Every hook command
   Apothem writes now starts Python with `-E -s`, so `PYTHONPATH` and your user
   site-packages cannot bring code from the opened project into a hook.
@@ -176,8 +183,10 @@ The [trust model](/docs/install#trust-model) explains each mode.
 - The install follows `XDG_CONFIG_HOME`, the folder OpenCode reads.
 - Apothem's OpenCode helpers no longer turn off OpenCode's prompt before
   reading `.env` files, and no longer override your own `permission` rules.
-  They carry only `deny` rules.
-  {/* TODO(clarify): draft advisory GHSA-qpmp-8g2h-296c covers this helper change, but the CHANGELOG entry does not cite it; confirm whether to link it here, as the two installer advisories are. */}
+  They carry only `deny` rules
+  ([GHSA-qpmp-8g2h-296c](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-qpmp-8g2h-296c)).
+  The upgrade leaves the installed helpers as they are, so run
+  `apothem update` for OpenCode after you upgrade.
 - Install, update and verify print a note when an
   `instructions` list in `opencode.jsonc` hides the one Apothem writes in
   `opencode.json`, or when one of the config files would stop OpenCode 1 from
