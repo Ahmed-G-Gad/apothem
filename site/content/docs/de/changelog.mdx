@@ -1480,10 +1480,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with `-E -s` too, plus `-X utf8`, so a validator still reads git output and
   files as UTF-8 under any Windows code page; the docs run the gate by its
   script path with `-E -s`, which keeps the checked project's Python files and
-  your `PYTHONPATH` out of the gate. `--all`, `--all-perwrite` and a few single
-  validators still run `git` in that project, and git reads the project's own
-  `.git/config`, so the docs say to run them only on a repository whose `.git`
-  folder you made yourself. An install made by an earlier release keeps its old
+  your `PYTHONPATH` out of the gate. An install made by an earlier release
+  keeps its old
   hook commands until you run `apothem install` or `apothem update`; an update
   replaces them without touching your own hooks, and an uninstall removes the
   old and the new form. The Claude Code statusline snippet in

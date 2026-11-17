@@ -40,12 +40,8 @@ path, since Windows PowerShell and cmd do not expand `~`:
 keeps the current folder out of the first entry of Python's module search
 path; `-E` also keeps out `PYTHONPATH`, where an empty or relative entry
 names the current folder too, and `-s` keeps out your user site-packages.
-This keeps the project's files out of the gate's own Python code only.
-`--all`, `--all-perwrite` and a few single validators also run `git` in
-the project folder, and git reads that repository's own `.git/config`,
-which can make git run a program. Run them only on a repository whose
-`.git` folder you made yourself with `git clone` or `git init`, not one
-that arrived with its `.git` folder in an archive or a shared folder.
+This keeps the project's files out of the gate's own Python code only;
+the `git` the gate runs is covered next.
 
 Three standalone validators run `git` in the project they check, and so do
 `--all`, which runs them, and `--all-perwrite`, which lists the tracked files
