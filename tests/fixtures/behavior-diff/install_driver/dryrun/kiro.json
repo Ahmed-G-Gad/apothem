@@ -102,7 +102,7 @@
   },
   {
     "detail": {
-      "diff": "--- a/apothem.json\n+++ b/apothem.json\n@@ -0,0 +1,15 @@\n+{\n+  \"version\": \"v1\",\n+  \"hooks\": [\n+    {\n+      \"name\": \"apothem-session-start\",\n+      \"description\": \"Apothem session bootstrap: adds the skill index and session notes to the context when a session starts.\",\n+      \"trigger\": \"SessionStart\",\n+      \"action\": {\n+        \"type\": \"command\",\n+        \"command\": \"\\\"${PYTHON_BIN}\\\" \\\"<ROOT>/.apothem/support/kiro/hooks/dispatch.py\\\" --contract kiro SessionStart\"\n+      },\n+      \"timeout\": 30\n+    }\n+  ]\n+}\n",
+      "diff": "--- a/apothem.json\n+++ b/apothem.json\n@@ -0,0 +1,15 @@\n+{\n+  \"version\": \"v1\",\n+  \"hooks\": [\n+    {\n+      \"name\": \"apothem-session-start\",\n+      \"description\": \"Apothem session bootstrap: adds the skill index and session notes to the context when a session starts.\",\n+      \"trigger\": \"SessionStart\",\n+      \"action\": {\n+        \"type\": \"command\",\n+        \"command\": \"\\\"${PYTHON_BIN}\\\" -E -s \\\"<ROOT>/.apothem/support/kiro/hooks/dispatch.py\\\" --contract kiro SessionStart\"\n+      },\n+      \"timeout\": 30\n+    }\n+  ]\n+}\n",
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",

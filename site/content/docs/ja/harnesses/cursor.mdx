@@ -120,7 +120,7 @@ Cursor は、プロジェクトのフックファイルのコミットされな�
 コマンドは次のようになり、2 つのパスの代わりにあなたのインタープリターとプロジェクトのパスが入ります。
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
 Windows ホストでは、コマンドは PowerShell の呼び出し演算子である `& ` で始まります。Cursor のデスクトップアプリはフックコマンドを PowerShell を通じて実行し、PowerShell では引用符で囲まれたプログラムパスで始まる行は呼び出しにならないためです。

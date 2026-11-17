@@ -224,13 +224,56 @@ _EXPORT_KEPT: frozenset[str] = frozenset(
     }
 )
 
+# How much of a tar stream's tail is read at a time once its members are known.
+_DRAIN_CHUNK = 1 << 16
+
+# A tar writer that keeps sending zero padding after the end-of-archive marker:
+# one file, the marker, then 4 MiB of zeros. That is far more than a pipe
+# holds (64 KiB on Linux), so the writer cannot finish unless its reader keeps
+# reading after the last member. It exits 0 only when every byte was accepted.
+_PADDING_WRITER = """
+import io, sys, tarfile
+
+raw = io.BytesIO()
+with tarfile.open(fileobj=raw, mode="w") as archive:
+    info = tarfile.TarInfo("kept.txt")
+    info.size = 4
+    archive.addfile(info, io.BytesIO(b"kept"))
+out = sys.stdout.buffer
+out.write(raw.getvalue())
+out.flush()
+chunk = bytes(65536)
+for _ in range(64):
+    out.write(chunk)
+    out.flush()
+"""
+
+
+def _tar_stream_files(command: list[str], env: dict[str, str]) -> set[str]:
+    """Return the files in the tar that *command* writes to its output.
+
+    The tar is read as a stream, so a large archive is never held in memory.
+    ``tarfile`` stops at the end-of-archive marker, but a tar writer pads its
+    output to a full record after that marker. The rest of the stream is
+    therefore read to its end before the pipe closes: a writer that is still
+    sending padding when the pipe closes dies of a broken pipe (return code
+    -13 on Linux), whether or not the archive was complete.
+    """
+    with subprocess.Popen(command, stdout=subprocess.PIPE, env=env) as proc:
+        assert proc.stdout is not None
+        with tarfile.open(fileobj=proc.stdout, mode="r|") as tf:
+            names = {member.name for member in tf if member.isfile()}
+        while proc.stdout.read(_DRAIN_CHUNK):
+            pass
+    assert proc.returncode == 0
+    return names
+
 
 def _git_archive_files(repo: Path, env: dict[str, str]) -> set[str]:
     """Return the files ``git archive HEAD`` writes for *repo*.
 
     It runs the way GitHub builds its source archives: case-sensitive, and
-    with no user or system attribute file. The tar is read as a stream, so a
-    large checkout is never held in memory.
+    with no user or system attribute file.
     """
     assert _GIT is not None
     command = [
@@ -245,14 +288,7 @@ def _git_archive_files(repo: Path, env: dict[str, str]) -> set[str]:
         "--format=tar",
         "HEAD",
     ]
-    with subprocess.Popen(
-        command, stdout=subprocess.PIPE, env={**env, "GIT_ATTR_NOSYSTEM": "1"}
-    ) as proc:
-        assert proc.stdout is not None
-        with tarfile.open(fileobj=proc.stdout, mode="r|") as tf:
-            names = {member.name for member in tf if member.isfile()}
-    assert proc.returncode == 0
-    return names
+    return _tar_stream_files(command, {**env, "GIT_ATTR_NOSYSTEM": "1"})
 
 
 def _fail_git_step(monkeypatch: pytest.MonkeyPatch, step: str) -> None:
@@ -267,6 +303,21 @@ def _fail_git_step(monkeypatch: pytest.MonkeyPatch, step: str) -> None:
         return real_run(argv, **kwargs)
 
     monkeypatch.setattr(brt.subprocess, "run", failing_run)
+
+
+class TestTarStreamReader:
+    """Reading a tar from a program's output without cutting the program off.
+
+    Covers a writer that is still sending record padding after the
+    end-of-archive marker: the reader names the archive's files and the writer
+    exits cleanly, instead of dying of a broken pipe.
+    """
+
+    def test_a_writer_still_padding_after_the_end_marker_exits_cleanly(
+        self,
+    ) -> None:
+        command = [sys.executable, "-c", _PADDING_WRITER]
+        assert _tar_stream_files(command, dict(os.environ)) == {"kept.txt"}
 
 
 @requires_git
