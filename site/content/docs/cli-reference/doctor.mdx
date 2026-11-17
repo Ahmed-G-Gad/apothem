@@ -25,8 +25,26 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   passes. Project-scope harnesses are checked when `--project` names their root;
   without it they are reported as `needs_project`.
 - **Verify.** Each installed harness must pass the same check as
-  [`verify`](/docs/cli-reference/verify).
-- **Hook runtime.** For each verified harness, doctor reads the files that the
+  [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
+  marker with no END marker, the failed check is `harness.stray_begin`, and its
+  fix names each such file and says to delete the marker line and the old
+  Apothem text below it, and not to add the END marker back with a line of
+  yours between the two markers, which the next run would replace or take out,
+  nor at all once an install or update has written Apothem's block apart from
+  it, which would leave two Apothem blocks: an update alone does not clear it
+  (see
+  [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  A file that holds two or more whole blocks between Apothem's markers, or
+  whose marker pairs Apothem cannot tell from your text, such as its block
+  inside a code block of yours, fails the same check: its message says the
+  file holds "Apothem markers to fix by hand", and its fix names each block
+  by its lines (see
+  [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+  or each marker pair, where its lines read and how to fix it, along with each
+  BEGIN marker that starts no marker pair (see
+  [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+- **Hook runtime.** For each verified harness, and for each one that such a
+  marker fails, doctor reads the files that the
   install it checks wrote: the install in the harness's own folder (a
   `CODEX_HOME` set where doctor runs is that folder), or, for a project-scope
   harness, in the `--project` folder. An install in another folder, such as a
@@ -88,8 +106,8 @@ and `profile_error` when the profile is invalid) and adds:
   (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
   install record or the install ledger cannot be read).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
-  `hook.start_failed`, `hook.unchecked`, `ledger.unreadable`, or a `profile.*`
-  code), `status`
+  `harness.stray_begin`, `hook.start_failed`, `hook.unchecked`,
+  `ledger.unreadable`, or a `profile.*` code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.
 
 ```json

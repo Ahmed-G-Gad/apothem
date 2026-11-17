@@ -32,7 +32,7 @@ The `drift` value is one of:
 | Value | Meaning |
 |---|---|
 | `in-sync` | The installed configuration carries the freshly-projected shared profile verbatim. |
-| `drift` | The harness is installed but its projected profile content no longer matches the current shared profile. Re-run `apothem install` to re-project. |
+| `drift` | The harness is installed but its projected profile content no longer matches the current shared profile, or a file the current install keeps a managed block in holds a BEGIN marker that starts no whole block, two or more whole blocks between Apothem's markers, or marker pairs Apothem cannot tell from your text. A file that only an earlier install record lists, such as the rules file in an OpenClaw workspace the install no longer uses, does not count here; `apothem verify` and `apothem doctor` name it. Re-run `apothem install` to re-project; fix such markers by hand (see [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers) and [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | `absent` | The harness is not installed, so there is nothing to compare. |
 | `needs-project` | A project-scope harness was reported without `--project`, so its target cannot be resolved. Pass `--project PATH` to inspect it. |
 | `unknown` | The default profile could not be loaded, so an installed harness has no baseline to compare against. Fix the profile to restore the drift verdict. |

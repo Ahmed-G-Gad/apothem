@@ -29,7 +29,11 @@ from click.testing import CliRunner
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import APOTHEM_BLOCK_END
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    complete_managed_block,
+)
 from apothem.lib.harness_registry import (
     HARNESS_REGISTRY,
     HarnessRegistryEntry,
@@ -179,6 +183,85 @@ def test_diff_is_empty_and_reinstall_is_a_noop_after_install(
     assert sorted(install_driver.BACKUP_ROOT.rglob("*")) == backups_before
 
 
+def _recorded_anchors(harness_id: str) -> list[Path]:
+    """Return the managed-block files the latest install of *harness_id* wrote."""
+    record = install_ledger.read_records(package_key_for_public_id(harness_id))[-1]
+    anchors = [
+        Path(target.path)
+        for target in record.targets
+        if target.mode == "sentinel_merge" and Path(target.path).is_file()
+    ]
+    if not anchors:
+        pytest.skip(f"{harness_id} writes no managed block on a clean install")
+    return anchors
+
+
+def _verify(box: _Sandbox) -> int:
+    result = CliRunner().invoke(
+        main, ["verify", "--harness", box.entry.public_id, *box.scope(), "--json"]
+    )
+    return result.exit_code
+
+
+@pytest.mark.parametrize("harness_id", _IDS)
+def test_an_install_keeps_your_text_after_a_begin_with_no_end(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """Install and update never cut the text after a BEGIN marker with no END.
+
+    Each managed block the install wrote loses its END marker and gains a line
+    of the operator's. A preview and the next install name each file; the
+    install keeps every byte and writes one whole block of its own; verify
+    fails until the stray marker goes.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchors = _recorded_anchors(harness_id)
+    for anchor in anchors:
+        text = anchor.read_text(encoding="utf-8").replace(APOTHEM_BLOCK_END, "")
+        anchor.write_bytes((text + "my own line\n").encode())
+    before = {anchor: anchor.read_bytes() for anchor in anchors}
+
+    preview = box.install("--dry-run")
+    payload = box.run("update", "--profile", str(profile_minimal_path()))
+    again = box.install()
+    status = CliRunner().invoke(
+        main,
+        ["status", *box.scope(), "--profile", str(profile_minimal_path()), "--json"],
+    )
+    damaged = _verify(box)
+    after = {anchor: anchor.read_bytes() for anchor in anchors}
+    for anchor in anchors:
+        # Delete only the stray marker: the one outside the whole block.
+        text = anchor.read_text(encoding="utf-8")
+        block = complete_managed_block(text) or ""
+        at = text.index(block)
+        kept = [
+            part.replace(APOTHEM_BLOCK_BEGIN, "")
+            for part in (text[:at], text[at + len(block) :])
+        ]
+        anchor.write_bytes((kept[0] + block + kept[1]).encode())
+    repaired = _verify(box)
+
+    for anchor in anchors:
+        stray = before[anchor][before[anchor].index(APOTHEM_BLOCK_BEGIN.encode()) :]
+        assert stray in after[anchor]
+        assert after[anchor].count(APOTHEM_BLOCK_END.encode()) == 1
+    for envelope in (preview, payload):
+        named = [
+            str(w["message"])
+            for w in envelope["warnings"]
+            if APOTHEM_BLOCK_END in str(w["message"])
+        ]
+        assert len(named) == len(anchors), envelope["warnings"]
+    assert again["files_written"] == []
+    names = {harness_id, package_key_for_public_id(harness_id)}
+    [row] = [r for r in json.loads(status.output)["results"] if r["harness"] in names]
+    assert row["drift"] == "drift", row
+    assert damaged != 0
+    assert repaired == 0
+
+
 @pytest.mark.parametrize("harness_id", _IDS)
 def test_a_block_that_lost_its_end_marker_is_left_as_it_is(
     harness_id: str, sandbox_factory: SandboxFactory
@@ -191,14 +274,7 @@ def test_a_block_that_lost_its_end_marker_is_left_as_it_is(
     """
     box = sandbox_factory(harness_id)
     box.install()
-    record = install_ledger.read_records(package_key_for_public_id(harness_id))[-1]
-    anchors = [
-        Path(target.path)
-        for target in record.targets
-        if target.mode == "sentinel_merge" and Path(target.path).is_file()
-    ]
-    if not anchors:
-        pytest.skip(f"{harness_id} writes no managed block on a clean install")
+    anchors = _recorded_anchors(harness_id)
     for anchor in anchors:
         text = anchor.read_text(encoding="utf-8").replace(APOTHEM_BLOCK_END, "")
         anchor.write_text(text + "my own line\n", encoding="utf-8")

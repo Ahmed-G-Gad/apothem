@@ -82,6 +82,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
   2. Copy your text from that copy back into the file by hand.
 
+- **Releases 1.0.1 to 1.5.0 wrote over a marker example of yours.** In a file
+  where Apothem keeps a managed block (`CLAUDE.md`, `AGENTS.md` and the like),
+  they took the first BEGIN marker, and the END marker after it, for
+  Apothem's block, wherever the two were. When the file held a marker pair
+  you quote, in a code example say, above Apothem's block or before any
+  install wrote one, `apothem install` and `apothem update` wrote Apothem's
+  block over that pair and the text between its markers, and
+  `apothem uninstall` removed them and left Apothem's block in place.
+
+  **To recover:** each of these commands copied the file first, to
+  `~/.apothem/backups/<timestamp>/<harness>/`. Those sets are not kept for
+  good: releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and
+  this release does the same for them unless an install record it keeps
+  refers to one, so the copy you need may already be gone. Every install,
+  update, uninstall and rollback adds a set.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. In that copy, find the newest backup of the file that still holds your
+     example, and copy the example back into the file by hand, in place of
+     any Apothem text written over it.
+
 ### Added
 
 - **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
@@ -99,7 +120,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     (`apothem verify` fails until then). One outside the home directory, or
     reached through a link, is skipped with a warning. When a workspace leaves
     the config, the next install or update takes the Apothem block out of the
-    file it wrote there.
+    file it wrote there. A BEGIN marker with no END marker that stays in that
+    file (a line of yours, or what is left of an older block) is named in a
+    warning, so you can delete that line with any old Apothem text below it.
   - **Hook settings:** left alone, with a warning, when internal hooks are off,
     the hook's entry is off, or `hooks.internal.enabled: true` names no hook
     (naming one would switch the others off).
@@ -109,7 +132,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     files and the entry's other extra files leave in the total
     (`bootstrapTotalMaxChars`, 60,000), with each entry's own limits and
     characters counted as OpenClaw counts them. When the file fits no
-    workspace, no path is registered.
+    workspace, no path is registered. When a rules file over the per-file
+    limit holds a BEGIN marker that starts no whole block (its END marker is
+    gone, or the marker is yours), the warning names that file, says that the
+    old Apothem text below that marker counts against the limit, and says to
+    delete the marker line and that text by hand, to shorten the profile's
+    custom rules, or to raise the limit.
   - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
     entry to a file with comments or other JSON5 syntax without dropping them.
     If you added the `skills.load.extraDirs` entry by hand, as these docs said
@@ -118,13 +146,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   - **Uninstall** removes the managed blocks, the files and folders they leave
     empty, and only the hook entries Apothem added. Apothem's entries in a
     commented `openclaw.json` stop it before anything changes, with an error
-    naming what to remove; a rules file behind a link is left in place and the
-    uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
+    naming what to remove; a rules file behind a link, or one where Apothem
+    cannot tell its block from your text, is left in place and the uninstall
+    reported unfinished (exit 2); a rules file Apothem cannot rewrite
     gets an error that names it, and the uninstall cleans the other
     workspaces' rules files, records their backups and stops before
     `openclaw.json` changes. In each case the install record stays, so a second
     uninstall after the hand fix finishes. `apothem verify` reports a missing
-    file or registration.
+    file or registration, and a rules file with an Apothem marker to fix by
+    hand, also in a workspace the install no longer uses.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -683,13 +713,180 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that, the file no longer makes the tool read as installed. A whole block is
   found from its END marker back to the nearest BEGIN marker, and each exact
   copy of it is taken out too (a block pasted in twice used to leave one, so
-  the tool still read as installed); another block between the markers, such
-  as a pair you quote, is left with the file and named, and the uninstall
-  stays unfinished until you remove it. A BEGIN marker of yours left with no
-  END once Apothem's block is out is named too: an install or update that
-  writes such a file again still replaces everything from that marker to the
-  end of the file. When the uninstall's next step is to run `apothem update`
-  and a warning names such a file, that step says to fix the file first.
+  the tool still read as installed). A second, different block between the
+  markers, such as a pair you quote outside a code block, is left with the
+  file and named, with each block by its lines, and the uninstall stays
+  unfinished (exit code `2`, a second run included) until you fix the file as
+  the warning says: change the marker lines of a pair of yours, and delete only
+  an older or pasted Apothem block (see the entry on two whole blocks below).
+  A BEGIN marker left with no END once Apothem's block is out (a line
+  of yours, or what is left of an older block that lost its END marker) is
+  named too, also when the uninstall stops part way, and under `--quiet` on
+  standard error; the warning says to delete that line with any old Apothem
+  text below it, which the tool still reads. When the uninstall's next step is
+  to run `apothem update` and a warning names such a file, the step, and the
+  warning of each path it keeps for that reason, say to fix the file first: an
+  update keeps a BEGIN marker with no END and does not fix a file that holds
+  two different blocks, and `verify` fails until you fix either. An OpenClaw
+  update that cannot retire a rules file with two blocks says the next
+  install, update or uninstall tries again, not to run the uninstall. An
+  OpenClaw update that takes Apothem's block out of a rules file in a
+  workspace the install no longer uses names a BEGIN marker it leaves there
+  too, and says that `verify` fails until you delete it.
+- **Install and update no longer cut your text after a BEGIN marker with no
+  END.** They replaced everything from such a marker to the end of the file,
+  with any text you had written below it (a backup was kept). They now keep
+  that text as it is, write Apothem's block apart from it, and print a warning
+  that names the file, says to delete that marker line with the old Apothem
+  text below it, and says not to add the END marker back (the file would then
+  hold two Apothem blocks). A dry run reads the file before anything is
+  written, so over a file with no whole block yet it says not to add the END
+  marker back with a line of yours between the two markers (the next run would
+  replace or take out every line between them), nor at all once an install or
+  update has written Apothem's block apart from it. While an install record
+  lists a file that also holds a marker pair in code and no whole block, they
+  leave the file as it is instead (see the next
+  entry). `verify` fails until the stray marker is gone,
+  including a BEGIN marker of yours above or below a whole block, and for a
+  file the current install writes, `status --profile` shows drift until then
+  too. This covers every file where Apothem keeps a managed block:
+  `CLAUDE.md`, the profile documents, `AGENTS.md` and the other instruction
+  files, and the rules file in each OpenClaw workspace. Apothem now
+  reads a marker only as a line of its own outside code, as it writes them and
+  as a Markdown viewer reads them: a marker you quote in a fenced code block (a
+  longer outer fence or a fence in a list included), or in code indented four
+  columns past its list item (or the margin) after a blank line, is not taken
+  for its block, and neither is a BEGIN and an END marker you quote in two
+  separate code blocks. A tab after a list bullet, a line such as `* * *`, and
+  an HTML comment on a line of its own above a numbered list read as they do
+  in a Markdown viewer. Apothem closes a code fence that a rule in your profile
+  leaves open at the end of the block it writes; in a block an earlier release
+  wrote, such a fence hides the END marker only when another marker pair
+  follows (see the next entry). A code fence left open to the end of the file
+  is read as text, however many there are, unless a BEGIN marker outside code
+  above it has its END marker in code and another marker pair follows them. A
+  byte order mark at the start of the file (as Notepad's "UTF-8 with BOM"
+  writes it) does not hide a marker on the first line. Markers inside an HTML
+  block or a block quote, or after a list item whose text goes on at the left
+  margin, can still be read differently from a Markdown viewer. `verify` and
+  `doctor` name each file that holds a stray marker and say to delete the
+  marker line and the old Apothem text below it, and not to add the END marker
+  back with a line of yours between the two markers, nor at all once an
+  install or update has written Apothem's block apart from it
+  (`doctor` reports it as `harness.stray_begin` and still starts that tool's
+  hooks); only the files a tool's install keeps its block in count, the files
+  an earlier install record lists included until an uninstall finishes.
+- **Install and update no longer take a marker pair you quote in code for
+  Apothem's block.** Release 1.5.0 took the first BEGIN marker in a file, and
+  the END marker after it, for its block wherever they were: an update wrote
+  over a marker pair you quote in a code example above the block, and the
+  uninstall took that pair out and left the block (to recover such an
+  example, see "Data loss in earlier releases" above). It also updated
+  Apothem's block in place when the block sat inside a code block of yours (a
+  code fence you left open above it, closed by a fence you added below it),
+  and the uninstall removed it. Apothem now reads its markers only outside
+  code (see the entry above), so it cannot tell its block inside your code
+  block from a pair you quote there. While an install record lists the file
+  (until an uninstall finishes), install and update now leave such a file as
+  it is and print a warning that names each marker pair in it by the lines of
+  its two markers and says where each of those lines reads: inside a code
+  block that opens at a given line, in indented code, as part of the
+  paragraph above it, or outside code. For each case it gives a fix with what
+  follows from it. If the pair is Apothem's block, close that code block above
+  its BEGIN marker (also when only that marker sits in it) or start its marker
+  lines at the left margin, and the next update replaces those lines; when its
+  two marker lines read differently in another way (in two separate code
+  blocks, say), delete them by hand, keeping your own text. If the pair is
+  yours, change or delete its two marker lines. The same happens, record or
+  not, when a BEGIN marker outside code has its END marker in code and another
+  marker pair follows. A block an earlier release wrote from a rule in your
+  profile that opens a code block and never closes it can cause that: the
+  warning then says to close that code block above the END marker and fix the
+  rule. This release closes such a code block at the end of the block it
+  writes, so that block stays whole beside a marker example of yours. That
+  closing line, or one a rule writes, can still close a code block of yours
+  that opens above Apothem's block and never closes. The block then reads as
+  code from its BEGIN marker on, and the install or update that writes it
+  prints the warning at once, which says to close your code block above that
+  BEGIN marker. So does an update that writes its block below an older block
+  that lost its END marker, where a rule left a code block open; its warning
+  also names that older BEGIN marker. When the line that opens the code block
+  may be part of the old Apothem text below that BEGIN marker, the fix also
+  says you can delete that line with that text instead: that ends the code
+  block too, so you add no closing line then. The fix for a marker pair after
+  such a BEGIN marker says to delete or change that BEGIN marker as well. The
+  warning also names, before the pairs, each BEGIN marker that starts no
+  marker pair (its END marker is gone, or the marker is yours) and says to
+  delete or change it, with any old Apothem text below it: left in place, it
+  can pair with an END marker below it once the pairs are fixed, and a later
+  install or update then replaces the lines between them. The uninstall's
+  warning says that the uninstall run again then takes those lines out, and
+  an update's warning for an OpenClaw rules file in a workspace the install no
+  longer uses says that a later install, update or uninstall takes them out.
+  Such a BEGIN marker does not change what install and update do while an
+  install record lists the file, even when every marker pair is quoted in code
+  below it: a pair in code may be Apothem's block inside a code block of
+  yours, so the file is left as it is.
+  Until you fix those lines, `verify` fails, `doctor` reports the file (as
+  `harness.stray_begin`) and, for a file the current install writes,
+  `status --profile` shows drift; then run `apothem update` again. A dry run's
+  warning says Apothem would leave the file as it is. With no install record,
+  `verify` and `doctor` do not check `CLAUDE.md` or the profile documents,
+  since only the record shows that the install wrote them; the OpenClaw verify
+  still checks the rules file in each workspace it finds, and fails without
+  naming the file. With an install record, the uninstall leaves such a file as
+  it is, removes the rest of the install, and stays unfinished (exit code `2`,
+  a second run included), so the install record stays and a later install
+  still leaves the file as it is. Its warning says to delete Apothem's block by
+  hand and to change or delete the two marker lines of each pair of yours,
+  then to run the uninstall again, which then finishes: any marker pair left in
+  the file keeps it unfinished, one of yours included. For a BEGIN marker
+  outside code whose END marker sits in code, the uninstall's warning also
+  says to delete or change that marker, if it is yours, before you run the
+  uninstall again: once no marker pair follows it, it pairs with that END
+  marker, and the uninstall then takes the lines between them out, as a later
+  install or update replaces them. Of that pair it asks for the BEGIN marker
+  alone, since the END marker sits in your own code. With no install record,
+  only such a BEGIN marker gets the uninstall's warning, and the uninstall
+  stays unfinished (exit code `2`) for it and for the paths no record shows; a
+  marker pair you quote in code is then your text, and the install adds its
+  block after it (in a rules file that Apothem writes with frontmatter, that
+  frontmatter and the block go at the top instead), unless that pair holds
+  exactly the block the install writes: then the install leaves the file as it
+  is, with the warning. So if the install record is gone, delete Apothem's
+  block from your code block by hand: a later install treats it as your text.
+- **Install and update leave a file with two whole blocks as it is.** Release
+  1.5.0 took the first marker pair in a file for Apothem's block (see "Data
+  loss in earlier releases" above), so in a file with two whole blocks between
+  Apothem's markers it rewrote the first one. A file gets there from a marker
+  pair of yours outside code, a block pasted in twice, or an old block whose
+  END marker you put back after an update had written a fresh block below it.
+  Apothem writes one block per file and cannot tell which one is its own, so
+  install and update now leave such a file as it is and print a warning that
+  names each block by its lines, for example "holds 2 whole blocks between
+  Apothem's markers (lines 1 to 32, and lines 36 to 67)". For a marker pair of
+  yours it says to change or delete its two marker lines, or move them inside
+  a code block, and not to delete Apothem's block instead: the next run would
+  then read your pair as Apothem's block. Of Apothem's own blocks, an older one
+  or one pasted in a second time, it says to keep one (in a file that starts
+  with Apothem's frontmatter, the one right below it) and to delete each other
+  one from its BEGIN marker line to its END marker line, keeping any line of
+  yours inside it. The uninstall gives the same text. When a BEGIN marker
+  above Apothem's block and an END marker below it make a second block only
+  once Apothem's block is out, the uninstall's warning names Apothem's block
+  and those two marker lines, and says to change or delete those marker
+  lines, not Apothem's block, and to delete the old Apothem text below that
+  BEGIN marker if it is what is left of an older block; when that END marker
+  sits in code or text of yours, it asks for the BEGIN marker alone. An update
+  does not fix such a file either.
+  Until you fix the file, `verify` and `verify --profile` fail, `doctor`
+  reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
+  hand") and, for a file the current install writes, `status --profile` shows
+  drift.
+- **`verify --profile` and `status --profile` no longer report drift for a
+  project's own `CLAUDE.md`.** A project-scope tool with no install record on
+  this machine read the project's `CLAUDE.md` as its own profile file and
+  reported drift.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and
@@ -762,7 +959,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   uninstall with the unfinished ones after it. With no install record in
   place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
   document of a tool configured through one settings file, stays as it is,
-  and a warning now names the file so you can delete the block by hand.
+  and a warning now names the file and the lines of Apothem's block, so you
+  can delete that block by hand and keep a BEGIN marker of yours, or a marker
+  pair you quote, above it. When that file holds two different blocks between
+  Apothem's markers, the warning names each block, or Apothem's block and the
+  marker lines around it, with the fix for such a file (see the entry on two
+  whole blocks above): deleting from the first BEGIN marker to the next END
+  marker would take a marker pair of yours, or your text above Apothem's
+  block, with it. When it names Apothem's block and the marker lines around
+  it, it then says to delete Apothem's block by hand. When it names two or
+  more whole blocks, it says instead to run `apothem update`, then
+  `apothem uninstall` again: a BEGIN marker of yours above Apothem's block and
+  an END marker below it, which that text does not name, would make one block
+  once Apothem's block was deleted by hand, and the next update would replace
+  the lines between them. The uninstall run again names those marker lines
+  first.
 - **Uninstall and rollback list every file they keep.** The plain output of
   `apothem uninstall` and `apothem rollback` now lists every file kept (paths
   left behind a link are counted, not listed), also when a rollback's restore

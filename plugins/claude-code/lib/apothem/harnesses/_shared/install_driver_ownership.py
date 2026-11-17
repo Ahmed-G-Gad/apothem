@@ -33,6 +33,7 @@ from typing import Final
 import yaml
 
 from apothem.lib import install_ledger, lenient_json
+from apothem.lib.harness_materializer import merge_managed_block
 from apothem.lib.install_ledger import LedgerTarget, OwnedEntry
 
 from .install_driver_jsonmerge import (
@@ -135,6 +136,16 @@ def prior_ownership(harness_name: str, root: Path, target: Path) -> PriorOwnersh
     if recorded.owned is None:
         return LEGACY_OWNERSHIP
     return recorded.owned
+
+
+def fold_block(before: str | None, content: str, prior: PriorOwnership) -> str:
+    """Return *before* with *content* merged in as Apothem's managed block.
+
+    *prior* is :func:`prior_ownership` for the file: when an install record
+    lists it, a marker pair with no certain place may be Apothem's block, so
+    the merge leaves the file as it is (see :func:`merge_managed_block`).
+    """
+    return merge_managed_block(before or "", content, recorded=prior != ())
 
 
 def _navigate(doc: object, path: tuple[str, ...]) -> object:

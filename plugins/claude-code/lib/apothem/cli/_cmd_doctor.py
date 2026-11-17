@@ -34,6 +34,7 @@ from apothem.cli._doctor_hooks import probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
+    _Adapter,
     _CliUserError,
     _emit_expected_error,
     _harness_roots,
@@ -43,6 +44,11 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._stray_begin_report import (
+    markers_to_fix_by_hand,
+    stray_begin_note,
+    stray_begin_paths,
+)
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
@@ -162,7 +168,36 @@ def _probe_harness(
         return row
     row["verified"] = verified
     if not verified:
-        row["status"] = "verify_failed"
+        _report_verify_failure(entry, adapter, project_root, row, checks)
+        return row
+    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
+    row["status"] = "ok"
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
+    return row
+
+
+def _report_verify_failure(
+    entry: HarnessRegistryEntry,
+    adapter: _Adapter,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Record why an installed harness does not verify, with the fix.
+
+    A file that holds a BEGIN marker with no END marker, two or more whole
+    blocks, or marker pairs no rule can place gets its own check, whose fix
+    names each such file: an update keeps that marker, or leaves such a file
+    as it is, so the generic "run update" fix would not clear it. Such a
+    marker leaves the rest of the install in place, so the harness's hooks
+    are still started; its status stays ``verify_failed``, and the Hooks
+    column shows how they did.
+    """
+    name = entry.public_id
+    project = project_root if entry.scope == "project" else None
+    row["status"] = "verify_failed"
+    stray = stray_begin_paths(entry, adapter, project_root)
+    if not stray:
         checks.append(
             _check(
                 "harness.verify_failed",
@@ -170,18 +205,47 @@ def _probe_harness(
                 f"{name} is installed but does not verify: managed files are "
                 "missing or changed.",
                 harness=name,
-                fix=fix,
+                fix=_update_fix(name, project),
             )
         )
-        return row
-    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
-    row["status"] = "ok"
+        return
+    held = "a file holds" if len(stray) == 1 else f"{len(stray)} files hold"
+    what = (
+        "Apothem markers to fix by hand"
+        if any(markers_to_fix_by_hand(path) for path in stray)
+        else "an Apothem BEGIN marker with no END marker"
+    )
+    checks.append(
+        _check(
+            "harness.stray_begin",
+            "fail",
+            f"{name} is installed but does not verify: {held} {what}.",
+            harness=name,
+            fix=stray_begin_note(stray, then=_update_fix(name, project, lead="run")),
+        )
+    )
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
+    row["status"] = "verify_failed"
+
+
+def _probe_install_hooks(
+    entry: HarnessRegistryEntry,
+    adapter: _Adapter,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Start the hooks of the install doctor examined; record the outcome on *row*.
+
+    Its root is the one :func:`_harness_roots` resolves: the harness folder of a
+    user-scope harness, the ``--project`` root of a project-scope one (see
+    :func:`_probe_registered_hooks`).
+    """
     harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
     install_root = harness_root if harness_root is not None else scoped_project
     if install_root is None:  # pragma: no cover - a project scope needs --project
-        return row
+        return
     _probe_registered_hooks(entry, install_root, row, checks)
-    return row
 
 
 def _probe_registered_hooks(
@@ -193,7 +257,9 @@ def _probe_registered_hooks(
     """Start the hooks the install at *install_root* registered; record the outcome.
 
     *install_root* is the root doctor examined: the harness folder of a
-    user-scope harness, the ``--project`` root of a project-scope one.
+    user-scope harness, the ``--project`` root of a project-scope one. Runs for
+    a harness that verifies, and for one a stray BEGIN marker fails (see
+    :func:`_report_verify_failure`).
     """
     name = entry.public_id
     project = install_root if entry.scope == "project" else None
