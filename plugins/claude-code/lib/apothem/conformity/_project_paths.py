@@ -62,7 +62,8 @@ def is_link(info: os.stat_result) -> bool:
 # ---------------------------------------------------------------------------
 
 _skip_root: Path | None = None
-_skipped: list[Path] = []
+# A dict used as an ordered set: a project can hold thousands of links.
+_skipped: dict[Path, None] = {}
 
 
 def start_skip_log(root: Path) -> None:
@@ -79,8 +80,8 @@ def start_skip_log(root: Path) -> None:
 
 def note_skipped(path: Path) -> None:
     """Note that *path*, a link or a special file, was left out."""
-    if _skip_root is not None and path not in _skipped:
-        _skipped.append(path)
+    if _skip_root is not None:
+        _skipped.setdefault(path, None)
 
 
 def take_skipped_paths() -> list[str]:
@@ -269,11 +270,26 @@ def is_project_dir(root: Path, path: Path) -> bool:
     return stat.S_ISDIR(info.st_mode)
 
 
-def _link_target(link: Path) -> Path | None:
-    """Return the path a link names, joined to its folder and tidied, or None.
+def _inside(root: Path, path: Path) -> bool:
+    """Return True when *path* is *root* or below it, by name."""
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
 
-    ``os.readlink`` reads the link itself and never touches its target. A
-    network path is never inside a project, so it gives None.
+
+def _link_target(root: Path, link: Path) -> Path | None:
+    """Return the file a link inside *root* names, found level by level, or None.
+
+    ``os.readlink`` reads the link itself and never touches its target. The
+    text is then walked one level at a time from the link's folder, as the
+    system would: ``..`` steps up from a folder already shown to be real, and
+    each named folder must be a real folder inside *root* (``os.lstat``), so
+    a ``..`` after a link is never tidied away as text. A level outside
+    *root* stops the walk before anything there is looked at. A network
+    path, a drive without a root (``C:name``), a rooted path without a drive
+    and an absolute path outside *root* give None.
     """
     try:
         text = str(link.readlink())
@@ -284,8 +300,30 @@ def _link_target(link: Path) -> Path | None:
         if text.startswith(_EXTENDED_UNC_PREFIX):
             return None
     named = Path(text)
-    joined = named if named.is_absolute() else link.parent / named
-    return Path(os.path.normpath(joined))
+    if named.is_absolute():
+        if not _inside(root, named):
+            return None
+        folder, parts = root, named.relative_to(root).parts
+    elif named.anchor:
+        return None
+    else:
+        folder, parts = link.parent, named.parts
+    if not parts or parts[-1] == "..":
+        return None
+    for part in parts[:-1]:
+        if part == "..":
+            folder = folder.parent
+            continue
+        folder = folder / part
+        if not _inside(root, folder):
+            return None
+        try:
+            info = os.lstat(folder)
+        except OSError:
+            return None
+        if is_link(info) or not stat.S_ISDIR(info.st_mode):
+            return None
+    return folder / parts[-1]
 
 
 def project_file_target(root: Path, path: Path) -> Path | None:
@@ -309,7 +347,9 @@ def project_file_target(root: Path, path: Path) -> Path | None:
         if not stat.S_ISDIR(info.st_mode):
             note_skipped(path)
         return None
-    target = _link_target(path)
+    # Only a symbolic link names a file; a junction or another reparse point
+    # that leads to a file cannot be opened as one, so it is refused.
+    target = _link_target(root, path) if stat.S_ISLNK(info.st_mode) else None
     if target is not None and _is_regular(_last_level(root, target)):
         return target
     note_skipped(path)

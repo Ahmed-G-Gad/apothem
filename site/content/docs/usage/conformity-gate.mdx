@@ -61,8 +61,9 @@ Three cases look at a link without following it:
   `CLAUDE.md` that points at another file there, is read at the file it points
   to. A linked `.gitattributes` still counts as missing, because git does not
   read it;
-- the stray-plans check in `no-global-plans-grep` reports a plans folder that
-  is a link, by its name, wherever the link leads;
+- the stray-plans check in `no-global-plans-grep` reports a plans folder or an
+  `.apothem` folder that is a link, by its name, wherever the link leads, and
+  lists every other link it does not search under `skipped_links`;
 - `no-toplevel-docs-grep` reports a `docs` link at the root by its name.
 
 A validator that passes when its folder is missing, such as the workflow

@@ -448,6 +448,20 @@ _Builder = Callable[[Path, Path], list[Path]]
 # The validator that reports a plans location that is a link, by name.
 _PLANS_SWEEP = "no-global-plans-grep"
 
+# The validators that walk a tree with the shared walk; each must name what
+# it left out under ``skipped_links`` in every case here.
+_TREE_WALKERS = frozenset(
+    {
+        "agents-md-coverage-grep",
+        "agnosticism-grep",
+        "dynamism-grep",
+        "freshness-token-grep",
+        "naming-grep",
+        "plain-language-grep",
+        "reference-token-grep",
+    }
+)
+
 
 def _comparable(result: list[object]) -> list[object]:
     """Return a result without its ``skipped_links`` list, the one part a link adds."""
@@ -518,12 +532,16 @@ def test_no_validator_reaches_through_a_link_or_a_pipe(
         {f"{label}: {event} {path}" for label, event, path in events if offends(path)}
     )
     assert offenders == []
-    traced = sorted(
+    # The plans sweep lists folders only, so a named pipe is not its concern.
+    tracers = set(_TREE_WALKERS)
+    if build is not _named_pipes:
+        tracers.add(_PLANS_SWEEP)
+    untraced = sorted(
         label
-        for label, result in linked.items()
-        if "skipped_links" in json.loads(str(result[1]) or "{}")
+        for label in tracers
+        if not json.loads(str(linked[label][1])).get("skipped_links")
     )
-    assert traced, "no report named a skipped link or pipe"
+    assert untraced == [], untraced
     if plans_link is not None:
         assert plans_link in _finding_paths(linked[_PLANS_SWEEP])
     if not same_once_deleted:

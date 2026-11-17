@@ -32,6 +32,7 @@ from pathlib import Path
 import pytest
 
 from apothem.conformity import (
+    _project_paths,
     dynamism_grep,
     no_global_plans_grep,
     no_toplevel_docs_grep,
@@ -44,6 +45,7 @@ from apothem.conformity._grep_base import (
     list_real_entries,
     project_file_target,
 )
+from apothem.conformity._project_paths import start_skip_log, take_skipped_paths
 
 _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="named pipes and /dev/zero exist only on POSIX systems"
@@ -413,3 +415,86 @@ def test_a_required_surface_that_links_inside_the_project_counts(
     ]
     assert "CLAUDE.md" not in absent
     assert "AGENTS.md" not in absent
+
+
+def test_the_stray_plans_sweep_names_a_link_it_does_not_search(tmp_path: Path) -> None:
+    """A link the sweep does not search is named in the skip log.
+
+    ``vend`` leads to a folder holding a ``.plans`` tree. The sweep never
+    follows it, so the report must say which link it left out.
+    """
+    outside = tmp_path / "outside"
+    (outside / ".plans").mkdir(parents=True)
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    _link_folder(root / "vend", outside)
+
+    start_skip_log(root)
+    findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+
+    assert findings == []
+    assert take_skipped_paths() == ["vend"]
+
+
+def _fake_readlink(monkeypatch: pytest.MonkeyPatch, link: Path, text: str) -> None:
+    """Make *link* read as a symbolic link holding *text*, on any host."""
+    real_readlink = Path.readlink
+
+    def readlink(self: Path) -> Path:
+        if self == link:
+            return Path(text)
+        return real_readlink(self)
+
+    monkeypatch.setattr(Path, "readlink", readlink)
+
+
+def test_a_link_target_is_found_level_by_level(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``..`` steps up only from a real folder, so a link on the way stops it.
+
+    The system resolves ``jsub/../AGENTS.md`` through the link ``jsub``, so
+    tidying the text to ``AGENTS.md`` would read a file the link does not name.
+    The link text is faked, so this runs on hosts that cannot create links.
+    """
+    outside = tmp_path / "outside"
+    _write(outside / "AGENTS.md")
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    (root / "real").mkdir()
+    (root / "nested").mkdir()
+    (outside / "sub").mkdir()
+    _link_folder(root / "jsub", outside / "sub")
+    link = root / "nested" / "CLAUDE.md"
+    cases = {
+        "../AGENTS.md": agents,
+        "../real/../AGENTS.md": agents,
+        str(agents): agents,
+        "../jsub/../AGENTS.md": None,
+        "../../outside/AGENTS.md": None,
+        str(outside / "AGENTS.md"): None,
+        "..": None,
+    }
+    back = chr(92)  # a backslash, built here so no escape is needed
+    unc = back.join(["", "", "?", "UNC", "server", "share", "AGENTS.md"])
+    cases[unc] = None
+    if os.name == "nt":
+        cases["C:AGENTS.md"] = None
+        cases[back + "AGENTS.md"] = None
+    for text, expected in cases.items():
+        _fake_readlink(monkeypatch, link, text)
+        assert _project_paths._link_target(root, link) == expected, text
+
+
+@pytest.mark.skipif(os.name != "nt", reason="junctions exist only on Windows")
+def test_a_junction_to_a_file_is_not_read_as_that_file(tmp_path: Path) -> None:
+    """Only a symbolic link names a file; a junction to one cannot be opened as it."""
+    winapi = pytest.importorskip("_winapi")
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    try:
+        winapi.CreateJunction(str(agents), str(root / "CLAUDE.md"))
+    except OSError as exc:
+        pytest.skip(f"cannot create a junction to a file here: {exc}")
+
+    assert project_file_target(root, root / "CLAUDE.md") is None

@@ -70,6 +70,7 @@ from apothem.conformity._grep_base import (
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
     LINK_ENTRY,
+    note_skipped,
     path_kind,
     scan_entries,
 )
@@ -188,6 +189,16 @@ _LINKED_PLANS_DETAIL: Final[str] = (
     "real folder there, or remove it"
 )
 
+# Finding text for an Apothem working folder (.apothem) that is a link.
+_LINKED_APOTHEM_DETAIL: Final[str] = (
+    "the Apothem working folder, which holds the plans tree, is a link: what "
+    "it holds lives wherever the link leads, outside the project, and the "
+    "gate does not follow links; the sole canonical plans tree is a real "
+    "folder at <root>/.apothem/plans inside the project per the "
+    "suite-locality invariant — replace the link with a real folder, or "
+    "remove it"
+)
+
 
 def _sweep_stray_plans_dirs(
     root: Path, tracked_plans_dirs: frozenset[str]
@@ -239,7 +250,12 @@ def _sweep_stray_plans_dirs(
         if rel in tracked_plans_dirs or (not link and entry == canonical):
             return
         if link:
-            findings.append(Finding(path=f"{rel}/", detail=_LINKED_PLANS_DETAIL))
+            detail = (
+                _LINKED_APOTHEM_DETAIL
+                if entry.name == ".apothem"
+                else _LINKED_PLANS_DETAIL
+            )
+            findings.append(Finding(path=f"{rel}/", detail=detail))
             return
         findings.append(
             Finding(
@@ -268,6 +284,10 @@ def _sweep_stray_plans_dirs(
             if kind == LINK_ENTRY:
                 if name in (".plans", ".apothem"):
                     _record_stray(entry, rel, link=True)
+                else:
+                    # Not searched, so a plans tree behind it would go
+                    # unseen: the report names it under skipped_links.
+                    note_skipped(entry)
                 continue
             if kind != DIR_ENTRY:
                 continue

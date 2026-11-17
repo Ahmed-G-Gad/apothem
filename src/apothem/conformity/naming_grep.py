@@ -58,6 +58,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     make_parser,
 )
+from apothem.conformity._project_paths import start_skip_log
 
 # Canonical-uppercase exception set per spec section 4.1. These names
 # are recognized verbatim regardless of casing rules. The set is closed;
@@ -416,7 +417,9 @@ def _main(argv: list[str]) -> int:
     else:
         candidate = Path(args.target) if args.target is not None else Path.cwd()
         if candidate.is_dir():
-            result = check_corpus(candidate.resolve())
+            corpus_root = candidate.resolve()
+            start_skip_log(corpus_root)
+            result = check_corpus(corpus_root)
             inspected = result.components_inspected
         elif candidate.is_file():
             result = check(str(candidate))

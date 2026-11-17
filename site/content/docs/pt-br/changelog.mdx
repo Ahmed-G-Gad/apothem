@@ -1304,7 +1304,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   links to a regular file inside the project, such as a `CLAUDE.md` that
   points at another file there, is read at that file (a linked
   `.gitattributes` still counts as missing, because git does not read it);
-  `no-global-plans-grep` reports a plans folder that is a link, by name; and
+  `no-global-plans-grep` reports a plans folder or an `.apothem` folder that
+  is a link, by name; and
   `no-toplevel-docs-grep` reports a root `docs` link. Each report lists the
   links and special files it left out under `skipped_links`. The checks that
   run git read the `.git` folder through git itself.
