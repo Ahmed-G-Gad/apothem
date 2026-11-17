@@ -345,7 +345,7 @@ def run_install(
             results=(
                 *results,
                 *preview,
-                *stray_begin_install_warnings([*results, *preview]),
+                *stray_begin_install_warnings([*results, *preview], dry_run=True),
             ),
         )
     if harness_root is not None:

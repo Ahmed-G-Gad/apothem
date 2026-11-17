@@ -2420,9 +2420,10 @@ def _failure_text(output: str) -> tuple[int, str]:
 _FIX_FIRST = (
     "first copy any listed file you edited or added, and fix the 1 file(s) "
     "whose warnings name a BEGIN marker with no END after it: an update keeps "
-    "that marker and your text as they are, and apothem verify fails until you "
-    "delete the marker line by hand, keeping your own lines; then run apothem "
-    "update, then apothem uninstall again"
+    "that marker and the text below it as they are, and apothem verify fails "
+    "until you delete that marker line by hand, with any old Apothem text below "
+    "it, keeping your own lines; then run apothem update, then apothem "
+    "uninstall again"
 )
 
 
@@ -2698,7 +2699,9 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
     # asks for cannot tell your quoted pair from a block of Apothem's inside
     # your code block: it changes nothing there (never writing over your
     # example) and names the file and the code block's line. The next
-    # uninstall finishes and leaves the file as it is.
+    # uninstall leaves the file as it is and stays unfinished, saying to
+    # change your pair's marker lines if it is yours; once you do, the
+    # uninstall run again finishes.
     profile = str(profile_minimal_path())
     code, envelope = _run("install", "--harness", "claude-code", "--profile", profile)
     assert code == 0, envelope
@@ -2716,7 +2719,10 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
     before_update = anchor.read_bytes()
     code, envelope = _run("update", "--harness", "claude-code", "--profile", profile)
     after_update = anchor.read_bytes()
-    last, _ = _uninstall()
+    last, last_envelope = _uninstall()
+    after_last = anchor.read_bytes()
+    anchor.write_bytes(after_last.replace(b"<!-- BEGIN", b"&lt;!-- BEGIN", 1))
+    finished, finished_envelope = _uninstall()
 
     assert first == cli._EXIT_PARTIAL
     assert before_update.startswith(quoted.rstrip(b"\n")), before_update[:200]
@@ -2729,16 +2735,25 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
         and "code block that opens at line 3" in str(w["message"])
     ]
     assert named, envelope["warnings"]
-    assert last == 0
-    assert anchor.read_bytes() == before_update
+    assert last == cli._EXIT_PARTIAL, last_envelope
+    (note,) = [
+        str(w["message"])
+        for w in last_envelope["warnings"]
+        if w.get("detail", {}).get("kept_reason") == "unclear-block"
+    ]
+    assert "if they are text of yours, change or delete those two marker" in note
+    assert after_last == before_update
+    assert finished == 0, finished_envelope
+    assert _unfinished(claude) is None
 
 
 def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     claude: Path,
 ) -> None:
-    # An update writes over the first whole block, here the pair you quote,
-    # so the advice is to remove your marker lines first; the BEGIN-marker
-    # advice (an update keeps it) is not given for this file.
+    # An update leaves a file with two whole blocks as it is (one of them,
+    # here, the pair you quote), so the advice is to remove your marker lines
+    # first; the BEGIN-marker advice (an update keeps it) is not given for
+    # this file.
     _earlier_release_with_an_edited_agent(claude)
     anchor = claude / "CLAUDE.md"
     quoted = (
@@ -2755,8 +2770,9 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     failure = str(envelope["results"][0]["message"])
     another = (
         "remove the marker lines you added to the 1 file(s) that hold two "
-        "different blocks, or move them inside a code block: an update writes "
-        "over the first whole block in a file, which can be yours"
+        "different blocks, or move them inside a code block: an update leaves "
+        "a file with two blocks as it is, and apothem verify fails until you "
+        "fix it"
     )
     assert f"first copy any listed file you edited or added, and {another}" in failure
     assert "an update keeps that marker" not in failure

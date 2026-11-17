@@ -13,7 +13,9 @@ marker pair is Apothem's block or a quote of the operator's, so:
 * verify fails until the operator fixes the file, and still reads the tool as
   installed;
 * uninstall removes Apothem's other files, keeps every byte of the file,
-  names it in a warning, and finishes.
+  names it in a warning, and stays unfinished (exit code 2): the install
+  record stays, so the next install still leaves the file as it is and the
+  next uninstall names it again, until the operator fixes it.
 
 That holds only when the merge sees the file's install record, so a harness
 whose record is kept under another root than the one the merge reads would
@@ -23,8 +25,8 @@ are run through the CLI the same way.
 
 The uninstall's text for such a stray BEGIN marker is followed too, with and
 without an install record: you delete Apothem's block by hand, and each BEGIN
-marker the text says may be yours, and a later install or update keeps every
-line of yours.
+marker the text says may be yours; the uninstall run again then finishes, and
+a later install or update keeps every line of yours.
 """
 
 from __future__ import annotations
@@ -169,12 +171,16 @@ def _other_files(harness_id: str, anchors: list[Path]) -> list[Path]:
     ]
 
 
-def _assert_uninstall_finished(
+def _assert_uninstall_unfinished(
     box: _Sandbox, anchors: list[Path], others: list[Path]
 ) -> None:
-    """Uninstall: it runs, names each anchor once, finishes and removes the rest."""
+    """Uninstall: it runs, names each anchor once, removes the rest, stays open.
+
+    lifecycle-1: one of the pairs may be Apothem's block, so the uninstall
+    does not finish (exit code 2) and the install record stays.
+    """
     code, output = box.invoke("uninstall", "--yes", "--json")
-    assert code == 0, output
+    assert code == 2, output
     payload = json.loads(output)
     assert "not installed" not in json.dumps(payload["results"]), payload["results"]
     for anchor in anchors:
@@ -186,10 +192,20 @@ def _assert_uninstall_finished(
         ]
         assert len(named) == 1, payload["warnings"]
         assert named[0]["detail"]["marker_left"] == "1"
-    key = package_key_for_public_id(box.entry.public_id)
-    assert install_ledger.read_records(key)[-1].kind == "uninstall"
+    assert [
+        row
+        for row in payload["results"]
+        if "marker lines Apothem cannot tell from your text" in str(row["message"])
+    ], payload["results"]
+    assert _kinds(box)[-1] == "uninstall-incomplete"
     assert others, "the install wrote no other file to check"
     assert [path for path in others if not path.exists()], others
+
+
+def _kinds(box: _Sandbox) -> list[str]:
+    """Return the kinds of the sandbox harness's ledger records, in order."""
+    key = package_key_for_public_id(box.entry.public_id)
+    return [record.kind for record in install_ledger.read_records(key)]
 
 
 @pytest.mark.parametrize(
@@ -213,7 +229,7 @@ def test_a_recorded_block_inside_an_operator_code_block_is_left_alone(
     again = box.install()
     after_install = {anchor: anchor.read_bytes() for anchor in anchors}
     verify, verify_output = box.invoke("verify", "--json")
-    _assert_uninstall_finished(box, anchors, others)
+    _assert_uninstall_unfinished(box, anchors, others)
     after_uninstall = {anchor: anchor.read_bytes() for anchor in anchors}
 
     assert after_install == before
@@ -244,12 +260,43 @@ def test_a_stray_begin_whose_end_is_quoted_in_code_cuts_nothing(
     again = box.install()
     after_install = anchor.read_bytes()
     verify, verify_output = box.invoke("verify", "--json")
-    _assert_uninstall_finished(box, [anchor], others)
+    _assert_uninstall_unfinished(box, [anchor], others)
 
     assert after_install == before
     assert _warnings_naming(again, anchor, 3), again["warnings"]
     assert verify != 0, verify_output
     assert json.loads(verify_output)["installed"] is True
+    assert anchor.read_bytes() == before
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_an_unclear_block_keeps_the_install_open_until_you_fix_it(
+    harness_id: str, sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """lifecycle-1: the uninstall used to finish and close the install record.
+
+    The tool kept loading the old block, a later install added a second
+    block beside it without a word, and the next uninstall left the old one
+    for good. Now the record stays: the install leaves the file as it is and
+    names it, and the next uninstall names it again and stays unfinished.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    [anchor] = _recorded_anchors(harness_id)
+    line = _fence_around_the_block(anchor, edit=True)
+    before = anchor.read_bytes()
+
+    first, first_output = box.invoke("uninstall", "--yes", "--json")
+    again = box.run("install", "--profile", _profile_with(tmp_path, ["A rule."]))
+    after_install = anchor.read_bytes()
+    second, second_output = box.invoke("uninstall", "--yes", "--json")
+
+    assert first == 2, first_output
+    assert after_install == before
+    assert _warnings_naming(again, anchor, line), again["warnings"]
+    assert second == 2, second_output
+    assert _unclear_text(json.loads(second_output), anchor)
+    assert _kinds(box)[-1] == "uninstall-incomplete"
     assert anchor.read_bytes() == before
 
 
@@ -371,7 +418,9 @@ def test_following_the_uninstall_text_keeps_your_lines(
     """regress-1, messages-1, diff-1, diff-2: the later install then cuts nothing.
 
     Deleting only Apothem's block would leave your BEGIN marker and the END
-    marker you quote as a whole block, which the install replaces.
+    marker you quote as a whole block, which the install replaces. The
+    uninstall stays unfinished until you follow its text (lifecycle-1); run
+    again then, it finishes.
     """
     box = sandbox_factory(harness_id)
     box.install()
@@ -380,10 +429,14 @@ def test_following_the_uninstall_text_keeps_your_lines(
     mine = _op_lines(anchor)
 
     code, output = box.invoke("uninstall", "--yes", "--json")
-    assert code == 0, output
+    assert code == 2, output
     _follow(anchor, _unclear_text(json.loads(output), anchor))
+    again, again_output = box.invoke("uninstall", "--yes")
+    finished = _kinds(box)[-1]
     box.install()
 
+    assert again == 0, again_output
+    assert finished == "uninstall"
     _assert_your_lines_kept(box, anchor, mine)
 
 
@@ -412,22 +465,31 @@ def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_line
 ) -> None:
     """oracle-1: Apothem's END marker reads as code too, so its pair is named apart.
 
-    The install text's fix for that pair says to delete your BEGIN marker at
-    line 1 as well, and the uninstall text says so in a step of its own.
+    The block is one an earlier release wrote: this release closes the code
+    block the rule opens before the END marker (markers-4), so here that
+    closer is taken out again. The install text's fix for that pair says to
+    delete your BEGIN marker at line 1 as well, and the uninstall text says
+    so in a step of its own.
     """
     box = sandbox_factory("codex")
     profile = _profile_with(tmp_path, [_OPEN_RULE])
     box.run("install", "--profile", profile)
     [anchor] = _recorded_anchors("codex")
-    anchor.write_bytes(_STRAY.encode() + anchor.read_bytes())
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    end = lines.index(E)
+    assert lines[end - 1] == "```", lines[end - 3 : end + 1]
+    earlier = "\n".join([*lines[: end - 1], *lines[end:]])
+    anchor.write_bytes(_STRAY.encode() + earlier.encode())
     mine = _op_lines(anchor)
 
     again = box.run("install", "--profile", profile)
     code, output = box.invoke("uninstall", "--yes", "--json")
-    assert code == 0, output
+    assert code == 2, output
     _follow(anchor, _unclear_text(json.loads(output), anchor))
+    finished, finished_output = box.invoke("uninstall", "--yes")
     box.run("install", "--profile", profile)
 
+    assert finished == 0, finished_output
     _assert_your_lines_kept(box, anchor, mine)
     assert [
         warning

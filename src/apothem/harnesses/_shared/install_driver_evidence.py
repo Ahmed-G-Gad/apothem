@@ -23,7 +23,7 @@ from apothem.lib.harness_materializer import (
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import InstallEntry, resolve_target
 
-from .install_driver_blocks import endless_block_left
+from .install_driver_blocks import markers_left
 from .install_driver_outcome import last_uninstall_finished
 from .install_driver_ownership import current_target
 from .install_driver_pathsafety import _APOTHEM_SUBTREE, _holds_content
@@ -104,8 +104,9 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
 
     *root*'s latest record is ``uninstall-incomplete`` and a file the active
     install lists still has the content Apothem wrote (see
-    :func:`still_written`), a managed block lost its END marker (the retry
-    then names that file), or no install is left since a finished uninstall
+    :func:`still_written`), a managed block lost its END marker or holds a
+    marker pair no rule can place (the retry then names that file, see
+    :func:`markers_left`), or no install is left since a finished uninstall
     (only a second run, which compares each path with what this release
     writes, can tell); an unreadable ledger reads as no evidence. With nothing
     Apothem wrote left, the install is closed by an ``uninstall``.
@@ -120,7 +121,7 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
     if not active and last_uninstall_finished(harness_name, root):
         return True
     if any(
-        still_written(target) or endless_block_left(target)
+        still_written(target) or markers_left(target)
         for install in active
         for target in install.targets
     ):

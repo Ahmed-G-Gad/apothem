@@ -13,8 +13,9 @@ the library functions an install, update and uninstall use:
   rule);
 * a BEGIN marker whose END is hidden in code with another pair after it is
   no certain block (rule 3);
-* a text with many fences left open is read a bounded number of times (the
-  re-read cap), and past the cap the last reading stands;
+* a text with fences left open is read once, however many there are, and a
+  block below them is still found; a fence Apothem's own block would leave
+  open is closed when the block is written;
 * a tab after a list bullet and a thematic break such as ``* * *`` read as
   CommonMark reads them, and so do the list items CommonMark does not open
   (one that would interrupt a paragraph, a setext underline, an empty item
@@ -168,6 +169,81 @@ def test_an_unrecorded_block_inside_an_operator_fence_gets_a_block_appended() ->
     assert uncertain_block(merged) is None
 
 
+#: A block that lost its END marker (lines 2-3), above an example of the
+#: markers you quote in a code block (lines 7-11).
+_LOST_END_ABOVE_A_QUOTE = (
+    f"# top\n{B}\nold apothem text\n\n## Notes\n\n```md\n{B}\nquoted\n{E}\n```\n"
+    "my tail\n"
+)
+
+
+def test_a_recorded_file_whose_block_lost_its_end_gets_a_fresh_block() -> None:
+    """markers-2: a pair quoted in code does not hold the merge back then.
+
+    The BEGIN marker outside code that starts no pair is what is left of
+    Apothem's block; every pair reads as code, so it is text you quote. The
+    merge adds a fresh block after the text, as it does with no record.
+    """
+    for recorded in (False, True):
+        merged = merge_managed_block(
+            _LOST_END_ABOVE_A_QUOTE, "new body", recorded=recorded
+        )
+
+        assert merged == _appended(_LOST_END_ABOVE_A_QUOTE), recorded
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(f"# top\n\n```md\n{B}\nquoted\n{E}\n```\n", id="no-lost-end"),
+        pytest.param(
+            f"# top\n{B}\nold text\n\n```md\n{B}\nquoted\n```\n{E}\n",
+            id="an-end-outside-code",
+        ),
+    ],
+)
+def test_a_recorded_file_whose_pair_may_be_the_block_is_still_held_back(
+    text: str,
+) -> None:
+    """With no BEGIN marker outside code, or a pair line outside code, it may be.
+
+    Apothem's block in a code block of yours, or one whose END marker you left
+    outside the code block, is no quote: the record keeps the file as it is.
+    """
+    assert merge_managed_block(text, "new body", recorded=True) == text
+
+
+#: Two whole blocks: an old block whose END marker came back above the block
+#: an update appended below it.
+_TWO_BLOCKS = f"# top\n{B}\nold body\n{E}\n\nmy text\n\n{B}\nnew body\n{E}\n"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(_TWO_BLOCKS, id="old-and-new"),
+        pytest.param(f"Notes:\n{B}\nmy example\n{E}\n\n{OLD}", id="your-pair-above"),
+        pytest.param(f"{OLD}\n{OLD}", id="pasted-twice"),
+    ],
+)
+def test_a_file_with_two_whole_blocks_is_left_as_it_is(text: str) -> None:
+    """lifecycle-2: one block per file, so which to replace is not certain.
+
+    An update used to replace the first and leave the second, so the tool
+    loaded two Apothem blocks, one of them stale.
+    """
+    for recorded in (False, True):
+        assert merge_managed_block(text, "newer body", recorded=recorded) == text
+    frontmatter = merge_managed_block(text, "---\nalwaysApply: true\n---\nrules")
+    assert frontmatter == text
+
+
+def test_whole_blocks_names_each_block_by_its_lines() -> None:
+    assert harness_materializer.whole_blocks(_TWO_BLOCKS) == [(2, 4), (8, 10)]
+    assert harness_materializer.whole_blocks(f"x\n{OLD}") == [(2, 4)]
+    assert harness_materializer.whole_blocks("no block\n") == []
+
+
 @pytest.mark.parametrize(
     "body",
     [
@@ -203,23 +279,111 @@ def test_a_stray_begin_whose_end_is_quoted_in_code_is_no_block() -> None:
     assert uncertain_block(text) == (1, 3)
 
 
+#: A block an earlier release wrote for a profile rule that opens a code block
+#: and never closes it: its END marker reads as code.
+_OPEN_BODY_BLOCK = f"{B}\nrules\n```bash\nls\n{E}\n"
+
+
 def test_a_body_with_an_open_fence_and_no_pair_after_it_is_one_block() -> None:
     """Rule 3 needs a pair after the block: alone, the block is replaced."""
-    text = "KEEP top\n\n" + wrap_managed_block("rules\n```bash\nls") + "after\n"
+    text = "KEEP top\n\n" + _OPEN_BODY_BLOCK + "after\n"
 
     merged = merge_managed_block(text, "new body")
 
-    assert merged == text.replace(wrap_managed_block("rules\n```bash\nls"), NEW)
+    assert merged == text.replace(_OPEN_BODY_BLOCK, NEW)
 
 
 def test_a_body_fence_an_operator_closer_below_ends_is_still_one_block() -> None:
     """tests-4: a closer of yours below the block is no marker pair after it."""
-    block = wrap_managed_block("rules\n```bash\nls")
+    block = _OPEN_BODY_BLOCK
     text = "KEEP top\n\n" + block + "after\n```\nmore\n"
 
     merged = merge_managed_block(text, "new body", recorded=True)
 
     assert merged == text.replace(block, NEW)
+    assert not has_stray_begin(text)
+    assert uncertain_block(text) is None
+
+
+@pytest.mark.parametrize(
+    ("body", "closer"),
+    [
+        pytest.param("rules\n```sh\nnpm test", "```", id="backticks"),
+        pytest.param("rules\n~~~~md\nx", "~~~~", id="tildes"),
+        pytest.param("rules\n````md\n```\nx", "````", id="longer-run"),
+        pytest.param("- Run:\n  ```sh\n  npm test", "  ```", id="in-a-list-item"),
+    ],
+)
+def test_a_fence_the_body_leaves_open_is_closed_in_the_block(
+    body: str, closer: str
+) -> None:
+    """markers-4: Apothem's own END marker never reads as code.
+
+    The closer is a run of the fence's character, as long as its opener, at
+    the column of the list item the fence sits in.
+    """
+    assert wrap_managed_block(body) == f"{B}\n{body}\n{closer}\n{E}\n"
+
+
+def test_a_body_whose_fences_close_gets_no_closer() -> None:
+    body = "rules\n```sh\nls\n```\nmore"
+
+    assert wrap_managed_block(body) == f"{B}\n{body}\n{E}\n"
+
+
+def test_a_reinstall_over_a_block_an_earlier_release_wrote_adds_no_second_block() -> (
+    None
+):
+    """markers-4: that block left the rule's code block open; this one closes it.
+
+    The block an earlier release wrote for the same body still counts as the
+    block the install writes, here inside a code block of yours with no
+    install record, so the re-install adds no second block.
+    """
+    body = "## Custom\n\n- Wrap like:\n```bash\nls"
+    text = f"```\nleft open\n\n{B}\n{body}\n{E}\n\n```\nleft open\n"
+
+    assert merge_managed_block(text, body) == text
+
+
+def test_a_block_whose_rule_opens_a_fence_stays_whole_beside_a_quoted_pair() -> None:
+    """markers-4: update and uninstall still find it with your example below.
+
+    Before, the rule's code block hid the END marker, and the example's marker
+    pair after it made the block unclear: no update refreshed it and no
+    uninstall took it out.
+    """
+    block = wrap_managed_block("## Apothem\n\n- Run:\n```sh\nnpm test")
+    example = f"\n## Example\n\n```md\n{B}\nq\n{E}\n```\n"
+    text = f"# mine\n\n{block}{example}"
+
+    assert complete_managed_block(text) == block.rstrip("\n")
+    assert uncertain_block(text) is None
+    for recorded in (False, True):
+        assert merge_managed_block(text, "new body", recorded=recorded) == (
+            text.replace(block, NEW)
+        )
+    assert remove_managed_block(text) == f"# mine\n{example}"
+
+
+def test_a_stray_begin_takes_an_end_quoted_in_code_below_it_as_its_end() -> None:
+    """markers-1, pinned: with no marker pair after them, they are one block.
+
+    A BEGIN marker that lost its END marker pairs with the next marker line
+    even when that END marker is quoted in code, so a merge replaces the text
+    between them and a removal takes it out. The reading cannot tell this
+    from a block an earlier release wrote whose body left a fence open (the
+    last test above), which it must still find; see the docstring of
+    ``_marker_lines``.
+    """
+    text = (
+        f"# My notes\n\n{B}\nold\n## My notes on Apothem\n\nIt closes its block "
+        f"with:\n```\n{E}\n```\nKeep this section.\n"
+    )
+    begin = text.index(B)
+    end = text.index(E) + len(E)
+
+    assert complete_managed_block(text) == text[begin:end]
     assert not has_stray_begin(text)
     assert uncertain_block(text) is None
 
@@ -235,13 +399,13 @@ def test_a_stray_begin_whose_end_sits_in_a_fence_left_open_cuts_nothing() -> Non
     assert uncertain_block(text) == (1, 3)
 
 
-# --- the re-read cap ---------------------------------------------------------
+# --- fences left open: one reading, however many ------------------------------
 
 
-def test_fences_left_open_are_read_again_at_most_eight_times(
+def test_a_text_with_fences_left_open_is_read_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """cr-6: one reading per fence left open, up to nine readings in all."""
+    """markers-5: one reading, and the block below the fences is replaced."""
     calls: list[int] = []
     scan = harness_materializer._scan
 
@@ -254,35 +418,64 @@ def test_fences_left_open_are_read_again_at_most_eight_times(
 
     merged = merge_managed_block(text, "new body", recorded=True)
 
-    assert merged == text
-    assert len(calls) <= 2 * 9
-
-
-@pytest.mark.parametrize(("openers", "found"), [(8, True), (9, False)])
-def test_past_eight_fences_left_open_no_block_is_certain(
-    openers: int, found: bool
-) -> None:
-    text = "```a\n" * openers + OLD
-
-    assert (complete_managed_block(text) is not None) is found
-
-
-def test_a_block_past_the_cap_is_named_inside_the_fence_left_open() -> None:
-    """oracle-4, docs-4 (a): the last reading puts it in the ninth code block.
-
-    A test of how :func:`uncertain_block` and :func:`uncertain_pairs` name a
-    pair past the cap. The "still found" tests below (four texts, and the
-    frontmatter one) cover the reading past the cap itself (tests-8).
-    """
-    text = "```a\n" * 9 + OLD
-
-    assert uncertain_block(text) == (10, 9)
-    assert _pairs(text) == [(10, "FENCE", 9, 12, "FENCE", 9, False)]
+    assert merged == text.replace(OLD, NEW)
+    assert len(calls) == 1
 
 
 def _closers_with_info(count: int) -> str:
     """Return *count* code examples whose closer carries an info string."""
     return "\n".join(f"```bash\nmake step{i}\n```bash\n" for i in range(count))
+
+
+@pytest.mark.parametrize(
+    "above",
+    [
+        pytest.param("```a\n" * 8, id="eight"),
+        pytest.param("```a\n" * 9, id="nine"),
+        pytest.param("```py\nx\n" * 40, id="forty"),
+        pytest.param(_closers_with_info(5) + "\n", id="closers-with-info"),
+    ],
+)
+def test_a_block_below_fences_left_open_is_found(above: str) -> None:
+    """markers-5: from the ninth such fence on, the block used to read as code.
+
+    Each update then added another block, or, with an install record, never
+    refreshed the one there.
+    """
+    text = above + OLD
+
+    assert complete_managed_block(text) == OLD.rstrip("\n")
+    assert uncertain_block(text) is None
+    for recorded in (False, True):
+        merged = merge_managed_block(text, "new body", recorded=recorded)
+        assert merged == text.replace(OLD, NEW), recorded
+    assert remove_managed_block(text) == above.rstrip("\n") + "\n"
+
+
+def test_updates_below_fences_left_open_keep_one_block() -> None:
+    """markers-5: each new body replaces the block; none is stacked."""
+    text = "```py\nx\n" * 9 + "\n" + OLD
+
+    for body in ("body one", "body two", "body three"):
+        for recorded in (False, True):
+            text = merge_managed_block(text, body, recorded=recorded)
+            assert text.count(B) == 1, (body, recorded)
+            assert body in text
+
+
+def test_rule_3_still_reads_a_fence_left_open_below_its_begin_marker() -> None:
+    """A fence left open still hides an END marker where rule 3 reads it.
+
+    Read as text, the fence would make a whole block of the pair your BEGIN
+    marker starts with the END marker quoted below it. The nine tilde fences
+    above it, which nothing closes, read as text as before.
+    """
+    text = "~~~a\n" * 9 + f"{B}\nop text A\n```\n{E}\nop text B\n\n{OLD}"
+
+    for recorded in (False, True):
+        assert merge_managed_block(text, "new body", recorded=recorded) == text
+    assert remove_managed_block(text) == text
+    assert uncertain_block(text) == (10, 12)
 
 
 @pytest.mark.parametrize(
@@ -310,7 +503,7 @@ def _closers_with_info(count: int) -> str:
         ),
     ],
 )
-def test_a_block_above_fences_past_the_cap_is_still_found(text: str) -> None:
+def test_a_block_above_fences_left_open_is_still_found(text: str) -> None:
     """oracle-1, cmark-2, diff-4: fences that open after a block cannot hide it."""
     block = complete_managed_block(text)
     removed = remove_managed_block(text)
@@ -326,7 +519,7 @@ def test_a_block_above_fences_past_the_cap_is_still_found(text: str) -> None:
     assert not has_stray_begin(text)
 
 
-def test_a_frontmatter_block_above_fences_past_the_cap_is_still_found() -> None:
+def test_a_frontmatter_block_above_fences_left_open_is_still_found() -> None:
     """oracle-1: the frontmatter-first block is replaced, not stacked."""
     body = "---\nalwaysApply: true\n---\nnew rules"
     old = "---\nalwaysApply: true\n---\n" + wrap_managed_block("old rules")
@@ -612,6 +805,42 @@ def test_a_fence_ends_the_paragraph_even_when_its_item_ends_the_fence() -> None:
     _quote_stays(text, quote)
 
 
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<!-- note -->",
+        "<!-- markdownlint-disable MD029 -->",
+        "<?php echo 1; ?>",
+        "<!DOCTYPE html>",
+        "<![CDATA[ x ]]>",
+        "<pre>x</pre>",
+    ],
+)
+def test_an_html_line_that_ends_its_block_leaves_no_paragraph_open(html: str) -> None:
+    """markers-3: so '2.' under it opens an item, and its fence holds the quote.
+
+    CommonMark ends such an HTML block on the line it starts; the reading
+    used to take that line for paragraph text, which '2.' cannot interrupt,
+    so the fence on the '2.' line opened nothing and the quoted pair read as
+    Apothem's block.
+    """
+    quote = f"2. ```md\n   {B}\n   quoted\n   {E}\n   ```\n"
+    text = f"{html}\n{quote}\n{OLD}"
+
+    _quote_stays(text, quote)
+
+
+def test_an_html_line_inside_a_block_tag_s_html_starts_nothing() -> None:
+    """Lines under a block tag such as <div> are raw HTML up to a blank line.
+
+    CommonMark reads every line there as HTML, the marker lines included, so
+    an HTML comment there does not end a paragraph and open the item below.
+    """
+    text = f"<div>\n<!-- note -->\n2. ```md\n   {B}\n   quoted\n   {E}\n   ```\n"
+
+    assert complete_managed_block(text) is not None
+
+
 # --- every pair no rule can place, with where it reads ------------------------
 
 
@@ -735,8 +964,12 @@ def test_a_recorded_unclear_file_with_a_frontmatter_body_is_left_as_it_is() -> N
 
 
 def test_a_frontmatter_block_whose_end_rule_3_hides_is_left_as_it_is() -> None:
-    """tests-5 (b): rule 3 holds the file back on the frontmatter path too."""
-    old = merge_managed_block("", "---\nalwaysApply: true\n---\nrules\n```bash\nls")
+    """tests-5 (b): rule 3 holds the file back on the frontmatter path too.
+
+    The block is one an earlier release wrote for a rule that opens a code
+    block and never closes it.
+    """
+    old = f"---\nalwaysApply: true\n---\n{_OPEN_BODY_BLOCK}"
     text = old + f"\nExample:\n\n```\n{B}\nquoted\n{E}\n```\n"
 
     assert merge_managed_block(text, _FRONTMATTER_BODY) == text

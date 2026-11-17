@@ -11,8 +11,8 @@ use CRLF or CR line endings. Merge (with and without an install record) and
 removal must each return one of:
 
 * the input, unchanged;
-* the input with only the real block's span changed (replaced by a merge,
-  taken out by a removal);
+* the input with only the real block's span changed (replaced by a merge
+  with the block this release writes, taken out by a removal);
 * the input plus one appended block, only when the document holds no real
   block, or when it holds one but no install record lists the file and the
   merge brings a new body (the merge cannot tell a block of Apothem's inside
@@ -36,6 +36,7 @@ from apothem.lib.harness_materializer import (
     complete_managed_block,
     merge_managed_block,
     remove_managed_block,
+    wrap_managed_block,
 )
 
 B = APOTHEM_BLOCK_BEGIN
@@ -163,14 +164,19 @@ def _documents(draw: st.DrawFn) -> _Doc:
 
 
 def _appended(text: str, body: str) -> str:
+    """Return *text* with the block this release writes for *body* appended."""
     separator = "" if text.endswith("\n") else "\n"
-    return f"{text}{separator}\n{_v150_block(body)}"
+    return f"{text}{separator}\n{wrap_managed_block(body)}"
 
 
 def _spliced(doc: _Doc, body: str) -> str:
+    """Return *doc* with its real block replaced by the one this release writes.
+
+    That block closes a fence the body leaves open, which v1.5.0's did not.
+    """
     assert doc.real is not None
     start, end = doc.real
-    return doc.text[:start] + _v150_block(body).rstrip("\n") + doc.text[end:]
+    return doc.text[:start] + wrap_managed_block(body).rstrip("\n") + doc.text[end:]
 
 
 def _removed(doc: _Doc, out: str) -> bool:

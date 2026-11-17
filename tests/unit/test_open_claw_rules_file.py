@@ -1956,3 +1956,90 @@ def test_an_update_that_cannot_retire_a_file_with_two_blocks_says_what_comes_nex
     assert "uninstall again" not in update_note
     (uninstall_note,) = uninstalled
     assert "then run the uninstall again" in uninstall_note
+
+
+# --- a rules file whose block lost its END marker -------------------------------
+
+
+def _verify_json() -> tuple[int, dict[str, object]]:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    result = CliRunner().invoke(main, ["verify", "--harness", "open-claw", "--json"])
+    payload: dict[str, object] = json.loads(result.output)
+    return result.exit_code, payload
+
+
+def _stray_files(payload: dict[str, object]) -> list[Path]:
+    results = payload["results"]
+    assert isinstance(results, list)
+    [row] = results
+    return [Path(path) for path in row["stray_begin"]["files"]]
+
+
+def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """lifecycle-4: the size warning blamed your text, and verify named no file.
+
+    The text below a BEGIN marker that lost its END marker is old Apothem
+    text, which an update keeps beside the fresh block it writes, so the file
+    no longer fits the limit: it is not written or registered. The warning
+    now names the file, that marker and that text, and verify names the file.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    target.write_text(text.replace(APOTHEM_BLOCK_END + "\n", ""), encoding="utf-8")
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    run = adapter.update({})
+    code, payload = _verify_json()
+
+    [size] = [
+        m for m in _messages(run) if "bootstrapMaxChars" in m and str(target) in m
+    ]
+    assert (
+        f"{target} holds an Apothem BEGIN marker that starts no whole block (its "
+        "END marker is gone), and the old Apothem text below it counts against "
+        "the limit: delete that marker line and that old text by hand, keeping "
+        "your own text, or raise the limit."
+    ) in size
+    assert "text you keep beside the Apothem block" not in size
+    assert code == 1, payload
+    assert _stray_files(payload) == [target]
+
+
+def test_verify_names_an_earlier_rules_file_an_update_cannot_retire(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """lifecycle-7: each update named the file, while verify passed.
+
+    The workspace moved, and the rules file Apothem wrote in the old one
+    holds a marker pair it cannot place, so no update can take its block
+    out. An earlier install record lists that file, so verify names it too.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN)
+    target.write_text(
+        f"{text[:at]}My notes:\n\n```\nmake test\n\n{text[at:]}\nMore:\n\n```sh\n"
+        "ls\n```\n",
+        encoding="utf-8",
+    )
+    _move_default_workspace(home, "~/ws-b")
+
+    run = adapter.update({})
+    code, payload = _verify_json()
+
+    assert [m for m in _messages(run) if str(target) in m]
+    assert code == 1, payload
+    assert _stray_files(payload) == [target]

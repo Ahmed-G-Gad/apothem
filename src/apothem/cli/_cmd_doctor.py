@@ -43,8 +43,11 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
-from apothem.cli._stray_begin_report import stray_begin_note, stray_begin_paths
-from apothem.harnesses._shared.install_driver_blocks import unclear_block_at
+from apothem.cli._stray_begin_report import (
+    markers_to_fix_by_hand,
+    stray_begin_note,
+    stray_begin_paths,
+)
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
@@ -149,11 +152,13 @@ def _report_verify_failure(
 ) -> None:
     """Record why an installed harness does not verify, with the fix.
 
-    A file that holds a BEGIN marker with no END marker gets its own check,
-    whose fix names each such file: an update keeps that marker, so the generic
-    "run update" fix would not clear it. That marker leaves the rest of the
-    install in place, so the harness's hooks are still started; its status stays
-    ``verify_failed``, and the Hooks column shows how they did.
+    A file that holds a BEGIN marker with no END marker, two or more whole
+    blocks, or marker pairs no rule can place gets its own check, whose fix
+    names each such file: an update keeps that marker, or leaves such a file
+    as it is, so the generic "run update" fix would not clear it. Such a
+    marker leaves the rest of the install in place, so the harness's hooks
+    are still started; its status stays ``verify_failed``, and the Hooks
+    column shows how they did.
     """
     name = entry.public_id
     row["status"] = "verify_failed"
@@ -173,7 +178,7 @@ def _report_verify_failure(
     held = "a file holds" if len(stray) == 1 else f"{len(stray)} files hold"
     what = (
         "Apothem markers to fix by hand"
-        if any(unclear_block_at(path) for path in stray)
+        if any(markers_to_fix_by_hand(path) for path in stray)
         else "an Apothem BEGIN marker with no END marker"
     )
     checks.append(

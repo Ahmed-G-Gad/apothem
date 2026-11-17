@@ -41,12 +41,12 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_blocks import (
     ANOTHER_BLOCK,
-    TAKES_OUT,
     another_block_warning,
     endless_block_warning,
     stray_begin_install_warnings,
     unclear_block_warning,
 )
+from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
 from apothem.harnesses._shared.install_driver_ownership import (
     fold_block,
     prior_ownership,
@@ -63,6 +63,7 @@ from apothem.lib import install_ledger, lenient_json
 from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
+    has_stray_begin,
     merge_managed_block,
 )
 
@@ -671,10 +672,25 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
 
     Past the per-file limit OpenClaw keeps the head and tail and drops the
     middle, and past the room the total leaves it cuts the file short or skips
-    it; either way the rules arrive broken, so the file is not written.
+    it; either way the rules arrive broken, so the file is not written. A file
+    that holds a BEGIN marker that starts no whole block keeps the old text
+    below it beside the block the install writes (see
+    :func:`~apothem.lib.harness_materializer.merge_managed_block`), so past the
+    per-file limit the reason names that file and that text, which is most
+    likely an old Apothem block that lost its END marker.
     """
     size = chars(text)
     limits = limits_for(config, workspace.agent_ids)
+    if size > limits.file_max and has_stray_begin(text):
+        return (
+            f"the Apothem rules file is {size:,} characters, over OpenClaw's "
+            f"{limits.file_max:,}-character limit per file (bootstrapMaxChars), "
+            "which would cut the middle out of it, so it is not written there. "
+            f"{workspace.rules_file} holds an Apothem BEGIN marker that starts no "
+            "whole block (its END marker is gone), and the old Apothem text below "
+            "it counts against the limit: delete that marker line and that old "
+            "text by hand, keeping your own text, or raise the limit."
+        )
     if size > limits.file_max:
         block = extract_managed_block(text)
         own = size - chars(block) if block is not None else 0
@@ -843,7 +859,8 @@ def _retire_one(
     forgotten. A block with no END marker is a plain warning, in a preview
     too: the file stays as it is, and it no longer counts as Apothem's. A
     marker pair no rule can place is a warning that leaves the file as it is
-    (see :func:`unclear_block_warning`).
+    (see :func:`unclear_block_warning`); with *strict*, its ``kept_reason``
+    leaves the uninstall unfinished too, since the pair may be Apothem's block.
     """
     home = harness_root.parent
     flag = _error if strict else _warning
@@ -1000,7 +1017,7 @@ def apply(
                 dry_run=dry_run,
             )
         )
-        results.extend(stray_begin_install_warnings(results[-1:]))
+        results.extend(stray_begin_install_warnings(results[-1:], dry_run=dry_run))
     results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
     return tuple(results)
 

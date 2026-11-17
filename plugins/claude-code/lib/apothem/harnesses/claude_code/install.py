@@ -156,7 +156,10 @@ def install(
         allowed_root=harness_root.parent,
         dry_run=dry_run,
     )
-    anchor = [anchor_result, *stray_begin_install_warnings([anchor_result])]
+    anchor = [
+        anchor_result,
+        *stray_begin_install_warnings([anchor_result], dry_run=dry_run),
+    ]
     if dry_run:
         return run.extend(anchor)
     return install_driver.finalize_install(

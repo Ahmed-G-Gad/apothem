@@ -279,9 +279,10 @@ def _failure_notes(
     Says it where the cause is one the operator can act on, so the fix is not a
     guess: ``user_level`` names the user-home folders that are missing or not
     Apothem's, and ``stray_begin`` names each file that holds a BEGIN marker
-    with no END marker, or marker pairs no rule can place, such as Apothem's
-    block inside a code block of the operator's (install and update keep such
-    a marker, and leave such a pair while an install record lists the file).
+    with no END marker, two or more whole blocks, or marker pairs no rule can
+    place, such as Apothem's block inside a code block of the operator's
+    (install and update keep such a marker, leave a file with two blocks as it
+    is, and leave such a pair while an install record lists the file).
     Each note is also appended to the row's message.
     """
     notes: list[str] = []

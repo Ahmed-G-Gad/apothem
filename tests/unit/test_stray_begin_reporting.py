@@ -598,9 +598,33 @@ def test_the_uninstall_warning_says_to_delete_whichever_pair_is_apothems(
     assert warning.detail == {"kept_reason": "unclear-block", "marker_left": "1"}
     assert warning.message.endswith(
         "If one of these pairs is Apothem's block (lines 4 to 6, or lines 14 to "
-        "16), delete it by hand, keeping your own text."
+        "16), delete it by hand, keeping your own text, and change or delete the "
+        "two marker lines of each pair of yours. Then run the uninstall again."
     )
     assert "sit inside a code block that opens at line 11" in warning.message
+
+
+def test_the_uninstall_warning_for_one_pair_says_what_to_do_if_it_is_yours(
+    tmp_path: Path,
+) -> None:
+    """lifecycle-1: the uninstall stays unfinished while the pair is there.
+
+    So the warning says how to clear it either way, and that the uninstall
+    runs again after.
+    """
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(
+        f"Intro\n```\ncode\n\n{OLD}New:\n```bash\nnpm ci\n```\n".encode()
+    )
+
+    warning = blocks.unclear_block_warning(target, "surgical_uninstall")
+
+    assert warning is not None
+    assert warning.message.endswith(
+        "If lines 5 to 7 are Apothem's block, delete them by hand, keeping your "
+        "own text; if they are text of yours, change or delete those two marker "
+        "lines. Then run the uninstall again."
+    )
 
 
 def test_the_verify_note_names_every_pair_with_its_fix(tmp_path: Path) -> None:
@@ -647,7 +671,8 @@ def test_the_uninstall_text_for_a_split_pair_names_your_begin_marker(
         "comes after it any more, a later install or update reads lines 1 to 4 as "
         "Apothem's block and replaces them. If one of these pairs is Apothem's "
         "block (lines 1 to 4, or lines 8 to 10), delete it by hand, keeping your "
-        "own text."
+        "own text, and change or delete the two marker lines of each pair of "
+        "yours. Then run the uninstall again."
     )
 
 
@@ -751,12 +776,13 @@ _QUOTED_BELOW = f"\nExample of the markers:\n\n```markdown\n{B}\nexample\n{E}\n`
 def test_a_write_that_leaves_a_split_pair_names_it_and_the_rule(
     tmp_path: Path,
 ) -> None:
-    """regress-2: no stray-marker text, whose fix deletes the block just written."""
-    written = merge_managed_block(
-        wrap_managed_block("Rule one.") + _QUOTED_BELOW,
-        f"Rule one.\n{_OPEN_RULE}",
-        recorded=True,
-    )
+    """regress-2: no stray-marker text, whose fix deletes the block just written.
+
+    The block is one an earlier release wrote for a rule that opens a code
+    block and never closes it; this release closes such a code block in the
+    block it writes (see the next test).
+    """
+    written = f"{B}\nRule one.\n{_OPEN_RULE}\n{E}\n{_QUOTED_BELOW}"
     target = tmp_path / "CLAUDE.md"
     target.write_bytes(written.encode())
     result = install_driver.MaterializationResult(
@@ -779,10 +805,15 @@ def test_a_write_that_leaves_a_split_pair_names_it_and_the_rule(
     assert "starts no whole block" not in warning.message
 
 
-def test_an_update_whose_rule_opens_a_code_block_above_your_quote_says_so(
+def test_an_update_whose_rule_opens_a_code_block_closes_it_in_the_block(
     sandbox_factory: SandboxFactory, tmp_path: Path
 ) -> None:
-    """regress-2: the update writes its block; the text names the rule to fix."""
+    """markers-4: the block stays whole, and your quote below stays your text.
+
+    Before, the rule's code block ran past Apothem's END marker, so the block
+    read as unclear beside your example: no update refreshed it, verify
+    failed, and no uninstall took it out.
+    """
     box = sandbox_factory("claude-code")
     code, output = box.invoke(
         "install", "--profile", _profile(tmp_path, "one.yaml", ["Rule one."]), "--json"
@@ -790,30 +821,25 @@ def test_an_update_whose_rule_opens_a_code_block_above_your_quote_says_so(
     assert code == 0, output
     anchor = _anchor(box)
     anchor.write_bytes(anchor.read_bytes() + _QUOTED_BELOW.encode())
-    before = anchor.read_bytes()
     rules = ["Rule one.", _OPEN_RULE]
 
     code, output = box.invoke(
         "update", "--profile", _profile(tmp_path, "two.yaml", rules), "--json"
     )
+    verify, verify_output = box.invoke("verify")
 
     assert code == 0, output
-    assert anchor.read_bytes() != before
     lines = anchor.read_bytes().decode("utf-8").split("\n")
-    fence, end = lines.index("```bash") + 1, lines.index(E) + 1
-    messages = [
-        str(warning["message"])
+    end = lines.index(E)
+    assert lines.index("```bash") < end - 1
+    assert lines[end - 1] == "```"
+    assert anchor.read_bytes().decode("utf-8").endswith(_QUOTED_BELOW)
+    assert not [
+        warning
         for warning in json.loads(output)["warnings"]
         if _names(str(warning["message"]), anchor)
     ]
-    assert not [m for m in messages if "starts no whole block" in m], messages
-    [message] = [m for m in messages if "cannot tell" in m]
-    assert "left the file as it is" not in message
-    assert (
-        f"If lines 1 to {end} are Apothem's block, the code block that opens at "
-        f"line {fence} comes from a rule in your profile: close it above line "
-        f"{end} and fix that rule"
-    ) in message
+    assert verify == 0, verify_output
 
 
 @pytest.mark.parametrize(
@@ -950,3 +976,245 @@ def test_a_recorded_unclear_anchor_counts_as_an_install(tmp_path: Path) -> None:
     _record("codex", root, anchor)
 
     assert install_driver.detect_install("codex", harness_root=root)
+
+
+# --- a BEGIN marker whose END marker came back: two whole blocks -------------
+
+
+def test_the_stray_warning_says_not_to_put_the_end_marker_back(tmp_path: Path) -> None:
+    """lifecycle-2: putting the END back leaves two Apothem blocks."""
+    target = tmp_path / "AGENTS.md"
+    target.write_text(
+        f"{B}\nold rules\nmy own line\n\n{B}\nnew rules\n{E}\n", encoding="utf-8"
+    )
+    merged = install_driver.MaterializationResult(
+        outcome="updated", operation="sentinel_merge", path=str(target), message=""
+    )
+
+    [warning] = stray_begin_install_warnings([merged])
+    note = stray_begin_note([target], then="run apothem update")
+
+    assert warning.message.endswith(
+        "Do not add the END marker back below that text: the file would then hold "
+        "two Apothem blocks, which install and update leave as they are."
+    )
+    assert "do not add the END marker back" in note
+
+
+#: An old block whose END marker came back (lines 2-4) above the block an
+#: update appended (lines 8-10).
+_TWO_BLOCKS = f"# top\n{B}\nold rules\n{E}\n\nmy own line\n\n{B}\nnew rules\n{E}\n"
+
+
+@pytest.mark.parametrize(
+    ("dry_run", "left"),
+    [(False, "so it left"), (True, "so it would leave")],
+)
+def test_a_file_with_two_whole_blocks_names_each_block(
+    tmp_path: Path, dry_run: bool, left: str
+) -> None:
+    """lifecycle-2: install and update leave it as it is and name both blocks."""
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(_TWO_BLOCKS.encode())
+    result = install_driver.MaterializationResult(
+        outcome="unchanged", operation="sentinel_merge", path=str(target), message=""
+    )
+
+    [warning] = stray_begin_install_warnings([result], dry_run=dry_run)
+
+    assert warning.message == (
+        f"{target} holds 2 whole blocks between Apothem's markers (lines 2 to 4, "
+        "and lines 8 to 10). Apothem writes one block per file and cannot tell "
+        f"which one is its own, {left} the file as it is. Keep one block and fix "
+        "the others by hand, keeping your own text: delete an Apothem block from "
+        "its BEGIN marker line to its END marker line, and for a marker pair of "
+        "yours (an example you quote, say), change or delete its two marker "
+        "lines. Then run apothem update again. apothem verify fails for this tool "
+        "until you fix the file."
+    )
+
+
+def test_the_verify_note_names_both_blocks(tmp_path: Path) -> None:
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(_TWO_BLOCKS.encode())
+
+    note = stray_begin_note([target], then="run apothem update")
+
+    assert note.startswith(
+        f"{target} holds 2 whole blocks between Apothem's markers (lines 2 to 4, "
+        "and lines 8 to 10). Apothem writes one block per file and cannot tell "
+        "which one is its own. Keep one block"
+    )
+    assert note.endswith(" Then run apothem update")
+
+
+def _profile_named(tmp_path: Path, name: str) -> str:
+    """Write the minimal profile with the operator named *name*; return its path."""
+    data = yaml.safe_load(Path(profile_minimal_path()).read_text(encoding="utf-8"))
+    data.setdefault("identity", {})["name"] = name
+    path = tmp_path / f"{name.replace(' ', '-')}.yaml"
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    return str(path)
+
+
+def test_an_end_marker_put_back_leaves_two_blocks_the_update_does_not_touch(
+    sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """lifecycle-2: the update used to refresh the old block and verify passed.
+
+    The block lost its END marker, an update added a fresh block below, and
+    the END marker was put back where it was: the file holds two Apothem
+    blocks, so the tool loads both. Update now leaves the file as it is and
+    names both, and verify and verify --profile fail until one is deleted.
+    """
+    box = sandbox_factory("claude-code")
+    box.install()
+    anchor = _anchor(box)
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    at = lines.index(E)
+    anchor.write_bytes("\n".join([*lines[:at], *lines[at + 1 :], "my tail"]).encode())
+    code, output = box.invoke("update", "--profile", str(profile_minimal_path()))
+    assert code == 0, output
+    lines = anchor.read_bytes().decode("utf-8").split("\n")
+    anchor.write_bytes("\n".join([*lines[:at], E, *lines[at:]]).encode())
+    before = anchor.read_bytes()
+    changed = _profile_named(tmp_path, "Changed Person")
+
+    code, output = box.invoke("update", "--profile", changed, "--json")
+    verify, verify_output = box.invoke("verify", "--json")
+    faithful, faithful_output = box.invoke("verify", "--profile", changed)
+    result = CliRunner().invoke(main, ["doctor", "--json"])
+
+    assert code == 0, output
+    assert anchor.read_bytes() == before
+    [message] = [
+        str(w["message"])
+        for w in json.loads(output)["warnings"]
+        if _names(str(w["message"]), anchor)
+    ]
+    assert "holds 2 whole blocks between Apothem's markers (lines " in message
+    assert verify == 1, verify_output
+    [row] = json.loads(verify_output)["results"]
+    assert "holds 2 whole blocks" in row["stray_begin"]["message"]
+    assert faithful != 0, faithful_output
+    [check] = [c for c in json.loads(result.output)["checks"] if c["status"] == "fail"]
+    assert check["code"] == "harness.stray_begin"
+    assert check["message"] == (
+        "claude-code is installed but does not verify: a file holds Apothem "
+        "markers to fix by hand."
+    )
+
+
+def test_a_marker_pair_of_yours_above_the_block_is_not_written_over(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """lifecycle-2: an update used to write Apothem's block over your pair.
+
+    Your marker pair outside code is a whole block too, so the file holds
+    two, and the update leaves it as it is.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    mine = f"# Notes\n\nThe markers:\n{B}\nMY EXAMPLE\n{E}\n\n".encode()
+    anchor.write_bytes(mine + anchor.read_bytes())
+    before = anchor.read_bytes()
+
+    code, output = box.invoke("update", "--profile", str(profile_minimal_path()))
+
+    assert code == 0, output
+    assert anchor.read_bytes() == before
+    assert "holds 2 whole blocks" in " ".join(output.split())
+
+
+# --- what an uninstall says about a BEGIN marker it leaves --------------------
+
+
+def test_the_uninstall_says_to_delete_the_old_text_below_a_lone_begin_marker(
+    tmp_path: Path,
+) -> None:
+    """lifecycle-3: deleting only the marker line left old Apothem text behind.
+
+    No later install, verify or uninstall would name that text again. And
+    after an uninstall, verify does not look at the file, so the warning no
+    longer says it fails until then.
+    """
+    target = tmp_path / "CLAUDE.md"
+    target.write_text(f"# top\n{B}\nold rules\n\nmy own line\n", encoding="utf-8")
+    result = install_driver.MaterializationResult(
+        outcome="updated",
+        operation="surgical_uninstall",
+        path=str(target),
+        message="",
+    )
+
+    [warning] = blocks.stray_begin_warnings([result])
+
+    assert warning.message == (
+        f"{target} still holds a line that reads as the Apothem BEGIN marker, with "
+        f"no END marker ({E}) after it, now that Apothem's block is out. Delete "
+        "that line by hand, with any old Apothem text below it, and keep your own "
+        "lines: the tool still reads that text, and an install keeps it as it is."
+    )
+
+
+# --- a preview says what the run would do --------------------------------------
+
+
+def _block_file(box: _Sandbox) -> Path:
+    """Return the first Markdown file the install record lists as a block file."""
+    record = install_ledger.read_records(box.entry.package_key)[-1]
+    return next(
+        Path(target.path)
+        for target in record.targets
+        if target.mode == "sentinel_merge" and Path(target.path).suffix == ".md"
+    )
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code", "hermes"])
+def test_a_dry_run_says_it_would_leave_an_unclear_file_as_it_is(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """lifecycle-5: the preview said Apothem 'left' the file it only previewed."""
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _block_file(box)
+    _fence_the_block(anchor)
+    profile = str(profile_minimal_path())
+
+    code, output = box.invoke("update", "--profile", profile, "--dry-run", "--json")
+
+    assert code == 0, output
+    [message] = [
+        str(w["message"])
+        for w in json.loads(output)["warnings"]
+        if _names(str(w["message"]), anchor)
+    ]
+    assert "so it would leave the file as it is." in message
+    assert "left the file" not in message
+
+
+# --- a recorded file whose block lost its END above a quoted pair -------------
+
+
+def test_a_fresh_block_after_a_lost_end_gets_the_stray_marker_text(
+    tmp_path: Path,
+) -> None:
+    """markers-2: the update adds its block; the warning names the BEGIN marker.
+
+    It used to leave the file as it is and name only your quoted example.
+    """
+    text = f"# top\n{B}\nold rules\n\n## Notes\n\n```md\n{B}\nquoted\n{E}\n```\n"
+    merged = merge_managed_block(text, "new rules", recorded=True)
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(merged.encode())
+    result = install_driver.MaterializationResult(
+        outcome="updated", operation="sentinel_merge", path=str(target), message=""
+    )
+
+    [warning] = stray_begin_install_warnings([result])
+
+    assert merged == f"{text}\n{wrap_managed_block('new rules')}"
+    assert warning.message.startswith(
+        f"{target} has an Apothem BEGIN marker that starts no whole block"
+    )

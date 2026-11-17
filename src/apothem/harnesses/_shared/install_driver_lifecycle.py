@@ -29,6 +29,7 @@ from .install_driver_blocks import (
     stray_begin_at,
     stray_begin_files,
     stray_begin_warnings,
+    whole_blocks_at,
 )
 from .install_driver_datahome import (
     _data_home_for,
@@ -128,10 +129,10 @@ def verify_install(
     A user-level entry passes when its folders are in place whichever harness
     wrote them (see :func:`user_level_entry_ok`). A file this install keeps a
     managed block in fails it while it holds a BEGIN marker that starts no
-    whole block, or a marker pair no rule can place (see
-    :func:`stray_begin_files`): install and update keep such a marker, so only
-    the operator can clear it. Returns False on the first
-    unsatisfied target.
+    whole block, two or more whole blocks, or a marker pair no rule can place
+    (see :func:`stray_begin_files`): install and update keep such a marker, or
+    leave such a file as it is, so only the operator can clear it. Returns
+    False on the first unsatisfied target.
     """
     rules = install_driver.load_rules(harness_name)
     if native_config is not None:
@@ -285,8 +286,11 @@ def check_fidelity(
     the freshly-projected managed-block body to appear verbatim inside the
     on-disk anchor's managed block. An anchor whose projected content was edited
     on disk (so the freshly-projected body is no longer a substring) reads as
-    ``drifted``; an absent anchor or one with no managed block reads as
-    ``missing``; an exact carry reads as ``faithful``. Line endings do not count:
+    ``drifted``, and so does one that also holds a BEGIN marker that starts no
+    whole block, or a second whole block (an update leaves that file as it
+    is, so the tool would load a stale copy beside the block checked here);
+    an absent anchor or one with no managed block reads as ``missing``; an
+    exact carry reads as ``faithful``. Line endings do not count:
     an anchor saved with CRLF or CR endings carries the body as well as one with
     LF endings, and an update that leaves the block as it is keeps those
     endings. This is what makes the CLI
@@ -317,6 +321,7 @@ def check_fidelity(
             expected
             and expected in block.replace("\r\n", "\n").replace("\r", "\n")
             and not stray_begin_at(target)
+            and len(whole_blocks_at(target)) < 2
         ):
             results.append(FidelityResult(_path_text(target), "faithful"))
         else:

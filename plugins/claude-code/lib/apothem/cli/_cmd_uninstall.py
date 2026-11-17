@@ -304,22 +304,23 @@ _UNPROVEN_PATHS = (
 #: What to do first with each file whose warning names a BEGIN marker with no
 #: END after it (``marker_left`` without ``kept_reason`` ``another-block``): an
 #: update keeps that marker and the text after it, so it is safe, but only the
-#: operator clears the marker, and verify fails until then.
+#: operator clears the marker, with any old Apothem text below it, and verify
+#: fails until then.
 _FIX_STRAY = (
     "fix the {count} file(s) whose warnings name a BEGIN marker with no END "
-    "after it: an update keeps that marker and your text as they are, and "
-    "apothem verify fails until you delete the marker line by hand, keeping "
-    "your own lines"
+    "after it: an update keeps that marker and the text below it as they are, "
+    "and apothem verify fails until you delete that marker line by hand, with "
+    "any old Apothem text below it, keeping your own lines"
 )
 
 #: What to do first with each file that holds two different blocks
-#: (``kept_reason`` ``another-block``): an update writes over the first whole
-#: block in the file, which can be a pair the operator quoted, so the marker
-#: lines the operator added go before any update.
+#: (``kept_reason`` ``another-block``): an update leaves a file with two whole
+#: blocks as it is (Apothem writes one block per file), so the marker lines
+#: the operator added go before any update.
 _FIX_ANOTHER = (
     "remove the marker lines you added to the {count} file(s) that hold two "
-    "different blocks, or move them inside a code block: an update writes "
-    "over the first whole block in a file, which can be yours"
+    "different blocks, or move them inside a code block: an update leaves a "
+    "file with two blocks as it is, and apothem verify fails until you fix it"
 )
 
 #: What to do first with each file whose marker pairs Apothem cannot place
@@ -342,7 +343,7 @@ def _marker_fix(run: MaterializationRun) -> str:
     marker with no END (:data:`_FIX_STRAY`), two different blocks
     (:data:`_FIX_ANOTHER`) and a marker pair Apothem cannot place
     (:data:`_FIX_UNCLEAR`) each get their own advice, since an update keeps
-    the first, writes over the second and leaves the third as it is.
+    the first and leaves the file as it is for the other two.
     """
     another = _another_block_paths(run)
     unclear = _kept_paths(run, UNCLEAR_BLOCK)
@@ -363,6 +364,16 @@ _ANOTHER_BLOCK_LINE = (
     "added in them (a marker pair you quoted, or a block you pasted in a second "
     "time), or move them inside a code block, keeping your own text, then run "
     "apothem uninstall again"
+)
+
+
+#: The failure line for files whose marker pairs Apothem cannot place
+#: (``kept_reason`` ``unclear-block``): one of those pairs may be Apothem's
+#: block, so the uninstall stays unfinished until the operator fixes them.
+_UNCLEAR_BLOCK_LINE = (
+    "{count} file(s) hold marker lines Apothem cannot tell from your text, so "
+    "Apothem left them as they are; fix the marker lines each warning names, "
+    "keeping your own text, then run apothem uninstall again"
 )
 
 
@@ -416,7 +427,9 @@ def _problems(
     the advice to close what holds them points at files the reader can see.
     When the next step is to run apothem update and a warning names a file
     with an Apothem marker the uninstall left, the step says to fix that file
-    first (:func:`_marker_fix`).
+    first (:func:`_marker_fix`). A file with two different marked blocks, or
+    with marker pairs Apothem cannot place, gets a line of its own: the
+    operator fixes it by hand, then runs the uninstall again.
     """
     problems = _link_problems(harness_id, run, blocked)
     for message, count in Counter(error.message for error in run.errors).items():
@@ -433,6 +446,9 @@ def _problems(
     another = _another_block_paths(run)
     if another:
         problems[_ANOTHER_BLOCK_LINE.format(count=len(another))] = []
+    unclear = _kept_paths(run, UNCLEAR_BLOCK)
+    if unclear:
+        problems[_UNCLEAR_BLOCK_LINE.format(count=len(unclear))] = []
     return problems
 
 
@@ -501,7 +517,8 @@ def _report_run(
     per failed step. The uninstall is partial when it removed files before the
     failure, when installed files stay because they are reached through a
     link (most tools still load them), when files stay that no record shows
-    are Apothem's, or when a file holds two different marked blocks.
+    are Apothem's, when a file holds two different marked blocks, or when a
+    file holds marker pairs Apothem cannot place.
     """
     run = outcome if isinstance(outcome, MaterializationRun) else None
     if run is None:
@@ -535,7 +552,12 @@ def _report_run(
     removed = any(result.outcome == "updated" for result in run.results)
     # Each of these stays until the operator acts, so a retry that removes
     # nothing more is graded as the first run was.
-    waiting = bool(blocked) or bool(earlier) or bool(_another_block_paths(run))
+    waiting = (
+        bool(blocked)
+        or bool(earlier)
+        or bool(_another_block_paths(run))
+        or bool(_kept_paths(run, UNCLEAR_BLOCK))
+    )
     return [summary, *_step_rows(harness_id, run)], waiting or removed
 
 

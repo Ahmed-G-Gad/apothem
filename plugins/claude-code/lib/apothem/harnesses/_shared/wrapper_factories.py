@@ -804,7 +804,9 @@ def make_native_config_install(
                 *support_results,
                 profile_result,
                 # The support run's own warnings are dropped above.
-                *stray_begin_install_warnings([*support_results, profile_result]),
+                *stray_begin_install_warnings(
+                    [*support_results, profile_result], dry_run=dry_run
+                ),
                 *extra_results,
             ),
         )

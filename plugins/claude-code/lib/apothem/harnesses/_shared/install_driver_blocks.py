@@ -8,31 +8,31 @@ module reads such a file as install evidence (a whole block counts; a BEGIN
 marker without its END counts only while the install may be open) and builds
 the warnings an uninstall gives when it leaves a file because of its markers:
 a block that lost its END marker, another whole block that is not a copy of
-Apothem's own, and a BEGIN marker of the operator's left alone once Apothem's
-block is out. Each of those warnings carries :data:`MARKER_LEFT`. It also
-finds the BEGIN markers that start no whole block, which install and update
-keep as they are and verify reports (:func:`stray_begin_files`), and the
-files whose marker pairs no rule can place (:func:`unclear_pairs_at`), which
-install and update leave as they are while an install record lists the file;
-with no record, only when rule 3 fired (a BEGIN marker outside code whose END
-marker reads as code, with another pair after it) or a pair holds exactly the
-block being written. The text for those names each pair, where its marker
-lines read, each BEGIN marker outside code that starts no pair
-(:func:`lone_begins_at`), and a fix for each case with what follows from it
-(:func:`unclear_block_report`).
+Apothem's own, a marker pair no rule can place, and a BEGIN marker of the
+operator's left alone once Apothem's block is out. Each of those warnings
+carries :data:`MARKER_LEFT`; the second and third leave the uninstall
+unfinished. It also finds the files whose markers verify reports
+(:func:`stray_begin_files`): a BEGIN marker that starts no whole block, which
+install and update keep as they are; two or more whole blocks
+(:func:`whole_blocks_at`), which install and update leave as they are; and
+marker pairs no rule can place (:func:`unclear_pairs_at`), which install and
+update leave as they are while an install record lists the file; with no
+record, only when rule 3 fired (a BEGIN marker outside code whose END marker
+reads as code, with another pair after it) or a pair holds exactly the block
+being written. The text for those (:mod:`install_driver_blocktext`) names each
+pair or block, where its marker lines read, each BEGIN marker outside code
+that starts no pair (:func:`lone_begins_at`), and a fix for each case with
+what follows from it.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
-    MarkerLine,
-    MarkerPlace,
     UncertainPair,
     complete_managed_block,
     extract_managed_block,
@@ -41,10 +41,12 @@ from apothem.lib.harness_materializer import (
     remove_managed_block,
     uncertain_block,
     uncertain_pairs,
+    whole_blocks,
 )
 from apothem.lib.install_ledger import LedgerTarget
 from apothem.lib.propagation import resolve_target
 
+from .install_driver_blocktext import two_blocks_report, unclear_block_report
 from .install_driver_pathsafety import _root_for
 from .install_driver_shared import path_key
 from .install_driver_types import (
@@ -60,9 +62,9 @@ from .install_driver_types import (
 #: whole block (:func:`another_block_warning`), or a marker pair no rule can
 #: place (:func:`unclear_block_warning`). An install or update keeps a BEGIN
 #: marker with no END and writes Apothem's block apart from it, and verify
-#: fails until the operator deletes it; in a file with two whole blocks, it
-#: writes over the first; a file with an unclear pair it leaves as it is. So an
-#: uninstall whose next step is ``apothem update`` says to fix such a file first.
+#: fails until the operator deletes it; a file with two whole blocks or an
+#: unclear pair it leaves as it is. So an uninstall whose next step is
+#: ``apothem update`` says to fix such a file first.
 MARKER_LEFT = "marker_left"
 
 #: ``kept_reason`` of a file that holds another whole block besides Apothem's
@@ -71,8 +73,9 @@ ANOTHER_BLOCK = "another-block"
 
 #: ``kept_reason`` of a file whose marker pairs no rule can place (see
 #: :func:`unclear_block_warning`): a recorded one, or one where rule 3 fired.
-#: The uninstall finishes: the file no longer counts as Apothem's, as with a
-#: BEGIN marker that lost its END.
+#: It leaves the uninstall unfinished, as another block does: one of those
+#: pairs may be Apothem's block, so the install record stays until the
+#: operator fixes the marker lines, and a second uninstall then finishes.
 UNCLEAR_BLOCK = "unclear-block"
 
 
@@ -128,237 +131,36 @@ def lone_begins_at(path: Path) -> list[int]:
     return lone_begins(text)
 
 
-#: What the next update does with a marker pair once both of its lines read
-#: outside code (see :func:`unclear_block_report`); ``{lines}`` names them.
-REPLACES = "the next update then replaces {lines}"
+def whole_blocks_at(path: Path) -> list[tuple[int, int]]:
+    """Return the lines of each whole block's BEGIN and END marker in *path*.
 
-#: The same for a rules file an install or update takes Apothem's block out of.
-TAKES_OUT = "the next install, update or uninstall then takes {lines} out"
-
-
-def _reads(marker: MarkerLine) -> str:
-    """Return what the line of *marker* reads as, after the marker's name."""
-    if marker.place is MarkerPlace.FENCE:
-        return f"sits inside a code block that opens at line {marker.fence}"
-    if marker.place is MarkerPlace.INDENTED:
-        return "sits in indented code"
-    if marker.place is MarkerPlace.PARAGRAPH:
-        return "reads as part of the paragraph above it"
-    return "is outside code"
-
-
-#: What both marker lines of a pair read as, when they read alike.
-_BOTH = {
-    MarkerPlace.INDENTED: "sit in indented code",
-    MarkerPlace.PARAGRAPH: "read as part of the paragraph above them",
-    MarkerPlace.OUTSIDE: "are outside code: that pair may be Apothem's block",
-}
-
-
-def _outside(pair: UncertainPair) -> bool:
-    """Return True when both marker lines of *pair* read outside code."""
-    return pair.begin.place is pair.end.place is MarkerPlace.OUTSIDE
-
-
-def _pair_text(pair: UncertainPair, later: UncertainPair | None) -> str:
-    """Return where the marker lines of *pair* read; *later* is the next pair."""
-    begin, end = pair.begin, pair.end
-    subject = f"The BEGIN marker at line {begin.line}"
-    if pair.split:
-        follows = (
-            f"the marker pair from line {later.begin.line} to line {later.end.line} "
-            "comes after them: that pair may be Apothem's block"
-            if later is not None and _outside(later)
-            else "another marker pair comes after them"
-        )
-        return (
-            f"{subject} is outside code, but its END marker at line {end.line} "
-            f"{_reads(end)}, and {follows}."
-        )
-    if begin.place is end.place and begin.fence == end.fence:
-        both = (
-            f"sit inside a code block that opens at line {begin.fence}"
-            if begin.place is MarkerPlace.FENCE
-            else _BOTH[begin.place]
-        )
-        return f"{subject} and the END marker at line {end.line} {both}."
-    return (
-        f"{subject} {_reads(begin)}, and the END marker at line {end.line} "
-        f"{_reads(end)}."
-    )
-
-
-def _split_fix(pair: UncertainPair, later: UncertainPair | None, outcome: str) -> str:
-    """Return how to fix the pair rule 3 fired on, each choice with its result.
-
-    Its BEGIN marker may be a line of the operator's; or the pair is
-    Apothem's block, and the code that hides its END marker then came from
-    the profile (Apothem writes its END marker at the margin).
+    See :func:`apothem.lib.harness_materializer.whole_blocks`. Empty when the
+    file cannot be read.
     """
-    begin, end = pair.begin, pair.end
-    yours = f"If the BEGIN marker at line {begin.line} is yours, delete or change it"
-    if later is not None and _outside(later):
-        span = f"lines {later.begin.line} to {later.end.line}"
-        yours += f": {outcome.format(lines=span)}"
-    done = outcome.format(lines="those lines")
-    if end.place is MarkerPlace.FENCE:
-        ours = (
-            f"the code block that opens at line {end.fence} comes from a rule in "
-            f"your profile: close it above line {end.line} and fix that rule; {done}"
-        )
-    else:
-        ours = f"start line {end.line} at the left margin: {done}"
-    return f"{yours}. If lines {begin.line} to {end.line} are Apothem's block, {ours}."
+    try:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    return whole_blocks(text)
 
 
-def _pair_fix(
-    pair: UncertainPair,
-    later: UncertainPair | None,
-    outcome: str,
-    split: UncertainPair | None = None,
-) -> str:
-    """Return how to fix *pair* by hand, each choice with what follows from it.
+def markers_to_fix_at(path: Path) -> bool:
+    """Return True when *path* holds Apothem markers only the operator can fix.
 
-    *outcome* (:data:`REPLACES` or :data:`TAKES_OUT`) is what the next run
-    does once both marker lines of a pair read outside code. A pair whose
-    lines both read outside code already needs no fix of its own: a pair
-    before it is what holds it back. *split* is the pair rule 3 fired on,
-    before *pair*: if *pair* is Apothem's block, that pair's BEGIN marker is
-    the operator's, and it must go too, or it pairs with the END marker in
-    code once *pair* is fixed.
+    A BEGIN marker that starts no whole block (:func:`stray_begin_at`), a
+    marker pair no rule can place (:func:`unclear_block_at`), or two or more
+    whole blocks (:func:`whole_blocks_at`). ``False`` when the file cannot be
+    read.
     """
-    if pair.split:
-        return _split_fix(pair, later, outcome)
-    if _outside(pair):
-        return ""
-    begin, end = pair.begin, pair.end
-    also = (
-        ""
-        if split is None
-        else f", and delete or change the BEGIN marker at line {split.begin.line}"
-    )
-    if begin.place is end.place and begin.fence == end.fence:
-        step = (
-            f"close that code block above line {begin.line}"
-            if begin.place is MarkerPlace.FENCE
-            else f"start lines {begin.line} and {end.line} at the left margin"
-        )
-        ours = f"{step}{also}: {outcome.format(lines='those lines')}"
-    else:
-        ours = f"delete them by hand, keeping your own text{also}"
+    try:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return False
     return (
-        f"If lines {begin.line} to {end.line} are Apothem's block, {ours}. If they "
-        "are text of yours, change or delete those two marker lines."
+        has_stray_begin(text)
+        or uncertain_block(text) is not None
+        or len(whole_blocks(text)) > 1
     )
-
-
-def _lone_text(lone: Sequence[int]) -> str:
-    """Return what to do with the BEGIN markers on lines *lone*, which start no pair.
-
-    Left in place, such a marker can pair with an END marker below it once
-    the pairs between are fixed, and a later run then replaces the lines
-    between them.
-    """
-    if not lone:
-        return ""
-    if len(lone) == 1:
-        return (
-            f"The BEGIN marker at line {lone[0]} starts no marker pair: its END "
-            "marker is gone, or the marker is yours. Delete or change it by hand, "
-            "with any old Apothem text below it, and keep your own text. If you "
-            "leave it, a later install or update can pair it with an END marker "
-            "below it and replace the lines between them."
-        )
-    listed = ", ".join(str(line) for line in lone[:-1])
-    return (
-        f"The BEGIN markers at lines {listed} and {lone[-1]} start no marker pair: "
-        "their END markers are gone, or the markers are yours. Delete or change "
-        "them by hand, with any old Apothem text below them, and keep your own "
-        "text. If you leave one, a later install or update can pair it with an "
-        "END marker below it and replace the lines between them."
-    )
-
-
-def _begin_first(pair: UncertainPair) -> str:
-    """Return the step an uninstall gives for the pair rule 3 fired on.
-
-    Once no pair comes after it, its BEGIN marker and the END marker in code
-    read as a whole block, which a later install or update replaces.
-    """
-    begin, end = pair.begin.line, pair.end.line
-    return (
-        f"If the BEGIN marker at line {begin} is yours, delete or change it. If "
-        "you leave it and no marker pair comes after it any more, a later "
-        f"install or update reads lines {begin} to {end} as Apothem's block and "
-        "replaces them."
-    )
-
-
-def _delete_by_hand(pairs: Sequence[UncertainPair]) -> str:
-    """Return the advice an uninstall gives: delete Apothem's block by hand."""
-    spans = [f"lines {pair.begin.line} to {pair.end.line}" for pair in pairs]
-    if len(spans) == 1:
-        return (
-            f"If {spans[0]} are Apothem's block, delete them by hand, keeping "
-            "your own text."
-        )
-    listed = f"{', '.join(spans[:-1])}, or {spans[-1]}"
-    return (
-        f"If one of these pairs is Apothem's block ({listed}), delete it by hand, "
-        "keeping your own text."
-    )
-
-
-def unclear_block_report(
-    path: str | Path,
-    pairs: Sequence[UncertainPair],
-    *,
-    outcome: str | None = REPLACES,
-    left: bool = True,
-    lone: Sequence[int] = (),
-) -> str:
-    """Return what is wrong with *path*, whose marker pairs are *pairs*, and the fix.
-
-    Each pair is named with the lines of its two marker lines and what they
-    read as (see :func:`unclear_pairs_at`), then how to fix it by hand: if
-    those lines are Apothem's block, what makes both read outside code, and
-    *outcome* says what the next run then does; if they are text of the
-    operator's, change or delete the marker lines. A pair after the one rule 3
-    fired on, both of whose lines read outside code, is named with that pair;
-    any other pair after it is Apothem's block only if that pair's BEGIN
-    marker is the operator's, so its fix says to delete or change that marker
-    too. Without *outcome* (an uninstall), the fix is to delete Apothem's
-    block by hand, after a step for the BEGIN marker of the pair rule 3 fired
-    on: left in place once no pair follows it, it pairs with the END marker in
-    code. With *left*, the text says Apothem left the file as it is. *lone*
-    names the BEGIN markers outside code that start no pair (see
-    :func:`lone_begins_at`): each must go too, or it can pair with an END
-    marker once the pairs are fixed.
-    """
-    head = (
-        f"{path}: Apothem cannot tell whether the marker lines in this file mark "
-        "its block or text of yours"
-    )
-    parts = [f"{head}, so it left the file as it is." if left else f"{head}."]
-    parts.append(_lone_text(lone))
-    split = next((pair for pair in pairs if pair.split), None)
-    for index, pair in enumerate(pairs):
-        if index and pairs[index - 1].split and _outside(pair):
-            continue
-        later = pairs[index + 1] if index + 1 < len(pairs) else None
-        parts.append(_pair_text(pair, later))
-        if outcome is not None:
-            after = (
-                split
-                if split is not None and split.begin.line < pair.begin.line
-                else None
-            )
-            parts.append(_pair_fix(pair, later, outcome, after))
-    if outcome is None:
-        if split is not None:
-            parts.append(_begin_first(split))
-        parts.append(_delete_by_hand(pairs))
-    return " ".join(part for part in parts if part)
 
 
 def stray_begin_files(
@@ -367,18 +169,21 @@ def stray_begin_files(
     harness_root: Path | None,
     project_root: Path | None,
 ) -> list[Path]:
-    """Return the managed-block files of *harness_name* that hold a stray BEGIN.
+    """Return the managed-block files of *harness_name* that hold markers to fix.
 
     The files looked at are the ones this tool's install keeps a managed block
     in: the manifest's ``sentinel_merge`` targets, resolved against the root as
     ``verify_install`` resolves them, and the ``sentinel_merge`` targets of the
-    current install record at that root (the anchors written outside the
-    manifest, such as a profile document or an OpenClaw workspace's rules file).
-    Without a readable record only the manifest targets count: nothing then
-    shows which other file the install wrote, and a file of the project's own,
-    such as its ``CLAUDE.md``, must not fail this tool's verify. Each existing
-    file :func:`stray_begin_at` or :func:`unclear_block_at` flags is returned
-    once, manifest targets first, then the record's, in their own order.
+    install records still in effect at that root, newest first (the anchors
+    written outside the manifest, such as a profile document or an OpenClaw
+    workspace's rules file; an earlier record lists a rules file a later
+    install no longer writes, which an install or update keeps naming until
+    it can take Apothem's block out). Without a readable record only the
+    manifest targets count: nothing then shows which other file the install
+    wrote, and a file of the project's own, such as its ``CLAUDE.md``, must not
+    fail this tool's verify. Each existing file :func:`markers_to_fix_at`
+    flags is returned once, manifest targets first, then the records', in
+    their own order.
     """
     rules = install_driver.load_rules(harness_name)
     candidates = [
@@ -390,29 +195,35 @@ def stray_begin_files(
     ]
     root = _root_for(harness_root, project_root)
     try:
-        record = install_ledger.current_install_record(harness_name, root=root)
+        records = install_ledger.active_install_records(harness_name, root=root)
     except (OSError, install_ledger.LedgerError):
-        record = None
-    if record is not None:
-        candidates.extend(
-            Path(target.path)
-            for target in record.targets
-            if target.mode == "sentinel_merge"
-        )
+        records = []
+    candidates.extend(
+        Path(target.path)
+        for record in reversed(records)
+        for target in record.targets
+        if target.mode == "sentinel_merge"
+    )
     unique: dict[str, Path] = {}
     for path in candidates:
         unique.setdefault(path_key(path), path)
     return [
-        path
-        for path in unique.values()
-        if path.is_file() and (stray_begin_at(path) or unclear_block_at(path))
+        path for path in unique.values() if path.is_file() and markers_to_fix_at(path)
     ]
 
 
+#: What follows an install or update's warning for a file it cannot place
+#: Apothem's block in.
+_UPDATE_AGAIN = (
+    " Then run apothem update again. apothem verify fails for this tool until "
+    "you fix the file."
+)
+
+
 def stray_begin_install_warnings(
-    results: list[MaterializationResult],
+    results: list[MaterializationResult], *, dry_run: bool = False
 ) -> list[MaterializationResult]:
-    """Name each managed-block file an install or update keeps a stray BEGIN in.
+    """Name each managed-block file an install or update keeps Apothem markers in.
 
     The text after a BEGIN marker with no END is kept as it is, and Apothem's
     own block is written apart from it, so the text an old block left below
@@ -422,10 +233,13 @@ def stray_begin_install_warnings(
     included) whose marker pairs no rule can place (:func:`unclear_pairs_at`)
     gets its own warning, which names each pair and how to fix it, and so
     does a file the merge wrote that holds the pair rule 3 fired on (a code
-    block a rule in the profile opens hides the END marker of the block just
-    written); that warning does not say the file was left as it is. A preview
-    of a write whose pairs are all quoted (a first install appends its block
-    after a pair the operator quotes) gets no such warning.
+    block in Apothem's block hides its END marker); that warning does not say
+    the file was left as it is. A file with two or more whole blocks
+    (:func:`whole_blocks_at`), which the merge leaves as it is, gets a warning
+    that names each block. A preview of a write whose pairs are all quoted (a
+    first install appends its block after a pair the operator quotes) gets no
+    such warning. With *dry_run* (a preview), a warning says Apothem would
+    leave the file as it is.
     """
     held: dict[str, bool] = {}
     for result in results:
@@ -434,33 +248,45 @@ def stray_begin_install_warnings(
             held[result.path] = held.get(result.path, False) or unchanged
     warnings: list[MaterializationResult] = []
     for path, unchanged in held.items():
-        pairs = unclear_pairs_at(Path(path))
-        # A write that leaves a pair rule 3 fired on (a code block a profile
-        # rule opens in Apothem's block) gets the same text, without the
-        # claim that the file was left as it is.
-        if pairs and (unchanged or any(pair.split for pair in pairs)):
-            report = unclear_block_report(
-                path, pairs, left=unchanged, lone=lone_begins_at(Path(path))
-            )
-            message = (
-                f"{report} Then run apothem update again. apothem verify fails "
-                "for this tool until you fix the file."
-            )
-        elif stray_begin_at(Path(path)):
-            message = (
-                f"{path} has an Apothem BEGIN marker that starts no whole block of "
-                f"its own (its END marker {APOTHEM_BLOCK_END} is gone, or the "
-                "marker is yours). Apothem never cuts the text after it: install "
-                "and update keep that text as it is and write a whole block of "
-                "their own apart from it. Delete that marker line by hand, with "
-                "the old Apothem text below it that repeats the rules in Apothem's "
-                "whole block, and keep your own lines; apothem verify fails for "
-                "this tool until you do."
-            )
-        else:
-            continue
-        warnings.append(_result("warning", "stray_begin", Path(path), message))
+        message = _install_warning(path, unchanged=unchanged, dry_run=dry_run)
+        if message is not None:
+            warnings.append(_result("warning", "stray_begin", Path(path), message))
     return warnings
+
+
+def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None:
+    """Return the install or update warning for the managed-block file *path*.
+
+    See :func:`stray_begin_install_warnings`; ``None`` when it needs none.
+    """
+    target = Path(path)
+    blocks = whole_blocks_at(target)
+    if len(blocks) > 1:
+        report = two_blocks_report(path, blocks, left=unchanged, dry_run=dry_run)
+        return f"{report}{_UPDATE_AGAIN}"
+    pairs = unclear_pairs_at(target)
+    # A write that leaves a pair rule 3 fired on (a code block in Apothem's
+    # block) gets the same text, without the claim that the file was left as
+    # it is.
+    if pairs and (unchanged or any(pair.split for pair in pairs)):
+        lone = lone_begins_at(target)
+        report = unclear_block_report(
+            path, pairs, left=unchanged, lone=lone, dry_run=dry_run
+        )
+        return f"{report}{_UPDATE_AGAIN}"
+    if not stray_begin_at(target):
+        return None
+    return (
+        f"{path} has an Apothem BEGIN marker that starts no whole block of its "
+        f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
+        "yours). Apothem never cuts the text after it: install and update keep "
+        "that text as it is and write a whole block of their own apart from it. "
+        "Delete that marker line by hand, with the old Apothem text below it "
+        "that repeats the rules in Apothem's whole block, and keep your own "
+        "lines; apothem verify fails for this tool until you do. Do not add the "
+        "END marker back below that text: the file would then hold two Apothem "
+        "blocks, which install and update leave as they are."
+    )
 
 
 def whole_block_left(entry: LedgerTarget) -> bool:
@@ -478,14 +304,20 @@ def whole_block_left(entry: LedgerTarget) -> bool:
     return complete_managed_block(text) is not None
 
 
-def endless_block_left(entry: LedgerTarget) -> bool:
-    """Return True when *entry*, a managed-block file, lost its block's END marker.
+def markers_left(entry: LedgerTarget) -> bool:
+    """Return True when *entry*, a managed-block file, holds markers to fix by hand.
 
-    After an unfinished uninstall such a file keeps the install open, so the
-    next uninstall runs, names the file and finishes (see :func:`whole_block_left`,
-    which does not count it as Apothem's).
+    A BEGIN marker that lost its END marker, or a marker pair no rule can
+    place (:func:`unclear_block_at`); :func:`whole_block_left` counts neither
+    as Apothem's. After an unfinished uninstall such a file keeps the install
+    open, so the next uninstall runs and names the file: it finishes past a
+    BEGIN marker that lost its END marker, and stays unfinished while a
+    marker pair no rule can place is there (see :data:`UNCLEAR_BLOCK`).
     """
-    return entry.mode == "sentinel_merge" and stray_begin_at(Path(entry.path))
+    if entry.mode != "sentinel_merge":
+        return False
+    path = Path(entry.path)
+    return stray_begin_at(path) or unclear_block_at(path) is not None
 
 
 def install_may_be_open(harness_name: str, root: Path) -> bool:
@@ -591,8 +423,9 @@ def unclear_block_warning(
 
     Marker pairs no rule can place (:func:`unclear_pairs_at`): one may be
     Apothem's block, or text the operator quotes, so nothing is changed, and
-    the file no longer counts as Apothem's (an uninstall finishes). Each pair
-    is named (see :func:`unclear_block_report`). *outcome* is what the next
+    an uninstall stays unfinished until the operator fixes the marker lines
+    (see :data:`UNCLEAR_BLOCK`). Each pair is named (see
+    :func:`unclear_block_report`). *outcome* is what the next
     run does once the operator makes a pair read outside code, such as
     :data:`TAKES_OUT`; without it, as for an uninstall, the warning says to
     delete Apothem's block by hand. ``None`` when the file holds a whole block
@@ -648,8 +481,10 @@ def stray_begin_warnings(
     """Name each file the uninstall rewrote that still holds a BEGIN marker alone.
 
     Taking Apothem's whole block out can leave such a line above where it was
-    (a stray line of the operator's, say). An install keeps it as it is and
-    verify reports the file, so the operator deletes it by hand.
+    (a stray line of the operator's, or what is left of an older block that
+    lost its END marker, with that block's text below it). An install keeps
+    it as it is, so the operator deletes it by hand, with any old Apothem
+    text below it.
     """
     rewritten = {
         result.path: result.operation
@@ -664,8 +499,9 @@ def stray_begin_warnings(
             Path(path),
             f"{path} still holds a line that reads as the Apothem BEGIN marker, "
             f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
-            "Apothem's block is out. Delete that line by hand: an install keeps "
-            "it as it is, and apothem verify fails until you do.",
+            "Apothem's block is out. Delete that line by hand, with any old "
+            "Apothem text below it, and keep your own lines: the tool still "
+            "reads that text, and an install keeps it as it is.",
             detail={MARKER_LEFT: "1"},
         )
         for path, operation in rewritten.items()
