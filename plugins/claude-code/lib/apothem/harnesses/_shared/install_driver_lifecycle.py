@@ -384,9 +384,12 @@ def run_uninstall(
     *prior_results* also makes the uninstall unfinished.
 
     A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
-    is raised as it is and records nothing: it changed nothing in the
-    protected folder, so the install stays as it was. A project root that is
-    the account home is refused before the pass starts.
+    is raised as it is: it changed nothing in the protected folder. When the
+    pass, or the caller just before it, had already removed files elsewhere,
+    an ``uninstall-incomplete`` record is appended first, so their backups
+    stay referenced; a refusal before any removal records nothing, and a
+    failure to write that record does not replace the refusal. A project root
+    that is the account home is refused before the pass starts.
     """
     if project_root is not None:
         home_write_guard.refuse_project_root_at_home(
@@ -425,7 +428,9 @@ def run_uninstall(
             with contextlib.suppress(Exception):
                 apply_retention(harness_name)
     except home_write_guard.RealHomeWriteError:
-        raise  # a refusal during a test, not an unfinished uninstall
+        # A refusal during a test: recorded only for what was already removed.
+        _record_before_refusal(record_pass, record, [*prior_results, *results])
+        raise
     except BaseException as exc:
         results += record_pass(record, [*prior_results, *results], finished=False)
         if not isinstance(exc, Exception):
@@ -436,6 +441,21 @@ def run_uninstall(
         run = MaterializationRun(harness_name, False, (*results, *kept_now))
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]
+
+
+def _record_before_refusal(
+    record_pass: functools.partial[list[MaterializationResult]],
+    record: LedgerRecord | None,
+    done: list[MaterializationResult],
+) -> None:
+    """Record an unfinished uninstall when *done* changed or backed up a file.
+
+    Called while a refusal of the real-home guard is raised. A second refusal,
+    or any error writing the record, is dropped so the first one propagates.
+    """
+    if any(result.changed or result.backup_path is not None for result in done):
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            record_pass(record, done, finished=False)
 
 
 def _remove_installed(

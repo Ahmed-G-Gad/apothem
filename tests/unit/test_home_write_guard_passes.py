@@ -8,7 +8,8 @@ backups stay outside that home, so the refusal comes from the pass itself and
 not from its bookkeeping. The command must raise
 :class:`~apothem.lib.home_write_guard.RealHomeWriteError` (not report an
 error row or a failed uninstall), change nothing in the home and record no
-unfinished pass.
+unfinished pass, unless the pass had already removed files outside the home:
+then an unfinished uninstall keeps their backups referenced.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from apothem.cli import main
 from apothem.harnesses._shared import (
     install_driver,
     install_driver_datahome,
+    install_driver_lifecycle,
     install_driver_reversal,
 )
 from apothem.harnesses._shared.install_driver_types import _result
@@ -154,6 +156,49 @@ def test_a_cli_uninstall_raises_the_refusal_and_records_nothing(
     assert _snapshot(home) == before
     assert _kinds(entry.package_key) == kinds
     assert "uninstall-incomplete" not in kinds
+
+
+@pytest.mark.parametrize("ledger_refuses", [False, True])
+def test_a_refusal_after_removals_elsewhere_records_the_unfinished_uninstall(
+    home: Path,
+    profile: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    ledger_refuses: bool,
+) -> None:
+    """The removed project files keep their backups referenced in the ledger.
+
+    The data home is removed last, after the project files. A refusal there
+    still reaches the CLI unchanged, also when the record itself is refused.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    _installed(
+        "--harness", "gemini-cli", "--project", str(project), "--profile", str(profile)
+    )
+    assert _kinds("gemini_cli") == ["install"]
+
+    def refused(*_args: object, **_kwargs: object) -> None:
+        raise Refused("the probe's refusal", path="", protected_root="", operation="")
+
+    monkeypatch.setattr(install_driver_lifecycle, "_remove_data_home", refused)
+    if ledger_refuses:
+        monkeypatch.setattr(install_ledger, "append_record", refused)
+
+    result = _run(
+        "uninstall", "--harness", "gemini-cli", "--yes", "--project", str(project)
+    )
+
+    assert isinstance(result.exception, Refused), (result.exit_code, result.output)
+    assert str(result.exception) == "the probe's refusal"
+    records = install_ledger.read_records("gemini_cli")
+    if ledger_refuses:
+        assert [record.kind for record in records] == ["install"]
+        return
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = [target.backup_ref for target in records[-1].targets]
+    assert backups
+    assert all(ref and Path(ref).exists() for ref in backups)
 
 
 def _operator_home(home: Path) -> Path:
