@@ -93,6 +93,34 @@ checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
 when the root has no commit history.
 
+A project can come with files someone else made, in an archive or a shared
+folder, so every `--all` validator opens and lists only regular files and real
+folders that it reaches through real folders below the root. It never follows
+a symbolic link or, on Windows, a junction, and at any level below the root it
+treats each of these as missing:
+
+- a link, even one that points inside the root. A walk or a folder listing
+  skips it, so what it points to is checked only where the validator reaches
+  it under its own path;
+- a named pipe, a device or a socket, where a read would wait or never end.
+
+Three cases look at a link without following it:
+
+- a fixed file that is a link to a regular file inside the project, such as a
+  `CLAUDE.md` that points at another file there, is read at the file it points
+  to. A linked `.gitattributes` still counts as missing, because git does not
+  read it;
+- the stray-plans check in `no-global-plans-grep` reports a plans folder or an
+  `.apothem` folder that is a link, by its name, wherever the link leads, and
+  lists every other link it does not search under `skipped_links`;
+- `no-toplevel-docs-grep` reports a `docs` link at the root by its name.
+
+A validator that passes when its folder is missing, such as the workflow
+validators, passes when that folder is a link. Each validator's report lists
+the links and special files it left out under `skipped_links`, so a link never
+hides a file without a trace. A hard link is a regular file and is read like
+one, and the checks that run git read the `.git` folder through git itself.
+
 Six validators start at the repository root and search the whole tree for the
 files they check:
 
@@ -106,8 +134,9 @@ reference-token-grep
 ```
 
 These skip nested git checkouts, such as worktrees, submodules and nested
-clones, and skip directories that hold dependencies, virtual environments,
-caches or build output, such as `node_modules`, `venv` and `dist`. The
+clones, never enter a linked folder, and skip directories that hold
+dependencies, virtual environments, caches or build output, such as
+`node_modules`, `venv` and `dist`. The
 stray-plans check in `no-global-plans-grep` also stops at a nested checkout. A
 run of any of these reports on the checkout it was pointed at and on nothing
 else. A validator that reads one fixed folder, such as `naming-grep` under

@@ -50,7 +50,10 @@ from typing import Final
 from apothem.conformity._grep_base import (
     RootGrepResult,
     finish_root_report,
+    is_project_dir,
+    is_project_file,
     iter_prose_lines,
+    iter_tree_files,
     parse_root_args,
 )
 
@@ -119,7 +122,10 @@ def _content_root(root: Path) -> Path | None:
     """Return the directory holding the convention strata, or None."""
     for parts in _CONTENT_SUBTREES:
         candidate = root.joinpath(*parts)
-        if any((candidate / name).is_dir() for name in ("rules", "commands", "agents")):
+        if any(
+            is_project_dir(root, candidate / name)
+            for name in ("rules", "commands", "agents")
+        ):
             return candidate
     return None
 
@@ -130,7 +136,7 @@ def _is_installed_tree(root: Path, content: Path) -> bool:
     The checkout layout is never an installed tree, whatever sits beside it, so
     the source-corpus requirement cannot be relaxed by a stray directory.
     """
-    return content == root and root.joinpath(*_INSTALL_MARKER).is_dir()
+    return content == root and is_project_dir(root, root.joinpath(*_INSTALL_MARKER))
 
 
 def _targets(content: Path) -> list[tuple[Path, tuple[str, ...]]]:
@@ -138,21 +144,32 @@ def _targets(content: Path) -> list[tuple[Path, tuple[str, ...]]]:
     targets: list[tuple[Path, tuple[str, ...]]] = []
     for stratum in ("rules", "commands", "agents"):
         targets.extend(
+            (path, DIRECTIONS_FULL) for path in _markdown_in(content, content / stratum)
+        )
+    skills = content / "skills"
+    if is_project_dir(content, skills):
+        targets.extend(
             (path, DIRECTIONS_FULL)
-            for path in sorted((content / stratum).glob("*.md"))
-            if path.is_file()
+            for path in sorted(
+                iter_tree_files(skills, names=("SKILL.md",), prune=False)
+            )
         )
     targets.extend(
-        (path, DIRECTIONS_FULL)
-        for path in sorted((content / "skills").rglob("SKILL.md"))
-        if path.is_file()
-    )
-    targets.extend(
         (path, DIRECTIONS_HOOK_MESSAGE)
-        for path in sorted((content / "hooks" / "messages").glob("*.md"))
-        if path.is_file()
+        for path in _markdown_in(content, content / "hooks" / "messages")
     )
     return targets
+
+
+def _markdown_in(content: Path, folder: Path) -> list[Path]:
+    """Return the ``*.md`` regular files directly inside *folder*, sorted.
+
+    A folder or file that is a link, or a folder reached through one, counts
+    as missing (see ``_grep_base.is_project_file``).
+    """
+    if not is_project_dir(content, folder):
+        return []
+    return sorted(p for p in folder.glob("*.md") if is_project_file(content, p))
 
 
 def _section_labels(text: str) -> set[str] | None:

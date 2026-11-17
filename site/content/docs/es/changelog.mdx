@@ -1461,6 +1461,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reached it. The same update moves Fumadocs (`fumadocs-core` and
   `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
+- **The conformity gate's `--all` validators open and list only real files
+  inside the project they check.** A project that came from someone else, in
+  an archive or a shared folder, can hold symbolic links and, on Windows,
+  junctions that lead out of it. The shared tree walk entered junctions,
+  returned linked files and looked up the target of each symbolic link, so
+  `dynamism-grep` read a linked page outside the project, and a junction back
+  to a folder above it made the walk go round the tree until the path grew too
+  long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now opens and lists only regular files and real folders that it
+  reaches through real folders below the root, and never follows a link. A
+  link, a named pipe, a device or a socket counts as missing, with three
+  exceptions that look at a link without following it: a fixed file that
+  links to a regular file inside the project, such as a `CLAUDE.md` that
+  points at another file there, is read at that file (a linked
+  `.gitattributes` still counts as missing, because git does not read it);
+  `no-global-plans-grep` reports a plans folder or an `.apothem` folder that
+  is a link, by name; and
+  `no-toplevel-docs-grep` reports a root `docs` link. Each report lists the
+  links and special files it left out under `skipped_links`. The checks that
+  run git read the `.git` folder through git itself.
 
 ## [1.5.0] - 2026-10-28
 

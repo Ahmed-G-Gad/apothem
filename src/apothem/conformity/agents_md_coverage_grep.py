@@ -72,6 +72,7 @@ from typing import Final
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     finish_root_report,
+    is_project_file,
     iter_tree_files,
     parse_root_args,
 )
@@ -250,7 +251,7 @@ def meaningful_folders(root: Path) -> list[str]:
             continue
         if _has_excluded_segment(rel) or _is_harness_template_leaf(rel):
             continue
-        if (py_file.parent / README_NAME).is_file():
+        if is_project_file(root, py_file.parent / README_NAME):
             continue
         folders.add(rel)
 

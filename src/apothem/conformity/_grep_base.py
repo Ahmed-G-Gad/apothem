@@ -38,6 +38,16 @@ vendored, virtual-environment, cache and build-output trees in
 :data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
 repository, so a root-level finding on one is a false positive, and a walk that
 descends into ``node_modules`` or a built site costs minutes.
+
+Project files only. A project can arrive with its files from someone else, in
+an archive or a shared folder, so every validator reads and lists only what
+the project itself holds: regular files and real folders below its root. The
+walk lists each folder with ``os.scandir`` and never follows a link, and the
+helpers in ``_project_paths`` (re-exported here: :func:`is_project_file`,
+:func:`is_project_dir`, :func:`project_file_target`,
+:func:`list_real_entries`, :func:`child_folder_files`) treat a symbolic link,
+a Windows junction, a named pipe, a device or a socket as if it were not
+there. A root report lists what they left out under ``skipped_links``.
 """
 
 from __future__ import annotations
@@ -52,6 +62,31 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol
 
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    FILE_ENTRY,
+    LINK_ENTRY,
+    note_skipped,
+    scan_entries,
+    start_skip_log,
+    take_skipped_paths,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT as NAME_SURROGATE_TAG_BIT,
+)
+from apothem.conformity._project_paths import (
+    child_folder_files as child_folder_files,
+)
+from apothem.conformity._project_paths import is_link as is_link
+from apothem.conformity._project_paths import is_project_dir as is_project_dir
+from apothem.conformity._project_paths import is_project_file as is_project_file
+from apothem.conformity._project_paths import (
+    list_real_entries as list_real_entries,
+)
+from apothem.conformity._project_paths import (
+    project_file_target as project_file_target,
+)
+
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
 # A command-line usage error (unknown flag, missing file or root): distinct
@@ -59,6 +94,9 @@ EXIT_FAIL: Final[int] = 2
 EXIT_USAGE: Final[int] = 3
 STDIN_FLAG: Final[str] = "--stdin"
 
+# Report key emitted only when the run left out links or special files: their
+# paths relative to the root (see ``_project_paths``).
+SKIPPED_KEY: Final[str] = "skipped_links"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
@@ -182,6 +220,7 @@ def parse_root_args(
     if not root.is_dir():
         parser.error(f"root is not an existing directory: {root}")
     args.root = root.resolve()
+    start_skip_log(args.root)
     return args
 
 
@@ -207,9 +246,15 @@ def finish_root_report(
     advisory validator, because a validator that inspected nothing has not
     earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
     advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    When the run left out links or special files, the payload lists them under
+    ``skipped_links`` (relative to the root), so a link never hides a file
+    without a trace.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
+    skipped = take_skipped_paths()
+    if skipped:
+        payload[SKIPPED_KEY] = skipped
     vacuous = inspected == 0 and not empty_scope_expected
     if inspected == 0:
         payload[EMPTY_SCOPE_KEY] = empty_scope_expected
@@ -278,41 +323,65 @@ def iter_tree_files(
     *,
     names: Iterable[str] = (),
     extra_prune: Iterable[str] = (),
+    prune: bool = True,
 ) -> Iterator[Path]:
-    """Yield the matching files below ``root``, skipping pruned subtrees.
+    """Yield the matching regular files below ``root``, skipping pruned subtrees.
 
     Pre-conditions: ``root`` is an existing directory. ``suffixes`` are file
     name endings (``".md"``) and ``names`` exact file names (``"README.md"``);
     a file matching either is yielded, and with both empty every file is.
     Matching follows the host's file-name case rules, as ``Path.rglob`` does.
     ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
-    Post-conditions: yields existing regular files as ``root``-prefixed paths,
+    ``prune=False`` drops the default pruning, so nested checkouts and the
+    names in :data:`PRUNED_SEGMENTS` are walked too (``extra_prune`` still
+    applies): the files a former ``Path.rglob`` caller saw, minus links.
+    Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
     never enters a nested checkout (a directory below ``root`` that holds a
     ``.git`` file or directory; ``root`` itself is never nested, even when its
-    ``.git`` is a file), a directory named in the pruned set, or a symbolic
-    link to a directory. A directory it cannot read is skipped.
+    ``.git`` is a file), a directory named in the pruned set, or a link to a
+    folder (a symbolic link or a Windows junction), and never yields a link, a
+    named pipe, a device or a socket; each one it leaves out is noted in the
+    skip log (see ``_project_paths``). A link that points inside ``root`` is
+    skipped too; what it points to is yielded under its own path when the
+    walk reaches it. A directory it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune)
+    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
-    for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
-        # Position 0 is the root itself; its own ``.git`` marks the checkout
-        # being inspected, not a nested one.
-        if position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
-            dirnames.clear()
+
+    def wanted(name: str) -> bool:
+        folded = os.path.normcase(name)
+        return match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
+
+    # Depth first, files before folders, each in name order: the order a
+    # top-down os.walk with sorted folder names gives. Each folder is listed
+    # with os.scandir and every entry is classified without following it.
+    stack: list[tuple[Path, bool]] = [(root, True)]
+    while stack:
+        folder, is_root = stack.pop()
+        entries = scan_entries(folder)
+        # The root's own ``.git`` marks the checkout being inspected; one
+        # below it marks a nested checkout, which is skipped whole.
+        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
             continue
-        dirnames[:] = sorted(name for name in dirnames if name not in pruned)
-        for filename in sorted(filenames):
-            folded = os.path.normcase(filename)
-            if not (
-                match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
-            ):
+        files: list[Path] = []
+        folders: list[Path] = []
+        for path, kind in sorted(entries, key=lambda entry: entry[0].name):
+            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
                 continue
-            candidate = Path(dirpath, filename)
-            if candidate.is_file():
-                yield candidate
+            if kind == DIR_ENTRY:
+                folders.append(path)
+            elif kind == FILE_ENTRY:
+                if wanted(path.name):
+                    files.append(path)
+            elif kind == LINK_ENTRY or wanted(path.name):
+                # A link may hide a folder or a file; a pipe, device or socket
+                # with a wanted name would make the read wait or never end.
+                note_skipped(path)
+        yield from files
+        stack.extend((path, False) for path in reversed(folders))
 
 
 # ---------------------------------------------------------------------------

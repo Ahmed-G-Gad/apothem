@@ -67,6 +67,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    list_real_entries,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "plan-suite-structure-grep"
 RULE_ANCHOR: Final[str] = (
     "context-management-scratch 2 (suite-locality + closed vocab) + "
@@ -212,7 +220,7 @@ def _outputs_filename_conformant(stem: str) -> bool:
 
 def _check_spec_dir(suite: str, spec_dir: Path, findings: list[Finding]) -> None:
     """Validate a suite's ``_spec/`` directory closed vocabulary."""
-    for child in sorted(spec_dir.iterdir(), key=lambda p: p.name):
+    for child in sorted(list_real_entries(spec_dir), key=lambda p: p.name):
         name = child.name
         if child.is_dir():
             if name not in _SPEC_ALLOWED_SUBDIRS:
@@ -265,7 +273,7 @@ def _check_inputs_dir(suite: str, inputs_dir: Path, findings: list[Finding]) -> 
     ``_inputs/`` is admitted (canonical-purpose names OR free-form kebab topics).
     """
     spec_here = inputs_dir / _SPEC_SINGLETON
-    if spec_here.is_file():
+    if is_project_file(inputs_dir, spec_here):
         findings.append(
             Finding(
                 suite=suite,
@@ -282,7 +290,7 @@ def _check_inputs_dir(suite: str, inputs_dir: Path, findings: list[Finding]) -> 
 
 def _check_outputs_dir(suite: str, outputs_dir: Path, findings: list[Finding]) -> None:
     """Validate a suite's ``_outputs/`` top-level filename purposes."""
-    for child in sorted(outputs_dir.iterdir(), key=lambda p: p.name):
+    for child in sorted(list_real_entries(outputs_dir), key=lambda p: p.name):
         if child.is_dir():
             # Sub-directory mirrors (e.g. `<phase-slug>/REPORT.md`) are allowed;
             # their names are kebab phase-slugs --- accept conservatively.
@@ -306,7 +314,7 @@ def _check_outputs_dir(suite: str, outputs_dir: Path, findings: list[Finding]) -
 
 def _check_phases_dir(suite: str, phases_dir: Path, findings: list[Finding]) -> None:
     """Validate a suite's ``phases/`` numeric-prefix + PHASE.md discipline."""
-    for child in sorted(phases_dir.iterdir(), key=lambda p: p.name):
+    for child in sorted(list_real_entries(phases_dir), key=lambda p: p.name):
         if not child.is_dir():
             # A stray file directly under phases/ is not a phase folder; the
             # phase apparatus expects only NN-topic directories here.
@@ -336,7 +344,7 @@ def _check_phases_dir(suite: str, phases_dir: Path, findings: list[Finding]) -> 
             )
             continue
         # Phase coherence: every phase folder carries a PHASE.md.
-        if not (child / "PHASE.md").is_file():
+        if not is_project_file(child, child / "PHASE.md"):
             findings.append(
                 Finding(
                     suite=suite,
@@ -351,7 +359,7 @@ def _check_phases_dir(suite: str, phases_dir: Path, findings: list[Finding]) -> 
         # Sub-phase folders (directories inside a phase folder) must match
         # NNL-subtopic. Non-matching sub-directories are findings; files
         # (PHASE.md, REPORT.md, ...) are ignored.
-        for sub in sorted(child.iterdir(), key=lambda p: p.name):
+        for sub in sorted(list_real_entries(child), key=lambda p: p.name):
             if not sub.is_dir():
                 continue
             if _SUBPHASE_DIR_RE.match(sub.name) is None:
@@ -380,7 +388,7 @@ def _check_root_numeric_prefixes(
     discipline.
     """
     prefixed: list[tuple[Path, str]] = []
-    for child in suite_dir.iterdir():
+    for child in list_real_entries(suite_dir):
         if not child.is_file():
             continue
         match = _NUMERIC_PREFIX_FILE_RE.match(child.name)
@@ -413,6 +421,22 @@ def _check_root_numeric_prefixes(
             )
 
 
+def _real_folders_below(top: Path) -> list[Path]:
+    """Return every real folder below *top*, depth first in name order.
+
+    Links and junctions are left out and never entered, so the scan stays
+    inside the suite (see ``_grep_base.list_real_entries``).
+    """
+    found: list[Path] = []
+    stack = [top]
+    while stack:
+        folder = stack.pop()
+        children = sorted(p for p in list_real_entries(folder) if p.is_dir())
+        found.extend(children)
+        stack.extend(reversed(children))
+    return found
+
+
 def _scan_nested_artifact_dirs(
     suite: str, suite_dir: Path, findings: list[Finding]
 ) -> None:
@@ -422,9 +446,7 @@ def _scan_nested_artifact_dirs(
     children of the suite folder. An instance appearing deeper inside the suite
     (e.g. ``phases/NN-x/_spec/``) is a suite-locality violation.
     """
-    for path in suite_dir.rglob("*"):
-        if not path.is_dir():
-            continue
+    for path in _real_folders_below(suite_dir):
         if path.name not in _ARTIFACT_CLASS_DIRS:
             continue
         # The direct-child instances are the canonical ones; skip them.
@@ -451,13 +473,13 @@ def _check_suite(suite_dir: Path, findings: list[Finding]) -> None:
     inputs_dir = suite_dir / "_inputs"
     outputs_dir = suite_dir / "_outputs"
     phases_dir = suite_dir / "phases"
-    if spec_dir.is_dir():
+    if is_project_dir(suite_dir, spec_dir):
         _check_spec_dir(suite, spec_dir, findings)
-    if inputs_dir.is_dir():
+    if is_project_dir(suite_dir, inputs_dir):
         _check_inputs_dir(suite, inputs_dir, findings)
-    if outputs_dir.is_dir():
+    if is_project_dir(suite_dir, outputs_dir):
         _check_outputs_dir(suite, outputs_dir, findings)
-    if phases_dir.is_dir():
+    if is_project_dir(suite_dir, phases_dir):
         _check_phases_dir(suite, phases_dir, findings)
     _check_root_numeric_prefixes(suite, suite_dir, findings)
     _scan_nested_artifact_dirs(suite, suite_dir, findings)
@@ -471,11 +493,9 @@ def _check_plans_tree(plans_root: Path, label: str, findings: list[Finding]) -> 
     root-level findings. Returns the number of suite folders inspected.
     """
     suite_count = 0
-    if not plans_root.is_dir():
-        return suite_count
     # Root-level suite-locality: the artifact-class directories must NOT
     # appear directly under the plans tree (only inside a suite folder).
-    for entry in sorted(plans_root.iterdir(), key=lambda p: p.name):
+    for entry in sorted(list_real_entries(plans_root), key=lambda p: p.name):
         if entry.is_dir() and entry.name in _ARTIFACT_CLASS_DIRS:
             findings.append(
                 Finding(
@@ -489,7 +509,7 @@ def _check_plans_tree(plans_root: Path, label: str, findings: list[Finding]) -> 
                 )
             )
     # Each remaining sub-directory of the plans tree is a suite folder.
-    for suite_dir in sorted(plans_root.iterdir(), key=lambda p: p.name):
+    for suite_dir in sorted(list_real_entries(plans_root), key=lambda p: p.name):
         if not suite_dir.is_dir():
             continue
         if suite_dir.name in _ARTIFACT_CLASS_DIRS:
@@ -511,9 +531,11 @@ def check(root: Path) -> GrepResult:
     """
     findings: list[Finding] = []
     suite_count = 0
-    suite_count += _check_plans_tree(
-        root / ".apothem" / "plans", ".apothem/plans", findings
-    )
+    plans_root = root / ".apothem" / "plans"
+    # A plans tree reached through a link counts as missing; below it, every
+    # listing leaves links out, so the checks never leave the project.
+    if is_project_dir(root, plans_root):
+        suite_count += _check_plans_tree(plans_root, ".apothem/plans", findings)
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),
@@ -524,10 +546,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(
