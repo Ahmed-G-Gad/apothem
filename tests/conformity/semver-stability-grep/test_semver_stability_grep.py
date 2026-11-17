@@ -8,8 +8,9 @@ carries the breaking-change logic; the v1.0.0 gate sits above it. These
 tests drive that core directly: a stable surface produces zero findings,
 an unstable surface (removed symbol / added required parameter / dropped
 ``__all__`` entry) produces findings. A separate test confirms the
-``--staged`` path swallows a git ``TimeoutExpired`` rather than raising,
-using the ``GIT_TIMEOUT_SECONDS`` bound the module added.
+``--staged`` path bounds git with ``GIT_TIMEOUT_SECONDS`` and turns a
+``TimeoutExpired`` into ``GitTimeoutError`` rather than an empty, passing
+finding list: a change set that was not read has not been checked.
 
 The cohort-contract tests assert the package exit/payload shape the matcher
 was brought onto: a JSON ``GrepResult`` payload on stdout, ``EXIT_FAIL == 2``
@@ -120,21 +121,25 @@ def test_removed_all_entry_fails() -> None:
     assert any("__all__" in f.message for f in findings)
 
 
-def test_check_staged_handles_git_timeout_gracefully(
+def test_check_staged_reports_a_git_timeout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Force the v1.0.0 gate open so check_staged reaches the git call,
     # then make the git invocation raise TimeoutExpired. The module's
-    # timeout=GIT_TIMEOUT_SECONDS bound must be caught, not propagated.
+    # timeout=GIT_TIMEOUT_SECONDS bound is turned into GitTimeoutError, not
+    # into an empty finding list that would pass an unread change set.
+    from apothem.conformity import _bounded_run
+    from apothem.conformity._grep_base import GitTimeoutError
+
     monkeypatch.setattr(_MOD, "current_version", lambda: "1.2.3")
 
     def _raise_timeout(*args: object, **kwargs: object) -> NoReturn:
         assert kwargs.get("timeout") == _MOD.GIT_TIMEOUT_SECONDS
         raise subprocess.TimeoutExpired(cmd="git", timeout=_MOD.GIT_TIMEOUT_SECONDS)
 
-    monkeypatch.setattr(_MOD.subprocess, "run", _raise_timeout)
-    # Must not raise; the matcher degrades to an empty finding list.
-    assert _MOD.check_staged() == []
+    monkeypatch.setattr(_bounded_run, "run_bounded", _raise_timeout)
+    with pytest.raises(GitTimeoutError, match="git diff --cached did not finish"):
+        _MOD.check_staged()
 
 
 def test_exit_constants_follow_the_cohort_contract() -> None:

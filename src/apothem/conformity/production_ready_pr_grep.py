@@ -31,11 +31,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
+    GitCheckError,
+    GitFailedError,
+    GitTimeoutError,
     GrepResult,
+    in_checkout,
     make_parser,
     parse_path_input,
 )
@@ -81,7 +85,8 @@ STAGED_FLAG: Final[str] = "--staged"
 # Subprocess timeout for the git invocation; the per-grep budget is
 # `gate.PER_GREP_BUDGET_SECONDS` (~520ms) but the staged-diff check is a
 # single git command that completes well under that ceiling on
-# representative repositories.
+# representative repositories. A timeout does not pass: the change set was
+# not read, which is not the same as an empty one.
 GIT_TIMEOUT_SECONDS: Final[int] = 5
 
 
@@ -116,30 +121,54 @@ def _classify(path: str) -> set[str]:
 
 
 def _staged_paths() -> list[str]:
-    """Return the staged-diff path list via git; empty on failure.
+    """Return the staged-diff path list via git; empty when there is none.
 
-    git runs through :func:`run_git`, so the repository's own settings cannot
-    make it start a program. ``-z`` ends each name with NUL, unquoted, so no
-    character in a name can split or hide it.
+    The list is empty when git is missing or the current folder is not a
+    checkout. git runs through :func:`run_git`, so the repository's own
+    settings cannot make it start a program. ``-z`` ends each name with NUL,
+    unquoted, and the output is read as file names, so a name comes back with
+    every byte it holds (a carriage return, a byte that is not UTF-8). Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
+    ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
+    wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
+    when git fails inside a checkout (a ``.git`` entry in the current folder or
+    one above it): a change set that
+    was not read is not an empty one.
     """
     try:
         result = run_git(
             ["diff", "--cached", "--name-only", "-z"],
             check=True,
             timeout=GIT_TIMEOUT_SECONDS,
+            file_names=True,
         )
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        FileNotFoundError,
-    ):
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
+    except subprocess.CalledProcessError as exc:
+        if in_checkout(Path.cwd()):
+            raise GitFailedError("git diff --cached", exc.returncode) from exc
         return []
-    return [name for name in result.stdout.split("\0") if name]
+    except FileNotFoundError:
+        return []
+    return split_names(result.stdout)
 
 
 def _check_staged() -> GrepResult:
-    """Substantive check: inspect the staged diff against the four-class shape."""
-    paths = _staged_paths()
+    """Substantive check: inspect the staged diff against the four-class shape.
+
+    A staged list that git did not deliver, within ``GIT_TIMEOUT_SECONDS`` or
+    at all in a checkout, does not pass: the result carries the reason as
+    ``check_error``.
+    """
+    try:
+        paths = _staged_paths()
+    except GitCheckError as exc:
+        return GrepResult(
+            grep=GREP_NAME,
+            path="<staged diff>",
+            passed=False,
+            check_error=str(exc),
+        )
     classes_present: set[str] = set()
     for path in paths:
         classes_present |= _classify(path)

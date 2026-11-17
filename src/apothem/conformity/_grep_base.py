@@ -64,6 +64,66 @@ INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+# Report key emitted only when a check could not finish, for example because a
+# git command ran past its time limit or the gate stopped the validator. The
+# value says why; a report that carries it does not pass.
+CHECK_ERROR_KEY: Final[str] = "check_error"
+
+
+class GitCheckError(Exception):
+    """A git command a check needs gave no answer, so the check could not finish.
+
+    The message names the command and what happened, in fixed words: it never
+    repeats git's own error output, which a checked repository can shape. A
+    validator reports the message as its ``check_error``; a check whose git
+    never answered has not earned a pass.
+    """
+
+
+class GitTimeoutError(GitCheckError):
+    """A git command ran past its time limit.
+
+    A repository's own configuration can make git wait for ever, for example
+    through an ``include.path`` that names a FIFO. The message reads, for
+    example, ``git log did not finish within 5 seconds``.
+    """
+
+    def __init__(self, command: str, seconds: float) -> None:
+        """Name the git *command* that did not finish within *seconds*."""
+        super().__init__(f"{command} did not finish within {seconds} seconds")
+
+
+class GitFailedError(GitCheckError):
+    """A git command failed in a repository that is there.
+
+    git refuses a repository it may not read (one another user owns, a bad
+    line in its configuration, an included file it cannot open). That is not
+    the exempt state of a folder with no repository or no commit: the history
+    is there but was not read. The message reads, for example,
+    ``git log failed with exit code 128``.
+    """
+
+    def __init__(self, command: str, returncode: int) -> None:
+        """Name the git *command* that exited with *returncode*."""
+        super().__init__(f"{command} failed with exit code {returncode}")
+
+
+class GitNameError(GitCheckError):
+    """A file name git listed cannot be given back to git as an argument.
+
+    Windows passes arguments as UTF-16, so a name that is not valid UTF-8 (one
+    from an index made on another system) reaches git as other bytes and git
+    finds no such file. The file's content was not read, which is not the same
+    as a file with nothing to report. The message reads, for example,
+    ``git cat-file cannot read a file whose name is not UTF-8 on Windows``; it
+    never repeats the name, which a checked repository shapes.
+    """
+
+    def __init__(self, command: str) -> None:
+        """Name the git *command* that could not be given the file name."""
+        super().__init__(
+            f"{command} cannot read a file whose name is not UTF-8 on Windows"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +252,7 @@ def finish_root_report(
     inspected: int,
     empty_scope_expected: bool = False,
     advisory: bool = False,
+    check_error: str | None = None,
 ) -> int:
     """Stamp the ``inspected`` count on a root report, print it, return the exit.
 
@@ -200,23 +261,29 @@ def finish_root_report(
     ``empty_scope_expected`` is True only when the validator documents that
     an empty scope is legitimate (for example a gitignored plans tree that a
     clean checkout does not carry). ``advisory`` validators report findings
-    without failing.
+    without failing. ``check_error`` is why the check could not finish (a
+    git command that ran past its time limit, say), or None when it finished.
     Post-conditions: the printed payload carries ``inspected``. When nothing
     was inspected it also carries ``empty_scope_expected``; an unexpected empty
     scope sets ``passed`` to false and returns :data:`EXIT_FAIL` even for an
     advisory validator, because a validator that inspected nothing has not
-    earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
-    advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    earned a pass. A ``check_error`` is stamped on the payload and fails the
+    run the same way, advisory or not: a check that could not finish has not
+    earned a pass either. Otherwise the return is :data:`EXIT_PASS` for a pass
+    or an advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
     vacuous = inspected == 0 and not empty_scope_expected
     if inspected == 0:
         payload[EMPTY_SCOPE_KEY] = empty_scope_expected
-    if vacuous:
+    if check_error is not None:
+        payload[CHECK_ERROR_KEY] = check_error
+    unearned = vacuous or check_error is not None
+    if unearned:
         payload["passed"] = False
     print(json.dumps(payload, indent=2))
-    if vacuous:
+    if unearned:
         return EXIT_FAIL
     if advisory or passed:
         return EXIT_PASS
@@ -270,6 +337,194 @@ def has_git_entry(directory: Path) -> bool:
     directory is a checkout root.
     """
     return os.path.lexists(directory / GIT_ENTRY)
+
+
+# What the ``.git`` entry of a folder is to git's search for a repository.
+GIT_ENTRY_NONE: Final[str] = "none"
+GIT_ENTRY_REPOSITORY: Final[str] = "repository"
+GIT_ENTRY_BROKEN: Final[str] = "broken"
+_GITFILE_PREFIX: Final[str] = "gitdir:"
+
+
+def _holds_repository(git_dir: Path) -> bool:
+    """Return True when *git_dir* looks like a repository to git.
+
+    git asks for a ``HEAD`` and for the object and reference stores, which a
+    linked work tree's folder borrows through its ``commondir`` file.
+    """
+    if not (git_dir / "HEAD").is_file():
+        return False
+    if (git_dir / "commondir").is_file():
+        return True
+    return (git_dir / "objects").is_dir() and (git_dir / "refs").is_dir()
+
+
+def git_entry_state(directory: Path) -> str:
+    """Say what the ``.git`` entry of ``directory`` is to git's search.
+
+    - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
+      folder that holds a repository, or a ``.git`` file whose ``gitdir:``
+      line names one (a linked work tree, a submodule).
+    - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
+      that names no repository, or that is no ``gitdir:`` file at all.
+    - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
+      folder that holds no repository (an empty one, say), or a ``.git`` link
+      that leads nowhere.
+    """
+    entry = directory / GIT_ENTRY
+    if entry.is_dir():
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
+    if not entry.is_file():
+        return GIT_ENTRY_NONE
+    try:
+        first_line = entry.read_text(encoding="utf-8", errors="replace").split("\n")[0]
+    except OSError:
+        return GIT_ENTRY_BROKEN
+    if not first_line.startswith(_GITFILE_PREFIX):
+        return GIT_ENTRY_BROKEN
+    target = directory / first_line[len(_GITFILE_PREFIX) :].strip()
+    return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
+
+
+# git stops its search for a repository at a folder on another file system.
+# Git for Windows does not: its file status carries no device number.
+_STOPS_AT_FILE_SYSTEM: Final[bool] = os.name != "nt"
+
+
+def _device(folder: Path) -> int | None:
+    """Return the number of the file system ``folder`` is on, or None."""
+    try:
+        return folder.stat().st_dev
+    except OSError:
+        return None
+
+
+# A whole number as git reads one: an optional sign, decimal, hexadecimal
+# (0x) or octal (leading 0) digits, and an optional k, m or g for a multiple
+# of 1024.
+_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"([-+]?)(0x[0-9a-f]+|\d+)[kmg]?")
+
+
+def _git_flag_is_set(name: str) -> bool:
+    """Return True unless git would read the environment variable as false.
+
+    git takes ``true``, ``yes``, ``on`` and any number other than zero as
+    true, and ``false``, ``no``, ``off``, zero and an empty value as false. On
+    any other value git stops with an error. That reads as true here: the
+    search for a checkout then stops nowhere git might have gone on, and the
+    git command the caller runs reports the error itself.
+    """
+    value = os.environ.get(name, "").lower()
+    if value in {"", "false", "no", "off"}:
+        return False
+    number = _GIT_INTEGER.fullmatch(value)
+    if number is None:
+        return True
+    digits = number.group(2)
+    base = 16 if digits.startswith("0x") else 8 if digits.startswith("0") else 10
+    try:
+        return int(digits, base) != 0
+    except ValueError:
+        return True
+
+
+def _git_reads_as_full_path(entry: str) -> bool:
+    """Return True when git takes *entry* as a full path.
+
+    Elsewhere than Windows that is a path that starts with ``/``. Git for
+    Windows also takes a path that starts with a separator and has no drive
+    letter, and one that starts with a drive letter and a colon.
+    """
+    if os.name != "nt":
+        return entry.startswith("/")
+    return entry[:1] in ("\\", "/") or (entry[:1].isalpha() and entry[1:2] == ":")
+
+
+def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
+    """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
+
+    git ignores an entry that is not a full path. Up to the first empty entry
+    it resolves each entry (links, ``..``, a missing drive letter) and drops
+    one it cannot resolve; those come back first, in the platform's case
+    form. After an empty entry git compares each entry as it is written, with
+    forward slashes, against its own current folder; those come back second,
+    without the one slash git lets such an entry end with (an entry that ends
+    with two never matches a folder, for git as here).
+    """
+    resolved: set[str] = set()
+    as_written: set[str] = set()
+    resolve = True
+    for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep):
+        if not entry:
+            resolve = False
+        elif not _git_reads_as_full_path(entry):
+            continue
+        elif not resolve:
+            ends_with_slash = entry.endswith("/") and len(entry) > 1
+            as_written.add(entry[:-1] if ends_with_slash else entry)
+        else:
+            try:
+                real = str(Path(entry).resolve(strict=True))
+            except OSError:
+                continue
+            resolved.add(os.path.normcase(_without_long_path_prefix(real)))
+    return frozenset(resolved), frozenset(as_written)
+
+
+def _without_long_path_prefix(path: str) -> str:
+    r"""Return a Windows path without its ``\\?\`` long-path prefix.
+
+    ``\\?\C:\work`` names ``C:\work`` and ``\\?\UNC\server\share`` names
+    ``\\server\share``. Git for Windows drops the prefix from a ceiling entry
+    before it compares. Elsewhere the path comes back unchanged.
+    """
+    if os.name != "nt":
+        return path
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    if path.startswith("\\\\?\\"):
+        return path[4:]
+    return path
+
+
+def checkout_search_folders(directory: Path) -> Iterator[Path]:
+    """Yield ``directory`` and the folders above it that git would search.
+
+    These are the folders git looks in for a repository when it runs in
+    ``directory``, nearest first, with links resolved as in git's own current
+    folder. The walk stops where git's search stops: below a folder that
+    ``GIT_CEILING_DIRECTORIES`` names, and, outside Windows, at a folder on
+    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
+    """
+    start = directory.resolve()
+    resolved, as_written = _ceiling_folders()
+    one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
+        "GIT_DISCOVERY_ACROSS_FILESYSTEM"
+    )
+    device = _device(start) if one_file_system else None
+    yield start
+    for folder in start.parents:
+        if os.path.normcase(str(folder)) in resolved or folder.as_posix() in as_written:
+            return
+        if device is not None and _device(folder) != device:
+            return
+        yield folder
+
+
+def in_checkout(directory: Path) -> bool:
+    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+
+    The walk covers :func:`checkout_search_folders`, the folders git searches
+    for a repository when it runs in ``directory``, so a git command that
+    fails there failed inside a checkout and its data was not read, also when
+    ``directory`` is a subfolder of the checkout. A folder with no repository
+    of its own, mounted below one, is outside a checkout here as it is for
+    git. Differences from git remain, among them: a ``.git`` folder that
+    holds no repository counts here, while git looks past it; and ``GIT_DIR``
+    or ``GIT_WORK_TREE`` in the environment, which tell git where the
+    repository is, are not read.
+    """
+    return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
 def iter_tree_files(
@@ -383,9 +638,11 @@ class GrepResult:
     """Canonical path-based matcher report.
 
     Pre-conditions: ``findings`` holds the matcher-specific finding dataclasses
-    (each a frozen ``@dataclass``). Post-conditions: ``to_json`` emits the
-    canonical ``{grep, path, passed, findings}`` payload, including ``note``
-    only when it is not ``None``.
+    (each a frozen ``@dataclass``). ``check_error``, when set, says why the
+    check could not finish, and the caller sets ``passed`` to false with it.
+    Post-conditions: ``to_json`` emits the canonical ``{grep, path, passed,
+    findings}`` payload, including ``note`` and ``check_error`` only when they
+    are not ``None``.
     """
 
     grep: str
@@ -393,6 +650,7 @@ class GrepResult:
     passed: bool
     findings: list[Any] = field(default_factory=list)
     note: str | None = None
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -400,7 +658,8 @@ class GrepResult:
         Post-conditions: the payload carries ``{grep, path, passed,
         findings}``; each finding is flattened through ``dataclasses.asdict``.
 
-        ``note`` is emitted only when it is not ``None``.
+        ``note`` and ``check_error`` are emitted only when they are not
+        ``None``.
         """
         payload: dict[str, object] = {
             "grep": self.grep,
@@ -410,6 +669,8 @@ class GrepResult:
         }
         if self.note is not None:
             payload["note"] = self.note
+        if self.check_error is not None:
+            payload[CHECK_ERROR_KEY] = self.check_error
         return json.dumps(payload, indent=2)
 
 

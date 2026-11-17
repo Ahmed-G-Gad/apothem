@@ -90,8 +90,10 @@ if __package__ in (None, ""):
         _support_package.__path__ = [str(_PACKAGE_DIR)]
         sys.modules["apothem"] = _support_package
 
-from apothem.conformity._git import run_git
+from apothem.conformity._bounded_run import run_bounded
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
@@ -354,6 +356,20 @@ STANDALONE_MODULES: Final[tuple[str, ...]] = (
 # has its own 10s ceiling and the orchestrator avoids hard-killing a
 # grep mid-scan.
 PER_GREP_BUDGET_SECONDS: Final[float] = 0.520
+
+# Seconds one standalone validator may run, in --all or --check, before the
+# gate stops it. Unlike the per-grep budget this is a hard stop: it ends a
+# validator that would never finish, such as one whose git command waits on a
+# FIFO that the checked repository's own ``include.path`` names. The slowest
+# validator takes about a minute on this repository on a busy machine, so the
+# limit leaves room for slower machines and larger projects. The validators
+# that run git give each git command a shorter limit of their own, so a stalled
+# repository normally ends there first.
+STANDALONE_TIMEOUT_SECONDS: Final[int] = 600
+
+# Exit code after an interrupt (Ctrl+C): 128 plus SIGINT's number, as a shell
+# reports a program that SIGINT ended.
+EXIT_INTERRUPTED: Final[int] = 130
 
 # Maximum per-matcher flagged-file sample carried in the ``--all-perwrite``
 # payload. ``file_count`` is the full tally; ``files`` is a bounded sample and
@@ -1120,6 +1136,28 @@ def _standalone_env() -> dict[str, str]:
     return env
 
 
+def _stopped_report(name: str) -> str:
+    """Return the JSON report for a validator the gate stopped at its limit.
+
+    The validator printed no report of its own, so the gate writes one in its
+    place: not passed, with a ``check_error`` that says why. The gate learns
+    whether a validator is advisory only from that validator's own report, so
+    this one carries no ``advisory`` field; its ``passed: false`` fails the
+    run either way, as an unfinished advisory check does.
+    """
+    return json.dumps(
+        {
+            "grep": name,
+            "passed": False,
+            CHECK_ERROR_KEY: (
+                f"{name} did not finish within {STANDALONE_TIMEOUT_SECONDS} "
+                "seconds and was stopped"
+            ),
+        },
+        indent=2,
+    )
+
+
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     """Invoke a standalone validator via subprocess; return (passed, output).
 
@@ -1136,14 +1174,19 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     ``PYTHONUTF8`` would have given, so git output and file text decode the
     same way under every locale code page. The child writes no bytecode cache
     (``-B``), as this file run as a program writes none (see the bootstrap at
-    the top of this file).
+    the top of this file). It gets :data:`STANDALONE_TIMEOUT_SECONDS`: a
+    validator still running then is stopped, together with every program it
+    started (it runs in a session of its own, or a Windows job object; see
+    :func:`~apothem.conformity._bounded_run.run_bounded`), and does not pass.
+    The output is then the gate's report in its place (see
+    :func:`_stopped_report`).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
+        completed = run_bounded(
             [
                 sys.executable,
                 "-B",
@@ -1157,12 +1200,12 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
                 module,
                 str(root),
             ],
-            capture_output=True,
-            text=True,
-            check=False,
-            encoding="utf-8",
             env=_standalone_env(),
+            timeout=STANDALONE_TIMEOUT_SECONDS,
+            new_session=True,
         )
+    except subprocess.TimeoutExpired:
+        return False, _stopped_report(name)
     except OSError as exc:
         return False, f"{name}: invocation failed: {exc}"
     output = completed.stdout or completed.stderr or ""
@@ -1197,12 +1240,14 @@ def _advisory_verdict(output: str) -> dict[str, object] | None:
 
 
 def _inspection_fields(output: str) -> dict[str, object]:
-    """Return a validator report's ``inspected`` / empty-scope fields, if any.
+    """Return a validator report's inspection fields, if any.
 
     Every standalone validator stamps ``inspected`` (how many targets it
     examined) on its JSON report, plus ``empty_scope_expected`` when it
-    examined none. Lifting them into the ``--all`` result entry lets a consumer
-    see a vacuous run without parsing each embedded ``output`` string.
+    examined none, and ``check_error`` when its check could not finish (the
+    gate's own report for a validator it stopped carries ``check_error`` too).
+    Lifting them into the ``--all`` result entry lets a consumer see a vacuous
+    or unfinished run without parsing each embedded ``output`` string.
     """
     try:
         payload = json.loads(output)
@@ -1211,7 +1256,9 @@ def _inspection_fields(output: str) -> dict[str, object]:
     if not isinstance(payload, dict):
         return {}
     return {
-        key: payload[key] for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY) if key in payload
+        key: payload[key]
+        for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY, CHECK_ERROR_KEY)
+        if key in payload
     }
 
 
@@ -1228,6 +1275,11 @@ def _run_all(root: Path) -> tuple[bool, str]:
     ``advisory`` / ``advisory_passed`` / ``findings`` and aggregated into the
     top-level ``advisory_findings_present`` flag so the drift is visible
     without parsing each validator's embedded ``output``.
+
+    A validator whose check could not finish (one the gate stopped at
+    :data:`STANDALONE_TIMEOUT_SECONDS`, or one whose own git command ran past
+    its time limit) does not pass, advisory or not, and its entry carries the
+    reason as ``check_error``.
     """
     results: list[dict[str, object]] = []
     overall_passed = True
@@ -1268,18 +1320,19 @@ def _corpus_tracked_files(root: Path) -> list[Path]:
     Uses ``git ls-files`` so the corpus is exactly the tracked working tree —
     ignored artifacts (``dist/``, caches, ``.plans/`` ephemera) are excluded by
     construction. The invocation is read-only, and :func:`run_git` keeps the
-    checked repository's own git settings from starting a program. When git is
-    unavailable or *root* is not a work tree, returns an empty list (the caller
-    treats an empty corpus as a clean pass — there is nothing tracked to scan).
+    checked repository's own git settings from starting a program. The ``-z``
+    list is read as file names, so a name comes back with every byte it holds
+    and names the file on disk. When git is unavailable or *root* is not a
+    work tree, returns an empty list (the caller treats an empty corpus as a
+    clean pass — there is nothing tracked to scan).
     """
     try:
-        completed = run_git(["ls-files", "-z"], cwd=root)
+        completed = run_git(["ls-files", "-z"], cwd=root, file_names=True)
     except (OSError, ValueError):
         return []
     if completed.returncode != EXIT_PASS:
         return []
-    rels = [entry for entry in completed.stdout.split("\0") if entry]
-    return [(root / rel).resolve() for rel in rels]
+    return [(root / rel).resolve() for rel in split_names(completed.stdout)]
 
 
 def _is_corpus_fixture_path(path: Path) -> bool:
@@ -1590,7 +1643,10 @@ def main(argv: list[str] | None = None) -> int:
     unknown flag or validator name, a conflicting flag pair, a file that does
     not exist, or a root that is not an existing directory — kept distinct so
     a caller can tell a misspelled selector or path from a real finding.
-    ``--help`` prints usage and returns 0.
+    ``--help`` prints usage and returns 0. An interrupt (Ctrl+C) prints one
+    line and returns 130, after the running validator has been stopped; a
+    ``SIGTERM`` or ``SIGHUP`` while a validator runs returns 128 plus the
+    signal number the same way.
     """
     if argv is None:
         argv = sys.argv
@@ -1605,6 +1661,9 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         # ``parser.error`` exits EXIT_USAGE after printing its one-line message.
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    except KeyboardInterrupt:
+        sys.stderr.write("conformity-gate: interrupted\n")
+        return EXIT_INTERRUPTED
 
 
 def _dispatch(

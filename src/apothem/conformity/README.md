@@ -11,6 +11,7 @@
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
+| `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -146,13 +147,33 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   program for git to start (`core.fsmonitor`, a signature program, a second git
   in a submodule, a lazy-fetch transport). `run_git` in `_git.py` turns those
   settings off on git's command line, blocks fetching, and starts git only from
-  a full-path `PATH` entry. A matcher starts no program itself: no
-  `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
-  `which`, no `git_argv` and no string naming the git program outside `_git.py`
-  (gate.py's validator launcher, which starts Python, is the one exception);
-  `test_no_conformity_module_starts_a_program_itself` checks those forms. It
-  reads file contents with `git cat-file blob`, never `git show`, which would
-  show a submodule entry as a commit, and reads a path list with `-z`.
+  a full-path `PATH` entry. A matcher starts no program itself and names no
+  git program. `_bounded_run.py` is the one module that starts a program:
+  `run_git` starts git through its `run_bounded`, and gate.py's validator
+  launcher (`_run_standalone`) starts Python through it. No other code calls
+  `run_bounded`: it starts whatever it is given, with none of `run_git`'s
+  options.
+  `test_no_conformity_module_starts_a_program_itself` is a tripwire for this
+  rule, not a proof of it. It reads each module's source and fails on the forms
+  it knows, among them: a use of `subprocess` beyond its exception and result
+  types, also under an `import ... as` name or through another module; the
+  `os` functions that start a program; `which`, `find_git`, `git_argv`, and
+  `run_bounded` outside its two callers; an import of `ctypes`,
+  `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
+  a string naming the git program. It leaves out only this folder's own
+  `_git.py` and `_bounded_run.py`, by path, and in `_git.py` it still checks
+  that `run_git` alone calls `run_bounded`. Code that reaches a starter some
+  way the test does not know can still pass it: source text run through
+  `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
+  `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
+  review a new matcher against the rule as well.
+  `run_git` reads file contents with `git cat-file blob`, never `git show`,
+  which would show a submodule entry as a commit. Read a path list with `-z`
+  and `file_names=True`, and split it with `split_names`: read as text, a
+  carriage return in a name becomes a line feed and a byte that is not UTF-8
+  becomes U+FFFD, and the changed name matches no file. Before a name from
+  such a list goes back to git as an argument, ask `reaches_git_unchanged`,
+  and report a name that fails it with `GitNameError`; never skip it.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many
@@ -160,6 +181,26 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **No unfinished pass.** A check that could not finish does not pass either.
+  Give every `run_git` call a timeout. `run_git` runs git through `run_bounded`,
+  so the limit holds for every program git starts; `subprocess.run` would stop
+  only git and, on Windows, then wait for every program that holds the output,
+  such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
+  into `GitTimeoutError`, and a git
+  failure in a checkout the walker found into `GitFailedError`, both from
+  `_grep_base.py`. `in_checkout` there says whether a folder is inside a
+  checkout: it looks for a `.git` entry in the folder and in the folders above
+  it, so a failure in a subfolder counts too, and it stops where git stops
+  looking (a `GIT_CEILING_DIRECTORIES` folder, or another file system outside
+  Windows). The messages name the command in fixed words and never repeat
+  git's own output. A corpus walker hands that message to
+  `finish_root_report(check_error=...)`, which stamps `check_error` and exits
+  `2`, advisory or not. A timeout or a refused checkout is not the exempt state
+  of a missing repository, a repository with no commit, or a host without git:
+  the data is there but was not read, and a checked repository's own
+  configuration can make git wait for ever or refuse to read it. The gate gives
+  each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
+  to stop with a `check_error` of its own.
 - **Two layouts, one import surface.** `gate.py` runs from the package
   (`src/apothem/conformity/`) and from a harness install
   (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its
