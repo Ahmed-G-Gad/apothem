@@ -1928,6 +1928,101 @@ def test_in_checkout_reads_ceiling_links_as_git_does(
     assert in_checkout(inner)  # after an empty entry the link is taken as written
 
 
+def _without_drive(folder: Path) -> str:
+    """Return *folder* as Windows writes it with no drive letter."""
+    return os.path.splitdrive(str(folder))[1]
+
+
+# Each case names a value for GIT_CEILING_DIRECTORIES, given the folder that
+# holds the repository; ``a`` is the folder between it and the current one.
+_CEILING_CASES: dict[str, Callable[[Path], str]] = {
+    "no ceiling": lambda top: "",
+    "the folder between": lambda top: str(top / "a"),
+    "the repository's own folder": lambda top: str(top),
+    "a folder beside": lambda top: str(top / "other"),
+    "not a full path": lambda top: "a",
+    "a missing folder on the way": lambda top: str(top / "missing" / ".." / "a"),
+    "a trailing separator": lambda top: str(top / "a") + os.sep,
+    "after an empty entry, as git writes it": (
+        lambda top: os.pathsep + (top / "a").as_posix()
+    ),
+    "after an empty entry, with a dot": (
+        lambda top: os.pathsep + top.as_posix() + "/./a"
+    ),
+    "after an empty entry, a trailing slash": (
+        lambda top: os.pathsep + (top / "a").as_posix() + "/"
+    ),
+    "after an empty entry, the platform's separators": (
+        lambda top: os.pathsep + str(top / "a")
+    ),
+    "after an empty entry, another case": (
+        lambda top: os.pathsep + (top / "a").as_posix().upper()
+    ),
+    "second of two entries": lambda top: (
+        str(top / "other") + os.pathsep + str(top / "a")
+    ),
+}
+if os.name == "nt":
+    _CEILING_CASES["no drive letter"] = lambda top: _without_drive(top / "a")
+    _CEILING_CASES["no drive letter, forward slashes"] = lambda top: _without_drive(
+        top / "a"
+    ).replace("\\", "/")
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize("case", list(_CEILING_CASES))
+def test_in_checkout_agrees_with_git_about_ceilings(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """For each ceiling value, ``in_checkout`` says what git itself finds.
+
+    The answer is git's own: ``git rev-parse --git-dir`` in the same folder
+    with the same environment either finds the repository or does not.
+    """
+    top = _empty_repo((tmp_path / "top").resolve())
+    (top / "other").mkdir()
+    inner = top / "a" / "b"
+    inner.mkdir(parents=True)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", _CEILING_CASES[case](top))
+
+    found = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=str(inner),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+
+    assert in_checkout(inner) is (found.returncode == 0), found.stderr
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("1", True),
+        ("true", True),
+        ("Yes", True),
+        ("on", True),
+        ("2", True),
+        ("1k", True),
+        ("-1", True),
+        ("0", False),
+        ("0k", False),
+        ("", False),
+        ("false", False),
+        ("no", False),
+        ("off", False),
+        ("maybe", False),
+    ],
+)
+def test_a_git_flag_is_read_as_git_reads_it(
+    value: str, expected: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GIT_DISCOVERY_ACROSS_FILESYSTEM", value)
+    assert _grep_base._git_flag_is_set("GIT_DISCOVERY_ACROSS_FILESYSTEM") is expected
+
+
 @pytest.mark.usefixtures("hermetic_git")
 def test_a_recreated_folder_companion_is_fresh_until_committed(
     tmp_path: Path,

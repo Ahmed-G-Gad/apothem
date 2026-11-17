@@ -352,34 +352,65 @@ def _device(folder: Path) -> int | None:
         return None
 
 
+# A whole number as git reads one: an optional sign, digits, and an optional
+# k, m or g for a multiple of 1024.
+_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"[-+]?\d+[kmg]?")
+
+
 def _git_flag_is_set(name: str) -> bool:
-    """Return True when git would read the environment variable as true."""
+    """Return True when git would read the environment variable as true.
+
+    git takes ``true``, ``yes``, ``on`` and any number other than zero as
+    true, and ``false``, ``no``, ``off``, zero and an empty value as false.
+    """
     value = os.environ.get(name, "").strip().lower()
     if value in {"true", "yes", "on"}:
         return True
-    try:
-        return int(value) != 0
-    except ValueError:
-        return False
+    if _GIT_INTEGER.fullmatch(value):
+        return int(value.rstrip("kmg")) != 0
+    return False
 
 
-def _ceiling_folders() -> frozenset[str]:
+def _git_reads_as_full_path(entry: str) -> bool:
+    """Return True when git takes *entry* as a full path.
+
+    Elsewhere than Windows that is a path that starts with ``/``. Git for
+    Windows also takes a path that starts with a separator and has no drive
+    letter, and one that starts with a drive letter and a colon.
+    """
+    if os.name != "nt":
+        return entry.startswith("/")
+    return entry[:1] in ("\\", "/") or (entry[:1].isalpha() and entry[1:2] == ":")
+
+
+def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
     """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
 
-    git ignores an entry that is not a full path. It resolves the links in an
-    entry, except in the entries that follow an empty one.
+    git ignores an entry that is not a full path. Up to the first empty entry
+    it resolves each entry (links, ``..``, a missing drive letter) and drops
+    one it cannot resolve; those come back first, in the platform's case
+    form. After an empty entry git compares each entry as it is written, with
+    forward slashes, against its own current folder; those come back second,
+    unchanged.
     """
-    resolve_links = True
-    folders: set[str] = set()
+    resolved: set[str] = set()
+    as_written: set[str] = set()
+    resolve = True
     for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep):
         if not entry:
-            resolve_links = False
+            resolve = False
+        elif not _git_reads_as_full_path(entry):
             continue
-        if not Path(entry).is_absolute():
-            continue
-        folder = Path(entry).resolve() if resolve_links else Path(entry)
-        folders.add(os.path.normcase(str(folder)))
-    return frozenset(folders)
+        elif not resolve:
+            # git drops the slashes an entry ends with before it compares.
+            as_written.add(entry.rstrip("/") or "/")
+        else:
+            try:
+                real = Path(entry).resolve(strict=True)
+            except OSError:
+                continue
+            resolved.add(os.path.normcase(str(real)))
+    return frozenset(resolved), frozenset(as_written)
 
 
 def checkout_search_folders(directory: Path) -> Iterator[Path]:
@@ -392,14 +423,14 @@ def checkout_search_folders(directory: Path) -> Iterator[Path]:
     another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
     """
     start = directory.resolve()
-    ceilings = _ceiling_folders()
+    resolved, as_written = _ceiling_folders()
     one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
         "GIT_DISCOVERY_ACROSS_FILESYSTEM"
     )
     device = _device(start) if one_file_system else None
     yield start
     for folder in start.parents:
-        if os.path.normcase(str(folder)) in ceilings:
+        if os.path.normcase(str(folder)) in resolved or folder.as_posix() in as_written:
             return
         if device is not None and _device(folder) != device:
             return
