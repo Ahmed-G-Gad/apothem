@@ -115,7 +115,7 @@ conventional-commit-grep            git log -1, git rev-parse          5 seconds
 agents-md-coverage-grep             git rev-parse                     10 seconds
                                     git log over the whole history     5 minutes
 production-ready-pr-grep --staged   git diff --cached                  5 seconds
-semver-stability-grep --staged      git diff --cached, git show        5 seconds
+semver-stability-grep --staged      git diff --cached, git cat-file    5 seconds
 ```
 
 A project's own git settings can make `git` wait for ever, for example an
