@@ -94,14 +94,14 @@ EXIT_FAIL: Final[int] = 2
 EXIT_USAGE: Final[int] = 3
 STDIN_FLAG: Final[str] = "--stdin"
 
+# Report key emitted only when the run left out links or special files: their
+# paths relative to the root (see ``_project_paths``).
+SKIPPED_KEY: Final[str] = "skipped_links"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
-# Report key emitted only when the run left out links or special files: their
-# paths relative to the root (see ``_project_paths``).
-SKIPPED_KEY: Final[str] = "skipped_links"
 
 
 # ---------------------------------------------------------------------------
