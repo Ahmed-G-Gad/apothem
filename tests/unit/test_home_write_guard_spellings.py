@@ -160,6 +160,60 @@ def test_the_layout_changes_when_a_home_folder_becomes_a_link(
     assert not settled_now
 
 
+def test_a_folder_swapped_inside_a_linked_config_is_seen_at_once(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``.config`` linked into a dotfiles folder: a change in there counts.
+
+    With no settling time the resolved folders are reused whenever the layout
+    is unchanged, so only a layout that reads the link's target sees the swap.
+    """
+    monkeypatch.setattr(home_write_guard, "_SETTLE_NS", 0)
+    dotfiles = tmp_path / "dotfiles"
+    (dotfiles / "apothem").mkdir(parents=True)
+    third = tmp_path / "third"
+    third.mkdir()
+    _link_folder(fake_home / ".config", dotfiles)
+    try:
+        _settled(dotfiles)
+        _settled(fake_home)
+        assert home_write_guard.would_refuse(dotfiles / "apothem" / "x")
+        assert not home_write_guard.would_refuse(third / "x")
+        assert not home_write_guard.would_refuse(third / "x")
+        (dotfiles / "apothem").rmdir()
+        _link_folder(dotfiles / "apothem", third)
+        try:
+            assert home_write_guard.would_refuse(third / "x")
+            with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+                atomic_io.write_bytes_atomically(third / "settings.yaml", b"data")
+            assert caught.value.protected_root == str(fake_home / ".config" / "apothem")
+        finally:
+            _remove_folder_link(dotfiles / "apothem")
+    finally:
+        _remove_folder_link(fake_home / ".config")
+    assert _everything_in(third) == []
+
+
+def test_the_layout_reads_where_a_linked_config_leads(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    dotfiles = tmp_path / "dotfiles"
+    _link_folder(fake_home / ".config", dotfiles)
+    try:
+        _settled(dotfiles)
+        before, _ = home_write_guard._layout((str(fake_home),))
+        (dotfiles / "opencode").mkdir()
+        after, settled = home_write_guard._layout((str(fake_home),))
+    finally:
+        _remove_folder_link(fake_home / ".config")
+    plain, _ = home_write_guard._layout((str(fake_home),))
+    # The home, the link, and the folder the link leads to.
+    assert len(before) == 3
+    assert after != before
+    assert not settled
+    assert len(plain) == 2
+
+
 # Short (8.3) names -----------------------------------------------------------
 
 

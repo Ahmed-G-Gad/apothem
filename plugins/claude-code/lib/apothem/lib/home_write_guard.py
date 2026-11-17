@@ -31,7 +31,8 @@ With both variables unset the check is two environment lookups.
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
 protected folders' own resolved spellings are kept only while each home and
-its ``.config`` stay as they were (see :func:`_layout`). On Windows a
+its ``.config``, and the folder either leads to when it is a link, stay as
+they were (see :func:`_layout`). On Windows a
 ``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either slash), a loopback
 admin share (``\\\\localhost\\C$``,
 ``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
@@ -83,9 +84,11 @@ import ipaddress
 import ntpath
 import os
 import re
+import stat
 import sys
 import time
 import unicodedata
+from collections.abc import Callable
 from typing import Any, TypeGuard
 
 #: The variable pytest sets for each test's setup, call and teardown.
@@ -827,22 +830,42 @@ def _layout(homes: tuple[str, ...]) -> tuple[tuple[object, ...], bool]:
     it: its timestamp, or, for a home swapped itself, its identity. A change
     within the same tick of the file system clock can leave the timestamp as
     it was, so a folder changed less than :data:`_SETTLE_NS` ago has not
-    settled, and nothing resolved under it is reused. Links above a home are
-    not looked at.
+    settled, and nothing resolved under it is reused.
+
+    A home or a ``.config`` that is itself a link (a dotfiles folder, say)
+    records the link, so the folder it leads to is read as well: a protected
+    folder swapped inside it, or the link pointed elsewhere, changes that
+    folder's timestamp or identity. Links above a home are not looked at.
     """
     now = time.time_ns()
     found: list[object] = []
     settled = True
     for home in homes:
         for folder in (home, os.path.join(home, ".config")):
-            try:
-                info = os.lstat(folder)
-            except (OSError, ValueError):
-                found.append(None)
-                continue
-            found.append((info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns))
-            settled = settled and now - info.st_mtime_ns >= _SETTLE_NS
+            link = _read(os.lstat, folder)
+            infos = [link]
+            if link is not None and _is_link(link):
+                infos.append(_read(os.stat, folder))
+            for info in infos:
+                if info is None:
+                    found.append(None)
+                    continue
+                found.append((info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns))
+                settled = settled and now - info.st_mtime_ns >= _SETTLE_NS
     return tuple(found), settled
+
+
+def _read(read: Callable[[str], os.stat_result], folder: str) -> os.stat_result | None:
+    """Return ``read(folder)`` (``os.lstat`` or ``os.stat``), or None on error."""
+    try:
+        return read(folder)
+    except (OSError, ValueError):
+        return None
+
+
+def _is_link(info: os.stat_result) -> bool:
+    """Return True for the ``lstat`` of a link: a symlink, or a junction."""
+    return stat.S_ISLNK(info.st_mode) or bool(getattr(info, "st_reparse_tag", 0))
 
 
 @functools.lru_cache(maxsize=8)
