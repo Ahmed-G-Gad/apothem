@@ -123,8 +123,9 @@ a full-path entry of your `PATH`, with every setting of that repository's
 object blocked, so a project that came with its `.git` folder from someone else
 cannot make them start a program through those settings.
 [Running the conformity gate](/docs/usage/conformity-gate) lists the settings
-and the two limits that remain: git can still read a file the repository points
-at elsewhere, and a later git release can add a new setting.
+and the two limits that remain: git can still read a path the repository names
+in any setting or file (`include.path`, `core.worktree`, a `.git` file's
+`gitdir:` line, and others), and a later git release can add a new setting.
 
 ```shell
 # Every standalone validator across the repository:

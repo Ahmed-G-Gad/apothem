@@ -159,7 +159,8 @@ def _git_ls_files(root: Path) -> list[str]:
     start a program.
     """
     try:
-        completed = run_git(["ls-files"], cwd=root, check=True)
+        # -z: names end with NUL, unquoted, whatever characters they hold.
+        completed = run_git(["ls-files", "-z"], cwd=root, check=True)
     except FileNotFoundError as exc:
         raise RuntimeError("git executable not found on PATH") from exc
     except subprocess.CalledProcessError as exc:
@@ -167,7 +168,7 @@ def _git_ls_files(root: Path) -> list[str]:
         raise RuntimeError(
             f"git ls-files failed under {root!s}: {stderr or 'no stderr'}"
         ) from exc
-    return [line for line in completed.stdout.splitlines() if line]
+    return [name for name in completed.stdout.split("\0") if name]
 
 
 def _sweep_stray_plans_dirs(

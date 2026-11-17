@@ -340,13 +340,15 @@ def check_staged() -> list[Finding]:
     if not version or is_v0(version):
         return []
 
-    # Get list of staged Python files under src/apothem/.
+    # Get list of staged Python files under src/apothem/. -z ends each name
+    # with NUL, unquoted, so no character in a name can split or hide it.
     try:
         result = run_git(
             [
                 "diff",
                 "--cached",
                 "--name-only",
+                "-z",
                 "--diff-filter=AMR",
                 PUBLIC_PACKAGE,
             ],
@@ -355,9 +357,9 @@ def check_staged() -> list[Finding]:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
     files = [
-        f.strip()
-        for f in result.stdout.splitlines()
-        if f.strip().endswith(".py")
+        f
+        for f in result.stdout.split("\0")
+        if f.endswith(".py")
         and not PRIVATE_PATTERN.search(f)
         and not CONFORMITY_INTERNAL.search(f)
     ]

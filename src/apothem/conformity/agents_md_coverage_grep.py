@@ -42,11 +42,14 @@ mtime: a checkout rewrites mtimes, so only commit history carries the truth of
 "what changed when". A single ``git log`` pass buckets every tracked file to
 its nearest meaningful-folder ancestor; a folder is stale when its newest
 content commit postdates its committed companion's commit. Folders with no
-companion on disk are skipped entirely — absence is not a finding under the
-root-only convention. The root ``AGENTS.md`` is that canon, not a per-folder
-companion, so it is never checked against the root folder's content. Where git history is unavailable (a shallow clone, a
-non-git tree), freshness is skipped and the sweep reports a clean pass — it
-never blocks a fresh clone.
+companion on disk are skipped entirely, a companion deleted since included —
+absence is not a finding under the root-only convention. The root
+``AGENTS.md`` is that canon, not a per-folder companion, so it is never
+checked against the root folder's content. The log names paths relative to
+the checked root and covers only history under it, so a subtree root checks
+its own folders. Where git history is unavailable (a shallow clone, a non-git
+tree), freshness is skipped and the sweep reports a clean pass — it never
+blocks a fresh clone.
 
 Posture. The result is advisory: the sweep surfaces findings and never
 silent-blocks by default, honoring the agnostic gate posture. The orchestrator
@@ -258,16 +261,26 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     """Return a map of tracked-file POSIX path → last-commit unix timestamp.
 
     One ``git log`` pass, newest commit first: the first time a path is seen
-    is its last-touching commit. Returns None when git history is unavailable
-    (no repository, shallow clone with no log, git absent, or timeout) so the
-    caller degrades to a presence-only sweep. git runs through
-    :func:`run_git`, which turns off the repository's program-running settings
-    (a signature check, say) and prints path names as they are, decoded as
-    UTF-8.
+    is its last-touching commit. ``--relative -- .`` limits the pass to
+    history under *root* and names paths relative to it, so they match
+    :func:`meaningful_folders` when *root* is a subtree of the repository.
+    Returns None when git history is unavailable (no repository, shallow clone
+    with no log, git absent, or timeout) so the caller degrades to a
+    presence-only sweep. git runs through :func:`run_git`, which turns off the
+    repository's program-running settings (a signature check, say) and prints
+    path names as they are, decoded as UTF-8.
     """
     try:
         completed = run_git(
-            ["log", "--format=%x1e%ct", "--name-only", "--no-renames"],
+            [
+                "log",
+                "--format=%x1e%ct",
+                "--name-only",
+                "--no-renames",
+                "--relative",
+                "--",
+                ".",
+            ],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
         )
@@ -285,7 +298,9 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             stamp = raw_line[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None
             continue
-        path = raw_line.strip()
+        # The name as git printed it: core.quotePath=false keeps it unquoted,
+        # and stripping would change a name that starts or ends with a space.
+        path = raw_line
         if not path or current_ct is None:
             continue
         # Newest-first: keep only the first (most recent) commit per path.
@@ -338,7 +353,12 @@ def check(root: Path) -> GrepResult:
                 companion_folder = path.rpartition("/")[0] or "."
                 # The root AGENTS.md is the repository's canon, not a
                 # per-folder companion, so it has no folder to fall behind.
-                if companion_folder != "." and companion_folder in folder_set:
+                # A companion deleted since is absent, and absence passes.
+                if (
+                    companion_folder != "."
+                    and companion_folder in folder_set
+                    and (root / path).is_file()
+                ):
                     companion_ct[companion_folder] = ct
                 continue
             content_ct[owner] = max(content_ct.get(owner, 0), ct)

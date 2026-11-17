@@ -28,11 +28,11 @@ while it only reads:
 - options on git's own command line (:data:`PROTECTIVE_OPTIONS`), which win
   over every configuration file and reach any git that git starts: no pager,
   no file-system monitor, signature programs that cannot exist, submodule
-  changes shown as commit ids only, no mailmap, no automatic maintenance, and
-  a hooks path no hook can exist under;
-- ``--no-ext-diff`` and ``--no-textconv`` on ``diff``, ``log`` and ``show``
-  (:data:`NO_DIFF_PROGRAMS`), so no diff driver or text-conversion program
-  runs;
+  changes shown as commit ids only, no mailmap, no excludes file, no automatic
+  maintenance, and a hooks path no hook can exist under;
+- ``--no-ext-diff``, ``--no-textconv`` and ``-O/dev/null`` on ``diff``, ``log``
+  and ``show`` (:data:`DIFF_OPTIONS`), so no diff driver or text-conversion
+  program runs and no ``diff.orderFile`` is read;
 - ``GIT_NO_LAZY_FETCH=1`` (git 2.44 and later) and an empty
   ``GIT_ALLOW_PROTOCOL`` (git 2.6.1 and later), which allows no transport and
   overrides the repository's ``protocol.*`` settings, so a missing object is
@@ -45,10 +45,12 @@ while it only reads:
 
 What stays: the user's own global and system configuration and ``GIT_*``
 variables apply, except the settings above, which win in every scope. The
-repository can still make git read a file from another place: an
-``include.path`` file, or objects borrowed through ``objects/info/alternates``.
-On Windows a network path there (``\\\\server\\share``) makes Windows sign in
-to that server. Reading content is done with ``cat-file blob``, never with
+repository can still make git read a path somewhere else through any setting
+or repository file that names one, for example ``include.path`` or
+``includeIf``, ``core.worktree``, the ``gitdir:`` line of a ``.git`` file, or
+``objects/info/alternates``. On Windows a network path there
+(``\\\\server\\share``) makes Windows connect to that server and send the
+user's sign-in. Reading content is done with ``cat-file blob``, never with
 ``show``, so a gitlink (a submodule entry) is refused instead of shown as a
 commit.
 """
@@ -81,9 +83,10 @@ _NOWHERE: Final[str] = str(Path(__file__).resolve() / "nothing-here")
 # one. ``diff.submodule=short`` keeps git from starting a second git inside a
 # submodule, where the submodule's own configuration would apply.
 # ``log.mailmap=false`` keeps ``log`` from reading a mailmap file the
-# repository names. ``core.quotePath=false`` prints path names as they are
-# rather than C-quoting every byte above 0x7f, so a non-ASCII path reads as
-# itself.
+# repository names, and ``core.excludesFile`` set nowhere keeps git from
+# reading an excludes file it names (either can be a network path).
+# ``core.quotePath=false`` prints path names as they are rather than C-quoting
+# every byte above 0x7f, so a non-ASCII path reads as itself.
 PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "--no-pager",
     "-c",
@@ -105,6 +108,8 @@ PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "-c",
     "log.mailmap=false",
     "-c",
+    f"core.excludesFile={_NOWHERE}",
+    "-c",
     "gc.auto=0",
     "-c",
     "maintenance.auto=false",
@@ -112,10 +117,18 @@ PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "core.quotePath=false",
 )
 
-# Subcommands that can show a diff or a blob, and the options that keep a
-# configured external diff program or text-conversion filter from running.
+# Subcommands that can show a diff or a blob, and the options they get: no
+# configured external diff program or text-conversion filter runs, and
+# ``-O/dev/null`` replaces any ``diff.orderFile`` the repository names (a
+# missing one fails the command, a network one makes Windows connect to it).
+# ``/dev/null`` is an absolute path on every platform; Git for Windows reads it
+# as its null device, so the order file is always empty and always there.
 DIFF_SUBCOMMANDS: Final[frozenset[str]] = frozenset({"diff", "log", "show"})
-NO_DIFF_PROGRAMS: Final[tuple[str, ...]] = ("--no-ext-diff", "--no-textconv")
+DIFF_OPTIONS: Final[tuple[str, ...]] = (
+    "--no-ext-diff",
+    "--no-textconv",
+    "-O/dev/null",
+)
 
 # Environment for every git run. GIT_ALLOW_PROTOCOL holds an empty list, so no
 # transport (file, ssh, ext, or a remote-helper program) is allowed whatever
@@ -202,14 +215,14 @@ def git_argv(
     """Return the full argument vector for ``git <args>``.
 
     *args* starts with the subcommand. :data:`PROTECTIVE_OPTIONS` go before
-    it, then ``-C <cwd>`` when *cwd* is given, and :data:`NO_DIFF_PROGRAMS`
+    it, then ``-C <cwd>`` when *cwd* is given, and :data:`DIFF_OPTIONS`
     right after the subcommand for ``diff``, ``log`` and ``show``.
     """
     if not args:
         raise ValueError("git_argv needs a subcommand")
     subcommand, *rest = args
     where = ("-C", str(cwd)) if cwd is not None else ()
-    extra = NO_DIFF_PROGRAMS if subcommand in DIFF_SUBCOMMANDS else ()
+    extra = DIFF_OPTIONS if subcommand in DIFF_SUBCOMMANDS else ()
     return [git, *PROTECTIVE_OPTIONS, *where, subcommand, *extra, *rest]
 
 

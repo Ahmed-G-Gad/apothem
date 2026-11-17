@@ -119,11 +119,12 @@ def _staged_paths() -> list[str]:
     """Return the staged-diff path list via git; empty on failure.
 
     git runs through :func:`run_git`, so the repository's own settings cannot
-    make it start a program.
+    make it start a program. ``-z`` ends each name with NUL, unquoted, so no
+    character in a name can split or hide it.
     """
     try:
         result = run_git(
-            ["diff", "--cached", "--name-only"],
+            ["diff", "--cached", "--name-only", "-z"],
             check=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
@@ -133,7 +134,7 @@ def _staged_paths() -> list[str]:
         FileNotFoundError,
     ):
         return []
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return [name for name in result.stdout.split("\0") if name]
 
 
 def _check_staged() -> GrepResult:

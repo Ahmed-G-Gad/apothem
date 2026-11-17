@@ -146,10 +146,13 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   program for git to start (`core.fsmonitor`, a signature program, a second git
   in a submodule, a lazy-fetch transport). `run_git` in `_git.py` turns those
   settings off on git's command line, blocks fetching, and starts git only from
-  a full-path `PATH` entry. A matcher never calls `subprocess.run(["git", ...])`
-  itself (`test_no_conformity_module_starts_git_itself` fails if one does), and
+  a full-path `PATH` entry. A matcher starts no program itself: no
+  `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
+  `which`, no `git_argv` and no string naming the git program outside `_git.py`
+  (gate.py's validator launcher, which starts Python, is the one exception);
+  `test_no_conformity_module_starts_a_program_itself` checks those forms. It
   reads file contents with `git cat-file blob`, never `git show`, which would
-  show a submodule entry as a commit.
+  show a submodule entry as a commit, and reads a path list with `-z`.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many

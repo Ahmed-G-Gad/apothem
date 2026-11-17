@@ -50,6 +50,8 @@ git starts in a submodule:
 - no hooks, no pager, and no automatic maintenance;
 - no external diff or text-conversion program, and submodule changes shown as
   commit ids only, so git starts no second git inside a submodule;
+- no diff order file (`diff.orderFile`), excludes file (`core.excludesFile`)
+  or mailmap file read;
 - file contents read with `git cat-file blob`, which refuses a submodule entry
   where `git show` would show it as a commit.
 
@@ -64,11 +66,12 @@ the programs it starts by name.
 So you can run these commands on a project that came with its `.git` folder
 from someone else, in an archive or a shared folder: none of the settings
 above can make the gate start a program. Two limits remain. The repository can
-still make git read a file from somewhere else, through `include.path` or
-objects it borrows (`.git/objects/info/alternates`); on Windows, a network path
-there (`\\server\share`) makes Windows connect to that server and sign you in.
-And the list covers the settings known today; a later git release can add a
-new one. Your own global and system git settings still apply, except the ones
+still make git read a path somewhere else through any setting or file that
+names one, for example `include.path` or `includeIf`, `core.worktree`, the
+`gitdir:` line of a `.git` file, or `.git/objects/info/alternates`; on
+Windows, a network path there (`\\server\share`) makes Windows connect to that
+server and sign you in. And the list covers the settings known today; a later
+git release can add a new one. Your own global and system git settings still apply, except the ones
 above, which the gate's command line overrides. This covers git only:
 `python -m` reads Python modules from the current folder first, so start the
 gate from a folder you trust.

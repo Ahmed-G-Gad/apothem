@@ -618,6 +618,7 @@ def test_git_argv_puts_the_protective_options_first() -> None:
         "log",
         "--no-ext-diff",
         "--no-textconv",
+        "-O/dev/null",
         "-1",
         "--pretty=%B",
     ]
@@ -651,9 +652,15 @@ def test_protective_options_name_every_program_switch() -> None:
     assert settings["gc.auto"] == "0"
     assert settings["maintenance.auto"] == "false"
     assert settings["core.quotePath"] == "false"
-    # The hooks path and the signature programs sit below a regular file,
-    # where nothing can exist, so no hook or signature program can start.
-    for key in ("core.hooksPath", "gpg.program", "gpg.ssh.program", "gpg.x509.program"):
+    # The hooks path, the signature programs and the excludes file sit below a
+    # regular file, where nothing can exist, so none of them can start or be read.
+    for key in (
+        "core.hooksPath",
+        "gpg.program",
+        "gpg.ssh.program",
+        "gpg.x509.program",
+        "core.excludesFile",
+    ):
         assert Path(settings[key]).parent.is_file(), key
     assert git_helper.PROTECTIVE_OPTIONS[0] == "--no-pager"
 
@@ -681,33 +688,146 @@ def test_run_git_reports_a_missing_git_as_file_not_found(
         git_helper.run_git(["version"])
 
 
-def test_no_conformity_module_starts_git_itself() -> None:
+_PROCESS_FUNCTIONS = frozenset(
+    {
+        "subprocess.run",
+        "subprocess.Popen",
+        "subprocess.call",
+        "subprocess.check_call",
+        "subprocess.check_output",
+        "subprocess.getoutput",
+        "subprocess.getstatusoutput",
+        "os.system",
+        "os.popen",
+        "os.startfile",
+        "asyncio.create_subprocess_exec",
+        "asyncio.create_subprocess_shell",
+        "asyncio.subprocess.create_subprocess_exec",
+        "asyncio.subprocess.create_subprocess_shell",
+        "pty.spawn",
+    }
+)
+_PROCESS_PREFIXES = ("os.exec", "os.spawn", "os.posix_spawn")
+_PROCESS_MODULES = ("subprocess", "os", "shutil", "asyncio", "pty")
+# A string that names the git program: "git", "git.exe", or a path ending so.
+_GIT_PROGRAM = re.compile(r"(?:^|[\\/])git(?:\.exe)?$", re.IGNORECASE)
+
+
+def _dotted(node: ast.expr, imported: dict[str, str]) -> str:
+    """Return a call target as a dotted name, through ``from ... import``."""
+    if isinstance(node, ast.Name):
+        return imported.get(node.id, node.id)
+    if isinstance(node, ast.Attribute):
+        return f"{_dotted(node.value, imported)}.{node.attr}"
+    return ""
+
+
+def _program_starts(source: str, *, allowed: frozenset[str] = frozenset()) -> list[int]:
+    """Return the lines where *source* starts or finds a program, or names git.
+
+    Every process-starting call counts, whatever its arguments, and so does any
+    ``which``, any use of ``git_argv``, and any string naming the git program.
+    Calls inside a function named in *allowed* are skipped.
+    """
+    tree = ast.parse(source)
+    imported: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            for alias in node.names:
+                imported[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    skipped: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name in allowed:
+            skipped.update(id(inner) for inner in ast.walk(node))
+    lines: list[int] = []
+    for node in ast.walk(tree):
+        if id(node) in skipped:
+            continue
+        if isinstance(node, ast.Call):
+            target = _dotted(node.func, imported)
+            if (
+                target in _PROCESS_FUNCTIONS
+                or target.startswith(_PROCESS_PREFIXES)
+                or target == "which"
+                or target.endswith(".which")
+            ):
+                lines.append(node.lineno)
+            continue
+        uses_git_argv = (isinstance(node, ast.Name) and node.id == "git_argv") or (
+            isinstance(node, ast.Attribute) and node.attr == "git_argv"
+        )
+        names_git = (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and _GIT_PROGRAM.search(node.value.strip()) is not None
+        )
+        if uses_git_argv or names_git:
+            lines.append(node.lineno)
+    return sorted(set(lines))
+
+
+# Source text for the guard's self-test: parsed with ast.parse, never run.
+_BYPASSES = {
+    "literal list": 'import subprocess\nsubprocess.run(["git", "log"])\n',
+    "shell string": 'import subprocess\nsubprocess.run("git log", shell=True)\n',
+    "name for git": 'import subprocess\nGIT = "git"\nsubprocess.run([GIT, "show"])\n',
+    "full path": 'import subprocess\nsubprocess.run(["/usr/bin/git", "log"])\n',
+    "split string": 'import subprocess\nsubprocess.run("git log".split())\n',
+    "os.system": 'import os\nos.system("git status")\n',
+    "os.popen": 'import os\nos.popen("git status")\n',
+    "os.exec": 'import os\nos.execvp("git", ["git"])\n',
+    "bare which": 'from shutil import which\nwhich("git")\n',
+    "keyword which": 'import shutil\nshutil.which(cmd="git")\n',
+    "renamed import": (
+        'from subprocess import check_output as co\nco(["git", "log"])\n'
+    ),
+    "git_argv": (
+        "import subprocess\n"
+        "from apothem.conformity._git import git_argv\n"
+        'subprocess.run(git_argv("g", ["log"]))\n'
+    ),
+    "getattr": 'import subprocess\ngetattr(subprocess, "run")(["git"])\n',
+    "asyncio": 'import asyncio\nasyncio.create_subprocess_exec("git", "log")\n',
+}
+
+
+@pytest.mark.parametrize("source", _BYPASSES.values(), ids=list(_BYPASSES))
+def test_the_program_guard_catches_each_direct_form(source: str) -> None:
+    assert _program_starts(source) != []
+
+
+def test_the_program_guard_passes_run_git_and_exception_types() -> None:
+    source = (
+        "import subprocess\n"
+        "from apothem.conformity._git import run_git\n"
+        'GIT_ENTRY = ".git"\n'
+        "try:\n"
+        '    run_git(["log", "-1"], timeout=5)\n'
+        "except (subprocess.TimeoutExpired, subprocess.CalledProcessError):\n"
+        "    pass\n"
+    )
+    assert _program_starts(source) == []
+
+
+def test_no_conformity_module_starts_a_program_itself() -> None:
     """Only ``_git.py`` starts git; every other module calls ``run_git``.
 
-    A literal list or tuple that begins with ``"git"`` is how a direct
-    ``subprocess.run(["git", ...])`` call is written, and
-    ``shutil.which("git")`` is how a direct lookup is.
+    The one other program start is gate.py's validator launcher
+    (``_run_standalone``), which starts Python, not git.
     """
     package = Path(gate.__file__).resolve().parent
     offenders: list[str] = []
-    for module in sorted(package.glob("*.py")):
+    for module in sorted(package.rglob("*.py")):
         if module.name == "_git.py":
             continue
-        tree = ast.parse(module.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.List, ast.Tuple)) and node.elts:
-                first = node.elts[0]
-                if isinstance(first, ast.Constant) and first.value == "git":
-                    offenders.append(f"{module.name}:{node.lineno}")
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr == "which"
-                and node.args
-                and isinstance(node.args[0], ast.Constant)
-                and node.args[0].value == "git"
-            ):
-                offenders.append(f"{module.name}:{node.lineno}")
+        allowed = (
+            frozenset({"_run_standalone"}) if module.name == "gate.py" else frozenset()
+        )
+        source = module.read_text(encoding="utf-8")
+        offenders.extend(
+            f"{module.relative_to(package).as_posix()}:{line}"
+            for line in _program_starts(source, allowed=allowed)
+        )
     assert offenders == []
 
 
@@ -772,6 +892,93 @@ def test_the_root_agents_md_is_never_a_stale_companion(tmp_path: Path) -> None:
 
     assert result.freshness_checked
     assert result.findings == []
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_deleted_folder_companion_is_not_reported(tmp_path: Path) -> None:
+    """A per-folder ``AGENTS.md`` deleted since is absent, and absence passes."""
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "pkg").mkdir()
+    (repo / "pkg" / "README.md").write_bytes(b"# pkg\n")
+    (repo / "pkg" / "AGENTS.md").write_bytes(b"# pkg notes\n")
+    _dated_commit(repo, "docs: add pkg", 1_700_000_000)
+    (repo / "pkg" / "AGENTS.md").unlink()
+    _dated_commit(repo, "docs: drop the pkg notes", 1_700_000_500)
+    (repo / "pkg" / "x.py").write_bytes(b"X = 1\n")
+    _dated_commit(repo, "feat: add pkg code", 1_700_001_000)
+
+    result = agents_md_coverage_grep.check(repo)
+
+    assert result.freshness_checked
+    assert result.findings == []
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_subfolder_root_checks_its_own_folders(tmp_path: Path) -> None:
+    """Paths come relative to the checked root, so a subfolder root matches."""
+    repo = _empty_repo(tmp_path / "project")
+    pkg = repo / "proj" / "pkg"
+    pkg.mkdir(parents=True)
+    (pkg / "README.md").write_bytes(b"# pkg\n")
+    (pkg / "AGENTS.md").write_bytes(b"# pkg notes\n")
+    _dated_commit(repo, "docs: add pkg", 1_700_000_000)
+    (pkg / "x.py").write_bytes(b"X = 1\n")
+    _dated_commit(repo, "feat: add pkg code", 1_700_001_000)
+
+    result = agents_md_coverage_grep.check(repo / "proj")
+
+    assert [(finding.surface, finding.kind) for finding in result.findings] == [
+        ("pkg/AGENTS.md", "stale-companion")
+    ]
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_names_with_line_separators_stay_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A name holding U+2028, U+2029 or U+0085 reaches the validators whole.
+
+    git prints such a name unquoted, and ``str.splitlines()`` would break it.
+    """
+    odd = f"a{chr(0x2028)}b{chr(0x2029)}c{chr(0x85)}d.md"
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    (repo / "docs" / odd).write_bytes(b"x\n")
+    _dated_commit(repo, "docs: add an oddly named page", 1_700_000_000)
+    staged = f"src/apothem/m{chr(0x2028)}x.py"
+    (repo / "src" / "apothem").mkdir(parents=True)
+    (repo / staged).write_bytes(b"X = 1\n")
+    _git(repo, "add", "-A")
+    monkeypatch.chdir(repo)
+
+    assert no_global_plans_grep._git_ls_files(repo) == [f"docs/{odd}", staged]
+    assert production_ready_pr_grep._staged_paths() == [staged]
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_missing_diff_order_file_hides_no_staged_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``diff.orderFile`` the repository names is never read.
+
+    A missing one made ``git diff`` fail, and both ``--staged`` checks then saw
+    an empty change set and passed; a network one makes Windows connect to it.
+    """
+    repo = _build_repo(tmp_path / "project")
+    _config(repo, "diff.orderFile", (tmp_path / "no-such-order-file").as_posix())
+    plain = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=str(repo),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    assert plain.returncode != 0  # plain git cannot list the staged change
+    monkeypatch.chdir(repo)
+
+    assert production_ready_pr_grep._staged_paths() == [_TRACKED]
+    assert semver_stability_grep.check_staged() != []  # g was dropped
 
 
 @pytest.mark.usefixtures("hermetic_git")
