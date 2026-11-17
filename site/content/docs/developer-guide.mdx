@@ -671,16 +671,18 @@ file copied out of `tests/` and run without `tests/conftest.py` cannot reach
 the real home through Apothem. While `PYTEST_CURRENT_TEST` (a test) or
 `PYTEST_VERSION` (the whole session, collection and session hooks included)
 is set, a write, removal, copy, rename or lock file in the account's
-`~/.apothem`, `~/.config/apothem` or a tool folder the harness registry names
-in the home (`~/.claude`, `~/.qwen`, `~/.config/opencode` and the rest) stops
-before anything changes, with an error like this:
+`~/.apothem`, `~/.config/apothem`, a tool folder the harness registry names
+in the home (`~/.claude`, `~/.qwen`, `~/.config/opencode` and the rest) or a
+file outside those folders that the propagation manifest changes (the
+`~/.antigravity/profile.yaml` an earlier release wrote) stops before anything
+changes, with an error like this:
 
 ```text
 RealHomeWriteError: Apothem refused to create the lock file
 C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
-C:\Users\you\.apothem, a folder in this account's real home, while a pytest
-test is running (test_probe.py::test_install (call)). Nothing in
-C:\Users\you\.apothem was changed. ...
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (test_probe.py::test_install (call)). Nothing
+in C:\Users\you\.apothem was changed. ...
 ```
 
 A project-scope install, update, uninstall or rollback whose project root is

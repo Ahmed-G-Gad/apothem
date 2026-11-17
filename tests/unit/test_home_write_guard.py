@@ -24,11 +24,19 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
-from apothem.lib import atomic_io, harness_registry_data, home_write_guard
+from apothem.lib import (
+    atomic_io,
+    harness_registry,
+    harness_registry_data,
+    home_write_guard,
+    propagation,
+)
 
-#: Every protected folder, relative to a home.
+#: Every protected folder, and each protected file outside them, relative to a
+#: home.
 _ROOTS = (
     ".agents",
+    ".antigravity/profile.yaml",
     ".apothem",
     ".claude",
     ".codebuddy",
@@ -210,21 +218,92 @@ def test_a_tree_operation_on_a_folder_that_holds_a_root_is_refused(
         assert not home_write_guard.would_refuse(holder)
 
 
-def test_the_protected_folders_follow_the_registry() -> None:
-    derived = home_write_guard.derive_roots(
+def test_the_protected_folders_follow_the_registry_and_the_manifest() -> None:
+    entries = harness_registry_data.HARNESS_REGISTRY
+    folders = home_write_guard.derive_roots(
         [
-            *(
-                path
-                for entry in harness_registry_data.HARNESS_REGISTRY
-                for path in entry.target_paths
-            ),
+            *(path for entry in entries for path in entry.target_paths),
             *(root.path for root in harness_registry_data.SHARED_ROOTS),
         ]
     )
-    # A new tool folder in the home fails here until it is listed in both places.
+    paths = home_write_guard.manifest_paths(propagation.load_manifest(), entries)
+    derived = home_write_guard.narrowest_roots(folders, paths)
+    # A new tool folder, or a manifest path outside every folder (an earlier
+    # release's file a stale sweep removes), fails here until it is listed in
+    # both places.
     assert set(derived) | set(home_write_guard.APOTHEM_ROOTS) == set(_ROOTS)
     assert derived == home_write_guard.FALLBACK_ROOTS
+    assert "~/.antigravity/profile.yaml" in paths
+    home_write_guard._derived_roots.cache_clear()
     assert home_write_guard._registry_roots() == home_write_guard.FALLBACK_ROOTS
+
+
+def test_the_root_of_a_user_scope_harness_is_its_first_target_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Stale-sweep entries are joined to this folder, the adapter's own root."""
+    for name in ("HOME", "USERPROFILE"):
+        monkeypatch.setenv(name, str(tmp_path))
+    for name in ("CODEX_HOME", "CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME"):
+        monkeypatch.delenv(name, raising=False)
+    checked = []
+    for entry in harness_registry.iter_harness_entries():
+        if entry.scope != "user":
+            continue
+        adapter = harness_registry.load_adapter_class(entry)()
+        output = Path(adapter.output_path)  # type: ignore[attr-defined]
+        expected = tmp_path.joinpath(*entry.target_paths[0][2:].split("/"))
+        assert os.path.normcase(output) == os.path.normcase(expected), entry.public_id
+        checked.append(entry.package_key)
+    assert "antigravity" in checked
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    [
+        ("${USER_HOME}/.agents/skills/", ["~/.agents/skills"]),
+        ("${HARNESS_ROOT}/config/plugins/apothem/", ["~/.tool/config/plugins/apothem"]),
+        ("${HARNESS_ROOT}/agents/*.toml", ["~/.tool/agents"]),
+        ("${HARNESS_ROOT}/../${NAME}/x", []),
+        ("${HARNESS_ROOT}/../../outside.txt", []),
+        ("${PROJECT_ROOT}/.tool/rules/", []),
+    ],
+)
+def test_manifest_targets_name_home_paths_of_user_scope_harnesses(
+    target: str, expected: list[str]
+) -> None:
+    entries = [
+        SimpleNamespace(
+            package_key="tool", scope="user", target_paths=("~/.tool/a.md",)
+        )
+    ]
+    rules = SimpleNamespace(install=[SimpleNamespace(target=target)], stale_sweep=[])
+    assert home_write_guard.manifest_paths({"tool": rules}, entries) == expected
+
+
+def test_stale_sweep_entries_are_joined_to_the_harness_root() -> None:
+    entries = [
+        SimpleNamespace(
+            package_key="user_tool", scope="user", target_paths=("~/.gemini/G.md",)
+        ),
+        SimpleNamespace(
+            package_key="project_tool",
+            scope="project",
+            target_paths=("<project>/AGENTS.md", "~/.agents/skills/"),
+        ),
+    ]
+    stale = ["../.antigravity/profile.yaml", "old/plugins/apothem", "../../x", ".."]
+    manifest = {
+        "user_tool": SimpleNamespace(install=[], stale_sweep=stale),
+        "project_tool": SimpleNamespace(install=[], stale_sweep=[".kimi/old"]),
+        "unregistered": SimpleNamespace(install=[], stale_sweep=["../.other/x"]),
+    }
+    paths = home_write_guard.manifest_paths(manifest, entries)
+    assert paths == ["~/.antigravity/profile.yaml", "~/.gemini/old/plugins/apothem"]
+    assert home_write_guard.narrowest_roots((".gemini",), paths) == (
+        ".antigravity/profile.yaml",
+        ".gemini",
+    )
 
 
 def test_the_registry_fallback_is_used_when_the_registry_cannot_load(
@@ -233,8 +312,48 @@ def test_the_registry_fallback_is_used_when_the_registry_cannot_load(
     def refuse(name: str) -> object:
         raise ImportError(name)
 
+    home_write_guard._derived_roots.cache_clear()
     monkeypatch.setattr(home_write_guard.importlib, "import_module", refuse)
-    assert home_write_guard._registry_roots() == home_write_guard.FALLBACK_ROOTS
+    try:
+        assert home_write_guard._registry_roots() == home_write_guard.FALLBACK_ROOTS
+        assert home_write_guard._derived_roots.cache_info().currsize == 0
+    finally:
+        monkeypatch.undo()
+        home_write_guard._derived_roots.cache_clear()
+
+
+def test_the_fallback_is_used_when_the_manifest_cannot_load(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def missing() -> object:
+        raise FileNotFoundError("propagation-manifest.yaml")
+
+    home_write_guard._derived_roots.cache_clear()
+    monkeypatch.setattr(propagation, "load_manifest", missing)
+    try:
+        assert home_write_guard._registry_roots() == home_write_guard.FALLBACK_ROOTS
+        assert home_write_guard._derived_roots.cache_info().currsize == 0
+    finally:
+        monkeypatch.undo()
+        home_write_guard._derived_roots.cache_clear()
+
+
+def test_a_protected_file_refuses_its_own_writes_and_removals_above_it(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    """``.antigravity/profile.yaml`` is protected; the rest of its folder is not."""
+    profile = fake_home / ".antigravity" / "profile.yaml"
+    for path, tree in ((profile, False), (profile.parent, True)):
+        with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+            home_write_guard.refuse_real_home_write(path, operation="remove", tree=tree)
+        assert caught.value.protected_root == str(profile)
+        assert "a protected path in this account's real home" in str(caught.value)
+    sibling = fake_home / ".antigravity" / "extensions" / "x.json"
+    assert not home_write_guard.would_refuse(sibling)
+    assert not home_write_guard.would_refuse(profile.parent)
+    _write(sibling)
+    _write(tmp_path / "elsewhere" / "profile.yaml")
+    assert sibling.read_bytes() == b"data"
 
 
 def _fresh_account_home() -> str | None:

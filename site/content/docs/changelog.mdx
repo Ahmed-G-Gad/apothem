@@ -212,10 +212,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Apothem refuses to write into the real home while pytest runs.**
   While `PYTEST_CURRENT_TEST` (a test) or `PYTEST_VERSION` (the whole session:
   collection, module-level code and session hooks) is set, a write, removal,
-  copy, rename or lock file in the account's `~/.apothem`, `~/.config/apothem`
-  or a tool folder the harness registry names in the home (`~/.claude`,
-  `~/.codex`, `~/.agents`, `~/.config/opencode`, `~/.gemini` and the rest)
-  stops with
+  copy, rename or lock file in the account's `~/.apothem`, `~/.config/apothem`,
+  a tool folder the harness registry names in the home (`~/.claude`,
+  `~/.codex`, `~/.agents`, `~/.config/opencode`, `~/.gemini` and the rest) or
+  `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
+  Antigravity stale sweep removes, stops with
   `RealHomeWriteError` before anything changes. The home is the one the
   operating system records for the account, not `HOME`. Reads, dry runs and
   previews still work, and nothing changes outside pytest. A project-scope

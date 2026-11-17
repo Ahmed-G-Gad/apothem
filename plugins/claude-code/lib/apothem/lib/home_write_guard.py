@@ -19,7 +19,11 @@ the account's home:
 - ``.config/apothem``;
 - the tools' own folders that the harness registry's ``~/`` targets and shared
   roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and the
-  rest; :data:`FALLBACK_ROOTS` lists them).
+  rest);
+- each path outside those folders that the propagation manifest's installs
+  and stale sweeps change in the home, by itself: the file an earlier release
+  wrote, ``.antigravity/profile.yaml``, which the Antigravity stale sweep
+  removes (:data:`FALLBACK_ROOTS` lists these and the tools' folders).
 
 With ``tree=True`` (removing or moving a whole folder) a path that holds one of
 those folders is refused too. :func:`refuse_project_root_at_home` refuses a
@@ -84,12 +88,13 @@ import importlib
 import ipaddress
 import ntpath
 import os
+import posixpath
 import re
 import stat
 import sys
 import time
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, TypeGuard
 
 #: The variable pytest sets for each test's setup, call and teardown.
@@ -105,10 +110,13 @@ _SESSION = "the pytest session"
 #: Apothem's own folders in the home, relative to it.
 APOTHEM_ROOTS: tuple[str, ...] = (".apothem", ".config/apothem")
 
-#: The tools' folders in the home the harness registry names, used when the
-#: registry cannot be imported. A unit test pins it equal to the derived set.
+#: The tools' folders in the home the harness registry names, and the paths
+#: outside them the propagation manifest changes there, used when the registry
+#: or the manifest cannot be loaded. A unit test pins it equal to the derived
+#: set.
 FALLBACK_ROOTS: tuple[str, ...] = (
     ".agents",
+    ".antigravity/profile.yaml",
     ".claude",
     ".codebuddy",
     ".codex",
@@ -354,7 +362,7 @@ def refuse_real_home_write(
         if root is not None:
             _refuse(
                 f"Apothem refused to {operation} {text}: it is inside or holds "
-                f"{root}, a folder in this account's real home, while "
+                f"{root}, a protected path in this account's real home, while "
                 f"{_running()}. Nothing in {root} was changed. Fix: {_FIX}",
                 path=text,
                 root=root,
@@ -900,24 +908,41 @@ def _resolved_roots(
 
 
 def _registry_roots() -> tuple[str, ...]:
-    """Return the home folders the harness registry's ``~/`` paths name.
+    """Return the home folders and paths the registry and the manifest name.
 
-    ``~/.claude/CLAUDE.md`` names ``.claude``; a path under ``~/.config`` names
-    the tool's own folder there (``.config/opencode``), not all of ``.config``.
+    They are read once per process (:func:`_derived_roots`). When either
+    cannot be loaded, :data:`FALLBACK_ROOTS` stands in, and the next check
+    reads them again.
     """
     try:
-        registry = importlib.import_module("apothem.lib.harness_registry_data")
-        paths = [
-            *(
-                path
-                for entry in registry.HARNESS_REGISTRY
-                for path in entry.target_paths
-            ),
+        return _derived_roots()
+    except _DERIVE_ERRORS:
+        return FALLBACK_ROOTS
+
+
+#: What reading the registry or the manifest may raise.
+_DERIVE_ERRORS = (ImportError, AttributeError, OSError, ValueError, TypeError)
+
+
+@functools.lru_cache(maxsize=1)
+def _derived_roots() -> tuple[str, ...]:
+    """Return the protected home folders and paths, read once from the sources.
+
+    The folders come from the registry (:func:`derive_roots`), the paths
+    outside them from the manifest (:func:`manifest_paths`). ``lru_cache``
+    keeps no failure.
+    """
+    registry = importlib.import_module("apothem.lib.harness_registry_data")
+    propagation = importlib.import_module("apothem.lib.propagation")
+    entries = tuple(registry.HARNESS_REGISTRY)
+    folders = derive_roots(
+        [
+            *(path for entry in entries for path in entry.target_paths),
             *(root.path for root in registry.SHARED_ROOTS),
         ]
-    except (ImportError, AttributeError):
-        return FALLBACK_ROOTS
-    return derive_roots(paths)
+    )
+    paths = manifest_paths(propagation.load_manifest(), entries)
+    return narrowest_roots(folders, paths)
 
 
 def derive_roots(paths: list[str]) -> tuple[str, ...]:
@@ -934,6 +959,79 @@ def derive_roots(paths: list[str]) -> tuple[str, ...]:
                 names[f".config/{parts[1]}"] = None
             continue
         names[parts[0]] = None
+    return tuple(sorted(names))
+
+
+def manifest_paths(manifest: Mapping[str, Any], entries: Iterable[Any]) -> list[str]:
+    """Return the home paths (``~/...``) the propagation *manifest* changes.
+
+    *manifest* maps a harness's package key to its rules (``install`` entries
+    with a ``target``, and ``stale_sweep``); *entries* are the registry's. A
+    ``${USER_HOME}`` target is a home path. A ``${HARNESS_ROOT}`` target and a
+    stale-sweep entry are joined to the harness root of a user-scope harness,
+    the folder of its first registry target (``~/.gemini`` for Antigravity),
+    so ``../.antigravity/profile.yaml`` names ``~/.antigravity/profile.yaml``.
+    A project-scope harness's paths are in the project, and a path that
+    leaves the home is not the home's: neither is returned. A path is cut
+    before its first part that holds a pattern or a placeholder.
+    """
+    roots: dict[str, str] = {}
+    for entry in entries:
+        first = entry.target_paths[0] if entry.target_paths else ""
+        if entry.scope == "user" and first.startswith("~/"):
+            roots[entry.package_key] = posixpath.dirname(first[2:].rstrip("/"))
+    found: dict[str, None] = {}
+    for key, rules in manifest.items():
+        root = roots.get(key)
+        relative = [_relative_target(item.target, root) for item in rules.install]
+        if root is not None:
+            relative += [posixpath.join(root, item) for item in rules.stale_sweep]
+        for path in relative:
+            inside = _inside_home(path)
+            if inside is not None:
+                found[f"~/{inside}"] = None
+    return list(found)
+
+
+def _relative_target(target: str, root: str | None) -> str | None:
+    """Return a manifest *target* relative to the home, or None outside it."""
+    for token, base in (("${USER_HOME}/", ""), ("${HARNESS_ROOT}/", root)):
+        if target.startswith(token) and base is not None:
+            return posixpath.join(base, target[len(token) :])
+    return None
+
+
+def _inside_home(path: str | None) -> str | None:
+    """Return *path* (relative to the home) normalized, or None outside it."""
+    if path is None:
+        return None
+    kept: list[str] = []
+    for part in posixpath.normpath(path).split("/"):
+        if any(mark in part for mark in "*?[{$"):
+            break
+        kept.append(part)
+    text = "/".join(kept)
+    if not text or text in {".", ".."} or text.startswith(("../", "/")):
+        return None
+    return text
+
+
+def narrowest_roots(folders: tuple[str, ...], paths: list[str]) -> tuple[str, ...]:
+    """Return *folders* and each of *paths* (``~/...``) outside every folder.
+
+    A path inside one of *folders* or :data:`APOTHEM_ROOTS` is protected
+    already. Any other is protected by itself, not by the folder that holds
+    it, which may hold the tool's own files.
+    """
+    covered = (*APOTHEM_ROOTS, *folders)
+    names = dict.fromkeys(folders)
+    for path in paths:
+        relative = path[2:] if path.startswith("~/") else path
+        if not any(
+            relative == folder or relative.startswith(f"{folder}/")
+            for folder in covered
+        ):
+            names[relative] = None
     return tuple(sorted(names))
 
 

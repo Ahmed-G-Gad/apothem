@@ -30,7 +30,7 @@ from apothem.harnesses._shared import (
 )
 from apothem.harnesses._shared.install_driver_types import _result
 from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
-from apothem.lib import home_write_guard, install_ledger
+from apothem.lib import atomic_io, home_write_guard, install_ledger
 from apothem.lib.harness_registry import get_harness_entry, iter_harness_entries
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -156,6 +156,68 @@ def test_a_cli_uninstall_raises_the_refusal_and_records_nothing(
     assert _snapshot(home) == before
     assert _kinds(entry.package_key) == kinds
     assert "uninstall-incomplete" not in kinds
+
+
+def _retired_antigravity_files(home: Path) -> Path:
+    """Write what earlier Antigravity installs left; return the retired profile.
+
+    ``~/.antigravity/profile.yaml`` sits outside every tool folder the
+    registry names, and the plugin folder before the move to
+    ``~/.gemini/config/plugins/`` sits in ``~/.gemini``. The stale sweep of an
+    uninstall removes both, the profile first. The old plugin's support files
+    alone show an install, so an uninstall runs without a current one.
+    """
+    retired = home / ".antigravity" / "profile.yaml"
+    retired.parent.mkdir(parents=True)
+    retired.write_bytes(_PROFILE)
+    (home / ".antigravity" / "argv.json").write_bytes(b"{}\n")
+    plugin = home / ".gemini" / "antigravity-cli" / "plugins" / "apothem"
+    support = plugin / ".apothem" / "support" / "templates"
+    support.mkdir(parents=True)
+    (plugin / "plugin.json").write_bytes(b'{"name": "apothem"}\n')
+    (support / "plan.md").write_bytes(b"# Plan\n")
+    return retired
+
+
+@pytest.mark.parametrize("installed", [True, False])
+def test_an_antigravity_uninstall_is_refused_before_its_stale_sweep(
+    home: Path, profile: Path, installed: bool
+) -> None:
+    """The retired profile outside ``~/.gemini`` is refused first, so nothing moves.
+
+    Without a current install, the old plugin folder alone is the install.
+    """
+    if installed:
+        _installed("--harness", "antigravity", "--profile", str(profile))
+    retired = _retired_antigravity_files(home)
+    before = _snapshot(home)
+    kinds = _kinds("antigravity")
+    home_write_guard.also_protect_home(home)
+    assert home_write_guard.would_refuse(retired)
+    assert not home_write_guard.would_refuse(retired.parent / "argv.json")
+
+    result = _run("uninstall", "--harness", "antigravity", "--yes")
+
+    assert isinstance(result.exception, Refused), (result.exit_code, result.output)
+    assert result.exception.protected_root == str(retired)
+    assert _snapshot(home) == before
+    assert _kinds("antigravity") == kinds
+    assert not install_driver.BACKUP_ROOT.exists() or not any(
+        install_driver.BACKUP_ROOT.rglob("profile.yaml")
+    )
+
+
+def test_a_tmp_path_write_and_the_checkout_stay_allowed_beside_the_retired_file(
+    home: Path, tmp_path: Path
+) -> None:
+    _retired_antigravity_files(home)
+    home_write_guard.also_protect_home(home)
+    elsewhere = tmp_path / "outside" / ".antigravity" / "profile.yaml"
+    assert not home_write_guard.would_refuse(elsewhere)
+    assert not home_write_guard.would_refuse(Path(__file__), tree=True)
+    assert not home_write_guard.would_refuse(Path(__file__).parents[2], tree=True)
+    atomic_io.write_bytes_atomically(elsewhere, b"data")
+    assert elsewhere.read_bytes() == b"data"
 
 
 @pytest.mark.parametrize("ledger_refuses", [False, True])
