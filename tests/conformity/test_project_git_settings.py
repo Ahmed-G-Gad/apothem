@@ -1429,7 +1429,9 @@ def test_a_malformed_diff_setting_is_not_an_empty_change_set(
 
     A value git cannot read for one of these settings makes ``git diff
     --cached`` exit with an error. Both ``--staged`` checks read that as no
-    staged change and passed, also from a subfolder of the checkout.
+    staged change and passed, also from a subfolder of the checkout. The
+    version is the repository's own, read from disk: from the subfolder the
+    version check finds the package through the top of the work tree.
     """
     repo = _build_repo(tmp_path / "project")
     _config(repo, key, value)
@@ -1444,7 +1446,6 @@ def test_a_malformed_diff_setting_is_not_an_empty_change_set(
     if plain.returncode == 0:
         pytest.skip(f"this git accepts {key}={value}")
     monkeypatch.chdir(repo / folder)
-    monkeypatch.setattr(semver_stability_grep, "current_version", lambda: "1.2.3")
 
     for module in (production_ready_pr_grep, semver_stability_grep):
         exit_code = module._main([module.GREP_NAME, "--staged"])
@@ -1454,6 +1455,82 @@ def test_a_malformed_diff_setting_is_not_an_empty_change_set(
         assert payload["check_error"] == (
             f"git diff --cached failed with exit code {plain.returncode}"
         )
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize("folder", ["src/apothem", "src", "docs"])
+def test_the_version_check_reads_the_change_set_from_a_subfolder(
+    folder: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """``semver_stability_grep --staged`` finds a dropped function from a subfolder.
+
+    It looked for ``src/apothem/__init__.py`` below the current folder only.
+    From a subfolder it found no version, ran no git, and passed.
+    """
+    repo = _build_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    listed = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--", "src/apothem"],
+        cwd=str(repo / folder),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=True,
+        timeout=60,
+    )
+    assert listed.stdout == b""  # git reads that path from the subfolder
+    monkeypatch.chdir(repo / folder)
+
+    findings = semver_stability_grep.check_staged()
+    assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
+    exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == semver_stability_grep.EXIT_FAIL
+    assert "check_error" not in payload
+    assert [finding["path"] for finding in payload["findings"]] == [_TRACKED]
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize("folder", [".", "src/apothem"], ids=["top", "subfolder"])
+def test_a_refused_checkout_does_not_pass_a_staged_check(
+    folder: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A git that cannot read ``.git/config`` fails both ``--staged`` checks.
+
+    From a subfolder the version check asks git for the top of the work tree
+    first, so that is the command its report names.
+    """
+    repo = _build_repo(tmp_path / "project")
+    with (repo / ".git" / "config").open("ab") as config:
+        config.write(b"[broken\n")
+    plain = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=str(repo),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    assert plain.returncode != 0  # git refuses the repository
+    monkeypatch.chdir(repo / folder)
+
+    command = {
+        production_ready_pr_grep: "git diff --cached",
+        semver_stability_grep: "git diff --cached"
+        if folder == "."
+        else "git rev-parse",
+    }
+    for module, named in command.items():
+        exit_code = module._main([module.GREP_NAME, "--staged"])
+        payload = json.loads(capsys.readouterr().out)
+        assert exit_code == module.EXIT_FAIL, module.GREP_NAME
+        assert payload["passed"] is False
+        assert payload["check_error"].startswith(f"{named} failed with exit code")
 
 
 @pytest.mark.usefixtures("hermetic_git")

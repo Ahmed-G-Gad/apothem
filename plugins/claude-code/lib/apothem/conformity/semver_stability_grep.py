@@ -277,13 +277,19 @@ def compare_surfaces(
     return findings
 
 
-def current_version() -> str | None:
-    """Read the staged or on-disk apothem.__version__ value."""
-    if not INIT_PATH.exists():
+def _version_in(folder: Path) -> str | None:
+    """Read ``apothem.__version__`` from the package below *folder*, or None."""
+    init = folder / INIT_PATH
+    if not init.exists():
         return None
-    text = INIT_PATH.read_text(encoding="utf-8")
+    text = init.read_text(encoding="utf-8")
     m = re.search(r'__version__\s*=\s*"([^"]+)"', text)
     return m.group(1) if m else None
+
+
+def current_version() -> str | None:
+    """Read the on-disk apothem.__version__ value below the current folder."""
+    return _version_in(Path())
 
 
 def is_v0(version: str) -> bool:
@@ -360,8 +366,37 @@ def _git(
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
+def _work_tree_top() -> Path | None:
+    """Return the top folder of the work tree when the current folder is below it.
+
+    ``git rev-parse --show-cdup`` prints the way up (``../../``), or nothing at
+    the top. Returns None at the top, outside a checkout and without git.
+    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` past the
+    limit, and :class:`~apothem.conformity._grep_base.GitFailedError` when git
+    fails inside a checkout: where the package is was not read, so the check
+    cannot say there is nothing to compare.
+    """
+    from apothem.conformity._grep_base import GitFailedError, in_checkout
+
+    try:
+        result = _git("git rev-parse", "rev-parse", "--show-cdup")
+    except FileNotFoundError:
+        return None
+    if result.returncode != 0:
+        if in_checkout(Path.cwd()):
+            raise GitFailedError("git rev-parse", result.returncode)
+        return None
+    way_up = result.stdout.split("\n", 1)[0]
+    return Path(way_up) if way_up else None
+
+
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
+
+    The package is looked for below the current folder first. When it is not
+    there, git names the top of the work tree, and the package and the staged
+    list are read from that top, so a run from a subfolder of the checkout
+    checks the same change set as a run from its top.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings. File contents are read with
@@ -393,14 +428,24 @@ def check_staged() -> list[Finding]:
         return _git("git cat-file", "cat-file", "blob", spec, check=check).stdout
 
     version = current_version()
+    package = PUBLIC_PACKAGE
+    if version is None:
+        # No package below the current folder: it may be a subfolder of the
+        # checkout. git reads ":(top)" as "from the top of the work tree".
+        top = _work_tree_top()
+        if top is None:
+            return []
+        version = _version_in(top)
+        package = f":(top){PUBLIC_PACKAGE}"
     if not version or is_v0(version):
         return []
 
     # Get list of staged Python files under src/apothem/. -z ends each name
     # with NUL, unquoted, and the list is read as file names, so each name
-    # comes back with every byte it holds. ``--`` marks the package as a path:
-    # without it git stops with "ambiguous argument" in a work tree where the
-    # folder is gone.
+    # comes back with every byte it holds. git prints each name from the top
+    # of the work tree, which is also how ``cat-file blob :<name>`` reads it.
+    # ``--`` marks the package as a path: without it git stops with "ambiguous
+    # argument" in a work tree where the folder is gone.
     try:
         result = _git(
             "git diff --cached",
@@ -410,7 +455,7 @@ def check_staged() -> list[Finding]:
             "-z",
             "--diff-filter=AMR",
             "--",
-            PUBLIC_PACKAGE,
+            package,
             file_names=True,
         )
     except FileNotFoundError:

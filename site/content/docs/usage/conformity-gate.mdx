@@ -143,7 +143,9 @@ such as `diff.renameLimit = abc`, is one such bad line: `git diff` fails, and a
 change set that was not read is not an empty one. These two checks and the
 stale-companion check look for the checkout in the folder they run in and in
 the folders above it, as git does, so the same holds in a subfolder of the
-checkout.
+checkout. `semver-stability-grep --staged` reads the package and the staged
+list from the top of the checkout, so it checks the same change set from any
+folder in it.
 
 The gate reads each list of path names from git byte for byte, so a name that
 holds a line break, a carriage return or a byte that is not UTF-8 names the

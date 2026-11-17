@@ -424,9 +424,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `agents-md-coverage-grep` on a subfolder, now look for the checkout in the
   folders above the one they run in, as git does: run from a subfolder, a
   `git` that failed, for example on `diff.renameLimit = abc`, was read as no
-  staged change and passed. `semver_stability_grep --staged` also names
-  `src/apothem` after `--`, so git reads it as a path where that folder is
-  missing.
+  staged change and passed. `semver_stability_grep --staged` looked for
+  `src/apothem` below the current folder only, so from a subfolder it ran no
+  git and passed whatever was staged; it now reads the package and the staged
+  list from the top of the checkout. It also names `src/apothem` after `--`,
+  so git reads it as a path where that folder is missing.
 - **`agents-md-coverage-grep` judges a re-created companion and a subfolder
   root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
   was written again was timed by the deleting commit, so the new file was
