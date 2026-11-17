@@ -42,7 +42,7 @@ from apothem.cli._helpers import (
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._stray_begin_report import stray_begin_note, stray_begin_paths
-from apothem.cli._user_level_report import verify_hint
+from apothem.cli._user_level_report import is_project_scope, verify_hint
 from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
 from apothem.lib.propagation import user_home
@@ -252,7 +252,14 @@ def _verify_row(
     notes = (
         []
         if verified_struct
-        else _failure_notes(row, harness_id, adapter, sweep.project_root)
+        else _failure_notes(
+            row,
+            harness_id,
+            adapter,
+            sweep.project_root,
+            output_path,
+            installed=installed,
+        )
     )
     if sweep.fmt != "json":
         _print_verify_line(
@@ -273,20 +280,26 @@ def _failure_notes(
     harness_id: str,
     adapter: _Adapter,
     project_root: Path | None,
+    output_path: Path,
+    *,
+    installed: bool,
 ) -> list[str]:
     """Add why the structural check failed to *row*; return the notes to print.
 
     Says it where the cause is one the operator can act on, so the fix is not a
     guess: ``user_level`` names the user-home folders that are missing or not
-    Apothem's, and ``stray_begin`` names each file that holds a BEGIN marker
-    with no END marker, two or more whole blocks, or marker pairs no rule can
-    place, such as Apothem's block inside a code block of the operator's
-    (install and update keep such a marker, leave a file with two blocks as it
-    is, and leave such a pair while an install record lists the file).
-    Each note is also appended to the row's message.
+    Apothem's, or that Apothem cannot prove it wrote (see
+    :func:`_user_level_hint`), and ``stray_begin`` names each file that holds a
+    BEGIN marker with no END marker, two or more whole blocks, or marker pairs
+    no rule can place, such as Apothem's block inside a code block of the
+    operator's (install and update keep such a marker, leave a file with two
+    blocks as it is, and leave such a pair while an install record lists the
+    file). Each note is also appended to the row's message.
     """
     notes: list[str] = []
-    hint = _user_level_hint(harness_id)
+    hint = _user_level_hint(
+        harness_id, adapter, project_root, output_path, installed=installed
+    )
     if hint is not None:
         row["user_level"] = hint
         notes.append(str(hint["message"]))
@@ -324,10 +337,29 @@ def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, obje
     return notes
 
 
-def _user_level_hint(harness_id: str) -> dict[str, object] | None:
-    """Return why a failed verify points at the user-home folders, or ``None``."""
+def _user_level_hint(
+    harness_id: str,
+    adapter: _Adapter,
+    project_root: Path | None,
+    output_path: Path,
+    *,
+    installed: bool,
+) -> dict[str, object] | None:
+    """Return why a failed verify points at the user-home folders, or ``None``.
+
+    The install root is the one the adapter's ``verify`` checks: the
+    ``--project`` root of a project-scope harness, the folder that holds the
+    output path of a user-scope one. For a harness that is not installed
+    there, the unproven and unlisted pass is skipped (its update would install
+    a harness the operator did not choose); the missing-folder note stays as
+    it was.
+    """
     try:
-        return verify_hint(harness_id)
+        if not installed:
+            return verify_hint(harness_id)
+        if is_project_scope(adapter):
+            return verify_hint(harness_id, project_root=project_root)
+        return verify_hint(harness_id, harness_root=output_path.parent)
     except OSError:
         return None
 
