@@ -432,7 +432,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   name that is not UTF-8 (only an index made on another system holds one), so
   `semver_stability_grep --staged` reports a `check_error` for it and does not
   pass. The history read of `agents-md-coverage-grep` still gets a name with a
-  control character in git's quoted form. Both `--staged` checks, and
+  control character in git's quoted form, and a byte that is not UTF-8 as
+  U+FFFD. Both `--staged` checks, and
   `agents-md-coverage-grep` on a subfolder, now look for the checkout in the
   folders above the one they run in, up to where git stops looking (a
   `GIT_CEILING_DIRECTORIES` folder, or another file system outside Windows):
@@ -449,7 +450,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
   the canon and passed it, while a run on the whole repository reported it;
   only the `AGENTS.md` at the top of the repository is the canon now, so both
-  runs agree.
+  runs agree for a subfolder that has a README of its own.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`

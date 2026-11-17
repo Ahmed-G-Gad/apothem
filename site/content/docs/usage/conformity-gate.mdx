@@ -156,14 +156,17 @@ same file to every check. One case cannot be read: Windows cannot hand git a
 name that is not UTF-8, which only an index made on another system can hold.
 `semver-stability-grep --staged` then reports a `check_error` for the change
 set; it does not skip that file. The history read of the stale-companion check
-is the exception to the first sentence: git prints a name with a control
-character there in its quoted form, so that check cannot match such a folder.
+is the exception to the first sentence: there git prints a name with a control
+character in its quoted form, and a byte that is not UTF-8 reads as U+FFFD, so
+that check cannot match a folder with such a name.
 
 The stale-companion check treats only the `AGENTS.md` at the top of the
-repository as the canon. When you run it on a subfolder, that subfolder's own
-`AGENTS.md` is a per-folder companion, and the run reports it as a run on the
-whole repository does. A companion that was deleted in a commit and written
-again counts as new until you commit it.
+repository as the canon. When you run it on a subfolder that has a README of
+its own, that subfolder's `AGENTS.md` is a per-folder companion, and the run
+reports it as a run on the whole repository does. A subfolder without a README
+is not checked as a folder of its own this way; run the check on a folder
+above it. A companion that was deleted in a commit and written again counts as
+new until you commit it.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

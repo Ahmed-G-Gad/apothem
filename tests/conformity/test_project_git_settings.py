@@ -472,7 +472,7 @@ def _drive_every_gate_git_call(repo: Path, monkeypatch: pytest.MonkeyPatch) -> N
         no_global_plans_grep._git_ls_files(repo)
     conventional_commit_grep._read_head_subject(repo)
     with contextlib.suppress(GitCheckError):
-        agents_md_coverage_grep._last_commit_times(repo)
+        agents_md_coverage_grep._read_history(repo)
     # The two change-set checks read the repository the process runs in.
     monkeypatch.chdir(repo)
     with contextlib.suppress(GitCheckError):
@@ -1243,11 +1243,15 @@ def test_a_stale_folder_companion_is_reported(tmp_path: Path) -> None:
     (repo / "pkg" / "x.py").write_bytes(b"X = 1\n")
     _dated_commit(repo, "feat: add pkg code", 1_700_001_000)
 
-    assert agents_md_coverage_grep._last_commit_times(repo) == {
+    history = agents_md_coverage_grep._read_history(repo)
+    assert history is not None
+    assert history.times == {
         "pkg/AGENTS.md": 1_700_000_000,
         "pkg/README.md": 1_700_000_000,
         "pkg/x.py": 1_700_001_000,
     }
+    assert history.deleted == frozenset()
+    assert history.root_is_top
     result = agents_md_coverage_grep.check(repo)
     assert [(finding.surface, finding.kind) for finding in result.findings] == [
         ("pkg/AGENTS.md", "stale-companion")
@@ -1366,9 +1370,9 @@ def test_non_ascii_paths_read_as_themselves(tmp_path: Path) -> None:
     _dated_commit(repo, "docs: add the cafe page", 1_700_000_000)
 
     assert no_global_plans_grep._git_ls_files(repo) == ["docs/café.md"]
-    assert agents_md_coverage_grep._last_commit_times(repo) == {
-        "docs/café.md": 1_700_000_000
-    }
+    history = agents_md_coverage_grep._read_history(repo)
+    assert history is not None
+    assert history.times == {"docs/café.md": 1_700_000_000}
 
 
 def test_ls_files_reports_a_missing_root_as_a_git_failure(tmp_path: Path) -> None:

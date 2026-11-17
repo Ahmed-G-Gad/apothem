@@ -51,7 +51,11 @@ companion, so it is never checked against the root folder's content. The log
 names paths relative to the checked root and covers only history under it, so
 a subtree root checks its own folders; the ``AGENTS.md`` of a subtree root is
 a per-folder companion there, as it is in a run on the whole repository, so
-both runs report it alike. Where git history is unavailable (a shallow clone,
+both runs report it alike when that root carries a README (a source folder
+without one is a meaningful folder only in a run on the repository, never as
+a root). The log is read as text: a name with a control character comes in
+git's quoted form and a byte that is not UTF-8 as U+FFFD, so a folder with
+such a name is not matched. Where git history is unavailable (a shallow clone,
 a non-git tree), freshness is skipped and the sweep reports a clean pass — it
 never blocks a fresh clone. A git command that runs past its time limit (the
 repository's own configuration can make git wait for ever), or a git that
@@ -388,16 +392,6 @@ def _read_history(root: Path) -> _History | None:
     # top of the work tree; it is empty when the root is that top.
     prefix = head.stdout.split("\n", 1)[0]
     return _History(times=times, deleted=frozenset(deleted), root_is_top=not prefix)
-
-
-def _last_commit_times(root: Path) -> dict[str, int] | None:
-    """Return a map of tracked-file POSIX path → last-commit unix timestamp.
-
-    The ``times`` of :func:`_read_history`, with the same None and the same
-    errors: for a deleted path, the time is that of the deleting commit.
-    """
-    history = _read_history(root)
-    return None if history is None else history.times
 
 
 def _owning_folder(file_posix: str, folder_set: frozenset[str]) -> str:
