@@ -211,6 +211,11 @@ def test_a_short_name_in_the_last_part_is_refused(fake_home: Path) -> None:
         ("\\\\?\\unc\\127.0.0.1\\c$\\Users\\me\\x", "c:\\Users\\me\\x"),
         ("\\\\.\\UNC\\localhost\\C$\\Users\\me\\x", "C:\\Users\\me\\x"),
         ("//localhost/C$/Users/me/x", "C:\\Users\\me\\x"),
+        # The NT object namespace, which a file call passes through as written.
+        ("\\??\\C:\\Users\\me\\x", "C:\\Users\\me\\x"),
+        ("/??/C:/Users/me/x", "C:\\Users\\me\\x"),
+        ("\\??\\UNC\\localhost\\C$\\Users\\me\\x", "C:\\Users\\me\\x"),
+        ("/??/unc/127.0.0.1/c$/x", "c:\\x"),
         ("C:\\Users\\me\\.apothem:evil", "C:\\Users\\me\\.apothem"),
         ("C:\\Users\\me\\.apothem:evil:$DATA", "C:\\Users\\me\\.apothem"),
         (
@@ -313,6 +318,94 @@ def test_every_windows_spelling_of_a_protected_folder_is_refused(
         assert not home_write_guard.would_refuse(f"{spelling}\\notes.txt"), spelling
         assert home_write_guard.would_refuse(spelling, tree=True), spelling
     assert _everything_in(fake_home) == []
+
+
+def _nt_spellings(folder: Path) -> list[str]:
+    """Return *folder* behind the NT object-namespace prefix, in every form."""
+    text = str(folder)
+    unc = _admin_share(folder, "localhost")[2:]
+    backslashed = [f"\\??\\{text}", f"\\??\\UNC\\{unc}", f"\\??\\unc\\{unc}"]
+    return [
+        *backslashed,
+        *(spelling.replace("\\", "/") for spelling in backslashed),
+        f"/??/{text}",
+    ]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+def test_the_nt_object_namespace_prefix_is_refused(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    """``\\??\\`` reaches the plain path in a file call, so it is read first.
+
+    ``os.path.abspath`` alone reads it as a folder ``??`` on the current drive,
+    so none of these spellings matched before.
+    """
+    if not ntpath.splitdrive(str(fake_home))[0].endswith(":"):
+        pytest.skip("the temporary folder is not on a drive letter")
+    ledger = fake_home / ".apothem" / "state" / "ledger.jsonl"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_bytes(b"kept\n")
+    project = tmp_path / "project"
+    project.mkdir()
+    before = _everything_in(fake_home)
+    for home in _nt_spellings(fake_home):
+        sep = "/" if "/" in home[:4] else "\\"
+
+        def under(*parts: str, home: str = home, sep: str = sep) -> str:
+            return sep.join((home, *parts))
+
+        assert home_write_guard.would_refuse(under(".apothem", "state")), home
+        assert home_write_guard.would_refuse(
+            under(".apothem", "state", "ledger.jsonl")
+        ), home
+        assert home_write_guard.would_refuse(
+            under(".claude", "a", "b", "c", "settings.json")
+        ), home
+        assert home_write_guard.would_refuse(under(".config", "apothem")), home
+        assert home_write_guard.would_refuse(under(".apothem"), tree=True), home
+        assert home_write_guard.would_refuse(home, tree=True), home
+        assert home_write_guard.would_refuse_project_root(home), home
+        assert not home_write_guard.would_refuse(under("notes.txt")), home
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            home_write_guard.refuse_real_home_write(
+                under(".claude", "x"), operation="write"
+            )
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            home_write_guard.refuse_project_root_at_home(home, operation="install")
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            clean_slate._remove_path(Path(under(".apothem")))
+    for spelling in _nt_spellings(project):
+        assert not home_write_guard.would_refuse_project_root(spelling), spelling
+    assert _everything_in(fake_home) == before
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+@pytest.mark.parametrize("slash", ["\\", "/"])
+def test_an_append_and_a_lock_through_the_nt_prefix_leave_the_home_alone(
+    fake_home: Path, slash: str
+) -> None:
+    if not ntpath.splitdrive(str(fake_home))[0].endswith(":"):
+        pytest.skip("the temporary folder is not on a drive letter")
+    state = fake_home / ".apothem" / "state"
+    state.mkdir(parents=True)
+    ledger = state / "ledger.jsonl"
+    ledger.write_bytes(b"kept\n")
+    nt_state = f"\\??\\{state}".replace("\\", slash)
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.append_line_durably(Path(f"{nt_state}{slash}ledger.jsonl"), "x")
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.append_line_durably(Path(f"{nt_state}{slash}new.jsonl"), "x")
+    with (
+        pytest.raises(home_write_guard.RealHomeWriteError),
+        atomic_io.advisory_lock(Path(f"{nt_state}{slash}x.install.lock")),
+    ):
+        pass
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.write_bytes_atomically(Path(f"{nt_state}{slash}x.json"), b"x")
+    assert ledger.read_bytes() == b"kept\n"
+    assert _everything_in(fake_home) == [fake_home / ".apothem", state, ledger]
+    assert len(home_write_guard.drain_refusals()) == 4
 
 
 def _reachable_share(home: Path, host: str) -> str:

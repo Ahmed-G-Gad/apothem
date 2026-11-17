@@ -29,7 +29,8 @@ A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
 protected folders' own resolved spellings are kept only while each home and
 its ``.config`` stay as they were (see :func:`_layout`). On Windows a
-``\\\\?\\`` or ``\\\\.\\`` prefix, a loopback admin share (``\\\\localhost\\C$``,
+``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either slash), a loopback
+admin share (``\\\\localhost\\C$``,
 ``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
 name), a short (8.3) name and an alternate data stream (``.apothem:name``)
 all read as the plain drive-letter path. Any other share path is compared by
@@ -135,6 +136,14 @@ _IPV6_LITERAL = ".ipv6-literal.net"
 #: leave a folder's timestamp as it was.
 _SETTLE_NS = 100_000_000
 
+#: The NT object-namespace prefixes, lower case, with what replaces each. A
+#: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as written,
+#: while ``os.path.abspath`` reads it as a folder ``??`` on the current drive.
+_NT_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("\\??\\unc\\", "\\\\"),
+    ("\\??\\", ""),
+)
+
 #: The path prefixes that name the same file as the plain path after them,
 #: lower case, with what replaces each.
 _PREFIXES: tuple[tuple[str, str], ...] = (
@@ -142,6 +151,7 @@ _PREFIXES: tuple[tuple[str, str], ...] = (
     ("\\\\.\\unc\\", "\\\\"),
     ("\\\\?\\", ""),
     ("\\\\.\\", ""),
+    *_NT_PREFIXES,
 )
 
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
@@ -260,7 +270,7 @@ def also_protect_home(path: str | os.PathLike[str]) -> None:
     A test seam: it only adds a home and can never replace or remove the
     account's own, so no test can weaken the refusal.
     """
-    _extra_homes.append(os.path.abspath(os.fspath(path)))
+    _extra_homes.append(_absolute(os.fspath(path)))
     _resolved_roots.cache_clear()
 
 
@@ -393,7 +403,7 @@ def _protected_root_of(path: str, *, tree: bool) -> str | None:
     roots = _roots(account_home(), tuple(_extra_homes))
     if not roots:
         return None
-    absolute = os.path.abspath(path)
+    absolute = _absolute(path)
     lexical = _canonical(absolute)
     found = _match(lexical, roots, tree=tree)
     if found is None:
@@ -414,7 +424,7 @@ def _home_at(path: str) -> str | None:
         for home in (account_home(), *_extra_homes)
         if home is not None
     ]
-    absolute = os.path.abspath(path)
+    absolute = _absolute(path)
     canonical = _canonical(absolute)
     spellings = [canonical, _canonical(_realpath(absolute))]
     if _is_share(canonical):
@@ -425,6 +435,24 @@ def _home_at(path: str) -> str | None:
             if _folded(spelling) in keys:
                 return home
     return None
+
+
+def _absolute(path: str) -> str:
+    """Return *path* made absolute, with an NT object-namespace prefix read first.
+
+    On Windows ``\\??\\C:\\x`` and ``\\??\\UNC\\host\\share\\x`` (with either
+    slash) read as ``C:\\x`` and ``\\\\host\\share\\x``, the paths a file call
+    reaches through them; ``os.path.abspath`` alone would read them as a
+    folder ``??`` on the current drive.
+    """
+    if os.name == "nt":
+        flipped = path.replace("/", "\\")
+        lowered = flipped[:8].lower()
+        for prefix, replacement in _NT_PREFIXES:
+            if lowered.startswith(prefix):
+                path = replacement + flipped[len(prefix) :]
+                break
+    return os.path.abspath(path)
 
 
 def _folded(path: str) -> str:
@@ -557,7 +585,7 @@ def _windows_spelling(path: str) -> str:
 
     - ``\\\\?\\C:\\x`` and ``\\\\.\\C:\\x`` read as ``C:\\x``;
       ``\\\\?\\UNC\\host\\share`` and ``\\\\.\\UNC\\host\\share`` as
-      ``\\\\host\\share``.
+      ``\\\\host\\share``. ``\\??\\`` (the NT object namespace) reads the same.
     - A loopback admin share reads as its drive: ``\\\\localhost\\C$\\x``,
       ``\\\\127.0.0.1\\C$\\x``, ``\\\\--1.ipv6-literal.net\\C$\\x`` and
       ``\\\\<this machine>\\C$\\x`` as ``C:\\x``.
