@@ -318,6 +318,16 @@ def _timing_out_run(
     raise subprocess.TimeoutExpired(cmd=argv, timeout=timeout)
 
 
+# The git subcommands the validators run; ``run_git`` puts its own options
+# (and ``-C <folder>``) before the subcommand.
+_SUBCOMMANDS = frozenset({"cat-file", "diff", "log", "rev-parse"})
+
+
+def _subcommand(argv: list[str]) -> str:
+    """Return the git subcommand in *argv*, after ``run_git``'s own options."""
+    return next(arg for arg in argv if arg in _SUBCOMMANDS)
+
+
 def _printed_payload(capsys: pytest.CaptureFixture[str]) -> dict[str, object]:
     """Return the JSON report a validator's command-line entry printed."""
     payload: dict[str, object] = json.loads(capsys.readouterr().out)
@@ -411,9 +421,11 @@ def test_companion_history_read_gets_the_long_limit(
     def run(
         argv: list[str], *, timeout: float | None, **_kwargs: object
     ) -> subprocess.CompletedProcess[str]:
-        limits[argv[3]] = timeout
+        limits[_subcommand(argv)] = timeout
         output = (
-            "0" * 40 + "\n" if argv[3] == "rev-parse" else "\x1e100\npkg/README.md\n"
+            "0" * 40 + "\n"
+            if _subcommand(argv) == "rev-parse"
+            else "\x1e100\npkg/README.md\n"
         )
         return subprocess.CompletedProcess(argv, 0, output, "")
 
@@ -439,7 +451,7 @@ def test_companion_history_read_past_its_limit_does_not_pass(
     def run(
         argv: list[str], *, timeout: float | None, **kwargs: object
     ) -> subprocess.CompletedProcess[str]:
-        if argv[3] == "rev-parse":
+        if _subcommand(argv) == "rev-parse":
             return subprocess.CompletedProcess(argv, 0, "0" * 40 + "\n", "")
         return _timing_out_run(argv, timeout=timeout, **kwargs)
 
@@ -482,14 +494,15 @@ def test_semver_staged_list_timeout_does_not_pass(
 def test_semver_staged_file_read_timeout_does_not_pass(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A staged file whose ``git show`` stalls is not skipped as if unchanged."""
+    """A staged file whose ``git cat-file`` stalls is not skipped as if unchanged."""
     monkeypatch.setattr(semver_stability_grep, "current_version", lambda: "1.2.3")
 
     def run(
         argv: list[str], *, timeout: float | None, **kwargs: object
     ) -> subprocess.CompletedProcess[str]:
         if "diff" in argv:
-            return subprocess.CompletedProcess(argv, 0, "src/apothem/api.py\n", "")
+            # ``-z`` ends each staged name with NUL.
+            return subprocess.CompletedProcess(argv, 0, "src/apothem/api.py\0", "")
         return _timing_out_run(argv, timeout=timeout, **kwargs)
 
     monkeypatch.setattr(_bounded_run, "run_bounded", run)
@@ -497,7 +510,7 @@ def test_semver_staged_file_read_timeout_does_not_pass(
     exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
     payload = _printed_payload(capsys)
     assert exit_code == semver_stability_grep.EXIT_FAIL
-    _assert_check_error(payload, "git show")
+    _assert_check_error(payload, "git cat-file")
 
 
 # --- A git that refuses the checkout does not pass ---------------------------

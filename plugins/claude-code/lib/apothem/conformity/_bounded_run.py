@@ -30,7 +30,10 @@ the stall.
 
 Without ``new_session`` the program stays in this process's group outside
 Windows, so a signal or a stop aimed at that group reaches it too; that is how a
-validator runs git under the gate.
+validator runs git under the gate. Every git command goes through
+:func:`~apothem.conformity._git.run_git`, which runs it here; the gate runs
+each standalone validator here too. This module is the one place in the
+package that starts a program.
 
 The module uses the standard library only, so it runs from a harness install as
 well as from the package.

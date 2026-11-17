@@ -218,13 +218,15 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *root* within ``GIT_TIMEOUT_SECONDS``.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
-    the repository's program-running settings. Raises
-    :class:`~apothem.conformity._grep_base.GitTimeoutError` past the limit and
-    :class:`OSError` when git cannot be started.
+    the repository's program-running settings and keeps the limit for every
+    program git starts. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
+    command as *label*, past the limit and :class:`OSError` when git cannot be
+    started.
     """
     # Imported here, not at module top, so the module itself imports without
     # the package; only a run that reads git history needs it.
@@ -234,7 +236,7 @@ def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     try:
         return run_git(list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired as exc:
-        raise GitTimeoutError(f"git {args[0]}", GIT_TIMEOUT_SECONDS) from exc
+        raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
 def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
@@ -259,13 +261,15 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     if not (root / ".git").exists():
         return None, "not-a-git-repo", None
     try:
-        completed = _git(root, "log", "-1", "--pretty=%B")
+        completed = _git(root, "git log", "log", "-1", "--pretty=%B")
         if completed.returncode != 0:
             # A branch with no commit yet and a repository git refused both
             # fail the log; only the first is exempt. ``rev-parse --verify
             # --quiet`` exits 1 for a HEAD that names no commit, and 128 when
             # git cannot read the repository at all.
-            head = _git(root, "rev-parse", "--verify", "--quiet", "HEAD")
+            head = _git(
+                root, "git rev-parse", "rev-parse", "--verify", "--quiet", "HEAD"
+            )
             if head.returncode == 1:
                 return None, "no-commits-yet", None
             raise GitFailedError("git log", completed.returncode)

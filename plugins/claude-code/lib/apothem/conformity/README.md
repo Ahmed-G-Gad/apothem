@@ -11,7 +11,7 @@
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
-| `_bounded_run.py` | `run_bounded`, which runs a program (a validator for the gate, git for a validator) with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
+| `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -149,9 +149,11 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   settings off on git's command line, blocks fetching, and starts git only from
   a full-path `PATH` entry. A matcher starts no program itself: no
   `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
-  `which`, no `git_argv` and no string naming the git program outside `_git.py`
-  (gate.py's validator launcher, which starts Python, is the one exception);
-  `test_no_conformity_module_starts_a_program_itself` checks those forms. It
+  `which`, no `git_argv` and no string naming the git program outside `_git.py`.
+  `_bounded_run.py` is the one module that starts a program: `run_git` starts
+  git through its `run_bounded`, and gate.py's validator launcher starts Python
+  through it; `test_no_conformity_module_starts_a_program_itself` checks those
+  forms. It
   reads file contents with `git cat-file blob`, never `git show`, which would
   show a submodule entry as a commit, and reads a path list with `-z`.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
@@ -162,10 +164,11 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
 - **No unfinished pass.** A check that could not finish does not pass either.
-  Run git through `run_bounded` from `_bounded_run.py` with a timeout, never
-  through `subprocess.run`: on Windows `subprocess.run` waits after a timeout
-  for every program that holds the output, such as the real git behind Git's
-  launcher. Turn `subprocess.TimeoutExpired` into `GitTimeoutError`, and a git
+  Give every `run_git` call a timeout. `run_git` runs git through `run_bounded`,
+  so the limit holds for every program git starts; `subprocess.run` would stop
+  only git and, on Windows, then wait for every program that holds the output,
+  such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
+  into `GitTimeoutError`, and a git
   failure in a checkout the walker found into `GitFailedError`, both from
   `_grep_base.py`; their messages name the command in fixed words and never
   repeat git's own output. A corpus walker hands that message to
