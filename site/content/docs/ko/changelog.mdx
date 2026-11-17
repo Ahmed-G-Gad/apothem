@@ -362,6 +362,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **`apothem doctor` starts GitHub Copilot's hooks, and Cursor's on Windows.**
+  Doctor looked for a hook's command line only under `command` (and Codex's
+  `commandWindows` on Windows). GitHub Copilot keeps its lines under `bash`
+  and `powershell`, so doctor never started Copilot's hooks and passed a
+  project whose Copilot hook could not run. It now starts the `powershell`
+  line on Windows and the `bash` line on macOS and Linux. On Windows,
+  Cursor's hook line starts with PowerShell's `&`, which doctor took for the
+  program to start, so it reported a working Cursor hook as unable to start.
+  Doctor now leaves the `&` out there.
+
 - **The Windows installer checks out releases whose paths pass 260
   characters.** `install.ps1` checks a release out in a staging folder beside
   `APOTHEM_HOME`, or in the temporary folder for a dry run, before it moves
@@ -422,9 +432,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   quote `--project` the same way; when the quotes cannot carry the folder,
   `quickstart` prints the command up to `--project` and names the folder in
   words after it.
-- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
-  Windows install writes begins with PowerShell's `&`, which doctor tried to
-  start as a program, so every healthy Cursor install failed the hook check.
 - **The conformity validators that read git's output read it correctly.**
   `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
   Python's `str.splitlines()` also breaks lines at the record marker its
@@ -1391,6 +1398,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`apothem doctor --project` starts only hook commands that run Apothem's
+  own code.** Doctor started any command in a project's hook files that named
+  a `hooks/dispatch.py`, so a command someone else committed to
+  `.cursor/hooks.json`, `.github/hooks/apothem.json` or `.kiro/hooks/`, or a
+  changed script in `.apothem/support/`, ran when you ran doctor, even if you
+  never opened the project in the tool. Doctor now takes hook commands only
+  from the places the tool reads them, and starts one only when its
+  interpreter is the one the install recorded (outside the project) or the
+  Python Apothem runs under, its options run no code, its script is the hook script the install
+  wrote, in a folder whose files still match the SHA-256 checksums the
+  install recorded and that holds no other Python file and no link, and its
+  arguments are the ones Apothem writes. It starts those known paths rather
+  than the text it read, and looks up no other path a hook command names,
+  such as a network share. A recorded interpreter or script that is gone is
+  reported as unable to start, without anything being started; any other
+  command is reported as `hook.unchecked`, which the plain output now shows
+  too, with any control character in it spelled out. Install records now keep the interpreter written into hook commands,
+  so hooks installed by an earlier release stay unchecked until you run
+  `apothem update`. An install now keeps only a true or false `enabled` flag
+  on Kiro's hooks, so no other value can ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
   a program.** `--all`, `--all-perwrite`, three standalone validators
   (`no-global-plans-grep`, `conventional-commit-grep` and
