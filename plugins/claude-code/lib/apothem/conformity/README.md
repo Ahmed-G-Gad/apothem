@@ -10,6 +10,7 @@
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
+| `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families

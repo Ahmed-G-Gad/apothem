@@ -67,23 +67,40 @@ else. A validator that reads one fixed folder, such as `naming-grep` under
 `--all-perwrite` checks the files that `git ls-files` lists under the root.
 git lists each entry exactly as the repository's index holds it, and a project
 can come with an index and files someone else made, so the gate reads a listed
-path only when it is a regular file inside the root. It skips:
+path only when it is a regular file inside the root, of at most 8 MiB, holding
+UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
 
-- an entry that leaves the root, such as `../notes.md` or an absolute path;
-- a symbolic link, or on Windows a junction, at any level below the root, even
-  one that points inside it. git stores a link as the path it points to, and a
-  tracked file that a link points to is checked under its own path;
-- anything that is not a regular file, such as a named pipe or a device, where
-  a read would wait or never end.
+- `outside_project`: an entry that leaves the root, such as `../notes.md` or an
+  absolute path. git never writes one, so the run does not pass;
+- `link`: a symbolic link, or on Windows a junction, at any level below the
+  root, even one that points inside it, or an entry the index marks as a link.
+  git stores a link as the path it points to, and a tracked file that a link
+  points to is checked under its own path;
+- `submodule`: the entry of a submodule;
+- `not_regular_file`: anything else that is not a regular file, such as a
+  named pipe or a device, where a read would wait or never end;
+- `missing`: a tracked file that is not in the working tree;
+- `too_large` and `not_utf8_text`: a file over 8 MiB, or one whose bytes are
+  not UTF-8 text.
 
-`git ls-files` gets 60 seconds, so a repository whose own settings make git
-wait, such as an `include.path` that points at a named pipe, holds the run up
-for that long at most. `no-global-plans-grep` gives its own `git ls-files` the
-same limit and fails when git runs past it. A `--all-perwrite` run that read no
-file does not pass: it reports `files_scanned: 0` with
-`empty_scope_expected: false`, and when the list of tracked files could not be
-read, `corpus_error` says why, for example that the root is not inside a git
-work tree or that `git ls-files` ran past its time. With `--strict`, that run
+In this run the `link-check` matcher looks up a link target only inside the
+root: a relative link that leaves the root counts as external, and the search
+for a `site/content/docs` folder stops at the root. In every mode, it never
+looks up a link that names a place by itself, such as a network share
+(`\\host\share`), a drive (`C:/notes.md`) or a `file:` address. On Windows,
+looking up a share sends your sign-in to that host.
+
+Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
+in `no-global-plans-grep`, which fails when git runs past it. A repository
+whose own settings make git wait, such as an `include.path` that points at a
+named pipe, holds up each of these calls for that long at most. A
+`--all-perwrite` run that read no file does not pass: it reports
+`files_scanned: 0` with `empty_scope_expected: false`. When the list of tracked
+files cannot be read, `check_error` gives a fixed reason: git did not start,
+`git ls-files` failed with a given exit code, or it did not finish in
+time. To see git's own message, for example when the root is not inside a git
+work tree, run `git ls-files` in the root; the report leaves it out, because it
+can name files outside the project. With `--strict`, a run that did not pass
 exits `2`.
 
 ## Gate bars

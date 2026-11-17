@@ -39,7 +39,6 @@ import importlib.util
 import json
 import ntpath
 import os
-import stat
 import subprocess
 import sys
 import time
@@ -91,12 +90,20 @@ if __package__ in (None, ""):
         _support_package.__path__ = [str(_PACKAGE_DIR)]
         sys.modules["apothem"] = _support_package
 
+from apothem.conformity._corpus import (
+    SKIP_OUTSIDE,
+    SKIP_REASONS,
+    CorpusListError,
+    leaves_root,
+    read_entry,
+)
+from apothem.conformity._corpus import tracked_entries as _corpus_tracked_files
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
     EXIT_USAGE,
-    GIT_LS_FILES_TIMEOUT_SECONDS,
     INSPECTED_KEY,
     STDIN_FLAG,
     make_parser,
@@ -256,6 +263,19 @@ def _is_harness_state_path(target: Path | None, scopes: tuple[Path, ...]) -> boo
         if relative.parts and relative.parts[0] in _HARNESS_STATE_SEGMENTS:
             return True
     return False
+
+
+class _RootedCheckCallable(Protocol):
+    """Shape of a matcher's ``check()`` that also takes the corpus root."""
+
+    def __call__(
+        self,
+        content: str,
+        path: Path | None = None,
+        *,
+        root: Path | None = None,
+    ) -> Any:  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+        """Scan *content*; what the matcher looks up on disk stays in *root*."""
 
 
 class _CheckCallable(Protocol):
@@ -577,6 +597,10 @@ _PER_SUFFIX_APPLICABILITY: Final[dict[str, frozenset[str]]] = {
     # GitHub Actions pinning applies to workflow YAML only.
     "unpinned_action_grep": frozenset({".yml", ".yaml"}),
 }
+
+# Matchers whose ``check()`` also takes the corpus root, so what they look up
+# on disk (a link target, for one) stays inside the project in a corpus run.
+_ROOTED_MATCHERS: Final[frozenset[str]] = frozenset({"link_check"})
 
 # File suffixes whose bytes are opaque to the text matchers; the corpus runner
 # skips them entirely (it cannot decode them as UTF-8 text). Mirrors the binary
@@ -1242,112 +1266,6 @@ def _run_all(root: Path) -> tuple[bool, str]:
     return overall_passed, json.dumps(payload, indent=2)
 
 
-class _CorpusListError(Exception):
-    """The tracked-file list could not be read; the message says why."""
-
-
-def _corpus_tracked_files(root: Path) -> list[Path]:
-    """Return the git-tracked files under *root* as *root*-prefixed Paths.
-
-    Uses ``git ls-files`` so the corpus is exactly the tracked working tree —
-    ignored artifacts (``dist/``, caches, ``.plans/`` ephemera) are excluded by
-    construction. The invocation is read-only and gives up after
-    :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. Each entry is joined to *root* as git
-    lists it, with no link followed; :func:`_corpus_file_text` decides which
-    paths may be read.
-
-    Raises :class:`_CorpusListError` when the list cannot be read: git is
-    missing, *root* is not in a git work tree, git fails or runs past the
-    timeout, or its output is not UTF-8. The caller reports that reason and
-    does not pass the run, because nothing was checked.
-    """
-    try:
-        completed = subprocess.run(
-            ["git", "ls-files", "-z"],  # noqa: S607 — read-only invocation; argv list (never shell); `git` resolved from PATH is the standard cross-platform invocation, mirroring the repo's other git subprocess call sites
-            cwd=str(root),
-            capture_output=True,
-            check=False,
-            encoding="utf-8",
-            timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise _CorpusListError(
-            f"git ls-files did not finish within {GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
-        ) from exc
-    except OSError as exc:
-        raise _CorpusListError(f"git could not be started: {exc}") from exc
-    except ValueError as exc:
-        raise _CorpusListError(f"git ls-files output is not UTF-8: {exc}") from exc
-    if completed.returncode != EXIT_PASS:
-        detail = completed.stderr.strip() or f"exit code {completed.returncode}"
-        raise _CorpusListError(f"git ls-files failed: {detail}")
-    rels = [entry for entry in completed.stdout.split("\0") if entry]
-    return [root / rel for rel in rels]
-
-
-# Windows sets this bit in the tag of a reparse point that names another file or
-# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
-# junction as a plain folder, so the tag is what shows it is a link.
-_NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
-
-
-def _is_link(info: os.stat_result) -> bool:
-    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
-    if stat.S_ISLNK(info.st_mode):
-        return True
-    return bool(getattr(info, "st_reparse_tag", 0) & _NAME_SURROGATE_TAG_BIT)
-
-
-def _corpus_file_text(root: Path, path: Path, real_folders: set[Path]) -> str | None:
-    """Return the text of one listed corpus *path*, or None when it is not read.
-
-    git lists an index entry exactly as the index stores it, and a project can
-    arrive with an index and a working tree written by someone else. So *path*
-    is read only when it stays inside *root* and is a regular file reached
-    through real folders. Skipped: an entry that leaves *root* (an absolute
-    path, or one with a ``..`` part), a symbolic link or Windows junction at
-    any level below *root*, and anything that is not a regular file (a FIFO,
-    a device, a socket, a submodule's folder). A link is skipped even when it
-    points inside *root*: git tracks a link as the path it holds, and a
-    tracked file it points to is read under its own path. Each level is
-    checked with ``os.lstat``, which never follows a link, so a FIFO is never
-    opened and a device is never read. *real_folders* holds the folders below
-    *root* already found to be real folders in this run; the caller keeps one
-    set per run, so each folder is checked once. The check sees the tree as it
-    is when it runs; a program that swaps a file for a link during the run is
-    out of its reach. Text that is not UTF-8 is not read either.
-    """
-    try:
-        parts = path.relative_to(root).parts
-    except ValueError:
-        return None
-    if not parts or ".." in parts:
-        return None
-    folder = root
-    for part in parts[:-1]:
-        folder = folder / part
-        if folder in real_folders:
-            continue
-        try:
-            info = os.lstat(folder)
-        except OSError:
-            return None
-        if _is_link(info) or not stat.S_ISDIR(info.st_mode):
-            return None
-        real_folders.add(folder)
-    current = folder / parts[-1]
-    try:
-        info = os.lstat(current)
-    except OSError:
-        return None
-    if _is_link(info) or not stat.S_ISREG(info.st_mode):
-        return None
-    try:
-        return current.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-
-
 def _is_corpus_fixture_path(path: Path) -> bool:
     """Return True for deliberately-malformed conformity-test fixture files.
 
@@ -1381,6 +1299,14 @@ def _matcher_applies_to(module_name: str, path: Path) -> bool:
     return path.suffix.lower() in suffixes
 
 
+def _run_matcher(module_name: str, content: str, path: Path, root: Path) -> Any:  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+    """Run one matcher on one corpus file; a root-aware one also gets *root*."""
+    check = _load_check(module_name)
+    if module_name in _ROOTED_MATCHERS:
+        return cast(_RootedCheckCallable, check)(content, path, root=root)
+    return check(content, path)
+
+
 def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     """Run every per-Write matcher over the git-tracked corpus under *root*.
 
@@ -1398,22 +1324,31 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     resolvable" skip) is not a finding. A run that read no file has checked
     nothing, so it does not pass: the payload then carries
     ``empty_scope_expected: false``, as a standalone validator's does, plus
-    ``corpus_error`` when the tracked-file list could not be read. Only regular
-    files inside *root* are read (see :func:`_corpus_file_text`). The caller
+    ``check_error`` when the tracked-file list cannot be read. Only regular
+    files inside *root* are read (see :func:`_corpus.read_entry`), and
+    ``files_skipped`` counts every other listed path by reason. An index
+    entry that leaves *root* also fails the run: git never writes one, so the
+    index was written by hand. The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """
-    corpus_error: str | None = None
+    check_error: str | None = None
     try:
-        files = _corpus_tracked_files(root)
-    except _CorpusListError as exc:
-        files, corpus_error = [], str(exc)
+        entries = _corpus_tracked_files(root)
+    except CorpusListError as exc:
+        entries, check_error = [], str(exc)
     # matcher -> {"finding_count": int, "file_count": int, "files": [rel, ...]}
     blocking: dict[str, dict[str, object]] = {}
     advisory: dict[str, dict[str, object]] = {}
     files_scanned = 0
-    real_folders: set[Path] = set()
-    for abs_path in files:
+    skipped = dict.fromkeys(SKIP_REASONS, 0)
+    for tracked in entries:
+        abs_path = tracked.path
+        if leaves_root(root, abs_path):
+            # Counted before the exemptions below, so none of them can hide
+            # an entry that leaves the project.
+            skipped[SKIP_OUTSIDE] += 1
+            continue
         if abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES:
             continue
         if _is_plan_suite_path(abs_path) or _is_corpus_fixture_path(abs_path):
@@ -1423,10 +1358,9 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             # apothem quality bar — exempt per schemas/header-exceptions.txt
             # (`**/_vendor/**`, `**/node_modules/**`).
             continue
-        content = _corpus_file_text(root, abs_path, real_folders)
+        content, reason = read_entry(root, tracked)
         if content is None:
-            # Outside the root, a link, not a regular file, or not UTF-8
-            # text: there is nothing for the text matchers to scan.
+            skipped[cast(str, reason)] += 1
             continue
         files_scanned += 1
         rel = str(abs_path.relative_to(root))
@@ -1434,7 +1368,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             if not _matcher_applies_to(module_name, abs_path):
                 continue
             try:
-                result = _load_check(module_name)(content, abs_path)
+                result = _run_matcher(module_name, content, abs_path, root)
             except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
                 continue
             if getattr(result, "note", None) is not None:
@@ -1485,13 +1419,14 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
         for name in sorted(_ADVISORY_PER_WRITE_GREPS)
         if name in advisory
     ]
-    passed = blocking_clean and files_scanned > 0
+    passed = blocking_clean and files_scanned > 0 and not skipped[SKIP_OUTSIDE]
     payload: dict[str, object] = {
         "orchestrator": "conformity-gate",
         "mode": "all-perwrite",
         "root": str(root),
         "passed": passed,
         "files_scanned": files_scanned,
+        "files_skipped": skipped,
         "blocking_matcher_count": len(_BLOCKING_PER_WRITE_GREPS),
         "advisory_matcher_count": len(_ADVISORY_PER_WRITE_GREPS),
         "blocking_findings_present": not blocking_clean,
@@ -1501,8 +1436,8 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     }
     if files_scanned == 0:
         payload[EMPTY_SCOPE_KEY] = False
-    if corpus_error is not None:
-        payload["corpus_error"] = corpus_error
+    if check_error is not None:
+        payload[CHECK_ERROR_KEY] = check_error
     return passed, json.dumps(payload, indent=2)
 
 
@@ -1662,7 +1597,9 @@ def main(argv: list[str] | None = None) -> int:
     Post-conditions: returns :data:`EXIT_PASS` when no blocking finding was
     raised, or when findings exist but strict mode is off — the advisory
     default reports without failing a build. Returns the findings-block code
-    under ``--strict``, and the usage-error code :data:`EXIT_USAGE` for an
+    under ``--strict`` for a blocking finding, and for an ``--all-perwrite`` run
+    that did not pass because it read no file or met an index entry that
+    leaves the root; and the usage-error code :data:`EXIT_USAGE` for an
     unknown flag or validator name, a conflicting flag pair, a file that does
     not exist, or a root that is not an existing directory — kept distinct so
     a caller can tell a misspelled selector or path from a real finding.

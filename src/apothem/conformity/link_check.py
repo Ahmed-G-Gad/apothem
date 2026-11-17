@@ -33,6 +33,18 @@ checks each resolvable internal reference:
   and **external references** (HTTP / HTTPS, ``mailto:``) are counted but
   not retrieved — their validity is the site build's or remote host's
   concern, not this matcher's.
+- **Destinations that name a place on their own** — a URI scheme or a
+  Windows drive (``file:``, ``C:``), a network share (``\\\\host\\share``,
+  ``//host/share``) or a backslash-rooted path — are counted as external and
+  never looked up. A lookup can reach another machine (on Windows, opening a
+  share sends the user's sign-in to that host) or a file outside the project.
+
+A relative destination is resolved by its name, as a browser resolves a
+link, without following links on disk. In a corpus run
+(``gate --all-perwrite``) the gate also passes the project root, and nothing
+outside it is looked up: a relative link that leaves the root is counted as
+external, a symbolic link or Windows junction on the way to a target is not
+followed, and the ``site/content/docs`` search stops at the root.
 
 The Fumadocs routing contract this mapping mirrors is declared at
 ``site/lib/source.ts`` (``baseUrl: '/docs'``, ``parser: 'dir'``,
@@ -43,11 +55,15 @@ The Fumadocs routing contract this mapping mirrors is declared at
 from __future__ import annotations
 
 import json
+import os
 import re
+import stat
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity._corpus import SKIP_LINK, leaves_root, lstat_inside
 
 # Markdown inline link shape: [text](destination "optional title"). Two
 # destination forms per CommonMark:
@@ -80,6 +96,10 @@ EXTERNAL_PREFIXES: Final[tuple[str, ...]] = (
     "ftp://",
     "ftps://",
 )
+# A destination that starts with a URI scheme or a Windows drive letter
+# (``file:``, ``C:``); together with a leading backslash or ``//`` (a network
+# share or a rooted path), it names a place by itself, not relative to the page.
+_SCHEME_OR_DRIVE_RE: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
 GREP_NAME: Final[str] = "link-check"
 RULE_ANCHOR: Final[str] = "rules/code-craft-markdown.md §6 Link Discipline"
 EXIT_PASS: Final[int] = 0
@@ -179,11 +199,22 @@ def _strip_fragment(destination: str) -> str:
     return destination.split("#", 1)[0]
 
 
+def _is_out_of_reach(target: str) -> bool:
+    """Return True when *target* names a place by itself; it is never looked up.
+
+    That is a URI scheme or a Windows drive (``file:``, ``C:``), a network
+    share (``\\\\host\\share``, ``//host/share``) or a backslash-rooted path.
+    On Windows, looking up a share opens a network connection that sends the
+    user's sign-in to that host.
+    """
+    return target.startswith(("\\", "//")) or bool(_SCHEME_OR_DRIVE_RE.match(target))
+
+
 def _resolve_target(
     source: Path | None,
     destination: str,
 ) -> Path | None:
-    """Resolve a relative destination to an on-disk path."""
+    """Resolve a relative destination by its name, without following links."""
     target = _strip_fragment(destination)
     if not target:
         # Anchor-only links (e.g., [foo](#section)) point inside the
@@ -191,27 +222,50 @@ def _resolve_target(
         return source
     if source is None:
         return None
-    return (source.parent / target).resolve()
+    return Path(os.path.abspath(source.parent / target))  # noqa: PTH100 — Path.resolve() follows links; this resolves by name only
 
 
-def _find_docs_content_root(source: Path | None) -> Path | None:
+def _exists(target: Path, root: Path | None) -> bool:
+    """Return True when *target* is on disk; in a corpus run, only inside *root*.
+
+    With a *root*, no link on the way is followed (see
+    :func:`apothem.conformity._corpus.lstat_inside`). A link found on the way is
+    inside the project, so the target counts as present, not as a dead link.
+    """
+    if root is None:
+        return target.exists()
+    found = lstat_inside(root, target)
+    return not isinstance(found, str) or found == SKIP_LINK
+
+
+def _find_docs_content_root(
+    source: Path | None, root: Path | None = None
+) -> Path | None:
     """Locate the ``site/content/docs`` page root above *source*, if any.
 
-    Walks *source*'s resolved ancestors and returns the first that contains
-    a ``site/content/docs`` directory. Returns None when *source* is None or
-    no such ancestor exists (e.g. a Markdown body checked outside the site
-    repo) — in which case ``/docs/`` routes stay out of scope, exactly as
-    before this resolution was added.
+    Walks *source*'s ancestors by name, nearest first, and returns the first
+    that contains a ``site/content/docs`` folder. With a *root*, the walk
+    stops at it, so a folder above the project is never looked at. Returns
+    None when *source* is None or no such ancestor exists (e.g. a Markdown body
+    checked outside the site repo) — in which case ``/docs/`` routes stay out
+    of scope.
     """
     if source is None:
         return None
     try:
-        resolved = source.expanduser().resolve()
-    except (OSError, RuntimeError):
+        start = Path(os.path.abspath(source.expanduser()))  # noqa: PTH100 — Path.resolve() follows links; this resolves by name only
+    except (OSError, RuntimeError, ValueError):
         return None
-    for ancestor in resolved.parents:
+    for ancestor in start.parents:
+        if root is not None and not ancestor.is_relative_to(root):
+            return None
         candidate = ancestor.joinpath(*DOCS_CONTENT_ROOT_SEGMENTS)
-        if candidate.is_dir():
+        if root is None:
+            if candidate.is_dir():
+                return candidate
+            continue
+        found = lstat_inside(root, candidate)
+        if not isinstance(found, str) and stat.S_ISDIR(found.st_mode):
             return candidate
     return None
 
@@ -231,6 +285,10 @@ def _docs_route_targets(docs_root: Path, route: str) -> list[Path] | None:
     # ``/docs/a?x=1`` from being mis-flagged.
     path_part = route.split("?", 1)[0].rstrip("/")
     segments = [segment for segment in path_part.split("/") if segment]
+    if any(segment in {".", ".."} or "\\" in segment for segment in segments):
+        # A route that climbs out of the page tree is no page route; looking it
+        # up would reach a file outside the docs folder.
+        return None
     if segments and segments[0] == DOCS_ROUTE_PREFIX:
         locale: str | None = None
         rest = segments[1:]
@@ -276,8 +334,14 @@ def _render_targets(docs_root: Path, targets: list[Path]) -> str:
 def check(
     content: str,
     path: Path | None = None,
+    *,
+    root: Path | None = None,
 ) -> GrepResult:
-    """Scan a Markdown body for internal-link reachability."""
+    """Scan a Markdown body for internal-link reachability.
+
+    *root*, which the gate passes in a corpus run, is the project folder:
+    nothing outside it is looked up (see the module docstring).
+    """
     findings: list[Finding] = []
     internal = 0
     external = 0
@@ -293,13 +357,13 @@ def check(
                 # An empty destination (``[text]()`` or ``[text](<>)``) has
                 # nothing to resolve; skip it rather than mis-count it.
                 continue
-            if _is_external(destination):
+            stripped = _strip_fragment(destination)
+            if _is_external(destination) or _is_out_of_reach(stripped):
                 external += 1
                 continue
-            stripped = _strip_fragment(destination)
             if stripped.startswith("/"):
                 if not docs_root_computed:
-                    docs_root = _find_docs_content_root(path)
+                    docs_root = _find_docs_content_root(path, root)
                     docs_root_computed = True
                 if docs_root is None:
                     # A Markdown body checked outside the site repo: the page
@@ -315,7 +379,7 @@ def check(
                     external += 1
                     continue
                 internal += 1
-                if not any(target.exists() for target in targets):
+                if not any(_exists(target, root) for target in targets):
                     findings.append(
                         Finding(
                             line=index,
@@ -327,8 +391,16 @@ def check(
                         )
                     )
                 continue
-            internal += 1
             resolved = _resolve_target(path, destination)
+            if (
+                resolved is not None
+                and root is not None
+                and leaves_root(root, resolved)
+            ):
+                # A corpus run looks up nothing outside the project.
+                external += 1
+                continue
+            internal += 1
             if resolved is None:
                 findings.append(
                     Finding(
@@ -338,7 +410,7 @@ def check(
                     )
                 )
                 continue
-            if not resolved.exists():
+            if not _exists(resolved, root):
                 findings.append(
                     Finding(
                         line=index,

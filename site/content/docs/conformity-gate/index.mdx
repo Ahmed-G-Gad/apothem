@@ -28,14 +28,14 @@ The gate runs only machine-checkable validators. The reasoned judgment that the 
 
 ## Severity ladder
 
-The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all` or `--all-perwrite`) exits `2` when a blocking validator or matcher fails; advisory findings are reported only. A `--all-perwrite` run that read no file, for example in a folder outside a git work tree, reports `passed: false`, so with `--strict` it exits `2` too. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
+The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all` or `--all-perwrite`) exits `2` when a blocking validator or matcher fails; advisory findings are reported only. A `--all-perwrite` run that read no file, or met an index entry that leaves the project, reports `passed: false`, with a `check_error` when the list of tracked files cannot be read (for example in a folder outside a git work tree), so with `--strict` it exits `2` too. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
 
 ## Validators
 
 The mechanical fraction lives at [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrated by [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
 Each validator runs in one of three ways:
 
-- **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`, which reads only the regular files inside the project and skips links, named pipes, devices and entries that leave the project.
+- **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`, which reads only the regular files inside the project and counts the paths it skips (links, named pipes, devices, entries that leave the project).
 - **standalone**: across the whole repository with `--all`, or one at a time with `--check <name>`.
 - **change-set**: against a staged diff, run directly as `python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
 

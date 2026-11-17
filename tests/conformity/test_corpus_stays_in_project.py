@@ -28,6 +28,7 @@ using up the machine's memory.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 import shutil
@@ -42,7 +43,7 @@ from typing import TypeVar
 
 import pytest
 
-from apothem.conformity import gate, no_global_plans_grep
+from apothem.conformity import gate, link_check, no_global_plans_grep
 from tests._shared.git_env import hermetic_git_env
 
 _T = TypeVar("_T")
@@ -72,6 +73,10 @@ _SHORT_TIMEOUT_SECONDS = 2
 # Address-space limit for the child process that meets /dev/zero: a read of
 # the device then fails fast with MemoryError instead of using up memory.
 _CHILD_ADDRESS_SPACE_BYTES = 1 << 30
+# The largest file the corpus run reads (``_corpus.MAX_FILE_BYTES``).
+_MAX_FILE_BYTES = 8 * 1024 * 1024
+# The fixed start of the reason a failed ``git ls-files`` reports.
+_GIT_FAILED = "git ls-files failed with exit code"
 
 _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="FIFOs and /dev/zero exist only on POSIX systems"
@@ -117,19 +122,34 @@ def _project(tmp_path: Path, files: dict[str, str] | None = None) -> Path:
     return _commit_tree(repo)
 
 
-def _write_index(repo: Path, names: list[str]) -> None:
+def _write_index(
+    repo: Path,
+    names: list[str | bytes],
+    *,
+    modes: dict[str, int] | None = None,
+) -> None:
     """Replace *repo*'s index with one that lists *names* exactly as given.
 
     git refuses to add a path with a ``..`` part or a leading ``/``, but it
     lists whatever a hand-written index holds. This writes a version-2 index:
     a twelve-byte header, one entry per name in byte order (each pointing at
     the empty blob), and a SHA-1 checksum. ``git ls-files`` reads only the
-    names.
+    names and modes. A ``bytes`` name is written as is, so it can hold bytes
+    that are not UTF-8. *modes* maps a ``str`` name to its index mode, such as
+    ``0o120000`` for a link; every other entry is a regular file.
     """
     empty_blob = hashlib.sha1(b"blob 0\0", usedforsecurity=False).digest()
+    chosen = modes or {}
+    entries = sorted(
+        (
+            item if isinstance(item, bytes) else item.encode("utf-8"),
+            chosen.get(item, 0o100644) if isinstance(item, str) else 0o100644,
+        )
+        for item in names
+    )
     body = b""
-    for name in sorted(item.encode("utf-8") for item in names):
-        entry = struct.pack(">10I", 0, 0, 0, 0, 0, 0, 0o100644, 0, 0, 0) + empty_blob
+    for name, mode in entries:
+        entry = struct.pack(">10I", 0, 0, 0, 0, 0, 0, mode, 0, 0, 0) + empty_blob
         entry += struct.pack(">H", min(len(name), 0xFFF)) + name
         entry += b"\0" * (8 - len(entry) % 8)
         body += entry
@@ -258,11 +278,20 @@ def _run_in_child(repo: Path) -> dict[str, object]:
     return payload
 
 
-def _assert_only_clean_file_read(payload: dict[str, object]) -> None:
-    """The run read ``clean.py`` alone and passed: nothing outside was read."""
+def _assert_only_clean_file_read(
+    payload: dict[str, object], *, passed: bool = True
+) -> None:
+    """The run read ``clean.py`` alone: nothing outside was read."""
     assert payload["blocking"] == [], payload["blocking"]
     assert payload["files_scanned"] == 1
-    assert payload["passed"] is True
+    assert payload["passed"] is passed
+
+
+def _skipped(payload: dict[str, object]) -> dict[str, int]:
+    """Return the payload's non-zero ``files_skipped`` counts by reason."""
+    skipped = payload["files_skipped"]
+    assert isinstance(skipped, dict)
+    return {reason: count for reason, count in skipped.items() if count}
 
 
 # --- Paths that leave the project -------------------------------------------
@@ -273,7 +302,8 @@ def test_index_entries_outside_the_project_are_not_read(tmp_path: Path) -> None:
 
     git lists these names as written. Joined to the project folder they name
     files above it (``..``) or anywhere on the disk (an absolute path replaces
-    the folder it is joined to).
+    the folder it is joined to). git never writes such an entry itself, so the
+    run counts them and does not pass.
     """
     repo = _project(tmp_path)
     above = tmp_path / "above.yml"
@@ -292,7 +322,16 @@ def test_index_entries_outside_the_project_are_not_read(tmp_path: Path) -> None:
     listed = _git(repo, "ls-files", "-z").split("\0")
     assert "../above.yml" in listed  # git lists the entry as written
 
-    _assert_only_clean_file_read(_run(repo))
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    # A backslash separates folders only on Windows; elsewhere that entry is
+    # one odd file name inside the project, missing from the working tree.
+    expected = (
+        {"outside_project": 4}
+        if os.name == "nt"
+        else {"outside_project": 3, "missing": 1}
+    )
+    assert _skipped(payload) == expected
 
 
 def test_tracked_link_to_a_file_outside_the_project_is_not_read(
@@ -426,11 +465,8 @@ def test_corpus_listing_timeout_does_not_pass(
     assert payload["passed"] is False
     assert payload["files_scanned"] == 0
     assert payload["empty_scope_expected"] is False
-    assert "did not finish" in str(payload["corpus_error"])
-    strict = gate.main(
-        ["gate", gate.ALL_PERWRITE_FLAG, str(tmp_path), gate.STRICT_FLAG]
-    )
-    assert strict == gate.EXIT_FAIL
+    assert payload["check_error"] == "git ls-files did not finish within 60 seconds"
+    _assert_exit_codes_for_a_run_that_did_not_pass(tmp_path)
 
 
 def test_plans_check_reports_a_listing_timeout(
@@ -451,14 +487,13 @@ def test_corpus_listing_that_waits_on_its_configuration_ends(
     repo = _project(tmp_path)
     fifo = tmp_path / "config-fifo"
     _include_fifo(repo, fifo)
-    monkeypatch.setattr(
-        gate, "GIT_LS_FILES_TIMEOUT_SECONDS", _SHORT_TIMEOUT_SECONDS, raising=False
-    )
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    monkeypatch.setattr(corpus, "GIT_LS_FILES_TIMEOUT_SECONDS", _SHORT_TIMEOUT_SECONDS)
 
     payload = _run_guarded(lambda: _run(repo), release=lambda: _release_fifo(fifo))
     assert payload["passed"] is False
     assert payload["files_scanned"] == 0
-    assert "did not finish" in str(payload["corpus_error"])
+    assert "did not finish" in str(payload["check_error"])
 
 
 @_POSIX_ONLY
@@ -498,7 +533,7 @@ def test_folder_outside_a_git_work_tree_does_not_pass(
     payload = _run(tmp_path)
     assert payload["passed"] is False
     assert payload["files_scanned"] == 0
-    assert payload["corpus_error"]
+    assert str(payload["check_error"]).startswith(_GIT_FAILED)
 
 
 def test_run_that_reads_no_file_does_not_pass(tmp_path: Path) -> None:
@@ -509,6 +544,206 @@ def test_run_that_reads_no_file_does_not_pass(tmp_path: Path) -> None:
     assert payload["passed"] is False
     assert payload["files_scanned"] == 0
     assert payload["empty_scope_expected"] is False
-    assert "corpus_error" not in payload
-    strict = gate.main(["gate", gate.ALL_PERWRITE_FLAG, str(repo), gate.STRICT_FLAG])
+    assert "check_error" not in payload
+    _assert_exit_codes_for_a_run_that_did_not_pass(repo)
+
+
+# --- What the report says about paths it did not read --------------------------
+
+
+def test_paths_the_run_did_not_read_are_counted_by_reason(tmp_path: Path) -> None:
+    """Each listed path that is not read leaves a count under its reason.
+
+    A tracked file missing from the working tree, a folder link, a file whose
+    bytes are not UTF-8 text and a file over the size limit are each counted,
+    so a pass that left most entries unread shows it.
+    """
+    outside = _write(tmp_path / "elsewhere", {"ci.yml": _UNPINNED_WORKFLOW})
+    repo = _project(
+        tmp_path,
+        {
+            "gone.md": "gone\n",
+            "linked/ci.yml": "placeholder: true\n",
+            "blob.txt": "text for now\n",
+            "big.yml": "small for now\n",
+        },
+    )
+    (repo / "gone.md").unlink()
+    shutil.rmtree(repo / "linked")
+    _link_folder(repo / "linked", outside)
+    (repo / "blob.txt").write_bytes(b"\xff\xfe\x00 not text")
+    with (repo / "big.yml").open("wb") as big:  # one byte over the limit
+        big.write(_UNPINNED_WORKFLOW.encode("utf-8"))
+        big.seek(_MAX_FILE_BYTES)
+        big.write(b"\n")
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {
+        "link": 1,
+        "missing": 1,
+        "too_large": 1,
+        "not_utf8_text": 1,
+    }
+
+
+def test_index_modes_for_links_and_submodules_are_skipped(tmp_path: Path) -> None:
+    """An entry the index marks as a link or a submodule is not read.
+
+    With ``core.symlinks=false``, git writes a tracked link as a regular file
+    that holds the path it points to, so only the index mode shows it is a
+    link. A submodule's entry names a folder.
+    """
+    repo = _project(tmp_path, {"alias.yml": "real.yml", "lib/README.md": "lib\n"})
+    _write_index(
+        repo,
+        ["clean.py", "alias.yml", "lib"],
+        modes={"alias.yml": 0o120000, "lib": 0o160000},
+    )
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"link": 1, "submodule": 1}
+
+
+# --- When the file list cannot be read ------------------------------------------
+
+
+def _assert_exit_codes_for_a_run_that_did_not_pass(root: Path) -> None:
+    """The advisory default still exits 0; ``--strict`` exits 2."""
+    assert gate.main(["gate", gate.ALL_PERWRITE_FLAG, str(root)]) == gate.EXIT_PASS
+    strict = gate.main(["gate", gate.ALL_PERWRITE_FLAG, str(root), gate.STRICT_FLAG])
     assert strict == gate.EXIT_FAIL
+
+
+def test_git_error_text_stays_out_of_the_report(tmp_path: Path) -> None:
+    """git's own error text can name files outside the project, so the report
+    gives a fixed reason with git's exit code instead."""
+    repo = _project(tmp_path)
+    secret = _write(tmp_path / "outside", {"secret.cfg": "this is not git config\n"})
+    with (repo / ".git" / "config").open("a", encoding="utf-8") as config:
+        config.write(f"[include]\n\tpath = {(secret / 'secret.cfg').as_posix()}\n")
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    error = str(payload["check_error"])
+    assert error.startswith(_GIT_FAILED)
+    assert "secret" not in error
+    assert "corpus_error" not in payload
+
+
+def test_git_error_text_that_is_not_utf8_does_not_crash_the_run(
+    tmp_path: Path,
+) -> None:
+    """A git error that is not UTF-8 text still ends in a report, not a crash."""
+    repo = _project(tmp_path)
+    with (repo / ".git" / "config").open("ab") as config:
+        config.write(b"[core]\n\tabbrev = caf\xe9\n")
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    assert str(payload["check_error"]).startswith(_GIT_FAILED)
+    _assert_exit_codes_for_a_run_that_did_not_pass(repo)
+
+
+def test_index_name_that_is_not_utf8_skips_that_entry_only(tmp_path: Path) -> None:
+    """One file name that is not UTF-8 does not stop the other files."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", b"caf\xe9.md"])
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"missing": 1}
+
+
+def test_missing_git_reports_a_check_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no git to run, the run reports that and does not pass."""
+    repo = _project(tmp_path)
+    empty = tmp_path / "no-programs"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    assert payload["check_error"] == "git did not start"
+    _assert_exit_codes_for_a_run_that_did_not_pass(repo)
+
+
+def test_corrupt_index_reports_a_check_error(tmp_path: Path) -> None:
+    """An index git cannot read ends the run with a reason, not a pass."""
+    repo = _project(tmp_path)
+    (repo / ".git" / "index").write_bytes(b"not an index")
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    assert str(payload["check_error"]).startswith(_GIT_FAILED)
+
+
+# --- Links inside file content --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "destination",
+    [
+        "\\\\192.0.2.1\\share\\notes.md",
+        "//192.0.2.1/share/notes.md",
+        "C:/Windows/win.ini",
+        "C:notes.md",
+        "\\rooted\\notes.md",
+        "file:///etc/hosts",
+        "file://192.0.2.1/share/notes.md",
+    ],
+)
+def test_link_check_never_looks_up_network_or_absolute_targets(
+    tmp_path: Path, destination: str
+) -> None:
+    """A link to a network share, a drive or another absolute place is counted
+    as external and never looked up, so no connection is made.
+
+    On Windows, looking up ``\\\\host\\share`` opens a network connection that
+    sends the user's sign-in to that host and can wait about 21 seconds.
+    """
+    started = time.monotonic()
+    result = link_check.check(f"[x]({destination})\n", tmp_path / "doc.md")
+    assert time.monotonic() - started < _DEADLINE_SECONDS / 6
+    assert result.findings == []
+    assert result.external_count == 1
+    assert result.internal_count == 0
+
+
+def _link_check_files(payload: dict[str, object]) -> list[str]:
+    """Return the files the corpus run's ``link_check`` flagged."""
+    advisory = payload["advisory"]
+    assert isinstance(advisory, list)
+    for entry in advisory:
+        if entry["matcher"] == "link_check":
+            return list(entry["files"])
+    return []
+
+
+def test_link_check_in_a_corpus_run_stays_inside_the_project(tmp_path: Path) -> None:
+    """A relative link that leaves the project is not looked up, so whether a
+    file outside exists stays out of the report; links inside are checked."""
+    _write(tmp_path, {"present.md": "here\n"})
+    repo = _project(
+        tmp_path,
+        {
+            "doc.md": "[a](../present.md) [b](../absent.md)\n",
+            "page.md": "[c](gone.md)\n",
+        },
+    )
+
+    assert _link_check_files(_run(repo)) == ["page.md"]
+
+
+def test_link_check_finds_the_docs_folder_only_inside_the_project(
+    tmp_path: Path,
+) -> None:
+    """A site route such as ``/docs/page`` is checked against the project's own
+    ``site/content/docs`` folder, never one found above the project."""
+    _write(tmp_path, {"site/content/docs/index.mdx": "page\n"})
+    repo = _project(tmp_path, {"doc.md": "[p](/docs/nowhere)\n"})
+
+    assert _link_check_files(_run(repo)) == []
