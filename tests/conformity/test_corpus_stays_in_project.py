@@ -855,9 +855,56 @@ def test_link_with_a_nul_character_keeps_the_other_findings(tmp_path: Path) -> N
 
 
 def test_link_check_never_looks_up_a_docs_route_with_a_drive(tmp_path: Path) -> None:
-    """A ``/docs/`` route whose segment names a drive, such as ``/docs/Z:/x``,
-    is counted as external, not looked up on that drive."""
+    """On Windows a ``/docs/`` route whose segment names a drive, such as
+    ``/docs/Z:/x``, is counted as external, not looked up on that drive.
+    Elsewhere a colon is an ordinary character, so the route is checked and,
+    with no such page, reported as dead."""
     _write(tmp_path, {"site/content/docs/index.mdx": "page\n"})
     result = link_check.check("[x](/docs/Z:/x)\n", tmp_path / "page.md")
-    assert result.findings == []
-    assert result.external_count == 1
+    if os.name == "nt":
+        assert result.findings == []
+        assert result.external_count == 1
+    else:
+        assert len(result.findings) == 1
+        assert result.internal_count == 1
+
+
+def test_link_check_reports_a_docs_route_holding_nul_in_a_corpus_run(
+    tmp_path: Path,
+) -> None:
+    """A NUL inside a ``/docs/`` route is a dead route, reported for its file."""
+    repo = _project(
+        tmp_path,
+        {"site/content/docs/index.mdx": "page\n", "doc.md": "[x](/docs/a\0b)\n"},
+    )
+
+    assert _link_check_files(_run(repo)) == ["doc.md"]
+
+
+def test_name_ending_in_a_dot_or_a_space_is_not_read_on_windows(
+    tmp_path: Path,
+) -> None:
+    """Windows drops a trailing dot or space, so ``ci.yml.`` would open
+    ``ci.yml``; such a name is counted as unsupported there. Elsewhere it is a
+    name of its own, missing here."""
+    repo = _project(tmp_path, {"ci.yml": _UNPINNED_WORKFLOW})
+    _write_index(repo, ["clean.py", "ci.yml.", "ci.yml "])
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    expected = {"unsupported_name": 2} if os.name == "nt" else {"missing": 2}
+    assert _skipped(payload) == expected
+
+
+def test_name_with_a_character_windows_reserves_is_unsupported_there(
+    tmp_path: Path,
+) -> None:
+    """A name with one of ``<>"|?*`` cannot exist on Windows, so it is counted
+    as unsupported there; elsewhere it is a name of its own, missing here."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", "what?.md", "a|b.md"])
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    expected = {"unsupported_name": 2} if os.name == "nt" else {"missing": 2}
+    assert _skipped(payload) == expected

@@ -1327,8 +1327,9 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     ``check_error`` when the tracked-file list cannot be read. Only regular
     files inside *root* are read (see :func:`_corpus.read_entry`), and
     ``files_skipped`` counts every other listed path by reason. An index
-    entry with a ``..`` part or a leading ``/`` also fails the run: git never
-    writes one, so the index was written by hand. The caller
+    entry with an empty, ``.`` or ``..`` part (a leading ``/`` among them)
+    also fails the run: git never writes one, so the index was written by
+    hand. The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """

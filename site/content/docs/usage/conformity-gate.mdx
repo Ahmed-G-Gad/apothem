@@ -119,15 +119,19 @@ can come with an index and files someone else made, so the gate reads a listed
 path only when it is a regular file inside the root, of at most 8 MiB, holding
 UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
 
-- `outside_project`: an entry with a `..` part or a leading `/`, such as
-  `../notes.md` or an absolute path. git never writes one, so the run does not
-  pass;
-- `unsupported_name`: on Windows, a name the system cannot hold as written,
-  such as `a:b.md`, whose `a:` reads as a drive, or one with a backslash. git
-  on Linux or macOS can track such a name, so it is counted without failing
-  the run;
+- `outside_project`: an entry with an empty, `.` or `..` part, such as
+  `../notes.md`, `a//b.md` or a name starting with `/`. git never writes one,
+  so the run does not pass;
+- `unsupported_name`: on Windows, a name the system cannot hold as written:
+  one with a colon (as in `a:b.md`, whose `a:` reads as a drive), a backslash,
+  one of `<>"|?*` or a control character, or a part that ends in a dot or a
+  space. git on Linux or macOS can track such a name, so it is counted without
+  failing the run. A hand-written entry such as `C:/x` or `..\..\x` lands
+  here on Windows too;
 - `link`: a symbolic link, or on Windows a junction, at any level below the
-  root, even one that points inside it, or an entry the index marks as a link.
+  root, even one that points inside it, or an entry the index marks as a link
+  (in any stage of a merge conflict, so such a file is not read until the
+  conflict is resolved).
   git stores a link as the path it points to, and a tracked file that a link
   points to is checked under its own path;
 - `submodule`: the entry of a submodule;

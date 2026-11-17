@@ -286,12 +286,15 @@ def _docs_route_targets(docs_root: Path, route: str) -> list[Path] | None:
     path_part = route.split("?", 1)[0].rstrip("/")
     segments = [segment for segment in path_part.split("/") if segment]
     if any(
-        segment in {".", ".."} or "\\" in segment or ":" in segment
+        segment in {".", ".."}
+        or "\\" in segment
+        or (os.name == "nt" and ":" in segment)
         for segment in segments
     ):
-        # A route that climbs out of the page tree, or names a drive such as
-        # ``/docs/Z:/x``, is no page route; looking it up would reach a file
-        # outside the docs folder.
+        # A route that climbs out of the page tree, or on Windows names a drive
+        # such as ``/docs/Z:/x``, is no page route; looking it up would reach a
+        # file outside the docs folder. Elsewhere a colon is an ordinary
+        # character in a file name.
         return None
     if segments and segments[0] == DOCS_ROUTE_PREFIX:
         locale: str | None = None

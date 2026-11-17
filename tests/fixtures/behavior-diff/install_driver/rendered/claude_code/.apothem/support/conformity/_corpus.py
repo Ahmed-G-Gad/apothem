@@ -67,6 +67,13 @@ SKIP_REASONS: Final[tuple[str, ...]] = (
     SKIP_NOT_TEXT,
 )
 
+# Characters no Windows file name can hold as written: a colon (a drive, as in
+# ``a:b.md``, or a file stream), the folder separator, the characters Windows
+# reserves, and the control characters.
+_WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
+    ':\\<>"|?*' + "".join(chr(code) for code in range(1, 32))
+)
+
 # Windows sets this bit in the tag of a reparse point that names another file or
 # folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
 # junction as a plain folder, so the tag is what shows it is a link.
@@ -155,15 +162,17 @@ def name_skip(name: str) -> str | None:
     was written by hand to reach outside the project: :data:`SKIP_OUTSIDE`.
     On Windows, a part with a colon (``a:b.md`` reads as drive ``a:``, and a
     colon later in a part names a file stream), a backslash (a folder separator
-    there) or a trailing dot or space (which Windows drops) cannot be held as
-    written. git on another system can write such a name, so it is skipped as
-    :data:`SKIP_UNSUPPORTED`, which does not fail the run.
+    there), one of ``<>"|?*``, a control character, or a trailing dot or space
+    (which Windows drops) cannot be held as written. git on another system can
+    write such a name, so it is skipped as :data:`SKIP_UNSUPPORTED`, which does
+    not fail the run.
     """
     parts = name.split("/")
     if any(part in ("", ".", "..") for part in parts):
         return SKIP_OUTSIDE
     if os.name == "nt" and any(
-        ":" in part or "\\" in part or part.endswith((".", " ")) for part in parts
+        not _WINDOWS_UNHELD.isdisjoint(part) or part.endswith((".", " "))
+        for part in parts
     ):
         return SKIP_UNSUPPORTED
     return None
