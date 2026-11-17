@@ -477,8 +477,14 @@ def rollback_install(
     after ``~/a`` became a link to a folder outside the home): the one result
     is a ``rollback_refused`` error naming the link (see
     :func:`~.install_driver_homelink.link_leaving_home_refusal`).
-    The rollback holds the user-level lock (see ``shared_scope``).
+    The rollback holds the user-level lock (see ``shared_scope``). A project
+    root that is the account home is refused first while a pytest test runs
+    (see :func:`apothem.lib.home_write_guard.refuse_project_root_at_home`).
     """
+    if project_root is not None:
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="roll back"
+        )
     if harness_root is not None:
         refusal = install_driver_homelink.link_leaving_home_refusal(
             harness_root, operation="rollback_refused"

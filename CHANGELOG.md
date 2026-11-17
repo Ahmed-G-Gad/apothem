@@ -206,7 +206,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `~/.config/opencode`, `~/.gemini` and the rest) stops with
   `RealHomeWriteError` before anything changes. The home is the one the
   operating system records for the account, not `HOME`. Reads, dry runs and
-  previews still work, and nothing changes outside pytest. A test that must run
+  previews still work, and nothing changes outside pytest. A project-scope
+  install, update, uninstall or rollback whose project root is the home itself
+  is refused before it writes anything. A refused uninstall raises the error
+  and records no unfinished uninstall. A test that must run
   a real install starts Apothem without `PYTEST_CURRENT_TEST` in the child's
   environment. `tests/README.md` lists what the refusal does not cover.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the

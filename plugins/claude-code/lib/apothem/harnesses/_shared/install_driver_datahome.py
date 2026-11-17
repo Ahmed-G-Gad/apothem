@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS, get_harness_entry
 from apothem.lib.shell_quote import shell_quoted
@@ -268,6 +268,11 @@ def _remove_data_home(
 
     Returns ``None`` when no data store exists (nothing to remove) or the home
     path falls outside the write boundary (see :func:`_store_boundary`).
+
+    While a pytest test runs, stores in the account's real home are refused
+    with :class:`~apothem.lib.home_write_guard.RealHomeWriteError` just before
+    their backup and removal, so a pass that keeps a shared home raises
+    nothing.
     """
     if home is None:
         home = _data_home_for(None, root=root)
@@ -275,7 +280,9 @@ def _remove_data_home(
         return None
     boundary = _store_boundary(home, allowed_root=allowed_root)
     if (
-        _validate_target_path(home, allowed_root=boundary, operation="remove_data_home")
+        _validate_target_path(
+            home, allowed_root=boundary, operation="remove_data_home", mutating=False
+        )
         is not None
     ):
         return None
@@ -316,12 +323,16 @@ def _remove_data_home(
     spec = DataHome.from_root(home)
     backups: list[Path] = []
     kept: list[Path] = []
-    removed_any = False
     # plans/ is intentionally excluded — operator planning state is never
     # auto-removed by uninstall.
-    for child in (spec.memory, spec.contexts, spec.learning):
-        if not child.exists():
-            continue
+    stores = (spec.memory, spec.contexts, spec.learning)
+    present = [child for child in stores if child.exists()]
+    if not present:
+        return None
+    home_write_guard.refuse_real_home_write(
+        *present, operation="apply 'remove_data_home' to", tree=True
+    )
+    for child in present:
         backup = backup_existing(
             child,
             install_root=root,
@@ -331,9 +342,6 @@ def _remove_data_home(
         if backup is not None:
             backups.append(backup)
         kept.extend(_remove_tree_keeping_links(child))
-        removed_any = True
-    if not removed_any:
-        return None
     return _result(
         "updated",
         "remove_data_home",

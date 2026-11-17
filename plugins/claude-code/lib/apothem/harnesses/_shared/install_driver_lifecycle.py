@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 import yaml
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
     extract_managed_block,
@@ -382,7 +382,16 @@ def run_uninstall(
     including those in *prior_results*: removals the caller made just before
     this pass, such as a native config stripped of Apothem's keys. An error in
     *prior_results* also makes the uninstall unfinished.
+
+    A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
+    is raised as it is and records nothing: it changed nothing in the
+    protected folder, so the install stays as it was. A project root that is
+    the account home is refused before the pass starts.
     """
+    if project_root is not None:
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="uninstall"
+        )
     root = _root_for(harness_root, project_root)
     root_floor = _allowed_write_root(harness_root, project_root)
     active: list[LedgerRecord] = []
@@ -415,6 +424,8 @@ def run_uninstall(
             # finished uninstall stands, as its record says.
             with contextlib.suppress(Exception):
                 apply_retention(harness_name)
+    except home_write_guard.RealHomeWriteError:
+        raise  # a refusal during a test, not an unfinished uninstall
     except BaseException as exc:
         results += record_pass(record, [*prior_results, *results], finished=False)
         if not isinstance(exc, Exception):

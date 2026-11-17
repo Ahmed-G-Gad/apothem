@@ -315,9 +315,15 @@ def run_install(
     exception from it stops the install with nothing written. An install
     moves its record to the spelling it writes under there, so an install
     that is refused changes nothing.
+
+    A project root that is the account home is refused before anything is
+    written while a pytest test runs (see
+    :func:`apothem.lib.home_write_guard.refuse_project_root_at_home`).
     """
     from apothem.harnesses._shared import install_driver
 
+    if project_root is not None and not dry_run:
+        home_write_guard.refuse_project_root_at_home(project_root, operation="install")
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
     root = _root_for(harness_root, project_root)
