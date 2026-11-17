@@ -134,7 +134,7 @@ def _refusal(path: Path) -> MaterializationResult:
         outcome="error",
         operation="surgical_uninstall",
         path=str(path),
-        message="target path crosses a symlink",
+        message="target path crosses a link",
     )
 
 
@@ -180,9 +180,7 @@ def test_every_uninstall_shim_returns_its_error_result(
     ]
     for shim in shims:
         run = shim()
-        assert [error.message for error in run.errors] == [
-            "target path crosses a symlink"
-        ]
+        assert [error.message for error in run.errors] == ["target path crosses a link"]
 
     _refusing_run_uninstall(monkeypatch, outcome="skipped")
     for shim in shims:

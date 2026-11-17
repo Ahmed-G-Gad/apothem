@@ -90,6 +90,7 @@ if __package__ in (None, ""):
         _support_package.__path__ = [str(_PACKAGE_DIR)]
         sys.modules["apothem"] = _support_package
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     EMPTY_SCOPE_KEY,
     EXIT_FAIL,
@@ -1245,18 +1246,13 @@ def _corpus_tracked_files(root: Path) -> list[Path]:
 
     Uses ``git ls-files`` so the corpus is exactly the tracked working tree —
     ignored artifacts (``dist/``, caches, ``.plans/`` ephemera) are excluded by
-    construction. The invocation is read-only. When git is unavailable or
-    *root* is not a work tree, returns an empty list (the caller treats an
-    empty corpus as a clean pass — there is nothing tracked to scan).
+    construction. The invocation is read-only, and :func:`run_git` keeps the
+    checked repository's own git settings from starting a program. When git is
+    unavailable or *root* is not a work tree, returns an empty list (the caller
+    treats an empty corpus as a clean pass — there is nothing tracked to scan).
     """
     try:
-        completed = subprocess.run(
-            ["git", "ls-files", "-z"],  # noqa: S607 — read-only invocation; argv list (never shell); `git` resolved from PATH is the standard cross-platform invocation, mirroring the repo's other git subprocess call sites
-            cwd=str(root),
-            capture_output=True,
-            check=False,
-            encoding="utf-8",
-        )
+        completed = run_git(["ls-files", "-z"], cwd=root)
     except (OSError, ValueError):
         return []
     if completed.returncode != EXIT_PASS:
