@@ -14,6 +14,8 @@ import contextlib
 import shutil
 from pathlib import Path
 
+from apothem.lib import home_write_guard
+
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
     KEPT_LINKS,
@@ -123,7 +125,7 @@ def stale_blocker(
     if _is_link(stale):
         return _link_kept(stale)
     refused = _validate_target_path(
-        stale, allowed_root=allowed_root, operation="sweep_stale"
+        stale, allowed_root=allowed_root, operation="sweep_stale", mutating=False
     )
     through = _unsafe_symlink(stale, allowed_root) if refused is not None else None
     if through is not None:
@@ -331,6 +333,11 @@ def sweep_stale(
         if blocker is not None:
             results.append(blocker)
             continue
+        if stale.is_dir() or stale.is_file():
+            # The shared blocker also serves the preview, so it does not refuse.
+            home_write_guard.refuse_real_home_write(
+                stale, operation="remove the stale path", tree=True
+            )
         if stale.is_dir():
             keep = _preserved_inside(stale, preserve)
             walk = _walk_without_links(stale)

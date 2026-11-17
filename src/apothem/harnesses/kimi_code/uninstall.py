@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib import home_write_guard
 from apothem.lib.install_ledger import move_install, uninstall_spelling
 
 _HARNESS_NAME: str = "kimi_code"
@@ -53,6 +54,7 @@ def uninstall(
         _HARNESS_NAME,
         project if project is not None else output_path.parents[_PROJECT_DEPTH],
     )
+    home_write_guard.refuse_project_root_at_home(project_root, operation="uninstall")
     if moving is not None:
         move_install(_HARNESS_NAME, moving, project_root)
     legacy = install_driver.sweep_stale(

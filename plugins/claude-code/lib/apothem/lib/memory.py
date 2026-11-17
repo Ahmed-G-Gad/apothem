@@ -26,6 +26,7 @@ from typing import Final, cast
 
 from jsonschema import Draft202012Validator
 
+from apothem.lib import home_write_guard
 from apothem.lib.atomic_io import advisory_lock, write_bytes_atomically
 from apothem.lib.data_home import DataHome
 from apothem.lib.schema_errors import format_schema_errors
@@ -256,6 +257,7 @@ class MemoryStore:
             MemoryStoreError: When *record* fails schema validation.
         """
         validate_record(record.to_dict())
+        home_write_guard.refuse_real_home_write(self._memory_dir, operation="create")
         self._memory_dir.mkdir(parents=True, exist_ok=True)
         # Serialize the read-modify-write window so a concurrent add cannot read
         # a stale record set and clobber the other writer's record.

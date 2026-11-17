@@ -1,0 +1,832 @@
+# SPDX-License-Identifier: MIT
+
+"""Refuse writes into the account's real home while a pytest test runs.
+
+The repository's ``tests/conftest.py`` points every test at temporary folders,
+but a test run that does not load it (a test file copied out of ``tests/`` and
+run with ``-c``, ``-o addopts=`` or ``--rootdir`` elsewhere) runs Apothem
+against the account's real home. This module stops such a write before it
+happens.
+
+While ``PYTEST_CURRENT_TEST`` is set (pytest sets it for each test's setup, call
+and teardown), :func:`refuse_real_home_write` raises :class:`RealHomeWriteError`
+for a path at or inside one of these folders of the account's home:
+
+- ``.apothem`` (install records, locks, backup sets, a user-scope data home);
+- ``.config/apothem``;
+- the tools' own folders that the harness registry's ``~/`` targets and shared
+  roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and the
+  rest; :data:`FALLBACK_ROOTS` lists them).
+
+With ``tree=True`` (removing or moving a whole folder) a path that holds one of
+those folders is refused too. :func:`refuse_project_root_at_home` refuses a
+project root that is the home itself, which a project-scope pass calls before
+its first write. Nothing else is refused: reads, dry runs and previews, the
+temporary folder, the checkout, and the rest of the home all stay allowed.
+With ``PYTEST_CURRENT_TEST`` unset the check is one environment lookup.
+
+A path is compared as written and as resolved through links, afresh on every
+check, so a folder swapped for a link during a test counts at once. The
+protected folders' own resolved spellings are kept only while each home and
+its ``.config`` stay as they were (see :func:`_layout`). On Windows a
+``\\\\?\\`` or ``\\\\.\\`` prefix, a loopback admin share (``\\\\localhost\\C$``,
+``\\\\127.0.0.1\\C$``, ``\\\\--1.ipv6-literal.net\\C$``, the machine's own
+name), a short (8.3) name and an alternate data stream (``.apothem:name``)
+all read as the plain drive-letter path. Any other share path is compared by
+file identity with the protected folders and the folders above them, so one
+of this machine's own addresses counts too. On macOS letter case and Unicode
+normalization are ignored, as the default volume format does; Linux compares
+names as they are.
+
+The account home comes from the operating system (``FOLDERID_Profile`` on
+Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
+under ``tests/conftest.py`` those name a temporary folder. The system functions
+the lookup calls are bound when this module is imported, so a test that later
+replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg`` cannot change the
+home found or poison its cache. When the system has no answer (a container user
+with no ``passwd`` entry, say), the account home is not protected at all: only
+the homes a test added with :func:`also_protect_home` are, and the failed lookup
+is tried again on the next check. ``HOME`` is no fallback, because under
+``tests/conftest.py`` it can already name a test's temporary folder. No
+environment variable, setting or flag turns the refusal off; a test that runs a
+real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` in the
+child's environment.
+
+Every refusal is logged in this process (:func:`refusals`,
+:func:`drain_refusals`) and written to ``stderr`` once per protected folder in
+each test, so a caller that absorbs the error still leaves a trace that
+``tests/conftest.py`` reports.
+
+Nothing here holds a path at module level, and nothing is looked up at import:
+the suite's scan for module-level paths naming the real home stays clean.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import functools
+import importlib
+import ipaddress
+import ntpath
+import os
+import re
+import sys
+import time
+import unicodedata
+from typing import Any, TypeGuard
+
+#: The variable pytest sets for each test's setup, call and teardown.
+PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
+
+#: Apothem's own folders in the home, relative to it.
+APOTHEM_ROOTS: tuple[str, ...] = (".apothem", ".config/apothem")
+
+#: The tools' folders in the home the harness registry names, used when the
+#: registry cannot be imported. A unit test pins it equal to the derived set.
+FALLBACK_ROOTS: tuple[str, ...] = (
+    ".agents",
+    ".claude",
+    ".codebuddy",
+    ".codex",
+    ".config/apothem",
+    ".config/opencode",
+    ".gemini",
+    ".hermes",
+    ".kiro",
+    ".openclaw",
+    ".qwen",
+    ".trae",
+)
+
+#: How many refusals the in-process log keeps.
+_LOG_LIMIT = 100
+
+#: ``FOLDERID_Profile``, the account's profile folder on Windows.
+_FOLDERID_PROFILE = "5E6C858F-0E22-4760-9AFE-EA3317B67173"
+
+#: What one home lookup may raise when the system, or a test's stand-in for
+#: part of ``ctypes`` or ``winreg``, cannot answer: the next lookup is tried.
+_LOOKUP_ERRORS = (
+    ImportError,
+    LookupError,
+    OSError,
+    AttributeError,
+    TypeError,
+    ValueError,
+    RuntimeError,
+)
+
+#: Fold letter case and Unicode normalization on both sides of a match. macOS
+#: volumes ignore both by default and ``os.path.normcase`` folds nothing on
+#: POSIX; Windows folds case through ``normcase``, and Linux compares names as
+#: they are. Tests switch it.
+_FOLD_CASE: bool = sys.platform == "darwin"
+
+#: An admin share of a drive (``C$``) and a loopback IPv4 host (``127.x.y.z``).
+_ADMIN_SHARE = re.compile(r"[a-z]\$", re.IGNORECASE)
+_LOOPBACK_V4 = re.compile(r"127\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+
+#: The domain Windows ends an IPv6 address with in a UNC host name.
+_IPV6_LITERAL = ".ipv6-literal.net"
+
+#: How long, in nanoseconds, a home and its ``.config`` must have stayed
+#: unchanged before the protected folders resolved under them are reused. A
+#: change within one tick of the file system clock (up to about 16 ms) can
+#: leave a folder's timestamp as it was.
+_SETTLE_NS = 100_000_000
+
+#: The path prefixes that name the same file as the plain path after them,
+#: lower case, with what replaces each.
+_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("\\\\?\\unc\\", "\\\\"),
+    ("\\\\.\\unc\\", "\\\\"),
+    ("\\\\?\\", ""),
+    ("\\\\.\\", ""),
+)
+
+#: Homes a test added with :func:`also_protect_home` (temporary folders only).
+_extra_homes: list[str] = []
+#: The refusal log, a list of exceptions.
+_refusals: list[RealHomeWriteError] = []
+#: The test whose refusals were last written to ``stderr``, and the protected
+#: folders already written for it.
+_announced: dict[str, set[str]] = {}
+
+
+def _bind_system() -> dict[str, Any]:
+    """Return the system functions the home lookup calls, bound at import.
+
+    Binding a function object looks nothing up. A test that replaces one of
+    them in its module later cannot change what the lookup calls.
+    """
+    wanted = (
+        {
+            "ctypes": (
+                "WinDLL",
+                "Structure",
+                "c_uint32",
+                "c_uint16",
+                "c_ubyte",
+                "c_long",
+                "c_wchar_p",
+                "byref",
+            ),
+            "uuid": ("UUID",),
+            "winreg": ("OpenKey", "QueryValueEx", "HKEY_CURRENT_USER"),
+        }
+        if os.name == "nt"
+        else {"pwd": ("getpwuid",), "os": ("geteuid", "getuid")}
+    )
+    bound: dict[str, Any] = {}
+    for module_name, names in wanted.items():
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            continue
+        for name in names:
+            if hasattr(module, name):
+                bound[f"{module_name}.{name}"] = getattr(module, name)
+    return bound
+
+
+#: ``module.name`` -> the function or constant the home lookup calls.
+_SYSTEM: dict[str, Any] = _bind_system()
+
+
+class RealHomeWriteError(OSError):
+    """A write into the account's real home, refused while a pytest test runs.
+
+    It is an :class:`OSError` built from its message alone, so ``errno`` and
+    ``winerror`` stay ``None`` and no retry on a sharing violation picks it up.
+    The keyword arguments default to ``""`` so that a copy, or a pickle that
+    crosses a process boundary, can rebuild the error from its message; the
+    attributes then come back from the instance dictionary.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        path: str = "",
+        protected_root: str = "",
+        operation: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.path = path
+        self.protected_root = protected_root
+        self.operation = operation
+
+
+class _HomeLookupError(Exception):
+    """The system has no record of this account's home."""
+
+
+def active() -> bool:
+    """Return True while a pytest test runs (``PYTEST_CURRENT_TEST`` is set)."""
+    return PYTEST_VARIABLE in os.environ
+
+
+def account_home() -> str | None:
+    """Return the account's home as the operating system records it, or None."""
+    try:
+        return _os_account_home()
+    except _HomeLookupError:
+        return None
+
+
+def protected_roots() -> tuple[str, ...]:
+    """Return every protected folder, under the account home and added homes."""
+    seen: dict[str, None] = {}
+    for _keys, shown in _roots(account_home(), tuple(_extra_homes)):
+        seen[shown] = None
+    return tuple(seen)
+
+
+def refusals() -> tuple[RealHomeWriteError, ...]:
+    """Return the refusals logged in this process, oldest first."""
+    return tuple(_refusals)
+
+
+def drain_refusals() -> tuple[RealHomeWriteError, ...]:
+    """Return the logged refusals and empty the log."""
+    drained = tuple(_refusals)
+    _refusals.clear()
+    return drained
+
+
+def also_protect_home(path: str | os.PathLike[str]) -> None:
+    """Protect the same folders under *path* as under the account home.
+
+    A test seam: it only adds a home and can never replace or remove the
+    account's own, so no test can weaken the refusal.
+    """
+    _extra_homes.append(os.path.abspath(os.fspath(path)))
+    _resolved_roots.cache_clear()
+
+
+def clear_extra_homes() -> None:
+    """Forget every home added with :func:`also_protect_home`."""
+    _extra_homes.clear()
+    _resolved_roots.cache_clear()
+
+
+def would_refuse(path: str | os.PathLike[str], *, tree: bool = False) -> bool:
+    """Return True when :func:`refuse_real_home_write` would refuse *path*.
+
+    It never raises and logs nothing, for code that must not raise.
+    """
+    try:
+        return _protected_root_of(os.fspath(path), tree=tree) is not None
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def refuse_real_home_write(
+    *paths: str | os.PathLike[str], operation: str, tree: bool = False
+) -> None:
+    """Raise :class:`RealHomeWriteError` for the first path that may not change.
+
+    A path may not change while a pytest test runs when it is at or inside a
+    protected folder (see the module docstring); with *tree* also when a
+    protected folder is at or below it. *operation* is a verb phrase for the
+    message (``write``, ``create the lock file``, ``remove``).
+    """
+    for path in paths:
+        text = os.fspath(path)
+        root = _protected_root_of(text, tree=tree)
+        if root is not None:
+            test = os.environ.get(PYTEST_VARIABLE, "")
+            _refuse(
+                f"Apothem refused to {operation} {text}: it is inside or holds "
+                f"{root}, a folder in this account's real home, while a pytest "
+                f"test is running ({test}). Nothing in {root} was changed. Fix: "
+                f"{_FIX}",
+                path=text,
+                root=root,
+                operation=operation,
+            )
+
+
+def would_refuse_project_root(project_root: str | os.PathLike[str]) -> bool:
+    """Return True when :func:`refuse_project_root_at_home` would refuse.
+
+    It never raises and logs nothing, for code that must not raise.
+    """
+    try:
+        return _home_at(os.fspath(project_root)) is not None
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def refuse_project_root_at_home(
+    project_root: str | os.PathLike[str], *, operation: str
+) -> None:
+    """Raise :class:`RealHomeWriteError` when *project_root* is an account home.
+
+    While a pytest test runs, a project-scope pass (install, update, uninstall,
+    rollback) whose project root is the account home, or a home added with
+    :func:`also_protect_home`, would write project files straight into that
+    home. The pass calls this before its first write, so a refusal leaves the
+    project untouched. Every spelling the write checks recognise counts (a link
+    to the home, a short name, a loopback admin share). Only the home itself
+    is refused: a project folder inside the home stays allowed, and one inside
+    a protected folder is refused by the write checks. *operation* names the
+    pass for the message (``install``, ``update``, ``uninstall``,
+    ``roll back``).
+    """
+    text = os.fspath(project_root)
+    home = _home_at(text)
+    if home is not None:
+        test = os.environ.get(PYTEST_VARIABLE, "")
+        _refuse(
+            f"Apothem refused to {operation} with the project root {text}: it is "
+            f"{home}, this account's real home, while a pytest test is running "
+            f"({test}). It stopped before writing anything for this project. Fix: "
+            f"pass a temporary folder as the project root; or {_FIX}",
+            path=text,
+            root=home,
+            operation=operation,
+        )
+
+
+#: The fix every refusal message ends with.
+_FIX = (
+    "run the test from the repository's tests/ folder so tests/conftest.py "
+    "loads; or, before the test writes, point HOME and USERPROFILE at a "
+    "temporary folder and set apothem.lib.install_ledger.STATE_ROOT and "
+    "apothem.harnesses._shared.install_driver.BACKUP_ROOT to temporary folders. "
+    "To run a real install on purpose, start Apothem without "
+    f"{PYTEST_VARIABLE} in its environment."
+)
+
+
+def _refuse(message: str, *, path: str, root: str, operation: str) -> None:
+    """Log, report once per protected folder and test, and raise the refusal."""
+    error = RealHomeWriteError(
+        message, path=path, protected_root=root, operation=operation
+    )
+    if len(_refusals) < _LOG_LIMIT:
+        _refusals.append(error)
+    test = _test_id(os.environ.get(PYTEST_VARIABLE, ""))
+    if test not in _announced:
+        _announced.clear()
+        _announced[test] = set()
+    if root not in _announced[test]:
+        _announced[test].add(root)
+        with contextlib.suppress(OSError, ValueError, AttributeError):
+            sys.stderr.write(f"{type(error).__name__}: {message}\n")
+    raise error
+
+
+def _test_id(current: str) -> str:
+    """Return the test id of a ``PYTEST_CURRENT_TEST`` value, without its phase."""
+    for phase in (" (setup)", " (call)", " (teardown)"):
+        if current.endswith(phase):
+            return current[: -len(phase)]
+    return current
+
+
+def _protected_root_of(path: str, *, tree: bool) -> str | None:
+    """Return the protected folder *path* is in (or, with *tree*, holds)."""
+    if PYTEST_VARIABLE not in os.environ:
+        return None
+    roots = _roots(account_home(), tuple(_extra_homes))
+    if not roots:
+        return None
+    absolute = os.path.abspath(path)
+    lexical = _canonical(absolute)
+    found = _match(lexical, roots, tree=tree)
+    if found is None:
+        found = _match(_real_target(absolute), roots, tree=tree)
+    if found is None and _is_share(lexical):
+        twin = _local_twin(lexical, roots)
+        if twin is not None:
+            found = _match(twin, roots, tree=tree)
+    return found
+
+
+def _home_at(path: str) -> str | None:
+    """Return the account home, or added home, that *path* names, or None."""
+    if PYTEST_VARIABLE not in os.environ:
+        return None
+    homes = [
+        (home, {_folded(_canonical(home)), _folded(_canonical(_realpath(home)))})
+        for home in (account_home(), *_extra_homes)
+        if home is not None
+    ]
+    absolute = os.path.abspath(path)
+    canonical = _canonical(absolute)
+    spellings = [canonical, _canonical(_realpath(absolute))]
+    if _is_share(canonical):
+        twin = _local_twin(canonical, _roots(account_home(), tuple(_extra_homes)))
+        spellings += [twin] if twin is not None else []
+    for spelling in spellings:
+        for home, keys in homes:
+            if _folded(spelling) in keys:
+                return home
+    return None
+
+
+def _folded(path: str) -> str:
+    """Return *path* folded when :data:`_FOLD_CASE` is set.
+
+    That is letter case and Unicode normalization (``é`` written as one
+    character or as ``e`` and an accent), both of which a macOS volume
+    ignores by default.
+    """
+    if not _FOLD_CASE:
+        return path
+    return unicodedata.normalize("NFD", unicodedata.normalize("NFD", path).casefold())
+
+
+def _match(
+    target: str, roots: tuple[tuple[tuple[str, ...], str], ...], *, tree: bool
+) -> str | None:
+    """Return the shown root whose spelling holds *target* (or *target* holds)."""
+    target = _folded(target)
+    for keys, shown in roots:
+        for raw in keys:
+            key = _folded(raw)
+            if target == key or target.startswith(key + os.sep):
+                return shown
+            if tree and key.startswith(target.rstrip(os.sep) + os.sep):
+                return shown
+    return None
+
+
+def _real_target(absolute: str) -> str:
+    """Return *absolute* resolved through links, canonical.
+
+    A path that exists is resolved whole, so a link at its leaf and a short
+    (8.3) name in its last part count too; for one that does not exist yet
+    its folder is resolved and the leaf kept as written. Nothing is cached: a
+    folder swapped for a link (or back) during a test is judged by what it is
+    now.
+    """
+    try:
+        os.lstat(absolute)
+    except (OSError, ValueError):
+        folder, leaf = os.path.split(absolute)
+        real_folder = _realpath(folder)
+        return _canonical(os.path.join(real_folder, leaf) if leaf else real_folder)
+    return _canonical(_realpath(absolute))
+
+
+def _is_share(canonical: str) -> bool:
+    """Return True for a canonical Windows path on a share (``\\\\host\\share``)."""
+    return os.name == "nt" and canonical.startswith("\\\\")
+
+
+def _local_twin(
+    share_path: str, roots: tuple[tuple[tuple[str, ...], str], ...]
+) -> str | None:
+    """Return the local path a canonical share path names, found by identity.
+
+    A share of this machine reached by a host name the string rules do not
+    know (one of the machine's own addresses, a link-local IPv6 literal, a
+    full domain name) or through a share that is not an admin share names a
+    local folder all the same. The nearest folder of *share_path* that exists
+    is compared, by device and file number, with each protected folder and
+    every folder above one; on a match the rest of *share_path* is joined to
+    that local folder. Only a share path the string checks did not place pays
+    for this, and a host that cannot be reached matches nothing.
+    """
+    current, rest = share_path, []
+    wanted = _identity(current)
+    while wanted is None:
+        parent, leaf = ntpath.split(current)
+        if not leaf or parent == current:
+            return None
+        rest.append(leaf)
+        current = parent
+        wanted = _identity(current)
+    for folder in _folders_above(roots):
+        if _identity(folder) == wanted:
+            return _canonical(ntpath.join(folder, *reversed(rest)))
+    return None
+
+
+def _identity(path: str) -> tuple[int, int] | None:
+    """Return the device and file number of *path*, or None when unknown."""
+    try:
+        info = os.stat(path)  # noqa: PTH116 - the guard works on str paths
+    except (OSError, ValueError):
+        return None
+    return (info.st_dev, info.st_ino) if info.st_ino else None
+
+
+def _folders_above(
+    roots: tuple[tuple[tuple[str, ...], str], ...],
+) -> dict[str, None]:
+    """Return every spelling of every protected folder and each folder above it."""
+    folders: dict[str, None] = {}
+    for keys, _shown in roots:
+        for key in keys:
+            folder = key
+            while folder not in folders:
+                folders[folder] = None
+                parent = ntpath.dirname(folder)
+                if parent == folder:
+                    break
+                folder = parent
+    return folders
+
+
+def _realpath(path: str) -> str:
+    """Return ``os.path.realpath`` of *path*, or *path* when it cannot."""
+    try:
+        return os.path.realpath(path)
+    except (OSError, ValueError, RuntimeError):
+        return path
+
+
+def _canonical(path: str) -> str:
+    """Return *path* in the one spelling every comparison uses.
+
+    That is ``os.path.normcase`` of it, and on Windows also
+    :func:`_windows_spelling`.
+    """
+    path = os.path.normcase(path)
+    if os.name == "nt":
+        path = _windows_spelling(path)
+    return path
+
+
+def _windows_spelling(path: str) -> str:
+    """Return a Windows *path* as the plain drive-letter path it names.
+
+    - ``\\\\?\\C:\\x`` and ``\\\\.\\C:\\x`` read as ``C:\\x``;
+      ``\\\\?\\UNC\\host\\share`` and ``\\\\.\\UNC\\host\\share`` as
+      ``\\\\host\\share``.
+    - A loopback admin share reads as its drive: ``\\\\localhost\\C$\\x``,
+      ``\\\\127.0.0.1\\C$\\x``, ``\\\\--1.ipv6-literal.net\\C$\\x`` and
+      ``\\\\<this machine>\\C$\\x`` as ``C:\\x``.
+    - A component ``name:stream`` or ``name::$TYPE`` (an alternate data
+      stream) reads as ``name``.
+
+    It is string work on *path* alone, so it runs the same on every system:
+    nothing touches the disk, and no host name is looked up on the network.
+    """
+    path = path.replace("/", "\\")
+    lowered = path.lower()
+    for prefix, replacement in _PREFIXES:
+        if lowered.startswith(prefix):
+            path = replacement + path[len(prefix) :]
+            break
+    if path.startswith("\\\\"):
+        host, _sep, rest = path[2:].partition("\\")
+        share, _sep, tail = rest.partition("\\")
+        if _ADMIN_SHARE.fullmatch(share) and _is_loopback(host):
+            path = f"{share[0]}:\\{tail}"
+    drive, tail = ntpath.splitdrive(path)
+    return drive + "\\".join(part.split(":", 1)[0] for part in tail.split("\\"))
+
+
+def _is_loopback(host: str) -> bool:
+    """Return True for a UNC host name that is this machine."""
+    name = host.lower()
+    return (
+        name == "localhost"
+        or _LOOPBACK_V4.fullmatch(name) is not None
+        or _is_ipv6_loopback(name)
+        or name in _machine_names()
+    )
+
+
+def _is_ipv6_loopback(name: str) -> bool:
+    """Return True for the ``ipv6-literal.net`` name of the IPv6 loopback.
+
+    A UNC host cannot hold ``:``, so Windows writes an IPv6 address there with
+    ``-`` for ``:``, ``s`` before a zone, and ``.ipv6-literal.net`` after it:
+    ``--1.ipv6-literal.net`` and ``0--1.ipv6-literal.net`` are ``::1``.
+    """
+    if not name.endswith(_IPV6_LITERAL):
+        return False
+    text = name[: -len(_IPV6_LITERAL)].replace("-", ":").partition("s")[0]
+    try:
+        address = ipaddress.IPv6Address(text)
+    except ValueError:
+        return False
+    mapped = address.ipv4_mapped
+    return address.is_loopback or (mapped is not None and mapped.is_loopback)
+
+
+def _machine_names() -> frozenset[str]:
+    """Return this machine's own names, lower case, from the system alone.
+
+    ``socket.gethostname()`` and ``platform.node()``, each with its first label
+    as well; there is no DNS lookup. Asked for only when a UNC path is checked.
+    """
+    names: set[str] = set()
+    for module_name, function in (("socket", "gethostname"), ("platform", "node")):
+        try:
+            value: object = getattr(importlib.import_module(module_name), function)()
+        except _LOOKUP_ERRORS:
+            continue
+        if isinstance(value, str) and value:
+            lowered = value.lower()
+            names.update((lowered, lowered.split(".", 1)[0]))
+    names.discard("")
+    return frozenset(names)
+
+
+def _roots(
+    home: str | None, extra: tuple[str, ...]
+) -> tuple[tuple[tuple[str, ...], str], ...]:
+    """Return ``(spellings, shown)`` for every protected folder, as they are now.
+
+    The resolved spellings are reused while :func:`_layout` finds each home
+    and its ``.config`` as they were, and built afresh otherwise.
+    """
+    homes = (*([home] if home else []), *extra)
+    layout, settled = _layout(homes)
+    if settled:
+        return _resolved_roots(homes, layout)
+    return _resolved_roots.__wrapped__(homes, layout)
+
+
+def _layout(homes: tuple[str, ...]) -> tuple[tuple[object, ...], bool]:
+    """Return what each home and its ``.config`` are now, and whether it settled.
+
+    A protected folder sits in a home or in its ``.config``. Swapping one of
+    them, or ``.config``, for a link (or back) changes the folder that holds
+    it: its timestamp, or, for a home swapped itself, its identity. A change
+    within the same tick of the file system clock can leave the timestamp as
+    it was, so a folder changed less than :data:`_SETTLE_NS` ago has not
+    settled, and nothing resolved under it is reused. Links above a home are
+    not looked at.
+    """
+    now = time.time_ns()
+    found: list[object] = []
+    settled = True
+    for home in homes:
+        for folder in (home, os.path.join(home, ".config")):
+            try:
+                info = os.lstat(folder)
+            except (OSError, ValueError):
+                found.append(None)
+                continue
+            found.append((info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns))
+            settled = settled and now - info.st_mtime_ns >= _SETTLE_NS
+    return tuple(found), settled
+
+
+@functools.lru_cache(maxsize=8)
+def _resolved_roots(
+    homes: tuple[str, ...], layout: tuple[object, ...]
+) -> tuple[tuple[tuple[str, ...], str], ...]:
+    """Return ``(spellings, shown)`` for every protected folder of *homes*.
+
+    Each folder is compared as written and as resolved through links, and the
+    home is resolved as well, so a link inside the home (a ``.config`` that
+    leads elsewhere) or a link to the home both count. *layout* only keys the
+    cache (see :func:`_layout`).
+    """
+    del layout
+    relative = dict.fromkeys((*APOTHEM_ROOTS, *_registry_roots()))
+    found: list[tuple[tuple[str, ...], str]] = []
+    for base in homes:
+        real_base = _realpath(base)
+        for name in relative:
+            parts = name.split("/")
+            shown = os.path.join(base, *parts)
+            spellings = dict.fromkeys(
+                (
+                    _canonical(shown),
+                    _canonical(os.path.join(real_base, *parts)),
+                    _canonical(_realpath(shown)),
+                )
+            )
+            found.append((tuple(spellings), shown))
+    return tuple(found)
+
+
+def _registry_roots() -> tuple[str, ...]:
+    """Return the home folders the harness registry's ``~/`` paths name.
+
+    ``~/.claude/CLAUDE.md`` names ``.claude``; a path under ``~/.config`` names
+    the tool's own folder there (``.config/opencode``), not all of ``.config``.
+    """
+    try:
+        registry = importlib.import_module("apothem.lib.harness_registry_data")
+        paths = [
+            *(
+                path
+                for entry in registry.HARNESS_REGISTRY
+                for path in entry.target_paths
+            ),
+            *(root.path for root in registry.SHARED_ROOTS),
+        ]
+    except (ImportError, AttributeError):
+        return FALLBACK_ROOTS
+    return derive_roots(paths)
+
+
+def derive_roots(paths: list[str]) -> tuple[str, ...]:
+    """Return the home folders that registry-style *paths* (``~/...``) name."""
+    names: dict[str, None] = {}
+    for path in paths:
+        if not path.startswith("~/"):
+            continue
+        parts = [part for part in path[2:].split("/") if part]
+        if not parts or "{" in parts[0] or " " in parts[0]:
+            continue
+        if parts[0] == ".config":
+            if len(parts) > 1 and "{" not in parts[1]:
+                names[f".config/{parts[1]}"] = None
+            continue
+        names[parts[0]] = None
+    return tuple(sorted(names))
+
+
+@functools.lru_cache(maxsize=1)
+def _os_account_home() -> str:
+    """Return the account's home from the operating system, looked up once.
+
+    Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
+    no failure, so the next call tries again. An error from one lookup (a
+    broken system library, say) moves on to the next lookup, so a broken step
+    never stops the check itself. The lookups call the system functions bound
+    at import (:data:`_SYSTEM`; a missing one is a ``KeyError``), so a test's
+    later fake cannot reach them.
+    """
+    lookups = (
+        (_windows_profile, _volatile_profile)
+        if os.name == "nt"
+        else (_passwd_home_effective, _passwd_home_real)
+    )
+    for lookup in lookups:
+        try:
+            found: object = lookup()
+        except _LOOKUP_ERRORS:
+            found = None
+        if _usable_home(found):
+            return os.path.abspath(found)
+    raise _HomeLookupError("the system has no record of this account's home")
+
+
+def _usable_home(found: object) -> TypeGuard[str]:
+    """Return True for a non-empty absolute path that is not a filesystem root."""
+    if not isinstance(found, str) or not found or not os.path.isabs(found):
+        return False
+    absolute = os.path.abspath(found)
+    return os.path.dirname(absolute) != absolute
+
+
+def _windows_profile() -> str:
+    """Return ``FOLDERID_Profile`` from ``SHGetKnownFolderPath``."""
+    dll_type = _SYSTEM["ctypes.WinDLL"]
+    structure = _SYSTEM["ctypes.Structure"]
+    c_uint32 = _SYSTEM["ctypes.c_uint32"]
+    c_uint16 = _SYSTEM["ctypes.c_uint16"]
+    c_ubyte = _SYSTEM["ctypes.c_ubyte"]
+    byref = _SYSTEM["ctypes.byref"]
+    shell32 = dll_type("shell32")
+    ole32 = dll_type("ole32")
+
+    class _Guid(structure):  # type: ignore[misc,valid-type]
+        _fields_ = (
+            ("data1", c_uint32),
+            ("data2", c_uint16),
+            ("data3", c_uint16),
+            ("data4", c_ubyte * 8),
+        )
+
+    folder = _SYSTEM["uuid.UUID"](_FOLDERID_PROFILE)
+    guid = _Guid(
+        folder.time_low,
+        folder.time_mid,
+        folder.time_hi_version,
+        (c_ubyte * 8)(*folder.bytes[8:]),
+    )
+    pointer = _SYSTEM["ctypes.c_wchar_p"]()
+    get_path = shell32.SHGetKnownFolderPath
+    get_path.restype = _SYSTEM["ctypes.c_long"]
+    free = ole32.CoTaskMemFree
+    free.restype = None
+    try:
+        status = get_path(byref(guid), 0, None, byref(pointer))
+        if status != 0:
+            raise OSError(f"SHGetKnownFolderPath failed: {status & 0xFFFFFFFF:#x}")
+        return str(pointer.value or "")
+    finally:
+        free(pointer)
+
+
+def _volatile_profile() -> str:
+    """Return ``USERPROFILE`` from the logon session's registry key."""
+    open_key = _SYSTEM["winreg.OpenKey"]
+    current_user = _SYSTEM["winreg.HKEY_CURRENT_USER"]
+    with open_key(current_user, "Volatile Environment") as key:
+        value, _kind = _SYSTEM["winreg.QueryValueEx"](key, "USERPROFILE")
+    return str(value)
+
+
+def _passwd_home_effective() -> str:
+    """Return the ``passwd`` home of the process's effective user."""
+    return str(_SYSTEM["pwd.getpwuid"](_SYSTEM["os.geteuid"]()).pw_dir)
+
+
+def _passwd_home_real() -> str:
+    """Return the ``passwd`` home of the process's real user."""
+    return str(_SYSTEM["pwd.getpwuid"](_SYSTEM["os.getuid"]()).pw_dir)

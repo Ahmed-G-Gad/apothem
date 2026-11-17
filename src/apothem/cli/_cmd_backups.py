@@ -40,7 +40,7 @@ from apothem.cli._helpers import (
 from apothem.cli._json_formatter import emit_json
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import BACKUP_KEEP, RetentionReport
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 
 
 @main.group(cls=AliasedGroup, context_settings=_CONTEXT)
@@ -126,6 +126,8 @@ def backups_prune(
             report = install_driver.prune_history(
                 package_key, keep=keep, dry_run=dry_run
             )
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal during a test, not a prune that failed
         except (install_ledger.LedgerError, OSError) as exc:
             tally.errored = True
             tally.results.append(

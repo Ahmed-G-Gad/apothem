@@ -145,6 +145,7 @@ def _guard_accepts(root: Path) -> bool:
         root / "opencode.json",
         allowed_root=install_driver._allowed_write_root(root, None),
         operation="opencode_config",
+        mutating=False,
     )
     return refusal is None
 

@@ -68,6 +68,14 @@ nothing appears in it afterwards. The ``home-isolation`` job in
 ``.github/workflows/ci.yml`` does that for the whole suite, with the XDG base
 directories on empty folders too.
 
+Apothem itself refuses the same writes in the product:
+``apothem.lib.home_write_guard`` raises ``RealHomeWriteError`` for a write into
+the account's real ``.apothem``, ``.config/apothem`` or a tool's folder there
+while a test runs, whether or not this file loads. Some callers absorb that
+error (a best-effort ledger line, a suppressed removal), so the autouse
+``_report_real_home_refusals`` fails a test after which the guard logged a
+refusal, also when the test is marked ``xfail``.
+
 The isolation fixtures above are all named with a leading underscore, and a
 ``from <this module> import *`` skips such names unless the module lists them in
 ``__all__``. A probe folder whose conftest star-imported this file before it had
@@ -120,8 +128,13 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   implementation runs it. The check sees the environment the body will see and
   fails the test before the body starts.
 - ``pytest_runtest_makereport``, a wrapper around every other: a test the guard
-  stopped stays failed when it is marked ``xfail``, which would otherwise turn the
-  failure into XFAIL and let the run pass.
+  stopped, or one after which ``_report_real_home_refusals`` found a refusal,
+  stays failed when it is marked ``xfail``, which would otherwise turn the
+  failure into XFAIL and let the run pass. Its teardown report also fails when
+  ``apothem.lib.home_write_guard`` logged a refusal that
+  ``_report_real_home_refusals`` did not see: one made while a fixture torn down
+  after it (an ``_isolate_*`` fixture, a module- or session-scoped one) was
+  torn down.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
@@ -179,7 +192,7 @@ What the guard cannot see or stop:
   is isolated or ``CODEX_HOME`` or ``XDG_CONFIG_HOME`` points at one;
   ``XDG_DATA_HOME`` and ``XDG_CACHE_HOME``, which Apothem does not read but the
   tools a test launches do; ``OPENCODE_CONFIG_DIR`` and ``OPENCODE_CONFIG``,
-  which only add or take away an install note; and ``APOTHEM_HOOK_STATE_DIR``,
+  which only add or take away an OpenCode note; and ``APOTHEM_HOOK_STATE_DIR``,
   which counts only through the hook state folder it names.
 - Code that runs outside pytest.
 
@@ -205,7 +218,7 @@ import pytest
 
 from apothem.harnesses._shared import install_driver, install_driver_types
 from apothem.hooks.lib import state_dir
-from apothem.lib import install_ledger, propagation
+from apothem.lib import home_write_guard, install_ledger, propagation
 from apothem.lib.data_home import resolve_shared_data_home
 from apothem.lib.profile import DEFAULT_PROFILE_PATH
 
@@ -235,8 +248,10 @@ __all__ = [
     "_isolate_install_ledger",
     "_isolate_session_home",
     "_isolate_user_home",
+    "_report_real_home_refusals",
     "annotations",
     "contextlib",
+    "home_write_guard",
     "install_driver",
     "install_driver_types",
     "install_ledger",
@@ -430,6 +445,31 @@ def _isolate_hook_state(
     monkeypatch.setenv(
         "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("hook-state"))
     )
+
+
+@pytest.fixture(autouse=True)
+def _report_real_home_refusals() -> Iterator[None]:
+    """Fail a test after which Apothem refused a write into the real home.
+
+    ``apothem.lib.home_write_guard`` refuses a write into the account's real
+    home while a test runs, and logs each refusal in the process. Some callers
+    absorb the error (a best-effort ledger line, a suppressed removal), so a
+    test can pass while the refusal fired; this fixture reads the log at
+    teardown and fails the test when it holds anything. A test of the guard
+    itself drains the log before it finishes. It fails with
+    ``RealHomeGuardFailure``, which the guard's report hook keeps failed when
+    the test is marked ``xfail``; a plain ``pytest.fail`` would turn into XFAIL
+    there and let the run pass.
+    """
+    yield
+    refused = home_write_guard.drain_refusals()
+    if refused:
+        raise RealHomeGuardFailure(
+            "Apothem refused a write into the account's real home during this "
+            "test, and the refusal was not raised to the test:\n"
+            + "\n".join(f"  - {error}" for error in refused),
+            pytrace=False,
+        )
 
 
 # --- Real-home guard --------------------------------------------------------
@@ -1009,18 +1049,62 @@ class RealHomeGuard:
         """Keep a test the guard stopped failed, even when it is marked ``xfail``.
 
         pytest's ``skipping`` plugin turns any failure of an ``xfail`` test
-        without ``raises=`` into XFAIL, so a stopped test would pass the run
-        quietly. This wrapper starts first and so finishes last, after
-        ``skipping`` has changed the report, and changes it back.
+        without ``raises=`` into XFAIL, in its setup, call or teardown, so a
+        stopped test, or an absorbed refusal ``_report_real_home_refusals``
+        found, would pass the run quietly. This wrapper starts first and so
+        finishes last, after ``skipping`` has changed the report, and changes it
+        back for a ``RealHomeGuardFailure``. A teardown
+        report also fails on a refusal logged too late for
+        ``_report_real_home_refusals`` (see :func:`_fail_on_late_refusals`).
         """
         report = yield
-        if call.excinfo is not None and isinstance(
-            call.excinfo.value, RealHomeGuardFailure
-        ):
-            report.outcome = "failed"
-            if hasattr(report, "wasxfail"):
-                del report.wasxfail
+        if call.excinfo is not None and _is_guard_failure(call.excinfo.value):
+            _keep_failed(report)
+        if report.when == "teardown":
+            _fail_on_late_refusals(report)
         return report
+
+
+def _is_guard_failure(error: BaseException) -> bool:
+    """Return whether *error* is the guard's failure, or a group that holds one.
+
+    pytest raises the errors of several finalizers that failed in one teardown
+    together, as an exception group.
+    """
+    if isinstance(error, RealHomeGuardFailure):
+        return True
+    inner = getattr(error, "exceptions", None)
+    return isinstance(inner, tuple) and any(
+        isinstance(each, BaseException) and _is_guard_failure(each) for each in inner
+    )
+
+
+def _keep_failed(report: pytest.TestReport) -> None:
+    """Mark *report* failed and drop the ``xfail`` note pytest's skipping added."""
+    report.outcome = "failed"
+    if hasattr(report, "wasxfail"):
+        del report.wasxfail
+
+
+def _fail_on_late_refusals(report: pytest.TestReport) -> None:
+    """Fail a teardown report when Apothem logged a refusal nobody reported.
+
+    ``_report_real_home_refusals`` reads the log in its own teardown, so a
+    refusal made while a fixture torn down after it was torn down (an
+    ``_isolate_*`` fixture, a module- or session-scoped one) is still in the
+    log. pytest builds the teardown report after every finalizer of the
+    teardown has run, so this check sees it, the session's last teardown
+    included.
+    """
+    refused = home_write_guard.drain_refusals()
+    if not refused or report.outcome == "failed":
+        return
+    _keep_failed(report)
+    report.longrepr = (
+        "Apothem refused a write into the account's real home while a fixture "
+        "was torn down, and the refusal was not raised to the test:\n"
+        + "\n".join(f"  - {error}" for error in refused)
+    )
 
 
 #: The name the guard is registered under, once per session.

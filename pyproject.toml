@@ -316,6 +316,10 @@ max-complexity = 20
 "src/apothem/hooks/dispatch.py"                = ["E402", "I001", "S110"]
 "src/apothem/hooks/emit_hook_context.py"       = ["E402", "I001"]
 "src/apothem/hooks/session_start_bootstrap.py" = ["E402", "I001"]
+# The real-home write guard compares paths with os.path on purpose: the suite
+# patches Path.resolve, Path.home and Path.stat while real writes run, and the
+# guard must give the same answer under those patches.
+"src/apothem/lib/home_write_guard.py" = ["PTH100", "PTH117", "PTH118", "PTH120"]
 # Tooling scripts invoke subprocesses with controlled, internally-
 # constructed argument vectors. The S603 / S607 security rules
 # generalize to "untrusted input" but the inputs here are always

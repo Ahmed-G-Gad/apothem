@@ -18,7 +18,6 @@ in the same order, so no rendered install output changes.
 
 from __future__ import annotations
 
-import contextlib
 import functools
 import os
 from collections.abc import Callable, Iterator, Mapping
@@ -27,7 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.harness_registry import package_key_for_public_id
 from apothem.lib.install_ledger import (
     OwnedEntry,
@@ -599,6 +598,9 @@ def make_project_scope_uninstall(
             harness_name,
             project if project is not None else output_path.parents[_depth],
         )
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="uninstall"
+        )
         if moving is not None:
             move_install(harness_name, moving, project_root)
         return MaterializationRun(
@@ -697,7 +699,7 @@ def make_native_config_uninstall(
             # keeps them, and the next run continues from the same install.
             root = output_path.parent
             unrecorded: list[MaterializationResult] = []
-            with contextlib.suppress(OSError, install_ledger.LedgerError):
+            try:
                 unrecorded = record_uninstall(
                     harness_name,
                     root,
@@ -706,6 +708,10 @@ def make_native_config_uninstall(
                     finished=False,
                     own=[],
                 )
+            except home_write_guard.RealHomeWriteError:
+                raise  # a refusal during a test, not a ledger problem
+            except (OSError, install_ledger.LedgerError):
+                unrecorded = []
             return MaterializationRun(
                 harness=harness_name, dry_run=False, results=(*before, *unrecorded)
             )
