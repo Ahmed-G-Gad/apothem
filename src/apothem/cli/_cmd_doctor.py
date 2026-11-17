@@ -37,6 +37,7 @@ from apothem.cli._helpers import (
     _Adapter,
     _CliUserError,
     _emit_expected_error,
+    _harness_roots,
     _invoke_with_project,
     _project_option,
     _resolve_profile_path,
@@ -48,6 +49,7 @@ from apothem.harnesses._shared.install_driver_blocks import unclear_block_at
 from apothem.lib.harness_registry import HarnessRegistryEntry
 from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
+from apothem.lib.shell_quote import shell_quoted
 
 _STATUS_STYLE = {
     "ok": "[green]ok[/]",
@@ -77,11 +79,41 @@ def _check(
     }
 
 
-def _update_fix(harness: str) -> str:
-    return (
-        f"Run 'update --harness {harness}' with the same command prefix you "
-        "installed with, then run doctor again."
-    )
+def _update_command(harness: str, project: Path | None = None) -> str | None:
+    """Return the ``update`` command line; a project-scope harness names its root.
+
+    The root is quoted for the operator's shell (:func:`shell_quoted`, the
+    helper every printed command uses). ``None`` when those quotes cannot
+    carry it.
+    """
+    command = f"update --harness {harness}"
+    if project is None:
+        return command
+    quoted = shell_quoted(str(project))
+    return None if quoted is None else f"{command} --project {quoted}"
+
+
+def _update_fix(
+    harness: str,
+    project: Path | None = None,
+    *,
+    lead: str = "Run",
+    then: str = "then run doctor again",
+) -> str:
+    """Return the fix that runs :func:`_update_command`: *lead*, then *then*.
+
+    The command ends the fix, after a colon, with no quotes or punctuation of
+    its own around it, so a quoted root ends where the line does. A root the
+    quotes cannot carry ends the fix in its place, named as it is.
+    """
+    prefix = "with the same command prefix you installed with"
+    command = _update_command(harness, project)
+    if command is None:
+        return (
+            f"{lead} update --harness {harness} {prefix} and this folder as "
+            f"--project, {then}: {project}"
+        )
+    return f"{lead} this command {prefix}, {then}: {command}"
 
 
 def _probe_harness(
@@ -92,6 +124,7 @@ def _probe_harness(
     """Check one harness, append its check records, and return its report row."""
     name = entry.public_id
     row: dict[str, object] = {"name": name, "installed": False, "verified": None}
+    fix = _update_fix(name, project_root if entry.scope == "project" else None)
     try:
         adapter = _pkg._load_adapter_for_entry(entry)
     except Exception as exc:
@@ -126,7 +159,7 @@ def _probe_harness(
                 "fail",
                 f"{name}: the install probe raised ({row['error']}).",
                 harness=name,
-                fix=_update_fix(name),
+                fix=fix,
             )
         )
         return row
@@ -136,7 +169,7 @@ def _probe_harness(
         return row
     checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
     row["status"] = "ok"
-    _probe_registered_hooks(entry, project_root, row, checks)
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
     return row
 
 
@@ -156,6 +189,7 @@ def _report_verify_failure(
     ``verify_failed``, and the Hooks column shows how they did.
     """
     name = entry.public_id
+    project = project_root if entry.scope == "project" else None
     row["status"] = "verify_failed"
     stray = stray_begin_paths(entry, adapter, project_root)
     if not stray:
@@ -166,7 +200,7 @@ def _report_verify_failure(
                 f"{name} is installed but does not verify: managed files are "
                 "missing or changed.",
                 harness=name,
-                fix=_update_fix(name),
+                fix=_update_fix(name, project),
             )
         )
         return
@@ -182,33 +216,54 @@ def _report_verify_failure(
             "fail",
             f"{name} is installed but does not verify: {held} {what}.",
             harness=name,
-            fix=stray_begin_note(
-                stray,
-                then=f"run 'update --harness {name}' with the same command prefix "
-                "you installed with, then run doctor again.",
-            ),
+            fix=stray_begin_note(stray, then=_update_fix(name, project, lead="run")),
         )
     )
-    _probe_registered_hooks(entry, project_root, row, checks)
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
     row["status"] = "verify_failed"
 
 
-def _probe_registered_hooks(
+def _probe_install_hooks(
     entry: HarnessRegistryEntry,
+    adapter: _Adapter,
     project_root: Path | None,
     row: dict[str, object],
     checks: list[dict[str, object]],
 ) -> None:
-    """Start the hooks a harness registered; record the outcome on *row*.
+    """Start the hooks of the install doctor examined; record the outcome on *row*.
 
-    Runs for a harness that verifies, and for one a stray BEGIN marker fails
-    (see :func:`_report_verify_failure`).
+    Its root is the one :func:`_harness_roots` resolves: the harness folder of a
+    user-scope harness, the ``--project`` root of a project-scope one (see
+    :func:`_probe_registered_hooks`).
+    """
+    harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
+    install_root = harness_root if harness_root is not None else scoped_project
+    if install_root is None:  # pragma: no cover - a project scope needs --project
+        return
+    _probe_registered_hooks(entry, install_root, row, checks)
+
+
+def _probe_registered_hooks(
+    entry: HarnessRegistryEntry,
+    install_root: Path,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Start the hooks the install at *install_root* registered; record the outcome.
+
+    *install_root* is the root doctor examined: the harness folder of a
+    user-scope harness, the ``--project`` root of a project-scope one. Runs for
+    a harness that verifies, and for one a stray BEGIN marker fails (see
+    :func:`_report_verify_failure`).
     """
     name = entry.public_id
+    project = install_root if entry.scope == "project" else None
+    fix = _update_fix(name, project)
     try:
         argvs = registered_hook_argvs(
             entry.package_key,
-            within=project_root if entry.scope == "project" else None,
+            root=install_root,
+            within=install_root if entry.scope == "project" else None,
         )
     except LedgerError as exc:
         row.update(status="error", hooks=None)
@@ -218,8 +273,12 @@ def _probe_registered_hooks(
                 "fail",
                 f"{name}: the install ledger cannot be read ({exc}).",
                 harness=name,
-                fix="Move the damaged ledger file aside, then re-run "
-                f"'update --harness {name}' to record a fresh install.",
+                fix=_update_fix(
+                    name,
+                    project,
+                    lead="Move the damaged ledger file aside, then run",
+                    then="to record a fresh install",
+                ),
             )
         )
         return
@@ -229,9 +288,10 @@ def _probe_registered_hooks(
             _check(
                 "hook.unchecked",
                 "info",
-                f"{name}: no install record, so its hook commands were not checked.",
+                f"{name}: no install record for {install_root}, so its hook "
+                "commands were not checked.",
                 harness=name,
-                fix=f"Run 'update --harness {name}' to record the install.",
+                fix=_update_fix(name, project, then="to record the install"),
             )
         )
         return
@@ -250,7 +310,7 @@ def _probe_registered_hooks(
                 f"({probe.detail}).",
                 harness=name,
                 fix="Check that the interpreter in the hook command exists and "
-                f"runs, then {_update_fix(name)[0].lower()}{_update_fix(name)[1:]}",
+                f"runs, then {fix[0].lower()}{fix[1:]}",
             )
         )
     if failed:
@@ -375,16 +435,33 @@ def doctor(
 
     _render_doctor_report(con, profile, harness_rows, checks)
     if all_ok:
-        installed_count = sum(1 for row in harness_rows if row["installed"])
-        if installed_count:
-            con.print(f"[green]All checks passed[/] ({installed_count} installed).")
-        else:
-            con.print(
-                "[green]All checks passed.[/] No harness is installed yet; "
-                "install one with 'install --harness <name>'."
-            )
+        _print_summary(con, harness_rows, checks)
         return
     sys.exit(_EXIT_EXPECTED)
+
+
+def _print_summary(
+    con: Console, harness_rows: list[dict[str, object]], checks: list[dict[str, object]]
+) -> None:
+    """Print the last line of a plain report in which no check failed.
+
+    A hook check that was not run is named there, so the line never says
+    every check passed when one did not run.
+    """
+    installed_count = sum(1 for row in harness_rows if row["installed"])
+    unchecked = [str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"]
+    if unchecked:
+        con.print(
+            f"[yellow]No check failed[/] ({installed_count} installed), but the "
+            f"hook commands of {', '.join(unchecked)} were not checked."
+        )
+    elif installed_count:
+        con.print(f"[green]All checks passed[/] ({installed_count} installed).")
+    else:
+        con.print(
+            "[green]All checks passed.[/] No harness is installed yet; "
+            "install one with 'install --harness <name>'."
+        )
 
 
 def _render_doctor_report(
@@ -419,9 +496,12 @@ def _render_doctor_report(
     con.print(table)
 
     for check in checks:
-        if check["status"] != "fail":
+        if check["status"] == "info" and check["fix"]:
+            con.print(f"[yellow]![/] {escape(str(check['message']))}")
+        elif check["status"] == "fail":
+            con.print(f"[red]✗[/] {escape(str(check['message']))}")
+        else:
             continue
-        con.print(f"[red]✗[/] {escape(str(check['message']))}")
         if check["fix"]:
             con.print(f"  Fix: {escape(str(check['fix']))}")
 
@@ -429,6 +509,8 @@ def _render_doctor_report(
 def _hook_cell(row: dict[str, object]) -> str:
     """Return the harness table's Hooks cell for one report row."""
     hooks = row.get("hooks")
+    if hooks is None and "hooks" in row and row.get("status") == "ok":
+        return "[yellow]not checked[/]"
     if not isinstance(hooks, dict):
         return ""
     failed = hooks.get("failed")

@@ -275,7 +275,8 @@ def apply_command_skills(
     if target_error is not None:
         return [target_error]
     root = _root_for(harness_root, project_root)
-    guard = SkillGuard.load().check if entry.user_level else None
+    skill_guard = SkillGuard.for_entry(entry, harness_name, project_root)
+    guard = skill_guard.check if skill_guard is not None else None
     results: list[MaterializationResult] = []
     for source_path in sorted(src.glob("*.md")):
         if source_path.name in _COHORT_DOC_FILES or source_path.stem in skip:
@@ -345,7 +346,8 @@ def apply_native_skills(
     if target_error is not None:
         return [target_error]
     root = _root_for(harness_root, project_root)
-    guard = SkillGuard.load().check if entry.user_level else None
+    skill_guard = SkillGuard.for_entry(entry, harness_name, project_root)
+    guard = skill_guard.check if skill_guard is not None else None
     results: list[MaterializationResult] = []
     for source_path in _skill_children(src, ignore, exclude):
         if source_path.is_dir():
