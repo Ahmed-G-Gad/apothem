@@ -1660,8 +1660,8 @@ def test_a_refused_checkout_does_not_pass_a_staged_check(
 ) -> None:
     """A git that cannot read ``.git/config`` fails both ``--staged`` checks.
 
-    From a subfolder the version check asks git for the top of the work tree
-    first, so that is the command its report names.
+    The repository holds the package, so from a subfolder the version check
+    still has a change set to read, and reports the git that refused it.
     """
     repo = _build_repo(tmp_path / "project")
     with (repo / ".git" / "config").open("ab") as config:
@@ -1677,18 +1677,132 @@ def test_a_refused_checkout_does_not_pass_a_staged_check(
     assert plain.returncode != 0  # git refuses the repository
     monkeypatch.chdir(repo / folder)
 
-    command = {
-        production_ready_pr_grep: "git diff --cached",
-        semver_stability_grep: "git diff --cached"
-        if folder == "."
-        else "git rev-parse",
-    }
-    for module, named in command.items():
+    for module in (production_ready_pr_grep, semver_stability_grep):
         exit_code = module._main([module.GREP_NAME, "--staged"])
         payload = json.loads(capsys.readouterr().out)
         assert exit_code == module.EXIT_FAIL, module.GREP_NAME
         assert payload["passed"] is False
-        assert payload["check_error"].startswith(f"{named} failed with exit code")
+        assert payload["check_error"] == (
+            f"git diff --cached failed with exit code {plain.returncode}"
+        )
+
+
+def _git_must_not_run(argv: list[str], **_kwargs: object) -> None:
+    """Stand in for ``run_bounded`` where a check has to finish without git."""
+    raise AssertionError(f"git ran: {argv}")
+
+
+def _refuse_nothing(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A healthy checkout."""
+
+
+def _refuse_by_config(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A line in ``.git/config`` git cannot read."""
+    with (repo / ".git" / "config").open("ab") as config:
+        config.write(b"[broken\n")
+
+
+def _refuse_by_owner(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """git takes the checkout as another user's (as in many CI containers)."""
+    monkeypatch.setenv("GIT_TEST_ASSUME_DIFFERENT_OWNER", "1")
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize(
+    "refuse",
+    [_refuse_nothing, _refuse_by_config, _refuse_by_owner],
+    ids=["healthy", "broken-config", "another-owner"],
+)
+@pytest.mark.parametrize("folder", [".", "lib"], ids=["top", "subfolder"])
+def test_the_version_check_passes_a_project_without_the_package_without_git(
+    refuse: Callable[[Path, pytest.MonkeyPatch], None],
+    folder: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A project with no ``src/apothem`` passes the version check, git or no git.
+
+    The check covers Apothem's own package. Where no folder up to the top of
+    the checkout holds it, the answer is known without git, so a repository
+    git refuses must not fail a check that has nothing to compare. The
+    change-set check still reports that repository.
+    """
+    repo = _empty_repo(tmp_path / "project")
+    (repo / "lib").mkdir()
+    (repo / "lib" / "x.py").write_bytes(b"def f():\n    return 1\n")
+    _dated_commit(repo, "feat: add lib", 1_700_000_000)
+    (repo / "lib" / "x.py").write_bytes(b"X = 1\n")
+    _git(repo, "add", "-A")
+    refuse(repo, monkeypatch)
+    plain = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=str(repo),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    refused = refuse is not _refuse_nothing
+    if refused and plain.returncode == 0:
+        pytest.skip("this git does not refuse the checkout this way")
+    monkeypatch.chdir(repo / folder)
+
+    production_ready_pr_grep._main(["production-ready-pr-grep", "--staged"])
+    assert ("check_error" in json.loads(capsys.readouterr().out)) is refused
+
+    monkeypatch.setattr(_bounded_run, "run_bounded", _git_must_not_run)
+    exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == semver_stability_grep.EXIT_PASS
+    assert payload["passed"] is True
+    assert "check_error" not in payload
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_the_version_check_needs_no_pathspec_magic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``GIT_LITERAL_PATHSPECS`` in the environment hides no change from a subfolder.
+
+    git then reads a ``:(top)`` path as a plain file name, which matches
+    nothing. The check runs git in the package's folder with a plain path.
+    """
+    repo = _build_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    monkeypatch.setenv("GIT_LITERAL_PATHSPECS", "1")
+    monkeypatch.chdir(repo / "docs")
+
+    findings = semver_stability_grep.check_staged()
+
+    assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_the_version_check_follows_a_link_into_the_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A current folder reached through a link is read as the folder it names.
+
+    On Windows the current folder keeps the text of a junction's path, so
+    ``..`` from there leads out of the checkout. The search for the package
+    starts from the real folder, as git's own search does.
+    """
+    repo = _build_repo(tmp_path / "project")
+    (repo / "docs").mkdir()
+    link = tmp_path / "elsewhere" / "docs-link"
+    link.parent.mkdir()
+    if os.name == "nt":
+        import _winapi
+
+        _winapi.CreateJunction(str(repo / "docs"), str(link))
+    else:
+        link.symlink_to(repo / "docs", target_is_directory=True)
+    monkeypatch.chdir(link)
+
+    findings = semver_stability_grep.check_staged()
+
+    assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
 
 
 @pytest.mark.usefixtures("hermetic_git")

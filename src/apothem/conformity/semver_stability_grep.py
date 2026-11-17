@@ -338,11 +338,16 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
 
 
 def _git(
-    label: str, *args: str, check: bool = False, file_names: bool = False
+    label: str,
+    *args: str,
+    check: bool = False,
+    file_names: bool = False,
+    cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
+    """Run ``git <args>`` within ``GIT_TIMEOUT_SECONDS``.
 
-    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    git runs in *cwd*, or in the current folder when it is None, through
+    :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings; *file_names* reads a ``-z``
     list with every byte of each name kept. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
@@ -358,6 +363,7 @@ def _git(
     try:
         return run_git(
             list(args),
+            cwd=cwd,
             timeout=GIT_TIMEOUT_SECONDS,
             check=check,
             file_names=file_names,
@@ -366,37 +372,37 @@ def _git(
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
-def _work_tree_top() -> Path | None:
-    """Return the top folder of the work tree when the current folder is below it.
+def _package_folder_above() -> Path | None:
+    """Return the nearest folder above the current one that holds the package.
 
-    ``git rev-parse --show-cdup`` prints the way up (``../../``), or nothing at
-    the top. Returns None at the top, outside a checkout and without git.
-    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` past the
-    limit, and :class:`~apothem.conformity._grep_base.GitFailedError` when git
-    fails inside a checkout: where the package is was not read, so the check
-    cannot say there is nothing to compare.
+    The search runs without git, over the folders git itself would search for
+    the repository (see
+    :func:`~apothem.conformity._grep_base.checkout_search_folders`), with
+    links resolved, and it ends at the top of the checkout: the first folder
+    that holds a ``.git`` entry. Returns None when no folder up to there holds
+    ``src/apothem/__init__.py``. Then the project has no package to check,
+    whatever state its repository is in, and no git command is needed to say
+    so.
     """
-    from apothem.conformity._grep_base import GitFailedError, in_checkout
+    from apothem.conformity._grep_base import checkout_search_folders, has_git_entry
 
-    try:
-        result = _git("git rev-parse", "rev-parse", "--show-cdup")
-    except FileNotFoundError:
-        return None
-    if result.returncode != 0:
-        if in_checkout(Path.cwd()):
-            raise GitFailedError("git rev-parse", result.returncode)
-        return None
-    way_up = result.stdout.split("\n", 1)[0]
-    return Path(way_up) if way_up else None
+    for folder in checkout_search_folders(Path.cwd()):
+        if (folder / INIT_PATH).exists():
+            return folder
+        if has_git_entry(folder):
+            return None
+    return None
 
 
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
 
     The package is looked for below the current folder first. When it is not
-    there, git names the top of the work tree, and the package and the staged
-    list are read from that top, so a run from a subfolder of the checkout
-    checks the same change set as a run from its top.
+    there, it is looked for in the folders above, up to the top of the
+    checkout, and git then runs in the folder that holds it, so a run from a
+    subfolder of the checkout checks the same change set as a run from that
+    folder. A project with no package there has nothing to check: the list of
+    findings is empty and no git command runs.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings. File contents are read with
@@ -409,7 +415,7 @@ def check_staged() -> list[Finding]:
     staged list, or a staged or committed file, is not read within
     ``GIT_TIMEOUT_SECONDS``, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails to
-    list the change set inside a checkout (a ``.git`` entry in the current
+    list the change set inside a checkout (a ``.git`` entry in the package's
     folder or one above it): a change set that was not read is not a clean
     one. Raises :class:`~apothem.conformity._grep_base.GitNameError` when a
     staged file's name cannot be given back to git to read its content (a
@@ -424,21 +430,23 @@ def check_staged() -> list[Finding]:
         in_checkout,
     )
 
-    def blob(spec: str, *, check: bool) -> str:
-        return _git("git cat-file", "cat-file", "blob", spec, check=check).stdout
-
     version = current_version()
-    package = PUBLIC_PACKAGE
+    # The folder git runs in: None is the current folder, where the package
+    # usually is. Otherwise the folder above that holds it, so git reads
+    # ``src/apothem`` from there exactly as in a run from that folder.
+    home: Path | None = None
     if version is None:
-        # No package below the current folder: it may be a subfolder of the
-        # checkout. git reads ":(top)" as "from the top of the work tree".
-        top = _work_tree_top()
-        if top is None:
+        home = _package_folder_above()
+        if home is None:
             return []
-        version = _version_in(top)
-        package = f":(top){PUBLIC_PACKAGE}"
+        version = _version_in(home)
     if not version or is_v0(version):
         return []
+
+    def blob(spec: str, *, check: bool) -> str:
+        return _git(
+            "git cat-file", "cat-file", "blob", spec, check=check, cwd=home
+        ).stdout
 
     # Get list of staged Python files under src/apothem/. -z ends each name
     # with NUL, unquoted, and the list is read as file names, so each name
@@ -455,14 +463,15 @@ def check_staged() -> list[Finding]:
             "-z",
             "--diff-filter=AMR",
             "--",
-            package,
+            PUBLIC_PACKAGE,
             file_names=True,
+            cwd=home,
         )
     except FileNotFoundError:
         return []
     if result.returncode != 0:
         # Outside a checkout there is no change set; in one, git refused it.
-        if in_checkout(Path.cwd()):
+        if in_checkout(home or Path.cwd()):
             raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [

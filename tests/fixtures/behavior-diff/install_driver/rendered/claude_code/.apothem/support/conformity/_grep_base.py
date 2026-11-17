@@ -382,18 +382,14 @@ def _ceiling_folders() -> frozenset[str]:
     return frozenset(folders)
 
 
-def in_checkout(directory: Path) -> bool:
-    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+def checkout_search_folders(directory: Path) -> Iterator[Path]:
+    """Yield ``directory`` and the folders above it that git would search.
 
-    The walk covers the folders git searches for a repository when it runs in
-    ``directory``, so a git command that fails there failed inside a checkout
-    and its data was not read, also when ``directory`` is a subfolder of the
-    checkout. It stops where git's search stops: below a folder that
+    These are the folders git looks in for a repository when it runs in
+    ``directory``, nearest first, with links resolved as in git's own current
+    folder. The walk stops where git's search stops: below a folder that
     ``GIT_CEILING_DIRECTORIES`` names, and, outside Windows, at a folder on
-    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set. So a
-    folder with no repository of its own, mounted below one, is outside a
-    checkout here as it is for git. One difference remains: a ``.git`` folder
-    that holds no repository counts here, while git looks past it.
+    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
     """
     start = directory.resolve()
     ceilings = _ceiling_folders()
@@ -401,15 +397,29 @@ def in_checkout(directory: Path) -> bool:
         "GIT_DISCOVERY_ACROSS_FILESYSTEM"
     )
     device = _device(start) if one_file_system else None
-    for folder in (start, *start.parents):
-        if folder != start:
-            if os.path.normcase(str(folder)) in ceilings:
-                return False
-            if device is not None and _device(folder) != device:
-                return False
-        if has_git_entry(folder):
-            return True
-    return False
+    yield start
+    for folder in start.parents:
+        if os.path.normcase(str(folder)) in ceilings:
+            return
+        if device is not None and _device(folder) != device:
+            return
+        yield folder
+
+
+def in_checkout(directory: Path) -> bool:
+    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+
+    The walk covers :func:`checkout_search_folders`, the folders git searches
+    for a repository when it runs in ``directory``, so a git command that
+    fails there failed inside a checkout and its data was not read, also when
+    ``directory`` is a subfolder of the checkout. A folder with no repository
+    of its own, mounted below one, is outside a checkout here as it is for
+    git. Differences from git remain, among them: a ``.git`` folder that
+    holds no repository counts here, while git looks past it; and ``GIT_DIR``
+    or ``GIT_WORK_TREE`` in the environment, which tell git where the
+    repository is, are not read.
+    """
+    return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
 def iter_tree_files(
