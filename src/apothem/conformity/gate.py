@@ -1174,10 +1174,9 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     ``PYTHONUTF8`` would have given, so git output and file text decode the
     same way under every locale code page. The child writes no bytecode cache
     (``-B``), as this file run as a program writes none (see the bootstrap at
-    the top of this file). It gets
-    :data:`STANDALONE_TIMEOUT_SECONDS`: a validator still running then is
-    stopped, together with every program it started (it runs in a session of
-    its own, or a Windows job object; see
+    the top of this file). It gets :data:`STANDALONE_TIMEOUT_SECONDS`: a
+    validator still running then is stopped, together with every program it
+    started (it runs in a session of its own, or a Windows job object; see
     :func:`~apothem.conformity._bounded_run.run_bounded`), and does not pass.
     The output is then the gate's report in its place (see
     :func:`_stopped_report`).
