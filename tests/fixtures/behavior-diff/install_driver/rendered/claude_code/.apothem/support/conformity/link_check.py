@@ -38,6 +38,9 @@ checks each resolvable internal reference:
   ``//host/share``) or a backslash-rooted path — are counted as external and
   never looked up. A lookup can reach another machine (on Windows, opening a
   share sends the user's sign-in to that host) or a file outside the project.
+  On Windows, a link with a part that ends in a dot or a space, which Windows
+  drops so the lookup finds another file (``ci.yml.`` finds ``ci.yml``), and
+  a ``/docs/`` route segment holding a colon are counted as external too.
 
 A relative destination is resolved by its name, as a browser resolves a
 link, without following links on disk. In a corpus run
@@ -210,6 +213,22 @@ def _is_out_of_reach(target: str) -> bool:
     return target.startswith(("\\", "//")) or bool(_SCHEME_OR_DRIVE_RE.match(target))
 
 
+def _ends_a_part_in_dot_or_space(target: str) -> bool:
+    """Return True on Windows when a part of *target* ends in a dot or a space.
+
+    Windows drops a trailing dot or space from a name, so such a link would
+    find another file (``ci.yml.`` finds ``ci.yml``) and pass as alive. It is
+    counted as external instead, as :func:`apothem.conformity._corpus.name_skip`
+    skips such a tracked name.
+    """
+    if os.name != "nt":
+        return False
+    return any(
+        part not in ("", ".", "..") and part.endswith((".", " "))
+        for part in re.split(r"[\\/]", target)
+    )
+
+
 def _resolve_target(
     source: Path | None,
     destination: str,
@@ -365,7 +384,11 @@ def check(
                 # nothing to resolve; skip it rather than mis-count it.
                 continue
             stripped = _strip_fragment(destination)
-            if _is_external(destination) or _is_out_of_reach(stripped):
+            if (
+                _is_external(destination)
+                or _is_out_of_reach(stripped)
+                or _ends_a_part_in_dot_or_space(stripped)
+            ):
                 external += 1
                 continue
             if stripped.startswith("/"):

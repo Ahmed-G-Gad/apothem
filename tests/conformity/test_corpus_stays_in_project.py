@@ -854,7 +854,9 @@ def test_link_with_a_nul_character_keeps_the_other_findings(tmp_path: Path) -> N
     assert entry["finding_count"] == 3
 
 
-def test_link_check_never_looks_up_a_docs_route_with_a_drive(tmp_path: Path) -> None:
+def test_link_check_skips_a_docs_route_with_a_drive_on_windows_only(
+    tmp_path: Path,
+) -> None:
     """On Windows a ``/docs/`` route whose segment names a drive, such as
     ``/docs/Z:/x``, is counted as external, not looked up on that drive.
     Elsewhere a colon is an ordinary character, so the route is checked and,
@@ -906,5 +908,47 @@ def test_name_with_a_character_windows_reserves_is_unsupported_there(
 
     payload = _run(repo)
     _assert_only_clean_file_read(payload)
+    expected = {"unsupported_name": 2} if os.name == "nt" else {"missing": 2}
+    assert _skipped(payload) == expected
+
+
+@pytest.mark.parametrize("destination", ["ci.yml.", "ci.yml ", "/docs/guide./page"])
+def test_link_part_ending_in_a_dot_or_a_space_is_not_checked_on_windows(
+    tmp_path: Path, destination: str
+) -> None:
+    """Windows drops a trailing dot or space, so on Windows ``ci.yml.`` would
+    find ``ci.yml`` and pass as alive; there such a link is counted as external,
+    not checked. Elsewhere it names a file of its own, here a dead link."""
+    _write(
+        tmp_path,
+        {
+            "ci.yml": "x: 1\n",
+            "site/content/docs/guide/page.mdx": "page\n",
+        },
+    )
+    result = link_check.check(f"[x](<{destination}>)\n", tmp_path / "doc.md")
+    if os.name == "nt":
+        assert result.findings == []
+        assert result.external_count == 1
+        assert result.internal_count == 0
+    else:
+        assert len(result.findings) == 1
+        assert result.internal_count == 1
+
+
+def test_tracked_file_next_to_its_trailing_dot_names_is_still_read(
+    tmp_path: Path,
+) -> None:
+    """Skipping ``ci.yml.`` and ``ci.yml `` leaves the tracked ``ci.yml`` itself
+    read, so its blocking finding is still reported."""
+    repo = _project(tmp_path, {"ci.yml": _UNPINNED_WORKFLOW})
+    _write_index(repo, ["clean.py", "ci.yml", "ci.yml.", "ci.yml "])
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    assert payload["files_scanned"] == 2
+    blocking = payload["blocking"]
+    assert isinstance(blocking, list)
+    assert [entry["files"] for entry in blocking] == [["ci.yml"]]
     expected = {"unsupported_name": 2} if os.name == "nt" else {"missing": 2}
     assert _skipped(payload) == expected
