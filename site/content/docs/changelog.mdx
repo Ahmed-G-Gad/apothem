@@ -137,7 +137,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `tests/fuzz/test_fuzz_seed_replay.py` replays every target's seeds in the
   ordinary test run. The OpenSSF Scorecard Fuzzing check credits the setup.
 - **An answer sheet for the OpenSSF Best Practices badge.** The new
-  [OpenSSF Best Practices badge](https://apothem.ahmedgad.com/docs/security/openssf-best-practices)
+  [OpenSSF Best Practices
+  badge](https://apothem.ahmedgad.com/docs/security/openssf-best-practices)
   page answers all 67 passing criteria from bestpractices.dev (Met, N/A or
   Unmet), each with a one-line justification and a link to the file or page
   that shows it, and lists the steps to register the project. The answers
@@ -882,11 +883,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   through the `bootstrap-extra-files` hook (see Added). CodeBuddy moved its
   IDE Rules page, and that page describes one folder per rule holding a
   `RULE.mdc` file. The CodeBuddy rules file and docs now link the CodeBuddy
-  Code memory page, which documents the
-  plain `.md` rule files the install writes. The docs say Apothem has not
-  confirmed that the IDE loads them. Kimi Code 2.4.0 through 2.5.2, the latest
-  release on 2026-11-07, change nothing the install relies on. No file the
-  install writes moves.
+  Code memory page, which documents the plain `.md` rule files the install
+  writes. The docs say Apothem has not confirmed that the IDE loads them.
+  Kimi Code 2.4.0 through 2.5.2, the latest release on 2026-11-07, change
+  nothing the install relies on. No file the install writes moves.
 - **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
   from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
   `tools/channel-smoke`. Dependabot cannot open pull requests for npm
@@ -1283,7 +1283,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   to them. Releases 1.0.1 to 1.5.0 are affected. Upgrading leaves the
   installed helpers as they are: after the upgrade, run `apothem update` (or
   `apothem install --harness opencode`), then check that no Apothem helper
-  in `~/.config/opencode/agents` still has an `allow` line.
+  still has an `allow` line. The helpers are in the `agents` folder under
+  the OpenCode config folder (`$XDG_CONFIG_HOME/opencode` when that is set,
+  else `~/.config/opencode`). Earlier releases ignored `XDG_CONFIG_HOME`, so
+  the helpers they wrote are in `~/.config/opencode/agents`.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
