@@ -131,8 +131,9 @@ def _validate_directory_name(directory_name: str) -> str:
 
     The working-directory name must be exactly one path component so that
     joining it onto a base never escapes the base. The guard rejects path
-    separators, a Windows drive specifier (``:``, which would reset pathlib to
-    the drive root), and the ``.`` / ``..`` traversal components.
+    separators, a Windows drive specifier (``:``, which, when it names another
+    drive, makes pathlib drop the base folder and use that drive instead), and
+    the ``.`` / ``..`` traversal components.
 
     Args:
         directory_name: The candidate working-directory name.

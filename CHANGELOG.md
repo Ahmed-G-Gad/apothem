@@ -351,6 +351,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Windows installer checks out releases whose paths pass 260
+  characters.** `install.ps1` checks a release out in a staging folder beside
+  `APOTHEM_HOME`, or in the temporary folder for a dry run, before it moves
+  the tree into place. That folder adds 57 characters to every path, and
+  v1.5.0 holds paths up to 170 characters long, so with a home folder path of
+  33 characters or more (a temporary folder path of 40 or more, for a dry
+  run) the checkout passed Windows' 260-character limit: Git for Windows
+  stopped with `Filename too long`, and the installer with `Could not check
+  out the v1.5.0 tag`. Every git command the installers and the updaters run
+  on a clone now sets `core.longpaths`, so Git for Windows writes and reads
+  such paths; git on other systems ignores the setting. Under Git Bash,
+  `install.sh` and `update.sh` set it too: their shorter staging folder put
+  fewer installs past the limit, but could let such an install go on without
+  the files git could not write. `install.ps1` also removes its staging and
+  scratch folders, and an earlier tree it replaces, through the long form of
+  the path (`\\?\C:\...`), since Windows PowerShell 5.1 cannot reach a path
+  past 260 characters otherwise on a machine where long paths are off.
 - **A deleted project no longer lets an install overwrite your own skill.**
   After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
   a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
@@ -397,6 +414,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`apothem doctor` starts Cursor's hook command on Windows.** The command a
   Windows install writes begins with PowerShell's `&`, which doctor tried to
   start as a program, so every healthy Cursor install failed the hook check.
+- **The conformity validators that read git's output read it correctly.**
+  `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
+  Python's `str.splitlines()` also breaks lines at the record marker its
+  `git log` format uses, so every commit time was lost. It now splits on new
+  lines only, checks only per-folder companions that still exist (never the
+  root `AGENTS.md`, which is the canon rather than a folder's companion), and
+  checks a subfolder root against that subfolder's own history.
+  `no-global-plans-grep`, `agents-md-coverage-grep`, and the `--staged` checks
+  of `production-ready-pr-grep` and `semver_stability_grep` received non-ASCII
+  path names in git's quoted form (`"caf\303\251.md"`), which their path rules
+  did not match; git now prints every name as it is. A repository whose
+  `diff.orderFile` named a missing file made both `--staged` checks see an
+  empty change set and pass; they no longer read that setting. On Windows,
+  `semver_stability_grep --staged` named `src\apothem\__init__.py` with
+  backslashes, which git does not accept, so a staged MAJOR version bump never
+  admitted a breaking change.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -1126,6 +1159,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it, and the install now follows it. On Windows a home folder that is a
   junction, as moving a user profile to another drive makes it, is followed
   the same way.
+- **An uninstall keeps the shared folders another install still uses when the
+  home folder is a link.** When the home folder is a link (`/home` leading to
+  `/var/home` on Fedora Silverblue, or a Windows profile moved behind a
+  junction), one install could run with the home spelled through the link and
+  another with the folder it leads to. Apothem compared the two spellings as
+  text, so uninstalling the first said `no other Apothem install uses it` and
+  removed `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/`
+  while the second install still used them. Apothem now compares the folder
+  each path names, so the uninstall keeps them and names the other install,
+  and the install note `Installs using it now` counts both. One tool
+  installed both ways is one install: uninstalling it, with the home spelled
+  either way, removes what either install wrote and ends both of its install
+  records, so no record is left that keeps the folders. An uninstall that
+  stops unfinished ends neither record; once you fix what stopped it, the next
+  uninstall ends both, and so does `apothem status` or `apothem verify` when
+  it finds nothing of Apothem's left. When the ledger cannot take the second
+  ending, the uninstall still finishes and warns, naming the record left
+  active; uninstalling with the home spelled that way ends it.
+- **A rollback keeps the shared folders the same tool's other install uses.**
+  When one tool was installed twice with the home spelled in two cases
+  (`C:\Users\gad` and `C:\Users\Gad` on Windows, `/Users/gad` and
+  `/Users/Gad` on macOS), `apothem rollback` under one spelling treated both
+  installs as the one it rolled back. It removed `~/.agents/skills/` and
+  `~/.config/apothem/rules/` and `templates/` while the other install still
+  used them, and that install then failed `apothem verify`. A rollback now
+  reverses only the install recorded with the home spelled exactly as it is
+  for that run, and keeps the shared folders for the other, on macOS too
+  when it rolls back the install that created them. Rolling back the install
+  that first wrote the tool's own files still removes the ones the other
+  install left as they were, such as `~/.codex/hooks/`, and keeps with a
+  warning the ones that install rewrote, such as `~/.codex/AGENTS.md`. The
+  other install then fails `apothem verify` until you run `apothem update`
+  with the home spelled its way.
+- **Rolling back every tool that uses the shared folders removes them.** When
+  the tool that created `~/.agents/skills/` and the other shared folders was
+  rolled back or uninstalled first, they were kept for the tool that still
+  used them, but Apothem then dropped the record that showed it had created
+  them. Rolling back that second tool kept them too, and later uninstalls said
+  nothing was installed, so the folders stayed for good. Apothem now keeps
+  that record, also when the first tool is installed again, updated, or
+  installed more than ten times, and the last rollback or uninstall removes
+  them, with the empty folders an install made to hold them, such as
+  `~/.agents/`. A folder Apothem removed and you put back yourself is kept.
+- **`install --clean` refuses a home folder that leads to the root of a drive
+  or file system.** The clean-slate step refused a home directory that is the
+  root of a drive or file system only as spelled, so a home that is a link or
+  a junction to one passed the check. It now follows the link first and stops
+  before it backs up or removes anything, and before it creates the starter
+  profile. It also stops when the home is reached through a link that loops,
+  and when the home is not a full path, and the error says to set the home
+  directory to the full path of your own folder.
 - **A refused uninstall is reported as failed.** When the write guard, a
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
@@ -1296,6 +1380,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **A checked project's git settings no longer make the conformity gate start
+  a program.** `--all`, `--all-perwrite`, three standalone validators
+  (`no-global-plans-grep`, `conventional-commit-grep` and
+  `agents-md-coverage-grep`) and the two `--staged` change-set checks run
+  `git` in the project they check, and git reads that repository's own
+  `.git/config`. A project that came with its `.git` folder, in an archive or
+  a shared folder, could set `core.fsmonitor` to a program that ran during
+  `git ls-files`, turn on `log.showSignature` so that `git log` ran its
+  `gpg.program`, or make a partial clone fetch a missing object through
+  `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. A
+  staged submodule entry also let `semver_stability_grep --staged` run
+  `git show` on a commit: a `%G` placeholder in `format.pretty` started the
+  signature program, and `diff.submodule=diff` started a second git inside the
+  submodule with the submodule's own diff program. Every git command the gate
+  runs now turns those settings off on git's command line (no file-system
+  monitor, hooks, pager or automatic maintenance; signature programs that
+  cannot start; no external diff or text-conversion program; submodule changes
+  as commit ids only; no diff order, excludes or mailmap file read), reads file
+  contents with `git cat-file blob`, which refuses a submodule entry, sets
+  `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, and starts git only
+  from a full-path entry of `PATH`.
+  On Windows the gate no longer runs a `git.exe` that sits in the folder it
+  was started from. The repository can still make git read a path elsewhere
+  through any setting or file that names one (for example `include.path`,
+  `core.worktree`, a `.git` file's `gitdir:` line or
+  `.git/objects/info/alternates`); on Windows a network path there makes
+  Windows sign in to that server.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the

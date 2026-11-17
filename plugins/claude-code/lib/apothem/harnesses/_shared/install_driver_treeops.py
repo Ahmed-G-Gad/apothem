@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 import shutil
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Collection, Iterable
 from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
@@ -470,14 +470,19 @@ def preview_native_skills(
 
 
 def remove_created_dirs(
-    directories: Iterable[Path], *, allowed_root: Path
+    directories: Iterable[Path],
+    *,
+    allowed_root: Path,
+    inherited: Collection[Path] = frozenset(),
 ) -> list[MaterializationResult]:
     """Remove the *directories* an install created, now that they are empty.
 
     Deepest first, so a created parent goes once its created children have. A
     directory that still holds anything (operator content, or data another
     harness keeps) is left in place; so is one outside *allowed_root* or behind
-    a symlink. Returns one ``updated`` result per directory removed.
+    a symlink. Returns one ``updated`` result per directory removed. The
+    result for a directory in *inherited*, which an earlier install created
+    rather than the one reversed, says so.
     """
     results: list[MaterializationResult] = []
     ordered = sorted(
@@ -499,12 +504,10 @@ def remove_created_dirs(
             directory.rmdir()
         except OSError:
             continue
-        results.append(
-            _result(
-                "updated",
-                "remove_directory",
-                directory,
-                "removed an empty directory the install created",
-            )
+        message = (
+            "removed an empty directory an earlier install created"
+            if directory in inherited
+            else "removed an empty directory the install created"
         )
+        results.append(_result("updated", "remove_directory", directory, message))
     return results
