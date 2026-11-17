@@ -128,6 +128,7 @@ def test_check_staged_reports_a_git_timeout(
     # then make the git invocation raise TimeoutExpired. The module's
     # timeout=GIT_TIMEOUT_SECONDS bound is turned into GitTimeoutError, not
     # into an empty finding list that would pass an unread change set.
+    from apothem.conformity import _bounded_run
     from apothem.conformity._grep_base import GitTimeoutError
 
     monkeypatch.setattr(_MOD, "current_version", lambda: "1.2.3")
@@ -136,7 +137,7 @@ def test_check_staged_reports_a_git_timeout(
         assert kwargs.get("timeout") == _MOD.GIT_TIMEOUT_SECONDS
         raise subprocess.TimeoutExpired(cmd="git", timeout=_MOD.GIT_TIMEOUT_SECONDS)
 
-    monkeypatch.setattr(_MOD.subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _raise_timeout)
     with pytest.raises(GitTimeoutError, match="git diff --cached did not finish"):
         _MOD.check_staged()
 

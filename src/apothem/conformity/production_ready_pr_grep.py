@@ -31,11 +31,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity import _bounded_run
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
+    GitCheckError,
+    GitFailedError,
     GitTimeoutError,
     GrepResult,
+    has_git_entry,
     make_parser,
     parse_path_input,
 )
@@ -117,23 +121,31 @@ def _classify(path: str) -> set[str]:
 
 
 def _staged_paths() -> list[str]:
-    """Return the staged-diff path list via git; empty on failure.
+    """Return the staged-diff path list via git; empty when there is none.
 
-    Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when git
-    runs past ``GIT_TIMEOUT_SECONDS``: the repository's own configuration can
-    make git wait for ever, and a change set that was not read is not empty.
+    The list is empty when git is missing or the current folder is not a
+    checkout. git runs through
+    :func:`~apothem.conformity._bounded_run.run_bounded`, so the limit holds
+    for every program git starts. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
+    ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
+    wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
+    when git fails in a folder that holds a ``.git`` entry: a change set that
+    was not read is not an empty one.
     """
     try:
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],  # noqa: S607  # PATH-resolved git is acceptable for a developer-tool grep; full-path resolution would require host-discovery and breaks portability across operator setups.
+        result = _bounded_run.run_bounded(
+            ["git", "diff", "--cached", "--name-only"],
             check=True,
-            capture_output=True,
-            text=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError as exc:
+        if has_git_entry(Path.cwd()):
+            raise GitFailedError("git diff --cached", exc.returncode) from exc
+        return []
+    except FileNotFoundError:
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
@@ -141,12 +153,13 @@ def _staged_paths() -> list[str]:
 def _check_staged() -> GrepResult:
     """Substantive check: inspect the staged diff against the four-class shape.
 
-    A staged list that git did not deliver within ``GIT_TIMEOUT_SECONDS``
-    does not pass: the result carries the reason as ``check_error``.
+    A staged list that git did not deliver, within ``GIT_TIMEOUT_SECONDS`` or
+    at all in a checkout, does not pass: the result carries the reason as
+    ``check_error``.
     """
     try:
         paths = _staged_paths()
-    except GitTimeoutError as exc:
+    except GitCheckError as exc:
         return GrepResult(
             grep=GREP_NAME,
             path="<staged diff>",

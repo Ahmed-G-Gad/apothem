@@ -39,7 +39,6 @@ import importlib.util
 import json
 import ntpath
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -91,6 +90,7 @@ if __package__ in (None, ""):
         _support_package.__path__ = [str(_PACKAGE_DIR)]
         sys.modules["apothem"] = _support_package
 
+from apothem.conformity._bounded_run import run_bounded
 from apothem.conformity._grep_base import (
     CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
@@ -361,13 +361,14 @@ PER_GREP_BUDGET_SECONDS: Final[float] = 0.520
 # validator that would never finish, such as one whose git command waits on a
 # FIFO that the checked repository's own ``include.path`` names. The slowest
 # validator takes about a minute on this repository on a busy machine, so the
-# limit leaves room for slower machines and larger projects.
+# limit leaves room for slower machines and larger projects. The validators
+# that run git give each git command a shorter limit of their own, so a stalled
+# repository normally ends there first.
 STANDALONE_TIMEOUT_SECONDS: Final[int] = 600
 
-# Seconds the gate waits, after stopping a validator, for the validator's
-# output to close. A process the validator started can hold that output open;
-# the gate then stops waiting for it and reports the stop.
-_STOP_GRACE_SECONDS: Final[int] = 5
+# Exit code after an interrupt (Ctrl+C): 128 plus SIGINT's number, as a shell
+# reports a program that SIGINT ended.
+EXIT_INTERRUPTED: Final[int] = 130
 
 # Maximum per-matcher flagged-file sample carried in the ``--all-perwrite``
 # payload. ``file_count`` is the full tally; ``files`` is a bounded sample and
@@ -1122,62 +1123,14 @@ def _standalone_env() -> dict[str, str]:
     return env
 
 
-def _stop_process_tree(process: subprocess.Popen[str]) -> None:
-    """Stop *process* and, outside Windows, every process in its group.
-
-    :func:`_run_bounded` starts the process in a session of its own, so its
-    process group holds the validator and every git command the validator
-    started. Windows has no such group, so the process alone is stopped there.
-    """
-    if sys.platform != "win32":
-        with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(process.pid, signal.SIGKILL)
-    with contextlib.suppress(OSError):
-        process.kill()
-
-
-def _run_bounded(
-    argv: list[str], *, env: dict[str, str], timeout: float
-) -> tuple[int, str] | None:
-    """Run *argv*; return ``(exit code, output)``, or None past *timeout* seconds.
-
-    The output is the program's standard output, or its standard error when
-    standard output is empty. Standard input is the null device, so nothing
-    the program runs can wait for input. Outside Windows the program starts in
-    a session of its own, so stopping it stops every process it started (see
-    :func:`_stop_process_tree`); that also happens when the gate itself is
-    interrupted. After a stop the gate waits at most
-    :data:`_STOP_GRACE_SECONDS` for the output to close and then leaves it
-    open: a process the program started can hold it, and closing it while it
-    is being read would wait just as long.
-    """
-    process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
-        argv,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        env=env,
-        start_new_session=sys.platform != "win32",
-    )
-    try:
-        stdout, stderr = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        _stop_process_tree(process)
-        with contextlib.suppress(subprocess.TimeoutExpired):
-            process.communicate(timeout=_STOP_GRACE_SECONDS)
-        return None
-    except BaseException:
-        _stop_process_tree(process)
-        raise
-    return process.returncode, stdout or stderr or ""
-
-
 def _stopped_report(name: str) -> str:
     """Return the JSON report for a validator the gate stopped at its limit.
 
     The validator printed no report of its own, so the gate writes one in its
-    place: not passed, with a ``check_error`` that says why.
+    place: not passed, with a ``check_error`` that says why. The gate learns
+    whether a validator is advisory only from that validator's own report, so
+    this one carries no ``advisory`` field; its ``passed: false`` fails the
+    run either way, as an unfinished advisory check does.
     """
     return json.dumps(
         {
@@ -1205,15 +1158,18 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     writes no bytecode cache (``-B``), as this file run as a program writes
     none (see the bootstrap at the top of this file). It gets
     :data:`STANDALONE_TIMEOUT_SECONDS`: a validator still running then is
-    stopped (see :func:`_run_bounded`) and does not pass, and the output is
-    the gate's report in its place (see :func:`_stopped_report`).
+    stopped, together with every program it started (it runs in a session of
+    its own, or a Windows job object; see
+    :func:`~apothem.conformity._bounded_run.run_bounded`), and does not pass.
+    The output is then the gate's report in its place (see
+    :func:`_stopped_report`).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = _run_bounded(
+        completed = run_bounded(
             [
                 sys.executable,
                 "-B",
@@ -1225,13 +1181,14 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
             ],
             env=_standalone_env(),
             timeout=STANDALONE_TIMEOUT_SECONDS,
+            new_session=True,
         )
+    except subprocess.TimeoutExpired:
+        return False, _stopped_report(name)
     except OSError as exc:
         return False, f"{name}: invocation failed: {exc}"
-    if completed is None:
-        return False, _stopped_report(name)
-    returncode, output = completed
-    return returncode == EXIT_PASS, output
+    output = completed.stdout or completed.stderr or ""
+    return completed.returncode == EXIT_PASS, output
 
 
 def _advisory_verdict(output: str) -> dict[str, object] | None:
@@ -1669,7 +1626,10 @@ def main(argv: list[str] | None = None) -> int:
     unknown flag or validator name, a conflicting flag pair, a file that does
     not exist, or a root that is not an existing directory — kept distinct so
     a caller can tell a misspelled selector or path from a real finding.
-    ``--help`` prints usage and returns 0.
+    ``--help`` prints usage and returns 0. An interrupt (Ctrl+C) prints one
+    line and returns 130, after the running validator has been stopped; a
+    ``SIGTERM`` or ``SIGHUP`` while a validator runs returns 128 plus the
+    signal number the same way.
     """
     if argv is None:
         argv = sys.argv
@@ -1684,6 +1644,9 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         # ``parser.error`` exits EXIT_USAGE after printing its one-line message.
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    except KeyboardInterrupt:
+        sys.stderr.write("conformity-gate: interrupted\n")
+        return EXIT_INTERRUPTED
 
 
 def _dispatch(

@@ -70,19 +70,42 @@ EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
 CHECK_ERROR_KEY: Final[str] = "check_error"
 
 
-class GitTimeoutError(Exception):
-    """A git command ran past its time limit, so a check could not finish.
+class GitCheckError(Exception):
+    """A git command a check needs gave no answer, so the check could not finish.
+
+    The message names the command and what happened, in fixed words: it never
+    repeats git's own error output, which a checked repository can shape. A
+    validator reports the message as its ``check_error``; a check whose git
+    never answered has not earned a pass.
+    """
+
+
+class GitTimeoutError(GitCheckError):
+    """A git command ran past its time limit.
 
     A repository's own configuration can make git wait for ever, for example
-    through an ``include.path`` that names a FIFO. The message, such as
-    ``git log did not finish within 5 seconds``, is what the validator reports
-    as its ``check_error``; a check whose git never answered has not earned a
-    pass.
+    through an ``include.path`` that names a FIFO. The message reads, for
+    example, ``git log did not finish within 5 seconds``.
     """
 
     def __init__(self, command: str, seconds: float) -> None:
         """Name the git *command* that did not finish within *seconds*."""
         super().__init__(f"{command} did not finish within {seconds} seconds")
+
+
+class GitFailedError(GitCheckError):
+    """A git command failed in a repository that is there.
+
+    git refuses a repository it may not read (one another user owns, a bad
+    line in its configuration, an included file it cannot open). That is not
+    the exempt state of a folder with no repository or no commit: the history
+    is there but was not read. The message reads, for example,
+    ``git log failed with exit code 128``.
+    """
+
+    def __init__(self, command: str, returncode: int) -> None:
+        """Name the git *command* that exited with *returncode*."""
+        super().__init__(f"{command} failed with exit code {returncode}")
 
 
 # ---------------------------------------------------------------------------

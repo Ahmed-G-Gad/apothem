@@ -46,31 +46,43 @@ when the root has no commit history.
 
 Each standalone validator runs as a program of its own, and the gate gives it
 10 minutes, in `--all` and in `--check`. The slowest one takes about a minute on
-Apothem's own repository. A validator still running at the limit is stopped and
-reported with `passed: false` and a `check_error` that says it did not finish.
-On Linux and macOS the gate also stops every program that validator started,
-such as a `git` command still waiting. On Windows it stops the validator, and
-when a program the validator started still holds its output open, the gate
-stops waiting for that output 5 seconds later.
+Apothem's own repository. A validator still running at the limit is stopped,
+together with every program it started, such as a `git` command still waiting,
+and reported with `passed: false` and a `check_error` that says it did not
+finish. On Linux and macOS each validator runs in a session of its own, and a
+`SIGTERM` or `SIGHUP` to the gate, such as from `timeout` or a closed terminal,
+stops the validator's programs before the gate exits with code 128 plus the
+signal's number. On Windows each validator runs in a job object, which also
+ends its programs when the gate itself ends. Ctrl+C prints one line and exits
+`130`. The limits add up: a run in which several validators wait takes the sum
+of their limits.
 
-Four validators also give each `git` command they run a time limit of its own:
+Four validators also give each `git` command they run a time limit of its own.
+The limits hold on every platform, including on Windows when `git` on `PATH`
+is the launcher that Git for Windows installs, which starts the real git:
 
 ```text
-conventional-commit-grep            git log -1                    5 seconds
-agents-md-coverage-grep             git log over the history     10 seconds
-production-ready-pr-grep --staged   git diff --cached             5 seconds
-semver-stability-grep --staged      git diff --cached, git show   5 seconds
+conventional-commit-grep            git log -1, git rev-parse          5 seconds
+agents-md-coverage-grep             git rev-parse                     10 seconds
+                                    git log over the whole history     5 minutes
+production-ready-pr-grep --staged   git diff --cached                  5 seconds
+semver-stability-grep --staged      git diff --cached, git show        5 seconds
 ```
 
 A project's own git settings can make `git` wait for ever, for example an
 `include.path` in its `.git/config` that names a named pipe. A `git` command
 that runs past its limit does not pass: the validator reports `passed: false`
-with a `check_error` that names the command. That holds for the stale-companion
-check too, although its findings are otherwise advisory, and the commit-subject
-check then also reports `inspected: 0` with `empty_scope_expected: false`. A
-folder that is not a git repository, or has no commit yet, still passes these
-checks as before. As with any result that does not pass, the advisory default
-reports it and exits `0`, and `--strict` exits `2`.
+with a `check_error` that names the command. Neither does a `git` that refuses
+a checkout it found, for example one another user owns or one with a bad line in
+its `.git/config`; the `check_error` then gives git's exit code. That holds for
+the stale-companion check too, although its findings are otherwise advisory,
+and the commit-subject check then also reports `inspected: 0` with
+`empty_scope_expected: false`. The stale-companion check reads the whole history
+once, and that read gets 5 minutes, so a large history is slow rather than a
+failure; a history that takes longer to read fails the check. A folder that is
+not a git repository, a repository with no commit yet, or a machine without
+`git` still passes these checks as before. As with any result that does not
+pass, the advisory default reports it and exits `0`, and `--strict` exits `2`.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

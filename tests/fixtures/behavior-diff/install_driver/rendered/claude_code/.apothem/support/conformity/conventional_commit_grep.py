@@ -18,14 +18,17 @@ subjects (``Merge branch ...`` / ``Merge pull request ...``) pass
 through — the merger does not author the merged content's subject form.
 Shallow-clone or no-git contexts (no ``.git/``, empty repo) exit 0 with
 an informational status so the validator never blocks a fresh clone or
-a non-git working tree. A ``git log`` that runs past
-``GIT_TIMEOUT_SECONDS`` is not such a context: the repository is there but
-its HEAD subject was never read (its own configuration can make git wait
-for ever), so the status is ``git-timeout`` and the check does not pass.
+a non-git working tree. Two other outcomes are not such a context: a git
+command that runs past ``GIT_TIMEOUT_SECONDS`` (the repository's own
+configuration can make git wait for ever) gives status ``git-timeout``, and a
+git that refuses the repository (another owner, a bad configuration line, an
+include it cannot read) gives ``git-failed``. In both the repository is there
+but its HEAD subject was never read, so the check does not pass.
 
 Exit semantics. Exits 0 when HEAD is conformant (or informationally
-exempt). Exits 2 on any drift class, and on ``git-timeout``. The exit-2
-convention matches the conformity-gate orchestrator's ``EXIT_FAIL`` constant.
+exempt). Exits 2 on any drift class, and on ``git-timeout`` or
+``git-failed``. The exit-2 convention matches the conformity-gate
+orchestrator's ``EXIT_FAIL`` constant.
 """
 
 from __future__ import annotations
@@ -209,43 +212,73 @@ class GrepResult:
             "drifts": [asdict(d) for d in self.drifts],
         }
         if self.check_error is not None:
+            # The same key as ``_grep_base.CHECK_ERROR_KEY``, spelled out so
+            # the module imports without the package.
             payload["check_error"] = self.check_error
         return json.dumps(payload, indent=2)
 
 
-def _read_head_subject(root: Path) -> tuple[str | None, str]:
-    """Return ``(subject, status)`` for the HEAD commit.
+def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run ``git <args>`` in *root* within ``GIT_TIMEOUT_SECONDS``.
+
+    git runs through :func:`~apothem.conformity._bounded_run.run_bounded`, so
+    the limit holds for every program git starts, also on Windows behind Git's
+    launcher. Raises :class:`~apothem.conformity._grep_base.GitTimeoutError`
+    past the limit and :class:`OSError` when git cannot be started.
+    """
+    # Imported here, not at module top, so the module itself imports without
+    # the package; only a run that reads git history needs it.
+    from apothem.conformity import _bounded_run
+    from apothem.conformity._grep_base import GitTimeoutError
+
+    try:
+        return _bounded_run.run_bounded(
+            ["git", *args], cwd=root, timeout=GIT_TIMEOUT_SECONDS
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError(f"git {args[0]}", GIT_TIMEOUT_SECONDS) from exc
+
+
+def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
+    """Return ``(subject, status, check_error)`` for the HEAD commit.
 
     ``status`` is one of ``ok`` (subject populated), ``not-a-git-repo``,
     ``no-commits-yet``, ``git-unavailable`` (git could not be started),
-    ``git-timeout`` (``git log`` ran past ``GIT_TIMEOUT_SECONDS``). The
-    subject is None for every non-``ok`` status so the caller can
-    short-circuit.
+    ``git-timeout`` (a git command ran past ``GIT_TIMEOUT_SECONDS``) or
+    ``git-failed`` (git refused the repository: another owner, a bad
+    configuration line, an include it cannot read). The subject is None for
+    every non-``ok`` status so the caller can short-circuit; ``check_error``
+    says why for the last two, and is None otherwise.
     """
+    from apothem.conformity._grep_base import (
+        GitCheckError,
+        GitFailedError,
+        GitTimeoutError,
+    )
+
     if not (root / ".git").exists():
-        return None, "not-a-git-repo"
+        return None, "not-a-git-repo", None
     try:
-        completed = subprocess.run(
-            ["git", "log", "-1", "--pretty=%B"],  # noqa: S607 — literal git argv, trusted PATH lookup, no shell
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=False,
-            encoding="utf-8",
-            timeout=GIT_TIMEOUT_SECONDS,
-        )
-    except subprocess.TimeoutExpired:
-        return None, "git-timeout"
+        completed = _git(root, "log", "-1", "--pretty=%B")
+        if completed.returncode != 0:
+            # A branch with no commit yet and a repository git refused both
+            # fail the log; only the first is exempt. ``rev-parse --verify
+            # --quiet`` exits 1 for a HEAD that names no commit, and 128 when
+            # git cannot read the repository at all.
+            head = _git(root, "rev-parse", "--verify", "--quiet", "HEAD")
+            if head.returncode == 1:
+                return None, "no-commits-yet", None
+            raise GitFailedError("git log", completed.returncode)
     except OSError:
-        return None, "git-unavailable"
-    if completed.returncode != 0:
-        # Empty repo or other transient git error — never block.
-        return None, "no-commits-yet"
+        return None, "git-unavailable", None
+    except GitCheckError as exc:
+        status = "git-timeout" if isinstance(exc, GitTimeoutError) else "git-failed"
+        return None, status, str(exc)
     body = completed.stdout or ""
     first_line = body.splitlines()[0] if body.strip() else ""
     if not first_line:
-        return None, "no-commits-yet"
-    return first_line, "ok"
+        return None, "no-commits-yet", None
+    return first_line, "ok", None
 
 
 def _is_merge_subject(subject: str) -> bool:
@@ -353,16 +386,17 @@ def check_repo(root: Path) -> GrepResult:
     Pre-conditions: ``root`` is the working-tree directory.
     Post-conditions: ``result.passed`` is True iff HEAD is conformant
     or the repo state is informationally exempt (no .git, no commits).
-    A ``git log`` past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``,
+    A git command past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``,
+    and a git that refused the repository gives ``git-failed``: both have
     ``passed`` False and a ``check_error`` that names the command.
     """
-    subject, status = _read_head_subject(root)
-    if status == "git-timeout":
+    subject, status, check_error = _read_head_subject(root)
+    if check_error is not None:
         return GrepResult(
             grep=GREP_NAME,
             passed=False,
             status=status,
-            check_error=f"git log did not finish within {GIT_TIMEOUT_SECONDS} seconds",
+            check_error=check_error,
         )
     if status != "ok" or subject is None:
         return GrepResult(
@@ -389,7 +423,8 @@ def check_repo(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check_repo()`` stays stdlib-only.
+    # Imported here, not at module top, so the module itself imports without
+    # the package.
     from apothem.conformity._grep_base import finish_root_report, parse_root_args
 
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root

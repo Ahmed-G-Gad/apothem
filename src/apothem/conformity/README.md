@@ -10,6 +10,7 @@
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
+| `_bounded_run.py` | `run_bounded`, which runs a program (a validator for the gate, git for a validator) with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -146,13 +147,18 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
 - **No unfinished pass.** A check that could not finish does not pass either.
-  Give every git call a timeout, and turn `subprocess.TimeoutExpired` into
-  `GitTimeoutError` from `_grep_base.py`, whose message names the command; a
-  corpus walker hands that message to `finish_root_report(check_error=...)`,
-  which stamps `check_error` and exits `2`, advisory or not. A timeout is not
-  the exempt state of a missing repository, a repository with no commit, or a
-  host without git: the data is there but was not read, and a checked
-  repository's own configuration can make git wait for ever. The gate gives
+  Run git through `run_bounded` from `_bounded_run.py` with a timeout, never
+  through `subprocess.run`: on Windows `subprocess.run` waits after a timeout
+  for every program that holds the output, such as the real git behind Git's
+  launcher. Turn `subprocess.TimeoutExpired` into `GitTimeoutError`, and a git
+  failure in a checkout the walker found into `GitFailedError`, both from
+  `_grep_base.py`; their messages name the command in fixed words and never
+  repeat git's own output. A corpus walker hands that message to
+  `finish_root_report(check_error=...)`, which stamps `check_error` and exits
+  `2`, advisory or not. A timeout or a refused checkout is not the exempt state
+  of a missing repository, a repository with no commit, or a host without git:
+  the data is there but was not read, and a checked repository's own
+  configuration can make git wait for ever or refuse to read it. The gate gives
   each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
   to stop with a `check_error` of its own.
 - **Two layouts, one import surface.** `gate.py` runs from the package

@@ -51,8 +51,9 @@ Posture. On the change-set path (`--staged`) the matcher emits a JSON
 ``GrepResult`` payload and follows the package exit contract: ``EXIT_PASS``
 (0) on a clean surface, ``EXIT_FAIL`` (2) when breaking-change findings
 stand without a MAJOR bump. A git command on that path that runs past
-``GIT_TIMEOUT_SECONDS`` leaves the change set unread, so the payload then
-carries ``check_error`` and ``passed: false`` and the exit is ``EXIT_FAIL``.
+``GIT_TIMEOUT_SECONDS``, or a git that refuses the checkout it runs in, leaves
+the change set unread, so the payload then carries ``check_error`` and
+``passed: false`` and the exit is ``EXIT_FAIL``.
 The per-Write hook path emits the same payload.
 """
 
@@ -145,6 +146,8 @@ class GrepResult:
             "findings": [f.as_dict() for f in self.findings],
         }
         if self.check_error is not None:
+            # The same key as ``_grep_base.CHECK_ERROR_KEY``, spelled out so
+            # the module stays stdlib-only at import.
             payload["check_error"] = self.check_error
         return json.dumps(payload, indent=2)
 
@@ -328,16 +331,47 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
     return compare_surfaces(old_surface, new_surface, str(p))
 
 
+def _git(
+    label: str, *args: str, check: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
+
+    git runs through :func:`~apothem.conformity._bounded_run.run_bounded`, so
+    the limit holds for every program git starts, also on Windows behind Git's
+    launcher. Raises :class:`~apothem.conformity._grep_base.GitTimeoutError`,
+    naming the command as *label*, past the limit; :class:`OSError` when git
+    cannot be started; and, with *check*,
+    :class:`subprocess.CalledProcessError` on a non-zero exit.
+    """
+    # Imported here, not at module top, so the module stays stdlib-only for
+    # every caller except the change-set check.
+    from apothem.conformity import _bounded_run
+    from apothem.conformity._grep_base import GitTimeoutError
+
+    try:
+        return _bounded_run.run_bounded(
+            ["git", *args], timeout=GIT_TIMEOUT_SECONDS, check=check
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
+
+
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
 
     Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when the
     staged list, or a staged or committed file, is not read within
-    ``GIT_TIMEOUT_SECONDS``: a change set that was not read is not a clean one.
+    ``GIT_TIMEOUT_SECONDS``, and
+    :class:`~apothem.conformity._grep_base.GitFailedError` when git fails to
+    list the change set in a folder that holds a ``.git`` entry: a change set
+    that was not read is not a clean one. Outside a checkout, or without git,
+    there is no change set and the list of findings is empty.
     """
-    # Imported here, not at module top, so the module stays stdlib-only for
-    # every caller except the change-set check.
-    from apothem.conformity._grep_base import GitTimeoutError
+    from apothem.conformity._grep_base import (
+        GitFailedError,
+        GitTimeoutError,
+        has_git_entry,
+    )
 
     version = current_version()
     if not version or is_v0(version):
@@ -345,23 +379,20 @@ def check_staged() -> list[Finding]:
 
     # Get list of staged Python files under src/apothem/.
     try:
-        result = subprocess.run(
-            [
-                "git",
-                "diff",
-                "--cached",
-                "--name-only",
-                "--diff-filter=AMR",
-                PUBLIC_PACKAGE,
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=GIT_TIMEOUT_SECONDS,
+        result = _git(
+            "git diff --cached",
+            "diff",
+            "--cached",
+            "--name-only",
+            "--diff-filter=AMR",
+            PUBLIC_PACKAGE,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
     except FileNotFoundError:
+        return []
+    if result.returncode != 0:
+        # Outside a checkout there is no change set; in one, git refused it.
+        if has_git_entry(Path.cwd()):
+            raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [
         f.strip()
@@ -373,24 +404,11 @@ def check_staged() -> list[Finding]:
 
     findings: list[Finding] = []
     for fp in files:
+        # A GitTimeoutError goes on to the caller: skipping the file would
+        # pass a change that was never compared.
         try:
-            staged = subprocess.run(
-                ["git", "show", f":{fp}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
-            prior = subprocess.run(
-                ["git", "show", f"HEAD:{fp}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
-        except subprocess.TimeoutExpired as exc:
-            # Skipping the file would pass a change that was never compared.
-            raise GitTimeoutError("git show", GIT_TIMEOUT_SECONDS) from exc
+            staged = _git("git show", "show", f":{fp}", check=True).stdout
+            prior = _git("git show", "show", f"HEAD:{fp}").stdout
         except subprocess.CalledProcessError:
             continue
         if not prior:
@@ -404,20 +422,8 @@ def check_staged() -> list[Finding]:
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
         try:
-            staged_init = subprocess.run(
-                ["git", "show", f":{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
-            prior_init = subprocess.run(
-                ["git", "show", f"HEAD:{INIT_PATH}"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=GIT_TIMEOUT_SECONDS,
-            ).stdout
+            staged_init = _git("git show", "show", f":{INIT_PATH}", check=True).stdout
+            prior_init = _git("git show", "show", f"HEAD:{INIT_PATH}").stdout
             staged_v = re.search(r'__version__\s*=\s*"([^"]+)"', staged_init)
             prior_v = re.search(r'__version__\s*=\s*"([^"]+)"', prior_init)
             if (
@@ -427,10 +433,9 @@ def check_staged() -> list[Finding]:
             ):
                 # MAJOR bump present — breaking changes are admissible.
                 return []
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        except (subprocess.CalledProcessError, GitTimeoutError):
             # Missing/timed-out staged init means the original breaking-change
-            # findings stand. A TimeoutExpired here is caught consistently with
-            # the bounded git calls above rather than crashing the validator.
+            # findings stand, so the check does not pass either way.
             pass
 
     return findings
@@ -451,7 +456,7 @@ def _read_hook_findings() -> list[Finding]:
 def _main(argv: list[str]) -> int:
     # Imported here, not at module top, so the module stays stdlib-only for
     # every caller except the command-line entry.
-    from apothem.conformity._grep_base import GitTimeoutError, make_parser
+    from apothem.conformity._grep_base import GitCheckError, make_parser
 
     parser = make_parser(GREP_NAME, __doc__)
     parser.add_argument(
@@ -465,7 +470,7 @@ def _main(argv: list[str]) -> int:
     if args.staged:
         try:
             findings = check_staged()
-        except GitTimeoutError as exc:
+        except GitCheckError as exc:
             findings, check_error = [], str(exc)
     else:
         findings = _read_hook_findings()

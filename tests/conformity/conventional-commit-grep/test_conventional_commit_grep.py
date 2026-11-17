@@ -153,13 +153,15 @@ def test_no_git_repo_is_informational_pass(tmp_path: Path) -> None:
 
 
 def test_git_timeout_does_not_pass(tmp_path: Path, monkeypatch) -> None:
+    from apothem.conformity import _bounded_run
+
     (tmp_path / ".git").mkdir()
 
     def _raise_timeout(*args: object, **kwargs: object) -> NoReturn:
         assert kwargs.get("timeout") == _MOD.GIT_TIMEOUT_SECONDS
         raise subprocess.TimeoutExpired(cmd="git", timeout=_MOD.GIT_TIMEOUT_SECONDS)
 
-    monkeypatch.setattr(_MOD.subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _raise_timeout)
     result = _MOD.check_repo(tmp_path)
     assert not result.passed
     assert result.status == "git-timeout"
@@ -171,12 +173,14 @@ def test_git_timeout_does_not_pass(tmp_path: Path, monkeypatch) -> None:
 def test_git_that_cannot_start_stays_exempt(tmp_path: Path, monkeypatch) -> None:
     # git missing from the host is unchanged: the history cannot be read
     # at all, so the check stays informational, as before.
+    from apothem.conformity import _bounded_run
+
     (tmp_path / ".git").mkdir()
 
     def _raise_missing(*args: object, **kwargs: object) -> NoReturn:
         raise FileNotFoundError("git")
 
-    monkeypatch.setattr(_MOD.subprocess, "run", _raise_missing)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _raise_missing)
     result = _MOD.check_repo(tmp_path)
     assert result.passed
     assert result.status == "git-unavailable"
