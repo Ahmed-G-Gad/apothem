@@ -513,6 +513,28 @@ def _link_fix(link: Path, *, named: bool = False) -> str:
     )
 
 
+def _link_leading_out(target: Path, root: Path) -> Path | None:
+    """Return the link that leads *target* out of *root*, if one does.
+
+    Walks up from *target* as spelled (``..`` folded by name) and returns the
+    first link that sits inside *root* and leads outside it: the link that
+    made the write escape. No user-level or ``~/.config`` link is exempt here,
+    since this only names the cause of a refusal. A link above *root*, the
+    project folder the operator named included (it leads to *root* itself),
+    and an escape spelled with ``..`` or a case variant name no link.
+    """
+    probe = _spelled(target)
+    while probe.parent != probe:
+        if (
+            _is_link(probe)
+            and _within_allowed_root(probe.parent, root)
+            and not _within_allowed_root(probe, root)
+        ):
+            return probe
+        probe = probe.parent
+    return None
+
+
 def _validate_target_path(
     target: Path,
     *,
@@ -530,12 +552,16 @@ def _validate_target_path(
     normalized_target = _normalized(target)
     normalized_root = _normalized(allowed_root)
     if not _within_allowed_root(normalized_target, normalized_root):
+        detail = {"allowed_root": _path_text(normalized_root)}
+        exit_link = _link_leading_out(target, normalized_root)
+        if exit_link is not None:
+            detail.update(symlink=_path_text(exit_link), leads_to=_leads_to(exit_link))
         return _result(
             "error",
             operation,
             target,
             "target escapes the allowed materialization root",
-            detail={"allowed_root": _path_text(normalized_root)},
+            detail=detail,
         )
     symlink = _unsafe_symlink(
         target, normalized_root, project_floor=project_floor, named=named

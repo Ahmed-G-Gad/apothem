@@ -95,6 +95,11 @@ def user_level_dirs(harness_id: str) -> tuple[Path, ...]:
     return tuple(found.values())
 
 
+def existing_user_level_dirs(harness_id: str) -> list[str]:
+    """Return the user-home folders *harness_id* writes that exist, as ``~/...``."""
+    return [_tilde(folder) for folder in user_level_dirs(harness_id) if folder.is_dir()]
+
+
 def is_project_scope(adapter: object) -> bool:
     """Return True for an adapter whose install root is the ``--project`` folder."""
     return callable(getattr(adapter, "resolve_output_path", None))
@@ -186,10 +191,11 @@ class LedgerView:
         """Return the active install of *harness* at *root*, or ``None``.
 
         The root is matched by exact text, never with the case folded, as the
-        ledger finds the uninstall's own install record. The same harness
-        recorded under another spelling of the folder is the same install to
-        an uninstall (see :meth:`others`), so the preview reports what the
-        uninstall does.
+        ledger finds the uninstall's own install record: a case-sensitive
+        folder can hold ``Proj`` and ``proj`` as two installs. The same
+        harness recorded under another spelling of the folder is the same
+        install to an uninstall (see :meth:`others`), so the preview reports
+        what the uninstall does.
         """
         for install in self.installs:
             if install.harness == harness and install.root == str(root):

@@ -98,6 +98,6 @@ jobs:
       # The Windows cells run the whole suite in 45 to 89 minutes (median 64,
       # 138 cells, 2026-11-10 to 2026-11-12), so the 90-minute limit cancelled
       # healthy runs; they get 120. The other cells keep 90. The workflow
-      # validator's 90-minute matrix ceiling covers jobs with their own steps;
-      # this job passes its limit to the reusable workflow, which owns it.
+      # validator checks the limit a job passes here the way it checks a job
+      # with its own steps: 120 at most for Windows and 90 for the rest.
       timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 }}

@@ -283,12 +283,14 @@ def holder_index(
     install, uninstall and rollback records). *exclude* names the pair doing the
     asking; only that pair is left out, so one harness installed in two
     projects counts as two holders. Its root is matched by exact text, as the
-    ledger matches it, so a root spelled any other way stays a holder. *also*
-    names more roots of that harness to leave out: an uninstall passes the
-    other spellings of its folder (see :func:`same_folder_roots`). A holder
-    whose root no longer exists is marked stale and ignored by
-    :meth:`HolderIndex.holders_of`, so a deleted project does not pin a folder
-    for good. *memo* is the caller's (see :func:`path_key`).
+    ledger matches it: a case-sensitive folder can hold ``Proj`` and ``proj``
+    as two installs, and a root spelled any other way stays a holder, which
+    keeps a folder rather than removing it. *also* names more roots of that
+    harness to leave out: an uninstall passes the other spellings of its
+    folder (see :func:`same_folder_roots`). A holder whose root no longer
+    exists is marked stale and ignored by :meth:`HolderIndex.holders_of`, so
+    a deleted project does not pin a folder for good. *memo* is the caller's
+    (see :func:`path_key`).
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
