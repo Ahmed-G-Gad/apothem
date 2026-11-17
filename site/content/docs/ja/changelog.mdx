@@ -1091,9 +1091,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reverses only the install recorded with the home spelled exactly as it is
   for that run, and keeps the shared folders for the other, on macOS too
   when it rolls back the install that created them. Rolling back the install
-  that first wrote the tool's own files, such as `~/.codex/AGENTS.md`, still
-  removes those files, so the other install fails `apothem verify` until you
-  run `apothem update` with the home spelled its way.
+  that first wrote the tool's own files still removes the ones the other
+  install left as they were, such as `~/.codex/hooks/`, and keeps with a
+  warning the ones that install rewrote, such as `~/.codex/AGENTS.md`. The
+  other install then fails `apothem verify` until you run `apothem update`
+  with the home spelled its way.
 - **Rolling back every tool that uses the shared folders removes them.** When
   the tool that created `~/.agents/skills/` and the other shared folders was
   rolled back or uninstalled first, they were kept for the tool that still

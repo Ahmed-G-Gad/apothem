@@ -490,8 +490,8 @@ def test_a_rollback_under_one_case_keeps_folders_the_other_case_holds(
     # folders it lists. Under home that rollback reverses the install that
     # made them, so only the other record keeps them, where case is kept as
     # text (macOS) as much as where the OS folds it. That rollback also
-    # removes the ~/.codex files it made, so only the rollback under HOME
-    # leaves an install that verifies.
+    # removes the ~/.codex files it made that HOME left unchanged, so only
+    # the rollback under HOME leaves an install that verifies.
     if case == "kept-as-spelled":
         _keep_case_as_spelled(monkeypatch)
     home, upper = _install_codex_in_two_cases(tmp_path, monkeypatch)
@@ -506,6 +506,15 @@ def test_a_rollback_under_one_case_keeps_folders_the_other_case_holds(
     assert {folder: _files(home / folder) for folder in _SHARED} == before
     assert _ended("codex", reversed_root / ".codex")
     assert not _ended("codex", kept / ".codex")
+    if rolled_back == "home":
+        # The install under HOME rewrote AGENTS.md to cite its own home,
+        # so the rollback under home keeps it and says so; the agents and
+        # hook scripts that install left as they were go.
+        assert (home / ".codex" / "AGENTS.md").is_file()
+        assert not _files(home / ".codex" / "agents")
+        assert not _files(home / ".codex" / "hooks")
+        # Joined with no spaces, so a path wrapped across lines still matches.
+        assert "AGENTS.mdwaskept" in "".join(result.output.split())
     if rolled_back == "HOME":
         _spell_home(monkeypatch, kept)
         verified = CliRunner().invoke(main, ["verify", "--harness", "codex"])

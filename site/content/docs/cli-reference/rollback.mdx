@@ -68,10 +68,12 @@ and you put back yourself, from a backup say, is yours: a rollback keeps it.
 A rollback reverses only the install recorded with your home spelled as it is
 when the rollback runs. When the same tool was also installed with your home
 spelled another way (through a link to it, or in another case on Windows or
-macOS), that install still uses the shared folders and keeps them. It does not
-keep the files in the tool's own folder, such as its instruction file: rolling
-back the install that first wrote them can remove them, so run
-`apothem update` with your home spelled the other way afterwards. A rollback
+macOS), that install still uses the shared folders and keeps them. The files
+in the tool's own folder are handled one by one: rolling back the install that
+first wrote them removes the ones the other install left as they were, such as
+its hook scripts, and keeps with a warning the ones the other install rewrote,
+such as its instruction file. Run `apothem update` with your home spelled the
+other way afterwards, so that install passes `apothem verify` again. A rollback
 run with your home spelled that way reverses that install too. When an
 install's record that could use the folder cannot be read, rollback stops with
 an error before it changes anything and writes no `rollback` record; repair
