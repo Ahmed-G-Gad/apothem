@@ -1631,7 +1631,7 @@ if ($env:APOTHEM_SOURCE) {
             $prior = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
-                $TagObject = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef" 2>$null)".Trim()
+                $TagObject = "$(& git @GitLongPaths @GitSafe -C $ApothemHome rev-parse --verify --quiet "refs/tags/$ApothemRef" 2>$null)".Trim()
                 if ($LASTEXITCODE -ne 0) { $TagObject = '' }
             } finally {
                 $ErrorActionPreference = $prior
@@ -1661,14 +1661,14 @@ if ($env:APOTHEM_SOURCE) {
                 if (-not ($TagType -ceq 'type commit' -and $TagName -ceq "tag $ApothemRef")) {
                     Write-Fail "Tag $ApothemRef carries the maintainer key's signature, but the signed tag object is not the $ApothemRef release tag (it names another tag, or no commit), so it was re-pointed (possible tampering). Aborting before anything is checked out or re-materialized."
                 }
-                $TagCommit = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}")".Trim()
+                $TagCommit = "$(& git @GitLongPaths @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}")".Trim()
                 if ($LASTEXITCODE -ne 0 -or -not $TagCommit) { Write-Fail "Could not read the commit the $ApothemRef tag points at" }
                 Write-Ok "Tag $ApothemRef carries a valid signature from the maintainer key $MaintainerFingerprint"
             } elseif ($ApothemAllowUnverified -eq '1') {
                 if ($TagObject) {
                     $ErrorActionPreference = 'Continue'
                     try {
-                        $TagCommit = "$(& git @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
+                        $TagCommit = "$(& git @GitLongPaths @GitSafe -C $ApothemHome rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
                         if ($LASTEXITCODE -ne 0) { $TagCommit = '' }
                     } finally {
                         $ErrorActionPreference = $prior

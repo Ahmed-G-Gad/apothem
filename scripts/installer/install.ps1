@@ -707,7 +707,7 @@ function Test-MaintainerTag {
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $TagObject = "$(& git @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref" 2>$null)".Trim()
+        $TagObject = "$(& git @GitLongPaths @GitSafe -C $Dir rev-parse --verify --quiet "refs/tags/$Ref" 2>$null)".Trim()
         if ($LASTEXITCODE -ne 0) { $TagObject = '' }
     } finally {
         $ErrorActionPreference = $prior
@@ -745,7 +745,7 @@ function Test-MaintainerTag {
         if ($TagObject) {
             $ErrorActionPreference = 'Continue'
             try {
-                $Commit = "$(& git @GitSafe -C $Dir rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
+                $Commit = "$(& git @GitLongPaths @GitSafe -C $Dir rev-parse --verify --quiet "$TagObject^{commit}" 2>$null)".Trim()
                 if ($LASTEXITCODE -ne 0) { $Commit = '' }
             } finally {
                 $ErrorActionPreference = $prior
