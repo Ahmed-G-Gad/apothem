@@ -365,8 +365,11 @@ def _surgical_remove_from_target(
     - ``sentinel_merge`` anchors: strip the managed block via
       :func:`remove_managed_block`; delete when the remainder is whitespace-only,
       else atomic-rewrite the operator prose. A BEGIN marker with no END after
-      it is a warning, and the file is left as it is. So is a recorded file
-      whose marker pair no rule can place (see :func:`unclear_block_warning`).
+      it is a warning, and the file is left as it is. So is a file whose
+      marker pairs no rule can place (see :func:`unclear_block_warning`) while
+      an install record lists it, and, record or not, one where rule 3 fired
+      (a BEGIN marker outside code whose END marker reads as code, with
+      another pair after it).
     - ``.json`` / ``.yaml`` / ``.yml`` targets: remove only Apothem's keys/hooks
       via the recursive structured stripper (operator-added/overridden keys
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;

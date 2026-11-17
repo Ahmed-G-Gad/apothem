@@ -326,15 +326,22 @@ starts. So Apothem never cuts the text after that marker:
   keeps a block in for that harness count, so a marker in a file of your own
   does not fail them.
 
+While an install record lists a file that also holds marker pairs Apothem
+cannot tell from your text, such as a pair you quote in a code block, install,
+update and uninstall leave all of that file as it is. Their warning, like the
+`apothem verify` note, then names that BEGIN marker along with each pair (see
+[Apothem cannot tell its block from your text](#apothem-cannot-tell-its-block-from-your-text)).
+
 Apothem reads a marker only as a line of its own outside code, as a Markdown
 viewer would, so a marker you quote in a sentence, in a fenced code block, or
 in code indented four columns past its list item (or the margin) after a blank
 line is not taken for one, and neither is a BEGIN and an END marker you quote
 in two separate code blocks. A code fence you leave open to the end of the file
-is read as text, up to eight of them; from the ninth, the rest of the file
-reads as code. Markers inside an HTML block or a block quote, or after a list
-item whose text goes on at the left margin, can still be read differently from
-a Markdown viewer.
+is read as text, up to eight of them (from the ninth, the rest of the file
+reads as code), unless a BEGIN marker outside code above it has its END marker
+in code and another marker pair follows them. Markers inside an HTML block or a
+block quote, or after a list item whose text goes on at the left margin, can
+still be read differently from a Markdown viewer.
 
 To fix it, open the named file and find the stray BEGIN marker: the one with no
 END marker before the next BEGIN marker, or none at all. Delete that line and
@@ -366,26 +373,53 @@ and the fix `apothem doctor` prints, each pair then comes with what to do in
 each case and what follows from it, for example "If lines 6 to 38 are
 Apothem's block, close that code block above line 6: the next update then
 replaces those lines. If they are text of yours, change or delete those two
-marker lines."
+marker lines." These texts, and the warning `apothem uninstall` gives, also
+name each BEGIN marker outside code that starts no marker pair, for example
+"The BEGIN marker at line 1 starts no marker pair: its END marker is gone, or
+the marker is yours."
 
 While an install record lists the file (until an uninstall finishes),
 `apothem install` and `apothem update` change nothing in it and print that
-warning. For a BEGIN marker whose END marker sits in code with another marker
-pair after them, they do so with or without a record. `apothem verify` fails,
-`apothem doctor` reports the file (as `harness.stray_begin`), and
-`apothem status --profile` shows drift, until you fix it. `apothem uninstall`
-leaves the file as it is, removes the rest of the install, and finishes; its
-warning names each pair and ends, for example, "If lines 6 to 38 are Apothem's
-block, delete them by hand, keeping your own text." Your text is never cut.
+warning. For a BEGIN marker outside code whose END marker sits in code with
+another marker pair after them, they do so with or without a record. A rule in
+your profile that opens a code block inside Apothem's block, above a marker
+pair of yours, leaves the file that way too: the install or update writes its
+block, then prints the warning, which says to fix that rule, without saying it
+left the file as it is.
+
+Until you fix the file, `apothem verify` fails, `apothem doctor` reports it
+(as `harness.stray_begin`), and `apothem status --profile` shows drift. With
+no install record, verify and doctor do not check `CLAUDE.md`, the profile
+document or the rules file in an OpenClaw workspace: only the record shows
+that the install wrote those files.
+
+With an install record, `apothem uninstall` leaves the file as it is, removes
+the rest of the install, and finishes. Its warning names each pair and ends,
+for example, "If lines 6 to 38 are Apothem's block, delete them by hand,
+keeping your own text." For a BEGIN marker outside code whose END marker sits
+in code, it says before that, for example, "If the BEGIN marker at line 1 is
+yours, delete or change it. If you leave it and no marker pair comes after it
+any more, a later install or update reads lines 1 to 4 as Apothem's block and
+replaces them." With no install record, the uninstall also leaves the file as
+it is, but it stays unfinished (exit code `2`) for the paths no record shows
+(see
+[An uninstall that did not finish](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+
+Do every step the warning gives. If you delete only Apothem's block and leave
+a BEGIN marker of yours above an END marker you quote in code, with no marker
+pair after them, those two markers read as Apothem's block, and a later
+install or update replaces the lines between them.
 
 With no install record, a marker pair you quote in code is your text: the
-install adds its block after it, unless the pair holds exactly the block the
-install writes, and then it leaves the file as it is and prints the warning.
-So once an uninstall has finished, delete Apothem's block from your code block
-by hand: a later install treats it as your text.
+install adds its block after it (in a rules file that Apothem writes with
+frontmatter, that frontmatter and the block go at the top instead), unless the
+pair holds exactly the block the install writes, and then it leaves the file
+as it is and prints the warning. So once an uninstall has finished, delete
+Apothem's block from your code block by hand: a later install treats it as
+your text.
 
 To fix it, open the named file at the lines the warning gives, and for each
-marker pair it names:
+marker pair and BEGIN marker it names:
 
 1. Decide whether the pair is Apothem's block, with Apothem's rules between the
    markers, or an example of yours.
@@ -395,16 +429,23 @@ marker pair it names:
    the left margin when they sit in indented code or under a paragraph. When
    the warning says to delete the pair by hand (its two marker lines sit in
    different code blocks, say), delete those lines and the lines between them,
-   keeping your own text.
+   keeping your own text. When it also says to delete or change a BEGIN marker
+   above the pair, do that too: if the pair is Apothem's block, that marker is
+   yours.
 3. If it is an example of yours, change or delete its two marker lines.
 4. If the warning says a BEGIN marker is outside code but its END marker sits
-   in code: when that BEGIN marker is yours, delete or change it. When the
-   lines from that BEGIN marker to its END marker are Apothem's block, start
-   the END marker line at the left margin if it sits in indented code; if it
+   in code or reads as part of the paragraph above it: when that BEGIN marker
+   is yours, delete or change it. When the lines from that BEGIN marker to its
+   END marker are Apothem's block, start the END marker line at the left
+   margin if it sits in indented code or reads as part of a paragraph; if it
    sits in a code block, a rule in your profile opened that code block inside
    Apothem's block, so close the code block above the END marker and fix the
    rule in your profile.
-5. Run `apothem update`, then `apothem verify` again.
+5. If the warning says a BEGIN marker starts no marker pair, delete or change
+   it by hand, with any old Apothem text below it, and keep your own text.
+   Left in place, it can pair with an END marker below it once you fix the
+   pairs, and a later install or update then replaces the lines between them.
+6. Run `apothem update`, then `apothem verify` again.
 
 ### Hooks not firing in Claude Code
 

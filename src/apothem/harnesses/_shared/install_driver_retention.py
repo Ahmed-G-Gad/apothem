@@ -249,8 +249,11 @@ def unlisted_block_warnings(
     names it without stopping the uninstall. A block that lost its END marker
     gets the warning for that instead (see
     :func:`install_driver_blocks.endless_block_warning`): no line shows where
-    it ends. A path in *skip* (one the uninstall handled already) and a file
-    that cannot be read are passed over.
+    it ends. A BEGIN marker outside code whose END marker reads as code, with
+    another pair after it (rule 3), gets the warning that names each marker
+    pair instead (see :func:`install_driver_blocks.unclear_block_warning`):
+    either pair may be Apothem's block. A path in *skip* (one the uninstall
+    handled already) and a file that cannot be read are passed over.
     """
     warnings: list[MaterializationResult] = []
     for relative in BOLT_ON_ANCHORS:

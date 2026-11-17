@@ -325,7 +325,9 @@ _FIX_ANOTHER = (
 #: What to do first with each file whose marker pairs Apothem cannot place
 #: (``kept_reason`` ``unclear-block``): an update leaves such a file as it is,
 #: and verify fails until the operator fixes the marker lines its warning
-#: names (each pair, where it reads, and the fix for each case).
+#: names (each pair and where it reads, each BEGIN marker that starts no pair,
+#: the BEGIN marker to delete or change when its END marker reads as code,
+#: and Apothem's block to delete by hand).
 _FIX_UNCLEAR = (
     "fix the marker lines the warnings name in the {count} file(s) where "
     "Apothem cannot tell its block from your text: an update leaves those "

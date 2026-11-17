@@ -33,7 +33,8 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   A file whose marker pairs Apothem cannot tell from your text, such as its
   block inside a code block of yours, fails the same check: its message says
   the file holds "Apothem markers to fix by hand", and its fix names each
-  marker pair, where its lines read, and how to fix it (see
+  marker pair, where its lines read and how to fix it, along with each BEGIN
+  marker that starts no marker pair (see
   [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 - **Hook runtime.** For each verified harness, and for each one that such a
   marker fails, doctor reads the files its latest

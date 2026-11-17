@@ -25,9 +25,17 @@ a BEGIN marker with no END marker after it: the text after that marker is kept
 as it is, and Apothem's block is written apart from it (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 A file where Apothem cannot tell its block from your text, such as its block
-inside a code block of yours, is left as it is, with a warning that names each
-marker pair in it and how to fix it (see
+inside a code block of yours, is left as it is while an install record lists
+it, with a warning that names each marker pair in it and how to fix it (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+With no install record, a marker pair you quote in code is your text, and the
+update adds its block after it, unless the pair holds exactly the block the
+update writes: then it leaves the file as it is, with the warning. A file where
+a BEGIN marker outside code has its END marker in code, with another marker
+pair after them, is left as it is with the warning, record or not. The update
+also prints the warning after it writes its block when a rule in your profile
+opens a code block inside the block and a marker pair of yours follows it; the
+warning then says to fix that rule.
 
 In each folder Apothem writes into (a skills folder, the support files under
 `.apothem/support/`), `update` compares every entry it writes. A file entry is

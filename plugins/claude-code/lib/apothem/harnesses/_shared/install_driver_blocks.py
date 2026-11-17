@@ -13,9 +13,13 @@ block is out. Each of those warnings carries :data:`MARKER_LEFT`. It also
 finds the BEGIN markers that start no whole block, which install and update
 keep as they are and verify reports (:func:`stray_begin_files`), and the
 files whose marker pairs no rule can place (:func:`unclear_pairs_at`), which
-install and update leave as they are once an install recorded the file. The
-text for those names each pair, where its marker lines read, and a fix for
-each case with what follows from it (:func:`unclear_block_report`).
+install and update leave as they are while an install record lists the file;
+with no record, only when rule 3 fired (a BEGIN marker outside code whose END
+marker reads as code, with another pair after it) or a pair holds exactly the
+block being written. The text for those names each pair, where its marker
+lines read, each BEGIN marker outside code that starts no pair
+(:func:`lone_begins_at`), and a fix for each case with what follows from it
+(:func:`unclear_block_report`).
 """
 
 from __future__ import annotations
@@ -85,9 +89,11 @@ def unclear_block_at(path: Path) -> tuple[int, int | None] | None:
     """Return where *path* holds a marker pair no rule can place, if it does.
 
     See :func:`apothem.lib.harness_materializer.uncertain_block`: the line of
-    the BEGIN marker, and of the code block's fence (``None`` for indented
-    code). ``None`` when the file holds a whole block, no such pair, or cannot
-    be read.
+    the first pair's BEGIN marker, and the line of the fence that opens the
+    code block holding that marker or, when rule 3 fired on the pair, its END
+    marker (``None`` when no fence does: the line is indented code or goes on
+    a paragraph). ``None`` when the file holds a whole block, no such pair, or
+    cannot be read.
     """
     try:
         text = path.read_bytes().decode("utf-8", errors="replace")

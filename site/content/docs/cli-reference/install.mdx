@@ -165,9 +165,11 @@ warning that names a file holding an Apothem BEGIN marker with no END after it:
 the install keeps the text after that marker and writes Apothem's block apart
 from it (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
-So does the warning for a file the install left as it is because Apothem
-cannot tell its block there from your text; it names each marker pair and how
-to fix it (see
+So does the warning for a file where Apothem cannot tell its block from your
+text, which names each marker pair and how to fix it: the install leaves such
+a file as it is or, when a rule in your profile opens a code block inside
+Apothem's block above a marker pair of yours, writes its block and then warns
+(see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 The `--format json` envelope always carries the full `warnings` array regardless
 of verbosity.
