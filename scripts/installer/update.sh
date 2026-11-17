@@ -84,11 +84,14 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
     GIT_CONFIG_COUNT GIT_EXEC_PATH GIT_TEMPLATE_DIR GIT_CONFIG \
     GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_ATTR_SOURCE
 # No replace refs, no lazy fetch of a missing object (a fetch the clone's
-# config shapes), only these transports whatever the caller set.
+# config shapes), only these transports whatever the caller set, and no
+# system attributes file (cgit empties core.attributesFile too): a macro
+# defined there could name a filter the clone's own files do not show.
 GIT_NO_REPLACE_OBJECTS=1
 GIT_NO_LAZY_FETCH=1
 GIT_ALLOW_PROTOCOL=file:git:http:https:ssh
-export GIT_NO_REPLACE_OBJECTS GIT_NO_LAZY_FETCH GIT_ALLOW_PROTOCOL
+GIT_ATTR_NOSYSTEM=1
+export GIT_NO_REPLACE_OBJECTS GIT_NO_LAZY_FETCH GIT_ALLOW_PROTOCOL GIT_ATTR_NOSYSTEM
 
 # The caller's PYTHONPATH is set aside until the Python this script runs is
 # chosen: which separator and which path form are safe depends on that
@@ -306,8 +309,10 @@ resolve_latest_tag() {
 # and pager off, no automatic maintenance, only the file, git, http, https
 # and ssh transports (so no ext:: or other remote helper program), no
 # recursion into submodules, no git status run inside a nested repository,
-# attributes from the work tree and index only (attr.tree emptied), paths
-# longer than Windows' usual limit allowed (Git for Windows), and, once
+# attributes from the clone's own files only (attr.tree and
+# core.attributesFile emptied, so no macro in the user's attributes file
+# names a filter), paths longer than Windows' usual limit allowed (Git
+# for Windows), and, once
 # HOOKS_OFF names an empty folder, with core.hooksPath pointing at it, so
 # none of the clone's hook scripts run (mirrors install.sh).
 HOOKS_OFF=""
@@ -319,7 +324,7 @@ cgit() {
         -c protocol.https.allow=always -c protocol.ssh.allow=always \
         -c submodule.recurse=false -c fetch.recurseSubmodules=false \
         -c diff.ignoreSubmodules=all -c gc.auto=0 -c maintenance.auto=false \
-        -c core.longpaths=true -c attr.tree= "$@"
+        -c core.longpaths=true -c attr.tree= -c core.attributesFile= "$@"
 }
 
 # exists PATH — return 0 when PATH is there, a dangling symbolic link included.

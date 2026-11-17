@@ -77,7 +77,10 @@ The installers and updaters also clear `GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
 git at another config file, and `GIT_ATTR_SOURCE`, which would make git read
 attributes from another tree than the work tree and index the checks read (an
 `attr.tree` in your own config is emptied on every git command run on a clone
-for the same reason). If you set one of them, the installer ignores it;
+for the same reason, and so is `core.attributesFile`, so git reads neither the
+attributes file it names nor `~/.config/git/attributes`, whose macros could
+name a filter the checks do not see). If you set one of them, the installer
+ignores it;
 the PowerShell scripts put it back when the run ends, so an `irm ... | iex`
 run leaves your session as it was. `GIT_CONFIG_NOSYSTEM` stays as you set it:
 it only stops git reading the system config. git still reads your own global
@@ -86,15 +89,17 @@ from the places it always looks, and `git`, `gpg` and `cosign` are the
 programs your `PATH` finds. The installers trust them as found, and so they
 trust that config.
 
-The installers and updaters also set three git variables for the whole run.
+The installers and updaters also set four git variables for the whole run.
 `GIT_NO_REPLACE_OBJECTS=1` stops git from swapping an object for another
 through replace refs. `GIT_NO_LAZY_FETCH=1` stops git from fetching a missing
 object from the remote on its own while it reads a clone.
 `GIT_ALLOW_PROTOCOL=file:git:http:https:ssh` allows only those five transports
 for every git command of the run, so a value in your environment cannot widen
 the list and an address cannot make git run a helper program such as `ext::`.
-`APOTHEM_REPO` must use one of them; a local path counts as `file`. The
-PowerShell scripts put all three back as they were when the run ends. They
+`APOTHEM_REPO` must use one of them; a local path counts as `file`.
+`GIT_ATTR_NOSYSTEM=1` stops git from reading the system attributes file, whose
+macros could name a filter. The PowerShell scripts put all four back as they
+were when the run ends. They
 also read git's output as UTF-8 for the run, whatever your console's code page,
 and put the console's setting back when the run ends.
 

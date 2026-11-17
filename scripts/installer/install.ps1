@@ -259,10 +259,12 @@ function Write-Fail  { param([string]$Msg) Write-Error "  x $Msg" }
 # start of the run, below;
 # mirrors install.sh). It also sets GIT_NO_LAZY_FETCH=1, so git never starts
 # a fetch of its own for an object the clone lacks (the clone's settings
-# would shape that fetch), and GIT_ALLOW_PROTOCOL to the five transports
+# would shape that fetch), GIT_ALLOW_PROTOCOL to the five transports
 # $GitNoProgram allows, since a value from the calling shell would win
-# over those settings. Run by irm | iex, the script shares the caller's
-# session, so the caller's values are put back as the run ends, however
+# over those settings, and GIT_ATTR_NOSYSTEM=1, so git reads no system
+# attributes file (see $GitNoProgram). Run by irm | iex, the script
+# shares the caller's session, so the caller's values are put back as
+# the run ends, however
 # it ends. GIT_CONFIG_NOSYSTEM is left as the caller set it: it only
 # stops git reading the system configuration. git still reads the user's
 # own global and system configuration from the places it always looks,
@@ -285,10 +287,13 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 # address in the clone's config cannot make git run a program (ext::,
 # or <name>:: for a git-remote-<name> found on PATH), writes a path
 # longer than Windows' usual limit at checkout (core.longpaths=true)
-# instead of leaving the file out, reads attributes from the work tree and
-# index only (attr.tree is emptied: a user's own attr.tree would name
-# another tree), and does not go into submodules: fetch and checkout leave
-# them alone, and diff and status skip them (diff.ignoreSubmodules=all),
+# instead of leaving the file out, reads attributes from the clone's own
+# files only (attr.tree and core.attributesFile are emptied, and the run
+# sets GIT_ATTR_NOSYSTEM: a user's own attr.tree would name another tree,
+# and a macro in the user's or the system's attributes file could name a
+# filter the clone's files do not show), and does not go into
+# submodules: fetch and checkout leave them alone, and diff and status
+# skip them (diff.ignoreSubmodules=all),
 # so the settings of a repository nested in the clone, which nothing
 # here checks, are never read. An update in place refuses a clone that
 # holds submodules anyway (Assert-CleanClone). The calls of an update
@@ -297,7 +302,7 @@ if ($ApothemRepo -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://' -and (Test-Path -Litera
 # run, so none of the clone's hooks runs either. core.sshCommand is left
 # alone: setting it would also override the user's own GIT_SSH (mirrors
 # install.sh's cgit).
-$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true', '-c', 'attr.tree=')
+$GitNoProgram = @('--no-pager', '-c', 'core.fsmonitor=', '-c', 'protocol.ext.allow=never', '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always', '-c', 'protocol.git.allow=always', '-c', 'protocol.http.allow=always', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always', '-c', 'submodule.recurse=false', '-c', 'fetch.recurseSubmodules=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'diff.ignoreSubmodules=all', '-c', 'core.longpaths=true', '-c', 'attr.tree=', '-c', 'core.attributesFile=')
 $GitSafe = @()
 
 # Every git call that reads or writes a clone's files (the clone, the tag
@@ -1818,9 +1823,9 @@ Lock-ApothemHome
 try {
 # The git variables described at the top are cleared or set for the run:
 # each one set now is kept in $SavedGitEnv, with GIT_NO_REPLACE_OBJECTS,
-# GIT_NO_LAZY_FETCH and GIT_ALLOW_PROTOCOL as they were, and the finally
-# block at the end puts them all back.
-$SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS; GIT_NO_LAZY_FETCH = $env:GIT_NO_LAZY_FETCH; GIT_ALLOW_PROTOCOL = $env:GIT_ALLOW_PROTOCOL }
+# GIT_NO_LAZY_FETCH, GIT_ALLOW_PROTOCOL and GIT_ATTR_NOSYSTEM as they
+# were, and the finally block at the end puts them all back.
+$SavedGitEnv = @{ GIT_NO_REPLACE_OBJECTS = $env:GIT_NO_REPLACE_OBJECTS; GIT_NO_LAZY_FETCH = $env:GIT_NO_LAZY_FETCH; GIT_ALLOW_PROTOCOL = $env:GIT_ALLOW_PROTOCOL; GIT_ATTR_NOSYSTEM = $env:GIT_ATTR_NOSYSTEM }
 # git writes paths and names in UTF-8, and PowerShell reads a program's
 # output in [Console]::OutputEncoding, the console's code page, where a
 # non-ASCII path reads as one that does not exist. It is UTF-8 for the
@@ -1838,6 +1843,7 @@ foreach ($GitVar in @('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_
 $env:GIT_NO_REPLACE_OBJECTS = '1'
 $env:GIT_NO_LAZY_FETCH = '1'
 $env:GIT_ALLOW_PROTOCOL = 'file:git:http:https:ssh'
+$env:GIT_ATTR_NOSYSTEM = '1'
 
 # Prerequisite: Python >= 3.10 ------------------------------------------------
 #

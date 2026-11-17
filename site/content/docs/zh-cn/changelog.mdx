@@ -1559,10 +1559,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`, so a value inherited from your
   environment can no longer point git at another config file, and
   `GIT_ATTR_SOURCE`, and every git command on the clone empties `attr.tree`, so
-  git never reads attributes from another tree; the PowerShell scripts put them,
-  the variables they set (`GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH` and
-  `GIT_ALLOW_PROTOCOL`) and the console's output encoding back when the run
-  ends, so an `irm ... | iex` run leaves your session as it was.
+  git never reads attributes from another tree. Every git command on the clone
+  also empties `core.attributesFile`, and the run sets `GIT_ATTR_NOSYSTEM=1`, so
+  git reads no attributes file outside the clone: a macro that your own or the
+  system's attributes file defines with a filter (`[attr]name filter=...`)
+  applies to nothing in the clone. The PowerShell scripts put the variables
+  they clear, the ones they set (`GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH`,
+  `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM`) and the console's output
+  encoding back when the run ends, so an `irm ... | iex` run leaves your
+  session as it was.
   `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL` for
   the installer, it is now ignored; git still reads your own global and system
   config from the usual places, and `git`, `gpg` and `cosign` are the ones your

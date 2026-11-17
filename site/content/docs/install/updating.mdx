@@ -96,7 +96,8 @@ load them. After the checkout, it removes the Python
 cache folders (`__pycache__`) under `src` before the engine runs from the
 clone. The clone's git hooks never run during the update, and a clone of a
 project other than Apothem is not updated at all. The update sets
-`GIT_NO_LAZY_FETCH=1` and `GIT_ALLOW_PROTOCOL` for its run (see the
+`GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM=1` for its
+run, and git reads no attributes file outside the clone (see the
 [installer environment variables](/docs/how-to/installer-environment-variables#the-installer-variables)).
 Each run holds a lock, `<APOTHEM_HOME>.lock`, for its whole length, so a
 second install, update or uninstall on the same `APOTHEM_HOME` stops; see

@@ -471,7 +471,9 @@ character stops the install; move it out of `APOTHEM_HOME` first. The installer
 ignores `GIT_DIR` and the other `GIT_*` variables that redirect git, point it
 at another config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
 `GIT_CONFIG_SYSTEM`; `GIT_CONFIG_NOSYSTEM` stays as you set it) or make it
-read attributes from another tree (`GIT_ATTR_SOURCE`), trusts the
+read attributes from another tree (`GIT_ATTR_SOURCE`), reads no attributes
+file outside the clone (it empties `core.attributesFile` and sets
+`GIT_ATTR_NOSYSTEM`), trusts the
 `git`, `gpg` and `cosign` that `PATH` finds and your own global git config, and
 refuses an `APOTHEM_REPO` that starts with `-`. `--dry-run` fetches and checks
 the source in a temporary folder and leaves `APOTHEM_HOME` as it is. It makes

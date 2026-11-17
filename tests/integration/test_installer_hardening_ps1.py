@@ -1868,7 +1868,7 @@ try {
 } catch {
     'SCRIPT-FAILED: ' + $_
 }
-foreach ($Name in 'GIT_CONFIG_GLOBAL', 'GIT_DIR', 'GIT_CONFIG_NOSYSTEM', 'GIT_NO_REPLACE_OBJECTS', 'GIT_NO_LAZY_FETCH', 'GIT_ALLOW_PROTOCOL') {
+foreach ($Name in 'GIT_CONFIG_GLOBAL', 'GIT_DIR', 'GIT_CONFIG_NOSYSTEM', 'GIT_NO_REPLACE_OBJECTS', 'GIT_NO_LAZY_FETCH', 'GIT_ALLOW_PROTOCOL', 'GIT_ATTR_NOSYSTEM') {
     "AFTER $Name=[$([Environment]::GetEnvironmentVariable($Name))]"
 }
 "AFTER CODE PAGE=[$([Console]::OutputEncoding.CodePage)]"
@@ -1895,12 +1895,13 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
 ) -> None:
     """Run the way the one-liner runs it (in the caller's own session), the
     script clears the git variables only for its run: here it stops at the
-    tag check, and the caller's GIT_CONFIG_GLOBAL, GIT_DIR and
-    GIT_ALLOW_PROTOCOL are back, GIT_NO_REPLACE_OBJECTS and
-    GIT_NO_LAZY_FETCH are unset again, and GIT_CONFIG_NOSYSTEM, which only
-    narrows what git reads, stayed set throughout. While the tag is checked
-    (the stub gpg looks), git may fetch no missing object and uses only the
-    run's own five transports, and the console's output code page is UTF-8
+    tag check, and the caller's GIT_CONFIG_GLOBAL, GIT_DIR,
+    GIT_ALLOW_PROTOCOL and GIT_ATTR_NOSYSTEM are back, GIT_NO_REPLACE_OBJECTS
+    and GIT_NO_LAZY_FETCH are unset again, and GIT_CONFIG_NOSYSTEM, which
+    only narrows what git reads, stayed set throughout. While the tag is
+    checked (the stub gpg looks), git may fetch no missing object, uses only
+    the run's own five transports and reads no system attributes file
+    (GIT_ATTR_NOSYSTEM=1), and the console's output code page is UTF-8
     (65001), so PowerShell reads every git command's output of the run as
     UTF-8, not only the clone checks'; the session's own (code page 437
     here, in a console of the test's own) is back as the run ends."""
@@ -1926,6 +1927,7 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
             "GIT_DIR": str(elsewhere),
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_ALLOW_PROTOCOL": "ext",
+            "GIT_ATTR_NOSYSTEM": "false",
             "APOTHEM_TEST_SCRIPT": str(INSTALLER_DIR / script),
         }
     )
@@ -1961,6 +1963,7 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
     assert "GIT_CONFIG_NOSYSTEM=1" in during, during
     assert "GIT_NO_LAZY_FETCH=1" in during, during
     assert "GIT_ALLOW_PROTOCOL=file:git:http:https:ssh" in during, during
+    assert "GIT_ATTR_NOSYSTEM=1" in during, during
     assert not any(line.startswith("GIT_CONFIG_GLOBAL=") for line in during), during
     assert f"AFTER GIT_CONFIG_GLOBAL=[{dotfiles}]" in result.stdout, plain
     assert f"AFTER GIT_DIR=[{elsewhere}]" in result.stdout, plain
@@ -1968,6 +1971,7 @@ def test_a_run_in_the_callers_session_puts_its_git_variables_back(
     assert "AFTER GIT_NO_REPLACE_OBJECTS=[]" in result.stdout, plain
     assert "AFTER GIT_NO_LAZY_FETCH=[]" in result.stdout, plain
     assert "AFTER GIT_ALLOW_PROTOCOL=[ext]" in result.stdout, plain
+    assert "AFTER GIT_ATTR_NOSYSTEM=[false]" in result.stdout, plain
 
 
 # D8: Windows PowerShell 5.1 follows each redirect by hand -------------------------

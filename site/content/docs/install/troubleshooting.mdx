@@ -301,9 +301,12 @@ clone tracks files there.
   example with `git -C ~/.apothem checkout HEAD -- <path>`, then re-run.
 - "has a .gitattributes file at ... that names a filter or diff driver
   (filter= or diff=)" names a tracked file whose committed copy, or the copy
-  in the work tree, names one outside a comment. git would run that
-  driver, which your own or the system's git config may define, while it
-  reads the clone. Remove the setting, commit that change, then re-run.
+  in the work tree, names one outside a comment, a macro (`[attr]` line) that
+  names one included. git would run that driver, which your own or the
+  system's git config may define, while it reads the clone. Remove the
+  setting, commit that change, then re-run. A macro that only your own or the
+  system's attributes file defines does not count: during the run git reads
+  no attributes file outside the clone, so such a macro names no driver there.
 - "has a .gitattributes file at ... whose committed copy git could not read"
   means the copy in the clone's git folder is missing or damaged, or its bytes
   do not match its ID, which git does not check as it reads them. The

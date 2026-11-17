@@ -1754,8 +1754,11 @@ def _git_env_without_user_config() -> dict[str, str]:
 #: (no ext:: and no other remote helper), no recursion into submodules, no
 #: git status run inside a nested repository, no automatic maintenance,
 #: paths longer than Windows' usual limit written at checkout, and
-#: attributes read from the work tree and index only (an empty attr.tree
-#: overrides one in the user's own config, which would name another tree).
+#: attributes read from the clone's own files only (an empty attr.tree
+#: overrides one in the user's own config, which would name another tree,
+#: and an empty core.attributesFile turns off the user's own attributes
+#: file, ~/.config/git/attributes included, whose macros could name a
+#: filter).
 GIT_NO_PROGRAM_SETTINGS = (
     "core.fsmonitor=",
     "protocol.ext.allow=never",
@@ -1772,6 +1775,7 @@ GIT_NO_PROGRAM_SETTINGS = (
     "maintenance.auto=false",
     "core.longpaths=true",
     "attr.tree=",
+    "core.attributesFile=",
 )
 
 
@@ -3782,6 +3786,23 @@ COMMITTED_ATTRIBUTE_CASES: tuple[tuple[str, object, str | None], ...] = (
         lambda h: _commit_attributes(h, ".gitattributes", "README diff=astextplain\n"),
         ".gitattributes",
     ),
+    # A macro names a driver only where it is defined. Defined in the
+    # clone's own files, its [attr] line holds filter= and is refused like
+    # any other; defined only in the user's own attributes file, it applies
+    # to nothing here, since git reads no such file on a clone (see
+    # test_a_macro_from_the_users_attributes_file_names_no_filter_in_both).
+    (
+        "macro-defined-in-the-clone",
+        lambda h: _commit_attributes(
+            h, ".gitattributes", "[attr]evil filter=userfilter\n*.txt evil\n"
+        ),
+        ".gitattributes",
+    ),
+    (
+        "macro-defined-elsewhere",
+        lambda h: _commit_attributes(h, ".gitattributes", "*.txt evil\n"),
+        None,
+    ),
 )
 
 
@@ -3814,6 +3835,72 @@ def test_a_committed_gitattributes_that_names_a_driver_is_refused_in_both(
     )
 
     assert got == (["passed"] if refused is None else _filter_attributes(home, refused))
+
+
+def _users_macro(tmp_path: Path, where: str) -> dict[str, str]:
+    """The environment of a user whose own attributes file defines the
+    macro evil as the filter userfilter: the file core.attributesFile names,
+    or, with that setting unset, $XDG_CONFIG_HOME/git/attributes."""
+    user = tmp_path / "user"
+    xdg = user / "xdg"
+    if where == "core.attributesFile":
+        attributes = user / "attributes"
+        config = f"[core]\n\tattributesFile = {attributes.as_posix()}\n"
+    else:
+        attributes = xdg / "git" / "attributes"
+        config = ""
+    attributes.parent.mkdir(parents=True, exist_ok=True)
+    attributes.write_text("[attr]evil filter=userfilter\n", encoding="utf-8")
+    (user / "gitconfig").write_text(config, encoding="utf-8")
+    return {"GIT_CONFIG_GLOBAL": str(user / "gitconfig"), "XDG_CONFIG_HOME": str(xdg)}
+
+
+@pytest.mark.parametrize("name", _CHECK_FAMILIES)
+@pytest.mark.parametrize("where", ["core.attributesFile", "xdg-default"])
+def test_a_macro_from_the_users_attributes_file_names_no_filter_in_both(
+    tmp_path: Path, name: str, where: str
+) -> None:
+    """A committed .gitattributes can name a macro (*.txt evil) that only
+    the user's own attributes file defines, with a filter ([attr]evil
+    filter=userfilter): the check reads the clone's own files and finds no
+    driver there. Every git command on a clone empties core.attributesFile,
+    which also turns off the default $XDG_CONFIG_HOME/git/attributes, so git
+    applies no such macro and would run no filter it names. Plain git, with
+    the same setup, applies it."""
+    home_path = _work_clone(tmp_path)
+    _write(home_path, ".gitattributes", "*.txt evil\n")
+    _write(home_path, "a.txt", "x\n")
+    _git("-C", str(home_path), "add", "--", ".gitattributes", "a.txt")
+    _git("-C", str(home_path), "commit", "--quiet", "-m", "macro")
+    env = _users_macro(tmp_path, where)
+    plain = subprocess.run(
+        ["git", "-C", str(home_path), "check-attr", "filter", "--", "a.txt"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**_git_env_without_user_config(), **env},
+    )
+    assert plain.stdout.strip() == "a.txt: filter: userfilter", plain.stdout
+
+    if name.endswith(".sh"):
+        if _SH is None:
+            pytest.skip("no POSIX sh on this host")
+        result = _run_sh_check(
+            name, 'cgit -C "$1" check-attr filter -- a.txt', home_path.as_posix(), **env
+        )
+    else:
+        if _PWSH is None:
+            pytest.skip("no PowerShell on this host")
+        result = _run_ps1_check(
+            name,
+            "& git @GitNoProgram -C $env:CLONE_HOME check-attr filter -- a.txt",
+            home_path.as_posix(),
+            **env,
+        )
+
+    lines = result.stdout.splitlines()
+    assert "a.txt: filter: unspecified" in lines, result.stdout + result.stderr
+    assert "passed" in lines, result.stdout + result.stderr
 
 
 def _git_output(home: Path, *args: str) -> str:
@@ -4685,6 +4772,23 @@ def test_every_script_turns_off_lazy_fetch_and_fixes_the_transports(
             assert f"{variable} = $env:{variable}" in saved.group(1), variable
         assert "$env:GIT_NO_LAZY_FETCH = '1'" in content
         assert "$env:GIT_ALLOW_PROTOCOL = 'file:git:http:https:ssh'" in content
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_every_script_reads_no_system_attributes_file(name: str) -> None:
+    """All four scripts set GIT_ATTR_NOSYSTEM=1 for the whole run, so git
+    reads no system attributes file, whose macros could name a filter; the
+    PowerShell scripts keep the caller's value and put it back."""
+    content = SCRIPTS[name]
+    if name.endswith(".sh"):
+        block = _sh_git_environment(name)
+        assert "\nGIT_ATTR_NOSYSTEM=1\n" in block
+        assert "GIT_ATTR_NOSYSTEM" in block.splitlines()[-1].split()
+    else:
+        saved = re.search(r"^\$SavedGitEnv = @\{([^}]*)\}", content, re.MULTILINE)
+        assert saved, f"{name} no longer keeps the caller's git variables"
+        assert "GIT_ATTR_NOSYSTEM = $env:GIT_ATTR_NOSYSTEM" in saved.group(1)
+        assert "$env:GIT_ATTR_NOSYSTEM = '1'" in content
 
 
 @requires_posix_sh
