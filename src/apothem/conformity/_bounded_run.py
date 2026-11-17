@@ -23,7 +23,10 @@ the stall.
   group of its own, and a stop ends the whole group. While it waits, a
   ``SIGTERM`` or ``SIGHUP`` to this process stops that group first and then
   exits, because a signal sent to this process's own group no longer reaches a
-  program in another session;
+  program in another session. A ``SIGKILL``, which no handler sees, or another
+  signal ends this process alone: the program runs on until it finishes, and
+  the time limits of its own work (a validator's git limits) still end any
+  wait;
 - after a stop it waits at most :data:`STOP_GRACE_SECONDS` for the output to
   close, then leaves it open: a program that escaped the stop can hold it, and
   closing a pipe that a reader thread is blocked on would wait as well.
