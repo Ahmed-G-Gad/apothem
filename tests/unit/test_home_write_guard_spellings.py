@@ -771,14 +771,18 @@ def test_an_alternate_data_stream_of_a_protected_folder_is_refused(
 @pytest.mark.parametrize(
     ("fold", "spelling", "expected"),
     [
-        (False, "/System/Volumes/Data/Users/me/.claude", "/Users/me/.claude"),
-        (False, "/System/Volumes/Data/Users/me", "/Users/me"),
+        (False, "/System/Volumes/Data/Users/alice/.claude", "/Users/alice/.claude"),
+        (False, "/System/Volumes/Data/Users/alice", "/Users/alice"),
         (False, "/System/Volumes/Data", "/"),
         (False, "/System/Volumes/Data/", "/"),
-        (False, "/System/Volumes/DataX/Users/me", "/System/Volumes/DataX/Users/me"),
-        (False, "/system/volumes/data/Users/me", "/system/volumes/data/Users/me"),
-        (True, "/system/volumes/data/Users/me", "/Users/me"),
-        (False, "/Users/me/System/Volumes/Data", "/Users/me/System/Volumes/Data"),
+        (
+            False,
+            "/System/Volumes/DataX/Users/alice",
+            "/System/Volumes/DataX/Users/alice",
+        ),
+        (False, "/system/volumes/data/Users/alice", "/system/volumes/data/Users/alice"),
+        (True, "/system/volumes/data/Users/alice", "/Users/alice"),
+        (False, "/Users/alice/System/Volumes/Data", "/Users/alice/System/Volumes/Data"),
     ],
 )
 def test_the_macos_data_volume_reads_as_the_path_it_is_firmlinked_to(
