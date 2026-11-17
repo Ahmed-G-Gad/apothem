@@ -44,6 +44,7 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     extract_managed_block,
+    whole_blocks,
 )
 from apothem.lib.profile import load_profile_file
 from apothem.schemas import profile_minimal_path
@@ -2055,12 +2056,26 @@ def _lost_end(text: str) -> str:
     return text.replace(APOTHEM_BLOCK_END, "") + "my own line\n"
 
 
+def _pair_below_a_quoted_end(text: str) -> str:
+    """Return the rules file *text* between a BEGIN marker of yours and your pair.
+
+    Above the block, a BEGIN marker of yours with your note below it; below
+    it, an END marker you quote in code, then a marker pair of yours.
+    """
+    return (
+        f"my own text above\n{APOTHEM_BLOCK_BEGIN}\nmy note\n\n{text}How the "
+        f"markers look:\n\n```md\n{APOTHEM_BLOCK_END}\n```\n\nmy own text below\n"
+        f"\nMy example:\n{APOTHEM_BLOCK_BEGIN}\nMY EXAMPLE\n{APOTHEM_BLOCK_END}\n"
+    )
+
+
 @pytest.mark.parametrize(
     "shape",
     [
         pytest.param(_fenced, id="unclear"),
         pytest.param(_another_pair, id="two-blocks"),
         pytest.param(_lost_end, id="lost-end"),
+        pytest.param(_pair_below_a_quoted_end, id="pair-below-a-quoted-end"),
     ],
 )
 def test_a_preview_says_it_would_leave_a_rules_file_it_cannot_retire(
@@ -2178,3 +2193,78 @@ def test_verify_names_an_earlier_rules_file_an_update_cannot_retire(
     assert [m for m in _messages(run) if str(target) in m]
     assert code == 1, payload
     assert _stray_files(payload) == [target]
+
+
+# --- a pair of yours below an END marker you quote ----------------------------
+
+
+def _note(envelope: dict[str, object], target: Path) -> str:
+    """Return the one warning of *envelope* that names *target*, flattened."""
+    (note,) = [m for m in _warning_messages(envelope) if str(target) in m]
+    return " ".join(note.split())
+
+
+@pytest.mark.parametrize(
+    ("command", "exits"),
+    [
+        pytest.param("update", (0, 0, 0), id="update"),
+        pytest.param("uninstall", (2, 2, 0), id="uninstall"),
+    ],
+)
+def test_a_rules_file_with_your_pair_below_a_quoted_end_keeps_it_to_the_end(
+    adapter: OpenClawAdapter, home: Path, command: str, exits: tuple[int, ...]
+) -> None:
+    """advice-1: the retire took Apothem's block out and named only your BEGIN marker.
+
+    A rules file in a workspace the config moved away from holds a BEGIN
+    marker of yours above Apothem's block, an END marker you quote in code
+    below it, and a marker pair of yours further down. Once Apothem's block
+    is out, that BEGIN marker and the quoted END marker read as a pair with
+    yours after it, so no block was certain, and the retire went ahead.
+    Deleting the BEGIN marker as its text said left your pair the one block
+    in the file, which the next update retired as Apothem's block. The run
+    now leaves the file as it is and names both whole blocks; done as each
+    warning says, it retires the file, a later install keeps every line of
+    yours, and verify passes.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    shaped = _pair_below_a_quoted_end(target.read_text(encoding="utf-8"))
+    target.write_bytes(shaped.encode())
+    _move_default_workspace(home, "~/ws-b")
+    run = _update_json if command == "update" else _uninstall_json
+    [(inner, inner_end), (mine, mine_end)] = whole_blocks(shaped)
+    lines = shaped.split("\n")
+    outer = lines.index(APOTHEM_BLOCK_BEGIN) + 1
+
+    first, first_envelope = run()
+    kept = target.read_bytes()
+    lines[mine - 1], lines[mine_end - 1] = "BEGIN (my example)", "END (my example)"
+    target.write_bytes("\n".join(lines).encode())
+    second, second_envelope = run()
+    del lines[outer - 1]
+    target.write_bytes("\n".join(lines).encode())
+    third, third_envelope = run()
+    left = target.read_text(encoding="utf-8")
+    adapter.install({})
+    verified, payload = _verify_json()
+
+    assert (first, second, third) == exits, (first_envelope, second_envelope)
+    assert kept == shaped.encode()
+    assert (
+        f"holds 2 whole blocks between Apothem's markers (lines {inner} to "
+        f"{inner_end}, and lines {mine} to {mine_end})"
+    ) in _note(first_envelope, target)
+    assert (
+        f"Delete or change the BEGIN marker at line {outer} instead, keeping your "
+        "own text"
+    ) in _note(second_envelope, target)
+    assert not [m for m in _warning_messages(third_envelope) if str(target) in m]
+    assert APOTHEM_BLOCK_BEGIN not in left
+    for line in ("my own text above", "my note", "my own text below", "MY EXAMPLE"):
+        assert line in left
+    assert target.read_text(encoding="utf-8") == left
+    assert verified == 0, payload

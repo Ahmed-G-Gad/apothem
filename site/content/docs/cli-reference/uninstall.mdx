@@ -123,20 +123,29 @@ uninstall also leaves Apothem's managed block where it is: in
 `apothem/rules/00-apothem-profile.md` in the folder of a tool configured
 through one settings file, such as Open-Claw, OpenCode or Qwen Code. Nothing
 shows which install wrote that block, so the file stays as it is, and a
-`Warning:` line names it; the warning does not stop the uninstall. If you no
-longer want the block (Claude Code still reads `CLAUDE.md`), delete the lines
-from `<!-- BEGIN APOTHEM MANAGED BLOCK -->` to
-`<!-- END APOTHEM MANAGED BLOCK -->` by hand. When that file holds two
+`Warning:` line names it with the lines of the block, from
+`<!-- BEGIN APOTHEM MANAGED BLOCK -->` to `<!-- END APOTHEM MANAGED BLOCK -->`
+(for example "delete lines 5 to 36"); the warning does not stop the
+uninstall. If you no longer want the block (Claude Code still reads
+`CLAUDE.md`), delete those lines by hand: a BEGIN marker of yours, or a marker
+pair you quote, above the block is not part of it. When that file holds two
 different blocks between Apothem's markers (a marker pair of yours outside
 code, say), deleting from the first BEGIN marker to the next END marker would
 take text of yours with it, so the warning gives the text for such a file
 instead (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)): it
 names each block by its lines, or Apothem's block and the marker lines around
-it, and says how to fix the file, keeping your own text. It then says to
-delete Apothem's block by hand if you no longer want it. This warning does not
-stop the uninstall either, and the `✗` line does not name that file. Fix it
-before you run `apothem update` too: an update does not fix it.
+it, and says how to fix the file, keeping your own text. When it names
+Apothem's block and the marker lines around it, it then says to delete
+Apothem's block by hand if you no longer want it. When it names two or more
+whole blocks, it says instead to run `apothem update`, then
+`apothem uninstall` again: a BEGIN marker of yours above Apothem's block and an
+END marker below it, which that text does not name, would make one block once
+Apothem's block was deleted by hand, and the next update would replace the
+lines between them. The uninstall run again names those marker lines first.
+This warning does not stop the uninstall either, and the `✗` line does not
+name that file. Fix it before you run `apothem update` too: an update does not
+fix it.
 
 The shared working directory's memory, contexts, and learning stores are
 backed up and removed only when this is the last harness installed at that

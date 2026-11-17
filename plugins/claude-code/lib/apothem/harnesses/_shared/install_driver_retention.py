@@ -252,13 +252,22 @@ BOLT_ON_ANCHORS: Final[tuple[str, ...]] = (
 
 
 #: What follows the fix in the warning for a bolt-on anchor no install record
-#: lists that holds two different blocks (see :func:`unlisted_block_warnings`).
-#: Once the file is fixed it holds Apothem's block alone, which the uninstall
-#: still leaves.
+#: lists whose second block shows only once Apothem's is out (see
+#: :func:`unlisted_block_warnings`). Once the marker lines it names are fixed,
+#: the file holds Apothem's block alone, which the uninstall still leaves.
 _UNLISTED_THEN = (
     "then delete Apothem's block by hand if you no longer want it: no install "
     "record lists the file, so the uninstall leaves it as it is"
 )
+
+#: The same for such a file that holds two or more whole blocks: the update,
+#: then the uninstall again. The text names each whole block, not a BEGIN
+#: marker of the operator's above Apothem's block and an END marker below it:
+#: once Apothem's block was deleted by hand, those two would make one block,
+#: and the next update would replace the lines between them. Once the update
+#: has recorded the file, the uninstall run again names them first (see
+#: :func:`install_driver_blocks.another_block_report`).
+_UNLISTED_AGAIN = "then run apothem update, then apothem uninstall again"
 
 
 def unlisted_block_warnings(
@@ -280,10 +289,15 @@ def unlisted_block_warnings(
     :func:`install_driver_blocks.another_block_report`): deleting the lines
     from the first BEGIN marker to the next END marker there would take out a
     marker pair of the operator's, or their text between two marker lines
-    around Apothem's block. Like the warning for one whole block, it carries
-    no ``detail``, so it changes nothing else the uninstall does. A path in
-    *skip* (one the uninstall handled already) and a file that cannot be read
-    are passed over.
+    around Apothem's block. With two or more whole blocks, that text ends
+    with the update and the uninstall again, not with deleting Apothem's
+    block by hand (see :data:`_UNLISTED_AGAIN`). A file with one whole block
+    and no other gets a text that names that block by its lines, so the
+    step to delete it by hand does not start at a BEGIN marker of the
+    operator's above it, or take a marker pair they quote there. Like that
+    text, the two-block text carries no ``detail``, so it changes nothing
+    else the uninstall does. A path in *skip* (one the uninstall handled
+    already) and a file that cannot be read are passed over.
     """
     warnings: list[MaterializationResult] = []
     for relative in BOLT_ON_ANCHORS:
@@ -296,18 +310,23 @@ def unlisted_block_warnings(
             continue
         if extract_managed_block(text) is None:
             continue
-        endless = endless_block_warning(anchor, "surgical_uninstall")
-        if endless is not None:
-            warnings.append(endless)
+        found = whole_blocks(text)
+        if not found:
+            endless = endless_block_warning(anchor, "surgical_uninstall")
+            if endless is not None:
+                warnings.append(endless)
             continue
-        if len(whole_blocks(text)) > 1 or another_block_at(anchor):
+        if len(found) > 1:
+            message = another_block_report(anchor, then=_UNLISTED_AGAIN)
+        elif another_block_at(anchor):
             message = another_block_report(anchor, then=_UNLISTED_THEN)
         else:
+            begin, end = found[0]
             message = (
                 f"{anchor} still holds Apothem's managed block: no install record "
-                "lists the file, so the uninstall leaves it as it is; delete the "
-                f"lines from {APOTHEM_BLOCK_BEGIN} to {APOTHEM_BLOCK_END} by hand "
-                "if you no longer want them"
+                "lists the file, so the uninstall leaves it as it is; delete lines "
+                f"{begin} to {end}, from {APOTHEM_BLOCK_BEGIN} to "
+                f"{APOTHEM_BLOCK_END}, by hand if you no longer want them"
             )
         warnings.append(_result("warning", "surgical_uninstall", anchor, message))
     return warnings

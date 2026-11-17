@@ -153,9 +153,14 @@ marker pair of yours, and delete or change a BEGIN marker of yours that it
 names before you run the uninstall again. For an earlier release's install or an
 install with no record, first copy any listed file you edited or added and
 fix each file a warning names for an Apothem marker, as that warning says,
-then run `apothem update`, then the uninstall. An update keeps a BEGIN marker
-with no END and the text below it, and does not fix a file that holds two
-different blocks. The
+then run `apothem update`, then the uninstall. With no record, Apothem's block
+in `CLAUDE.md` or a profile document stays, and its warning names the lines to
+delete by hand if you no longer want the block. When that file holds two or
+more whole blocks, the warning names each and ends with that update and
+uninstall instead, and the uninstall then names any marker lines of yours
+around Apothem's block before it takes the block out. An update keeps a BEGIN
+marker with no END and the text below it, and does not fix a file that holds
+two different blocks. The
 [uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
 describes each case, and its [exit codes](/docs/cli-reference/uninstall#exit-codes)
 table lists what `1` and `2` mean.

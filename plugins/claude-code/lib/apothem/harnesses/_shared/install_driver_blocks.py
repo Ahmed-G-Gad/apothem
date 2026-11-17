@@ -27,6 +27,7 @@ what follows from it.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from apothem.lib import install_ledger
@@ -411,18 +412,53 @@ def endless_block_warning(
 
 
 def another_block_at(path: Path) -> bool:
-    """Return True when a whole block stays in *path* once Apothem's own is out.
+    """Return True when *path* holds a whole block besides Apothem's own.
 
     Apothem's block is the first whole block, and its exact copies go with it
     (see :func:`apothem.lib.harness_materializer.remove_managed_block`); any
-    other whole block may be the operator's. ``False`` when the file cannot be
-    read.
+    other whole block may be the operator's. Two cases count: the file holds
+    a whole block after the first whose lines, each without its surrounding
+    whitespace, differ from the first block's (see :func:`_copies_only`), or
+    a whole block stays once Apothem's own and its copies are out (a BEGIN
+    marker above Apothem's block and an END marker below it make one). The
+    first counts even when no whole block stays then: with a BEGIN marker
+    above Apothem's block and an END marker quoted in code below it, a marker
+    pair of the operator's further down makes rule 3 fire once Apothem's
+    block is out (see :func:`apothem.lib.harness_materializer.uncertain_pairs`).
+    Taking Apothem's block out would then leave only that BEGIN marker to
+    name, and deleting it, as that text says, would make the operator's pair
+    the one block in the file, which the next install replaces. ``False``
+    when the file cannot be read.
     """
     try:
         text = path.read_bytes().decode("utf-8", errors="replace")
     except OSError:
         return False
+    if not _copies_only(text):
+        return True
     return complete_managed_block(remove_managed_block(text)) is not None
+
+
+#: The line endings :func:`apothem.lib.harness_materializer.whole_blocks`
+#: splits a text at, and the byte order mark it leaves out of the first line.
+_EOL = re.compile(r"\r\n|\r|\n")
+_BOM = "\ufeff"
+
+
+def _copies_only(text: str) -> bool:
+    """Return True when each whole block of *text* after the first copies it.
+
+    Lines are compared without their surrounding whitespace, and numbered as
+    :func:`apothem.lib.harness_materializer.whole_blocks` numbers them: a byte
+    order mark at offset 0 is not part of the first line. True when *text*
+    holds one whole block or none.
+    """
+    lines = _EOL.split(text.removeprefix(_BOM))
+    blocks = [
+        [line.strip() for line in lines[begin - 1 : end]]
+        for begin, end in whole_blocks(text)
+    ]
+    return all(block == blocks[0] for block in blocks[1:])
 
 
 def sentinel_refusal(
@@ -434,9 +470,13 @@ def sentinel_refusal(
     rule can place (:func:`unclear_block_warning`). Its block lost its END
     marker, or a BEGIN marker outside code has its END marker in code with
     another pair after it, record or not (:func:`endless_block_warning`), or
-    another whole block stays once Apothem's own and its copies are out
-    (:func:`another_block_warning`). ``None`` when the strip may go ahead, or
-    when the file holds no block.
+    it holds a whole block besides Apothem's own (see :func:`another_block_at`
+    and :func:`another_block_warning`): one that is not a copy of Apothem's
+    block, even when taking Apothem's block out would leave no whole block
+    (rule 3 then fires on a BEGIN marker above it), or one that stays once
+    Apothem's own and its copies are out. An exact copy of Apothem's block
+    goes with it. ``None`` when the strip may go ahead, or when the file
+    holds no block.
     """
     unclear = unclear_block_warning(target, "surgical_uninstall") if recorded else None
     if unclear is not None:

@@ -404,9 +404,10 @@ which one is its own:
   [An uninstall that did not finish](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
   With no install record, it leaves Claude Code's `CLAUDE.md` or a profile
   document that holds two blocks as it is too, and its warning names each
-  block the same way. That warning ends by saying to delete Apothem's block
-  by hand, after the fix, if you no longer want it, and it does not stop the
-  uninstall.
+  block the same way. That warning ends by saying to run `apothem update`,
+  then `apothem uninstall` again, after the fix, and it does not stop the
+  uninstall. The uninstall run then names any marker lines of yours around
+  Apothem's block before it takes the block out.
 
 The warning starts with a pair of yours: "For a marker pair of yours (an
 example you quote, say), change or delete its two marker lines, or move them

@@ -950,13 +950,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   uninstall with the unfinished ones after it. With no install record in
   place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
   document of a tool configured through one settings file, stays as it is,
-  and a warning now names the file so you can delete the block by hand. When
-  that file holds two different blocks between Apothem's markers, the warning
-  names each block, or Apothem's block and the marker lines around it, with
-  the fix for such a file (see the entry on two whole blocks above), and only
-  then says to delete Apothem's block by hand: deleting from the first BEGIN
-  marker to the next END marker would take a marker pair of yours, or your
-  text above Apothem's block, with it.
+  and a warning now names the file and the lines of Apothem's block, so you
+  can delete that block by hand and keep a BEGIN marker of yours, or a marker
+  pair you quote, above it. When that file holds two different blocks between
+  Apothem's markers, the warning names each block, or Apothem's block and the
+  marker lines around it, with the fix for such a file (see the entry on two
+  whole blocks above): deleting from the first BEGIN marker to the next END
+  marker would take a marker pair of yours, or your text above Apothem's
+  block, with it. When it names Apothem's block and the marker lines around
+  it, it then says to delete Apothem's block by hand. When it names two or
+  more whole blocks, it says instead to run `apothem update`, then
+  `apothem uninstall` again: a BEGIN marker of yours above Apothem's block and
+  an END marker below it, which that text does not name, would make one block
+  once Apothem's block was deleted by hand, and the next update would replace
+  the lines between them. The uninstall run again names those marker lines
+  first.
 - **Uninstall and rollback list every file they keep.** The plain output of
   `apothem uninstall` and `apothem rollback` now lists every file kept (paths
   left behind a link are counted, not listed), also when a rollback's restore
