@@ -3,7 +3,8 @@
 """Installs and updates of a release whose paths pass Windows' 260-character limit.
 
 The installers check a release out in a staging folder: beside APOTHEM_HOME
-(``.apothem-clone.<id>/apothem``) for an install, and in the temporary folder
+(``.apothem-clone.<name>.<id>/apothem``, where ``<name>`` is APOTHEM_HOME's
+own name) for an install, and in the temporary folder
 for a dry run. The folder adds about 55 characters to every path in the tree
 (install.sh's shorter name adds about 30), and Apothem v1.5.0's deepest path
 is 170 characters long, so on Windows a home folder of ordinary length puts
@@ -228,8 +229,13 @@ def _env(base: Path) -> dict[str, str]:
             "NO_COLOR": "1",
         }
     )
+    # The scripts clear GIT_CONFIG_GLOBAL, so the stub gpg is named in
+    # HOME/.gitconfig, where git then looks; the variable names the same
+    # text, for a script that does not clear it.
     status = good_signature_status(MAINTAINER_FINGERPRINT)
-    env["GIT_CONFIG_GLOBAL"] = str(write_stub_gpg(base / "stub-gpg", status))
+    stub_config = write_stub_gpg(base / "stub-gpg", status)
+    (home / ".gitconfig").write_bytes(stub_config.read_bytes())
+    env["GIT_CONFIG_GLOBAL"] = str(stub_config)
     return env
 
 
@@ -363,7 +369,10 @@ def test_install_ps1_checks_out_a_release_past_the_path_limit(
     """The clone in the staging folder beside APOTHEM_HOME is checked out
     with paths past the limit, moved into place, and its folder removed."""
     long_path = _path_at_home(base, INSTALLED_LENGTH)
-    assert _staged_length(base, long_path, ".apothem-clone." + "0" * 32) > MAX_PATH
+    assert (
+        _staged_length(base, long_path, f".apothem-clone.{HOME_NAME}." + "0" * 32)
+        > MAX_PATH
+    )
     commit = _release(base, long_path)
 
     result = _run_powershell(shell, base, "install.ps1", "-Yes")
@@ -485,7 +494,9 @@ def test_install_sh_checks_out_a_release_past_the_path_limit_under_git_bash(
     moves it into place, the dry run removes it."""
     long_path = _path_at_home(base, INSTALLED_LENGTH)
     staging = (
-        str(Path("temp") / "tmp.0123456789") if dry_run else ".apothem-clone.012345"
+        str(Path("temp") / "tmp.0123456789")
+        if dry_run
+        else f".apothem-clone.{HOME_NAME}.012345"
     )
     assert _staged_length(base, long_path, staging) > MAX_PATH
     commit = _release(base, long_path)

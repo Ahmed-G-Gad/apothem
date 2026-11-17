@@ -1656,6 +1656,7 @@ _SWAP_FUNCTIONS = (
     "Move-Entry",
     "Get-SourceEntry",
     "Undo-SwapIn",
+    "Remove-Tree",
     "Invoke-SwapIn",
 )
 
