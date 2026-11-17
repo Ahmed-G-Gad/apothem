@@ -199,11 +199,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- **Apothem refuses to write into the real home while a pytest test runs.**
-  While `PYTEST_CURRENT_TEST` is set, a write, removal, copy, rename or lock
-  file in the account's `~/.apothem`, `~/.config/apothem` or a tool folder the
-  harness registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode`, `~/.gemini` and the rest) stops with
+- **Apothem refuses to write into the real home while pytest runs.**
+  While `PYTEST_CURRENT_TEST` (a test) or `PYTEST_VERSION` (the whole session:
+  collection, module-level code and session hooks) is set, a write, removal,
+  copy, rename or lock file in the account's `~/.apothem`, `~/.config/apothem`
+  or a tool folder the harness registry names in the home (`~/.claude`,
+  `~/.codex`, `~/.agents`, `~/.config/opencode`, `~/.gemini` and the rest)
+  stops with
   `RealHomeWriteError` before anything changes. The home is the one the
   operating system records for the account, not `HOME`. Reads, dry runs and
   previews still work, and nothing changes outside pytest. A project-scope
@@ -219,8 +221,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refusal was absorbed, also when the test is marked `xfail`. With no system
   record of the account's home (no `passwd` entry), the home is not
   protected. A test that must run
-  a real install starts Apothem without `PYTEST_CURRENT_TEST` in the child's
-  environment. `tests/README.md` lists what the refusal does not cover.
+  a real install starts Apothem without `PYTEST_CURRENT_TEST` and
+  `PYTEST_VERSION` in the child's environment. `tests/README.md` lists what the refusal does not cover.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix

@@ -101,6 +101,7 @@ def test_nothing_is_refused_when_no_test_is_running(
 ) -> None:
     target = fake_home / ".claude" / "settings.json"
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE, raising=False)
     assert not home_write_guard.active()
     _write(target)
     assert target.read_bytes() == b"data"
@@ -110,6 +111,51 @@ def test_a_write_is_refused_while_a_test_runs(fake_home: Path) -> None:
     assert home_write_guard.active()
     with pytest.raises(home_write_guard.RealHomeWriteError):
         _write(fake_home / ".claude" / "settings.json")
+
+
+def test_pytest_marks_the_whole_session_for_the_guard() -> None:
+    """pytest 8.2 and later sets ``PYTEST_VERSION`` for the session.
+
+    It is set before any conftest or plugin is imported and stays set through
+    collection and the session hooks; an xdist worker inherits it.
+    """
+    assert home_write_guard.PYTEST_SESSION_VARIABLE in os.environ
+
+
+def test_a_write_outside_any_test_is_refused_and_names_the_session(
+    fake_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Collection, module-level code and session hooks run with no test id."""
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, pytest.__version__)
+    assert home_write_guard.active()
+    claude = fake_home / ".claude" / "settings.json"
+    assert home_write_guard.would_refuse(claude)
+    assert home_write_guard.would_refuse_project_root(fake_home)
+    with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+        _write(claude)
+    message = str(caught.value)
+    assert "while pytest is running (the pytest session" in message
+    assert "()" not in message
+    assert "without PYTEST_CURRENT_TEST and PYTEST_VERSION" in message
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        _append(fake_home / ".claude" / "x.jsonl")
+    with pytest.raises(home_write_guard.RealHomeWriteError) as project:
+        home_write_guard.refuse_project_root_at_home(fake_home, operation="install")
+    assert "the pytest session" in str(project.value)
+    notices = [
+        line
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("RealHomeWriteError: ")
+    ]
+    # Once per protected folder in the session: the second .claude refusal is
+    # logged but not written again; the home itself is a folder of its own.
+    assert len(notices) == 2
+    assert all("the pytest session" in line for line in notices)
+    assert len(home_write_guard.drain_refusals()) == 3
+    assert _everything_in(fake_home) == []
 
 
 @pytest.mark.parametrize("primitive", sorted(_PRIMITIVES))
@@ -599,6 +645,7 @@ def test_a_project_folder_other_than_the_home_is_allowed(
     assert not home_write_guard.would_refuse_project_root(inside)
     assert home_write_guard.would_refuse(inside / "AGENTS.md")
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE, raising=False)
     assert not home_write_guard.would_refuse_project_root(fake_home)
     home_write_guard.refuse_project_root_at_home(fake_home, operation="uninstall")
     assert home_write_guard.refusals() == ()

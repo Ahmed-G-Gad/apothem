@@ -109,6 +109,45 @@ def _home_only(tmp_path, monkeypatch):
 """
 
 
+#: Tries one write into the fake home and records the outcome beside the file
+#: that runs it, so the probe session passes either way.
+_TRY_WRITE = """
+from pathlib import Path
+
+from apothem.lib import atomic_io, home_write_guard
+
+HOME = Path({home!r})
+
+
+def _try(name, target):
+    try:
+        atomic_io.write_bytes_atomically(target, b"data")
+    except home_write_guard.RealHomeWriteError as error:
+        outcome = f"refused: {{error}}"
+    else:
+        outcome = "written"
+    (Path(__file__).parent / f"{{name}}.outcome").write_text(outcome, encoding="utf-8")
+"""
+
+#: A conftest that writes when it is imported and when the session starts.
+_SESSION_CONFTEST = """
+_try("conftest-import", HOME / ".apothem" / "conftest.json")
+
+
+def pytest_sessionstart(session):
+    _try("sessionstart", HOME / ".claude" / "session.json")
+"""
+
+#: A test module that writes when it is collected; its test writes nothing.
+_COLLECTED_MODULE = """
+_try("module-level", HOME / ".config" / "apothem" / "module.yaml")
+
+
+def test_nothing():
+    pass
+"""
+
+
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
     """Run the ``case_*`` functions below in a pytest session of their own."""
     session = tmp_path / "session"
@@ -298,6 +337,40 @@ def case_incident_3_single_file_with_rootdir(
     _protect(pytester.path, fake_home)
     result = _run(pytester, "-p", "fake_account_home", "--rootdir", ".", probe.name)
     _assert_refused(result, fake_home)
+
+
+def case_module_level_code_and_session_hooks_are_refused(
+    pytester: pytest.Pytester, fake_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A write outside any test is refused: pytest sets PYTEST_VERSION for all.
+
+    The probe session gets neither pytest variable from this one, so only the
+    ``PYTEST_VERSION`` its own pytest sets can switch the guard on while the
+    conftest is imported, the session starts and the module is collected.
+    """
+    for name in ("PYTEST_CURRENT_TEST", "PYTEST_VERSION"):
+        monkeypatch.delenv(name, raising=False)
+    helper = _TRY_WRITE.format(home=str(fake_home))
+    (pytester.path / "conftest.py").write_text(
+        helper + _SESSION_CONFTEST, encoding="utf-8"
+    )
+    (pytester.path / "test_collected.py").write_text(
+        helper + _COLLECTED_MODULE, encoding="utf-8"
+    )
+    _protect(pytester.path, fake_home)
+    result = _run(
+        pytester, "-p", "fake_account_home", "--rootdir", ".", "test_collected.py"
+    )
+    output = "\n".join((*result.outlines, *result.errlines))
+    assert _snapshot(fake_home) == _untouched(), output
+    outcomes = {
+        name: (pytester.path / f"{name}.outcome").read_text(encoding="utf-8")
+        for name in ("conftest-import", "sessionstart", "module-level")
+    }
+    for name, outcome in outcomes.items():
+        assert outcome.startswith("refused: "), (name, outcome, output)
+        assert "while pytest is running (the pytest session" in outcome, outcome
+    result.assert_outcomes(passed=1)
 
 
 def case_control_without_the_plugin_the_probe_writes_the_fake_home(

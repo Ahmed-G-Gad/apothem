@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-"""Refuse writes into the account's real home while a pytest test runs.
+"""Refuse writes into the account's real home while pytest runs.
 
 The repository's ``tests/conftest.py`` points every test at temporary folders,
 but a test run that does not load it (a test file copied out of ``tests/`` and
@@ -8,9 +8,12 @@ run with ``-c``, ``-o addopts=`` or ``--rootdir`` elsewhere) runs Apothem
 against the account's real home. This module stops such a write before it
 happens.
 
-While ``PYTEST_CURRENT_TEST`` is set (pytest sets it for each test's setup, call
-and teardown), :func:`refuse_real_home_write` raises :class:`RealHomeWriteError`
-for a path at or inside one of these folders of the account's home:
+While ``PYTEST_CURRENT_TEST`` or ``PYTEST_VERSION`` is set (pytest sets the
+first for each test's setup, call and teardown, and pytest 8.2 and later the
+second for the whole session, so collection, module-level code and session
+hooks count too), :func:`refuse_real_home_write` raises
+:class:`RealHomeWriteError` for a path at or inside one of these folders of
+the account's home:
 
 - ``.apothem`` (install records, locks, backup sets, a user-scope data home);
 - ``.config/apothem``;
@@ -23,7 +26,7 @@ those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
 its first write. Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
-With ``PYTEST_CURRENT_TEST`` unset the check is one environment lookup.
+With both variables unset the check is two environment lookups.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
@@ -54,12 +57,12 @@ the homes a test added with :func:`also_protect_home` are, and the failed lookup
 is tried again on the next check. ``HOME`` is no fallback, because under
 ``tests/conftest.py`` it can already name a test's temporary folder. No
 environment variable, setting or flag turns the refusal off; a test that runs a
-real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` in the
-child's environment.
+real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` and
+``PYTEST_VERSION`` in the child's environment.
 
 Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
-each test, so a caller that absorbs the error still leaves a trace that
+each test (or, outside a test, in the pytest session), so a caller that absorbs the error still leaves a trace that
 ``tests/conftest.py`` reports.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
@@ -82,6 +85,13 @@ from typing import Any, TypeGuard
 
 #: The variable pytest sets for each test's setup, call and teardown.
 PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
+
+#: The variable pytest 8.2 and later sets for the whole session: collection,
+#: module-level code and session hooks run with it, outside any test.
+PYTEST_SESSION_VARIABLE = "PYTEST_VERSION"
+
+#: What a refusal outside any test names in place of the test.
+_SESSION = "the pytest session"
 
 #: Apothem's own folders in the home, relative to it.
 APOTHEM_ROOTS: tuple[str, ...] = (".apothem", ".config/apothem")
@@ -214,7 +224,7 @@ _SYSTEM: dict[str, Any] = _bind_system()
 
 
 class RealHomeWriteError(OSError):
-    """A write into the account's real home, refused while a pytest test runs.
+    """A write into the account's real home, refused while pytest runs.
 
     It is an :class:`OSError` built from its message alone, so ``errno`` and
     ``winerror`` stay ``None`` and no retry on a sharing violation picks it up.
@@ -246,8 +256,13 @@ class _UnreachableShareError(Exception):
 
 
 def active() -> bool:
-    """Return True while a pytest test runs (``PYTEST_CURRENT_TEST`` is set)."""
-    return PYTEST_VARIABLE in os.environ
+    """Return True while pytest runs.
+
+    That is while ``PYTEST_CURRENT_TEST`` (a test) or ``PYTEST_VERSION`` (the
+    whole session, pytest 8.2 and later) is set.
+    """
+    environ = os.environ
+    return PYTEST_VARIABLE in environ or PYTEST_SESSION_VARIABLE in environ
 
 
 def account_home() -> str | None:
@@ -310,7 +325,7 @@ def refuse_real_home_write(
 ) -> None:
     """Raise :class:`RealHomeWriteError` for the first path that may not change.
 
-    A path may not change while a pytest test runs when it is at or inside a
+    A path may not change while pytest runs when it is at or inside a
     protected folder (see the module docstring); with *tree* also when a
     protected folder is at or below it. *operation* is a verb phrase for the
     message (``write``, ``create the lock file``, ``remove``).
@@ -319,12 +334,10 @@ def refuse_real_home_write(
         text = os.fspath(path)
         root = _protected_root_of(text, tree=tree)
         if root is not None:
-            test = os.environ.get(PYTEST_VARIABLE, "")
             _refuse(
                 f"Apothem refused to {operation} {text}: it is inside or holds "
-                f"{root}, a folder in this account's real home, while a pytest "
-                f"test is running ({test}). Nothing in {root} was changed. Fix: "
-                f"{_FIX}",
+                f"{root}, a folder in this account's real home, while "
+                f"{_running()}. Nothing in {root} was changed. Fix: {_FIX}",
                 path=text,
                 root=root,
                 operation=operation,
@@ -347,7 +360,7 @@ def refuse_project_root_at_home(
 ) -> None:
     """Raise :class:`RealHomeWriteError` when *project_root* is an account home.
 
-    While a pytest test runs, a project-scope pass (install, update, uninstall,
+    While pytest runs, a project-scope pass (install, update, uninstall,
     rollback) whose project root is the account home, or a home added with
     :func:`also_protect_home`, would write project files straight into that
     home. The pass calls this before its first write, so a refusal leaves the
@@ -361,12 +374,11 @@ def refuse_project_root_at_home(
     text = os.fspath(project_root)
     home = _home_at(text)
     if home is not None:
-        test = os.environ.get(PYTEST_VARIABLE, "")
         _refuse(
             f"Apothem refused to {operation} with the project root {text}: it is "
-            f"{home}, this account's real home, while a pytest test is running "
-            f"({test}). It stopped before writing anything for this project. Fix: "
-            f"pass a temporary folder as the project root; or {_FIX}",
+            f"{home}, this account's real home, while {_running()}. It stopped "
+            "before writing anything for this project. Fix: pass a temporary "
+            f"folder as the project root; or {_FIX}",
             path=text,
             root=home,
             operation=operation,
@@ -380,8 +392,16 @@ _FIX = (
     "temporary folder and set apothem.lib.install_ledger.STATE_ROOT and "
     "apothem.harnesses._shared.install_driver.BACKUP_ROOT to temporary folders. "
     "To run a real install on purpose, start Apothem without "
-    f"{PYTEST_VARIABLE} in its environment."
+    f"{PYTEST_VARIABLE} and {PYTEST_SESSION_VARIABLE} in its environment."
 )
+
+
+def _running() -> str:
+    """Return what is running, for a message: the test, or the pytest session."""
+    test = os.environ.get(PYTEST_VARIABLE, "")
+    if test:
+        return f"a pytest test is running ({test})"
+    return f"pytest is running ({_SESSION}: collection or a session hook)"
 
 
 def _refuse(message: str, *, path: str, root: str, operation: str) -> None:
@@ -391,7 +411,7 @@ def _refuse(message: str, *, path: str, root: str, operation: str) -> None:
     )
     if len(_refusals) < _LOG_LIMIT:
         _refusals.append(error)
-    test = _test_id(os.environ.get(PYTEST_VARIABLE, ""))
+    test = _test_id(os.environ.get(PYTEST_VARIABLE, "")) or _SESSION
     if test not in _announced:
         _announced.clear()
         _announced[test] = set()
@@ -412,7 +432,7 @@ def _test_id(current: str) -> str:
 
 def _protected_root_of(path: str, *, tree: bool) -> str | None:
     """Return the protected folder *path* is in (or, with *tree*, holds)."""
-    if PYTEST_VARIABLE not in os.environ:
+    if not active():
         return None
     roots = _roots(account_home(), tuple(_extra_homes))
     if not roots:
@@ -435,7 +455,7 @@ def _protected_root_of(path: str, *, tree: bool) -> str | None:
 
 def _home_at(path: str) -> str | None:
     """Return the account home, or added home, that *path* names, or None."""
-    if PYTEST_VARIABLE not in os.environ:
+    if not active():
         return None
     homes = [
         (home, {_folded(_canonical(home)), _folded(_canonical(_realpath(home)))})

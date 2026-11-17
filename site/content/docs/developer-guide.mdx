@@ -666,12 +666,13 @@ or adapters against your real home. Run behaviour inside a test under `tests/`, 
 `tests/conftest.py` points the home, the install ledger and the backup root at
 temporary folders.
 
-Apothem also refuses these writes itself while a pytest test runs, so a test
+Apothem also refuses these writes itself while pytest runs, so a test
 file copied out of `tests/` and run without `tests/conftest.py` cannot reach
-the real home through Apothem. While `PYTEST_CURRENT_TEST` is set, a write,
-removal, copy, rename or lock file in the account's `~/.apothem`,
-`~/.config/apothem` or a tool folder the harness registry names in the home
-(`~/.claude`, `~/.qwen`, `~/.config/opencode` and the rest) stops
+the real home through Apothem. While `PYTEST_CURRENT_TEST` (a test) or
+`PYTEST_VERSION` (the whole session, collection and session hooks included)
+is set, a write, removal, copy, rename or lock file in the account's
+`~/.apothem`, `~/.config/apothem` or a tool folder the harness registry names
+in the home (`~/.claude`, `~/.qwen`, `~/.config/opencode` and the rest) stops
 before anything changes, with an error like this:
 
 ```text
@@ -708,11 +709,12 @@ The home is the one the operating system records for the account, not `HOME`
 or `USERPROFILE`. Reads, dry runs and previews still work; the one status
 check that records a finished uninstall in the ledger is a write, so it is
 refused quietly and reported. A test that must run a real install on purpose
-starts Apothem without `PYTEST_CURRENT_TEST` in the child's environment.
+starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the
+child's environment.
 
 The refusal does not cover folders moved out of the home by `CODEX_HOME`,
-`CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, writes during
-collection, or programs that are not Python, such as the shell installers.
+`CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, or programs
+that are not Python, such as the shell installers.
 When the system has no record of the account's home (a container user with no
 `passwd` entry), the account home is not protected at all. A checkout that sits
 inside a protected folder (under `~/.claude`, say) has its Apothem writes
