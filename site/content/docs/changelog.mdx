@@ -318,6 +318,52 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **A deleted project no longer lets an install overwrite your own skill.**
+  After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
+  a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` or `~/.trae/skills/`) under an
+  Apothem skill's name was overwritten by the next install (a backup was
+  kept). The install now skips it with the `skill_conflict` warning. A project
+  folder that still exists but holds none of the files its install recorded
+  there with Apothem's content in them (a re-cloned project that keeps only
+  its own instruction file, say) counts as deleted too, and so does one on a
+  drive or network share that does not answer. The deleted install still
+  counts while the skill folder holds exactly the files it recorded,
+  unchanged, so an update still refreshes a folder Apothem wrote. A folder
+  that already holds what this release writes is kept as it is. Otherwise,
+  when only deleted installs list a skill folder, or only an earlier install
+  in the same folder did, the install skips it and leaves it untouched unless
+  it holds exactly the files one of them recorded: you made it or edited it
+  (changed, added or removed a file), or an earlier release wrote it without
+  recording its files. For a skipped folder, the install, update and dry-run
+  warning and `apothem verify` give the same cause and fix: keep it there and
+  the harness stays not verified, or move it out of the skills folder, then
+  run `apothem update` for that harness (with `--project` for a project
+  install). `apothem verify` looks for these folders only for a harness that
+  is installed. A project installed at the home folder itself no longer counts
+  as present through the shared folders it writes there. A Codex install into
+  a removed or emptied `~/.codex` skips such a folder too: the files it had
+  just written there no longer make its old install count as present.
+- **`apothem doctor` checks the hooks of the install it is looking at.** It
+  read the newest install record of a harness from any folder. When that
+  record came from another folder (another project, a `CODEX_HOME`, or one you
+  had since deleted), doctor checked the wrong install's hooks or none, and
+  could report the harness as healthy even when its hook command could not
+  start. It now reads the record of the harness folder, or of the `--project`
+  folder, that it checks, under whichever spelling of that folder the install
+  used. When that folder has no record, the plain report shows the hook check
+  as `not checked`, its last line says which hook commands were not checked
+  rather than `All checks passed`, and for a project-scope harness the fix
+  names `--project`, quoted for the shell as uninstall's steps are (double
+  quotes on Windows, single quotes elsewhere), or in words, with the folder as
+  it is, when those quotes cannot carry it. The command, or that folder, ends
+  the fix, after a colon. `verify`, and the next step `quickstart` prints,
+  quote `--project` the same way; when the quotes cannot carry the folder,
+  `quickstart` prints the command up to `--project` and names the folder in
+  words after it.
+- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
+  Windows install writes begins with PowerShell's `&`, which doctor tried to
+  start as a program, so every healthy Cursor install failed the hook check.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -664,11 +710,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   them: for a project install, the exact commands, with the folder quoted for
   your shell and a `--profile` placeholder for the profile that install used.
   A folder those quotes cannot carry gets the same steps in words: on Windows,
-  one holding `$`, a backquote, `%`, `!` or a double quote, one with no space
-  that holds `&`, `^`, `|`, `<` or `>`, or a network share; elsewhere, one
-  holding a straight or curly single quote. Apothem's hook scripts and the conformity gate's checks also stop
-  writing Python bytecode caches (`__pycache__`) into the folders Apothem
-  installs.
+  one holding `$`, a backquote, `%`, `!`, a straight or curly double quote or a
+  control character, one with no space that holds `&`, `^`, `|`, `<` or `>`,
+  or one with two backslashes in a row, as in a network share; elsewhere, one
+  holding a straight or curly single quote, a control character or two
+  backslashes in a row, or one ending in a backslash. Apothem's hook scripts
+  and the conformity gate's checks also stop writing Python bytecode caches
+  (`__pycache__`) into the folders Apothem installs.
 - **The install ledger stays right when a write fails.** If an uninstall
   cannot write its final record, it records the uninstall as unfinished, so
   running it again finishes the job. When the ledger still ends in a finished
