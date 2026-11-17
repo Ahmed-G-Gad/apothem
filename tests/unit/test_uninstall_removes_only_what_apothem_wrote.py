@@ -32,6 +32,7 @@ from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    whole_blocks,
     wrap_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
@@ -2675,24 +2676,48 @@ def test_a_retry_with_only_another_block_left_exits_as_the_first_run_did(
     assert _unfinished(claude) is not None
 
 
-def test_the_another_block_advice_names_the_marker_lines_you_added(
+def test_the_another_block_advice_names_each_block_and_which_to_delete_whole(
     claude: Path,
 ) -> None:
-    # Not "delete it": deleting Apothem's block would leave the retry to take
-    # out the pair you quoted, as the one block left.
+    """advice-2, regress-4, lifecycle-2: it said to fix the marker lines you added.
+
+    Deleting only the marker lines of a block pasted in a second time left its
+    text where no later run finds it, and two Apothem blocks got no step. The
+    warning now gives the install's text: each block by its lines, one to
+    keep, an Apothem block to delete whole and a pair of yours to unmark. Not
+    "delete it": deleting Apothem's block would leave the retry to take out
+    the pair you quoted, as the one block left.
+    """
     ClaudeCodeAdapter().install({})
     anchor = claude / "CLAUDE.md"
     _another_block(anchor)
+    [(begin, end), (quoted, quoted_end)] = whole_blocks(
+        anchor.read_bytes().decode("utf-8")
+    )
 
     _, envelope = _uninstall()
 
     (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
-    failure = str(envelope["results"][0]["message"])
-    for text in (str(note["message"]), failure):
-        assert "two different blocks between Apothem's markers" in text
-        assert "reword the marker lines you added" in text
+    message = " ".join(str(note["message"]).split())
+    failure = " ".join(str(envelope["results"][0]["message"]).split())
+    assert (
+        f"holds 2 whole blocks between Apothem's markers (lines {begin} to {end}, "
+        f"and lines {quoted} to {quoted_end})"
+    ) in message
+    assert (
+        "delete an Apothem block (an older one, or one pasted in a second time) "
+        "from its BEGIN marker line to its END marker line, and for a marker pair "
+        "of yours (an example you quote, say), change or delete its two marker "
+        "lines or move them inside a code block; then run the uninstall again."
+    ) in message
+    assert (
+        "1 file(s) hold two different blocks between Apothem's markers, so "
+        "Apothem left them as they are; keep one block in each and fix the others "
+        "as each warning says"
+    ) in failure
+    for text in (message, failure):
+        assert "marker lines you added" not in text
         assert "Delete it by hand" not in text
-    assert "then run the uninstall again" in str(note["message"])
 
 
 def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
@@ -2756,9 +2781,10 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     claude: Path,
 ) -> None:
     # An update leaves a file with two whole blocks as it is (one of them,
-    # here, the pair you quote), so the advice is to remove your marker lines
-    # first; the BEGIN-marker advice (an update keeps it) is not given for
-    # this file.
+    # here, the pair you quote), so the advice is to keep one block and fix
+    # the others first, as the file's warning says (advice-2: not only the
+    # marker lines you added); the BEGIN-marker advice (an update keeps it)
+    # is not given for this file.
     _earlier_release_with_an_edited_agent(claude)
     anchor = claude / "CLAUDE.md"
     quoted = (
@@ -2774,10 +2800,9 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     assert anchor.read_bytes() == before
     failure = str(envelope["results"][0]["message"])
     another = (
-        "remove the marker lines you added to the 1 file(s) that hold two "
-        "different blocks, or move them inside a code block: an update leaves "
-        "a file with two blocks as it is, and apothem verify fails until you "
-        "fix it"
+        "keep one block in each of the 1 file(s) that hold two different blocks "
+        "and fix the others as its warning says: an update leaves a file with "
+        "two blocks as it is, and apothem verify fails until you fix it"
     )
     assert f"first copy any listed file you edited or added, and {another}" in failure
     assert "an update keeps that marker" not in failure

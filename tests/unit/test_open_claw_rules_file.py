@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -1958,6 +1959,89 @@ def test_an_update_that_cannot_retire_a_file_with_two_blocks_says_what_comes_nex
     assert "then run the uninstall again" in uninstall_note
 
 
+def test_an_update_that_retires_a_file_names_a_begin_marker_it_leaves(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """advice-3: the update took Apothem's block out and said nothing more.
+
+    A BEGIN marker that starts no whole block (what is left of an older block,
+    or a line of yours) sits above Apothem's block in a workspace the config
+    moved away from. The update takes the block out and now names the file
+    and the marker it leaves, as an uninstall does.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    stray = f"{APOTHEM_BLOCK_BEGIN}\nold apothem text\n\n"
+    target.write_bytes(stray.encode() + target.read_bytes())
+    _move_default_workspace(home, "~/ws-b")
+
+    named = [m for m in _messages(adapter.update({})) if str(target) in m]
+
+    left = target.read_text(encoding="utf-8")
+    assert left.startswith(stray.rstrip("\n"))
+    assert left.count(APOTHEM_BLOCK_BEGIN) == 1
+    assert APOTHEM_BLOCK_END not in left
+    (note,) = named
+    assert "still holds a line that reads as the Apothem BEGIN marker" in note
+
+
+def _fenced(text: str) -> str:
+    """Return the rules file *text* with its block in a code block of yours."""
+    at = text.index(APOTHEM_BLOCK_BEGIN)
+    return (
+        f"{text[:at]}My notes:\n\n```\nmake test\n\n{text[at:]}\nMore:\n\n"
+        "```sh\nls\n```\n"
+    )
+
+
+def _another_pair(text: str) -> str:
+    """Return the rules file *text* with a marker pair of yours below the block."""
+    return f"{text}\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
+
+
+def _lost_end(text: str) -> str:
+    """Return the rules file *text* without its END marker, and a line of yours."""
+    return text.replace(APOTHEM_BLOCK_END, "") + "my own line\n"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param(_fenced, id="unclear"),
+        pytest.param(_another_pair, id="two-blocks"),
+        pytest.param(_lost_end, id="lost-end"),
+    ],
+)
+def test_a_preview_says_it_would_leave_a_rules_file_it_cannot_retire(
+    adapter: OpenClawAdapter, home: Path, shape: Callable[[str], str]
+) -> None:
+    """docs-7: the preview said Apothem 'left' the file, or would take its block out.
+
+    A rules file in a workspace the config moved away from, whose markers
+    Apothem cannot place, or which holds another whole block: the update
+    leaves it as it is, and its preview now says it would.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    target.write_text(shape(target.read_text(encoding="utf-8")), encoding="utf-8")
+    before = target.read_bytes()
+    _move_default_workspace(home, "~/ws-b")
+
+    run = install(adapter.output_path, {}, dry_run=True)
+
+    named = [r for r in run.results if str(target) in f"{r.path} {r.message}"]
+    assert target.read_bytes() == before
+    assert [r.outcome for r in named] == ["warning"], named
+    assert "would leave the file as it is" in named[0].message
+    assert "left the file" not in named[0].message
+
+
 # --- a rules file whose block lost its END marker -------------------------------
 
 
@@ -1987,6 +2071,8 @@ def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
     text, which an update keeps beside the fresh block it writes, so the file
     no longer fits the limit: it is not written or registered. The warning
     now names the file, that marker and that text, and verify names the file.
+    The marker may be yours, and that text need not be all of the overage,
+    so the warning still offers shorter custom rules (docs-5).
     """
     workspace = _workspace(home / ".openclaw" / "workspace")
     adapter.install({})
@@ -2005,9 +2091,10 @@ def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
     ]
     assert (
         f"{target} holds an Apothem BEGIN marker that starts no whole block (its "
-        "END marker is gone), and the old Apothem text below it counts against "
-        "the limit: delete that marker line and that old text by hand, keeping "
-        "your own text, or raise the limit."
+        "END marker is gone, or the marker is yours), and the old Apothem text "
+        "below it counts against the limit: delete that marker line and that old "
+        "text by hand, keeping your own text, shorten the profile's custom rules, "
+        "or raise the limit."
     ) in size
     assert "text you keep beside the Apothem block" not in size
     assert code == 1, payload

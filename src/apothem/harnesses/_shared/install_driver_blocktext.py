@@ -120,10 +120,14 @@ def _pair_fix(
     *outcome* (:data:`REPLACES` or :data:`TAKES_OUT`) is what the next run
     does once both marker lines of a pair read outside code. A pair whose
     lines both read outside code already needs no fix of its own: a pair
-    before it is what holds it back. *split* is the pair rule 3 fired on,
-    before *pair*: if *pair* is Apothem's block, that pair's BEGIN marker is
-    the operator's, and it must go too, or it pairs with the END marker in
-    code once *pair* is fixed.
+    before it is what holds it back. A pair whose BEGIN marker sits in a code
+    block and whose END marker is outside code, if it is Apothem's block, sits
+    below a code block of the operator's that a line in the block closes:
+    closing that code block above the BEGIN marker fixes it, where deleting
+    the block by hand would only bring it back with the next update. *split*
+    is the pair rule 3 fired on, before *pair*: if *pair* is Apothem's block,
+    that pair's BEGIN marker is the operator's, and it must go too, or it
+    pairs with the END marker in code once *pair* is fixed.
     """
     if pair.split:
         return _split_fix(pair, later, outcome)
@@ -142,6 +146,11 @@ def _pair_fix(
             else f"start lines {begin.line} and {end.line} at the left margin"
         )
         ours = f"{step}{also}: {outcome.format(lines='those lines')}"
+    elif begin.place is MarkerPlace.FENCE and end.place is MarkerPlace.OUTSIDE:
+        ours = (
+            f"close the code block that opens at line {begin.fence} above line "
+            f"{begin.line}{also}: {outcome.format(lines='those lines')}"
+        )
     else:
         ours = f"delete them by hand, keeping your own text{also}"
     return (
@@ -181,14 +190,17 @@ def _begin_first(pair: UncertainPair) -> str:
     """Return the step an uninstall gives for the pair rule 3 fired on.
 
     Once no pair comes after it, its BEGIN marker and the END marker in code
-    read as a whole block, which a later install or update replaces.
+    read as a whole block, which the uninstall run again takes out, as a
+    later install or update replaces it: so a BEGIN marker of the operator's
+    goes before that run.
     """
     begin, end = pair.begin.line, pair.end.line
     return (
-        f"If the BEGIN marker at line {begin} is yours, delete or change it. If "
-        "you leave it and no marker pair comes after it any more, a later "
-        f"install or update reads lines {begin} to {end} as Apothem's block and "
-        "replaces them."
+        f"If the BEGIN marker at line {begin} is yours, delete or change it "
+        "before you run the uninstall again: left in place once no marker pair "
+        f"comes after it, it pairs with the END marker at line {end}, and the "
+        f"uninstall then takes lines {begin} to {end} out, as a later install "
+        "or update replaces them."
     )
 
 
@@ -197,7 +209,10 @@ def _delete_by_hand(pairs: Sequence[UncertainPair]) -> str:
 
     Each other pair is the operator's, and its marker lines go too: while a
     marker pair stays in a file an install record lists, the uninstall leaves
-    that file and stays unfinished.
+    that file and stays unfinished. Of the pair rule 3 fired on, only the
+    BEGIN marker goes: its END marker reads as code, in the operator's own
+    code block, and needs no change once that BEGIN marker is gone (a BEGIN
+    marker above it that starts no pair goes too, see :func:`_lone_text`).
     """
     spans = [f"lines {pair.begin.line} to {pair.end.line}" for pair in pairs]
     if len(spans) == 1:
@@ -208,10 +223,17 @@ def _delete_by_hand(pairs: Sequence[UncertainPair]) -> str:
         )
     else:
         listed = f"{', '.join(spans[:-1])}, or {spans[-1]}"
+        split = next((pair for pair in pairs if pair.split), None)
+        alone = (
+            ""
+            if split is None
+            else f" (for the pair from line {split.begin.line} to line "
+            f"{split.end.line}, its BEGIN marker alone)"
+        )
         fix = (
             f"If one of these pairs is Apothem's block ({listed}), delete it by "
             "hand, keeping your own text, and change or delete the two marker "
-            "lines of each pair of yours."
+            f"lines of each pair of yours{alone}."
         )
     return f"{fix} Then run the uninstall again."
 
@@ -238,11 +260,13 @@ def unclear_block_report(
     that marker too. Without *outcome* (an uninstall, which stays unfinished
     while such a file holds a pair), the fix is to delete Apothem's block by
     hand and to change or delete the marker lines of each pair of the
-    operator's, after a step for the BEGIN marker of the pair rule 3 fired
-    on: left in place once no pair follows it, it pairs with the END marker
-    in code; then the uninstall runs again. With *left*, the text says
-    Apothem left the file as it is, or, with *dry_run*, that it would. *lone*
-    names the BEGIN markers outside code that start no pair (see
+    operator's (of the pair rule 3 fired on, the BEGIN marker alone), then to
+    run the uninstall again. A step before it says to delete or change that
+    BEGIN marker first: left in place once no pair follows it, it pairs with
+    the END marker in code, and the uninstall run again takes the lines
+    between them out. With *left*, the text says Apothem left the file as it
+    is, or, with *dry_run*, that it would. *lone* names the BEGIN markers
+    outside code that start no pair (see
     :func:`install_driver_blocks.lone_begins_at`): each must go too, or it can
     pair with an END marker once the pairs are fixed.
     """
@@ -271,29 +295,55 @@ def unclear_block_report(
     return " ".join(part for part in parts if part)
 
 
+#: How to fix a file with two or more blocks (see :func:`two_blocks_report`).
+#: An Apothem block that is not the one kept (an older one, or one pasted in a
+#: second time) goes whole, since deleting only its marker lines would leave
+#: its text behind where no later run finds it; a marker pair of the
+#: operator's keeps its text and loses its marker lines. In a file that starts
+#: with Apothem's frontmatter the block kept is the one right below it: only
+#: there does the frontmatter count as Apothem's, so an uninstall takes it
+#: out with that block.
+_KEEP_ONE = (
+    "Keep one block (in a file that starts with Apothem's frontmatter, the one "
+    "right below it) and fix the others by hand, keeping your own text: delete "
+    "an Apothem block (an older one, or one pasted in a second time) from its "
+    "BEGIN marker line to its END marker line, and for a marker pair of yours "
+    "(an example you quote, say), change or delete its two marker lines or "
+    "move them inside a code block"
+)
+
+
 def two_blocks_report(
     path: str | Path,
     blocks: Sequence[tuple[int, int]],
     *,
     left: bool = True,
     dry_run: bool = False,
+    then: str | None = None,
 ) -> str:
     """Return what is wrong with *path*, which holds two or more whole *blocks*.
 
     Each block is named by the lines of its BEGIN and END marker (see
     :func:`apothem.lib.harness_materializer.whole_blocks`). Apothem writes one
     block per file, so it cannot tell which one is its own: the operator
-    keeps one, deletes each other Apothem block and changes the marker lines
-    of each pair of their own. With *left*, the text says Apothem left the
-    file as it is, or, with *dry_run*, that it would.
+    keeps one and fixes the others (see :data:`_KEEP_ONE`). With *left*, the
+    text says Apothem left the file as it is, or, with *dry_run*, that it
+    would. *then* is the step after the fix, when the text names it. Fewer
+    than two *blocks* is a file that shows a second whole block only once
+    the first is out (a BEGIN marker above Apothem's block and an END marker
+    below it): no lines are named then.
     """
-    spans = [f"lines {begin} to {end}" for begin, end in blocks]
-    listed = f"{', '.join(spans[:-1])}, and {spans[-1]}"
+    if len(blocks) > 1:
+        spans = [f"lines {begin} to {end}" for begin, end in blocks]
+        listed = f"{', '.join(spans[:-1])}, and {spans[-1]}"
+        head = (
+            f"{path} holds {len(blocks)} whole blocks between Apothem's markers "
+            f"({listed})"
+        )
+    else:
+        head = f"{path} holds two different blocks between Apothem's markers"
+    end = "." if then is None else f"; {then}."
     return (
-        f"{path} holds {len(blocks)} whole blocks between Apothem's markers "
-        f"({listed}). Apothem writes one block per file and cannot tell which "
-        f"one is its own{_left(left, dry_run)} Keep one block and fix the others "
-        "by hand, keeping your own text: delete an Apothem block from its BEGIN "
-        "marker line to its END marker line, and for a marker pair of yours (an "
-        "example you quote, say), change or delete its two marker lines."
+        f"{head}. Apothem writes one block per file and cannot tell which one is "
+        f"its own{_left(left, dry_run)} {_KEEP_ONE}{end}"
     )

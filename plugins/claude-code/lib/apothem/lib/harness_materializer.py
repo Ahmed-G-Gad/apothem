@@ -863,11 +863,10 @@ def _held_back(text: str, body: str, *, recorded: bool) -> bool:
     line compared without its surrounding whitespace, so a re-install adds no
     second block), or a pair is there that may be Apothem's block: a pair's END
     marker is hidden in code with another pair after it, or an install
-    recorded a block in this file. A recorded file whose pairs all read as
-    code, below a BEGIN marker outside code that starts no pair, is not held
-    back: that marker is what is left of Apothem's block, which lost its END
-    marker, and a fresh block is added after the text, as for a file with no
-    pair (see :func:`_lost_its_end`).
+    recorded a block in this file. A BEGIN marker outside code that starts no
+    pair changes nothing: it may be what is left of Apothem's block or a line
+    of the operator's, and a pair in code may be a quote of theirs or
+    Apothem's recorded block inside a code block of theirs.
     """
     lines, pairs, scan = _read(text)
     if not pairs or any(marker.paired for marker in scan.markers):
@@ -881,18 +880,7 @@ def _held_back(text: str, body: str, *, recorded: bool) -> bool:
             return True
     if scan.unclear:
         return True
-    return recorded and not _lost_its_end(scan)
-
-
-def _lost_its_end(scan: _Scan) -> bool:
-    """Return True when *scan* shows a block that lost its END marker, alone.
-
-    A BEGIN marker outside code that starts no pair, while no marker line of
-    any pair reads outside code: those pairs are quoted in code, and the
-    marker outside code is what Apothem's block left.
-    """
-    begins = any(marker.marker == APOTHEM_BLOCK_BEGIN for marker in scan.markers)
-    return begins and all(kind is not _Kind.MARKER for kind, _ in scan.places.values())
+    return recorded
 
 
 def complete_managed_block(text: str) -> str | None:
@@ -974,9 +962,9 @@ def merge_managed_block(existing: str, body: str, *, recorded: bool = False) -> 
       marker line is an END marker (see :func:`uncertain_block`) — return
       *existing* unchanged when such a pair already reads as the wrapped block,
       when *recorded* (an install record lists the file, so the pair may be
-      Apothem's block; not when every pair reads as code below a BEGIN marker
-      that lost its END marker), or when a pair's END marker reads as code with
-      another pair after it. Otherwise append, as below.
+      Apothem's block, a BEGIN marker that starts no pair beside it or not),
+      or when a pair's END marker reads as code with another pair after it.
+      Otherwise append, as below.
     - *existing* carries no whole managed block — append the wrapped block
       after the operator's content, separated by one blank line. A begin
       sentinel with no end after it is such a case: its text is kept, and the

@@ -232,9 +232,11 @@ def stray_begin_install_warnings(
     the merge left as it is (outcome ``unchanged``, a dry run's preview
     included) whose marker pairs no rule can place (:func:`unclear_pairs_at`)
     gets its own warning, which names each pair and how to fix it, and so
-    does a file the merge wrote that holds the pair rule 3 fired on (a code
-    block in Apothem's block hides its END marker); that warning does not say
-    the file was left as it is. A file with two or more whole blocks
+    does a file the merge wrote that holds such pairs and no whole block (a
+    code block of the operator's left open above the block, which a line in
+    the block closes, or the pair rule 3 fired on, whose END marker a code
+    block in Apothem's block hides); that warning does not say the file was
+    left as it is. A file with two or more whole blocks
     (:func:`whole_blocks_at`), which the merge leaves as it is, gets a warning
     that names each block. A preview of a write whose pairs are all quoted (a
     first install appends its block after a pair the operator quotes) gets no
@@ -265,10 +267,13 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
         report = two_blocks_report(path, blocks, left=unchanged, dry_run=dry_run)
         return f"{report}{_UPDATE_AGAIN}"
     pairs = unclear_pairs_at(target)
-    # A write that leaves a pair rule 3 fired on (a code block in Apothem's
-    # block) gets the same text, without the claim that the file was left as
-    # it is.
-    if pairs and (unchanged or any(pair.split for pair in pairs)):
+    # A write that leaves no whole block gets the same text, without the claim
+    # that the file was left as it is: a code block of the operator's left
+    # open above the block, which a line in the block closes, or the pair rule
+    # 3 fired on (a code block in Apothem's block hides its END marker). A
+    # preview reads the file as it was before the write, so there only the
+    # rule 3 pair counts.
+    if pairs and (unchanged or not dry_run or any(pair.split for pair in pairs)):
         lone = lone_begins_at(target)
         report = unclear_block_report(
             path, pairs, left=unchanged, lone=lone, dry_run=dry_run
@@ -352,7 +357,9 @@ def install_may_be_open(harness_name: str, root: Path) -> bool:
     )
 
 
-def endless_block_warning(target: Path, operation: str) -> MaterializationResult | None:
+def endless_block_warning(
+    target: Path, operation: str, *, dry_run: bool = False
+) -> MaterializationResult | None:
     """Return a warning when *target*'s managed block lost its END marker.
 
     A BEGIN marker with no END after it: the text below it may be the
@@ -360,8 +367,10 @@ def endless_block_warning(target: Path, operation: str) -> MaterializationResult
     Apothem's (see :func:`whole_block_left`). A BEGIN marker outside code
     whose END marker reads as code, with another marker pair after it, did
     not lose its END marker: it gets the warning that names each pair (see
-    :func:`unclear_block_warning`), install record or not. ``None`` when the
-    file holds a whole block, holds no marker, or cannot be read.
+    :func:`unclear_block_warning`), install record or not. With *dry_run* (a
+    preview), the warning says Apothem would leave the file as it is.
+    ``None`` when the file holds a whole block, holds no marker, or cannot be
+    read.
     """
     try:
         text = target.read_bytes().decode("utf-8", errors="replace")
@@ -370,18 +379,33 @@ def endless_block_warning(target: Path, operation: str) -> MaterializationResult
     if extract_managed_block(text) is None or complete_managed_block(text):
         return None
     if any(pair.split for pair in uncertain_pairs(text)):
-        return unclear_block_warning(target, operation)
+        return unclear_block_warning(target, operation, dry_run=dry_run)
+    left = "would leave" if dry_run else "left"
     return _result(
         "warning",
         operation,
         target,
         f"{_path_text(target)} has the Apothem BEGIN marker but no END marker "
         f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
-        "ends and left the file as it is. Delete that marker line, and what is "
-        "left of the block, by hand, "
-        "keeping your own text.",
+        f"ends and {left} the file as it is. Delete that marker line, and what "
+        "is left of the block, by hand, keeping your own text.",
         detail={MARKER_LEFT: "1"},
     )
+
+
+def another_block_at(path: Path) -> bool:
+    """Return True when a whole block stays in *path* once Apothem's own is out.
+
+    Apothem's block is the first whole block, and its exact copies go with it
+    (see :func:`apothem.lib.harness_materializer.remove_managed_block`); any
+    other whole block may be the operator's. ``False`` when the file cannot be
+    read.
+    """
+    try:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    return complete_managed_block(remove_managed_block(text)) is not None
 
 
 def sentinel_refusal(
@@ -403,11 +427,7 @@ def sentinel_refusal(
     endless = endless_block_warning(target, "surgical_uninstall")
     if endless is not None:
         return endless
-    try:
-        text = target.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return None
-    if complete_managed_block(remove_managed_block(text)):
+    if another_block_at(target):
         return another_block_warning(target)
     return None
 
@@ -417,7 +437,7 @@ UNINSTALL_AGAIN = "then run the uninstall again"
 
 
 def unclear_block_warning(
-    target: Path, operation: str, *, outcome: str | None = None
+    target: Path, operation: str, *, outcome: str | None = None, dry_run: bool = False
 ) -> MaterializationResult | None:
     """Return a warning when *target*, a recorded file, holds an unclear block.
 
@@ -428,10 +448,11 @@ def unclear_block_warning(
     :func:`unclear_block_report`). *outcome* is what the next
     run does once the operator makes a pair read outside code, such as
     :data:`TAKES_OUT`; without it, as for an uninstall, the warning says to
-    delete Apothem's block by hand. ``None`` when the file holds a whole block
-    or no such pair. The caller checks that an install record lists the file:
-    a file Apothem never wrote may quote a pair, and that is not Apothem's to
-    report (rule 3 aside, see :func:`endless_block_warning`).
+    delete Apothem's block by hand. With *dry_run* (a preview), it says
+    Apothem would leave the file as it is. ``None`` when the file holds a
+    whole block or no such pair. The caller checks that an install record
+    lists the file: a file Apothem never wrote may quote a pair, and that is
+    not Apothem's to report (rule 3 aside, see :func:`endless_block_warning`).
     """
     pairs = unclear_pairs_at(target)
     if not pairs:
@@ -441,7 +462,11 @@ def unclear_block_warning(
         operation,
         target,
         unclear_block_report(
-            _path_text(target), pairs, outcome=outcome, lone=lone_begins_at(target)
+            _path_text(target),
+            pairs,
+            outcome=outcome,
+            lone=lone_begins_at(target),
+            dry_run=dry_run,
         ),
         detail={KEPT_REASON: UNCLEAR_BLOCK, MARKER_LEFT: "1"},
     )
@@ -452,25 +477,27 @@ def another_block_warning(
     *,
     operation: str = "surgical_uninstall",
     then: str = UNINSTALL_AGAIN,
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Name a file that holds another whole block besides Apothem's own.
 
     It is not a copy of Apothem's block, so it may be the operator's (a marker
-    pair they quote): nothing changes, and the uninstall stays unfinished.
-    Apothem writes one block per file, so the fix is the marker lines the
-    operator added, never Apothem's block: with those gone, the strip takes
-    out the one block left, whichever came first. *then* is the step after the
-    fix (an install or update that retires the file gives its own).
+    pair they quote), an older Apothem block, or one pasted in a second time:
+    nothing changes, and the uninstall stays unfinished. The text is the one
+    install and update give (see :func:`two_blocks_report`): it names each
+    whole block by its lines, and the operator keeps one, deletes each other
+    Apothem block whole and changes the marker lines of each pair of theirs;
+    then the strip takes out the one block left. *then* is the step after the
+    fix (an install or update that retires the file gives its own). With
+    *dry_run* (a preview), it says Apothem would leave the file as it is.
     """
     return _result(
         "warning",
         operation,
         target,
-        f"{_path_text(target)} holds two different blocks between Apothem's "
-        "markers, so Apothem cannot tell which one is its own and left the file "
-        "as it is. Delete or reword the marker lines you added there (a marker "
-        "pair you quoted, or a block you pasted in a second time), or move them "
-        f"inside a code block, keeping your own text; {then}.",
+        two_blocks_report(
+            _path_text(target), whole_blocks_at(target), dry_run=dry_run, then=then
+        ),
         detail={KEPT_REASON: ANOTHER_BLOCK, MARKER_LEFT: "1"},
     )
 

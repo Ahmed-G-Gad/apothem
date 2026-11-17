@@ -315,12 +315,13 @@ _FIX_STRAY = (
 
 #: What to do first with each file that holds two different blocks
 #: (``kept_reason`` ``another-block``): an update leaves a file with two whole
-#: blocks as it is (Apothem writes one block per file), so the marker lines
-#: the operator added go before any update.
+#: blocks as it is (Apothem writes one block per file), so the operator keeps
+#: one block and fixes the others, as the file's warning says, before any
+#: update.
 _FIX_ANOTHER = (
-    "remove the marker lines you added to the {count} file(s) that hold two "
-    "different blocks, or move them inside a code block: an update leaves a "
-    "file with two blocks as it is, and apothem verify fails until you fix it"
+    "keep one block in each of the {count} file(s) that hold two different "
+    "blocks and fix the others as its warning says: an update leaves a file "
+    "with two blocks as it is, and apothem verify fails until you fix it"
 )
 
 #: What to do first with each file whose marker pairs Apothem cannot place
@@ -360,10 +361,9 @@ def _marker_fix(run: MaterializationRun) -> str:
 #: markers (``kept_reason`` ``another-block``).
 _ANOTHER_BLOCK_LINE = (
     "{count} file(s) hold two different blocks between Apothem's markers, so "
-    "Apothem left them as they are; delete or reword the marker lines you "
-    "added in them (a marker pair you quoted, or a block you pasted in a second "
-    "time), or move them inside a code block, keeping your own text, then run "
-    "apothem uninstall again"
+    "Apothem left them as they are; keep one block in each and fix the others "
+    "as each warning says, keeping your own text, then run apothem uninstall "
+    "again"
 )
 
 

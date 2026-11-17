@@ -41,9 +41,12 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.install_driver_blocks import (
     ANOTHER_BLOCK,
+    UNINSTALL_AGAIN,
+    another_block_at,
     another_block_warning,
     endless_block_warning,
     stray_begin_install_warnings,
+    stray_begin_warnings,
     unclear_block_warning,
 )
 from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
@@ -677,7 +680,9 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
     below it beside the block the install writes (see
     :func:`~apothem.lib.harness_materializer.merge_managed_block`), so past the
     per-file limit the reason names that file and that text, which is most
-    likely an old Apothem block that lost its END marker.
+    likely an old Apothem block that lost its END marker (the marker may be
+    the operator's too). That text need not be all of the overage, so the
+    reason still offers shorter custom rules and a higher limit.
     """
     size = chars(text)
     limits = limits_for(config, workspace.agent_ids)
@@ -687,9 +692,10 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
             f"{limits.file_max:,}-character limit per file (bootstrapMaxChars), "
             "which would cut the middle out of it, so it is not written there. "
             f"{workspace.rules_file} holds an Apothem BEGIN marker that starts no "
-            "whole block (its END marker is gone), and the old Apothem text below "
-            "it counts against the limit: delete that marker line and that old "
-            "text by hand, keeping your own text, or raise the limit."
+            "whole block (its END marker is gone, or the marker is yours), and "
+            "the old Apothem text below it counts against the limit: delete that "
+            "marker line and that old text by hand, keeping your own text, "
+            "shorten the profile's custom rules, or raise the limit."
         )
     if size > limits.file_max:
         block = extract_managed_block(text)
@@ -861,17 +867,22 @@ def _retire_one(
     marker pair no rule can place is a warning that leaves the file as it is
     (see :func:`unclear_block_warning`); with *strict*, its ``kept_reason``
     leaves the uninstall unfinished too, since the pair may be Apothem's block.
+    A preview gives each of those warnings as the run would, saying Apothem
+    would leave the file as it is, and so it does for a file that holds
+    another whole block, which the strip leaves as it is.
     """
     home = harness_root.parent
     flag = _error if strict else _warning
-    unclear = unclear_block_warning(path, RETIRE, outcome=None if strict else TAKES_OUT)
+    unclear = unclear_block_warning(
+        path, RETIRE, outcome=None if strict else TAKES_OUT, dry_run=dry_run
+    )
     if unclear is not None:
         return [unclear]
     if not _holds_block(path):
         # Nothing of Apothem's is left in it (reading through a link changes
         # nothing), so there is nothing to take out.
         return []
-    endless = endless_block_warning(path, RETIRE)
+    endless = endless_block_warning(path, RETIRE, dry_run=dry_run)
     if endless is not None:
         return [endless]
     link = _unsafe_symlink(path, home)
@@ -898,6 +909,12 @@ def _retire_one(
             )
         ]
     if dry_run:
+        if another_block_at(path):
+            # The strip would leave the file as it is (see below).
+            then = UNINSTALL_AGAIN if strict else _RETRIED
+            return [
+                another_block_warning(path, operation=RETIRE, then=then, dry_run=True)
+            ]
         return [
             MaterializationResult(
                 outcome="updated",
@@ -987,7 +1004,8 @@ def apply(
     workspace whose limits the file exceeds gets a warning and no file (see
     :func:`refusal`). Files earlier installs wrote that this run does not
     keep lose their managed block (see :func:`retire_earlier_files`); a file
-    whose write failed is kept, never retired.
+    whose write failed is kept, never retired. A retired file that still
+    holds a BEGIN marker with no END after it is named in a warning.
     """
     harness_root = config_path.parent
     home = harness_root.parent
@@ -1018,7 +1036,13 @@ def apply(
             )
         )
         results.extend(stray_begin_install_warnings(results[-1:], dry_run=dry_run))
-    results.extend(retire_earlier_files(harness_root, keep, dry_run=dry_run))
+    retired = retire_earlier_files(harness_root, keep, dry_run=dry_run)
+    results.extend(retired)
+    if not dry_run:
+        # Taking Apothem's block out can leave a BEGIN marker alone above
+        # where it was (a line of the operator's, or what is left of an older
+        # block): the file is named, as an uninstall names it.
+        results.extend(stray_begin_warnings(retired))
     return tuple(results)
 
 

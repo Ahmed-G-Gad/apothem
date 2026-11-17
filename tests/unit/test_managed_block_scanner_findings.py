@@ -177,19 +177,57 @@ _LOST_END_ABOVE_A_QUOTE = (
 )
 
 
-def test_a_recorded_file_whose_block_lost_its_end_gets_a_fresh_block() -> None:
-    """markers-2: a pair quoted in code does not hold the merge back then.
+def test_a_recorded_file_whose_block_lost_its_end_is_left_as_it_is() -> None:
+    """markers-2, regress-2: with a record, the pair quoted in code holds it back.
 
-    The BEGIN marker outside code that starts no pair is what is left of
-    Apothem's block; every pair reads as code, so it is text you quote. The
-    merge adds a fresh block after the text, as it does with no record.
+    Without a record the pair in code is text you quote, and the merge adds a
+    fresh block after the text. With one, that pair may be Apothem's block in
+    a code block of yours, and nothing tells the BEGIN marker outside code
+    that starts no pair from a line of yours, so the file is left as it is.
     """
-    for recorded in (False, True):
-        merged = merge_managed_block(
-            _LOST_END_ABOVE_A_QUOTE, "new body", recorded=recorded
-        )
+    unrecorded = merge_managed_block(_LOST_END_ABOVE_A_QUOTE, "new body")
+    recorded = merge_managed_block(_LOST_END_ABOVE_A_QUOTE, "new body", recorded=True)
 
-        assert merged == _appended(_LOST_END_ABOVE_A_QUOTE), recorded
+    assert unrecorded == _appended(_LOST_END_ABOVE_A_QUOTE)
+    assert recorded == _LOST_END_ABOVE_A_QUOTE
+
+
+def _indented(text: str) -> str:
+    """Return *text* with each line indented four spaces: indented code."""
+    return "".join(f"    {line}\n" for line in text.rstrip("\n").split("\n"))
+
+
+#: Apothem's recorded block (the one for "old body") read as code of yours,
+#: beside a BEGIN marker outside code that starts no pair: a line of yours, or
+#: what is left of an older block.
+_RECORDED_BLOCK_IN_CODE = {
+    "lone-begin-above-a-fence": (
+        f"# Notes\n{B}\nmy heading line\n\n```\n{OLD}```\n\nafter\n"
+    ),
+    "lone-begin-below-a-fence": f"# Notes\n\n```\n{OLD}```\n\n{B}\nmy line\n",
+    "indented-block": f"# Notes\n\n{_indented(OLD)}\n{B}\nmine\n",
+    # A code block of yours left open above the block, closed by the opening
+    # fence of the example below it: the quoted BEGIN line reads outside code.
+    "fence-closed-by-a-quote": (
+        f"My notes:\n\n```sh\nmake test\n\n{OLD}\n## How the block starts\n\n"
+        f"```\n{B}\n```\n"
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "text", list(_RECORDED_BLOCK_IN_CODE.values()), ids=list(_RECORDED_BLOCK_IN_CODE)
+)
+def test_a_recorded_block_in_code_beside_a_lone_begin_gets_no_second_block(
+    text: str,
+) -> None:
+    """regress-2, advice-1, cmark-1, docs-2: a changed body added a second block.
+
+    The old block stayed in the code block, where the tool still read it, and
+    an uninstall then took out only the new one. The record says the pair in
+    code may be Apothem's block, whatever the BEGIN marker outside code is.
+    """
+    assert merge_managed_block(text, "new body", recorded=True) == text
 
 
 @pytest.mark.parametrize(
@@ -205,7 +243,7 @@ def test_a_recorded_file_whose_block_lost_its_end_gets_a_fresh_block() -> None:
 def test_a_recorded_file_whose_pair_may_be_the_block_is_still_held_back(
     text: str,
 ) -> None:
-    """With no BEGIN marker outside code, or a pair line outside code, it may be.
+    """A pair in code, or one with a marker line outside code, may be the block.
 
     Apothem's block in a code block of yours, or one whose END marker you left
     outside the code block, is no quote: the record keeps the file as it is.
