@@ -1650,7 +1650,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   also empties `core.attributesFile`, and the run sets `GIT_ATTR_NOSYSTEM=1`, so
   git reads no attributes file outside the clone: a macro that your own or the
   system's attributes file defines with a filter (`[attr]name filter=...`)
-  applies to nothing in the clone. The PowerShell scripts put the variables
+  applies to nothing in the clone. Nor do the line-ending settings there
+  (`eol` and `text`), so an update can report `has changes to tracked files`
+  for a clone you never changed: run `git -C ~/.apothem status` once, then run
+  the update again. The PowerShell scripts put the variables
   they clear, the ones they set (`GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH`,
   `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM`) and the console's output
   encoding back when the run ends, so an `irm ... | iex` run leaves your

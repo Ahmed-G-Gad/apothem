@@ -563,7 +563,10 @@ messages stop the update before the checkout. "Could not fetch" usually means a
 local tag differs from the one on origin: delete it with
 `git -C ~/.apothem tag -d <tag>` and re-run. "has changes to tracked files.
 Commit or stash them, then re-run." means the clone has uncommitted changes to
-files git tracks: commit or stash them, then re-run. A dry run does not check
+files git tracks: commit or stash them, then re-run. The check ignores the
+line-ending settings (`eol` and `text`) in your own or the system's git
+attributes file, so a clone you never changed can be reported this way: run
+`git -C ~/.apothem status` once, then re-run. A dry run does not check
 for ordinary uncommitted changes, since it does not fetch into the clone, but
 it stops with the same message when files are marked assume-unchanged or
 skip-worktree (see the clone setup section above). "Could not check out"
