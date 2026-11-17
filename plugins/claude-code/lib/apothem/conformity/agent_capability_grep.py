@@ -56,6 +56,13 @@ from typing import Final
 
 import yaml
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "agent-capability-grep"
 RULE_ANCHOR: Final[str] = "agent-capability-discipline (per-harness capability matrix)"
 
@@ -187,7 +194,7 @@ def _find_declaration(harness_dir: Path) -> Path | None:
     for directory in candidate_dirs:
         for filename in DECLARATION_FILENAMES:
             candidate = directory / filename
-            if candidate.is_file():
+            if is_project_file(harness_dir, candidate):
                 return candidate
     return None
 
@@ -243,7 +250,7 @@ def check(root: Path) -> GrepResult:
     present_count = 0
     for harness in HARNESS_COHORT:
         harness_dir = harnesses_dir / harness
-        if not harness_dir.is_dir():
+        if not is_project_dir(root, harness_dir):
             continue
         present_count += 1
         declaration_path = _find_declaration(harness_dir)
@@ -296,10 +303,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

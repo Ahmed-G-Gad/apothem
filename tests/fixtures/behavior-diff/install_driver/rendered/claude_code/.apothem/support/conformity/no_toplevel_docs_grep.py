@@ -39,6 +39,7 @@ from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
     RootGrepResult,
+    is_project_dir,
     run_root_grep,
 )
 
@@ -74,7 +75,7 @@ def check(root: Path) -> RootGrepResult:
     """
     candidate = root / _FORBIDDEN_DIR
     findings: list[Finding] = []
-    if candidate.is_dir():
+    if is_project_dir(root, candidate):
         findings.append(
             Finding(
                 path=f"{_FORBIDDEN_DIR}/",

@@ -102,7 +102,14 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._grep_base import finish_root_report, parse_root_args
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    iter_tree_files,
+    list_real_entries,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "gate-evidence-grep"
 RULE_ANCHOR: Final[str] = (
@@ -768,23 +775,27 @@ def _inspect_file(
 def _suite_dirs(root: Path) -> list[Path]:
     """Return the suite directories to inspect for *root*."""
     plans = root.joinpath(*APOTHEM_PLANS_RELPATH)
-    if plans.is_dir():
-        return sorted(p for p in plans.iterdir() if p.is_dir())
+    if is_project_dir(root, plans):
+        return sorted(p for p in list_real_entries(plans) if p.is_dir())
     if root.name == APOTHEM_PLANS_RELPATH[1] and root.parent.name == ".apothem":
-        return sorted(p for p in root.iterdir() if p.is_dir())
-    if (root / "PROGRESS.md").is_file() or (root / "phases").is_dir():
+        return sorted(p for p in list_real_entries(root) if p.is_dir())
+    if is_project_file(root, root / "PROGRESS.md") or is_project_dir(
+        root, root / "phases"
+    ):
         return [root]
     return []
 
 
 def _suite_files(suite: Path) -> list[Path]:
     """Return the report, progress and attestation files of one suite."""
-    files = [suite / name for name in _ROOT_FILES if (suite / name).is_file()]
-    files.extend(sorted(suite.rglob("REPORT.md")))
+    files = [
+        suite / name for name in _ROOT_FILES if is_project_file(suite, suite / name)
+    ]
+    files.extend(sorted(iter_tree_files(suite, names=("REPORT.md",), prune=False)))
     for name in _ATTESTATION_FILES:
-        files.extend(sorted(suite.rglob(name)))
+        files.extend(sorted(iter_tree_files(suite, names=(name,), prune=False)))
     manifest = suite.joinpath(*_MANIFEST_RELPATH)
-    if manifest.is_file():
+    if is_project_file(suite, manifest):
         files.append(manifest)
     return files
 

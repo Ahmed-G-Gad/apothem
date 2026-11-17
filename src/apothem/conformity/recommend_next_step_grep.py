@@ -35,6 +35,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "recommend-next-step-grep"
 RULE_ANCHOR: Final[str] = "rules/recommend-next-step.md"
 
@@ -199,16 +206,19 @@ def check(root: Path) -> GrepResult:
     files_inspected = 0
 
     commands_dir = root / COMMANDS_DIR
-    if not commands_dir.is_dir():
+    if not is_project_dir(root, commands_dir):
         findings.append(
             Finding(
                 surface=COMMANDS_DIR,
-                detail=(f"commands directory absent at canonical path {commands_dir}"),
+                detail=(
+                    f"commands directory absent at canonical path {commands_dir}, "
+                    "or a link"
+                ),
             )
         )
     else:
         for path in sorted(commands_dir.glob("*.md")):
-            if path.name in EXCLUDED_FILES:
+            if path.name in EXCLUDED_FILES or not is_project_file(root, path):
                 continue
             files_inspected += 1
             finding = _classify_command_file(path)
@@ -216,15 +226,19 @@ def check(root: Path) -> GrepResult:
                 findings.append(finding)
 
     skills_dir = root / SKILLS_DIR
-    if not skills_dir.is_dir():
+    if not is_project_dir(root, skills_dir):
         findings.append(
             Finding(
                 surface=SKILLS_DIR,
-                detail=(f"skills directory absent at canonical path {skills_dir}"),
+                detail=(
+                    f"skills directory absent at canonical path {skills_dir}, or a link"
+                ),
             )
         )
     else:
         for path in sorted(skills_dir.glob("*/SKILL.md")):
+            if not is_project_file(root, path):
+                continue
             files_inspected += 1
             finding = _classify_command_file(path)
             if finding is not None:
@@ -240,10 +254,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

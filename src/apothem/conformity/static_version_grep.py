@@ -32,6 +32,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "static-version-grep"
 RULE_ANCHOR: Final[str] = "rules/dynamism.md §static-version-resolution"
 EXIT_PASS: Final[int] = 0
@@ -178,7 +184,7 @@ def _check_readme(root: Path, findings: list[Finding]) -> int:
     read = 0
     for candidate in README_CANDIDATES:
         readme = root / candidate
-        if not readme.is_file():
+        if not is_project_file(root, readme):
             continue
         try:
             text = readme.read_text(encoding="utf-8")
@@ -213,7 +219,7 @@ def _check_site_config(root: Path, findings: list[Finding]) -> int:
     read = 0
     for candidate in SITE_CONFIG_CANDIDATES:
         config = root / candidate
-        if not config.is_file():
+        if not is_project_file(root, config):
             continue
         try:
             text = config.read_text(encoding="utf-8")
@@ -246,7 +252,7 @@ def _check_site_config(root: Path, findings: list[Finding]) -> int:
 def _check_runtime_version(root: Path, findings: list[Finding]) -> int:
     """Flag a literal ``__version__`` in the runtime module; return files read."""
     module = root / RUNTIME_VERSION_MODULE
-    if not module.is_file():
+    if not is_project_file(root, module):
         return 0
     try:
         text = module.read_text(encoding="utf-8")
@@ -302,9 +308,6 @@ def main(root: Path) -> int:
     to stdout; the return is :data:`EXIT_PASS` when the sweep passed and
     :data:`EXIT_FAIL` otherwise (including a sweep that read no site).
     """
-    # Imported here, not at module top: ``check()`` stays stdlib-only.
-    from apothem.conformity._grep_base import finish_root_report
-
     result = check(root)
     return finish_root_report(
         result.to_json(), passed=result.passed, inspected=result.inspected
@@ -312,8 +315,6 @@ def main(root: Path) -> int:
 
 
 def _main(argv: list[str]) -> int:
-    from apothem.conformity._grep_base import parse_root_args
-
     return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 

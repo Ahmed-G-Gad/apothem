@@ -145,6 +145,23 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **Project files only, never through a link.** The project being checked can
+  come with files someone else made, so a validator reads and lists only
+  regular files and real folders that it reaches through real folders below
+  the root. It never follows a symbolic link or a Windows junction, even one
+  that points inside the project, and never opens a named pipe, a device or a
+  socket; each counts as missing. Use the helpers in `_grep_base.py`:
+  `iter_tree_files` for a walk (`prune=False` where every file below a fixed
+  folder counts, as `rglob` did), `is_project_file` before reading a fixed
+  path, `is_project_dir` before listing or globbing a fixed folder, and
+  `list_real_entries` in place of `iterdir`. Plain `is_file`, `is_dir` and
+  `exists` follow links, and `glob`, `rglob` and `iterdir` list a linked
+  folder and return links.
+  `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
+  validator against a project made of links. Add each file a new validator
+  reads to its `_project_files` (or, for a file read only after another one
+  passed, to `_second_reads`): its control test fails only while the
+  validator reaches none of those files, so a path left out is not tested.
 - **Two layouts, one import surface.** `gate.py` runs from the package
   (`src/apothem/conformity/`) and from a harness install
   (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its

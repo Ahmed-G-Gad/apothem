@@ -52,6 +52,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    iter_tree_files,
+    make_parser,
+)
+
 # Canonical-uppercase exception set per spec section 4.1. These names
 # are recognized verbatim regardless of casing rules. The set is closed;
 # new exceptions land via rule revision, never ad-hoc.
@@ -333,12 +340,10 @@ def _is_hidden_path(rel: str) -> bool:
 def _iter_corpus_files(root: Path) -> list[str]:
     """Return in-scope POSIX-relative file paths under the authored tree."""
     corpus = root / _CORPUS_ROOT
-    if not corpus.is_dir():
+    if not is_project_dir(root, corpus):
         return []
     rels: list[str] = []
-    for path in corpus.rglob("*"):
-        if not path.is_file():
-            continue
+    for path in iter_tree_files(corpus, prune=False):
         try:
             rel = path.relative_to(root).as_posix()
         except ValueError:
@@ -389,10 +394,6 @@ def _main(argv: list[str]) -> int:
     not exist yet (a name about to be created). Any other argument is a usage
     error (exit 3).
     """
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, make_parser
-
     parser = make_parser(GREP_NAME, __doc__)
     parser.add_argument(
         "target",

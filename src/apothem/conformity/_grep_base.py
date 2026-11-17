@@ -38,6 +38,14 @@ vendored, virtual-environment, cache and build-output trees in
 :data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
 repository, so a root-level finding on one is a false positive, and a walk that
 descends into ``node_modules`` or a built site costs minutes.
+
+Project files only. A project can arrive with its files from someone else, in
+an archive or a shared folder, so every validator reads and lists only what
+the project itself holds: regular files and real folders below its root. The
+walk and the helpers beside it (:func:`is_project_file`,
+:func:`is_project_dir`, :func:`list_real_entries`) check each level with
+``os.lstat``, which never follows a link, and treat a symbolic link, a Windows
+junction, a named pipe, a device or a socket as if it were not there.
 """
 
 from __future__ import annotations
@@ -46,6 +54,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field
@@ -272,38 +281,182 @@ def has_git_entry(directory: Path) -> bool:
     return os.path.lexists(directory / GIT_ENTRY)
 
 
+# ---------------------------------------------------------------------------
+# Project files only: no links, no named pipes, no devices
+# ---------------------------------------------------------------------------
+#
+# A symbolic link, or on Windows a junction, can lead from the project to a
+# file or a whole tree anywhere on the disk, and a named pipe or a link to a
+# device such as ``/dev/zero`` makes a read wait or never end. ``Path.is_file``,
+# ``Path.is_dir``, ``Path.glob`` and ``os.walk`` all follow links (``os.walk``
+# stops at a symbolic link to a folder but enters a junction), so the helpers
+# below look at each level with ``os.lstat`` instead. A link is skipped even
+# when it points inside the root: what it points to is read under its own path,
+# once.
+
+# Windows sets this bit in the tag of a reparse point that names another file or
+# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
+# junction as a plain folder, so the tag is what shows it is a link.
+NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
+
+
+def is_link(info: os.stat_result) -> bool:
+    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
+    if stat.S_ISLNK(info.st_mode):
+        return True
+    return bool(getattr(info, "st_reparse_tag", 0) & NAME_SURROGATE_TAG_BIT)
+
+
+def _project_lstat(root: Path, path: Path) -> os.stat_result | None:
+    """Return ``os.lstat(path)`` when *path* is reached through real folders.
+
+    Pre-conditions: *path* was built from *root*, with the same spelling, so
+    the test is by name: a path that does not start with *root*, or that has a
+    ``..`` part, is outside it.
+    Post-conditions: None when *path* is outside *root*, is *root* itself,
+    does not exist or is a link, or when a level between *root* and *path* is
+    not a real folder (a link to a folder, a junction, a file). The levels are
+    looked at with ``os.lstat``, which never follows a link.
+    """
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError:
+        return None
+    if not parts or ".." in parts:
+        return None
+    folder = root
+    for part in parts[:-1]:
+        folder = folder / part
+        try:
+            info = os.lstat(folder)
+        except OSError:
+            return None
+        if is_link(info) or not stat.S_ISDIR(info.st_mode):
+            return None
+    try:
+        info = os.lstat(folder / parts[-1])
+    except OSError:
+        return None
+    return None if is_link(info) else info
+
+
+def is_project_file(root: Path, path: Path) -> bool:
+    """Return True iff *path* is a regular file reached through real folders.
+
+    Pre-conditions: *path* was built from *root* (see :func:`_project_lstat`).
+    Post-conditions: False for a path outside *root*, a link at any level, a
+    named pipe, a device, a socket, a folder or a missing path. A validator
+    treats such a path as missing, the way git ignores a ``.gitattributes``
+    that is a symbolic link.
+    """
+    info = _project_lstat(root, path)
+    return info is not None and stat.S_ISREG(info.st_mode)
+
+
+def is_project_dir(root: Path, path: Path) -> bool:
+    """Return True iff *path* is *root* or a real folder reached through real folders.
+
+    Pre-conditions: *path* was built from *root* (see :func:`_project_lstat`).
+    Post-conditions: False for a path outside *root*, a link to a folder or a
+    junction at any level, a file or a missing path, so a caller never lists a
+    folder outside the project. *root* itself is the folder the caller was
+    pointed at and counts when it is a folder.
+    """
+    if path == root:
+        return root.is_dir()
+    info = _project_lstat(root, path)
+    return info is not None and stat.S_ISDIR(info.st_mode)
+
+
+def list_real_entries(folder: Path) -> list[Path]:
+    """Return the real folders and regular files directly inside *folder*.
+
+    Pre-conditions: the caller already trusts *folder*: it is the root, or
+    :func:`is_project_dir` or this function vouched for it.
+    Post-conditions: links of any kind, named pipes, devices and sockets are
+    left out, as if they were not there, so a caller can test each entry with
+    ``is_dir`` or ``is_file`` without following a link. The order is the
+    host's listing order; callers sort. A folder that cannot be listed gives
+    an empty list.
+    """
+    try:
+        with os.scandir(folder) as listing:
+            entries = list(listing)
+    except OSError:
+        return []
+    kept: list[Path] = []
+    for entry in entries:
+        try:
+            info = entry.stat(follow_symlinks=False)
+        except OSError:
+            continue
+        if is_link(info):
+            continue
+        if stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode):
+            kept.append(folder / entry.name)
+    return kept
+
+
+def _lstat_kind(path: Path) -> int | None:
+    """Return the file type of *path* (``stat.S_IFMT``), or None for a link or no entry.
+
+    The type comes from ``os.lstat``, so a link of any kind is None, never the
+    type of what it points to; callers compare with ``S_IFDIR`` or ``S_IFREG``.
+    """
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return None
+    if is_link(info):
+        return None
+    return stat.S_IFMT(info.st_mode)
+
+
 def iter_tree_files(
     root: Path,
     suffixes: Iterable[str] = (),
     *,
     names: Iterable[str] = (),
     extra_prune: Iterable[str] = (),
+    prune: bool = True,
 ) -> Iterator[Path]:
-    """Yield the matching files below ``root``, skipping pruned subtrees.
+    """Yield the matching regular files below ``root``, skipping pruned subtrees.
 
     Pre-conditions: ``root`` is an existing directory. ``suffixes`` are file
     name endings (``".md"``) and ``names`` exact file names (``"README.md"``);
     a file matching either is yielded, and with both empty every file is.
     Matching follows the host's file-name case rules, as ``Path.rglob`` does.
     ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
-    Post-conditions: yields existing regular files as ``root``-prefixed paths,
+    ``prune=False`` drops the default pruning, so nested checkouts and the
+    names in :data:`PRUNED_SEGMENTS` are walked too (``extra_prune`` still
+    applies): the files a former ``Path.rglob`` caller saw, minus links.
+    Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
     never enters a nested checkout (a directory below ``root`` that holds a
     ``.git`` file or directory; ``root`` itself is never nested, even when its
-    ``.git`` is a file), a directory named in the pruned set, or a symbolic
-    link to a directory. A directory it cannot read is skipped.
+    ``.git`` is a file), a directory named in the pruned set, or a link to a
+    folder (a symbolic link or a Windows junction), and never yields a link, a
+    named pipe, a device or a socket. A link that points inside ``root`` is
+    skipped too; what it points to is yielded under its own path. A directory
+    it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune)
+    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
     for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
         # Position 0 is the root itself; its own ``.git`` marks the checkout
         # being inspected, not a nested one.
-        if position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
+        if prune and position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
             dirnames.clear()
             continue
-        dirnames[:] = sorted(name for name in dirnames if name not in pruned)
+        # ``os.walk`` lists a link to a folder and a junction among the
+        # folders and would enter a junction; keep real folders only.
+        dirnames[:] = sorted(
+            name
+            for name in dirnames
+            if name not in pruned and _lstat_kind(Path(dirpath, name)) == stat.S_IFDIR
+        )
         for filename in sorted(filenames):
             folded = os.path.normcase(filename)
             if not (
@@ -311,7 +464,7 @@ def iter_tree_files(
             ):
                 continue
             candidate = Path(dirpath, filename)
-            if candidate.is_file():
+            if _lstat_kind(candidate) == stat.S_IFREG:
                 yield candidate
 
 

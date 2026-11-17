@@ -34,6 +34,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "gitattributes-presence-grep"
 RULE_ANCHOR: Final[str] = "supply-chain .gitattributes contract"
 
@@ -143,12 +149,13 @@ def check(root: Path) -> GrepResult:
     enumerates each drift class.
     """
     path = root / GITATTRIBUTES_FILENAME
-    if not path.is_file():
+    if not is_project_file(root, path):
         finding = Finding(
             drift_class=DRIFT_FILE_ABSENT,
             detail=(
                 f"{GITATTRIBUTES_FILENAME} is absent at repository root "
-                f"({path}); the supply-chain contract requires it"
+                f"({path}), or is a link, which git does not read; the "
+                "supply-chain contract requires it"
             ),
         )
         return GrepResult(
@@ -237,16 +244,12 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
-        inspected=int((root / GITATTRIBUTES_FILENAME).is_file()),
+        inspected=int(is_project_file(root, root / GITATTRIBUTES_FILENAME)),
     )
 
 

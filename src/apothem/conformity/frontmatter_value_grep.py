@@ -69,6 +69,13 @@ from typing import Any, Final
 
 import yaml
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "frontmatter-value-grep"
 RULE_ANCHOR: Final[str] = "per-class JSON Schema enum/pattern value constraints"
 
@@ -349,8 +356,13 @@ def check(root: Path) -> GrepResult:
         constraints = _load_value_constraints(SCHEMAS_DIR / schema_filename)
         if not constraints:
             continue
+        # The pattern's fixed folders come first; glob only a real folder,
+        # so a link on the way never leads the glob out of the project.
+        folder = root / glob_pattern.split("*", 1)[0]
+        if not is_project_dir(root, folder):
+            continue
         for path in sorted(root.glob(glob_pattern)):
-            if not path.is_file():
+            if not is_project_file(root, path):
                 continue
             inspected, file_findings = _check_file(
                 path, root, artifact_class, constraints
@@ -376,10 +388,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

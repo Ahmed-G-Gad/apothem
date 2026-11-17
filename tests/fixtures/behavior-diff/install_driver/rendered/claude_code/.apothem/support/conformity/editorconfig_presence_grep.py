@@ -33,6 +33,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "editorconfig-presence-grep"
 RULE_ANCHOR: Final[str] = "supply-chain SOTA-rigor §editorconfig"
 EXIT_PASS: Final[int] = 0
@@ -157,12 +163,13 @@ def check(root: Path) -> GrepResult:
     """
     findings: list[Finding] = []
     target = root / EDITORCONFIG_FILENAME
-    if not target.is_file():
+    if not is_project_file(root, target):
         findings.append(
             Finding(
                 drift_class="file-absent",
                 detail=(
-                    f"no .editorconfig at {target}; author a canonical file "
+                    f"no .editorconfig at {target} (a link counts as none); "
+                    "author a canonical file "
                     "per the supply-chain SOTA-rigor contract"
                 ),
             )
@@ -290,20 +297,15 @@ def main(root: Path) -> int:
     ``.editorconfig`` file was read), is written to stdout; the return is
     :data:`EXIT_PASS` when the sweep passed and :data:`EXIT_FAIL` otherwise.
     """
-    # Imported here, not at module top: ``check()`` stays stdlib-only.
-    from apothem.conformity._grep_base import finish_root_report
-
     result = check(root)
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
-        inspected=int((root / EDITORCONFIG_FILENAME).is_file()),
+        inspected=int(is_project_file(root, root / EDITORCONFIG_FILENAME)),
     )
 
 
 def _main(argv: list[str]) -> int:
-    from apothem.conformity._grep_base import parse_root_args
-
     return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 

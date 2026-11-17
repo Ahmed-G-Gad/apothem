@@ -49,6 +49,13 @@ from typing import Any, Final
 
 import yaml
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "workflow-concurrency-grep"
 RULE_ANCHOR: Final[str] = "workflow concurrency + per-job timeouts"
 
@@ -257,7 +264,7 @@ def check(root: Path) -> GrepResult:
     timeouts, OR the workflows directory does not yet exist.
     """
     workflows_dir = root / ".github" / "workflows"
-    if not workflows_dir.is_dir():
+    if not is_project_dir(root, workflows_dir):
         return GrepResult(
             grep=GREP_NAME,
             root=str(root),
@@ -267,7 +274,9 @@ def check(root: Path) -> GrepResult:
             findings=[],
         )
     workflow_files = sorted(
-        list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        p
+        for p in [*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")]
+        if is_project_file(root, p)
     )
     findings: list[Finding] = []
     for path in workflow_files:
@@ -283,10 +292,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

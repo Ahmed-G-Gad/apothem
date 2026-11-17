@@ -1200,6 +1200,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **The conformity gate's `--all` validators read only real files inside the
+  project they check.** A project that came from someone else, in an archive
+  or a shared folder, can hold symbolic links and, on Windows, junctions that
+  lead out of it. The shared tree walk entered junctions and returned linked
+  files, so `dynamism-grep` read a linked page outside the project, and a
+  junction back to a folder above it made the walk go round the tree until the
+  path grew too long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now reads and lists only regular files and real folders that it
+  reaches through real folders below the root. A symbolic link, a junction, a
+  named pipe, a device or a socket counts as missing, even a link that points
+  inside the project, whose target is checked under its own path. So a
+  validator that reports a missing file reports a linked one the same way, and
+  one that passes when its folder is missing, such as the workflow validators,
+  passes when that folder is a link.
 
 ## [1.5.0] - 2026-10-28
 

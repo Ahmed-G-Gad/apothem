@@ -65,6 +65,8 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     has_git_entry,
+    is_project_dir,
+    list_real_entries,
     parse_root_args,
 )
 
@@ -233,10 +235,8 @@ def _sweep_stray_plans_dirs(
     stack: list[Path] = [resolved_root]
     while stack:
         current = stack.pop()
-        try:
-            entries = list(current.iterdir())
-        except (OSError, PermissionError):
-            continue
+        # Links and junctions are left out: the walk never follows one.
+        entries = list_real_entries(current)
         for entry in entries:
             try:
                 is_dir = entry.is_dir()
@@ -260,7 +260,7 @@ def _sweep_stray_plans_dirs(
                 # further into the data children.
                 plans_child = entry / "plans"
                 try:
-                    if plans_child.is_dir():
+                    if is_project_dir(entry, plans_child):
                         _record_stray(plans_child, f"{rel}/plans")
                 except OSError:
                     pass
