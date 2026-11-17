@@ -46,10 +46,17 @@ _ROOTS = (
 
 @pytest.fixture(autouse=True)
 def _forget_fake_homes() -> Iterator[None]:
-    """Drop the added homes and the refusals each test logged."""
+    """Drop the added homes, the refusals and the account home each test cached.
+
+    A test that looks the account home up under fakes caches what it found. If
+    that were a fake (a regression), clearing the cache here, after
+    ``monkeypatch`` has undone the fakes, keeps the failure in that one test:
+    the next lookup finds the real home again.
+    """
     yield
     home_write_guard.clear_extra_homes()
     home_write_guard.drain_refusals()
+    home_write_guard._os_account_home.cache_clear()
 
 
 @pytest.fixture

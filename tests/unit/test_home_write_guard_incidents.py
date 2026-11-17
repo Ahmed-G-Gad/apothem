@@ -34,6 +34,12 @@ the null device leaves pytest no folder to stop at (on Windows it reads the
 null device as ``\\\\.\\nul``, which has no parent), so collection walks up
 through every parent folder of the probe and lists the shared temporary folder,
 where other processes create and remove folders while it reads.
+
+Each case session starts in a folder named after its case, under the outer
+session's ``--basetemp`` (kept short, ``bt``). On Windows a working folder
+longer than 260 characters makes starting that session fail with
+``WinError 87``, so this test needs a temporary root no deeper than about 100
+characters; the default one under ``%TEMP%`` is well inside that.
 """
 
 from __future__ import annotations
@@ -144,7 +150,7 @@ def test_the_pytester_cases_pass(tmp_path: Path) -> None:
             f"python_functions={_CASE_PREFIX}*",
             "-q",
             "--basetemp",
-            str(tmp_path / "basetemp"),
+            str(tmp_path / "bt"),
             module.name,
         ],
         cwd=session,

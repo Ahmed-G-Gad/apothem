@@ -300,10 +300,11 @@ _XFAIL_PROBES = "import pytest\n" + _PROBES.replace(
     "\ndef test_", '\n@pytest.mark.xfail(reason="probe")\ndef test_'
 )
 
-#: Three probe tests that each absorb a refusal of a write into a protected home:
-#: in the test body, in a function fixture's teardown and in a module fixture's
-#: teardown. ``{home}`` is the protected home and ``{marker}`` a mark line or
-#: nothing. Nothing is written: the guard refuses before any write.
+#: Four probe tests that each absorb a refusal of a write into a protected home:
+#: in the test body, in a function fixture's teardown, in a function fixture's
+#: teardown beside another fixture whose teardown fails, and in a module
+#: fixture's teardown. ``{home}`` is the protected home and ``{marker}`` a mark
+#: line or nothing. Nothing is written: the guard refuses before any write.
 _ABSORBING_PROBES = """
 import contextlib
 
@@ -333,6 +334,12 @@ def absorbs_at_module_teardown():
     yield
     _absorb()
 
+
+@pytest.fixture
+def fails_at_teardown():
+    yield
+    raise ValueError("another fixture's teardown failed")
+
 {marker}
 def test_absorbs_in_its_body():
     _absorb()
@@ -342,12 +349,22 @@ def test_absorbs_in_a_fixture_teardown(absorbs_at_teardown):
     pass
 
 {marker}
+def test_absorbs_beside_another_failing_teardown(
+    absorbs_at_teardown, fails_at_teardown
+):
+    pass
+
+{marker}
 def test_absorbs_in_a_module_fixture_teardown(absorbs_at_module_teardown):
     pass
 """
+#: The probe tests in the order they run. The module fixture's teardown runs
+#: with the last test's, so its test stays last. The third test's teardown
+#: fails twice at once, which pytest raises as an exception group.
 _ABSORBING_TESTS = (
     "test_absorbs_in_its_body",
     "test_absorbs_in_a_fixture_teardown",
+    "test_absorbs_beside_another_failing_teardown",
     "test_absorbs_in_a_module_fixture_teardown",
 )
 
