@@ -200,8 +200,8 @@ adapter warning prints on its own `Warning:` line in plain mode too, for example
 the Zed warning that names an instruction file the new `.rules` hides, and the
 warning that names a file holding an Apothem BEGIN marker with no END after it:
 the install keeps the text after that marker and writes Apothem's block apart
-from it, and the warning says not to add the END marker back below that text,
-which would leave two Apothem blocks (see
+from it, so the warning says not to add the END marker back below that text,
+which would then leave two Apothem blocks (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 So do the warning for a file that holds two or more whole blocks between
 Apothem's markers, which names each block by its lines (see
@@ -213,8 +213,14 @@ the install leaves such a file as it is (for marker pairs, while an install
 record lists the file; see [`update`](/docs/cli-reference/update)). In a dry
 run, the warning for a file left as it is says that Apothem "would leave the
 file as it is". A rule in your profile that opens a code block and never
-closes it does not hide the END marker of Apothem's block: the install closes
-that code block at the end of the block it writes.
+closes it does not hide the END marker of the block the install writes: the
+install closes that code block at the end of the block. A block an earlier
+release wrote from such a rule has no such closing line. A code block of yours
+that opens above Apothem's block and never closes is a different case: a
+closing line in the block closes it, so the block reads as code. The install
+warns about such a block as soon as it writes it, and the warning names the
+code block to close above the BEGIN marker (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 The `--format json` envelope always carries the full `warnings` array regardless
 of verbosity.
 

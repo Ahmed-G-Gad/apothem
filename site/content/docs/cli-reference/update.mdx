@@ -22,9 +22,9 @@ advisories, including the `instruction_override` note when a file of yours keeps
 a tool from loading what Apothem writes (see
 [`install`](/docs/cli-reference/install)). It also warns about a file that holds
 a BEGIN marker with no END marker after it: the text after that marker is kept
-as it is, and Apothem's block is written apart from it, also when the file
-holds a marker pair you quote in code; the warning says not to add the END
-marker back below that text, which would leave two Apothem blocks (see
+as it is, and Apothem's block is written apart from it, so the warning says not
+to add the END marker back below that text, which would then leave two Apothem
+blocks (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 A file that holds two or more whole blocks between Apothem's markers is left
 as it is, with a warning that names each block by its lines (see
@@ -33,15 +33,23 @@ A file where Apothem cannot tell its block from your text, such as its block
 inside a code block of yours, is left as it is while an install record lists
 it, with a warning that names each marker pair in it and how to fix it (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
-With no install record, a marker pair you quote in code is your text, and the
-update adds its block after it, unless the pair holds exactly the block the
-update writes: then it leaves the file as it is, with the warning. A file where
-a BEGIN marker outside code has its END marker in code, with another marker
-pair after them, is left as it is with the warning, record or not. A rule in
-your profile that opens a code block and never closes it does not cause that:
-the update closes that code block at the end of the block it writes. In a dry
-run, the warning for a file left as it is says that Apothem "would leave the
-file as it is".
+That holds beside a BEGIN marker that starts no marker pair too, such as what
+is left of Apothem's block after its END marker was lost: the warning names
+that BEGIN marker first, and you delete or change it, with any old Apothem text
+below it. With no install record, a marker pair you quote in code is your text,
+and the update adds its block after it, with or without such a BEGIN marker,
+unless the pair holds exactly the block the update writes: then it leaves the
+file as it is, with the warning. A file where a BEGIN marker outside code has
+its END marker in code, with another marker pair after them, is left as it is
+with the warning, record or not. A rule in your profile that opens a code block
+and never closes it does not cause that for the block the update writes: the
+update closes that code block at the end of the block. A block an earlier
+release wrote from such a rule has no such closing line, so it can cause that.
+A code block of yours that opens above Apothem's block and never closes is a
+different case: a closing line in the block closes it, so the block reads as
+code, and the update that writes such a block warns at once and names the code
+block to close above the BEGIN marker. In a dry run, the warning for a file
+left as it is says that Apothem "would leave the file as it is".
 
 In each folder Apothem writes into (a skills folder, the support files under
 `.apothem/support/`), `update` compares every entry it writes. A file entry is

@@ -28,8 +28,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
   marker with no END marker, the failed check is `harness.stray_begin`, and its
   fix names each such file and says to delete the marker line and the old
-  Apothem text below it, and not to add the END marker back, which would leave
-  two Apothem blocks: an update alone does not clear it (see
+  Apothem text below it, and not to add the END marker back once an install or
+  update has written Apothem's block apart from it, which would leave two
+  Apothem blocks: an update alone does not clear it (see
   [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
   A file that holds two or more whole blocks between Apothem's markers, or
   whose marker pairs Apothem cannot tell from your text, such as its block

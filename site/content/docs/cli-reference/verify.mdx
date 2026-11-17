@@ -36,12 +36,15 @@ The files checked are the ones the harness's install writes a block into and
 the ones its install records list since the last uninstall that finished, a
 rules file in an OpenClaw workspace the install no longer uses included. A
 marker in a file of your own, such as a project's notes file, does not fail
-it. With no install record, `CLAUDE.md`, the profile document
-and the rules file in each OpenClaw workspace are not checked: only the record
-shows that the install wrote them. The failed row names each such file and
+it. With no install record, `CLAUDE.md` and the profile document are not
+checked: only the record shows that the install wrote them. The OpenClaw
+verify still fails, without naming the file, when the rules file in a
+workspace it finds holds no whole block or a BEGIN marker that starts none.
+The failed row names each such file and
 says what to fix: the stray marker line to delete, with the old Apothem text
-below it (the note also says not to add the END marker back, which would leave
-two Apothem blocks); each whole block, by its lines; or, for marker pairs
+below it (the note also says not to add the END marker back once an install or
+update has written Apothem's block apart from it, which would leave two
+Apothem blocks); each whole block, by its lines; or, for marker pairs
 Apothem cannot tell from your text, the lines of each pair, where they read
 and how to fix them, along with each BEGIN marker that starts no marker pair.
 In plain mode a `Note:` line follows the row,

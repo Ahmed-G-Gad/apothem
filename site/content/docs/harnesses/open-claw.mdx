@@ -166,9 +166,11 @@ docs, read 2026-11-09.)
 
 A rules file whose Apothem block lost its END marker keeps the old Apothem text
 below its BEGIN marker, and an update writes Apothem's block beside it, so that
-old text counts against the per-file limit. When it takes the file over the
-limit, the warning names the file and says to delete that marker line and that
-old text by hand, keeping your own text, or to raise the limit.
+old text counts against the per-file limit. When a rules file over the limit
+holds a BEGIN marker that starts no whole block (its END marker is gone, or the
+marker is yours), the warning names the file and says to delete that marker
+line and the old text below it by hand, keeping your own text, to shorten the
+profile's custom rules, or to raise the limit.
 
 ### Skills
 
@@ -289,14 +291,17 @@ keeps the keys it already has, and the Apothem entries in
 update. Each update writes Apothem's path last in the hook entry's list, so it
 moves to the end if you put entries after it. Text you add to a rules file
 outside its managed block stays. A rules file in a workspace the install no
-longer uses loses its block; if that file holds two different blocks between
-Apothem's markers, the update leaves it as it is and names it. Remove or
-reword the marker lines you added there, and the next install, update or
-uninstall takes Apothem's block out. If Apothem cannot tell its block in that
-file from your text (the block sits inside a code block of yours, say), the
-update leaves the file as it is too, and its warning names each marker pair
-with how to fix it; once you fix it, the next install, update or uninstall
-takes Apothem's block out (see
+longer uses loses its block. When that leaves a BEGIN marker with no END marker
+in the file (a line of yours, or what is left of an older block that lost its
+END marker), the update names the file: delete that line by hand, with any old
+Apothem text below it, and keep your own lines. If such a file holds two
+different blocks between Apothem's markers, the update leaves it as it is and
+names each block by its lines. Keep one block and fix the others as the
+warning says, and the next install, update or uninstall takes Apothem's block
+out. If Apothem cannot tell its block in that file from your text (the block
+sits inside a code block of yours, say), the update leaves the file as it is
+too, and its warning names each marker pair with how to fix it; once you fix
+it, the next install, update or uninstall takes Apothem's block out (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 Until then, `apothem verify` fails and names the file (see
 [Verification](#verification)).
@@ -337,18 +342,21 @@ Some leftovers need your hand:
   else, leaves that file as it is, and reports the uninstall as unfinished
   (exit code 2). Its warning names each marker pair: delete Apothem's block
   there by hand, change or delete the two marker lines of each pair of yours,
-  and delete or change each BEGIN marker the warning tells you to.
+  and delete or change each BEGIN marker the warning tells you to, before you
+  run the uninstall again.
 
 In each case Apothem records the uninstall as unfinished and keeps its install
 record, even if you later add your own text beside the block. Remove the named
 entries, or the Apothem block (or the file), or fix the file, then run the
 uninstall again to finish. A rules file whose Apothem block lost its END line
 is left as it is too, with a warning that names it, but the uninstall still
-finishes; delete the rest of the block by hand. Until you do, each install and
-update names such a file in a workspace the install no longer uses. In a
-workspace the install uses, an install or update keeps the text of such a
-rules file, writes Apothem's block apart from it and names the file. The
-shared profile YAML and Apothem engine are unaffected.
+finishes; delete the rest of the block by hand. While the install stays in
+place, each install and update names such a file in a workspace the install no
+longer uses, until you delete the rest of the block. Once an uninstall has
+finished, Apothem names the file again only when a later install writes into
+its workspace. In a workspace the install uses, an install or update keeps the
+text of such a rules file, writes Apothem's block apart from it and names the
+file. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 
