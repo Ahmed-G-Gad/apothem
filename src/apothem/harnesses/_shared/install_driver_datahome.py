@@ -269,10 +269,11 @@ def _remove_data_home(
     Returns ``None`` when no data store exists (nothing to remove) or the home
     path falls outside the write boundary (see :func:`_store_boundary`).
 
-    While a pytest test runs, stores in the account's real home are refused
-    with :class:`~apothem.lib.home_write_guard.RealHomeWriteError` just before
-    their backup and removal, so a pass that keeps a shared home raises
-    nothing.
+    While a pytest test runs, stores in the account's real home (in a
+    protected folder, or in a data home right in the home under any name)
+    are refused with :class:`~apothem.lib.home_write_guard.RealHomeWriteError`
+    just before their backup and removal, so a pass that keeps a shared home
+    raises nothing.
     """
     if home is None:
         home = _data_home_for(None, root=root)
@@ -331,6 +332,9 @@ def _remove_data_home(
         return None
     home_write_guard.refuse_real_home_write(
         *present, operation="apply 'remove_data_home' to", tree=True
+    )
+    home_write_guard.refuse_data_home_in_home(
+        home, operation="apply 'remove_data_home' to"
     )
     for child in present:
         backup = backup_existing(

@@ -356,6 +356,28 @@ def test_a_protected_file_refuses_its_own_writes_and_removals_above_it(
     assert sibling.read_bytes() == b"data"
 
 
+def test_a_data_home_right_in_a_home_is_refused_whatever_its_name(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    for name in ("apothem-data", ".apothem", "Work Data"):
+        with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+            home_write_guard.refuse_data_home_in_home(
+                fake_home / name, operation="create the data home"
+            )
+        assert caught.value.protected_root == str(fake_home)
+        assert "a data home right in" in str(caught.value)
+    for allowed in (
+        fake_home / "project" / ".apothem",
+        fake_home / ".gemini" / ".apothem",
+        tmp_path / "apothem-data",
+        fake_home,
+    ):
+        home_write_guard.refuse_data_home_in_home(
+            allowed, operation="create the data home"
+        )
+    assert _everything_in(fake_home) == []
+
+
 def _fresh_account_home() -> str | None:
     home_write_guard._os_account_home.cache_clear()
     return home_write_guard.account_home()

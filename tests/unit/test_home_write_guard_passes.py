@@ -375,6 +375,50 @@ def _store(home: Path) -> Path:
     return data_home
 
 
+#: A profile whose data home sits right in the home, under a name of its own.
+_USER_HOME_PROFILE = (
+    _PROFILE + b"workspace:\n  scope: user-home\n  directory_name: apothem-data\n"
+)
+
+
+def test_a_data_home_right_in_the_home_is_refused_under_any_name(
+    home: Path, profile: Path, tmp_path: Path
+) -> None:
+    profile.write_bytes(_USER_HOME_PROFILE)
+    project = tmp_path / "project"
+    project.mkdir()
+    argv = ("--harness", "gemini-cli", "--project", str(project))
+    _installed(*argv, "--profile", str(profile))
+    data_home = home / "apothem-data"
+    assert (data_home / "memory").is_dir()
+    assert not home_write_guard.would_refuse(data_home / "memory", tree=True)
+    before = _snapshot(home)
+    home_write_guard.also_protect_home(home)
+
+    for verb in ("install", "uninstall"):
+        extra = ("--profile", str(profile)) if verb == "install" else ("--yes",)
+        result = _run(verb, *argv, *extra)
+        assert isinstance(result.exception, Refused), (verb, result.output)
+        assert "a data home right in" in str(result.exception)
+        assert result.exception.protected_root == str(home)
+        assert _snapshot(home) == before
+
+
+def test_a_data_home_right_in_the_home_is_not_created(
+    home: Path, profile: Path, tmp_path: Path
+) -> None:
+    profile.write_bytes(_USER_HOME_PROFILE)
+    project = tmp_path / "project"
+    project.mkdir()
+    home_write_guard.also_protect_home(home)
+    result = _run(
+        "install", "--harness", "gemini-cli", "--project", str(project),
+        "--profile", str(profile),
+    )  # fmt: skip
+    assert isinstance(result.exception, Refused), result.output
+    assert _snapshot(home) == {}
+
+
 def test_a_kept_shared_data_home_raises_nothing(home: Path) -> None:
     data_home = _store(home)
     (home / ".codex").mkdir()

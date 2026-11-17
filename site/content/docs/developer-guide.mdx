@@ -688,7 +688,10 @@ in C:\Users\you\.apothem was changed. ...
 A project-scope install, update, uninstall or rollback whose project root is
 the account home itself is refused the same way, before it writes anything:
 its project files would otherwise land straight in the home. A project folder
-inside the home stays allowed.
+inside the home stays allowed. A data home right in the home is refused too,
+whatever name the profile gives it (`workspace.scope: user-home` with a
+`directory_name` of its own), before it is created and before its stores are
+removed.
 
 These spellings of a protected folder count: a link or junction into it, and a
 folder swapped for a link during the test. On Windows letter case, short (8.3)

@@ -89,10 +89,14 @@ class DataHome:
 
         Raises:
             RealHomeWriteError: While a pytest test runs, when the root is in a
-                protected folder of the account's real home (see
-                :mod:`apothem.lib.home_write_guard`); nothing is created.
+                protected folder of the account's real home, or right in that
+                home under any name (see :mod:`apothem.lib.home_write_guard`);
+                nothing is created.
         """
         home_write_guard.refuse_real_home_write(
+            self.root, operation="create the data home"
+        )
+        home_write_guard.refuse_data_home_in_home(
             self.root, operation="create the data home"
         )
         for directory in (

@@ -223,7 +223,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   operating system records for the account, not `HOME`. Reads, dry runs and
   previews still work, and nothing changes outside pytest. A project-scope
   install, update, uninstall or rollback whose project root is the home itself
-  is refused before it writes anything. An OpenClaw uninstall is refused
+  is refused before it writes anything, and so is a data home right in the
+  home under a name the profile chose. An OpenClaw uninstall is refused
   before it changes any workspace's rules file, one outside `~/.openclaw`
   included. Links and junctions into a protected
   folder count; on Windows so do letter case, short (8.3) names, the `\\?\`,

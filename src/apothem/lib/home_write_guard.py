@@ -28,7 +28,10 @@ the account's home:
 With ``tree=True`` (removing or moving a whole folder) a path that holds one of
 those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
-its first write. Nothing else is refused: reads, dry runs and previews, the
+its first write, and :func:`refuse_data_home_in_home` a data home right in
+the home under any name (a profile with the ``user-home`` workspace scope and
+its own ``directory_name``), before it is created or its stores are removed.
+Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 With both variables unset the check is two environment lookups.
 
@@ -405,6 +408,34 @@ def refuse_project_root_at_home(
             f"{home}, this account's real home, while {_running()}. It stopped "
             "before writing anything for this project. Fix: pass a temporary "
             f"folder as the project root; or {_FIX}",
+            path=text,
+            root=home,
+            operation=operation,
+        )
+
+
+def refuse_data_home_in_home(
+    data_home: str | os.PathLike[str], *, operation: str
+) -> None:
+    """Raise :class:`RealHomeWriteError` when *data_home* sits right in a home.
+
+    A profile with the ``user-home`` workspace scope puts the data home at
+    ``<home>/<directory_name>``, and the name is the profile's to choose, so
+    no fixed protected folder covers it: ``.apothem`` is one, any other name
+    is not. While pytest runs, a data home whose folder is the account home
+    or a home added with :func:`also_protect_home` (any spelling
+    :func:`refuse_project_root_at_home` accepts) is refused before it is
+    created or its stores are removed. A data home anywhere else, in a
+    project or a tool folder, is left to the write checks. *operation* is a
+    verb phrase for the message.
+    """
+    text = os.fspath(data_home)
+    home = _home_at(os.path.dirname(_absolute(text)))
+    if home is not None:
+        _refuse(
+            f"Apothem refused to {operation} {text}: it is a data home right in "
+            f"{home}, this account's real home, while {_running()}. Nothing in "
+            f"{text} was changed. Fix: {_FIX}",
             path=text,
             root=home,
             operation=operation,
