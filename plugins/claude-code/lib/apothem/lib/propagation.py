@@ -352,10 +352,12 @@ def _validate_user_level_block(name: str, install: list[InstallEntry]) -> None:
     """Check the rules that relate one block's user-level entries to each other.
 
     The skills and commands entries of a block share one target string, so
-    their folders cannot split across two user folders. In a project-scope
-    block (any ``${PROJECT_ROOT}`` target) the user-level entries come first:
-    a failure writing the user folder then aborts the install before anything
-    in the project changes.
+    their folders cannot split across two user folders. The user-level
+    entries come first in every block: a failure writing the user folder then
+    aborts the install before anything in the project or the harness root
+    changes, and the skill guard judges the install's own folder as it was
+    before the install wrote into it (an entry written earlier in the same
+    run would make the install's old record look live).
     """
     skill_targets = {
         entry.target.rstrip("/")
@@ -367,16 +369,14 @@ def _validate_user_level_block(name: str, install: list[InstallEntry]) -> None:
             f"harness '{name}' user-level skills and commands entries must share "
             f"one target, found: {', '.join(sorted(skill_targets))}"
         )
-    if not any("${PROJECT_ROOT}" in entry.target for entry in install):
-        return
-    seen_project_entry = False
+    seen_other_entry = False
     for entry in install:
         if not entry.user_level:
-            seen_project_entry = True
-        elif seen_project_entry:
+            seen_other_entry = True
+        elif seen_other_entry:
             raise ValueError(
                 f"harness '{name}' user-level install entry '{entry.target}' must "
-                "come before the project entries"
+                "come before the block's other install entries"
             )
 
 

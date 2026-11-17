@@ -3,7 +3,9 @@
 """Find and start the hook commands an install registered, for ``doctor``.
 
 The check is harness-neutral: it holds no vendor config format. It reads the
-files an install wrote (from the install ledger), parses the JSON ones, and
+files the current install at the root being checked wrote (from that root's
+install record in the ledger, under any spelling of the folder), parses the
+JSON ones, and
 collects every handler mapping whose command line for this platform the shared
 install driver recognizes as Apothem-owned (``is_apothem_hook``: a command plus
 optional ``args`` that point at the materialized ``hooks/dispatch.py`` or
@@ -61,6 +63,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 
 from apothem.harnesses._shared.install_driver import is_apothem_hook
+from apothem.harnesses._shared.install_driver_shared import same_location
 from apothem.lib import install_ledger
 from apothem.lib.links import is_link
 
@@ -142,37 +145,89 @@ class RegisteredHooks:
 
 
 def registered_hooks(
-    package_key: str, *, project_root: Path | None = None
+    package_key: str, *, root: Path, project: bool = False
 ) -> RegisteredHooks | None:
-    """Return the Apothem hook commands an install registered.
+    """Return the Apothem hook commands the install at *root* registered.
 
-    With *project_root* (a project-scope harness), the current install record
-    of that project is read, and a line is kept to start only when it runs
-    nothing but known code (see the module docstring). Without it, the latest
-    install record of the harness is read. Returns ``None`` when there is no
-    such record (installed before the ledger existed, into another project, or
+    *root* is the install root being checked: the harness folder of a
+    user-scope harness, the project root of a project-scope one (*project*).
+    Only that root's current install record is read (under whichever spelling
+    of the folder the ledger holds, see :func:`_install_record`), so a newer
+    install at another root (a ``CODEX_HOME`` or project since deleted, say)
+    never stands in for it. For a project, a line is kept to start only when
+    it runs nothing but known code (see the module docstring). Returns ``None``
+    when *root* has no install record (installed before the ledger existed, or
     by other means), so the caller can report the hook check as not run rather
     than as passed.
 
     Raises:
         install_ledger.LedgerError: The ledger exists but cannot be read.
     """
-    if project_root is None:
-        record = install_ledger.latest_record(package_key)
-    else:
-        record = install_ledger.current_install_record(package_key, root=project_root)
+    record = _install_record(package_key, root)
     if record is None:
         return None
     hooks = RegisteredHooks()
-    if project_root is None:
+    if not project:
         for target in record.targets:
             if target.path.endswith(".json"):
                 _read_user_file(Path(target.path), hooks)
         return hooks
-    project = _ProjectInstall(project_root, record)
+    # The record's own spelling of the root: every path it lists is under it.
+    checked = _ProjectInstall(Path(record.root), record)
     for target in record.targets:
-        project.read_file(target, hooks)
+        checked.read_file(target, hooks)
     return hooks
+
+
+def _same_folder(spelling: str, root: Path) -> bool:
+    """Return True when the recorded root *spelling* names *root*'s folder.
+
+    :func:`same_location` folds letter case only where the OS does (Windows).
+    On a volume that ignores case but keeps it, as macOS does by default, two
+    spellings that differ only in case are one folder when both exist with one
+    file ID (``st_dev`` and ``st_ino``, neither 0). Names that differ otherwise
+    are never joined by file ID, since some network drives give every folder
+    the same one, and a case-sensitive folder holds ``Proj`` and ``proj`` as
+    two IDs.
+    """
+    if same_location(spelling, root):
+        return True
+    left, right = os.path.normpath(spelling), os.path.normpath(str(root))
+    if left == right or left.lower() != right.lower():
+        return False
+    try:
+        first, second = Path(left).stat(), Path(right).stat()
+    except (OSError, ValueError):
+        return False
+    return bool(first.st_ino and first.st_dev) and os.path.samestat(first, second)
+
+
+def _install_record(package_key: str, root: Path) -> install_ledger.LedgerRecord | None:
+    """Return the current install record at *root*, under any spelling of *root*.
+
+    The ledger keys a record by the root text the install was given, and one
+    folder has several spellings (another letter case on Windows, a ``..``
+    step, a path through a link: ``CODEX_HOME`` is taken as written). The exact
+    spelling is tried first, then each spelling the ledger holds for the same
+    folder, newest first, so the check reads the install that is there rather
+    than reporting it as not checked.
+
+    Raises:
+        install_ledger.LedgerError: The ledger exists but cannot be read.
+    """
+    record = install_ledger.current_install_record(package_key, root=root)
+    if record is not None:
+        return record
+    records = install_ledger.read_records(package_key)
+    spellings = dict.fromkeys(earlier.root for earlier in reversed(records))
+    spellings.pop(str(root), None)
+    for spelling in spellings:
+        if not _same_folder(spelling, root):
+            continue
+        record = install_ledger.current_install_record(package_key, root=spelling)
+        if record is not None:
+            return record
+    return None
 
 
 def probe_hooks(argvs: list[list[str]]) -> list[HookProbe]:
