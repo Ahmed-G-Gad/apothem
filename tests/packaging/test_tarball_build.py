@@ -72,7 +72,9 @@ def source_tree(tmp_path: Path) -> Path:
     sub.mkdir()
     (sub / "alpha.txt").write_text("alpha" + NEWLINE, encoding=ENCODING)
     (sub / "beta.txt").write_text("beta" + NEWLINE, encoding=ENCODING)
-    excluded = root / ".git"
+    # A nested .git folder: the walk must prune it. A .git at the root would
+    # make the tree a checkout, which the builder reads through git instead.
+    excluded = sub / ".git"
     excluded.mkdir()
     (excluded / "HEAD").write_text("excluded" + NEWLINE, encoding=ENCODING)
     return root
@@ -142,6 +144,7 @@ def test_archive_contains_installable_runtime_layout(
     assert not any(name.startswith(f"{root}/.github/") for name in names)
     assert not any(name.startswith(f"{root}/packaging/") for name in names)
     assert not any(name.startswith(f"{root}/tools/") for name in names)
+    assert not any("/.git/" in name for name in names)
 
 
 def test_git_checkout_uses_index_blob_bytes(tmp_path: Path) -> None:

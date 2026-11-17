@@ -204,19 +204,18 @@ def _read_head_subject(root: Path) -> tuple[str | None, str]:
 
     ``status`` is one of ``ok`` (subject populated), ``not-a-git-repo``,
     ``no-commits-yet``, ``git-unavailable``. The subject is None for
-    every non-``ok`` status so the caller can short-circuit.
+    every non-``ok`` status so the caller can short-circuit. git runs through
+    :func:`~apothem.conformity._git.run_git`, so the repository's own settings
+    cannot make it start a program (a signature check, say).
     """
+    # Imported here, not at module top, so the module stays stdlib-only.
+    from apothem.conformity._git import run_git
+
     if not (root / ".git").exists():
         return None, "not-a-git-repo"
     try:
-        completed = subprocess.run(
-            ["git", "log", "-1", "--pretty=%B"],  # noqa: S607 — literal git argv, trusted PATH lookup, no shell
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=False,
-            encoding="utf-8",
-            timeout=GIT_TIMEOUT_SECONDS,
+        completed = run_git(
+            ["log", "-1", "--pretty=%B"], cwd=root, timeout=GIT_TIMEOUT_SECONDS
         )
     except (OSError, subprocess.TimeoutExpired):
         return None, "git-unavailable"
