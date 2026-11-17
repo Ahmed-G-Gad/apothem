@@ -217,15 +217,19 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
     ``strategy.matrix`` and sets its ``timeout-minutes`` to exactly
     ``${{ inputs.timeout-minutes }}``. Any other reference, and a callee that is
     missing or does not parse, returns False, so the caller's own matrix
-    alone decides the ceiling.
+    alone decides the ceiling. A callee that is a link, a named pipe or
+    anything but a regular file counts as missing and is never opened.
     """
     if not isinstance(uses, str) or not uses.startswith(_LOCAL_CALLEE_PREFIX):
         return False
     name = uses[len(_LOCAL_CALLEE_PREFIX) :]
     if _LOCAL_CALLEE_NAME.fullmatch(name) is None:
         return False
+    callee = workflows_dir / name
+    if not is_project_file(workflows_dir, callee):
+        return False
     try:
-        doc = yaml.safe_load((workflows_dir / name).read_text(encoding="utf-8"))
+        doc = yaml.safe_load(callee.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
         # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         return False

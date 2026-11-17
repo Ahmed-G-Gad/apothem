@@ -63,6 +63,13 @@ _SPDX_HASH = "# SPDX-License-" + "Identifier: MIT"
 
 _WORKFLOW = f"{_SPDX_HASH}\nname: ci\non: [push]\njobs: {{}}\n"
 _PAGE = "---\nname: sample\ndescription: A sample page.\n---\n\n# Sample\n\nText.\n"
+# A job that calls a reusable workflow in the same folder and passes it a
+# time limit, so ``workflow-concurrency-grep`` reads the called file too.
+_CALLER_WORKFLOW = (
+    f"{_SPDX_HASH}\nname: caller\non: [push]\njobs:\n  call:\n"
+    "    uses: ./.github/workflows/reusable.yml\n"
+    "    with:\n      timeout-minutes: 30\n"
+)
 
 # Validators that open or list no project file in Python: one asks git for the
 # last commit subject, the other only checks whether ``docs/`` is a folder.
@@ -98,6 +105,7 @@ def _project_files() -> dict[str, str]:
         ".github/workflows/ci.yml": _WORKFLOW,
         ".github/workflows/ci-matrix.yml": _WORKFLOW,
         ".github/workflows/publish-pypi.yml": _WORKFLOW,
+        ".github/workflows/caller.yml": _CALLER_WORKFLOW,
         ".apothem/plans/sample-suite/PROGRESS.md": "# Progress\n",
         ".apothem/plans/sample-suite/phases/01-start/PHASE.md": "# Phase\n",
         ".apothem/plans/sample-suite/phases/01-start/REPORT.md": "# Report\n",
@@ -125,7 +133,8 @@ def _second_reads() -> list[str]:
     its ``PROGRESS.md`` is real, ``gate-evidence-grep`` reads a suite's
     completion, attestation and hand-off files, and
     ``registry-capability-consistency-grep`` reads each harness's
-    ``materializer.py`` after the propagation manifest.
+    ``materializer.py`` after the propagation manifest, and
+    ``workflow-concurrency-grep`` reads the reusable workflow a caller names.
     """
     suite = ".apothem/plans/sample-suite"
     return [
@@ -136,6 +145,7 @@ def _second_reads() -> list[str]:
         f"{suite}/attestation.yml",
         f"{suite}/_inputs/handoff-manifest.yml",
         f"src/apothem/harnesses/{HARNESS_REGISTRY[0].package_key}/materializer.py",
+        ".github/workflows/reusable.yml",
     ]
 
 
