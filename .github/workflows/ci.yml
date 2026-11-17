@@ -120,7 +120,7 @@ jobs:
         # clean-install-gate.yml. Non-Linux cells run unhardened by platform
         # limitation.
         if: runner.os == 'Linux'
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -227,7 +227,7 @@ jobs:
       contents: read
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -279,7 +279,7 @@ jobs:
       contents: read
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -311,7 +311,7 @@ jobs:
       security-events: write
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -352,7 +352,7 @@ jobs:
           github.event.repository.private == false &&
           (github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
           sarif_file: trivy-results.sarif
           category: trivy
@@ -414,7 +414,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -480,7 +480,7 @@ jobs:
           - minimal-research-pipeline
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -508,7 +508,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -635,7 +635,7 @@ jobs:
       contents: read
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -687,10 +687,11 @@ jobs:
   # 12 — home-isolation
   home-isolation:
     # tests/conftest.py redirects the user home, the install ledger and backup
-    # roots and the hook state folder, and clears CODEX_HOME, for the session
-    # and for every test. A write made before those fixtures run
-    # (collection-time code, a plugin's session fixture), or through a root they
-    # do not cover, still lands in the developer's real home. Such a write can
+    # roots and the hook state folder, and clears CODEX_HOME and
+    # CLAUDE_CONFIG_DIR, for the session and for every test. A write made
+    # before those fixtures run (collection-time code, a plugin's session
+    # fixture), or through a root they do not cover, still lands in the
+    # developer's real home. Such a write can
     # start in any test subtree, so this job runs the whole suite, as the
     # quality job's Pytest step does, with the home and the four XDG base
     # directories on fresh empty folders: anything that appears in them is such
@@ -702,7 +703,7 @@ jobs:
       contents: read
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout

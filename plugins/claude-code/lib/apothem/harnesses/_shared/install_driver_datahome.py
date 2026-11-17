@@ -9,12 +9,12 @@ recorded, so they reverse the stores where the install actually wrote them.
 from __future__ import annotations
 
 import os
-import unicodedata
 from pathlib import Path
 
 from apothem.lib import install_ledger
 from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS, get_harness_entry
+from apothem.lib.shell_quote import shell_quoted
 
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
@@ -189,51 +189,6 @@ def _holder(
     # may have come from a setting the steps cannot repeat, so it goes last.
     gone.sort(key=lambda holder: get_harness_entry(holder[0]).scope != "project")
     return gone[0] if gone else None
-
-
-#: What the quotes around a printed folder cannot carry, besides a control
-#: character. Windows prints double quotes, inside which PowerShell expands
-#: ``$`` and the backquote (and also reads the curly double quotes as quotes)
-#: and cmd expands ``%`` and ``!``. Elsewhere single quotes, which a single
-#: quote ends, and in PowerShell also the curly single quotes.
-_UNQUOTABLE = {
-    True: frozenset('$`%!"' + "".join(map(chr, (0x201C, 0x201D, 0x201E)))),
-    False: frozenset("'" + "".join(map(chr, (0x2018, 0x2019, 0x201A, 0x201B)))),
-}
-
-#: What cmd acts on in a Windows folder that holds no space. PowerShell and
-#: Git Bash then pass that folder to the installer's ``apothem.cmd`` shim
-#: without its quotes, and the shim's ``%*`` hands it to cmd. With a space in
-#: the folder they keep the quotes, and cmd leaves these alone.
-_CMD_METACHARACTERS = frozenset("&^|<>")
-
-
-def shell_quoted(path: str, *, windows: bool | None = None) -> str | None:
-    """Return *path* quoted for a command the operator pastes into a shell.
-
-    On Windows (*windows*, by default this host) the path goes in double
-    quotes, with each trailing backslash doubled so the closing quote stays a
-    quote (``C:\\`` becomes ``"C:\\\\"``); elsewhere in single quotes. ``None``
-    when those quotes cannot carry the path (see :data:`_UNQUOTABLE`). On
-    Windows also when a path with no space holds a character cmd acts on (see
-    :data:`_CMD_METACHARACTERS`), and when two backslashes stand together
-    before its end, as at the start of a network share
-    (``\\\\server\\share``): Git Bash reads them as one inside double quotes.
-    """
-    windows = os.name == "nt" if windows is None else windows
-    if any(
-        char in _UNQUOTABLE[windows] or unicodedata.category(char) == "Cc"
-        for char in path
-    ):
-        return None
-    if not windows:
-        return f"'{path}'"
-    if " " not in path and not _CMD_METACHARACTERS.isdisjoint(path):
-        return None
-    bare = path.rstrip("\\")
-    if "\\\\" in bare:
-        return None
-    return '"' + bare + "\\" * (2 * (len(path) - len(bare))) + '"'
 
 
 def _release_steps(home: Path, package_key: str, root: str) -> str:
