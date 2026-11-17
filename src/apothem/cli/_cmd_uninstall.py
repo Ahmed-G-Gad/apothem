@@ -52,11 +52,11 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.harnesses._shared.install_driver_backup import REMOVED_APOTHEM_ONLY_FILE
 from apothem.harnesses._shared.install_driver_blocks import ANOTHER_BLOCK, MARKER_LEFT
-from apothem.harnesses._shared.install_driver_datahome import shell_quoted
 from apothem.harnesses._shared.install_driver_types import KEPT_REASON
 from apothem.harnesses._shared.install_driver_written import UNPROVEN_REASONS
 from apothem.lib.harness_registry import package_key_for_public_id
 from apothem.lib.install_ledger import recorded_root
+from apothem.lib.shell_quote import shell_quoted
 
 
 def _retention_advisories(

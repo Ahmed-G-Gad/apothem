@@ -30,13 +30,13 @@ from click.testing import CliRunner, Result
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver_materialize, wrapper_factories
-from apothem.harnesses._shared.install_driver_datahome import shell_quoted
 from apothem.harnesses._shared.install_driver_types import MaterializationError, _result
 from apothem.harnesses.cursor import CursorAdapter
 from apothem.harnesses.cursor.install import install as cursor_install
 from apothem.harnesses.kimi_code.install import install as kimi_install
 from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_uninstall
 from apothem.lib import install_ledger
+from apothem.lib.shell_quote import shell_quoted
 from tests._shared.case_sensitive import case_sensitive_folder
 
 
