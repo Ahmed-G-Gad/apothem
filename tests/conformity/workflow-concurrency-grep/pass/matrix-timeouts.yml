@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: MIT
+
+name: matrix-timeouts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integer:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo integer
+
+  conditional:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo conditional
+
+  conditional-compact:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{matrix.os=='windows-latest'&&120||90}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo conditional-compact
+
+  conditional-lower:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{   matrix.os   ==   'windows-latest'   &&   100   ||   45   }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - run: echo conditional-lower

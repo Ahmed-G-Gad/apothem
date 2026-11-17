@@ -9,6 +9,7 @@
 | File | Purpose |
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
+| `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
 | `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
@@ -141,6 +142,20 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `has_git_entry` and keeps its own skip list. A walker confined to one fixed
   subtree (`naming-grep` under `src/apothem/`, `redundancy-grep`, a plan suite's
   own files) reads everything below that subtree.
+- **Every git call goes through `run_git`.** The project being checked can come
+  with a `.git` folder someone else wrote, and its `.git/config` can name a
+  program for git to start (`core.fsmonitor`, a signature program, a second git
+  in a submodule, a lazy-fetch transport). `run_git` in `_git.py` turns those
+  settings off on git's command line, blocks fetching, and starts git only from
+  a full-path `PATH` entry. A matcher starts no program itself: no
+  `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
+  `which`, no `git_argv` and no string naming the git program outside `_git.py`
+  (gate.py's validator launcher, which starts Python, is the one exception);
+  `test_no_conformity_module_starts_a_program_itself` checks those forms. It
+  reads file contents with `git cat-file blob`, never `git show`, which would
+  show a submodule entry as a commit, and reads a path list with `-z`.
+  `tests/conformity/test_project_git_settings.py` plants each setting and drives
+  every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many
   targets it examined), stamped by `finish_root_report`. A run that inspected
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite

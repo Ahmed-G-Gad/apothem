@@ -211,6 +211,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The Windows test cells in CI get 120 minutes.** The Windows cells of the
+  `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
+  cancelled cells whose tests had passed. They now get 120, as the CI Matrix
+  Windows cells already do; the other cells keep 90. The workflow
+  validator (`workflow-concurrency-grep`) accepts this one form for a matrix
+  job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
+  most 120 and M at most 90, and still flags any other expression. Every
+  limit, N and M included, must be at least 1. It now
+  also checks the limit a job passes to a reusable workflow through
+  `with: timeout-minutes`, which it skipped before, so the CI Matrix limit is
+  held to the same ceilings. A caller without a matrix gets the matrix
+  ceiling when it calls a workflow in the same folder whose matrix job takes
+  that limit.
 - **A link in a translated docs page keeps the reader in their language.** A
   link such as `/docs/install#choose-a-channel` in the body of a translated page
   now opens the translated copy of the page, at the matching section, when the
@@ -317,9 +330,80 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `unroutable` and gets no request. Like an unreachable URL, it does not fail
   the check. Each run carries a warning naming such a host, and the issue the
   monitor files lists its URLs to check by hand.
+- **Dependabot updates tailwindcss and `@tailwindcss/postcss` in one pull
+  request.** The website's `tailwind` group lists both, yet
+  `@tailwindcss/postcss` arrived in the `dev-tools` group's pull request.
+  Dependabot gives a package that fits several groups to the group whose rule
+  fits it most closely, and a group with no name patterns, like `dev-tools`,
+  counts as closer than a wildcard such as `@tailwindcss/*`. Because
+  `@tailwindcss/postcss` requires one exact tailwindcss version, either pull
+  request alone left two tailwindcss versions in the lockfile. `dev-tools` now
+  excludes both names, so the `tailwind` group is the only one they fit.
 
 ### Fixed
 
+- **A deleted project no longer lets an install overwrite your own skill.**
+  After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
+  a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` or `~/.trae/skills/`) under an
+  Apothem skill's name was overwritten by the next install (a backup was
+  kept). The install now skips it with the `skill_conflict` warning. A project
+  folder that still exists but holds none of the files its install recorded
+  there with Apothem's content in them (a re-cloned project that keeps only
+  its own instruction file, say) counts as deleted too, and so does one on a
+  drive or network share that does not answer. The deleted install still
+  counts while the skill folder holds exactly the files it recorded,
+  unchanged, so an update still refreshes a folder Apothem wrote. A folder
+  that already holds what this release writes is kept as it is. Otherwise,
+  when only deleted installs list a skill folder, or only an earlier install
+  in the same folder did, the install skips it and leaves it untouched unless
+  it holds exactly the files one of them recorded: you made it or edited it
+  (changed, added or removed a file), or an earlier release wrote it without
+  recording its files. For a skipped folder, the install, update and dry-run
+  warning and `apothem verify` give the same cause and fix: keep it there and
+  the harness stays not verified, or move it out of the skills folder, then
+  run `apothem update` for that harness (with `--project` for a project
+  install). `apothem verify` looks for these folders only for a harness that
+  is installed. A project installed at the home folder itself no longer counts
+  as present through the shared folders it writes there. A Codex install into
+  a removed or emptied `~/.codex` skips such a folder too: the files it had
+  just written there no longer make its old install count as present.
+- **`apothem doctor` checks the hooks of the install it is looking at.** It
+  read the newest install record of a harness from any folder. When that
+  record came from another folder (another project, a `CODEX_HOME`, or one you
+  had since deleted), doctor checked the wrong install's hooks or none, and
+  could report the harness as healthy even when its hook command could not
+  start. It now reads the record of the harness folder, or of the `--project`
+  folder, that it checks, under whichever spelling of that folder the install
+  used. When that folder has no record, the plain report shows the hook check
+  as `not checked`, its last line says which hook commands were not checked
+  rather than `All checks passed`, and for a project-scope harness the fix
+  names `--project`, quoted for the shell as uninstall's steps are (double
+  quotes on Windows, single quotes elsewhere), or in words, with the folder as
+  it is, when those quotes cannot carry it. The command, or that folder, ends
+  the fix, after a colon. `verify`, and the next step `quickstart` prints,
+  quote `--project` the same way; when the quotes cannot carry the folder,
+  `quickstart` prints the command up to `--project` and names the folder in
+  words after it.
+- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
+  Windows install writes begins with PowerShell's `&`, which doctor tried to
+  start as a program, so every healthy Cursor install failed the hook check.
+- **The conformity validators that read git's output read it correctly.**
+  `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
+  Python's `str.splitlines()` also breaks lines at the record marker its
+  `git log` format uses, so every commit time was lost. It now splits on new
+  lines only, checks only per-folder companions that still exist (never the
+  root `AGENTS.md`, which is the canon rather than a folder's companion), and
+  checks a subfolder root against that subfolder's own history.
+  `no-global-plans-grep`, `agents-md-coverage-grep`, and the `--staged` checks
+  of `production-ready-pr-grep` and `semver_stability_grep` received non-ASCII
+  path names in git's quoted form (`"caf\303\251.md"`), which their path rules
+  did not match; git now prints every name as it is. A repository whose
+  `diff.orderFile` named a missing file made both `--staged` checks see an
+  empty change set and pass; they no longer read that setting. On Windows,
+  `semver_stability_grep --staged` named `src\apothem\__init__.py` with
+  backslashes, which git does not accept, so a staged MAJOR version bump never
+  admitted a breaking change.
 - **OpenCode installs say when a file in OpenCode's folder keeps the rules
   from OpenCode 1.**
   OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
@@ -583,7 +667,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and
-  stopped with a UnicodeDecodeError, and `status --profile` did the same.
+  stopped with a UnicodeDecodeError, and `status --profile` did the same. An
+  uninstall printed `'utf-8' codec can't decode byte` and exited 1 before
+  looking at anything; it now removes the rest and exits 2, and names that
+  file, left in place, with the fix: save it as UTF-8 or delete the Apothem
+  block in it by hand, then run the uninstall again.
 - **Uninstall removes only the files Apothem wrote.** Each install now
   records the SHA-256 of every file it copies into place (skills, commands,
   rules and the like),
@@ -666,11 +754,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   them: for a project install, the exact commands, with the folder quoted for
   your shell and a `--profile` placeholder for the profile that install used.
   A folder those quotes cannot carry gets the same steps in words: on Windows,
-  one holding `$`, a backquote, `%`, `!` or a double quote, one with no space
-  that holds `&`, `^`, `|`, `<` or `>`, or a network share; elsewhere, one
-  holding a straight or curly single quote. Apothem's hook scripts and the conformity gate's checks also stop
-  writing Python bytecode caches (`__pycache__`) into the folders Apothem
-  installs.
+  one holding `$`, a backquote, `%`, `!`, a straight or curly double quote or a
+  control character, one with no space that holds `&`, `^`, `|`, `<` or `>`,
+  or one with two backslashes in a row, as in a network share; elsewhere, one
+  holding a straight or curly single quote, a control character or two
+  backslashes in a row, or one ending in a backslash. Apothem's hook scripts
+  and the conformity gate's checks also stop writing Python bytecode caches
+  (`__pycache__`) into the folders Apothem installs.
 - **The install ledger stays right when a write fails.** If an uninstall
   cannot write its final record, it records the uninstall as unfinished, so
   running it again finishes the job. When the ledger still ends in a finished
@@ -840,6 +930,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   apart from `dependabot.yml`, so it found no workflows and reported
   Dangerous-Workflow, Token-Permissions, Pinned-Dependencies and Packaging as
   inconclusive.
+- **The release archives leave out the test suite.** The platform archives
+  (`apothem-vX.Y.Z-darwin.tar.gz`, `-linux.tar.gz` and `-windows.zip`) were
+  built from every tracked file, and the builder did not read the
+  `export-ignore` lines in `.gitattributes`, so the archives carried `tests/`,
+  which GitHub's source archives leave out. In an archive built from the
+  current source, `tests/` held 1,916 of the 3,415 files. The builder now
+  leaves out every path that GitHub's source archives leave out. The installed
+  engine does not use those files, and the wheel, the sdist and the npm
+  package never held them. Updating an archive install made by an installer
+  from release 1.5.0 or earlier keeps its old `tests/` folder, because the
+  installers keep every folder they cannot tell is theirs; you can delete it.
 - **The pipeline overview's command index is current in every translation.**
   The docs generator wrote the index of shipped commands into the English page
   only, so the eleven translated overviews kept older summaries for every
@@ -1004,9 +1105,144 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (32 KiB by default). The developer guide states both rules. On Python 3.10,
   which has no TOML reader, a `~/.codex/config.toml` gives a null for Codex
   instead of ending the run.
+- **An install made from Python through a linked project folder can be
+  removed from the command line.** The command line resolves `--project`
+  (follows its links and expands `~`) before it reads or writes the install
+  record, but Python code that called an install function kept the project
+  folder as it was typed. With `~/proj` a link, `apothem uninstall --project
+  ~/proj` then found no record, left most installed files in place with a
+  warning, printed `Uninstalled` and exited 0. The same happened when a
+  folder above the project was a link. Every project-scope update, preview,
+  plan, verify, uninstall and installed check now reads the install record
+  under the spelling it already has, and `apothem rollback --project` and
+  the notes `apothem uninstall` prints about shared folders find such a
+  record too. An install or update records the folder resolved, as the
+  command line does. An install still recorded under another spelling, such
+  as a link, is moved to the resolved one once the install passes its
+  checks, so it is still found after the link is removed, and an install
+  that is refused changes no record. An uninstall moves such an install the
+  same way before it removes anything, so an uninstall that does not finish
+  is recorded under the resolved folder, where running it again still finds
+  it once the link is removed. A folder that a record names another way on
+  disk (a `\\localhost\C$` path to a folder recorded as `C:\...`) keeps the
+  spelling the record has, and an install or uninstall in a folder that has
+  an install of its own still in place leaves a record under another
+  spelling as it is. A spelling whose install is still in place is taken
+  before one whose install was removed; of two in place, the one with more
+  of its files in the folder, then the newer. An install none of whose files
+  is in the folder is not taken for it, unless its uninstall did not finish:
+  running the uninstall again then finishes it. One recorded with a relative
+  folder or `~` is not taken for another folder of the same name. Folder
+  names are compared exactly: in a case-sensitive folder (one WSL made, say)
+  `Proj` and `proj` are two folders and are never taken for each other. In
+  an ordinary Windows folder they are one folder while it exists; once it is
+  gone, only the spelling the record has finds it. Two folders that look the
+  same on disk count as one only when the volume gives them real file IDs
+  and, when Windows can name both volumes, the names match, so a cloned
+  volume is not taken for the original. A record on another network share
+  (a `\\server\share` path or a drive letter mapped to one) is compared by
+  its text only, so a share that cannot be reached does not stall the record
+  lookup. The notes about shared folders still check each recorded folder,
+  so they can still wait on such a share. Known limits: an install that an
+  earlier release recorded twice, from the command line and from Python
+  through a link, keeps the second record after `apothem uninstall`, and
+  that record keeps the shared folders in your home; remove it from Python
+  with the folder spelled as installed. An install recorded under a
+  `\\localhost\C$` spelling of a folder on this computer is not found from
+  its `C:\` spelling, since a record on a share is not looked up from
+  elsewhere. And when two installs were made through two links to two
+  different folders, and one link was later pointed at the other folder, the
+  uninstall takes the install with more of its files in that folder. If both
+  wrote the same file names (the same release), or an earlier release
+  recorded them (it did not list its files), it takes the newer one, whose
+  files may be in the folder the link used to lead to.
+- **An uninstall that finds no install record says what it left and what
+  it removed.** Such an uninstall does not finish (see the entry on stricter
+  checks of which files are Apothem's). After its `✗ <harness> uninstall did
+  not finish:` line, a `Note: <harness> - no install record matched` line
+  now names the shared folders in your home it left and what it still
+  removed: Apothem-only files such as a rules file or `hooks.json`, Apothem's
+  lines in a shared file, and the memory, contexts and learning stores of its
+  data folder, which are backed up. For a project-scope harness it also says
+  to check that `--project` names the folder you installed into before you
+  run `apothem update`, the folder quoted as in the other printed commands
+  or named as it is when those quotes cannot carry it, and to fix first any
+  file whose warning names an Apothem marker the uninstall left. The `Note:`
+  line is printed under `--quiet` too, to the error stream. In
+  `--format json` output the harness's error row carries the same note and
+  `"detail": {"kept_reason": "no-record"}`.
+- **Uninstalling a project keeps the shared folders a project named in
+  another case uses.** In a case-sensitive folder that holds `Proj` and
+  `proj`, each with an install, `apothem uninstall --project .../proj`
+  removed `~/.agents/skills` and `~/.config/apothem/rules` and `templates`,
+  which `Proj`'s install still loads, while its note said they were kept.
+  The uninstall now matches its own install by the exact folder name, as
+  the install records do, so `Proj`'s install keeps those folders, and a
+  data home both use. The notes no longer describe `Proj`'s install when
+  `proj` has none.
+- **An uninstall that cannot delete a file says so.** When another program
+  held an Apothem-only file open, such as `.cursor/rules/apothem-rules.mdc`
+  in an editor, `apothem uninstall` reported it removed, printed
+  `✓ Uninstalled` and exited 0, though the file stayed and the harness kept
+  loading it. That step is now an error: the command says `could not remove
+  <file>, an Apothem-only file`, exits 2 when it removed other files, and
+  keeps the install recorded, so running it again once the file is closed
+  finishes it.
+- **A write that a link leads out of the allowed folder names the link.**
+  A write refused with `target escapes the allowed materialization root`
+  because a link inside the folder leads it out, such as `~/.agents/skills`
+  linked to a folder outside your home directory, now names the link and the
+  folder it leads to, and says to replace the link with a real folder. In
+  `--format json` output the result carries `detail.symlink` and
+  `detail.leads_to`, as a result refused with `target path crosses a link`
+  does. The message itself is unchanged, and an escape written with `..`
+  names no link. `apothem uninstall` groups such failures by link: its `✗
+  <harness> uninstall did not finish:` line names the link, and the link
+  keeps its warning that it was left in place. When the problems name one
+  link, the harness's `uninstall` error row carries it in `detail.symlink`
+  and where it leads in `detail.leads_to`, also when the link only keeps
+  installed files behind it. Nothing is written or removed through the link.
+- **Each module of the install driver can be imported first.** Python code
+  that imported one of the driver's modules, such as its path checks, before
+  anything else of Apothem stopped with an `ImportError` (a circular import).
+  The modules now load in any order.
+- **Docs pages have one skip link, and it works.** From 16.18.0 Fumadocs
+  layouts add their own "Skip to Content" link, aimed at a page container the
+  site replaces with its `main` element, so the link led nowhere. It stayed
+  hidden even when it had keyboard focus, so the second Tab press on every docs
+  page seemed to lose the focus. The site now hides that link. The first Tab
+  still reaches the site's own "Skip to content" link, which shows when
+  focused and moves the focus to the page content.
 
 ### Security
 
+- **A checked project's git settings no longer make the conformity gate start
+  a program.** `--all`, `--all-perwrite`, three standalone validators
+  (`no-global-plans-grep`, `conventional-commit-grep` and
+  `agents-md-coverage-grep`) and the two `--staged` change-set checks run
+  `git` in the project they check, and git reads that repository's own
+  `.git/config`. A project that came with its `.git` folder, in an archive or
+  a shared folder, could set `core.fsmonitor` to a program that ran during
+  `git ls-files`, turn on `log.showSignature` so that `git log` ran its
+  `gpg.program`, or make a partial clone fetch a missing object through
+  `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. A
+  staged submodule entry also let `semver_stability_grep --staged` run
+  `git show` on a commit: a `%G` placeholder in `format.pretty` started the
+  signature program, and `diff.submodule=diff` started a second git inside the
+  submodule with the submodule's own diff program. Every git command the gate
+  runs now turns those settings off on git's command line (no file-system
+  monitor, hooks, pager or automatic maintenance; signature programs that
+  cannot start; no external diff or text-conversion program; submodule changes
+  as commit ids only; no diff order, excludes or mailmap file read), reads file
+  contents with `git cat-file blob`, which refuses a submodule entry, sets
+  `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, and starts git only
+  from a full-path entry of `PATH`.
+  On Windows the gate no longer runs a `git.exe` that sits in the folder it
+  was started from. The repository can still make git read a path elsewhere
+  through any setting or file that names one (for example `include.path`,
+  `core.worktree`, a `.git` file's `gitdir:` line or
+  `.git/objects/info/alternates`); on Windows a network path there makes
+  Windows sign in to that server.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the
@@ -1236,6 +1472,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
+- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+  moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
+  GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
+  image optimization, Edge routes and self-hosted response forwarding). The
+  site is published as static files with no Next.js server, so none of them
+  reached it. The same update moves Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 
 ## [1.5.0] - 2026-10-28
 

@@ -20,7 +20,7 @@ reach, though each file's levels are checked right before it is read. A hard
 link reads as an ordinary file, because nothing in it tells where the other
 names of its data are; git and archive tools do not create one to a file
 outside the project. And ``git ls-files`` itself reads the repository's own git
-configuration, which the gate's git options govern, not this module.
+configuration, which :func:`run_git` governs, not this module.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
 
 # The largest file the corpus run reads, in bytes. Files the matchers check are
@@ -87,9 +88,11 @@ class TrackedEntry:
 def tracked_entries(root: Path) -> list[TrackedEntry]:
     """Return the index entries under *root*, each path joined as git lists it.
 
-    Runs ``git ls-files -s -z`` in *root* with no input and gives up after
-    :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. Output is decoded as UTF-8 with any
-    other byte replaced, so a file name that is not UTF-8 names no file on disk
+    Runs ``git ls-files -s -z`` in *root* through :func:`run_git`, which keeps
+    the repository's own git settings from starting a program, gives git no
+    input and decodes its output as UTF-8 with any other byte replaced; the
+    call gives up after :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. So a file name
+    that is not UTF-8 names no file on disk
     and is skipped on its own instead of failing the run. An entry git lists
     more than once (a file with a merge conflict) is kept once. No path is
     resolved and no link is followed.
@@ -99,14 +102,9 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     work tree), or git runs past the time limit.
     """
     try:
-        completed = subprocess.run(
-            ["git", "ls-files", "-s", "-z"],  # noqa: S607 — read-only invocation; argv list (never shell); `git` resolved from PATH is the standard cross-platform invocation, mirroring the repo's other git subprocess call sites
-            cwd=str(root),
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            check=False,
-            encoding="utf-8",
-            errors="replace",
+        completed = run_git(
+            ["ls-files", "-s", "-z"],
+            cwd=root,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:

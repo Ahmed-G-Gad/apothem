@@ -62,6 +62,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     GIT_LS_FILES_TIMEOUT_SECONDS,
     finish_root_report,
@@ -156,15 +157,15 @@ def _git_ls_files(root: Path) -> list[str]:
     Raises ``RuntimeError`` when ``git`` is unavailable, root is not
     a git repository, or git runs past :data:`GIT_LS_FILES_TIMEOUT_SECONDS`
     (the repository's own configuration can make git wait for ever) — all
-    errors the caller surfaces.
+    errors the caller surfaces. git runs through :func:`run_git`, so the
+    repository's own settings cannot make it start a program.
     """
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: literal argv against git
-            ["git", "-C", str(root), "ls-files"],  # noqa: S607 — PATH-resolved git is acceptable for a developer-tool validator; full-path resolution would require host-discovery and breaks portability across operator setups.
+        # -z: names end with NUL, unquoted, whatever characters they hold.
+        completed = run_git(
+            ["ls-files", "-z"],
+            cwd=root,
             check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
         )
     except FileNotFoundError as exc:
@@ -179,7 +180,7 @@ def _git_ls_files(root: Path) -> list[str]:
         raise RuntimeError(
             f"git ls-files failed under {root!s}: {stderr or 'no stderr'}"
         ) from exc
-    return [line for line in completed.stdout.splitlines() if line]
+    return [name for name in completed.stdout.split("\0") if name]
 
 
 def _sweep_stray_plans_dirs(
