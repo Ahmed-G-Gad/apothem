@@ -42,13 +42,17 @@ mtime: a checkout rewrites mtimes, so only commit history carries the truth of
 "what changed when". A single ``git log`` pass buckets every tracked file to
 its nearest meaningful-folder ancestor; a folder is stale when its newest
 content commit postdates its committed companion's commit. Folders with no
-companion on disk are skipped entirely — absence is not a finding under the
-root-only convention. Where git history is unavailable (a shallow clone, a
-non-git tree), freshness is skipped and the sweep reports a clean pass — it
-never blocks a fresh clone. A git command that runs past its time limit
-(the repository's own configuration can make git wait for ever), or a git
-that refuses a checkout it found (another owner, a bad configuration line),
-is different: the history is there but was not read, so the sweep reports a
+companion on disk are skipped entirely, a companion deleted since included —
+absence is not a finding under the root-only convention. The root
+``AGENTS.md`` is that canon, not a per-folder companion, so it is never
+checked against the root folder's content. The log names paths relative to
+the checked root and covers only history under it, so a subtree root checks
+its own folders. Where git history is unavailable (a shallow clone, a non-git
+tree), freshness is skipped and the sweep reports a clean pass — it never
+blocks a fresh clone. A git command that runs past its time limit (the
+repository's own configuration can make git wait for ever), or a git that
+refuses a checkout it found (another owner, a bad configuration line), is
+different: the history is there but was not read, so the sweep reports a
 ``check_error`` and does not pass. The read of the whole history gets a long
 limit of its own, so a large history is slow rather than a failure.
 
@@ -71,7 +75,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity import _bounded_run
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     CHECK_ERROR_KEY,
     GitCheckError,
@@ -283,11 +287,14 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     First ``git rev-parse --verify --quiet HEAD`` within
     ``GIT_TIMEOUT_SECONDS`` finds out whether there is a history to read; then
     one ``git log`` pass within ``GIT_HISTORY_TIMEOUT_SECONDS``, newest commit
-    first: the first time a path is seen is its last-touching commit. git runs
-    through :func:`~apothem.conformity._bounded_run.run_bounded`, so each limit
-    holds for every program git starts. Returns None when git history is
-    unavailable (no repository, no commit yet, or git absent) so the caller
-    degrades to a presence-only sweep. Raises
+    first: the first time a path is seen is its last-touching commit.
+    ``--relative -- .`` limits the pass to history under *root* and names
+    paths relative to it, so they match :func:`meaningful_folders` when *root*
+    is a subtree of the repository. git runs through :func:`run_git`, which
+    turns off the repository's program-running settings (a signature check,
+    say) and prints path names as they are, decoded as UTF-8. Returns None
+    when git history is unavailable (no repository, no commit yet, or git
+    absent) so the caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
@@ -296,8 +303,9 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     not read.
     """
     try:
-        head = _bounded_run.run_bounded(
-            ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", "HEAD"],
+        head = run_git(
+            ["rev-parse", "--verify", "--quiet", "HEAD"],
+            cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
@@ -311,16 +319,17 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             raise GitFailedError("git rev-parse", head.returncode)
         return None
     try:
-        completed = _bounded_run.run_bounded(
+        completed = run_git(
             [
-                "git",
-                "-C",
-                str(root),
                 "log",
                 "--format=%x1e%ct",
                 "--name-only",
                 "--no-renames",
+                "--relative",
+                "--",
+                ".",
             ],
+            cwd=root,
             timeout=GIT_HISTORY_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
@@ -334,12 +343,16 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
 
     times: dict[str, int] = {}
     current_ct: int | None = None
-    for raw_line in completed.stdout.splitlines():
+    # Split on "\n" only: str.splitlines() also breaks at the \x1e record
+    # marker, which would strip it from every header line.
+    for raw_line in completed.stdout.split("\n"):
         if raw_line.startswith("\x1e"):
             stamp = raw_line[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None
             continue
-        path = raw_line.strip()
+        # The name as git printed it: core.quotePath=false keeps it unquoted,
+        # and stripping would change a name that starts or ends with a space.
+        path = raw_line
         if not path or current_ct is None:
             continue
         # Newest-first: keep only the first (most recent) commit per path.
@@ -396,7 +409,14 @@ def check(root: Path) -> GrepResult:
             owner = _owning_folder(path, folder_set)
             if path.rpartition("/")[2] == COMPANION_NAME:
                 companion_folder = path.rpartition("/")[0] or "."
-                if companion_folder in folder_set:
+                # The root AGENTS.md is the repository's canon, not a
+                # per-folder companion, so it has no folder to fall behind.
+                # A companion deleted since is absent, and absence passes.
+                if (
+                    companion_folder != "."
+                    and companion_folder in folder_set
+                    and (root / path).is_file()
+                ):
                     companion_ct[companion_folder] = ct
                 continue
             content_ct[owner] = max(content_ct.get(owner, 0), ct)
@@ -406,9 +426,7 @@ def check(root: Path) -> GrepResult:
                 continue
             newest_content = content_ct.get(folder, 0)
             if newest_content > companion_ct[folder]:
-                surface = (
-                    COMPANION_NAME if folder == "." else f"{folder}/{COMPANION_NAME}"
-                )
+                surface = f"{folder}/{COMPANION_NAME}"
                 findings.append(
                     Finding(
                         surface=surface,

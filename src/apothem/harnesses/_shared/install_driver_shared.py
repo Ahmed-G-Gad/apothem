@@ -291,9 +291,13 @@ def holder_index(*, exclude: tuple[str, str | Path] | None = None) -> HolderInde
     lists it (:func:`install_ledger.current_install_record`, which replays
     install, uninstall and rollback records). *exclude* names the pair doing the
     asking; only that exact pair is left out, so one harness installed in two
-    projects counts as two holders. A holder whose root directory no longer
-    exists is marked stale and ignored by :meth:`HolderIndex.holders_of`, so a
-    deleted project does not pin a folder for good.
+    projects counts as two holders. Its root is matched as the ledger matches
+    roots, by exact text: a case-sensitive folder can hold ``Proj`` and
+    ``proj`` as two installs, and a root spelled otherwise counts as a holder,
+    which keeps a folder rather than removing it. A holder whose root
+    directory no longer exists is marked stale and ignored by
+    :meth:`HolderIndex.holders_of`, so a deleted project does not pin a
+    folder for good.
 
     Raises:
         apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
@@ -314,7 +318,7 @@ def holder_index(*, exclude: tuple[str, str | Path] | None = None) -> HolderInde
             if (
                 exclude is not None
                 and package_key == exclude[0]
-                and path_key(root) == path_key(exclude[1])
+                and root == str(exclude[1])
             ):
                 continue
             record = install_ledger.current_install_record(package_key, root=root)

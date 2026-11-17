@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity import _bounded_run
+from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
@@ -124,9 +124,9 @@ def _staged_paths() -> list[str]:
     """Return the staged-diff path list via git; empty when there is none.
 
     The list is empty when git is missing or the current folder is not a
-    checkout. git runs through
-    :func:`~apothem.conformity._bounded_run.run_bounded`, so the limit holds
-    for every program git starts. Raises
+    checkout. git runs through :func:`run_git`, so the repository's own
+    settings cannot make it start a program. ``-z`` ends each name with NUL,
+    unquoted, so no character in a name can split or hide it. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
     wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
@@ -134,8 +134,8 @@ def _staged_paths() -> list[str]:
     was not read is not an empty one.
     """
     try:
-        result = _bounded_run.run_bounded(
-            ["git", "diff", "--cached", "--name-only"],
+        result = run_git(
+            ["diff", "--cached", "--name-only", "-z"],
             check=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
@@ -147,7 +147,7 @@ def _staged_paths() -> list[str]:
         return []
     except FileNotFoundError:
         return []
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return [name for name in result.stdout.split("\0") if name]
 
 
 def _check_staged() -> GrepResult:

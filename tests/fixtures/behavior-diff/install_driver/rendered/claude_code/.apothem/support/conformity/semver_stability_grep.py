@@ -68,7 +68,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
 
-# Bound every gate-path git invocation so a hung `git show`/`git diff`
+# Bound every gate-path git invocation so a hung `git cat-file`/`git diff`
 # (filesystem lock, slow network-backed repo, large object, or a repository
 # configuration that makes git wait) cannot block a commit indefinitely.
 # Mirrors the convention in production_ready_pr_grep.py: a timeout does not
@@ -336,28 +336,33 @@ def _git(
 ) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
 
-    git runs through :func:`~apothem.conformity._bounded_run.run_bounded`, so
-    the limit holds for every program git starts, also on Windows behind Git's
-    launcher. Raises :class:`~apothem.conformity._grep_base.GitTimeoutError`,
-    naming the command as *label*, past the limit; :class:`OSError` when git
-    cannot be started; and, with *check*,
-    :class:`subprocess.CalledProcessError` on a non-zero exit.
+    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
+    command as *label*, past the limit; :class:`OSError` when git cannot be
+    started; and, with *check*, :class:`subprocess.CalledProcessError` on a
+    non-zero exit.
     """
     # Imported here, not at module top, so the module stays stdlib-only for
     # every caller except the change-set check.
-    from apothem.conformity import _bounded_run
+    from apothem.conformity._git import run_git
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return _bounded_run.run_bounded(
-            ["git", *args], timeout=GIT_TIMEOUT_SECONDS, check=check
-        )
+        return run_git(list(args), timeout=GIT_TIMEOUT_SECONDS, check=check)
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
+
+    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings. File contents are read with
+    ``git cat-file blob``, never ``git show``: the staged list can name a
+    gitlink (a submodule entry), which ``show`` would display as a commit,
+    signature check and submodule diff included, while ``cat-file blob``
+    refuses it.
 
     Raises :class:`~apothem.conformity._grep_base.GitTimeoutError` when the
     staged list, or a staged or committed file, is not read within
@@ -373,17 +378,22 @@ def check_staged() -> list[Finding]:
         has_git_entry,
     )
 
+    def blob(spec: str, *, check: bool) -> str:
+        return _git("git cat-file", "cat-file", "blob", spec, check=check).stdout
+
     version = current_version()
     if not version or is_v0(version):
         return []
 
-    # Get list of staged Python files under src/apothem/.
+    # Get list of staged Python files under src/apothem/. -z ends each name
+    # with NUL, unquoted, so no character in a name can split or hide it.
     try:
         result = _git(
             "git diff --cached",
             "diff",
             "--cached",
             "--name-only",
+            "-z",
             "--diff-filter=AMR",
             PUBLIC_PACKAGE,
         )
@@ -395,9 +405,9 @@ def check_staged() -> list[Finding]:
             raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [
-        f.strip()
-        for f in result.stdout.splitlines()
-        if f.strip().endswith(".py")
+        f
+        for f in result.stdout.split("\0")
+        if f.endswith(".py")
         and not PRIVATE_PATTERN.search(f)
         and not CONFORMITY_INTERNAL.search(f)
     ]
@@ -407,8 +417,8 @@ def check_staged() -> list[Finding]:
         # A GitTimeoutError goes on to the caller: skipping the file would
         # pass a change that was never compared.
         try:
-            staged = _git("git show", "show", f":{fp}", check=True).stdout
-            prior = _git("git show", "show", f"HEAD:{fp}").stdout
+            staged = blob(f":{fp}", check=True)
+            prior = blob(f"HEAD:{fp}", check=False)
         except subprocess.CalledProcessError:
             continue
         if not prior:
@@ -421,9 +431,11 @@ def check_staged() -> list[Finding]:
 
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
+        # git names a path with forward slashes on every platform.
+        init_spec = INIT_PATH.as_posix()
         try:
-            staged_init = _git("git show", "show", f":{INIT_PATH}", check=True).stdout
-            prior_init = _git("git show", "show", f"HEAD:{INIT_PATH}").stdout
+            staged_init = blob(f":{init_spec}", check=True)
+            prior_init = blob(f"HEAD:{init_spec}", check=False)
             staged_v = re.search(r'__version__\s*=\s*"([^"]+)"', staged_init)
             prior_v = re.search(r'__version__\s*=\s*"([^"]+)"', prior_init)
             if (

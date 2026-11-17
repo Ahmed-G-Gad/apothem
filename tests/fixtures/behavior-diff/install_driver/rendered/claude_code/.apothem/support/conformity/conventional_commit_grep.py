@@ -221,20 +221,18 @@ class GrepResult:
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *root* within ``GIT_TIMEOUT_SECONDS``.
 
-    git runs through :func:`~apothem.conformity._bounded_run.run_bounded`, so
-    the limit holds for every program git starts, also on Windows behind Git's
-    launcher. Raises :class:`~apothem.conformity._grep_base.GitTimeoutError`
-    past the limit and :class:`OSError` when git cannot be started.
+    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` past the limit and
+    :class:`OSError` when git cannot be started.
     """
     # Imported here, not at module top, so the module itself imports without
     # the package; only a run that reads git history needs it.
-    from apothem.conformity import _bounded_run
+    from apothem.conformity._git import run_git
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return _bounded_run.run_bounded(
-            ["git", *args], cwd=root, timeout=GIT_TIMEOUT_SECONDS
-        )
+        return run_git(list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(f"git {args[0]}", GIT_TIMEOUT_SECONDS) from exc
 
@@ -248,7 +246,9 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     ``git-failed`` (git refused the repository: another owner, a bad
     configuration line, an include it cannot read). The subject is None for
     every non-``ok`` status so the caller can short-circuit; ``check_error``
-    says why for the last two, and is None otherwise.
+    says why for the last two, and is None otherwise. git runs through
+    :func:`~apothem.conformity._git.run_git`, so the repository's own settings
+    cannot make it start a program (a signature check, say).
     """
     from apothem.conformity._grep_base import (
         GitCheckError,
