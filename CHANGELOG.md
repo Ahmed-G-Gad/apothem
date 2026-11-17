@@ -350,7 +350,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Cursor's hook line starts with PowerShell's `&`, which doctor took for the
   program to start, so it reported a working Cursor hook as unable to start.
   Doctor now leaves the `&` out there.
-
 - **The Windows installer checks out releases whose paths pass 260
   characters.** `install.ps1` checks a release out in a staging folder beside
   `APOTHEM_HOME`, or in the temporary folder for a dry run, before it moves
