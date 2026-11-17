@@ -770,6 +770,10 @@ _DYNAMIC_HOSTS = frozenset({"__builtins__", "builtins", "importlib"})
 # as ``subprocess.run``. A chain that starts at a local name is left as it
 # is: a field called ``subprocess`` on some object starts nothing.
 _JUDGED_FROM = frozenset({"os", "subprocess"})
+# The name under which a module sees its built-ins: a module in some runs, a
+# dict in others (under ``runpy`` and in an imported module), so it is flagged
+# however it is used. No conformity module has a reason to touch it.
+_BUILTINS_NAME = "__builtins__"
 # The package's own modules: reaching into one by a computed name, ``vars`` or
 # ``__dict__`` can fetch ``run_bounded`` or the ``subprocess`` it imports.
 _OWN_PACKAGE = "apothem.conformity"
@@ -885,6 +889,7 @@ def _program_starts(
                 or ("." in dotted and _flagged_name(dotted, names))
                 or node.id in names
                 or node.id in _DYNAMIC_CALLS
+                or node.id == _BUILTINS_NAME
             )
         elif isinstance(node, ast.Call):
             flagged = _flagged_call(node, resolve, chain)
@@ -892,7 +897,9 @@ def _program_starts(
             flagged = _names_process_module(node.slice)
         else:
             text = _fixed_string(node)
-            flagged = text is not None and bool(_GIT_PROGRAM.search(text.strip()))
+            flagged = text is not None and (
+                text == _BUILTINS_NAME or bool(_GIT_PROGRAM.search(text.strip()))
+            )
         if flagged:
             lines.append(node.lineno)  # type: ignore[attr-defined]
     return sorted(set(lines))
@@ -904,12 +911,25 @@ def _names_process_module(node: ast.AST) -> bool:
     return key is not None and _root(key) in _PROCESS_MODULES
 
 
+# Code that runs later than the statement it is written in, so a call inside
+# it can leave the function: a nested function, a lambda, a comprehension.
+_DEFERRED_CODE = (
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.Lambda,
+    ast.GeneratorExp,
+    ast.ListComp,
+    ast.SetComp,
+    ast.DictComp,
+)
+
+
 def _direct_call_targets(tree: ast.Module, functions: frozenset[str]) -> set[int]:
     """Return the ids of what the named module-level functions call directly.
 
     Only the called expression of a call in the function's own body counts:
-    not a use of the name as a value, and nothing inside a nested function or
-    a lambda, which could carry the name out of the function.
+    not a use of the name as a value, and nothing inside a nested function, a
+    lambda or a comprehension, which could carry the call out of the function.
     """
     found: set[int] = set()
     for function in tree.body:
@@ -918,7 +938,7 @@ def _direct_call_targets(tree: ast.Module, functions: frozenset[str]) -> set[int
         pending: list[ast.AST] = list(function.body)
         while pending:
             node = pending.pop()
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            if isinstance(node, _DEFERRED_CODE):
                 continue
             if isinstance(node, ast.Call):
                 found.add(id(node.func))
@@ -959,7 +979,7 @@ def _flagged_call(
 ) -> bool:
     """Return True for a call that reaches a starter or a process module by name.
 
-    ``getattr(x, "<starter or process module>")`` on any object;
+    ``getattr(x, "<starter or process module>")`` on anything imported;
     ``getattr(module, <computed name>)`` and ``vars(module)`` on a process
     module or one of the package's own modules; and a ``sys.modules`` method
     given a process module's name. The called name itself is judged where the
@@ -971,10 +991,14 @@ def _flagged_call(
     if called not in {"getattr", "vars"}:
         return False
     name = _fixed_string(node.args[1]) if len(node.args) > 1 else None
-    if name is not None and (name in _PROGRAM_NAMES or name in _JUDGED_FROM):
+    dotted, imported = chain(node.args[0]) if node.args else ("", False)
+    # On a local object a field may share a starter's or a module's name
+    # (``getattr(job, "os", None)``); on something imported it is a fetch.
+    names_a_starter = name in _PROGRAM_NAMES or name in _JUDGED_FROM
+    if imported and names_a_starter:
         return True
     target = resolve(node.args[0]) if node.args else ""
-    own = bool(node.args) and chain(node.args[0])[0].startswith(_OWN_PACKAGE)
+    own = dotted.startswith(_OWN_PACKAGE)
     if _root(target) not in _PROCESS_MODULES and not own:
         return False
     return name is None or _flagged_name(f"{target}.{name}")
@@ -1150,6 +1174,16 @@ _BYPASSES = {
         'import pkgutil\npkgutil.resolve_name("sub" + "process:run")\n'
     ),
     "__builtins__": '__builtins__.__import__("sub" + "process")\n',
+    # Under the gate's launcher and in an imported module __builtins__ is a
+    # dict, so these are the forms that work there.
+    "__builtins__, as a dict": '__builtins__["__import__"]("sub" + "process")\n',
+    "__builtins__.get": '__builtins__.get("__import__")("sub" + "process")\n',
+    "__builtins__ through globals": (
+        'globals()["__builtins__"]["ex" + "ec"]("import sub" + "process")\n'
+    ),
+    "_ctypes": "import _ctypes\n_ctypes.dlopen\n",
+    "antigravity": "import antigravity\n",
+    "platform.uname": "import platform\nplatform.uname()\n",
     "sys.modules.pop": 'import sys\nsys.modules.pop("subprocess").run(["x"])\n',
     # Reaching into one of the package's own modules by name.
     "getattr, a starter by name": (
@@ -1210,6 +1244,8 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
         "    return result.subprocess, context.os.system\n"
         "from apothem.conformity import _grep_base\n"
         'check = getattr(_grep_base, "has_git_entry")\n'
+        "def read(job, args):\n"
+        '    return getattr(job, "os", None), getattr(args, "which", None)\n'
     )
     assert _program_starts(source) == []
 
@@ -1304,12 +1340,13 @@ def test_run_bounded_is_allowed_only_in_the_gate_launcher(tmp_path: Path) -> Non
         "    LATER.append(lambda: run_bounded([sys.executable], timeout=5))\n"
         "    def inner():\n"
         "        return run_bounded([sys.executable], timeout=5)\n"
+        "    LATER.append(run_bounded([a], timeout=5) for a in sys.argv)\n"
         "    return run_bounded([sys.executable], timeout=5)\n"
         "class Holder:\n"
         "    def _run_standalone(self):\n"
         "        return run_bounded([sys.executable], timeout=5)\n"
     )
-    assert _program_starts(leaks, run_bounded_in=allowed) == [6, 7, 9, 13]
+    assert _program_starts(leaks, run_bounded_in=allowed) == [6, 7, 9, 10, 14]
 
 
 def test_run_bounded_in_the_git_helper_is_called_by_run_git_only() -> None:
@@ -1326,6 +1363,8 @@ def test_run_bounded_in_the_git_helper_is_called_by_run_git_only() -> None:
     inside = frozenset({"run_git"})
     assert _run_bounded_uses(helper, inside=inside) == []
     assert _run_bounded_uses(helper + extra, inside=inside) == [5]
+    imported = "from apothem.conformity._bounded_run import run_bounded\n"
+    assert _run_bounded_uses(imported, inside=inside) == [1]
 
     package = Path(gate.__file__).resolve().parent
     real = (package / "_git.py").read_text(encoding="utf-8")
@@ -1987,6 +2026,160 @@ def test_the_version_check_follows_a_link_into_the_checkout(
     assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
 
 
+def _empty_git_folder(folder: Path) -> None:
+    """An empty ``.git`` folder, as an aborted ``git init`` clean-up leaves."""
+    (folder / ".git").mkdir()
+
+
+def _git_link_to_nowhere(folder: Path) -> None:
+    """A ``.git`` link whose target is gone."""
+    try:
+        (folder / ".git").symlink_to(folder / "gone", target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"this host cannot create a symlink: {exc}")
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize(
+    "plant",
+    [_empty_git_folder, _git_link_to_nowhere],
+    ids=["empty .git folder", ".git link to nowhere"],
+)
+def test_the_version_check_looks_past_a_git_entry_that_git_looks_past(
+    plant: Callable[[Path], None], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``.git`` entry that holds no repository does not end the package search.
+
+    git itself looks past it and finds the checkout above. A search that
+    stopped there found no package, ran no git, and passed a staged change
+    that dropped a public function.
+    """
+    repo = _build_repo(tmp_path / "project")
+    below = repo / "docs" / "sub"
+    below.mkdir(parents=True)
+    plant(below)
+    found = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=str(below),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=True,
+        timeout=60,
+    )
+    top = Path(found.stdout.decode("utf-8").strip())
+    assert top.resolve() == repo.resolve()  # git finds the checkout above
+    monkeypatch.chdir(below)
+
+    findings = semver_stability_grep.check_staged()
+
+    assert [finding.path for finding in findings] == [_TRACKED]  # g was dropped
+
+
+@pytest.mark.usefixtures("hermetic_git")
+def test_the_version_check_fails_below_a_git_file_that_names_no_repository(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """git stops with an error at a stale ``.git`` file; the check reports it.
+
+    The package lies above that file, so the run cannot pass as a project
+    with nothing to check, and it cannot read the change set as if it had
+    started in the package's folder either.
+    """
+    repo = _build_repo(tmp_path / "project")
+    below = repo / "docs" / "sub"
+    below.mkdir(parents=True)
+    (below / ".git").write_bytes(b"gitdir: ../../nowhere/.git\n")
+    refused = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=str(below),
+        env=hermetic_git_env(),
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    assert refused.returncode != 0  # git does not look past a .git file
+    monkeypatch.chdir(below)
+
+    exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == semver_stability_grep.EXIT_FAIL
+    assert payload["passed"] is False
+    assert payload["check_error"].startswith("git diff --cached failed with exit code")
+
+
+def _nested_repository(folder: Path) -> None:
+    """A repository of its own below the checkout."""
+    _git(folder, "-c", "init.defaultBranch=main", "init", "-q")
+
+
+def _nested_git_file(folder: Path) -> None:
+    """A ``.git`` file that names a repository, as a linked work tree has."""
+    elsewhere = folder.parent / "elsewhere"
+    elsewhere.mkdir()
+    _git(elsewhere, "-c", "init.defaultBranch=main", "init", "-q")
+    target = (elsewhere / ".git").as_posix()
+    (folder / ".git").write_bytes(f"gitdir: {target}\n".encode())
+
+
+@pytest.mark.usefixtures("hermetic_git")
+@pytest.mark.parametrize(
+    "plant",
+    [_nested_repository, _nested_git_file],
+    ids=["nested repository", ".git file that names a repository"],
+)
+def test_the_version_check_stops_at_a_repository_below_the_package(
+    plant: Callable[[Path], None],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A repository nested below the package is a project of its own.
+
+    git stops at it, so the package above belongs to another checkout: the
+    nested project has no package, and the check passes without running git.
+    """
+    repo = _build_repo(tmp_path / "project")
+    nested = repo / "docs" / "nested"
+    (nested / "inner").mkdir(parents=True)
+    plant(nested)
+    monkeypatch.chdir(nested / "inner")
+    monkeypatch.setattr(_bounded_run, "run_bounded", _git_must_not_run)
+
+    exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == semver_stability_grep.EXIT_PASS
+    assert payload["passed"] is True
+    assert "check_error" not in payload
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="Windows keeps a folder in use by a process"
+)
+def test_the_version_check_passes_in_a_folder_that_is_gone(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A current folder deleted under the check gives a verdict, not a traceback."""
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    monkeypatch.chdir(gone)
+    gone.rmdir()
+    try:
+        exit_code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+        payload = json.loads(capsys.readouterr().out)
+    finally:
+        # Leave a folder that exists, so the fixture can restore the old one.
+        os.chdir(tmp_path)
+
+    assert exit_code == semver_stability_grep.EXIT_PASS
+    assert payload["passed"] is True
+
+
 @pytest.mark.usefixtures("hermetic_git")
 def test_the_version_check_passes_a_checkout_without_the_package(
     tmp_path: Path,
@@ -2140,6 +2333,12 @@ _CEILING_CASES: dict[str, Callable[[Path], str]] = {
     "after an empty entry, another case": (
         lambda top: os.pathsep + (top / "a").as_posix().upper()
     ),
+    "after an empty entry, two trailing slashes": (
+        lambda top: os.pathsep + (top / "a").as_posix() + "//"
+    ),
+    "after an empty entry, three trailing slashes": (
+        lambda top: os.pathsep + (top / "a").as_posix() + "///"
+    ),
     "second of two entries": lambda top: (
         str(top / "other") + os.pathsep + str(top / "a")
     ),
@@ -2149,6 +2348,7 @@ if os.name == "nt":
     _CEILING_CASES["no drive letter, forward slashes"] = lambda top: _without_drive(
         top / "a"
     ).replace("\\", "/")
+    _CEILING_CASES["the long-path prefix"] = lambda top: "\\\\?\\" + str(top / "a")
 
 
 @pytest.mark.usefixtures("hermetic_git")
@@ -2195,7 +2395,15 @@ def test_in_checkout_agrees_with_git_about_ceilings(
         ("false", False),
         ("no", False),
         ("off", False),
-        ("maybe", False),
+        ("0x10", True),
+        ("0x0", False),
+        ("010", True),
+        ("00", False),
+        # git stops with an error on these; they read as true, so the search
+        # for a checkout stops nowhere git might have gone on.
+        ("maybe", True),
+        ("1 ", True),
+        ("1kk", True),
     ],
 )
 def test_a_git_flag_is_read_as_git_reads_it(

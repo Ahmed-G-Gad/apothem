@@ -441,8 +441,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `semver_stability_grep --staged` looked for
   `src/apothem` below the current folder only, so from a subfolder it ran no
   git and passed whatever was staged; it now also looks in the folders above,
-  up to the top of the checkout, and runs git in the folder that holds the
-  package. A project without the package still passes without running git.
+  up to the nearest folder that holds a repository, and runs git in the
+  nearest folder that holds the package. A project without the package still passes without running git.
   The check also names `src/apothem` after `--`, so git reads it as a path
   where that folder is missing.
 - **`agents-md-coverage-grep` judges a re-created companion and a subfolder

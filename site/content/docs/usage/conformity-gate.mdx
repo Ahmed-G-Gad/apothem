@@ -151,8 +151,10 @@ and, outside Windows, at a folder on another file system, unless
 own, mounted below one, therefore still passes. `semver-stability-grep --staged` looks for the package in the folder
 it runs in and then in the folders above it, up to the top of the checkout, and
 runs git in the folder that holds it, so a run from a subfolder checks the same
-change set. A project without the package has nothing to check there: it
-passes without running git, whatever state its repository is in.
+change set. The search ends at the nearest folder that holds a repository, and
+the nearest folder that holds `src/apothem` is the one checked; it does not
+read `GIT_WORK_TREE`. A project without the package has nothing to check
+there: it passes without running git, whatever state its repository is in.
 
 The gate reads each list of path names from git byte for byte, so a name that
 holds a line break, a carriage return or a byte that is not UTF-8 names the

@@ -372,25 +372,46 @@ def _git(
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
-def _package_folder_above() -> Path | None:
-    """Return the nearest folder above the current one that holds the package.
+def _package_folder_above() -> tuple[Path, bool] | None:
+    """Find the nearest folder above the current one that holds the package.
 
     The search runs without git, over the folders git itself would search for
     the repository (see
     :func:`~apothem.conformity._grep_base.checkout_search_folders`), with
-    links resolved, and it ends at the top of the checkout: the first folder
-    that holds a ``.git`` entry. Returns None when no folder up to there holds
-    ``src/apothem/__init__.py``. Then the project has no package to check,
-    whatever state its repository is in, and no git command is needed to say
-    so.
-    """
-    from apothem.conformity._grep_base import checkout_search_folders, has_git_entry
+    links resolved. It ends where git's search ends, at the first folder
+    whose ``.git`` entry is a repository git would use: a ``.git`` folder
+    that holds one, or a ``.git`` file that names one (a linked work tree, a
+    submodule). An entry git looks past does not end it: an empty ``.git``
+    folder, a ``.git`` link that leads nowhere.
 
-    for folder in checkout_search_folders(Path.cwd()):
+    Returns None when no folder up to there holds ``src/apothem/__init__.py``
+    (or the current folder is gone). Then the project has no package to
+    check, whatever state its repository is in, and no git command is needed
+    to say so. Otherwise returns the folder and whether a ``.git`` file that
+    names no repository lies between it and the current folder. git stops
+    with an error at such a file, so the caller must not read the package's
+    change set as if the run had started in the package's folder.
+    """
+    from apothem.conformity._grep_base import (
+        GIT_ENTRY_BROKEN,
+        GIT_ENTRY_REPOSITORY,
+        checkout_search_folders,
+        git_entry_state,
+    )
+
+    try:
+        start = Path.cwd()
+    except OSError:
+        return None
+    below_broken_entry = False
+    for folder in checkout_search_folders(start):
         if (folder / INIT_PATH).exists():
-            return folder
-        if has_git_entry(folder):
+            return folder, below_broken_entry
+        state = git_entry_state(folder)
+        if state == GIT_ENTRY_REPOSITORY:
             return None
+        if state == GIT_ENTRY_BROKEN:
+            below_broken_entry = True
     return None
 
 
@@ -399,10 +420,13 @@ def check_staged() -> list[Finding]:
 
     The package is looked for below the current folder first. When it is not
     there, it is looked for in the folders above, up to the top of the
-    checkout, and git then runs in the folder that holds it, so a run from a
-    subfolder of the checkout checks the same change set as a run from that
-    folder. A project with no package there has nothing to check: the list of
-    findings is empty and no git command runs.
+    checkout, and git then runs in the nearest folder that holds it, so a run
+    from a subfolder of the checkout checks the same change set as a run from
+    that folder. A project with no package there has nothing to check: the
+    list of findings is empty and no git command runs. Where a ``.git`` file
+    that names no repository lies between the current folder and the package,
+    git runs in the current folder, stops at that file, and the failure is
+    reported. ``GIT_WORK_TREE`` in the environment is not read by the search.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings. File contents are read with
@@ -436,10 +460,14 @@ def check_staged() -> list[Finding]:
     # ``src/apothem`` from there exactly as in a run from that folder.
     home: Path | None = None
     if version is None:
-        home = _package_folder_above()
-        if home is None:
+        found = _package_folder_above()
+        if found is None:
             return []
-        version = _version_in(home)
+        package_folder, below_broken_entry = found
+        version = _version_in(package_folder)
+        # Below a ``.git`` file that names no repository, git runs where the
+        # check was started and reports that file itself.
+        home = None if below_broken_entry else package_folder
     if not version or is_v0(version):
         return []
 

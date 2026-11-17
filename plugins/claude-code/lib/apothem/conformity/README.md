@@ -161,9 +161,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `run_bounded` outside its two callers; an import of `ctypes`,
   `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
   a string naming the git program. It leaves out only this folder's own
-  `_git.py` and `_bounded_run.py`, by path. Code that builds a call from
-  computed names, or reaches a starter some way the test does not know, can
-  still pass it, so review a new matcher against the rule as well.
+  `_git.py` and `_bounded_run.py`, by path, and in `_git.py` it still checks
+  that `run_git` alone calls `run_bounded`. Code that reaches a starter some
+  way the test does not know can still pass it: source text run through
+  `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
+  `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
+  review a new matcher against the rule as well.
   `run_git` reads file contents with `git cat-file blob`, never `git show`,
   which would show a submodule entry as a commit. Read a path list with `-z`
   and `file_names=True`, and split it with `split_names`: read as text, a

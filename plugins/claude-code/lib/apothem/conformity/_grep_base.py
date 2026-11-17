@@ -339,6 +339,53 @@ def has_git_entry(directory: Path) -> bool:
     return os.path.lexists(directory / GIT_ENTRY)
 
 
+# What the ``.git`` entry of a folder is to git's search for a repository.
+GIT_ENTRY_NONE: Final[str] = "none"
+GIT_ENTRY_REPOSITORY: Final[str] = "repository"
+GIT_ENTRY_BROKEN: Final[str] = "broken"
+_GITFILE_PREFIX: Final[str] = "gitdir:"
+
+
+def _holds_repository(git_dir: Path) -> bool:
+    """Return True when *git_dir* looks like a repository to git.
+
+    git asks for a ``HEAD`` and for the object and reference stores, which a
+    linked work tree's folder borrows through its ``commondir`` file.
+    """
+    if not (git_dir / "HEAD").is_file():
+        return False
+    if (git_dir / "commondir").is_file():
+        return True
+    return (git_dir / "objects").is_dir() and (git_dir / "refs").is_dir()
+
+
+def git_entry_state(directory: Path) -> str:
+    """Say what the ``.git`` entry of ``directory`` is to git's search.
+
+    - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
+      folder that holds a repository, or a ``.git`` file whose ``gitdir:``
+      line names one (a linked work tree, a submodule).
+    - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
+      that names no repository, or that is no ``gitdir:`` file at all.
+    - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
+      folder that holds no repository (an empty one, say), or a ``.git`` link
+      that leads nowhere.
+    """
+    entry = directory / GIT_ENTRY
+    if entry.is_dir():
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
+    if not entry.is_file():
+        return GIT_ENTRY_NONE
+    try:
+        first_line = entry.read_text(encoding="utf-8", errors="replace").split("\n")[0]
+    except OSError:
+        return GIT_ENTRY_BROKEN
+    if not first_line.startswith(_GITFILE_PREFIX):
+        return GIT_ENTRY_BROKEN
+    target = directory / first_line[len(_GITFILE_PREFIX) :].strip()
+    return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
+
+
 # git stops its search for a repository at a folder on another file system.
 # Git for Windows does not: its file status carries no device number.
 _STOPS_AT_FILE_SYSTEM: Final[bool] = os.name != "nt"
@@ -352,23 +399,33 @@ def _device(folder: Path) -> int | None:
         return None
 
 
-# A whole number as git reads one: an optional sign, digits, and an optional
-# k, m or g for a multiple of 1024.
-_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"[-+]?\d+[kmg]?")
+# A whole number as git reads one: an optional sign, decimal, hexadecimal
+# (0x) or octal (leading 0) digits, and an optional k, m or g for a multiple
+# of 1024.
+_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"([-+]?)(0x[0-9a-f]+|\d+)[kmg]?")
 
 
 def _git_flag_is_set(name: str) -> bool:
-    """Return True when git would read the environment variable as true.
+    """Return True unless git would read the environment variable as false.
 
     git takes ``true``, ``yes``, ``on`` and any number other than zero as
-    true, and ``false``, ``no``, ``off``, zero and an empty value as false.
+    true, and ``false``, ``no``, ``off``, zero and an empty value as false. On
+    any other value git stops with an error. That reads as true here: the
+    search for a checkout then stops nowhere git might have gone on, and the
+    git command the caller runs reports the error itself.
     """
-    value = os.environ.get(name, "").strip().lower()
-    if value in {"true", "yes", "on"}:
+    value = os.environ.get(name, "").lower()
+    if value in {"", "false", "no", "off"}:
+        return False
+    number = _GIT_INTEGER.fullmatch(value)
+    if number is None:
         return True
-    if _GIT_INTEGER.fullmatch(value):
-        return int(value.rstrip("kmg")) != 0
-    return False
+    digits = number.group(2)
+    base = 16 if digits.startswith("0x") else 8 if digits.startswith("0") else 10
+    try:
+        return int(digits, base) != 0
+    except ValueError:
+        return True
 
 
 def _git_reads_as_full_path(entry: str) -> bool:
@@ -391,7 +448,8 @@ def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
     one it cannot resolve; those come back first, in the platform's case
     form. After an empty entry git compares each entry as it is written, with
     forward slashes, against its own current folder; those come back second,
-    unchanged.
+    without the one slash git lets such an entry end with (an entry that ends
+    with two never matches a folder, for git as here).
     """
     resolved: set[str] = set()
     as_written: set[str] = set()
@@ -402,15 +460,31 @@ def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
         elif not _git_reads_as_full_path(entry):
             continue
         elif not resolve:
-            # git drops the slashes an entry ends with before it compares.
-            as_written.add(entry.rstrip("/") or "/")
+            ends_with_slash = entry.endswith("/") and len(entry) > 1
+            as_written.add(entry[:-1] if ends_with_slash else entry)
         else:
             try:
-                real = Path(entry).resolve(strict=True)
+                real = str(Path(entry).resolve(strict=True))
             except OSError:
                 continue
-            resolved.add(os.path.normcase(str(real)))
+            resolved.add(os.path.normcase(_without_long_path_prefix(real)))
     return frozenset(resolved), frozenset(as_written)
+
+
+def _without_long_path_prefix(path: str) -> str:
+    r"""Return a Windows path without its ``\\?\`` long-path prefix.
+
+    ``\\?\C:\work`` names ``C:\work`` and ``\\?\UNC\server\share`` names
+    ``\\server\share``. Git for Windows drops the prefix from a ceiling entry
+    before it compares. Elsewhere the path comes back unchanged.
+    """
+    if os.name != "nt":
+        return path
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    if path.startswith("\\\\?\\"):
+        return path[4:]
+    return path
 
 
 def checkout_search_folders(directory: Path) -> Iterator[Path]:
