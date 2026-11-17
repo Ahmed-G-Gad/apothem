@@ -106,10 +106,12 @@ and reported with `passed: false` and a `check_error` that says it did not
 finish. On Linux and macOS each validator runs in a session of its own, and a
 `SIGTERM` or `SIGHUP` to the gate, such as from `timeout` or a closed terminal,
 stops the validator's programs before the gate exits with code 128 plus the
-signal's number. On Windows each validator runs in a job object, which also
-ends its programs when the gate itself ends. Ctrl+C prints one line and exits
-`130`. The limits add up: a run in which several validators wait takes the sum
-of their limits.
+signal's number. A `SIGKILL`, which no program can catch, ends only the gate
+there: a validator it started runs on until it finishes, and a `git` command
+that validator waits on still stops at its own limit. On Windows each validator
+runs in a job object, which also ends its programs when the gate itself ends.
+Ctrl+C prints one line and exits `130`. The limits add up: a run in which
+several validators wait takes the sum of their limits.
 
 Four validators also give each `git` command they run a time limit of its own.
 The limits hold on every platform, including on Windows when `git` on `PATH`

@@ -1492,22 +1492,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 - **A stalled validator or `git` command no longer holds up the conformity
-  gate, and no longer counts as a pass.** `--all` and `--check` ran each
-  standalone validator as a program of its own with no time limit, so one that
-  never finished stopped the whole run. A project that came with its `.git`
-  folder from someone else, in an archive or a shared folder, can cause that:
-  an `include.path` in its `.git/config` that names a named pipe makes `git`
-  wait for ever. The gate now gives each standalone validator 10 minutes. One
-  still running then is stopped together with every program it started, and
-  reported with `passed: false` and a `check_error` that says it did not
-  finish. Each validator runs in a session of its own on Linux and macOS,
-  where a `SIGTERM` or `SIGHUP` to the gate stops it before the gate exits,
-  and in a job object on Windows, which ends its programs when the gate ends
-  too. Ctrl+C prints one line and exits `130`. The `git` commands of
-  `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
-  checks of `production-ready-pr-grep` and `semver-stability-grep` had limits
-  of 5 or 10 seconds, but a command that ran past its limit passed: the
-  commit-subject check took it for a folder without history, the companion
+  gate's `--all` and `--check` runs, and no longer counts as a pass.** `--all`
+  and `--check` ran each standalone validator as a program of its own with no
+  time limit, so one that never finished stopped the whole run. A project that
+  came with its `.git` folder from someone else, in an archive or a shared
+  folder, can cause that: an `include.path` in its `.git/config` that names a
+  named pipe makes `git` wait for ever. The gate now gives each standalone
+  validator 10 minutes. One still running then is stopped together with every
+  program it started, and reported with `passed: false` and a `check_error`
+  that says it did not finish. Each validator runs in a session of its own on
+  Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
+  the gate exits, and in a job object on Windows, which ends its programs when
+  the gate ends too. Ctrl+C prints one line and exits `130`. The `git`
+  commands of `conventional-commit-grep`, `agents-md-coverage-grep` and the
+  `--staged` checks of `production-ready-pr-grep` and `semver-stability-grep`
+  had limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the commit-subject check took it for a folder without history, the companion
   check skipped its freshness test, and the `--staged` checks read an empty
   change set or skipped the file. On Windows, where `git` on `PATH` is usually
   the launcher Git installs, the limit did not even end the wait. Each limit
@@ -1516,8 +1516,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   checkout it found, such as one another user owns or one with a bad
   configuration line, which used to count as a repository with no commit.
   `agents-md-coverage-grep` exits `2` for either although its findings are
-  otherwise advisory, and its read of the whole history now gets 5 minutes,
-  so a large history is slow rather than a failure. A folder that is not a git
+  otherwise advisory, and its read of the whole history now gets 5 minutes, so
+  a large history is slow rather than a failure. A folder that is not a git
   repository, a repository with no commit yet, or a machine without `git`
   still passes these checks. The gate's advisory default still exits `0` on
   such a result, and `--strict` exits `2`.
