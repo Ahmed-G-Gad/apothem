@@ -86,9 +86,9 @@ with the same warning.
   the install recorded, and a second run finishes the job.
   The output lists every path it kept, including the
   files inside a kept folder.
-  {/* depends on #239 */} When no install record matches, it prints
-  `Partly uninstalled` or `Not uninstalled` and says what to check next,
-  instead of `Uninstalled`.
+  When no install record matches, it prints `uninstall did not finish`
+  instead of `Uninstalled`, then a `Note:` line that names what it left,
+  what it still removed and what to check next.
 - **Links are left alone.** An install, update or uninstall no longer enters,
   removes or backs up anything through a symbolic link or a Windows junction
   in a folder it cleans up. It leaves the link in place and names it in a
@@ -177,6 +177,16 @@ strictly before they install it.
 
 The [trust model](/docs/install#trust-model) explains each mode.
 
+## The conformity gate in a project you did not make
+
+The whole-project runs of the [conformity gate](/docs/conformity-gate)
+(`--all` and `--all-perwrite`), its `--staged` checks and three of its
+validators run `git` in the project they check. A project that came with its
+own `.git` folder, in an archive or a shared folder, could set git options
+that made such a run start a program. The gate now turns those options off on
+git's command line, and on Windows it no longer runs a `git.exe` from the
+folder it was started in.
+
 ## Harness changes worth knowing
 
 ### OpenCode
@@ -244,6 +254,9 @@ Before you upgrade by any channel, copy `~/.apothem/backups/` somewhere else.
 Re-run the installer. It checks the release, keeps your engine data, and
 updates the `apothem` command. The update scripts do not replace an `apothem`
 command written by an earlier release, so re-run the installer at least once.
+On Windows, the installer now checks out a release whose paths pass 260
+characters, so a long home folder path no longer stops it with
+`Filename too long`.
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
