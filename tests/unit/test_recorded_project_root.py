@@ -29,13 +29,17 @@ import yaml
 from click.testing import CliRunner, Result
 
 from apothem.cli import main
+from apothem.cli._user_level_report import LedgerView
 from apothem.harnesses._shared import install_driver_materialize, wrapper_factories
+from apothem.harnesses._shared.install_driver_keys import same_folder_roots
+from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
 from apothem.harnesses._shared.install_driver_types import MaterializationError, _result
 from apothem.harnesses.cursor import CursorAdapter
 from apothem.harnesses.cursor.install import install as cursor_install
 from apothem.harnesses.kimi_code.install import install as kimi_install
 from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_uninstall
 from apothem.lib import install_ledger
+from apothem.lib.propagation import user_home
 from apothem.lib.shell_quote import shell_quoted
 from tests._shared.case_sensitive import case_sensitive_folder
 
@@ -760,6 +764,65 @@ def test_moving_an_install_moves_its_paths_and_unfinished_uninstall(
     assert install_ledger.install_spelling("cursor", project) == (outside, None)
     install_ledger.move_install("cursor", project, outside)
     assert len(install_ledger.read_records("cursor")) == count
+
+
+def _user_level_paths(harness: str) -> list[str]:
+    """Return the paths in the home that *harness*'s records list."""
+    home = path_key(user_home())
+    return sorted(
+        {
+            target.path
+            for record in install_ledger.read_records(harness)
+            for target in record.targets
+            if path_key(target.path).startswith(home + os.sep)
+        }
+    )
+
+
+@pytest.mark.parametrize("both", [False, True], ids=["moved", "both-spellings"])
+def test_an_uninstall_through_the_folder_releases_the_shared_folders(
+    tmp_path: Path,
+    linked: tuple[Path, Path],
+    profile: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    both: bool,
+) -> None:
+    # An earlier release recorded the install under the link. Uninstalling
+    # through the folder resolved moves that install there first, or, when the
+    # folder has an install of its own, ends both as one install; either way
+    # the shared folders in the home are released, and the notes and the
+    # holder count say so, as the uninstall does.
+    project, outside = linked
+    if both:
+        _install_cli(outside, tmp_path)
+    _install_as_typed(monkeypatch, project, profile)
+    shared = _user_level_paths("cursor")
+    assert shared
+    assert all(Path(path).exists() for path in shared)
+    if both:
+        assert same_folder_roots("cursor", outside) == (str(project),)
+        view = LedgerView.load()
+        assert view is not None
+        own = view.find("cursor", outside)
+        assert own is not None
+        assert [i for i in view.others(own) if i.harness == "cursor"] == []
+
+    result = _cli(
+        "uninstall", "--harness", "cursor", "--project", str(outside), "--yes"
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "were kept" not in result.output, result.output
+    assert "no other Apothem install uses it" in " ".join(result.output.split())
+    assert _files(outside) == []
+    assert [path for path in shared if Path(path).exists()] == []
+    index = holder_index()
+    assert [path for path in shared if index.holders_of(path)] == []
+    view = LedgerView.load()
+    assert view is not None
+    assert [i.root for i in view.installs if i.harness == "cursor"] == []
+    for root in {record.root for record in install_ledger.read_records("cursor")}:
+        assert install_ledger.active_install_records("cursor", root=root) == []
 
 
 def test_an_install_keeps_a_live_relative_record_as_given(tmp_path: Path) -> None:

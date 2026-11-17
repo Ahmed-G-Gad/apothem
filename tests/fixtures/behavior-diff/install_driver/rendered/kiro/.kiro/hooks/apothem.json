@@ -7,7 +7,7 @@
       "trigger": "SessionStart",
       "action": {
         "type": "command",
-        "command": "\"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/kiro/hooks/dispatch.py\" --contract kiro SessionStart"
+        "command": "\"${PYTHON_BIN}\" -E -s \"<ROOT>/.apothem/support/kiro/hooks/dispatch.py\" --contract kiro SessionStart"
       },
       "timeout": 30
     }

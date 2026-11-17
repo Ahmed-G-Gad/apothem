@@ -72,7 +72,7 @@ l'écosystème et délègue à `hooks/emit_hook_context.py` et
 
 Un environnement qui n'est pas Claude Code exécute le même répartiteur avec
 `--contract <id>` après le script, par exemple
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 Le contrat (`hooks/lib/vendor_contract.py`) traduit les graphies d'événements
 et de noms d'outils et les clés de charge utile du fournisseur dans la forme
 Claude que lisent les gestionnaires, réécrit l'enveloppe dans la forme que lit

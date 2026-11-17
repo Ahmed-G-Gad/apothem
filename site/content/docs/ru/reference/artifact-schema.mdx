@@ -286,7 +286,7 @@ argument-hint: "[--focus area] [--fix]"
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -303,7 +303,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | строка | Шаблон имени инструмента (или `"*"` для событий, не зависящих от инструмента) | `"Write"` |
 | `hooks[].type` | литерал `"command"` | Единственный на сегодня поддерживаемый тип обработчика хука | `"command"` |
 | `hooks[].command` | строка | Исполняемая команда; Apothem использует плейсхолдер `${PYTHON_BIN}`, который разрешается при установке | `"${PYTHON_BIN}"` |
-| `hooks[].args` | массив строк | Аргументы в exec-форме: путь к скрипту в `${HARNESS_ROOT}/.apothem/support/`, затем его аргументы | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | массив строк | Аргументы в exec-форме: путь к скрипту в `${HARNESS_ROOT}/.apothem/support/`, затем его аргументы | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | целое число секунд | Максимальное время выполнения, по истечении которого хост завершает хук | `30` |
 | `hooks[].statusMessage` | строка | Короткая метка, показываемая в интерфейсе хоста | `"Session start"` |
 

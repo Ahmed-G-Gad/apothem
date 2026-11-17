@@ -159,8 +159,12 @@ A command looks like this, with your interpreter and project path in place of th
 two paths:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
+
+`-E -s` makes Python ignore `PYTHONPATH` and the other `PYTHON*` variables
+and skip your user site-packages, so no file in the project can load into
+the hook.
 
 `--contract codebuddy` is a no-op for the output: CodeBuddy reads the same
 envelope Claude Code does. CodeBuddy runs hook commands through your shell, and
@@ -310,8 +314,17 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 ## Troubleshooting
 

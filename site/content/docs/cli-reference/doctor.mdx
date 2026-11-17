@@ -32,18 +32,40 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   harness, in the `--project` folder. An install in another folder, such as a
   `CODEX_HOME` doctor is not pointed at or a project you have since deleted,
   is not used in its place. doctor finds the hook commands Apothem registered
-  in the JSON files among them (a `command`, with optional `args`), and starts
-  each interpreter and hook script once with a no-op payload (the registered
-  arguments plus `--help`, `{}` on stdin, a scratch working directory, and
-  `PYTHONPATH` removed). Nothing is written. A missing interpreter, a missing
-  script, or a crash at import time fails the check. A hook registered another
-  way (outside a JSON file, or under keys other than `command`) is not started
-  and is not counted in `N started`. The install record is found under any
-  spelling of that folder, such as another letter case on Windows. When the
-  install ledger has no record for that folder, the check is not run: the
-  report shows `not checked`, its last line names the harnesses whose hook
-  commands were not checked instead of `All checks passed`, and the JSON
+  in the JSON files among them, and starts each interpreter and hook script
+  once with a no-op payload (the registered arguments plus `--help`, `{}` on
+  stdin, a scratch working directory, and `PYTHONPATH` removed). Nothing is
+  written. A missing interpreter, a missing script, or a crash at import time
+  fails the check. When a hook has a separate command line for each system,
+  doctor starts the one the tool runs on this machine: the `powershell` line
+  on Windows and the `bash` line on macOS and Linux. Doctor starts the program
+  itself, without a shell, so on Windows it leaves out the `&` that a line
+  written for PowerShell starts with. A hook registered outside a JSON file is
+  not started and is not counted in `N started`. The install record is found
+  under any spelling of that folder, such as another letter case on Windows.
+  When the install ledger has no record for that folder, the check is not
+  run: the report shows `not checked`, its last line names the harnesses whose
+  hook commands were not checked instead of `All checks passed`, and the JSON
   output carries a `hook.unchecked` check.
+- **Project hook files.** Anyone who can commit to a project can change its
+  files, so for a project-scope harness doctor starts a hook command only when
+  everything it runs is known. It reads the install record of the project
+  that `--project` names, takes hook commands only from the places the tool
+  reads them, and starts a command only when its interpreter is the one that
+  install recorded (unless it is inside the project, where others can change
+  it) or the Python that Apothem itself runs under, the options
+  before the script run no code (such as `-E` and `-s`), the script is the
+  hook script that install wrote, in a folder whose files still match the
+  SHA-256 checksums the install recorded and that holds no other Python file
+  and no link, and the arguments after it are the ones Apothem writes. Doctor
+  then starts those known paths rather than the text it read, and it looks up
+  no other path a hook command names. A recorded interpreter or hook script
+  that is gone fails the check without anything being started. Doctor starts
+  no other project hook command, and reports each one, with the reason, as
+  `hook.unchecked` (info, not a failure, marked `!` in the plain output).
+  Hooks installed by an earlier release, which recorded no interpreter or no
+  checksums, stay unchecked until you run `update` with the same options you
+  installed with.
 
 Every failed check names a fix. A fix that runs `update` ends with the
 command, after a colon. For a project-scope harness the command names
@@ -66,7 +88,8 @@ and `profile_error` when the profile is invalid) and adds:
   (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
   install record or the install ledger cannot be read).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
-  `hook.start_failed`, `ledger.unreadable`, or a `profile.*` code), `status`
+  `hook.start_failed`, `hook.unchecked`, `ledger.unreadable`, or a `profile.*`
+  code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.
 
 ```json

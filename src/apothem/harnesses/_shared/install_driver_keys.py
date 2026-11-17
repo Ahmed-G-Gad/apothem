@@ -1,0 +1,604 @@
+# SPDX-License-Identifier: MIT
+
+"""Comparison keys for the paths and roots the install ledger records.
+
+:func:`path_key` keys a path an install writes, so two spellings of one shared
+user-level folder (a home reached through a link and the folder it leads to)
+count as one folder. :func:`same_folder` and :func:`same_folder_roots` tell
+when two recorded install roots are one folder, so an uninstall treats the
+same harness recorded under both spellings as one install
+(:func:`one_install`). :func:`made_keys` says which shared paths an install
+made and nothing has changed since, and :func:`made_dirs` which folders that
+hold them an install that has let go of them created.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import os
+import re
+from collections.abc import Collection, Iterable, Iterator
+from dataclasses import replace
+from pathlib import Path
+
+from apothem.lib import install_ledger
+from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS
+from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, created_here
+from apothem.lib.propagation import USER_LEVEL_PREFIXES, user_home
+
+from .install_driver_pathsafety import _normalized
+from .install_driver_sharedlock import writes_user_level
+
+
+def _folded(path: str | Path) -> str:
+    """Return *path* normalized and case-folded where the OS is, without following links."""
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
+#: The user-level folders as folded key endings. Only a path that is one of
+#: them, or lies inside one, can be shared between installs, so only such a
+#: path has its links followed; any other path is keyed by its spelling.
+_SHARED_TAILS: tuple[str, ...] = tuple(
+    os.sep + _folded(prefix) for prefix in sorted(USER_LEVEL_PREFIXES)
+)
+#: Matches a folded folder that is a user-level folder or lies inside one.
+_SHARED_FOLDER = re.compile(
+    "|".join(re.escape(tail) + f"(?:{re.escape(os.sep)}|$)" for tail in _SHARED_TAILS)
+)
+#: Starts of the memo keys no path spells, since a path never holds a NUL:
+#: a folder's key prefix (:func:`_key_prefix`), a folder, as followed links
+#: spell it, in the case its parents list it with (:func:`_on_disk_case`),
+#: and a folder's entries, joined by NULs (:func:`_listed_name`).
+_PREFIX_KEY, _CASE_KEY, _LIST_KEY = "\0prefix\0", "\0case\0", "\0list\0"
+
+
+def path_key(path: str | Path, memo: dict[str, str] | None = None) -> str:
+    """Return the comparison key of *path*: the place it names, case-folded where the OS is.
+
+    The spelling is folded lexically first, ``..`` by name as Windows does,
+    before any link is followed. Ledger records written before
+    ``${USER_HOME}`` name Codex's skills as ``<root>/.codex/../.agents/skills/x``,
+    which keys as ``<home>/.agents/skills/x`` even when ``.codex`` is a link.
+    For a path that is a user-level folder (``.agents/skills``,
+    ``.config/apothem/rules``, ...) or lies inside one, the links in the folder
+    that holds it are then followed, so a home spelled through a link
+    (``/home`` leading to ``/var/home``, a profile moved behind a junction)
+    and the home's own path give one key. The test is on the folder names as
+    the manifest spells them, not on the current home, so a record made under
+    the other spelling qualifies too. The last part stays as spelled: a path
+    that is itself a link is keyed as that entry, not as the place it leads
+    to. Any other path, and a relative one, is only folded, which costs no
+    filesystem call. On Windows case is folded as text, the way the OS folds
+    it, so in a folder with case sensitivity turned on two homes that differ
+    only in case share keys: an uninstall then counts the other as a holder
+    and keeps the shared folders, the side that loses nothing. Where the OS
+    keeps case as text, the folder that holds the path is spelled in the case
+    its parents list it with, so on a volume that ignores case but keeps it
+    (macOS) ``home`` and ``HOME`` give one key.
+
+    *memo* maps a holding folder, as spelled, to its key prefix, for a caller
+    that keys many paths in one pass, so each folder that holds a path is
+    tested and resolved once, and so is each user-level folder itself. Under
+    keys no path spells, it also keeps each resolved folder, each folder's
+    listing and the case each folder is listed with (see
+    :func:`_on_disk_case`), so a pass lists each folder at most once. Nothing
+    is kept between calls without it, since a link can be made or removed at
+    any time.
+    """
+    # Text, not Path objects: an index keys a few thousand paths per pass, so
+    # the folder test runs once per holding folder, not once per path.
+    lexical = os.path.normpath(str(path))
+    parent, leaf = os.path.split(lexical)
+    if not leaf:
+        return os.path.normcase(lexical)
+    prefix = memo.get(parent) if memo is not None else None
+    if prefix is None:
+        prefix = os.path.normcase(os.path.join(parent, ""))  # noqa: PTH118
+        if _SHARED_FOLDER.search(prefix) is not None:  # inside a user-level folder
+            prefix = _key_prefix(parent, memo)
+        if memo is not None:
+            memo[parent] = prefix
+    key = prefix + os.path.normcase(leaf)
+    if key.endswith(_SHARED_TAILS):  # a user-level folder itself
+        key = _key_prefix(parent, memo) + os.path.normcase(leaf)
+    return key
+
+
+def _key_prefix(folder: str, memo: dict[str, str] | None = None) -> str:
+    """Return *folder*, its links followed when absolute, case-folded, ending in a separator.
+
+    Where the OS keeps case as text (macOS), the folder is spelled in the
+    case its parents list it with (see :func:`_on_disk_case`). *memo* (see
+    :func:`path_key`) keeps the result for the pass.
+    """
+    cached = memo.get(_PREFIX_KEY + folder) if memo is not None else None
+    if cached is not None:
+        return cached
+    spelled = folder
+    if os.path.isabs(folder):  # noqa: PTH117
+        with contextlib.suppress(OSError, ValueError):
+            spelled = _on_disk_case(os.path.realpath(folder), memo)
+    prefix = os.path.normcase(os.path.join(spelled, ""))  # noqa: PTH118
+    if memo is not None:
+        memo[_PREFIX_KEY + folder] = prefix
+    return prefix
+
+
+def _on_disk_case(folder: str, memo: dict[str, str] | None = None) -> str:
+    """Return the absolute *folder* with each part in the case its parent lists it.
+
+    Only where ``os.path.normcase`` keeps case (macOS, Linux): there,
+    following the links keeps the case as spelled, so on a volume that
+    ignores case but keeps it ``~/.agents`` under ``home`` and under
+    ``HOME`` would give two keys. Each part whose other case names the same
+    entry (one file ID) is looked up in its parent's listing. A part on a
+    volume that tells case apart, or that does not exist, keeps its case,
+    which costs one failed lookup and no listing. *memo* (see
+    :func:`path_key`) keeps each folder's listed case for the pass, so the
+    folders above many paths are looked up once.
+    """
+    if os.path.normcase("A") != "A":  # the OS folds case as text (Windows)
+        return folder
+    parts = Path(folder).parts
+    if not parts:
+        return folder
+    seen: dict[str, str] = {} if memo is None else memo
+    typed = spelled = parts[0]
+    for name in parts[1:]:
+        typed = os.path.join(typed, name)  # noqa: PTH118
+        listed = seen.get(_CASE_KEY + typed)
+        if listed is None:
+            listed = os.path.join(spelled, _listed_name(spelled, name, seen))  # noqa: PTH118
+            seen[_CASE_KEY + typed] = listed
+        spelled = listed
+    return spelled
+
+
+def _listed_name(parent: str, name: str, seen: dict[str, str]) -> str:
+    """Return the entry of *parent* that is *name* in another case, else *name*.
+
+    *seen* keeps *parent*'s listing, so a folder is listed once per pass.
+    """
+    other = name.swapcase()
+    if other == name:
+        return name
+    try:
+        own = os.lstat(os.path.join(parent, name))  # noqa: PTH118
+        if not (own.st_ino and own.st_dev):
+            return name
+        if not os.path.samestat(own, os.lstat(os.path.join(parent, other))):  # noqa: PTH118
+            return name
+        kept = seen.get(_LIST_KEY + parent)
+        if kept is None:
+            kept = seen[_LIST_KEY + parent] = "\0".join(os.listdir(parent))  # noqa: PTH208
+        listed = kept.split("\0") if kept else []
+    except (OSError, ValueError):
+        return name
+    if name in listed:
+        return name
+    for entry in listed:
+        if entry.lower() == name.lower():
+            with contextlib.suppress(OSError, ValueError):
+                if os.path.samestat(own, os.lstat(os.path.join(parent, entry))):  # noqa: PTH118
+                    return entry
+    return name
+
+
+def same_location(left: str | Path, right: str | Path) -> bool:
+    """Return True when *left* and *right* name the same location, case-folded where the OS is."""
+    return os.path.normcase(str(_normalized(Path(left)))) == os.path.normcase(
+        str(_normalized(Path(right)))
+    )
+
+
+def same_folder(left: str | Path, right: str | Path) -> bool:
+    """Return True when the install roots *left* and *right* are one folder.
+
+    Both must be absolute. They are one folder when they are the same text,
+    or the same text with their links followed. Two that then differ only
+    in case are one folder when both exist with one file ID (``st_dev`` and
+    ``st_ino``, neither 0): on a volume that ignores case but keeps it, as
+    macOS does, following the links keeps the case as spelled, while a
+    case-sensitive folder (``Proj`` and ``proj``) holds two IDs. Case is
+    never folded as text, and two names that differ otherwise are never
+    joined by ID, since some network and cloud drives give every folder the
+    same one. A pair this cannot tell apart counts as two folders, the side
+    that keeps files. A link pointed at another folder after an install was
+    recorded through it is not detected: its root and that folder's then
+    count as one folder.
+    """
+    if not (os.path.isabs(left) and os.path.isabs(right)):  # noqa: PTH117
+        return False
+    if str(left) == str(right):
+        return True
+    try:
+        first, second = os.path.realpath(left), os.path.realpath(right)
+        if first == second:
+            return True
+        if first.lower() != second.lower():
+            return False
+        one, two = Path(first).stat(), Path(second).stat()
+    except (OSError, ValueError):
+        return False
+    return bool(one.st_ino and one.st_dev) and os.path.samestat(one, two)
+
+
+def same_folder_roots(harness: str, root: Path) -> tuple[str, ...]:
+    """Return the other roots *harness*'s records spell *root*'s folder with.
+
+    Each is a recorded root, as recorded, that is not *root*'s exact text,
+    names the same folder (see :func:`same_folder`) and has an install still
+    in place. The ledger finds an install's records by the root's exact text,
+    so these are the same harness installed in the same folder under another
+    spelling: the home reached through a link and the folder it leads to.
+    They matter only as holders of the shared user-level folders, so a
+    harness that writes none gets none (OpenCode closes its own other
+    spelling). Empty when the ledger cannot be read; the caller that reads
+    it next reports that.
+    """
+    if not writes_user_level(harness):
+        return ()
+    own = str(root)
+    try:
+        records = install_ledger.read_records(harness)
+    except (install_ledger.LedgerError, OSError):
+        return ()
+    by_root: dict[str, list[install_ledger.LedgerRecord]] = {}
+    for record in records:
+        by_root.setdefault(record.root, []).append(record)
+    return tuple(
+        spelling
+        for spelling, group in by_root.items()
+        if spelling != own
+        and install_ledger.active_install_ids(group)
+        and same_folder(spelling, own)
+    )
+
+
+def _moves(other: str, root: Path) -> list[tuple[str, str]]:
+    """Return the ``(from, to)`` folder pairs that spell a path of *other*'s under *root*.
+
+    In order: *root* as spelled, *other*, *root* with its links followed,
+    the home as spelled, the home with its links followed. A record keeps
+    some paths resolved (the directories an install created), so both
+    spellings of each folder are tried.
+    """
+    home, spelled = str(user_home()), str(root)
+    pairs = [(spelled, spelled), (other, spelled)]
+    with contextlib.suppress(OSError, ValueError):
+        pairs.append((os.path.realpath(spelled), spelled))
+    pairs.append((home, home))
+    with contextlib.suppress(OSError, ValueError):
+        pairs.append((os.path.realpath(home), home))
+    return [(os.path.normcase(os.path.normpath(folder)), to) for folder, to in pairs]
+
+
+def _respelled(path: str, moves: list[tuple[str, str]]) -> str | None:
+    """Return *path* spelled under the folder of the first of *moves* that holds it.
+
+    A path in a user-level folder that none holds moves under the current
+    home, where the gate looks for it; ``None`` for any other path. The
+    folded text only finds the folder: the parts below it keep their case.
+    Where the OS does not fold case (macOS), a path whose leading parts
+    spell a folder of *moves* in another case is held by it when both are
+    one folder by file ID (see :func:`same_folder`), so ``~/.agents``
+    recorded under ``home`` is found under ``HOME``.
+    """
+    lexical = os.path.normpath(path)
+    folded = os.path.normcase(lexical)
+    parts = Path(lexical).parts
+    for folder, to in moves:
+        base = folder.rstrip(os.sep)
+        if folded in (folder, base):
+            return to
+        depth = len(Path(base).parts)
+        if folded.startswith(base + os.sep):
+            return str(Path(to, *parts[depth:]))
+        head = str(Path(*parts[:depth])) if len(parts) >= depth else ""
+        if head.lower() == base.lower() and same_folder(head, base):
+            return str(Path(to, *parts[depth:]))
+    found = _SHARED_FOLDER.search(folded)
+    if found is None:
+        return None
+    depth = len(Path(folded[: found.start()]).parts)
+    return str(Path(user_home(), *parts[depth:]))
+
+
+def _respelled_record(record: LedgerRecord, root: Path) -> LedgerRecord:
+    """Return *record*, made under another spelling of *root*, spelled under *root*.
+
+    A path that cannot be spelled under *root* or the home is left out.
+    """
+    moves = _moves(record.root, root)
+    targets = []
+    for target in record.targets:
+        path = _respelled(target.path, moves)
+        if path is not None:
+            targets.append(replace(target, path=path))
+    dirs = (_respelled(path, moves) for path in record.created_dirs)
+    return replace(
+        record,
+        root=str(root),
+        targets=tuple(targets),
+        created_dirs=tuple(path for path in dirs if path is not None),
+    )
+
+
+def _with_provenance(target: LedgerTarget, maker: LedgerTarget | None) -> LedgerTarget:
+    """Return *target* described by *maker*, the record entry that made it, if any.
+
+    The entry of the install that made the file says what Apothem added
+    (``created``, and the ``owned`` entries, containers included); the
+    entries only *target* lists are added to them. *target*'s own path, and
+    its digests, which describe the file as last written, are kept.
+    """
+    if maker is None or created_here(target):
+        return target
+    owned = maker.owned
+    if target.owned:
+        known = maker.owned or ()
+        owned = (*known, *(entry for entry in target.owned if entry not in known))
+    return replace(
+        maker,
+        path=target.path,
+        digest=maker.digest if target.digest is None else target.digest,
+        files=maker.files if target.files is None else target.files,
+        owned=owned,
+    )
+
+
+def one_install(harness: str, root: Path) -> tuple[list[LedgerRecord], tuple[str, ...]]:
+    """Return *harness*'s install at *root*, with its records under other spellings.
+
+    The install is its records in place at *root*, oldest first. The records
+    in place under each other spelling of the folder (see
+    :func:`same_folder_roots`) are spelled under *root* and put first. The
+    newest record at *root* stays last; it gains every file they list that it
+    does not, and for a file one of them made (see
+    :func:`~apothem.lib.install_ledger.created_here`) that entry's word of
+    what Apothem added. The uninstall then removes what any of them shows
+    Apothem wrote. Also returns those spellings, whose records the uninstall
+    ends.
+    """
+    active = install_ledger.active_install_records(harness, root=root)
+    same = same_folder_roots(harness, root) if active else ()
+    if not same:
+        return active, ()
+    others = [
+        _respelled_record(record, root)
+        for spelling in same
+        for record in install_ledger.active_install_records(harness, root=spelling)
+    ]
+    memo: dict[str, str] = {}
+    makers = {
+        path_key(target.path, memo): target
+        for record in others
+        for target in record.targets
+        if created_here(target)
+    }
+    targets = [
+        _with_provenance(target, makers.get(path_key(target.path, memo)))
+        for target in active[-1].targets
+    ]
+    listed = {path_key(target.path, memo) for target in targets}
+    for record in others:
+        for target in record.targets:
+            key = path_key(target.path, memo)
+            if key not in listed:
+                listed.add(key)
+                targets.append(target)
+    merged = replace(active[-1], targets=tuple(targets))
+    return [*others, *active[:-1], merged], same
+
+
+#: What an uninstall or rollback record says of a target it backed up but
+#: did not change.
+_LEFT_AS_IT_WAS = frozenset({"skipped", "error"})
+
+
+def _user_level_ledgers() -> list[list[LedgerRecord]]:
+    """Return the records of each harness that writes a user-level folder.
+
+    Raises:
+        apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
+        OSError: A ledger cannot be read.
+    """
+    return [
+        install_ledger.read_records(package_key)
+        for package_key in SUPPORTED_PACKAGE_KEYS
+        if writes_user_level(package_key)
+    ]
+
+
+def _changes(ledgers: list[list[LedgerRecord]], memo: dict[str, str]) -> dict[str, str]:
+    """Map the key of each path an uninstall or rollback changed to its latest time.
+
+    Such a record lists what its pass backed up before changing or removing
+    it, so a folder Apothem made, then removed, and someone put back shows
+    here with the time it was removed.
+    """
+    changed: dict[str, str] = {}
+    for records in ledgers:
+        for record in records:
+            if record.kind == "install":
+                continue
+            for target in record.targets:
+                if target.outcome not in _LEFT_AS_IT_WAS:
+                    key = path_key(target.path, memo)
+                    changed[key] = max(changed.get(key, ""), record.timestamp)
+    return changed
+
+
+def made_keys(memo: dict[str, str] | None = None) -> frozenset[str]:
+    """Return the keys of the paths an install made that nothing changed since.
+
+    Across every harness that writes a user-level folder: a path an install
+    record made (see :func:`~apothem.lib.install_ledger.created_here`) that
+    no uninstall or rollback record lists from that record's time on (see
+    :func:`_changes`). The latest install that made a path counts, so a
+    file Apothem made, removed and made again is counted, and one someone
+    put back by hand is not.
+
+    Raises:
+        apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
+        OSError: A ledger cannot be read.
+    """
+    memo = {} if memo is None else memo
+    ledgers = _user_level_ledgers()
+    changed = _changes(ledgers, memo)
+    made: dict[str, str] = {}
+    for records in ledgers:
+        for record in records:
+            if record.kind != "install":
+                continue
+            for target in record.targets:
+                if created_here(target):
+                    key = path_key(target.path, memo)
+                    made[key] = max(made.get(key, ""), record.timestamp)
+    return frozenset(key for key, stamp in made.items() if changed.get(key, "") < stamp)
+
+
+def _installs(records: list[LedgerRecord]) -> Iterator[tuple[LedgerRecord, bool]]:
+    """Yield each install record of one harness's *records*, in ledger order.
+
+    Each comes with whether it is in place: no uninstall or rollback ended
+    it, and its root still exists (``install_driver_shared.holder_index``
+    skips a holder whose root is gone the same way).
+    """
+    by_root: dict[str, list[LedgerRecord]] = {}
+    for record in records:
+        by_root.setdefault(record.root, []).append(record)
+    for root, group in by_root.items():
+        live: set[str] = set()
+        if Path(root).is_dir():
+            live = install_ledger.active_install_ids(group)
+        for record in group:
+            if record.kind == "install":
+                yield record, record.install_id in live
+
+
+def _still_made(
+    record: LedgerRecord,
+    dirs: set[str],
+    changed: dict[str, str],
+    memo: dict[str, str],
+) -> set[str]:
+    """Return the folders of *dirs* that hold a path *record* made, unchanged since.
+
+    The path is judged against *record*'s own time, not the latest install
+    that made it: once an uninstall or rollback removed it, the folder that
+    stands there may be one someone put back, whatever wrote into it later.
+    """
+    paths = [
+        key
+        for key in (path_key(t.path, memo) for t in record.targets if created_here(t))
+        if changed.get(key, "") < record.timestamp
+    ]
+    return {folder for folder in dirs if any(path.startswith(folder) for path in paths)}
+
+
+def _made_and_used(
+    names: set[str], ending: Collection[str], memo: dict[str, str]
+) -> tuple[set[str], set[str]]:
+    """Return the keys :func:`made_dirs` reads from the ledgers.
+
+    The first set holds the directories named one of *names* that an install
+    no longer in place created, while a path it made inside one is unchanged
+    since that install (see :func:`_still_made`). The second holds the
+    directories, so named, that an install in place created and every path
+    it lists; the installs whose ids are in *ending* are left out of it.
+    *memo* is the caller's (see :func:`path_key`).
+
+    Raises:
+        apothem.lib.install_ledger.LedgerError: A ledger is corrupted.
+        OSError: A ledger cannot be read.
+    """
+    ledgers = _user_level_ledgers()
+    changed = _changes(ledgers, memo)
+    made: set[str] = set()
+    used: set[str] = set()
+    for records in ledgers:
+        for record, in_place in _installs(records):
+            dirs = {
+                _key_prefix(path, memo)
+                for path in record.created_dirs
+                if os.path.normcase(Path(path).name) in names
+            }
+            if in_place:
+                if record.install_id not in ending:
+                    used |= dirs
+                    used.update(
+                        path_key(target.path, memo) for target in record.targets
+                    )
+            elif dirs:
+                made |= _still_made(record, dirs, changed, memo)
+    return made, used
+
+
+def made_dirs(
+    bases: Iterable[Path], ending: Collection[str], *, boundary: Path
+) -> set[Path]:
+    """Return the user-level folders an install that has let go of them created.
+
+    *bases* are the user-level folders a harness writes; each of them, and
+    each folder that holds one below the home (``~/.agents``,
+    ``~/.config/apothem`` and ``~/.config``), is returned when an install of
+    any harness that is no longer in place lists it among the directories it
+    created and a path it made there is unchanged since it ran (see
+    :func:`_still_made`): a folder Apothem removed and someone put back is
+    theirs. Retention keeps those directories on the record that says what the
+    install made (see :func:`~apothem.lib.install_ledger.compact_records`). An
+    install whose root no longer exists counts as no longer in place. A folder
+    another install in place lists, as a directory it created or as one that
+    holds a path it lists, is not returned. *ending* names the installs that
+    do not count as in place, by install id: the one a rollback reverses, or
+    those an uninstall ends.
+
+    *boundary* is the write boundary of the install the caller reverses.
+    Only when it is the home, as for Codex's own root, does
+    ``UserLevelGate.tidy`` leave these folders to the caller; for any other
+    boundary tidy removes them once empty, whoever made them, so none is
+    returned and no ledger is read.
+
+    Folders are compared with their links followed, so a record made with the
+    home spelled another way counts. They are returned with their links
+    followed too, as install records spell the directories they created, so
+    the caller removes them with those, deepest first, and only the empty
+    ones. An unreadable ledger proves nothing, so none is returned then.
+    """
+    home = user_home()
+    if not same_location(boundary, home):
+        return set()
+    wanted: dict[str, Path] = {}
+    memo: dict[str, str] = {}  # one pass: each folder resolved once
+    for base in bases:
+        try:
+            parts = base.relative_to(home).parts
+        except ValueError:  # not below the home
+            continue
+        for depth in range(1, len(parts) + 1):
+            folder = home.joinpath(*parts[:depth])
+            wanted[_key_prefix(str(folder), memo)] = folder
+    if not wanted:
+        return set()
+    names = {os.path.normcase(folder.name) for folder in wanted.values()}
+    try:
+        made, used = _made_and_used(names, ending, memo)
+    except (install_ledger.LedgerError, OSError, ValueError):
+        return set()
+    return {
+        _normalized(folder)
+        for key, folder in wanted.items()
+        if key in made and not any(path.startswith(key) for path in used)
+    }
+
+
+__all__ = [
+    "made_dirs",
+    "made_keys",
+    "one_install",
+    "path_key",
+    "same_folder",
+    "same_folder_roots",
+    "same_location",
+]

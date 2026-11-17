@@ -330,9 +330,10 @@ def test_claude_code_settings_declares_context_ignore_equivalent() -> None:
 def test_claude_code_settings_hook_args_carry_harness_root_tokens() -> None:
     """The settings template addresses its hook scripts by install-time path.
 
-    Every hook entry's first argument is a ``${HARNESS_ROOT}``-tokenized
-    absolute path to the installed dispatcher (or conformity gate), rendered
-    by the install driver at materialization time. Every hook ``command`` is
+    Every hook entry's arguments start with ``-E -s`` (Python reads no
+    ``PYTHON*`` variable and no user site-packages), then a
+    ``${HARNESS_ROOT}``-tokenized absolute path to the installed dispatcher (or
+    conformity gate), rendered by the install driver at materialization time. Every hook ``command`` is
     the ``${PYTHON_BIN}`` placeholder the ``claude_code`` adapter resolves to
     an absolute CPython >= 3.10 path at install time — never a bare ``python``
     (which a host PATH can resolve to a Microsoft Store WindowsApps stub).
@@ -352,7 +353,8 @@ def test_claude_code_settings_hook_args_carry_harness_root_tokens() -> None:
         for entry in entries:
             for hook in entry["hooks"]:
                 assert hook["command"] == "${PYTHON_BIN}"
-                first_args.append(hook["args"][0])
+                assert hook["args"][:2] == ["-E", "-s"], hook
+                first_args.append(hook["args"][2])
     assert first_args, "settings template declares no hook entries"
     expected = {
         "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",

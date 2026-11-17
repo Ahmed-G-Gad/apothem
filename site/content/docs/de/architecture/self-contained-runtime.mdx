@@ -59,7 +59,7 @@ stattdessen zwei Aufrufoberflächen:
 | Oberfläche | Aufruf | Kontext |
 | ------- | ---------- | ------- |
 | Engine-CLI | `python -m apothem <command>` | Ein Quellbaum mit `src/` auf dem `PYTHONPATH` (Checkout, npx-Cache, Plugin-Baum) |
-| Hook-Laufzeit | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Die Materialisierung für Claude Code: die Kopie im gemeinsamen Baum `.apothem/support/` der Harness-Wurzel, per absolutem Pfad |
+| Hook-Laufzeit | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Die Materialisierung für Claude Code: die Kopie im gemeinsamen Baum `.apothem/support/` der Harness-Wurzel, per absolutem Pfad |
 
 - `python -m apothem` führt `src/apothem/__main__.py` aus, das
   `src/apothem/_vendor` in den `sys.path` aufnimmt, prüft, dass `click` und
@@ -82,7 +82,7 @@ Das Paketverzeichnis wird importierbar, indem das `src/`-Verzeichnis des
 Checkouts dem `PYTHONPATH` vorangestellt wird:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
 Wenn der Starter `apothem` nicht im PATH liegt, gibt `install.sh` bei Abschluss

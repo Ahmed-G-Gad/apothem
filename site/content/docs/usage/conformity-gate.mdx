@@ -27,6 +27,22 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
+These commands run the gate from an Apothem checkout. `python -m` reads
+modules from the current folder first, so run them from the checkout root
+or another folder you trust. To check a project whose files you do not
+trust, run the gate by its script path with `-E -s` instead:
+`python3 -E -s src/apothem/conformity/gate.py --all .` in a checkout, or
+`python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .` after a
+script install. On Windows, use `python` in place of `python3` and the full
+path, since Windows PowerShell and cmd do not expand `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. A script start
+keeps the current folder out of the first entry of Python's module search
+path; `-E` also keeps out `PYTHONPATH`, where an empty or relative entry
+names the current folder too, and `-s` keeps out your user site-packages.
+This keeps the project's files out of the gate's own Python code only;
+the `git` the gate runs is covered next.
+
 Three standalone validators run `git` in the project they check, and so do
 `--all`, which runs them, and `--all-perwrite`, which lists the tracked files
 with `git ls-files`:
@@ -197,10 +213,11 @@ the file when you run it from a terminal. A standalone validator takes a root
 directory (the current directory when omitted). `--list` shows which group each
 validator belongs to.
 
-`--hook` mode (`python -m apothem.conformity.gate --hook`) is the
-harness-dispatched entry point: it reads a tool-input JSON payload from stdin
-and runs the per-write matcher chain against the pending write. This is the
-form the deployed `PreToolUse` hook invokes; you rarely call it by hand.
+`--hook` mode (`<python> -E -s .../conformity/gate.py --hook`, where
+`<python>` is the interpreter the install found) is the harness-dispatched
+entry point: it reads a tool-input JSON payload from stdin and runs the
+per-write matcher chain against the pending write. This is the form the
+deployed `PreToolUse` hook invokes; you rarely call it by hand.
 
 Hook mode is **scoped to a set of directories**. It runs the matcher chain
 only on writes whose target falls under one of them; a write outside every

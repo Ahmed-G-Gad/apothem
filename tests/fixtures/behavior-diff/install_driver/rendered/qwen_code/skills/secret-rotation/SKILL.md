@@ -82,7 +82,7 @@ When the rotation reaches a decision in any of the seven authoritative-data cate
 
 ## Recommended Next Step
 
-**Run `python -m apothem.conformity.gate --all .`** to run the host's mechanical conformity corpus — which includes the secret-leak matcher — and confirm zero plaintext-secret residue after rotation. (To scope the secret-leak matcher to a single touched file, use `--check secret-leak-grep <path>`; the bare `--check secret-leak-grep .` directory form is not a runnable invocation.)
+**Run `python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --check secret-leak-grep <path>`** from the host project's root, once for each file the rotation touched, to confirm that no plaintext secret is left after rotation. Name each file: the bare `--check secret-leak-grep .` directory form is not a runnable invocation. On Windows, use `python` in place of `python3` and the full path, since Windows PowerShell and cmd do not expand `~`: `$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd; from an Apothem checkout, the script is `src/apothem/conformity/gate.py`. The gate runs by its script path with `-E -s`, so no module in the project folder, no `PYTHONPATH` entry and no user site-packages can load code into it. To run the host's other mechanical conformity checks, use `--all .` in place of `--check secret-leak-grep <path>`; that run does not include the secret-leak matcher.
 
 ## Bindings (§0.j five-direction)
 

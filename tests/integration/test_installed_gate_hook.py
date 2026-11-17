@@ -111,7 +111,10 @@ def test_registered_gate_hook_starts_and_reports(
 ) -> None:
     """The registered command exits 0 and prints a report from loaded matchers."""
     argv = _gate_command(installed_home, matcher)
-    assert argv[1].endswith(".apothem/support/conformity/gate.py")
+    script = next(i for i, arg in enumerate(argv) if arg.endswith("gate.py"))
+    assert argv[script].endswith(".apothem/support/conformity/gate.py")
+    # The interpreter reads no PYTHON* variable and no user site-packages.
+    assert argv[1:script] == ["-E", "-s"]
     target = installed_home / ".claude" / "rules" / "zz-probe.md"
     payload = {
         "tool_name": "Write",
