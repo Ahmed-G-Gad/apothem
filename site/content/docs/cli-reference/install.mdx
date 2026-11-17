@@ -18,7 +18,11 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 Loads and validates the shared profile, selects a named adapter or the
 registry-wide `all` set, validates the materialization plan, and writes
 harness-native configuration plus support cohorts. Project-scope adapters
-require `--project PATH`.
+require `--project PATH`. The folder is read with its links followed and `~`
+expanded, and the install record names it that way. An install recorded under
+another spelling of the folder, such as a link that Python code or an earlier
+release kept, is moved to that spelling once the install passes its checks
+(see [`uninstall`](/docs/cli-reference/uninstall)).
 
 The continuous-form alias `apothem installing` (also accepted as
 `apothem Installing`) resolves to the same handler.
@@ -116,10 +120,12 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   `~/.config` or `~/.agents`, is followed when it leads to somewhere inside
   your home directory. On Windows a junction counts as a link. A link that
   leaves your home directory stops the install with `target escapes the
-  allowed materialization root`. A skill folder that is itself a link is never
-  written through: the install skips it with a warning, or stops when Apothem
-  wrote that skill there before. A link inside a skill folder Apothem wrote is
-  replaced by a folder the next time the install writes that skill.
+  allowed materialization root`, followed by the link, the folder it leads
+  to and the fix: replace the link with a real folder. A skill folder that is
+  itself a link is never written through: the install skips it with a
+  warning, or stops when Apothem wrote that skill there before. A link inside
+  a skill folder Apothem wrote is replaced by a folder the next time the
+  install writes that skill.
 - A harness folder below `~/.config`, such as OpenCode's `~/.config/opencode/`
   or a `CODEX_HOME` there, also follows a link at `~/.config` that leads
   somewhere inside your home directory. A link at `~/.config` that leaves your
