@@ -19,6 +19,7 @@ in the same order, so no rendered install output changes.
 from __future__ import annotations
 
 import contextlib
+import functools
 import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -28,7 +29,13 @@ from typing import Any
 
 from apothem.lib import install_ledger
 from apothem.lib.harness_registry import package_key_for_public_id
-from apothem.lib.install_ledger import OwnedEntry
+from apothem.lib.install_ledger import (
+    OwnedEntry,
+    install_spelling,
+    move_install,
+    recorded_root,
+    uninstall_spelling,
+)
 from apothem.lib.profile import (
     ProfileValidationError,
     load_profile_file,
@@ -114,7 +121,8 @@ def make_update_project(install_fn: _ProjectScopeInstall) -> _ProjectScopeUpdate
     """Return a project-scope ``update`` shim delegating to *install_fn*.
 
     The returned closure threads the operator-supplied ``project`` keyword
-    through to *install_fn*, matching the hand-written project-scope shim.
+    through to *install_fn*, matching the hand-written project-scope shim;
+    the install records the folder resolved (see :func:`install_spelling`).
     """
 
     def update(
@@ -183,9 +191,12 @@ _UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
 
 _UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
 
-    The project root passes through when the CLI supplied it; otherwise it is
-    derived from the adapter's declared relative target. Returns the run; a
-    step that reports an error is an ``error`` result in it."""
+    The project root is the one the CLI supplied, or else the one derived from
+    the adapter's declared relative target. It is spelled as the install
+    record spells it, and an install recorded under another spelling of the
+    folder, such as a link, is first moved to the folder resolved, unless the
+    folder has an install of its own still in place. Returns the run; a step
+    that reports an error is an ``error`` result in it."""
 
 _UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
 
@@ -214,7 +225,9 @@ def make_verify_project(harness_name: str) -> _ProjectScopeVerify:
         del output_path  # the manifest walk resolves targets from the project root
         if project is None:
             return False
-        return install_driver.verify_install(harness_name, project_root=project)
+        return install_driver.verify_install(
+            harness_name, project_root=recorded_root(harness_name, project)
+        )
 
     verify.__doc__ = _VERIFY_DOC_PROJECT
     return verify
@@ -496,11 +509,26 @@ def make_project_scope_install(
         del output_path  # resolved per-entry from manifest + project root
         if project is None:
             raise ValueError(error_message)
+        # A Python caller passes the folder as typed (a link, ``~``); the CLI
+        # passes it resolved. A preview reads the install record under the
+        # spelling it has; an install writes and records the folder resolved,
+        # so no record stays under a link that may later be removed. An
+        # install recorded another way moves to that spelling once the plan
+        # passed validation, so a refused install leaves the ledger as it was.
         with _rendering_tokens(content_tokens):
             if dry_run:
                 return install_driver.run_install(
-                    harness_name, project_root=project, profile=profile, dry_run=True
+                    harness_name,
+                    project_root=recorded_root(harness_name, project),
+                    profile=profile,
+                    dry_run=True,
                 )
+            project, moving = install_spelling(harness_name, project)
+            move = (
+                None
+                if moving is None
+                else functools.partial(move_install, harness_name, moving, project)
+            )
             # One lock from the first user-level write to the ledger record (a
             # no-op for a harness with no user-level entry).
             with shared_scope(harness_name):
@@ -509,7 +537,10 @@ def make_project_scope_install(
                 )
                 return install_driver.finalize_install(
                     install_driver.run_install(
-                        harness_name, project_root=project, profile=profile
+                        harness_name,
+                        project_root=project,
+                        profile=profile,
+                        before_writes=move,
                     ),
                     root=project,
                     missing_before=missing,
@@ -524,6 +555,8 @@ def make_project_scope_plan(harness_name: str) -> _ProjectScopePlan:
 
     def plan(output_path: Path, *, project: Path | None = None) -> list[dict[str, str]]:
         del output_path  # resolved per-entry from manifest + project root
+        if project is not None:
+            project = recorded_root(harness_name, project)
         return install_driver.build_plan(harness_name, project_root=project)
 
     plan.__doc__ = _PLAN_DOC_PROJECT
@@ -548,14 +581,26 @@ def make_project_scope_uninstall(
     below the project root, so the project root is ``output_path.parents[d - 1]``.
     Deriving ``d`` from *relative_target* keeps the correct root under any
     manifest-depth change, where a hardcoded index would silently derive the
-    wrong root.
+    wrong root. Either root is then spelled as the install record spells it,
+    after an install recorded under another spelling of the folder is moved
+    to the folder resolved (see :func:`uninstall_spelling`).
     """
     _depth = len(relative_target.parts) - 1
 
     def uninstall(
         output_path: Path, *, project: Path | None = None
     ) -> MaterializationRun:
-        project_root = project if project is not None else output_path.parents[_depth]
+        # Spelled as the install record spells it. An install recorded under
+        # another spelling of the folder, such as a link, moves to the folder
+        # resolved first, as an install moves it, so an uninstall that does
+        # not finish is recorded where the next run finds it once the link
+        # is removed.
+        project_root, moving = uninstall_spelling(
+            harness_name,
+            project if project is not None else output_path.parents[_depth],
+        )
+        if moving is not None:
+            move_install(harness_name, moving, project_root)
         return MaterializationRun(
             harness=harness_name,
             dry_run=False,
@@ -927,8 +972,9 @@ def make_project_scope_adapter(
             """Return True if this project root carries an Apothem install."""
             if project is None:
                 return False
+            key = package_key_for_public_id(_name)
             return install_driver.detect_install(
-                package_key_for_public_id(_name), project_root=project
+                key, project_root=recorded_root(key, project)
             )
 
         def verify(self, *, project: Path | None = None) -> bool:
