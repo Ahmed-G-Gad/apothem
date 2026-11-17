@@ -1019,21 +1019,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`apothem doctor --project` starts only hook commands that run Apothem's
   own code.** Doctor started any command in a project's hook files that named
   a `hooks/dispatch.py`, so a command someone else committed to
-  `.cursor/hooks.json` or `.github/hooks/apothem.json`, or a changed script in
-  `.apothem/support/`, ran when you ran doctor, even if you never opened the
-  project in the tool. Doctor now starts a project hook command only when its
-  interpreter is the Python Apothem runs under or the one the install wrote,
-  its options run no code, its script is the hook script the install wrote,
-  in a folder whose files still match the SHA-256 checksums the install
-  recorded and that holds no other Python file and no link, and its
+  `.cursor/hooks.json`, `.github/hooks/apothem.json` or `.kiro/hooks/`, or a
+  changed script in `.apothem/support/`, ran when you ran doctor, even if you
+  never opened the project in the tool. Doctor now takes hook commands only
+  from the places the tool reads them, and starts one only when its
+  interpreter is the one the install recorded or the Python Apothem runs
+  under, its options run no code, its script is the hook script the install
+  wrote, in a folder whose files still match the SHA-256 checksums the
+  install recorded and that holds no other Python file and no link, and its
   arguments are the ones Apothem writes. It starts those known paths rather
   than the text it read, and looks up no other path a hook command names,
-  such as a network share. A known interpreter or script that is gone is
+  such as a network share. A recorded interpreter or script that is gone is
   reported as unable to start, without anything being started; any other
-  command is reported as `hook.unchecked`. Doctor also reads the install
-  record of the project that `--project` names: it read the newest record of
-  any project, so after an install into another project it started none of
-  the named project's hooks and still passed.
+  command is reported as `hook.unchecked`, which the plain output now shows
+  too. Install records now keep the interpreter written into hook commands,
+  so hooks installed by an earlier release stay unchecked until you run
+  `apothem update`. An install now keeps only a true or false `enabled` flag
+  on Kiro's hooks, so no other value can ride along in the file. Doctor also
+  reads the install record of the project that `--project` names: it read
+  the newest record of any project, so after an install into another project
+  it started none of the named project's hooks and still passed.
 - **`install --clean` no longer rewrites a profile it did not remove.** After
   the clean-slate step, the install wrote the profile back to the `--profile
   PATH` it was given, whether or not the step had removed it, and without the

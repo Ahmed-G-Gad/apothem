@@ -40,18 +40,21 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
 - **Project hook files.** Anyone who can commit to a project can change its
   files, so for a project-scope harness doctor starts a hook command only when
   everything it runs is known. It reads the install record of the project
-  that `--project` names, and starts a command only when its interpreter is
-  the Python that Apothem itself runs under or the one the install wrote into
-  its own hook entries, the options before the script run no code (such as
-  `-E` and `-s`), the script is the hook script that install wrote, in a
-  folder whose files still match the SHA-256 checksums the install recorded
-  and that holds no other Python file and no link, and the arguments after it
-  are the ones Apothem writes. Doctor then starts those known paths rather than
-  the text it read, and it looks up no other path a hook command names. A
-  known interpreter or hook script that is gone fails the check without
-  anything being started. Doctor starts no other project hook command, and
-  reports each one, with the reason, as `hook.unchecked` (info, not a
-  failure). Run `update` to install the hook scripts again.
+  that `--project` names, takes hook commands only from the places the tool
+  reads them, and starts a command only when its interpreter is the one that
+  install recorded or the Python that Apothem itself runs under, the options
+  before the script run no code (such as `-E` and `-s`), the script is the
+  hook script that install wrote, in a folder whose files still match the
+  SHA-256 checksums the install recorded and that holds no other Python file
+  and no link, and the arguments after it are the ones Apothem writes. Doctor
+  then starts those known paths rather than the text it read, and it looks up
+  no other path a hook command names. A recorded interpreter or hook script
+  that is gone fails the check without anything being started. Doctor starts
+  no other project hook command, and reports each one, with the reason, as
+  `hook.unchecked` (info, not a failure, marked `!` in the plain output).
+  Hooks installed by an earlier release, which recorded no interpreter or no
+  checksums, stay unchecked until you run `update` with the same options you
+  installed with.
 
 Every failed check names a fix. Exits 0 when no check fails and 1 otherwise.
 

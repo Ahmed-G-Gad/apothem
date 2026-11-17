@@ -204,21 +204,36 @@ def test_doctor_starts_github_copilot_hooks(
     assert _unchecked(payload, "github-copilot") == []
 
 
-@pytest.mark.parametrize("harness", ["cursor", "github-copilot"])
+@pytest.mark.parametrize(
+    ("harness", "operator_hook"),
+    [
+        pytest.param("cursor", False, id="cursor"),
+        pytest.param("cursor", True, id="cursor-with-an-operator-hook"),
+        pytest.param("github-copilot", False, id="github-copilot"),
+        pytest.param("kiro", False, id="kiro"),
+        pytest.param("codebuddy", False, id="codebuddy"),
+        pytest.param("windsurf", False, id="windsurf"),
+    ],
+)
 def test_doctor_reports_a_project_hook_whose_interpreter_is_gone(
     runner: CliRunner,
     home: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     harness: str,
+    operator_hook: bool,
 ) -> None:
-    # The Python the install wrote into the hook lines was removed later. The
-    # hooks cannot start, and doctor says so without starting anything.
+    # The Python the install wrote into the hook lines, which its record keeps,
+    # was removed later. The hooks cannot start, and doctor says so without
+    # starting anything, also after the operator added a hook of their own.
     _as_windows(monkeypatch)
     gone = tmp_path / "removed-python" / "python.exe"
     monkeypatch.setattr(wrapper_factories, "resolve_python_bin", lambda: gone)
     project = _project(tmp_path)
     _install(runner, harness, "--project", str(project))
+    if operator_hook:
+        entry = {"type": "command", "command": "echo operator-own-hook"}
+        _add_entry(project / _HOOK_FILES[harness], entry)
 
     code, payload = _doctor(runner, "--project", str(project))
 
@@ -229,6 +244,68 @@ def test_doctor_reports_a_project_hook_whose_interpreter_is_gone(
     # The command shown starts with the interpreter, not with PowerShell's "&".
     assert f"cannot start: {gone.as_posix()} " in failed[0]["message"]
     assert "the interpreter does not exist" in failed[0]["message"]
+
+
+def test_doctor_does_not_start_handlers_kept_inside_a_kiro_hook(
+    runner: CliRunner, home: Path, tmp_path: Path
+) -> None:
+    # A committed Kiro hook file hides handlers in the "enabled" value of a hook
+    # that looks like Apothem's. The install keeps only a true or false flag
+    # there, and doctor reads a handler only where Kiro does, under "action".
+    project = _project(tmp_path)
+    script, marker = _marker_script(tmp_path)
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(project, "kiro").as_posix()
+    missing = (tmp_path / "planted" / "python.exe").as_posix()
+    apothem_like = (
+        "python .apothem/support/kiro/hooks/dispatch.py --contract kiro SessionStart"
+    )
+    hidden = [
+        {"command": f'"{missing}" "{dispatcher}" --contract kiro SessionStart'},
+        {
+            "command": f'"{python}" "{script.as_posix()}" "{dispatcher}" '
+            "--contract kiro SessionStart"
+        },
+    ]
+    planted = {
+        "version": "v1",
+        "hooks": [
+            {
+                "name": "apothem-session-start",
+                "trigger": "SessionStart",
+                "action": {"type": "command", "command": apothem_like},
+                "enabled": hidden,
+            }
+        ],
+    }
+    hook_file = project / ".kiro" / "hooks" / "apothem.json"
+    hook_file.parent.mkdir(parents=True)
+    hook_file.write_text(json.dumps(planted), encoding="utf-8")
+    _install(runner, "kiro", "--project", str(project))
+    installed = json.loads(hook_file.read_text(encoding="utf-8"))
+    assert all("enabled" not in hook for hook in installed["hooks"])
+
+    code, payload = _doctor(runner, "--project", str(project))
+
+    assert not marker.exists()
+    assert code == 0, payload
+    assert _row(payload, "kiro")["hooks"] == {"probed": 1, "failed": []}
+    assert not any(missing in check["message"] for check in payload["checks"])
+
+
+def test_doctor_prints_why_it_did_not_start_a_hook(
+    runner: CliRunner, home: Path, tmp_path: Path
+) -> None:
+    project = _project(tmp_path)
+    _install(runner, "github-copilot", "--project", str(project))
+    _dispatcher(project, "github-copilot").write_text("# changed\n", encoding="utf-8")
+
+    result = runner.invoke(main, ["doctor", "--project", str(project), "--no-color"])
+
+    assert result.exit_code == 0, result.output
+    shown = " ".join(result.output.split())
+    assert "changed after the install (dispatch.py)" in shown
+    assert "Fix: Check the hook command or file named here." in shown
 
 
 @pytest.mark.parametrize("shape", ["line", "args", "nested", "commandWindows"])
@@ -272,8 +349,13 @@ def test_doctor_does_not_start_a_hook_line_the_install_did_not_write(
     assert not marker.exists()
     assert code == 0, payload
     assert _row(payload, harness)["hooks"] == {"probed": 1, "failed": []}
-    [message] = _unchecked(payload, harness)
-    assert "foreign_hook.py, which this install did not write" in message
+    messages = _unchecked(payload, harness)
+    if shape == "nested":
+        # Not where the tool reads a handler, so not a hook at all.
+        assert messages == []
+    else:
+        [message] = messages
+        assert "foreign_hook.py, which this install did not write" in message
 
 
 @pytest.mark.parametrize("harness", ["cursor", "github-copilot"])
@@ -357,12 +439,12 @@ def _fake_install(
     monkeypatch: pytest.MonkeyPatch,
     entry: dict[str, object],
     *,
-    edited: bool = False,
+    python_bin: str | None = None,
 ) -> tuple[Path, Path]:
     """Fake a GitHub Copilot project install whose hook file holds *entry*.
 
-    With *edited*, the hook file changes after the install recorded it, the way
-    a commit changes it, so the install's checksum of it no longer matches.
+    *python_bin* is the interpreter the install record keeps; ``None`` is a
+    record from a release that kept none.
     """
     dispatcher = _dispatcher(tmp_path, "github-copilot")
     dispatcher.parent.mkdir(parents=True)
@@ -381,11 +463,7 @@ def _fake_install(
             (dispatcher, "merge_tree_entries"),
         )
     ]
-    if edited:
-        hook_file.write_text(
-            hook_file.read_text(encoding="utf-8") + "\n", encoding="utf-8"
-        )
-    record = SimpleNamespace(targets=targets)
+    record = SimpleNamespace(targets=targets, python_bin=python_bin)
     monkeypatch.setattr(
         install_ledger, "current_install_record", lambda package_key, root: record
     )
@@ -448,7 +526,7 @@ _ARGV = ["{py}", "-E", "-s", "{script}", "--contract", "copilot"]
             False,
             {"command": f"& {_DOUBLE} command"},
             None,
-            "runs &, not a Python Apothem runs under",
+            "runs &, which is not the Python Apothem runs under",
             id="posix-keeps-the-call-operator",
         ),
         pytest.param(
@@ -512,75 +590,100 @@ def _delete_dispatcher(tmp_path: Path, dispatcher: Path) -> None:
     dispatcher.unlink()
 
 
-def _symlink(link: Path, target: Path, *, folder: bool = False) -> None:
+def _link(link: Path, target: Path, *, folder: bool = False) -> None:
+    """Make *link* a symbolic link to *target*; a junction for a folder on Windows."""
     link.parent.mkdir(parents=True, exist_ok=True)
     try:
         link.symlink_to(target, target_is_directory=folder)
     except OSError:
-        pytest.skip("this host cannot create a symbolic link")
+        if not (folder and sys.platform == "win32"):
+            pytest.skip("this host cannot create a symbolic link")
+        import _winapi  # Windows only; a junction needs no privilege
+
+        _winapi.CreateJunction(str(target), str(link))
 
 
 def _link_folder(tmp_path: Path, dispatcher: Path) -> None:
     elsewhere = tmp_path / "elsewhere-lib"
     elsewhere.mkdir()
-    _symlink(dispatcher.parent / "lib", elsewhere, folder=True)
+    _link(dispatcher.parent / "lib", elsewhere, folder=True)
 
 
 def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
     # A committed folder that looks like a virtual environment, whose python
     # links to the real one: started from there, Python would read the
     # folder's pyvenv.cfg and its .pth files.
-    _symlink(tmp_path / "e" / "bin" / "python3", Path(sys.executable))
+    _link(tmp_path / "e" / "bin" / "python3", Path(sys.executable))
     (tmp_path / "e" / "pyvenv.cfg").write_text("home = /usr/bin\n", encoding="utf-8")
 
 
+_OTHER_PYTHON = '"{other}" "{script}" --contract copilot'
+_GONE_PYTHON = '"{tmp}/removed/python" "{script}" --contract copilot'
+
+
 @pytest.mark.parametrize(
-    ("line", "edited", "change", "outcome", "detail"),
+    ("line", "python_bin", "change", "outcome", "detail"),
     [
-        pytest.param(_DOUBLE, False, None, "start", None, id="apothem-line"),
+        pytest.param(_DOUBLE, None, None, "start", None, id="apothem-line"),
         pytest.param(
-            '"{other}" "{script}" --contract copilot',
-            True,
-            None,
-            "unchecked",
-            "not a Python Apothem runs under",
-            id="another-python",
-        ),
-        pytest.param(
-            '"{other}" "{script}" --contract copilot',
-            False,
+            _OTHER_PYTHON,
+            "{other}",
             None,
             "start",
             None,
-            id="the-python-the-install-wrote",
+            id="the-python-the-install-recorded",
         ),
         pytest.param(
-            '"{tmp}/removed/python" "{script}" --contract copilot',
-            False,
+            _GONE_PYTHON,
+            "{tmp}/removed/python",
             None,
             "cannot start",
             "the interpreter does not exist",
-            id="the-python-the-install-wrote-is-gone",
+            id="the-python-the-install-recorded-is-gone",
         ),
         pytest.param(
-            '"{tmp}/removed/python" "{script}" --contract copilot',
-            True,
+            _OTHER_PYTHON,
+            "{tmp}/recorded/python",
             None,
             "unchecked",
-            "not a Python Apothem runs under",
+            "not the Python the install recorded",
+            id="not-the-python-the-install-recorded",
+        ),
+        pytest.param(
+            _OTHER_PYTHON,
+            None,
+            None,
+            "unchecked",
+            "earlier Apothem that kept no interpreter",
+            id="a-record-that-kept-no-interpreter",
+        ),
+        pytest.param(
+            _GONE_PYTHON,
+            None,
+            None,
+            "unchecked",
+            "which is not the Python Apothem runs under",
             id="an-unknown-python-is-not-looked-up",
         ),
         pytest.param(
+            '"{tmp}/removed/python" "{other}" "{script}" --contract copilot',
+            "{tmp}/removed/python",
+            None,
+            "unchecked",
+            "which this install did not write",
+            id="a-rejected-line-is-not-looked-up",
+        ),
+        pytest.param(
             '"{tmp}/e/bin/python3" "{script}" --contract copilot',
-            True,
+            None,
             _venv_python,
             "unchecked",
-            "not a Python Apothem runs under",
+            "which is not the Python Apothem runs under",
             id="a-link-to-the-python-is-not-it",
         ),
         pytest.param(
             '"{py}" -c "import os" "{script}" --contract copilot',
-            False,
+            None,
             None,
             "unchecked",
             "an option Apothem does not write",
@@ -588,7 +691,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             '"{py}" "{other}" "{script}" --contract copilot',
-            False,
+            None,
             None,
             "unchecked",
             "which this install did not write",
@@ -597,7 +700,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         pytest.param(
             '"{py}" "{tmp}/x/../.apothem/support/github-copilot/hooks/dispatch.py"'
             " --contract copilot",
-            False,
+            None,
             None,
             "unchecked",
             "which this install did not write",
@@ -605,7 +708,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             '"{py}" "{script}" --contract copilot --',
-            False,
+            None,
             None,
             "unchecked",
             "arguments Apothem does not write",
@@ -613,7 +716,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             '"{py}" "{script}" sessionStart --contract copilot',
-            False,
+            None,
             None,
             "unchecked",
             "arguments Apothem does not write",
@@ -621,7 +724,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             _DOUBLE,
-            False,
+            None,
             _delete_dispatcher,
             "cannot start",
             "the hook script does not exist",
@@ -629,7 +732,7 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             _DOUBLE,
-            False,
+            None,
             _plant_module,
             "unchecked",
             "hold json.py, which the install did not write",
@@ -637,14 +740,14 @@ def _venv_python(tmp_path: Path, dispatcher: Path) -> None:
         ),
         pytest.param(
             _DOUBLE,
-            False,
+            None,
             _change_dispatcher,
             "unchecked",
             "changed after the install (dispatch.py)",
             id="changed-dispatcher",
         ),
         pytest.param(
-            _DOUBLE, False, _link_folder, "unchecked", "hold a link", id="link"
+            _DOUBLE, None, _link_folder, "unchecked", "hold a link", id="link"
         ),
     ],
 )
@@ -652,21 +755,24 @@ def test_doctor_starts_a_project_hook_line_only_when_it_runs_known_code(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     line: str,
-    edited: bool,
+    python_bin: str | None,
     change: object,
     outcome: str,
     detail: str | None,
 ) -> None:
     other = tmp_path / "other-python.exe"
     other.write_text("", encoding="utf-8")
-    command = line.format(
-        py=Path(sys.executable).as_posix(),
-        script=_dispatcher(tmp_path, "github-copilot").as_posix(),
-        other=other.as_posix(),
-        tmp=tmp_path.as_posix(),
-    )
+    values = {
+        "py": Path(sys.executable).as_posix(),
+        "script": _dispatcher(tmp_path, "github-copilot").as_posix(),
+        "other": other.as_posix(),
+        "tmp": tmp_path.as_posix(),
+    }
     _, dispatcher = _fake_install(
-        tmp_path, monkeypatch, {"type": "command", "bash": command}, edited=edited
+        tmp_path,
+        monkeypatch,
+        {"type": "command", "bash": line.format(**values)},
+        python_bin=None if python_bin is None else python_bin.format(**values),
     )
     if callable(change):
         change(tmp_path, dispatcher)
@@ -690,6 +796,60 @@ def test_doctor_starts_a_project_hook_line_only_when_it_runs_known_code(
         assert detail is not None
         assert detail in unchecked
         assert hooks.unstartable == []
+
+
+def test_doctor_reads_no_handler_kept_beside_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Only the places the tool reads a command count: a handler kept in another
+    # value of the entry is not one, whatever it names.
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot").as_posix()
+    hidden = (
+        f'"{tmp_path.as_posix()}/planted/python" "{dispatcher}" --contract copilot x'
+    )
+    entry = {
+        "type": "command",
+        "bash": _DOUBLE.format(py=python, script=dispatcher),
+        "enabled": [{"command": hidden}],
+        "note": {"bash": hidden},
+    }
+    _fake_install(tmp_path, monkeypatch, entry)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [argv] = hooks.argvs
+    assert argv[-2:] == ["--contract", "copilot"]
+    assert hooks.unchecked == []
+    assert hooks.unstartable == []
+
+
+def test_doctor_names_an_install_recorded_without_checksums(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A release before checksums recorded the hook files with none, and a hook
+    # subfolder as one folder; doctor says so instead of calling them foreign.
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    lib = dispatcher.parent / "lib"
+    lib.mkdir()
+    (lib / "__init__.py").write_text("", encoding="utf-8")
+    record = install_ledger.current_install_record("github_copilot", root=tmp_path)
+    for target in record.targets:
+        target.digest = None
+    record.targets.append(
+        SimpleNamespace(
+            path=str(lib), mode="merge_tree_entries", digest=None, files=None
+        )
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "installed by an earlier Apothem that kept no checksums" in unchecked
 
 
 def test_doctor_fails_when_an_installed_harness_does_not_verify(

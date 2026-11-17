@@ -111,30 +111,6 @@ def _is_ours(hook: object) -> bool:
     return is_apothem_contract_command(_command_text(hook))
 
 
-def apothem_hook_entries(doc: object) -> list[dict[str, object]]:
-    """Return the hooks in *doc* that an install takes for its own.
-
-    The same hooks :func:`_without_ours` drops, so an install replaces and an
-    uninstall removes exactly these: the direct items of a list-shaped
-    ``hooks``, or of each event list of an event-map ``hooks``, that run the
-    native dispatcher. In a file still as an install left it, each was written
-    by that install.
-    """
-    if not isinstance(doc, dict):
-        return []
-    hooks = doc.get("hooks")
-    if isinstance(hooks, dict):
-        hooks = [
-            hook
-            for listed in hooks.values()
-            if isinstance(listed, list)
-            for hook in listed
-        ]
-    if not isinstance(hooks, list):
-        return []
-    return [hook for hook in hooks if isinstance(hook, dict) and _is_ours(hook)]
-
-
 def _without_ours(doc: object) -> tuple[dict[str, object], int] | None:
     """Return *doc* without Apothem's hooks, plus how many hooks remain.
 
@@ -196,7 +172,9 @@ def _restore_enabled(
     when an update rewrites the entry. Hooks are matched by ``name`` (the list
     shape only; the event-map shape has no such flag). Every other field of an
     Apothem hook is Apothem's: a changed ``timeout`` is indistinguishable from an
-    earlier release's, so it is refreshed, not kept. Returns the incoming
+    earlier release's, so it is refreshed, not kept. Only a true or false
+    value is carried: anything else under that key is not the flag, and an
+    Apothem hook keeps no data the install did not write. Returns the incoming
     registration and its text, both unchanged when no flag is carried.
     """
     old, new = (
@@ -211,7 +189,7 @@ def _restore_enabled(
         if isinstance(hook, dict)
         and _is_ours(hook)
         and isinstance(hook.get("name"), str)
-        and "enabled" in hook
+        and isinstance(hook.get("enabled"), bool)
     }
     carried = [
         {**hook, "enabled": flags[hook["name"]]}

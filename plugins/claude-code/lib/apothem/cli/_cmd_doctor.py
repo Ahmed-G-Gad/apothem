@@ -194,8 +194,8 @@ def _probe_registered_hooks(
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
-                fix="Find out who changed the hook command or file named here. "
-                "If Apothem should run it, "
+                fix="Check the hook command or file named here. If Apothem "
+                "installed it, "
                 f"{_update_fix(name)[0].lower()}{_update_fix(name)[1:]}",
             )
         )
@@ -357,7 +357,8 @@ def _render_doctor_report(
     harness_rows: list[dict[str, object]],
     checks: list[dict[str, object]],
 ) -> None:
-    """Print the plain-mode report: environment, profile, harness table, failures."""
+    """Print the plain-mode report: environment, profile, harness table, failures
+    and the hook commands doctor did not start."""
     con.print("[bold]Apothem Doctor[/]")
     con.print(f"  Version:   Apothem v{_VERSION}")
     con.print(f"  Python:    {sys.version.split()[0]}")
@@ -382,10 +383,14 @@ def _render_doctor_report(
         )
     con.print(table)
 
+    # Failures, and the hook commands doctor did not start, with their reasons.
     for check in checks:
-        if check["status"] != "fail":
+        if check["status"] == "fail":
+            con.print(f"[red]✗[/] {escape(str(check['message']))}")
+        elif check["code"] == "hook.unchecked":
+            con.print(f"[yellow]![/] {escape(str(check['message']))}")
+        else:
             continue
-        con.print(f"[red]✗[/] {escape(str(check['message']))}")
         if check["fix"]:
             con.print(f"  Fix: {escape(str(check['fix']))}")
 

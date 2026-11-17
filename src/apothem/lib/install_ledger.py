@@ -313,6 +313,11 @@ class LedgerRecord:
             stores under, as an absolute path string. Set on install records
             only; ``None`` for other kinds and for records written before the
             field existed, which reverse against the default location.
+        python_bin: The interpreter path the install pass wrote into hook
+            commands (the rendered ``${PYTHON_BIN}``), so ``doctor`` can tell
+            the install's own interpreter from one a changed hook file names.
+            Set on install records whose pass rendered it; ``None`` otherwise
+            and for records written before the field existed.
     """
 
     install_id: str
@@ -323,6 +328,7 @@ class LedgerRecord:
     targets: tuple[LedgerTarget, ...] = ()
     created_dirs: tuple[str, ...] = ()
     data_home: str | None = None
+    python_bin: str | None = None
 
     @classmethod
     def create(
@@ -335,6 +341,7 @@ class LedgerRecord:
         install_id: str | None = None,
         created_dirs: tuple[str, ...] = (),
         data_home: str | None = None,
+        python_bin: str | None = None,
     ) -> LedgerRecord:
         """Build a record, stamping a fresh ULID and UTC timestamp.
 
@@ -355,6 +362,7 @@ class LedgerRecord:
             targets=tuple(targets),
             created_dirs=tuple(created_dirs),
             data_home=data_home or None,
+            python_bin=python_bin or None,
         )
 
     def to_json_line(self) -> str:
@@ -375,6 +383,8 @@ class LedgerRecord:
             payload["created_dirs"] = list(self.created_dirs)
         if self.data_home is not None:
             payload["data_home"] = self.data_home
+        if self.python_bin is not None:
+            payload["python_bin"] = self.python_bin
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
@@ -399,6 +409,8 @@ class LedgerRecord:
         )
         raw_home = data.get("data_home")
         data_home = str(raw_home) if isinstance(raw_home, str) and raw_home else None
+        raw_python = data.get("python_bin")
+        python_bin = raw_python if isinstance(raw_python, str) and raw_python else None
         return cls(
             install_id=str(data["install_id"]),
             timestamp=str(data["timestamp"]),
@@ -408,6 +420,7 @@ class LedgerRecord:
             targets=targets,
             created_dirs=created_dirs,
             data_home=data_home,
+            python_bin=python_bin,
         )
 
 
