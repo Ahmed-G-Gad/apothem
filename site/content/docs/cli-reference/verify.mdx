@@ -25,18 +25,26 @@ Either way, a file where Apothem keeps a managed block fails verify while it
 holds a BEGIN marker that starts no whole block, such as one whose END marker
 is gone (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)),
-or while it holds no whole block but marker pairs Apothem cannot tell from your
-text, such as its block inside a code block of yours (see
+two or more whole blocks between Apothem's markers (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+or no whole block but marker pairs Apothem cannot tell from your text, such as
+its block inside a code block of yours (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+An update keeps such a marker, or leaves such a file as it is, so running
+`apothem update` does not clear the failure.
 The files checked are the ones the harness's install writes a block into and
-the ones its install record lists, so a marker in a file of your own, such as a
-project's notes file, does not fail it. With no install record, `CLAUDE.md`,
-the profile document and the rules file in each OpenClaw workspace are not
-checked: only the record shows that the install wrote them. The failed row
-names each such file and says what to fix: the stray marker line to delete or,
-for marker pairs Apothem cannot tell from your text, the lines of each pair,
-where they read and how to fix them, along with each BEGIN marker that starts
-no marker pair. In plain mode a `Note:` line follows the row,
+the ones its install records list since the last uninstall that finished, a
+rules file in an OpenClaw workspace the install no longer uses included. A
+marker in a file of your own, such as a project's notes file, does not fail
+it. With no install record, `CLAUDE.md`, the profile document
+and the rules file in each OpenClaw workspace are not checked: only the record
+shows that the install wrote them. The failed row names each such file and
+says what to fix: the stray marker line to delete, with the old Apothem text
+below it (the note also says not to add the END marker back, which would leave
+two Apothem blocks); each whole block, by its lines; or, for marker pairs
+Apothem cannot tell from your text, the lines of each pair, where they read
+and how to fix them, along with each BEGIN marker that starts no marker pair.
+In plain mode a `Note:` line follows the row,
 which then leaves out the expected path, and the JSON row gains a `stray_begin`
 object with the `files` and a `message`.
 

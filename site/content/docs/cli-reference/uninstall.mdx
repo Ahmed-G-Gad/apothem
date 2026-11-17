@@ -224,16 +224,18 @@ file. With `--quiet` these lines print only
 when the uninstall does not finish, and then on standard error with the `✗`
 line, so the paths its advice is about stay in view. A line that names an
 Apothem marker left in a file prints on standard error under `--quiet` even
-when the uninstall finishes: a later install keeps that marker, and `verify`
-fails until you delete it. In the `--format json`
+when the uninstall finishes: the tool still reads any old Apothem text below
+that marker, a later install keeps both, and `verify` then fails until you
+delete them. In the `--format json`
 envelope each such line is one `warnings` entry with `"outcome": "warning"`,
 the line's `message`, `count` (how many paths it covers), `paths` (each of
 them) and, for kept paths, `files` (each file kept). These warnings do not
-stop the uninstall. Three kinds do: files of an install an earlier release
+stop the uninstall. Four kinds do: files of an install an earlier release
 recorded that differ from what this release writes, the files of an
 install with no record at all (see
-[What an uninstall removes](#what-an-uninstall-removes)), and a file that
-holds two different blocks between Apothem's markers (see
+[What an uninstall removes](#what-an-uninstall-removes)), a file that
+holds two different blocks between Apothem's markers, and a file whose marker
+lines Apothem cannot tell from your text (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)).
 
 Apothem's own files reached through a link are different: most tools still
@@ -282,8 +284,9 @@ When an uninstall does not finish, it appends an `uninstall-incomplete` record
 to the install ledger instead of an `uninstall` record. That happens when a
 step failed, when it stopped with an exception, when Apothem's own files stay
 behind a link, when a file holds two different blocks between Apothem's
-markers (see below), when files of an install an earlier release recorded
-differ from what this release writes, and when the install has no record. The
+markers or marker lines Apothem cannot tell from your text (see below), when
+files of an install an earlier release recorded differ from what this release
+writes, and when the install has no record. The
 last four exit `2` with `status` `"partial"` even when nothing was removed,
 including a second run before you fix what they name. The last two finish only after
 `apothem update` (see
@@ -325,11 +328,12 @@ would: a fenced code block (closed by a fence of the same character, at least
 as long, with nothing after it) or code indented four columns past its list
 item (or the margin) after a blank line. So a marker you quote in a sentence
 or a code example is your text, and a BEGIN and an END marker you quote in two
-separate code blocks do not make a block. A fence in Apothem's own block hides
-its END marker only when another marker pair follows (see below). A fence you
-leave open to the end of the file is read as text (up to eight of them; from
-the ninth, the rest of the file reads as code), unless a BEGIN marker outside
-code above it has its END marker in code and another marker pair follows them.
+separate code blocks do not make a block. Apothem closes a code fence that a
+rule in your profile leaves open at the end of the block it writes; in a block
+an earlier release wrote, such a fence hides the END marker only when another
+marker pair follows (see below). A fence you leave open to the end of the file
+is read as text, however many there are, unless a BEGIN marker outside code
+above it has its END marker in code and another marker pair follows them.
 A byte order mark at the start of the file (as some Windows editors save it)
 does not hide a marker on the first line. Markers inside an HTML block or a
 block quote, or after a list item whose text goes on at the left margin, can
@@ -338,36 +342,45 @@ still be read differently from a Markdown viewer.
 If Apothem's block sits inside a code block of yours (a fence left open above
 it and closed by one below), or a code block between a BEGIN marker and its END
 hides that END with another marker pair after it, Apothem cannot tell its
-block from an example of yours. The uninstall leaves such a file as it is and
-removes the rest of the install; the file does not keep the uninstall from
-finishing. Its warning names each marker pair in the file by its lines, and
-each BEGIN marker outside code that starts no marker pair. With no install
-record, only a BEGIN marker whose END marker is hidden that way gets the
-warning: a pair inside a code block of yours is then your text. For such a
-BEGIN marker, the warning says, for example, "If the BEGIN marker at line 1 is
-yours, delete or change it. If you leave it and no marker pair comes after it
-any more, a later install or update reads lines 1 to 4 as Apothem's block and
-replaces them." The warning ends, for example, "If lines 6 to 38 are
-Apothem's block, delete them by hand, keeping your own text." or, with several
-pairs, "If one of these pairs is Apothem's block (lines 1 to 4, or lines 8 to
-10), delete it by hand, keeping your own text."
-Delete Apothem's block there by hand, and delete or change each BEGIN marker
-the warning tells you to: once the uninstall has finished, no install record
-lists the file, so a later install treats that block as your text, and it
-reads a BEGIN marker left above an END marker you quote in code, with no
-marker pair after them, as Apothem's block and replaces the lines between them
-(see
+block from an example of yours. The uninstall leaves such a file as it is,
+removes the rest of the install, and does not finish: it prints
+`✗ <harness> uninstall did not finish:` followed by "1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are;
+fix the marker lines each warning names, keeping your own text, then run
+apothem uninstall again", and exits `2`, a second run included. The install
+record stays, so a later install still leaves the file as it is, and the next
+uninstall names it again. Its warning names each marker pair in the file by
+its lines, and each BEGIN marker outside code that starts no marker pair. With
+no install record, only a BEGIN marker whose END marker is hidden that way
+gets the warning: a pair inside a code block of yours is then your text, and
+the uninstall stays unfinished for that marker and for the paths no record
+shows. For such a BEGIN marker, the warning says, for example, "If the BEGIN
+marker at line 1 is yours, delete or change it. If you leave it and no marker
+pair comes after it any more, a later install or update reads lines 1 to 4 as
+Apothem's block and replaces them." The warning ends, for example, "If lines 6
+to 38 are Apothem's block, delete them by hand, keeping your own text; if they
+are text of yours, change or delete those two marker lines. Then run the
+uninstall again." or, with several pairs, "If one of these pairs is Apothem's
+block (lines 1 to 4, or lines 8 to 10), delete it by hand, keeping your own
+text, and change or delete the two marker lines of each pair of yours. Then
+run the uninstall again." Do each of those steps: a marker pair left in that
+file keeps the uninstall unfinished, one of yours included, and a later
+install reads a BEGIN marker left above an END marker you quote in code, with
+no marker pair after them, as Apothem's block and replaces the lines between
+them (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Once the file holds no such pair, running the uninstall again finishes it.
 
 If the END marker is
 gone, nothing shows where Apothem's text stops and yours starts, so the
 uninstall leaves the file as it is, names it in a warning and finishes; so
-does a retry after an uninstall that did not finish. If a BEGIN marker of
-yours is left with no END after it once Apothem's block is out, the uninstall
-names that file too. Delete such a BEGIN marker, or the rest of the block, by
-hand, keeping your own lines. An `install` or `update` keeps the text after it
-as it is, writes Apothem's block apart from it and names the file, and
-`verify` fails until the marker is gone (see
+does a retry after an uninstall that did not finish. If a BEGIN marker is left
+with no END after it once Apothem's block is out (a line of yours, or what is
+left of an older block that lost its END marker), the uninstall names that
+file too. Delete such a BEGIN marker by hand, with any old Apothem text below
+it, keeping your own lines: the tool still reads that text. An `install` or
+`update` keeps the text after it as it is, writes Apothem's block apart from
+it and names the file, and `verify` fails until the marker is gone (see
 [A file has an Apothem BEGIN marker with no END marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 
 A file that holds two different blocks between the markers (a marker pair you
@@ -375,8 +388,11 @@ quote outside a code block, or a block you pasted in a second time) is left as
 it is and named, and the uninstall stays unfinished until you remove or
 reword the marker lines you added, or move them inside a code block. Do not
 delete Apothem's block instead: the next uninstall would then take out the one
-block left, your own. Fix such a file before you run `apothem update`, too: an
-update writes over the first whole block in the file, which can be yours.
+block left, your own. When both blocks are Apothem's own (an old block whose
+END marker you put back), delete one of them. An `apothem update` does not fix
+such a file: it leaves a file with two whole blocks as it is, with a warning
+that names each block by its lines, and `verify` fails until you fix it (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
 
 When the uninstall's next step is to run `apothem update` and a warning names
 a file for an Apothem marker (in the `--format json` envelope, its `detail`
@@ -494,7 +510,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
 | 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or nothing was removed because each installed harness failed before removing anything |
-| 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, a file holds two different blocks between Apothem's markers, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
+| 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, a file holds two different blocks between Apothem's markers or marker lines Apothem cannot tell from your text, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

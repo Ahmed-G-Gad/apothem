@@ -22,8 +22,13 @@ advisories, including the `instruction_override` note when a file of yours keeps
 a tool from loading what Apothem writes (see
 [`install`](/docs/cli-reference/install)). It also warns about a file that holds
 a BEGIN marker with no END marker after it: the text after that marker is kept
-as it is, and Apothem's block is written apart from it (see
+as it is, and Apothem's block is written apart from it, also when the file
+holds a marker pair you quote in code; the warning says not to add the END
+marker back below that text, which would leave two Apothem blocks (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+A file that holds two or more whole blocks between Apothem's markers is left
+as it is, with a warning that names each block by its lines (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
 A file where Apothem cannot tell its block from your text, such as its block
 inside a code block of yours, is left as it is while an install record lists
 it, with a warning that names each marker pair in it and how to fix it (see
@@ -32,10 +37,11 @@ With no install record, a marker pair you quote in code is your text, and the
 update adds its block after it, unless the pair holds exactly the block the
 update writes: then it leaves the file as it is, with the warning. A file where
 a BEGIN marker outside code has its END marker in code, with another marker
-pair after them, is left as it is with the warning, record or not. The update
-also prints the warning after it writes its block when a rule in your profile
-opens a code block inside the block and a marker pair of yours follows it; the
-warning then says to fix that rule.
+pair after them, is left as it is with the warning, record or not. A rule in
+your profile that opens a code block and never closes it does not cause that:
+the update closes that code block at the end of the block it writes. In a dry
+run, the warning for a file left as it is says that Apothem "would leave the
+file as it is".
 
 In each folder Apothem writes into (a skills folder, the support files under
 `.apothem/support/`), `update` compares every entry it writes. A file entry is
