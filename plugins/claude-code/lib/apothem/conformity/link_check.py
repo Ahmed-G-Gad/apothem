@@ -285,9 +285,13 @@ def _docs_route_targets(docs_root: Path, route: str) -> list[Path] | None:
     # ``/docs/a?x=1`` from being mis-flagged.
     path_part = route.split("?", 1)[0].rstrip("/")
     segments = [segment for segment in path_part.split("/") if segment]
-    if any(segment in {".", ".."} or "\\" in segment for segment in segments):
-        # A route that climbs out of the page tree is no page route; looking it
-        # up would reach a file outside the docs folder.
+    if any(
+        segment in {".", ".."} or "\\" in segment or ":" in segment
+        for segment in segments
+    ):
+        # A route that climbs out of the page tree, or names a drive such as
+        # ``/docs/Z:/x``, is no page route; looking it up would reach a file
+        # outside the docs folder.
         return None
     if segments and segments[0] == DOCS_ROUTE_PREFIX:
         locale: str | None = None
@@ -390,6 +394,18 @@ def check(
                             ),
                         )
                     )
+                continue
+            if "\0" in stripped:
+                # No file name can hold a NUL, so the link is dead; the
+                # system calls that would look it up refuse such a name.
+                internal += 1
+                findings.append(
+                    Finding(
+                        line=index,
+                        destination=destination,
+                        detail="target name holds a NUL character, so no file has it",
+                    )
+                )
                 continue
             resolved = _resolve_target(path, destination)
             if (

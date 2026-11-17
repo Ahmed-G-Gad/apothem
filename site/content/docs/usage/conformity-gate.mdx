@@ -119,8 +119,13 @@ can come with an index and files someone else made, so the gate reads a listed
 path only when it is a regular file inside the root, of at most 8 MiB, holding
 UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
 
-- `outside_project`: an entry that leaves the root, such as `../notes.md` or an
-  absolute path. git never writes one, so the run does not pass;
+- `outside_project`: an entry with a `..` part or a leading `/`, such as
+  `../notes.md` or an absolute path. git never writes one, so the run does not
+  pass;
+- `unsupported_name`: on Windows, a name the system cannot hold as written,
+  such as `a:b.md`, whose `a:` reads as a drive, or one with a backslash. git
+  on Linux or macOS can track such a name, so it is counted without failing
+  the run;
 - `link`: a symbolic link, or on Windows a junction, at any level below the
   root, even one that points inside it, or an entry the index marks as a link.
   git stores a link as the path it points to, and a tracked file that a link
@@ -132,6 +137,11 @@ UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
 - `too_large` and `not_utf8_text`: a file over 8 MiB, or one whose bytes are
   not UTF-8 text.
 
+Two things these checks do not see. A hard link reads as an ordinary file, so
+a hard link to a file elsewhere is read; git and archive tools do not create
+one. And each file's levels are checked right before it is read, so a folder
+another program swaps for a link in between is followed.
+
 In this run the `link-check` matcher looks up a link target only inside the
 root: a relative link that leaves the root counts as external, and the search
 for a `site/content/docs` folder stops at the root. In every mode, it never
@@ -140,7 +150,9 @@ looks up a link that names a place by itself, such as a network share
 looking up a share sends your sign-in to that host.
 
 Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
-in `no-global-plans-grep`, which fails when git runs past it. A repository
+in `no-global-plans-grep`, whose report then carries the same `check_error`
+and fails; when git itself fails there, its message gives git's exit code,
+not git's own text. A repository
 whose own settings make git wait, such as an `include.path` that points at a
 named pipe, holds up each of these calls for that long at most. A
 `--all-perwrite` run that read no file does not pass: it reports

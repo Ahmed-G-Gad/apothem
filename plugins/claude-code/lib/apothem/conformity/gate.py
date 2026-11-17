@@ -1327,8 +1327,8 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     ``check_error`` when the tracked-file list cannot be read. Only regular
     files inside *root* are read (see :func:`_corpus.read_entry`), and
     ``files_skipped`` counts every other listed path by reason. An index
-    entry that leaves *root* also fails the run: git never writes one, so the
-    index was written by hand. The caller
+    entry with a ``..`` part or a leading ``/`` also fails the run: git never
+    writes one, so the index was written by hand. The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """
@@ -1344,10 +1344,11 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     skipped = dict.fromkeys(SKIP_REASONS, 0)
     for tracked in entries:
         abs_path = tracked.path
-        if leaves_root(root, abs_path):
+        if tracked.skip is not None or leaves_root(root, abs_path):
             # Counted before the exemptions below, so none of them can hide
-            # an entry that leaves the project.
-            skipped[SKIP_OUTSIDE] += 1
+            # an entry that leaves the project or a name this system cannot
+            # hold.
+            skipped[tracked.skip or SKIP_OUTSIDE] += 1
             continue
         if abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES:
             continue

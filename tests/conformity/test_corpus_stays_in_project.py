@@ -124,7 +124,7 @@ def _project(tmp_path: Path, files: dict[str, str] | None = None) -> Path:
 
 def _write_index(
     repo: Path,
-    names: list[str | bytes],
+    names: list[str | bytes | tuple[str, int, int]],
     *,
     modes: dict[str, int] | None = None,
 ) -> None:
@@ -134,23 +134,26 @@ def _write_index(
     lists whatever a hand-written index holds. This writes a version-2 index:
     a twelve-byte header, one entry per name in byte order (each pointing at
     the empty blob), and a SHA-1 checksum. ``git ls-files`` reads only the
-    names and modes. A ``bytes`` name is written as is, so it can hold bytes
-    that are not UTF-8. *modes* maps a ``str`` name to its index mode, such as
-    ``0o120000`` for a link; every other entry is a regular file.
+    names, modes and stages. A ``bytes`` name is written as is, so it can hold
+    bytes that are not UTF-8. *modes* maps a ``str`` name to its index mode,
+    such as ``0o120000`` for a link; every other entry is a regular file. A
+    ``(name, mode, stage)`` tuple writes one stage of a file with a merge
+    conflict (1 the common base, 2 ours, 3 theirs).
     """
     empty_blob = hashlib.sha1(b"blob 0\0", usedforsecurity=False).digest()
     chosen = modes or {}
-    entries = sorted(
-        (
-            item if isinstance(item, bytes) else item.encode("utf-8"),
-            chosen.get(item, 0o100644) if isinstance(item, str) else 0o100644,
-        )
-        for item in names
-    )
+    entries: list[tuple[bytes, int, int]] = []
+    for item in names:
+        if isinstance(item, tuple):
+            entries.append((item[0].encode("utf-8"), item[2], item[1]))
+        elif isinstance(item, bytes):
+            entries.append((item, 0, 0o100644))
+        else:
+            entries.append((item.encode("utf-8"), 0, chosen.get(item, 0o100644)))
     body = b""
-    for name, mode in entries:
+    for name, stage, mode in sorted(entries):
         entry = struct.pack(">10I", 0, 0, 0, 0, 0, 0, mode, 0, 0, 0) + empty_blob
-        entry += struct.pack(">H", min(len(name), 0xFFF)) + name
+        entry += struct.pack(">H", (stage << 12) | min(len(name), 0xFFF)) + name
         entry += b"\0" * (8 - len(entry) % 8)
         body += entry
     data = b"DIRC" + struct.pack(">II", 2, len(names)) + body
@@ -324,14 +327,68 @@ def test_index_entries_outside_the_project_are_not_read(tmp_path: Path) -> None:
 
     payload = _run(repo)
     _assert_only_clean_file_read(payload, passed=False)
-    # A backslash separates folders only on Windows; elsewhere that entry is
-    # one odd file name inside the project, missing from the working tree.
+    # Read as git reads a name, split on "/", the backslash entry is one file
+    # name, and on Windows the absolute one is a folder named "C:". git on
+    # another system can write both, so on Windows, where neither name can be
+    # held as written, they are counted as unsupported names, not as entries
+    # that leave the project. Elsewhere the backslash entry is just missing.
     expected = (
-        {"outside_project": 4}
+        {"outside_project": 2, "unsupported_name": 2}
         if os.name == "nt"
         else {"outside_project": 3, "missing": 1}
     )
     assert _skipped(payload) == expected
+
+
+def test_name_with_a_colon_is_not_counted_as_leaving_the_project(
+    tmp_path: Path,
+) -> None:
+    """A name such as ``a:b.py``, which git on Linux or macOS tracks, passes.
+
+    On Windows the part before the colon reads as a drive, so the file is
+    skipped as an unsupported name; elsewhere it is an ordinary file.
+    """
+    repo = _project(tmp_path)
+    if os.name != "nt":
+        (repo / "a:b.py").write_text(_CLEAN_PY, encoding="utf-8")
+    _write_index(repo, ["clean.py", "a:b.py"])
+
+    payload = _run(repo)
+    assert payload["passed"] is True
+    if os.name == "nt":
+        assert payload["files_scanned"] == 1
+        assert _skipped(payload) == {"unsupported_name": 1}
+    else:
+        assert payload["files_scanned"] == 2
+        assert _skipped(payload) == {}
+
+
+def test_link_in_any_stage_of_a_merge_conflict_counts_as_a_link(
+    tmp_path: Path,
+) -> None:
+    """During a merge conflict the index holds several modes for one name; a
+    link in any of them is enough to skip the file."""
+    repo = _project(tmp_path, {"alias.yml": "real.yml"})
+    _write_index(
+        repo,
+        [
+            "clean.py",
+            ("alias.yml", 0o100644, 1),
+            ("alias.yml", 0o120000, 2),
+            ("alias.yml", 0o100644, 3),
+        ],
+    )
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"link": 1}
+
+
+def test_missing_root_reports_a_git_failure(tmp_path: Path) -> None:
+    """A root that is gone is git's own error, reported with its exit code."""
+    payload = _run(tmp_path / "missing")
+    assert payload["passed"] is False
+    assert str(payload["check_error"]).startswith(_GIT_FAILED)
 
 
 def test_tracked_link_to_a_file_outside_the_project_is_not_read(
@@ -477,6 +534,38 @@ def test_plans_check_reports_a_listing_timeout(
 
     with pytest.raises(RuntimeError, match="did not finish"):
         no_global_plans_grep._git_ls_files(tmp_path)
+
+
+def test_plans_check_reports_a_listing_timeout_as_a_check_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The plans check's report carries the timeout as ``check_error``, the key
+    the corpus run uses for a check that did not finish, and fails."""
+    monkeypatch.setattr(subprocess, "run", _timing_out_run)
+
+    code = no_global_plans_grep._main(["no-global-plans-grep", str(tmp_path)])
+    report = json.loads(capsys.readouterr().out)
+    assert code == no_global_plans_grep.EXIT_FAIL
+    assert report["passed"] is False
+    assert report["check_error"] == "git ls-files did not finish within 60 seconds"
+    assert report["inspected"] == 0
+    assert report["empty_scope_expected"] is False
+
+
+def test_plans_check_leaves_git_error_text_out(tmp_path: Path) -> None:
+    """The plans check's git failure names git's exit code, not git's own text,
+    which can name files outside the project."""
+    repo = _project(tmp_path)
+    secret = _write(tmp_path / "outside", {"secret.cfg": "this is not git config\n"})
+    with (repo / ".git" / "config").open("a", encoding="utf-8") as config:
+        config.write(f"[include]\n\tpath = {(secret / 'secret.cfg').as_posix()}\n")
+
+    with pytest.raises(RuntimeError, match="git ls-files failed under") as caught:
+        no_global_plans_grep._git_ls_files(repo)
+    assert "exit code" in str(caught.value)
+    assert "secret" not in str(caught.value)
 
 
 @_POSIX_ONLY
@@ -747,3 +836,28 @@ def test_link_check_finds_the_docs_folder_only_inside_the_project(
     repo = _project(tmp_path, {"doc.md": "[p](/docs/nowhere)\n"})
 
     assert _link_check_files(_run(repo)) == []
+
+
+def test_link_with_a_nul_character_keeps_the_other_findings(tmp_path: Path) -> None:
+    """A NUL in one link's destination is a dead link like any other; the
+    file's other link findings are still reported."""
+    repo = _project(
+        tmp_path,
+        {"one.md": "[c](gone-too.md)\n", "two.md": "[a](gone.md) [b](a\0b.md)\n"},
+    )
+
+    payload = _run(repo)
+    assert _link_check_files(payload) == ["one.md", "two.md"]
+    advisory = payload["advisory"]
+    assert isinstance(advisory, list)
+    entry = next(item for item in advisory if item["matcher"] == "link_check")
+    assert entry["finding_count"] == 3
+
+
+def test_link_check_never_looks_up_a_docs_route_with_a_drive(tmp_path: Path) -> None:
+    """A ``/docs/`` route whose segment names a drive, such as ``/docs/Z:/x``,
+    is counted as external, not looked up on that drive."""
+    _write(tmp_path, {"site/content/docs/index.mdx": "page\n"})
+    result = link_check.check("[x](/docs/Z:/x)\n", tmp_path / "page.md")
+    assert result.findings == []
+    assert result.external_count == 1

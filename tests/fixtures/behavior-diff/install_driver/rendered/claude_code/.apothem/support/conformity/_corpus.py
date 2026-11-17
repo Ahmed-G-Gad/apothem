@@ -20,7 +20,10 @@ reach, though each file's levels are checked right before it is read. A hard
 link reads as an ordinary file, because nothing in it tells where the other
 names of its data are; git and archive tools do not create one to a file
 outside the project. And ``git ls-files`` itself reads the repository's own git
-configuration, which :func:`run_git` governs, not this module.
+configuration: :func:`run_git` turns off the settings in it that start a
+program, but others, such as an ``include.path`` that names a named pipe or a
+network share, still apply (see ``_git.py``); the time limit bounds a wait one
+of them causes.
 """
 
 from __future__ import annotations
@@ -46,6 +49,7 @@ _SUBMODULE_MODE: Final[str] = "160000"
 
 # Why a listed path was not read. The corpus report counts each one.
 SKIP_OUTSIDE: Final[str] = "outside_project"
+SKIP_UNSUPPORTED: Final[str] = "unsupported_name"
 SKIP_LINK: Final[str] = "link"
 SKIP_SUBMODULE: Final[str] = "submodule"
 SKIP_NOT_REGULAR: Final[str] = "not_regular_file"
@@ -54,6 +58,7 @@ SKIP_TOO_LARGE: Final[str] = "too_large"
 SKIP_NOT_TEXT: Final[str] = "not_utf8_text"
 SKIP_REASONS: Final[tuple[str, ...]] = (
     SKIP_OUTSIDE,
+    SKIP_UNSUPPORTED,
     SKIP_LINK,
     SKIP_SUBMODULE,
     SKIP_NOT_REGULAR,
@@ -79,23 +84,29 @@ class CorpusListError(Exception):
 
 @dataclass(frozen=True)
 class TrackedEntry:
-    """One index entry: its path joined to the root as git lists it, its mode."""
+    """One index entry: its path inside the root, its mode, and any name skip.
+
+    *skip* is set when the name itself rules the entry out (see
+    :func:`name_skip`); *path* is then the root, never read.
+    """
 
     path: Path
     mode: str
+    skip: str | None = None
 
 
 def tracked_entries(root: Path) -> list[TrackedEntry]:
-    """Return the index entries under *root*, each path joined as git lists it.
+    """Return the index entries under *root*, each path built from its git name.
 
-    Runs ``git ls-files -s -z`` in *root* through :func:`run_git`, which keeps
-    the repository's own git settings from starting a program, gives git no
-    input and decodes its output as UTF-8 with any other byte replaced; the
-    call gives up after :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. So a file name
-    that is not UTF-8 names no file on disk
-    and is skipped on its own instead of failing the run. An entry git lists
-    more than once (a file with a merge conflict) is kept once. No path is
-    resolved and no link is followed.
+    Runs ``git ls-files -s -z`` in *root* through :func:`run_git`, which turns
+    off the repository's settings that start a program, gives git no input and
+    decodes its output as UTF-8 with any other byte replaced, so a file name
+    that is not UTF-8 names no file on disk and is skipped on its own instead
+    of failing the run. The call gives up after
+    :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. A file with a merge conflict, which
+    the index lists once per stage, is kept once, and counts as a link or a
+    submodule when any of its stages does. Each name is judged as git writes
+    it (see :func:`name_skip`); no path is resolved and no link is followed.
 
     Raises :class:`CorpusListError` when the list cannot be read: git cannot be
     started, git exits with an error (for example, *root* is not inside a git
@@ -117,16 +128,45 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
         raise CorpusListError(
             f"git ls-files failed with exit code {completed.returncode}"
         )
-    entries: list[TrackedEntry] = []
-    seen: set[str] = set()
+    modes: dict[str, str] = {}
     for record in completed.stdout.split("\0"):
         # Each record is "<mode> <object> <stage>\t<path>".
         details, tab, name = record.partition("\t")
-        if not tab or not name or name in seen:
+        if not tab or not name:
             continue
-        seen.add(name)
-        entries.append(TrackedEntry(root / name, details.split(" ", 1)[0]))
+        mode = details.split(" ", 1)[0]
+        if name not in modes or mode in (_LINK_MODE, _SUBMODULE_MODE):
+            modes[name] = mode
+    entries: list[TrackedEntry] = []
+    for name, mode in modes.items():
+        skip = name_skip(name)
+        if skip is None:
+            entries.append(TrackedEntry(root.joinpath(*name.split("/")), mode))
+        else:
+            entries.append(TrackedEntry(root, mode, skip))
     return entries
+
+
+def name_skip(name: str) -> str | None:
+    """Return why a git *name* is not read on this system, or None to read it.
+
+    git writes a name as parts joined by ``/``, and never an empty, ``.`` or
+    ``..`` part, so a name with one (a leading ``/`` is an empty first part)
+    was written by hand to reach outside the project: :data:`SKIP_OUTSIDE`.
+    On Windows, a part with a colon (``a:b.md`` reads as drive ``a:``, and a
+    colon later in a part names a file stream), a backslash (a folder separator
+    there) or a trailing dot or space (which Windows drops) cannot be held as
+    written. git on another system can write such a name, so it is skipped as
+    :data:`SKIP_UNSUPPORTED`, which does not fail the run.
+    """
+    parts = name.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        return SKIP_OUTSIDE
+    if os.name == "nt" and any(
+        ":" in part or "\\" in part or part.endswith((".", " ")) for part in parts
+    ):
+        return SKIP_UNSUPPORTED
+    return None
 
 
 def is_link(info: os.stat_result) -> bool:
@@ -173,7 +213,8 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
         current = current / part
         try:
             info = os.lstat(current)
-        except OSError:
+        except (OSError, ValueError):
+            # ValueError: a NUL in the name, which no file can have.
             return SKIP_MISSING
         if is_link(info):
             return SKIP_LINK
@@ -195,6 +236,8 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
     that holds that path, so the index mode is checked as well. The text is read
     the way ``Path.read_text`` reads it, line endings turned into ``\\n``.
     """
+    if entry.skip is not None:
+        return None, entry.skip
     if leaves_root(root, entry.path):
         return None, SKIP_OUTSIDE
     if entry.mode == _LINK_MODE:
@@ -209,13 +252,15 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
     if info.st_size > MAX_FILE_BYTES:
         return None, SKIP_TOO_LARGE
     try:
-        with entry.path.open(encoding="utf-8") as handle:
-            text = handle.read(MAX_FILE_BYTES + 1)
-    except UnicodeDecodeError:
-        return None, SKIP_NOT_TEXT
+        with entry.path.open("rb") as handle:
+            data = handle.read(MAX_FILE_BYTES + 1)
     except OSError:
         return None, SKIP_MISSING
-    if len(text) > MAX_FILE_BYTES:
+    if len(data) > MAX_FILE_BYTES:
         # The file grew past the limit after it was checked.
         return None, SKIP_TOO_LARGE
-    return text, None
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None, SKIP_NOT_TEXT
+    return text.replace("\r\n", "\n").replace("\r", "\n"), None
