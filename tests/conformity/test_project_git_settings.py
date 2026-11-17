@@ -1716,9 +1716,16 @@ def test_the_corpus_run_reads_files_with_odd_names(tmp_path: Path) -> None:
     """
     repo = _empty_repo(tmp_path / "project")
     (repo / "docs").mkdir()
-    names = ["a\rb.md", os.fsdecode(b"c\xe9d.md")]
-    for name in names:
-        (repo / "docs" / name).write_bytes(b"# page\n")
+    names = ["a\rb.md"]
+    (repo / "docs" / names[0]).write_bytes(b"# page\n")
+    not_utf_8 = os.fsdecode(b"c\xe9d.md")
+    try:
+        (repo / "docs" / not_utf_8).write_bytes(b"# page\n")
+    except OSError:
+        # A file system that takes only UTF-8 names, as on macOS, refuses it.
+        pass
+    else:
+        names.append(not_utf_8)
     _git(repo, "add", "-A")
     _git(repo, *_IDENT, "commit", "-q", "-m", "docs: add two pages")
 
