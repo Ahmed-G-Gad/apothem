@@ -44,9 +44,8 @@ imported pytest (a child process a session started, say), ``PYTEST_VERSION``
 counts when it holds the version of the pytest installed for this Python,
 read from its package metadata only while ``PYTEST_VERSION`` is set; the
 answer is kept for the process, a failed lookup (no pytest installed)
-included. A ``PYTEST_VERSION`` with any other
-value (an empty one, or a pin such as ``8.2`` that a shell or a CI job
-exports) does not count. One that a shell or a CI job exports with the
+included. A ``PYTEST_VERSION`` with any other value (an empty one, or a pin
+such as ``8.2`` that a shell or a CI job exports) does not count. One that a shell or a CI job exports with the
 installed pytest's exact version (``9.1.0`` beside ``pip install
 pytest==9.1.0``) counts all the same, outside pytest too: the refusal message
 then says that ``PYTEST_VERSION`` alone turned the guard on, in a process that
