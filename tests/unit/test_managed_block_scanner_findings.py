@@ -1040,6 +1040,41 @@ def _move_line(text: str, line: int, above: int) -> str:
     return "\n".join(lines)
 
 
+def _add_closer(text: str, pair: harness_materializer.UncertainPair) -> str:
+    """Return *text* with a closing line added above *pair*'s BEGIN marker.
+
+    The line is indented as the line that opens the code block holding the
+    pair, so it closes that code block inside a list item too.
+    """
+    lines = text.split("\n")
+    assert pair.begin.fence is not None
+    opener = lines[pair.begin.fence - 1]
+    indent = opener[: len(opener) - len(opener.lstrip())]
+    at = pair.begin.line - 1
+    return "\n".join([*lines[:at], f"{indent}```", *lines[at:]])
+
+
+def _code_line_numbers(text: str) -> set[int]:
+    """Return the 0-based lines a CommonMark reading of *text* shows as code."""
+    from markdown_it import MarkdownIt
+
+    code: set[int] = set()
+    for token in MarkdownIt("commonmark").parse(text):
+        if token.type in {"fence", "code_block"} and token.map is not None:
+            code.update(range(*token.map))
+    return code
+
+
+def _read_differently(text: str, fixed: str, lines: dict[int, int]) -> list[str]:
+    """Return the lines of *text* that read as code in one text and not the other.
+
+    *lines* maps each 0-based line of *text* to compare to its line in *fixed*.
+    """
+    before, after = _code_line_numbers(text), _code_line_numbers(fixed)
+    split = text.split("\n")
+    return [split[at] for at, to in lines.items() if (at in before) != (to in after)]
+
+
 #: Apothem's block (lines 6 to 8) inside a code block of yours that opens at
 #: line 3 and that a fence closes at line 9, below it, then text of yours.
 _WRAPPED = f"My notes:\n\n```\nmake test\n\n{OLD}```\n\nafter fence\n\nmy tail\n"
@@ -1049,60 +1084,116 @@ _WRAPPED = f"My notes:\n\n```\nmake test\n\n{OLD}```\n\nafter fence\n\nmy tail\n
 #: the opener on line 13 would run to the end of the file.
 _CASCADE = f"My notes:\n\n```\nmake test\n\n{OLD}```\n\n```\nlater\n```\nmy tail\n"
 
+#: The block in your code block, closed at line 9, and then text and code
+#: examples of yours. Added, a closing line above the block turns line 9 into
+#: an opener that the last line of your first example closes (an opening line
+#: with an info string, such as ```sh, closes nothing), so the text between
+#: reads as code; below that line both readings agree again.
+_LATER_EXAMPLES = {
+    "text-then-an-example": "\nafter fence\n\nMore:\n\n```sh\nls\n```\n\nmy tail\n",
+    "a-line-then-an-example": "\nsome prose\n\n```sh\nls\n```\n",
+    "two-examples": ("\nafter\n\n```sh\nls\n```\n\nmid\n\n```py\nx = 1\n```\n\ntail\n"),
+    "a-later-line-closes-what-it-opens": "more code\n```\n",
+}
 
-def test_a_closing_line_that_would_open_a_code_block_is_named_to_move() -> None:
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(_WRAPPED, id="text-to-the-end"),
+        pytest.param(_CASCADE, id="a-code-block-further-down"),
+        *(
+            pytest.param(f"My notes:\n\n```\nmake test\n\n{OLD}```\n{tail}", id=name)
+            for name, tail in _LATER_EXAMPLES.items()
+        ),
+    ],
+)
+def test_a_closing_line_that_would_open_a_code_block_is_named_to_move(
+    text: str,
+) -> None:
     """lifecycle-r4-4: a closing fence added above the BEGIN marker, as the fix
     said, turned the old closing line below the block into an opener, and a
-    Markdown viewer showed the rest of the file as code. The pair now names
-    that line, and moving it as the fix says leaves no code block open.
+    Markdown viewer showed the rest of the file as code.
+
+    The pair named that line only when the code block it opened ran to the
+    end of the file. With a code example of yours further down, the readings
+    agreed again at the last line of that example, so the fix still said to
+    add a closing line: done that way, your text between (and the line that
+    opens your example) read as code, and the next update and verify passed.
+    The pair now names that line whenever, added, a closing line would change
+    how a line below it reads; moved as the fix says, every line of yours
+    reads as before.
     """
-    [pair] = harness_materializer.uncertain_pairs(_WRAPPED)
-    added = _WRAPPED.replace("make test\n\n", "make test\n```\n\n", 1)
-    moved = _move_line(_WRAPPED, 9, above=6)
-    [cascade] = harness_materializer.uncertain_pairs(_CASCADE)
+    [pair] = harness_materializer.uncertain_pairs(text)
+    lines = text.split("\n")
+    moved = _move_line(text, 9, above=6)
+    above = {at: at for at in range(5)}
+    below = range(9, len(lines))
 
     assert (pair.begin.line, pair.end.line, pair.closer) == (6, 8, 9)
-    assert cascade.closer == 9
-    assert "my tail" not in _code_lines(_move_line(_CASCADE, 9, above=6))
-    assert "after fence" in _code_lines(added)
-    assert "after fence" not in _code_lines(moved)
-    assert "my tail" not in _code_lines(moved)
+    assert _read_differently(
+        text, _add_closer(text, pair), {at: at + 1 for at in below}
+    )
+    assert not _read_differently(text, moved, {**above, **{at: at for at in below}})
     assert complete_managed_block(moved) == OLD.rstrip("\n")
     assert merge_managed_block(moved, "new body", recorded=True) == moved.replace(
         OLD.rstrip("\n"), NEW.rstrip("\n")
     )
 
 
+#: The block in your code block, then a code example of yours whose opening
+#: line (```sh) the code block holds: line 13 closes that code block, and,
+#: once a closing line above the block ends it, your example.
+_CLOSES_YOUR_EXAMPLE = f"My notes:\n\n```\nmake test\n\n{OLD}More:\n\n```sh\nls\n```\n"
+
+
 @pytest.mark.parametrize(
-    "text",
+    ("text", "close"),
     [
+        pytest.param(_CLOSES_YOUR_EXAMPLE, 13, id="closes-a-later-code-block-of-yours"),
         pytest.param(
-            f"My notes:\n\n```\nmake test\n\n{OLD}More:\n\n```sh\nls\n```\n",
-            id="closes-a-later-code-block-of-yours",
-        ),
-        pytest.param(
-            f"My notes:\n\n```\nmake test\n\n{OLD}```\nmore code\n```\n",
-            id="a-later-line-closes-what-it-opens",
+            f"{_CLOSES_YOUR_EXAMPLE}\nmy tail\n",
+            13,
+            id="closes-a-later-code-block-of-yours-then-text",
         ),
         pytest.param(
             f"- item\n\n  ```\n  make test\n\n  {B}\n  old body\n  {E}\nafter list\n",
+            None,
             id="its-list-item-ends-it",
         ),
     ],
 )
-def test_a_closing_line_that_then_opens_nothing_left_open_is_not_moved(
-    text: str,
+def test_a_closing_line_is_added_where_that_changes_no_line_below(
+    text: str, close: int | None
 ) -> None:
-    """Closing the code block above the pair then leaves no code block open.
+    """The fix adds a closing line above the pair, and no line below changes.
 
-    The closing line below the block closes a code block of yours whose
-    opener the first one held, or a later line closes what it opens (moving
-    it would leave that later line open instead), or no closing line ends
-    the code block at all: the fix adds a closing line.
+    The closing line below the block (*close*) is the last line of a code
+    example of yours whose opening line the first code block held: added, a
+    closing line above the block leaves it closing that example, where moved
+    it would leave the example open. Or no closing line ends the code block
+    at all: its list item does. Every line of yours below that line (below
+    the END marker, without one) reads as it does now.
     """
     [pair] = harness_materializer.uncertain_pairs(text)
+    start = pair.end.line if close is None else close
 
     assert pair.closer is None
+    assert not _read_differently(
+        text,
+        _add_closer(text, pair),
+        {at: at + 1 for at in range(start, len(text.split("\n")))},
+    )
+
+
+def test_moving_the_last_line_of_your_example_would_leave_it_open() -> None:
+    """Why the fix adds a closing line there: moved, line 13 no longer closes
+    your example, which then runs to the end of the file over your text.
+    """
+    text = f"{_CLOSES_YOUR_EXAMPLE}\nmy tail\n"
+
+    assert "my tail" not in _code_lines(text)
+    assert "my tail" in _code_lines(_move_line(text, 13, above=6))
 
 
 def test_the_end_marker_a_rule_s_code_block_hides_names_its_closing_line() -> None:

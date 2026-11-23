@@ -91,10 +91,10 @@ def _close_above(pair: UncertainPair, block: str, line: int) -> str:
     """Return the step that closes *block*, the code block holding *pair*, above *line*.
 
     When the line that closes that code block further down would then open
-    a code block of its own that nothing closes (see
-    :attr:`UncertainPair.closer`), the step moves that line up instead of
-    adding a closing line: added, the old closing line would turn the rest of
-    the file into code in a Markdown viewer.
+    a code block of its own (see :attr:`UncertainPair.closer`), the step
+    moves that line up instead of adding a closing line: added, the old
+    closing line would turn lines below it into code in a Markdown viewer,
+    or a code example of the operator's further down into text.
     """
     if pair.closer is None:
         return f"close {block} above line {line}"

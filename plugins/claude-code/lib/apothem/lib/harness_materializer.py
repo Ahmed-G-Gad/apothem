@@ -775,9 +775,10 @@ class UncertainPair:
     either pair can be Apothem's block. ``closer`` is the 1-based line of the
     closing run that closes, below the END marker, the code block holding
     that marker, given only when that line has to move: once the code block
-    is closed above the pair, the line would open a code block that no later
-    line closes, and a Markdown viewer would show the rest of the file as
-    code (see :func:`_closer_of`).
+    is closed above the pair by an added closing line, the line would open a
+    code block of its own, and a Markdown viewer would show lines of the
+    operator's below it as code, or a code example of theirs further down as
+    text (see :func:`_closer_of`).
     """
 
     begin: MarkerLine
@@ -831,31 +832,39 @@ def _closer_of(lines: list[_Line], end: int, scan: _Scan) -> int | None:
 
     The fix for a pair whose END marker reads as fenced code closes that
     code block above a marker of the pair, and the pair then reads as a
-    whole block. When the code block's own closing run below the END marker
-    would then open a code block that runs to the end of the text (see
-    :func:`_left_open_by`), a Markdown viewer would show the rest of the file
-    as code: the fix moves that run up instead of adding a closing line.
-    ``None`` otherwise, also when no closing run ends that code block.
+    whole block. When, with a closing line added there, the code block's own
+    closing run below the END marker would open a code block of its own that
+    changes how a line after it reads (see :func:`_kept_run_misreads`), the
+    fix moves that run up instead. ``None`` otherwise, also when no closing
+    run ends that code block.
     """
     kind, fence = scan.places.get(end, (_Kind.TEXT, None))
     if kind is not _Kind.CODE or fence is None:
         return None
     close = scan.closers.get(fence)
-    if close is None or close <= end or not _left_open_by(lines, end, close):
+    if close is None or close <= end or not _kept_run_misreads(lines, end, close):
         return None
     return close + 1
 
 
-def _left_open_by(lines: list[_Line], end: int, close: int) -> bool:
-    """Return True when line *close* would leave a code block open to the end.
+def _kept_run_misreads(lines: list[_Line], end: int, close: int) -> bool:
+    """Return True when the run on line *close*, left in place, changes a later line.
 
-    The lines after the END marker on line *end* are read afresh twice, as a
-    Markdown viewer reads them (every fence opener opens): with line *close*,
-    and with it left out (moved up above the pair). True when only the first
-    reading ends in a code block. A run that then closes a code block of the
-    operator's whose opener the first code block held (a line such as ```sh
-    in it, say) leaves none open. The two readings agree up to *close*, and
-    once they read a line alike after it they agree to the end, so the
+    That run closes, below the END marker on line *end*, the code block a
+    fix closes above the pair: by adding a closing line there, which leaves
+    the run in place, or by moving the run up there. The lines after the END
+    marker are read afresh twice, as a Markdown viewer reads them (every
+    fence opener opens): with the run, and with it moved. The two readings
+    agree up to *close*. When the run then closes a code block that a line
+    after the END marker opens (a code example of the operator's, such as one
+    that opens with ```sh, whose opening line the first code block held), it
+    is that example's closing line, and moved it would leave the example
+    open: False. Otherwise the run opens a code block of its own (or sits in
+    one a line after the END marker opens, where moving it changes nothing):
+    True when a line after it then reads as code in one reading and not in
+    the other, however far down a later code example of the operator's
+    carries the change, or when only the reading with the run ends in a code
+    block. Once the two readings are alike they agree to the end, so the
     reading stops there.
     """
     kept = _MarkdownState(lines, None)
@@ -863,11 +872,13 @@ def _left_open_by(lines: list[_Line], end: int, close: int) -> bool:
         kept.step(index)
     moved = replace(kept, items=list(kept.items))
     kept.step(close)
+    if kept.closed is not None:
+        return False
     for index in range(close + 1, len(lines)):
         if _alike(kept, moved):
             return False
-        kept.step(index)
-        moved.step(index)
+        if kept.step(index) is not moved.step(index):
+            return True
     return kept.fence is not None and moved.fence is None
 
 

@@ -508,20 +508,30 @@ def _held(tmp_path: Path, text: str) -> tuple[Path, list[str]]:
 def test_the_install_warning_names_every_pair_and_conditions_each_fix(
     tmp_path: Path,
 ) -> None:
-    """docs-1, cmark-3, diff-3, oracle-2: the example is not the only pair named."""
+    """docs-1, cmark-3, diff-3, oracle-2: the example is not the only pair named.
+
+    For the pair at lines 4 to 6, a closing line added above line 4 would turn
+    line 7, which closes that code block, into an opener over your notes
+    below it, so the fix moves line 7 up (r12). For the pair at lines 14 to
+    16, the last line of the file closes your ```sh example once the code
+    block is closed above line 14, so the fix adds a closing line.
+    """
     target, [message] = _held(tmp_path, _EXAMPLE_ABOVE)
 
     assert message.startswith(
         f"{target}: Apothem cannot tell whether the marker lines in this file "
         "mark its block or text of yours, so it left the file as it is."
     )
-    for begin, end, fence in ((4, 6, 3), (14, 16, 11)):
+    for begin, end, fence, step in (
+        (4, 6, 3, "move line 7, which closes that code block further down, up"),
+        (14, 16, 11, "close that code block"),
+    ):
         assert (
             f"The BEGIN marker at line {begin} and the END marker at line {end} sit "
             f"inside a code block that opens at line {fence}. If lines {begin} to "
-            f"{end} are Apothem's block, close that code block above line {begin}: "
-            "the next update then replaces those lines. If they are text of yours, "
-            "change or delete those two marker lines."
+            f"{end} are Apothem's block, {step} above line {begin}: the next update "
+            "then replaces those lines. If they are text of yours, change or delete "
+            "those two marker lines."
         ) in message
     assert message.endswith(
         "Then run apothem update again. apothem verify fails for this tool until "
@@ -2598,6 +2608,17 @@ def _code_text(text: str) -> str:
     return "".join(t.content for t in tokens if t.type in {"fence", "code_block"})
 
 
+def _code_line_numbers(text: str) -> set[int]:
+    """Return the 0-based lines a CommonMark reading of *text* shows as code."""
+    from markdown_it import MarkdownIt
+
+    code: set[int] = set()
+    for token in MarkdownIt("commonmark").parse(text):
+        if token.type in {"fence", "code_block"} and token.map is not None:
+            code.update(range(*token.map))
+    return code
+
+
 #: The step the update's text gives for Apothem's block inside a code block
 #: of yours whose closing line below the block has to move.
 _MOVE_STEP = re.compile(
@@ -2605,10 +2626,51 @@ _MOVE_STEP = re.compile(
     r"that code block further down, up above line (\d+)"
 )
 
+#: The step that adds a closing line above the block instead.
+_CLOSE_STEP = re.compile(
+    r"If lines (\d+) to (\d+) are Apothem's block, close that code block above "
+    r"line (\d+)"
+)
 
+#: What follows the line that closes the code block around Apothem's block:
+#: your text, and code examples of yours whose opening line carries an info
+#: string (```sh), which closes nothing.
+_YOUR_LINES_BELOW = {
+    "text": "\nafter fence\n\nmy tail\n",
+    "text-then-an-example": "\nafter fence\n\nMore:\n\n```sh\nls\n```\n\nmy tail\n",
+    "a-line-then-an-example": "\nsome prose\n\n```sh\nls\n```\n",
+    "two-examples": ("\nafter\n\n```sh\nls\n```\n\nmid\n\n```py\nx = 1\n```\n\ntail\n"),
+}
+
+
+def _follow_the_step(text: str, message: str) -> tuple[str, int, int, int]:
+    """Return *text* fixed as *message* says, the block's lines and its closing line.
+
+    *message* says to move the line that closes the code block around the
+    block up above its BEGIN marker, or to add a closing line there; the
+    closing line is the first line of three backticks after the END marker.
+    """
+    lines = text.split("\n")
+    moved = _MOVE_STEP.search(message)
+    if moved is not None:
+        begin, end, closer, above = (int(group) for group in moved.groups())
+        lines.insert(above - 1, lines.pop(closer - 1))
+    else:
+        added = _CLOSE_STEP.search(message)
+        assert added is not None, message
+        begin, end, above = (int(group) for group in added.groups())
+        closer = lines.index("```", end) + 1
+        lines.insert(above - 1, "```")
+    assert above == begin
+    return "\n".join(lines), begin, end, closer
+
+
+@pytest.mark.parametrize(
+    "below", list(_YOUR_LINES_BELOW.values()), ids=list(_YOUR_LINES_BELOW)
+)
 @pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
 def test_following_the_fix_for_a_block_in_your_code_block_leaves_no_code_open(
-    harness_id: str, sandbox_factory: SandboxFactory
+    harness_id: str, below: str, sandbox_factory: SandboxFactory
 ) -> None:
     """lifecycle-r4-4, markers-r4-4: done as the text said, your text became code.
 
@@ -2616,40 +2678,51 @@ def test_following_the_fix_for_a_block_in_your_code_block_leaves_no_code_open(
     the block ends, with your own text after it. The text said to close that
     code block above the BEGIN marker; done that way, the old closing line
     below the block opened a code block that nothing closes, so a Markdown
-    viewer showed every line of yours after it as code. The text now says to
-    move that closing line up; done as it says, the update replaces the
-    block, verify passes, and no line of yours after the block reads as code.
+    viewer showed every line of yours after it as code. The text then said to
+    move that closing line up only when that code block ran to the end of
+    the file: with a code example of yours further down, whose last line
+    closed it, the text still said to add a closing line, and done that way
+    your text above that example (and the line that opens it) read as code,
+    while the next update and verify passed (r12). The text now says to move
+    the closing line up; done as it says, the update replaces the block,
+    verify passes, and every line of yours reads as before: your code above
+    the block stays code, and each line below it reads as code only where it
+    did. The test follows whichever step the text gives.
     """
     box = sandbox_factory(harness_id)
     box.install()
     anchor = _anchor(box)
     text = anchor.read_bytes().decode("utf-8")
-    wrapped = f"My notes:\n\n```\nmake test\n\n{text}```\n\nafter fence\n\nmy tail\n"
+    wrapped = f"My notes:\n\n```\nmake test\n\n{text}```\n{below}"
     anchor.write_bytes(wrapped.encode())
     profile = str(profile_minimal_path())
 
     payload = box.partial("update", "--profile", profile)
     [message] = [_flat(str(w["message"])) for w in payload["warnings"] if _left(w)]
-    found = _MOVE_STEP.search(message)
-    assert found is not None, message
-    begin, end, closer, above = (int(group) for group in found.groups())
-    lines = wrapped.split("\n")
-    lines.insert(above - 1, lines.pop(closer - 1))
-    anchor.write_bytes("\n".join(lines).encode())
+    fixed, begin, end, closer = _follow_the_step(wrapped, message)
+    anchor.write_bytes(fixed.encode())
     code, output = box.invoke("update", "--profile", profile, "--json")
     verify, verify_output = box.invoke("verify")
     after = anchor.read_bytes().decode("utf-8")
 
     assert (wrapped.split("\n")[begin - 1], wrapped.split("\n")[end - 1]) == (B, E)
-    assert above == begin
+    assert closer == end + 1
     assert wrapped.split("\n")[closer - 1] == "```"
     assert code == 0, output
     assert json.loads(output)["status"] == "success"
     assert verify == 0, verify_output
     assert after.count(B) == 1
     assert "make test" in _code_text(after)
-    assert "after fence" not in _code_text(after)
-    assert "my tail" not in _code_text(after)
+    old, new = wrapped.split("\n"), after.split("\n")
+    rest = len(old) - closer
+    assert new[-rest:] == old[-rest:]
+    was, now = _code_line_numbers(wrapped), _code_line_numbers(after)
+    yours = [*range(begin - 1), *range(len(old) - rest, len(old))]
+    assert not [
+        old[at]
+        for at in yours
+        if (at in was) != ((at if at < begin else at - len(old) + len(new)) in now)
+    ]
 
 
 def test_deleting_the_opening_line_with_old_text_deletes_the_closing_line_too(

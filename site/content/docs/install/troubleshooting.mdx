@@ -524,9 +524,9 @@ closing line. With a marker pair of yours after it, install and update leave
 the file as it is, and the warning says that the code block comes from a rule
 in your profile: close it above the END marker and fix that rule. When the
 line that closes that code block further down would then open a code block
-of its own that nothing closes, the warning says instead to move that line up
-above the END marker, for example "move line 5, which closes it further down,
-up above line 4".
+of its own, which would change how a line of yours below it reads, the
+warning says instead to move that line up above the END marker, for example
+"move line 5, which closes it further down, up above line 4".
 
 That closing line, or the closing line of a code block a rule in your profile
 writes, can also close a code block of yours that opens above Apothem's block
@@ -607,8 +607,13 @@ marker pair and BEGIN marker it names:
    further down, as in "move line 40, which closes that code block further
    down, up above line 6", move that line up rather than add a closing
    fence: added, a second closing line would turn the old one into the start
-   of a code block that runs to the end of the file, so a Markdown viewer
-   would show the rest of your text as code. When the warning says to delete
+   of a code block, so a Markdown viewer would show your text below it as
+   code, up to the next line that closes a code block or to the end of the
+   file, and a code example of yours further down could then show as text.
+   When that closing line is the last line of a code example of yours that
+   starts below the block (its opening line sat inside your code block), the
+   warning says to add the closing fence instead: that line still closes
+   your example. When the warning says to delete
    the opening line with old Apothem text instead, it names that closing line
    to delete too. When the warning says to delete the pair by hand (its two marker
    lines sit in different code blocks, say), delete those lines and the lines
