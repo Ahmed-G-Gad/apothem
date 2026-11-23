@@ -179,7 +179,12 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   wrapper does it for a refusal absorbed in ``pytest_unconfigure`` ("after the
   session finished"): pytest returns the session's exit status after that
   hook. One absorbed later still, in a cleanup registered with
-  ``config.add_cleanup``, reaches only ``stderr``.
+  ``config.add_cleanup``, reaches only ``stderr``. These ``tryfirst`` wrappers
+  finish after every wrapper except a ``tryfirst`` one that pytest registered
+  after the guard (a conftest's): a refusal absorbed after such a
+  ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the session
+  finished", and one after such a ``pytest_unconfigure`` wrapper's ``yield``
+  reaches only ``stderr``.
 - ``pytest_testnodedown``, an optional hook that only xdist defines. An xdist
   worker's ``trylast`` session-finish wrapper puts what it holds in
   ``config.workeroutput`` once every plain session-finish hook has run, which
@@ -1286,9 +1291,12 @@ class RealHomeGuard:
         pytest calls the hook after the session finished and returns the
         session's exit status after it, so the status set here is the run's. As
         a ``tryfirst`` wrapper this finishes after every plain implementation
-        and every wrapper that is not ``tryfirst``. An xdist worker writes the
-        refusal to ``stderr`` only: it has handed its refusals to the controller
-        by then.
+        and every wrapper that is not ``tryfirst``, and after every ``tryfirst``
+        one registered before the guard. A ``tryfirst`` wrapper registered
+        after it (a conftest's) finishes later still: a refusal absorbed after
+        its ``yield`` reaches only ``stderr``, as one in a cleanup registered
+        with ``config.add_cleanup`` does. An xdist worker writes the refusal to
+        ``stderr`` only: it has handed its refusals to the controller by then.
         """
         try:
             return (yield)
