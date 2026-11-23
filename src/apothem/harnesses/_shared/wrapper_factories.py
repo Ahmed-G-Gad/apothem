@@ -650,14 +650,15 @@ def _retired_at_uninstall(retired_fn: _RetiredFn | None) -> tuple[OwnedEntry, ..
     return retired_fn(profile)
 
 
-def _record_refused_prepass(
+def _record_stopped_prepass(
     harness_name: str, root: Path, done: tuple[MaterializationResult, ...]
 ) -> None:
     """Record an unfinished uninstall when the pre-pass *done* changed a file.
 
-    Called while a refusal of the real-home guard is raised, so the backups
-    the pre-pass took stay referenced. A second refusal, or any error writing
-    the record, is dropped so the first one propagates.
+    Called while the native-config step raises (a refusal of the real-home
+    guard or any other error), so the backups the pre-pass took stay
+    referenced. A refusal, or any error writing the record, is dropped so the
+    first error propagates.
     """
     if any(result.changed or result.backup_path is not None for result in done):
         with contextlib.suppress(OSError, install_ledger.LedgerError):
@@ -708,10 +709,10 @@ def make_native_config_uninstall(
     uninstall, after the fix, does the whole job. Otherwise its results join
     the uninstall's: their paths are not handled again, and a ``blocked``
     warning (Apothem's file behind a link) leaves the uninstall unfinished
-    like any other. A refusal of the real-home guard at the native config,
-    after *before_fn* changed files elsewhere, records the uninstall
-    unfinished with their backups before it is raised (the shared driver
-    does the same for a refusal later on). A backup root or ledger in a
+    like any other. An error at the native config (a refusal of the
+    real-home guard included), after *before_fn* changed files elsewhere,
+    records the uninstall unfinished with their backups before it is raised
+    (the shared driver does the same for an error later on). A backup root or ledger in a
     protected folder is refused before *before_fn* runs.
     """
 
@@ -754,8 +755,8 @@ def make_native_config_uninstall(
                 retired=_retired_at_uninstall(retired_fn),
                 relocated=relocated_fn,
             )
-        except home_write_guard.RealHomeWriteError:
-            _record_refused_prepass(harness_name, output_path.parent, before)
+        except Exception:
+            _record_stopped_prepass(harness_name, output_path.parent, before)
             raise
         prior = (*before, *((native,) if native is not None else ()))
         removed = install_driver.run_uninstall(
