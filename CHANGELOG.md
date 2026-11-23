@@ -110,9 +110,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
     gets an error that names it, and the uninstall cleans the other
     workspaces' rules files, records their backups and stops before
-    `openclaw.json` changes. In each case the install record stays, so a second
-    uninstall after the hand fix finishes. `apothem verify` reports a missing
-    file or registration.
+    `openclaw.json` changes. When the step that changes `openclaw.json` stops
+    with an error after the rules files changed (a backup that cannot be
+    written, say), the uninstall records itself unfinished with their backups,
+    so retention keeps them, and exits 2 with `uninstall stopped after
+    removing files`; an interrupt (`Ctrl+C`) there is recorded the same way.
+    An error inside the rules-file step itself leaves the backups it took
+    before the error unrecorded. In each case the install record stays, so a
+    second uninstall after the hand fix finishes. `apothem verify` reports a
+    missing file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -1253,22 +1259,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   <file>, an Apothem-only file`, exits 2 when it removed other files, and
   keeps the install recorded, so running it again once the file is closed
   finishes it.
-- **An OpenClaw uninstall that stops partway is recorded and reported as
-  partial.** The uninstall first takes Apothem's block out of each
-  workspace's rules file, backing each file up, and then changes
-  `openclaw.json`. When that second step stopped with an error (a backup
-  that cannot be written, say), the uninstall recorded nothing: no ledger
-  record named the rules files' backups, so backup retention was free to
-  delete them, and the install still read as fully in place. It also
-  exited `1` with `uninstall failed`, as if nothing had changed. It now
-  appends an `uninstall-incomplete` record that names those backups, so
-  retention keeps them and the next uninstall continues from the same
-  install, and it exits `2` with `uninstall stopped after removing files`.
-  An interrupt (`Ctrl+C`) at that step is recorded the same way. This holds
-  for every run, not only while pytest runs. When the rules-file step itself
-  stops with an error partway, the backups it took before the error are
-  still named by no record; a rules file it cannot rewrite is reported and
-  recorded, as before.
 - **A write that a link leads out of the allowed folder names the link.**
   A write refused with `target escapes the allowed materialization root`
   because a link inside the folder leads it out, such as `~/.agents/skills`
