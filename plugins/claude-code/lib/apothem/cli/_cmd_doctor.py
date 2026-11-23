@@ -50,7 +50,7 @@ from apothem.cli._stray_begin_report import (
     stray_begin_paths,
 )
 from apothem.lib.harness_registry import HarnessRegistryEntry
-from apothem.lib.install_ledger import LedgerError
+from apothem.lib.install_ledger import LedgerError, ledger_path
 from apothem.lib.profile import ProfileValidationError, load_profile_file
 from apothem.lib.shell_quote import shell_quoted
 
@@ -259,7 +259,9 @@ def _probe_registered_hooks(
     *install_root* is the root doctor examined: the harness folder of a
     user-scope harness, the ``--project`` root of a project-scope one. Runs for
     a harness that verifies, and for one a stray BEGIN marker fails (see
-    :func:`_report_verify_failure`).
+    :func:`_report_verify_failure`). A ledger that cannot be read, damaged or
+    not opened, is reported as ``ledger.unreadable`` (see
+    :func:`_ledger_unreadable`).
     """
     name = entry.public_id
     project = install_root if entry.scope == "project" else None
@@ -268,22 +270,9 @@ def _probe_registered_hooks(
         hooks = registered_hooks(
             entry.package_key, root=install_root, project=project is not None
         )
-    except LedgerError as exc:
+    except (LedgerError, OSError) as exc:
         row.update(status="error", hooks=None)
-        checks.append(
-            _check(
-                "ledger.unreadable",
-                "fail",
-                f"{name}: the install ledger cannot be read ({exc}).",
-                harness=name,
-                fix=_update_fix(
-                    name,
-                    project,
-                    lead="Move the damaged ledger file aside, then run",
-                    then="to record a fresh install",
-                ),
-            )
-        )
+        checks.append(_ledger_unreadable(entry, project, exc))
         return
     if hooks is None:
         row["hooks"] = None
@@ -342,6 +331,39 @@ def _probe_registered_hooks(
                 harness=name,
             )
         )
+
+
+def _ledger_unreadable(
+    entry: HarnessRegistryEntry, project: Path | None, exc: Exception
+) -> dict[str, object]:
+    """Return the ``ledger.unreadable`` check for *exc*, with the fix that suits it.
+
+    A damaged ledger (:class:`LedgerError`) is moved aside, and an update
+    records a fresh install. A ledger the system will not open (another
+    program holds it open without read sharing, or a permission is missing)
+    is not damaged: the fix names the file and says to make it readable.
+    """
+    name = entry.public_id
+    if isinstance(exc, LedgerError):
+        fix = _update_fix(
+            name,
+            project,
+            lead="Move the damaged ledger file aside, then run",
+            then="to record a fresh install",
+        )
+    else:
+        fix = (
+            f"Make {ledger_path(entry.package_key)} readable (close any program "
+            "that holds it open, or give your account read access to it), then "
+            "run doctor again."
+        )
+    return _check(
+        "ledger.unreadable",
+        "fail",
+        f"{name}: the install ledger cannot be read ({exc}).",
+        harness=name,
+        fix=fix,
+    )
 
 
 @dataclass(frozen=True)

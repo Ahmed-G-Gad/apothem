@@ -1283,6 +1283,50 @@ def test_an_unreadable_ledger_and_an_unclear_block_do_not_read_as_no_install(
     assert [c for c in report["checks"] if c["code"] == "ledger.unreadable"]
 
 
+def test_doctor_reports_a_ledger_it_cannot_open_beside_an_unclear_block(
+    sandbox_factory: SandboxFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """doctor stopped with a traceback when it could not open the ledger.
+
+    Another program held the ledger open without read sharing, say. The file
+    whose marker pair sits in code then counted as an install, as it does
+    for a damaged ledger, so doctor went on to start the tool's hooks, which
+    reads the ledger and stopped only a damaged one: the error ended the run
+    with no report, where it used to report the tool as not installed.
+    doctor now names that ledger in its ledger.unreadable check, with the
+    error, and its fix says to make the file readable, not to move a damaged
+    file aside.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    _fence_the_block(_anchor(box))
+    ledger = install_ledger.ledger_path("codex")
+    read_text = Path.read_text
+
+    def held_open(self: Path, *args: object, **kwargs: object) -> str:
+        if self == ledger:
+            raise PermissionError(13, "Permission denied", str(self))
+        return read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", held_open)
+    result = CliRunner().invoke(main, ["doctor", "--json"])
+
+    assert isinstance(result.exception, SystemExit), repr(result.exception)
+    assert result.exit_code == 1, result.output
+    report = json.loads(result.stdout)
+    [row] = [row for row in report["harnesses"] if row["name"] == "codex"]
+    assert row["installed"] is True
+    assert row["status"] != "not_installed"
+    [check] = [c for c in report["checks"] if c["code"] == "ledger.unreadable"]
+    assert check["status"] == "fail"
+    assert check["message"].startswith("codex: the install ledger cannot be read (")
+    assert "Permission denied" in check["message"]
+    assert check["fix"] == (
+        f"Make {ledger} readable (close any program that holds it open, or give "
+        "your account read access to it), then run doctor again."
+    )
+
+
 # --- a BEGIN marker whose END marker came back: two whole blocks -------------
 
 
