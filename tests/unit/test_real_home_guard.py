@@ -50,7 +50,8 @@ between two collect reports (a ``pytest_itemcollected`` hook, and the
 hook for a teardown report), in a ``pytest_sessionfinish`` hook or after a
 session-finish wrapper yields, in ``pytest_terminal_summary``, in
 ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and in
-a worker's session finish. Each names where the refusal happened. A session
+a worker's session finish, also in a ``trylast`` hook of a conftest that pytest
+finds during collection. Each names where the refusal happened. A session
 that absorbs nothing exits 0, with and without xdist. The guard refuses before
 any write, so nothing lands in a home.
 """
@@ -589,10 +590,12 @@ def test_the_session_hooks_read_the_log_after_what_they_follow(
     after_the_summary, at_the_end = guard_impls("pytest_sessionfinish")
     assert after_the_summary.wrapper
     assert after_the_summary.tryfirst
-    assert not at_the_end.wrapper
-    assert at_the_end.trylast
+    assert at_the_end.wrapper
+    assert at_the_end.trylast, "it has to go on after every plain one"
     reporter = request.config.pluginmanager.get_plugin("terminalreporter")
     calls = _call_order(request, "pytest_sessionfinish")
+    finish_wrappers = [i for i in calls if i.wrapper or i.hookwrapper]
+    assert finish_wrappers[-1] is at_the_end
     (summary,) = [i for i in calls if i.plugin is reporter]
     assert summary.wrapper, "the summary is written after its yield"
     assert calls.index(after_the_summary) < calls.index(summary)
@@ -1546,6 +1549,41 @@ def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
     result = _run_absorbing(
         pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_SESSION_FINISH, "-n", "2"
     )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in xdist worker gw?, after the last test"
+    )
+
+
+#: A session-finish hook that pytest calls after the guard's own, in a
+#: conftest that pytest registers during collection, after the guard. It
+#: absorbs the refusal in an xdist worker only.
+_ABSORBED_LAST_AT_A_WORKERS_SESSION_FINISH = """
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+"""
+
+
+def case_a_later_conftests_refusal_at_a_workers_session_finish_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A ``trylast`` hook of a conftest found during collection runs last.
+
+    The worker hands what it holds to the controller after it all the same.
+    """
+    pytester.makeconftest(_STAR_IMPORT)
+    sub = pytester.mkdir("sub")
+    (sub / "conftest.py").write_text(
+        "import pytest\n"
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_LAST_AT_A_WORKERS_SESSION_FINISH,
+        encoding="utf-8",
+    )
+
+    result = _run(pytester, "-n", "2")
 
     _assert_the_run_failed_on_it(
         result, fake_real_home, "in xdist worker gw?, after the last test"

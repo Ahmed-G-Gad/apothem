@@ -740,8 +740,9 @@ logged outside any test, at the session start, between two collect reports,
 after collection, between two tests, after the last test, in the summary or
 in `pytest_unconfigure`, is reported when the
 session finishes, named for where it happened, and fails the run, also when
-a parallel worker (`-n`) sends it; one a worker logs after it sent its
-results shows only on `stderr`. The log is kept per process: a
+a parallel worker (`-n`) sends it; one a worker logs after it handed its
+refusals to the main process, once its plain session-finish hooks have run,
+shows only on `stderr`. The log is kept per process: a
 refusal that a child Apothem process absorbs shows only as a line on the
 child's `stderr`, and the test is not failed for it.
 

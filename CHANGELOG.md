@@ -252,8 +252,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   marked `xfail`; one absorbed outside any test fails the collection of the
   node pytest was collecting then, or else the run when the session
   finishes, named for where it happened, also in a parallel run (one a
-  worker process absorbs after it sent its results to the main process
-  shows only on `stderr`). With no system record of the account's home (no
+  worker process absorbs after it handed its refusals to the main process,
+  once its plain session-finish hooks have run, shows only on `stderr`). With no system record of the account's home (no
   `passwd` entry), the home is not protected. A test that must run a real
   install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION`
   in the child's environment. `tests/README.md` lists what the refusal does

@@ -165,10 +165,12 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   every test, failing the next node's would blame it and stop the run before
   any test, and failing the first test would blame it; the tests run, and the
   run fails at its end.
-- ``pytest_sessionfinish``, a ``trylast`` plain implementation: it writes what
-  is held, and a refusal another session-finish hook absorbed, named "after the
-  last test", to the terminal above the summary, and turns the exit code "OK"
-  or "no tests collected" into "tests failed". A ``tryfirst``
+- ``pytest_sessionfinish``, a ``trylast`` wrapper, the innermost one, which
+  goes on after its ``yield`` once every plain implementation has run,
+  whenever it was registered: it writes what is held, and a refusal a plain
+  session-finish hook absorbed, named "after the last test", to the terminal
+  above the summary, and turns the exit code "OK" or "no tests collected" into
+  "tests failed". A ``tryfirst``
   ``pytest_sessionfinish`` wrapper does the same after pytest's terminal
   reporter has written the summary, calling every ``pytest_terminal_summary``
   hook, and a ``tryfirst`` ``pytest_unconfigure`` wrapper does it for a refusal
@@ -176,12 +178,13 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   returns the session's exit status after that hook. One absorbed later still,
   in a cleanup registered with ``config.add_cleanup``, reaches only ``stderr``.
 - ``pytest_testnodedown``, an optional hook that only xdist defines. An xdist
-  worker's ``trylast`` session finish puts what it holds in
-  ``config.workeroutput``, which xdist sends to the controller once every plain
-  session-finish hook has run, and the controller holds it under the worker's
-  name. A refusal a worker finds after that, in its terminal summary or its
-  ``pytest_unconfigure``, reaches only ``stderr``: a worker's terminal output is
-  discarded, and the controller does not use its exit code.
+  worker's ``trylast`` session-finish wrapper puts what it holds in
+  ``config.workeroutput`` once every plain session-finish hook has run, which
+  xdist's own wrapper then sends to the controller, and the controller holds
+  it under the worker's name. A refusal a worker finds after that hand-off,
+  after another session-finish wrapper's ``yield``, in its terminal summary or
+  in its ``pytest_unconfigure``, reaches only ``stderr``: a worker's terminal
+  output is discarded, and the controller does not use its exit code.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
@@ -1213,23 +1216,32 @@ class RealHomeGuard:
         _hold(session.config, _BEFORE_THE_FIRST_TEST)
         return (yield)
 
-    @pytest.hookimpl(trylast=True)
-    def pytest_sessionfinish(self, session: pytest.Session) -> None:
+    @pytest.hookimpl(wrapper=True, trylast=True)
+    def pytest_sessionfinish(
+        self, session: pytest.Session
+    ) -> Generator[None, None, None]:
         """Fail the run when Apothem logged a refusal after the last test.
 
-        A ``pytest_sessionfinish`` hook that runs before this one can absorb a
-        refusal after the last teardown report. It is written to the terminal
-        above the summary, with every refusal the guard holds for the end of the
-        run (one from before the first test, see :meth:`pytest_sessionstart` and
+        A ``pytest_sessionfinish`` hook can absorb a refusal after the last
+        teardown report. As a ``trylast`` wrapper this is the innermost one: it
+        goes on after its ``yield`` once every plain implementation has run,
+        whenever it was registered (a ``trylast`` one of a conftest that pytest
+        found during collection included), and before any other wrapper goes
+        on after its own. The refusal is written there to the terminal above
+        the summary, with every refusal the guard holds for the end of the run
+        (one from before the first test, see :meth:`pytest_sessionstart` and
         :meth:`pytest_collection_finish`, or one an xdist worker sent, see
         :meth:`pytest_testnodedown`), and the run's exit code becomes "tests
         failed". An xdist worker hands them to the controller instead, in
         ``config.workeroutput``: the worker's terminal output is discarded and
-        the controller does not use its exit code. xdist sends that output once
-        every plain ``pytest_sessionfinish`` hook has run, so after this one.
+        the controller does not use its exit code. xdist's own wrapper sends
+        that output after its ``yield``, so after this one.
         """
-        _hold(session.config, _AFTER_THE_LAST_TEST)
-        _report_held(session.config, session, to_the_controller=True)
+        try:
+            return (yield)
+        finally:
+            _hold(session.config, _AFTER_THE_LAST_TEST)
+            _report_held(session.config, session, to_the_controller=True)
 
     @pytest.hookimpl(wrapper=True, tryfirst=True, specname="pytest_sessionfinish")
     def pytest_sessionfinish_after_the_summary(
@@ -1245,7 +1257,7 @@ class RealHomeGuard:
         wrapper that is not ``tryfirst``, the terminal reporter's included, so
         it sees a refusal absorbed in any of them. The refusal is written below
         the summary and the run's exit code becomes "tests failed". An xdist
-        worker writes it to ``stderr`` only: it has sent its output to the
+        worker writes it to ``stderr`` only: it has handed its refusals to the
         controller by then.
         """
         session.config.stash[_HELD_SESSION] = session
@@ -1263,8 +1275,8 @@ class RealHomeGuard:
         session's exit status after it, so the status set here is the run's. As
         a ``tryfirst`` wrapper this finishes after every plain implementation
         and every wrapper that is not ``tryfirst``. An xdist worker writes the
-        refusal to ``stderr`` only: it has sent its output to the controller by
-        then.
+        refusal to ``stderr`` only: it has handed its refusals to the controller
+        by then.
         """
         try:
             return (yield)
@@ -1431,8 +1443,9 @@ def _report_held(
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if worker:
         sys.stderr.write(
-            f"{message}\nThe worker found it after it sent its results to the "
-            "controller, so the run does not fail on it.\n"
+            f"{message}\nThe worker found it after it handed its refusals to the "
+            "controller, once every plain session-finish hook had run, so the run "
+            "does not fail on it.\n"
         )
     elif reporter is not None:
         reporter.write_line(f"\n{message}", red=True)
