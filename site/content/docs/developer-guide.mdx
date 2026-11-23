@@ -706,8 +706,10 @@ link to a file in a protected folder.
 
 The CLI raises the error as it is, for an uninstall too. A refused uninstall
 records an unfinished uninstall in the ledger only when it had already removed
-files outside the protected folders, so the backups of those files stay
-referenced. A few internal callers absorb
+files outside the protected folders, in the steps before the shared removal
+too, so the backups of those files stay referenced. A
+stale sweep checks every path it would remove before the first removal, so
+it is refused before anything changes. A few internal callers absorb
 the error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
 logged, even when the test is marked `xfail`.

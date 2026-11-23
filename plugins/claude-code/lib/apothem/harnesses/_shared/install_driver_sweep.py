@@ -324,20 +324,30 @@ def sweep_stale(
     targets) is left in place, with no backup: it is the live folder under
     another name. A stale path that is itself a link is left in place with a
     warning.
+
+    While pytest runs, every stale path that would go is checked against the
+    real-home guard before the first one goes, so a refusal changes nothing.
     """
     results: list[MaterializationResult] = []
     boundary = _write_boundary(allowed_root, root)
-    for legacy in stale_sweep:
-        stale = root / legacy
-        blocker = stale_blocker(stale, protect, boundary)
+    planned = [
+        (root / legacy, stale_blocker(root / legacy, protect, boundary))
+        for legacy in stale_sweep
+    ]
+    # The shared blocker also serves the preview, so it does not refuse.
+    home_write_guard.refuse_real_home_write(
+        *(
+            stale
+            for stale, blocker in planned
+            if blocker is None and (stale.is_dir() or stale.is_file())
+        ),
+        operation="remove the stale path",
+        tree=True,
+    )
+    for stale, blocker in planned:
         if blocker is not None:
             results.append(blocker)
             continue
-        if stale.is_dir() or stale.is_file():
-            # The shared blocker also serves the preview, so it does not refuse.
-            home_write_guard.refuse_real_home_write(
-                stale, operation="remove the stale path", tree=True
-            )
         if stale.is_dir():
             keep = _preserved_inside(stale, preserve)
             walk = _walk_without_links(stale)

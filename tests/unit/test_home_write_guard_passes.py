@@ -31,7 +31,9 @@ from apothem.harnesses._shared import (
 )
 from apothem.harnesses._shared.install_driver_types import _result
 from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
+from apothem.harnesses.open_claw import rules_file
 from apothem.lib import atomic_io, home_write_guard, install_ledger
+from apothem.lib.harness_materializer import wrap_managed_block
 from apothem.lib.harness_registry import get_harness_entry, iter_harness_entries
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -473,4 +475,100 @@ def test_a_stopped_native_uninstall_raises_its_refused_record(
     )
     with pytest.raises(Refused):
         uninstall(root / "openclaw.json")
+    assert _snapshot(home) == before
+
+
+def test_a_stale_sweep_is_refused_before_its_first_removal(home: Path) -> None:
+    first = home / "old-layout.txt"
+    first.write_bytes(b"an earlier layout\n")
+    protected = home / ".claude" / "old-layout"
+    protected.mkdir(parents=True)
+    (protected / "file.md").write_bytes(b"kept\n")
+    before = _snapshot(home)
+    home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(first)
+
+    with pytest.raises(Refused):
+        install_driver.sweep_stale(
+            ["old-layout.txt", ".claude/old-layout"], home, harness_name="claude_code"
+        )
+    assert _snapshot(home) == before
+
+
+def test_a_native_uninstall_refused_after_its_first_step_records_the_backups(
+    home: Path, tmp_path: Path
+) -> None:
+    """What the step before the native config removed stays referenced."""
+    root = home / ".openclaw"
+    root.mkdir()
+    config = root / "openclaw.json"
+    config.write_bytes(b"{}\n")
+    install_ledger.append_record(
+        LedgerRecord.create(harness="open_claw", root=root, kind="install")
+    )
+    elsewhere = tmp_path / "workspace" / "AGENTS.md"
+    elsewhere.parent.mkdir()
+    elsewhere.write_bytes(b"rules\n")
+    home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(elsewhere)
+
+    def remove_elsewhere(
+        output_path: Path,
+    ) -> tuple[install_driver.MaterializationResult, ...]:
+        backup = install_driver.backup_existing(
+            elsewhere,
+            install_root=output_path.parent,
+            harness_name="open_claw",
+            allowed_root=elsewhere.parent,
+        )
+        elsewhere.unlink()
+        return (
+            _result("updated", "rules_file", elsewhere, "removed", backup_path=backup),
+        )
+
+    uninstall = make_native_config_uninstall(
+        "open_claw", lambda profile: "{}", before_fn=remove_elsewhere
+    )
+    with pytest.raises(Refused):
+        uninstall(config)
+    assert config.read_bytes() == b"{}\n"
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = [target.backup_ref for target in records[-1].targets]
+    assert backups
+    assert all(ref and Path(ref).read_bytes() == b"rules\n" for ref in backups)
+
+
+def test_an_open_claw_uninstall_checks_every_rules_file_first(home: Path) -> None:
+    """A rules file in a protected folder is refused before any other changes."""
+    root = home / "openclaw-state"
+    root.mkdir()
+    config = root / "openclaw.json"
+    config.write_bytes(b"{}\n")
+    files = [
+        home / "workspace" / "apothem" / "AGENTS.md",
+        home / ".claude" / "workspace" / "apothem" / "AGENTS.md",
+    ]
+    for path in files:
+        path.parent.mkdir(parents=True)
+        path.write_bytes(wrap_managed_block("rules").encode())
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="open_claw",
+            root=root,
+            kind="install",
+            targets=tuple(
+                install_ledger.LedgerTarget(
+                    str(path), "sentinel_merge", "apothem-owned", outcome="created"
+                )
+                for path in files
+            ),
+        )
+    )
+    before = _snapshot(home)
+    home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(files[0])
+
+    with pytest.raises(Refused):
+        rules_file.before_uninstall(config)
     assert _snapshot(home) == before

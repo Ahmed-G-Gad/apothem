@@ -18,6 +18,7 @@ in the same order, so no rendered install output changes.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 from collections.abc import Callable, Iterator, Mapping
@@ -648,6 +649,27 @@ def _retired_at_uninstall(retired_fn: _RetiredFn | None) -> tuple[OwnedEntry, ..
     return retired_fn(profile)
 
 
+def _record_refused_prepass(
+    harness_name: str, root: Path, done: tuple[MaterializationResult, ...]
+) -> None:
+    """Record an unfinished uninstall when the pre-pass *done* changed a file.
+
+    Called while a refusal of the real-home guard is raised, so the backups
+    the pre-pass took stay referenced. A second refusal, or any error writing
+    the record, is dropped so the first one propagates.
+    """
+    if any(result.changed or result.backup_path is not None for result in done):
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            record_uninstall(
+                harness_name,
+                root,
+                install_ledger.current_install_record(harness_name, root=root),
+                list(done),
+                finished=False,
+                own=[],
+            )
+
+
 def make_native_config_uninstall(
     harness_name: str,
     materialize_fn: _MaterializeFn,
@@ -685,7 +707,10 @@ def make_native_config_uninstall(
     uninstall, after the fix, does the whole job. Otherwise its results join
     the uninstall's: their paths are not handled again, and a ``blocked``
     warning (Apothem's file behind a link) leaves the uninstall unfinished
-    like any other.
+    like any other. A refusal of the real-home guard at the native config,
+    after *before_fn* changed files elsewhere, records the uninstall
+    unfinished with their backups before it is raised (the shared driver
+    does the same for a refusal later on).
     """
 
     @install_driver.backup_session()
@@ -715,16 +740,20 @@ def make_native_config_uninstall(
             return MaterializationRun(
                 harness=harness_name, dry_run=False, results=(*before, *unrecorded)
             )
-        native = install_driver.surgically_remove_materialized_config(
-            output_path,
-            materialize_fn({}),
-            install_root=output_path.parent,
-            harness_name=harness_name,
-            allowed_root=_native_allowed_root(output_path),
-            apothem_keys=apothem_keys,
-            retired=_retired_at_uninstall(retired_fn),
-            relocated=relocated_fn,
-        )
+        try:
+            native = install_driver.surgically_remove_materialized_config(
+                output_path,
+                materialize_fn({}),
+                install_root=output_path.parent,
+                harness_name=harness_name,
+                allowed_root=_native_allowed_root(output_path),
+                apothem_keys=apothem_keys,
+                retired=_retired_at_uninstall(retired_fn),
+                relocated=relocated_fn,
+            )
+        except home_write_guard.RealHomeWriteError:
+            _record_refused_prepass(harness_name, output_path.parent, before)
+            raise
         prior = (*before, *((native,) if native is not None else ()))
         removed = install_driver.run_uninstall(
             harness_name, harness_root=output_path.parent, prior_results=prior

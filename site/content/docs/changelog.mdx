@@ -224,7 +224,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   is refused before it writes anything, and so is a data home right in the
   home under a name the profile chose. An OpenClaw uninstall is refused
   before it changes any workspace's rules file, one outside `~/.openclaw`
-  included. Links and junctions into a protected
+  included. A stale sweep checks every path it would remove first, so it
+  is refused before anything changes. Links and junctions into a protected
   folder count; on Windows so do letter case, short (8.3) names, the `\\?\`,
   `\\.\` and `\??\` prefixes, loopback admin shares (IPv6 included), shares
   reached by the machine's own addresses or a mapped drive and alternate data
@@ -232,7 +233,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `/System/Volumes/Data` spelling of a path. The CLI raises
   the error as it is: a refused uninstall records an unfinished uninstall
   only for files it had already
-  removed outside the home. The test suite fails a test after which a
+  removed outside the home, in the steps before the shared removal too. The test suite fails a test after which a
   refusal was absorbed, also when the test is marked `xfail`. With no system
   record of the account's home (no `passwd` entry), the home is not
   protected. A test that must run
