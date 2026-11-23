@@ -61,8 +61,8 @@ a file the controller reads and removes, also once a controller hook ended
 the run with ``pytest.exit`` before xdist ended the workers (a later run with
 the same ``--basetemp`` passes, and no such file is made in a protected
 folder), a worker whose session ends at its start, which handed nothing
-over, is not named as if it had, and an empty file a worker left fails the
-run; a
+over, is not named as if it had, and an empty file a worker left, a line it
+cut short and a file the controller cannot read each fail the run; a
 worker that stops on Ctrl-C has its refusal reported once, and one the
 controller absorbs while its workers run the tests is named for the run. Each
 names where the refusal happened. A session that absorbs nothing exits 0, with
@@ -1900,6 +1900,60 @@ def case_an_empty_late_file_a_worker_left_fails_the_run(
     assert "outside any test, in xdist worker gw0, and the refusal" in output
     assert "gw0.jsonl is empty: the worker creates it only to write" in output
     assert not (fake_real_home / ".apothem").exists()
+
+
+#: An unconfigure hook that leaves the start of a line in the file an xdist
+#: worker writes its late refusals to, as a worker stopped while it wrote
+#: the line would.
+_A_CUT_LATE_LINE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        with open(config.workerinput[{_LATE_FILE_KEY!r}], "a") as stream:
+            stream.write('{{"where": "probe", "messa')
+"""
+
+#: An unconfigure hook that puts a folder where an xdist worker writes its
+#: late refusals, so the controller cannot read that file.
+_A_FOLDER_IN_PLACE_OF_THE_LATE_FILE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        import os
+
+        os.mkdir(config.workerinput[{_LATE_FILE_KEY!r}])
+"""
+
+
+def case_a_cut_line_in_a_workers_late_file_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A line the controller cannot read is reported whole, for the worker."""
+    pytester.makeconftest(_STAR_IMPORT + _A_CUT_LATE_LINE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    named = "outside any test, in xdist worker gw0, and the refusal was not raised:"
+    assert f'{named} - {{"where": "probe", "messa' in output, output
+
+
+def case_a_workers_late_file_the_controller_cannot_read_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker made it only to write a refusal, so the run fails on it."""
+    pytester.makeconftest(_STAR_IMPORT + _A_FOLDER_IN_PLACE_OF_THE_LATE_FILE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    named = "outside any test, in xdist worker gw0, and the refusal was not raised:"
+    assert f"{named} - the guard could not read " in output, output
+    assert "gw0.jsonl" in output
 
 
 #: Protects the fake real home when the probe conftest is imported, before the
