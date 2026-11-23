@@ -666,11 +666,11 @@ or adapters against your real home. Run behaviour inside a test under `tests/`, 
 `tests/conftest.py` points the home, the install ledger and the backup root at
 temporary folders.
 
-Apothem also refuses these writes itself while pytest runs, so a test
-file copied out of `tests/` and run without `tests/conftest.py` cannot reach
-the real home through Apothem. While `PYTEST_CURRENT_TEST` is set (a test),
-or `PYTEST_VERSION` holds the version of the running pytest (the whole
-session, collection and session hooks included), a write, removal, copy,
+Apothem also refuses these writes itself while pytest runs, so a test file
+copied out of `tests/` and run without `tests/conftest.py` cannot reach the
+real home through Apothem. While `PYTEST_CURRENT_TEST` is set and not empty
+(a test), or `PYTEST_VERSION` holds the version of the running pytest (the
+whole session, collection and session hooks included), a write, removal, copy,
 rename or lock file in the account's `~/.apothem`, `~/.config/apothem`, a
 tool folder the harness registry names in the home (`~/.claude`, `~/.qwen`,
 `~/.config/opencode` and the rest) or a file outside those folders that the
@@ -686,13 +686,16 @@ test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
 changed. ...
 ```
 
-A `PYTEST_VERSION` with any other value, such as a pin like `8.2` that a
-shell or a CI job exports, does not count. Outside any test the error says
-`PYTEST_VERSION matches the running pytest <version>` in place of the test.
-A `PYTEST_VERSION` that a shell or a CI job exports with the installed
-pytest's exact version counts all the same, outside pytest too, and the error
-then says `PYTEST_VERSION holds the installed pytest's version, <version>,
-though no pytest runs in this process`.
+A `PYTEST_VERSION` with any other value, such as a pin like `8.2` that
+a shell or a CI job exports, does not count, and neither does an empty
+`PYTEST_CURRENT_TEST`. Outside any test the error says `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` in place of the test; it does not claim that a pytest session runs,
+since a process can import pytest without running one. A `PYTEST_VERSION` that
+a shell or a CI job exports with the installed pytest's exact version counts
+all the same, outside pytest too, and in a process that has not imported
+pytest the error then says `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`.
 
 A project-scope install, update, uninstall or rollback whose project root is
 the account home itself is refused the same way, before it writes anything:
@@ -753,19 +756,19 @@ refused quietly and reported. A test that must run a real install on purpose
 starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the
 child's environment.
 
-The refusal does not cover folders that `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or
-`XDG_CONFIG_HOME` move away from their default names, outside the home or
-inside it (`XDG_CONFIG_HOME=~/xdg` puts OpenCode's folder at
-`~/xdg/opencode`), the hook state folder, or programs that are not Python, such as the shell installers. The check runs before
-the write, by path, so a folder swapped for a link between the two is not
-seen.
-When the system has no record of the account's home (a container user with no
-`passwd` entry), the account home is not protected at all. A checkout that sits
-inside a protected folder (under `~/.claude`, say) has its Apothem writes
-refused during tests. The refusal does nothing outside pytest, that is with
-neither `PYTEST_CURRENT_TEST` nor the installed pytest's version in
-`PYTEST_VERSION` in the environment, which is why the rule above still
-applies. `tests/README.md` lists every gap.
+The refusal does not cover folders that `CODEX_HOME`, `CLAUDE_CONFIG_DIR`
+or `XDG_CONFIG_HOME` move away from their default names, outside the
+home or inside it (`XDG_CONFIG_HOME=~/xdg` puts OpenCode's folder at
+`~/xdg/opencode`), the hook state folder, or programs that are not Python,
+such as the shell installers. The check runs before the write, by path, so a
+folder swapped for a link between the two is not seen. When the system has no
+record of the account's home (a container user with no `passwd` entry), the
+account home is not protected at all. A checkout that sits inside a protected
+folder (under `~/.claude`, say) has its Apothem writes refused during tests.
+The refusal does nothing outside pytest, that is when the environment holds
+neither a `PYTEST_CURRENT_TEST` that is not empty nor the installed pytest's
+version in `PYTEST_VERSION`, which is why the rule above still applies.
+`tests/README.md` lists every gap.
 
 ### Coverage per package
 

@@ -205,61 +205,60 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- **Apothem refuses to write into the real home while pytest runs.**
-  While `PYTEST_CURRENT_TEST` is set (a test), or `PYTEST_VERSION` holds the
-  running pytest's version (the whole session: collection, module-level
-  code and session hooks), a write, removal, copy, rename or lock file in a
-  protected path of the account's home stops with `RealHomeWriteError`
-  before anything changes. The protected paths are
-  `~/.apothem`, `~/.config/apothem`, each tool folder the harness registry
-  names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside those
-  folders that the propagation manifest changes in the home: today that is
-  `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
+- **Apothem refuses to write into the real home while pytest runs.** While
+  `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
+  holds the running pytest's version (the whole session: collection,
+  module-level code and session hooks), a write, removal, copy, rename
+  or lock file in a protected path of the account's home stops with
+  `RealHomeWriteError` before anything changes. The protected paths
+  are `~/.apothem`, `~/.config/apothem`, each tool folder the harness
+  registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside
+  those folders that the propagation manifest changes in the home: today that
+  is `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
   Antigravity stale sweep removes. The home is the one the operating system
   records for the account, not `HOME`. Reads, dry runs and previews still
   work, and outside pytest nothing is refused unless the environment carries
-  `PYTEST_CURRENT_TEST`, or the installed pytest's exact version in
-  `PYTEST_VERSION` (a shell or a CI job may export it to pin what it
-  installs). A `PYTEST_VERSION` with any other value, such as a pin like
-  `9.1` for `9.1.0`, does not count, and the error names the variable that
-  turned the refusal on. A project-scope install, update, uninstall or
-  rollback whose project root is the home itself is refused before it
-  writes anything. A data home right in the home, under a name the profile
-  chose, or one that is a link to a folder right in the home or to the home
-  itself (also through a chain of links), is refused before it is created
-  and before its stores are removed: an install or update has written the
-  project's files by then and undoes those writes (recording a rollback),
-  and an uninstall has removed them by then and records itself unfinished.
-  Some passes check their paths before the first change, so a refusal there
-  leaves everything as it was: a stale sweep every stale path; a rollback
-  every path its install record names, the data stores it would remove and the
-  user-level folders in the home it would tidy last; a rollback and an
-  uninstall the backup root and the ledger; and an OpenClaw uninstall
-  `openclaw.json` and every workspace's rules file, one outside `~/.openclaw`
-  included. The stale sweep now also decides which stale paths it keeps (a
-  link, a path reached through one, a live folder under another name) before
-  it removes the first, in every run; it never removes a link, so it keeps the
-  same paths as before. Links and junctions into a protected folder count; on
-  Windows so do letter case, short (8.3) names,
-  the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares (IPv6
-  included), shares reached by the machine's own addresses or through a
-  mapped drive, alternate data streams and device paths behind a prefix
-  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter
-  case, Unicode normalization and the `/System/Volumes/Data` spelling of a
-  path. Only the
-  string rules make no network contact: a share path is checked by asking
-  its host. The CLI raises the error as it is. A refused uninstall records an
-  unfinished uninstall only when it had already changed files outside the
-  protected folders, in a step before the shared removal too, so the backups
-  of those files stay referenced. The test suite fails a test after which a
-  refusal was absorbed in the test's own process, also when the test is
-  marked `xfail`; one absorbed outside any test fails the collection of the
-  node pytest was collecting then, or else the run when the session
-  finishes, named for where it happened, also in a parallel run (one a
-  worker process absorbs after it handed its refusals to the main process,
-  once its plain session-finish hooks have run, shows only on `stderr`).
-  With no system record of the account's home (no `passwd` entry), the home is
+  a `PYTEST_CURRENT_TEST` that is not empty, or the installed pytest's exact
+  version in `PYTEST_VERSION` (a shell or a CI job may export it to pin what
+  it installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, nor does an empty `PYTEST_CURRENT_TEST`,
+  and the error names the variable that turned the refusal on and the value
+  it holds. A project-scope install, update, uninstall or rollback whose
+  project root is the home itself is refused before it writes anything. A
+  data home right in the home, under a name the profile chose, or one that is
+  a link to a folder right in the home or to the home itself (also through a
+  chain of links), is refused before it is created and before its stores are
+  removed: an install or update has written the project's files by then and
+  undoes those writes (recording a rollback), and an uninstall has removed
+  them by then and records itself unfinished. Some passes check their paths
+  before the first change, so a refusal there leaves everything as it was:
+  a stale sweep every stale path; a rollback every path its install record
+  names, the data stores it would remove and the user-level folders in the
+  home it would tidy last; a rollback and an uninstall the backup root and
+  the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
+  rules file, one outside `~/.openclaw` included. The stale sweep now also
+  decides which stale paths it keeps (a link, a path reached through one,
+  a live folder under another name) before it removes the first, in every
+  run; it never removes a link, so it keeps the same paths as before. Links
+  and junctions into a protected folder count; on Windows so do letter case,
+  short (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin
+  shares (IPv6 included), shares reached by the machine's own addresses or
+  through a mapped drive, alternate data streams and device paths behind
+  a prefix (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS
+  letter case, Unicode normalization and the `/System/Volumes/Data` spelling
+  of a path. Only the string rules make no network contact: a share path is
+  checked by asking its host. The CLI raises the error as it is. A refused
+  uninstall records an unfinished uninstall only when it had already changed
+  files outside the protected folders, in a step before the shared removal
+  too, so the backups of those files stay referenced. The test suite fails
+  a test after which a refusal was absorbed in the test's own process, also
+  when the test is marked `xfail`; one absorbed outside any test fails the
+  collection of the node pytest was collecting then, or else the run when the
+  session finishes, named for where it happened, also in a parallel run (one
+  a worker process absorbs after it handed its refusals to the main process,
+  once its plain session-finish hooks have run, shows only on `stderr`). With
+  no system record of the account's home (no `passwd` entry), the home is
   not protected. A test that must run a real install starts Apothem without
   `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's environment.
   `tests/README.md` lists what the refusal does not cover, such as a bind
