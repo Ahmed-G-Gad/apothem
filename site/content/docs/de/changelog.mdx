@@ -785,9 +785,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and the uninstall removed it. Apothem now reads its markers only outside
   code (see the entry above), so it cannot tell its block inside your code
   block from a pair you quote there. While an install record lists the file
-  (until an uninstall finishes; a record made under another spelling of the
-  folder, such as your home reached through a link, counts, as it does for
-  the uninstall, and so does an install ledger that cannot be read), install
+  (until an uninstall finishes; an install ledger that cannot be read counts
+  as one; a record made under another spelling of the folder, such as your
+  home reached through a link, counts too, as it does for the uninstall, when
+  the spelling you run under has an install of its own still in place and the
+  tool writes the shared folders in your home directory), install
   and update now leave such a file as
   it is and print a warning that names each marker pair in it by the lines of
   its two markers and says where each of those lines reads: inside a code
@@ -858,10 +860,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   a second run included), so the install record stays and a later install
   still leaves the file as it is. While the install ledger cannot be read,
   such a file counts as an install too: the uninstall stops on the damaged
-  ledger and names it (exit code `1`), and `doctor` reports the install with
-  its `ledger.unreadable` check, where both used to read the tool as not
-  installed. The uninstall's warning for such a file says to delete Apothem's
-  block by
+  ledger and names it (exit code `1`), and `doctor` reports the install,
+  where both used to read the tool as not installed. `doctor` names the
+  ledger in its `ledger.unreadable` check when it goes on to start the
+  tool's hooks, as it does for a tool that verifies and for one whose failed
+  check names files with Apothem markers; a ledger it cannot open (another
+  program holds it open, say) gets that check too, with a fix that says to
+  make the file readable. The uninstall's warning for such a file says to
+  delete Apothem's block by
   hand and to change or delete the two marker lines of each pair of yours,
   then to run the uninstall again, which then finishes: any marker pair left in
   the file keeps it unfinished, one of yours included. For a BEGIN marker

@@ -25,9 +25,16 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   passes. Project-scope harnesses are checked when `--project` names their root;
   without it they are reported as `needs_project`. A file with marker lines
   Apothem cannot tell from your text counts as an install while the install
-  ledger cannot be read, so such a harness is checked, and its
-  `ledger.unreadable` check names the damaged ledger, rather than being
-  reported as `not_installed`.
+  ledger cannot be read, so such a harness is checked rather than reported
+  as `not_installed`. Doctor names a ledger it cannot read in a
+  `ledger.unreadable` check where it reads that ledger to start the
+  harness's hooks (see **Hook runtime** below): for a harness that verifies,
+  and for one whose failed check names files with Apothem markers
+  (`harness.stray_begin`). Its fix says to move a damaged ledger aside and
+  run `update`, or, for a ledger doctor cannot open (another program holds
+  it open, say), to make that file readable. A harness whose verify fails
+  for another reason gets the `harness.verify_failed` check and no hook
+  check, so no `ledger.unreadable` check either.
 - **Verify.** Each installed harness must pass the same check as
   [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
   marker with no END marker, the failed check is `harness.stray_begin`, and its

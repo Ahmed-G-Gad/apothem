@@ -486,11 +486,13 @@ name each BEGIN marker outside code that starts no marker pair, for example
 "The BEGIN marker at line 1 starts no marker pair: its END marker is gone, or
 the marker is yours."
 
-While an install record lists the file (until an uninstall finishes; a
-record made under another spelling of the folder, such as your home reached
-through a link, counts, as it does for the uninstall, and so does an install
-ledger that cannot be read), `apothem install` and `apothem update` change
-nothing in it and print that
+While an install record lists the file (until an uninstall finishes; an
+install ledger that cannot be read counts as one; a record made under another
+spelling of the folder, such as your home reached through a link, counts too,
+as it does for the uninstall, when the spelling you run under has an install
+of its own still in place and the tool writes the
+[shared folders in your home directory](/docs/cli-reference/install#folders-in-your-home-directory)),
+`apothem install` and `apothem update` change nothing in it and print that
 warning; in a dry run it says Apothem "would leave the file as it is". For a
 BEGIN marker outside code whose END marker sits in code with another marker
 pair after them, they do so with or without a record. Each such run ends as
