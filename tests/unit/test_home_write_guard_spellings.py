@@ -463,6 +463,115 @@ def test_an_append_and_a_lock_through_the_nt_prefix_leave_the_home_alone(
     assert len(home_write_guard.drain_refusals()) == 4
 
 
+def _device_spellings(folder: Path) -> dict[str, str]:
+    """Return *folder* as NT device paths, or skip when Windows names none.
+
+    ``\\??\\GLOBALROOT\\Device\\HarddiskVolumeN\\...`` (the volume's device),
+    ``\\??\\Volume{GUID}\\...`` (its volume name) and
+    ``\\??\\GLOBALROOT\\GLOBAL??\\C:\\...`` (the drive's global link). None of
+    them holds a drive letter or a share after the prefix.
+    """
+    import ctypes
+
+    kernel32 = ctypes.WinDLL("kernel32")  # type: ignore[attr-defined, unused-ignore]
+    text = str(folder)
+    mount = ctypes.create_unicode_buffer(1024)
+    volume = ctypes.create_unicode_buffer(1024)
+    device = ctypes.create_unicode_buffer(1024)
+    if not kernel32.GetVolumePathNameW(text, mount, 1024):
+        pytest.skip("Windows names no volume for the temporary folder")
+    root = mount.value
+    drive = ntpath.splitdrive(text)[0]
+    if not drive.endswith(":") or root.rstrip("\\").lower() != drive.lower():
+        pytest.skip("the temporary folder is not at a drive letter's volume")
+    if not kernel32.GetVolumeNameForVolumeMountPointW(root, volume, 1024):
+        pytest.skip("Windows names no volume GUID for the temporary folder")
+    if not kernel32.QueryDosDeviceW(drive, device, 1024):
+        pytest.skip("Windows names no device for the temporary folder's drive")
+    rest = text[len(root) :]
+    guid = volume.value.removeprefix("\\\\?\\").rstrip("\\")
+    return {
+        "globalroot-device": f"\\??\\GLOBALROOT{device.value}\\{rest}",
+        "volume-guid": f"\\??\\{guid}\\{rest}",
+        "globalroot-drive": f"\\??\\GLOBALROOT\\GLOBAL??\\{drive}\\{rest}",
+    }
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+@pytest.mark.parametrize(
+    "form", ["globalroot-device", "volume-guid", "globalroot-drive"]
+)
+@pytest.mark.parametrize("slash", ["\\", "/"])
+def test_a_device_path_behind_the_nt_prefix_is_refused(
+    fake_home: Path, tmp_path: Path, form: str, slash: str
+) -> None:
+    """``\\??\\`` before a device path reaches the protected folder too.
+
+    Dropping the prefix left a relative path, joined to the current folder, so
+    neither check saw the protected folder while the write landed in it.
+    """
+    state = fake_home / ".apothem" / "state"
+    state.mkdir(parents=True)
+    ledger = state / "ledger.jsonl"
+    ledger.write_bytes(b"kept\n")
+    home = _device_spellings(fake_home)[form].replace("\\", slash)
+
+    def under(*parts: str) -> str:
+        return slash.join((home, *parts))
+
+    # An existing file, a new file and a lock in an existing protected folder.
+    assert home_write_guard.would_refuse(under(".apothem", "state", "ledger.jsonl"))
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.append_line_durably(
+            Path(under(".apothem", "state", "ledger.jsonl")), "x"
+        )
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.append_line_durably(
+            Path(under(".apothem", "state", "new.jsonl")), "x"
+        )
+    with (
+        pytest.raises(home_write_guard.RealHomeWriteError),
+        atomic_io.advisory_lock(Path(under(".apothem", "state", "x.install.lock"))),
+    ):
+        pass
+    # A protected folder that does not exist yet.
+    assert home_write_guard.would_refuse(under(".codex", "config.toml"))
+    assert home_write_guard.would_refuse(under(".codex"), tree=True)
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        atomic_io.write_bytes_atomically(Path(under(".codex", "config.toml")), b"x")
+    # The home itself as a project root, and the rest of the home.
+    assert home_write_guard.would_refuse_project_root(home)
+    assert home_write_guard.would_refuse(home, tree=True)
+    assert not home_write_guard.would_refuse(under("notes.txt"))
+    project = tmp_path / "project"
+    project.mkdir()
+    outside = _device_spellings(project)[form].replace("\\", slash)
+    assert not home_write_guard.would_refuse_project_root(outside)
+    assert ledger.read_bytes() == b"kept\n"
+    assert _everything_in(fake_home) == [fake_home / ".apothem", state, ledger]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+@pytest.mark.parametrize(
+    "form", ["globalroot-device", "volume-guid", "globalroot-drive"]
+)
+def test_a_device_path_is_not_read_against_the_current_folder(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, form: str
+) -> None:
+    """With the current folder in a protected folder, a path elsewhere is allowed."""
+    inside = fake_home / ".claude"
+    inside.mkdir()
+    monkeypatch.chdir(inside)
+    other = tmp_path / "other"
+    other.mkdir()
+    spelled = _device_spellings(other)[form]
+    assert not home_write_guard.would_refuse(f"{spelled}\\settings.json")
+    assert not home_write_guard.would_refuse_project_root(spelled)
+    home_write_guard.refuse_real_home_write(
+        f"{spelled}\\settings.json", operation="write"
+    )
+
+
 def _reachable_share(home: Path, host: str) -> str:
     """Return *home* on the admin share of *host*, or skip when it cannot be reached."""
     unc_home = _admin_share(home, host)

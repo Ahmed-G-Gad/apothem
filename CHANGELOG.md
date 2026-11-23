@@ -221,8 +221,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   protected folder count; on Windows so do letter case, short (8.3) names,
   the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares (IPv6
   included), shares reached by the machine's own addresses or through a
-  mapped drive, and alternate data streams; on macOS letter case, Unicode
-  normalization and the `/System/Volumes/Data` spelling of a path. Only the
+  mapped drive, alternate data streams and device paths behind a prefix
+  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter
+  case, Unicode normalization and the `/System/Volumes/Data` spelling of a
+  path. Only the
   string rules make no network contact: a share path is checked by asking
   its host. The CLI raises the error as it is. A refused uninstall records an
   unfinished uninstall only when it had already changed files outside the
