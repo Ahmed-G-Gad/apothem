@@ -8,19 +8,19 @@ run with ``-c``, ``-o addopts=`` or ``--rootdir`` elsewhere) runs Apothem
 against the account's real home. This module stops such a write before it
 happens.
 
-While ``PYTEST_CURRENT_TEST`` is set, or ``PYTEST_VERSION`` holds the version
-of the pytest that runs in this process (pytest sets the first for each test's
-setup, call and teardown, and pytest 8.2 and later the second, to its own
-version, for the whole session, so collection, module-level code and session
-hooks count too), :func:`refuse_real_home_write` raises
-:class:`RealHomeWriteError` for a path at or inside one of these folders of
-the account's home:
+While ``PYTEST_CURRENT_TEST`` is set and not empty, or ``PYTEST_VERSION`` holds
+the version of the pytest that runs in this process (pytest sets the first, to
+the test's id and phase, for each test's setup, call and teardown, and pytest
+8.2 and later the second, to its own version, for the whole session, so
+collection, module-level code and session hooks count too),
+:func:`refuse_real_home_write` raises :class:`RealHomeWriteError` for a path at
+or inside one of these folders of the account's home:
 
 - ``.apothem`` (install records, locks, backup sets, a user-scope data home);
 - ``.config/apothem``;
 - the tools' own folders that the harness registry's ``~/`` targets and shared
-  roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and the
-  rest);
+  roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and
+  the rest);
 - each path outside those folders that the propagation manifest's installs
   and stale sweeps change in the home, by itself: the file an earlier release
   wrote, ``.antigravity/profile.yaml``, which the Antigravity stale sweep
@@ -29,12 +29,12 @@ the account's home:
 With ``tree=True`` (removing or moving a whole folder) a path that holds one of
 those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
-its first write, and :func:`refuse_data_home_in_home` a data home right in
-the home under any name (a profile with the ``user-home`` workspace scope and
-its own ``directory_name``), or one that is a link to the home itself, before
-it is created or its stores are removed.
-Nothing else is refused: reads, dry runs and previews, the
-temporary folder, the checkout, and the rest of the home all stay allowed.
+its first write, and :func:`refuse_data_home_in_home` a data home right in the
+home under any name (a profile with the ``user-home`` workspace scope and its
+own ``directory_name``), or one that is a link to the home itself, before it is
+created or its stores are removed. Nothing else is refused: reads, dry runs and
+previews, the temporary folder, the checkout, and the rest of the home all stay
+allowed.
 
 The running pytest's version is the ``__version__`` of its ``_pytest``
 package, the string pytest puts in ``PYTEST_VERSION``, so a stale
@@ -83,28 +83,28 @@ compared, so a bind mount of the home or a case-insensitive Linux mount is
 judged by its spelling.
 
 The account home comes from the operating system (``FOLDERID_Profile`` on
-Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
-under ``tests/conftest.py`` those name a temporary folder. The system functions
-the lookup calls are bound when this module is imported, so a test that later
-replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg`` cannot change the
-home found or poison its cache. When the system has no answer (a container user
-with no ``passwd`` entry, say), the account home is not protected at all: only
-the homes a test added with :func:`also_protect_home` are, and the failed lookup
-is tried again on the next check. ``HOME`` is no fallback, because under
-``tests/conftest.py`` it can already name a test's temporary folder. No
-environment variable, setting or flag turns the refusal off; a test that runs a
-real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` and
-``PYTEST_VERSION`` in the child's environment.
+Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or
+``USERPROFILE``: under ``tests/conftest.py`` those name a temporary folder. The
+system functions the lookup calls are bound when this module is imported, so a
+test that later replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg``
+cannot change the home found or poison its cache. When the system has no answer
+(a container user with no ``passwd`` entry, say), the account home is not
+protected at all: only the homes a test added with :func:`also_protect_home`
+are, and the failed lookup is tried again on the next check. ``HOME`` is no
+fallback, because under ``tests/conftest.py`` it can already name a test's
+temporary folder. No environment variable, setting or flag turns the refusal
+off; a test that runs a real install on purpose starts Apothem without
+``PYTEST_CURRENT_TEST`` and ``PYTEST_VERSION`` in the child's environment.
 
 Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
 each test (or, outside any test, in the pytest session), so a caller that
-absorbs the error still leaves a trace that ``tests/conftest.py`` reports.
-The log is per process: a refusal a child process absorbs shows only as the
-child's ``stderr`` line. A child process that inherits only
-``PYTEST_VERSION`` (one started outside any test) is guarded only when its
-Python has the same pytest installed. The check runs before the write and by
-path, so a folder swapped for a link between the two is not seen.
+absorbs the error still leaves a trace that ``tests/conftest.py`` reports. The
+log is per process: a refusal a child process absorbs shows only as the child's
+``stderr`` line. A child process that inherits only ``PYTEST_VERSION`` (one
+started outside any test) is guarded only when its Python has the same pytest
+installed. The check runs before the write and by path, so a folder swapped for
+a link between the two is not seen.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
@@ -132,11 +132,15 @@ PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
 
 #: The variable pytest 8.2 and later sets, to its own version, for the whole
 #: session: collection, module-level code and session hooks run with it,
-#: outside any test. It counts only while it holds the version of the pytest
-#: installed for this Python (see :func:`active`).
+#: outside any test. It counts only while it holds the running pytest's version
+#: (the ``__version__`` of the ``_pytest`` package this process imported) or,
+#: in a process that has not imported pytest, the installed one's (see
+#: :func:`active`).
 PYTEST_SESSION_VARIABLE = "PYTEST_VERSION"
 
-#: What a refusal outside any test names in place of the test.
+#: What stands in for the test outside any test: the key the ``stderr`` notices
+#: are counted under, and the name a message gives when neither variable counts
+#: any more (see :func:`_running`).
 _SESSION = "the pytest session"
 
 #: Apothem's own folders in the home, relative to it.
@@ -209,11 +213,11 @@ _IPV6_LITERAL = ".ipv6-literal.net"
 _SETTLE_NS = 100_000_000
 
 #: The NT object-namespace prefixes, lower case, with what replaces each. A
-#: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as written,
-#: while ``os.path.abspath`` reads it as a folder ``??`` on the current drive.
-#: ``\\\\?\\`` passes a path through the same way, so a device path after the
-#: prefix (``GLOBALROOT\\Device\\HarddiskVolume2``, ``Volume{GUID}``) stays
-#: absolute and is resolved like any other path.
+#: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as
+#: written, while ``os.path.abspath`` reads it as a folder ``??`` on the
+#: current drive. ``\\\\?\\`` passes a path through the same way, so a device
+#: path after the prefix (``GLOBALROOT\\Device\\HarddiskVolume2``,
+#: ``Volume{GUID}``) stays absolute and is resolved like any other path.
 _NT_PREFIXES: tuple[tuple[str, str], ...] = (
     ("\\??\\unc\\", "\\\\"),
     ("\\??\\", "\\\\?\\"),
@@ -231,9 +235,8 @@ _PREFIXES: tuple[tuple[str, str], ...] = (
 )
 
 #: The Windows errors that say a share's host, or the share itself, cannot be
-#: reached: bad network path or name, no network, host or network
-#: unreachable, a dropped or timed-out connection, a mapped drive not
-#: connected.
+#: reached: bad network path or name, no network, host or network unreachable,
+#: a dropped or timed-out connection, a mapped drive not connected.
 _UNREACHABLE_ERRORS = frozenset({51, 53, 59, 64, 67, 121, 1222, 1231, 1232, 2250})
 
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
@@ -320,13 +323,15 @@ class _UnreachableShareError(Exception):
 def active() -> bool:
     """Return True while pytest runs.
 
-    That is while ``PYTEST_CURRENT_TEST`` is set, whatever its value (a test),
-    or while ``PYTEST_VERSION`` holds the version of the pytest that runs in
-    this process (the whole session, pytest 8.2 and later), or, in a process
-    that has not imported pytest, of the pytest installed for this Python.
-    Any other ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does
-    not count: a shell or a CI job may export that name for its own use. An
-    exported value equal to the installed version counts, outside pytest too.
+    That is while ``PYTEST_CURRENT_TEST`` is set and not empty (a test), or
+    while ``PYTEST_VERSION`` holds the version of the pytest that runs in this
+    process (the whole session, pytest 8.2 and later), or, in a process that
+    has not imported pytest, of the pytest installed for this Python. An empty
+    ``PYTEST_CURRENT_TEST`` does not count (pytest sets it to the test's id and
+    phase), and neither does any other ``PYTEST_VERSION`` (an empty one, or a
+    pin such as ``8.2``): a shell or a CI job may export either name for its
+    own use. An exported ``PYTEST_VERSION`` equal to the installed version
+    counts, outside pytest too.
     """
     return _turned_on_by() is not None
 
@@ -335,10 +340,11 @@ def _turned_on_by() -> str | None:
     """Return the variable that turns the guard on now, or None.
 
     The pytest version is looked up only while ``PYTEST_VERSION`` is set and
-    not empty, so with both variables unset this is two environment lookups.
+    not empty, so with both variables unset or empty this is two environment
+    lookups.
     """
     environ = os.environ
-    if PYTEST_VARIABLE in environ:
+    if environ.get(PYTEST_VARIABLE):
         return PYTEST_VARIABLE
     if _session_counts(environ.get(PYTEST_SESSION_VARIABLE)):
         return PYTEST_SESSION_VARIABLE
@@ -571,14 +577,17 @@ _FIX = (
 
 
 def _running() -> str:
-    """Return what is running, for a message, and the variable that says so.
+    """Return why the guard is on, for a message, and the variable that says so.
 
-    That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
-    pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
-    running pytest (:func:`active`). In a process that has not imported
-    pytest (one a session started, or one whose shell or CI job exports the
-    installed pytest's exact version), no pytest is running: the message says
-    that ``PYTEST_VERSION`` alone turned the guard on.
+    That is the test, while ``PYTEST_CURRENT_TEST`` is set and not empty.
+    Otherwise ``PYTEST_VERSION`` turned the guard on (:func:`active`), outside
+    any test. In a process that has imported pytest the message says that the
+    variable holds the version of that pytest, not that a pytest session runs:
+    pytest sets it so for its whole session, but a shell or a CI job may export
+    it to a process that imports pytest without running it. In any other
+    process (one a session started, or one whose shell or CI job exports the
+    installed pytest's exact version) no pytest runs, and the message says that
+    ``PYTEST_VERSION`` alone turned the guard on.
 
     Each variable is read once. pytest takes ``PYTEST_CURRENT_TEST`` out of the
     environment at the end of each test's teardown, so a check made just before
@@ -588,9 +597,8 @@ def _running() -> str:
     """
     environ = os.environ
     test = environ.get(PYTEST_VARIABLE)
-    if test is not None:
-        shown = f": {test}" if test else ""
-        return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
+    if test:
+        return f"a pytest test is running ({PYTEST_VARIABLE} is set: {test})"
     version = environ.get(PYTEST_SESSION_VARIABLE, "")
     if not _session_counts(version):
         return f"pytest is running ({_SESSION}, outside any test)"
@@ -600,8 +608,8 @@ def _running() -> str:
             f"{version}, though no pytest runs in this process"
         )
     return (
-        f"pytest is running ({_SESSION}, outside any test: "
-        f"{PYTEST_SESSION_VARIABLE} matches the running pytest {version})"
+        f"{PYTEST_SESSION_VARIABLE} holds the version of the pytest imported in "
+        f"this process, {version}, outside any test"
     )
 
 
@@ -689,14 +697,14 @@ def _absolute(path: str) -> str:
     """Return *path* made absolute, with an NT object-namespace prefix read first.
 
     On Windows ``\\??\\UNC\\host\\share\\x`` (with either slash) reads as
-    ``\\\\host\\share\\x`` and any other ``\\??\\x`` as ``\\\\?\\x``, which a file
-    call passes through to the same NT path. So ``\\??\\C:\\x`` reads as
+    ``\\\\host\\share\\x`` and any other ``\\??\\x`` as ``\\\\?\\x``, which a
+    file call passes through to the same NT path. So ``\\??\\C:\\x`` reads as
     ``C:\\x``, and a device path such as
-    ``\\??\\GLOBALROOT\\Device\\HarddiskVolume2\\x`` or ``\\??\\Volume{GUID}\\x``
-    stays absolute and is resolved to the drive path it names.
-    ``os.path.abspath`` alone would read each as a folder ``??`` on the current
-    drive, and dropping the prefix would leave a device path relative to the
-    current folder.
+    ``\\??\\GLOBALROOT\\Device\\HarddiskVolume2\\x`` or
+    ``\\??\\Volume{GUID}\\x`` stays absolute and is resolved to the drive path
+    it names. ``os.path.abspath`` alone would read each as a folder ``??`` on
+    the current drive, and dropping the prefix would leave a device path
+    relative to the current folder.
     """
     if os.name == "nt":
         flipped = path.replace("/", "\\")
@@ -1228,8 +1236,8 @@ def narrowest_roots(folders: tuple[str, ...], paths: list[str]) -> tuple[str, ..
 def _os_account_home() -> str:
     """Return the account's home from the operating system, looked up once.
 
-    Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
-    no failure, so the next call tries again. An error from one lookup (a
+    Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache``
+    keeps no failure, so the next call tries again. An error from one lookup (a
     broken system library, say) moves on to the next lookup, so a broken step
     never stops the check itself. The lookups call the system functions bound
     at import (:data:`_SYSTEM`; a missing one is a ``KeyError``), so a test's

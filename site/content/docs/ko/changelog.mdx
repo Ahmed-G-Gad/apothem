@@ -114,22 +114,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     If you added the `skills.load.extraDirs` entry by hand, as these docs said
     before, install and update now print the hook entry to add as well;
     `apothem verify` fails until you add it.
-  - **Uninstall** removes the managed blocks, the files and folders they leave
-    empty, and only the hook entries Apothem added. Apothem's entries in a
-    commented `openclaw.json` stop it before anything changes, with an error
-    naming what to remove; a rules file behind a link is left in place and the
-    uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
-    gets an error that names it, and the uninstall cleans the other
-    workspaces' rules files, records their backups and stops before
+  - **Uninstall** removes the managed blocks, the files and folders they
+    leave empty, and only the hook entries Apothem added. Apothem's entries
+    in a commented `openclaw.json` stop it before anything changes, with an
+    error naming what to remove; a rules file behind a link is left in place
+    and the uninstall reported unfinished (exit 2); a rules file Apothem
+    cannot rewrite gets an error that names it, and the uninstall cleans the
+    other workspaces' rules files, records their backups and stops before
     `openclaw.json` changes. When the step that changes `openclaw.json` stops
     with an error after the rules files changed (a backup that cannot be
     written, say), the uninstall records itself unfinished with their backups,
     so retention keeps them, and exits 2 with `uninstall stopped after
     removing files`; an interrupt (`Ctrl+C`) there is recorded the same way.
-    An error inside the rules-file step itself leaves the backups it took
-    before the error unrecorded. In each case the install record stays, so a
-    second uninstall after the hand fix finishes. `apothem verify` reports a
-    missing file or registration.
+    The command then prints `Aborted!` and exits 1, though files were removed;
+    run the uninstall again to finish it. An error inside the rules-file step
+    itself leaves the backups it took before the error unrecorded. In each
+    case the install record stays, so a second uninstall after the hand fix
+    finishes. `apothem verify` reports a missing file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -216,61 +217,67 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- **Apothem refuses to write into the real home while pytest runs.**
-  While `PYTEST_CURRENT_TEST` is set (a test), or `PYTEST_VERSION` holds the
-  running pytest's version (the whole session: collection, module-level
-  code and session hooks), a write, removal, copy, rename or lock file in a
-  protected path of the account's home stops with `RealHomeWriteError`
-  before anything changes. The protected paths are
-  `~/.apothem`, `~/.config/apothem`, each tool folder the harness registry
-  names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside those
-  folders that the propagation manifest changes in the home: today that is
-  `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
+- **Apothem refuses to write into the real home while pytest runs.** While
+  `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
+  holds the running pytest's version (the whole session: collection,
+  module-level code and session hooks), a write, removal, copy, rename
+  or lock file in a protected path of the account's home stops with
+  `RealHomeWriteError` before anything changes. The protected paths
+  are `~/.apothem`, `~/.config/apothem`, each tool folder the harness
+  registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside
+  those folders that the propagation manifest changes in the home: today that
+  is `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
   Antigravity stale sweep removes. The home is the one the operating system
   records for the account, not `HOME`. Reads, dry runs and previews still
   work, and outside pytest nothing is refused unless the environment carries
-  `PYTEST_CURRENT_TEST`, or the installed pytest's exact version in
-  `PYTEST_VERSION` (a shell or a CI job may export it to pin what it
-  installs). A `PYTEST_VERSION` with any other value, such as a pin like
-  `9.1` for `9.1.0`, does not count, and the error names the variable that
-  turned the refusal on. A project-scope install, update, uninstall or
-  rollback whose project root is the home itself is refused before it
-  writes anything. A data home right in the home, under a name the profile
-  chose, or one that is a link to a folder right in the home or to the home
-  itself (also through a chain of links), is refused before it is created
-  and before its stores are removed: an install or update has written the
-  project's files by then and undoes those writes (recording a rollback),
-  and an uninstall has removed them by then and records itself unfinished.
-  Some passes check their paths before the first change, so a refusal there
-  leaves everything as it was: a stale sweep every stale path; a rollback
-  every path its install record names, the data stores it would remove and the
-  user-level folders in the home it would tidy last; a rollback and an
-  uninstall the backup root and the ledger; and an OpenClaw uninstall
-  `openclaw.json` and every workspace's rules file, one outside `~/.openclaw`
-  included. The stale sweep now also decides which stale paths it keeps (a
-  link, a path reached through one, a live folder under another name) before
-  it removes the first, in every run; it never removes a link, so it keeps the
-  same paths as before. Links and junctions into a protected folder count; on
-  Windows so do letter case, short (8.3) names,
-  the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares (IPv6
-  included), shares reached by the machine's own addresses or through a
-  mapped drive, alternate data streams and device paths behind a prefix
-  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter
-  case, Unicode normalization and the `/System/Volumes/Data` spelling of a
-  path. Only the
-  string rules make no network contact: a share path is checked by asking
-  its host. The CLI raises the error as it is. A refused uninstall records an
-  unfinished uninstall only when it had already changed files outside the
-  protected folders, in a step before the shared removal too, so the backups
-  of those files stay referenced. The test suite fails a test after which a
-  refusal was absorbed in the test's own process, also when the test is
-  marked `xfail`; one absorbed outside any test fails the collection of the
-  node pytest was collecting then, or else the run when the session
-  finishes, named for where it happened, also in a parallel run (one a
-  worker process absorbs after it handed its refusals to the main process,
-  once its plain session-finish hooks have run, shows only on `stderr`).
-  With no system record of the account's home (no `passwd` entry), the home is
+  a `PYTEST_CURRENT_TEST` that is not empty, or the installed pytest's exact
+  version in `PYTEST_VERSION` (a shell or a CI job may export it to pin what
+  it installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, nor does an empty `PYTEST_CURRENT_TEST`,
+  and the error names the variable that turned the refusal on and the value
+  it holds. A project-scope install, update, uninstall or rollback whose
+  project root is the home itself is refused before it writes anything. A
+  data home right in the home, under a name the profile chose, or one that is
+  a link to a folder right in the home or to the home itself (also through a
+  chain of links), is refused before it is created and before its stores are
+  removed: an install or update has written the project's files by then and
+  undoes those writes (recording a rollback), and an uninstall has removed
+  them by then and records itself unfinished. Some passes check their paths
+  before the first change, so a refusal there leaves everything as it was:
+  a stale sweep every stale path; a rollback every path its install record
+  names, the data stores it would remove and the user-level folders in the
+  home it would tidy last; a rollback and an uninstall the backup root and
+  the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
+  rules file, one outside `~/.openclaw` included. The stale sweep now also
+  decides which stale paths it keeps (a link, a path reached through one, a
+  live folder under another name) before it removes the first, in every run;
+  it never removes a link, so it keeps the same paths as before. Links and
+  junctions into a protected folder count; on Windows so do letter case, short
+  (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares
+  (IPv6 included), shares reached by the machine's own addresses or through
+  a mapped drive, alternate data streams and device paths behind a prefix
+  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter case,
+  Unicode normalization and the `/System/Volumes/Data` spelling of a path.
+  Only the string rules make no network contact: a share path is checked by
+  asking its host. The CLI raises the error as it is. A refused uninstall
+  records an unfinished uninstall only when it had already changed files
+  outside the protected folders, in a step before the shared removal too,
+  so the backups of those files stay referenced. The test suite fails a test
+  after which a refusal was absorbed in the test's own process, also when the
+  test is marked `xfail`; one absorbed outside any test fails the collection
+  of the node pytest was collecting then, or else the run when the session
+  finishes, named for where it happened, also when a worker process of a
+  parallel run absorbs it, before or after it handed its refusals to the main
+  process. Three cases still show only on `stderr` and leave the exit code as
+  it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
+  wrapper that pytest registered after the guard, one absorbed in a cleanup
+  registered with `config.add_cleanup`, and one a worker absorbs after that
+  hand-off but never writes to the file the main process reads, because the
+  worker was stopped first (a worker still running 5 seconds after the main
+  process's session finishes is interrupted, and one still running after
+  10 seconds is stopped) or that file could not be made or written. With
+  no system record of the account's home (no `passwd` entry), the home is
   not protected. A test that must run a real install starts Apothem without
   `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's environment.
   `tests/README.md` lists what the refusal does not cover, such as a bind
@@ -754,40 +761,43 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   looking at anything; it now removes the rest and exits 2, and names that
   file, left in place, with the fix: save it as UTF-8 or delete the Apothem
   block in it by hand, then run the uninstall again.
-- **Uninstall removes only the files Apothem wrote.** Each install now
-  records the SHA-256 of every file it copies into place (skills, commands,
-  rules and the like),
-  and an uninstall removes a file only while it still has that content. A file
-  you added to an Apothem folder, an Apothem file you edited, and a file of
-  your own with an Apothem name stay, with a warning, and so does the folder
-  that holds them. Before, an uninstall removed the whole folder, and after a
-  partial uninstall followed by cleaning up by hand it could remove files you
-  had put there since. For an install recorded by an earlier release, which
-  does not say which files Apothem wrote, the uninstall removes the files that
-  have the same bytes as what this release writes there; a file that differs
-  leaves the uninstall unfinished (exit `2`) with the next step: copy any of
-  those files you edited and move your own files out of Apothem's folders
-  (an update replaces them), then run `apothem update` and `apothem uninstall`
-  again. An uninstall that does not finish
-  (a failed step, an error, or Apothem's own files reached through a link)
-  appends an `uninstall-incomplete` record to the install ledger, so running
-  it again finishes the job; an install, update, rollback or finished
-  uninstall replaces that state, and so does removing the files by hand. A
-  file where Apothem keeps a managed block (such as `CLAUDE.md`) counts as
-  Apothem's while the block is there, even after you add text of your own
-  beside it, so the second run still finishes the job. A
-  linked folder that holds only your own files no longer stops an uninstall:
-  it is left in place with a warning and the uninstall finishes. An uninstall
-  that removed files before a step failed now exits `2` with the status
-  `partial`, and the `--format json` warnings are grouped like the printed
-  ones, with `count` and `paths`. An uninstall that stops with an error after
-  removing files exits `2` too. `apothem rollback` now undoes the newest
-  install still in place, so a second rollback undoes the one before, refuses
-  an `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that install
-  wrote. Uninstalling a tool from one project no longer removes the shared
-  memory, contexts and learning stores in your home folder while the same tool
-  installed in another project still uses them.
+- **Uninstall removes only the files Apothem wrote.** Each install now records
+  the SHA-256 of every file it copies into place (skills, commands, rules
+  and the like), and an uninstall removes a file only while it still has
+  that content. A file you added to an Apothem folder, an Apothem file you
+  edited, and a file of your own with an Apothem name stay, with a warning,
+  and so does the folder that holds them. Before, an uninstall removed the
+  whole folder, and after a partial uninstall followed by cleaning up by
+  hand it could remove files you had put there since. For an install recorded
+  by an earlier release, which does not say which files Apothem wrote, the
+  uninstall removes the files that have the same bytes as what this release
+  writes there; a file that differs leaves the uninstall unfinished (exit
+  `2`) with the next step: copy any of those files you edited and move your
+  own files out of Apothem's folders (an update replaces them), then run
+  `apothem update` and `apothem uninstall` again. An uninstall that does not
+  finish (a failed step, an error, or Apothem's own files reached through
+  a link) appends an `uninstall-incomplete` record to the install ledger,
+  so running it again finishes the job; an install, update, rollback or
+  finished uninstall replaces that state, and so does removing the files
+  by hand. A file where Apothem keeps a managed block (such as `CLAUDE.md`)
+  counts as Apothem's while the block is there, even after you add text of
+  your own beside it, so the second run still finishes the job. A linked
+  folder that holds only your own files no longer stops an uninstall: it is
+  left in place with a warning and the uninstall finishes. An uninstall that
+  removed files before a step failed now exits `2` with the status `partial`,
+  and the `--format json` warnings are grouped like the printed ones, with
+  `count` and `paths`. An uninstall that stops with an error after removing
+  files exits `2` too. A stopped uninstall now also names each link it
+  found keeping Apothem's own files in place, as one that ran all its steps
+  does: on a `✗ <harness> uninstall did not finish:` line, at the end of its
+  `results` row's message and, when the reasons name one link, in that row's
+  `detail.symlink` and `detail.leads_to`. `apothem rollback` now undoes the
+  newest install still in place, so a second rollback undoes the one before,
+  refuses an `--install-id` that was already rolled back or uninstalled, and
+  removes a file an install created only while it still has the content that
+  install wrote. Uninstalling a tool from one project no longer removes the
+  shared memory, contexts and learning stores in your home folder while the
+  same tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
