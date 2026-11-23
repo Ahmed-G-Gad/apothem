@@ -1064,19 +1064,45 @@ class RealHomeGuard:
             _fail_on_late_refusals(report)
         return report
 
+    @pytest.hookimpl(wrapper=True, tryfirst=True)
+    def pytest_sessionstart(
+        self, session: pytest.Session
+    ) -> Generator[None, None, None]:
+        """Hold a refusal Apothem logged before the session collected anything.
+
+        One absorbed while a conftest was imported, while pytest was configured
+        or in a ``pytest_sessionstart`` hook would otherwise fail the session's
+        collection, which drops every test, and the xdist controller, which
+        collects nothing, would report it as made after the last test. As a
+        ``tryfirst`` wrapper this finishes after every plain implementation and
+        every wrapper that is not ``tryfirst``. It holds the refusal, and
+        :meth:`pytest_sessionfinish` reports it and fails the run once the tests
+        have run.
+        """
+        session.config.stash[_HELD_SESSION] = session
+        try:
+            return (yield)
+        finally:
+            _hold(session.config, _AT_SESSION_START)
+
     @pytest.hookimpl(wrapper=True)
     def pytest_make_collect_report(
         self, collector: pytest.Collector
     ) -> Generator[None, pytest.CollectReport, pytest.CollectReport]:
         """Fail the collection of a node after which Apothem logged a refusal.
 
-        A refusal absorbed outside any test, in module-level code a collector
-        runs or in a session-start hook, would otherwise stay in the log until
-        the first test's teardown and fail that test. The report of the node
-        pytest was collecting then fails instead: the session itself for a
-        refusal in a session-start hook. A report that failed already keeps
-        its own error, with the refusal added.
+        A refusal absorbed while a collector ran, in a test module's
+        module-level code or a conftest pytest imports during collection, say,
+        would otherwise stay in the log until the first test's teardown and fail
+        that test. The report of the node pytest was collecting then fails
+        instead. A report that failed already keeps its own error, with the
+        refusal added. One logged before the session's own report starts (in a
+        ``pytest_collection`` hook) is held like one from the session start
+        (see :meth:`pytest_sessionstart`): failing the session's report would
+        drop every test.
         """
+        if isinstance(collector, pytest.Session):
+            _hold(collector.config, _AT_SESSION_START)
         report = yield
         refused = home_write_guard.drain_refusals()
         if refused:
@@ -1088,6 +1114,41 @@ class RealHomeGuard:
             report.longrepr = message
         return report
 
+    @pytest.hookimpl(wrapper=True, tryfirst=True)
+    def pytest_collection_finish(
+        self, session: pytest.Session
+    ) -> Generator[None, None, None]:
+        """Hold a refusal Apothem logged after the last collect report.
+
+        One absorbed in a ``pytest_collection_modifyitems``,
+        ``pytest_collection_finish`` or ``pytest_report_collectionfinish`` hook
+        would otherwise fail the first test, as made during it. As a
+        ``tryfirst`` wrapper this finishes after every plain implementation and
+        every wrapper that is not ``tryfirst``. pytest calls the hook even when
+        the collection stops on an error, so the refusal is named for where it
+        happened also when no test runs.
+        """
+        try:
+            return (yield)
+        finally:
+            _hold(session.config, _BEFORE_THE_FIRST_TEST)
+
+    @pytest.hookimpl(wrapper=True, trylast=True)
+    def pytest_runtestloop(
+        self, session: pytest.Session
+    ) -> Generator[None, object, object]:
+        """Hold a refusal Apothem logged after collection, before the first test.
+
+        A ``trylast`` wrapper starts after every other wrapper of the hook, right
+        before the implementation that runs the tests (pytest's own, or
+        xdist's), so this sees one absorbed after
+        :meth:`pytest_collection_finish`: by another ``pytest_runtestloop``
+        wrapper before it yields, or by a ``pytest_collection`` wrapper after it
+        yields.
+        """
+        _hold(session.config, _BEFORE_THE_FIRST_TEST)
+        return (yield)
+
     @pytest.hookimpl(trylast=True)
     def pytest_sessionfinish(self, session: pytest.Session) -> None:
         """Fail the run when Apothem logged a refusal after the last test.
@@ -1095,12 +1156,13 @@ class RealHomeGuard:
         A ``pytest_sessionfinish`` hook that runs before this one can absorb a
         refusal after the last teardown report. It is written to the terminal
         above the summary, with every refusal the guard holds for the end of the
-        run (those an xdist worker sent, see :meth:`pytest_testnodedown`), and
-        the run's exit code becomes "tests failed". An xdist worker hands them
-        to the controller instead, in ``config.workeroutput``: the worker's
-        terminal output is discarded and the controller does not use its exit
-        code. xdist sends that output once every plain ``pytest_sessionfinish``
-        hook has run, so after this one.
+        run (one from before the first test, see :meth:`pytest_sessionstart` and
+        :meth:`pytest_collection_finish`, or one an xdist worker sent, see
+        :meth:`pytest_testnodedown`), and the run's exit code becomes "tests
+        failed". An xdist worker hands them to the controller instead, in
+        ``config.workeroutput``: the worker's terminal output is discarded and
+        the controller does not use its exit code. xdist sends that output once
+        every plain ``pytest_sessionfinish`` hook has run, so after this one.
         """
         _hold(session.config, _AFTER_THE_LAST_TEST)
         _report_held(session.config, session, to_the_controller=True)
@@ -1214,6 +1276,8 @@ def _outside_any_test(refused: Iterable[object], where: str) -> str:
 
 
 #: Where Apothem logged a refusal outside any test, as its report names it.
+_AT_SESSION_START = "at the session start, before collection"
+_BEFORE_THE_FIRST_TEST = "after collection, before the first test"
 _AFTER_THE_LAST_TEST = "after the last test"
 _AFTER_THE_SESSION = "after the session finished"
 
@@ -1223,6 +1287,8 @@ _HELD = pytest.StashKey[list[tuple[str, tuple[str, ...]]]]()
 _HELD_SESSION = pytest.StashKey[pytest.Session]()
 #: The ``config.workeroutput`` key an xdist worker sends its held refusals under.
 _TO_THE_CONTROLLER = "apothem-real-home-refusals"
+#: The exit statuses a held refusal turns into "tests failed".
+_PASSED_OR_EMPTY = (pytest.ExitCode.OK, pytest.ExitCode.NO_TESTS_COLLECTED)
 
 
 def _hold(config: pytest.Config, where: str) -> None:
@@ -1247,7 +1313,8 @@ def _report_held(
     this is an xdist worker, whose terminal output is discarded. With
     *to_the_controller*, a worker puts the refusals in ``config.workeroutput``
     instead, which xdist sends to the controller. The exit status of *session*
-    becomes "tests failed" when it was "OK".
+    becomes "tests failed" when it was "OK" or "no tests collected", which some
+    jobs accept as a pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
@@ -1274,7 +1341,7 @@ def _report_held(
         reporter.write_line(f"\n{message}", red=True)
     else:
         sys.stderr.write(message + "\n")
-    if session is not None and session.exitstatus == pytest.ExitCode.OK:
+    if session is not None and session.exitstatus in _PASSED_OR_EMPTY:
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 

@@ -94,6 +94,16 @@ _ISOLATION = (
     "_isolate_install_ledger",
     "_isolate_backup_root",
 )
+#: The guard's hooks that read the refusal log outside any test.
+_SESSION_HOOKS = (
+    "pytest_sessionstart",
+    "pytest_make_collect_report",
+    "pytest_collection_finish",
+    "pytest_runtestloop",
+    "pytest_sessionfinish",
+    "pytest_unconfigure",
+    "pytest_testnodedown",
+)
 #: The functions the pytester session collects, and the suite does not.
 _CASE_PREFIX = "case_"
 
@@ -414,8 +424,14 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     ]
     assert guards == [conftest.real_home_guard]
     assert manager.get_plugin(conftest.REAL_HOME_GUARD_PLUGIN) is guards[0]
-    # The conftest module itself holds no guard hook, only the registrar.
-    for hook in ("pytest_runtest_setup", "pytest_runtest_call", "pytest_pyfunc_call"):
+    # The conftest module itself holds no guard hook, only the registrar, so a
+    # star import of it registers none of them a second time.
+    for hook in (
+        "pytest_runtest_setup",
+        "pytest_runtest_call",
+        "pytest_pyfunc_call",
+        *_SESSION_HOOKS,
+    ):
         caller = getattr(request.node.ihook, hook)
         assert [i for i in caller.get_hookimpls() if i.plugin is conftest] == []
     registrars = [
@@ -524,6 +540,46 @@ def test_the_report_hook_wraps_every_other_report_hook(
     skipping = request.config.pluginmanager.get_plugin("skipping")
     order = [i.plugin for i in _call_order(request, "pytest_runtest_makereport")]
     assert order.index(impl.plugin) < order.index(skipping)
+
+
+def test_the_session_hooks_read_the_log_after_what_they_follow(
+    request: pytest.FixtureRequest,
+) -> None:
+    """Each hook that reads the refusal log outside a test finishes late enough."""
+    guard = request.config.pluginmanager.get_plugin("apothem-real-home-guard")
+
+    def guard_impls(hook: str) -> list[HookImpl]:
+        return [i for i in _call_order(request, hook) if i.plugin is guard]
+
+    for hook in (
+        "pytest_sessionstart",
+        "pytest_collection_finish",
+        "pytest_unconfigure",
+    ):
+        (impl,) = guard_impls(hook)
+        assert impl.wrapper, hook
+        assert impl.tryfirst, f"{hook}: it has to finish after every other one"
+    (loop,) = guard_impls("pytest_runtestloop")
+    assert loop.wrapper
+    assert loop.trylast, "it has to start after every other wrapper"
+    wrappers = [
+        i
+        for i in _call_order(request, "pytest_runtestloop")
+        if i.wrapper or i.hookwrapper
+    ]
+    assert wrappers[-1] is loop
+    after_the_summary, at_the_end = guard_impls("pytest_sessionfinish")
+    assert after_the_summary.wrapper
+    assert after_the_summary.tryfirst
+    assert not at_the_end.wrapper
+    assert at_the_end.trylast
+    reporter = request.config.pluginmanager.get_plugin("terminalreporter")
+    calls = _call_order(request, "pytest_sessionfinish")
+    (summary,) = [i for i in calls if i.plugin is reporter]
+    assert summary.wrapper, "the summary is written after its yield"
+    assert calls.index(after_the_summary) < calls.index(summary)
+    (worker_down,) = guard_impls("pytest_testnodedown")
+    assert worker_down.optionalhook, "only xdist defines the hook"
 
 
 def test_a_star_import_carries_the_isolation_and_the_guard(
@@ -1430,3 +1486,111 @@ def case_a_passing_session_under_xdist_exits_zero(
     result.assert_outcomes(passed=len(_PROBE_TESTS))
     assert result.ret == pytest.ExitCode.OK
     assert "refused" not in result.stdout.str()
+
+
+#: A conftest hook that absorbs the refusal when the session starts.
+_ABSORBED_AT_SESSION_START = """
+
+def pytest_sessionstart(session):
+    _absorb()
+"""
+
+#: A conftest collection hook that absorbs the refusal before pytest's own
+#: collects anything.
+_ABSORBED_BEFORE_COLLECTION = """
+
+def pytest_collection(session):
+    _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal after the last collect report.
+_ABSORBED_AFTER_COLLECTION = """
+
+def pytest_collection_modifyitems(session, config, items):
+    _absorb()
+"""
+
+#: A test-loop wrapper that absorbs the refusal before the first test.
+_ABSORBED_BEFORE_THE_TEST_LOOP = """
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtestloop(session):
+    _absorb()
+    return (yield)
+"""
+
+_AT_SESSION_START = "at the session start, before collection"
+_BEFORE_THE_FIRST_TEST = "after collection, before the first test"
+
+
+def _assert_nothing_collected_failed(result: pytest.RunResult) -> None:
+    output = result.stdout.str()
+    assert "ERROR collecting" not in output
+    assert "found no collectors" not in output
+    assert "while pytest collected" not in output
+
+
+def case_a_refusal_absorbed_at_session_start_fails_the_run_after_the_tests(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Failing the session's collection would drop every test it collected."""
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_SESSION_START)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+
+
+def case_a_refusal_absorbed_before_collection_fails_the_run_after_the_tests(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_BEFORE_COLLECTION)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+
+
+def case_a_refusal_absorbed_after_collection_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AFTER_COLLECTION)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+def case_a_refusal_absorbed_before_the_test_loop_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_BEFORE_THE_TEST_LOOP)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+def case_a_session_start_refusal_fails_a_run_that_collects_no_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The exit code says tests failed, not that none was collected."""
+    pytester.makepyfile(test_probe="")
+
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_SESSION_START)
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(["*collected 0 items*"])
+    result.stdout.fnmatch_lines([f"*outside any test, {_AT_SESSION_START}, and*"])
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_session_start_refusal_under_xdist_is_named_where_it_happened(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The controller collects nothing; each worker sends its own refusal."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_SESSION_START, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+    output = result.stdout.str()
+    assert output.count(f", {_AT_SESSION_START}, and the refusal") == 3, output
+    assert output.count(f"in xdist worker gw0, {_AT_SESSION_START}") == 1, output
+    assert output.count(f"in xdist worker gw1, {_AT_SESSION_START}") == 1, output
+    assert "after the last test" not in output
