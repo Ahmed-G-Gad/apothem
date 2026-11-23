@@ -43,7 +43,8 @@ outside any test: while a test module is imported, which fails that module's
 collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
 test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook,
-between two collect reports (a ``pytest_itemcollected`` hook, and the
+in a ``pytest_collection_finish`` hook while a path that does not exist stops
+the collection, between two collect reports (a ``pytest_itemcollected`` hook, and the
 ``pytest_collectreport`` hook of the session's own report), in a
 ``pytest_runtestloop`` wrapper before it yields and in a plain
 ``pytest_runtestloop`` hook, between two tests (a ``pytest_runtest_logreport``
@@ -1717,6 +1718,31 @@ def case_a_refusal_absorbed_after_collection_fails_the_run_not_the_first_test(
     result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AFTER_COLLECTION)
 
     _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: A collection-finish hook that absorbs the refusal. pytest calls it also
+#: when the collection stops on an error.
+_ABSORBED_AT_COLLECTION_FINISH = """
+
+def pytest_collection_finish(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_at_collection_finish_is_named_when_no_test_runs(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A path that does not exist stops the collection: no test loop starts."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_COLLECTION_FINISH, "does_not_exist.py"
+    )
+
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    result.stdout.fnmatch_lines(
+        [f"*outside any test, {_BEFORE_THE_FIRST_TEST}, and the refusal*"]
+    )
+    assert "after the last test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
 
 
 def case_a_refusal_absorbed_before_the_test_loop_fails_the_run_not_the_first_test(
