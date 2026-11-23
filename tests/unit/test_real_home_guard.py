@@ -1250,3 +1250,76 @@ def case_a_test_that_absorbs_a_refusal_errors(
     _assert_each_absorbed_refusal_errors(
         result, fake_real_home, passed=len(_ABSORBING_TESTS)
     )
+
+
+#: A helper that absorbs one refusal of a write into the protected home
+#: ``{home}``, for a probe to call outside any test.
+_ABSORB_ONE = """
+import contextlib
+
+from apothem.lib import home_write_guard
+
+
+def _absorb():
+    home_write_guard.also_protect_home({home!r})
+    with contextlib.suppress(OSError):
+        home_write_guard.refuse_real_home_write(
+            {home!r} + "/.apothem/probe.txt", operation="write"
+        )
+"""
+
+#: A probe module that absorbs the refusal while it is imported.
+_ABSORBED_AT_IMPORT = """
+_absorb()
+
+
+def test_after_the_import():
+    pass
+"""
+
+#: A conftest hook that absorbs the refusal after the last test.
+_ABSORBED_AT_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_at_import_fails_the_collection(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the first test that runs after it: the module that absorbed it."""
+    pytester.makepyfile(
+        test_probe=_ABSORB_ONE.format(home=str(fake_real_home)) + _ABSORBED_AT_IMPORT
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    result.assert_outcomes(errors=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*ERROR collecting test_probe.py*",
+            "*outside any test, while pytest collected test_probe.py*",
+        ]
+    )
+    assert "during this test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_after_the_last_test_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makepyfile(test_probe="def test_passes():\n    pass\n")
+    pytester.makeconftest(
+        _STAR_IMPORT
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_AT_SESSION_FINISH
+    )
+
+    result = _run(pytester)
+
+    result.assert_outcomes(passed=1)
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(["*outside any test, after the last test*"])
+    assert not (fake_real_home / ".apothem").exists()

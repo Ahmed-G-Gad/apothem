@@ -722,7 +722,9 @@ shared removal too (the first step of a native-config uninstall, say), so the
 backups of those files stay referenced. A few internal callers absorb the
 error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
-logged, even when the test is marked `xfail`. The log is kept per process: a
+logged, even when the test is marked `xfail`. One logged outside any test
+fails the collection of the node pytest was collecting then, or the run when
+a session-finish hook absorbed it. The log is kept per process: a
 refusal that a child Apothem process absorbs shows only as a line on the
 child's `stderr`, and the test is not failed for it.
 

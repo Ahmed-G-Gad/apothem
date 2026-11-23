@@ -986,7 +986,7 @@ class RealHomeGuard:
     """The pytest plugin that stops a test before it can use the real home.
 
     One instance, ``real_home_guard``, is registered per session under
-    ``REAL_HOME_GUARD_PLUGIN``. Its four hooks are ordinary methods; pytest
+    ``REAL_HOME_GUARD_PLUGIN``. Its hooks are ordinary methods; pytest
     finds them on the object, not in the namespace of the conftest that imported
     this module, so deleting or rebinding a name there leaves them in place.
     """
@@ -1064,6 +1064,53 @@ class RealHomeGuard:
             _fail_on_late_refusals(report)
         return report
 
+    @pytest.hookimpl(wrapper=True)
+    def pytest_make_collect_report(
+        self, collector: pytest.Collector
+    ) -> Generator[None, pytest.CollectReport, pytest.CollectReport]:
+        """Fail the collection of a node after which Apothem logged a refusal.
+
+        A refusal absorbed outside any test, in module-level code a collector
+        runs or in a session-start hook, would otherwise stay in the log until
+        the first test's teardown and fail that test. The report of the node
+        pytest was collecting then fails instead: the session itself for a
+        refusal in a session-start hook. A report that failed already keeps
+        its own error, with the refusal added.
+        """
+        report = yield
+        refused = home_write_guard.drain_refusals()
+        if refused:
+            where = f"while pytest collected {collector.nodeid or 'the session'}"
+            message = _outside_any_test(refused, where)
+            if report.outcome == "failed":
+                message = f"{report.longrepr}\n\n{message}"
+            report.outcome = "failed"
+            report.longrepr = message
+        return report
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_sessionfinish(self, session: pytest.Session) -> None:
+        """Fail the run when Apothem logged a refusal after the last test.
+
+        A ``pytest_sessionfinish`` hook that runs before this one can absorb a
+        refusal after the last teardown report. The refusal is written to the
+        terminal and the run's exit code becomes "tests failed". One absorbed
+        later, in ``pytest_unconfigure``, shows only as the line the guard
+        writes to ``stderr``, and so does one in an xdist worker's session
+        finish, whose exit code the controller does not use.
+        """
+        refused = home_write_guard.drain_refusals()
+        if not refused:
+            return
+        message = _outside_any_test(refused, "after the last test")
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reporter is not None:
+            reporter.write_line(message, red=True)
+        else:
+            sys.stderr.write(message + "\n")
+        if session.exitstatus == pytest.ExitCode.OK:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
 
 def _is_guard_failure(error: BaseException) -> bool:
     """Return whether *error* is the guard's failure, or a group that holds one.
@@ -1103,6 +1150,15 @@ def _fail_on_late_refusals(report: pytest.TestReport) -> None:
     report.longrepr = (
         "Apothem refused a write into the account's real home while a fixture "
         "was torn down, and the refusal was not raised to the test:\n"
+        + "\n".join(f"  - {error}" for error in refused)
+    )
+
+
+def _outside_any_test(refused: tuple[BaseException, ...], where: str) -> str:
+    """Return the report of refusals Apothem logged outside any test, *where*."""
+    return (
+        "Apothem refused a write into the account's real home outside any "
+        f"test, {where}, and the refusal was not raised:\n"
         + "\n".join(f"  - {error}" for error in refused)
     )
 

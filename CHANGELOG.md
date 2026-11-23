@@ -234,7 +234,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   protected folders, in a step before the shared removal too, so the backups
   of those files stay referenced. The test suite fails a test after which a
   refusal was absorbed in the test's own process, also when the test is
-  marked `xfail`. With no system record of the account's home (no `passwd`
+  marked `xfail`; one absorbed outside any test fails the collection, or the
+  run when a session-finish hook absorbed it. With no system record of the account's home (no `passwd`
   entry), the home is not protected. A test that must run a real install
   starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the
   child's environment. `tests/README.md` lists what the refusal does not
