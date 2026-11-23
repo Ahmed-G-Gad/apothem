@@ -42,7 +42,9 @@ without an ``xfail`` mark, and each test errors at teardown. The rest absorb it
 outside any test: while a test module is imported, which fails that module's
 collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
-test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook, in
+test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook,
+between two collect reports (a ``pytest_itemcollected`` hook, and the
+``pytest_collectreport`` hook of the session's own report), in
 a ``pytest_runtestloop`` wrapper before it yields, in a ``pytest_sessionfinish``
 hook or after a session-finish wrapper yields, in ``pytest_terminal_summary``,
 in ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and
@@ -1376,6 +1378,64 @@ def case_a_refusal_absorbed_at_import_fails_the_collection(
     )
     assert "during this test" not in result.stdout.str()
     assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal once, after pytest collected
+#: ``test_probe.py`` and before it collects ``test_second.py``.
+_ABSORBED_WHEN_AN_ITEM_IS_COLLECTED = """
+
+def pytest_itemcollected(item):
+    if item.name == "test_fixture_free":
+        _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal at the session's own collect report.
+_ABSORBED_AT_THE_SESSIONS_COLLECT_REPORT = """
+
+def pytest_collectreport(report):
+    if report.nodeid == "":
+        _absorb()
+"""
+
+
+def case_a_refusal_absorbed_between_two_collect_reports_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the collection of the module pytest collects next, which ran no test."""
+    pytester.makepyfile(test_second="def test_second():\n    pass\n")
+    pytester.makeconftest(
+        _STAR_IMPORT
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_WHEN_AN_ITEM_IS_COLLECTED
+    )
+
+    result = _run(pytester)
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS) + 1)
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(
+        [
+            "*outside any test, during collection, before pytest collected "
+            "test_second.py, and the refusal*"
+        ]
+    )
+    assert "ERROR collecting" not in result.stdout.str()
+    assert "during this test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_at_the_sessions_collect_report_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the collection of the root folder, which would drop every test."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_THE_SESSIONS_COLLECT_REPORT
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "during collection, before pytest collected ."
+    )
+    assert "ERROR collecting" not in result.stdout.str()
 
 
 def case_a_refusal_absorbed_after_the_last_test_fails_the_run(

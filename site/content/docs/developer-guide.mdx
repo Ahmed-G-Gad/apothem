@@ -736,8 +736,9 @@ error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
 logged, even when the test is marked `xfail`. One logged outside any test
 while pytest collects a node fails that node's collection. Any other one
-logged outside any test, at the session start, after collection, after the
-last test, in the summary or in `pytest_unconfigure`, is reported when the
+logged outside any test, at the session start, between two collect reports,
+after collection, after the last test, in the summary or in
+`pytest_unconfigure`, is reported when the
 session finishes, named for where it happened, and fails the run, also when
 a parallel worker (`-n`) sends it; one a worker logs after it sent its
 results shows only on `stderr`. The log is kept per process: a

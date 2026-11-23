@@ -143,14 +143,19 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   wrappers, which finish after every plain implementation and every wrapper
   that is not ``tryfirst``; ``pytest_runtestloop``, a ``trylast`` wrapper,
   which starts right before the implementation that runs the tests; and the
-  collect-report wrapper, before the session's own report. Each holds a
-  refusal absorbed outside any test before the first test, named "at the
-  session start, before collection" (a conftest's import, ``pytest_configure``,
-  ``pytest_sessionstart``, a ``pytest_collection`` hook) or "after collection,
-  before the first test" (``pytest_collection_modifyitems``, a
-  collection-finish hook, a ``pytest_runtestloop`` wrapper). Failing the
-  session's collection would drop every test, and failing the first test would
-  blame it; the tests run, and the run fails at its end.
+  collect-report wrapper, before each report starts. Each holds a refusal
+  absorbed outside any test before the first test, named "at the session
+  start, before collection" (a conftest's import, ``pytest_configure``,
+  ``pytest_sessionstart``, a ``pytest_collection`` hook), "during collection,
+  before pytest collected <node>" (a hook that runs between two collect
+  reports: ``pytest_itemcollected`` or ``pytest_collectreport`` for the node
+  before, ``pytest_collectstart`` for that one) or "after collection, before
+  the first test" (``pytest_collection_modifyitems``, a collection-finish hook,
+  a ``pytest_runtestloop`` wrapper, and the last node's
+  ``pytest_collectreport``). Failing the session's collection would drop
+  every test, failing the next node's would blame it and stop the run before
+  any test, and failing the first test would blame it; the tests run, and the
+  run fails at its end.
 - ``pytest_sessionfinish``, a ``trylast`` plain implementation: it writes what
   is held, and a refusal another session-finish hook absorbed, named "after the
   last test", to the terminal above the summary, and turns the exit code "OK"
@@ -1129,13 +1134,24 @@ class RealHomeGuard:
         would otherwise stay in the log until the first test's teardown and fail
         that test. The report of the node pytest was collecting then fails
         instead. A report that failed already keeps its own error, with the
-        refusal added. One logged before the session's own report starts (in a
-        ``pytest_collection`` hook) is held like one from the session start
-        (see :meth:`pytest_sessionstart`): failing the session's report would
-        drop every test.
+        refusal added.
+
+        What was logged before the report starts is held for the end of the
+        run, as at the session start (see :meth:`pytest_sessionstart`), so
+        only a refusal logged while this node was collected fails it. Before
+        the session's own report, that is one from a ``pytest_collection``
+        hook, named as from the session start: failing the session's report
+        would drop every test. Before any other node's, it is one from a hook
+        that runs between two collect reports (``pytest_itemcollected`` or
+        ``pytest_collectreport`` for the node before, ``pytest_collectstart``
+        for this one), named for the node pytest collects next: failing that
+        node's report would blame it, and stop the run before any test.
         """
         if isinstance(collector, pytest.Session):
             _hold(collector.config, _AT_SESSION_START)
+        else:
+            where = f"{_DURING_COLLECTION}, before pytest collected {collector.nodeid}"
+            _hold(collector.config, where)
         report = yield
         refused = home_write_guard.drain_refusals()
         if refused:
@@ -1313,6 +1329,7 @@ def _outside_any_test(refused: Iterable[object], where: str) -> str:
 
 #: Where Apothem logged a refusal outside any test, as its report names it.
 _AT_SESSION_START = "at the session start, before collection"
+_DURING_COLLECTION = "during collection"
 _BEFORE_THE_FIRST_TEST = "after collection, before the first test"
 _AFTER_THE_LAST_TEST = "after the last test"
 _AFTER_THE_SESSION = "after the session finished"
