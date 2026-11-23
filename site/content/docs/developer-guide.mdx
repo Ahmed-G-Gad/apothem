@@ -662,9 +662,9 @@ paths longest-first.
 ### Tests never write your real home
 
 A probe script or an automated assistant must never run Apothem's installers
-or adapters against your real home. Run behaviour inside a test under `tests/`, where
-`tests/conftest.py` points the home, the install ledger and the backup root at
-temporary folders.
+or adapters against your real home. Run behaviour inside a test under
+`tests/`, where `tests/conftest.py` points the home, the install ledger and
+the backup root at temporary folders.
 
 Apothem also refuses these writes itself while pytest runs, so a test file
 copied out of `tests/` and run without `tests/conftest.py` cannot reach the
@@ -708,20 +708,19 @@ in the home is refused the same way, and so is one that leads to the home
 itself, directly or through a chain of links, whose stores would land right
 in the home.
 
-These spellings of a protected folder count: a link or junction into it, and a
-folder swapped for a link during the test. On Windows letter case, short (8.3)
-names, the `\\?\`, `\\.\` and `\??\` prefixes, a loopback admin share such as
-`\\localhost\C$` or `\\--1.ipv6-literal.net\C$`, a share reached by one of the
-machine's own addresses or through a mapped drive, and an alternate data
-stream (`.apothem:name`) count too, and so does a device path behind one of
-those prefixes (`GLOBALROOT\Device\HarddiskVolume2` or `Volume{GUID}`). On
-macOS letter case and Unicode normalization are ignored as well, and
-`/System/Volumes/Data/<path>` reads as
-`/<path>`. Only these string rules make no network contact: a share path, or
-a path on a mapped drive, is checked by asking the share's host.
-`tests/README.md` lists the spellings the check does not see, such as a hard
-link to a file in a protected folder, a bind mount of the home and a
-case-insensitive Linux mount.
+These spellings of a protected folder count: a link or junction into it, and
+a folder swapped for a link during the test. On Windows letter case, short
+(8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, a loopback admin share
+such as `\\localhost\C$` or `\\--1.ipv6-literal.net\C$`, a share reached by
+one of the machine's own addresses or through a mapped drive, and an alternate
+data stream (`.apothem:name`) count too, and so does a device path behind one
+of those prefixes (`GLOBALROOT\Device\HarddiskVolume2` or `Volume{GUID}`).
+On macOS letter case and Unicode normalization are ignored as well, and
+`/System/Volumes/Data/<path>` reads as `/<path>`. Only these string rules make
+no network contact: a share path, or a path on a mapped drive, is checked by
+asking the share's host. `tests/README.md` lists the spellings the check does
+not see, such as a hard link to a file in a protected folder, a bind mount of
+the home and a case-insensitive Linux mount.
 
 The CLI raises the error as it is, for an uninstall too. Some passes check
 their paths before the first change, so a refusal there leaves everything
